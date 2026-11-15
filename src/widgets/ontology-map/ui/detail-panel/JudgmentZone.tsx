@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { ChevronRight, CircleAlert } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -38,12 +38,11 @@ export function countReasonsMissing(kind: string, reach: ConceptReach | null, gr
   return missing(reach.needs, "out") + missing(reach.neededBy, "in");
 }
 
-function ActionControl({ action, filled, testId }: { action: JudgmentAction; filled: boolean; testId: string }) {
+function ActionControl({ action, testId }: { action: JudgmentAction; testId: string }) {
   const props = {
     "data-testid": testId,
     "data-judgment-action": action.emphasis,
-    "data-action-role": filled ? "primary" : "secondary",
-    className: panelActionClass(filled),
+    className: panelActionClass(false, "sm"),
   };
   return action.href ? (
     <Link href={action.href} {...props}>{action.label}</Link>
@@ -52,13 +51,17 @@ function ActionControl({ action, filled, testId }: { action: JudgmentAction; fil
   );
 }
 
+const ROW = "flex min-h-7 min-w-0 items-center gap-2 text-body leading-body";
+
 /**
- * What a person must settle first, above the definition and only when a fact holds. The first item
- * shows its note and carries the one action; the rest fold under one "+N more" line. Nothing here says the
- * concept is wrong; the lists below stay.
+ * What a person must settle first, above the definition and only when a fact holds: one row of a
+ * warning icon, the sentence and its action as a quiet chip, set off by a hairline rather than a
+ * box. The first item shows its note; the rest open under a plain "+N more". Nothing here says
+ * the concept is wrong; the lists below stay.
  */
-export function JudgmentZone({ items, actionFilled }: { items: readonly JudgmentItem[]; actionFilled: boolean }) {
+export function JudgmentZone({ items }: { items: readonly JudgmentItem[] }) {
   const tDial = useTranslations("mapDial");
+  const tReach = useTranslations("conceptReach");
   const [open, setOpen] = useState(false);
   const [lead, ...rest] = items;
   if (!lead) return null;
@@ -67,49 +70,40 @@ export function JudgmentZone({ items, actionFilled }: { items: readonly Judgment
       data-testid="map-detail-panel-judgment"
       data-judgment-first={lead.id}
       data-judgment-count={items.length}
-      className="mx-[var(--map-panel-pad)] mb-3 flex flex-col gap-1.5 rounded-chip border border-[color:var(--color-amber-signal-a30)] bg-[color:var(--color-amber-signal-a07)] px-2.5 py-2"
+      className="flex flex-col border-b border-[color:var(--map-panel-zone-divider)] px-[var(--map-panel-pad)] py-1.5"
     >
-      <div data-judgment-item={lead.id} className="flex items-start gap-2">
-        <CircleAlert size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]" />
-        <div className="min-w-0 flex-1 text-body leading-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-primary)]">
-          {lead.line}
-        </div>
+      <div data-judgment-item={lead.id} className={ROW}>
+        <CircleAlert size={ICON_SIZE.sm} aria-hidden className="shrink-0 text-[color:var(--color-status-warning)]" />
+        <div className="min-w-0 flex-1 text-[color:var(--map-panel-text-secondary)]">{lead.line}</div>
+        {lead.action ? <ActionControl action={lead.action} testId="map-detail-panel-judgment-action" /> : null}
       </div>
       {lead.note ? (
         <p
           data-testid="map-detail-panel-judgment-note"
           title={lead.note}
-          className="line-clamp-2 pl-6 text-body leading-body break-words text-[color:var(--map-panel-text-secondary)]"
+          className="line-clamp-2 pb-1 pl-6 text-body leading-body break-words text-[color:var(--map-panel-text-tertiary)]"
         >
           {lead.note}
         </p>
       ) : null}
-      {lead.action || rest.length > 0 ? (
-        <div className="flex items-center gap-2 pl-6">
-          {lead.action ? <ActionControl action={lead.action} filled={actionFilled} testId="map-detail-panel-judgment-action" /> : null}
-          {rest.length > 0 ? (
-            <button
-              type="button"
-              aria-expanded={open}
-              onClick={() => setOpen((value) => !value)}
-              data-testid="map-detail-panel-judgment-more"
-              className="atlas-touch-floor ml-auto inline-flex min-h-7 items-center gap-1 rounded-chip px-1.5 text-label text-[color:var(--map-panel-text-secondary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-primary)]"
-            >
-              {tDial("more", { count: rest.length })}
-              <ChevronRight size={ICON_SIZE.sm} aria-hidden className={open ? "rotate-90" : undefined} />
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      {open ? (
-        <ul className="flex flex-col gap-1.5 border-t border-[color:var(--color-amber-signal-a16)] pt-1.5 pl-6">
-          {rest.map((item) => (
-            <li key={item.id} data-judgment-item={item.id} className="flex min-w-0 items-center gap-2 text-body leading-body text-[color:var(--map-panel-text-secondary)]">
+      {open
+        ? rest.map((item) => (
+            <div key={item.id} data-judgment-item={item.id} className={`${ROW} pl-6 text-[color:var(--map-panel-text-secondary)]`}>
               <div className="min-w-0 flex-1">{item.line}</div>
-              {item.action ? <ActionControl action={item.action} filled={false} testId={`map-detail-panel-judgment-action-${item.id}`} /> : null}
-            </li>
-          ))}
-        </ul>
+              {item.action ? <ActionControl action={item.action} testId={`map-detail-panel-judgment-action-${item.id}`} /> : null}
+            </div>
+          ))
+        : null}
+      {rest.length > 0 ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          data-testid="map-detail-panel-judgment-more"
+          className="atlas-touch-floor ml-5 inline-flex min-h-7 items-center self-start rounded-chip px-1 text-label text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-primary)]"
+        >
+          {open ? tReach("showFewer") : tDial("more", { count: rest.length })}
+        </button>
       ) : null}
     </section>
   );
