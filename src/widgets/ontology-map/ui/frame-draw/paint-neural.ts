@@ -40,10 +40,9 @@ const LIT_DOT_T = 0.96;
 const NAME_GRID_PX = 48;
 const SPRITE_PX = 64;
 const PLATE_EDGE_ALPHA = 0.2;
-/** Points per lit axon a name or receded domain title must keep clear of: at least this many, and one per step. */
-const LIT_PATH_SAMPLES = 10;
-const LIT_PATH_STEP_PX = 8;
-const LIT_PATH_PAD_PX = 4;
+/** A lit axon is sampled every step into a raster of cells a name or receded title must keep clear of. */
+const LIT_PATH_STEP_PX = 5;
+const LIT_CELL_PX = 6;
 /** A cluster's soft pool reaches this far past its members' half-span. */
 const CLUSTER_POOL_REACH = 1.6;
 /** An axon's end dot is this much brighter than its stroke. */
@@ -68,6 +67,8 @@ const PLATE_LINES = 2;
 const PLATE_PAD_SHARE = 1.8;
 /** How far, in name heights, a focus's name may stand off its first places to keep clear of lit axons. */
 const NAME_NUDGE_LINES = 1.2;
+/** A selection's indirect dependents take at most this share of the name budget, nearest first. */
+const INDIRECT_NAME_SHARE = 0.25;
 /** At most this many names are tried per drawn name, so a dense frame stops early. */
 const NAME_TRIES_PER_NAME = 4;
 /** Off-screen cells this far past an edge may still put a name on screen. */
@@ -336,6 +337,35 @@ class BoxGrid {
       box.minX < o.maxX && box.maxX > o.minX && box.minY < o.maxY && box.maxY > o.minY));
   }
 }
+
+/** The screen cells lit axons pass through, reused across frames: mark is O(1), a box test O(cells it covers). */
+class LitRaster {
+  private cells = new Uint8Array(0);
+  private cols = 0;
+  private rows = 0;
+  reset(width: number, height: number): void {
+    this.cols = Math.max(1, Math.ceil(width / LIT_CELL_PX));
+    this.rows = Math.max(1, Math.ceil(height / LIT_CELL_PX));
+    if (this.cells.length < this.cols * this.rows) this.cells = new Uint8Array(this.cols * this.rows);
+    else this.cells.fill(0, 0, this.cols * this.rows);
+  }
+  mark(x: number, y: number): void {
+    const col = Math.floor(x / LIT_CELL_PX);
+    const row = Math.floor(y / LIT_CELL_PX);
+    if (col >= 0 && row >= 0 && col < this.cols && row < this.rows) this.cells[row * this.cols + col] = 1;
+  }
+  hits(box: Box): boolean {
+    const c0 = Math.max(0, Math.floor(box.minX / LIT_CELL_PX));
+    const c1 = Math.min(this.cols - 1, Math.floor(box.maxX / LIT_CELL_PX));
+    const r0 = Math.max(0, Math.floor(box.minY / LIT_CELL_PX));
+    const r1 = Math.min(this.rows - 1, Math.floor(box.maxY / LIT_CELL_PX));
+    for (let row = r0; row <= r1; row += 1) {
+      for (let col = c0; col <= c1; col += 1) if (this.cells[row * this.cols + col] === 1) return true;
+    }
+    return false;
+  }
+}
+const litRaster = new LitRaster();
 
 interface ClusterSummary { capabilities: number; elements: number; stale: number }
 let summaryCache: { graph: NeuralGraph; evidence: unknown; byDomain: Map<string, ClusterSummary> } | null = null;
@@ -717,7 +747,8 @@ function paintNeuralNames(
   const cells = new BoxGrid();
   const names = new BoxGrid();
   const boxes: typeof passState.drawnLabelBoxes = [];
-  for (let i = 0; i < world.nodes.length; i += 1) {
+  // A focus's names may cross a receded cell, so the cells are gathered only at rest.
+  for (let i = 0; i < world.nodes.length && focus.sets === null; i += 1) {
     if (sa[i] <= 0.05) continue;
     const r = sr[i] + 2;
     cells.add({ minX: sx[i] - r, minY: sy[i] - r, maxX: sx[i] + r, maxY: sy[i] + r });
@@ -758,13 +789,17 @@ function paintNeuralNames(
   const { hopOf, spread } = focus;
   // Where each lit axon arrives at its far end, and how many of the focus's own leave it to the right.
   const arrival = new Map<number, { dx: number; dy: number }>();
-  const litPath = new BoxGrid();
+  const litPath = litRaster;
+  litPath.reset(width, height);
   let litRight = 0;
   let litOwn = 0;
   for (let k = 0; k < focus.litCount; k += 1) {
     const e = litAxon[k];
     const far = litFarNode[k];
-    const [fx, fy, nx] = litHop[k] === 0 ? [abx[e], aby[e], ax[e]] : [ax[e], ay[e], abx[e]];
+    const farIsTarget = litHop[k] === 0;
+    const fx = farIsTarget ? abx[e] : ax[e];
+    const fy = farIsTarget ? aby[e] : ay[e];
+    const nx = farIsTarget ? ax[e] : abx[e];
     const into = arrival.get(far) ?? { dx: 0, dy: 0 };
     const len = Math.hypot(acx[e] - fx, acy[e] - fy) || 1;
     into.dx += (acx[e] - fx) / len;
@@ -775,12 +810,8 @@ function paintNeuralNames(
       if (acx[e] > nx) litRight += 1;
     }
     const lengthPx = Math.hypot(acx[e] - ax[e], acy[e] - ay[e]) + Math.hypot(abx[e] - acx[e], aby[e] - acy[e]);
-    const samples = Math.max(LIT_PATH_SAMPLES, Math.ceil(lengthPx / LIT_PATH_STEP_PX));
-    for (let j = 1; j < samples; j += 1) {
-      const x = at(ax[e], acx[e], abx[e], j / samples);
-      const y = at(ay[e], acy[e], aby[e], j / samples);
-      litPath.add({ minX: x - LIT_PATH_PAD_PX, minY: y - LIT_PATH_PAD_PX, maxX: x + LIT_PATH_PAD_PX, maxY: y + LIT_PATH_PAD_PX });
-    }
+    const samples = Math.ceil(lengthPx / LIT_PATH_STEP_PX);
+    for (let j = 1; j < samples; j += 1) litPath.mark(at(ax[e], acx[e], abx[e], j / samples), at(ay[e], acy[e], aby[e], j / samples));
   }
   const impactSize = focus.impact?.distance.size ?? 0;
   const plate = focusId !== null && focus.focusIndex !== undefined && sets !== null && labels
@@ -849,7 +880,14 @@ function paintNeuralNames(
   const nameBudget = Math.round(t.nameBudget * focus.zoomGrowth);
   const placeNames = () => {
     const tries = Math.min(candidates.length, nameBudget * NAME_TRIES_PER_NAME);
-    for (let k = 0; k < tries && named < nameBudget; k += 1) if (placeName(candidates[k])) named += 1;
+    let indirect = 0;
+    for (let k = 0; k < tries && named < nameBudget; k += 1) {
+      const far = nameStep(candidates[k]) > 1;
+      if (far && indirect >= nameBudget * INDIRECT_NAME_SHARE) break;
+      if (!placeName(candidates[k])) continue;
+      named += 1;
+      if (far) indirect += 1;
+    }
   };
 
   // Each domain's name stands above its cluster, nearest first; a title that would sit on another

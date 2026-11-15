@@ -33,7 +33,7 @@ function manifestOf(docs: readonly { slug: string; frontmatter: Record<string, u
   return { version: "2026-04-23", generatedAt: "2026-04-23T00:00:00.000Z", docs: vaultDocs, backlinksDetail: {}, tags: {}, tree: { name: "root", path: "", type: "dir" } };
 }
 
-type CaseDocs = (typeof NEURAL_IMPACT_CASES)[number]["docs"];
+type CaseDocs = readonly { slug: string; frontmatter: Record<string, unknown> }[];
 
 function mapImpactOf(docs: CaseDocs) {
   const insight = derivationToInsight(deriveOntologyFromVault(manifestOf(docs)), "en");
