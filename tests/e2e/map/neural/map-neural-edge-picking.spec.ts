@@ -69,7 +69,7 @@ test('Neural: visible dependency strokes lie on the curves a pointer selects', a
     for (const k of painted) {
       const edge = edges[k];
       // Tracts bundle dependencies, so look along the curve for a point no other curve passes near.
-      const at = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8].map(t => point(curveOf(edge), t)).find(p =>
+      const at = Array.from({ length: 17 }, (_, i) => 0.1 + i * 0.05).map(t => point(curveOf(edge), t)).find(p =>
         p.x >= 330 && p.x <= innerWidth - 100 && p.y >= 100 && p.y <= innerHeight - 100 &&
         !nodes.some(node => Math.hypot(node.x - p.x, node.y - p.y) < node.radius + 14) &&
         !samples.some((other, i) => i !== k && other.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 12)));
