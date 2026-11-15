@@ -128,10 +128,34 @@ test("five Flat-to-Neural round trips leave at most one live WebGL2 context", as
   expect(await liveInstances(cdp, "WebGL2RenderingContext", "!item.isContextLost()")).toBeLessThanOrEqual(1);
 });
 
+/**
+ * Resolves once the painter's frame count has held for 30 page frames in a row: Neural's arrival keeps
+ * drawing for about a second after the map's layout is still. A painter that never stops times out.
+ */
+async function waitForPainterIdle(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const host = window as unknown as MapWindow & { __painterIdle?: { frames: number; held: number } };
+      const seen = (host.__painterIdle ??= { frames: -1, held: 0 });
+      const frames = host.__atlasMapNeuralGl.frames();
+      if (frames !== seen.frames) {
+        seen.frames = frames;
+        seen.held = 0;
+        return false;
+      }
+      seen.held += 1;
+      return seen.held >= 30;
+    },
+    undefined,
+    { polling: "raf" },
+  );
+}
+
 test("the WebGL painter draws no frame while Neural rests", async ({ page }) => {
   await openNeural(page, "&neuralgl=force");
   await expect.poll(() => painter(page)).toBe("webgl");
   await waitForMapStill(page);
+  await waitForPainterIdle(page);
   const frames = () => page.evaluate(() => (window as unknown as MapWindow).__atlasMapNeuralGl.frames());
   const before = await frames();
   expect(before).toBeGreaterThan(0);
