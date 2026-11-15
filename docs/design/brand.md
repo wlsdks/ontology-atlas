@@ -127,16 +127,24 @@ side and otherwise touches only ink does too, so two crumbs a hairline joined
 go together. Stone beside indigo, blush, haze or the silhouette is left alone;
 crumbs of that kind remain, most of them at the tail tip.
 
-A whisker drawn faint has an ink core thinner than a speck, so cleaning left
-the whole stroke in the fade's dark gray: a smudge where the whisker should be
-(`magic-fish`, `star-sneeze`, `pup-peek`, `bubble-chase`). A dark-gray piece
-enclosed in the drawing, no larger than a facial mark, that meets the belly
-ivory by a side is that mark. One at least a drawn pixel long becomes ink, and
-the gray within half a drawn pixel of it dissolves; a shorter one dissolves
-into the fill. Dark gray on a prop's ivory, on the silhouette, on the body
-fill or larger than a mark stays. In one frame of `connect` the piece runs
-from the left whisker to the flipper outline, so that whisker gains a short
-tail.
+A mark drawn faint has an ink core thinner than a speck, so cleaning left the
+whole stroke in the fade's dark gray: a smudge where a whisker should be
+(`magic-fish`, `star-sneeze`, `pup-peek`, `bubble-chase`) or a gap where the
+flipper outline meets the belly (`connect`). A dark-gray piece enclosed in the
+drawing and no larger than a facial mark is that mark when it meets the ivory
+of Moru's body by a side, directly or through the haze or stone its own edge
+fades into within half a drawn pixel. One at least a drawn pixel long becomes
+ink; a shorter one dissolves into the fill, and so does the haze beside
+either. The body is the largest side-connected area of light fill, so a prop
+with more ivory than the belly (the folder in `no-results`) keeps its gray, and
+a belly a flipper splits in two is treated on each side that still joins the
+body's fill; where the flippers cut all the ivory off (`peekaboo`) the pass
+does nothing. Dark gray on the
+silhouette, on the body fill away from the ivory, or larger than a mark stays.
+In `connect` frame 13 the piece runs from the left whisker to the flipper
+outline, so that whisker gains a short tail; where a faint whisker sat in a
+wide stone smudge the smudge stays around the redrawn stroke (`magic-fish`
+frame 19).
 
 The still poses of 32px or more are cut on the same 256px grid, cleaned by the
 same passes and reduced the same way, so a pose and a clip pose are drawn
