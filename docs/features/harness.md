@@ -37,24 +37,32 @@ way forward (get the app in a browser, connect a source folder in the app). The 
 filter of the agent tools the scan found (All · Claude Code · Codex · …), hidden when one tool or
 none is found. The filter narrows every list to the files that tool reads; scripts, Git hooks and CI
 workflows stay under every filter because they run whichever agent worked, while an ignore file no
-listed tool reads (`.codeiumignore`, `.aiexclude`, `.aiignore`) shows only under All. A selected file
-the filter hides closes its detail. Below 76rem of content the filter wraps as chips.
+listed tool reads (`.codeiumignore`, `.aiexclude`, `.aiignore`) shows only under All. Every count
+follows the filter; a category the filter empties stays listed, dimmed and not selectable, with 0,
+and a selection the filter hides moves to the arrival choice below. Below three panes the filter
+wraps as chips.
 
-**A problems strip appears only when a person has something to fix**: one amber bordered block, a
-row per problem, and a row opens the item concerned. It holds two kinds only: a hook script a config
-names and the disk does not have (`harness.problemHookMissing`), one row per config file and script
-however many events name it; and the root plus largest nested `AGENTS.md` Codex reads over its
-default 32 KiB `project_doc_max_bytes` (`harness.problemCodexCap`). With none, nothing is drawn: no
-"all good" banner. Claude and Codex trees are maintained independently (`e47518a9`), so a skill or
-subagent that differs from its twin is a neutral tag on the file (`harness.differsFromCodex`,
-`harness.differsFromClaude`), and a file with no twin carries none.
+**One quiet line names the problems, only when there is one**: a warning icon, `harness.problemCount`
+with the first problem's words, and a chip that selects that item (`harness.problemShow`). Two
+kinds count: a hook script a config names and the disk does not have (`harness.problemHookMissing`),
+one per config file and script however many events name it; and the root plus largest nested
+`AGENTS.md` Codex reads over its default 32 KiB `project_doc_max_bytes` (`harness.problemCodexCap`).
+With none, nothing is drawn: no "all good" banner. A category holding a problem carries an amber dot
+and its problem count at the right of its row, and the area heading carries the area's total. Claude
+and Codex trees are maintained independently (`e47518a9`), so a skill or subagent that differs from
+its twin is a neutral tag on the file (`harness.differsFromCodex`, `harness.differsFromClaude`), and
+a file with no twin carries none.
 
-**Three sections in the order of the agent's loop**, three equal-height columns at `lg` and wider,
-stacked below. Each has a title, a one-line caption and a total, then group rows that show the
-artefact's name, its count and, for read files, its total size; a group expands in place to its
-files, and a file opens the detail. Groups with no items are not drawn. Counts in rows are bare
-numbers; only the section total carries a unit. A skill counts once per directory, and its row,
-when selected, lists the directory's files, each of which opens on its own.
+**Three panes, one thing always selected in each, nothing folded.** Pane 1 lists the three areas in
+the order of the agent's loop, each with a title, a one-line caption and a total, and its categories
+as rows with their name, size where they have one and item count; pane 2 lists the selected
+category's items, each with its file name, the tool that reads it, its status tags and its size, on
+rows of one height whose long names lose their middle; pane 3 is the selected item's detail. On
+arrival the first category holding a problem is selected, otherwise the first; in pane 2 the first
+problem item, otherwise the first. Each pane is a listbox: arrow keys, Home and End move its
+selection, and Tab moves between panes. Counts in rows are bare numbers; only totals carry a unit. A
+skill counts once per directory, and its files are listed under it in pane 2, each selectable on its
+own. "Read from" sits as a caption at the foot of pane 1.
 
 | Section | Groups |
 |---|---|
@@ -71,16 +79,17 @@ A hook row shows its event as the config writes it (`PreToolUse`), the tool that
 and its status: `harness.hookWired` means only that the script exists on disk, never that it runs;
 `harness.hookMissing` is amber; a command that runs no script file (`pnpm lint`) is shown as written
 with no status; a `.codex` hook also carries `harness.hookApprovalGate`, because Codex runs a new or
-changed hook only after a person trusts it in `/hooks`, which no file records. The Context header
-also states what each tool reads at session start where the scan knows it: Claude Code's
+changed hook only after a person trusts it in `/hooks`, which no file records. Directly under the
+Context heading, as the page's one figure, is what each tool reads at session start where the scan
+knows it: Claude Code's
 `CLAUDE.md`, every rule with no `paths:`, and root `AGENTS.md` when `CLAUDE.md` imports it (that
 file is then listed under the Claude Code filter, tagged `harness.importedByClaudeMd`); and Codex's
 root plus largest nested `AGENTS.md` against its default 32 KiB limit as a bar.
 
-**The detail sits beside the lists** in a 24rem panel when the content is at least 76rem wide, and
-on arrival shows the first problem's item, or the first file. Below that width it waits for a press
-and then takes the place of the lists, with "Back to the list", which takes focus; Back or Escape
-returns focus to the row that opened it and the list to where it stood. It stays short: the path,
+**The panes fill the workbench width** separated by hairlines: pane 1 is 17.5rem, pane 2 22.5rem and
+pane 3 the rest, while the content is at least 64rem wide (a window 1168px wide or wider, with the rail). Narrower,
+pane 3 opens as the shared centred dialog when an item is pressed, and Escape or Close returns focus
+to the row; below `lg` pane 2 follows pane 1 in one column. The detail stays short: the path,
 the tools that read it (each claim cited where a tool's documentation was checked), the size, the
 event and config for a hook, the status with its explanation as text, the declaring text for a
 script or workflow, then the content. A
