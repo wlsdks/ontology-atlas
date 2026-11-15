@@ -18,14 +18,14 @@ const DIRECTORIES_SHOWN = 4;
 const PATHS_SHOWN = 6;
 
 /** Neutral steps for the period's kinds in rank order, then the remainder; the bars separate them by 1px. */
-export const KIND_INKS = [
+const KIND_INKS = [
   'bg-[color:var(--color-text-secondary)]',
   'bg-[color:var(--color-text-tertiary)]',
   'bg-[color:var(--color-text-quaternary)]',
   'bg-[color:var(--color-indigo-a46)]',
   'bg-[color:var(--color-indigo-a28)]',
 ] as const;
-export const OTHER_KIND_INK = 'bg-[color:var(--color-indigo-a16)]';
+const OTHER_KIND_INK = 'bg-[color:var(--color-indigo-a16)]';
 const ACCENT_INK = 'bg-[color:var(--color-indigo-accent)]';
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
@@ -48,7 +48,7 @@ interface DigestGroupsProps {
   onOpen: (commit: BriefingCommit) => void;
 }
 
-export function selectedGroup(digest: ChangeDigest, selection: DigestSelection) {
+function selectedGroup(digest: ChangeDigest, selection: DigestSelection) {
   return digest.groups.find(group => group.key === selection.group) ?? digest.groups[0];
 }
 
@@ -107,7 +107,7 @@ function GroupOption({ group, kinds, selected, accent, share, optionRef, onPress
   const newest = group.changes[0];
   const segments = kinds ? kindCounts(group.changes, kinds) : [count];
   return <div ref={optionRef} role="option" aria-selected={selected} tabIndex={selected ? 0 : -1} aria-label={t('groupName', { group: name, count })} data-digest-group={group.key}
-    onClick={onPress} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onPress(); } }}
+    onClick={onPress}
     className={cn('block cursor-pointer rounded-card border px-3 py-2.5 transition-colors', FOCUS_RING,
       selected ? 'border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)]' : 'border-transparent hover:bg-[color:var(--color-overlay-1)]')}>
     <span className="flex items-baseline justify-between gap-3">
