@@ -133,7 +133,7 @@ test("Neural: dragging inside the dome rotates it, and dragging the black area o
   const { x: outsideX, y: outsideY } = outside!;
 
   /* ── ① Drag outside the dome = camera pan ──────────────────────────────── */
-  // Hover pauses the idle spin; read the drag baseline after the pointer arrives.
+  // Read the drag baseline after the pointer arrives.
   await page.mouse.move(outsideX, outsideY);
   await waitForMapStill(page, { what: "dome" });
   const before1 = await readPose(page);
@@ -183,8 +183,8 @@ test("Neural: dragging inside the dome rotates it, and dragging the black area o
   await page.mouse.up();
   /*
    * The orbit keeps closing its remaining gap after velocity reaches zero
-   * (`yawSnap`), and the hand that just dragged disarmed the auto-spin, so the pose
-   * really does come to rest. Waiting for that rest reads the landing rather than
+   * (`yawSnap`), and Neural never turns by itself, so the pose really does come to
+   * rest. Waiting for that rest reads the landing rather than
    * whatever 60 ms of this machine happened to reach.
    */
   await waitForMapStill(page, { what: "dome" });

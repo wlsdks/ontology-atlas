@@ -160,8 +160,8 @@ export function useTopologyFocusNavigation({
     const releasedLeash = focusLeashPxRef.current;
         /*
          * In 3D a click only selects: the camera and pose stay put, and flying to a node is its own gesture
-         * (double-click or Enter, consumed by the dome frame, `DOME_FLY_MS`). A selection stops the attention
-         * spin; the nudge off the inspector is undone on deselect. Esc and Home fly back, a click does not.
+         * (double-click or Enter, consumed by the dome frame, `DOME_FLY_MS`). The nudge off the inspector
+         * is undone on deselect. Esc and Home fly back, a click does not.
          */
         if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
       handledInitialFocus.current = true;

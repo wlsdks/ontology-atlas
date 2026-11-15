@@ -278,7 +278,7 @@ export function createFrameGate({
             }
         }
         // The navigation yield sits **ahead of** the idle gate: whatever the
-        // activity flags say (auto-spin, comets, assembly ramp), a screen that is
+        // activity flags say (comets, assembly ramp, a travelling signal), a screen that is
         // being left does not get drawn.
         if (now < navYieldUntilRef.current) {
             return FRAME_NOT_READY;

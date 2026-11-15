@@ -121,7 +121,7 @@ export function createPointerMoveHandler(
           const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
           const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
-          // Grabbing a node is intervention — release the attention spin (①).
+          // Grabbing a node is intervention: fold the entry sweep into the pose.
           commitDomeEntrySweep(dome);
           nodeDragRef.current = { nodeId: grabbedNodeId, offset };
           dome.drag = {
@@ -198,7 +198,7 @@ export function createPointerMoveHandler(
           dragHistoryRef.current.shift();
         return;
       }
-      // Panning is intervention too: the dome must not resume idle rotation on release.
+      // Panning is intervention too: fold the entry sweep into the pose.
       if (dome) {
         commitDomeEntrySweep(dome);
       }

@@ -410,9 +410,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 beginCameraTween(target);
               }
             } else {
-              // A selection is interaction, so the attention spin is
-              // lowered here. That holds even for a node with no coordinate
-              // (a kind outside the dome model) — interaction is interaction.
+              // A selection is interaction, so the entry sweep folds into the pose, even for a
+              // node with no coordinate (a kind outside the dome model).
               commitDomeEntrySweep(dome);
               const coord = dome.model.coords.get(pending.slug);
               if (coord !== undefined) {

@@ -215,7 +215,7 @@ test.describe("Neural on the dogfood vault", () => {
   test("a stale concept's cell is amber in the desktop runtime and a current one is not", async ({ page }) => {
     const { vault } = await openNeural(page);
     const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
-    // A pointer resting on empty canvas stops the idle spin, so the probe and the pixels agree.
+    // A pointer resting on empty canvas, so no hover lights a cell while the pixels are read.
     await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
     await waitForMapStill(page, { what: "camera" });
     await waitForMapStill(page, { what: "dome" });
