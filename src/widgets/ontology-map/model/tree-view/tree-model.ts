@@ -3,15 +3,21 @@ import type { TreeFocus, TreeModel, TreeNodeKind } from "./types";
 
 /** A concept parent keeps at most this many domain or capability children before it forks. */
 const DIRECT_CHILD_LIMIT = 3;
-/** Most children one synthetic fork holds, and most forks one parent splits into. */
+/** Most children one synthetic fork holds, and most children any parent has. */
 const FORK_FAN_OUT = 4;
+
+/** Loop iterations a build or layout performed, for work-count tests. */
+export interface TreeWork { steps: number }
 
 type BuildTask =
   | { kind: "concept"; node: TreeInputNode; parent: number }
   | { kind: "fork"; items: readonly TreeInputNode[]; lo: number; hi: number; parent: number }
+  | { kind: "stem"; leaves: readonly TreeInputNode[]; parent: number }
   | { kind: "loose"; parent: number };
 
-const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const byId = (a: { id: string }, b: { id: string }) => byText(a.id, b.id);
+const byIdKindLabel = (a: TreeInputNode, b: TreeInputNode) => byId(a, b) || byText(a.kind, b.kind) || byText(a.label, b.label);
 
 const EMPTY_INTS = new Int32Array(0);
 
@@ -35,15 +41,14 @@ function emptyModel(): TreeModel {
   };
 }
 
-function firstOfEachId(nodes: readonly TreeInputNode[]): TreeInputNode[] {
-  const seen = new Set<string>();
-  const out: TreeInputNode[] = [];
+/** One node per id: the first in id, kind, label order, so input order never decides. */
+function oneNodePerId(nodes: readonly TreeInputNode[]): TreeInputNode[] {
+  const chosen = new Map<string, TreeInputNode>();
   for (const node of nodes) {
-    if (seen.has(node.id)) continue;
-    seen.add(node.id);
-    out.push(node);
+    const held = chosen.get(node.id);
+    if (!held || byIdKindLabel(node, held) < 0) chosen.set(node.id, node);
   }
-  return out;
+  return [...chosen.values()];
 }
 
 function mergeById(a: readonly TreeInputNode[], b: readonly TreeInputNode[]): TreeInputNode[] {
@@ -81,15 +86,14 @@ function transpose(start: Int32Array, list: Int32Array, rows: number): { start: 
 
 /**
  * The containment of `readContainmentTree` as a preorder tree: trunk, domains, capabilities,
- * elements, with synthetic forks keeping every domain or capability fan-out at most four and one
- * loose fork for what no domain holds. Linear after the id sort the containment rule performs.
+ * elements. Synthetic forks keep every fan-out at most four, a parent's own elements hang from one
+ * stem fork so no parent mixes branches and leaves, and one loose fork holds what no domain holds.
+ * O((V + E) log(V + E)) for the id sorts here and in the containment rule; linear otherwise.
  */
-export function buildTreeModel(nodes: readonly TreeInputNode[], edges: readonly TreeInputEdge[]): TreeModel {
-  const unique = firstOfEachId(nodes);
+export function buildTreeModel(nodes: readonly TreeInputNode[], edges: readonly TreeInputEdge[], work?: TreeWork): TreeModel {
+  const unique = oneNodePerId(nodes);
   if (unique.length === 0) return emptyModel();
   const tree = readContainmentTree(unique, edges);
-  const kindOf = new Map<string, TreeInputNode["kind"]>();
-  for (const node of unique) kindOf.set(node.id, node.kind);
 
   const domainCapabilities = new Map<string, TreeInputNode[]>();
   const looseCapabilities: TreeInputNode[] = [];
@@ -130,10 +134,13 @@ export function buildTreeModel(nodes: readonly TreeInputNode[], edges: readonly 
   };
 
   const stack: BuildTask[] = [];
+  const pushConcepts = (items: readonly TreeInputNode[], lo: number, hi: number, parent: number) => {
+    for (let k = hi - 1; k >= lo; k -= 1) stack.push({ kind: "concept", node: items[k]!, parent });
+  };
   const pushGroups = (items: readonly TreeInputNode[], lo: number, hi: number, parent: number, directLimit: number, maxParts: number) => {
     const n = hi - lo;
     if (n <= directLimit) {
-      for (let k = hi - 1; k >= lo; k -= 1) stack.push({ kind: "concept", node: items[k]!, parent });
+      pushConcepts(items, lo, hi, parent);
       return;
     }
     const parts = Math.min(maxParts, Math.max(2, Math.ceil(n / FORK_FAN_OUT)));
@@ -141,28 +148,36 @@ export function buildTreeModel(nodes: readonly TreeInputNode[], edges: readonly 
       stack.push({ kind: "fork", items, lo: lo + Math.floor((j * n) / parts), hi: lo + Math.floor(((j + 1) * n) / parts), parent });
     }
   };
-  const pushChildren = (parent: number, branches: readonly TreeInputNode[], leaves: readonly TreeInputNode[], maxParts: number) => {
-    for (let k = leaves.length - 1; k >= 0; k -= 1) stack.push({ kind: "concept", node: leaves[k]!, parent });
-    pushGroups(branches, 0, branches.length, parent, DIRECT_CHILD_LIMIT, maxParts);
+  /** Branches first, then the stem; the stem takes one of the parent's four places. */
+  const pushChildren = (parent: number, branches: readonly TreeInputNode[], leaves: readonly TreeInputNode[]) => {
+    if (leaves.length > 0) stack.push({ kind: "stem", leaves, parent });
+    pushGroups(branches, 0, branches.length, parent, DIRECT_CHILD_LIMIT, leaves.length > 0 ? FORK_FAN_OUT - 1 : FORK_FAN_OUT);
   };
 
   const trunk = emit(tree.project?.id ?? null, tree.project?.label ?? "", "project", -1);
   if (hasLoose) stack.push({ kind: "loose", parent: trunk });
-  pushGroups(tree.domains, 0, tree.domains.length, trunk, DIRECT_CHILD_LIMIT, hasLoose ? FORK_FAN_OUT - 1 : FORK_FAN_OUT);
+  pushGroups(tree.domains, 0, tree.domains.length, trunk, DIRECT_CHILD_LIMIT, FORK_FAN_OUT - 1);
   const none: readonly TreeInputNode[] = [];
   while (stack.length > 0) {
     const task = stack.pop()!;
+    if (work) work.steps += 1;
     if (task.kind === "fork") {
       const fork = emit(null, "", "fork", task.parent);
       pushGroups(task.items, task.lo, task.hi, fork, FORK_FAN_OUT, FORK_FAN_OUT);
+    } else if (task.kind === "stem") {
+      const stem = emit(null, "", "fork", task.parent);
+      pushConcepts(task.leaves, 0, task.leaves.length, stem);
     } else if (task.kind === "loose") {
       looseRoot = emit(null, "", "fork", task.parent);
-      pushChildren(looseRoot, looseBranches, looseLeaves, FORK_FAN_OUT);
+      pushChildren(looseRoot, looseBranches, looseLeaves);
     } else {
       const { node } = task;
       const index = emit(node.id, node.label, node.kind, task.parent);
-      if (node.kind === "domain") pushChildren(index, domainCapabilities.get(node.id) ?? none, ownedLeaves.get(node.id) ?? none, FORK_FAN_OUT);
-      else if (node.kind === "capability") pushChildren(index, none, ownedLeaves.get(node.id) ?? none, FORK_FAN_OUT);
+      if (node.kind === "domain") pushChildren(index, domainCapabilities.get(node.id) ?? none, ownedLeaves.get(node.id) ?? none);
+      else if (node.kind === "capability") {
+        const leaves = ownedLeaves.get(node.id) ?? none;
+        pushConcepts(leaves, 0, leaves.length, index);
+      }
     }
   }
 
