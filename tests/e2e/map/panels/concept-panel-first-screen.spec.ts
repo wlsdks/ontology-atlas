@@ -161,6 +161,26 @@ test.describe("the concept panel's first screen", () => {
       expect(m.y + m.height, `${menu}: the menu sits above its trigger`).toBeLessThanOrEqual(t.y);
       expect(Math.abs(m.x + m.width - (t.x + t.width)), `${menu}: right edges align`).toBeLessThanOrEqual(1);
       expect(m.x, `${menu}: the menu stays inside the panel's left edge`).toBeGreaterThanOrEqual(p.x);
+      const edge = await box.evaluate((el) => {
+        const probe = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
+        const paint = (...layers: string[]) => {
+          probe.clearRect(0, 0, 1, 1);
+          for (const fill of layers) {
+            probe.fillStyle = fill;
+            probe.fillRect(0, 0, 1, 1);
+          }
+          return [...probe.getImageData(0, 0, 1, 1).data].slice(0, 3).map((v) => {
+            const s = v / 255;
+            return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          });
+        };
+        const luminance = ([r, g, b]: number[]) => 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+        const panelSurface = getComputedStyle(el.closest('[data-testid="map-detail-panel"]')!).backgroundColor;
+        const own = getComputedStyle(el);
+        const [hi, lo] = [luminance(paint(own.backgroundColor, own.borderTopColor)), luminance(paint(panelSurface))].sort((a, b) => b - a);
+        return (hi! + 0.05) / (lo! + 0.05);
+      });
+      expect(edge, `${menu}: the menu's edge reads as a layer above the panel`).toBeGreaterThanOrEqual(3);
       await page.keyboard.press("Escape");
       await expect(box).toBeHidden();
     }

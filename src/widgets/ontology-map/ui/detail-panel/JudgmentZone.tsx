@@ -42,7 +42,7 @@ function ActionControl({ action, testId }: { action: JudgmentAction; testId: str
   const props = {
     "data-testid": testId,
     "data-judgment-action": action.emphasis,
-    className: panelActionClass(false, "sm"),
+    className: panelActionClass(false, "row"),
   };
   return action.href ? (
     <Link href={action.href} {...props}>{action.label}</Link>
