@@ -247,6 +247,12 @@
     --graph-page-halo: #0e0f13;
 
     /*
+     * The ring is only three lines on screen, so it needs more ink than the planar `--map-grid-major`.
+     * Capped below `--map-ink-depth-leaf` so it never competes with data.
+     */
+    --map-dome-ring: #43434f;
+
+    /*
      * Background always loses to data: no background may exceed `--canvas-bg-ink-max`, and only near the
      * cursor up to that limit.
      */
@@ -326,6 +332,14 @@
        ratio (0.92) so the DEFAULT overview reads as CIRCUIT (farT ≈ 0), while
        tier visibility rides a separate zoom-ratio signal (model/visibility/tier-visibility). */
     --map-overview-entry-ratio: 0.95;
+    /*
+     * Top band 104: the label pipeline culls against `--map-safe-inset-top` (148); a smaller band put
+     * the apex ring through its own name. Used by `computeDomeFitCameraTarget` in
+     * `topology-camera-math.ts`.
+     */
+    --map-dome-fit-fill: 0.98;
+    --map-dome-fit-inset-top: 104;
+    --map-dome-fit-inset-bottom: 32;
     --map-focus-fit-max-scale: 1.9;
     /*
      * Multiplicative margin: larger clusters get proportionally larger padding. See
