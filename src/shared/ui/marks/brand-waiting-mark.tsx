@@ -79,5 +79,5 @@ function WaitingMarkCell({ ref, state, scale, motion }: { ref?: Ref<HTMLSpanElem
       style={{ backgroundImage: `url(${withBasePath(`/brand/mascot-${motion}-row${scale === 2 ? '-128' : ''}.png`)})` }}
     />
   );
-  return scale === 2 ? <span className="atlas-waiting-mark-2x inline-block shrink-0">{mark}</span> : mark;
+  return scale === 2 ? <span className="atlas-waiting-mark-2x inline-flex shrink-0">{mark}</span> : mark;
 }

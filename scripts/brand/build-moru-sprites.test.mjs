@@ -7,7 +7,7 @@ import { despeckle, inkFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMor
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
-const INK = [23, 25, 35], SKIN = [214, 211, 201], IVORY = [255, 241, 215], FREE_INK = [109, 115, 210], FRINGE_GRAY = [85, 84, 81];
+const INK = [23, 25, 35], SKIN = [214, 211, 201], IVORY = [255, 241, 215], FREE_INK = [109, 115, 210], FRINGE_GRAY = [85, 84, 81], HAZE_GRAY = [153, 150, 143];
 
 function canvas(size) {
   const data = Buffer.alloc(size * size * 4);
@@ -374,6 +374,33 @@ test('the soft gray edge of the outline joins it, that of a facial mark dissolve
   assert.deepEqual([44, 48, 51].map(x => at(joined, x, 26)), [FRINGE_GRAY, FRINGE_GRAY, FRINGE_GRAY], 'a gray surface turned to ink');
   assert.deepEqual([at(joined, 21, 21), at(joined, 22, 22)], [SKIN, INK], 'the soft edge of a facial mark did not dissolve into the fill');
   assert.deepEqual(at(joined, 31, 31), FRINGE_GRAY, 'gray that touches no ink turned to ink');
+});
+
+test('the lighter haze beside the outline dissolves into the fill, and the same gray away from ink stays', () => {
+  const { data, paint, at } = canvas(64);
+  paint(8, 8, 40, 40, INK);
+  paint(10, 10, 38, 38, SKIN);
+  paint(10, 10, 12, 38, HAZE_GRAY);
+  paint(6, 8, 8, 40, HAZE_GRAY);
+  paint(22, 22, 26, 26, HAZE_GRAY);
+  const cleared = inkFringe(data, 64);
+  assert.deepEqual(at(cleared, 11, 20), SKIN, 'haze inside the outline stayed gray');
+  assert.equal(cleared[(20 * 64 + 7) * 4 + 3], 0, 'haze outside the outline was not cleared');
+  assert.deepEqual(at(cleared, 9, 20), INK, 'the outline changed');
+  assert.deepEqual(at(cleared, 24, 24), HAZE_GRAY, 'gray that touches no ink was repainted');
+});
+
+test('haze inside a one-pixel diagonal outline takes the fill, never the outside it touches by a corner', () => {
+  const { data, paint, at } = canvas(64);
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+    const depth = x + y - 24;
+    if (depth >= 0) paint(x, y, x + 1, y + 1, depth === 0 ? INK : depth <= 3 ? HAZE_GRAY : SKIN);
+  }
+  const cleared = inkFringe(data, 64);
+  let holes = 0;
+  for (let y = 1; y < 63; y++) for (let x = 1; x < 63; x++) if (x + y > 24 && cleared[(y * 64 + x) * 4 + 3] === 0) holes++;
+  assert.equal(holes, 0, 'a pixel inside the outline was cleared');
+  assert.deepEqual(at(cleared, 13, 12), SKIN, 'haze beside the diagonal outline stayed gray');
 });
 
 test('ink drawn away from every fill takes the indigo that reads on the dark canvas', () => {

@@ -111,8 +111,12 @@ replaces a piece of one colour smaller than a quarter of a drawn pixel with the
 colour around it. The source's ink fades through dark gray, which showed as
 gray dashes around the silhouette on the dark canvas: within half a drawn pixel
 the soft edge of the outline joins the outline, and the soft edge of a facial
-mark dissolves into the fill around it. Gray farther in is a drawn surface and
-stays gray.
+mark dissolves into the fill around it. The lighter gray step of the same fade
+(`99968f`) left a one-pixel sliver beside whiskers and under the belly, which at
+64px was a whole drawn pixel; within the same reach of any ink it dissolves into
+the fill, or clears where it lay outside the outline. Haze thicker than that
+reach keeps its inner part, so a few slivers remain (`star-sneeze` beside the
+left whiskers). Gray farther in is a drawn surface and stays gray.
 
 Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
 halves in length and a filled square stays a filled rectangle within a pixel of
@@ -177,6 +181,10 @@ and silence keep their existing behavior. Intersection and document visibility
 pause motion; reduced motion uses a still pose and unchanged status/actions.
 The curious row runs under the same visibility and reduced-motion guards but
 accompanies no operation: its 7200ms cycle holds neutral, tilts once and returns.
+Moru is exempt from the five-second bound on ambient motion
+([Design system](../DESIGN-SYSTEM.md), "Motion"): a character's gesture may
+repeat for as long as it is visible. Reduced motion is its stop control, and no
+screen adds a pause button for it.
 The decorative companion keeps native 128px cells and authored jump headroom.
 Its ambient and reaction sheets use 32 columns with explicit row/column addressing
 (maximum width 4096px), so adding motions does not create oversized textures.
