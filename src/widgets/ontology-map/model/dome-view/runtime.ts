@@ -88,6 +88,7 @@ export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
   runtime.flyRequest = null;
   runtime.nudgeReturn = null;
   runtime.restFit = null;
+  runtime.turnFollow = null;
   runtime.flight = null;
   runtime.lag.project = 0;
   runtime.lag.domain = 0;
@@ -208,11 +209,15 @@ export interface DomeRuntime {
   /**
    * The whole-cloud fit a fit control or the entry last chose, and the pose it was made for. Neural's
    * zoom growth measures from its scale, and a click refits the cloud only while the camera still sits
-   * on it. A panel's refit never changes it. `followed` is the camera a turn last set from it; once the
-   * camera differs from that, the person has zoomed or panned and turning stops changing the zoom.
-   * null = no fit yet.
+   * on it. A panel's refit never changes it. null = no fit yet.
    */
-  restFit: { target: DomeFitTarget; yaw: number; pitch: number; followed?: CameraPose | null } | null;
+  restFit: { target: DomeFitTarget; yaw: number; pitch: number } | null;
+  /**
+   * The fit a turn's zoom follows: the last one the camera was sent to, the rest fit or a selection's
+   * refit, and `followed`, the camera a turn last set from it. A camera anywhere else means the person
+   * zoomed or panned (`followed` undefined) until the next fit. null = none.
+   */
+  turnFollow: { target: DomeFitTarget; yaw: number; followed?: CameraPose | null } | null;
   /** Invalidates the edge candidate cache, since entries update in place. */
   frameEpoch: number;
   yaw: number;
@@ -283,6 +288,7 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     drawnBounds: null,
     fitScale: null,
     restFit: null,
+    turnFollow: null,
     frameEpoch: 0,
     yaw: DOME_YAW_DEFAULT,
     pitch: DOME_PITCH_DEFAULT,
