@@ -133,6 +133,9 @@ describe("layoutTree", () => {
   it("keeps each crown's shape relative to its hub when a domain is added", () => {
     const before = vault([[2, 3, 1, 4, 2], [3, 3], [5]]);
     const after = vault([[2, 3, 1, 4, 2], [3, 3], [5]]);
+    // The first domain tops the dome on the trunk axis, where a hub has no azimuth to turn by.
+    addDomain(before, "domain:!top", [1]);
+    addDomain(after, "domain:!top", [1]);
     addDomain(after, "domain:!first", [2, 2]);
     const a = layoutOf(before);
     const b = layoutOf(after);
@@ -253,6 +256,62 @@ describe("layoutTree", () => {
         for (const p of [point(layout, i), ...controls(layout, i)]) expect(distance(p, centre), `${i} in ${root}`).toBeLessThanOrEqual(radius);
       }
     }
+  });
+
+  describe("at 1, 2, 4, 8, 16 and 40 domains of 10 capabilities with 8 elements each", () => {
+    const DOMAIN_COUNTS = [1, 2, 4, 8, 16, 40] as const;
+    const layouts = new Map(DOMAIN_COUNTS.map((d) => [d, layoutOf(vault(Array.from({ length: d }, () => new Array<number>(10).fill(8))))]));
+    const hubsOf = (layout: TreeLayout) => Array.from({ length: layout.model.count }, (_, i) => i).filter((i) => layout.model.kinds[i] === "domain");
+    const heightOf = (layout: TreeLayout) => Math.max(...Array.from({ length: layout.model.count }, (_, i) => point(layout, i)[1]));
+
+    it("stands at least as tall as its widest horizontal diameter", () => {
+      for (const [domains, layout] of layouts) {
+        const points = [[0, 0, 0], ...Array.from({ length: layout.model.count }, (_, i) => point(layout, i))];
+        let width = 0;
+        for (let step = 0; step < 72; step += 1) {
+          const c = Math.cos((step * Math.PI) / 72), s = Math.sin((step * Math.PI) / 72);
+          const along = points.map((p) => p[0]! * c + p[2]! * s);
+          width = Math.max(width, Math.max(...along) - Math.min(...along));
+        }
+        expect(heightOf(layout), `${domains} domains`).toBeGreaterThanOrEqual(width);
+      }
+    });
+
+    it("gives the trunk 25 to 35 percent of the height and sets every hub above its top", () => {
+      for (const [domains, layout] of layouts) {
+        const trunkTop = point(layout, 0)[1];
+        const share = trunkTop / heightOf(layout);
+        expect(share, `${domains} domains`).toBeGreaterThanOrEqual(0.25);
+        expect(share, `${domains} domains`).toBeLessThanOrEqual(0.35);
+        for (const hub of hubsOf(layout)) expect(point(layout, hub)[1], `${domains} domains, hub ${hub}`).toBeGreaterThan(trunkTop);
+      }
+    });
+
+    it("keeps at least 95 percent of 40 domains' concepts nearer their own hub than any other", () => {
+      const layout = layouts.get(40)!;
+      const hubs = hubsOf(layout);
+      let owned = 0;
+      let strays = 0;
+      for (const hub of hubs) {
+        for (let i = hub + 1; i < layout.model.subtreeEnd[hub]!; i += 1) {
+          if (layout.model.ids[i] === null) continue;
+          owned += 1;
+          const own = distance(point(layout, i), point(layout, hub));
+          if (hubs.some((other) => other !== hub && distance(point(layout, i), point(layout, other)) < own)) strays += 1;
+        }
+      }
+      expect(strays / owned).toBeLessThanOrEqual(0.05);
+    });
+
+    it("never widens wood along a path from the trunk", () => {
+      for (const [domains, layout] of layouts) {
+        expect(layout.widthEnd[0]!, `${domains} domains`).toBeLessThanOrEqual(layout.widthStart[0]!);
+        for (let i = 1; i < layout.model.count; i += 1) {
+          expect(layout.widthStart[i]!, `${domains} domains, node ${i}`).toBeLessThanOrEqual(layout.widthEnd[layout.model.parent[i]!]!);
+          expect(layout.widthEnd[i]!, `${domains} domains, node ${i}`).toBeLessThanOrEqual(layout.widthStart[i]!);
+        }
+      }
+    });
   });
 
   it("holds the whole tree in the least sphere centred on the trunk axis", () => {
