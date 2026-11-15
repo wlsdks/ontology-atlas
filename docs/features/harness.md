@@ -120,42 +120,53 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
 - The stable role blueprint is one reviewed contract. Pattern names are declared
   summaries; Atlas does not infer Clean, Hexagonal, MVP, or Feature-Sliced Design
   from folder names. The visible Understand → Plan → Verify stages were removed
-  on 2026-09-03; the canvas compares reviewed intent with observation directly.
-- **The picture is a cross-section of the code** (2026-11-14, owner). One row per role in
-  profile order: at the left the role's path pattern in mono and its name, then a rounded
-  band holding the role's real members as small mono chips on one line, closing with `+N`
-  for the members that do not fit, or the total when all of them do. Members are the
-  connected repository's folder and file names under the role's paths, listed through the
-  read-only harness commands with no file opened; without a listing they are the modules the
-  role's recorded concepts sit in, most recorded first; with neither the band is empty and
-  only the pattern names it. A band carries no description; the role's sentence, reach,
-  modules and concepts are in its detail panel.
-- **Observed imports are arcs beside the bands.** Each crossing between two roles in the
-  last record is one arc leaving the right edge of its source band and returning to its
-  target's, bulging further the more rows it spans, its stroke 1 to 6px wide by its share
-  of the busiest crossing, neutral at rest. Imports inside one role are not drawn, and an
-  allowed rule nobody has imported along is not drawn: the arcs are the code's, the rules
-  are in the rules panel. A violation takes the outer lane, dashed in the danger tone with
-  an arrowhead at its target and a short label `from → to N`. Choosing a band brightens its
-  arcs, dims the rest and puts each bright arc's count at its far point; hovering an arc
-  shows `from → to N`, and each arc's accessible name is its full sentence. One legend line
-  under the picture keys the marks. Before a record exists nothing is drawn beside the
-  bands: no arc, placeholder or legend.
-- **The header is one line.** The profile title, then the status: "Not scanned yet", "No
-  import against the rules · checked <date>", or a red dot and the count against the rules
-  with its date; a live agent turn names itself there instead. The status opens the
-  profile's issues and records. At the right sit the rules toggle and the agent action. The
-  last check's result, counts and dated stamp, or the command that would write one, are in
-  the rules panel under "Last check".
-- **At workbench width the screen does not scroll** (2026-08-30). The panel hugs its rows,
-  which shrink from 60 to 34px with a tighter gap before any role leaves view, so seven
-  roles stand whole at 1280×800 and 1512×945. The role's answer and the rules open in a
-  380px panel beside it — by choosing a band, by the "Roles and rules" button, or by a link
-  naming a role — and Escape closes it and returns focus. Below workbench width the panels
-  return to the document flow, the arc column narrows first, and below a 600px stage the
-  arcs are dropped and each band names its strongest outgoing crossing instead. Bands never
-  scroll sideways. The arcs draw in once over `--motion-settle`, selection crossfades, and
-  reduced motion shows the finished picture.
+  on 2026-09-03; the table compares reviewed intent with observation directly.
+- **The verdict leads** (2026-11-15, owner). Above everything else, the number of imports the
+  last record counted against the rules is the screen's one large numeral, in the danger tone
+  when it is above zero, with the label "imports against the rules" and a success dot when it
+  is zero. Beside it stand three quiet figures: imports observed between layers, layers, and
+  modules. One line under them says when the record was taken and from what (commit, dirty
+  flag or folder fingerprint) and the dependency rule in one sentence. An `unknown` record
+  says why in plain words: imports no rule covers, imports from files in no layer, layers with
+  no file, or files in a language the check cannot read. Before a record exists the verdict
+  says the source has not been checked and that a check fills the table; the agent action in
+  the header runs or copies that check. The header line is the profile title with its pattern,
+  the profile switcher when several profiles exist, a live agent turn's state, "Findings &
+  history" (the profile's issues and records), and the agent action.
+- **The picture is one import table** (2026-11-15). Rows and columns are the profile's roles
+  in profile order; the cell at row A, column B counts the imports the last record observed
+  from A into B. A row header carries the role's number, name, path pattern in mono and module
+  count; a column header its name, or its number when cells are narrow. Cells are equal
+  squares on one grid with a 1px gap. An allowed pair with imports shows its count in tabular
+  mono on a neutral fill that steps up with the square root of its share of the busiest pair;
+  an allowed pair with none shows a faint dot, so the rule itself is on the picture; a
+  forbidden pair with none is empty; a pair the record counted against the rules is the only
+  coloured mark, a danger-toned outline and count. The diagonal is a dash: imports inside one
+  layer are not counted. A forbidden pair whose imports the check does not govern (such as
+  type-only) shows its count in quaternary ink. Under an `explicit` rule the allowed cells
+  follow each role's declared reach wherever they fall. Before a record the table shows the
+  rule alone. One caption line says how to read a cell and keys the dot and the red cell.
+  Pointing at or focusing a cell brightens its row and column headers and names the pair in a
+  fixed line above the table (`Views → Shared foundation · 61 imports · allowed by the
+  rules`), which is also each cell's accessible name; at rest that line names the violation,
+  else the busiest pair. Cells are buttons with one tab stop and arrow keys between them.
+- **One role is always in the pane.** On arrival it is the source role of the first violation,
+  else the first role that imports another, else the first role; `?role=` overrides it and a
+  role the profile lacks is declined in words. Choosing a row header or a cell selects that row's
+  role and writes `?role=`; a cell also marks its column's role in the pane. The pane shows the
+  role's number and name, its sentence, its path patterns, the layers it may import, the layers
+  it imports and the layers that import it (name, neutral bar and count; a violation in the
+  danger tone with the record's file paths under it), all of its modules with each one's
+  recorded-concept count, then its recorded concepts. Modules are the connected repository's
+  folder and file names under the role's paths, listed through the read-only harness commands
+  with no file opened; without a listing they are the modules the role's recorded concepts sit
+  in, and the pane says why. Nothing in the pane or table unfolds in place.
+- **At workbench width the screen does not scroll** (2026-08-30). From `xl` the pane is a 380px
+  column with a hairline on its left and scrolls inside itself; the table's cells size to the
+  room left, from 34 to 72px, so seven roles stand whole at 1280×800 and 1512×945 and twelve
+  roles fit at 1280×800. Below 52px a count of four digits abbreviates (`1.2k`). Below `xl`
+  the pane stacks under the table and choosing a role scrolls it into view; below `md` the
+  table may scroll sideways inside its own area, never the page.
 - **A role's sentence can be written in the reader's language** (2026-09-03). Beside
   `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
   `summary_views_ko`. The screen shows the locale line to a reader in that locale
@@ -164,7 +175,7 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   the reviewed fact: it is the only sentence the agent handoff, `inspect_architecture`
   and CLI `architecture` print, and a locale line without it is refused, as is a
   locale line for a role the profile does not declare. A document whose profile this
-  screen cannot read is now named in a notice above the canvas instead of replacing
+  screen cannot read is now named in a notice above the table instead of replacing
   every profile in the folder with an error.
 - **The agent task is the person's to choose** (2026-09-03). The button keeps its
   derived default — inspect source, review delta, or plan change — and a chooser
@@ -185,9 +196,9 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   app, an exact CLI fallback is included only when the project source binding,
   vault path, and Atlas CLI entry are all verified absolute paths; otherwise the
   packet says the fallback is unavailable instead of inventing a command.
-- At narrow widths the role model remains first in document order. Open role and rules
-  panels scroll into view without covering the persistent bottom tabs, whose reserve stays
-  part of the workbench.
+- At narrow widths the verdict and the table come first in document order; the role pane
+  follows and scrolls into view without covering the persistent bottom tabs, whose reserve
+  stays part of the workbench.
 
 **Before a profile exists, the tab shows what one gives** (2026-10-02, owner). The empty state is a
 hero on the Harness start line, top-aligned under the tabs: the sentence and its two actions, and
