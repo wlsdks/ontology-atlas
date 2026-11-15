@@ -426,7 +426,7 @@ export function OntologyTreeMap({
       <div
         ref={footerRef}
         data-testid="tree-map-footer"
-        className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex flex-col items-center"
+        className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex min-h-12 flex-col items-center justify-end"
       >
         {legend?.({ focused: focus !== null })}
       </div>

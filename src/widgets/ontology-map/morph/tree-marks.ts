@@ -53,7 +53,7 @@ function readTreeTokensOrNull(): TreeTokens | null {
   }
 }
 
-/** The tree's footer band from the canvas bottom: its 16 px inset and a two-line legend, 48 px on the web at 1400x860. */
+/** The tree's footer band from the canvas bottom: its 16 px inset and the 48 px its footer keeps for a one- or two-line legend. */
 const TREE_FOOTER_BAND_PX = 64;
 /** The mounted tree always gives a named trunk a meta line; only its presence sizes the reserve. */
 const trunkMetaPresent = (node: number) => (node === 0 ? "meta" : null);
