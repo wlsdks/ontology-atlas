@@ -317,7 +317,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const { reverseDeps, ontologyMapGraph, canvasSelectedSlug } = topologyGraphProjection;
   const topologyExplorationLenses = useTopologyExplorationLenses({
     routeState, setRouteState, topologyVaultReadModel, topologyGraphProjection, topologyRouteControls,
-    foldsApply: view3d || topologyGraphProjection.resolvedRealmSlug !== null,
+    foldsApply: topologyGraphProjection.resolvedRealmSlug !== null,
   });
 
   const {
