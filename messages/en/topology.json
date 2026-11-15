@@ -172,17 +172,8 @@
   },
   "light3d": {
     "legendLabel": "3D map key",
-    "kindsHeading": "Kinds",
-    "evidenceHeading": "Evidence",
-    "current": "Current {count, number}",
-    "stale": "Stale {count, number}",
-    "unknown": "Unknown {count, number}",
-    "noteReading": "Reading the Git history. Until it is read, everything is unknown.",
-    "noteAppOnly": "The app checks evidence from Git history. Here, everything is unknown.",
-    "noteUnreadable": "The Git history could not be read, so everything is unknown.",
-    "noteNoPaths": "No concept names a code path, so everything is unknown.",
-    "dependenciesHidden": "{count, plural, one {# dependency} other {# dependencies}} hidden",
-    "dependenciesHiddenHint": "Point at a domain to show its own."
+    "focusFacts": "depends on {needs} · used by {users}",
+    "dependenciesHidden": "{count, plural, one {# dependency} other {# dependencies}} hidden"
   },
   "analysis": {
     "pathChipUnresolved": "Path: {source} → choose a target",

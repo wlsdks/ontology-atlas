@@ -1,5 +1,8 @@
 import { BarnesHutOctree, CollisionHashGrid } from './cloud-spatial-index';
+import { clusterRadius, clusterRingAnchors } from './cluster-ring';
 import { findCouplingGroups } from './coupling-groups';
+import { clusterDomainOf } from './neural-cells';
+import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { DOME_FIT_RADIUS } from './projection';
 import type { DomeCoord, DomeInputNode, DomeViewKind } from './types';
 
@@ -29,16 +32,17 @@ export const CLOUD_ITERATIONS = 260;
 const CLOUD_REPULSION = 16000;
 /** A Hooke spring along each relation. */
 const CLOUD_SPRING = 0.02;
-const CLOUD_COHESION = 0.07;
+const CLOUD_COHESION = 0.02;
 const CLOUD_LOCAL_REPULSION = 0.25;
 const CLOUD_REST_LENGTH = 92;
-/**
- * Domain anchors sit about two rest lengths out, so neighbouring clusters keep a gap a
- * relation must visibly cross; the pulls are weak beside springs and repulsion.
- */
-const CLOUD_DOMAIN_ANCHOR_RADIUS = 190;
-const CLOUD_DOMAIN_ANCHOR_PULL = 0.08;
-const CLOUD_DOMAIN_MEMBER_PULL = 0.03;
+/** A cluster's warm start opens to this share of its reach, leaving springs room to settle it. */
+const CLOUD_SEED_SHARE_OF_REACH = 0.9;
+/** Weak, so members spread to fill their cluster's reach rather than crowd its heart. */
+const CLOUD_DOMAIN_MEMBER_PULL = 0.04;
+/** The most one axis of a drawn cluster is stretched, so two members on a line do not fly apart. */
+const CLUSTER_ROUND_MAX_STRETCH = 4;
+/** A relation between two clusters pulls this much of a relation inside one, so clusters keep apart. */
+const CLOUD_CROSS_DOMAIN_SPRING_SHARE = 0.15;
 
 /**
  * Finite-step repulsion guarantees nothing, so each iteration ends with a position
@@ -99,37 +103,90 @@ export function createCouplingCloudRelaxer(
   }
 
   /*
-   * Each domain is drawn toward a fixed anchor (a deterministic Fibonacci lattice in id order)
+   * Each domain is drawn toward its ring anchor (`cluster-ring.ts`, in id order)
    * and its members toward the domain, so "whose is this" has a place. A layout aid over the
    * declared `contains` chain; no edge is invented and springs decide inside a cluster.
    */
-  const parentOf = new Map(nodes.map((node) => [node.id, node.parentId]));
+  const clusterOf = clusterDomainOf(nodes);
   const domainIndexOf = new Int32Array(n).fill(-1);
   const domainIds = ids.filter((id) => kindOf.get(id) === "domain").sort();
   const domainSlot = new Map(domainIds.map((id, k) => [id, k]));
   for (let i = 0; i < n; i += 1) {
-    let cursor: string | null = ids[i];
-    for (let hop = 0; cursor !== null && hop < 8; hop += 1) {
-      const slot = domainSlot.get(cursor);
-      if (slot !== undefined) {
-        domainIndexOf[i] = slot;
-        break;
-      }
-      cursor = parentOf.get(cursor) ?? null;
-    }
+    const domain = clusterOf.get(ids[i]);
+    const slot = domain === undefined ? undefined : domainSlot.get(domain);
+    if (slot !== undefined) domainIndexOf[i] = slot;
   }
   const domainNodeIndex = domainIds.map((id) => index.get(id)!);
-  const anchorX = new Float64Array(domainIds.length);
-  const anchorY = new Float64Array(domainIds.length);
-  const anchorZ = new Float64Array(domainIds.length);
-  for (let k = 0; k < domainIds.length; k += 1) {
-    const y = domainIds.length === 1 ? 0 : 1 - (2 * (k + 0.5)) / domainIds.length;
-    const ring = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = k * Math.PI * (3 - Math.sqrt(5));
-    anchorX[k] = Math.cos(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
-    anchorY[k] = y * CLOUD_DOMAIN_ANCHOR_RADIUS * 0.7;
-    anchorZ[k] = Math.sin(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
+  const membersOf = new Uint32Array(domainIds.length);
+  for (let i = 0; i < n; i += 1) if (domainIndexOf[i] >= 0) membersOf[domainIndexOf[i]] += 1;
+  const reachOf = Float64Array.from(membersOf, clusterRadius);
+  // Concepts no domain reaches, the project among them, gather as one group at the ring's centre.
+  let looseCount = 0;
+  for (let i = 0; i < n; i += 1) if (domainIndexOf[i] < 0) looseCount += 1;
+  const looseReach = domainIds.length >= 2 ? clusterRadius(looseCount) : Infinity;
+  const anchors = clusterRingAnchors(Array.from(reachOf), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT, Number.isFinite(looseReach) ? looseReach : 0);
+  const looseY = anchors.length > 0 ? anchors[0].y : 0;
+  const anchorX = Float64Array.from(anchors, (a) => a.x);
+  const anchorY = Float64Array.from(anchors, (a) => a.y);
+  const anchorZ = Float64Array.from(anchors, (a) => a.z);
+  seedClustersAtAnchors();
+
+  /** Moves each cluster's warm start onto its anchor, its spread scaled to fit its reach. O(n). */
+  function seedClustersAtAnchors(): void {
+    const spread = new Float64Array(domainIds.length);
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const d = domainNodeIndex[slot];
+      spread[slot] = Math.max(spread[slot], Math.hypot(px[i] - px[d], py[i] - py[d], pz[i] - pz[d]));
+    }
+    const heartX = Float64Array.from(domainNodeIndex, (d) => px[d]);
+    const heartY = Float64Array.from(domainNodeIndex, (d) => py[d]);
+    const heartZ = Float64Array.from(domainNodeIndex, (d) => pz[d]);
+    if (Number.isFinite(looseReach)) {
+      for (let i = 0; i < n; i += 1) {
+        if (domainIndexOf[i] >= 0) continue;
+        const r = Math.hypot(px[i], pz[i]) || 1;
+        const k = Math.min(1, (looseReach * CLOUD_SEED_SHARE_OF_REACH) / r);
+        px[i] *= k; pz[i] *= k; py[i] = looseY;
+      }
+    }
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const k = spread[slot] > 1e-6 ? (reachOf[slot] * CLOUD_SEED_SHARE_OF_REACH) / spread[slot] : 0;
+      px[i] = anchorX[slot] + (px[i] - heartX[slot]) * k;
+      py[i] = anchorY[slot] + (py[i] - heartY[slot]) * k;
+      pz[i] = anchorZ[slot] + (pz[i] - heartZ[slot]) * k;
+    }
   }
+
+  /** Each heart stands on its anchor and no member leaves its cluster's reach, so clusters never meet. O(n). */
+  function holdClusters(): void {
+    for (let k = 0; k < domainNodeIndex.length; k += 1) {
+      const d = domainNodeIndex[k];
+      px[d] = anchorX[k]; py[d] = anchorY[k]; pz[d] = anchorZ[k];
+    }
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      const cx = slot >= 0 ? anchorX[slot] : 0;
+      const cy = slot >= 0 ? anchorY[slot] : looseY;
+      const cz = slot >= 0 ? anchorZ[slot] : 0;
+      const reach = slot >= 0 ? reachOf[slot] : looseReach;
+      const dx = px[i] - cx;
+      const dy = py[i] - cy;
+      const dz = pz[i] - cz;
+      const d = Math.hypot(dx, dy, dz);
+      if (d <= reach) continue;
+      const k = reach / d;
+      px[i] = cx + dx * k; py[i] = cy + dy * k; pz[i] = cz + dz * k;
+    }
+  }
+
+  const linkSpring = Float64Array.from(links, ([a, b]) =>
+    domainIndexOf[a] >= 0 && domainIndexOf[b] >= 0 && domainIndexOf[a] !== domainIndexOf[b]
+      ? CLOUD_SPRING * CLOUD_CROSS_DOMAIN_SPRING_SHARE
+      : CLOUD_SPRING);
 
   const groups = findCouplingGroups(ids, edges);
   const groupCount = groups.reduce((largest, group) => Math.max(largest, group), -1) + 1;
@@ -286,12 +343,13 @@ export function createCouplingCloudRelaxer(
     return true;
   };
   const finishIteration = (): void => {
-    for (const [a, b] of links) {
+    for (let k = 0; k < links.length; k += 1) {
+      const [a, b] = links[k];
       const dx = px[b] - px[a];
       const dy = py[b] - py[a];
       const dz = pz[b] - pz[a];
       const d = Math.hypot(dx, dy, dz) || 1e-6;
-      const pull = (d - CLOUD_REST_LENGTH) * CLOUD_SPRING;
+      const pull = (d - CLOUD_REST_LENGTH) * linkSpring[k];
       const ux = (dx / d) * pull;
       const uy = (dy / d) * pull;
       const uz = (dz / d) * pull;
@@ -317,12 +375,6 @@ export function createCouplingCloudRelaxer(
       fz[i] += (groupZ[group] / size - pz[i]) * CLOUD_COHESION;
     }
 
-    for (let k = 0; k < domainNodeIndex.length; k += 1) {
-      const d = domainNodeIndex[k];
-      fx[d] += (anchorX[k] - px[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
-      fy[d] += (anchorY[k] - py[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
-      fz[d] += (anchorZ[k] - pz[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
-    }
     for (let i = 0; i < n; i += 1) {
       const slot = domainIndexOf[i];
       if (slot < 0) continue;
@@ -350,10 +402,66 @@ export function createCouplingCloudRelaxer(
       const moved = Math.hypot(mx2, my2, mz2);
       if (moved > maxStep) maxStep = moved;
     }
+    holdClusters();
     if (maxStep < settleEpsilon) settled = true;
     iter += 1;
     phase = "between";
   };
+
+  const roundX = new Float64Array(n);
+  const roundY = new Float64Array(n);
+  const roundZ = new Float64Array(n);
+  /**
+   * Members pressed against their cluster's reach form a slab that is thin across the ring, so a side
+   * cluster reads narrow. The drawn copy stretches each cluster's thinner axes (radial, tangential,
+   * height) until their spread matches its widest, inside its reach; the relaxation is untouched. O(n).
+   */
+  function roundClusters(): void {
+    roundX.set(px.subarray(0, n)); roundY.set(py.subarray(0, n)); roundZ.set(pz.subarray(0, n));
+    const k = domainIds.length;
+    if (k === 0) return;
+    const extent = new Float64Array(k * 3);
+    const axisOf = (slot: number, i: number): [number, number, number] => {
+      const rl = Math.hypot(anchorX[slot], anchorZ[slot]);
+      const ux = rl > 1e-6 ? anchorX[slot] / rl : 1;
+      const uz = rl > 1e-6 ? anchorZ[slot] / rl : 0;
+      const dx = px[i] - anchorX[slot];
+      const dz = pz[i] - anchorZ[slot];
+      return [dx * ux + dz * uz, -dx * uz + dz * ux, py[i] - anchorY[slot]];
+    };
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const [r, t, h] = axisOf(slot, i);
+      extent[slot * 3] += r * r;
+      extent[slot * 3 + 1] += t * t;
+      extent[slot * 3 + 2] += h * h;
+    }
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const widest = Math.max(extent[slot * 3], extent[slot * 3 + 1], extent[slot * 3 + 2]);
+      const stretch = (axis: number) => {
+        const e = extent[slot * 3 + axis];
+        return e > 1e-9 ? Math.min(CLUSTER_ROUND_MAX_STRETCH, Math.sqrt(widest / e)) : 1;
+      };
+      const [r, t, h] = axisOf(slot, i);
+      let a = r * stretch(0);
+      let b = t * stretch(1);
+      let c = h * stretch(2);
+      const d = Math.hypot(a, b, c);
+      if (d > reachOf[slot]) {
+        const shrink = reachOf[slot] / d;
+        a *= shrink; b *= shrink; c *= shrink;
+      }
+      const rl = Math.hypot(anchorX[slot], anchorZ[slot]);
+      const ux = rl > 1e-6 ? anchorX[slot] / rl : 1;
+      const uz = rl > 1e-6 ? anchorZ[slot] / rl : 0;
+      roundX[i] = anchorX[slot] + a * ux - b * uz;
+      roundZ[i] = anchorZ[slot] + a * uz + b * ux;
+      roundY[i] = anchorY[slot] + c;
+    }
+  }
 
   let written = -1;
   /*
@@ -363,29 +471,33 @@ export function createCouplingCloudRelaxer(
   const writeNormalized = (): void => {
     if (written === iter) return;
     written = iter;
+    roundClusters();
     let mx = 0;
     let my = 0;
     let mz = 0;
-    for (let i = 0; i < n; i += 1) {
-      mx += px[i];
-      my += py[i];
-      mz += pz[i];
+    // Clusters' rings are centred on the spin axis by construction.
+    if (domainIds.length < 2) {
+      for (let i = 0; i < n; i += 1) {
+        mx += roundX[i];
+        my += roundY[i];
+        mz += roundZ[i];
+      }
+      mx /= n;
+      my /= n;
+      mz /= n;
     }
-    mx /= n;
-    my /= n;
-    mz /= n;
 
     // Normalised so camera fit and fog see the dome's scale.
     let maxR = 0;
     for (let i = 0; i < n; i += 1) {
-      const r = Math.hypot(px[i] - mx, py[i] - my, pz[i] - mz);
+      const r = Math.hypot(roundX[i] - mx, roundY[i] - my, roundZ[i] - mz);
       if (r > maxR) maxR = r;
     }
     const norm = maxR > 1e-6 ? DOME_FIT_RADIUS / maxR : 1;
     for (let i = 0; i < n; i += 1) {
-      drawn[i].px = (px[i] - mx) * norm;
-      drawn[i].py = (py[i] - my) * norm;
-      drawn[i].pz = (pz[i] - mz) * norm;
+      drawn[i].px = (roundX[i] - mx) * norm;
+      drawn[i].py = (roundY[i] - my) * norm;
+      drawn[i].pz = (roundZ[i] - mz) * norm;
     }
   };
   writeNormalized();

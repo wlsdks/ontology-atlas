@@ -2,84 +2,107 @@ import { expect, test } from '@playwright/test';
 import { seedFirstRunSeen } from '../../first-run-seed';
 import { waitForDomeEntered, waitForMapStill } from '../../settle';
 
-// Record the actual canvas path, independently of __atlasMap.edges(). Previously
-// paint curved in 3D while both the probe and picking reported the old flat bow.
+// Record the actual canvas paths, independently of __atlasMap.edges(). Neural strokes each axon in
+// tapered pieces, each a piece of one quadratic, so every painted piece must lie on the curve the
+// probe reports and a pointer picks.
 test.use({ viewport: { width: 1440, height: 900 }, contextOptions: { reducedMotion: 'reduce' } });
 
-test('Neural: visible connection strokes are the curves a pointer selects', async ({ page }) => {
+test('Neural: visible dependency strokes lie on the curves a pointer selects', async ({ page }) => {
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     localStorage.setItem('atlas.appearance.view3d', 'on');
     localStorage.setItem('atlas.appearance.map-arrangement', 'coupling');
     type Curve = { ax: number; ay: number; cx: number; cy: number; bx: number; by: number };
-    const host = window as unknown as { drawnCurves: Curve[] };
+    const host = window as unknown as { drawnCurves: Curve[]; litCurves: Curve[] };
     host.drawnCurves = [];
-    const paths = new WeakMap<CanvasRenderingContext2D, { x: number; y: number; curve?: Curve }>();
+    host.litCurves = [];
+    const paths = new WeakMap<CanvasRenderingContext2D, { x: number; y: number; curves: Curve[] }>();
     const proto = CanvasRenderingContext2D.prototype;
     const begin = proto.beginPath, move = proto.moveTo, quad = proto.quadraticCurveTo, stroke = proto.stroke, fill = proto.fillRect;
     const strokePlain: (this: CanvasRenderingContext2D) => void = proto.stroke;
-    proto.beginPath = function () { paths.delete(this); begin.call(this); };
-    proto.moveTo = function (x, y) { paths.set(this, { x, y }); move.call(this, x, y); };
+    proto.beginPath = function () { paths.set(this, { x: 0, y: 0, curves: [] }); begin.call(this); };
+    proto.moveTo = function (x, y) {
+      const path = paths.get(this);
+      if (path) { path.x = x; path.y = y; }
+      move.call(this, x, y);
+    };
     proto.quadraticCurveTo = function (cx, cy, bx, by) {
-      const start = paths.get(this);
-      if (start) start.curve = { ax: start.x, ay: start.y, cx, cy, bx, by };
+      const path = paths.get(this);
+      if (path) path.curves.push({ ax: path.x, ay: path.y, cx, cy, bx, by });
       quad.call(this, cx, cy, bx, by);
     };
     proto.fillRect = function (x, y, width, height) {
-      if (this.canvas.dataset.testid === 'ontology-map-canvas' && x === 0 && y === 0 && width > 100 && height > 100) host.drawnCurves = [];
+      if (this.canvas.dataset.testid === 'ontology-map-canvas' && x === 0 && y === 0 && width > 100 && height > 100) { host.drawnCurves = []; host.litCurves = []; }
       fill.call(this, x, y, width, height);
     };
     proto.stroke = function (path?: Path2D) {
-      const curve = paths.get(this)?.curve;
-      if (curve && this.canvas.dataset.testid === 'ontology-map-canvas' && this.globalAlpha > 0.3) host.drawnCurves.push(curve);
+      const recorded = paths.get(this);
+      if (recorded && this.canvas.dataset.testid === 'ontology-map-canvas' && this.globalAlpha > 0.05) {
+        host.drawnCurves.push(...recorded.curves);
+        if (this.shadowBlur > 0) host.litCurves.push(...recorded.curves);
+      }
       if (path) stroke.call(this, path); else strokePlain.call(this);
     };
   });
-  await page.goto('/en/topology/?synth=31&e2e=1&guides=off');
+  await page.goto('/en/topology/?synth=31&synthDeps=1&e2e=1&guides=off');
   await waitForDomeEntered(page);
   await waitForMapStill(page);
   const result = await page.evaluate(() => {
     type Curve = { ax: number; ay: number; cx: number; cy: number; bx: number; by: number };
-    type Edge = { sourceId: string; targetId: string; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number };
+    type Edge = { sourceId: string; targetId: string; kind: string; visible: boolean; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number };
     const host = window as unknown as { drawnCurves: Curve[]; __atlasMap: {
       edges(): Edge[]; nodes(): { x: number; y: number; radius: number; hidden: boolean }[];
       edgeAt(x: number, y: number): { sourceId: string; targetId: string } | null;
     } };
-    const edges = host.__atlasMap.edges();
-    const nodes = host.__atlasMap.nodes().filter(node => !node.hidden);
-    const unique = new Map<string, Curve>();
-    for (const curve of host.drawnCurves) unique.set(JSON.stringify(curve), curve);
-    const curves = [...unique.values()];
     const point = (curve: Curve, t: number) => ({
       x: (1 - t) ** 2 * curve.ax + 2 * (1 - t) * t * curve.cx + t * t * curve.bx,
       y: (1 - t) ** 2 * curve.ay + 2 * (1 - t) * t * curve.cy + t * t * curve.by,
     });
-    const mismatchedControls: string[] = [];
+    const curveOf = (edge: Edge): Curve => ({ ax: edge.ax, ay: edge.ay, cx: edge.controlX, cy: edge.controlY, bx: edge.bx, by: edge.by });
+    const edges = host.__atlasMap.edges().filter(edge => edge.visible);
+    const samples = edges.map(edge => Array.from({ length: 401 }, (_, i) => point(curveOf(edge), i / 400)));
+    const onCurve = (k: number, p: { x: number; y: number }) => samples[k].some(s => Math.hypot(s.x - p.x, s.y - p.y) < 0.75);
+    const nodes = host.__atlasMap.nodes().filter(node => !node.hidden);
+    const painted = new Set<number>();
+    let strays = 0;
+    for (const piece of host.drawnCurves) {
+      const k = edges.findIndex((_, i) => [0, 0.5, 1].every(t => onCurve(i, point(piece, t))));
+      if (k < 0) strays += 1; else painted.add(k);
+    }
     const candidates: { sourceId: string; targetId: string; x: number; y: number; hit: boolean }[] = [];
-    for (const curve of curves) {
-      const edge = edges.find(edge => Math.hypot(edge.ax - curve.ax, edge.ay - curve.ay, edge.bx - curve.bx, edge.by - curve.by) < 0.5);
-      if (!edge) continue;
-      if (Math.hypot(edge.controlX - curve.cx, edge.controlY - curve.cy) > 0.5) mismatchedControls.push(`${edge.sourceId}:${edge.targetId}`);
-      const at = point(curve, 0.5);
-      if (at.x < 330 || at.x > innerWidth - 100 || at.y < 100 || at.y > innerHeight - 100) continue;
-      if (nodes.some(node => Math.hypot(node.x - at.x, node.y - at.y) < node.radius + 14)) continue;
-      const otherNearby = curves.some(other => other !== curve &&
-        Math.hypot(other.ax - curve.ax, other.ay - curve.ay, other.bx - curve.bx, other.by - curve.by) > 1 &&
-        Array.from({ length: 21 }, (_, i) => point(other, i / 20)).some(p => Math.hypot(p.x - at.x, p.y - at.y) < 12));
-      if (otherNearby) continue;
+    for (const k of painted) {
+      const edge = edges[k];
+      // Tracts bundle dependencies, so look along the curve for a point no other curve passes near.
+      const at = Array.from({ length: 17 }, (_, i) => 0.1 + i * 0.05).map(t => point(curveOf(edge), t)).find(p =>
+        p.x >= 330 && p.x <= innerWidth - 100 && p.y >= 100 && p.y <= innerHeight - 100 &&
+        !nodes.some(node => Math.hypot(node.x - p.x, node.y - p.y) < node.radius + 14) &&
+        !samples.some((other, i) => i !== k && other.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 12)));
+      if (!at) continue;
       const hit = host.__atlasMap.edgeAt(at.x, at.y);
       candidates.push({ sourceId: edge.sourceId, targetId: edge.targetId, ...at,
         hit: hit?.sourceId === edge.sourceId && hit?.targetId === edge.targetId });
     }
-    return { recorded: curves.length, candidates, mismatchedControls };
+    return { pieces: host.drawnCurves.length, painted: painted.size, strays, candidates };
   });
-  expect(result.mismatchedControls, 'the inspection curve differs from the painted curve').toEqual([]);
-  expect(result.recorded, 'the paint recorder measured no connection paths').toBeGreaterThan(5);
-  console.log(`[edge-picking] Neural: ${result.recorded} painted paths, ${result.candidates.length} isolated strokes`);
-  expect(result.candidates.length, 'fewer than three isolated connection strokes were tested').toBeGreaterThanOrEqual(3);
+  console.log(`[edge-picking] Neural: ${result.pieces} painted pieces on ${result.painted} dependencies, ${result.candidates.length} isolated`);
+  expect(result.strays, 'painted pieces that lie on no curve the probe reports').toBe(0);
+  expect(result.painted, 'the paint recorder measured no dependency curves').toBeGreaterThan(5);
+  expect(result.candidates.length, 'fewer than three isolated dependency strokes were tested').toBeGreaterThanOrEqual(3);
   expect(result.candidates.filter(candidate => !candidate.hit), 'visible strokes missed by picking').toEqual([]);
   const target = result.candidates[0];
   const canvas = await page.getByTestId('ontology-map-canvas').boundingBox();
   await page.mouse.click(canvas!.x + target.x, canvas!.y + target.y);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __atlasMap: { selection(): { edge: unknown } } }).__atlasMap.selection().edge)).toMatchObject({ sourceId: target.sourceId, targetId: target.targetId });
+  // The picked axon is drawn lit: some glowing piece lies on its curve.
+  await expect.poll(() => page.evaluate((picked) => {
+    type Curve = { ax: number; ay: number; cx: number; cy: number; bx: number; by: number };
+    type Edge = { sourceId: string; targetId: string; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number };
+    const host = window as unknown as { litCurves: Curve[]; __atlasMap: { edges(): Edge[] } };
+    const edge = host.__atlasMap.edges().find((e) => e.sourceId === picked.sourceId && e.targetId === picked.targetId);
+    if (!edge) return false;
+    const on = (x: number, y: number) => Array.from({ length: 401 }, (_, i) => i / 400).some((t) =>
+      Math.hypot((1 - t) ** 2 * edge.ax + 2 * (1 - t) * t * edge.controlX + t * t * edge.bx - x,
+        (1 - t) ** 2 * edge.ay + 2 * (1 - t) * t * edge.controlY + t * t * edge.by - y) < 0.75);
+    return host.litCurves.some((piece) => on(piece.ax, piece.ay) && on(piece.bx, piece.by));
+  }, { sourceId: target.sourceId, targetId: target.targetId }), 'the picked axon is drawn lit').toBe(true);
 });

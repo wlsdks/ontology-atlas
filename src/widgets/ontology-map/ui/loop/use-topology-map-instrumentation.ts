@@ -7,6 +7,8 @@ import { measureCanvasInsets } from "../../interaction/free-area";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
+import { isNeuralDependency } from "../../model/dome-view/neural-cells";
+import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { ForceSimulation } from "../../model/layout/force-layout";
@@ -186,6 +188,7 @@ export function useTopologyMapInstrumentation({
             ? domeRuntimeRef.current.frame
             : null;
         const drawnAlphas = lastDrawnNodeAlphas();
+        const neuralDome = domeRuntimeRef.current?.model.arrangement === "coupling" ? domeRuntimeRef.current : null;
         return world.nodes.map((n) => {
           const dOff = domeFrame?.get(n.id) ?? { dx: 0, dy: 0, s: 1 };
           return {
@@ -224,7 +227,9 @@ export function useTopologyMapInstrumentation({
               ? radiusForKind(n.kind, tokens) *
               n.magnitudeScale *
               camera.scale.value *
-              dOff.s
+              (neuralDome !== null && domeFrame !== null
+                ? neuralRadiusScale(world, n, dOff.s, camera.scale.value, neuralDome.restFit?.target.tscale ?? neuralDome.fitScale)
+                : dOff.s)
               : 0,
           };
         });
@@ -249,13 +254,15 @@ export function useTopologyMapInstrumentation({
             : null;
         const EDGE_ZERO = { dx: 0, dy: 0, s: 1 };
         const edgeOff = (nodeId: string) => domeFrame?.get(nodeId) ?? EDGE_ZERO;
+        const dome = domeRuntimeRef.current;
+        const tracts = domeFrame !== null && dome !== null && dome.model.arrangement === "coupling" ? neuralTractsFor(world, domeFrame, dome.frameEpoch) : null;
                 return world.edges
           .filter((e) => !clustered?.has(e.sourceId) && !clustered?.has(e.targetId))
           .map((e) => {
             const offA = edgeOff(e.sourceId);
             const offB = edgeOff(e.targetId);
-            const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
-            const visible = true;
+            const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current, tracts);
+            const visible = tracts === null || isNeuralDependency(e);
                     return {
                         sourceId: e.sourceId,
                         targetId: e.targetId,
@@ -384,7 +391,6 @@ export function useTopologyMapInstrumentation({
                     yawVel: d.yawVel,
                     pitchVel: d.pitchVel,
                     orbiting: d.orbiting,
-                    spinArmed: d.spinArmed,
                     /*
                      * Tier torsion (follow-through) — **from outside the canvas this is
                      * the only thing that says whether the dome reacts to its own

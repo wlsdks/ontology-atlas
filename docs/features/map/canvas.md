@@ -14,7 +14,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 
 - **Click node** → on the Flat map the selection is made in place: the camera frames the selection and its lit reach between the panels, zooming in only while every far end it showed stays in view ([`flat-dial.md`](flat-dial.md)), INDEX stays open from 1280 px wide (below that, and in every other view, it folds for the selection), the chrome under the panel fades where it stands (in Hex too, which keeps its two-press Escape), and the right-side panel opens. Clicking the selected node again keeps it; a background click or Escape deselects. A selection from any other source (double-click, Enter, search, INDEX, a panel link, a deep link, an arrow key) frames the node; on the Flat graph INDEX, search, a panel link and a deep link frame it as a click does ([`flat-dial.md`](flat-dial.md)). One Escape clears a Flat selection and its chrome and, whatever made the selection, returns the camera to where it was before the selection framed it unless the reader has panned or zoomed since; a selection a deep link arrived on returns to the overview. The panel: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
-- **Drag empty canvas** → the map moves with the pointer in every view; in 3D a drag turns the tree instead (see **3D** below), and in Neural a drag that starts on the structure turns it while one that starts beside it pans. Panning in Neural also stops idle rotation, so the structure does not resume turning after the pan. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A Neural turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Neural every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
+- **Drag empty canvas** → the map moves with the pointer in every view; in 3D a drag turns the tree instead (see **3D** below), and in Neural a drag that starts on the structure turns it while one that starts beside it pans. Neural never turns by itself: the cloud rests in its rest pose until a person turns it. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A Neural turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Neural every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
 - **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, 3D, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers.
 - **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or the tree's or Neural's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
 - **Double-click node** (or **Enter** on the focused map) → on the Flat overview, selects and zooms in to the node, never toggling a selected one off; one Escape clears the selection and returns the camera it moved from unless the reader moved the view since; inside a realm, opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
@@ -265,24 +265,46 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   again. A view switch that arrives in 3D does not replay it, the first input
   settles it, and reduced motion draws the tree grown and lands every flight at
   once. At rest the tree draws no frame.
-- **Neural** — real relations, not containment, decide all three coordinates, with
-  deterministic relation communities as a layout aid: tighter local groups
-  gathered around the domains, lit cell bodies, and shallow connection arcs. Group
-  proximity is inferred layout, not a new domain or an accepted relation. Its
-  relations have bounded curves whose paint, pointer hit test and measurement
-  share the same live endpoints, and reciprocal facts take opposite arcs. It is
-  drawn as light in the canvas-2D engine: nodes emit a halo in their kind colour,
-  and **evidence is the light** — a current concept emits fully, a stale one keeps
-  a dimmer core and wears a 1 px amber ring, and an unknown one emits nothing and
-  wears a dashed ring, by the rule the MCP server uses (one Git walk in the app);
-  the web has no Git walk, so everything there is unknown and the legend (kinds
-  and evidence counts) says so. **A click only selects** the concept the frame
-  painted under the pointer; a double-click or Enter flies the node to the front
-  in 800 ms and frames its family, and Esc or Home flies back to the view it left.
-  A focus lights one subtree, apex to leaves, and sinks the rest into a deeper fog
-  (down to 0.28 at the back); particles run only along that subtree's dependency
-  edges. Pitch stays between 0.15 and 0.95 rad. Depth fades a line toward the back,
-  but its ink stops at a floor and its stroke never falls below one device pixel.
-  Labels are larger than in Flat; after closing the detail panel, Fit Map leaves
-  the retained selection and returns to the whole map. Reduced motion: no spin, no
-  particles, the fly-to arrives at once. Gates: `tests/e2e/map/neural/`.
+- **Neural** — the ontology as cells and dependencies. Each domain's concepts
+  gather in their own cluster, set on a ring round the spin axis and sized by its
+  member count, so no two clusters meet at the rest pose (seen from 0.85 rad above;
+  turning may pass one across another). Concepts no domain reaches gather as one
+  small group round the project at the ring's centre. Relations and deterministic
+  relation communities settle positions inside a cluster. Group proximity is
+  inferred layout, not a new domain or an accepted relation. A concept is a filled
+  cell in the strong ink, a capability larger and with a dark nucleus, both growing
+  with the square root of their dependency count; the domain is the ringed heart of
+  its cluster and the project its own ink, named beside it at rest. In the app a stale concept's cell is
+  amber, by the rule the MCP server uses (one Git walk); the web has no Git walk, so
+  nothing there is amber and the legend's quiet line says why. Kind is not drawn
+  by colour, and containment is not drawn as a line: only declared `depends_on`
+  relations are, as tapered axons that bow a little inside a cluster and share one
+  tract through the gap between clusters. Paint, pointer hit test and measurement
+  use the same route. Every domain carries its name and a count line (capabilities,
+  elements, stale) above its cluster, placed before any capability name. Titles
+  stand nearest first: a title that would sit on another cluster or a nearer title
+  fades out, and with a focus a receded title gives way to the lit names. While any
+  of a cluster is on screen its title stays inside the free area under the chrome.
+  Zooming in past the fit grows the cells with the camera, up to
+  `--map-neural-zoom-grow-max` times, and names more capabilities as room allows;
+  capability names appear only where they fit, element names only for a focus. **A click only
+  selects** the concept the frame painted under the pointer; a double-click or Enter
+  flies the node to the front in 800 ms and frames its family, and Esc or Home flies
+  back. A focus veils everything else, lights what it depends on in the arc ink and
+  what depends on it in the reach ink, names each far end on the side its axon
+  leaves free, and sets a plate with its name and counts beside it, on the side with
+  fewer lit axons. A receded cell keeps a third of its rest opacity
+  (`--map-neural-veil`) and a receded title a little less (`--map-neural-title-veil`). While the detail panel is open and the camera sits at
+  the rest fit, the whole cloud glides into the area the panel leaves free, on the
+  camera transition a panel opening uses, and returns when it closes; zoomed or
+  turned, the view keeps its zoom and pose and only slides until the selected cell
+  clears the panel. Reduced motion moves it at once. A hovered, selected or path
+  dependency is lit the same way with both ends named, and the pointer presses
+  exactly the cell Neural paints. One signal travels each lit axon once over `--motion-expressive`;
+  reduced motion shows none and the fly-to arrives at once. Auto-arrange, Fit Map
+  and `0` glide a turned cloud back to its rest pose and fit it; under reduced
+  motion it arrives at once. The legend
+  at the bottom centre names capability, element and stale, and the two arc keys
+  with a focus. Pitch stays between 0.15 and 0.95 rad. After closing the detail
+  panel, Fit Map leaves the retained selection and returns to the whole map. Gates:
+  `tests/e2e/map/neural/`.

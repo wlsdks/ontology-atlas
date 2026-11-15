@@ -2,11 +2,11 @@ import { DOME_PLANE } from './cone-layout';
 import type { DomeCoord, DomeModel } from './types';
 
 /**
- * Smaller is a wider lens. 760 gives a near/far scale ratio of 1.42/0.77 = 1.84 on the
- * bottom ring, enough to read front from back and to grow a node rotating forward; below
- * 500 the ring's near arc leaves the screen.
+ * Smaller is a wider lens. 1200 gives a near/far scale ratio of 1.23/0.84 = 1.46 at the fit
+ * radius: depth still reads, while Neural's front and back clusters stay within 1.5 times
+ * each other at rest.
  */
-export const DOME_FOCAL = 760;
+export const DOME_FOCAL = 1200;
 
 /** The denominator of the world scale. */
 export const DOME_FIT_RADIUS = DOME_PLANE.element.r;
@@ -133,7 +133,7 @@ export function solveDomePlanePoint(
   return { px, pz };
 }
 
-/** Input to 3D fit view. */
+/** Input to 3D fit view. O(nodes). */
 export function domeWorldBounds(
   model: DomeModel,
   yaw: number,
