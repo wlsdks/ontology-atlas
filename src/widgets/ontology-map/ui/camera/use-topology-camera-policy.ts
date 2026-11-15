@@ -20,6 +20,7 @@ import { CANVAS_SPRING_PAN_MS, cameraTransitionDurationMs, type CameraKeyframe, 
 import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
+  domeTurnBounds,
   domeWorldBounds,
 } from "../../model/dome-view/projection";
 import type { DomeModel } from "../../model/dome-view/types";
@@ -152,7 +153,7 @@ export function useTopologyCameraPolicy({
       height: number,
       tokens: OntologyMapTokens,
     ): CameraTarget | null => {
-      const bounds = domeWorldBounds(model, yaw, pitch);
+      const bounds = model.arrangement === "coupling" ? domeTurnBounds(model, pitch) : domeWorldBounds(model, yaw, pitch);
       if (bounds === null) return null;
       const canvasEl = canvasRef.current;
       let left = tokens.safeInsetLeft;

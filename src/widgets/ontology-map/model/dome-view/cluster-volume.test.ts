@@ -87,9 +87,10 @@ describe('clusterVolumeAnchors', () => {
     expect(Math.abs(box.top + box.bottom) / (box.top - box.bottom)).toBeLessThan(SETTLED);
   });
 
-  it.each([9, 13, 30])('packs %i equal clusters wider than tall', (count) => {
-    const { box } = drawn(equal(count));
-    expect(box.right - box.left).toBeGreaterThan(box.top - box.bottom);
+  it.each([4, 9, 13])('packs %i equal clusters into more than one row', (count) => {
+    const { discs } = drawn(equal(count));
+    const rows = new Set(discs.map((d) => Math.round(d.y / d.r)));
+    expect(rows.size).toBeGreaterThan(1);
   });
 
   it('fills the middle of nine equal clusters', () => {

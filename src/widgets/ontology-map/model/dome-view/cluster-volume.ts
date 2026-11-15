@@ -22,8 +22,11 @@ const SETTLE_PASSES_MAX = 6;
 const TITLE_BAND_CAP = 1.5;
 /** The lens a pack is drawn with and the one its normalisation implies settle in this many passes. */
 const LENS_PASSES = 3;
-/** The window's free area is wider than tall, so the pack grows sideways first. */
-const PACK_ASPECT = 1.7;
+/**
+ * The fit frames a whole turn, so a wide pack buys nothing; at 1.7 four titled clusters fall
+ * into one flat row, and rounder than 1.4 the title band no longer settles clear at 30 clusters.
+ */
+const PACK_ASPECT = 1.4;
 /** Candidate positions round each placed cluster. */
 const PACK_DIRECTIONS = 24;
 /** Depth spans this share of the pack's drawn height: deep enough that turning shows parallax, shallow enough that far clusters stay legible. */
