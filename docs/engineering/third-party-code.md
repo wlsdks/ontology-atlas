@@ -27,11 +27,12 @@ license asks for.
 Both run in pre-push and in PR CI whenever a manifest, a lockfile, the license
 policy or the notice generator changes.
 
-The pinned `three@0.185.1` pnpm patch releases each renderer's shared DFG lookup-texture
-allocation and dispose listener before clearing renderer properties. It preserves other
-renderers' allocations and the reusable canvas context. Repeated Library navigation is
-covered by `tests/e2e/library/graph/library-renderer-disposal.spec.ts`; remove the patch only when an
-upstream release passes that regression without it.
+`three` carries no pnpm patch. Until 0.185.1 a patch released each renderer's shared
+DFG lookup-texture allocation on `WebGLRenderer.dispose()`; three r187 (0.187.0) fixed
+this upstream, because the renderer now tracks every texture it uploads and destroys
+them all on dispose. Repeated Library navigation is still covered by
+`tests/e2e/library/graph/library-renderer-disposal.spec.ts`; if it fails after a `three`
+upgrade, restore the fix with `pnpm patch`.
 
 ## Allowed licenses
 
