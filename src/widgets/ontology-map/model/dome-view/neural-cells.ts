@@ -30,15 +30,11 @@ export interface NeuralGraph {
 const MAX_PARENT_HOPS = 8;
 const graphs = new WeakMap<readonly NeuralEdgeInput[], NeuralGraph>();
 
-/** O(n · parent depth + e), cached per edge list: a world rebuild makes a new list. */
-export function neuralGraphOf(nodes: readonly NeuralNodeInput[], edges: readonly NeuralEdgeInput[]): NeuralGraph {
-  const cached = graphs.get(edges);
-  if (cached) return cached;
+/** Concept id → the domain whose cluster holds it, walking `parentId`; a domain maps to itself. O(n · parent depth). */
+export function clusterDomainOf(nodes: readonly NeuralNodeInput[]): Map<string, string> {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const clusterOf = new Map<string, string>();
-  const domainIds: string[] = [];
   for (const node of nodes) {
-    if (node.kind === 'domain') domainIds.push(node.id);
     let cursor: NeuralNodeInput | undefined = node;
     for (let hop = 0; cursor && hop < MAX_PARENT_HOPS; hop += 1) {
       if (cursor.kind === 'domain') {
@@ -48,6 +44,15 @@ export function neuralGraphOf(nodes: readonly NeuralNodeInput[], edges: readonly
       cursor = cursor.parentId === null ? undefined : byId.get(cursor.parentId);
     }
   }
+  return clusterOf;
+}
+
+/** O(n · parent depth + e), cached per edge list: a world rebuild makes a new list. */
+export function neuralGraphOf(nodes: readonly NeuralNodeInput[], edges: readonly NeuralEdgeInput[]): NeuralGraph {
+  const cached = graphs.get(edges);
+  if (cached) return cached;
+  const clusterOf = clusterDomainOf(nodes);
+  const domainIds = nodes.filter((node) => node.kind === 'domain').map((node) => node.id);
   const dependencyCount = new Map<string, number>();
   for (const edge of edges) {
     if (!isNeuralDependency(edge)) continue;
@@ -88,13 +93,13 @@ export function neuralFocusSets(edges: readonly NeuralEdgeInput[], focusId: stri
   return { needs, usedBy };
 }
 
-/** Amber only where evidence was read and called the concept stale; unread evidence is never amber. */
 /** How far a focus's signal has run along its lit axons: 1 once it has arrived, and at once under reduced motion. */
 export function neuralSignalProgress(nowMs: number, startMs: number, signalMs: number, reducedMotion: boolean): number {
   if (reducedMotion || signalMs <= 0) return 1;
   return Math.min(1, Math.max(0, (nowMs - startMs) / signalMs));
 }
 
+/** Amber only where evidence was read and called the concept stale; unread evidence is never amber. */
 export function neuralCellIsStale(evidence: ReadonlyMap<string, 'current' | 'stale' | 'unknown'> | null, id: string): boolean {
   return evidence !== null && evidence.get(id) === 'stale';
 }

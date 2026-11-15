@@ -12,6 +12,7 @@ const nodes = [
   { id: 'p', kind: 'project' as const, parentId: null },
   { id: 'd1', kind: 'domain' as const, parentId: 'p' },
   { id: 'd2', kind: 'domain' as const, parentId: 'p' },
+  { id: 'd3', kind: 'domain' as const, parentId: 'p' },
   { id: 'c1', kind: 'capability' as const, parentId: 'd1' },
   { id: 'c2', kind: 'capability' as const, parentId: 'd1' },
   { id: 'e1', kind: 'element' as const, parentId: 'c1' },
@@ -42,11 +43,13 @@ describe("Neural's route", () => {
   it('bends a cross-cluster dependency through the gap between the two hearts, pulled toward the centre', () => {
     const control = neuralAxonControl('c1', 'c3', 20, -60, 380, -60, tracts);
     const gap = { x: 200, y: 0 };
-    const centre = { x: 200, y: 0 };
+    // The third heart sits below, so the pull moves the control toward it and away from the gap.
+    const centre = { x: 200, y: 400 / 3 };
     const through = { x: gap.x + (centre.x - gap.x) * shape.pull, y: gap.y + (centre.y - gap.y) * shape.pull };
     const mid = { x: 200, y: -60 };
     expect(control.x).toBeCloseTo(mid.x + (through.x - mid.x) * shape.gain);
     expect(control.y).toBeCloseTo(mid.y + (through.y - mid.y) * shape.gain);
+    expect(through.y).toBeGreaterThan(gap.y);
     // The curve's midpoint passes below the chord, toward the gap.
     expect(0.25 * -60 + 0.5 * control.y + 0.25 * -60).toBeGreaterThan(-60);
   });
