@@ -6,8 +6,6 @@
   "browserUnavailable": "Planning folders are available only in the macOS app.",
   "loading": "Reading the selected folder…",
   "empty": "No supported documents or images were found.",
-  "folderLabel": "Folder: {folder}",
-  "pathLabel": "Path: {path}",
   "observedAt": "Folder list read: {time}",
   "observationLimit": "Files may change before the next check.",
   "findFile": "Find a file name or path",
@@ -50,5 +48,6 @@
   "imageUnnamed": "Image {line}:{column}",
   "startTitle": "Your plans and designs, together",
   "startBody": "Open a planning folder to read Markdown documents and design images in one place.",
-  "designImages": "Design images"
+  "designImages": "Design images",
+  "close": "Close"
 }

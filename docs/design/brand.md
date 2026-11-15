@@ -207,7 +207,7 @@ Moru is exempt from the five-second bound on ambient motion
 ([Design system](../DESIGN-SYSTEM.md), "Motion"): a character's gesture may
 repeat for as long as it is visible. Reduced motion is its stop control, and no
 screen adds a pause button for it.
-The decorative companion keeps native 128px cells and authored jump headroom.
+The decorative companion keeps native 128px cells and authored jump headroom; the download hero shows them at exactly twice that size, so each drawn pixel stays a square.
 Its ambient and reaction sheets use 32 columns with explicit row/column addressing
 (maximum width 4096px), so adding motions does not create oversized textures.
 Horizontal travel is capped at 32px and occurs only in airborne hop poses.
@@ -233,7 +233,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Surface | Asset |
 |---|---|
 | Gateway header | `AtlasSymbol` → `public/brand/atlas-symbol.png` |
-| Download closing invitation | Playful `BrandCompanion`, outside graph illustrations |
+| Download hero | Playful `BrandCompanion` at twice its native cell on whole pixels: on the app window's top edge from 80rem, above the headline when narrower |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
 | First run / missing page, route error, startup failure, missing project and an unread harness, schedule or Git status | Playful companion / curious `BrandPortrait` → `public/brand/mascot-curious-row-128.png` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |

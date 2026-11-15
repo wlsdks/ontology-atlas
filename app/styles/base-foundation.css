@@ -348,13 +348,6 @@
   box-shadow: inset 0 1px 0 var(--color-shadow-a35);
 }
 
-.gateway-hero-atlas-wash {
-  background: radial-gradient(48% 42% at 50% 50%, var(--color-indigo-a22) 0%, var(--color-indigo-a06) 45%, transparent 72%);
-}
-.gateway-hero-atlas-wash.is-wide {
-  background: radial-gradient(34% 46% at 72% 52%, var(--color-indigo-a22) 0%, var(--color-indigo-a06) 45%, transparent 72%);
-}
-
 .architecture-canvas-node {
   box-shadow: inset 0 1px 0 var(--architecture-node-lit-edge);
 }
