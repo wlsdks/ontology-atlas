@@ -206,9 +206,9 @@ function fillShells(target: NeuralGlBatch, f: NeuralFrame, inks: NeuralGlInks, u
     const pool = f.pools[k];
     const strength = (pool.alpha > 0 ? pool.alpha : f.neural) * f.veilCell * unramp;
     const alpha = Math.min(1, inks.shellAlpha * strength);
-    if (alpha <= 0.002 || pool.reachPx <= 0.5) continue;
+    if (alpha <= 0.002 || pool.shellPx <= 0.5) continue;
     const o = target.count * SHELL_FLOATS;
-    d[o] = pool.x; d[o + 1] = pool.y; d[o + 2] = pool.reachPx; d[o + 3] = 0;
+    d[o] = pool.shellX; d[o + 1] = pool.shellY; d[o + 2] = pool.shellPx; d[o + 3] = 0;
     writeInk(d, o + 4, inks.arc, alpha);
     target.count += 1;
   }

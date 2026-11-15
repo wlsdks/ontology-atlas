@@ -92,6 +92,17 @@ describe("buildNeuralFrame", () => {
     expect(lastLitStateCounts()).toEqual({ current: 1, stale: 1, unknown: 3 });
   });
 
+  it("wraps a cluster's shell around its cells, the farthest one a capability radius inside the rim", () => {
+    const input = fixture();
+    const f = buildNeuralFrame(input, CAMERA);
+    const cells = ids(input).map((_, i) => i);
+    const margin = Math.max(...cells.filter((i) => input.world.nodes[i].kind === "capability").map((i) => f.cellR[i]));
+    const { shellX, shellY, shellPx } = f.pools[0];
+    const reach = cells.map((i) => Math.hypot(f.cellX[i] - shellX, f.cellY[i] - shellY) + f.cellR[i]);
+    expect(f.poolCount).toBe(1);
+    expect(Math.max(...reach)).toBeCloseTo(shellPx - margin, 6);
+  });
+
   it("reuses its buffers when the same graph is built again", () => {
     const input = fixture();
     const first = buildNeuralFrame(input, CAMERA);

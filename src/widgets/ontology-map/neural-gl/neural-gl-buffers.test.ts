@@ -154,12 +154,13 @@ describe("fillNeuralGlBuffers", () => {
     expect(buffers.cellCount).toBe(frame.drawCount);
   });
 
-  it("draws one shell per cluster on its pool's radius, quieter while a selection veils the cluster", () => {
+  it("draws one shell per cluster on the frame's shell circle, quieter while a selection veils the cluster", () => {
     const rest = createNeuralGlBuffers();
     const restFrame = buildNeuralFrame(inputs(), CAMERA);
     fillNeuralGlBuffers(rest, restFrame, INKS);
     expect(rest.shells.count).toBe(restFrame.poolCount);
-    expect(rest.shells.data[2]).toBe(Math.fround(restFrame.pools[0].reachPx));
+    const { shellX, shellY, shellPx } = restFrame.pools[0];
+    expect([...rest.shells.data.subarray(0, 3)]).toEqual([shellX, shellY, shellPx].map(Math.fround));
     const restAlpha = rest.shells.data[SHELL_FLOATS - 1];
     expect(restAlpha).toBeGreaterThan(0);
     expect(restAlpha).toBeLessThanOrEqual(INKS.shellAlpha);

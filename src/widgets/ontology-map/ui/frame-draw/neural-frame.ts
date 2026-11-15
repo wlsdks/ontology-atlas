@@ -27,6 +27,10 @@ export interface NeuralPool {
   y: number;
   reachPx: number;
   lightAlpha: number;
+  /** The shell: a circle around the cluster's drawn cells, one capability radius wider. */
+  shellX: number;
+  shellY: number;
+  shellPx: number;
 }
 
 /**
@@ -201,8 +205,17 @@ function ensureAxons(f: NeuralFrame, edges: number): void {
   f.litHop = new Int32Array(edges); f.litAlpha = new Float64Array(edges);
 }
 
-interface PoolSlot extends NeuralPool { builtAt: number }
+interface PoolSlot extends NeuralPool {
+  builtAt: number;
+  /** Its place in `pools` this build. */
+  slot: number;
+  /** The largest capability cell, and the largest cell for a cluster without one. */
+  capabilityPx: number;
+  widestPx: number;
+}
 const poolByDomain = new Map<string, PoolSlot>();
+/** The pool slot each cell joined this build, or -1; grows only with the graph. */
+let poolOfCell = new Int32Array(0);
 let poolGraph: NeuralGraph | null = null;
 let builds = 0;
 
@@ -310,26 +323,34 @@ function buildPools(f: NeuralFrame, frame: NeuralFrameInputs, graph: NeuralGraph
     poolGraph = graph;
   }
   builds += 1;
+  if (poolOfCell.length < n) poolOfCell = new Int32Array(n);
   let poolCount = 0;
   for (let i = 0; i < n; i += 1) {
+    poolOfCell[i] = -1;
+    const kind = frame.world.nodes[i].kind;
     const domain = graph.clusterOf.get(frame.world.nodes[i].id);
     if (domain === undefined || sa[i] <= 0.01) continue;
     let pool = poolByDomain.get(domain);
     if (pool === undefined) {
-      pool = { domainId: domain, minX: 0, maxX: 0, minY: 0, maxY: 0, top: 0, alpha: 0, depth: 0, x: 0, y: 0, reachPx: 0, lightAlpha: 0, builtAt: 0 };
+      pool = { domainId: domain, minX: 0, maxX: 0, minY: 0, maxY: 0, top: 0, alpha: 0, depth: 0, x: 0, y: 0, reachPx: 0, lightAlpha: 0,
+        shellX: 0, shellY: 0, shellPx: 0, builtAt: 0, slot: 0, capabilityPx: 0, widestPx: 0 };
       poolByDomain.set(domain, pool);
     }
     if (pool.builtAt !== builds) {
       pool.builtAt = builds;
       pool.minX = Infinity; pool.maxX = -Infinity; pool.minY = Infinity; pool.maxY = -Infinity; pool.top = Infinity;
-      pool.alpha = 0; pool.depth = 0;
+      pool.alpha = 0; pool.depth = 0; pool.capabilityPx = 0; pool.widestPx = 0;
+      pool.slot = poolCount;
       f.pools[poolCount] = pool;
       poolCount += 1;
     }
+    poolOfCell[i] = pool.slot;
     pool.minX = Math.min(pool.minX, sx[i]); pool.maxX = Math.max(pool.maxX, sx[i]);
     pool.minY = Math.min(pool.minY, sy[i]); pool.maxY = Math.max(pool.maxY, sy[i]);
     pool.top = Math.min(pool.top, sy[i] - sr[i]);
-    if (frame.world.nodes[i].kind === "domain") {
+    pool.widestPx = Math.max(pool.widestPx, sr[i]);
+    if (kind === "capability") pool.capabilityPx = Math.max(pool.capabilityPx, sr[i]);
+    if (kind === "domain") {
       pool.alpha = Math.max(pool.alpha, restAlpha[i]);
       pool.depth = su[i];
     }
@@ -341,8 +362,41 @@ function buildPools(f: NeuralFrame, frame: NeuralFrameInputs, graph: NeuralGraph
     pool.y = (pool.minY + pool.maxY) / 2;
     pool.reachPx = reach * CLUSTER_POOL_REACH;
     pool.lightAlpha = t.clusterGlowAlpha * frame.neural;
+    pool.shellX = pool.x;
+    pool.shellY = pool.y;
+    pool.shellPx = 0;
+  }
+  encloseClusters(f, n);
+  for (let k = 0; k < poolCount; k += 1) {
+    const pool = f.pools[k] as PoolSlot;
+    pool.shellPx += pool.capabilityPx > 0 ? pool.capabilityPx : pool.widestPx;
   }
   f.poolCount = poolCount;
+}
+
+/**
+ * Grows each shell over its cluster's cell discs in one pass, O(cells): a disc outside the circle widens
+ * it to the smallest circle holding both, so the last disc that grew it touches the rim.
+ */
+function encloseClusters(f: NeuralFrame, n: number): void {
+  const { cellX: sx, cellY: sy, cellR: sr } = f;
+  for (let i = 0; i < n; i += 1) {
+    const slot = poolOfCell[i];
+    if (slot < 0) continue;
+    const pool = f.pools[slot];
+    const dx = sx[i] - pool.shellX;
+    const dy = sy[i] - pool.shellY;
+    const d = Math.hypot(dx, dy);
+    const far = d + sr[i];
+    if (far <= pool.shellPx) continue;
+    const near = Math.min(-pool.shellPx, d - sr[i]);
+    if (d > 0) {
+      const shift = (far + near) / 2 / d;
+      pool.shellX += dx * shift;
+      pool.shellY += dy * shift;
+    }
+    pool.shellPx = (far - near) / 2;
+  }
 }
 
 interface AxonLight {

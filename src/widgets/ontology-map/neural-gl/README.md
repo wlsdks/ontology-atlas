@@ -36,7 +36,9 @@ The frame's marks, in the 3D look the canvas-2D fallback does not attempt:
   whole.
 - **Connections** are tapered ribbons at the canvas painter's widths, drawn
   behind every cell; a lit one keeps a soft glow that fades across its width.
-- **Clusters** are shells: the pool's disc with ink rising toward its rim.
+- **Clusters** are shells: a disc around the cluster's drawn cells, one
+  capability radius wider than its farthest cell, with ink rising toward its
+  rim. The canvas pool light keeps its wider reach.
 
 No bloom, post-processing or second render target; edges are antialiased in
 the shaders, not by multisampling.
