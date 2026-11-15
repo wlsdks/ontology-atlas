@@ -3,15 +3,12 @@ import { isNeuralDependency, neuralCellIsStale, neuralFocusSets, neuralGraphOf, 
 import { isOutwardHop, type NeuralImpact } from "../../model/dome-view/neural-impact";
 import { isPathLensEdge } from "../../model/visibility/path-lens";
 import type { NeuralTokens } from "../../tokens/read-neural-tokens";
-import { radiusForKind, type WorldNode } from "../world/topology-world";
+import { radiusForKind } from "../world/topology-world";
 import { litDrawnStateCounts, passState } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
 import { impactStrength, lastLit, neuralSpreadFrame } from "./neural-spread";
-import { neuralRadiusScale, neuralTractsFor } from "./paint-neural";
-
-/** `NeuralFrame.cellKind` codes: the one choice a cell's body and ring make by kind. */
-export const NEURAL_CELL = { element: 0, capability: 1, domain: 2, project: 3 } as const satisfies Record<WorldNode["kind"], number>;
+import { NEURAL_CELL, neuralRadiusScale, neuralTokens, neuralTractsFor, zoomGrowthOf } from "./paint-neural";
 
 /** One cluster's soft light and the screen box of its cells, which a domain's title stands above. */
 export interface NeuralPool {
@@ -131,11 +128,6 @@ export type NeuralFrameInputs = Pick<FrameInputs, "world" | "domeFrame" | "viewp
 
 type ScreenCamera = Pick<FrameFocus, "camX" | "camY" | "camScale" | "halfW" | "halfH">;
 
-/** Zooming in past the whole-cloud fit grows the cells with the camera, up to `zoomGrowMax`. */
-export function zoomGrowthOf(camScale: number, restFitScale: number | null, t: NeuralTokens): number {
-  return restFitScale !== null && restFitScale > 0 ? Math.min(t.zoomGrowMax, Math.max(1, camScale / restFitScale)) : 1;
-}
-
 const axonKey = (edge: { sourceId: string; targetId: string }) => `${edge.sourceId}\u0000${edge.targetId}`;
 
 /** The dependencies a person is pointing at: a hovered or selected axon, or the path lens's axons. Null when none. */
@@ -214,12 +206,6 @@ const poolByDomain = new Map<string, PoolSlot>();
 let poolGraph: NeuralGraph | null = null;
 let builds = 0;
 
-/** The last built frame's pool for a domain's cluster, or undefined when none of its cells showed. */
-export function neuralPoolOf(domainId: string): NeuralPool | undefined {
-  const pool = poolByDomain.get(domainId);
-  return pool !== undefined && pool.builtAt === builds ? pool : undefined;
-}
-
 let farFirstDepth: Float64Array = new Float64Array(0);
 const farFirst = (a: number, b: number) => farFirstDepth[b] - farFirstDepth[a];
 let drawOrderView: Int32Array = new Int32Array(0);
@@ -229,7 +215,8 @@ let drawOrderView: Int32Array = new Int32Array(0);
  * O(d log d) far-to-near sort of the d cells on screen. Also writes what the map probe reads, so the
  * probe does not depend on which painter drew the frame.
  */
-export function buildNeuralFrame(frame: NeuralFrameInputs, camera: ScreenCamera, t: NeuralTokens): NeuralFrame {
+export function buildNeuralFrame(frame: NeuralFrameInputs, camera: ScreenCamera): NeuralFrame {
+  const t = neuralTokens();
   const { world, hoveredNodeId, colorFocusedNodeId, emphasisById, focusRampById, reducedMotion, now, domeLight, neural, nodeFrameAt } = frame;
   const { camX, camY, camScale, halfW, halfH } = camera;
   const f = reusedFrame(t);

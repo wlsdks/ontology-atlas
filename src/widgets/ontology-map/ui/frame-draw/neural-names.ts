@@ -5,7 +5,7 @@ import { labelFontFamily } from "../../render/labels";
 import { passState } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import { litRaster } from "./neural-lit-raster";
-import { neuralPoolOf, type NeuralFrame } from "./neural-frame";
+import type { NeuralFrame, NeuralPool } from "./neural-frame";
 import { lastLit } from "./neural-spread";
 import type { NeuralLabels } from "./paint-neural";
 
@@ -137,6 +137,8 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
     return { minX: left - 3, minY: y - px * 0.62 - 2, maxX: left + w + 3, maxY: y + px * 0.62 + 2 };
   };
   const { focusId, focusIndex, sets, ramp, impact, spread } = nf;
+  const poolOf = new Map<string, NeuralPool>();
+  for (let k = 0; k < nf.poolCount; k += 1) poolOf.set(nf.pools[k].domainId, nf.pools[k]);
   const hopOf = nf.impact === null ? null : nf.cellHop;
   // Where each lit axon arrives at its far end, and how many of the focus's own leave it to the right.
   const arrival = new Map<number, { dx: number; dy: number }>();
@@ -200,7 +202,7 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
   const placeName = (i: number): boolean => {
     const node = world.nodes[i];
     const cluster = graph.clusterOf.get(node.id);
-    const pool = cluster === undefined ? undefined : neuralPoolOf(cluster);
+    const pool = cluster === undefined ? undefined : poolOf.get(cluster);
     const into = arrival.get(i);
     const right = into ? into.dx <= 0 : pool === undefined || sx[i] >= (pool.minX + pool.maxX) / 2;
     const gap = sr[i] + t.nameGapPx;

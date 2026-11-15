@@ -3,13 +3,9 @@ import { neuralCellRadiusPx, neuralGraphOf, neuralTracts, type NeuralTracts } fr
 import { readNeuralTokens, type NeuralTokens } from "../../tokens/read-neural-tokens";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import type { TopologyWorld, WorldNode } from "../world/topology-world";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
 import { at, AXON_BANDS, bandWidthPx, glowSprite, stamp, taperedAxon, traceAxon } from "./neural-axons";
-import { buildNeuralFrame, NEURAL_CELL, zoomGrowthOf, type NeuralFrame } from "./neural-frame";
-import { paintNeuralNames } from "./neural-names";
+import type { NeuralFrame } from "./neural-frame";
 import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "./neural-spread";
-import type { NodeLayer } from "./node-layer";
 
 /** The words Neural paints, composed by the view that owns the locale. */
 export interface NeuralLabels {
@@ -17,6 +13,9 @@ export interface NeuralLabels {
   /** `impact` is present on a selection whose impact reaches past its direct dependents. */
   focusFacts: (facts: { stale: boolean; needs: number; usedBy: number; impact?: number }) => string;
 }
+
+/** `NeuralFrame.cellKind` codes: the one choice a cell's body and ring make by kind. */
+export const NEURAL_CELL = { element: 0, capability: 1, domain: 2, project: 3 } as const satisfies Record<WorldNode["kind"], number>;
 
 const AXON_DOT_T = 0.95;
 const LIT_DOT_T = 0.96;
@@ -31,6 +30,16 @@ const IMPACT_WIDTH_FLOOR = 0.45;
 
 let tokens: NeuralTokens | null = null;
 let tractCache: { world: TopologyWorld; epoch: number; tracts: NeuralTracts } | null = null;
+
+/** Neural's tokens, read once per page. */
+export function neuralTokens(): NeuralTokens {
+  return (tokens ??= readNeuralTokens());
+}
+
+/** Zooming in past the whole-cloud fit grows the cells with the camera, up to `zoomGrowMax`. */
+export function zoomGrowthOf(camScale: number, restFitScale: number | null, t: NeuralTokens): number {
+  return restFitScale !== null && restFitScale > 0 ? Math.min(t.zoomGrowMax, Math.max(1, camScale / restFitScale)) : 1;
+}
 
 function cellSizesOf(t: NeuralTokens) {
   return { capabilityPx: t.capPx, capabilityGainPx: t.capGainPx, elementPx: t.elementPx, elementGainPx: t.elementGainPx, domainPx: t.domainPx, projectPx: t.projectPx };
@@ -48,7 +57,7 @@ export function neuralRadiusScale(
   camScale: number,
   restFitScale: number | null,
 ): number {
-  const t = (tokens ??= readNeuralTokens());
+  const t = neuralTokens();
   const dependencies = neuralGraphOf(world.nodes, world.edges).dependencyCount.get(node.id) ?? 0;
   return (perspective * neuralCellRadiusPx(node.kind, dependencies, cellSizesOf(t)) * zoomGrowthOf(camScale, restFitScale, t)) / DOME_NODE_PX[node.kind];
 }
@@ -59,7 +68,7 @@ export function neuralRadiusScale(
  */
 export function neuralTractsFor(world: TopologyWorld, frame: ReadonlyMap<string, DomeNodeFrame>, epoch: number | null): NeuralTracts {
   if (epoch !== null && tractCache?.world === world && tractCache.epoch === epoch) return tractCache.tracts;
-  const t = (tokens ??= readNeuralTokens());
+  const t = neuralTokens();
   const tracts = neuralTracts(neuralGraphOf(world.nodes, world.edges), (id) => {
     const node = world.nodeById.get(id);
     const f = frame.get(id);
@@ -70,26 +79,11 @@ export function neuralTractsFor(world: TopologyWorld, frame: ReadonlyMap<string,
 }
 
 /**
- * Neural: builds this frame's `NeuralFrame`, lets `neuralSurface` paint it when it can and strokes it
- * on canvas 2D otherwise, then draws the names on the context the painter returns.
- */
-export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLayer, labels: NeuralLabels | null): void {
-  const nf = buildNeuralFrame(frame, focus, (tokens ??= readNeuralTokens()));
-  let namesCtx = frame.neuralSurface?.paint(nf) ?? null;
-  if (namesCtx === null) {
-    strokeNeural(layer.ctx, nf);
-    namesCtx = layer.ctx;
-  }
-  paintNeuralNames(namesCtx, frame, nf, labels);
-  namesCtx.globalAlpha = 1;
-}
-
-/**
  * Canvas-2D strokes of a `NeuralFrame`: cluster light, rest axons batched by group, cells far to near
  * (glow, filled body in the strong ink or amber when stale, a capability's nucleus, a domain's ring),
  * then a focus's lit axons, signal, spread and ring. O(cells drawn + axons drawn).
  */
-function strokeNeural(ctx: CanvasRenderingContext2D, nf: NeuralFrame): void {
+export function strokeNeural(ctx: CanvasRenderingContext2D, nf: NeuralFrame): void {
   const t = nf.tokens;
   const ink = t.inks;
   const arcGlow = glowSprite(ink.arc);

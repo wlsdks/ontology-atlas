@@ -60,7 +60,7 @@ const ids = (input: NeuralFrameInputs) => input.world.nodes.map((n) => n.id);
 describe("buildNeuralFrame", () => {
   it("orders the drawn cells far to near", () => {
     const input = fixture();
-    const f = buildNeuralFrame(input, CAMERA, TOKENS);
+    const f = buildNeuralFrame(input, CAMERA);
     const depths = [...f.drawOrder.subarray(0, f.drawCount)].map((i) => f.cellU[i]);
     expect(f.drawCount).toBe(5);
     expect(depths).toEqual([...depths].sort((a, b) => b - a));
@@ -68,7 +68,7 @@ describe("buildNeuralFrame", () => {
 
   it("gives a selected concept's cells and lit axons the hops of its impact", () => {
     const input = fixture({ colorFocusedNodeId: "a", focusedNodeId: "a", focusRampById: new Map([["a", 1]]) });
-    const f = buildNeuralFrame(input, CAMERA, TOKENS);
+    const f = buildNeuralFrame(input, CAMERA);
     const impact = neuralImpact(neuralGraphOf(input.world.nodes, input.world.edges), "a");
     const expected = ids(input).map((id) => (id === "a" ? 0 : impact.distance.get(id) ?? -1));
     expect([...f.cellHop.subarray(0, f.cellCount)]).toEqual(expected);
@@ -78,7 +78,7 @@ describe("buildNeuralFrame", () => {
 
   it("lights only a hovered concept's direct ends", () => {
     const input = fixture({ hoveredNodeId: "b", emphasisById: new Map([["b", 1]]) });
-    const f = buildNeuralFrame(input, CAMERA, TOKENS);
+    const f = buildNeuralFrame(input, CAMERA);
     const lit = ids(input).filter((_, i) => f.cellLit[i] === 1);
     expect(lit.sort()).toEqual(["a", "b", "c"]);
     expect([...f.cellHop.subarray(0, f.cellCount)].every((hop) => hop === -1)).toBe(true);
@@ -87,24 +87,24 @@ describe("buildNeuralFrame", () => {
   it("flags a cell whose evidence is stale", () => {
     const evidence = new Map([["e", "stale" as const], ["a", "current" as const]]);
     const input = fixture({ domeLight: { evidence } as unknown as NeuralFrameInputs["domeLight"] });
-    const f = buildNeuralFrame(input, CAMERA, TOKENS);
+    const f = buildNeuralFrame(input, CAMERA);
     expect(ids(input).filter((_, i) => f.cellStale[i] === 1)).toEqual(["e"]);
     expect(lastLitStateCounts()).toEqual({ current: 1, stale: 1, unknown: 3 });
   });
 
   it("reuses its buffers when the same graph is built again", () => {
     const input = fixture();
-    const first = buildNeuralFrame(input, CAMERA, TOKENS);
+    const first = buildNeuralFrame(input, CAMERA);
     const buffers = [first.cellX, first.cellAlpha, first.drawOrder, first.axonAX, first.litHop, first.pools, first.pools[0]];
     const lengths = [first.cellX.length, first.axonAX.length];
-    const second = buildNeuralFrame({ ...input, now: 2_000 }, { ...CAMERA, camX: 10 }, TOKENS);
+    const second = buildNeuralFrame({ ...input, now: 2_000 }, { ...CAMERA, camX: 10 });
     const again = [second.cellX, second.cellAlpha, second.drawOrder, second.axonAX, second.litHop, second.pools, second.pools[0]];
     again.forEach((buffer, k) => expect(buffer).toBe(buffers[k]));
     expect([second.cellX.length, second.axonAX.length]).toEqual(lengths);
   });
 
   it("reports as drawn exactly the cells it emits", () => {
-    const f = buildNeuralFrame(fixture(), { ...CAMERA, camX: -380 }, TOKENS);
+    const f = buildNeuralFrame(fixture(), { ...CAMERA, camX: -380 });
     expect(f.drawCount).toBeGreaterThan(0);
     expect(f.drawCount).toBeLessThan(f.cellCount);
     expect(lastDrawnNodeCount()).toBe(f.drawCount);
