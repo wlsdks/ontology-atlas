@@ -186,17 +186,15 @@ describe("layoutTree", () => {
     expect(layout.childPitch[capability]).toBeGreaterThan(0.9 * least);
   });
 
-  it("keeps sibling capabilities clear of a packed head", () => {
-    const layout = layoutOf(vault([[300, 0, 0, 0, 0]]));
-    const capability = layout.model.indexOf.get("capability:domain:00/000")!;
-    const leaves = childrenOf(layout, capability);
-    const domain = layout.model.indexOf.get("domain:00")!;
-    const siblings: number[] = [];
-    for (let i = domain + 1; i < layout.model.subtreeEnd[domain]!; i += 1) if (layout.model.kinds[i] === "capability" && i !== capability) siblings.push(i);
+  it("stands a capability with a packed head out from its hub by the head's width", () => {
+    const twigs = layoutOf(vault([[12, 0, 0, 0, 0]]));
+    const head = layoutOf(vault([[300, 0, 0, 0, 0]]));
+    const reach = (layout: TreeLayout) => distance(at(layout, "capability:domain:00/000"), at(layout, "domain:00"));
+    const capability = head.model.indexOf.get("capability:domain:00/000")!;
+    const headCentre = controls(head, childrenOf(head, capability)[0]!)[1]!;
+    const headWidth = Math.max(...childrenOf(head, capability).map((leaf) => distance(point(head, leaf), headCentre)));
 
-    for (const sibling of siblings) {
-      for (const leaf of leaves) expect(distance(point(layout, sibling), point(layout, leaf))).toBeGreaterThan(CAPABILITY_GAP_FLOOR);
-    }
+    expect(reach(head) - reach(twigs)).toBeGreaterThanOrEqual(0.95 * headWidth);
   });
 
   it("reports a forked parent's spacing from its concepts, not from its forks", () => {
