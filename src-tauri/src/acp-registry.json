@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-08T22:14:49.549Z",
+  "npmDependencyCutoff": "2026-11-15T22:22:52.817Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.101.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.107.0",
         "args": []
       }
     },
@@ -117,7 +117,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@ibm/bob@2.0.9",
+        "package": "@ibm/bob@2.1.0",
         "args": [
           "acp"
         ]
@@ -153,7 +153,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.181.0",
+        "package": "@tencent-ai/codebuddy-code@2.184.0",
         "args": [
           "--acp"
         ]
@@ -276,7 +276,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.24",
+        "package": "dimcode@0.5.28",
         "args": [
           "acp"
         ]
@@ -294,7 +294,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.24",
+        "package": "dirac-cli@0.6.0",
         "args": [
           "--acp"
         ]
@@ -312,7 +312,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@1.6.0",
+        "package": "droid@1.12.1",
         "args": [
           "exec",
           "--output-format",
@@ -350,7 +350,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.67.0",
+        "package": "@google/gemini-cli@0.68.0",
         "args": [
           "--acp"
         ]
@@ -368,7 +368,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.107",
+        "package": "@github/copilot@1.0.112",
         "args": [
           "--acp"
         ]
@@ -386,7 +386,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.17.0",
+        "package": "glm-acp-agent@1.17.1",
         "args": []
       }
     },
@@ -436,7 +436,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.79",
+        "package": "@xai-official/grok@1.0.87",
         "args": [
           "agent",
           "stdio"
@@ -547,7 +547,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@moonshot-ai/kimi-code@2.5.2",
+        "package": "@moonshot-ai/kimi-code@2.6.2",
         "args": [
           "acp"
         ]
@@ -625,6 +625,24 @@
       }
     },
     {
+      "id": "muse-code",
+      "name": "Muse Code",
+      "description": "Meta's coding agent, built for Muse Spark",
+      "website": "https://dev.meta.ai/docs/muse-code",
+      "license": "proprietary",
+      "verified": false,
+      "icon": "/acp-icons/muse-code.svg",
+      "brandInk": null,
+      "cli": null,
+      "launch": {
+        "kind": "binary",
+        "command": "muse",
+        "args": [
+          "acp"
+        ]
+      }
+    },
+    {
       "id": "nova",
       "name": "Nova",
       "description": "Nova by Compass AI - a fully-fledged software engineer at your command",
@@ -636,7 +654,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.64",
+        "package": "@compass-ai/nova@1.1.65",
         "args": [
           "acp"
         ]
@@ -724,7 +742,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@qoder-ai/qodercli@0.2.14",
+        "package": "@qoder-ai/qodercli@1.1.89",
         "args": [
           "--acp"
         ]
@@ -742,7 +760,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.27.0",
+        "package": "@qwen-code/qwen-code@0.27.4",
         "args": [
           "--acp",
           "--experimental-skills"
