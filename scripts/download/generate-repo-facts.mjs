@@ -39,7 +39,7 @@ try {
   );
 } catch (error) {
   const stderr = typeof error.stderr === "string" ? error.stderr.trim() : "";
-  fail(`gh api repos/${REPOSITORY} failed${stderr ? `: ${stderr}` : ""}`);
+  fail(`gh api repos/${REPOSITORY} failed: ${stderr || error.message}`);
 }
 
 const stars = count(repository.stargazers_count, "star count");

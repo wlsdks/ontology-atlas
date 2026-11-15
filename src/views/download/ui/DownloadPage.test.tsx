@@ -363,7 +363,7 @@ describe('DownloadPage', () => {
     renderDownloadPage();
 
     expect(within(screen.getByTestId('gateway-hero')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
-    expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(2);
+    expect(within(screen.getByTestId('gateway-closing')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Chromium on the web does open a folder.
     expect(

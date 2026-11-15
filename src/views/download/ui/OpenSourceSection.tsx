@@ -87,7 +87,7 @@ export function OpenSourceSection() {
                   {point === 'together' ? (
                     <span
                       data-testid="gateway-source-links"
-                      className="mt-3 flex min-w-0 flex-wrap gap-x-5 gap-y-2"
+                      className="mt-3 flex min-w-0 flex-wrap gap-x-5 gap-y-5"
                     >
                       {LINKS.map((link) => (
                         <a
