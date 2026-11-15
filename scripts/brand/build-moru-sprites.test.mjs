@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { despeckle, holdBody, inkFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
+import { despeckle, holdBody, inkFringe, ivoryFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
@@ -404,6 +404,92 @@ test('haze inside a one-pixel diagonal outline takes the fill, never the outside
   for (let y = 1; y < 63; y++) for (let x = 1; x < 63; x++) if (x + y > 24 && cleared[(y * 64 + x) * 4 + 3] === 0) holes++;
   assert.equal(holes, 0, 'a pixel inside the outline was cleared');
   assert.deepEqual(at(cleared, 13, 12), SKIN, 'haze beside the diagonal outline stayed gray');
+});
+
+test('a stone crumb on the ivory takes the ivory, and stone that is a surface, on the silhouette or beside another colour stays', () => {
+  const { data, paint, at } = canvas(64);
+  paint(2, 2, 46, 62, INK);
+  paint(4, 4, 44, 60, IVORY);
+  paint(4, 4, 44, 12, SKIN);
+  paint(8, 16, 20, 18, INK);
+  paint(8, 18, 14, 20, SKIN);
+  paint(26, 16, 29, 19, SKIN);
+  paint(6, 24, 13, 33, SKIN);
+  paint(18, 24, 26, 32, SKIN);
+  paint(32, 24, 35, 27, FREE_INK);
+  paint(35, 24, 38, 27, SKIN);
+  paint(10, 40, 20, 50, INK);
+  paint(13, 43, 16, 46, SKIN);
+  paint(50, 10, 60, 20, IVORY);
+  paint(48, 12, 50, 15, SKIN);
+  paint(24, 50, 40, 58, INK);
+  paint(26, 52, 38, 56, SKIN);
+  paint(25, 51, 26, 52, IVORY);
+  const cleaned = ivoryFringe(data, 64);
+  assert.deepEqual([at(cleaned, 9, 18), at(cleaned, 13, 19)], [IVORY, IVORY], 'a crumb under a whisker stayed gray');
+  assert.deepEqual(at(cleaned, 27, 17), IVORY, 'a crumb alone on the ivory stayed gray');
+  assert.deepEqual([at(cleaned, 6, 24), at(cleaned, 12, 32)], [IVORY, IVORY], 'a piece one pixel under four drawn pixels stayed gray');
+  assert.deepEqual([at(cleaned, 18, 24), at(cleaned, 25, 31)], [SKIN, SKIN], 'a piece of four drawn pixels was erased');
+  assert.deepEqual(at(cleaned, 20, 8), SKIN, 'the body beside the ivory was erased');
+  assert.deepEqual(at(cleaned, 36, 25), SKIN, 'stone beside another colour was erased');
+  assert.deepEqual(at(cleaned, 14, 44), SKIN, 'stone enclosed in ink alone turned ivory');
+  assert.deepEqual(at(cleaned, 49, 13), SKIN, 'stone on the silhouette turned ivory');
+  assert.deepEqual([at(cleaned, 26, 52), at(cleaned, 37, 55)], [SKIN, SKIN], 'stone enclosed in ink that meets the ivory only by a corner turned ivory');
+  assert.deepEqual([at(cleaned, 9, 16), at(cleaned, 33, 25), at(cleaned, 30, 40)], [INK, FREE_INK, IVORY], 'a colour other than stone changed');
+});
+
+test('a stone hairline between ink and ivory takes the ivory even where it joins the body, and a thicker strip stays', () => {
+  const { data, paint, at } = canvas(64);
+  paint(2, 2, 62, 62, INK);
+  paint(4, 4, 60, 60, IVORY);
+  paint(4, 4, 24, 60, SKIN);
+  paint(24, 21, 40, 23, INK);
+  paint(24, 20, 34, 21, SKIN);
+  paint(34, 18, 37, 21, SKIN);
+  paint(24, 30, 44, 32, INK);
+  paint(24, 29, 44, 30, SKIN);
+  paint(24, 42, 44, 44, INK);
+  paint(24, 40, 44, 42, SKIN);
+  paint(24, 48, 27, 49, SKIN);
+  paint(24, 54, 44, 56, FREE_INK);
+  paint(24, 53, 44, 54, SKIN);
+  paint(30, 10, 54, 12, INK);
+  paint(30, 4, 36, 10, SKIN);
+  paint(48, 4, 54, 10, SKIN);
+  paint(36, 9, 48, 10, SKIN);
+  const cleaned = ivoryFringe(data, 64);
+  assert.deepEqual([24, 34, 43].map(x => at(cleaned, x, 29)), [IVORY, IVORY, IVORY], 'a hairline joined to the body stayed gray');
+  assert.deepEqual([at(cleaned, 28, 20), at(cleaned, 35, 19)], [IVORY, IVORY], 'a crumb the hairline tied to the body stayed gray');
+  assert.deepEqual([at(cleaned, 31, 5), at(cleaned, 40, 9), at(cleaned, 52, 8)], [IVORY, IVORY, IVORY], 'two crumbs a hairline joined into one larger piece stayed gray');
+  assert.deepEqual([at(cleaned, 24, 40), at(cleaned, 43, 41)], [SKIN, SKIN], 'a strip half a drawn pixel thick was erased');
+  assert.deepEqual(at(cleaned, 25, 48), SKIN, 'the edge of the body away from ink was erased');
+  assert.deepEqual(at(cleaned, 30, 53), SKIN, 'a hairline beside another colour was erased');
+  assert.deepEqual([at(cleaned, 23, 29), at(cleaned, 10, 30)], [SKIN, SKIN], 'the body lost pixels');
+});
+
+test('every stone pixel beside a resting whisker belongs to the body, at both exported sizes', async () => {
+  const { clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  for (const [file, size] of [[clips.blink.sprite64, 64], [clips.blink.sprite, 128]]) {
+    const frame = await frameOf(`assets/brand/moru/${file}`, 0, size);
+    const stone = p => frame[p * 4 + 3] === 255 && SKIN.every((channel, i) => frame[p * 4 + i] === channel);
+    const pieceOf = new Int32Array(size * size).fill(-1), areas = [];
+    for (let start = 0; start < size * size; start++) {
+      if (pieceOf[start] >= 0 || !stone(start)) continue;
+      const piece = [start]; pieceOf[start] = areas.length;
+      for (let j = 0; j < piece.length; j++) for (const step of [-size - 1, -size, -size + 1, -1, 1, size - 1, size, size + 1]) {
+        const n = piece[j] + step;
+        if (n >= 0 && n < size * size && pieceOf[n] < 0 && stone(n)) { pieceOf[n] = areas.length; piece.push(n); }
+      }
+      areas.push(piece.length);
+    }
+    const body = areas.indexOf(Math.max(...areas));
+    const whiskers = enclosedInk(frame, size).filter(mark => mark.width >= 2 * mark.height && mark.pixels.some(p => [-size, size].some(step => IVORY.every((channel, i) => frame[(p + step) * 4 + i] === channel))));
+    assert.ok(whiskers.length >= 4, `${size}px resting face shows only ${whiskers.length} whiskers on the ivory`);
+    for (const whisker of whiskers) for (const p of whisker.pixels) for (const step of [-size - 1, -size, -size + 1, -1, 1, size - 1, size, size + 1]) {
+      const n = p + step;
+      assert.ok(!stone(n) || pieceOf[n] === body, `${size}px resting face keeps a detached gray crumb at ${n % size},${Math.floor(n / size)}`);
+    }
+  }
 });
 
 test('ink drawn away from every fill takes the indigo that reads on the dark canvas', () => {

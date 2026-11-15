@@ -190,6 +190,44 @@ export function inkFringe(data, size) {
   return paintedOver(out, size, fringeOf(out, size, ink, new Uint8Array(total), HAZE).map(([p]) => p), true);
 }
 
+/**
+ * Where ink is drawn on ivory, the source's fade passes through a blend that quantises to the
+ * stone body gray and leaves gray crumbs and hairlines on the muzzle. A stone run thinner than
+ * `FRINGE_REACH` that touches ink and meets ivory by a side takes the ivory, even where it joins
+ * the body; then so does a piece left under `CRUMB_AREA` that meets ivory by a side and otherwise
+ * touches only ink. Ivory at a corner alone is the far side of an outline. O(pixels).
+ */
+export function ivoryFringe(data, size) {
+  const total = size * size, out = Buffer.from(data), stone = pack(...STONE), ivory = pack(...IVORY);
+  const colourAt = p => isOpaque(out, p) ? pack(out[p * 4], out[p * 4 + 1], out[p * 4 + 2]) : -1;
+  const repaint = (member, fringe) => {
+    const seen = new Uint8Array(total);
+    for (let start = 0; start < total; start++) {
+      if (!member[start] || seen[start]) continue;
+      const piece = floodGroup(start, member, seen, size);
+      let onIvory = false, onInk = false, onOther = false;
+      for (const p of piece) eightNeighbours(p, size, n => {
+        const colour = colourAt(n);
+        if (colour === ivory) onIvory ||= Math.abs(n - p) === 1 || Math.abs(n - p) === size;
+        else if (INK.has(colour)) onInk = true; else if (colour !== stone) onOther = true;
+      });
+      if (onIvory && !onOther && fringe(piece, onInk)) for (const p of piece) member[p] = 2;
+    }
+    for (let p = 0; p < total; p++) if (member[p] === 2) out.set([...IVORY, 255], p * 4);
+  };
+  const stoneMask = () => Uint8Array.from({ length: total }, (_, p) => colourAt(p) === stone ? 1 : 0);
+  const thin = stoneMask();
+  for (let y = 0; y + FRINGE_REACH <= size; y++) for (let x = 0; x + FRINGE_REACH <= size; x++) {
+    let solid = true;
+    for (let dy = 0; dy < FRINGE_REACH && solid; dy++) for (let dx = 0; dx < FRINGE_REACH; dx++) if (!thin[(y + dy) * size + x + dx]) { solid = false; break; }
+    if (solid) for (let dy = 0; dy < FRINGE_REACH; dy++) for (let dx = 0; dx < FRINGE_REACH; dx++) thin[(y + dy) * size + x + dx] = 3;
+  }
+  for (let p = 0; p < total; p++) if (thin[p] === 3) thin[p] = 0;
+  repaint(thin, (_, onInk) => onInk);
+  repaint(stoneMask(), piece => piece.length < CRUMB_AREA);
+  return out;
+}
+
 /** Ink components drawn inside a fill and small enough to be one facial mark; O(pixels). */
 function enclosedMarks(data, size) {
   const total = size * size, ink = new Uint8Array(total), seen = new Uint8Array(total), marks = [];
@@ -502,7 +540,7 @@ export async function buildMoru() {
       if (i === 0 || i === count - 1) return reference;
       try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
       catch (error) { throw new Error(`${clip.id} frame ${i + 1}: ${error.message}`); }
-    }).map(f => inkFringe(liftFreeInk(despeckle(f, size), size), size));
+    }).map(f => ivoryFringe(inkFringe(liftFreeInk(despeckle(f, size), size), size), size));
     if (clip.restingBody) frames = holdBody(frames, size);
     for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
       const reduced = reduceMoru(f, size, exported);

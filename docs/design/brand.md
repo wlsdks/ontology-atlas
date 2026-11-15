@@ -118,6 +118,15 @@ the fill, or clears where it lay outside the outline. Haze thicker than that
 reach keeps its inner part, so a few slivers remain (`star-sneeze` beside the
 left whiskers). Gray farther in is a drawn surface and stays gray.
 
+Where ink is drawn on ivory the same fade passes through a blend that lands on
+the stone body gray, which left gray crumbs between the whiskers and hairlines
+along the flipper outline. A stone run thinner than half a drawn pixel that
+touches ink and meets ivory by a side takes the ivory, even where it joins the
+body; then a stone piece left under four drawn pixels that meets ivory by a
+side and otherwise touches only ink does too, so two crumbs a hairline joined
+go together. Stone beside indigo, blush, haze or the silhouette is left alone;
+crumbs of that kind remain, most of them at the tail tip.
+
 Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
 halves in length and a filled square stays a filled rectangle within a pixel of
 its true size wherever it sits on the grid. An upright or level ink stroke, or
