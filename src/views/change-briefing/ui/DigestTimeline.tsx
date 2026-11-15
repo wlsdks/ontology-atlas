@@ -128,7 +128,7 @@ export function DigestTimeline({ unit, range, changes, notable, onSelect }: Dige
     });
 
   return <figure data-testid="change-digest-timeline" data-timeline-unit={unit} className="min-w-0">
-    <figcaption className="flex min-w-0 items-baseline justify-between gap-6">
+    <figcaption className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
       <span className="flex shrink-0 items-center gap-4">
         <span className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{label}</span>
         {notable.size > 0 && <span className="flex items-center gap-1.5 text-label text-[color:var(--color-text-tertiary)]"><span aria-hidden className="h-2.5 w-[3px] rounded-micro bg-[color:var(--color-indigo-accent)]" />{t('notable')}</span>}
