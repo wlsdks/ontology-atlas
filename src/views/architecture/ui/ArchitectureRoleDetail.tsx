@@ -1,305 +1,252 @@
 'use client';
 
-import { useState, type ComponentType } from 'react';
-import { FileCode2, Folder } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 
-import { Chip, StaggeredFadeIn, OntologyMapKindGlyph } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { cn } from '@/shared/lib/cn';
 
-import { useGridColumns } from '../model/grid-columns';
+import type { ImportCell } from '../model/import-matrix';
 import type { RoleConcept } from '../model/role-concepts';
-import type { RoleSourceModule } from '../model/source-modules';
+import type { RoleMembers } from '../model/role-members';
+
+const SECTION_LABEL =
+  'text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
 /**
- * Everything one role carries, beside the drawing: the graph answers shape and traffic, this panel
- * what is in the layer. Props only: it reads no profile or record, so any surface that composed
- * the graph can use it.
+ * Everything one role carries beside the table: what it may import, what it imports, who imports
+ * it, and what is inside it. Props only: it reads no profile or record.
  */
-
-/* The occupant grids' track floor and gap (`minmax(200px, 1fr)`, `gap-2.5`); the class strings quote them. */
-const OCCUPANT_CARD_MIN = 200;
-const OCCUPANT_CARD_GAP = 10;
-/* The preview count where layout cannot be measured, so an unmeasurable surface loses nothing. */
-const OCCUPANT_PREVIEW_FALLBACK = 3;
-/* A one-column dock would preview a single card; the preview ends on a whole row but never before this many. */
-const OCCUPANT_PREVIEW_MIN = 4;
-
 export function ArchitectureRoleDetail({
   roleId,
-  vaultKey,
   index,
   label,
   summary,
   paths,
-  reach,
-  modules,
+  mayImport,
+  imports,
+  importedBy,
+  measured,
+  maxCount,
+  markedRole,
+  members,
   concepts,
-  edgeParticipants,
-  icon: RoleIcon,
   roleLabel,
-  sinkLabel,
-  reachInlineLabel,
-  moduleCountLabel,
-  moreLabel,
-  showFewerLabel,
-  layerConceptsLabel,
+  sourceNote,
 }: {
-  /** The selected role's id — used for the test hooks the surface already names. */
   roleId: string;
-  vaultKey: string;
-  /** The role's position in reach order, already 1-based: the number a reader says out loud. */
+  /** 1-based position in profile order: the number the table prints. */
   index: number;
-  /** The reviewed role name. */
   label: string;
   /** One sentence for what the role is for; `null` for a role written before the field existed. */
   summary: string | null;
-  /** The role's globs — where it lives, as opposed to what it is for. */
   paths: readonly string[];
-  /** Role ids this role may reach; empty means it depends on nothing. */
-  reach: readonly string[];
-  /** Source modules the role's globs contain, or `null` where this surface cannot list source. */
-  modules: readonly RoleSourceModule[] | null;
-  /** Recorded concepts whose `path` sits inside the role's globs. */
+  /** Role ids the rules let this role import, in profile order. */
+  mayImport: readonly string[];
+  /** Pairs out of this role with imports or violations, busiest first. */
+  imports: readonly ImportCell[];
+  /** Pairs into this role, the same way. */
+  importedBy: readonly ImportCell[];
+  /** Whether a record exists; without one the observed lists wait for a check. */
+  measured: boolean;
+  maxCount: number;
+  /** The other end of the cell last chosen in the table, marked in both lists. */
+  markedRole: string | null;
+  members: RoleMembers;
   concepts: readonly RoleConcept[];
-  /** Slugs taking part in any reviewed relation — the preview shows these first. */
-  edgeParticipants: ReadonlySet<string>;
-  /** The role's mark, from the caller's own icon table; the panel invents no icon of its own. */
-  icon?: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>;
-  /** Reads a role id as its reviewed name, for the reach sentence. */
   roleLabel: (id: string) => string;
-  /** What "depends on nothing" is called. */
-  sinkLabel: string;
-  /** "may depend on {targets}", written in role names. */
-  reachInlineLabel: (targets: string) => string;
-  /** "N modules"; derived counts only. */
-  moduleCountLabel: (count: number) => string;
-  /** "+N more" where the occupants exceed the preview row; the count is the derived remainder. */
-  moreLabel: (count: number) => string;
-  /** Collapses an expanded grid back to its preview row. */
-  showFewerLabel: string;
-  /** Carries its own count, so the heading does not stutter the noun beside a separate count. */
-  layerConceptsLabel: (count: number) => string;
+  /** Why modules are missing or come from concepts, where this surface cannot list source. */
+  sourceNote: ReactNode;
 }) {
-  /* Keyed by role, so selecting another box starts at its preview row instead of inheriting expansion. */
-  const [expansion, setExpansion] = useState<{
-    role: string;
-    modules: boolean;
-    concepts: boolean;
-  }>({ role: roleId, modules: false, concepts: false });
-  const showAllModules = expansion.role === roleId && expansion.modules;
-  const showAllConcepts = expansion.role === roleId && expansion.concepts;
-  const setModulesExpanded = (next: boolean) =>
-    setExpansion((current) => ({
-      role: roleId,
-      modules: next,
-      concepts: current.role === roleId ? current.concepts : false,
-    }));
-  const setConceptsExpanded = (next: boolean) =>
-    setExpansion((current) => ({
-      role: roleId,
-      modules: current.role === roleId ? current.modules : false,
-      concepts: next,
-    }));
-
-  /* Both grids preview exactly one full row, measured on each grid's own wrapper. */
-  const [setModuleGridNode, modulePreview] = useGridColumns(OCCUPANT_CARD_MIN, OCCUPANT_CARD_GAP, {
-    fallback: OCCUPANT_PREVIEW_FALLBACK,
-  });
-  const [setConceptGridNode, conceptPreview] = useGridColumns(OCCUPANT_CARD_MIN, OCCUPANT_CARD_GAP, {
-    fallback: OCCUPANT_PREVIEW_FALLBACK,
-  });
-
-  const roleModules = modules ?? [];
-  const wholeRows = (columns: number) =>
-    Math.ceil(OCCUPANT_PREVIEW_MIN / Math.max(1, columns)) * Math.max(1, columns);
-  const modulePreviewCount = wholeRows(modulePreview);
-  const visibleModules = showAllModules ? roleModules : roleModules.slice(0, modulePreviewCount);
-  const hiddenModules = roleModules.length - modulePreviewCount;
-
-  /* Concepts in a reviewed relation preview first, so strokes exist at rest; path order breaks ties. */
-  const orderedConcepts = edgeParticipants.size
-    ? [...concepts].sort(
-        (a, b) => Number(edgeParticipants.has(b.slug)) - Number(edgeParticipants.has(a.slug)),
-      )
-    : concepts;
-  const visibleConcepts = showAllConcepts
-    ? orderedConcepts
-    : orderedConcepts.slice(0, wholeRows(conceptPreview));
-  const hiddenConcepts = concepts.length - visibleConcepts.length;
-
+  const t = useTranslations('architecture');
   return (
-    <section
-      className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
-      data-testid="architecture-role-detail"
-      data-role={roleId}
-    >
-      <div className="flex min-w-0 flex-col gap-2.5 p-[var(--card-pad)]">
-        <div className="min-w-0">
-          <span className="flex min-w-0 items-center gap-2.5">
-            {RoleIcon ? (
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]">
-                <RoleIcon size={ICON_SIZE.lg} aria-hidden />
-              </span>
-            ) : null}
-            <span className="min-w-0">
-              <span className="flex min-w-0 items-baseline gap-1.5">
-                {/* A stable number lets a reader name a layer out loud. */}
-                <span className="shrink-0 font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                  {/* Zero-padded like the canvas, so both name a role the same way. */}
-                  {String(index).padStart(2, '0')}
-                </span>
-                <span
-                  className={
-                    reach.length === 0
-                      ? 'truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]'
-                      : 'truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]'
-                  }
-                >
-                  {label}
-                </span>
-              </span>
-              {/* This role's own empty state, only where a listing exists; a surface that cannot list says so once. */}
-              {modules !== null ? (
-                <span
-                  className="block text-caption tabular-nums text-[color:var(--color-text-quaternary)]"
-                  data-testid={`architecture-module-count-${roleId}`}
-                >
-                  {moduleCountLabel(roleModules.length)}
-                </span>
-              ) : null}
-            </span>
+    <section className="flex min-w-0 flex-col gap-5" data-testid="architecture-role-detail" data-role={roleId}>
+      <header className="min-w-0">
+        <h2 className="flex min-w-0 items-baseline gap-2">
+          <span className="shrink-0 font-mono text-body tabular-nums text-[color:var(--color-text-quaternary)]">
+            {String(index).padStart(2, '0')}
           </span>
-          {/* The reach is written out under both policies: the ordering alone does not tell a new reader what a role may depend on. */}
+          <span className="truncate text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+            {label}
+          </span>
+        </h2>
+        {summary ? (
           <p
-            className="mt-0.5 text-caption text-[color:var(--color-text-tertiary)]"
-            data-testid={`architecture-reach-${roleId}`}
+            className="mt-1.5 break-keep text-body text-[color:var(--color-text-tertiary)]"
+            data-testid={`architecture-role-summary-${roleId}`}
           >
-            {reach.length === 0
-              ? sinkLabel
-              : reachInlineLabel(reach.map(roleLabel).join(' · '))}
+            {summary}
           </p>
-          {/* A role id is a folder name and carries no intent; the sentence says what the role is for. */}
-          {summary ? (
-            <p
-              className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
-              data-testid={`architecture-role-summary-${roleId}`}
-            >
-              {summary}
-            </p>
-          ) : null}
-          <p
-            className="mt-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]"
-            title={paths.join('  ·  ')}
-          >
-            {paths.join('  ·  ')}
-          </p>
-        </div>
-
-        {/* Source modules from a read-only directory walk; no edges between cards are invented and no import is read. */}
-        <div ref={setModuleGridNode} className="min-w-0">
-          {roleModules.length > 0 ? (
-            <div className="min-w-0" data-testid={`architecture-modules-${roleId}`}>
-              <StaggeredFadeIn
-                key={`${roleId}-modules`}
-                vaultKey={vaultKey}
-                scopeKey={`architecture:${roleId}:modules`}
-                as="div"
-                className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
-              >
-                {visibleModules.map((module) => (
-                  <div
-                    key={module.path}
-                    title={module.path}
-                    className="flex h-14 min-w-0 items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3"
-                  >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]">
-                      {module.kind === 'dir' ? (
-                        <Folder size={ICON_SIZE.lg} aria-hidden />
-                      ) : (
-                        <FileCode2 size={ICON_SIZE.lg} aria-hidden />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                        {module.name}
-                      </span>
-                      <span className="block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                        {module.path}
-                      </span>
-                    </span>
-                  </div>
-                ))}
-              </StaggeredFadeIn>
-              {/* The chip sits under the cards it reveals. */}
-              {hiddenModules > 0 || showAllModules ? (
-                <div className="mt-2">
-                  <Chip
-                    size="sm"
-                    aria-expanded={showAllModules}
-                    data-testid={`architecture-modules-toggle-${roleId}`}
-                    onClick={() => setModulesExpanded(!showAllModules)}
-                  >
-                    {showAllModules ? showFewerLabel : moreLabel(hiddenModules)}
-                  </Chip>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* The meaning layer: recorded concepts, never mixed with the source modules above. */}
-      <div
-        ref={setConceptGridNode}
-        className="border-t border-[color:var(--color-divider)] px-[var(--card-pad)] pb-[var(--card-pad)] pt-3"
-        data-testid={`architecture-concepts-${roleId}`}
-      >
-        <p className="text-caption text-[color:var(--color-text-quaternary)]">
-          {layerConceptsLabel(concepts.length)}
+        ) : null}
+        <p className="mt-1.5 break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
+          {paths.join('  ')}
         </p>
-        {concepts.length > 0 ? (
-          <StaggeredFadeIn
-            key={`${roleId}-concepts`}
-            vaultKey={vaultKey}
-            scopeKey={`architecture:${roleId}:concepts`}
-            as="div"
-            className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
-          >
-            {visibleConcepts.map((concept) => (
-              <div
-                key={concept.slug}
-                title={concept.path}
-                data-concept-slug={concept.slug}
-                className="flex h-14 min-w-0 items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3"
+      </header>
+
+      <div>
+        <h3 className={SECTION_LABEL}>{t('paneMayImport')}</h3>
+        <p className="mt-1 break-keep text-body text-[color:var(--color-text-secondary)]" data-testid={`architecture-reach-${roleId}`}>
+          {mayImport.length === 0 ? t('paneNone') : mayImport.map(roleLabel).join(' · ')}
+        </p>
+      </div>
+
+      <ImportList
+        title={t('paneImports')}
+        testId={`architecture-imports-${roleId}`}
+        entries={imports}
+        otherEnd={(cell) => cell.to}
+        measured={measured}
+        maxCount={maxCount}
+        markedRole={markedRole}
+        roleLabel={roleLabel}
+      />
+      <ImportList
+        title={t('paneImportedBy')}
+        testId={`architecture-imported-by-${roleId}`}
+        entries={importedBy}
+        otherEnd={(cell) => cell.from}
+        measured={measured}
+        maxCount={maxCount}
+        markedRole={markedRole}
+        roleLabel={roleLabel}
+      />
+
+      <div data-testid={`architecture-modules-${roleId}`}>
+        <h3 className={SECTION_LABEL} data-testid={`architecture-module-count-${roleId}`}>
+          {t('moduleCount', { count: members.members.length })}
+        </h3>
+        {sourceNote}
+        {members.members.length > 0 ? (
+          <ul className="mt-1.5 flex flex-col">
+            {members.members.map((member) => (
+              <li
+                key={member.path ?? member.name}
+                title={member.path ?? undefined}
+                className="flex min-w-0 items-baseline justify-between gap-3 border-b border-[color:var(--color-divider)] py-1.5 last:border-b-0"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]">
-                  <OntologyMapKindGlyph kind={concept.kind} size={18} />
+                <span className="truncate font-mono text-body text-[color:var(--color-text-secondary)]">
+                  {member.name}
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                    {concept.title}
+                {member.concepts > 0 ? (
+                  <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+                    {t('conceptCount', { count: member.concepts })}
                   </span>
-                  <span className="block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {concept.path}
-                  </span>
-                </span>
-              </div>
+                ) : null}
+              </li>
             ))}
-          </StaggeredFadeIn>
-        ) : null}
-        {hiddenConcepts > 0 || showAllConcepts ? (
-          <div className="mt-2">
-            <Chip
-              size="sm"
-              aria-expanded={showAllConcepts}
-              data-testid={`architecture-concepts-toggle-${roleId}`}
-              onClick={() => setConceptsExpanded(!showAllConcepts)}
-            >
-              {showAllConcepts ? showFewerLabel : moreLabel(hiddenConcepts)}
-            </Chip>
-          </div>
+          </ul>
         ) : null}
       </div>
+
+      {concepts.length > 0 ? (
+        <div data-testid={`architecture-concepts-${roleId}`}>
+          <h3 className={SECTION_LABEL}>{t('layerConcepts', { count: concepts.length })}</h3>
+          <ul className="mt-1.5 flex flex-col">
+            {concepts.map((concept) => (
+              <li
+                key={concept.slug}
+                data-concept-slug={concept.slug}
+                className="flex min-w-0 flex-col border-b border-[color:var(--color-divider)] py-1.5 last:border-b-0"
+              >
+                <span className="truncate text-body text-[color:var(--color-text-secondary)]">{concept.title}</span>
+                <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                  {concept.path}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
+  );
+}
+
+function ImportList({
+  title,
+  testId,
+  entries,
+  otherEnd,
+  measured,
+  maxCount,
+  markedRole,
+  roleLabel,
+}: {
+  title: string;
+  testId: string;
+  entries: readonly ImportCell[];
+  otherEnd: (cell: ImportCell) => string;
+  measured: boolean;
+  maxCount: number;
+  markedRole: string | null;
+  roleLabel: (id: string) => string;
+}) {
+  const t = useTranslations('architecture');
+  const countFormat = new Intl.NumberFormat(useLocale());
+  return (
+    <div data-testid={testId}>
+      <h3 className={SECTION_LABEL}>{title}</h3>
+      {!measured || entries.length === 0 ? (
+        <p className="mt-1 text-body text-[color:var(--color-text-quaternary)]">
+          {measured ? t('paneNone') : t('paneNotMeasured')}
+        </p>
+      ) : (
+        <ul className="mt-1.5 flex flex-col gap-1">
+          {entries.map((cell) => {
+            const end = otherEnd(cell);
+            const violated = cell.kind === 'violation';
+            const count = violated ? cell.violations : cell.count;
+            const share = maxCount > 0 ? Math.sqrt(Math.min(1, cell.count / maxCount)) : 0;
+            return (
+              <li
+                key={end}
+                data-other-role={end}
+                data-violated={violated ? 'true' : undefined}
+                data-marked={end === markedRole ? 'true' : undefined}
+                className={cn('rounded-micro px-1.5 py-1', end === markedRole && 'bg-[color:var(--color-overlay-2)]')}
+              >
+                <span className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_auto] items-center gap-3">
+                  <span
+                    className={cn(
+                      'truncate text-body',
+                      violated ? 'text-[color:var(--color-danger-text)]' : 'text-[color:var(--color-text-secondary)]',
+                    )}
+                  >
+                    {roleLabel(end)}
+                  </span>
+                  <span aria-hidden className="h-1.5 rounded-full bg-[color:var(--color-overlay-2)]">
+                    <span
+                      className={cn(
+                        'block h-full rounded-full',
+                        violated ? 'bg-[color:var(--color-danger-a50)]' : 'bg-[color:var(--color-indigo-a40)]',
+                      )}
+                      style={{ width: `${Math.max(4, share * 100)}%` }}
+                    />
+                  </span>
+                  <span
+                    className={cn(
+                      'font-mono text-label tabular-nums',
+                      violated ? 'text-[color:var(--color-danger-text)]' : 'text-[color:var(--color-text-tertiary)]',
+                    )}
+                  >
+                    {violated ? t('paneViolations', { count }) : countFormat.format(count)}
+                  </span>
+                </span>
+                {violated && cell.evidence.length > 0 ? (
+                  <ul className="mt-1 flex flex-col gap-0.5 pl-0.5">
+                    {cell.evidence.map((line) => (
+                      <li
+                        key={`${line.from}>${line.to}`}
+                        className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]"
+                      >
+                        {line.from} → {line.to}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
