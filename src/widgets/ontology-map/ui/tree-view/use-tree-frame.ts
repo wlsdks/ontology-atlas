@@ -3,7 +3,15 @@
 import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import { aimTreeProjector, createTreeProjector } from "../../model/tree-view/tree-camera";
 import { cutTreeDetail, TREE_MARK_BUDGET } from "../../model/tree-view/tree-detail";
-import { placeTreeNames, treeNameCandidates, type TreeCrownCircles } from "../../model/tree-view/tree-names";
+import {
+  createTreeCrowns,
+  findTreeCrowns,
+  placeTreeNames,
+  treeDomainOf,
+  treeNameCandidates,
+  trunkBlockReservePx,
+  type TreeCrowns,
+} from "../../model/tree-view/tree-names";
 import type {
   TreeDrawList,
   TreeFocus,
@@ -16,7 +24,6 @@ import type {
   TreePose,
   TreeProjector,
   TreeRect,
-  TreeScreenPoint,
 } from "../../model/tree-view/types";
 import { hexMapChrome } from "../../morph/hex-marks";
 import type { TreeTokens } from "../../tokens/read-tree-tokens";
@@ -37,18 +44,18 @@ export function readTreeFreeArea(canvas: HTMLCanvasElement | null, board: Elemen
   return bottom - free.y > 0 ? { x: free.x, y: free.y, width: free.width, height: bottom - free.y } : free;
 }
 
-/** Aims `projector` at `pose` and cuts the tree's detail for a canvas of `width` x `height` CSS px. */
+/** Aims `projector` at `pose` to fit the tree in `fit`, and cuts its detail for a canvas of `width` x `height` CSS px. */
 export function cutTreeAtPose(
   layout: TreeLayout,
   tokens: Pick<TreeTokens, "marks" | "detail">,
   pose: TreePose,
   canvas: { width: number; height: number },
-  free: TreeRect,
+  fit: TreeRect,
   reveal: readonly number[],
   projector: TreeProjector,
   out: TreeDrawList,
 ): void {
-  aimTreeProjector(projector, layout, pose, canvas, free);
+  aimTreeProjector(projector, layout, pose, canvas, fit);
   cutTreeDetail(
     {
       layout,
@@ -62,37 +69,6 @@ export function cutTreeAtPose(
     },
     out,
   );
-}
-
-/** Pooled crown circles; `written` lists the nodes set last time so a refill clears only those. */
-interface CrownScratch { circles: TreeCrownCircles; written: number[]; point: TreeScreenPoint }
-
-function createCrownScratch(): CrownScratch {
-  return { circles: { x: new Float32Array(0), y: new Float32Array(0), radius: new Float32Array(0) }, written: [], point: { x: 0, y: 0, scale: 0, depth: 0 } };
-}
-
-/** Projects the bound sphere of each drawn domain's subtree to a screen circle. O(drawn marks). */
-function projectTreeCrowns(layout: TreeLayout, list: TreeDrawList, projector: TreeProjector, scratch: CrownScratch): TreeCrownCircles {
-  const { circles, written, point } = scratch;
-  const { model, bound } = layout;
-  if (circles.radius.length < model.count) {
-    circles.x = new Float32Array(model.count);
-    circles.y = new Float32Array(model.count);
-    circles.radius = new Float32Array(model.count);
-    written.length = 0;
-  }
-  for (const node of written) circles.radius[node] = 0;
-  written.length = 0;
-  for (let i = 0; i < list.count; i += 1) {
-    const node = list.marks[i]!.node;
-    if (model.kinds[node] !== "domain") continue;
-    projector.project(bound[node * 4]!, bound[node * 4 + 1]!, bound[node * 4 + 2]!, point);
-    circles.x[node] = point.x;
-    circles.y[node] = point.y;
-    circles.radius[node] = bound[node * 4 + 3]! * projector.unit * point.scale;
-    written.push(node);
-  }
-  return circles;
 }
 
 let measureContext: CanvasRenderingContext2D | null | undefined;
@@ -159,6 +135,7 @@ interface CutKey {
   width: number;
   height: number;
   free: TreeRect | null;
+  trunkReservePx: number;
   reveal: number;
   yaw: number;
   pitch: number;
@@ -177,7 +154,8 @@ interface NamesKey {
 }
 
 const sameCut = (a: CutKey, b: CutKey) =>
-  a.layout === b.layout && a.tokens === b.tokens && a.width === b.width && a.height === b.height && a.free === b.free && a.reveal === b.reveal &&
+  a.layout === b.layout && a.tokens === b.tokens && a.width === b.width && a.height === b.height && a.free === b.free &&
+  a.trunkReservePx === b.trunkReservePx && a.reveal === b.reveal &&
   a.yaw === b.yaw && a.pitch === b.pitch && a.zoom === b.zoom && a.panX === b.panX && a.panY === b.panY;
 
 const sameNames = (a: NamesKey, b: NamesKey) =>
@@ -196,31 +174,38 @@ export function useTreeFrame(canvasRef: RefObject<HTMLCanvasElement | null>, sou
   const projector = useRef<TreeProjector>(pooledProjector);
   const frames = useRef(0);
   const candidates = useRef<TreeNameCandidate[]>([]);
-  const crowns = useRef<CrownScratch | null>(null);
+  const crowns = useRef<TreeCrowns | null>(null);
   const reveal = useRef<number[]>([]);
   const cutVersion = useRef(0);
   const cutKey = useRef<CutKey | null>(null);
   const namesKey = useRef<NamesKey | null>(null);
   const measure = useMemo(() => (tokens ? createNameMeasure(tokens, fontFamily) : measureNothing), [tokens, fontFamily]);
+  const domainOf = useMemo(() => (layout ? treeDomainOf(layout.model) : null), [layout]);
 
   const draw = useCallback(
     (pose: TreePose, keep: ReadonlyMap<number, TreeNameSide> | null): boolean => {
       const canvas = canvasRef.current;
-      if (!canvas || !layout || !nameModel || !tokens || !size || !free || size.width <= 0 || size.height <= 0) return false;
+      if (!canvas || !layout || !domainOf || !nameModel || !tokens || !size || !free || size.width <= 0 || size.height <= 0) return false;
       const revealNode = focus ? focus.node : -1;
-      const nextCut: CutKey = { layout, tokens, width: size.width, height: size.height, free, reveal: revealNode, yaw: pose.yaw, pitch: pose.pitch, zoom: pose.zoom, panX: pose.panX, panY: pose.panY };
+      const trunkReservePx = trunkBlockReservePx(nameModel, subOf, tokens.names, tokens.marks.project);
+      const nextCut: CutKey = {
+        layout, tokens, width: size.width, height: size.height, free, trunkReservePx, reveal: revealNode,
+        yaw: pose.yaw, pitch: pose.pitch, zoom: pose.zoom, panX: pose.panX, panY: pose.panY,
+      };
       if (!cutKey.current || !sameCut(cutKey.current, nextCut)) {
         reveal.current.length = 0;
         if (revealNode >= 0) reveal.current.push(revealNode);
-        cutTreeAtPose(layout, tokens, pose, size, free, reveal.current, projector.current, list.current);
-        projectTreeCrowns(layout, list.current, projector.current, (crowns.current ??= createCrownScratch()));
+        const fit = trunkReservePx > 0 && trunkReservePx < free.height ? { ...free, height: free.height - trunkReservePx } : free;
+        cutTreeAtPose(layout, tokens, pose, size, fit, reveal.current, projector.current, list.current);
+        if (!crowns.current || crowns.current.radius.length < layout.model.count) crowns.current = createTreeCrowns(layout.model.count);
+        findTreeCrowns(layout.model, layout.position, domainOf, list.current, projector.current, crowns.current);
         cutKey.current = nextCut;
         cutVersion.current += 1;
       }
       const nextNames: NamesKey = { cut: cutVersion.current, nameModel, focus, subOf, measure, keep };
       if (!namesKey.current || !sameNames(namesKey.current, nextNames)) {
         const count = treeNameCandidates(list.current, nameModel, focus, measure, subOf, tokens.names, tokens.detail.elementNamePitchPx, candidates.current);
-        placeTreeNames(candidates.current, count, list.current, free, keep, names.current, tokens.names, crowns.current?.circles ?? null);
+        placeTreeNames(candidates.current, count, list.current, free, keep, names.current, tokens.names, crowns.current);
         namesKey.current = nextNames;
       }
       const backingWidth = Math.round(size.width * dpr);
@@ -238,7 +223,7 @@ export function useTreeFrame(canvasRef: RefObject<HTMLCanvasElement | null>, sou
       frames.current += 1;
       return true;
     },
-    [canvasRef, layout, nameModel, tokens, size, dpr, free, stale, focus, subOf, measure],
+    [canvasRef, layout, domainOf, nameModel, tokens, size, dpr, free, stale, focus, subOf, measure],
   );
 
   return { draw, list, names, projector, frames };

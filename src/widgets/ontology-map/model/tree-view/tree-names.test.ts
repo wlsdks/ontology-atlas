@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeTreeNames, treeNameCandidates, type TreeCrownCircles } from "./tree-names";
+import { createTreeCrowns, findTreeCrowns, placeTreeNames, treeDomainOf, treeNameCandidates, type TreeCrowns } from "./tree-names";
 import type {
   TreeDrawList,
   TreeDrawMark,
@@ -366,59 +366,75 @@ describe("placeTreeNames", () => {
     expect(out.dropped).toBe(0);
   });
 
-  describe("leaning away from the trunk", () => {
-    // Trunk base at x 500; one domain left of it whose crown circle is centred at (300, 400), radius 80.
+  describe("beside the crown it draws", () => {
+    // Trunk base at x 500; one domain left of it whose drawn marks span (250..350, 390..410),
+    // so its crown circle is centred at (300, 400) with radius 50; node 4 hangs off the trunk.
     const model = modelOf([
       { kind: "project", parent: -1 },
       { kind: "domain", parent: 0, label: "domain" },
       { kind: "capability", parent: 1 },
       { kind: "capability", parent: 1 },
+      { kind: "capability", parent: 0 },
     ]);
-    const CROWN = { x: 300, y: 400, r: 80 };
-    const crownsOf = (x: number, y: number, r: number): TreeCrownCircles => ({
-      x: Float32Array.of(0, x, 0, 0),
-      y: Float32Array.of(0, y, 0, 0),
-      radius: Float32Array.of(0, r, 0, 0),
-    });
-    const list = () => listOf([mark(0, 500, 900), mark(1, 320, 420, 8), mark(2, 270, 380), mark(3, 340, 360)]);
+    const CROWN = { x: 300, y: 400, r: 50 };
+    const atScreen = { project: (x: number, y: number, _z: number, out: { x: number; y: number }) => ((out.x = x), (out.y = y)) };
+    const list = (dx = 0) => listOf([mark(0, 500, 900), mark(1, 300 + dx, 400, 10), mark(2, 260 + dx, 400, 10), mark(3, 340 + dx, 400, 10)]);
+    /** The crowns of `l` with the trunk top, where the domain's bough starts, at (`parentX`, `parentY`). */
+    const crownsOf = (l: TreeDrawList, parentX = 500, parentY = 700) => {
+      const position = new Float32Array(model.count * 3);
+      position[0] = parentX;
+      position[1] = parentY;
+      const out = createTreeCrowns(model.count);
+      findTreeCrowns(model, position, treeDomainOf(model), l, atScreen, out);
+      return out;
+    };
     const placeWith = (
       l: TreeDrawList,
-      crowns: TreeCrownCircles,
-      free: TreeRect = WIDE,
+      crowns: TreeCrowns,
       keep: ReadonlyMap<number, TreeNameSide> | null = null,
       subOf: (node: number) => string | null = noSub,
     ) => {
       const out = emptyPlacement();
       const named = candidatesOf(l, model, null, subOf);
-      placeTreeNames(named, named.length, l, free, keep, out, SIZES, crowns);
+      placeTreeNames(named, named.length, l, WIDE, keep, out, SIZES, crowns);
       return out;
     };
     const boxOf = (out: TreeNamePlacement, node: number) => out.boxes.slice(0, out.count).find((b) => b.node === node);
 
-    it("places a domain block outside its crown circle, on the side away from the trunk", () => {
-      const box = boxOf(placeWith(list(), crownsOf(CROWN.x, CROWN.y, CROWN.r)), 1)!;
+    it("places a domain block in contact with the circle around its drawn marks, away from the trunk", () => {
+      const box = boxOf(placeWith(list(), crownsOf(list())), 1)!;
       expect(box.side).toBe(1);
-      expect(boxMeetsCircle(box, CROWN.x, CROWN.y, CROWN.r)).toBe(false);
-      expect(box.x + box.width).toBeLessThanOrEqual(CROWN.x - CROWN.r);
+      expect(box.x + box.width).toBeCloseTo(CROWN.x - CROWN.r - SIZES.gap);
+      expect(box.y + box.height / 2).toBeCloseTo(CROWN.y);
     });
 
-    it("sets a domain block beside its hub when no edge of its crown lies inside the free area", () => {
-      const free: TreeRect = { x: 200, y: 300, width: 400, height: 460 };
-      const box = boxOf(placeWith(list(), crownsOf(CROWN.x, CROWN.y, 400), free), 1)!;
-      expect(box).toBeDefined();
-      expect(boxMeetsCircle(box, 320, 420, 8 + SIZES.gap + 1)).toBe(true);
-    });
-
-    it("sets a domain block beside its hub over marks rather than dropping it", () => {
-      const crowded = listOf([mark(0, 500, 900), mark(1, 320, 420, 8), ...[2, 3].map((n) => mark(n, 320, 420, 300))]);
-      const out = placeWith(crowded, crownsOf(CROWN.x, CROWN.y, 400), { x: 0, y: 0, width: 640, height: 800 });
-      expect(placedNodes(out)).toContain(1);
-    });
-
-    it("keeps a kept domain block at its crown while that place is free", () => {
-      const box = boxOf(placeWith(list(), crownsOf(CROWN.x, CROWN.y, CROWN.r), WIDE, new Map([[1, 2]])), 1)!;
+    it("never places a domain block across its own bough while another side is free", () => {
+      const box = boxOf(placeWith(list(), crownsOf(list(), 100, 400)), 1)!;
       expect(box.side).toBe(2);
-      expect(box.y + box.height).toBeLessThanOrEqual(CROWN.y - CROWN.r);
+      expect(box.y + box.height).toBeCloseTo(CROWN.y - CROWN.r - SIZES.gap);
+    });
+
+    it("places a closed domain's block beside its mark", () => {
+      const closed = listOf([mark(0, 500, 900), mark(1, 300, 400, 12, true)]);
+      const box = boxOf(placeWith(closed, crownsOf(closed)), 1)!;
+      expect(box.x + box.width).toBeCloseTo(300 - 12 - SIZES.gap);
+      expect(box.y + box.height / 2).toBeCloseTo(400);
+    });
+
+    it("sets a domain block over marks rather than dropping it", () => {
+      const crowded = listOf([...list().marks, mark(4, 300, 400, 300)]);
+      expect(placedNodes(placeWith(crowded, crownsOf(crowded)))).toContain(1);
+    });
+
+    it("moves a kept domain block with its crown and drops it when that place collides", () => {
+      const moved = list(100);
+      const box = boxOf(placeWith(moved, crownsOf(moved), new Map([[1, 2]])), 1)!;
+      expect(box.side).toBe(2);
+      expect(box.x + box.width / 2).toBeCloseTo(CROWN.x + 100);
+      expect(box.y + box.height).toBeCloseTo(CROWN.y - CROWN.r - SIZES.gap);
+
+      const blocked = listOf([...moved.marks, mark(4, 400, 330, 20)]);
+      expect(placedNodes(placeWith(blocked, crownsOf(blocked), new Map([[1, 2]])))).not.toContain(1);
     });
 
     it("tries the right side first right of the trunk and the left side first left of it", () => {
@@ -433,7 +449,7 @@ describe("placeTreeNames", () => {
     });
 
     it("centres the trunk's block under the trunk base", () => {
-      const out = placeWith(list(), crownsOf(CROWN.x, CROWN.y, CROWN.r), WIDE, null, (node) => (node === 0 ? "concepts 4" : null));
+      const out = placeWith(list(), crownsOf(list()), null, (node) => (node === 0 ? "concepts 4" : null));
       const box = boxOf(out, 0)!;
       expect(box.side).toBe(3);
       expect(box.x + box.width / 2).toBeCloseTo(500);

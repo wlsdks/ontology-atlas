@@ -8,7 +8,9 @@ import type {
   TreeNameSide,
   TreeNameSizes,
   TreeNodeKind,
+  TreeProjector,
   TreeRect,
+  TreeScreenPoint,
 } from "./types";
 import { TREE_ARC_BUDGET } from "./types";
 
@@ -27,9 +29,10 @@ const PIN_FOCUS = 2;
 /** After a candidate's own side, placement tries the rest in `TreeNameSide` order: right, left, above, below. */
 const SIDE_RIGHT: TreeNameSide = 0;
 const SIDE_LEFT: TreeNameSide = 1;
+const SIDE_ABOVE: TreeNameSide = 2;
 const SIDE_BELOW: TreeNameSide = 3;
 const SIDE_COUNT = 4;
-/** Up to this many domains each keep their block: with no clear place left it goes beside the hub, over marks. */
+/** Up to this many domains each keep their block: with no clear side left it goes over marks. */
 const ALWAYS_NAMED_DOMAINS = 12;
 
 let markOfNode = new Int32Array(0);
@@ -280,22 +283,123 @@ let gridCols = 0;
 let gridRows = 0;
 
 /**
- * Screen circles holding each domain's crown, by node index, in CSS pixels; a radius of 0 means
- * the node has no crown to anchor to.
+ * Each drawn domain's crown on screen, by node index, CSS pixels: the circle around the marks
+ * drawn from its subtree (radius 0 where there is none), and where its bough leaves its parent.
+ * `nodes[0..count)` are the domains with a circle.
  */
-export interface TreeCrownCircles { x: Float32Array; y: Float32Array; radius: Float32Array }
+export interface TreeCrowns {
+  x: Float32Array;
+  y: Float32Array;
+  radius: Float32Array;
+  boughX: Float32Array;
+  boughY: Float32Array;
+  nodes: Int32Array;
+  count: number;
+}
+
+export function createTreeCrowns(nodes: number): TreeCrowns {
+  const floats = () => new Float32Array(nodes);
+  return { x: floats(), y: floats(), radius: floats(), boughX: floats(), boughY: floats(), nodes: new Int32Array(nodes), count: 0 };
+}
+
+/** Each node's domain (the node itself for a domain), or -1 outside every domain. O(n x domain depth). */
+export function treeDomainOf(model: TreeModel): Int32Array {
+  const domainOf = new Int32Array(model.count).fill(-1);
+  for (let node = 0; node < model.count; node += 1) {
+    if (model.kinds[node] === "domain") domainOf.fill(node, node, model.subtreeEnd[node]!);
+  }
+  return domainOf;
+}
+
+let crownDrawn = new Uint8Array(0);
+let crownMinX = new Float32Array(0);
+let crownMinY = new Float32Array(0);
+let crownMaxX = new Float32Array(0);
+let crownMaxY = new Float32Array(0);
+const boughStart: TreeScreenPoint = { x: 0, y: 0, scale: 0, depth: 0 };
+
+/**
+ * Sets `out` to the crown of each domain whose mark is drawn: the circle around the marks drawn
+ * from its subtree, and its parent's projected `position`, where its bough leaves. `domainOf` is
+ * from `treeDomainOf`; `out` from `createTreeCrowns` for this model. Three passes, O(drawn marks).
+ */
+export function findTreeCrowns(
+  model: TreeModel,
+  position: Float32Array,
+  domainOf: Int32Array,
+  list: TreeDrawList,
+  projector: Pick<TreeProjector, "project">,
+  out: TreeCrowns,
+): void {
+  if (crownDrawn.length < model.count) {
+    crownDrawn = new Uint8Array(model.count);
+    crownMinX = new Float32Array(model.count);
+    crownMinY = new Float32Array(model.count);
+    crownMaxX = new Float32Array(model.count);
+    crownMaxY = new Float32Array(model.count);
+  }
+  for (let k = 0; k < out.count; k += 1) out.radius[out.nodes[k]!] = 0;
+  out.count = 0;
+  for (let i = 0; i < list.count; i += 1) {
+    const node = list.marks[i]!.node;
+    if (model.kinds[node] !== "domain") continue;
+    out.nodes[out.count++] = node;
+    crownDrawn[node] = 1;
+    crownMinX[node] = Infinity;
+    crownMinY[node] = Infinity;
+    crownMaxX[node] = -Infinity;
+    crownMaxY[node] = -Infinity;
+  }
+  for (let i = 0; i < list.count; i += 1) {
+    const mark = list.marks[i]!;
+    const domain = domainOf[mark.node]!;
+    if (domain < 0 || crownDrawn[domain] === 0) continue;
+    crownMinX[domain] = Math.min(crownMinX[domain]!, mark.x - mark.radius);
+    crownMinY[domain] = Math.min(crownMinY[domain]!, mark.y - mark.radius);
+    crownMaxX[domain] = Math.max(crownMaxX[domain]!, mark.x + mark.radius);
+    crownMaxY[domain] = Math.max(crownMaxY[domain]!, mark.y + mark.radius);
+  }
+  for (let k = 0; k < out.count; k += 1) {
+    const node = out.nodes[k]!;
+    out.x[node] = (crownMinX[node]! + crownMaxX[node]!) / 2;
+    out.y[node] = (crownMinY[node]! + crownMaxY[node]!) / 2;
+    const parent = model.parent[node]!;
+    projector.project(position[parent * 3]!, position[parent * 3 + 1]!, position[parent * 3 + 2]!, boughStart);
+    out.boughX[node] = boughStart.x;
+    out.boughY[node] = boughStart.y;
+  }
+  for (let i = 0; i < list.count; i += 1) {
+    const mark = list.marks[i]!;
+    const domain = domainOf[mark.node]!;
+    if (domain < 0 || crownDrawn[domain] === 0) continue;
+    const reach = Math.hypot(mark.x - out.x[domain]!, mark.y - out.y[domain]!) + mark.radius;
+    if (reach > out.radius[domain]!) out.radius[domain] = reach;
+  }
+  for (let k = 0; k < out.count; k += 1) crownDrawn[out.nodes[k]!] = 0;
+}
+
+/** What may refuse a crown position, strictest first: other crowns, then marks, then only names. */
+const AVOID_CROWNS = 0;
+const AVOID_MARKS = 1;
+const AVOID_NAMES = 2;
 
 let query = 0;
+
+/** The trunk's block height plus its gap and the base mark, CSS pixels; 0 when the trunk is unnamed. */
+export function trunkBlockReservePx(model: TreeModel, subOf: (node: number) => string | null, sizes: TreeNameSizes, baseMarkPx: number): number {
+  if (model.count === 0 || model.ids[0] === null || (model.labels[0] ?? "") === "") return 0;
+  return baseMarkPx + sizes.gap + (sizes.project + (subOf(0) ? sizes.domainSub : 0)) * sizes.leading;
+}
 
 /**
  * Places `candidates[0..count)` greedily in array order (ascending `priority`), each on the
  * first side that is inside `free` and keeps `spacing.pad` from every mark and placed box: its
- * own `side` first, then the rest in order. A name with a crown in `crowns` (a domain block) is
- * set outside the crown's circle, beside its hub only when no side of the crown is free; the
- * trunk's block (node 0) only ever sits below the base. While at most `ALWAYS_NAMED_DOMAINS`
- * blocks have crowns, a block with no clear place is set beside its hub over marks, never over
- * a name. With `keep`, only kept nodes are tried, each on its recorded side, at its crown before
- * its hub. Expected O(c + m) with a grid.
+ * own `side` first, then the rest in order. A domain block with a crown in `crowns` touches its
+ * crown's circle, away from the trunk, then above, the other side, below, each centred then slid
+ * along the circle's tangent; never across its own bough, and clear of other crowns while it can be. While at most `ALWAYS_NAMED_DOMAINS` blocks have
+ * crowns, a block with no clear side is set over marks, never over a name; the trunk's block is
+ * always set, below the base. With `keep`, only kept nodes are tried, each on its recorded side,
+ * a block re-anchored to its crown. Expected O(c + m + b x d) for b blocks and d crowns.
  */
 export function placeTreeNames(
   candidates: readonly TreeNameCandidate[],
@@ -305,7 +409,7 @@ export function placeTreeNames(
   keep: ReadonlyMap<number, TreeNameSide> | null,
   out: TreeNamePlacement,
   spacing: Pick<TreeNameSizes, "gap" | "pad">,
-  crowns: TreeCrownCircles | null = null,
+  crowns: TreeCrowns | null = null,
 ): void {
   out.count = 0;
   out.dropped = 0;
@@ -316,42 +420,168 @@ export function placeTreeNames(
     const r = mark.radius + spacing.pad;
     insertOccupant(i, mark.x - r, mark.y - r, mark.x + r, mark.y + r, free);
   }
-  let crowned = 0;
-  for (let c = 0; c < count; c += 1) if (crownRadiusOf(crowns, candidates[c]!.node) > 0) crowned += 1;
-  const blocksAlwaysPlaced = !keep && crowned <= ALWAYS_NAMED_DOMAINS;
+  if (crowns) placeCrownBlocks(candidates, count, crowns, list, free, keep, out, spacing);
   for (let c = 0; c < count; c += 1) {
     const candidate = candidates[c]!;
-    const kept = keep ? keep.get(candidate.node) : undefined;
+    const node = candidate.node;
+    if (crownRadiusOf(crowns, node) > 0) continue;
+    const kept = keep ? keep.get(node) : undefined;
     if (keep && kept === undefined) continue;
     const box = (out.boxes[out.count] ??= emptyBox());
-    const node = candidate.node;
-    const crownRadius = crownRadiusOf(crowns, node);
-    const first = kept ?? candidate.side;
-    const sides = kept !== undefined || node === 0 ? 1 : SIDE_COUNT;
-    let placed =
-      crownRadius > 0 && tryAnchor(box, candidate, crowns!.x[node]!, crowns!.y[node]!, crownRadius, first, sides, list, out, free, spacing, true);
-    if (!placed) placed = tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, first, sides, list, out, free, spacing, true);
-    if (!placed && blocksAlwaysPlaced && (crownRadius > 0 || node === 0)) {
-      placed = tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, first, sides, list, out, free, spacing, false);
+    let placed: boolean;
+    if (node === 0) {
+      const side = kept ?? SIDE_BELOW;
+      placed =
+        tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, side, 1, list, out, free, spacing, true) ||
+        tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, side, 1, list, out, free, spacing, false);
+    } else {
+      placed = tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, kept ?? candidate.side, kept === undefined ? SIDE_COUNT : 1, list, out, free, spacing, true);
     }
-    if (!placed) {
-      out.dropped += 1;
-      continue;
-    }
-    box.node = candidate.node;
-    box.text = candidate.text;
-    box.sub = candidate.sub;
-    insertOccupant(list.count + out.count, box.x, box.y, box.x + box.width, box.y + box.height, free);
-    out.count += 1;
+    if (placed) acceptBox(box, candidate, list, out, free);
+    else out.dropped += 1;
   }
+}
+
+let crownPlaced = new Uint8Array(0);
+
+/**
+ * Places the blocks with crowns one level at a time, strictest first, so no block settles for a
+ * looser position while another still holds a stricter one it would take. O(levels x b x d).
+ */
+function placeCrownBlocks(
+  candidates: readonly TreeNameCandidate[],
+  count: number,
+  crowns: TreeCrowns,
+  list: TreeDrawList,
+  free: TreeRect,
+  keep: ReadonlyMap<number, TreeNameSide> | null,
+  out: TreeNamePlacement,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+): void {
+  if (crownPlaced.length < count) crownPlaced = new Uint8Array(count);
+  let crowned = 0;
+  for (let c = 0; c < count; c += 1) {
+    crownPlaced[c] = 0;
+    if (crownRadiusOf(crowns, candidates[c]!.node) > 0) crowned += 1;
+  }
+  const firstLevel = keep ? AVOID_MARKS : AVOID_CROWNS;
+  const lastLevel = !keep && crowned <= ALWAYS_NAMED_DOMAINS ? AVOID_NAMES : AVOID_MARKS;
+  for (let level = firstLevel; level <= lastLevel; level += 1) {
+    for (let c = 0; c < count; c += 1) {
+      const candidate = candidates[c]!;
+      if (crownPlaced[c] === 1 || crownRadiusOf(crowns, candidate.node) === 0) continue;
+      const kept = keep ? keep.get(candidate.node) : undefined;
+      if (keep && kept === undefined) continue;
+      const box = (out.boxes[out.count] ??= emptyBox());
+      if (!placeAtCrown(box, candidate, crowns, kept, level, list, out, free, spacing)) continue;
+      acceptBox(box, candidate, list, out, free);
+      crownPlaced[c] = 1;
+    }
+  }
+  for (let c = 0; c < count; c += 1) {
+    const node = candidates[c]!.node;
+    if (crownPlaced[c] === 0 && crownRadiusOf(crowns, node) > 0 && (!keep || keep.has(node))) out.dropped += 1;
+  }
+}
+
+function acceptBox(box: TreeNameBox, candidate: TreeNameCandidate, list: TreeDrawList, out: TreeNamePlacement, free: TreeRect): void {
+  box.node = candidate.node;
+  box.text = candidate.text;
+  box.sub = candidate.sub;
+  insertOccupant(list.count + out.count, box.x, box.y, box.x + box.width, box.y + box.height, free);
+  out.count += 1;
 }
 
 function emptyBox(): TreeNameBox {
   return { node: -1, text: "", sub: null, x: 0, y: 0, width: 0, height: 0, side: 0 };
 }
 
-function crownRadiusOf(crowns: TreeCrownCircles | null, node: number): number {
+function crownRadiusOf(crowns: TreeCrowns | null, node: number): number {
   return crowns !== null && node < crowns.radius.length ? crowns.radius[node]! : 0;
+}
+
+/** A crown's sides in the order a block tries them: away from the trunk, above, toward it, below. */
+function crownSide(away: TreeNameSide, k: number): TreeNameSide {
+  if (k === 0) return away;
+  if (k === 1) return SIDE_ABOVE;
+  if (k === 2) return away === SIDE_LEFT ? SIDE_RIGHT : SIDE_LEFT;
+  return SIDE_BELOW;
+}
+
+/** Sets the block in contact with its crown's circle at the first position `level` allows, or reports none. */
+function placeAtCrown(
+  box: TreeNameBox,
+  candidate: TreeNameCandidate,
+  crowns: TreeCrowns,
+  kept: TreeNameSide | undefined,
+  level: number,
+  list: TreeDrawList,
+  out: TreeNamePlacement,
+  free: TreeRect,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+): boolean {
+  const node = candidate.node;
+  const away = candidate.side === SIDE_LEFT ? SIDE_LEFT : SIDE_RIGHT;
+  const positions = kept === undefined ? SIDE_COUNT * CROWN_SLIDES : 1;
+  for (let k = 0; k < positions; k += 1) {
+    const side = kept ?? crownSide(away, Math.floor(k / CROWN_SLIDES));
+    setBoxOnSide(box, crowns.x[node]!, crowns.y[node]!, crowns.radius[node]!, candidate, side, spacing.gap);
+    slideAlongSide(box, side, away, k % CROWN_SLIDES, spacing.gap);
+    query += 1;
+    if (!insideRect(box, free)) continue;
+    if (segmentMeetsBox(candidate.x, candidate.y, crowns.boughX[node]!, crowns.boughY[node]!, box)) continue;
+    if (level === AVOID_CROWNS && nearOtherCrown(box, node, crowns, spacing.gap)) continue;
+    if (isClear(box, node, list, out, free, spacing.pad, query, level !== AVOID_NAMES)) return true;
+  }
+  return false;
+}
+
+/** Positions per side: centred on the contact point, then slid away from the trunk (or up), then the other way. */
+const CROWN_SLIDES = 3;
+
+/** Slides the box along its side so it still touches the circle at the same point, `gapPx` short of its end. */
+function slideAlongSide(box: TreeNameBox, side: TreeNameSide, away: TreeNameSide, slide: number, gapPx: number): void {
+  if (slide === 0) return;
+  const sign = slide === 1 ? -1 : 1;
+  if (side === SIDE_ABOVE || side === SIDE_BELOW) {
+    box.x += (away === SIDE_RIGHT ? -sign : sign) * Math.max(0, box.width / 2 - gapPx);
+  } else {
+    box.y += sign * Math.max(0, box.height / 2 - gapPx);
+  }
+}
+
+/** Whether the box comes within `gapPx` of another crown, so it would not read as nearer its own. */
+function nearOtherCrown(box: TreeNameBox, node: number, crowns: TreeCrowns, gapPx: number): boolean {
+  for (let k = 0; k < crowns.count; k += 1) {
+    const other = crowns.nodes[k]!;
+    if (other !== node && circleNearBox(crowns.x[other]!, crowns.y[other]!, crowns.radius[other]! + gapPx + 1, box)) return true;
+  }
+  return false;
+}
+
+/** Whether the segment from (x0, y0) to (x1, y1) crosses the box: the segment's x and y slabs overlap, O(1). */
+function segmentMeetsBox(x0: number, y0: number, x1: number, y1: number, box: TreeNameBox): boolean {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const [enterX, leaveX] = slab(x0, dx, box.x, box.x + box.width);
+  const [enterY, leaveY] = slab(y0, dy, box.y, box.y + box.height);
+  return Math.max(0, enterX, enterY) <= Math.min(1, leaveX, leaveY);
+}
+
+const slabSpan: [number, number] = [0, 0];
+
+/** The parameter range in which `start + t * delta` lies in [low, high]; empty as [1, 0]. Reuses one pair. */
+function slab(start: number, delta: number, low: number, high: number): [number, number] {
+  if (delta === 0) {
+    slabSpan[0] = start >= low && start <= high ? -Infinity : 1;
+    slabSpan[1] = start >= low && start <= high ? Infinity : 0;
+    return slabSpan;
+  }
+  const a = (low - start) / delta;
+  const b = (high - start) / delta;
+  slabSpan[0] = Math.min(a, b);
+  slabSpan[1] = Math.max(a, b);
+  return slabSpan;
 }
 
 /**
