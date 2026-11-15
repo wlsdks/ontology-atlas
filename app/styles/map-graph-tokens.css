@@ -142,8 +142,8 @@
     --map-neural-title-veil: 0.3;
     /* Zooming in grows cells with the camera, up to this many times their size at the fit. */
     --map-neural-zoom-grow-max: 2.5;
-    /* A cluster's title stays at least this far below the canvas top while the cluster is on screen. */
-    --map-neural-title-pin-px: 96;
+    /* While its cluster is on screen a title stays this far inside the canvas top and sides, clear of the chrome. */
+    --map-neural-title-pin-px: 136;
     --map-neural-axon-veil: 0.13;
     --map-neural-lit-start-px: 3.2;
     --map-neural-lit-end-px: 1.2;

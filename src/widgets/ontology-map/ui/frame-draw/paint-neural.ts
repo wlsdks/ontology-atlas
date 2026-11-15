@@ -546,6 +546,8 @@ function paintNeuralNames(
   const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
   const summaries = clusterSummaries(frame, graph, evidence);
   const focusCluster = focusId === null ? undefined : graph.clusterOf.get(focusId);
+  const freeLeft = Math.max(t.titlePinPx, (frame.panelInsets?.left ?? 0) + t.domainNameGapPx);
+  const freeRight = width - Math.max(t.titlePinPx, (frame.panelInsets?.right ?? 0) + t.domainNameGapPx);
   const titles: (TitleCandidate & { label: string; meta: string | null; x: number; nameY: number; metaY: number; nameBox: Box; a: number })[] = [];
   for (const [domainId, pool] of pools) {
     if (pool.a <= 0.05) continue;
@@ -553,11 +555,16 @@ function paintNeuralNames(
     if (!node) continue;
     const summary = summaries.get(domainId);
     const meta = labels && summary ? labels.domainMeta(summary) : null;
-    const x = (pool.minX + pool.maxX) / 2;
-    // While any of the cluster is on screen its title stays inside the top of the canvas.
+    // While any of the cluster is on screen its title stays inside the free area, under the chrome.
     const onScreen = pool.maxY > 0 && pool.minY < height && pool.maxX > 0 && pool.minX < width;
     const metaY = Math.max(pool.top - t.domainMetaGapPx, onScreen ? t.titlePinPx + t.domainNameGapPx : -Infinity);
     const nameY = metaY - t.domainNameGapPx;
+    ctx.font = nameFont;
+    const nameW = ctx.measureText(node.label).width;
+    ctx.font = metaFont;
+    const halfW = Math.max(nameW, meta ? ctx.measureText(meta).width : 0) / 2;
+    const centre = (pool.minX + pool.maxX) / 2;
+    const x = onScreen ? Math.min(Math.max(centre, freeLeft + halfW), Math.max(freeLeft + halfW, freeRight - halfW)) : centre;
     ctx.font = nameFont;
     const nameBox = boxFor(node.label, x, nameY, "center", t.domainNamePx);
     ctx.font = metaFont;
