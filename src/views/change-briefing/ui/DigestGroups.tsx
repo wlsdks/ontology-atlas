@@ -116,7 +116,7 @@ function GroupOption({ group, kinds, selected, accent, share, optionRef, onPress
     </span>
     {newest && <span className="mt-0.5 block truncate text-body text-[color:var(--color-text-tertiary)]">{changeTitle(newest.commit.subject, newest.commit.message)}</span>}
     <span aria-hidden className="mt-2 flex h-1.5 gap-px" style={{ width: `${share * 100}%` }}>
-      {segments.map((value, index) => value > 0 && <span key={index} className={cn('h-full min-w-px first:rounded-l-micro last:rounded-r-micro', accent ? ACCENT_INK : !kinds ? KIND_INKS[2] : KIND_INKS[index] ?? OTHER_KIND_INK)} style={{ flexGrow: value }} />)}
+      {segments.map((value, index) => value > 0 && <span key={index} className={cn('h-full min-w-px first:rounded-l-micro last:rounded-r-micro', accent ? ACCENT_INK : !kinds ? KIND_INKS[2] : index < kinds.kinds.length ? KIND_INKS[index] : OTHER_KIND_INK)} style={{ flexGrow: value }} />)}
     </span>
   </div>;
 }
@@ -169,7 +169,7 @@ function GroupPanel({ group, kinds, selection, onSelection, conceptTitle, format
       <span className="text-label text-[color:var(--color-text-tertiary)]">{t('concepts')}</span>
       <ConceptLinks ids={group.concepts} conceptTitle={conceptTitle} />
     </div>}
-    <ul ref={listRef} className={cn('-mx-3 mt-4 border-t border-[color:var(--color-border-soft)] pt-1', opened && 'atlas-scroll-quiet max-h-50 overflow-y-auto', listOverflows && '[mask-image:linear-gradient(to_bottom,black_calc(100%_-_var(--tabbar-edge-fade)),transparent)]')}>
+    <ul ref={listRef} className={cn('relative -mx-3 mt-4 border-t border-[color:var(--color-border-soft)] pt-1', opened && 'atlas-scroll-quiet max-h-50 overflow-y-auto', listOverflows && '[mask-image:linear-gradient(to_bottom,black_calc(100%_-_var(--tabbar-edge-fade)),transparent)]')}>
       {group.changes.slice(0, shown).map(change => <li key={change.commit.hash}>
         <ChangeRow change={change} time={formatTime(change.commit.committedAt)} headless={group.kind === 'label'} selected={change === opened} onPress={() => select(change === opened ? null : change.commit.hash)} />
       </li>)}
