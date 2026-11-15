@@ -265,7 +265,6 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // with `\n` (the headline) never matches, so the headline is not a needle. One needle per section,
     // so a section dropping out of a deployment is caught.
     downloadCopy.eyebrow,
-    downloadCopy.demoTitle,
     stripKeyTags(downloadCopy.change.title),
     downloadCopy.screens.title,
     stripKeyTags(downloadCopy.start.title),

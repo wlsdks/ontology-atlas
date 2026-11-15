@@ -386,7 +386,7 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  it('walks problem → conduction → demo → screens → colophon, with the decision in the first screen', () => {
+  it('walks decision → app window → conduction → screens → colophon, with the decision before the window', () => {
     publishRelease();
     renderDownloadPage();
 
@@ -400,9 +400,9 @@ describe('DownloadPage', () => {
 
     for (const [earlier, later] of [
       [heading, primaryCta],
-      [primaryCta, conduction],
-      [conduction, demo],
-      [demo, architecture],
+      [primaryCta, demo],
+      [demo, conduction],
+      [conduction, architecture],
       [architecture, library],
       [library, colophon],
     ] as const) {
@@ -489,7 +489,7 @@ describe('DownloadPage', () => {
   });
 
   describe('one screen served at two addresses', () => {
-    it('keeps compass identity in chrome and Moru outside the graph illustration', () => {
+    it('keeps compass identity in chrome and one Moru, in the hero', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
 
@@ -497,13 +497,11 @@ describe('DownloadPage', () => {
         'src',
         '/brand/atlas-symbol.png',
       );
-      const companion = within(screen.getByTestId('gateway-closing')).getByRole('button', { name: 'Pet Moru' });
-      expect(within(screen.getByTestId('gateway-closing')).getAllByRole('button')).toHaveLength(1);
+      const companion = within(screen.getByTestId('gateway-hero')).getByRole('button', { name: 'Pet Moru' });
+      expect(within(screen.getByTestId('gateway-closing')).queryByRole('button')).toBeNull();
       fireEvent.contextMenu(companion);
       fireEvent.click(screen.getByRole('menuitem', { name: 'Pause Moru animation' }));
       expect(companion).toHaveAttribute('data-moru-paused', 'true');
-      // Moru belongs to the closing invitation, clear of the graph's data marks.
-      expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });
 
     it('names the page in the breadcrumb at /download', () => {

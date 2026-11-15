@@ -26,10 +26,3 @@ export function probeWebglAccelerated(): boolean {
     return false;
   }
 }
-
-let verdict: boolean | null = null;
-
-export function webglAccelerated(): boolean {
-  verdict ??= probeWebglAccelerated();
-  return verdict;
-}

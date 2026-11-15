@@ -438,15 +438,6 @@
     .gateway-type-ch {
       visibility: visible !important;
     }
-
-    /* Opacity-only, so it keeps its 120ms fade instead of the global hard cut, like the toast above. */
-    .gateway-hero-caption {
-      transition-duration: var(--motion-fast) !important;
-    }
-
-    .gateway-hero-caption[data-hero-caption-source="chain"] {
-      transition: none !important;
-    }
   }
 
   /*
