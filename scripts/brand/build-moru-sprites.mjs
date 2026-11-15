@@ -192,10 +192,10 @@ export function inkFringe(data, size) {
 
 /**
  * Where ink is drawn on ivory, the source's fade passes through a blend that quantises to the
- * stone body gray and leaves gray crumbs and hairlines on the muzzle. A stone piece under
- * `CRUMB_AREA` that touches ivory and otherwise only ink was never a drawn surface and takes the
- * ivory; so does a run of stone thinner than `FRINGE_REACH` lying between ink and ivory, even
- * where it joins the body. O(pixels).
+ * stone body gray and leaves gray crumbs and hairlines on the muzzle. A stone run thinner than
+ * `FRINGE_REACH` that touches ink and meets ivory by a side takes the ivory, even where it joins
+ * the body; then so does a piece left under `CRUMB_AREA` that meets ivory by a side and otherwise
+ * touches only ink. Ivory at a corner alone is the far side of an outline. O(pixels).
  */
 export function ivoryFringe(data, size) {
   const total = size * size, out = Buffer.from(data), stone = pack(...STONE), ivory = pack(...IVORY);
@@ -208,7 +208,8 @@ export function ivoryFringe(data, size) {
       let onIvory = false, onInk = false, onOther = false;
       for (const p of piece) eightNeighbours(p, size, n => {
         const colour = colourAt(n);
-        if (colour === ivory) onIvory = true; else if (INK.has(colour)) onInk = true; else if (colour !== stone) onOther = true;
+        if (colour === ivory) onIvory ||= Math.abs(n - p) === 1 || Math.abs(n - p) === size;
+        else if (INK.has(colour)) onInk = true; else if (colour !== stone) onOther = true;
       });
       if (onIvory && !onOther && fringe(piece, onInk)) for (const p of piece) member[p] = 2;
     }

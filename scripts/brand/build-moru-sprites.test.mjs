@@ -422,6 +422,9 @@ test('a stone crumb on the ivory takes the ivory, and stone that is a surface, o
   paint(13, 43, 16, 46, SKIN);
   paint(50, 10, 60, 20, IVORY);
   paint(48, 12, 50, 15, SKIN);
+  paint(24, 50, 40, 58, INK);
+  paint(26, 52, 38, 56, SKIN);
+  paint(25, 51, 26, 52, IVORY);
   const cleaned = ivoryFringe(data, 64);
   assert.deepEqual([at(cleaned, 9, 18), at(cleaned, 13, 19)], [IVORY, IVORY], 'a crumb under a whisker stayed gray');
   assert.deepEqual(at(cleaned, 27, 17), IVORY, 'a crumb alone on the ivory stayed gray');
@@ -431,6 +434,7 @@ test('a stone crumb on the ivory takes the ivory, and stone that is a surface, o
   assert.deepEqual(at(cleaned, 36, 25), SKIN, 'stone beside another colour was erased');
   assert.deepEqual(at(cleaned, 14, 44), SKIN, 'stone enclosed in ink alone turned ivory');
   assert.deepEqual(at(cleaned, 49, 13), SKIN, 'stone on the silhouette turned ivory');
+  assert.deepEqual([at(cleaned, 26, 52), at(cleaned, 37, 55)], [SKIN, SKIN], 'stone enclosed in ink that meets the ivory only by a corner turned ivory');
   assert.deepEqual([at(cleaned, 9, 16), at(cleaned, 33, 25), at(cleaned, 30, 40)], [INK, FREE_INK, IVORY], 'a colour other than stone changed');
 });
 
@@ -449,9 +453,14 @@ test('a stone hairline between ink and ivory takes the ivory even where it joins
   paint(24, 48, 27, 49, SKIN);
   paint(24, 54, 44, 56, FREE_INK);
   paint(24, 53, 44, 54, SKIN);
+  paint(30, 10, 54, 12, INK);
+  paint(30, 4, 36, 10, SKIN);
+  paint(48, 4, 54, 10, SKIN);
+  paint(36, 9, 48, 10, SKIN);
   const cleaned = ivoryFringe(data, 64);
   assert.deepEqual([24, 34, 43].map(x => at(cleaned, x, 29)), [IVORY, IVORY, IVORY], 'a hairline joined to the body stayed gray');
   assert.deepEqual([at(cleaned, 28, 20), at(cleaned, 35, 19)], [IVORY, IVORY], 'a crumb the hairline tied to the body stayed gray');
+  assert.deepEqual([at(cleaned, 31, 5), at(cleaned, 40, 9), at(cleaned, 52, 8)], [IVORY, IVORY, IVORY], 'two crumbs a hairline joined into one larger piece stayed gray');
   assert.deepEqual([at(cleaned, 24, 40), at(cleaned, 43, 41)], [SKIN, SKIN], 'a strip half a drawn pixel thick was erased');
   assert.deepEqual(at(cleaned, 25, 48), SKIN, 'the edge of the body away from ink was erased');
   assert.deepEqual(at(cleaned, 30, 53), SKIN, 'a hairline beside another colour was erased');
