@@ -25,13 +25,14 @@ function boxMeetsDisc(box: TitleBox, disc: { x: number; y: number; r: number }):
 
 /**
  * The domain titles that stand: nearest first, a title gives way when it would sit on another
- * cluster's disc or on a nearer title. O(k²) for k clusters.
+ * cluster's disc, on a nearer title or on a fixed label such as the project's. O(k² + k·f).
  */
-export function standingDomainTitles(candidates: readonly TitleCandidate[]): Set<string> {
+export function standingDomainTitles(candidates: readonly TitleCandidate[], fixedLabels: readonly TitleBox[] = []): Set<string> {
   const nearestFirst = [...candidates].sort((a, b) => a.depth - b.depth);
   const standing: TitleCandidate[] = [];
   for (const c of nearestFirst) {
     if (standing.some((s) => boxesMeet(s.box, c.box))) continue;
+    if (fixedLabels.some((label) => boxesMeet(label, c.box))) continue;
     if (candidates.some((o) => o.id !== c.id && boxMeetsDisc(c.box, o.disc))) continue;
     standing.push(c);
   }

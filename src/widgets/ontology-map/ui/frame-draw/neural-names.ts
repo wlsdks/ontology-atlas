@@ -300,7 +300,16 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
     const disc = { x: centre, y: (pool.minY + pool.maxY) / 2, r: Math.max(pool.maxX - pool.minX, pool.maxY - pool.minY) / 2 };
     titles.push({ id: domainId, box, disc, depth: pool.depth, label: node.label, meta, x, nameY, metaY, nameBox, a: pool.alpha });
   }
-  const standing = standingDomainTitles(titles);
+  const projectLabels: { i: number; x: number; box: Box }[] = [];
+  if (!hot) {
+    ctx.font = font;
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      if (world.nodes[i].kind !== "project" || sa[i] <= 0.05) continue;
+      const x = sx[i] + sr[i] + t.nameGapPx;
+      projectLabels.push({ i, x, box: boxFor(world.nodes[i].label, x, sy[i], "left", t.namePx) });
+    }
+  }
+  const standing = standingDomainTitles(titles, projectLabels.map((label) => label.box));
   const receded = (id: string) => hot && !litClusters.has(id);
   const writeTitle = (title: (typeof titles)[number]) => {
     if (title.box.maxX < 0 || title.box.minX > width || title.box.maxY < 0 || title.box.minY > height) return;
@@ -323,12 +332,9 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
   }
 
   if (!hot) {
-    for (let i = 0; i < world.nodes.length; i += 1) {
-      if (world.nodes[i].kind !== "project" || sa[i] <= 0.05) continue;
-      ctx.font = font;
+    for (const { i, x, box } of projectLabels) {
       const label = world.nodes[i].label;
-      const box = boxFor(label, sx[i] + sr[i] + t.nameGapPx, sy[i], "left", t.namePx);
-      write(label, sx[i] + sr[i] + t.nameGapPx, sy[i], "left", font, ink.name, 0.9 * neural, t.nameHaloPx);
+      write(label, x, sy[i], "left", font, ink.name, 0.9 * neural, t.nameHaloPx);
       names.add(box);
       boxes.push({ nodeId: world.nodes[i].id, text: label, ...box });
     }
