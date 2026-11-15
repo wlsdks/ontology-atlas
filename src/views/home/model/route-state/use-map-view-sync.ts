@@ -1,13 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import {
-  useDomainStructure,
-  useHexBoard,
-  useMapArrangement,
-  useView3d,
-  writeMapView,
-} from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView, writeMapView } from '@/shared/lib/preferences/appearance-preferences';
 import type { HomeMapView, HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 
@@ -46,18 +40,8 @@ export function useMapViewSync(
     options?: HomeRouteStateUpdateOptions,
   ) => void,
 ): void {
-  const hexBoard = useHexBoard();
-  const structure = useDomainStructure();
-  const view3d = useView3d();
-  const arrangement = useMapArrangement();
-  // The picker's precedence (`View3dMenu`), so both read one view from the same flags.
-  const stored: HomeMapView | null = view3d
-    ? arrangement
-    : hexBoard
-      ? 'hex'
-      : structure
-        ? 'structure'
-        : null;
+  const storedView = useMapView();
+  const stored: HomeMapView | null = storedView === 'flat' ? null : storedView;
   const lastRef = useRef<{ stored: HomeMapView | null; address: HomeMapView | null } | null>(null);
   useEffect(() => {
     const last = lastRef.current;

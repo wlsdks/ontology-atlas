@@ -32,10 +32,6 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-indigo-bright": "#8890e0",
   "--map-amber-hub": "#d4b478",
   "--map-recent-change": "#3fbfae",
-  "--color-kind-project-rgb": "126 134 216",
-  "--color-kind-domain-rgb": "74 177 196",
-  "--color-kind-capability-rgb": "211 159 73",
-  "--color-kind-element-rgb": "124 166 141",
   "--color-status-warning": "#f4b731",
   "--map-numeral-shadow": "#08080a",
   "--map-numeral-face": "#8c8c94",
@@ -66,10 +62,6 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-canvas-bg-far": "#050507",
   "--map-grid-minor": "#0e0e13",
   "--map-grid-major": "#121218",
-  "--map-dome-ring": "#43434f",
-  // Not a `--map-*` name: the raised plane ring borrows the application's
-  // own tertiary text step rather than adding a colour for one hover state.
-  "--color-text-tertiary": "#8a8f98",
   "--map-vignette-base-alpha": "0.32",
   "--map-vignette-far-alpha": "0.18",
 
@@ -129,9 +121,6 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-altitude-far-high-ratio": "0.92",
   "--map-altitude-far-low-ratio": "0.62",
   "--map-overview-entry-ratio": "0.95",
-  "--map-dome-fit-fill": "0.98",
-  "--map-dome-fit-inset-top": "104",
-  "--map-dome-fit-inset-bottom": "32",
   "--map-focus-fit-max-scale": "1.9",
   "--map-focus-bbox-margin": "70",
   "--map-focus-max-zoom-ratio": "1.8",

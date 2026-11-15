@@ -9,14 +9,8 @@ import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/keyboard/use-roving-radio-group';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
-import {
-  useDomainStructure,
-  useHexBoard,
-  useMapArrangement,
-  useView3d,
-  writeMapView,
-  type MapArrangement,
-} from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView, writeMapView } from '@/shared/lib/preferences/appearance-preferences';
+import type { MapLayoutView } from '@/shared/lib/map-canvas/map-layout-morph-store';
 
 /**
  * The view picker the map-view chip opens. A control that changes what you are looking at
@@ -24,15 +18,8 @@ import {
  * current view reads from one place. Rows name the visible shape, never the internal key.
  */
 
-/** One row: the flat views plus the 3D arrangements; "how does the map look" is one question. */
-type View3dChoice = 'flat' | 'hex' | 'structure' | MapArrangement;
-
-/*
- * Ordered by distance from the flat map: the flat-plane views first, then Strata
- * (containment as levels) before Neural (no containment). A stored Cone opens
- * Strata (`resolveStoredMapArrangement`).
- */
-const CHOICES: readonly View3dChoice[] = ['flat', 'hex', 'structure', 'strata', 'coupling'];
+/** Ordered by distance from the flat map: 3D lifts the same map, Domain structure redraws it. */
+const CHOICES: readonly MapLayoutView[] = ['flat', 'hex', '3d', 'structure'];
 
 /**
  * The canvas is the one surface a dismissing press must not also act on. Matched by
@@ -58,16 +45,12 @@ export function View3dMenu({
   anchorRef?: RefObject<HTMLElement | null>;
 }) {
   const t = useTranslations('searchWidgets.hint');
-  const view3d = useView3d();
-  const arrangement = useMapArrangement();
-  const structure = useDomainStructure();
-  const hexBoard = useHexBoard();
-  const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : structure ? 'structure' : 'flat';
+  const value = useMapView();
   const boxRef = useRef<HTMLDivElement | null>(null);
   const presence = usePanelPresence(open);
   const reducedMotion = usePrefersReducedMotion();
 
-  const write = (next: View3dChoice) => {
+  const write = (next: MapLayoutView) => {
     if (next !== value) armMapLayoutMorph();
     writeMapView(next);
   };

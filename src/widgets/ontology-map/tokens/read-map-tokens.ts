@@ -28,14 +28,6 @@ export interface OntologyMapTokens {
   amberHub: string;
   /** Teal reserved for the recent changes lens; distinct from the hub amber. */
   recentChange: string;
-  /**
-   * The lit 3D map's kind light: the kind ramp triples (`--color-kind-*-rgb`, "r g b"), the same
-   * hues as the legend, so a node's light and its legend dot agree.
-   */
-  kindRgbProject: string;
-  kindRgbDomain: string;
-  kindRgbCapability: string;
-  kindRgbElement: string;
   /** The product's one warning hue — a stale node's evidence ring. */
   statusWarning: string;
   numeralShadow: string;
@@ -80,15 +72,6 @@ export interface OntologyMapTokens {
   labelElement: string;
   labelMaxWidth: number;
   canvasBgNear: string;
-  /** 3D dome latitude ring ink — consumed only in 3D. The rationale for the value is the doc-comment in `globals.css`. */
-  domeRing: string;
-  /**
-   * The ink one Strata plane ring rises to while its legend row is hovered. It is
-   * the application's existing tertiary text step rather than a new colour: the
-   * ring is briefly promoted to the rank of something you are reading, and drops
-   * straight back to `domeRing` when the pointer leaves.
-   */
-  domeRingRaised: string;
   canvasBgFar: string;
   gridMinor: string;
   gridMajor: string;
@@ -163,15 +146,6 @@ export interface OntologyMapTokens {
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
   overviewEntryRatio: number;
-  /**
-   * Fraction of the free canvas axis the fitted cone spans (`computeDomeFitCameraTarget`); the
-   * cone's only padding term.
-   */
-  domeFitFill: number;
-  /** Screen px the cone fit leaves above itself for the floating tool lane. */
-  domeFitInsetTop: number;
-  /** Screen px the cone fit leaves below itself for the instrument readout. */
-  domeFitInsetBottom: number;
   focusFitMaxScale: number;
   focusBboxMargin: number;
   /** The zoom-in ceiling for selection (ego) framing — a ratio against overviewEntryScale. */
@@ -322,10 +296,6 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "indigoBright", cssVar: "--map-indigo-bright", kind: "color" },
   { key: "amberHub", cssVar: "--map-amber-hub", kind: "color" },
   { key: "recentChange", cssVar: "--map-recent-change", kind: "color" },
-  { key: "kindRgbProject", cssVar: "--color-kind-project-rgb", kind: "color" },
-  { key: "kindRgbDomain", cssVar: "--color-kind-domain-rgb", kind: "color" },
-  { key: "kindRgbCapability", cssVar: "--color-kind-capability-rgb", kind: "color" },
-  { key: "kindRgbElement", cssVar: "--color-kind-element-rgb", kind: "color" },
   { key: "statusWarning", cssVar: "--color-status-warning", kind: "color" },
   { key: "numeralShadow", cssVar: "--map-numeral-shadow", kind: "color" },
   { key: "numeralFace", cssVar: "--map-numeral-face", kind: "color" },
@@ -356,8 +326,6 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "canvasBgFar", cssVar: "--map-canvas-bg-far", kind: "color" },
   { key: "gridMinor", cssVar: "--map-grid-minor", kind: "color" },
   { key: "gridMajor", cssVar: "--map-grid-major", kind: "color" },
-  { key: "domeRing", cssVar: "--map-dome-ring", kind: "color" },
-  { key: "domeRingRaised", cssVar: "--color-text-tertiary", kind: "color" },
   { key: "vignetteBaseAlpha", cssVar: "--map-vignette-base-alpha", kind: "number" },
   { key: "vignetteFarAlpha", cssVar: "--map-vignette-far-alpha", kind: "number" },
 
@@ -393,9 +361,6 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "altitudeFarHighRatio", cssVar: "--map-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--map-altitude-far-low-ratio", kind: "number" },
   { key: "overviewEntryRatio", cssVar: "--map-overview-entry-ratio", kind: "number" },
-  { key: "domeFitFill", cssVar: "--map-dome-fit-fill", kind: "number" },
-  { key: "domeFitInsetTop", cssVar: "--map-dome-fit-inset-top", kind: "number" },
-  { key: "domeFitInsetBottom", cssVar: "--map-dome-fit-inset-bottom", kind: "number" },
   { key: "focusFitMaxScale", cssVar: "--map-focus-fit-max-scale", kind: "number" },
   { key: "focusBboxMargin", cssVar: "--map-focus-bbox-margin", kind: "number" },
   { key: "focusMaxZoomRatio", cssVar: "--map-focus-max-zoom-ratio", kind: "number" },

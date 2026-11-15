@@ -228,11 +228,7 @@ export function useMapZoomSpeed(): MapSpeed {
 
 /* ── 3D view (map view mode) ────────────────────────────────────────────── */
 
-/**
- * Whether the map is drawn with a 3D arrangement rather than the flat map. Off by default: the 3D
- * arrangement raises edge crossings about 3x, and crossing count dominates graph readability.
- * Geometry: `src/widgets/ontology-map/model/dome-view/`.
- */
+/** Whether the map opens in the 3D view rather than the flat map. Off by default. */
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
 const DEFAULT_VIEW_3D = false;
@@ -284,10 +280,15 @@ export function useHexBoard(): boolean {
 }
 
 export function useFlatMapView(): boolean {
+  return useMapView() === "flat";
+}
+
+/** The picker's view from its stored flags; 3D wins over the flat-plane views. */
+export function useMapView(): MapLayoutView {
   const view3d = useView3d();
   const structure = useDomainStructure();
   const hexBoard = useHexBoard();
-  return !view3d && !structure && !hexBoard;
+  return view3d ? "3d" : hexBoard ? "hex" : structure ? "structure" : "flat";
 }
 
 const HEX_RELIEF_KEY = "atlas.appearance.hex-relief";
@@ -308,55 +309,15 @@ export function useHexRelief(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── Arrangement (3D map) ───────────────────────────────────────────────── */
-
-/**
- * `strata`: who contains what, read by level (`buildStrataTargets` in
- * `src/widgets/ontology-map/model/dome-view/`). `coupling`: what attaches to what, a force cloud
- * without kind tiers. A stored `ownership` or `cone` opens Strata.
- */
-export type MapArrangement = "strata" | "coupling";
-
-const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["strata", "coupling"];
-
-const LEGACY_MAP_ARRANGEMENTS: Readonly<Record<string, MapArrangement>> = {
-  ownership: "strata",
-  cone: "strata",
-};
-
-export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "strata";
-
-const MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
-
-function isMapArrangement(value: string | null): value is MapArrangement {
-  return value !== null && (MAP_ARRANGEMENTS as readonly string[]).includes(value);
-}
-
-export function resolveStoredMapArrangement(saved: string | null): MapArrangement {
-  if (isMapArrangement(saved)) return saved;
-  if (saved !== null && Object.prototype.hasOwnProperty.call(LEGACY_MAP_ARRANGEMENTS, saved)) {
-    return LEGACY_MAP_ARRANGEMENTS[saved];
-  }
-  return DEFAULT_MAP_ARRANGEMENT;
-}
-
-function readMapArrangement(): MapArrangement {
-  if (typeof window === "undefined") return DEFAULT_MAP_ARRANGEMENT;
-  try {
-    return resolveStoredMapArrangement(window.localStorage.getItem(MAP_ARRANGEMENT_KEY));
-  } catch {
-    return DEFAULT_MAP_ARRANGEMENT;
-  }
-}
+/** Never read: the 3D flag alone opens 3D, whatever arrangement an older build kept here. */
+const RETIRED_MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
 
 export function writeMapView(view: MapLayoutView): void {
   if (typeof window === "undefined") return;
-  const dome = view === "strata" || view === "coupling";
   const writes: Array<[string, string]> = [
     [HEX_BOARD_KEY, view === "hex" ? "on" : "off"],
     [STRUCTURE_KEY, view === "structure" ? "on" : "off"],
-    ...(dome ? [[MAP_ARRANGEMENT_KEY, view] as [string, string]] : []),
-    [VIEW_3D_KEY, dome ? "on" : "off"],
+    [VIEW_3D_KEY, view === "3d" ? "on" : "off"],
   ];
   for (const [key, value] of writes) {
     let unchanged = false;
@@ -369,15 +330,10 @@ export function writeMapView(view: MapLayoutView): void {
       } catch {}
     }
   }
-  try { window.localStorage.removeItem(RETIRED_VIEW_KEY); } catch {}
-  try { window.localStorage.removeItem(RETIRED_TERRITORIES_KEY); } catch {}
+  for (const retired of [RETIRED_VIEW_KEY, RETIRED_TERRITORIES_KEY, RETIRED_MAP_ARRANGEMENT_KEY]) {
+    try { window.localStorage.removeItem(retired); } catch {}
+  }
   notifyPreferenceChange();
-}
-
-export function useMapArrangement(): MapArrangement {
-  const getSnapshot = useCallback(() => readMapArrangement(), []);
-  const getServerSnapshot = useCallback(() => DEFAULT_MAP_ARRANGEMENT, []);
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 /* ── Agent activity (working indicator, notifications) ──────────────────── */

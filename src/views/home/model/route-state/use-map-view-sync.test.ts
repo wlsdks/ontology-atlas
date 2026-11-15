@@ -10,7 +10,7 @@ describe("map view address sync", () => {
 
   it("adopts an address that names a view, on arrival or later", () => {
     expect(decideMapViewSync("arrival", null, "hex")).toEqual({ adopt: "hex", write: undefined });
-    expect(decideMapViewSync("address-changed", "strata", "hex")).toEqual({ adopt: "hex", write: undefined });
+    expect(decideMapViewSync("address-changed", "3d", "hex")).toEqual({ adopt: "hex", write: undefined });
   });
 
   it("writes a stored view once on arrival", () => {

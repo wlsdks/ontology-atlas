@@ -5,7 +5,7 @@ import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { MOTION } from "@/shared/motion/tokens";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
-const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "strata", "coupling"];
+const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "3d", "structure"];
 
 const mark = (id: string, x: number, y: number, extra: Partial<MapLayoutMark> = {}): MapLayoutMark => ({
   id,
@@ -45,27 +45,22 @@ describe("chooseLayoutSwitch", () => {
     }
   });
 
-  it("leaves the map's own three views to their native morphs", () => {
-    for (const from of ["flat", "strata", "coupling"] as const) {
-      for (const to of ["flat", "strata", "coupling"] as const) {
-        if (from !== to) expect(chooseLayoutSwitch({ ...base, from, to })).toBe("native");
-      }
+  it("ghosts every switch to or from 3D, into 3D at any vault size", () => {
+    for (const other of ["flat", "hex"] as const) {
+      expect(chooseLayoutSwitch({ ...base, from: "3d", to: other })).toBe("ghost");
+      for (const conceptCount of [2000, 10000]) expect(chooseLayoutSwitch({ ...base, conceptCount, from: other, to: "3d" })).toBe("ghost");
     }
   });
 
-  it("crossfades into and out of Coupling, and into the map's views past their measured ceilings", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "hex", to: "coupling" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, from: "coupling", to: "hex" })).toBe("fade");
+  it("crossfades into the flat and structure views past their measured ceilings", () => {
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "flat" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "structure" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "strata" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "flat", to: "hex" })).toBe("ghost");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "structure", to: "hex" })).toBe("fade");
   });
 
-  it("retargets a travel in flight instead of handing it to a native morph", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "structure", fromOverlay: true })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, from: "hex", to: "coupling", fromOverlay: true })).toBe("fade");
+  it("retargets a travel in flight back to the view it left", () => {
+    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "flat", fromOverlay: true })).toBe("ghost");
   });
 });
 

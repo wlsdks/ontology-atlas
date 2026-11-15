@@ -170,20 +170,6 @@
     "error": "설명을 저장하지 못했어요.",
     "conflict": "이 파일이 밖에서 (다른 편집기나 에이전트가) 먼저 바뀌어서 저장하지 않았어요. 쓰던 설명은 그대로 있고, 다시 저장하면 그 내용으로 바꿔요."
   },
-  "light3d": {
-    "legendLabel": "3D 지도 범례",
-    "kindsHeading": "종류",
-    "evidenceHeading": "근거",
-    "current": "현재 {count, number}",
-    "stale": "오래됨 {count, number}",
-    "unknown": "알 수 없음 {count, number}",
-    "noteReading": "Git 기록을 읽는 중이에요. 다 읽을 때까지는 상태를 알 수 없어요.",
-    "noteAppOnly": "근거 상태는 앱이 Git 기록으로 확인해요. 여기서는 모두 알 수 없어요.",
-    "noteUnreadable": "Git 기록을 읽지 못해 상태를 알 수 없어요.",
-    "noteNoPaths": "코드 경로를 적은 개념이 없어 상태를 알 수 없어요.",
-    "dependenciesHidden": "의존 {count, number}개 숨김",
-    "dependenciesHiddenHint": "도메인을 가리키면 그 도메인의 의존이 보여요."
-  },
   "analysis": {
     "pathChipUnresolved": "경로: {source} → 대상 선택",
     "pathChipEndpoints": "{source} → {target}",

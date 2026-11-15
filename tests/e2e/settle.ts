@@ -37,9 +37,7 @@ type MapStillness =
   /** Camera spring only — pan, zoom, fit, focus framing. */
   | "camera"
   /** Camera plus every drawn node coordinate — physics, expansion, auto-arrange. */
-  | "layout"
-  /** 3D dome pose, its inertia and its assembly ramp. */
-  | "dome";
+  | "layout";
 
 export interface MapStillOptions {
   /** Which of the map's motions must stop. Default `"layout"`. */
@@ -66,14 +64,6 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
         cameraTarget?: () => { x: number; y: number; scale: number };
         nodes?: () => ProbeNode[];
         dialMotionSettled?: () => boolean;
-        dome?: () => {
-          yaw: number;
-          pitch: number;
-          ramp: number;
-          poseTween: boolean;
-          orbiting: boolean;
-          settling: boolean;
-        } | null;
       };
       const probe = (window as unknown as { __atlasMap?: Probe }).__atlasMap;
       if (!probe) return false;
@@ -99,17 +89,6 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
           .filter((node) => !node.hidden)
           .map((node) => `${node.id}:${tenth(node.x)},${tenth(node.y)}`)
           .join(",")}`;
-      }
-      if (argument.what === "dome") {
-        const dome = probe.dome?.() ?? null;
-        if (!dome) return false;
-        // A pose tween or live inertia is motion regardless of how small this
-        // frame's step was, so they are part of the signature rather than a
-        // separate early return: the counter resets while either is live.
-        signature = `${Math.round(dome.yaw * 1e3)},${Math.round(dome.pitch * 1e3)},${Math.round(
-          dome.ramp * 1e3,
-        )},${dome.poseTween},${dome.orbiting}`;
-        settling = dome.settling;
       }
       const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
         .__atlasStill ??= {});
@@ -251,65 +230,32 @@ export async function waitFrames(page: Page, count = 2): Promise<void> {
 }
 
 /**
- * Resolve once the 3D dome has finished assembling — its ramp clock is at the top.
- *
- * The assembly is a fixed-length ramp the loop advances by real elapsed time, so a
- * busy machine takes more wall clock to reach the same ramp value. `ramp >= 1` is
- * that value; four seconds was one machine's guess at it.
- *
- * The pose is deliberately not part of this: the dome arrives **armed to spin**
- * (`dome-view/`), so "assembled" and "still" are different states and only the
- * first one is what arriving in 3D means.
+ * Resolve once the 3D tree is drawn and at rest: `data-tree-ready`, and neither its drawn-frame
+ * count nor its pose has changed for {@link STILL_FRAMES} page frames (`window.__atlasTree`,
+ * `?e2e=1`). The tree draws no frame at rest, so a growing, flying or coasting tree resets the
+ * count and a resting one reads as still at once; its list mirror is written by then.
  */
-export async function waitForDomeAssembled(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+export async function waitForTreeStill(page: Page, options: { frames?: number; timeout?: number } = {}): Promise<void> {
+  const { frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;
+  const key = `tree-still-${(stillKeySeed += 1)}`;
   await page.waitForFunction(
-    () => {
-      const dome = (window as unknown as { __atlasMap?: { dome?: () => { ramp: number } | null } }).__atlasMap?.dome?.();
-      return dome !== null && dome !== undefined && dome.ramp >= 1;
+    (argument: { frames: number; key: string }) => {
+      if (document.querySelector<HTMLElement>('[data-testid="tree-map"]')?.dataset.treeReady !== "true") return false;
+      const tree = window.__atlasTree;
+      if (!tree) return false;
+      const pose = tree.pose();
+      const signature = `${tree.frames()}|${[pose.yaw, pose.pitch, pose.zoom, pose.panX, pose.panY].map((v) => Math.round(v * 1e4)).join(",")}`;
+      const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
+        .__atlasStill ??= {});
+      const seen = store[argument.key];
+      if (!seen || seen.signature !== signature) {
+        store[argument.key] = { signature, count: 1 };
+        return false;
+      }
+      seen.count += 1;
+      return seen.count >= argument.frames;
     },
-    undefined,
-    { polling: "raf", timeout },
-  );
-}
-
-/**
- * Resolve once the map is flat again: the dome's ramp has run all the way back
- * down (or the runtime is gone), and the 2D layout underneath has stopped moving.
- */
-export async function waitForFlatMap(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const probe = (window as unknown as { __atlasMap?: { dome?: () => { ramp: number } | null } }).__atlasMap;
-      if (!probe) return false;
-      const dome = probe.dome?.() ?? null;
-      return dome === null || dome.ramp <= 0;
-    },
-    undefined,
-    { polling: "raf", timeout },
-  );
-  await waitForMapStill(page, { timeout });
-}
-
-/**
- * Resolve once the 3D dome has assembled, swept in **and** settled its layout.
- *
- * The two have separate clocks — the sweep outlives the assembly by 380 ms
- * (`model/dome-view/`) — so "arrived in 3D" is both flags, and while the sweep
- * is alive the drawn attitude keeps moving and cannot be told apart from what a
- * drag changed.
- *
- * The pose is still not required to be *still*: the dome arrives armed to spin, so
- * stillness would never come until a hand touched it.
- */
-export async function waitForDomeEntered(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const dome = (
-        window as unknown as { __atlasMap?: { dome?: () => { ramp: number; entryArmed: boolean; settling: boolean } | null } }
-      ).__atlasMap?.dome?.();
-      return dome !== null && dome !== undefined && dome.ramp >= 1 && !dome.entryArmed && !dome.settling;
-    },
-    undefined,
+    { frames, key },
     { polling: "raf", timeout },
   );
 }

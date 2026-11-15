@@ -5,7 +5,6 @@ import type { PointerMachineState } from "../../interaction/pointer-state-machin
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import { createFocusRampClock } from "../../model/visibility/focus-state";
 import { easeAnchoredZoom, easeCameraKeyframe, type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { GrowthReplay } from "../../model/ambient/growth-replay";
 import {
   depthParallaxFactorForDepth,
@@ -65,7 +64,6 @@ export interface CameraFrameStageSources {
   ambientSleepDelayRef: SourceRef<number | undefined>;
   selectedEdgeRef: SourceRef<SelectedEdge | null>;
   pointerMachineRef: SourceRef<PointerMachineState>;
-  domeRuntimeRef: SourceRef<DomeRuntime | null>;
   focusLeashPxRef: SourceRef<FocusLeashPx | null>;
   userDrivenCameraRef: SourceRef<boolean>;
   clusteredIdsRef: SourceRef<ReadonlySet<string>>;
@@ -118,7 +116,6 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     ambientSleepDelayRef,
     selectedEdgeRef,
     pointerMachineRef,
-    domeRuntimeRef,
     focusLeashPxRef,
     userDrivenCameraRef,
     clusteredIdsRef,
@@ -272,23 +269,6 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
       hoveredNodeId,
       panelEmphasisNodeId,
       isDragging: pointerMachineRef.current.phase === "dragging",
-      // In 3D, anchor the pan leash to the drawn dome bounds and focused node, not the 2D `world.bounds`.
-      worldBoundsOverride:
-        domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-          ? domeRuntimeRef.current.drawnBounds
-          : null,
-      focusAnchorOverride: (() => {
-        const dome = domeRuntimeRef.current;
-        if (dome === null || dome.rampClock <= 0 || focusedNodeId === null) return null;
-        const off = dome.frame.get(focusedNodeId);
-        const node = world.nodeById.get(focusedNodeId);
-        if (!off || !node) return null;
-        return { x: node.x + off.dx, y: node.y + off.dy };
-      })(),
-      scaleMinOverride:
-        domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-          ? domeRuntimeRef.current.fitScale
-          : null,
       focusLeashPx: focusLeashPxRef.current,
       reducedMotion: reducedMotionRef.current,
       userDrivenCamera: userDrivenCameraRef.current,

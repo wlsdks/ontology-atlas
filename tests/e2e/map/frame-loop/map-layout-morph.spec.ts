@@ -3,9 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { SPRING, springVisualMs } from "../../../../src/shared/motion/spring";
 import { MOTION, STAGGER } from "../../../../src/shared/motion/tokens";
 import { seedFirstRunSeen } from "../../first-run-seed";
-import { waitForAnimationsDone, waitForDomeEntered, waitForMapSettled } from "../../settle";
+import { waitForAnimationsDone, waitForMapSettled, waitForTreeStill } from "../../settle";
 
-type View = "flat" | "hex" | "strata" | "coupling";
+type View = "flat" | "hex" | "3d";
 
 interface Frame {
   t: number;
@@ -217,8 +217,7 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
         flag("hex-relief", tilted);
         flag("hex-board", initial === "hex");
         flag("structure", false);
-        flag("view3d", initial === "strata" || initial === "coupling");
-        window.localStorage.setItem("atlas.appearance.map-arrangement", initial === "coupling" ? "coupling" : "strata");
+        flag("view3d", initial === "3d");
     }, { initial: view, tilted: relief });
     await installSampler(page);
     await page.goto(`/ko/topology/?${synth === null ? "" : `synth=${synth}&`}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
@@ -227,8 +226,8 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
 
 async function settled(page: Page, view: View): Promise<void> {
   if (view === "hex") await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
-  else if (view === "strata" || view === "coupling")
-        await waitForDomeEntered(page);
+  else if (view === "3d")
+        await waitForTreeStill(page);
     else
         await waitForMapSettled(page);
 }
@@ -280,7 +279,8 @@ test.describe("map layout morph", () => {
         boolean?
     ]> = [
         ["flat", "hex"],
-        ["strata", "hex"],
+        ["flat", "3d"],
+        ["3d", "hex"],
         ["hex", "flat"],
         ["flat", "hex", true]
     ];
@@ -322,7 +322,7 @@ test.describe("map layout morph", () => {
             const floor = INK_FLOOR * Math.min(startInk, endInk);
             const dips = frames.slice(start).filter((f) => f.ink! < floor).map((f) => `${Math.round(f.t - run.travelStartMs)} ms: ${f.ink} (${f.phase})`);
             expect(dips, `ink fell under ${Math.round(floor)} (start ${startInk}, end ${endInk})`).toEqual([]);
-            const arrival = to === "hex" ? to : "map";
+            const arrival = to === "hex" ? to : to === "3d" ? "tree" : "map";
             const handoff = frames.findIndex((f, i) => i > start && f.views.includes(arrival) && f.camera !== null);
             expect(handoff, "the incoming view never drew").toBeGreaterThan(start);
             expect([...new Set(frames.slice(handoff).map((f) => f.camera))], "the incoming camera moved after the handoff").toHaveLength(1);
@@ -469,7 +469,7 @@ test.describe("map layout morph", () => {
     test("reduced motion crossfades every pick on the fast clock and moves nothing", async ({ page }) => {
         test.setTimeout(180000);
         await openAt(page, "flat", true);
-        for (const view of ["hex", "strata", "coupling", "flat"] as const) {
+        for (const view of ["hex", "3d", "flat"] as const) {
             const before = await startRecording(page, false);
             await pick(page, view);
             const run = await morphDone(page, before);

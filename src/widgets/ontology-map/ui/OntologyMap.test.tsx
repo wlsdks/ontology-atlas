@@ -162,17 +162,10 @@ describe("OntologyMap", () => {
     realmEnterTooltip: "이 노드 안쪽만 봐요",
   };
 
-  it("in 2D the orbit button carries a micro tooltip", () => {
+  it("the orbit button carries a micro tooltip", () => {
     render(<OntologyMap {...realmProps} />);
 
     expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent("이 노드 안쪽만 봐요");
-  });
-
-  it("in 3D the same button renders without a tooltip, keeping the button and its accessible name", () => {
-    render(<OntologyMap {...realmProps} view3d />);
-
-    expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
-    const button = screen.getByTestId("topology-realm-enter-button");
-    expect(button).toHaveAttribute("aria-label", "이것만 보기");
+    expect(screen.getByTestId("topology-realm-enter-button")).toHaveAttribute("aria-label", "이것만 보기");
   });
 });

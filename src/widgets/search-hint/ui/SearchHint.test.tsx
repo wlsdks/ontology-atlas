@@ -19,19 +19,19 @@ beforeEach(() => {
 describe("SearchHint", () => {
   it("names the map-view picker and describes the current map view in Help", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
-    window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
 
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
 
     const picker = screen.getByTestId("topology-view-3d");
-    expect(picker).toHaveAccessibleName("Map view: Neural");
+    expect(picker).toHaveAccessibleName("Map view: 3D");
     expect(picker).toHaveAttribute(
       "title",
-      "Choose a map view. Current: Neural.",
+      "Choose a map view. Current: 3D.",
     );
-    // With 3D on, the chip names the arrangement: the indigo tint alone cannot
+    // With 3D on, the chip names the view: the indigo tint alone cannot
     // say which view this is once the labels fade and the choice survives a reload.
-    expect(picker).toHaveTextContent("Neural");
+    expect(picker).toHaveTextContent("3D");
+    expect(picker).toHaveAttribute("data-map-view", "3d");
   });
 
   it("shows the current flat view rather than a 3D-only label", () => {
