@@ -467,29 +467,42 @@ test('a stone hairline between ink and ivory takes the ivory even where it joins
   assert.deepEqual([at(cleaned, 23, 29), at(cleaned, 10, 30)], [SKIN, SKIN], 'the body lost pixels');
 });
 
-test('a faint gray whisker on the belly becomes ink, a shorter gray piece there takes the ivory, and gray anywhere else stays', () => {
-  const { data, paint, at } = canvas(64);
-  paint(2, 2, 62, 62, INK);
-  paint(4, 4, 60, 60, IVORY);
-  paint(4, 4, 60, 16, SKIN);
-  paint(10, 24, 18, 25, FRINGE_GRAY);
-  paint(10, 25, 18, 26, HAZE_GRAY);
-  paint(30, 24, 32, 26, FRINGE_GRAY);
-  paint(20, 8, 26, 9, FRINGE_GRAY);
-  paint(40, 6, 50, 12, IVORY);
-  paint(42, 8, 48, 9, FRINGE_GRAY);
-  paint(10, 40, 24, 46, FRINGE_GRAY);
-  paint(40, 50, 46, 51, FRINGE_GRAY);
-  data.fill(0, (50 * 64 + 46) * 4, (50 * 64 + 47) * 4);
-  const drawn = faintMarks(data, 64);
-  assert.deepEqual([10, 14, 17].map(x => at(drawn, x, 24)), [INK, INK, INK], 'a faint whisker on the belly stayed gray');
-  assert.deepEqual([10, 14, 17].map(x => at(drawn, x, 25)), [IVORY, IVORY, IVORY], 'the haze under the redrawn whisker stayed gray');
-  assert.deepEqual([at(drawn, 30, 24), at(drawn, 31, 25)], [IVORY, IVORY], 'a gray piece shorter than a drawn pixel stayed on the belly');
-  assert.deepEqual(at(drawn, 22, 8), FRINGE_GRAY, 'gray on the body fill, away from the belly, changed');
-  assert.deepEqual(at(drawn, 44, 8), FRINGE_GRAY, 'gray on a smaller ivory area than the belly changed');
-  assert.deepEqual([at(drawn, 10, 40), at(drawn, 23, 45)], [FRINGE_GRAY, FRINGE_GRAY], 'a gray surface larger than a mark changed');
-  assert.deepEqual([at(drawn, 40, 50), at(drawn, 45, 50)], [FRINGE_GRAY, FRINGE_GRAY], 'gray that reaches the outside of the drawing changed');
-  assert.deepEqual([at(drawn, 3, 30), at(drawn, 30, 30), at(drawn, 30, 10)], [INK, IVORY, SKIN], 'the outline, the belly or the body changed');
+test('a faint gray mark on the body ivory becomes ink, a shorter piece there dissolves, and gray anywhere else stays', () => {
+  const { data, paint, at } = canvas(96);
+  paint(2, 2, 50, 94, INK);
+  paint(4, 4, 48, 92, SKIN);
+  paint(8, 50, 44, 90, IVORY);
+  paint(8, 10, 44, 22, IVORY);
+  paint(54, 2, 94, 94, INK);
+  paint(56, 4, 92, 92, IVORY);
+  paint(12, 56, 20, 57, FRINGE_GRAY);
+  paint(12, 57, 20, 58, HAZE_GRAY);
+  paint(24, 56, 28, 57, FRINGE_GRAY);
+  paint(32, 56, 35, 57, MID_FRINGE_GRAY);
+  paint(11, 65, 19, 68, HAZE_GRAY);
+  paint(12, 66, 18, 67, FRINGE_GRAY);
+  paint(12, 14, 20, 15, FRINGE_GRAY);
+  paint(12, 30, 18, 31, FRINGE_GRAY);
+  paint(22, 65, 30, 68, SKIN);
+  paint(23, 66, 29, 67, FRINGE_GRAY);
+  paint(10, 74, 30, 80, FRINGE_GRAY);
+  paint(30, 84, 36, 85, FRINGE_GRAY);
+  data.fill(0, (85 * 96 + 36) * 4, (85 * 96 + 37) * 4);
+  paint(60, 40, 68, 41, FRINGE_GRAY);
+  const drawn = faintMarks(data, 96);
+  assert.deepEqual([12, 16, 19].map(x => at(drawn, x, 56)), [INK, INK, INK], 'a faint whisker on the belly stayed gray');
+  assert.deepEqual([12, 16, 19].map(x => at(drawn, x, 57)), [IVORY, IVORY, IVORY], 'the haze under the redrawn whisker stayed gray');
+  assert.deepEqual([24, 27].map(x => at(drawn, x, 56)), [INK, INK], 'a piece exactly one drawn pixel long was not drawn');
+  assert.deepEqual([32, 34].map(x => at(drawn, x, 56)), [IVORY, IVORY], 'a piece shorter than a drawn pixel stayed on the belly');
+  assert.deepEqual([12, 17].map(x => at(drawn, x, 66)), [INK, INK], 'a faint whisker that only its haze joins to the belly stayed gray');
+  assert.deepEqual([at(drawn, 11, 65), at(drawn, 15, 67), at(drawn, 18, 66)], [IVORY, IVORY, IVORY], 'the haze around that whisker stayed gray');
+  assert.deepEqual([12, 19].map(x => at(drawn, x, 14)), [INK, INK], 'a whisker on a second ivory area of the same body stayed gray');
+  assert.deepEqual(at(drawn, 14, 30), FRINGE_GRAY, 'gray on the body fill, farther from the ivory than its blend reaches, changed');
+  assert.deepEqual([23, 28].map(x => at(drawn, x, 66)), [INK, INK], 'a faint whisker that only its stone blend joins to the belly stayed gray');
+  assert.deepEqual([at(drawn, 10, 74), at(drawn, 29, 79)], [FRINGE_GRAY, FRINGE_GRAY], 'a gray surface larger than a mark changed');
+  assert.deepEqual([at(drawn, 30, 84), at(drawn, 35, 84)], [FRINGE_GRAY, FRINGE_GRAY], 'gray that reaches the outside by a corner changed');
+  assert.deepEqual([at(drawn, 60, 40), at(drawn, 67, 40)], [FRINGE_GRAY, FRINGE_GRAY], 'gray on a prop with more ivory than the belly changed');
+  assert.deepEqual([at(drawn, 3, 30), at(drawn, 30, 62), at(drawn, 30, 30), at(drawn, 70, 60)], [INK, IVORY, SKIN, IVORY], 'the outline, the belly, the body or the prop changed');
 });
 
 test('a still pose of 32px or more keeps none of the dark gray that ink fades through', async () => {

@@ -93,6 +93,8 @@ const FREE_INK = PALETTE[COLORS.indexOf('6d73d2')];
 const FRINGE = new Set(['555451', '777572'].map(hex => parseInt(hex, 16)));
 /** The lighter step of the same fade; within reach of ink it is fringe, not a drawn surface. */
 const HAZE = new Set(['99968f'].map(hex => parseInt(hex, 16)));
+/** What a faint stroke's own edge fades into: the haze, or over ivory the stone body gray. */
+const BLEND = new Set(['99968f', 'd6d3c9'].map(hex => parseInt(hex, 16)));
 /** Work pixels along one side of a drawn pixel. */
 const DRAWN_PIXEL = 4;
 /** Work pixels, half a drawn pixel: the outline's soft edge reaches this far from its ink. */
@@ -233,44 +235,40 @@ export function ivoryFringe(data, size) {
 }
 
 /**
- * A whisker drawn faint has an ink core thinner than a speck, so cleaning leaves the whole stroke
- * in the dark gray of ink's fade. Such a piece on the belly (the frame's largest ivory area), no
- * larger than a mark, is the mark: one at least `DRAWN_PIXEL` long becomes ink and its own soft
- * edge dissolves; a shorter one dissolves into the fill. Props keep their gray. O(pixels).
+ * A mark drawn faint has an ink core thinner than a speck, so cleaning leaves it whole in the dark
+ * gray of ink's fade. Such a piece on the body's ivory, no larger than a mark, is the mark: one at
+ * least `DRAWN_PIXEL` long becomes ink; a shorter one and the haze beside either dissolve. O(pixels).
  */
 export function faintMarks(data, size) {
-  const total = size * size, faint = new Uint8Array(total), pale = new Uint8Array(total), seen = new Uint8Array(total), ivory = pack(...IVORY), strokes = [], crumbs = [];
+  const total = size * size, faint = new Uint8Array(total), belly = new Uint8Array(total), seen = new Uint8Array(total), ringed = new Uint8Array(total), strokes = [], crumbs = [];
   const colourAt = p => isOpaque(data, p) ? pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) : -1;
-  for (let p = 0; p < total; p++) { const colour = colourAt(p); if (FRINGE.has(colour)) faint[p] = 1; else if (colour === ivory) pale[p] = 1; }
-  let belly = [];
-  for (let start = 0; start < total; start++) {
-    if (!pale[start] || seen[start]) continue;
-    const area = floodGroup(start, pale, seen, size);
-    if (area.length > belly.length) belly = area;
-  }
-  pale.fill(0);
-  for (const p of belly) pale[p] = 1;
+  const besideBelly = p => {
+    const x = p % size;
+    return x > 0 && belly[p - 1] || x + 1 < size && belly[p + 1] || p >= size && belly[p - size] || p + size < total && belly[p + size];
+  };
+  for (const p of moruBody(data, size)?.pixels ?? []) if (colourAt(p) === pack(...IVORY)) belly[p] = 1;
+  for (let p = 0; p < total; p++) if (FRINGE.has(colourAt(p))) faint[p] = 1;
   for (let start = 0; start < total; start++) {
     if (!faint[start] || seen[start]) continue;
     const piece = floodGroup(start, faint, seen, size);
-    let x0 = size, y0 = size, x1 = 0, y1 = 0, enclosed = true, onBelly = false;
+    let x0 = size, y0 = size, x1 = 0, y1 = 0, enclosed = true;
     for (const p of piece) {
       const x = p % size, y = (p - x) / size;
       x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-      eightNeighbours(p, size, n => {
-        if (!isOpaque(data, n)) enclosed = false;
-        else if (pale[n]) onBelly ||= Math.abs(n - p) === 1 || Math.abs(n - p) === size;
-      });
+      eightNeighbours(p, size, n => { if (!isOpaque(data, n)) enclosed = false; });
     }
     const span = Math.max(x1 - x0, y1 - y0) + 1;
-    if (!enclosed || !onBelly || x0 === 0 || y0 === 0 || x1 === size - 1 || y1 === size - 1 || span > size * MARK_SPAN_SHARE) continue;
-    (span >= DRAWN_PIXEL ? strokes : crumbs).push(...piece);
+    if (!enclosed || span > size * MARK_SPAN_SHARE) continue;
+    // A faint mark can sit in its own blend, so the blend within reach counts as its edge.
+    const blend = fringeOf(data, size, piece, ringed, BLEND).map(([p]) => p);
+    for (const p of blend) ringed[p] = 0;
+    if (piece.some(besideBelly) || blend.some(besideBelly)) (span >= DRAWN_PIXEL ? strokes : crumbs).push(...piece);
   }
   if (!strokes.length && !crumbs.length) return data;
-  const inked = Buffer.from(data), taken = new Uint8Array(total);
-  for (const p of strokes) { inked.set([...PALETTE[0], 255], p * 4); taken[p] = 1; }
-  const edge = [...fringeOf(inked, size, strokes, taken), ...fringeOf(inked, size, strokes, taken, HAZE)].map(([p]) => p);
-  return paintedOver(inked, size, [...crumbs.filter(p => !taken[p]), ...edge]);
+  const inked = Buffer.from(data);
+  for (const p of strokes) inked.set([...PALETTE[0], 255], p * 4);
+  const haze = fringeOf(inked, size, [...strokes, ...crumbs], ringed, HAZE).map(([p]) => p);
+  return paintedOver(inked, size, [...crumbs, ...haze]);
 }
 
 /** Ink components drawn inside a fill and small enough to be one facial mark; O(pixels). */
@@ -523,7 +521,8 @@ async function strip(frames, size) {
 /** Red channel above both dark grays (`555451`, `777572`) and below every skin fill. */
 const DARK_GRAY_RED = 160;
 
-export function moruBodyAnchor(data, size) {
+/** The largest side-connected area of light warm fill, which is Moru's body; O(pixels). */
+function moruBody(data, size) {
   // Light warm fills only: the dark grays also shade props and floor lines, which are not body.
   const isBody = p => data[p * 4 + 3] && data[p * 4] > DARK_GRAY_RED && data[p * 4 + 2] <= data[p * 4] + 30;
   const seen = new Uint8Array(size * size), queue = new Uint32Array(size * size);
@@ -538,10 +537,15 @@ export function moruBodyAnchor(data, size) {
         if (n >= 0 && !seen[n] && isBody(n)) { seen[n] = 1; queue[tail++] = n; }
       }
     }
-    if (!largest || tail > largest.area) largest = { area: tail, centerX: (x0 + x1 + 1) / 2, bottom };
+    if (!largest || tail > largest.pixels.length) largest = { pixels: queue.slice(0, tail), centerX: (x0 + x1 + 1) / 2, bottom };
   }
-  if (!largest) throw new Error('Moru silhouette is empty');
   return largest;
+}
+
+export function moruBodyAnchor(data, size) {
+  const body = moruBody(data, size);
+  if (!body) throw new Error('Moru silhouette is empty');
+  return { area: body.pixels.length, centerX: body.centerX, bottom: body.bottom };
 }
 
 function registerBody(frame, reference, size, airborneOrigin, scaleReference) {
