@@ -36,7 +36,8 @@
         50,
         1500
       ],
-      "airborne": false
+      "airborne": false,
+      "restingBody": true
     },
     {
       "id": "wave",
