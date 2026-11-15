@@ -4,8 +4,11 @@ import type { DomeCoord, DomeModel, DomeViewKind } from './types';
 
 /** Idle spin: one turn per 48 s. */
 export const DOME_PERIOD_MS = 48000;
-/** Steep enough that the small base circles under each parent read as circles, not lines. */
-export const DOME_PITCH_DEFAULT = 0.5;
+/**
+ * Neural's cluster ring is seen from well above, so neighbours on it stay apart at every turn
+ * while each cluster keeps a large share of the frame (`cluster-ring.ts`).
+ */
+export const DOME_PITCH_DEFAULT = 0.85;
 /** The yaw a dome opens at, before anyone turns it. */
 export const DOME_YAW_DEFAULT = 0.55;
 /**

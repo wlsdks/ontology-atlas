@@ -31,13 +31,13 @@ export const CLOUD_ITERATIONS = 260;
 const CLOUD_REPULSION = 16000;
 /** A Hooke spring along each relation. */
 const CLOUD_SPRING = 0.02;
-const CLOUD_COHESION = 0.07;
+const CLOUD_COHESION = 0.02;
 const CLOUD_LOCAL_REPULSION = 0.25;
 const CLOUD_REST_LENGTH = 92;
 /** A cluster's warm start opens to this share of its reach, leaving springs room to settle it. */
-const CLOUD_SEED_SHARE_OF_REACH = 0.7;
-/** Strong enough that a cluster gathers round its heart, so its name stands above its own members. */
-const CLOUD_DOMAIN_MEMBER_PULL = 0.16;
+const CLOUD_SEED_SHARE_OF_REACH = 0.9;
+/** Weak, so members spread to fill their cluster's reach rather than crowd its heart. */
+const CLOUD_DOMAIN_MEMBER_PULL = 0.04;
 /** A relation between two clusters pulls this much of a relation inside one, so clusters keep apart. */
 const CLOUD_CROSS_DOMAIN_SPRING_SHARE = 0.15;
 

@@ -114,6 +114,9 @@ function step(state: StrataLodState, runtime: DomeRuntime, nodes: VaultNode[], s
   return camera;
 }
 
+/** The pitch Strata was drawn at, where the pointer below lands on a slice. */
+const STRATA_TEST_PITCH = 0.5;
+
 function settled(nodes: VaultNode[], pitch?: number) {
   const runtime = assembled(nodes, pitch);
   const scale = fitScale(runtime, nodes);
@@ -248,7 +251,7 @@ describe("stepStrataLod", () => {
 
   it("re-reads the held slice once the dome comes to rest under a still pointer", () => {
     const nodes = vault(10000);
-    const { runtime, scale, state } = settled(nodes);
+    const { runtime, scale, state } = settled(nodes, STRATA_TEST_PITCH);
     const pointer = { x: W / 2 + 180, y: H / 2 + 230 };
     for (let i = 0; i < 40; i += 1) step(state, runtime, nodes, scale, { pointer });
     const held = state.hoverSlot;

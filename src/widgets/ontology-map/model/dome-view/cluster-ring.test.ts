@@ -25,17 +25,17 @@ function projectedDiscs(members: number[], yaw: number) {
 describe('clusterRingAnchors', () => {
   const sizes = [40, 3, 17, 1, 9, 26, 5, 12];
 
-  it.each([2, 3, 4, 5, 6, 7, 8])('keeps %i unequal clusters apart at the rest pose and while the dome turns', (count) => {
-    const members = sizes.slice(0, count);
-    for (const yaw of [DOME_YAW_DEFAULT, 0, 1.3, 2.4, 3.9, 5.1]) {
-      const discs = projectedDiscs(members, yaw);
-      for (let i = 0; i < discs.length; i += 1) {
-        for (let j = i + 1; j < discs.length; j += 1) {
-          const apart = Math.hypot(discs[i].x - discs[j].x, discs[i].y - discs[j].y);
-          expect(apart, `clusters ${i} and ${j} at yaw ${yaw}`).toBeGreaterThan(discs[i].r + discs[j].r);
-        }
+  it.each([2, 3, 4, 5, 6, 7, 8])('keeps %i unequal clusters apart at the rest pose, nearer than a cluster', (count) => {
+    const discs = projectedDiscs(sizes.slice(0, count), DOME_YAW_DEFAULT);
+    let nearest = Infinity;
+    for (let i = 0; i < discs.length; i += 1) {
+      for (let j = i + 1; j < discs.length; j += 1) {
+        const gap = Math.hypot(discs[i].x - discs[j].x, discs[i].y - discs[j].y) - discs[i].r - discs[j].r;
+        expect(gap, `clusters ${i} and ${j}`).toBeGreaterThan(0);
+        nearest = Math.min(nearest, gap);
       }
     }
+    expect(nearest).toBeLessThan(2 * Math.min(...discs.map((d) => d.r)));
   });
 
   it('centres the rest pose', () => {

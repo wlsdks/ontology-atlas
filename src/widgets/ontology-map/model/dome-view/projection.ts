@@ -133,10 +133,7 @@ export function solveDomePlanePoint(
   return { px, pz };
 }
 
-/** Neural's clusters turn on its idle spin, so its fit holds this many yaws of one turn. */
-const COUPLING_FIT_YAWS = 8;
-
-/** Input to 3D fit view. O(nodes), or O(nodes × COUPLING_FIT_YAWS) for the coupling cloud. */
+/** Input to 3D fit view. O(nodes). */
 export function domeWorldBounds(
   model: DomeModel,
   yaw: number,
@@ -146,16 +143,12 @@ export function domeWorldBounds(
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  const yaws = model.arrangement === "coupling" ? COUPLING_FIT_YAWS : 1;
-  for (let k = 0; k < yaws; k += 1) {
-    const turned = yaw + (k * Math.PI * 2) / yaws;
-    for (const coord of model.coords.values()) {
-      const p = projectDomeCoord(model, coord, turned, pitch);
-      if (p.wx < minX) minX = p.wx;
-      if (p.wx > maxX) maxX = p.wx;
-      if (p.wy < minY) minY = p.wy;
-      if (p.wy > maxY) maxY = p.wy;
-    }
+  for (const coord of model.coords.values()) {
+    const p = projectDomeCoord(model, coord, yaw, pitch);
+    if (p.wx < minX) minX = p.wx;
+    if (p.wx > maxX) maxX = p.wx;
+    if (p.wy < minY) minY = p.wy;
+    if (p.wy > maxY) maxY = p.wy;
   }
   if (!Number.isFinite(minX)) return null;
   return { minX, minY, maxX, maxY };
