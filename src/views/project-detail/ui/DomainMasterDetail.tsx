@@ -6,7 +6,6 @@ import { getTopologyFocusHref } from "@/entities/project";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
 import type { DomainCompositionRow } from "../model/domain-composition";
 
 /** Twelve rows read as a list at a glance; the rest waits behind one press. */
@@ -74,7 +73,16 @@ export function DomainMasterDetail({
     >
       <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <DomainCapacityLegend labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }} />
+          <p aria-hidden data-testid="domain-capacity-legend" className="flex items-center gap-3.5 whitespace-nowrap text-label text-[color:var(--color-text-tertiary)]">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-indigo-brand)]" />
+              {labels.capabilityUnit}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-text-quaternary)]" />
+              {labels.elementUnit}
+            </span>
+          </p>
           <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.legendCaption}</span>
         </div>
         <ul
