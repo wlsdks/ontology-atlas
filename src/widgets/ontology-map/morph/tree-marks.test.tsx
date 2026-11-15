@@ -117,7 +117,7 @@ describe("the tree's morph marks", () => {
     const model = buildTreeModel(nodes, edges);
     const layout = layoutTree(model);
     const list: TreeDrawList = { marks: [], count: 0, visited: 0, folded: 0 };
-    const view = { width: 600, height: 400 };
+    const view = { width: 320, height: 220 };
     cutTreeAtPose(layout, tokens, TREE_POSE_REST, view, { x: 0, y: 0, ...view }, [], createTreeProjector(), list);
     const closed = list.marks.slice(0, list.count).find((m) => m.closed && model.kinds[m.node] === "capability")!;
     expect(closed).toBeDefined();
