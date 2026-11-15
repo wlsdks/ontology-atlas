@@ -87,6 +87,8 @@ const pack = (r, g, b) => r << 16 | g << 8 | b;
 const INK = new Set([COLORS[0], COLORS[1]].map(hex => parseInt(hex, 16)));
 const FREE_INK = PALETTE[COLORS.indexOf('6d73d2')];
 const FRINGE = new Set(['555451', '777572'].map(hex => parseInt(hex, 16)));
+/** The lighter step of the same fade; within reach of ink it is fringe, not a drawn surface. */
+const HAZE = new Set(['99968f'].map(hex => parseInt(hex, 16)));
 /** Work pixels, half a drawn pixel: the outline's soft edge reaches this far from its ink. */
 const FRINGE_REACH = 2;
 const isOpaque = (data, p) => data[p * 4 + 3] !== 0;
@@ -129,15 +131,24 @@ export function despeckle(data, size) {
   return out;
 }
 
-/** The pixels repainted outside in with the fill beside them, never with ink; O(pixels × depth). */
-function paintedOver(data, size, pixels) {
+/**
+ * The pixels repainted outside in with the fill beside them, never with ink; O(pixels × depth).
+ * `atEdge` is for pixels that may lie on the silhouette, where the first neighbour can be the outside.
+ */
+function paintedOver(data, size, pixels, atEdge = false) {
   const out = Buffer.from(data), pending = new Uint8Array(size * size);
   for (const p of pixels) pending[p] = 1;
   for (let layer = pixels; layer.length;) {
     const painted = [], inner = [];
     for (const p of layer) {
-      let fill = -1;
-      eightNeighbours(p, size, n => { if (fill < 0 && !pending[n] && !isInk(out, n)) fill = n; });
+      // An 8-connected outline leaves the outside reachable by sides only, so at the edge a side
+      // neighbour outranks a corner one, a drawn one outranks none, and a clear corner never counts.
+      let fill = -1, rank = 0;
+      eightNeighbours(p, size, n => {
+        if (pending[n] || isInk(out, n)) return;
+        const beside = Math.abs(n - p) === 1 || Math.abs(n - p) === size, candidate = atEdge ? (beside ? 2 : 0) + (isOpaque(out, n) ? 2 : 1) : 1;
+        if (candidate > rank && !(atEdge && candidate === 1)) { fill = n; rank = candidate; }
+      });
       if (fill < 0) inner.push(p); else painted.push([p, fill]);
     }
     if (!painted.length) break;
@@ -148,9 +159,9 @@ function paintedOver(data, size, pixels) {
   return out;
 }
 
-/** Dark gray pixels within `FRINGE_REACH` of the given ink, nearest first; O(pixels). */
-function fringeOf(data, size, ink, taken) {
-  const isFringe = p => isOpaque(data, p) && FRINGE.has(pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2])), fringe = [];
+/** Pixels of `shades` within `FRINGE_REACH` of the given ink, nearest first; O(pixels). */
+function fringeOf(data, size, ink, taken, shades = FRINGE) {
+  const isFringe = p => isOpaque(data, p) && shades.has(pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2])), fringe = [];
   let edge = ink.map(p => [p, p]);
   for (let step = 0; step < FRINGE_REACH && edge.length; step++) {
     const next = [];
@@ -164,7 +175,7 @@ function fringeOf(data, size, ink, taken) {
 /**
  * The source's ink fades through dark gray, which shows as gray dashes on the app's dark
  * canvas. Within `FRINGE_REACH`, the soft edge of a facial mark dissolves into the fill around
- * it and the soft edge of the outline joins the outline; gray farther in is a drawn surface.
+ * it, that of the outline joins the outline, and the lighter haze beside either dissolves too.
  */
 export function inkFringe(data, size) {
   const total = size * size, taken = new Uint8Array(total), markInk = enclosedMarks(data, size).flatMap(mark => mark.pixels), outline = [];
@@ -172,7 +183,9 @@ export function inkFringe(data, size) {
   for (let p = 0; p < total; p++) if (isInk(data, p) && !taken[p]) { taken[p] = 1; outline.push(p); }
   const out = paintedOver(data, size, fringeOf(data, size, markInk, taken).map(([p]) => p));
   for (const [p, source] of fringeOf(data, size, outline, taken)) data.copy(out, p * 4, source * 4, source * 4 + 4);
-  return out;
+  const ink = [];
+  for (let p = 0; p < total; p++) if (isInk(out, p)) ink.push(p);
+  return paintedOver(out, size, fringeOf(out, size, ink, new Uint8Array(total), HAZE).map(([p]) => p), true);
 }
 
 /** Ink components drawn inside a fill and small enough to be one facial mark; O(pixels). */
