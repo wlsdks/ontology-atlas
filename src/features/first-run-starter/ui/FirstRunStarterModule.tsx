@@ -1,39 +1,28 @@
 "use client";
 
 import {
-  Fragment,
   useEffect,
-  useId,
   useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { ChevronRight, FolderOpen, FolderPlus } from "lucide-react";
+import { ChevronRight, FolderOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
 import { Link } from "@/i18n/navigation";
-import { cn } from "@/shared/lib/cn";
-import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { useSampleSource } from "@/entities/vault-session";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
-import {
-  Button,
-  CompactCopyButton,
-  RowDisclosure,
-  StaggeredFadeIn,
-  controlClass,
-} from "@/shared/ui";
+import { Button, StaggeredFadeIn, controlClass } from "@/shared/ui";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
+import { CliBridgeBody, CliBridgeDialog, GlossaryDialog } from "./StarterDialogs";
 import {
   readVaultGuideAutoOpened,
   writeVaultGuideAutoOpened,
 } from "../model/vault-guide-auto-open";
-
-const GLOSSARY_TERMS = ["domain", "capability", "element"] as const;
 
 export interface FirstRunStarterModuleProps {
   concepts: number;
@@ -48,19 +37,18 @@ export interface FirstRunStarterModuleProps {
   children?: ReactNode;
 }
 
-const CLI_BOOTSTRAP_COMMAND =
-  "node cli/src/index.mjs init && node cli/src/index.mjs bootstrap";
-
 const subscribeNever = () => () => {};
 const readApplePlatform = () =>
   /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 const readApplePlatformOnServer = () => false;
 
-const LIST_LINK_CLASS = controlClass({
+/** The quiet text buttons under the primary action share this one size step. */
+const SECONDARY_ACTION_CLASS = controlClass({
   shape: "link",
   scope: "panel",
+  tone: "muted",
   hoverInk: "strong",
-  className: "atlas-touch-floor gap-1.5 text-left",
+  className: "atlas-touch-floor whitespace-nowrap text-left",
 });
 
 function SampleDot() {
@@ -71,54 +59,6 @@ function SampleDot() {
     </span>
   );
 }
-
-function CardDisclosure({
-  open,
-  onToggle,
-  label,
-  testId,
-  children,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  label: ReactNode;
-  testId: string;
-  children: ReactNode;
-}) {
-  const bodyId = useId();
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={bodyId}
-        data-testid={testId}
-        className={controlClass({
-          shape: "link",
-          scope: "panel",
-          tone: "muted",
-          hoverInk: "strong",
-          className: "atlas-touch-floor gap-1.5 text-left",
-        })}
-      >
-        <ChevronRight
-          size={ICON_SIZE.sm}
-          aria-hidden
-          className={cn(
-            "shrink-0 transition-[rotate] duration-[var(--motion-fast)] ease-[var(--motion-ease)] motion-reduce:transition-none",
-            open && "rotate-90",
-          )}
-        />
-        {label}
-      </button>
-      <RowDisclosure open={open} id={bodyId}>
-        {children}
-      </RowDisclosure>
-    </div>
-  );
-}
-
 
 export function FirstRunStarterModule({
   concepts,
@@ -133,7 +73,7 @@ export function FirstRunStarterModule({
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
-  const glossary = useTranslations("searchWidgets.shortcuts.glossary");
+  const glossaryTitle = useTranslations("searchWidgets.shortcuts.glossary")("title");
   const {
     visible,
     dismissed,
@@ -150,14 +90,9 @@ export function FirstRunStarterModule({
     errorDetail,
     fsaUnsupported,
   } = useFirstRunStarter({ mapSelectionActive: nodeSelected });
-  const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
   const [sampleSource, setSampleSource] = useSampleSource();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [cliOpen, setCliOpen] = useState(false);
-  const [wordsOpen, setWordsOpen] = useState(false);
-  const moreShown = moreOpen;
-  const cliShown = cliOpen;
-  const cliBridgeRef = useRef<HTMLDivElement | null>(null);
   const focusReopenRef = useRef(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -362,6 +297,41 @@ export function FirstRunStarterModule({
               <p className="text-label leading-label text-[color:var(--color-status-danger)]">{errorText}</p>
             </div>
           ) : null}
+          {/* The terminal start lives in the folder guide; without folder access that guide never
+              opens, so it takes the create button's place here. */}
+          <div data-testid="first-run-starter-secondary" className="flex items-center gap-4">
+            {fsaUnsupported ? (
+              <button
+                type="button"
+                onClick={() => setCliOpen(true)}
+                data-testid="first-run-starter-cli-open"
+                className={SECONDARY_ACTION_CLASS}
+              >
+                {t("cliBridgeToggle")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                disabled={busy}
+                data-testid="first-run-starter-create"
+                className={SECONDARY_ACTION_CLASS}
+              >
+                {scaffolding ? t("createBusy") : t("createLabel")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setGlossaryOpen(true)}
+              data-testid="first-run-starter-glossary-open"
+              className={SECONDARY_ACTION_CLASS}
+            >
+              {glossaryTitle}
+            </button>
+          </div>
+          {canBuildFromCode && agentAvailable && !fsaUnsupported ? (
+            <BuildFromCodeDoor build={build} variant="card" disabled={busy} />
+          ) : null}
         </div>
 
         <div
@@ -414,131 +384,6 @@ export function FirstRunStarterModule({
             ) : null}
           </p>
         </div>
-
-        <div key="more" className="mt-3 flex flex-col gap-1">
-          <CardDisclosure
-            open={moreShown}
-            onToggle={() => setMoreOpen((open) => !open)}
-            label={t("moreWaysToggle")}
-            testId="first-run-starter-more-toggle"
-          >
-            <div
-              data-testid="first-run-starter-more"
-              className="flex flex-col items-start gap-1 pb-1 pt-1"
-            >
-              {canBuildFromCode && agentAvailable && !fsaUnsupported ? (
-                <div className="w-full pb-1">
-                  <BuildFromCodeDoor build={build} variant="card" disabled={busy} />
-                </div>
-              ) : null}
-              {fsaUnsupported ? null : (
-                <button
-                  type="button"
-                  onClick={() => setGuideOpen(true)}
-                  disabled={busy}
-                  data-testid="first-run-starter-create"
-                  className={LIST_LINK_CLASS}
-                >
-                  <FolderPlus size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
-                  {scaffolding ? t("createBusy") : t("createLabel")}
-                </button>
-              )}
-              <div className="w-full">
-                <CardDisclosure
-                  open={cliShown}
-                  onToggle={() => setCliOpen((open) => !open)}
-                  label={t("cliBridgeToggle")}
-                  testId="first-run-starter-cli-toggle"
-                >
-                  <div
-                    ref={cliBridgeRef}
-                    id="first-run-starter-cli-bridge"
-                    data-testid="first-run-starter-cli-bridge"
-                    className="mt-1 rounded-chip border border-[color:var(--map-panel-divider)] bg-[color:var(--map-panel-recess-a35)] px-2.5 py-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="min-w-0 break-keep text-caption leading-display-tight text-[color:var(--map-panel-text-quaternary)]">
-                        {t("cliBridgeLabel")}
-                      </p>
-                      <CompactCopyButton
-                        copied={cliCopyState === "copied"}
-                        label={cliCopyState === "copied" ? t("cliBridgeCopied") : t("cliBridgeCopy")}
-                        ariaLabel={t("cliBridgeCopyAriaLabel")}
-                        onClick={() => void copyCliCommand(CLI_BOOTSTRAP_COMMAND)}
-                        data-testid="first-run-starter-cli-bridge-copy"
-                        className="-my-1.5 -mr-1.5 shrink-0"
-                      />
-                    </div>
-                    <p
-                      data-testid="first-run-starter-cli-source-only"
-                      className="mt-1.5 text-caption leading-label text-[color:var(--color-text-tertiary)]"
-                    >
-                      {t("cliBridgeSourceOnly")}
-                    </p>
-                    <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-label leading-label text-[color:var(--map-panel-text-secondary)]">
-                      {CLI_BOOTSTRAP_COMMAND}
-                    </code>
-                  </div>
-                </CardDisclosure>
-              </div>
-            </div>
-          </CardDisclosure>
-
-          <CardDisclosure
-            open={wordsOpen}
-            onToggle={() => setWordsOpen((open) => !open)}
-            label={t("glossaryToggle")}
-            testId="first-run-starter-glossary-toggle"
-          >
-            <div className="pb-1 pt-1.5">
-              <dl
-                data-testid="first-run-starter-glossary"
-                style={{ gridTemplateColumns: "auto auto minmax(0, 1fr)" }}
-                className="grid gap-x-1.5 gap-y-1 text-label leading-label"
-              >
-                {GLOSSARY_TERMS.map((term) => (
-                  <Fragment key={term}>
-                    <dt className="font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-secondary)]">
-                      {glossary(`${term}Term`)}
-                    </dt>
-                    <span
-                      aria-hidden="true"
-                      className="text-[color:var(--map-panel-text-quaternary)]"
-                    >
-                      =
-                    </span>
-                    <dd className="text-[color:var(--map-panel-text-tertiary)]">
-                      {glossary(`${term}Definition`)}
-                    </dd>
-                  </Fragment>
-                ))}
-              </dl>
-              {onEnablePlainMode ? (
-                audiencePlain ? null : (
-                  <button
-                    type="button"
-                    data-testid="first-run-plain-toggle"
-                    onClick={onEnablePlainMode}
-                    className={controlClass({
-                      shape: "link",
-                      tone: "accent",
-                      className: "touch-hit-expand mt-2 underline-offset-2 hover:underline",
-                    })}
-                  >
-                    {t("plainModeCta")}
-                  </button>
-                )
-              ) : (
-                <p
-                  data-testid="first-run-starter-plain-mode-hint"
-                  className="mt-2 text-label leading-label text-[color:var(--map-panel-text-quaternary)]"
-                >
-                  {t("plainModeHint")}
-                </p>
-              )}
-            </div>
-          </CardDisclosure>
-        </div>
       </StaggeredFadeIn>
 
       <VaultOpenGuideSheet
@@ -553,7 +398,22 @@ export function FirstRunStarterModule({
           setGuideOpen(false);
           void createVault();
         }}
+        lastSection={
+          <section>
+            <h3 className="mb-2 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {t("cliBridgeToggle")}
+            </h3>
+            <CliBridgeBody />
+          </section>
+        }
       />
+      <GlossaryDialog
+        open={glossaryOpen}
+        onClose={() => setGlossaryOpen(false)}
+        onEnablePlainMode={onEnablePlainMode}
+        audiencePlain={audiencePlain}
+      />
+      <CliBridgeDialog open={cliOpen} onClose={() => setCliOpen(false)} />
     </div>
   );
 }
