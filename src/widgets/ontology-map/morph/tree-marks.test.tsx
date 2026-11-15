@@ -48,10 +48,11 @@ function stubTreeTokens(): void {
 const CANVAS = { x: 64, y: 0, width: 1448, height: 982 };
 const rectOf = ({ x, y, width, height }: typeof CANVAS) => ({ x, y, left: x, top: y, right: x + width, bottom: y + height, width, height, toJSON: () => ({}) });
 
-/** The map's box for its canvases and the tree's root, a toolbar over its top left, nothing elsewhere. */
+/** The map's box for its canvases and the tree's root, a toolbar over its top left, a two-line legend, nothing elsewhere. */
 function stubLayoutBoxes(): void {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
     if (this instanceof HTMLCanvasElement || this.dataset.testid === "tree-map") return rectOf(CANVAS);
+    if (this.dataset.testid === "tree-map-footer") return rectOf({ x: CANVAS.x, y: CANVAS.y + CANVAS.height - 64, width: CANVAS.width, height: 48 });
     if (this.dataset.testid === "toolbar") return rectOf({ x: 88, y: 24, width: 300, height: 120 });
     return rectOf({ x: 0, y: 0, width: 0, height: 0 });
   });

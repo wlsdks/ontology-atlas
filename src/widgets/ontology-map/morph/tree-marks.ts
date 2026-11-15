@@ -52,9 +52,12 @@ function readTreeTokensOrNull(): TreeTokens | null {
   }
 }
 
+/** The tree's footer band from the canvas bottom: its 16 px inset and a two-line legend, 48 px on the web at 1400x860. */
+const TREE_FOOTER_BAND_PX = 64;
+
 /**
- * The marks the tree draws at its rest pose over `host`, through the tree's own pipeline. The
- * tree's legend is not mounted yet, so the free area keeps the strip the legend later takes.
+ * The marks the tree draws at its rest pose over `host`, through the tree's own pipeline. Its
+ * legend is not mounted yet, so the footer band stands in for the legend's measured top.
  */
 export function predictTreeTarget(
   nodes: readonly OntologyMapNode[],
@@ -64,7 +67,7 @@ export function predictTreeTarget(
   const tokens = readTreeTokensOrNull();
   const box = host.getBoundingClientRect();
   if (!tokens || box.width <= 0 || box.height <= 0) return null;
-  const free = readTreeFreeArea(host, host, null);
+  const free = readTreeFreeArea(host, host, box.height - TREE_FOOTER_BAND_PX);
   if (!free) return null;
   const model = buildTreeModel(nodes, edges);
   const layout = layoutTree(model);
