@@ -77,7 +77,7 @@ function glowSprite(ink: string): HTMLCanvasElement | null {
     const half = SPRITE_PX / 2;
     const gradient = g.createRadialGradient(half, half, 0, half, half, half);
     gradient.addColorStop(0, ink);
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(1, "transparent");
     g.fillStyle = gradient;
     g.fillRect(0, 0, SPRITE_PX, SPRITE_PX);
   }
