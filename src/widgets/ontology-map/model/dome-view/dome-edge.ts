@@ -1,10 +1,12 @@
 import type { DomeNodeFrame } from './runtime';
+import { isNeuralDependency, neuralAxonControl, type NeuralTracts } from './neural-cells';
 import type { DomeArrangement } from './types';
 
 interface EdgeCoordinates {
   sourceId: string;
   targetId: string;
   kind: 'contains' | 'depends';
+  relationType: string;
   ax: number;
   ay: number;
   bx: number;
@@ -19,6 +21,7 @@ interface EdgeCoordinates {
  * Containment stays straight in Cone/Strata. Neural branches and other relations
  * take shallow arcs; their control offset is capped at one small node diameter
  * in screen space, even when zoomed in. Reciprocal relations bow opposite ways.
+ * Given Neural's tracts, a dependency takes Neural's axon route instead, by `neuralMix`.
  */
 export function projectDomeEdgeControl(
   edge: EdgeCoordinates,
@@ -26,6 +29,7 @@ export function projectDomeEdgeControl(
   arrangement: DomeArrangement,
   cameraScale: number,
   neuralMix = arrangement === 'coupling' ? 1 : 0,
+  tracts: NeuralTracts | null = null,
 ): { x: number; y: number } {
   const a = frame?.get(edge.sourceId);
   const b = frame?.get(edge.targetId);
@@ -44,7 +48,13 @@ export function projectDomeEdgeControl(
   const bow = curved && length > 1e-6
     ? Math.min(length * (edge.kind === 'contains' ? 0.06 : 0.1), 16 / Math.max(cameraScale, 1e-6)) * branchMix
     : 0;
-  const x = (ax + bx) / 2 - (length > 1e-6 ? dy / length * bow : 0);
-  const y = (ay + by) / 2 + (length > 1e-6 ? dx / length * bow : 0);
+  let x = (ax + bx) / 2 - (length > 1e-6 ? dy / length * bow : 0);
+  let y = (ay + by) / 2 + (length > 1e-6 ? dx / length * bow : 0);
+  const mix = Math.min(1, Math.max(0, neuralMix));
+  if (tracts !== null && mix > 0 && isNeuralDependency(edge)) {
+    const axon = neuralAxonControl(edge.sourceId, edge.targetId, ax, ay, bx, by, tracts);
+    x += (axon.x - x) * mix;
+    y += (axon.y - y) * mix;
+  }
   return { x: flatX + (x - flatX) * ramp, y: flatY + (y - flatY) * ramp };
 }

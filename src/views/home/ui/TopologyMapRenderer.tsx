@@ -39,7 +39,7 @@ import { useMapEvidenceStates } from "../model/map-canvas/use-map-evidence-state
 import { useMapLayoutMorph } from "../model/map-canvas/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { TopologyTreeSurface } from "./TopologyTreeSurface";
-import { TopologyLightLegend } from "./TopologyLightLegend";
+import { TopologyNeuralLegend, useNeuralLabels } from "./TopologyNeuralLegend";
 import { DomainStructureMap } from "@/widgets/ontology-map";
 import { TopologyFlatKey } from "./TopologyScopeReadout";
 
@@ -142,7 +142,7 @@ export function TopologyMapRenderer({
   } = topologyAuthoring;
   const {
     handleExpandRequest, handleMapFrameDrawn, handleTopologyGraphStatsChange, mapLensIds, mapLensKind,
-    pathLensEdgeIds, pathExpandedParents, allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels,
+    pathLensEdgeIds, pathExpandedParents, allExpandedParentIds, realmCaption, clusterBarLabels, dialLabels,
   } = topologySceneControls;
   const { setFullDetailSlug, handleContextMenuNode, panelHoverNodeIdRef } = topologyCanvasFocus;
   const { constellationFitToken, routedConstellation, spotlightExpandedParents } = topologyExplorationLenses;
@@ -157,6 +157,7 @@ export function TopologyMapRenderer({
   const missingStructureDocuments = useMemo(() => new Set(ontologyInsight?.nodes.filter(node => node.hasOwnDocument === false).map(node => node.id)), [ontologyInsight]);
   const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
   const dialEvidence = mapEvidence.availability === "reading" ? null : mapEvidence.states;
+  const neuralLabels = useNeuralLabels(mapEvidence.availability === "measured");
   const labelFont = useBodyLabelFont();
   const dialLabelsInFont = useMemo(() => (labelFont.adopted && dialLabels ? { ...dialLabels } : dialLabels), [dialLabels, labelFont.adopted]);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
@@ -343,11 +344,12 @@ export function TopologyMapRenderer({
             mapArrangement="coupling"
             domeEvidence={evidenceStates}
             onHiddenDependenciesChange={setHiddenDependencyCount}
+            neuralLabels={neuralLabels}
             domeLightLegend={
-              <TopologyLightLegend
+              <TopologyNeuralLegend
                 evidence={mapEvidence}
                 nodeIds={nodes.map((node) => node.id)}
-                kindLabels={domeTierLabels}
+                focused={canvasSelectedSlug !== null}
                 hiddenDependencies={hiddenDependencyCount}
               />
             }

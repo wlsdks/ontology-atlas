@@ -83,7 +83,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL,
     glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
     expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
-    onWalkDeadEnd = null, domeEvidence, dialLabels, evidenceStates, impactLens, onFlatDialChange, onHiddenDependenciesChange,
+    onWalkDeadEnd = null, domeEvidence, neuralLabels = null, dialLabels, evidenceStates, impactLens, onFlatDialChange, onHiddenDependenciesChange,
     relationCaptions, reviewQuestionIds, flatRingMemory = null, loadProgress = null, placingTierRead = false,
   } = args;
   const {
@@ -277,6 +277,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(domeEvidence ?? null);
   const domeLodRef = useRef<StrataLodState>(createStrataLodState());
+  const neuralLabelsRef = useRef(neuralLabels);
+  useEffect(() => {
+    neuralLabelsRef.current = neuralLabels;
+    lastActiveMsRef.current = performance.now();
+  }, [neuralLabels, lastActiveMsRef]);
   useEffect(() => {
     domeEvidenceRef.current = domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
@@ -600,11 +605,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       expandedParentsRef,
       clusteredIdsRef,
       pointerMachineRef,
-      bgPointerRef,
       reducedMotionRef,
-      lastInputMsRef,
       lastActiveMsRef,
-      ambientSleepDelayRef,
       viewportRef,
       beginCameraTween,
       cameraTokens,
@@ -856,6 +858,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeTierNameWidthsRef,
       domeFitInsetsRef,
       domeEvidenceRef,
+      neuralLabelsRef,
       domeLodRef,
       onHiddenDependenciesChangeRef,
       hiddenDependenciesSentRef,

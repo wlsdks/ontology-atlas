@@ -100,7 +100,6 @@ export function createPointerContext(refs: PointerHandlerRefs) {
     zoomEaseRef.current = null;
     const dome = domeInteractive();
     if (dome) {
-      dome.spinArmed = false;
       commitDomeEntrySweep(dome);
       dome.poseTween = null;
     }

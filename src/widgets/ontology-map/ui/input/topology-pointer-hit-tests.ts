@@ -1,5 +1,7 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
+import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
+import { isNeuralDependency } from "../../model/dome-view/neural-cells";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
 import { clipBranchRelation } from "../../dial/branches/relation-ports";
@@ -81,6 +83,13 @@ export function createPointerHitTests(ctx: PointerContext) {
     clusterBarLabelsRef, realmParallaxRef, realmTierKindsRef, domeRuntimeRef, neuralRampRef,
     tierRevealRef, pathEdgeIdsRef, visitedTrailRef, domeFrameNow,
   } = ctx;
+  /** The radius factor the 3D draw used for this node: Neural's painted cell, or the dome's perspective. */
+  const domeRadiusScale = (world: TopologyWorld, node: { id: string; kind: "project" | "domain" | "capability" | "element" }, frame: ReadonlyMap<string, DomeNodeFrame>, scale: number): number => {
+    const s = frame.get(node.id)?.s ?? 1;
+    const dome = domeRuntimeRef?.current ?? null;
+    if (dome === null || dome.model.arrangement !== "coupling") return s;
+    return neuralRadiusScale(world, node, s, scale, dome.restFit?.target.tscale ?? dome.fitScale);
+  };
 
   /**
    * Density gate — decides which cluster chip a click or hover point is over. It
@@ -228,8 +237,8 @@ export function createPointerHitTests(ctx: PointerContext) {
           // The alpha the draw used this frame — every see-through channel from one source.
           lastDrawnNodeAlphas()),
       renderOffsetForNode,
-      // 3D perspective factor — the same s the draw multiplied by, applied to the hit disc too.
-      domeFrame ? (node) => domeFrame.get(node.id)?.s ?? 1 : undefined,
+      // 3D: the radius factor the draw multiplied by, so the hit disc is the painted disc.
+      domeFrame ? (node) => domeRadiusScale(world, node, domeFrame, camera.scale.value) : undefined,
       // 3D depth — among overlapping discs the nearer (brighter, larger) node wins.
       domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined);
   };
@@ -313,8 +322,7 @@ export function createPointerHitTests(ctx: PointerContext) {
       const node = world.nodeById.get(id);
       if (!node)
         return undefined;
-      // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
-      const domeS = domeFrame?.get(id)?.s ?? 1;
+      const domeS = domeFrame === null ? 1 : domeRadiusScale(world, node, domeFrame, scale);
       return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
     };
     const candidates: EdgeHitCandidate[] = [];
@@ -322,12 +330,17 @@ export function createPointerHitTests(ctx: PointerContext) {
     // Averaging endpoint offsets onto the flat bow misses the visible 3D line.
     const cam = cameraRef.current;
     const ZERO = { dx: 0, dy: 0, s: 1 };
+    const dome = domeRuntimeRef?.current ?? null;
+    const neural = domeFrame !== null && dome !== null && dome.model.arrangement === "coupling";
+    const tracts = neural ? neuralTractsFor(world, domeFrame, dome.frameEpoch) : null;
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId))
         continue;
+      if (neural && !isNeuralDependency(edge))
+        continue;
       const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
       const offB = domeFrame?.get(edge.targetId) ?? ZERO;
-      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
+      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current, tracts);
       candidates.push({
         edge,
         ...clipBranchRelation(dial, edge.sourceId, edge.targetId, {

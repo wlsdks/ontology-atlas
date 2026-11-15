@@ -74,6 +74,40 @@ async function domeScreenBox(page: import("@playwright/test").Page) {
   });
 }
 
+/**
+ * A point on the bare canvas well outside the grip ellipse (the one inscribed in the drawn
+ * nodes' bbox): chrome panels cover parts of the canvas and would take the pointer instead.
+ */
+async function outsidePoint(page: import("@playwright/test").Page) {
+  return page.evaluate(() => {
+    const m = (
+      window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; x: number; y: number }> } }
+    ).__atlasMap;
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]');
+    const rect = canvas?.getBoundingClientRect();
+    const nodes = (m?.nodes() ?? []).filter((n) => !n.hidden);
+    if (!canvas || !rect || nodes.length === 0) return null;
+    const xs = nodes.map((n) => n.x);
+    const ys = nodes.map((n) => n.y);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const halfW = (Math.max(...xs) - Math.min(...xs)) / 2;
+    const halfH = (Math.max(...ys) - Math.min(...ys)) / 2;
+    for (let y = 24; y < rect.height - 24; y += 16) {
+      for (let x = 24; x < rect.width - 24; x += 16) {
+        const nx = (x - cx) / (halfW * 1.3);
+        const ny = (y - cy) / (halfH * 1.3);
+        if (nx * nx + ny * ny <= 1) continue;
+        if (nodes.some((n) => Math.hypot(n.x - x, n.y - y) < 40)) continue;
+        // Room for the pan drag's 112 x 72 px path on bare canvas.
+        const path = [0, 0.5, 1].map((t) => document.elementFromPoint(rect.left + x + 112 * t, rect.top + y + 72 * t));
+        if (path.every((el) => el === canvas)) return { x: rect.left + x, y: rect.top + y };
+      }
+    }
+    return null;
+  });
+}
+
 test("Neural: dragging inside the dome rotates it, and dragging the black area outside pans the map", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
@@ -93,17 +127,13 @@ test("Neural: dragging inside the dome rotates it, and dragging the black area o
 
   const box = await domeScreenBox(page);
   expect(box, "no 3D node could be read, so the instrument is spinning idle").not.toBeNull();
-  const b = box!;
 
-  // Top-left margin — well outside the drawn nodes, unambiguously outside.
-  const outsideX = Math.max(b.left + 8, b.left + b.minX - 160);
-  const outsideY = Math.max(b.top + 8, b.top + b.minY - 120);
-  expect(outsideX, "the dome fills the screen so there is no outside, and the test cannot hold").toBeLessThan(
-    b.left + b.minX - 40,
-  );
+  const outside = await outsidePoint(page);
+  expect(outside, "the dome fills the bare canvas so there is no outside, and the test cannot hold").not.toBeNull();
+  const { x: outsideX, y: outsideY } = outside!;
 
   /* ── ① Drag outside the dome = camera pan ──────────────────────────────── */
-  // Hover pauses the idle spin; read the drag baseline after the pointer arrives.
+  // Read the drag baseline after the pointer arrives.
   await page.mouse.move(outsideX, outsideY);
   await waitForMapStill(page, { what: "dome" });
   const before1 = await readPose(page);
@@ -153,8 +183,8 @@ test("Neural: dragging inside the dome rotates it, and dragging the black area o
   await page.mouse.up();
   /*
    * The orbit keeps closing its remaining gap after velocity reaches zero
-   * (`yawSnap`), and the hand that just dragged disarmed the auto-spin, so the pose
-   * really does come to rest. Waiting for that rest reads the landing rather than
+   * (`yawSnap`), and Neural never turns by itself, so the pose really does come to
+   * rest. Waiting for that rest reads the landing rather than
    * whatever 60 ms of this machine happened to reach.
    */
   await waitForMapStill(page, { what: "dome" });
@@ -184,7 +214,6 @@ test("Neural: the cursor names two zones (grab over the dome, move outside)", as
 
   const box = await domeScreenBox(page);
   expect(box, "no 3D node could be read, so the instrument is spinning idle").not.toBeNull();
-  const b = box!;
   const cursor = () =>
     page.evaluate(() => {
       const el = document.querySelector('[data-testid="ontology-map-canvas"]') as HTMLElement | null;
@@ -195,9 +224,9 @@ test("Neural: the cursor names two zones (grab over the dome, move outside)", as
    * A rule with no cursor is discoverable only by dragging — the "drag-only
    * discovery" this repository forbids. So the cursor is part of the contract.
    */
-  const outsideX = Math.max(b.left + 8, b.left + b.minX - 160);
-  const outsideY = Math.max(b.top + 8, b.top + b.minY - 120);
-  await page.mouse.move(outsideX, outsideY);
+  const outside = await outsidePoint(page);
+  expect(outside, "the dome fills the bare canvas so there is no outside, and the test cannot hold").not.toBeNull();
+  await page.mouse.move(outside!.x, outside!.y);
   await expect.poll(cursor, { message: "there is no indication outside the dome that it can be moved" }).toBe("move");
 
   // Pick empty space between the rings, avoiding node discs — over a node the node's

@@ -60,10 +60,10 @@ describe("map inspection hook (window.__atlasMap)", () => {
 
   it("nodes expose their screen radius, since overlap cannot be counted without a radius", () => {
     // Must be **the same expression** as the drawing side: radiusForKind ×
-    // magnitudeScale × camera zoom (× the 3D frame's perspective factor s — identical
-    // to draw; 1 in 2D).
+    // magnitudeScale × camera zoom × the 3D radius factor (Neural's painted cell from
+    // `neuralRadiusScale`, otherwise the frame's perspective s; 1 in 2D).
     expect(source).toMatch(
-      /radius:\s*tokens\s*\n?\s*\?\s*radiusForKind\(n\.kind, tokens\) \*\s*\n?\s*n\.magnitudeScale \*\s*\n?\s*camera\.scale\.value \*\s*\n?\s*dOff\.s/,
+      /radius:\s*tokens\s*\n?\s*\?\s*radiusForKind\(n\.kind, tokens\) \*\s*\n?\s*n\.magnitudeScale \*\s*\n?\s*camera\.scale\.value \*\s*\n?\s*\([^)]*\n?[\s\S]*?neuralRadiusScale\(world, n, dOff\.s,[\s\S]*?: dOff\.s\)/,
     );
   });
 

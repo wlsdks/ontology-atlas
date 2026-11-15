@@ -1,5 +1,4 @@
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
-import { lerpColorHex } from "../../render/grid";
 import { worldToScreen } from "../camera/topology-camera-math";
 import { domeFamily } from "../frame-cache/structure";
 import type { WorldEdge } from "../world/topology-world";
@@ -97,9 +96,9 @@ export function prepareFocus(frame: FrameInputs) {
   const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
   resetNodeVisualCacheFor(tokens, reducedMotion);
   const traceTokensFrame = {
-    edgeContains: lerpColorHex(tokens.edgeContains, tokens.indigo, neural * 0.12),
-    edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.indigoBright, neural * 0.12),
-    edgeContainsL2: lerpColorHex(tokens.edgeContainsL2, tokens.indigo, neural * 0.12),
+    edgeContains: tokens.edgeContains,
+    edgeContainsL0: tokens.edgeContainsL0,
+    edgeContainsL2: tokens.edgeContainsL2,
     edgeDepends: tokens.edgeDepends,
     edgeDim: tokens.edgeDim,
     indigo: tokens.indigo,

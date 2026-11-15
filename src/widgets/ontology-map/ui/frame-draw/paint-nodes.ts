@@ -31,7 +31,6 @@ import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview
 import { isSpineNode, radiusForKind, type WorldNode } from "../world/topology-world";
 import { pressResponse } from "../../expressive/mass-spring";
 import { drawNodeBloom } from "../../expressive/ego-light";
-import { drawNeuralBloom } from "../../expressive/neural-bloom";
 import {
   BACKGROUND_DIM_WHEN_EXPANDED,
   EMPTY_NEIGHBOR_SET,
@@ -45,7 +44,6 @@ import {
   LIT_KIND_STRENGTH,
   type NodeVisual,
   litBodyInk,
-  neuralPaletteCache,
   nodeVisualCache,
   phaseForId,
   resolveNodeVisual,
@@ -88,7 +86,7 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
     colorFocusedNodeId, colorSelectedEdge, focusRampById, emphasisById, emphasizedNeighborId,
     tokens, reducedMotion, footprintStepColor, appearById, batchAppearById, expandRevealById, now,
     hoverReleasedNodeId, hoveredNodeId, hoverStartedAt, realmDepthById, camera, viewportWidth,
-    viewportHeight, spotlightIds, domeLight, selectionPulse, devicePixelRatio, farT,
+    viewportHeight, spotlightIds, domeLight, selectionPulse, farT,
     agentFocusNodeId, spotlightRamp, spotlightDashOffset, glyphStyle, footprintStepsById,
     footprintPref, trailStarInk, trailLensOpenedAtMs, footprintNewestStep, footprintNewestId,
     footprintAppear, footprintInk, wardingRing, spotlightLensActive, recentSpotlightActive,
@@ -304,18 +302,6 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         bodyStroke = body.stroke;
       }
     }
-    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
-      const ink = node.kind === "project" ? tokens.amberHub : tokens.indigoBright;
-      let palette = neuralPaletteCache.get(visual);
-      if (!palette || palette.ramp !== neural || palette.ink !== ink) {
-        const fill = lerpColorHex(visual.fill, ink, neural * 0.85);
-        palette = { ramp: neural, ink, fill, stroke: lerpColorHex(visual.stroke, fill, neural * 0.85) };
-        neuralPaletteCache.set(visual, palette);
-      }
-      bodyFill = palette.fill;
-      if (colorEgoState === "normal")
-        bodyStroke = palette.stroke;
-    }
     let sheenTop = sheenTopCache.get(bodyFill);
     if (sheenTop === undefined) {
       sheenTop = lerpColorHex(bodyFill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
@@ -361,11 +347,6 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
       const strength =
         EVIDENCE_EMISSION[litState] * LIT_KIND_STRENGTH[node.kind] * lineBoost * nodeDome.a * (colorEgoState === "dim" ? 0.3 : 1);
       drawEmissiveHalo(ctx, screen.x, screen.y, screenRadius, litRgb, strength);
-    }
-    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
-      const strength = attended ? 1 : node.kind === "element" ? 0.35 : 0.6;
-      drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, devicePixelRatio,
-        node.kind === "project" ? { core: tokens.amberHub, halo: tokens.amberHub } : undefined);
     }
     if (bodyAlpha > 0 || showCount) nodeShapesDraw(
       ctx,

@@ -4,9 +4,9 @@ import {
   extendsGrace,
   isCameraUnsettled,
   isCanvasActive,
-  isDomeSpinAnimating,
-  isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type DomeSpinInput, type EgoTailActivityInput } from "./idle-gate";
+  isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type EgoTailActivityInput } from "./idle-gate";
 import { stepFocusRamp } from "../visibility/focus-state";
+import { neuralSignalProgress } from "../dome-view/neural-cells";
 
 const IDLE: CanvasActivityFlags = {
   pointerActive: false,
@@ -22,6 +22,7 @@ const IDLE: CanvasActivityFlags = {
   trailLensSettling: false,
   trailMotionActive: false,
   lightActive: false,
+  neuralSignalTravelling: false,
 };
 
 describe("isCanvasActive", () => {
@@ -33,6 +34,24 @@ describe("isCanvasActive", () => {
     for (const key of Object.keys(IDLE) as (keyof CanvasActivityFlags)[]) {
       expect(isCanvasActive({ ...IDLE, [key]: true })).toBe(true);
     }
+  });
+});
+
+describe("Neural's focus signal", () => {
+  const SIGNAL_MS = 600;
+  const awakeAt = (elapsedMs: number, reducedMotion: boolean) =>
+    extendsGrace({ ...IDLE, neuralSignalTravelling: neuralSignalProgress(elapsedMs, 0, SIGNAL_MS, reducedMotion) < 1 });
+
+  it("keeps the map drawing while the signal runs and lets it sleep once it arrives", () => {
+    expect(awakeAt(0, false)).toBe(true);
+    expect(awakeAt(SIGNAL_MS / 2, false)).toBe(true);
+    expect(awakeAt(SIGNAL_MS, false)).toBe(false);
+    expect(awakeAt(SIGNAL_MS * 4, false)).toBe(false);
+  });
+
+  it("never runs under reduced motion, so no frame is drawn for it", () => {
+    expect(neuralSignalProgress(0, 0, SIGNAL_MS, true)).toBe(1);
+    expect(awakeAt(0, true)).toBe(false);
   });
 });
 
@@ -196,46 +215,6 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
         hasDependsEdges: false,
         hasContainsEdges: false,
       })).toBe(false);
-  });
-});
-
-/** The 3D autonomous spin sleeps under the same ambient contract as the comets. */
-describe("isDomeSpinAnimating", () => {
-  const SPINNING: DomeSpinInput = {
-    domeOn: true,
-    reducedMotion: false,
-    ambientAsleep: false,
-    spinArmed: true,
-    pointerOverCanvas: false,
-    assembled: true,
-  };
-
-  it("rotates when armed, assembled and awake", () => {
-    expect(isDomeSpinAnimating(SPINNING)).toBe(true);
-  });
-
-  it("auto-rotate is not activity during ambient sleep", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, ambientAsleep: true })).toBe(false);
-  });
-
-  it("does not rotate with 3D off", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, domeOn: false })).toBe(false);
-  });
-
-  it("does not rotate under reduced motion", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, reducedMotion: true })).toBe(false);
-  });
-
-  it("does not rotate once intervention disarms it", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, spinArmed: false })).toBe(false);
-  });
-
-  it("stops while the cursor is over the canvas, so the aimed node never slides away", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, pointerOverCanvas: true })).toBe(false);
-  });
-
-  it("does not auto-rotate before the assembly ramp fills", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, assembled: false })).toBe(false);
   });
 });
 
