@@ -137,7 +137,9 @@ fades into within half a drawn pixel. One at least a drawn pixel long becomes
 ink; a shorter one dissolves into the fill, and so does the haze beside
 either. The body is the largest side-connected area of light fill, so a prop
 with more ivory than the belly (the folder in `no-results`) keeps its gray, and
-a belly a flipper splits in two is treated on both sides. Dark gray on the
+a belly a flipper splits in two is treated on each side that still joins the
+body's fill; where the flippers cut all the ivory off (`peekaboo`) the pass
+does nothing. Dark gray on the
 silhouette, on the body fill away from the ivory, or larger than a mark stays.
 In `connect` frame 13 the piece runs from the left whisker to the flipper
 outline, so that whisker gains a short tail; where a faint whisker sat in a

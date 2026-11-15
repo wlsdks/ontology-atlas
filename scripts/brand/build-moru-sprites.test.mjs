@@ -481,6 +481,15 @@ test('a faint gray mark on the body ivory becomes ink, a shorter piece there dis
   paint(32, 56, 35, 57, MID_FRINGE_GRAY);
   paint(11, 65, 19, 68, HAZE_GRAY);
   paint(12, 66, 18, 67, FRINGE_GRAY);
+  paint(34, 62, 42, 67, SKIN);
+  paint(36, 64, 40, 65, FRINGE_GRAY);
+  paint(33, 70, 43, 77, SKIN);
+  paint(36, 73, 40, 74, FRINGE_GRAY);
+  paint(38, 53, 40, 54, FRINGE_GRAY);
+  paint(38, 54, 40, 55, HAZE_GRAY);
+  paint(4, 49, 8, 50, FRINGE_GRAY);
+  paint(8, 49, 13, 50, INK);
+  paint(7, 50, 8, 55, INK);
   paint(12, 14, 20, 15, FRINGE_GRAY);
   paint(12, 30, 18, 31, FRINGE_GRAY);
   paint(22, 65, 30, 68, SKIN);
@@ -496,6 +505,10 @@ test('a faint gray mark on the body ivory becomes ink, a shorter piece there dis
   assert.deepEqual([32, 34].map(x => at(drawn, x, 56)), [IVORY, IVORY], 'a piece shorter than a drawn pixel stayed on the belly');
   assert.deepEqual([12, 17].map(x => at(drawn, x, 66)), [INK, INK], 'a faint whisker that only its haze joins to the belly stayed gray');
   assert.deepEqual([at(drawn, 11, 65), at(drawn, 15, 67), at(drawn, 18, 66)], [IVORY, IVORY, IVORY], 'the haze around that whisker stayed gray');
+  assert.deepEqual([36, 39].map(x => at(drawn, x, 64)), [INK, INK], 'a whisker half a drawn pixel of stone away from the ivory stayed gray');
+  assert.deepEqual([36, 39].map(x => at(drawn, x, 73)), [FRINGE_GRAY, FRINGE_GRAY], 'gray farther from the ivory than half a drawn pixel changed');
+  assert.deepEqual([at(drawn, 38, 53), at(drawn, 39, 54)], [IVORY, IVORY], 'a short piece or the haze beside it stayed on the belly');
+  assert.deepEqual([4, 7].map(x => at(drawn, x, 49)), [FRINGE_GRAY, FRINGE_GRAY], 'gray that meets the ivory only by a corner changed');
   assert.deepEqual([12, 19].map(x => at(drawn, x, 14)), [INK, INK], 'a whisker on a second ivory area of the same body stayed gray');
   assert.deepEqual(at(drawn, 14, 30), FRINGE_GRAY, 'gray on the body fill, farther from the ivory than its blend reaches, changed');
   assert.deepEqual([23, 28].map(x => at(drawn, x, 66)), [INK, INK], 'a faint whisker that only its stone blend joins to the belly stayed gray');
