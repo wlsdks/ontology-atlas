@@ -138,6 +138,13 @@ fill or larger than a mark stays. In one frame of `connect` the piece runs
 from the left whisker to the flipper outline, so that whisker gains a short
 tail.
 
+The still poses of 32px or more are cut on the same 256px grid, cleaned by the
+same passes and reduced the same way, so a pose and a clip pose are drawn
+alike; they keep the stricter opacity cutoff, because at the clips' cutoff a
+detached shadow under `happy-hop` survives. The 16px face is cut at its own
+size: its marks are one pixel each and the reduction has no room to redraw
+them, so its one fade pixel on the head remains.
+
 Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
 halves in length and a filled square stays a filled rectangle within a pixel of
 its true size wherever it sits on the grid. An upright or level ink stroke, or
