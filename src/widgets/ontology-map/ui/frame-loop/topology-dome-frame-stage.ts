@@ -488,6 +488,27 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               beginCameraTween(target);
               lastActiveMsRef.current = now;
             }
+          } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0 && dome.model.arrangement === "coupling") {
+            /*
+             * Neural lights dependencies across the whole cloud, so the click's move refits the
+             * cloud into the area the panels leave free; the same move back when they close.
+             */
+            const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
+            if (target !== null && !sameTarget(cameraTargetRef.current, target)) {
+              const current = cameraTargetRef.current;
+              const before =
+                dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed)
+                  ? dome.nudgeReturn.before
+                  : { ...current };
+              dome.nudgeReturn = { before, landed: { ...target } };
+              dome.fitScale = Math.min(dome.fitScale ?? target.tscale, target.tscale);
+              cameraTargetRef.current = target;
+              userDrivenCameraRef.current = false;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              beginCameraTween(target);
+              lastActiveMsRef.current = now;
+            }
           } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0) {
             /*
              * The click's one allowed move (see `DomeRuntime.flyRequest`): slide sideways

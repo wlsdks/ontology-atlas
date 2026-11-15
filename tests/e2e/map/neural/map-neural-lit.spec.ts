@@ -114,9 +114,9 @@ type Probe = {
 const probe = <T>(page: Page, read: (p: Probe) => T) =>
   page.evaluate(`(${read.toString()})(window.__atlasMap)`) as Promise<T>;
 
-async function openNeural(page: Page, runtime: "desktop" | "web" = "desktop") {
+async function openNeural(page: Page, runtime: "desktop" | "web" = "desktop", width = 1512) {
   const vault = dogfoodVault();
-  await page.setViewportSize({ width: 1512, height: 982 });
+  await page.setViewportSize({ width, height: Math.round((width * 982) / 1512) });
   if (runtime === "web") {
     await seedFirstRunSeen(page);
     await stubDirectoryPicker(page, vault.files);
@@ -174,6 +174,23 @@ async function countAmber(page: Page, region?: { x: number; y: number; r: number
   }, region ?? null);
 }
 
+/** The concepts `slug` depends on and the concepts that depend on it, as map ids. */
+function dependencyEnds(files: Record<string, string>, slug: string): string[] {
+  const docs = Object.values(files).map((text) => parseFrontmatter(text).frontmatter);
+  const kindOf = new Map(docs.flatMap((d) => (typeof d.slug === "string" && typeof d.kind === "string" ? [[d.slug, d.kind] as const] : [])));
+  const ends: string[] = [];
+  for (const d of docs) {
+    if (typeof d.slug !== "string" || typeof d.kind !== "string") continue;
+    const deps = (Array.isArray(d.dependencies) ? d.dependencies : []).filter((dep): dep is string => typeof dep === "string");
+    if (d.slug === slug) {
+      for (const dep of deps) if (kindOf.has(dep)) ends.push(idOf(kindOf.get(dep)!, dep));
+    } else if (deps.includes(slug)) {
+      ends.push(idOf(d.kind, d.slug));
+    }
+  }
+  return ends;
+}
+
 /** A disc inside every cell's filled body, clear of a capability's dark nucleus. */
 const CELL_PROBE_PX = 4;
 /** A cell this close to one of the other evidence state shares its pixels or glow. */
@@ -218,6 +235,41 @@ test.describe("Neural on the dogfood vault", () => {
     expect(staleSeen, "no stale cell stood clear of current ones").toBeGreaterThan(0);
     expect(misdrawn).toEqual([]);
   });
+
+  for (const width of [1512, 1920]) {
+    test(`at ${width} px a focus's lit far ends stay clear of the detail panel`, async ({ page }) => {
+      const { vault } = await openNeural(page, "desktop", width);
+      const focusId = idOf("capability", "capabilities/mcp-tool-server");
+      const ends = dependencyEnds(vault.files, "capabilities/mcp-tool-server");
+      expect(ends.length).toBeGreaterThan(2);
+      await page.mouse.move(2, 2);
+      await waitForMapStill(page, { what: "camera" });
+      const canvas = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+      const focus = (await probe(page, (p) => p.nodes())).find((n) => n.id === focusId)!;
+      await page.mouse.click(canvas.x + focus.x, canvas.y + focus.y);
+      const panel = page.getByTestId("map-detail-panel");
+      await expect(panel).toHaveAttribute("data-selected-node-id", focusId);
+      await page.mouse.move(2, 2);
+      await waitForMapStill(page, { what: "camera" });
+      const rect = (await panel.boundingBox())!;
+      const viewport = page.viewportSize()!;
+      const drawn = await probe(page, (p) => p.nodes());
+      const misplaced: string[] = [];
+      for (const id of ends) {
+        const n = drawn.find((d) => d.id === id);
+        if (!n || n.hidden) {
+          misplaced.push(`${id}: not drawn`);
+          continue;
+        }
+        const x = canvas.x + n.x;
+        const y = canvas.y + n.y;
+        const underPanel = x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+        const offScreen = x < 0 || y < 0 || x > viewport.width || y > viewport.height;
+        if (underPanel || offScreen) misplaced.push(`${id} at ${x.toFixed(0)},${y.toFixed(0)}`);
+      }
+      expect(misplaced).toEqual([]);
+    });
+  }
 
   test("on the web nothing is amber and the quiet evidence line says why", async ({ page }) => {
     const { legend } = await openNeural(page, "web");
