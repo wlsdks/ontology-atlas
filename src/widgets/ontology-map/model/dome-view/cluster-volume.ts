@@ -7,12 +7,19 @@ const CLUSTER_RADIUS_GAIN = 15;
 export const CLUSTER_GAP = 20;
 /** A title's height as a share of the cloud's rest-pose height: its 65 px of the 708 a 1440 by 900 window leaves free. */
 export const CLUSTER_TITLE_SHARE = 0.092;
+/** A title box is about this many times as wide as it is tall: a domain name over its counts. */
+export const CLUSTER_TITLE_ASPECT = 2.4;
 /**
  * The title band, the pack's height and the lens settle in this many passes. Packing is discrete,
  * so later passes, never narrowing the band, stop at the first whose height leaves it whole.
  */
 const SETTLE_PASSES = 3;
 const SETTLE_PASSES_MAX = 6;
+/**
+ * Past about forty clusters the rows' titles outgrow the window and the band would grow without
+ * end, so it stops at this many largest-cluster radii; titles that then collide give way when drawn.
+ */
+const TITLE_BAND_CAP = 1.5;
 /** The lens a pack is drawn with and the one its normalisation implies settle in this many passes. */
 const LENS_PASSES = 3;
 /** The window's free area is wider than tall, so the pack grows sideways first. */
@@ -23,9 +30,11 @@ const PACK_DIRECTIONS = 24;
 const CLUSTER_DEPTH_SHARE = 0.8;
 const DEPTH_LEVELS = 7;
 const MIDDLE_LEVEL = (DEPTH_LEVELS - 1) / 2;
+/** Neighbours this many levels apart already read as near and far, so the rest of the levels get used. */
+const DEPTH_APART_ENOUGH = 2;
 /** Clusters whose drawn centres lie within this many pair distances are screen neighbours and stand at different depths. */
 const NEIGHBOUR_REACH = 1.6;
-/** Rounding allowance on the clearing test, so a candidate touching its generator counts as clear. */
+/** A touching candidate steps this share further out, so rounding never counts it as overlapping. */
 const CLEAR_EPSILON = 1e-9;
 
 interface Point3 {
@@ -38,11 +47,84 @@ export function clusterRadius(members: number): number {
   return CLUSTER_RADIUS_BASE + CLUSTER_RADIUS_GAIN * Math.sqrt(Math.max(0, members));
 }
 
-/** Two discs `pair` apart side by side clear each other, one above the other they also leave `band`. */
-function clears(dx: number, dy: number, pair: number, band: number): boolean {
-  const u = dx / pair;
-  const v = dy / (pair + band);
-  return u * u + v * v >= 1 - CLEAR_EPSILON;
+/** A cluster as the packer sees it: its disc and, when it has one, the title box standing on it. */
+interface Footprint {
+  r: number;
+  /** The title box's half width; 0 for the loose group, which has no title. */
+  w: number;
+  /** The title's lowest foot above the centre: on a far cluster's smaller drawn disc. */
+  base: number;
+}
+
+function boxDiscDistanceSq(x0: number, x1: number, y0: number, y1: number, px: number, py: number): number {
+  const nx = Math.min(Math.max(px, x0), x1);
+  const ny = Math.min(Math.max(py, y0), y1);
+  return (px - nx) ** 2 + (py - ny) ** 2;
+}
+
+/**
+ * Whether cluster `c`, `(dx, dy)` from cluster `q`, leaves `gap` between their discs, between
+ * either title box (`band` tall, on its disc) and the other disc, and between the two titles.
+ */
+function clears(dx: number, dy: number, c: Footprint, q: Footprint, gap: number, band: number): boolean {
+  if (dx * dx + dy * dy < (c.r + q.r + gap) ** 2) return false;
+  if (c.w > 0 && boxDiscDistanceSq(dx - c.w, dx + c.w, dy + c.base, dy + c.r + band, 0, 0) < (q.r + gap) ** 2) return false;
+  if (q.w > 0 && boxDiscDistanceSq(-q.w, q.w, q.base, q.r + band, dx, dy) < (c.r + gap) ** 2) return false;
+  return !(c.w > 0 && q.w > 0 && Math.abs(dx) < c.w + q.w + gap && dy + c.base < q.r + band + gap && dy + c.r + band > q.base - gap);
+}
+
+/** The parameter interval where a ray from the origin along `u` lies within `[lo, hi]` on one axis. */
+function slab(lo: number, hi: number, u: number, out: Float64Array): boolean {
+  if (Math.abs(u) < 1e-12) return lo <= 0 && hi >= 0;
+  const a = lo / u;
+  const b = hi / u;
+  out[0] = Math.max(out[0], Math.min(a, b));
+  out[1] = Math.min(out[1], Math.max(a, b));
+  return true;
+}
+
+const span = new Float64Array(2);
+
+/** Where a ray from the origin along `(ux, uy)` leaves a box, or -Infinity when it misses it. */
+function boxExit(x0: number, x1: number, y0: number, y1: number, ux: number, uy: number): number {
+  span[0] = -Infinity;
+  span[1] = Infinity;
+  if (!slab(x0, x1, ux, span) || !slab(y0, y1, uy, span)) return -Infinity;
+  return span[1] >= Math.max(span[0], 0) ? span[1] : -Infinity;
+}
+
+/** Where a ray from the origin along unit `(ux, uy)` leaves a disc, or -Infinity when it misses it. */
+function discExit(cx: number, cy: number, r: number, ux: number, uy: number): number {
+  const along = cx * ux + cy * uy;
+  const disc = along * along - (cx * cx + cy * cy) + r * r;
+  return disc < 0 ? -Infinity : along + Math.sqrt(disc);
+}
+
+/** Where a ray leaves a box widened by `r` on every side with rounded corners. */
+function roundedBoxExit(x0: number, x1: number, y0: number, y1: number, r: number, ux: number, uy: number): number {
+  return Math.max(
+    boxExit(x0 - r, x1 + r, y0, y1, ux, uy),
+    boxExit(x0, x1, y0 - r, y1 + r, ux, uy),
+    discExit(x0, y0, r, ux, uy),
+    discExit(x1, y0, r, ux, uy),
+    discExit(x0, y1, r, ux, uy),
+    discExit(x1, y1, r, ux, uy),
+  );
+}
+
+/**
+ * How far from `q` along unit `(ux, uy)` cluster `c` first clears it: the farthest exit of the
+ * regions `clears` forbids, each convex, so a ray leaves each once. O(1).
+ */
+function touchingDistance(ux: number, uy: number, c: Footprint, q: Footprint, gap: number, band: number): number {
+  let t = c.r + q.r + gap;
+  if (c.w > 0) t = Math.max(t, roundedBoxExit(-c.w, c.w, -c.r - band, -c.base, q.r + gap, ux, uy));
+  if (q.w > 0) t = Math.max(t, roundedBoxExit(-q.w, q.w, q.base, q.r + band, c.r + gap, ux, uy));
+  if (c.w > 0 && q.w > 0) {
+    const half = c.w + q.w + gap;
+    t = Math.max(t, boxExit(-half, half, q.base - c.r - band - gap, q.r + band - c.base + gap, ux, uy));
+  }
+  return t * (1 + CLEAR_EPSILON);
 }
 
 /**
@@ -50,11 +132,12 @@ function clears(dx: number, dy: number, pair: number, band: number): boolean {
  * a placed disc where it lies nearest the origin under the pack's aspect. A uniform grid keeps
  * each validity test O(1), so a pass is O(k² · PACK_DIRECTIONS) for k discs.
  */
-function packDiscs(reach: readonly number[], order: readonly number[], gap: number, band: number): { x: Float64Array; y: Float64Array } {
-  const x = new Float64Array(reach.length);
-  const y = new Float64Array(reach.length);
-  const cellX = 2 * Math.max(...reach) + gap;
-  const cellY = cellX + band;
+function packDiscs(shapes: readonly Footprint[], order: readonly number[], gap: number, band: number): { x: Float64Array; y: Float64Array } {
+  const x = new Float64Array(shapes.length);
+  const y = new Float64Array(shapes.length);
+  const widest = Math.max(...shapes.map((s) => Math.max(s.r, s.w)));
+  const cellX = 2 * widest + gap;
+  const cellY = 2 * widest + band + gap;
   const grid = new Map<number, number[]>();
   const keyOf = (gx: number, gy: number) => (gx + 32768) * 65536 + (gy + 32768);
   const insert = (i: number) => {
@@ -65,7 +148,7 @@ function packDiscs(reach: readonly number[], order: readonly number[], gap: numb
   // Neighbouring candidates are mostly blocked by the same disc, so it is tried first.
   let blocker = -1;
   const isClear = (c: number, cx: number, cy: number) => {
-    if (blocker >= 0 && !clears(cx - x[blocker], cy - y[blocker], reach[blocker] + reach[c] + gap, band)) return false;
+    if (blocker >= 0 && !clears(cx - x[blocker], cy - y[blocker], shapes[c], shapes[blocker], gap, band)) return false;
     const gx = Math.floor(cx / cellX);
     const gy = Math.floor(cy / cellY);
     for (let ox = -1; ox <= 1; ox += 1) {
@@ -73,7 +156,7 @@ function packDiscs(reach: readonly number[], order: readonly number[], gap: numb
         const bucket = grid.get(keyOf(gx + ox, gy + oy));
         if (bucket === undefined) continue;
         for (const q of bucket) {
-          if (clears(cx - x[q], cy - y[q], reach[q] + reach[c] + gap, band)) continue;
+          if (clears(cx - x[q], cy - y[q], shapes[c], shapes[q], gap, band)) continue;
           blocker = q;
           return false;
         }
@@ -83,9 +166,25 @@ function packDiscs(reach: readonly number[], order: readonly number[], gap: numb
   };
   const ux = Array.from({ length: PACK_DIRECTIONS }, (_, d) => Math.cos((d * 2 * Math.PI) / PACK_DIRECTIONS));
   const uy = Array.from({ length: PACK_DIRECTIONS }, (_, d) => Math.sin((d * 2 * Math.PI) / PACK_DIRECTIONS));
+  // Touching distances depend only on the two footprints, which repeat with the radius.
+  const kindOf = new Map<number, number>();
+  const kind = Int32Array.from(shapes, (s) => {
+    if (!kindOf.has(s.r)) kindOf.set(s.r, kindOf.size);
+    return kindOf.get(s.r)!;
+  });
+  const touching = new Map<number, Float64Array>();
+  const touchingRound = (c: number, p: number) => {
+    const key = kind[p] * shapes.length + kind[c];
+    let row = touching.get(key);
+    if (row === undefined) {
+      row = Float64Array.from(ux, (_, d) => touchingDistance(ux[d], uy[d], shapes[c], shapes[p], gap, band));
+      touching.set(key, row);
+    }
+    return row;
+  };
   // A candidate blocked for a radius stays blocked for it, since placing only adds discs.
-  const blockedFor = new Float64Array(reach.length).fill(-1);
-  const blocked = new Int32Array(reach.length);
+  const blockedFor = new Float64Array(shapes.length).fill(-1);
+  const blocked = new Int32Array(shapes.length);
   const allBlocked = (1 << PACK_DIRECTIONS) - 1;
   insert(order[0]);
   for (let k = 1; k < order.length; k += 1) {
@@ -95,19 +194,18 @@ function packDiscs(reach: readonly number[], order: readonly number[], gap: numb
     let bestScore = Infinity;
     for (let j = 0; j < k; j += 1) {
       const p = order[j];
-      if (blockedFor[p] !== reach[c]) {
-        blockedFor[p] = reach[c];
+      if (blockedFor[p] !== shapes[c].r) {
+        blockedFor[p] = shapes[c].r;
         blocked[p] = 0;
       }
       if (blocked[p] === allBlocked) continue;
-      const pair = reach[p] + reach[c] + gap;
-      const nearest = Math.max(0, Math.sqrt((x[p] * x[p]) / (PACK_ASPECT * PACK_ASPECT) + y[p] * y[p]) - pair - band);
+      const farthest = shapes[p].r + shapes[c].r + shapes[p].w + shapes[c].w + 2 * band + gap;
+      const nearest = Math.max(0, Math.sqrt((x[p] * x[p]) / (PACK_ASPECT * PACK_ASPECT) + y[p] * y[p]) - farthest);
       if (nearest * nearest >= bestScore) continue;
+      const round = touchingRound(c, p);
       for (let d = 0; d < PACK_DIRECTIONS; d += 1) {
         if (blocked[p] & (1 << d)) continue;
-        const u = ux[d] / pair;
-        const v = uy[d] / (pair + band);
-        const t = 1 / Math.sqrt(u * u + v * v);
+        const t = round[d];
         const cx = x[p] + ux[d] * t;
         const cy = y[p] + uy[d] * t;
         const score = (cx * cx) / (PACK_ASPECT * PACK_ASPECT) + cy * cy;
@@ -129,20 +227,23 @@ function packDiscs(reach: readonly number[], order: readonly number[], gap: numb
 }
 
 /**
- * Depth levels in placement order: each takes the level farthest from its screen neighbours',
- * then the one keeping the depths' sum nearest zero, then the nearer. O(k²).
+ * Depth levels in placement order: each takes a level at least `DEPTH_APART_ENOUGH` from its screen
+ * neighbours' (else the farthest), then the least used, then the one keeping the depths' sum nearest zero, then the nearer. O(k²).
  */
 function depthLevels(reach: readonly number[], order: readonly number[], x: Float64Array, y: Float64Array, gap: number, loose: number | null): Int32Array {
   const level = new Int32Array(reach.length);
+  const used = new Int32Array(DEPTH_LEVELS);
   let sum = 0;
   for (let k = 0; k < order.length; k += 1) {
     const c = order[k];
     if (c === loose) {
       level[c] = MIDDLE_LEVEL;
+      used[MIDDLE_LEVEL] += 1;
       continue;
     }
     if (k === (loose === null ? 0 : 1)) {
       level[c] = 1;
+      used[1] += 1;
       sum += 1 - MIDDLE_LEVEL;
       continue;
     }
@@ -156,18 +257,21 @@ function depthLevels(reach: readonly number[], order: readonly number[], x: Floa
     }
     let best = 0;
     let bestApart = -1;
+    let bestUse = Infinity;
     let bestSum = Infinity;
     for (let l = 0; l < DEPTH_LEVELS; l += 1) {
       let apart = Infinity;
-      for (const other of neighbourLevels) apart = Math.min(apart, Math.abs(l - other));
+      for (const other of neighbourLevels) apart = Math.min(apart, Math.abs(l - other), DEPTH_APART_ENOUGH);
       const balance = Math.abs(sum + l - MIDDLE_LEVEL);
-      if (apart > bestApart || (apart === bestApart && balance < bestSum)) {
-        best = l;
-        bestApart = apart;
-        bestSum = balance;
-      }
+      const better = apart !== bestApart ? apart > bestApart : used[l] !== bestUse ? used[l] < bestUse : balance < bestSum;
+      if (!better) continue;
+      best = l;
+      bestApart = apart;
+      bestUse = used[l];
+      bestSum = balance;
     }
     level[c] = best;
+    used[best] += 1;
     sum += best - MIDDLE_LEVEL;
   }
   return level;
@@ -190,7 +294,10 @@ function arrange(
 ): { points: Point3[]; height: number; focal: number } {
   const nearGrowth = Number.isFinite(focal) ? focal / (focal - depthHalf) : 1;
   const reach = radii.map((r) => r * nearGrowth);
-  const { x, y } = packDiscs(reach, order, gap, band);
+  const titleHalf = (CLUSTER_TITLE_ASPECT * band) / 2;
+  const farShrink = Number.isFinite(focal) ? focal / (focal + depthHalf) : 1;
+  const shapes = radii.map((r, i) => ({ r: reach[i], w: i === loose ? 0 : Math.max(reach[i], titleHalf), base: r * farShrink }));
+  const { x, y } = packDiscs(shapes, order, gap, band);
   const level = depthLevels(reach, order, x, y, gap, loose);
   const depth = Array.from(level, (l) => depthHalf * (l / MIDDLE_LEVEL - 1));
   let drawn = backProject(radii, x, y, depth, focal, restYaw, pitch);
@@ -258,10 +365,11 @@ export function clusterVolumeAnchors(
   const order = loose === null ? bySize : [loose, ...bySize];
   let placed = arrange(all, order, loose, restYaw, pitch, gap, 0, 0, Infinity);
   let band = 0;
+  const bandCap = TITLE_BAND_CAP * Math.max(...radii);
   for (let pass = 0; pass < SETTLE_PASSES_MAX; pass += 1) {
-    band = Math.max(band, CLUSTER_TITLE_SHARE * placed.height);
+    band = Math.min(Math.max(band, CLUSTER_TITLE_SHARE * placed.height), bandCap);
     placed = arrange(all, order, loose, restYaw, pitch, gap, band, (CLUSTER_DEPTH_SHARE * placed.height) / 2, placed.focal);
-    if (pass >= SETTLE_PASSES - 1 && CLUSTER_TITLE_SHARE * placed.height <= band) break;
+    if (pass >= SETTLE_PASSES - 1 && (CLUSTER_TITLE_SHARE * placed.height <= band || band === bandCap)) break;
   }
   const anchors = placed.points.slice(0, radii.length);
   return { anchors, centre: loose === null ? { x: 0, y: 0, z: 0 } : placed.points[loose] };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CLUSTER_GAP, CLUSTER_TITLE_SHARE, clusterRadius, clusterVolumeAnchors } from './cluster-volume';
+import { CLUSTER_GAP, CLUSTER_TITLE_ASPECT, CLUSTER_TITLE_SHARE, clusterRadius, clusterVolumeAnchors } from './cluster-volume';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { DOME_FIT_RADIUS, projectWithTrig } from './projection';
 import type { DomeModel } from './types';
@@ -38,21 +38,45 @@ function drawn(members: readonly number[], looseMembers = 0) {
   return { discs, box, gap: CLUSTER_GAP * norm, band: CLUSTER_TITLE_SHARE * (box.top - box.bottom) };
 }
 
-/** 1 when two discs side by side leave exactly `gap`, or one above the other `gap` plus `band`. */
-function clearance(a: Disc, b: Disc, gap: number, band: number): number {
-  const pair = a.r + b.r + gap;
-  return Math.hypot((a.x - b.x) / pair, (a.y - b.y) / (pair + band));
+/** The distance from a box to a point. */
+function boxToPoint(x0: number, x1: number, y0: number, y1: number, px: number, py: number): number {
+  return Math.hypot(px - Math.min(Math.max(px, x0), x1), py - Math.min(Math.max(py, y0), y1));
+}
+
+/**
+ * How much of the required room two clusters leave, 1 at exactly enough: `gap` between the discs,
+ * between each title box (`band` tall, standing on its disc) and the other disc, and between the titles.
+ */
+function clearance(a: Disc, b: Disc, gap: number, band: number, bTitled = true): number {
+  const halfWidth = (d: Disc) => Math.max(d.r, (CLUSTER_TITLE_ASPECT * band) / 2);
+  const titleOf = (d: Disc) => [d.x - halfWidth(d), d.x + halfWidth(d), d.y + d.r, d.y + d.r + band] as const;
+  const room = [Math.hypot(a.x - b.x, a.y - b.y) / (a.r + b.r + gap), boxToPoint(...titleOf(a), b.x, b.y) / (b.r + gap)];
+  if (bTitled) {
+    room.push(boxToPoint(...titleOf(b), a.x, a.y) / (a.r + gap));
+    room.push(Math.max(Math.abs(a.x - b.x) / (halfWidth(a) + halfWidth(b) + gap), Math.abs(a.y + a.r - b.y - b.r) / (band + gap)));
+  }
+  return Math.min(...room);
 }
 
 const mixed = (count: number) => Array.from({ length: count }, (_, i) => [40, 3, 17, 1, 9, 26, 5, 12, 21, 7, 33, 14, 0][i % 13]);
 const equal = (count: number) => Array.from({ length: count }, () => 15);
 
 describe('clusterVolumeAnchors', () => {
-  it.each([2, 4, 9, 13, 30, 200])('keeps %i mixed clusters a gap apart side by side and a title band more one above the other', (count) => {
+  it.each([2, 4, 9, 13, 30])('keeps %i mixed clusters a gap apart, titles included', (count) => {
     const { discs, gap, band } = drawn(mixed(count));
     for (let i = 0; i < discs.length; i += 1) {
+      for (let j = 0; j < discs.length; j += 1) {
+        if (i !== j) expect(clearance(discs[i], discs[j], gap, band), `clusters ${i} and ${j}`).toBeGreaterThanOrEqual(1 - SETTLED);
+      }
+    }
+  });
+
+  it('keeps 200 mixed clusters a gap apart, where rows of titles no longer fit the window', () => {
+    const { discs, gap } = drawn(mixed(200));
+    for (let i = 0; i < discs.length; i += 1) {
       for (let j = i + 1; j < discs.length; j += 1) {
-        expect(clearance(discs[i], discs[j], gap, band), `clusters ${i} and ${j}`).toBeGreaterThanOrEqual(1 - SETTLED);
+        const room = Math.hypot(discs[i].x - discs[j].x, discs[i].y - discs[j].y) / (discs[i].r + discs[j].r + gap);
+        expect(room, `clusters ${i} and ${j}`).toBeGreaterThanOrEqual(1 - SETTLED);
       }
     }
   });
@@ -110,6 +134,6 @@ describe('clusterVolumeAnchors', () => {
     const loose = discs[discs.length - 1];
     const smallest = Math.min(...discs.map((d) => d.r));
     expect(Math.hypot(loose.x - (box.left + box.right) / 2, loose.y - (box.top + box.bottom) / 2)).toBeLessThan(2 * smallest + gap);
-    for (const cluster of discs.slice(0, -1)) expect(clearance(cluster, loose, gap, band)).toBeGreaterThanOrEqual(1 - SETTLED);
+    for (const cluster of discs.slice(0, -1)) expect(clearance(cluster, loose, gap, band, false)).toBeGreaterThanOrEqual(1 - SETTLED);
   });
 });
