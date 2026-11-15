@@ -175,8 +175,10 @@ names the ones a change reaches.
   rest; ambient and infinite motion pauses when hidden or offscreen, except
   loops that show running work, which the `infinite-motion` contract lists and
   which stop with the work. Ambient motion that starts by itself stops within
-  5 s and rests, or sits beside a visible pause; loops that show running work
-  are exempt (WCAG 2.2.2).
+  5 s and rests, or sits beside a visible pause (WCAG 2.2.2). Exempt: loops
+  that show running work, and Moru, a character rather than decoration, whose
+  gestures repeat while visible under the hidden, offscreen and reduced-motion
+  rules (`docs/design/brand.md`).
 - A primitive owns an `app/styles/motion-*.css` part or a `src/shared/motion`
   module, a reduced equivalent, and a line in "Motion primitives". It needs no
   decision record.
