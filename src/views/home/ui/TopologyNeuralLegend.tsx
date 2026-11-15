@@ -78,7 +78,7 @@ export function TopologyNeuralLegend({
           ) : null}
           {hiddenDependencies > 0 ? (
             <span
-              data-testid="topology-light-legend-hidden-dependencies"
+              data-testid="topology-neural-legend-hidden-dependencies"
               data-hidden-dependencies={hiddenDependencies}
               className="whitespace-nowrap"
             >

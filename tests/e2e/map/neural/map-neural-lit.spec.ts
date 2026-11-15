@@ -5,7 +5,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { parseFrontmatter } from "../../../../src/shared/lib/vault-document/parse-frontmatter";
 import { judgeEvidence } from "../../../../src/shared/lib/git/evidence-verdict.mjs";
 import { installDesktopRailRuntime, type StubPathChange } from "../../desktop-rail-arrival-harness";
+import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForDomeEntered, waitForMapStill } from "../../settle";
+import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * Neural, lit, on the dogfood vault, opened through the installed-app runtime with the Git walk
@@ -43,8 +45,10 @@ function gitTime(repoRelative: string): string | null {
   }
 }
 
-/** The vault's files, the Git walk's answers, and the stale count the rule gives. */
-function dogfoodVault(): { files: Record<string, string>; changes: Record<string, StubPathChange>; expectedStale: number } {
+const idOf = (kind: string, slug: string) => `${kind}:${slug.split("/").pop()}`;
+
+/** The vault's files, the Git walk's answers, and the concepts the rule calls stale. */
+function dogfoodVault(): { files: Record<string, string>; changes: Record<string, StubPathChange>; stale: Set<string> } {
   const files: Record<string, string> = {};
   const docs: VaultDocFacts[] = [];
   for (const abs of walk(VAULT)) {
@@ -71,7 +75,7 @@ function dogfoodVault(): { files: Record<string, string>; changes: Record<string
     changes[p] = change;
     return change;
   };
-  let expectedStale = 0;
+  const stale = new Set<string>();
   for (const doc of docs) {
     const docKey = `${doc.slug}.md`;
     changes[docKey] = { exists: true, isDir: false, lastChangedAt: gitTime(path.join("docs/ontology", doc.rel)) };
@@ -86,10 +90,10 @@ function dogfoodVault(): { files: Record<string, string>; changes: Record<string
       entries: [...paths].map((p) => ({ path: p, change: repoChange(p) })),
     }).verdict;
     if (["project", "domain", "capability", "element"].includes(doc.kind) && (verdict === "stale" || verdict === "missing")) {
-      expectedStale += 1;
+      stale.add(idOf(doc.kind, doc.slug));
     }
   }
-  return { files, changes, expectedStale };
+  return { files, changes, stale };
 }
 
 type Probe = {
@@ -110,19 +114,70 @@ type Probe = {
 const probe = <T>(page: Page, read: (p: Probe) => T) =>
   page.evaluate(`(${read.toString()})(window.__atlasMap)`) as Promise<T>;
 
-async function openNeural(page: Page) {
+async function openNeural(page: Page, runtime: "desktop" | "web" = "desktop") {
   const vault = dogfoodVault();
   await page.setViewportSize({ width: 1512, height: 982 });
-  await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
-  await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
-  await page.getByTestId("first-run-open").click();
-  await page.getByTestId("topology-view-3d").click();
-  await page.getByTestId("topology-view-3d-choice-neural").click();
+  if (runtime === "web") {
+    await seedFirstRunSeen(page);
+    await stubDirectoryPicker(page, vault.files);
+    await page.goto("/ko/topology/?guides=off&e2e=1&view=neural", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-starter-open").click();
+    await page.getByTestId("vault-guide-pick-existing").click();
+  } else {
+    await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
+    await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-open").click();
+    await page.getByTestId("topology-view-3d").click();
+    await page.getByTestId("topology-view-3d-choice-neural").click();
+  }
   await waitForDomeEntered(page, 60_000);
-  const legend = page.getByTestId("topology-light-legend");
-  await expect(legend).toHaveAttribute("data-evidence-availability", "measured", { timeout: 30_000 });
+  const legend = page.getByTestId("topology-neural-legend");
+  if (runtime === "desktop") await expect(legend).toHaveAttribute("data-evidence-availability", "measured", { timeout: 30_000 });
   return { vault, legend };
 }
+
+/**
+ * Pixels of the map canvas in the stale warning ink, counted in the page; `region` limits the
+ * count to a disc in canvas CSS px.
+ */
+async function countAmber(page: Page, region?: { x: number; y: number; r: number }): Promise<number> {
+  return page.evaluate((disc) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="ontology-map-canvas"]')!;
+    const ctx = canvas.getContext("2d")!;
+    const scale = canvas.width / canvas.getBoundingClientRect().width;
+    const x0 = disc ? Math.max(0, Math.floor((disc.x - disc.r) * scale)) : 0;
+    const y0 = disc ? Math.max(0, Math.floor((disc.y - disc.r) * scale)) : 0;
+    const x1 = disc ? Math.min(canvas.width, Math.ceil((disc.x + disc.r) * scale)) : canvas.width;
+    const y1 = disc ? Math.min(canvas.height, Math.ceil((disc.y + disc.r) * scale)) : canvas.height;
+    if (x1 <= x0 || y1 <= y0) return 0;
+    const data = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    const w = x1 - x0;
+    let count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (disc) {
+        const px = (x0 + ((i / 4) % w) + 0.5) / scale;
+        const py = (y0 + Math.floor(i / 4 / w) + 0.5) / scale;
+        if (Math.hypot(px - disc.x, py - disc.y) > disc.r) continue;
+      }
+      const r = data[i]! / 255;
+      const g = data[i + 1]! / 255;
+      const b = data[i + 2]! / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      if (max === min) continue;
+      const s = (max - min) / max;
+      const h = (max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60;
+      const hue = h < 0 ? h + 360 : h;
+      if (hue >= 32 && hue <= 55 && s >= 0.55 && max >= 0.3) count += 1;
+    }
+    return count;
+  }, region ?? null);
+}
+
+/** A disc inside every cell's filled body, clear of a capability's dark nucleus. */
+const CELL_PROBE_PX = 4;
+/** A cell this close to one of the other evidence state shares its pixels or glow. */
+const CELL_NEIGHBOUR_PX = 24;
 
 /** A drawn node near the middle of the canvas, of the given kind, in page coordinates. */
 async function pickNode(page: Page, kind: string) {
@@ -139,6 +194,40 @@ async function pickNode(page: Page, kind: string) {
 
 test.describe("Neural on the dogfood vault", () => {
   test.setTimeout(180_000);
+
+  test("a stale concept's cell is amber in the desktop runtime and a current one is not", async ({ page }) => {
+    const { vault } = await openNeural(page);
+    const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+    // A pointer resting on empty canvas stops the idle spin, so the probe and the pixels agree.
+    await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
+    await waitForMapStill(page, { what: "camera" });
+    await waitForMapStill(page, { what: "dome" });
+    const cells = (await probe(page, (p) => p.nodes())).filter(
+      (n) => !n.hidden && n.x > 20 && n.x < box.width - 20 && n.y > 20 && n.y < box.height - 20 && n.kind !== "project",
+    );
+    const misdrawn: string[] = [];
+    let staleSeen = 0;
+    for (const c of cells) {
+      const stale = vault.stale.has(c.id);
+      const mixed = cells.some((o) => o !== c && vault.stale.has(o.id) !== stale && Math.hypot(o.x - c.x, o.y - c.y) < CELL_NEIGHBOUR_PX);
+      if (mixed) continue;
+      const amber = await countAmber(page, { x: c.x, y: c.y, r: CELL_PROBE_PX });
+      if (stale) staleSeen += 1;
+      if ((amber > 0) !== stale) misdrawn.push(`${c.id}: ${amber} amber px, ${stale ? "stale" : "current"}`);
+    }
+    expect(staleSeen, "no stale cell stood clear of current ones").toBeGreaterThan(0);
+    expect(misdrawn).toEqual([]);
+  });
+
+  test("on the web nothing is amber and the quiet evidence line says why", async ({ page }) => {
+    const { legend } = await openNeural(page, "web");
+    await expect(legend).not.toHaveAttribute("data-evidence-availability", "measured");
+    await expect(page.getByTestId("topology-neural-legend-note")).toBeVisible();
+    await expect(page.getByTestId("topology-neural-legend-stale")).toHaveCount(0);
+    await page.mouse.move(2, 2);
+    await waitForMapStill(page, { what: "camera" });
+    expect(await countAmber(page), "amber pixels on the web").toBe(0);
+  });
 
   test("Neural: lit by the same evidence, captured at rest and on a focus", async ({ page }) => {
     const { legend } = await openNeural(page);
