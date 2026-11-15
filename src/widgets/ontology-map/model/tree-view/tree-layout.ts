@@ -1,11 +1,12 @@
+import { TREE_POSE_REST } from "./tree-camera";
 import type { TreeWork } from "./tree-model";
-import type { TreeLayout, TreeModel, TreeNodeKind } from "./types";
+import type { TreeLayout, TreeModel } from "./types";
 
 /** Lengths are world units; the trunk base is the origin and y is up. */
 /** The trunk's two inner control points as fractions of its height, a slight S-bend. */
 const TRUNK_CONTROLS = [-0.04, 0.34, 0.02, 0.05, 0.69, -0.014] as const;
 /** The trunk's share of the tree's nominal height: trunk, dome radius, crown height. */
-const TRUNK_SHARE = 0.3;
+const TRUNK_SHARE = 0.2;
 /** A crown's nominal height above its hub; crowns keep their size at every domain count. */
 const CROWN_TOP = 250;
 
@@ -14,13 +15,21 @@ const CROWN_TOP = 250;
  * frac(k * golden), a Fibonacci lattice, so neighbours by index share a sector. Hub 0 takes the top
  * and its fair share 1/D of the cap; the others fill the rest.
  */
-const DOME_HALF_ANGLE = (40 * Math.PI) / 180;
+const DOME_HALF_ANGLE = (60 * Math.PI) / 180;
 /** Distance kept between neighbouring hubs; the dome's radius grows with the square root of D. */
 const HUB_SPACING = 640;
-const DOME_RADIUS_MIN = 520;
+const DOME_RADIUS_MIN = 420;
 const DOME_RADIUS_JITTER = 0.04;
-/** Slots start here so that with four domains none hides behind the top hub from a camera on +z. */
 const DOMAIN_AZIMUTH_START = (200 * Math.PI) / 180;
+
+/**
+ * The tree turns about its trunk so that, seen from the rest pose, nominal crowns of one size stand
+ * apart. Only the domain count decides the turn, so adding a concept never turns the tree.
+ */
+const FACING_TURNS = 72;
+const FACING_PITCH = TREE_POSE_REST.pitch;
+/** A nominal crown's centre lies this far from its hub along the crown axis. */
+const NOMINAL_CROWN_REACH = 100;
 /** A trunk fork leans toward its sector at this squared cap radius. */
 const FORK_DOME_SPREAD = 0.3;
 
@@ -66,16 +75,15 @@ const CURVE_HANDLE = 0.33;
 const CURVE_LEAVE_HEADING = 0.8;
 const CURVE_ARRIVE_DIRECTION = 0.6;
 
-/** Wood widths at a branch's two ends as shares of the tree's height; a child never starts wider than its parent ends. */
+/**
+ * Wood keeps its cross-section through a fork: each child starts with the share of its parent's
+ * end area that its subtree's concepts carry. Widths are shares of the tree's height.
+ */
 const TRUNK_WIDTH: readonly [number, number] = [0.03, 0.02];
-const KIND_WIDTH: Readonly<Record<Exclude<TreeNodeKind, "fork">, readonly [number, number]>> = {
-  project: [0.0025, 0.0015],
-  domain: [0.01, 0.004],
-  capability: [0.0025, 0.0015],
-  element: [0.0008, 0.0004],
-};
-/** A fork carries its parent's end width on and narrows it by this much. */
-const FORK_WIDTH_TAPER = 0.8;
+const BRANCH_TAPER = 0.8;
+const LEAF_TAPER = 0.4;
+/** Least width, so a twig of a very large tree stays drawable; below it a fork gains area. */
+const WIDTH_FLOOR = 0.0002;
 
 /** Covers Float32 rounding of positions a few thousand units from the origin. */
 const BOUND_EPSILON = 0.01;
@@ -107,8 +115,48 @@ function domePolar(capRadiusSq: number): number {
   return Math.acos(1 - capRadiusSq * (1 - Math.cos(DOME_HALF_ANGLE)));
 }
 
-function slotAzimuth(slot: number, domains: number): number {
-  return DOMAIN_AZIMUTH_START + ((slot + 0.5) * TAU) / domains;
+/** Hub 0 tops the dome; the others spread over the rest of the cap by a golden-ratio step. */
+function domainCapRadiusSq(slot: number, domains: number): number {
+  return slot === 0 ? 0 : 1 / domains + (1 - 1 / domains) * ((slot * GOLDEN_RATIO_INVERSE) % 1);
+}
+
+function slotAzimuth(slot: number, domains: number, turn: number): number {
+  return DOMAIN_AZIMUTH_START + turn + ((slot + 0.5) * TAU) / domains;
+}
+
+/**
+ * The sampled turn whose nominal crown centres, seen orthographically at the rest pitch, keep the
+ * largest least distance; the lowest turn wins a tie. O(D² · FACING_TURNS), and it reads only D.
+ */
+function facingTurn(domains: number): number {
+  if (domains < 2) return 0;
+  const dome = domeRadius(domains);
+  const cosPitch = Math.cos(FACING_PITCH), sinPitch = Math.sin(FACING_PITCH);
+  const axisLength = Math.hypot(CROWN_AXIS_OUT, 1);
+  const across = new Float64Array(domains);
+  const up = new Float64Array(domains);
+  let best = 0;
+  let bestGap = Number.NEGATIVE_INFINITY;
+  for (let t = 0; t < FACING_TURNS; t += 1) {
+    const turn = (t * TAU) / FACING_TURNS;
+    for (let k = 0; k < domains; k += 1) {
+      const polar = domePolar(domainCapRadiusSq(k, domains));
+      const azimuth = slotAzimuth(k, domains, turn);
+      const outward = Math.sin(polar) * dome + (NOMINAL_CROWN_REACH * CROWN_AXIS_OUT) / axisLength;
+      const height = Math.cos(polar) * dome + NOMINAL_CROWN_REACH / axisLength;
+      across[k] = Math.cos(azimuth) * outward;
+      up[k] = height * cosPitch - Math.sin(azimuth) * outward * sinPitch;
+    }
+    let least = Number.POSITIVE_INFINITY;
+    for (let a = 0; a < domains; a += 1) {
+      for (let b = a + 1; b < domains; b += 1) least = Math.min(least, Math.hypot(across[a]! - across[b]!, up[a]! - up[b]!));
+    }
+    if (least > bestGap + 1e-9) {
+      bestGap = least;
+      best = turn;
+    }
+  }
+  return best;
 }
 
 function crownHalfAngle(siblings: number): number {
@@ -259,6 +307,8 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
   const domains = branchTotal[0]!;
   const dome = domeRadius(domains);
   const trunkHeight = (TRUNK_SHARE / (1 - TRUNK_SHARE)) * (dome + CROWN_TOP);
+  const turn = facingTurn(domains);
+  const facing = DOMAIN_AZIMUTH_START + turn;
   /** Places node i at `distance` from the trunk top along the dome direction (polar, azimuth); that direction becomes its `dir`. */
   const placeOnDome = (i: number, polar: number, azimuth: number, distance: number) => {
     setOut(i, azimuth);
@@ -272,7 +322,7 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
       for (let c = 0; c < 6; c += 1) ctl[c] = TRUNK_CONTROLS[c]! * trunkHeight;
       setVec(heading, 0, 0, 1, 0);
       setVec(dir, 0, 0, 1, 0);
-      setOut(0, DOMAIN_AZIMUTH_START);
+      setOut(0, facing);
       continue;
     }
     const p = parent[i]!;
@@ -282,8 +332,8 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
     let customStem = false;
 
     if (i === looseRoot) {
-      if (domains === 0) placeOnDome(i, 0, DOMAIN_AZIMUTH_START, dome);
-      else placeOnDome(i, LOOSE_POLAR, DOMAIN_AZIMUTH_START, dome * LOOSE_REACH_SHARE);
+      if (domains === 0) placeOnDome(i, 0, facing, dome);
+      else placeOnDome(i, LOOSE_POLAR, facing, dome * LOOSE_REACH_SHARE);
       openCrown(i, domains === 0);
     } else if (isStem(i)) {
       copyOut(i, a);
@@ -298,7 +348,7 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
       const share = 1 - Math.pow(FORK_STEP, level);
       const siblings = branchTotal[a]!;
       if (a === 0) {
-        placeOnDome(i, domePolar(FORK_DOME_SPREAD), slotAzimuth(mid, siblings), dome * share);
+        placeOnDome(i, domePolar(FORK_DOME_SPREAD), slotAzimuth(mid, siblings, turn), dome * share);
       } else {
         copyOut(i, a);
         crownDirection(a, Math.round(mid), siblings);
@@ -307,8 +357,7 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
       }
     } else if (kind === "domain") {
       const slot = branchSeen[0]!++;
-      const capRadiusSq = slot === 0 ? 0 : 1 / domains + (1 - 1 / domains) * ((slot * GOLDEN_RATIO_INVERSE) % 1);
-      placeOnDome(i, domePolar(capRadiusSq), slotAzimuth(slot, domains), dome * (1 + hashUnit(id, 1) * DOME_RADIUS_JITTER));
+      placeOnDome(i, domePolar(domainCapRadiusSq(slot, domains)), slotAzimuth(slot, domains, turn), dome * (1 + hashUnit(id, 1) * DOME_RADIUS_JITTER));
       openCrown(i, false);
     } else if (kind !== "element") {
       const k = branchSeen[a]!++;
@@ -368,18 +417,25 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
   let treeHeight = 0;
   for (let k = 1; k < n * 3; k += 3) treeHeight = Math.max(treeHeight, pos[k]!);
   for (let k = 1; k < n * 6; k += 3) treeHeight = Math.max(treeHeight, ctl[k]!);
+  const carried = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i -= 1) {
+    if (kinds[i] !== "fork") carried[i]! += 1;
+    if (i > 0) carried[parent[i]!]! += carried[i]!;
+  }
+  const floor = WIDTH_FLOOR * treeHeight;
   widthStart[0] = TRUNK_WIDTH[0] * treeHeight;
   widthEnd[0] = TRUNK_WIDTH[1] * treeHeight;
   for (let i = 0; i < n; i += 1) {
     reach[i] = farthest > 0 ? arc[i]! / farthest : 0;
     if (i === 0) continue;
-    const parentEnd = widthEnd[parent[i]!]!;
-    const kind = kinds[i]!;
-    const shares = i === looseRoot ? KIND_WIDTH.domain : kind === "fork" ? null : KIND_WIDTH[kind];
-    widthStart[i] = shares ? Math.min(shares[0] * treeHeight, parentEnd) : parentEnd;
-    widthEnd[i] = Math.min(shares ? shares[1] * treeHeight : parentEnd * FORK_WIDTH_TAPER, widthStart[i]!);
+    const p = parent[i]!;
+    const passedOn = carried[p]! - (kinds[p] === "fork" ? 0 : 1);
+    const start = Math.min(widthEnd[p]!, Math.max(floor, widthEnd[p]! * Math.sqrt(carried[i]! / passedOn)));
+    const taper = subtreeEnd[i]! > i + 1 ? BRANCH_TAPER : LEAF_TAPER;
+    widthStart[i] = start;
+    widthEnd[i] = Math.min(start, Math.max(floor, start * taper));
   }
-  tick(3 * n);
+  tick(4 * n);
 
   const sphere = new Float64Array(n * 4);
   for (let i = 0; i < n; i += 1) {
