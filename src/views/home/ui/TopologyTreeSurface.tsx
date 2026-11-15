@@ -43,6 +43,7 @@ export function TopologyTreeSurface({
   navigationSpeed,
   fitToken,
   growthReplayToken,
+  onGrowthReplayingChange,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -58,6 +59,7 @@ export function TopologyTreeSurface({
   navigationSpeed: MapNavigationSpeed;
   fitToken: number;
   growthReplayToken: number;
+  onGrowthReplayingChange?: (replaying: boolean) => void;
 }) {
   const t = useTranslations("mapTree");
   const tHex = useTranslations("topology.hexBoard");
@@ -76,6 +78,18 @@ export function TopologyTreeSurface({
       looseCaption: (count) => tDial("orphans", { count }),
     };
   }, [tHex, tDial]);
+
+  const tooltipLabels: ComponentProps<typeof OntologyTreeMap>["tooltipLabels"] = useMemo(
+    () => ({
+      concept: ({ name, stale, needs, users, elements }) =>
+        `${name}${stale ? ` · ${tHex("tooltipStale")}` : ""} · ${tHex("tooltipFacts", { needs, users, elements })}`,
+      folded: ({ name, capabilities, elements }) => {
+        const inside = capabilities > 0 ? t("foldedCapabilities", { count: capabilities }) : t("foldedElements", { count: elements });
+        return name ? `${name} · ${inside}` : inside;
+      },
+    }),
+    [t, tHex],
+  );
 
   const staleTotal = useMemo(
     () => (measured ? nodes.reduce((sum, n) => sum + (evidence.states.get(n.id) === "stale" ? 1 : 0), 0) : 0),
@@ -143,6 +157,7 @@ export function TopologyTreeSurface({
       evidence={evidence.states}
       evidenceMeasured={measured}
       labels={labels}
+      tooltipLabels={tooltipLabels}
       onSelect={onSelect}
       onPaneClick={onPaneClick}
       onDrawnCountChange={onDrawnCountChange}
@@ -151,6 +166,8 @@ export function TopologyTreeSurface({
       legend={legend}
       fitToken={fitToken}
       replayToken={growthReplayToken}
+      onGrowthReplayingChange={onGrowthReplayingChange}
+      arrivalKey={vaultKey}
       reducedMotion={reducedMotion}
       arrivedByMorph={arrivedByMorph}
       navigationSpeed={navigationSpeed}
