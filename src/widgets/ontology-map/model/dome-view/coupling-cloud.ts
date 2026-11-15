@@ -39,8 +39,6 @@ const CLOUD_REST_LENGTH = 92;
 const CLOUD_SEED_SHARE_OF_REACH = 0.9;
 /** Weak, so members spread to fill their cluster's reach rather than crowd its heart. */
 const CLOUD_DOMAIN_MEMBER_PULL = 0.04;
-/** A drawn cluster fills a ball of this share of its reach along each of its three axes. */
-const CLUSTER_FILL_SHARE = 0.9;
 /** The most one axis of a drawn cluster is stretched, so two members on a line do not fly apart. */
 const CLUSTER_ROUND_MAX_STRETCH = 4;
 /** A relation between two clusters pulls this much of a relation inside one, so clusters keep apart. */
@@ -414,9 +412,9 @@ export function createCouplingCloudRelaxer(
   const roundY = new Float64Array(n);
   const roundZ = new Float64Array(n);
   /**
-   * Members pressed against their cluster's reach form a shell that is thin across the ring, so a side
-   * cluster reads narrow. The drawn copy stretches each cluster along its radial, tangential and height
-   * axes until it fills a ball of its reach; the relaxation itself is untouched. O(n).
+   * Members pressed against their cluster's reach form a slab that is thin across the ring, so a side
+   * cluster reads narrow. The drawn copy stretches each cluster's thinner axes (radial, tangential,
+   * height) until their spread matches its widest, inside its reach; the relaxation is untouched. O(n).
    */
   function roundClusters(): void {
     roundX.set(px.subarray(0, n)); roundY.set(py.subarray(0, n)); roundZ.set(pz.subarray(0, n));
@@ -435,17 +433,17 @@ export function createCouplingCloudRelaxer(
       const slot = domainIndexOf[i];
       if (slot < 0) continue;
       const [r, t, h] = axisOf(slot, i);
-      extent[slot * 3] = Math.max(extent[slot * 3], Math.abs(r));
-      extent[slot * 3 + 1] = Math.max(extent[slot * 3 + 1], Math.abs(t));
-      extent[slot * 3 + 2] = Math.max(extent[slot * 3 + 2], Math.abs(h));
+      extent[slot * 3] += r * r;
+      extent[slot * 3 + 1] += t * t;
+      extent[slot * 3 + 2] += h * h;
     }
     for (let i = 0; i < n; i += 1) {
       const slot = domainIndexOf[i];
       if (slot < 0) continue;
-      const target = reachOf[slot] * CLUSTER_FILL_SHARE;
+      const widest = Math.max(extent[slot * 3], extent[slot * 3 + 1], extent[slot * 3 + 2]);
       const stretch = (axis: number) => {
         const e = extent[slot * 3 + axis];
-        return e > 1e-6 ? Math.min(CLUSTER_ROUND_MAX_STRETCH, target / e) : 1;
+        return e > 1e-9 ? Math.min(CLUSTER_ROUND_MAX_STRETCH, Math.sqrt(widest / e)) : 1;
       };
       const [r, t, h] = axisOf(slot, i);
       let a = r * stretch(0);
