@@ -45,24 +45,22 @@ describe("chooseLayoutSwitch", () => {
     }
   });
 
-  it("leaves the map's flat and 3D views to their native morphs", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "3d" })).toBe("native");
-    expect(chooseLayoutSwitch({ ...base, from: "3d", to: "flat" })).toBe("native");
+  it("ghosts every switch to or from 3D, into 3D at any vault size", () => {
+    for (const other of ["flat", "hex"] as const) {
+      expect(chooseLayoutSwitch({ ...base, from: "3d", to: other })).toBe("ghost");
+      for (const conceptCount of [2000, 10000]) expect(chooseLayoutSwitch({ ...base, conceptCount, from: other, to: "3d" })).toBe("ghost");
+    }
   });
 
-  it("ghosts between hex and 3D, and crossfades into the map's views past their measured ceilings", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "hex", to: "3d" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "3d", to: "hex" })).toBe("ghost");
+  it("crossfades into the flat and structure views past their measured ceilings", () => {
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "flat" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "structure" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "3d" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "flat", to: "hex" })).toBe("ghost");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "structure", to: "hex" })).toBe("fade");
   });
 
-  it("retargets a travel in flight instead of handing it to a native morph", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "structure", fromOverlay: true })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "3d", fromOverlay: true })).toBe("ghost");
+  it("retargets a travel in flight back to the view it left", () => {
+    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "flat", fromOverlay: true })).toBe("ghost");
   });
 });
 

@@ -4,17 +4,16 @@ import { MOTION } from "@/shared/motion/tokens";
 import { readContainmentTree, type TreeInputEdge, type TreeInputNode } from "../model/containment-tree";
 import { createGlideFrame, planGlide, sampleGlide, type Glide, type GlideFrame, type GlideOptions } from "./glide";
 
-export type LayoutSwitch = "none" | "cut" | "native" | "ghost" | "fade";
-
-const OVERLAY_VIEWS: ReadonlySet<MapLayoutView> = new Set(["hex"]);
+export type LayoutSwitch = "none" | "cut" | "ghost" | "fade";
 
 export const ARRIVAL_GLIDE_CONCEPT_CEILING = 2000;
 
+/** Hex and 3D predict their targets within a bounded mark count, whatever the vault's size. */
 const GHOST_TARGET_CONCEPT_CEILING: Readonly<Record<MapLayoutView, number>> = {
   hex: Number.POSITIVE_INFINITY,
   flat: 6500,
   structure: 0,
-  "3d": 6100,
+  "3d": Number.POSITIVE_INFINITY,
 };
 
 export function chooseLayoutSwitch({
@@ -35,7 +34,6 @@ export function chooseLayoutSwitch({
   if (from === to && !fromOverlay) return "none";
   if (!armed) return "cut";
   if (reducedMotion || from === "structure" || to === "structure") return "fade";
-  if (!fromOverlay && !OVERLAY_VIEWS.has(from) && !OVERLAY_VIEWS.has(to)) return "native";
   if (conceptCount > GHOST_TARGET_CONCEPT_CEILING[to]) return "fade";
   return "ghost";
 }
