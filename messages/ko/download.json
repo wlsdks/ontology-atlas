@@ -21,8 +21,6 @@
   "factRequiresLabel": "요구 사항",
   "factChangelogLabel": "변경 내역",
   "factChangelogValue": "{tag}에서 바뀐 것",
-  "factSourceLabel": "소스",
-  "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "릴리스 페이지의 {file} 체크섬 파일",
   "demoProvisionalNote": "앱 창을 한 번에 찍은 {seconds}초. 자르거나 빨리 감지 않았고 소리는 없어요.",
   "acpUserLabel": "나",

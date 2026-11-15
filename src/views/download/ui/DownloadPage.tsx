@@ -544,26 +544,6 @@ function FactsStrip({
         publishedTag: MACOS_RELEASE.tag,
         releaseVersion: RELEASE_VERSION,
       });
-  /** Links, not facts, so they take the link grammar instead of the engraved face. */
-  const links = [
-    {
-      label: t('factChangelogLabel'),
-      text: t('factChangelogValue', { tag }),
-      href: '/changelog' as const,
-      external: false,
-      testId: `${scope}-facts-changelog`,
-      code: false,
-    },
-    {
-      label: t('factSourceLabel'),
-      text: t('factSourceValue'),
-      href: GITHUB_REPO_URL,
-      external: true,
-      testId: `${scope}-facts-source`,
-      // A path, so mono.
-      code: true,
-    },
-  ];
 
   return (
     <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
@@ -609,38 +589,18 @@ function FactsStrip({
               </dd>
             </div>
           ))}
-          {(scope === 'gateway' ? links : []).map((link, index) => (
-            <div
-              key={link.label}
-              className={cn('min-w-0', index === 0 && '@min-[66rem]/gateway-facts:ml-auto')}
-            >
-              <dt className={FACT_LABEL}>{link.label}</dt>
+          {/* A link, not a fact, so it takes the link grammar instead of the engraved face. On a
+              phone it takes the last row whole, since five cells leave one alone in two columns. */}
+          {scope === 'gateway' ? (
+            <div className="min-w-0 max-sm:col-span-full @min-[66rem]/gateway-facts:ml-auto">
+              <dt className={FACT_LABEL}>{t('factChangelogLabel')}</dt>
               <dd className={FACT_VALUE}>
-                {link.external ? (
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    data-testid={link.testId}
-                    className={cn(FACT_LINK, link.code && 'font-mono')}
-                  >
-                    <span aria-hidden data-external-link-marker>
-                      ↗
-                    </span>
-                    {link.text}
-                  </a>
-                ) : (
-                  <Link
-                    href={link.href}
-                    data-testid={link.testId}
-                    className={cn(FACT_LINK, link.code && 'font-mono')}
-                  >
-                    {link.text}
-                  </Link>
-                )}
+                <Link href="/changelog" data-testid={`${scope}-facts-changelog`} className={FACT_LINK}>
+                  {t('factChangelogValue', { tag })}
+                </Link>
               </dd>
             </div>
-          ))}
+          ) : null}
         </dl>
       </div>
     </div>

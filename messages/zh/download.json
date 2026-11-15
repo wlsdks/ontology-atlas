@@ -21,8 +21,6 @@
   "factRequiresLabel": "系统要求",
   "factChangelogLabel": "更新日志",
   "factChangelogValue": "{tag} 的变更内容",
-  "factSourceLabel": "源码",
-  "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "发布页面上 {file} 的校验和文件",
   "demoProvisionalNote": "一次录下应用窗口的 {seconds} 秒。没有剪辑，没有加速，也没有声音。",
   "acpUserLabel": "你",
