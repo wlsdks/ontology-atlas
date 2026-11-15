@@ -86,7 +86,7 @@ export interface TreeNameSizes {
 export interface TreeDetailInput {
   layout: TreeLayout; projector: TreeProjector; view: TreeRect; marks: TreeMarkSizes;
   openPitchPx: number; leafPitchPx: number; markBudget: number;
-  /** Nodes drawn whatever the spacing; their ancestors open for them. */
+  /** Nodes given a mark of their own whatever the spacing: their ancestors open for them. */
   reveal: readonly number[];
 }
 
