@@ -36,7 +36,7 @@ let seq = 0;
 const key = () => `source-${seq++}`;
 
 describe("tier assembly", () => {
-  it("keeps the dome's tier schedule", () => {
+  it("keeps the tier schedule", () => {
     expect(TIER_DELAY_MS).toEqual({ project: 0, domain: 180, capability: 380, element: 600 });
     expect(TIER_ASSEMBLE_TOTAL_MS).toBe(TIER_DELAY_MS.element + TIER_RISE_MS);
   });
