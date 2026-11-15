@@ -115,7 +115,7 @@
     /* Neural (the dome's coupling cloud): screen pixels at the front of the cloud; inks are the ones above. */
     --map-neural-cap-px: 4.6;
     --map-neural-cap-gain-px: 1.5;
-    --map-neural-element-px: 2.4;
+    --map-neural-element-px: 2.8;
     --map-neural-element-gain-px: 0.85;
     --map-neural-domain-px: 7.5;
     --map-neural-project-px: 9;

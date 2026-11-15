@@ -36,9 +36,12 @@ const CLOUD_REST_LENGTH = 92;
  * Domain anchors sit about two rest lengths out, so neighbouring clusters keep a gap a
  * relation must visibly cross; the pulls are weak beside springs and repulsion.
  */
-const CLOUD_DOMAIN_ANCHOR_RADIUS = 190;
+const CLOUD_DOMAIN_ANCHOR_RADIUS = 300;
 const CLOUD_DOMAIN_ANCHOR_PULL = 0.08;
-const CLOUD_DOMAIN_MEMBER_PULL = 0.03;
+/** Strong enough that a cluster gathers round its heart, so its name stands above its own members. */
+const CLOUD_DOMAIN_MEMBER_PULL = 0.16;
+/** A relation between two clusters pulls this much of a relation inside one, so clusters keep apart. */
+const CLOUD_CROSS_DOMAIN_SPRING_SHARE = 0.15;
 
 /**
  * Finite-step repulsion guarantees nothing, so each iteration ends with a position
@@ -130,6 +133,11 @@ export function createCouplingCloudRelaxer(
     anchorY[k] = y * CLOUD_DOMAIN_ANCHOR_RADIUS * 0.7;
     anchorZ[k] = Math.sin(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
   }
+
+  const linkSpring = Float64Array.from(links, ([a, b]) =>
+    domainIndexOf[a] >= 0 && domainIndexOf[b] >= 0 && domainIndexOf[a] !== domainIndexOf[b]
+      ? CLOUD_SPRING * CLOUD_CROSS_DOMAIN_SPRING_SHARE
+      : CLOUD_SPRING);
 
   const groups = findCouplingGroups(ids, edges);
   const groupCount = groups.reduce((largest, group) => Math.max(largest, group), -1) + 1;
@@ -286,12 +294,13 @@ export function createCouplingCloudRelaxer(
     return true;
   };
   const finishIteration = (): void => {
-    for (const [a, b] of links) {
+    for (let k = 0; k < links.length; k += 1) {
+      const [a, b] = links[k];
       const dx = px[b] - px[a];
       const dy = py[b] - py[a];
       const dz = pz[b] - pz[a];
       const d = Math.hypot(dx, dy, dz) || 1e-6;
-      const pull = (d - CLOUD_REST_LENGTH) * CLOUD_SPRING;
+      const pull = (d - CLOUD_REST_LENGTH) * linkSpring[k];
       const ux = (dx / d) * pull;
       const uy = (dy / d) * pull;
       const uz = (dz / d) * pull;

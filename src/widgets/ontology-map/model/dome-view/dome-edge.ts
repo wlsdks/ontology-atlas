@@ -1,11 +1,12 @@
 import type { DomeNodeFrame } from './runtime';
-import { neuralAxonControl, type NeuralTracts } from './neural-cells';
+import { isNeuralDependency, neuralAxonControl, type NeuralTracts } from './neural-cells';
 import type { DomeArrangement } from './types';
 
 interface EdgeCoordinates {
   sourceId: string;
   targetId: string;
   kind: 'contains' | 'depends';
+  relationType: string;
   ax: number;
   ay: number;
   bx: number;
@@ -50,7 +51,7 @@ export function projectDomeEdgeControl(
   let x = (ax + bx) / 2 - (length > 1e-6 ? dy / length * bow : 0);
   let y = (ay + by) / 2 + (length > 1e-6 ? dx / length * bow : 0);
   const mix = Math.min(1, Math.max(0, neuralMix));
-  if (tracts !== null && edge.kind === 'depends' && mix > 0) {
+  if (tracts !== null && mix > 0 && isNeuralDependency(edge)) {
     const axon = neuralAxonControl(edge.sourceId, edge.targetId, ax, ay, bx, by, tracts);
     x += (axon.x - x) * mix;
     y += (axon.y - y) * mix;

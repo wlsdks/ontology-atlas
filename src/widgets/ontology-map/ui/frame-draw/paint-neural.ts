@@ -2,6 +2,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { DOME_NODE_PX } from "../../model/dome-view/ink";
 import {
+  isNeuralDependency,
   neuralCellIsStale,
   neuralCellRadiusPx,
   neuralFocusSets,
@@ -34,6 +35,7 @@ const LIT_DOT_T = 0.96;
 const NAME_GRID_PX = 48;
 const DOMAIN_DIM_IN_FOCUS = 0.45;
 const SPRITE_PX = 64;
+const PLATE_EDGE_ALPHA = 0.2;
 
 let tokens: NeuralTokens | null = null;
 const sprites = new Map<string, HTMLCanvasElement | null>();
@@ -251,7 +253,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   const litEdges: number[] = [];
   const litRole: boolean[] = [];
   for (const edge of world.edges) {
-    if (edge.kind !== "depends") continue;
+    if (!isNeuralDependency(edge)) continue;
     const s = indexOf.get(edge.sourceId);
     const e = indexOf.get(edge.targetId);
     if (s === undefined || e === undefined || s === e) continue;
@@ -409,12 +411,13 @@ function paintNeuralNames(
   const ink = t.inks;
   const { world, neural, viewportWidth: width, viewportHeight: height } = frame;
   const family = labelFontFamily();
-  const grid = new BoxGrid();
+  const cells = new BoxGrid();
+  const names = new BoxGrid();
   const boxes: typeof passState.drawnLabelBoxes = [];
   for (let i = 0; i < world.nodes.length; i += 1) {
     if (sa[i] <= 0.05) continue;
     const r = sr[i] + 2;
-    grid.add({ minX: sx[i] - r, minY: sy[i] - r, maxX: sx[i] + r, maxY: sy[i] + r });
+    cells.add({ minX: sx[i] - r, minY: sy[i] - r, maxX: sx[i] + r, maxY: sy[i] + r });
   }
   ctx.lineJoin = "round";
   ctx.textBaseline = "middle";
@@ -433,12 +436,20 @@ function paintNeuralNames(
     const left = align === "right" ? x - w : align === "center" ? x - w / 2 : x;
     return { minX: left - 3, minY: y - px * 0.62 - 2, maxX: left + w + 3, maxY: y + px * 0.62 + 2 };
   };
+  const focusId = focus.focusId;
+  const sets = focus.sets;
+  const plate = focusId !== null && focus.focusIndex !== undefined && sets !== null && labels
+    ? placeFocusPlate(ctx, frame, focus.focusIndex, labels.focusFacts({
+      stale: neuralCellIsStale(evidence, focusId), needs: sets.needs.size, usedBy: sets.usedBy.size,
+    }), family)
+    : null;
+  if (plate) names.add(plate.box);
 
-  // Domain names, above their own cluster; a name that would cover another domain's name stays unpainted.
+  // Domain names, above their own cluster; a name that would cover another name stays unpainted.
   const nameFont = `${FONT_WEIGHT.strong} ${t.domainNamePx}px ${family}`;
   const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
   const summaries = clusterSummaries(frame, graph, evidence);
-  const focusCluster = focus.focusId === null ? undefined : graph.clusterOf.get(focus.focusId);
+  const focusCluster = focusId === null ? undefined : graph.clusterOf.get(focusId);
   const domainOrder = [...pools.entries()].sort((a, b) => b[1].a - a[1].a || (summaries.get(b[0])?.capabilities ?? 0) - (summaries.get(a[0])?.capabilities ?? 0));
   for (const [domainId, pool] of domainOrder) {
     if (pool.a <= 0.05) continue;
@@ -450,10 +461,10 @@ function paintNeuralNames(
     if (x < -200 || x > width + 200 || nameY < -40 || metaY > height + 40) continue;
     ctx.font = nameFont;
     const nameBox = boxFor(node.label, x, nameY, "center", t.domainNamePx);
-    if (grid.hits(nameBox)) continue;
+    if (names.hits(nameBox) || cells.hits(nameBox)) continue;
     const dim = (focusCluster !== undefined && focusCluster !== domainId ? 1 - (1 - DOMAIN_DIM_IN_FOCUS) * focus.ramp : 1) * pool.a * neural;
     write(node.label, x, nameY, "center", nameFont, ink.strong, 0.96 * dim, t.nameHaloPx + 1);
-    grid.add(nameBox);
+    names.add(nameBox);
     boxes.push({ nodeId: domainId, text: node.label, ...nameBox });
     const summary = summaries.get(domainId);
     if (labels && summary) {
@@ -461,13 +472,11 @@ function paintNeuralNames(
       ctx.font = metaFont;
       const metaBox = boxFor(meta, x, metaY, "center", t.domainMetaPx);
       write(meta, x, metaY, "center", metaFont, ink.name, 0.85 * dim, t.nameHaloPx);
-      grid.add(metaBox);
+      names.add(metaBox);
     }
   }
 
   // Capability names beside their cells at rest; with a focus, the names of its two sets.
-  const focusId = focus.focusId;
-  const sets = focus.sets;
   const candidates: number[] = [];
   for (let i = 0; i < world.nodes.length; i += 1) {
     const node = world.nodes[i];
@@ -477,18 +486,16 @@ function paintNeuralNames(
   }
   const rank = (i: number) => (graph.dependencyCount.get(world.nodes[i].id) ?? 0) - su[i] * 4;
   candidates.sort((a, b) => rank(b) - rank(a));
-  const plainFont = `${FONT_WEIGHT.signature} ${t.namePx}px ${family}`;
-  const hotFont = `${FONT_WEIGHT.emphasis} ${t.namePx}px ${family}`;
+  const hot = sets !== null;
+  const font = `${hot ? FONT_WEIGHT.emphasis : FONT_WEIGHT.signature} ${t.namePx}px ${family}`;
   let named = 0;
   for (const i of candidates) {
     if (named >= t.nameBudget) break;
     const node = world.nodes[i];
-    const hot = sets !== null;
     const cluster = graph.clusterOf.get(node.id);
     const pool = cluster === undefined ? undefined : pools.get(cluster);
     const right = pool === undefined || sx[i] >= (pool.minX + pool.maxX) / 2;
     const gap = sr[i] + t.nameGapPx;
-    const font = hot ? hotFont : plainFont;
     ctx.font = font;
     const tries: [number, number, CanvasTextAlign][] = [
       [sx[i] + (right ? gap : -gap), sy[i], right ? "left" : "right"],
@@ -496,55 +503,65 @@ function paintNeuralNames(
       [sx[i], sy[i] + gap + t.namePx * 0.5, "center"],
       [sx[i], sy[i] - gap - t.namePx * 0.5, "center"],
     ];
-    const self = { minX: sx[i] - sr[i] - 2, minY: sy[i] - sr[i] - 2, maxX: sx[i] + sr[i] + 2, maxY: sy[i] + sr[i] + 2 };
     for (const [x, y, align] of tries) {
       const box = boxFor(node.label, x, y, align, t.namePx);
       if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
-      if (grid.hits(box, self) && !hot) continue;
-      if (hot && grid.hits(box, self) && boxes.some((o) => box.minX < o.maxX && box.maxX > o.minX && box.minY < o.maxY && box.maxY > o.minY)) continue;
+      // A focus's names may cross a receded cell, never another name.
+      if (names.hits(box) || (!hot && cells.hits(box))) continue;
       const alpha = (hot ? focus.ramp : 0.9 * (1 - (1 - t.farAlpha) * su[i])) * neural;
       write(node.label, x, y, align, font, hot ? ink.strong : ink.name, alpha, t.nameHaloPx);
-      grid.add(box);
+      names.add(box);
       boxes.push({ nodeId: node.id, text: node.label, ...box });
       named += 1;
       break;
     }
   }
 
-  // One line beside the focus: its name, then stale, needs and used-by.
-  if (focusId !== null && focus.focusIndex !== undefined && sets !== null && labels) {
-    const i = focus.focusIndex;
-    const node = world.nodes[i];
-    const stale = neuralCellIsStale(evidence, node.id);
-    const facts = labels.focusFacts({ stale, needs: sets.needs.size, usedBy: sets.usedBy.size });
-    const titleFont = `${FONT_WEIGHT.emphasis} ${t.namePx + 2.5}px ${family}`;
-    const factFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx - 0.5}px ${family}`;
-    ctx.font = titleFont;
-    const titleW = ctx.measureText(node.label).width;
-    ctx.font = factFont;
-    const plateW = Math.max(titleW, ctx.measureText(facts).width) + t.platePadPx * 2;
-    const plateH = t.namePx * 2 + t.platePadPx * 1.8;
-    let x = sx[i] + sr[i] + t.focusRingGapPx + t.platePadPx;
-    if (x + plateW > width - 8) x = sx[i] - sr[i] - t.focusRingGapPx - t.platePadPx - plateW;
-    const y = Math.max(8, sy[i] - plateH - sr[i]);
-    ctx.globalAlpha = focus.ramp * neural;
-    ctx.fillStyle = ink.plate;
-    ctx.strokeStyle = ink.name;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(x, y, plateW, plateH, t.plateRadiusPx);
-    ctx.fill();
-    ctx.globalAlpha = focus.ramp * neural * 0.2;
-    ctx.stroke();
-    ctx.textAlign = "left";
-    ctx.globalAlpha = focus.ramp * neural;
-    ctx.font = titleFont;
-    ctx.fillStyle = ink.strong;
-    ctx.fillText(node.label, x + t.platePadPx, y + plateH * 0.34);
-    ctx.font = factFont;
-    ctx.fillStyle = stale ? ink.warning : ink.name;
-    ctx.fillText(facts, x + t.platePadPx, y + plateH * 0.72);
-    boxes.push({ nodeId: node.id, text: node.label, minX: x, minY: y, maxX: x + plateW, maxY: y + plateH });
+  if (plate && focusId !== null) {
+    paintFocusPlate(ctx, plate, focus.ramp * neural, neuralCellIsStale(evidence, focusId));
+    boxes.push({ nodeId: focusId, text: plate.title, ...plate.box });
   }
   passState.drawnLabelBoxes = boxes;
+}
+
+interface FocusPlate { box: Box; title: string; facts: string; titleFont: string; factFont: string }
+
+/** One plate beside the focus: its name, then stale, needs and used-by; on the side that fits. */
+function placeFocusPlate(ctx: CanvasRenderingContext2D, frame: FrameInputs, i: number, facts: string, family: string): FocusPlate {
+  const t = tokens!;
+  const title = frame.world.nodes[i].label;
+  const titleFont = `${FONT_WEIGHT.emphasis} ${t.namePx + 2.5}px ${family}`;
+  const factFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx - 0.5}px ${family}`;
+  ctx.font = titleFont;
+  const titleW = ctx.measureText(title).width;
+  ctx.font = factFont;
+  const w = Math.max(titleW, ctx.measureText(facts).width) + t.platePadPx * 2;
+  const h = t.namePx * 2 + t.platePadPx * 1.8;
+  const reach = sr[i] + t.focusRingGapPx + t.platePadPx;
+  const x = sx[i] + reach + w > frame.viewportWidth - t.platePadPx ? sx[i] - reach - w : sx[i] + reach;
+  const y = Math.max(t.platePadPx, sy[i] - h - sr[i]);
+  return { box: { minX: x, minY: y, maxX: x + w, maxY: y + h }, title, facts, titleFont, factFont };
+}
+
+function paintFocusPlate(ctx: CanvasRenderingContext2D, plate: FocusPlate, alpha: number, stale: boolean): void {
+  const t = tokens!;
+  const { minX: x, minY: y, maxX, maxY } = plate.box;
+  const h = maxY - y;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = t.inks.plate;
+  ctx.beginPath();
+  ctx.roundRect(x, y, maxX - x, h, t.plateRadiusPx);
+  ctx.fill();
+  ctx.globalAlpha = alpha * PLATE_EDGE_ALPHA;
+  ctx.strokeStyle = t.inks.name;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = "left";
+  ctx.font = plate.titleFont;
+  ctx.fillStyle = t.inks.strong;
+  ctx.fillText(plate.title, x + t.platePadPx, y + h * 0.34);
+  ctx.font = plate.factFont;
+  ctx.fillStyle = stale ? t.inks.warning : t.inks.name;
+  ctx.fillText(plate.facts, x + t.platePadPx, y + h * 0.72);
 }

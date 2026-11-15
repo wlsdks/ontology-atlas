@@ -161,7 +161,7 @@ export function createFrameGate({
   hoveredClusterIdRef,
   trailLensPropRef,
   trailBrushPropRef,
-  panelHoverPropRef, drawnTrailLensRef,
+  panelHoverPropRef, neuralRampRef, drawnTrailLensRef,
   trailLensRampRef,
   visitedTrailRef,
   colorFocusRef,
@@ -352,6 +352,8 @@ export function createFrameGate({
                 }
                 lastActiveMsRef.current = now;
             }
+            // Neural paints no comets: once it alone is on screen, a focus rests after its signal.
+            const neuralAlone = neuralRampRef.current >= 0.999;
             const idleFlags = {
                 pointerActive: pointerMachineRef.current.phase !== "idle",
                 // The sim counts as warm only while a drag grab/release is charging
@@ -366,10 +368,10 @@ export function createFrameGate({
                 egoTailAnimating: isEgoTailAnimating({
                     reducedMotion: reducedMotionRef.current,
                     ambientAsleep,
-                    hasDependsEdges: hasDependsEdgesRef.current && lastDialFrame() === null,
+                    hasDependsEdges: hasDependsEdgesRef.current && lastDialFrame() === null && !neuralAlone,
                     edgePulseSpeed: tokens.edgePulseSpeed,
                     focused: focusedSlugRef.current !== null,
-                    hasContainsEdges: hasContainsEdgesRef.current && lastDialFrame() === null,
+                    hasContainsEdges: hasContainsEdgesRef.current && lastDialFrame() === null && !neuralAlone,
                     livePulseCount: pulsesRef.current.length,
                 }),
                 // Lens brushing is an interaction in progress too: folding to idle

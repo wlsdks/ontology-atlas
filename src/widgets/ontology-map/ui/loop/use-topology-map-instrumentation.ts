@@ -8,6 +8,7 @@ import type { PointerMachineState } from "../../interaction/pointer-state-machin
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { neuralTractsFor } from "../frame-draw/paint-neural";
+import { isNeuralDependency } from "../../model/dome-view/neural-cells";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { ForceSimulation } from "../../model/layout/force-layout";
@@ -258,7 +259,7 @@ export function useTopologyMapInstrumentation({
             const offA = edgeOff(e.sourceId);
             const offB = edgeOff(e.targetId);
             const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current, tracts);
-            const visible = tracts === null || e.kind !== "contains";
+            const visible = tracts === null || isNeuralDependency(e);
                     return {
                         sourceId: e.sourceId,
                         targetId: e.targetId,

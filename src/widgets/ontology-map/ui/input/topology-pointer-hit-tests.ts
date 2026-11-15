@@ -1,6 +1,7 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
 import { neuralTractsFor } from "../frame-draw/paint-neural";
+import { isNeuralDependency } from "../../model/dome-view/neural-cells";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
 import { clipBranchRelation } from "../../dial/branches/relation-ports";
@@ -329,7 +330,7 @@ export function createPointerHitTests(ctx: PointerContext) {
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId))
         continue;
-      if (neural && edge.kind === "contains")
+      if (neural && !isNeuralDependency(edge))
         continue;
       const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
       const offB = domeFrame?.get(edge.targetId) ?? ZERO;

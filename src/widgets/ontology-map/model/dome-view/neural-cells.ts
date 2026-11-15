@@ -10,6 +10,12 @@ interface NeuralEdgeInput {
   sourceId: string;
   targetId: string;
   kind: 'contains' | 'depends';
+  relationType: string;
+}
+
+/** The only relation Neural draws: membership is the cluster, and other relations stay in the panel. */
+export function isNeuralDependency(edge: NeuralEdgeInput): boolean {
+  return edge.kind === 'depends' && edge.relationType === 'depends_on';
 }
 
 /** Neural's reading of the graph: which cluster a concept sits in and how many dependencies it carries. */
@@ -44,7 +50,7 @@ export function neuralGraphOf(nodes: readonly NeuralNodeInput[], edges: readonly
   }
   const dependencyCount = new Map<string, number>();
   for (const edge of edges) {
-    if (edge.kind !== 'depends') continue;
+    if (!isNeuralDependency(edge)) continue;
     dependencyCount.set(edge.sourceId, (dependencyCount.get(edge.sourceId) ?? 0) + 1);
     dependencyCount.set(edge.targetId, (dependencyCount.get(edge.targetId) ?? 0) + 1);
   }
@@ -75,7 +81,7 @@ export function neuralFocusSets(edges: readonly NeuralEdgeInput[], focusId: stri
   const needs = new Set<string>();
   const usedBy = new Set<string>();
   for (const edge of edges) {
-    if (edge.kind !== 'depends' || edge.sourceId === edge.targetId) continue;
+    if (!isNeuralDependency(edge) || edge.sourceId === edge.targetId) continue;
     if (edge.sourceId === focusId) needs.add(edge.targetId);
     else if (edge.targetId === focusId) usedBy.add(edge.sourceId);
   }
