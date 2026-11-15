@@ -83,12 +83,13 @@ let tokens: NeuralTokens | null = null;
 const sprites = new Map<string, HTMLCanvasElement | null>();
 interface Signal { key: string | null; startMs: number; impact: NeuralImpact | null; hops: number; hopMs: number }
 /**
- * The signal plays once per focus: the selection and the hover each keep their own start, so a hover
- * ending over another cell returns to the selection without replaying its signal.
+ * The signal plays once per focus: the selection, a hovered concept and a lit relation each keep their
+ * own start, so a hover over a cell or an axon returns to the selection without replaying its spread.
  */
-const signals: { selected: Signal; hovered: Signal } = {
+const signals: { selected: Signal; hovered: Signal; relation: Signal } = {
   selected: { key: null, startMs: 0, impact: null, hops: 1, hopMs: 0 },
   hovered: { key: null, startMs: 0, impact: null, hops: 1, hopMs: 0 },
+  relation: { key: null, startMs: 0, impact: null, hops: 1, hopMs: 0 },
 };
 let activeSignal: Signal = signals.selected;
 
@@ -420,7 +421,9 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   const veilCell = 1 - (1 - t.veil) * ramp;
   const veilAxon = 1 - (1 - t.axonVeil) * ramp;
   const signalKey = litAxons !== null ? [...litAxons].join("\u0001") : focusId;
-  const signalSlot = focusId !== null && focusId === hoveredNodeId && selection === null ? signals.hovered : signals.selected;
+  const signalSlot = litAxons !== null ? signals.relation
+    : focusId !== null && focusId === hoveredNodeId && selection === null ? signals.hovered : signals.selected;
+  if (signalSlot !== signals.relation) signals.relation.key = null;
   if (signalSlot === signals.selected) signals.hovered.key = null;
   if (signalKey !== signalSlot.key) {
     signalSlot.key = signalKey;
