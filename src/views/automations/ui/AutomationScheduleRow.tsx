@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { cadenceKey, cadenceMinutes, type RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { cn } from '@/shared/lib/cn';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { AutomationAllowHere } from './AutomationAllowHere';
 import { AutomationRemoveConfirm, AutomationScheduleActions, useScheduleChange } from './AutomationScheduleActions';
@@ -17,7 +18,7 @@ const ROW_SELECTOR = '[data-schedule-row]';
 
 /** Up and Down walk the schedule rows; Enter and Space select the focused one. */
 function onRowKeyDown(event: KeyboardEvent<HTMLDivElement>, select: () => void) {
-  if (event.target !== event.currentTarget) return;
+  if (event.target !== event.currentTarget || isImeComposing(event)) return;
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
     select();
