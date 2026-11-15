@@ -1,5 +1,35 @@
 import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT, type DomeDragSpring } from './orbit';
 import type { DomeCircle, DomeCoord, DomeModel, DomeViewKind } from './types';
+import type { DomeTurnReach } from './turn-follow';
+
+type CameraPose = { tx: number; ty: number; tscale: number };
+
+/**
+ * A dome fit. Neural's carries the reach table its turn-following zoom reads (`followTurnWithZoom`)
+ * and the free area it fills: its centre's offset from the viewport's and its half-size (px).
+ */
+export type DomeFitTarget = CameraPose & {
+  turn?: DomeTurnReach;
+  freeArea?: { centreX: number; centreY: number; halfW: number; halfH: number };
+};
+
+/**
+ * The leash a focused camera is held in while it aims at a Neural fit: the free area that fit fills,
+ * round the camera that puts the anchor at that area's centre, so the fit is always reachable. null
+ * leaves the focus leash as it is. O(1).
+ */
+export function domeFitFocusLeash(
+  anchor: { x: number; y: number },
+  target: DomeFitTarget,
+  scale: number,
+): { anchor: { x: number; y: number }; leashPx: { x: number; y: number } } | null {
+  const free = target.freeArea;
+  if (free === undefined || !(scale > 0)) return null;
+  return {
+    anchor: { x: anchor.x - free.centreX / scale, y: anchor.y - free.centreY / scale },
+    leashPx: { x: free.halfW, y: free.halfH },
+  };
+}
 
 export interface DomeTierRampAnchor {
   from: number;
@@ -178,9 +208,11 @@ export interface DomeRuntime {
   /**
    * The whole-cloud fit a fit control or the entry last chose, and the pose it was made for. Neural's
    * zoom growth measures from its scale, and a click refits the cloud only while the camera still sits
-   * on it. A panel's refit never changes it. null = no fit yet.
+   * on it. A panel's refit never changes it. `followed` is the camera a turn last set from it; once the
+   * camera differs from that, the person has zoomed or panned and turning stops changing the zoom.
+   * null = no fit yet.
    */
-  restFit: { target: { tx: number; ty: number; tscale: number }; yaw: number; pitch: number } | null;
+  restFit: { target: DomeFitTarget; yaw: number; pitch: number; followed?: CameraPose | null } | null;
   /** Invalidates the edge candidate cache, since entries update in place. */
   frameEpoch: number;
   yaw: number;
