@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
+  TREE_ARC_BUDGET,
   TREE_TONE_STEPS,
   type TreeDrawList,
   type TreeFocus,
@@ -305,8 +306,7 @@ describe("paintTreeFrame", () => {
     const r = recorder();
     paintTreeFrame(r.ctx, frameOf(layout, list, { focus: focusOn(2, needs, usedBy) }), T);
     const drawn = [...strokesIn(r.paints, T.inks.arc), ...strokesIn(r.paints, T.inks.reach)].reduce((n, p) => n + p.curves, 0);
-    expect(T.paint.arcBudget).toBe(64);
-    expect(drawn).toBe(T.paint.arcBudget);
+    expect(drawn).toBe(TREE_ARC_BUDGET);
   });
 
   it("draws no mark beyond half the reach at growth 0.5 and grows the branch toward it partway", () => {

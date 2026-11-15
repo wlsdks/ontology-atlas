@@ -1,6 +1,7 @@
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { labelFontFamily } from "../render/labels";
 import {
+  TREE_ARC_BUDGET,
   TREE_TONE_STEPS,
   type TreeDrawMark,
   type TreeFrameInput,
@@ -33,11 +34,11 @@ function fontsFor(tokens: TreeTokens, family: string): readonly string[] {
   if (!byFamily) fonts.set(tokens, (byFamily = new Map()));
   let set = byFamily.get(family);
   if (!set) {
-    const { names, paint } = tokens;
+    const { names } = tokens;
     const strong = FONT_WEIGHT.strong;
     const plain = FONT_WEIGHT.signature;
     set = [
-      `${strong} ${paint.projectNamePx}px ${family}`,
+      `${strong} ${names.project}px ${family}`,
       `${strong} ${names.domain}px ${family}`,
       `${plain} ${names.capability}px ${family}`,
       `${plain} ${names.element}px ${family}`,
@@ -414,7 +415,7 @@ function nameInk(kind: TreeNodeKind, tone: number, tokens: TreeTokens, lit: bool
 function paintName(ctx: CanvasRenderingContext2D, box: TreeNameBox, kind: TreeNodeKind, tone: number, tokens: TreeTokens, family: string, lit: boolean): void {
   const { names, paint, inks, tones } = tokens;
   const set = fontsFor(tokens, family);
-  const subHeight = box.sub === null ? 0 : names.domainSub * paint.nameLeading;
+  const subHeight = box.sub === null ? 0 : names.domainSub * names.leading;
   const x = box.side === 0 ? box.x : box.side === 1 ? box.x + box.width : box.x + box.width / 2;
   ctx.textAlign = box.side === 0 ? "left" : box.side === 1 ? "right" : "center";
   ctx.textBaseline = "middle";
@@ -505,7 +506,7 @@ function paintFocus(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, sums: 
   litStamp[focus.node] = stamp;
   litStamp[list.marks[focusAt]!.node] = stamp;
   for (let i = 0; i < focus.path.length; i += 1) litStamp[focus.path[i]!] = stamp;
-  const arcs = collectArcs(frame, focusAt, paint.arcBudget);
+  const arcs = collectArcs(frame, focusAt, TREE_ARC_BUDGET);
   for (let i = 0; i < arcs; i += 1) litStamp[list.marks[arcFrom[i] === focusAt ? arcTo[i]! : arcFrom[i]!]!.node] = stamp;
 
   ctx.globalAlpha = paint.focusVeilAlpha;
@@ -572,7 +573,7 @@ function isOnPath(path: readonly number[], focus: number, node: number): boolean
 export function paintTreeFrame(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens: TreeTokens): void {
   const { layout, list, width, height, dpr } = frame;
   const model = layout.model;
-  ensureCapacity(model.count, list.count, tokens.paint.arcBudget);
+  ensureCapacity(model.count, list.count, TREE_ARC_BUDGET);
   for (let i = 0; i < list.count; i += 1) {
     const node = list.marks[i]!.node;
     markAt[node] = i;

@@ -9,9 +9,9 @@ export interface TreePaintTokens {
   branchMinPx: number; branchInk: number; branchCoreShare: number; branchCoreMinPx: number; branchCoreInk: number;
   markInk: number; ringShare: number; ringMinPx: number; domainCoreShare: number;
   closedRingGapPx: number; closedRingPx: number; staleDotShare: number; staleDotMinPx: number;
-  arcBudget: number; arcWidthPx: number; arcHaloPx: number; arcBow: number; arcGapPx: number;
+  arcWidthPx: number; arcHaloPx: number; arcBow: number; arcGapPx: number;
   focusVeilAlpha: number; focusRingGapPx: number; focusRingPx: number;
-  projectNamePx: number; nameHaloPx: number; domainNameHaloPx: number; nameSubInk: number; nameLeading: number;
+  nameHaloPx: number; domainNameHaloPx: number; nameSubInk: number;
   backdropAlpha: number; backdropReach: number; canopyAlpha: number; canopyReach: number;
   poolAlpha: number; poolReach: number; poolFlatten: number;
 }
@@ -50,16 +50,16 @@ const vars = <K extends string>(keys: readonly K[], cssVar: (key: K) => string) 
 
 const MARK_VARS = vars<keyof TreeMarkSizes>(["project", "domain", "capability", "element", "bud"], (k) => `--map-tree-mark-${k}-px`);
 const NAME_VARS = vars<keyof TreeNameSizes>(
-  ["domain", "domainSub", "capability", "element", "gap", "pad"],
-  (k) => `--map-tree-name-${kebab(k)}-px`,
+  ["project", "domain", "domainSub", "capability", "element", "gap", "pad", "leading"],
+  (k) => (k === "leading" ? "--map-tree-name-leading" : `--map-tree-name-${kebab(k)}-px`),
 );
 const DETAIL_VARS = vars<keyof TreeDetailTokens>(["openPitchPx", "leafPitchPx", "elementNamePitchPx", "pickSlopPx"], (k) => `--map-tree-${kebab(k)}`);
 const PAINT_VARS = vars<keyof TreePaintTokens>(
   [
     "toneFar", "branchMinPx", "branchInk", "branchCoreShare", "branchCoreMinPx", "branchCoreInk",
     "markInk", "ringShare", "ringMinPx", "domainCoreShare", "closedRingGapPx", "closedRingPx", "staleDotShare", "staleDotMinPx",
-    "arcBudget", "arcWidthPx", "arcHaloPx", "arcBow", "arcGapPx", "focusVeilAlpha", "focusRingGapPx", "focusRingPx",
-    "projectNamePx", "nameHaloPx", "domainNameHaloPx", "nameSubInk", "nameLeading",
+    "arcWidthPx", "arcHaloPx", "arcBow", "arcGapPx", "focusVeilAlpha", "focusRingGapPx", "focusRingPx",
+    "nameHaloPx", "domainNameHaloPx", "nameSubInk",
     "backdropAlpha", "backdropReach", "canopyAlpha", "canopyReach", "poolAlpha", "poolReach", "poolFlatten",
   ],
   (k) => `--map-tree-${kebab(k)}`,

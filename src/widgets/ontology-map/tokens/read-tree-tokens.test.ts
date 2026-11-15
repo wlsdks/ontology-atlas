@@ -31,8 +31,8 @@ afterEach(() => vi.restoreAllMocks());
 describe("readTreeTokens", () => {
   it("throws naming a missing tree token instead of falling back", () => {
     const values = { ...declaredTreeTokens(), ...BORROWED_INKS };
-    delete values["--map-tree-arc-budget"];
+    delete values["--map-tree-arc-width-px"];
     stubStyle(values);
-    expect(() => readTreeTokens()).toThrow(/--map-tree-arc-budget/);
+    expect(() => readTreeTokens()).toThrow(/--map-tree-arc-width-px/);
   });
 });

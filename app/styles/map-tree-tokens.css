@@ -37,7 +37,6 @@
     --map-tree-closed-ring-px: 1.2;
     --map-tree-stale-dot-share: 0.5;
     --map-tree-stale-dot-min-px: 2.2;
-    --map-tree-arc-budget: 64;
     --map-tree-arc-width-px: 1.5;
     --map-tree-arc-halo-px: 4;
     --map-tree-arc-bow: 0.22;
@@ -45,7 +44,7 @@
     --map-tree-focus-veil-alpha: 0.5;
     --map-tree-focus-ring-gap-px: 5;
     --map-tree-focus-ring-px: 1.5;
-    --map-tree-project-name-px: 17;
+    --map-tree-name-project-px: 17;
     --map-tree-name-halo-px: 4;
     --map-tree-domain-name-halo-px: 6;
     --map-tree-name-sub-ink: 0.62;
