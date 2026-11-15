@@ -322,9 +322,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the rest fit, the whole cloud glides into the area the panel leaves free, on the
   camera transition a panel opening uses, and returns when it closes; zoomed, the
   view keeps its zoom and pose and only slides until the selected cell clears the
-  panel. A turn keeps the whole cloud inside that free area, with or without a
-  selection: the zoom follows the turn angle, so no cluster leaves the screen at
-  any pose. A name that would run under a panel takes its cell's other side, and
+  panel. A turn at the fit's tilt keeps the whole cloud inside that free area, with
+  or without a selection: the zoom follows the turn angle. A change of tilt is not
+  followed and can carry cells past the area's edge. A name that would run under a panel takes its cell's other side, and
   is moved inside the free area only when neither side fits. Reduced motion moves
   it at once. A hovered, selected or path
   dependency is lit the same way with both ends named, and the pointer presses
