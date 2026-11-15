@@ -87,7 +87,7 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", 1],
   ["src/views/home/ui/CreateNodeForm.tsx", 2],
   ["src/views/home/ui/OntologyBootstrapForm.tsx", 1],
-  ["src/views/project-detail/ui/ProjectDetailPage.tsx", 1],
+  ["src/views/project-detail/ui/ProjectActions.tsx", 1],
   ["src/views/project-detail/ui/construction-review/ConstructionReviewPanel.tsx", 3],
   ["src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx", 2],
   ["src/widgets/atlas-git-panel/ui/ActionDock.tsx", 1],

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { cn } from '@/shared/lib/cn';
 
@@ -46,13 +46,10 @@ export function HeroTypewriter({
   start,
   className,
   budgetMs = BUDGET_MS,
-  onProgress,
 }: {
   lines: readonly HeroTypewriterLine[];
   start: boolean;
   className?: string;
-  /** Reported after the characters paint, so the echo never runs ahead of its cause. */
-  onProgress?: (typed: number, total: number) => void;
   budgetMs?: number;
 }) {
   const reduced = usePrefersReducedMotion();
@@ -93,11 +90,6 @@ export function HeroTypewriter({
 
   /** Derived, not set in an effect, which would cascade a render. */
   const typed = reduced ? total : progress.typed;
-
-  /* A layout effect, so the hero's dots light before the browser paints these characters. */
-  useLayoutEffect(() => {
-    onProgress?.(typed, total);
-  }, [onProgress, typed, total]);
 
   /*
    * The count follows the wall clock, not the number of callbacks, so a throttled main thread

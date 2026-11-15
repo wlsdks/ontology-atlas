@@ -52,15 +52,3 @@ export function resolveSoleProjectSlug(docs: readonly VaultDoc[]): string | null
   }
   return only;
 }
-
-/** Stops at the second project document. */
-export function hasSeveralProjectDocs(docs: readonly VaultDoc[]): boolean {
-  let seen = 0;
-  for (const doc of docs) {
-    if (!isProjectVaultDoc(doc)) continue;
-    if (!computeProjectSlug(doc)) continue;
-    seen += 1;
-    if (seen > 1) return true;
-  }
-  return false;
-}
