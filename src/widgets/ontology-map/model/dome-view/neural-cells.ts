@@ -89,6 +89,12 @@ export function neuralFocusSets(edges: readonly NeuralEdgeInput[], focusId: stri
 }
 
 /** Amber only where evidence was read and called the concept stale; unread evidence is never amber. */
+/** How far a focus's signal has run along its lit axons: 1 once it has arrived, and at once under reduced motion. */
+export function neuralSignalProgress(nowMs: number, startMs: number, signalMs: number, reducedMotion: boolean): number {
+  if (reducedMotion || signalMs <= 0) return 1;
+  return Math.min(1, Math.max(0, (nowMs - startMs) / signalMs));
+}
+
 export function neuralCellIsStale(evidence: ReadonlyMap<string, 'current' | 'stale' | 'unknown'> | null, id: string): boolean {
   return evidence !== null && evidence.get(id) === 'stale';
 }

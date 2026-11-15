@@ -10,6 +10,7 @@ import {
   neuralTracts,
   type NeuralGraph,
   type NeuralTracts,
+  neuralSignalProgress,
 } from "../../model/dome-view/neural-cells";
 import { labelFontFamily } from "../../render/labels";
 import { readNeuralTokens, type NeuralTokens } from "../../tokens/read-neural-tokens";
@@ -118,6 +119,11 @@ let tractCache: { world: TopologyWorld; epoch: number; tracts: NeuralTracts } | 
  * Neural's route context for this frame: the one input paint, picking and the probe give
  * `projectDomeEdgeControl`, so all three bend a dependency the same way. Cached per frame epoch.
  */
+/** True while a focus's signal is still on its way, so the frame loop draws until it arrives. */
+export function isNeuralSignalTravelling(nowMs: number, reducedMotion: boolean): boolean {
+  return tokens !== null && signal.focusId !== null && neuralSignalProgress(nowMs, signal.startMs, tokens.signalMs, reducedMotion) < 1;
+}
+
 export function neuralTractsFor(world: TopologyWorld, frame: ReadonlyMap<string, DomeNodeFrame>, epoch: number | null): NeuralTracts {
   if (epoch !== null && tractCache?.world === world && tractCache.epoch === epoch) return tractCache.tracts;
   const t = (tokens ??= readNeuralTokens());
@@ -211,7 +217,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   const veilCell = 1 - (1 - t.veil) * ramp;
   const veilAxon = 1 - (1 - t.axonVeil) * ramp;
   if (focusId !== signal.focusId) signal = { focusId, startMs: now };
-  const travel = reducedMotion || focusId === null ? 1 : (now - signal.startMs) / t.signalMs;
+  const travel = focusId === null ? 1 : neuralSignalProgress(now, signal.startMs, t.signalMs, reducedMotion);
 
   let drawn = 0;
   litDrawnStateCounts.current = 0;
@@ -523,8 +529,8 @@ function paintNeuralNames(
   let named = 0;
   if (hot) for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
 
-  // Every domain's name above its cluster, or below when above is taken. With a focus, a receded
-  // title gives way to the lit names and axons.
+  // At rest every domain's name stands above its cluster. With a focus a receded title moves
+  // below its cluster, or gives way, to keep clear of the lit names and axons.
   const nameFont = `${FONT_WEIGHT.strong} ${t.domainNamePx}px ${family}`;
   const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
   const summaries = clusterSummaries(frame, graph, evidence);
@@ -553,11 +559,12 @@ function paintNeuralNames(
     const below = titleAt(pool.maxY + t.domainMetaGapPx + t.domainNameGapPx);
     const receded = focusCluster !== undefined && focusCluster !== domainId;
     const free = (b: Box) => !names.hits(b) && !(receded && litPath.hits(b));
-    const chosen = free(above.box) && !cells.hits(above.box) ? above
+    const chosen = !hot ? above
+      : free(above.box) && !cells.hits(above.box) ? above
       : free(below.box) && !cells.hits(below.box) ? below
       : free(above.box) ? above : null;
-    if (chosen === null && hot) continue;
-    const title = chosen ?? above;
+    if (chosen === null) continue;
+    const title = chosen;
     if (title.box.maxX < -200 || title.box.minX > width + 200 || title.box.maxY < -40 || title.box.minY > height + 40) continue;
     const dim = (receded ? 1 - (1 - DOMAIN_DIM_IN_FOCUS) * focus.ramp : 1) * pool.a * neural;
     write(node.label, x, title.nameY, "center", nameFont, ink.strong, 0.96 * dim, t.nameHaloPx + 1);
@@ -566,7 +573,18 @@ function paintNeuralNames(
     boxes.push({ nodeId: domainId, text: node.label, ...title.nameBox });
   }
 
-  if (!hot) for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
+  if (!hot) {
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      if (world.nodes[i].kind !== "project" || sa[i] <= 0.05) continue;
+      ctx.font = font;
+      const label = world.nodes[i].label;
+      const box = boxFor(label, sx[i] + sr[i] + t.nameGapPx, sy[i], "left", t.namePx);
+      write(label, sx[i] + sr[i] + t.nameGapPx, sy[i], "left", font, ink.name, 0.9 * neural, t.nameHaloPx);
+      names.add(box);
+      boxes.push({ nodeId: world.nodes[i].id, text: label, ...box });
+    }
+    for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
+  }
 
   if (plate && focusId !== null) {
     paintFocusPlate(ctx, plate, focus.ramp * neural, neuralCellIsStale(evidence, focusId));

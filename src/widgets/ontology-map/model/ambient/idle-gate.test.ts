@@ -7,6 +7,7 @@ import {
   isDomeSpinAnimating,
   isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type DomeSpinInput, type EgoTailActivityInput } from "./idle-gate";
 import { stepFocusRamp } from "../visibility/focus-state";
+import { neuralSignalProgress } from "../dome-view/neural-cells";
 
 const IDLE: CanvasActivityFlags = {
   pointerActive: false,
@@ -22,6 +23,7 @@ const IDLE: CanvasActivityFlags = {
   trailLensSettling: false,
   trailMotionActive: false,
   lightActive: false,
+  neuralSignalTravelling: false,
 };
 
 describe("isCanvasActive", () => {
@@ -33,6 +35,24 @@ describe("isCanvasActive", () => {
     for (const key of Object.keys(IDLE) as (keyof CanvasActivityFlags)[]) {
       expect(isCanvasActive({ ...IDLE, [key]: true })).toBe(true);
     }
+  });
+});
+
+describe("Neural's focus signal", () => {
+  const SIGNAL_MS = 600;
+  const awakeAt = (elapsedMs: number, reducedMotion: boolean) =>
+    extendsGrace({ ...IDLE, neuralSignalTravelling: neuralSignalProgress(elapsedMs, 0, SIGNAL_MS, reducedMotion) < 1 });
+
+  it("keeps the map drawing while the signal runs and lets it sleep once it arrives", () => {
+    expect(awakeAt(0, false)).toBe(true);
+    expect(awakeAt(SIGNAL_MS / 2, false)).toBe(true);
+    expect(awakeAt(SIGNAL_MS, false)).toBe(false);
+    expect(awakeAt(SIGNAL_MS * 4, false)).toBe(false);
+  });
+
+  it("never runs under reduced motion, so no frame is drawn for it", () => {
+    expect(neuralSignalProgress(0, 0, SIGNAL_MS, true)).toBe(1);
+    expect(awakeAt(0, true)).toBe(false);
   });
 });
 

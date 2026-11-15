@@ -36,6 +36,8 @@ export interface CanvasActivityFlags {
    */
   trailMotionActive: boolean;
   lightActive: boolean;
+  /** Neural's signal is still travelling its focus's lit axons (`isNeuralSignalTravelling`). */
+  neuralSignalTravelling?: boolean;
 }
 
 /**
@@ -102,7 +104,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.focusFadeSettling ||
     flags.spotlightSettling ||
     flags.trailLensSettling ||
-    flags.trailMotionActive
+    flags.trailMotionActive ||
+    flags.neuralSignalTravelling === true
         ||
     flags.lightActive
   );
