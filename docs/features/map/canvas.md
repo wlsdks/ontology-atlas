@@ -295,8 +295,10 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   leaves free, and sets a plate with its name and counts beside it, on the side with
   fewer lit axons. Pointing at a concept lights only those direct ends. **Selecting
   it lights its impact**: every concept that depends on it, directly or through
-  others, over the same `depends_on` axons and at its fewest hops, the answer MCP's
-  `impact` (incoming) gives an agent. The change travels outward hop by hop: a
+  others, over the same `depends_on` axons and at its fewest hops. The map lights the
+  whole impact, which equals MCP's `impact` (direction incoming) when the call's
+  depth and limit cover it; the default call stops at depth 2 and 100 results.
+  The change travels outward hop by hop: a
   signal runs along each axon that carries it one hop further, from the end nearer
   the selection, and each dependent lifts from the veil as the signal reaches it.
   One hop takes `--motion-expressive`; when the whole spread would take longer than

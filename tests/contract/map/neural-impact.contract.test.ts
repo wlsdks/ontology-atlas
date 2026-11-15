@@ -14,7 +14,10 @@ import { NEURAL_IMPACT_CASES } from "../../fixtures/neural-impact-cases.mjs";
  * concepts at the same distances: one table runs through both, each from the same frontmatter.
  */
 
-/** Deep enough that no case is cut short. */
+/**
+ * The comparison holds at a covering depth and limit: MCP's default call stops at depth 2 and 100
+ * results, while Neural lights the whole reach. 10 and 500 cover every case and the dogfood vault.
+ */
 const MCP_DEPTH = 10;
 
 function manifestOf(docs: readonly { slug: string; frontmatter: Record<string, unknown> }[]): VaultManifest {
