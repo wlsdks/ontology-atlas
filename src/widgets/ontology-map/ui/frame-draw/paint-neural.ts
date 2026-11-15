@@ -822,6 +822,11 @@ function paintNeuralNames(
     : null;
   lastLit.plateFacts = plate?.facts ?? null;
   if (plate) names.add(plate.box);
+  if (focus.focusIndex !== undefined && sets !== null) {
+    const f = focus.focusIndex;
+    const ring = sr[f] + t.focusRingGapPx + t.focusRingPx;
+    names.add({ minX: sx[f] - ring, minY: sy[f] - ring, maxX: sx[f] + ring, maxY: sy[f] + ring });
+  }
 
   // Capability names beside their cells at rest; with a focus, its direct ends first and then a
   // selection's arrived dependents nearest first, each name on the side its arriving axons leave free.
@@ -861,14 +866,16 @@ function paintNeuralNames(
     const nudged = hot ? tries.flatMap(([x, y, align, dx, dy]): (typeof tries)[number][] => dy === 0
       ? [[x, y - nudge, align, dx, dy], [x, y + nudge, align, dx, dy]]
       : [[x, y + dy * nudge, align, dx, dy]]) : [];
-    for (const clearOfLit of hot ? [true, false] : [false]) {
+    const direct = nameStep(i) === 1;
+    for (const clearOfLit of hot ? (direct ? [true, false] : [true]) : [false]) {
       for (const [x, y, align] of clearOfLit ? [...tries, ...nudged] : tries) {
         const box = boxFor(node.label, x, y, align, t.namePx);
         if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
-        // A focus's names may cross a receded cell, never another name, and a lit axon only if no side is clear.
+        // A focus's names may cross a receded cell, never another name or the focus's ring; only a
+        // direct end's name may cross a lit axon, and only if no side is clear.
         if (names.hits(box) || (!hot && cells.hits(box)) || (clearOfLit && litPath.hits(box))) continue;
         const alpha = (hot ? focus.ramp : REST_NAME_ALPHA * (1 - (1 - t.farAlpha) * su[i])) * neural;
-        write(node.label, x, y, align, font, hot && nameStep(i) === 1 ? ink.strong : ink.name, alpha, t.nameHaloPx);
+        write(node.label, x, y, align, font, hot && direct ? ink.strong : ink.name, alpha, t.nameHaloPx);
         names.add(box);
         boxes.push({ nodeId: node.id, text: node.label, ...box });
         return true;
