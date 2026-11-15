@@ -73,6 +73,13 @@ describe("map inspection hook (window.__atlasMap)", () => {
     expect(source).toMatch(/draggable:\s*sim\?\.hasNode/);
   });
 
+  it("Neural reports which painter drew it, and its WebGL probe attaches only under `e2e` and leaves on unmount", () => {
+    const stage = readFileSync(join(process.cwd(), "src/widgets/ontology-map/neural-gl/neural-gl-stage.ts"), "utf8");
+    expect(source).toMatch(/painter:\s*neuralPainterOf\(canvasRef\.current\)/);
+    expect(stage).toMatch(/params\.has\("e2e"\)[^;]*\?\s*installNeuralGlProbe\(/);
+    expect(stage).toMatch(/dispose\(\)\s*\{[^}]*removeProbe\?\.\(\)/);
+  });
+
   it("the chip reports the claim and the actual side by side", () => {
     // With `claimedCount` but no `shownChildren`, the mismatch of "says +24 and draws
     // 1" is invisible from outside — a defect that actually occurred.

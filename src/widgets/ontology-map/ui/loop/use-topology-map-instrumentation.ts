@@ -40,6 +40,7 @@ import {
   type TopologyWorld,
 } from "../world/topology-world";
 import { lastFocusFrame } from "../camera/topology-camera-math";
+import { neuralPainterOf } from "../../neural-gl/neural-gl-stage";
 
 type SourceRef<T> = { current: T; };
 
@@ -428,7 +429,8 @@ export function useTopologyMapInstrumentation({
                     flyPending: d.flyRequest !== null,
                     light: lastLitStateCounts(),
                     /** Neural's lit focus: its direct ends, a selection's impact by distance, and how far the spread has run. */
-                    neural: lastNeuralLit(),
+                    /** `painter`: whether WebGL or canvas 2D drew the last Neural frame. */
+                    neural: { ...lastNeuralLit(), painter: neuralPainterOf(canvasRef.current) },
                     lod: {
                         active: domeLodRef.current.active,
                         capability: domeLodRef.current.planeResolve.capability,
