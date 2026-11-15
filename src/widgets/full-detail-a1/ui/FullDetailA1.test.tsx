@@ -35,9 +35,6 @@ const messages = {
     unknown: "알 수 없음",
   },
   fullDetailA1: {
-    backToMap: "← 지도",
-    breadcrumbSeparator: "/",
-    census: "{concepts} CONCEPTS · {relations} RELATIONS",
     freshOn: "최근 갱신",
     freshOff: "정체",
     copyLink: "노드 링크 복사",
@@ -45,30 +42,19 @@ const messages = {
     close: "닫기",
     groups: {
       containsTitle: "이 노드가 담는 것",
-      containsCaption: "contains",
       usedByTitle: "이 노드를 쓰는 곳",
-      usedByCaption: "used by",
       dependsOnTitle: "이 노드가 기대는 곳",
-      dependsOnCaption: "depends on",
       belongsToTitle: "속한 곳",
-      belongsToCaption: "belongs to",
       relatedTitle: "관련 항목",
-      relatedCaption: "related",
       freshDotTitle: "최근 갱신",
       directLinks: "직접 연결 {count}",
       domainCount: "도메인 {count}곳",
       domainLinks: "링크 {count}개",
-      emptyGroup: "{title} 없음",
+      caption: "들어오는·나가는 관계에는 의존이 아닌 관계도 있어요.",
     },
     reach: {
-      leadIn: "이 노드에서",
-      stepUnit: "단계",
-      afterSteps: "안에 닿는 개념",
+      summary: "{depth}단계 안에 있는 개념 {count}개 · 전체 {total}개",
       stepsAria: koMessages.fullDetailA1.reach.stepsAria,
-      ofTotal: "{count} / {total}",
-      mostlyNone: "도달하는 개념이 없습니다.",
-      mostlyOne: "대부분 {a}({aCount})에 있다.",
-      mostlyTwo: "대부분 {a}({aCount})와 {b}({bCount})에 있다.",
       selfDomainLabel: "도메인 내부",
       noDomainLabel: "소속 없음",
     },
@@ -93,6 +79,9 @@ const messages = {
       placeholder: "설명을 적어보세요…",
       saving: "저장 중…",
     },
+  },
+  topology: {
+    nodeDatasheet: { noConnections: "아직 기록된 관계 없음" },
   },
   editProvenance: {
     prefix: "마지막 편집",
@@ -203,8 +192,14 @@ function projectSourceView(overrides: Partial<ProjectSourceView> = {}): ProjectS
 describe("FullDetailA1", () => {
   it('renders title, kind and slug in the header', () => {
     renderFullDetail();
-    expect(screen.getByText("Domain A")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Domain A" })).toBeInTheDocument();
+    expect(screen.getByTestId("full-detail-a1-kind")).toHaveTextContent("도메인");
     expect(screen.getByText("domains/a")).toBeInTheDocument();
+  });
+
+  it('names the owner beside the kind, as the compact panel does', () => {
+    renderFullDetail({ node: { id: "capability:child", title: "Child", kind: "capability", ownerTitle: "Domain A", slug: "capabilities/child", fresh: false } });
+    expect(screen.getByTestId("full-detail-a1-kind")).toHaveTextContent("캡슐·Domain A");
   });
 
   it('renders fullTitle as secondary text when it differs from title', () => {
@@ -233,12 +228,29 @@ describe("FullDetailA1", () => {
     ).not.toBeInTheDocument();
   });
 
-  it('draws a card only for a group with something in it and folds the empty ones into one line', () => {
+  it('draws only the groups that have rows and never stretches them into cards', () => {
     const { container } = renderFullDetailWithContainer();
+    expect(container.querySelector('[data-fulldetail-group="contains"]')).not.toBeNull();
     expect(container.querySelector('[data-fulldetail-group="used-by"]')).not.toBeNull();
     expect(container.querySelector('[data-fulldetail-group="depends-on"]')).toBeNull();
-    expect(container.querySelector('[data-fulldetail-empty-groups]')?.textContent).toBe("이 노드가 기대는 곳 없음·속한 곳 없음");
-    expect(container.querySelector('[data-fulldetail-metric]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-group="belongs-to"]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-groups-caption]')).not.toBeNull();
+  });
+
+  it('says once that no relations are recorded when every group is empty', () => {
+    const empty = { rows: [], total: 0 };
+    const groups = { contains: empty, usedBy: empty, dependsOn: empty, belongsTo: empty, related: empty, domainLevel: null };
+    const { container } = renderFullDetailWithContainer({ groups });
+    expect(container.querySelector('[data-fulldetail-group]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-groups-empty]')?.textContent).toBe("아직 기록된 관계 없음");
+    expect(container.querySelector('[data-fulldetail-groups-caption]')).toBeNull();
+  });
+
+  it('states the reach for the chosen depth in one sentence', () => {
+    const { container } = renderFullDetailWithContainer();
+    expect(container.querySelector('[data-fulldetail-reach-summary]')?.textContent).toBe("3단계 안에 있는 개념 1개 · 전체 3개");
+    fireEvent.click(screen.getByTestId("fulldetail-reach-step-1"));
+    expect(container.querySelector('[data-fulldetail-reach-summary]')?.textContent).toMatch(/^1단계/);
   });
 
   it('counts a domain by the domains that use it, with its direct links as a second line', () => {
@@ -255,7 +267,7 @@ describe("FullDetailA1", () => {
     expect(onSelectNode).toHaveBeenCalledWith("domain:b");
   });
 
-  it('draws a domain with no partner on a side as an empty side, not as zero domains', () => {
+  it('draws no group for a side where a domain has no partner, not zero domains', () => {
     const groups = {
       ...buildFullDetailGroups("domain:a", nodes, edges),
       dependsOn: { rows: [], total: 0 },
@@ -263,11 +275,10 @@ describe("FullDetailA1", () => {
     };
     const { container } = renderFullDetailWithContainer({ groups });
     expect(container.querySelector('[data-fulldetail-group="depends-on"]')).toBeNull();
-    expect(container.querySelector('[data-fulldetail-empty-groups]')?.textContent).toContain("이 노드가 기대는 곳 없음");
   });
 
   it('lists a related concept in its own card and never under a direction', () => {
-    const relatedRow = { id: "domain:c", title: "Domain C", kind: "domain", containment: false, childCount: 0, fresh: false };
+    const relatedRow = { id: "domain:c", title: "Domain C", kind: "domain", childCount: 0, fresh: false };
     const groups = { ...buildFullDetailGroups("domain:a", nodes, edges), related: { rows: [relatedRow], total: 1 } };
     const { container } = renderFullDetailWithContainer({ groups });
     const card = container.querySelector('[data-fulldetail-group="related"]')!;
@@ -303,6 +314,12 @@ describe("FullDetailA1", () => {
 
   it('renders the markdown body in the body section', () => {
     renderFullDetail();
+    expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
+  });
+
+  it('draws the name once when the body opens with a heading that repeats it', () => {
+    renderFullDetail({ bodyMarkdown: "# Domain A\n\n본문 텍스트입니다." });
+    expect(screen.getAllByRole("heading", { name: "Domain A" })).toHaveLength(1);
     expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
   });
 

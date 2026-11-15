@@ -86,12 +86,12 @@ async function select(page: Page, id: string): Promise<void> {
   await waitForMapStill(page);
 }
 
-/** Every list line the panel's relations hold: group headings, rows, show-more rows and folded lines. */
+/** Every list line the panel's relations hold: group headings, rows, show-more rows and the counts line. */
 const listLines = (page: Page) =>
   page.getByTestId("map-detail-panel").evaluate((panel) => {
     const zone = panel.querySelector("[data-reach-zone]");
     if (!zone) return 1;
-    return zone.querySelectorAll("[data-datasheet-group-total], li > button, [data-reach-line]").length;
+    return zone.querySelectorAll("[data-datasheet-group-total], li > button, [data-reach-counts]").length;
   });
 
 test.describe("the concept panel's first screen", () => {
@@ -145,6 +145,45 @@ test.describe("the concept panel's first screen", () => {
     await page.keyboard.press("Escape");
     await expect(card).toBeHidden();
     await expect(panel).toBeVisible();
+  });
+
+  test("a menu of several actions opens above its trigger, right edges aligned, inside the panel", async ({ page }) => {
+    test.setTimeout(180_000);
+    await select(page, "domain:orders");
+    const panel = page.getByTestId("map-detail-panel");
+    for (const menu of ["edit", "more"]) {
+      const trigger = panel.getByTestId(`map-detail-panel-${menu}-menu-trigger`);
+      await trigger.click();
+      const box = panel.getByTestId(`map-detail-panel-${menu}-menu`);
+      await expect(box.getByRole("menuitem")).not.toHaveCount(1);
+      await expect.poll(() => box.evaluate((el) => el.getAnimations().every((a) => a.playState !== "running"))).toBe(true);
+      const [t, m, p] = [(await trigger.boundingBox())!, (await box.boundingBox())!, (await panel.boundingBox())!];
+      expect(m.y + m.height, `${menu}: the menu sits above its trigger`).toBeLessThanOrEqual(t.y);
+      expect(Math.abs(m.x + m.width - (t.x + t.width)), `${menu}: right edges align`).toBeLessThanOrEqual(1);
+      expect(m.x, `${menu}: the menu stays inside the panel's left edge`).toBeGreaterThanOrEqual(p.x);
+      const edge = await box.evaluate((el) => {
+        const probe = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
+        const paint = (...layers: string[]) => {
+          probe.clearRect(0, 0, 1, 1);
+          for (const fill of layers) {
+            probe.fillStyle = fill;
+            probe.fillRect(0, 0, 1, 1);
+          }
+          return [...probe.getImageData(0, 0, 1, 1).data].slice(0, 3).map((v) => {
+            const s = v / 255;
+            return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          });
+        };
+        const luminance = ([r, g, b]: number[]) => 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+        const panelSurface = getComputedStyle(el.closest('[data-testid="map-detail-panel"]')!).backgroundColor;
+        const own = getComputedStyle(el);
+        const [hi, lo] = [luminance(paint(own.backgroundColor, own.borderTopColor)), luminance(paint(panelSurface))].sort((a, b) => b - a);
+        return (hi! + 0.05) / (lo! + 0.05);
+      });
+      expect(edge, `${menu}: the menu's edge reads as a layer above the panel`).toBeGreaterThanOrEqual(3);
+      await page.keyboard.press("Escape");
+      await expect(box).toBeHidden();
+    }
   });
 
   test("the domain and element selections list no more than the panel did before", async ({ page }) => {
@@ -256,7 +295,7 @@ test.describe("the concept panel's first screen holds its parts", () => {
     });
   }
 
-  test("a calm concept emphasises nothing, and missing reasons make meaning review the one filled action", async ({ page }) => {
+  test("a calm concept emphasises nothing, and missing reasons put meaning review on the warning row", async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1512, height: 949 });
     await openVault(page);
@@ -267,7 +306,7 @@ test.describe("the concept panel's first screen holds its parts", () => {
     await expect(panel.getByTestId("map-detail-panel-definition")).toHaveText(TYPICAL_DEFINITION);
     await select(page, "capability:hub");
     await expect(panel).toHaveAttribute("data-panel-emphasis", "meaning-review");
-    await expect(panel.getByTestId("map-detail-panel-judgment-action")).toHaveAttribute("data-action-role", "primary");
+    await expect(panel.getByTestId("map-detail-panel-judgment-action")).toHaveAttribute("data-judgment-action", "meaning-review");
   });
 
   test("the reach block stays where it first painted", async ({ page }) => {

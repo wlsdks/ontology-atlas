@@ -10,16 +10,13 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { RowButton } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import type { GraphLineKind } from "../../flat-graph/attention";
 import type { ConceptReach, ReachRow } from "../../model/concept-reach";
 import { OntologyMapEdgeHoverCard } from "../OntologyMapEdgeHoverCard";
 import { ConnectionGroup, type ReachListRow, type ReachRowHandlers } from "./ConnectionGroup";
 import { reasonsByRelation, type V2ConnectionGroupsView } from "./map-datasheet";
-import { GROUP_GLYPH_SLOT, RelationGroupShell } from "./RelationGroupShell";
+import { RelationGroupShell } from "./RelationGroupShell";
 import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
 
 /** How long the pointer rests on a row before its reason shows, so a pass over the list stays quiet. */
@@ -28,9 +25,8 @@ const REASON_REST_MS = 150;
 const CARD_ANCHOR_OFFSET_PX = 14;
 const NAVIGATION_KEYS = new Set(["ArrowDown", "ArrowUp", "Home", "End"]);
 
-type ListKey = "needs" | "neededBy" | "other" | "contains" | "describes";
-/** An open folded line, or an opened "show more" inside one of the lists. */
-type OpenKey = ListKey | `${ListKey}:all`;
+/** A list whose "show more" row is open. */
+type ListKey = "needs" | "neededBy" | "describes";
 
 interface PointedRow {
   row: ReachListRow;
@@ -54,8 +50,8 @@ function uniqueById(rows: readonly ReachListRow[]): ReachListRow[] {
 
 /**
  * The compact panel's relations: what the concept needs and what needs it, counted as the map's
- * count line counts them, then at most two folded lines (other links, what it contains). A reason
- * shows only for the row pointed at, in the edge hover card beside the panel.
+ * count line counts them, then one line counting the other links and what it contains, whose rows
+ * live in full detail. A reason shows only for the row pointed at, in the edge hover card.
  */
 export function RelationsZone({
   kind,
@@ -64,6 +60,7 @@ export function RelationsZone({
   labels,
   onSelectConnection,
   onHoverConnection,
+  onOpenFullDetail,
 }: {
   kind: string;
   reach: ConceptReach | null;
@@ -71,6 +68,7 @@ export function RelationsZone({
   labels: OntologyMapDetailPanelLabels;
   onSelectConnection: OntologyMapDetailPanelProps["onSelectConnection"];
   onHoverConnection: OntologyMapDetailPanelProps["onHoverConnection"];
+  onOpenFullDetail: OntologyMapDetailPanelProps["onOpenFullDetail"];
 }) {
   const t = useTranslations("conceptReach");
   const tDial = useTranslations("mapDial");
@@ -78,7 +76,7 @@ export function RelationsZone({
   const zoneRef = useRef<HTMLDivElement | null>(null);
   const restTimer = useRef<number | null>(null);
   const descriptionPrefix = useId();
-  const [openLists, setOpenLists] = useState<ReadonlySet<OpenKey>>(() => new Set());
+  const [openLists, setOpenLists] = useState<ReadonlySet<ListKey>>(() => new Set());
   const [pointed, setPointed] = useState<PointedRow | null>(null);
   const [tabStopId, setTabStopId] = useState<string | null>(null);
 
@@ -87,22 +85,18 @@ export function RelationsZone({
   const toRow = useCallback(
     (r: ReachRow): ReachListRow => {
       if (r.links !== null) return { id: r.id, label: r.label, kind: r.kind, links: r.links };
-      const reason =
-        r.line === "needs" ? reasons.get(`out:${r.id}`)
-        : r.line === "neededBy" ? reasons.get(`in:${r.id}`)
-        : reasons.get(`out:${r.id}`) ?? reasons.get(`in:${r.id}`);
-      const sample = drawn && (r.line === "relates" || r.line === "broader") ? r.line : undefined;
-      return { id: r.id, label: r.label, kind: r.kind, reason: reason ?? null, ...(sample ? { sample } : {}) };
+      const reason = r.line === "needs" ? reasons.get(`out:${r.id}`) : reasons.get(`in:${r.id}`);
+      return { id: r.id, label: r.label, kind: r.kind, reason: reason ?? null };
     },
-    [reasons, drawn],
+    [reasons],
   );
   const needs = useMemo(() => reach?.needs.map(toRow) ?? [], [reach, toRow]);
   const neededBy = useMemo(() => reach?.neededBy.map(toRow) ?? [], [reach, toRow]);
-  const other = useMemo(() => reach?.other.map(toRow) ?? [], [reach, toRow]);
-  const contained = useMemo(() => {
+  const otherCount = reach?.other.length ?? 0;
+  const containedKinds = useMemo(() => {
     const kinds = CONTAINED_KINDS[kind];
     const rows = kinds ? (groups.contains.allRows ?? groups.contains.rows).filter((row) => kinds.has(row.kind)) : [];
-    return rows.map((row): ReachListRow => ({ id: row.id, label: row.title, kind: row.kind }));
+    return rows.map((row) => row.kind);
   }, [groups, kind]);
   const described = useMemo(() => {
     if (kind !== "document") return [];
@@ -119,8 +113,7 @@ export function RelationsZone({
   };
   useEffect(() => clearRest, []);
 
-  const headingOf = (row: ReachListRow): string =>
-    needs.includes(row) ? t("needs") : neededBy.includes(row) ? t("neededBy") : t("otherLinks", { count: other.length });
+  const headingOf = (row: ReachListRow): string => (needs.includes(row) ? t("needs") : t("neededBy"));
   const pointAt = (row: ReachListRow, button: HTMLButtonElement) => {
     if (!row.reason) return;
     const panel = button.closest('[data-testid="map-detail-panel"]') ?? button;
@@ -181,7 +174,7 @@ export function RelationsZone({
     showFewer: t("showFewer"),
     domainLinks: labels.domainLinks,
   };
-  const toggle = (key: OpenKey) =>
+  const toggle = (key: ListKey) =>
     setOpenLists((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
@@ -192,52 +185,33 @@ export function RelationsZone({
     <ConnectionGroup
       groupKey={key}
       rows={rows}
-      open={openLists.has(`${key}:all`)}
-      onToggle={() => toggle(`${key}:all`)}
+      open={openLists.has(key)}
+      onToggle={() => toggle(key)}
       labels={listLabels}
       handlers={handlers}
     />
   );
   const group = (key: "needs" | "neededBy", rows: readonly ReachListRow[]) => (
-    <RelationGroupShell groupKey={key} sample={drawn ? (key as GraphLineKind) : null} label={t(key)} count={rows.length}>
+    <RelationGroupShell groupKey={key} sample={drawn ? key : null} label={t(key)} count={rows.length}>
       {list(key, rows)}
     </RelationGroupShell>
   );
-  const foldedLine = (key: "other" | "contains", text: string, rows: readonly ReachListRow[]) => {
-    const open = openLists.has(key);
-    return (
-      <div className="flex flex-col" data-datasheet-group={key}>
-        <RowButton
-          size="sm"
-          aria-expanded={open}
-          data-reach-line={key}
-          data-reach-line-count={rows.length}
-          onClick={() => toggle(key)}
-          className="-mx-2 w-auto rounded-chip hover:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]"
-        >
-          <span className={`${GROUP_GLYPH_SLOT} text-[color:var(--map-panel-text-tertiary)]`}>
-            <ChevronRight size={ICON_SIZE.sm} aria-hidden className={open ? "rotate-90" : undefined} />
-          </span>
-          <span className="min-w-0 flex-1 truncate text-body text-[color:var(--map-panel-text-secondary)]">{text}</span>
-        </RowButton>
-        {open ? list(key, rows) : null}
-      </div>
-    );
-  };
-
   const reachShown = needs.length > 0 || neededBy.length > 0;
   const containsText =
-    contained.length === 0 ? null
+    containedKinds.length === 0 ? null
     : kind === "domain"
       ? tDial("units", {
-          capabilities: contained.filter((row) => row.kind === "capability").length,
-          elements: contained.filter((row) => row.kind === "element").length,
+          capabilities: containedKinds.filter((k) => k === "capability").length,
+          elements: containedKinds.filter((k) => k === "element").length,
         })
-    : kind === "project" ? t("domains", { count: contained.length })
-    : t("elements", { count: contained.length });
-  const folded = other.length > 0 || containsText !== null;
+    : kind === "project" ? t("domains", { count: containedKinds.length })
+    : t("elements", { count: containedKinds.length });
+  const countsText = [otherCount > 0 ? t("otherLinks", { count: otherCount }) : null, containsText]
+    .filter((part): part is string => part !== null)
+    .join(" · ");
+  const counted = countsText !== "";
 
-  if (!reachShown && !folded && described.length === 0) {
+  if (!reachShown && !counted && described.length === 0) {
     return (
       <div className="px-[var(--map-panel-pad)] py-3">
         <span className="text-label text-[color:var(--map-panel-text-tertiary)]">{labels.noConnections}</span>
@@ -262,10 +236,28 @@ export function RelationsZone({
           ) : null}
         </div>
       ) : null}
-      {folded ? (
-        <div className={`flex flex-col px-[var(--map-panel-pad)] py-1.5 ${reachShown || described.length > 0 ? "border-t border-[color:var(--map-panel-zone-divider)]" : ""}`}>
-          {other.length > 0 ? foldedLine("other", t("otherLinks", { count: other.length }), other) : null}
-          {containsText !== null ? foldedLine("contains", containsText, contained) : null}
+      {counted ? (
+        <div
+          data-reach-counts=""
+          data-reach-other-count={otherCount}
+          data-reach-contains-count={containedKinds.length}
+          className={`flex px-[var(--map-panel-pad)] py-1.5 ${reachShown || described.length > 0 ? "border-t border-[color:var(--map-panel-zone-divider)]" : ""}`}
+        >
+          {onOpenFullDetail ? (
+            <RowButton
+              size="sm"
+              data-testid="map-detail-panel-reach-counts"
+              aria-label={`${countsText} · ${labels.openFullDetail}`}
+              onClick={onOpenFullDetail}
+              className="-mx-2 w-auto flex-1 rounded-chip text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-primary)] active:bg-[color:var(--map-panel-row-active)]"
+            >
+              <span className="min-w-0 flex-1 truncate text-body">{countsText}</span>
+            </RowButton>
+          ) : (
+            <p data-testid="map-detail-panel-reach-counts" className="flex min-h-7 min-w-0 flex-1 items-center truncate text-body text-[color:var(--map-panel-text-tertiary)]">
+              {countsText}
+            </p>
+          )}
         </div>
       ) : null}
       {pointed?.row.reason && typeof document !== "undefined"

@@ -57,7 +57,7 @@ import { useTaxonomy } from "@/features/taxonomy";
 import { useConstructionReviewSession } from "@/features/construction-review-local";
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { resolveProjectTagline } from "../model/project-tagline";
-import { stripDuplicateHeading } from "../model/strip-duplicate-heading";
+import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
 import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";

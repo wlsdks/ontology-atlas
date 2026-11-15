@@ -16,6 +16,10 @@ describe("stripDuplicateHeading draws the title once", () => {
     expect(stripDuplicateHeading("## 이름\n\n본문.", "이름")).toBe("본문.");
   });
 
+  it("removes a first heading that equals any shown name", () => {
+    expect(stripDuplicateHeading("# Order Placement\n\n본문.", "주문 접수", "Order Placement")).toBe("본문.");
+  });
+
   it("keeps a different heading", () => {
     const body = "# 다른 제목\n\n본문.";
     expect(stripDuplicateHeading(body, "이름")).toBe(body);

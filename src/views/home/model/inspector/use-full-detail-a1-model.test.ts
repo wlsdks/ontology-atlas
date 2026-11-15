@@ -101,7 +101,6 @@ describe("useFullDetailA1Model: a closed surface does not traverse the graph", (
     const { result } = render(true);
     expect(result.current).not.toBeNull();
     expect(result.current?.node.id).toBe("capability:alpha");
-    expect(result.current?.breadcrumb.projectTitle).toBe("P");
     expect(groupsSpy).toHaveBeenCalledTimes(1);
     expect(reachSpy).toHaveBeenCalledTimes(1);
     expect(codeLocationsSpy).toHaveBeenCalledTimes(1);
@@ -146,7 +145,6 @@ describe("useFullDetailA1Model: a closed surface does not traverse the graph", (
 
     const nextNodes = [...nodes, node("element:new")];
     rerender({ ...initial, insight: { nodes: nextNodes, edges } });
-    expect(result.current?.breadcrumb.totalConcepts).toBe(3);
     expect(reachSpy).toHaveBeenCalledTimes(2);
     expect(codeLocationsSpy).toHaveBeenCalledTimes(2);
 
