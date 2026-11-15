@@ -5,7 +5,7 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canva
 import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel, readTreeFocus } from "../model/tree-view/tree-model";
-import type { TreeModel, TreePose, TreeRect } from "../model/tree-view/types";
+import type { TreeDrawList, TreeDrawMark, TreeModel, TreeNamePlacement, TreePose, TreeRect } from "../model/tree-view/types";
 import { treeMarks } from "../morph/tree-marks";
 import { adoptBodyLabelFont, labelFontFamily } from "../render/labels";
 import { readTreeTokens } from "../tokens/read-tree-tokens";
@@ -176,64 +176,24 @@ export function OntologyTreeMap({
   const listed = useMemo(() => listedNodes(model, selectedNode), [model, selectedNode]);
 
   /** The list's `data-mark` / `data-name-box`, the e2e frame record and the drawn count: written at rest only. */
-  const writeMirror = useCallback(() => {
-    const canvas = canvasRef.current;
-    const drawn = list.current;
-    const placed = names.current;
-    const markOf = new Map<number, number>();
-    for (let i = 0; i < drawn.count; i += 1) markOf.set(drawn.marks[i]!.node, i);
-    const boxOf = new Map<number, number>();
-    for (let i = 0; i < placed.count; i += 1) boxOf.set(placed.boxes[i]!.node, i);
-    for (const el of listRef.current?.querySelectorAll<HTMLElement>("[data-tree-id]") ?? []) {
-      const node = model.indexOf.get(el.dataset.treeId!) ?? -1;
-      const mark = markOf.has(node) ? drawn.marks[markOf.get(node)!]! : null;
-      el.dataset.mark = mark ? `${Math.round(mark.x)},${Math.round(mark.y)},${Math.round(mark.radius)}` : "";
-      const box = boxOf.has(node) ? placed.boxes[boxOf.get(node)!]! : null;
-      el.dataset.nameBox = box ? `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}` : "";
-    }
-    if (canvas && new URLSearchParams(window.location.search).has("e2e")) {
-      canvas.dataset.frame = JSON.stringify({ marks: drawn.count, visited: drawn.visited, folded: drawn.folded, names: placed.count, dropped: placed.dropped });
-    }
-    if (drawn.count !== drawnRef.current) {
-      drawnRef.current = drawn.count;
-      onDrawnCountChange?.(drawn.count);
-    }
-  }, [list, names, model, onDrawnCountChange]);
-
-  /** Beside the hovered mark, inside the free area, clear of names where it can be; hidden for the selection. */
-  const placeTip = useCallback(
-    (node: number, area: TreeRect | null) => {
-      const tip = tipRef.current;
-      if (!tip) return;
-      const mark = node >= 0 && node !== selectedNode ? treeMarkOf(list.current, node) : null;
-      if (!mark || !area) {
-        tip.hidden = true;
-        return;
+  const writeMirror = useCallback(
+    (drawn: TreeDrawList, placed: TreeNamePlacement) => {
+      writeTreeMirror(listRef.current, canvasRef.current, model, drawn, placed);
+      if (drawn.count !== drawnRef.current) {
+        drawnRef.current = drawn.count;
+        onDrawnCountChange?.(drawn.count);
       }
-      tip.hidden = false;
-      const w = tip.offsetWidth;
-      const h = tip.offsetHeight;
-      const reach = mark.radius + TOOLTIP_GAP_PX;
-      const spots = [
-        [mark.x + reach, mark.y - h / 2],
-        [mark.x - reach - w, mark.y - h / 2],
-        [mark.x - w / 2, mark.y + reach],
-        [mark.x - w / 2, mark.y - reach - h],
-      ] as const;
-      const placed = names.current;
-      const inside = ([x, y]: readonly [number, number]) =>
-        x >= area.x + TOOLTIP_GAP_PX && y >= area.y + TOOLTIP_GAP_PX && x + w <= area.x + area.width - TOOLTIP_GAP_PX && y + h <= area.y + area.height - TOOLTIP_GAP_PX;
-      const clear = ([x, y]: readonly [number, number]) => {
-        for (let i = 0; i < placed.count; i += 1) {
-          const b = placed.boxes[i]!;
-          if (b.x < x + w && x < b.x + b.width && b.y < y + h && y < b.y + b.height) return false;
-        }
-        return true;
-      };
-      const [x, y] = spots.find((s) => inside(s) && clear(s)) ?? spots.find(inside) ?? spots[0];
-      tip.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
     },
-    [list, names, selectedNode],
+    [model, onDrawnCountChange],
+  );
+
+  /** The hovered concept's tooltip; hidden for the selection, which the panel names. */
+  const placeTip = useCallback(
+    (node: number, area: TreeRect | null, drawn: TreeDrawList, placed: TreeNamePlacement) => {
+      const tip = tipRef.current;
+      if (tip) placeTreeTooltip(tip, node >= 0 && node !== selectedNode ? treeMarkOf(drawn, node) : null, area, placed);
+    },
+    [selectedNode],
   );
 
   const wrapReady = () => {
@@ -250,8 +210,8 @@ export function OntologyTreeMap({
       reducedMotion,
       onDrawn: (rest) => {
         wrapReady();
-        if (rest) writeMirror();
-        if (hoverRef.current >= 0) placeTip(hoverRef.current, motion.free);
+        if (rest) writeMirror(list.current, names.current);
+        if (hoverRef.current >= 0) placeTip(hoverRef.current, motion.free, list.current, names.current);
       },
       onGrowing: (growing) => {
         if (growing && arrivalKey != null) grownKeys.add(arrivalKey);
@@ -365,8 +325,8 @@ export function OntologyTreeMap({
   }, [draw, motion]);
 
   useLayoutEffect(() => {
-    if (!motion.busy) writeMirror();
-  }, [listed, writeMirror, motion]);
+    if (!motion.busy) writeMirror(list.current, names.current);
+  }, [listed, writeMirror, motion, list, names]);
 
   useLayoutEffect(() => {
     hoverRef.current = hover;
@@ -374,8 +334,8 @@ export function OntologyTreeMap({
     if (!tip) return;
     const text = hover >= 0 && tooltipLabels ? tooltipText(nameModel, hover, list.current, tooltipLabels, stale) : "";
     if (tip.textContent !== text) tip.textContent = text;
-    placeTip(text ? hover : -1, motion.free);
-  }, [hover, nameModel, tooltipLabels, stale, list, placeTip, motion]);
+    placeTip(text ? hover : -1, motion.free, list.current, names.current);
+  }, [hover, nameModel, tooltipLabels, stale, list, names, placeTip, motion]);
 
   const pick = useCallback(
     (node: number) => {
@@ -475,11 +435,58 @@ export function OntologyTreeMap({
   );
 }
 
+/** Writes each listed concept's drawn mark and name box, and under `?e2e` the frame record. O(listed + marks + names). */
+function writeTreeMirror(listEl: HTMLUListElement | null, canvas: HTMLCanvasElement | null, model: TreeModel, drawn: TreeDrawList, placed: TreeNamePlacement): void {
+  const markOf = new Map<number, number>();
+  for (let i = 0; i < drawn.count; i += 1) markOf.set(drawn.marks[i]!.node, i);
+  const boxOf = new Map<number, number>();
+  for (let i = 0; i < placed.count; i += 1) boxOf.set(placed.boxes[i]!.node, i);
+  for (const el of listEl?.querySelectorAll<HTMLElement>("[data-tree-id]") ?? []) {
+    const node = model.indexOf.get(el.dataset.treeId!) ?? -1;
+    const mark = markOf.has(node) ? drawn.marks[markOf.get(node)!]! : null;
+    el.dataset.mark = mark ? `${Math.round(mark.x)},${Math.round(mark.y)},${Math.round(mark.radius)}` : "";
+    const box = boxOf.has(node) ? placed.boxes[boxOf.get(node)!]! : null;
+    el.dataset.nameBox = box ? `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}` : "";
+  }
+  if (canvas && new URLSearchParams(window.location.search).has("e2e")) {
+    canvas.dataset.frame = JSON.stringify({ marks: drawn.count, visited: drawn.visited, folded: drawn.folded, names: placed.count, dropped: placed.dropped });
+  }
+}
+
+/** Beside `mark` (right, left, below, above), inside `area`, clear of the placed names where a side allows. */
+function placeTreeTooltip(tip: HTMLElement, mark: TreeDrawMark | null, area: TreeRect | null, placed: TreeNamePlacement): void {
+  if (!mark || !area) {
+    tip.hidden = true;
+    return;
+  }
+  tip.hidden = false;
+  const w = tip.offsetWidth;
+  const h = tip.offsetHeight;
+  const reach = mark.radius + TOOLTIP_GAP_PX;
+  const spots = [
+    [mark.x + reach, mark.y - h / 2],
+    [mark.x - reach - w, mark.y - h / 2],
+    [mark.x - w / 2, mark.y + reach],
+    [mark.x - w / 2, mark.y - reach - h],
+  ] as const;
+  const inside = ([x, y]: readonly [number, number]) =>
+    x >= area.x + TOOLTIP_GAP_PX && y >= area.y + TOOLTIP_GAP_PX && x + w <= area.x + area.width - TOOLTIP_GAP_PX && y + h <= area.y + area.height - TOOLTIP_GAP_PX;
+  const clear = ([x, y]: readonly [number, number]) => {
+    for (let i = 0; i < placed.count; i += 1) {
+      const b = placed.boxes[i]!;
+      if (b.x < x + w && x < b.x + b.width && b.y < y + h && y < b.y + b.height) return false;
+    }
+    return true;
+  };
+  const [x, y] = spots.find((s) => inside(s) && clear(s)) ?? spots.find(inside) ?? spots[0];
+  tip.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+}
+
 /** A closed mark names what is folded in it; a concept its stale state and dependency facts. */
 function tooltipText(
   model: TreeModel,
   node: number,
-  list: Parameters<typeof treeMarkOf>[0],
+  list: TreeDrawList,
   labels: TreeTooltipLabels,
   stale: Uint8Array | null,
 ): string {

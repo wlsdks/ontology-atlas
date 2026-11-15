@@ -93,8 +93,8 @@ const clampInto = (v: number, low: number, high: number) => (low > high ? (low +
  */
 export class TreeMotion {
   readonly pose: TreePose = copyPose(TREE_POSE_REST, { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 });
-  growth: number;
-  host: TreeMotionHost;
+  private growth: number;
+  private host: TreeMotionHost;
   private shownFree: TreeRect | null = null;
   private freeMove: RectMove | null = null;
   private flight: Flight | null = null;
@@ -128,6 +128,11 @@ export class TreeMotion {
 
   get free(): TreeRect | null {
     return this.shownFree;
+  }
+
+  /** The latest sources; the next frame draws with them. */
+  attach(host: TreeMotionHost): void {
+    this.host = host;
   }
 
   dispose(): void {
@@ -204,8 +209,7 @@ export class TreeMotion {
     const target = this.targetFree();
     if (!target || spacingWorld <= 0 || unitPx <= 0 || mark.scale <= 0) return;
     const needed = (thresholdPx / (spacingWorld * unitPx)) ** 2;
-    const factor = Math.max(OPEN_MARGIN, (needed / mark.scale) * OPEN_MARGIN);
-    const to: TreePose = { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+    const factor = Math.max(OPEN_MARGIN, (needed / mark.scale) * OPEN_MARGIN);    const to: TreePose = { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
     zoomTreePoseAbout(this.pose, factor, mark.x, mark.y, this.host.fitOf(target), to);
     const flight = this.startFlight(to, FLY_MS, node);
     flight.fromX = flight.toX = mark.x;
@@ -445,7 +449,7 @@ export class TreeMotion {
 export function useTreeMotion(host: TreeMotionHost, grows: () => boolean): TreeMotion {
   const [motion] = useState(() => new TreeMotion(host, grows()));
   useLayoutEffect(() => {
-    motion.host = host;
+    motion.attach(host);
   });
   useEffect(() => () => motion.dispose(), [motion]);
   return motion;

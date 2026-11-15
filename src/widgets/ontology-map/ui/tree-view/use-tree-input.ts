@@ -23,6 +23,42 @@ function readFlickTokens(): { windowMs: number; minSpeedPxPerMs: number } {
   return Number.isFinite(windowMs) && Number.isFinite(minSpeedPxPerMs) ? { windowMs, minSpeedPxPerMs } : { windowMs: 0, minSpeedPxPerMs: Infinity };
 }
 
+/** The pointer's last horizontal positions in a ring, for the speed it lets go at. */
+class PointerTrail {
+  private readonly x = new Float64Array(RELEASE_SAMPLES);
+  private readonly t = new Float64Array(RELEASE_SAMPLES);
+  private count = 0;
+
+  constructor(private readonly flick: { windowMs: number; minSpeedPxPerMs: number }) {}
+
+  restart(x: number, nowMs: number): void {
+    this.count = 0;
+    this.add(x, nowMs);
+  }
+
+  add(x: number, nowMs: number): void {
+    const at = this.count % RELEASE_SAMPLES;
+    this.x[at] = x;
+    this.t[at] = nowMs;
+    this.count += 1;
+  }
+
+  /** Horizontal speed over the release window, px/ms; 0 when it is no flick. */
+  flickSpeed(nowMs: number): number {
+    if (this.count < 2) return 0;
+    const last = (this.count - 1) % RELEASE_SAMPLES;
+    let first = last;
+    for (let k = 1; k < Math.min(this.count, RELEASE_SAMPLES); k += 1) {
+      const at = (this.count - 1 - k) % RELEASE_SAMPLES;
+      if (this.t[at]! < nowMs - this.flick.windowMs) break;
+      first = at;
+    }
+    if (first === last) return 0;
+    const speed = (this.x[last]! - this.x[first]!) / Math.max(1, this.t[last]! - this.t[first]!);
+    return Math.abs(speed) < this.flick.minSpeedPxPerMs ? 0 : speed;
+  }
+}
+
 /** The drawn mark of `node`, or null. O(m). */
 export function treeMarkOf(list: TreeDrawList, node: number): TreeDrawMark | null {
   for (let i = 0; i < list.count; i += 1) if (list.marks[i]!.node === node) return list.marks[i]!;
@@ -87,32 +123,8 @@ const local = (e: { clientX: number; clientY: number; currentTarget: Element }) 
 export function useTreeInput(sources: TreeInputSources): TreeInputHandlers {
   const { canvasRef, motion, layout, list, projector, tokens, selectedNode, navigationSpeed, onPick, onPaneClick, onHover } = sources;
   const pressRef = useRef<Press | null>(null);
-  const [flick] = useState(readFlickTokens);
-  const [samples] = useState(() => ({ x: new Float64Array(RELEASE_SAMPLES), t: new Float64Array(RELEASE_SAMPLES), count: 0 }));
+  const [samples] = useState(() => new PointerTrail(readFlickTokens()));
   const pinchWheelRef = useRef(createPinchWheelStream());
-
-  const sample = (x: number) => {
-    const at = samples.count % RELEASE_SAMPLES;
-    samples.x[at] = x;
-    samples.t[at] = performance.now();
-    samples.count += 1;
-  };
-
-  /** Horizontal speed over the release window, px/ms; 0 when it is no flick. */
-  const releaseSpeed = (): number => {
-    const now = performance.now();
-    const last = (samples.count - 1) % RELEASE_SAMPLES;
-    if (samples.count < 2) return 0;
-    let first = last;
-    for (let k = 1; k < Math.min(samples.count, RELEASE_SAMPLES); k += 1) {
-      const at = (samples.count - 1 - k) % RELEASE_SAMPLES;
-      if (samples.t[at]! < now - flick.windowMs) break;
-      first = at;
-    }
-    if (first === last) return 0;
-    const speed = (samples.x[last]! - samples.x[first]!) / Math.max(1, samples.t[last]! - samples.t[first]!);
-    return Math.abs(speed) < flick.minSpeedPxPerMs ? 0 : speed;
-  };
 
   const pick = (x: number, y: number) => (tokens ? pickTreeMark(list.current, x, y, tokens.detail.pickSlopPx) : -1);
 
@@ -132,8 +144,7 @@ export function useTreeInput(sources: TreeInputSources): TreeInputHandlers {
     if (e.button !== 0) return;
     const p = local(e);
     pressRef.current = { id: e.pointerId, x: p.x, y: p.y, dragging: false };
-    samples.count = 0;
-    sample(p.x);
+    samples.restart(p.x, performance.now());
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -150,7 +161,7 @@ export function useTreeInput(sources: TreeInputSources): TreeInputHandlers {
         motion.beginDrag(selectedNode);
       }
       if (press.dragging) {
-        sample(p.x);
+        samples.add(p.x, performance.now());
         motion.dragBy(dx * navigationSpeed.drag, dy * navigationSpeed.drag);
       }
       return;
@@ -168,7 +179,7 @@ export function useTreeInput(sources: TreeInputSources): TreeInputHandlers {
     pressRef.current = null;
     if (press.dragging) {
       e.currentTarget.style.cursor = "grab";
-      motion.endDrag(releaseSpeed() * navigationSpeed.drag);
+      motion.endDrag(samples.flickSpeed(performance.now()) * navigationSpeed.drag);
       return;
     }
     const p = local(e);
