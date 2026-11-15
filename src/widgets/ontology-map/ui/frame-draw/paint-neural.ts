@@ -103,6 +103,9 @@ function selectionImpact(graph: NeuralGraph, nodes: readonly { id: string }[], f
   return impactCache;
 }
 
+/** The last selection's impact and how far its spread had come, kept while it fades after release. */
+const released = { focusId: null as string | null, impact: null as NeuralImpact | null, hopOf: null as Int32Array | null, spread: 0 };
+
 /** What the last frame lit, for the map probe: references only, so a frame allocates nothing for it. */
 const lastLit = {
   focusId: null as string | null,
@@ -420,11 +423,14 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   const focusId = hoverRamp > 0.001 ? hoveredNodeId : litAxons !== null ? null : colorFocusedNodeId;
   const ramp = litAxons !== null ? 1 : focusId === null ? 0 : focusId === hoveredNodeId ? hoverRamp : Math.min(1, Math.max(0, focusRampById.get(focusId) ?? 0));
   const sets = litAxons !== null ? axonEnds(world.edges, litAxons) : focusId !== null && ramp > 0.001 ? neuralFocusSets(world.edges, focusId) : null;
-  // Only the selection itself spreads; a hover and a fading former selection light their direct ends.
+  // Only the selection itself spreads and a hover lights its direct ends; a released selection keeps the
+  // picture it had at release while its focus ramp fades out.
   const selection = sets !== null && litAxons === null && focusId !== null && focusId === frame.focusedNodeId
     ? selectionImpact(graph, world.nodes, focusId) : null;
-  const impact = selection?.impact ?? null;
-  const hopOf = selection?.hopOf ?? null;
+  const releasing = selection === null && sets !== null && litAxons === null && focusId !== null &&
+    focusId !== hoveredNodeId && released.focusId === focusId;
+  const impact = selection?.impact ?? (releasing ? released.impact : null);
+  const hopOf = selection?.hopOf ?? (releasing ? released.hopOf : null);
   const veilCell = 1 - (1 - t.veil) * ramp;
   const veilAxon = 1 - (1 - t.axonVeil) * ramp;
   const signalKey = litAxons !== null ? [...litAxons].join("\u0001") : focusId;
@@ -446,8 +452,15 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     signalSlot.hopMs = neuralSpreadHopMs(signalSlot.hops, t.signalMs, t.spreadMs);
   }
   activeSignal = signalSlot;
-  const spread = signalKey === null ? signalSlot.hops : neuralSpreadAt(now, signalSlot.startMs, signalSlot.hops, signalSlot.hopMs, reducedMotion);
-  const travel = signalKey === null ? 1 : neuralSignalProgress(now, signalSlot.startMs, signalSlot.hopMs, reducedMotion);
+  const spread = releasing ? released.spread
+    : signalKey === null ? signalSlot.hops : neuralSpreadAt(now, signalSlot.startMs, signalSlot.hops, signalSlot.hopMs, reducedMotion);
+  const travel = releasing || signalKey === null ? 1 : neuralSignalProgress(now, signalSlot.startMs, signalSlot.hopMs, reducedMotion);
+  if (selection !== null) {
+    released.focusId = focusId;
+    released.impact = selection.impact;
+    released.hopOf = selection.hopOf;
+    released.spread = spread;
+  } else if (!releasing) released.focusId = null;
   lastLit.focusId = focusId;
   lastLit.selected = selection !== null;
   lastLit.sets = sets;
@@ -845,10 +858,13 @@ function paintNeuralNames(
   // Capability names beside their cells at rest; with a focus, its direct ends first and then a
   // selection's arrived dependents nearest first, each name on the side its arriving axons leave free.
   const candidates: number[] = [];
+  // A selection's dependent is named once its hop has arrived.
   const nameStep = (i: number) => {
     const id = world.nodes[i].id;
-    if (sets !== null && (sets.needs.has(id) || sets.usedBy.has(id))) return 1;
-    return hopOf !== null && hopOf[i] > 1 && spread >= hopOf[i] ? hopOf[i] : 0;
+    if (sets === null) return 0;
+    if (sets.needs.has(id)) return 1;
+    if (hopOf === null) return sets.usedBy.has(id) ? 1 : 0;
+    return hopOf[i] > 0 && spread >= hopOf[i] ? hopOf[i] : 0;
   };
   for (let i = 0; i < world.nodes.length; i += 1) {
     const node = world.nodes[i];
