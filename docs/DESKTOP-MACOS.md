@@ -194,8 +194,8 @@ asset hashes to the step summary, and uploads an
 `main`.
 
 **5. Land the download facts.** After a successful run, `desktop:release-run`
-regenerates the `/download` facts and opens a PR with the operator's
-credentials. Land it with `pnpm pr:land <number>`; if that part failed, retry it
+regenerates the `/download` facts, re-reads the repository's star and fork
+counts for the same page, and opens a PR with the operator's credentials. Land it with `pnpm pr:land <number>`; if that part failed, retry it
 alone:
 
 ```bash
