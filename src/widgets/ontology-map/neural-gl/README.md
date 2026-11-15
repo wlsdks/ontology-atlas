@@ -9,9 +9,9 @@ frame's screen coordinates, so a click selects the painted cell.
 | Module | What it owns |
 |---|---|
 | `neural-gl-stage.ts` | the two sibling canvases, the state machine and the fallback order; created beside the light stage in `ui/frame-loop/use-topology-frame-loop.ts`; imports no `three` |
-| `neural-gl.ts` | the `WebGLRenderer`, an orthographic camera in CSS pixels, six instanced draws; loaded with `import()` on first entry to Neural |
-| `neural-gl-buffers.ts` | the instanced records of one frame, in the canvas painter's order; reused arrays |
-| `neural-gl-shaders.ts` | the spot (disc, glow, nucleus, ring) and ribbon (quadratic) programs |
+| `neural-gl.ts` | the `WebGLRenderer`, an orthographic camera in CSS pixels, nine instanced draws in one pass; loaded with `import()` on first entry to Neural |
+| `neural-gl-buffers.ts` | the instanced records of one frame; reused arrays |
+| `neural-gl-shaders.ts` | the cell (lit sphere), shell, spot (glow, ring, dot) and ribbon (quadratic) programs, and the shading constants |
 | `neural-gl-probe.ts` | `window.__atlasMapNeuralGl` under `?e2e=1` |
 
 ## One opener
@@ -21,6 +21,32 @@ frame's screen coordinates, so a click selects the painted cell.
 context: Neural's is created on first entry and disposed when Neural's ramp
 returns to 0 or the map unmounts, and the light layer (`light/`) stands down
 while Neural holds it.
+
+## What it draws
+
+The frame's marks, in the 3D look the canvas-2D fallback does not attempt:
+
+- **Cells** are lit spheres on the frame's own disc (picking and names rely on
+  it): one key light from the upper left, an ambient floor, a small highlight
+  (none on a stale cell, so its amber holds), a capability's darker nucleus.
+  Depth darkens a cell to `DEPTH_FLOOR` on top of the frame's alpha, and the
+  frame's alpha mixes the cell with the ground, so a cell is opaque: it writes
+  depth and hides farther cells and every connection behind it. A cell a
+  selection has veiled writes no depth, so a lit connection crossing it stays
+  whole.
+- **Connections** are tapered ribbons at the canvas painter's widths, drawn
+  behind every cell; a lit one keeps a soft glow that fades across its width.
+- **Clusters** are shells: the pool's disc with ink rising toward its rim.
+
+No bloom, post-processing or second render target; edges are antialiased in
+the shaders, not by multisampling.
+
+| Token | What it sets |
+|---|---|
+| `--map-neural-shell-alpha` | a cluster shell's rim at full strength |
+| `--map-neural-lit-glow-alpha` | the soft light under a lit connection, at its centre line |
+
+Every other ink and alpha is the canvas painter's (`read-neural-tokens.ts`).
 
 ## Canvases
 

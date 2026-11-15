@@ -11,9 +11,30 @@ import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "../ui/frame
 export const SPOT_FLOATS = 24;
 /**
  * A ribbon: the quadratic (a, c, b) between `t0` and `t1`, its width running from `startPx` at t = 0
- * to `endPx` at t = 1. Floats: ax, ay, cx, cy · bx, by, t0, t1 · startPx, endPx, depth, 0 · rgba.
+ * to `endPx` at t = 1. Floats: ax, ay, cx, cy · bx, by, t0, t1 · startPx, endPx, depth, glow · rgba.
+ * A glow ribbon fades across its width instead of ending at an antialiased edge.
  */
 export const RIBBON_FLOATS = 16;
+/**
+ * A cell: a lit sphere whose silhouette is the frame's disc. Floats: centre x, y, radius, depth ·
+ * body rgba (alpha the frame's) · nucleus radius as a share of the radius, nucleus alpha, matte, 0.
+ * A matte (stale) cell takes no highlight, so its hue survives the shading.
+ */
+export const CELL_FLOATS = 12;
+/** A cluster's shell: a disc whose ink rises toward its rim. Floats: centre x, y, radius, 0 · rgba. */
+export const SHELL_FLOATS = 8;
+/** Depth of every connection and its end dot: behind all cells (0..1), so each sphere covers them. */
+export const BEHIND_CELLS = 1.5;
+/** How bright the farthest cell draws, as a share of the nearest: its body, glow and ring. */
+export const DEPTH_FLOOR = 0.8;
+/**
+ * A cell a selection has veiled below this share of its rest alpha has receded: it is drawn before the
+ * occluding cells without writing depth, so a lit connection passing it is not cut by a dim disc.
+ */
+const OCCLUDING_SHARE = 0.5;
+
+/** A cell's brightness at depth `u` (0 near, 1 far). */
+export const depthShade = (u: number) => 1 - (1 - DEPTH_FLOOR) * Math.min(1, Math.max(0, u));
 
 /** One instanced draw: `count` records of its stride in `data`; `data` is replaced only to grow. */
 export interface NeuralGlBatch {
@@ -24,10 +45,15 @@ export interface NeuralGlBatch {
 
 /** The draws of one Neural frame, in paint order. */
 export interface NeuralGlBuffers {
-  pools: NeuralGlBatch;
+  shells: NeuralGlBatch;
+  halos: NeuralGlBatch;
+  /** Cells a selection has veiled; they hide nothing. */
+  veiledCells: NeuralGlBatch;
+  /** Every other cell; each hides the connections and farther cells behind it. */
+  cells: NeuralGlBatch;
+  rings: NeuralGlBatch;
   restAxons: NeuralGlBatch;
   restDots: NeuralGlBatch;
-  cells: NeuralGlBatch;
   litAxons: NeuralGlBatch;
   litSpots: NeuralGlBatch;
   /** What the last fill drew. */
@@ -38,7 +64,7 @@ export interface NeuralGlBuffers {
 /** Straight (not premultiplied) rgba in 0..1. */
 export type GlInk = readonly [number, number, number, number];
 
-/** The frame's inks resolved to numbers; the GL module resolves them from CSS once per tokens object. */
+/** The frame's inks and the WebGL painter's own alphas, resolved to numbers once per tokens object. */
 export interface NeuralGlInks {
   strong: GlInk;
   arc: GlInk;
@@ -46,6 +72,10 @@ export interface NeuralGlInks {
   project: GlInk;
   warning: GlInk;
   ground: GlInk;
+  /** A cluster shell's rim at full strength. */
+  shellAlpha: number;
+  /** The soft light under a lit connection, at its centre line. */
+  litGlowAlpha: number;
 }
 
 /** Mirrors of the canvas-2D painter's constants (`ui/frame-draw/paint-neural.ts`), so both draw the same marks. */
@@ -55,8 +85,7 @@ const AXON_DOT_GAIN = 1.7;
 const RING_ALPHA = 0.8;
 const SIGNAL_GLOW_ALPHA = 0.85;
 const IMPACT_WIDTH_FLOOR = 0.45;
-/** The canvas painter's shadow blur under a lit axon, drawn here as a wider faint ribbon beneath it. */
-const LIT_GLOW_ALPHA = 0.18;
+/** The canvas painter's shadow blur under a lit axon, drawn here as a wider ribbon that fades across. */
 const LIT_GLOW_WIDTH_SHARE = 0.75;
 /** The GL canvas fades by its CSS opacity, so marks are drawn without the ramp the frame folded in. */
 const MIN_RAMP = 1e-3;
@@ -69,10 +98,13 @@ function batch(stride: number): NeuralGlBatch {
 
 export function createNeuralGlBuffers(): NeuralGlBuffers {
   return {
-    pools: batch(SPOT_FLOATS),
+    shells: batch(SHELL_FLOATS),
+    halos: batch(SPOT_FLOATS),
+    veiledCells: batch(CELL_FLOATS),
+    cells: batch(CELL_FLOATS),
+    rings: batch(SPOT_FLOATS),
     restAxons: batch(RIBBON_FLOATS),
     restDots: batch(SPOT_FLOATS),
-    cells: batch(SPOT_FLOATS),
     litAxons: batch(RIBBON_FLOATS),
     litSpots: batch(SPOT_FLOATS),
     cellCount: 0,
@@ -127,12 +159,12 @@ function pushSpot(target: NeuralGlBatch, x: number, y: number, r: number, depth:
   target.count += 1;
 }
 
-function pushRibbon(target: NeuralGlBatch, f: NeuralFrame, i: number, t0: number, t1: number, startPx: number, endPx: number, ink: GlInk, alpha: number): void {
+function pushRibbon(target: NeuralGlBatch, f: NeuralFrame, i: number, t0: number, t1: number, startPx: number, endPx: number, ink: GlInk, alpha: number, glow = false): void {
   const d = target.data;
   const o = target.count * RIBBON_FLOATS;
   d[o] = f.axonAX[i]; d[o + 1] = f.axonAY[i]; d[o + 2] = f.axonCX[i]; d[o + 3] = f.axonCY[i];
   d[o + 4] = f.axonBX[i]; d[o + 5] = f.axonBY[i]; d[o + 6] = t0; d[o + 7] = t1;
-  d[o + 8] = startPx; d[o + 9] = endPx; d[o + 10] = 0; d[o + 11] = 0;
+  d[o + 8] = startPx; d[o + 9] = endPx; d[o + 10] = BEHIND_CELLS; d[o + 11] = glow ? 1 : 0;
   writeInk(d, o + 12, ink, alpha);
   target.count += 1;
 }
@@ -143,36 +175,84 @@ function writeInk(d: Float32Array, o: number, ink: GlInk, alpha: number): void {
 }
 
 /**
- * Fills `buffers` with what `f` draws, in the canvas painter's order: cluster light, rest axons and
- * their end dots, cells far to near, then a focus's lit axons, spread, signals and ring.
- * O(cells drawn + axons drawn); allocates only when a batch grows.
+ * Fills `buffers` with what `f` draws: cluster shells, cell glows, cells far to near with a domain's
+ * ring, rest axons and their end dots (behind every cell), then a focus's lit axons, spread, signals
+ * and ring. O(cells drawn + axons drawn); allocates only when a batch grows.
  */
 export function fillNeuralGlBuffers(buffers: NeuralGlBuffers, f: NeuralFrame, inks: NeuralGlInks): void {
   const unramp = 1 / Math.max(f.neural, MIN_RAMP);
-  buffers.pools.count = 0;
+  buffers.shells.count = 0;
+  buffers.halos.count = 0;
+  buffers.veiledCells.count = 0;
+  buffers.cells.count = 0;
+  buffers.rings.count = 0;
   buffers.restAxons.count = 0;
   buffers.restDots.count = 0;
-  buffers.cells.count = 0;
   buffers.litAxons.count = 0;
   buffers.litSpots.count = 0;
-  fillPools(buffers.pools, f, inks, unramp);
+  fillShells(buffers.shells, f, inks, unramp);
+  fillCells(buffers, f, inks, unramp);
   fillRestAxons(buffers, f, inks, unramp);
-  fillCells(buffers.cells, f, inks, unramp);
   if (f.sets !== null) fillLit(buffers, f, inks, unramp);
-  buffers.cellCount = buffers.cells.count;
+  buffers.cellCount = buffers.cells.count + buffers.veiledCells.count;
   buffers.axonCount = f.axonCount;
 }
 
-function fillPools(target: NeuralGlBatch, f: NeuralFrame, inks: NeuralGlInks, unramp: number): void {
+/** A shell recedes with its domain's depth and, during a selection, with the unlit cells. */
+function fillShells(target: NeuralGlBatch, f: NeuralFrame, inks: NeuralGlInks, unramp: number): void {
   reserve(target, f.poolCount);
+  const d = target.data;
   for (let k = 0; k < f.poolCount; k += 1) {
     const pool = f.pools[k];
-    if (pool.lightAlpha <= 0.004 || pool.reachPx <= 0.5) continue;
-    const marks = clearSpot();
-    marks.glow = inks.arc;
-    marks.glowAlpha = pool.lightAlpha;
-    marks.glowReachPx = pool.reachPx;
-    pushSpot(target, pool.x, pool.y, 0, 1, marks, unramp);
+    const strength = (pool.alpha > 0 ? pool.alpha : f.neural) * f.veilCell * unramp;
+    const alpha = Math.min(1, inks.shellAlpha * strength);
+    if (alpha <= 0.002 || pool.reachPx <= 0.5) continue;
+    const o = target.count * SHELL_FLOATS;
+    d[o] = pool.x; d[o + 1] = pool.y; d[o + 2] = pool.reachPx; d[o + 3] = 0;
+    writeInk(d, o + 4, inks.arc, alpha);
+    target.count += 1;
+  }
+}
+
+function fillCells(buffers: NeuralGlBuffers, f: NeuralFrame, inks: NeuralGlInks, unramp: number): void {
+  const t = f.tokens;
+  const { halos, rings } = buffers;
+  reserve(buffers.cells, f.drawCount);
+  reserve(buffers.veiledCells, f.drawCount);
+  reserve(halos, f.drawCount);
+  reserve(rings, f.drawCount);
+  for (let k = 0; k < f.drawCount; k += 1) {
+    const i = f.drawOrder[k];
+    const alpha = f.cellAlpha[i];
+    const r = f.cellR[i];
+    const u = f.cellU[i];
+    const kind = f.cellKind[i];
+    const stale = f.cellStale[i] === 1;
+    const body = kind === NEURAL_CELL.project ? inks.project : stale ? inks.warning : inks.strong;
+    const capability = kind === NEURAL_CELL.capability;
+    const target = f.sets !== null && alpha < f.cellRestAlpha[i] * OCCLUDING_SHARE ? buffers.veiledCells : buffers.cells;
+    const d = target.data;
+    const o = target.count * CELL_FLOATS;
+    d[o] = f.cellX[i]; d[o + 1] = f.cellY[i]; d[o + 2] = r; d[o + 3] = u;
+    writeInk(d, o + 4, body, alpha * unramp);
+    d[o + 8] = capability ? t.nucleusShare : 0; d[o + 9] = capability ? t.nucleusAlpha : 0;
+    d[o + 10] = stale ? 1 : 0; d[o + 11] = 0;
+    target.count += 1;
+    if (r * t.glowReach > 0.5) {
+      const glow = clearSpot();
+      glow.glow = stale ? inks.warning : inks.strong;
+      glow.glowAlpha = alpha * t.glowAlpha * depthShade(u);
+      glow.glowReachPx = r * t.glowReach;
+      pushSpot(halos, f.cellX[i], f.cellY[i], 0, u, glow, unramp);
+    }
+    if (kind === NEURAL_CELL.domain || kind === NEURAL_CELL.project) {
+      const ring = clearSpot();
+      ring.ring = body;
+      ring.ringAlpha = alpha * RING_ALPHA * depthShade(u);
+      ring.ringPx = r + t.ringGapPx;
+      ring.ringWidthPx = t.ringPx;
+      pushSpot(rings, f.cellX[i], f.cellY[i], 0, u, ring, unramp);
+    }
   }
 }
 
@@ -190,36 +270,7 @@ function fillRestAxons(buffers: NeuralGlBuffers, f: NeuralFrame, inks: NeuralGlI
     const marks = clearSpot();
     marks.body = inks.arc;
     marks.bodyAlpha = Math.min(1, alpha * AXON_DOT_GAIN);
-    pushSpot(buffers.restDots, at(f.axonAX[i], f.axonCX[i], f.axonBX[i], AXON_DOT_T), at(f.axonAY[i], f.axonCY[i], f.axonBY[i], AXON_DOT_T), t.axonDotPx, 0, marks, unramp);
-  }
-}
-
-function fillCells(target: NeuralGlBatch, f: NeuralFrame, inks: NeuralGlInks, unramp: number): void {
-  const t = f.tokens;
-  reserve(target, f.drawCount);
-  for (let k = 0; k < f.drawCount; k += 1) {
-    const i = f.drawOrder[k];
-    const alpha = f.cellAlpha[i];
-    const r = f.cellR[i];
-    const kind = f.cellKind[i];
-    const stale = f.cellStale[i] === 1;
-    const marks = clearSpot();
-    marks.body = kind === NEURAL_CELL.project ? inks.project : stale ? inks.warning : inks.strong;
-    marks.bodyAlpha = alpha;
-    marks.glow = stale ? inks.warning : inks.strong;
-    marks.glowAlpha = r * t.glowReach > 0.5 ? alpha * t.glowAlpha : 0;
-    marks.glowReachPx = r * t.glowReach;
-    if (kind === NEURAL_CELL.capability) {
-      marks.inner = inks.ground;
-      marks.innerAlpha = alpha * t.nucleusAlpha;
-      marks.innerPx = r * t.nucleusShare;
-    } else if (kind === NEURAL_CELL.domain || kind === NEURAL_CELL.project) {
-      marks.ring = marks.body;
-      marks.ringAlpha = alpha * RING_ALPHA;
-      marks.ringPx = r + t.ringGapPx;
-      marks.ringWidthPx = t.ringPx;
-    }
-    pushSpot(target, f.cellX[i], f.cellY[i], r, f.cellU[i], marks, unramp);
+    pushSpot(buffers.restDots, at(f.axonAX[i], f.axonCX[i], f.axonBX[i], AXON_DOT_T), at(f.axonAY[i], f.axonCY[i], f.axonBY[i], AXON_DOT_T), t.axonDotPx, BEHIND_CELLS, marks, unramp);
   }
 }
 
@@ -253,7 +304,7 @@ function fillLit(buffers: NeuralGlBuffers, f: NeuralFrame, inks: NeuralGlInks, u
     const i = f.litAxon[k];
     const ink = f.litHop[k] > 0 ? inks.reach : inks.arc;
     const alpha = Math.min(1, f.litAlpha[k] * unramp);
-    pushRibbon(litAxons, f, i, 0, 1, t.litStartPx + glowPx, t.litEndPx + glowPx, ink, alpha * LIT_GLOW_ALPHA);
+    pushRibbon(litAxons, f, i, 0, 1, t.litStartPx + glowPx, t.litEndPx + glowPx, ink, alpha * inks.litGlowAlpha, true);
     pushRibbon(litAxons, f, i, 0, 1, t.litStartPx, t.litEndPx, ink, alpha);
     pushLitDot(litSpots, f, i, ink, f.litAlpha[k], unramp);
     if (f.travel < 1) pushSignal(litSpots, f, i, f.travel, inks, unramp);

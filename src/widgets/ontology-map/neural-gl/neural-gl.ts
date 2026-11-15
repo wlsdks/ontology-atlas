@@ -13,21 +13,38 @@ import {
   OrthographicCamera,
   Scene,
   ShaderMaterial,
+  Vector3,
   WebGLRenderer,
 } from "three";
 
 import type { NeuralFrame } from "../ui/frame-draw/neural-frame";
-import type { NeuralTokens } from "../tokens/read-neural-tokens";
+import { readNeuralGlTokens, type NeuralGlTokens, type NeuralTokens } from "../tokens/read-neural-tokens";
 import {
+  CELL_FLOATS,
   createNeuralGlBuffers,
   fillNeuralGlBuffers,
   RIBBON_FLOATS,
+  SHELL_FLOATS,
   SPOT_FLOATS,
   type GlInk,
   type NeuralGlBatch,
+  type NeuralGlBuffers,
   type NeuralGlInks,
 } from "./neural-gl-buffers";
-import { RIBBON_FRAGMENT, RIBBON_SEGMENTS, RIBBON_VERTEX, SPOT_FRAGMENT, SPOT_VERTEX } from "./neural-gl-shaders";
+import {
+  CELL_FRAGMENT,
+  CELL_VERTEX,
+  RIBBON_FRAGMENT,
+  RIBBON_SEGMENTS,
+  RIBBON_VERTEX,
+  SHELL_FRAGMENT,
+  SHELL_VERTEX,
+  SPOT_FRAGMENT,
+  SPOT_VERTEX,
+} from "./neural-gl-shaders";
+
+type DrawName = Exclude<keyof NeuralGlBuffers, "cellCount" | "axonCount">;
+const DRAW_ORDER: readonly DrawName[] = ["shells", "halos", "veiledCells", "cells", "rings", "restAxons", "restDots", "litAxons", "litSpots"];
 
 export interface NeuralGlOptions {
   /** Backing pixels per CSS pixel for the frame being painted; the loop lowers it while a drag runs. */
@@ -51,8 +68,13 @@ export interface NeuralGl {
 
 const SPOT_ATTRIBUTES = ["aSpot", "aBody", "aGlow", "aInner", "aRing", "aExtent"] as const;
 const RIBBON_ATTRIBUTES = ["aCurve0", "aCurve1", "aWidth", "aColor"] as const;
+const CELL_ATTRIBUTES = ["aCell", "aInk", "aCore"] as const;
+const SHELL_ATTRIBUTES = ["aShell", "aColor"] as const;
 
-function spotGeometry(): BufferGeometry {
+/** `none` paints over everything, `test` hides behind a nearer cell, `write` is a cell itself. */
+type DepthUse = "none" | "test" | "write";
+
+function quadGeometry(): BufferGeometry {
   const base = new BufferGeometry();
   base.setAttribute("position", new BufferAttribute(new Float32Array([-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0]), 3));
   base.setIndex([0, 1, 2, 2, 1, 3]);
@@ -76,10 +98,11 @@ function ribbonGeometry(): BufferGeometry {
   return base;
 }
 
-function material(vertexShader: string, fragmentShader: string, depth: boolean): ShaderMaterial {
+function material(vertexShader: string, fragmentShader: string, depth: DepthUse, uniforms: ShaderMaterial["uniforms"] = {}): ShaderMaterial {
   return new ShaderMaterial({
     vertexShader,
     fragmentShader,
+    uniforms,
     transparent: true,
     premultipliedAlpha: true,
     blending: CustomBlending,
@@ -87,8 +110,8 @@ function material(vertexShader: string, fragmentShader: string, depth: boolean):
     blendDst: OneMinusSrcAlphaFactor,
     blendSrcAlpha: OneFactor,
     blendDstAlpha: OneMinusSrcAlphaFactor,
-    depthTest: depth,
-    depthWrite: depth,
+    depthTest: depth !== "none",
+    depthWrite: depth === "write",
     // The camera's y runs down the screen, which mirrors every triangle's winding.
     side: DoubleSide,
   });
@@ -155,13 +178,13 @@ function resolveInk(ctx: CanvasRenderingContext2D, css: string): GlInk {
   return [r / 255, g / 255, b / 255, a / 255];
 }
 
-function inksOf(tokens: NeuralTokens, doc: Document): NeuralGlInks {
+function inksOf(tokens: NeuralTokens, glTokens: NeuralGlTokens, doc: Document): NeuralGlInks {
   let inks = inkCache.get(tokens);
   if (inks) return inks;
   const ctx = doc.createElement("canvas").getContext("2d", { willReadFrequently: true });
   const ink = (css: string): GlInk => (ctx ? resolveInk(ctx, css) : [1, 1, 1, 1]);
   const t = tokens.inks;
-  inks = { strong: ink(t.strong), arc: ink(t.arc), reach: ink(t.reach), project: ink(t.project), warning: ink(t.warning), ground: ink(t.ground) };
+  inks = { strong: ink(t.strong), arc: ink(t.arc), reach: ink(t.reach), project: ink(t.project), warning: ink(t.warning), ground: ink(t.ground), ...glTokens };
   inkCache.set(tokens, inks);
   return inks;
 }
@@ -181,20 +204,27 @@ export function createNeuralGl(canvas: HTMLCanvasElement, options: NeuralGlOptio
 
   const scene = new Scene();
   const camera = new OrthographicCamera(0, 1, 0, 1, 0, 4);
-  const spotBase = spotGeometry();
+  const quadBase = quadGeometry();
   const ribbonBase = ribbonGeometry();
-  const spot = (order: number, depth = false) => new InstancedDraw(spotBase, SPOT_ATTRIBUTES, SPOT_FLOATS, material(SPOT_VERTEX, SPOT_FRAGMENT, depth), order);
-  const ribbon = (order: number) => new InstancedDraw(ribbonBase, RIBBON_ATTRIBUTES, RIBBON_FLOATS, material(RIBBON_VERTEX, RIBBON_FRAGMENT, false), order);
-  const draws = {
-    pools: spot(0),
-    restAxons: ribbon(1),
-    restDots: spot(2),
-    cells: spot(3, true),
-    litAxons: ribbon(4),
-    litSpots: spot(5),
+  const cellUniforms = { uGround: { value: new Vector3() }, uHighlight: { value: new Vector3() } };
+  const spot = (order: number, depth: DepthUse) => new InstancedDraw(quadBase, SPOT_ATTRIBUTES, SPOT_FLOATS, material(SPOT_VERTEX, SPOT_FRAGMENT, depth), order);
+  const ribbon = (order: number) => new InstancedDraw(ribbonBase, RIBBON_ATTRIBUTES, RIBBON_FLOATS, material(RIBBON_VERTEX, RIBBON_FRAGMENT, "test"), order);
+  const cell = (order: number, depth: DepthUse) => new InstancedDraw(quadBase, CELL_ATTRIBUTES, CELL_FLOATS, material(CELL_VERTEX, CELL_FRAGMENT, depth, cellUniforms), order);
+  // Cells first and opaque, writing depth; connections after, behind every cell they cross.
+  const draws: Record<DrawName, InstancedDraw> = {
+    shells: new InstancedDraw(quadBase, SHELL_ATTRIBUTES, SHELL_FLOATS, material(SHELL_VERTEX, SHELL_FRAGMENT, "none"), 0),
+    halos: spot(1, "none"),
+    veiledCells: cell(2, "none"),
+    cells: cell(3, "write"),
+    rings: spot(4, "test"),
+    restAxons: ribbon(5),
+    restDots: spot(6, "test"),
+    litAxons: ribbon(7),
+    litSpots: spot(8, "none"),
   };
   for (const draw of Object.values(draws)) scene.add(draw.mesh);
   const buffers = createNeuralGlBuffers();
+  const glTokens = readNeuralGlTokens();
 
   let width = 0;
   let height = 0;
@@ -224,13 +254,11 @@ export function createNeuralGl(canvas: HTMLCanvasElement, options: NeuralGlOptio
     paint(frame) {
       if (disposed) return;
       fit(frame.width, frame.height, options.pixelRatio());
-      fillNeuralGlBuffers(buffers, frame, inksOf(frame.tokens, canvas.ownerDocument));
-      draws.pools.update(buffers.pools);
-      draws.restAxons.update(buffers.restAxons);
-      draws.restDots.update(buffers.restDots);
-      draws.cells.update(buffers.cells);
-      draws.litAxons.update(buffers.litAxons);
-      draws.litSpots.update(buffers.litSpots);
+      const inks = inksOf(frame.tokens, glTokens, canvas.ownerDocument);
+      fillNeuralGlBuffers(buffers, frame, inks);
+      cellUniforms.uGround.value.set(inks.ground[0], inks.ground[1], inks.ground[2]);
+      cellUniforms.uHighlight.value.set(inks.strong[0], inks.strong[1], inks.strong[2]);
+      for (const name of DRAW_ORDER) draws[name].update(buffers[name]);
       renderer.render(scene, camera);
       painted = true;
     },
@@ -265,7 +293,7 @@ export function createNeuralGl(canvas: HTMLCanvasElement, options: NeuralGlOptio
       disposed = true;
       canvas.removeEventListener("webglcontextlost", onLost);
       for (const draw of Object.values(draws)) draw.dispose();
-      spotBase.dispose();
+      quadBase.dispose();
       ribbonBase.dispose();
       renderer.dispose();
       renderer.forceContextLoss();

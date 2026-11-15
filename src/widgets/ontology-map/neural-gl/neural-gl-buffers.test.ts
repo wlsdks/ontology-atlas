@@ -3,7 +3,16 @@ import type { DomeNodeFrame } from "../model/dome-view/runtime";
 import type { NeuralTokens } from "../tokens/read-neural-tokens";
 import { buildNeuralFrame, type NeuralFrameInputs } from "../ui/frame-draw/neural-frame";
 import type { TopologyWorld, WorldEdge, WorldNode } from "../ui/world/topology-world";
-import { createNeuralGlBuffers, fillNeuralGlBuffers, SPOT_FLOATS, type NeuralGlInks } from "./neural-gl-buffers";
+import {
+  BEHIND_CELLS,
+  CELL_FLOATS,
+  createNeuralGlBuffers,
+  fillNeuralGlBuffers,
+  RIBBON_FLOATS,
+  SHELL_FLOATS,
+  SPOT_FLOATS,
+  type NeuralGlInks,
+} from "./neural-gl-buffers";
 
 const TOKENS = vi.hoisted((): NeuralTokens => ({
   capPx: 6, capGainPx: 1, elementPx: 3, elementGainPx: 0.5, domainPx: 10, projectPx: 12,
@@ -20,6 +29,7 @@ vi.mock("../tokens/read-neural-tokens", () => ({ readNeuralTokens: () => TOKENS 
 
 const INKS: NeuralGlInks = {
   strong: [1, 1, 1, 1], arc: [0.5, 0.5, 1, 1], reach: [1, 0.5, 0.6, 1], project: [0.6, 0.6, 1, 1], warning: [1, 0.6, 0, 1], ground: [0, 0, 0, 1],
+  shellAlpha: 0.1, litGlowAlpha: 0.2,
 };
 const CAMERA = { camX: 0, camY: 0, camScale: 1, halfW: 400, halfH: 300 };
 
@@ -66,7 +76,7 @@ describe("fillNeuralGlBuffers", () => {
     expect(buffers.cells.count).toBe(frame.drawCount);
     for (let k = 0; k < frame.drawCount; k += 1) {
       const i = frame.drawOrder[k];
-      const o = k * SPOT_FLOATS;
+      const o = k * CELL_FLOATS;
       expect([...buffers.cells.data.subarray(o, o + 4)]).toEqual([frame.cellX[i], frame.cellY[i], frame.cellR[i], frame.cellU[i]].map(Math.fround));
     }
     expect(buffers.restAxons.count).toBe(frame.axonCount);
@@ -75,9 +85,9 @@ describe("fillNeuralGlBuffers", () => {
   it("reuses its arrays when a frame of the same graph is filled again", () => {
     const buffers = createNeuralGlBuffers();
     fillNeuralGlBuffers(buffers, buildNeuralFrame(selected(), CAMERA), INKS);
-    const arrays = [buffers.pools, buffers.restAxons, buffers.restDots, buffers.cells, buffers.litAxons, buffers.litSpots].map((batch) => batch.data);
+    const arrays = [buffers.shells, buffers.halos, buffers.cells, buffers.rings, buffers.restAxons, buffers.restDots, buffers.litAxons, buffers.litSpots].map((batch) => batch.data);
     fillNeuralGlBuffers(buffers, buildNeuralFrame({ ...selected(), now: 2_000 }, { ...CAMERA, camX: 10 }), INKS);
-    [buffers.pools, buffers.restAxons, buffers.restDots, buffers.cells, buffers.litAxons, buffers.litSpots].forEach((batch, k) => expect(batch.data).toBe(arrays[k]));
+    [buffers.shells, buffers.halos, buffers.cells, buffers.rings, buffers.restAxons, buffers.restDots, buffers.litAxons, buffers.litSpots].forEach((batch, k) => expect(batch.data).toBe(arrays[k]));
   });
 
   it("draws lit axons and the focus ring only while a focus is lit", () => {
@@ -97,5 +107,64 @@ describe("fillNeuralGlBuffers", () => {
     const fullAlpha = full.cells.data[7];
     fillNeuralGlBuffers(half, buildNeuralFrame(inputs({ neural: 0.5 }), CAMERA), INKS);
     expect(half.cells.data[7]).toBeCloseTo(fullAlpha, 5);
+  });
+
+  it("gives a capability its nucleus and a stale cell its matte surface, and an element neither", () => {
+    const buffers = createNeuralGlBuffers();
+    const evidence = new Map([["b", "stale" as const]]);
+    const frame = buildNeuralFrame(inputs({ domeLight: { evidence } as unknown as NeuralFrameInputs["domeLight"] }), CAMERA);
+    fillNeuralGlBuffers(buffers, frame, INKS);
+    const coreOf = (id: string) => {
+      const k = Array.from(frame.drawOrder.subarray(0, frame.drawCount)).indexOf(["domain", "a", "b", "c", "e"].indexOf(id));
+      const o = k * CELL_FLOATS + 8;
+      return { nucleus: buffers.cells.data[o], matte: buffers.cells.data[o + 2], ink: [...buffers.cells.data.subarray(k * CELL_FLOATS + 4, k * CELL_FLOATS + 7)] };
+    };
+    expect(coreOf("a")).toEqual({ nucleus: Math.fround(TOKENS.nucleusShare), matte: 0, ink: [1, 1, 1] });
+    expect(coreOf("b")).toEqual({ nucleus: Math.fround(TOKENS.nucleusShare), matte: 1, ink: [1, Math.fround(0.6), 0] });
+    expect(coreOf("e")).toMatchObject({ nucleus: 0, matte: 0 });
+  });
+
+  it("puts every connection and its end dot behind all cells, and only a lit glow fades across", () => {
+    const buffers = createNeuralGlBuffers();
+    const needsA = inputs({ colorFocusedNodeId: "b", focusedNodeId: "b", focusRampById: new Map([["b", 1]]) });
+    fillNeuralGlBuffers(buffers, buildNeuralFrame(needsA, CAMERA), INKS);
+    const field = (batch: { data: Float32Array; count: number }, stride: number, at: number) =>
+      Array.from({ length: batch.count }, (_, k) => batch.data[k * stride + at]);
+    const cellDepths = field(buffers.cells, CELL_FLOATS, 3);
+    for (const depth of [...field(buffers.restAxons, RIBBON_FLOATS, 10), ...field(buffers.litAxons, RIBBON_FLOATS, 10), ...field(buffers.restDots, SPOT_FLOATS, 3)]) {
+      expect(depth).toBe(BEHIND_CELLS);
+      expect(depth).toBeGreaterThan(Math.max(...cellDepths));
+    }
+    expect(field(buffers.restAxons, RIBBON_FLOATS, 11).every((glow) => glow === 0)).toBe(true);
+    const litGlows = field(buffers.litAxons, RIBBON_FLOATS, 11);
+    expect(litGlows[0], "b's need of a is lit with its glow under it").toBe(1);
+    expect(litGlows[1]).toBe(0);
+  });
+
+  it("moves only the cells a selection veils out of the cells that hide what lies behind them", () => {
+    const buffers = createNeuralGlBuffers();
+    fillNeuralGlBuffers(buffers, buildNeuralFrame(inputs(), CAMERA), INKS);
+    expect(buffers.veiledCells.count).toBe(0);
+    const frame = buildNeuralFrame(selected(), CAMERA);
+    fillNeuralGlBuffers(buffers, frame, INKS);
+    const veiled = Array.from(frame.drawOrder.subarray(0, frame.drawCount)).filter((i) => frame.cellAlpha[i] < frame.cellRestAlpha[i] * 0.5);
+    expect(veiled.length).toBeGreaterThan(0);
+    expect(buffers.veiledCells.count).toBe(veiled.length);
+    expect(buffers.cells.count + buffers.veiledCells.count).toBe(frame.drawCount);
+    expect(buffers.cellCount).toBe(frame.drawCount);
+  });
+
+  it("draws one shell per cluster on its pool's radius, quieter while a selection veils the cluster", () => {
+    const rest = createNeuralGlBuffers();
+    const restFrame = buildNeuralFrame(inputs(), CAMERA);
+    fillNeuralGlBuffers(rest, restFrame, INKS);
+    expect(rest.shells.count).toBe(restFrame.poolCount);
+    expect(rest.shells.data[2]).toBe(Math.fround(restFrame.pools[0].reachPx));
+    const restAlpha = rest.shells.data[SHELL_FLOATS - 1];
+    expect(restAlpha).toBeGreaterThan(0);
+    expect(restAlpha).toBeLessThanOrEqual(INKS.shellAlpha);
+    const lit = createNeuralGlBuffers();
+    fillNeuralGlBuffers(lit, buildNeuralFrame(selected(), CAMERA), INKS);
+    expect(lit.shells.data[SHELL_FLOATS - 1]).toBeLessThan(restAlpha);
   });
 });
