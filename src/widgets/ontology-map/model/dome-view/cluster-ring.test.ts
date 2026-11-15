@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clusterRadius, clusterRingAnchors } from './cluster-ring';
+import { CLUSTER_TITLE_BAND, clusterRadius, clusterRingAnchors } from './cluster-ring';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { DOME_FIT_RADIUS, DOME_FOCAL } from './projection';
 
@@ -18,14 +18,14 @@ function projectedDiscs(members: number[], yaw: number) {
     const zr = px * sy + pz * cy;
     const y = py * cp + zr * sp;
     const s = DOME_FOCAL / (DOME_FOCAL + (-py * sp + zr * cp));
-    return { x: MODEL_UNIT.centerX + x * s, y: MODEL_UNIT.centerY - y * s, r: radii[i] * norm * s };
+    return { x: MODEL_UNIT.centerX + x * s, y: MODEL_UNIT.centerY - y * s, r: radii[i] * norm * s, band: CLUSTER_TITLE_BAND * norm * s };
   });
 }
 
 describe('clusterRingAnchors', () => {
   const sizes = [40, 3, 17, 1, 9, 26, 5, 12];
 
-  it.each([2, 3, 4, 5, 6, 7, 8])('keeps %i unequal clusters apart at the rest pose, nearer than a cluster', (count) => {
+  it.each([2, 3, 4, 5, 6, 7, 8])('keeps %i unequal clusters apart at the rest pose, within a cluster and a title of each other', (count) => {
     const discs = projectedDiscs(sizes.slice(0, count), DOME_YAW_DEFAULT);
     let nearest = Infinity;
     for (let i = 0; i < discs.length; i += 1) {
@@ -35,7 +35,7 @@ describe('clusterRingAnchors', () => {
         nearest = Math.min(nearest, gap);
       }
     }
-    expect(nearest).toBeLessThan(2 * Math.min(...discs.map((d) => d.r)));
+    expect(nearest).toBeLessThan(2 * Math.min(...discs.map((d) => d.r)) + Math.max(...discs.map((d) => d.band)));
   });
 
   it('centres the rest pose', () => {
@@ -45,7 +45,30 @@ describe('clusterRingAnchors', () => {
     expect(Math.abs(left + right) / (right - left)).toBeLessThan(0.2);
   });
 
-  it('stacks more than eight clusters into rings that stay apart', () => {
+  it('leaves a title\'s band between two clusters that stand one above the other', () => {
+    const discs = projectedDiscs([15, 15, 15, 15, 15, 15, 15, 15, 15], DOME_YAW_DEFAULT);
+    for (let i = 0; i < discs.length; i += 1) {
+      for (let j = 0; j < discs.length; j += 1) {
+        const below = discs[j];
+        const above = discs[i];
+        if (i === j || below.y <= above.y || Math.abs(below.x - above.x) > above.r + below.r) continue;
+        expect(below.y - below.r - (above.y + above.r), `${j} under ${i}`).toBeGreaterThan(below.band * 0.8);
+      }
+    }
+  });
+
+  it('keeps nine clusters on one ring and shares thirteen between two', () => {
+    const heights = (count: number) => {
+      const anchors = clusterRingAnchors(Array.from({ length: count }, () => clusterRadius(10)), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT);
+      const perHeight = new Map<number, number>();
+      for (const a of anchors) perHeight.set(Math.round(a.y), (perHeight.get(Math.round(a.y)) ?? 0) + 1);
+      return [...perHeight.values()].sort((a, b) => b - a);
+    };
+    expect(heights(9)).toEqual([9]);
+    expect(heights(13)).toEqual([7, 6]);
+  });
+
+  it('stacks more than twelve clusters into rings that stay apart', () => {
     const members = [...sizes, ...sizes, 4, 2];
     const discs = projectedDiscs(members, DOME_YAW_DEFAULT);
     for (let i = 0; i < discs.length; i += 1) {
