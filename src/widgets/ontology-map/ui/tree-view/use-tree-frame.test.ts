@@ -53,10 +53,10 @@ const noSub = () => null;
 function fitWhenDrawn(nameModel: TreeModel) {
   vi.mocked(aimTreeProjector).mockClear();
   const canvas = { current: document.createElement("canvas") };
-  const sources = { layout, nameModel, tokens: readTreeTokens(), size: { width: 800, height: 600 }, dpr: 1, free: FREE, stale: null, focus: null, subOf: noSub, fontFamily: "sans-serif" };
+  const sources = { layout, nameModel, tokens: readTreeTokens(), size: { width: 800, height: 600 }, dpr: 1, stale: null, focus: null, subOf: noSub, fontFamily: "sans-serif" };
   const { result } = renderHook(() => useTreeFrame(canvas, sources));
-  expect(result.current.draw(TREE_POSE_REST, null)).toBe(true);
-  return vi.mocked(aimTreeProjector).mock.calls[0]![4];
+  expect(result.current.draw(TREE_POSE_REST, null, 1, FREE)).toBe(true);
+  return { ...vi.mocked(aimTreeProjector).mock.calls[0]![4] };
 }
 
 describe("the room the camera fits the tree into", () => {

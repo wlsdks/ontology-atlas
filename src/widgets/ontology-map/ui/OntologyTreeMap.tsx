@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
-import type { MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
-import { TREE_POSE_REST } from "../model/tree-view/tree-camera";
+import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel, readTreeFocus } from "../model/tree-view/tree-model";
-import type { TreeModel, TreeRect } from "../model/tree-view/types";
+import type { TreeModel, TreePose, TreeRect } from "../model/tree-view/types";
 import { treeMarks } from "../morph/tree-marks";
 import { adoptBodyLabelFont, labelFontFamily } from "../render/labels";
 import { readTreeTokens } from "../tokens/read-tree-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { readTreeFreeArea, useTreeFrame } from "./tree-view/use-tree-frame";
+import { treeMarkOf, useTreeInput } from "./tree-view/use-tree-input";
+import { useTreeKeyboard } from "./tree-view/use-tree-keyboard";
 import { useTreeMorphSnapshot } from "./tree-view/use-tree-morph-snapshot";
+import { useTreeMotion } from "./tree-view/use-tree-motion";
 
 export type TreeEvidenceState = "current" | "stale" | "unknown";
 
@@ -25,6 +27,13 @@ export interface TreeMapLabels {
   looseCaption: (concepts: number) => string;
 }
 
+export interface TreeTooltipLabels {
+  /** The hovered concept's name and facts; `stale` only when evidence was measured. */
+  concept: (facts: { name: string; stale: boolean; needs: number; users: number; elements: number }) => string;
+  /** A closed mark's name (empty for a fork) and what is folded inside it. */
+  folded: (facts: { name: string; capabilities: number; elements: number }) => string;
+}
+
 export interface OntologyTreeMapProps {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -33,6 +42,8 @@ export interface OntologyTreeMapProps {
   evidence: ReadonlyMap<string, TreeEvidenceState>;
   evidenceMeasured: boolean;
   labels: TreeMapLabels;
+  /** Without them the hover draws the focus but shows no tooltip. */
+  tooltipLabels?: TreeTooltipLabels;
   onSelect?: (id: string) => void;
   onPaneClick?: () => void;
   onDrawnCountChange?: (drawn: number) => void;
@@ -41,6 +52,9 @@ export interface OntologyTreeMapProps {
   legend?: (state: { focused: boolean }) => ReactNode;
   fitToken?: number;
   replayToken?: number;
+  onGrowthReplayingChange?: (replaying: boolean) => void;
+  /** The folder's identity: the tree grows the first time a folder opens in 3D in a session. */
+  arrivalKey?: string | null;
   reducedMotion?: boolean;
   arrivedByMorph?: boolean;
   navigationSpeed?: MapNavigationSpeed;
@@ -48,6 +62,11 @@ export interface OntologyTreeMapProps {
 
 /** Chrome that moves with a selection or the INDEX panel has settled by then. */
 const CHROME_SETTLE_MS = 450;
+/** The tooltip keeps this far (CSS px) from its mark and from the free area's edge. */
+const TOOLTIP_GAP_PX = 8;
+
+/** Folders whose tree has grown (or arrived grown) in this session. */
+const grownKeys = new Set<string>();
 
 const sameRect = (a: TreeRect | null, b: TreeRect | null) =>
   a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height);
@@ -71,8 +90,8 @@ function listedNodes(model: TreeModel, selected: number): number[] {
 }
 
 /**
- * The 3D view: the containment drawn as a tree at its rest pose. A frame is drawn only when a
- * source changes (vault, size, pixel ratio, evidence, selection, the label font).
+ * The 3D view: the containment drawn as a tree the person turns, zooms and walks. Frames are drawn
+ * only while the pose, the growth or the free area moves, or when a source changes.
  */
 export function OntologyTreeMap({
   nodes,
@@ -81,23 +100,38 @@ export function OntologyTreeMap({
   evidence,
   evidenceMeasured,
   labels,
+  tooltipLabels,
   onSelect,
+  onPaneClick,
   onDrawnCountChange,
   canvasLabel,
   listLabel,
   legend,
+  fitToken = 0,
+  replayToken = 0,
+  onGrowthReplayingChange,
+  arrivalKey = null,
+  reducedMotion = false,
+  arrivedByMorph = false,
+  navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED,
 }: OntologyTreeMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
+  const tipRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const [free, setFree] = useState<TreeRect | null>(null);
   const [dpr, setDpr] = useState(() => (typeof window === "undefined" ? 1 : window.devicePixelRatio || 1));
   const [tokens] = useState(() => (typeof document === "undefined" ? null : readTreeTokens()));
   const [fontFamily, setFontFamily] = useState(() => (typeof document === "undefined" ? "" : labelFontFamily()));
+  const [hover, setHover] = useState(-1);
   const readChromeRef = useRef<() => void>(() => {});
   const drawnRef = useRef(-1);
+  const hoverRef = useRef(-1);
+  /** The concept the canvas itself just chose: revealed in place, not flown to. */
+  const pickedRef = useRef(-1);
+  const replayingRef = useRef(false);
 
   const model = useMemo(() => buildTreeModel(nodes, edges), [nodes, edges]);
   const layout = useMemo(() => layoutTree(model), [model]);
@@ -109,7 +143,8 @@ export function OntologyTreeMap({
   }, [model, labels]);
 
   const selectedNode = selectedId == null ? -1 : (model.indexOf.get(selectedId) ?? -1);
-  const focus = useMemo(() => (selectedNode >= 0 ? readTreeFocus(model, selectedNode, true) : null), [model, selectedNode]);
+  const focusNode = hover >= 0 ? hover : selectedNode;
+  const focus = useMemo(() => (focusNode >= 0 ? readTreeFocus(model, focusNode, focusNode === selectedNode) : null), [model, focusNode, selectedNode]);
 
   const stale = useMemo(() => {
     if (!evidenceMeasured) return null;
@@ -134,8 +169,103 @@ export function OntologyTreeMap({
   }, [model, labels, stale]);
   const subOf = useMemo(() => (node: number) => subs[node] ?? null, [subs]);
 
-  const frame = useTreeFrame(canvasRef, { layout, nameModel, tokens, size, dpr, free, stale, focus, subOf, fontFamily });
-  useTreeMorphSnapshot(canvasRef, () => (tokens ? treeMarks(frame.list.current, model, tokens) : []), tokens?.inks.ground ?? "transparent");
+  const frame = useTreeFrame(canvasRef, { layout, nameModel, tokens, size, dpr, stale, focus, subOf, fontFamily });
+  const { draw, locate, fitOf, list, names, projector, frames } = frame;
+  useTreeMorphSnapshot(canvasRef, () => (tokens ? treeMarks(list.current, model, tokens) : []), tokens?.inks.ground ?? "transparent");
+
+  const listed = useMemo(() => listedNodes(model, selectedNode), [model, selectedNode]);
+
+  /** The list's `data-mark` / `data-name-box`, the e2e frame record and the drawn count: written at rest only. */
+  const writeMirror = useCallback(() => {
+    const canvas = canvasRef.current;
+    const drawn = list.current;
+    const placed = names.current;
+    const markOf = new Map<number, number>();
+    for (let i = 0; i < drawn.count; i += 1) markOf.set(drawn.marks[i]!.node, i);
+    const boxOf = new Map<number, number>();
+    for (let i = 0; i < placed.count; i += 1) boxOf.set(placed.boxes[i]!.node, i);
+    for (const el of listRef.current?.querySelectorAll<HTMLElement>("[data-tree-id]") ?? []) {
+      const node = model.indexOf.get(el.dataset.treeId!) ?? -1;
+      const mark = markOf.has(node) ? drawn.marks[markOf.get(node)!]! : null;
+      el.dataset.mark = mark ? `${Math.round(mark.x)},${Math.round(mark.y)},${Math.round(mark.radius)}` : "";
+      const box = boxOf.has(node) ? placed.boxes[boxOf.get(node)!]! : null;
+      el.dataset.nameBox = box ? `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}` : "";
+    }
+    if (canvas && new URLSearchParams(window.location.search).has("e2e")) {
+      canvas.dataset.frame = JSON.stringify({ marks: drawn.count, visited: drawn.visited, folded: drawn.folded, names: placed.count, dropped: placed.dropped });
+    }
+    if (drawn.count !== drawnRef.current) {
+      drawnRef.current = drawn.count;
+      onDrawnCountChange?.(drawn.count);
+    }
+  }, [list, names, model, onDrawnCountChange]);
+
+  /** Beside the hovered mark, inside the free area, clear of names where it can be; hidden for the selection. */
+  const placeTip = useCallback(
+    (node: number, area: TreeRect | null) => {
+      const tip = tipRef.current;
+      if (!tip) return;
+      const mark = node >= 0 && node !== selectedNode ? treeMarkOf(list.current, node) : null;
+      if (!mark || !area) {
+        tip.hidden = true;
+        return;
+      }
+      tip.hidden = false;
+      const w = tip.offsetWidth;
+      const h = tip.offsetHeight;
+      const reach = mark.radius + TOOLTIP_GAP_PX;
+      const spots = [
+        [mark.x + reach, mark.y - h / 2],
+        [mark.x - reach - w, mark.y - h / 2],
+        [mark.x - w / 2, mark.y + reach],
+        [mark.x - w / 2, mark.y - reach - h],
+      ] as const;
+      const placed = names.current;
+      const inside = ([x, y]: readonly [number, number]) =>
+        x >= area.x + TOOLTIP_GAP_PX && y >= area.y + TOOLTIP_GAP_PX && x + w <= area.x + area.width - TOOLTIP_GAP_PX && y + h <= area.y + area.height - TOOLTIP_GAP_PX;
+      const clear = ([x, y]: readonly [number, number]) => {
+        for (let i = 0; i < placed.count; i += 1) {
+          const b = placed.boxes[i]!;
+          if (b.x < x + w && x < b.x + b.width && b.y < y + h && y < b.y + b.height) return false;
+        }
+        return true;
+      };
+      const [x, y] = spots.find((s) => inside(s) && clear(s)) ?? spots.find(inside) ?? spots[0];
+      tip.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    },
+    [list, names, selectedNode],
+  );
+
+  const wrapReady = () => {
+    const wrap = wrapRef.current;
+    if (wrap && wrap.dataset.treeReady !== "true") wrap.dataset.treeReady = "true";
+  };
+  const motion = useTreeMotion(
+    {
+      layout,
+      draw,
+      locate,
+      fitOf,
+      names,
+      reducedMotion,
+      onDrawn: (rest) => {
+        wrapReady();
+        if (rest) writeMirror();
+        if (hoverRef.current >= 0) placeTip(hoverRef.current, motion.free);
+      },
+      onGrowing: (growing) => {
+        if (growing && arrivalKey != null) grownKeys.add(arrivalKey);
+        if (!replayingRef.current) return;
+        if (!growing) replayingRef.current = false;
+        onGrowthReplayingChange?.(growing);
+      },
+    },
+    () => arrivalKey != null && !reducedMotion && !arrivedByMorph && !grownKeys.has(arrivalKey),
+  );
+
+  useEffect(() => {
+    if (arrivalKey != null && (reducedMotion || arrivedByMorph)) grownKeys.add(arrivalKey);
+  }, [reducedMotion, arrivedByMorph, arrivalKey]);
 
   useEffect(() => {
     let live = true;
@@ -192,49 +322,99 @@ export function OntologyTreeMap({
     readChromeRef.current();
   }, [selectedId]);
 
-  const listed = useMemo(() => listedNodes(model, selectedNode), [model, selectedNode]);
-
-  const { draw, list, names } = frame;
+  /* A free area that changes within the same canvas (a panel opening or closing) is moved to; a resize jumps. */
+  const sizeAtFreeRef = useRef(size);
+  const selectedNodeRef = useRef(selectedNode);
   useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
-    if (!draw(TREE_POSE_REST, null)) {
-      wrap.dataset.treeReady = "false";
-      return;
-    }
-    const drawn = list.current;
-    const placed = names.current;
-    const markOf = new Map<number, number>();
-    for (let i = 0; i < drawn.count; i += 1) markOf.set(drawn.marks[i]!.node, i);
-    const boxOf = new Map<number, number>();
-    for (let i = 0; i < placed.count; i += 1) boxOf.set(placed.boxes[i]!.node, i);
-    for (const el of listRef.current?.querySelectorAll<HTMLElement>("[data-tree-id]") ?? []) {
-      const node = model.indexOf.get(el.dataset.treeId!) ?? -1;
-      const mark = markOf.has(node) ? drawn.marks[markOf.get(node)!]! : null;
-      el.dataset.mark = mark ? `${Math.round(mark.x)},${Math.round(mark.y)},${Math.round(mark.radius)}` : "";
-      const box = boxOf.has(node) ? placed.boxes[boxOf.get(node)!]! : null;
-      el.dataset.nameBox = box ? `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}` : "";
-    }
-    if (new URLSearchParams(window.location.search).has("e2e")) {
-      canvas.dataset.frame = JSON.stringify({ marks: drawn.count, visited: drawn.visited, folded: drawn.folded, names: placed.count, dropped: placed.dropped });
-    }
-    wrap.dataset.treeReady = "true";
-    if (drawn.count !== drawnRef.current) {
-      drawnRef.current = drawn.count;
-      onDrawnCountChange?.(drawn.count);
-    }
-  }, [draw, list, names, model, listed, onDrawnCountChange]);
+    selectedNodeRef.current = selectedNode;
+  }, [selectedNode]);
+  useLayoutEffect(() => {
+    if (!free) return;
+    const sameCanvas = sizeAtFreeRef.current !== null && sizeAtFreeRef.current === size;
+    sizeAtFreeRef.current = size;
+    motion.setFree(free, sameCanvas, selectedNodeRef.current);
+  }, [free, size, motion]);
 
-  const { frames } = frame;
+  /* A selection from outside the canvas flies to its concept; one chosen on the canvas is revealed in place. */
+  useEffect(() => {
+    const picked = pickedRef.current;
+    pickedRef.current = -1;
+    if (selectedNode < 0) return;
+    if (picked === selectedNode) motion.reveal(selectedNode);
+    else motion.flyTo(selectedNode);
+  }, [selectedNode, motion]);
+
+  const fitTokenRef = useRef(fitToken);
+  useEffect(() => {
+    if (fitTokenRef.current === fitToken) return;
+    fitTokenRef.current = fitToken;
+    motion.fit();
+  }, [fitToken, motion]);
+
+  const replayTokenRef = useRef(replayToken);
+  useEffect(() => {
+    if (replayTokenRef.current === replayToken) return;
+    replayTokenRef.current = replayToken;
+    if (reducedMotion) return;
+    replayingRef.current = true;
+    motion.replayGrowth();
+  }, [replayToken, reducedMotion, motion]);
+
+  useLayoutEffect(() => {
+    motion.redraw();
+  }, [draw, motion]);
+
+  useLayoutEffect(() => {
+    if (!motion.busy) writeMirror();
+  }, [listed, writeMirror, motion]);
+
+  useLayoutEffect(() => {
+    hoverRef.current = hover;
+    const tip = tipRef.current;
+    if (!tip) return;
+    const text = hover >= 0 && tooltipLabels ? tooltipText(nameModel, hover, list.current, tooltipLabels, stale) : "";
+    if (tip.textContent !== text) tip.textContent = text;
+    placeTip(text ? hover : -1, motion.free);
+  }, [hover, nameModel, tooltipLabels, stale, list, placeTip, motion]);
+
+  const pick = useCallback(
+    (node: number) => {
+      const id = model.ids[node];
+      if (id == null) return;
+      if (node !== selectedNode) pickedRef.current = node;
+      onSelect?.(id);
+    },
+    [model, selectedNode, onSelect],
+  );
+
+  const input = useTreeInput({
+    canvasRef,
+    motion,
+    layout,
+    list,
+    projector,
+    tokens,
+    selectedNode,
+    navigationSpeed,
+    onPick: pick,
+    onPaneClick,
+    onHover: setHover,
+  });
+  const onKeyDown = useTreeKeyboard({ model, motion, list, selectedNode, navigationSpeed, onPick: pick, onPaneClick });
+
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("e2e")) return;
     const w = window as unknown as { __atlasTree?: unknown };
-    w.__atlasTree = { pose: () => ({ ...TREE_POSE_REST }), frames: () => frames.current };
+    w.__atlasTree = {
+      pose: (): TreePose => ({ ...motion.pose }),
+      setPose: (pose: TreePose) => motion.setPose(pose),
+      flyTo: (id: string) => motion.flyTo(model.indexOf.get(id) ?? -1),
+      frames: () => frames.current,
+    };
     return () => {
       delete w.__atlasTree;
     };
-  }, [frames]);
+  }, [frames, motion, model]);
 
   const conceptList = (
     <ul ref={listRef} className="sr-only" aria-label={listLabel} data-testid="tree-map-list">
@@ -268,6 +448,20 @@ export function OntologyTreeMap({
         aria-label={canvasLabel}
         tabIndex={0}
         className="absolute inset-0 h-full w-full touch-none outline-none"
+        style={{ cursor: "grab" }}
+        onPointerDown={input.onPointerDown}
+        onPointerMove={input.onPointerMove}
+        onPointerUp={input.onPointerUp}
+        onPointerCancel={input.onPointerCancel}
+        onPointerLeave={input.onPointerLeave}
+        onKeyDown={onKeyDown}
+      />
+      <div
+        ref={tipRef}
+        hidden
+        role="tooltip"
+        data-testid="tree-map-tooltip"
+        className="pointer-events-none absolute left-0 top-0 max-w-[22rem] truncate rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--chrome-surface)] px-2.5 py-1.5 text-label text-[color:var(--map-panel-text-secondary)] shadow-[var(--shadow-elevation-2)]"
       />
       <div
         ref={footerRef}
@@ -279,4 +473,27 @@ export function OntologyTreeMap({
       {conceptList}
     </div>
   );
+}
+
+/** A closed mark names what is folded in it; a concept its stale state and dependency facts. */
+function tooltipText(
+  model: TreeModel,
+  node: number,
+  list: Parameters<typeof treeMarkOf>[0],
+  labels: TreeTooltipLabels,
+  stale: Uint8Array | null,
+): string {
+  const name = model.labels[node] ?? "";
+  const ownCapability = model.kinds[node] === "capability" ? 1 : 0;
+  const ownElement = model.kinds[node] === "element" ? 1 : 0;
+  if (treeMarkOf(list, node)?.closed) {
+    return labels.folded({ name, capabilities: model.capabilities[node]! - ownCapability, elements: model.elements[node]! - ownElement });
+  }
+  return labels.concept({
+    name,
+    stale: stale?.[node] === 1,
+    needs: model.needsStart[node + 1]! - model.needsStart[node]!,
+    users: model.usedByStart[node + 1]! - model.usedByStart[node]!,
+    elements: model.elements[node]! - ownElement,
+  });
 }
