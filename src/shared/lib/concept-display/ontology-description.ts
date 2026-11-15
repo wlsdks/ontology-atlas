@@ -3,10 +3,10 @@ const MIN_SENTENCE_CHARS = 20;
 
 /**
  * A wikilink read as the words a reader would see: `[[a/b|Label]]` is Label, `[[a/b]]` is a/b, and a
- * `#section` stays out. Callers print plain text, so brackets would come through raw.
+ * `#section` stays out. Neither class admits `[`, so a run of brackets cannot restart the match: O(n).
  */
-function readWikilinks(text: string): string {
-  return text.replace(/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g, (_, target: string, label?: string) =>
+export function readWikilinks(text: string): string {
+  return text.replace(/\[\[([^[\]|]+)(?:\|([^[\]]+))?\]\]/g, (_, target: string, label?: string) =>
     (label ?? target.split('#')[0]).trim(),
   );
 }

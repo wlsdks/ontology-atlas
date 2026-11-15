@@ -29,7 +29,7 @@ Initial repository analysis distinguishes authored Markdown from literal example
 Document excerpts report omitted prose with an exact, hash-bound source read;
 truncated evidence requires review and does not authorize meaning writes.
 
-Folder entry and the download invitation use native-resolution Moru in a bounded space.
+Folder entry uses native-resolution Moru in a bounded space; the download page shows it at twice that size, on the app window's top edge or, on a narrow screen, above the headline.
 Folder selection offers a small folder; opening yields to the existing waiting view.
 A busy chooser that stays mounted uses quiet stationary poses.
 The download invitation has its own welcome. Short hops move only while airborne and finish landing before a pointer/keyboard hold.

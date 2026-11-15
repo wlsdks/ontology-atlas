@@ -15,8 +15,6 @@
   "createBusy": "正在写入起步结构…",
   "closeLabel": "关闭",
   "closeAriaLabel": "关闭起步指南",
-  "moreWaysToggle": "更多开始方式",
-  "glossaryToggle": "领域、能力、元素是什么意思",
   "plainModeHint": "想要更易懂的视图？在左下角齿轮里打开“通用”",
   "errorFallback": "无法打开文件夹，请重试。",
   "unsupportedNotice": "这个浏览器无法打开本地文件夹。请用桌面应用或 Chrome/Edge 打开，即可以地图查看文件夹。",

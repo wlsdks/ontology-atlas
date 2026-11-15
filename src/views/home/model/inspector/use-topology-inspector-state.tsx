@@ -161,12 +161,13 @@ export function useTopologyInspectorState({
   // The model turns null on close, so the exit window holds it. Keyed by slug: an unkeyed
   // per-render `useMemo` value crashes the map with React #301.
   const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
+  // Full detail is a dialog over the dimmed map, so the selection and its panel stay beneath it and
+  // its opener is still there to take focus back.
   const selectedNodeFocusActive =
     Boolean(
       selectedOntologyNode &&
       ontologyInsight &&
       nodeFocus &&
-      !fullDetailOpen &&
       analysisMode !== "path",
     );
   const meaningEditorOpen = Boolean(

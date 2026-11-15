@@ -64,20 +64,12 @@ describe("buildFullDetailGroups", () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     expect(groups.usedBy.total).toBe(1);
     expect(groups.usedBy.rows[0].id).toBe("capability:user");
-    expect(groups.usedBy.rows[0].containment).toBe(false);
   });
 
   it('puts outgoing non-containment in dependsOn', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     expect(groups.dependsOn.total).toBe(1);
     expect(groups.dependsOn.rows[0].id).toBe("capability:dep");
-  });
-
-  it('marks containment rows containment:true and others false', () => {
-    const groups = buildFullDetailGroups("domain:a", nodes, edges);
-    for (const row of groups.contains.rows) expect(row.containment).toBe(true);
-    for (const row of groups.belongsTo.rows) expect(row.containment).toBe(true);
-    for (const row of groups.dependsOn.rows) expect(row.containment).toBe(false);
   });
 
   it('returns the full uncapped list', () => {
@@ -155,7 +147,7 @@ describe("buildFullDetailGroups", () => {
     const groups = buildFullDetailGroups("domain:a", nodes, mixed);
     expect(groups.contains.rows).toEqual([{
       id: "capability:child-1", title: "Child One", kind: "capability",
-      containment: true, childCount: 5, fresh: false,
+      childCount: 5, fresh: false,
     }]);
     expect(groups.usedBy.rows[0]?.childCount).toBe(5);
     expect(buildFullDetailGroups("domain:a", nodes, []).contains.rows).toEqual([]);

@@ -16,6 +16,7 @@ import {
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
+import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
 import {
   formatProjectSourceHandoff,
   type ProjectSourceView,
@@ -34,21 +35,24 @@ import { FullDetailA1GroupsPanel } from "./full-detail-a1-groups-panel";
 import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 /**
- * The full-detail surface: header, four
- * direction groups, reach sentence, agent handoff and body. Shared by the topology datasheet's full
- * detail and the `/ontology` node detail, both fed by `buildFullDetailGroups`
- * and `buildFullDetailReachModel` so numbers cannot drift.
+ * The full-detail sheet, core first: a fixed header (kind, title, slug, freshness), then a
+ * scrolling column of body, relations, reach, agent prompt, code locations and project source.
+ * The host owns the frame; groups and reach come from `buildFullDetailGroups` and
+ * `buildFullDetailReachModel` so numbers cannot drift from the map.
  */
 
 export interface FullDetailA1Node {
   id: string;
   /** The short display title (the display field wins; otherwise the title's
-   *  parenthetical explanation is cut). The header h1 draws this large. */
+   *  parenthetical explanation is cut). The header heading draws this large. */
   title: string;
-  /** The full original vault title — preserved as secondary text under the h1 only
+  /** The full original vault title — preserved as secondary text under the heading only
    *  when it differs from `title` (layering, not hiding). Identical, it is not rendered. */
   fullTitle?: string;
   kind: string;
+  /** The owner the compact panel names beside the kind: a capability's domain, an element's
+   *  capability. */
+  ownerTitle?: string | null;
   /** Vault slug / evidence path beneath the identity. */
   slug: string;
   /**
@@ -73,12 +77,6 @@ export interface FullDetailA1Node {
   mtimeConflict?: boolean;
 }
 
-export interface FullDetailA1Breadcrumb {
-  projectTitle: string | null;
-  totalConcepts: number | null;
-  totalRelations: number | null;
-}
-
 export interface FullDetailA1ProjectSourceLabels {
   heading: string;
   sourceKind?: string;
@@ -94,7 +92,8 @@ export interface FullDetailA1Props {
   node: FullDetailA1Node;
   groups: FullDetailGroups;
   reach: FullDetailReachModel;
-  breadcrumb?: FullDetailA1Breadcrumb;
+  /** Id for the title heading, so the host dialog can name itself by it. */
+  titleId?: string;
   /** The node's own markdown body (the node IS a markdown doc — A1 must not
    * drop it, per the design gate). `null` renders the empty-body message. */
   bodyMarkdown: string | null;
@@ -104,7 +103,6 @@ export interface FullDetailA1Props {
   } | null;
   onSelectNode: (id: string) => void;
   onClose: () => void;
-  onBackToMap?: () => void;
   /** **This node's own** document. null or omitted when it has no `.md` of its own. */
   documentHref?: string | null;
   /**
@@ -131,16 +129,25 @@ export interface FullDetailA1Props {
   className?: string;
 }
 
+const SHEET_PAD_X = "px-5 sm:px-7";
+const SECTION_CLASS = "mt-6 border-t border-[color:var(--map-panel-border)] pt-5";
+const SECTION_HEADING_CLASS = "text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]";
+const SHEET_LINK_CLASS = controlClass({
+  shape: "link",
+  size: "lg",
+  scope: "panel",
+  className: "touch-hit-expand shrink-0 hover:text-[color:var(--map-panel-text-secondary)]",
+});
+
 export function FullDetailA1({
   node,
   groups,
   reach,
-  breadcrumb,
+  titleId,
   bodyMarkdown,
   explanationEdit,
   onSelectNode,
   onClose,
-  onBackToMap,
   documentHref,
   mentionDocumentHref = null,
   codeLocations = [],
@@ -155,6 +162,7 @@ export function FullDetailA1({
   // Same editProvenance namespace as DocFrontmatterBlock and OntologyMapDetailPanel, so the
   // three cannot drift.
   const tProvenance = useTranslations("editProvenance");
+  const tDatasheet = useTranslations("topology.nodeDatasheet");
   const getKindLabel = useOntologyKindLabel();
   const { show } = useToast();
   const copyLinkFeedback = useCopyFeedback();
@@ -163,7 +171,9 @@ export function FullDetailA1({
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true });
+    // A host dialog records its opener in its own effect, which runs after this child's; focusing
+    // in the same task but after that effect keeps the opener as the focus-return target.
+    queueMicrotask(() => headingRef.current?.focus({ preventScroll: true }));
   }, []);
 
   const handoffChain = useMemo(() => {
@@ -205,78 +215,78 @@ export function FullDetailA1({
   const projectSourceAction = projectSource?.nextAction.id === "use_current_evidence"
     ? handleCopyHandoff
     : onProjectSourceAction;
+  const readBody = stripDuplicateHeading(bodyMarkdown, node.title, node.fullTitle);
+  const hasBody = Boolean(readBody && readBody.trim().length > 0);
 
   return (
     <div
       data-testid="full-detail-a1"
       data-fulldetail-node={node.id}
-      className={["full-detail-a1 mx-auto flex max-w-[1240px] flex-col px-4 py-5 sm:px-6 sm:py-7", className ?? ""].join(" ")}
+      className={cn("full-detail-a1 flex min-h-0 flex-1 flex-col", className)}
     >
-      <nav className="mb-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-body text-[color:var(--map-panel-text-tertiary)]">
-        {onBackToMap ? (
-          <button
-            type="button"
-            onClick={onBackToMap}
-            className={controlClass({
-              shape: "link",
-              size: "lg",
-              scope: "panel",
-              tone: "secondary",
-              className:
-                "touch-hit-expand hover:text-[color:var(--map-panel-text-primary)]",
-            })}
+      <header className={cn("shrink-0 border-b border-[color:var(--map-panel-border)] pt-3 pb-4", SHEET_PAD_X)}>
+        <div className="flex min-h-8 items-center gap-2">
+          <p
+            data-testid="full-detail-a1-kind"
+            className="flex min-w-0 flex-1 items-center gap-1.5 text-label text-[color:var(--map-panel-text-tertiary)]"
           >
-            {t("backToMap")}
-          </button>
-        ) : null}
-        {breadcrumb?.projectTitle ? (
-          <>
-            <span className="text-[color:var(--map-panel-text-quaternary)]">
-              {t("breadcrumbSeparator")}
-            </span>
-            <span>{breadcrumb.projectTitle}</span>
-          </>
-        ) : null}
-        <span className="text-[color:var(--map-panel-text-quaternary)]">
-          {t("breadcrumbSeparator")}
-        </span>
-        <span>{getKindLabel(node.kind)}</span>
-        {breadcrumb?.totalConcepts != null && breadcrumb?.totalRelations != null ? (
-          <span data-testid="full-detail-census" className="ml-auto tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-            {t("census", {
-              concepts: breadcrumb.totalConcepts,
-              relations: breadcrumb.totalRelations,
-            })}
-          </span>
-        ) : null}
-      </nav>
-
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 min-[1308px]:-ml-8.5 min-[1308px]:grid-cols-[auto_minmax(0,1fr)_auto]">
-        <span className="col-start-1 row-start-1 self-center min-[1308px]:mt-1 min-[1308px]:self-start">
-          <OntologyMapKindGlyph kind={node.kind} size={22} />
-        </span>
-        <div className="col-span-2 row-start-2 min-w-0 min-[1308px]:col-span-1 min-[1308px]:col-start-2 min-[1308px]:row-start-1">
-          <h1
-            ref={headingRef}
-            tabIndex={-1}
-            className="[overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)]">
-            <span {...morphTargetProps(morphName("concept", node.id))} className="inline-block max-w-full">
-              {node.title}
-            </span>
-          </h1>
-          {/* The full title as secondary text when the display name abbreviates it. */}
-          {node.fullTitle && node.fullTitle !== node.title ? (
-            <p
-              data-testid="full-detail-a1-full-title"
-              className="mt-1 [overflow-wrap:anywhere] text-body text-[color:var(--map-panel-text-tertiary)]"
+            <OntologyMapKindGlyph kind={node.kind} size={12} />
+            <span className="shrink-0">{getKindLabel(node.kind)}</span>
+            {node.ownerTitle ? (
+              <>
+                <span aria-hidden="true" className="text-[color:var(--map-panel-text-quaternary)]">·</span>
+                <span className="min-w-0 truncate text-[color:var(--map-panel-text-secondary)]">{node.ownerTitle}</span>
+              </>
+            ) : null}
+          </p>
+          <div className="-mr-2 flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              aria-label={t("copyLink")}
+              title={t("copyLink")}
+              data-testid="full-detail-a1-copy-link"
+              className={controlClass({
+                shape: "icon",
+                size: "lg",
+                scope: "panel",
+                className:
+                  "hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]",
+              })}
             >
-              {node.fullTitle}
-            </p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-label text-[color:var(--map-panel-text-tertiary)]">
-            <span className="min-w-0 max-w-full [overflow-wrap:anywhere] font-mono text-[color:var(--map-panel-text-quaternary)]">{node.slug}</span>
-            <span aria-hidden className="text-[color:var(--map-panel-text-quaternary)]">·</span>
-            <span className="inline-flex items-center gap-2">
+              <Link2 size={ICON_SIZE.md} />
+            </button>
+            <CloseButton
+              onClick={onClose}
+              label={t("close")}
+              data-testid="full-detail-a1-close"
+              className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
+            />
+          </div>
+        </div>
+        <h2
+          id={titleId}
+          ref={headingRef}
+          data-testid="full-detail-a1-title"
+          tabIndex={-1}
+          className="mt-1 [overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)] focus:outline-none"
+        >
+          <span {...morphTargetProps(morphName("concept", node.id))} className="inline-block max-w-full">
+            {node.title}
+          </span>
+        </h2>
+        {node.fullTitle && node.fullTitle !== node.title ? (
+          <p
+            data-testid="full-detail-a1-full-title"
+            className="mt-0.5 [overflow-wrap:anywhere] text-body text-[color:var(--map-panel-text-tertiary)]"
+          >
+            {node.fullTitle}
+          </p>
+        ) : null}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--map-panel-text-tertiary)]">
+          <span className="min-w-0 max-w-full [overflow-wrap:anywhere] font-mono text-[color:var(--map-panel-text-quaternary)]">{node.slug}</span>
+          <span aria-hidden="true" className="text-[color:var(--map-panel-text-quaternary)]">·</span>
+          <span className="inline-flex items-center gap-1.5">
             <span
               aria-hidden="true"
               className="h-[6px] w-[6px] shrink-0 rounded-full"
@@ -286,12 +296,10 @@ export function FullDetailA1({
                   : "var(--map-panel-power-off)",
               }}
             />
-            <span>{getKindLabel(node.kind)}</span>
-            <span className="text-[color:var(--map-panel-text-quaternary)]">·</span>
             <span data-testid="full-detail-freshness">
               {node.updatedAtLabel ?? (node.fresh ? t("freshOn") : t("freshOff"))}
             </span>
-            </span>
+          </span>
           {node.lastEditSubject ? (
             <div className="min-w-0 sm:ml-2">
               <LastEditSubjectRow
@@ -304,274 +312,196 @@ export function FullDetailA1({
               />
             </div>
           ) : null}
-          </div>
-        </div>
-        <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-1 justify-self-end min-[1308px]:col-start-3">
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            aria-label={t("copyLink")}
-            title={t("copyLink")}
-            data-testid="full-detail-a1-copy-link"
-            className={controlClass({
-              shape: "icon",
-              size: "lg",
-              scope: "panel",
-              className:
-                "hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]",
-            })}
-          >
-            <Link2 size={ICON_SIZE.md} />
-          </button>
-          <CloseButton
-            onClick={onClose}
-            label={t("close")}
-            data-testid="full-detail-a1-close"
-            className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
-          />
         </div>
       </header>
 
-      {showProjectSource ? (
-        <section
-          data-testid="full-detail-project-source"
-          data-source-version={projectSource.contractVersion}
-          data-source-status={projectSource.status}
-          data-source-measured-at={projectSource.measuredAt ?? "unmeasured"}
-          data-source-top-gap={projectSource.topGap?.id ?? "none"}
-          data-source-action={projectSource.nextAction.id}
-          data-source-currentness={projectSource.currentness}
-          data-source-cardinality={projectSource.bindingCardinality}
-          aria-live="polite"
-          className="mt-5.5 grid gap-2 border-y border-[color:var(--map-panel-border)] py-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
-        >
-          <div className="min-w-0">
-            <p className="text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--map-panel-text-quaternary)]">
-              {projectSourceLabels.heading}
-              {projectSourceLabels.sourceKind ? (
-                <span className="ml-2 font-mono normal-case tracking-normal">
-                  {projectSourceLabels.sourceKind}
-                </span>
-              ) : null}
+      <div
+        data-fulldetail-scroll
+        // The fade sits inside the bottom padding, so it only touches content that scrolls on.
+        className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain pt-5 pb-7 [mask-image:linear-gradient(to_bottom,black_calc(100%-1.5rem),transparent)]", SHEET_PAD_X)}
+      >
+        {/* A body's own `#` heading steps down one level so it never rivals the sheet's title. */}
+        <section data-fulldetail-body className="min-w-0 [&_[data-testid=node-explanation-rendered]_h1]:text-title">
+          {node.mtimeConflict ? (
+            <p data-testid="mtime-conflict-badge" role="status" className="mb-3 flex items-start gap-2 text-body leading-body text-[color:var(--map-panel-text-secondary)]">
+              <TriangleAlert size={ICON_SIZE.md} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]" />
+              <span>{tProvenance("conflictMessage")}</span>
             </p>
-            <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
-              {projectSourceLabels.status}
-            </p>
-            <p className="mt-0.5 text-body text-[color:var(--map-panel-text-tertiary)]">
-              {projectSourceLabels.measuredAt}
-              <span className="mx-1.5 text-[color:var(--map-panel-text-quaternary)]">·</span>
-              {projectSourceLabels.currentness}
-            </p>
-            <p className="mt-2 text-body text-[color:var(--map-panel-text-secondary)]">
-              {projectSourceLabels.gap}
-            </p>
-            {projectSourceError ? (
-              <p
-                role="status"
-                className="mt-1.5 text-body text-[color:var(--color-danger-text)]"
-              >
-                {projectSourceError}
-              </p>
-            ) : null}
-          </div>
-          {projectSourceAction ? (
-            <button
-              type="button"
-              onClick={() => void projectSourceAction()}
-              disabled={projectSourceBusy}
-              aria-busy={projectSourceBusy}
-              className={controlClass({ shape: "chip", className: "justify-self-start border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] px-3 py-1.5 font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:border-[color:var(--map-indigo)] hover:bg-[color:var(--map-panel-row-hover)] disabled:cursor-wait sm:justify-self-end" })}
+          ) : null}
+          {explanationEdit ? (
+            <NodeExplanationEdit
+              value={bodyMarkdown ?? ""}
+              onSave={explanationEdit.onSave}
+              labels={explanationEditLabels}
+            />
+          ) : hasBody ? (
+            /* Shared prose constant: `@tailwindcss/typography` is not installed, so `prose` emits nothing. */
+            <div
+              className={cn(
+                "min-w-0 max-w-[var(--measure-prose)] overflow-x-auto [overflow-wrap:anywhere] text-body-lg leading-prose text-[color:var(--map-panel-text-secondary)]",
+                MARKDOWN_PROSE_CLASS,
+                "[&_h1]:text-title",
+              )}
             >
-              {projectSourceBusy ? projectSourceLabels.busy : projectSourceLabels.action}
-            </button>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{readBody}</ReactMarkdown>
+            </div>
           ) : (
-            <span className="justify-self-start text-body font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] sm:justify-self-end">
-              {projectSourceLabels.action}
-            </span>
+            <p className="text-body text-[color:var(--map-panel-text-tertiary)]">{t("body.empty")}</p>
           )}
         </section>
-      ) : null}
 
-      <FullDetailA1GroupsPanel
-        className="mt-5.5"
-        groups={groups}
-        onSelectNode={onSelectNode}
-        labels={{
-          containsTitle: t("groups.containsTitle"),
-          containsCaption: t("groups.containsCaption"),
-          usedByTitle: t("groups.usedByTitle"),
-          usedByCaption: t("groups.usedByCaption"),
-          dependsOnTitle: t("groups.dependsOnTitle"),
-          dependsOnCaption: t("groups.dependsOnCaption"),
-          belongsToTitle: t("groups.belongsToTitle"),
-          belongsToCaption: t("groups.belongsToCaption"),
-          relatedTitle: t("groups.relatedTitle"),
-          relatedCaption: t("groups.relatedCaption"),
-          freshDotTitle: t("groups.freshDotTitle"),
-          directLinks: (count) => t("groups.directLinks", { count }),
-          domainCount: (count) => t("groups.domainCount", { count }),
-          domainLinks: (count) => t("groups.domainLinks", { count }),
-          emptyGroup: (title) => t("groups.emptyGroup", { title }),
-        }}
-      />
+        <FullDetailA1GroupsPanel
+          className={SECTION_CLASS}
+          groups={groups}
+          onSelectNode={onSelectNode}
+          labels={{
+            containsTitle: t("groups.containsTitle"),
+            usedByTitle: t("groups.usedByTitle"),
+            dependsOnTitle: t("groups.dependsOnTitle"),
+            belongsToTitle: t("groups.belongsToTitle"),
+            relatedTitle: t("groups.relatedTitle"),
+            freshDotTitle: t("groups.freshDotTitle"),
+            directLinks: (count) => t("groups.directLinks", { count }),
+            domainCount: (count) => t("groups.domainCount", { count }),
+            domainLinks: (count) => t("groups.domainLinks", { count }),
+            caption: t("groups.caption"),
+            empty: tDatasheet("noConnections"),
+          }}
+        />
 
-      {codeLocations.length > 0 ? (
-        <section
-          data-fulldetail-code-locations
-          className="mt-5.5 flex flex-col gap-1.5 rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-3.5 py-3"
-        >
-          <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
-            {t("codeLocations.heading")}
-          </span>
-          <ul className="flex flex-col gap-1">
-            {codeLocations.map((path) => (
-              <FullDetailCodeLocationRow
-                key={path}
-                path={path}
-                copyLabel={t("codeLocations.copy")}
-                copiedLabel={t("codeLocations.copied")}
-              />
-            ))}
-          </ul>
-        </section>
-      ) : null}
+        <FullDetailA1ReachPanel
+          className={SECTION_CLASS}
+          reach={reach}
+          step={step}
+          onChangeStep={setStep}
+          labels={{
+            summary: (depth, count, total) => t("reach.summary", { depth, count, total }),
+            stepsAria: t("reach.stepsAria"),
+            selfDomainLabel: t("reach.selfDomainLabel"),
+            noDomainLabel: t("reach.noDomainLabel"),
+            domainsHidden: (hidden) => t("reach.domainsHidden", { count: hidden }),
+          }}
+        />
 
-      <FullDetailA1ReachPanel
-        className="mt-5.5"
-        reach={reach}
-        step={step}
-        onChangeStep={setStep}
-        labels={{
-          leadIn: t("reach.leadIn"),
-          stepUnit: t("reach.stepUnit"),
-          afterSteps: t("reach.afterSteps"),
-          stepsAria: t("reach.stepsAria"),
-          ofTotal: (count, total) => t("reach.ofTotal", { count, total }),
-          mostlyNone: t("reach.mostlyNone"),
-          mostlyOne: (a, aCount) => t("reach.mostlyOne", { a, aCount }),
-          mostlyTwo: (a, aCount, b, bCount) =>
-            t("reach.mostlyTwo", { a, aCount, b, bCount }),
-          selfDomainLabel: t("reach.selfDomainLabel"),
-          noDomainLabel: t("reach.noDomainLabel"),
-          domainsHidden: (hidden) => t("reach.domainsHidden", { count: hidden }),
-        }}
-      />
-
-      <section
-        data-fulldetail-handoff
-        className="mt-5 flex flex-col gap-3 rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-[var(--card-pad)]"
-      >
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="min-w-0 flex-1 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
-          {t("handoff.label")}
-        </span>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <button
-          type="button"
-          onClick={handleCopyHandoff}
-          data-testid="full-detail-a1-handoff-copy"
-          className={controlClass({ shape: "chip", size: "lg", className: "shrink-0 border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:bg-[color:var(--map-panel-row-hover)] hover:border-[color:var(--map-indigo)]" })}
-        >
-          {t("handoff.copy")}
-        </button>
-        {/*
-         * This card is an opaque overlay, so every link here closes it first; otherwise the map
-         * action happens unseen underneath.
-         */}
-        {documentHref ? (
-          <Link
-            href={documentHref}
-            onClick={onClose}
-            data-testid="full-detail-a1-open-document"
-            className={controlClass({
-              shape: "link",
-              size: "lg",
-              scope: "panel",
-              className:
-                "touch-hit-expand shrink-0 hover:text-[color:var(--map-panel-text-secondary)]",
-            })}
-          >
-            {t("handoff.openDocument")}
-          </Link>
-        ) : mentionDocumentHref ? (
-          <Link
-            href={mentionDocumentHref}
-            onClick={onClose}
-            title={t("handoff.openMentionDocumentTip")}
-            data-testid="full-detail-a1-open-mention-document"
-            className={controlClass({
-              shape: "link",
-              size: "lg",
-              scope: "panel",
-              className:
-                "touch-hit-expand shrink-0 hover:text-[color:var(--map-panel-text-secondary)]",
-            })}
-          >
-            {t("handoff.openMentionDocument")}
-          </Link>
-        ) : null}
-        <Link
-          href={buildTopologyMeaningEditorNodeHref(node.id)}
-          onClick={onClose}
-          data-testid="full-detail-a1-open-studio"
-          className={controlClass({
-            shape: "link",
-            size: "lg",
-            scope: "panel",
-            className:
-              "touch-hit-expand shrink-0 hover:text-[color:var(--map-panel-text-secondary)]",
-          })}
-        >
-          {t("handoff.openStudio")}
-        </Link>
-        </div>
-        </div>
-        <code className="block min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] border-t border-[color:var(--map-panel-border)] pt-3 font-mono text-label leading-label text-[color:var(--map-panel-text-tertiary)]">
-          {handoffChain}
-        </code>
-      </section>
-
-      <section data-fulldetail-body className="mt-6 rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-metric-surface)] p-[var(--card-pad)]">
-        {node.mtimeConflict ? (
-          <p data-testid="mtime-conflict-badge" role="status" className="mb-4 flex items-start gap-2 text-body leading-body text-[color:var(--map-panel-text-secondary)]">
-            <TriangleAlert size={ICON_SIZE.md} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]" />
-            <span>{tProvenance("conflictMessage")}</span>
-          </p>
-        ) : null}
-        <div className="min-w-0 max-w-[var(--measure-doc-column)] [&>div>div:first-child]:mb-4 [&>div>div:first-child]:border-b [&>div>div:first-child]:border-[color:var(--map-panel-border)] [&>div>div:first-child]:pb-3 [&>div>div:first-child>span]:font-sans [&>div>div:first-child>span]:text-body [&>div>div:first-child>span]:font-[var(--font-weight-strong)] [&>div>div:first-child>span]:normal-case [&>div>div:first-child>span]:tracking-normal [&>div>div:first-child>span]:text-[color:var(--map-panel-text-primary)]">
-        {explanationEdit ? (
-          <NodeExplanationEdit
-            value={bodyMarkdown ?? ""}
-            onSave={explanationEdit.onSave}
-            labels={explanationEditLabels}
-          />
-        ) : (
-          <>
-            <h2 className="mb-4 border-b border-[color:var(--map-panel-border)] pb-3 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
-              {t("body.title")}
-            </h2>
-            {/*
-             * Shared prose constant: `@tailwindcss/typography` is not installed, so `prose` classes
-             * emit nothing.
-             */}
-            {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (
-              <div
-                className={cn(
-                  "min-w-0 max-w-[var(--measure-prose)] overflow-x-auto [overflow-wrap:anywhere] text-body-lg leading-prose text-[color:var(--map-panel-text-secondary)]",
-                  MARKDOWN_PROSE_CLASS,
-                )}
+        <section data-fulldetail-handoff className={SECTION_CLASS}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <h3 className={cn("min-w-0 flex-1", SECTION_HEADING_CLASS)}>{t("handoff.label")}</h3>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <button
+                type="button"
+                onClick={handleCopyHandoff}
+                data-testid="full-detail-a1-handoff-copy"
+                className={controlClass({ shape: "chip", size: "lg", className: "shrink-0 border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:bg-[color:var(--map-panel-row-hover)] hover:border-[color:var(--map-indigo)]" })}
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyMarkdown}</ReactMarkdown>
-              </div>
-            ) : (
-              <p className="text-body text-[color:var(--map-panel-text-tertiary)]">
-                {t("body.empty")}
+                {t("handoff.copy")}
+              </button>
+              {/* Each link leaves the map, so it closes the sheet first rather than act unseen beneath it. */}
+              {documentHref ? (
+                <Link href={documentHref} onClick={onClose} data-testid="full-detail-a1-open-document" className={SHEET_LINK_CLASS}>
+                  {t("handoff.openDocument")}
+                </Link>
+              ) : mentionDocumentHref ? (
+                <Link
+                  href={mentionDocumentHref}
+                  onClick={onClose}
+                  title={t("handoff.openMentionDocumentTip")}
+                  data-testid="full-detail-a1-open-mention-document"
+                  className={SHEET_LINK_CLASS}
+                >
+                  {t("handoff.openMentionDocument")}
+                </Link>
+              ) : null}
+              <Link
+                href={buildTopologyMeaningEditorNodeHref(node.id)}
+                onClick={onClose}
+                data-testid="full-detail-a1-open-studio"
+                className={SHEET_LINK_CLASS}
+              >
+                {t("handoff.openStudio")}
+              </Link>
+            </div>
+          </div>
+          <code className="mt-3 block min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-label leading-label text-[color:var(--map-panel-text-tertiary)]">
+            {handoffChain}
+          </code>
+        </section>
+
+        {codeLocations.length > 0 ? (
+          <section data-fulldetail-code-locations className={SECTION_CLASS}>
+            <h3 className={SECTION_HEADING_CLASS}>{t("codeLocations.heading")}</h3>
+            <ul className="-mx-1.5 mt-1.5 flex flex-col gap-1">
+              {codeLocations.map((path) => (
+                <FullDetailCodeLocationRow
+                  key={path}
+                  path={path}
+                  copyLabel={t("codeLocations.copy")}
+                  copiedLabel={t("codeLocations.copied")}
+                />
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {showProjectSource ? (
+          <section
+            data-testid="full-detail-project-source"
+            data-source-version={projectSource.contractVersion}
+            data-source-status={projectSource.status}
+            data-source-measured-at={projectSource.measuredAt ?? "unmeasured"}
+            data-source-top-gap={projectSource.topGap?.id ?? "none"}
+            data-source-action={projectSource.nextAction.id}
+            data-source-currentness={projectSource.currentness}
+            data-source-cardinality={projectSource.bindingCardinality}
+            aria-live="polite"
+            className={cn(SECTION_CLASS, "grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end")}
+          >
+            <div className="min-w-0">
+              <h3 className={SECTION_HEADING_CLASS}>
+                {projectSourceLabels.heading}
+                {projectSourceLabels.sourceKind ? (
+                  <span className="ml-2 font-mono text-label font-normal text-[color:var(--map-panel-text-quaternary)]">
+                    {projectSourceLabels.sourceKind}
+                  </span>
+                ) : null}
+              </h3>
+              <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
+                {projectSourceLabels.status}
               </p>
+              <p className="mt-0.5 text-body text-[color:var(--map-panel-text-tertiary)]">
+                {projectSourceLabels.measuredAt}
+                <span className="mx-1.5 text-[color:var(--map-panel-text-quaternary)]">·</span>
+                {projectSourceLabels.currentness}
+              </p>
+              <p className="mt-2 text-body text-[color:var(--map-panel-text-secondary)]">
+                {projectSourceLabels.gap}
+              </p>
+              {projectSourceError ? (
+                <p
+                  role="status"
+                  className="mt-1.5 text-body text-[color:var(--color-danger-text)]"
+                >
+                  {projectSourceError}
+                </p>
+              ) : null}
+            </div>
+            {projectSourceAction ? (
+              <button
+                type="button"
+                onClick={() => void projectSourceAction()}
+                disabled={projectSourceBusy}
+                aria-busy={projectSourceBusy}
+                className={controlClass({ shape: "chip", className: "justify-self-start border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] px-3 py-1.5 font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:border-[color:var(--map-indigo)] hover:bg-[color:var(--map-panel-row-hover)] disabled:cursor-wait sm:justify-self-end" })}
+              >
+                {projectSourceBusy ? projectSourceLabels.busy : projectSourceLabels.action}
+              </button>
+            ) : (
+              <span className="justify-self-start text-body font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] sm:justify-self-end">
+                {projectSourceLabels.action}
+              </span>
             )}
-          </>
-        )}
-        </div>
-      </section>
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }

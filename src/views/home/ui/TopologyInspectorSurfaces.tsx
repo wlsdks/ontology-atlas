@@ -19,7 +19,7 @@ import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read
 import { daysBehind } from "@/entities/docs-vault";
 import { MeaningEditorPanel } from "@/features/ontology-meaning-editor";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source/project-source-receipt";
-import { Surface, controlClass } from "@/shared/ui";
+import { Dialog, Surface, controlClass } from "@/shared/ui";
 import { morphName, runMorph } from "@/shared/motion/shared-element";
 import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailPanel, OntologyMapEdgeHoverCard, OntologyMapEdgePanel } from "@/widgets/ontology-map";
 import { ProjectDrawer } from "@/widgets/project-drawer";
@@ -31,6 +31,7 @@ import { type ConceptReviewTarget, type ReadConceptBody, useConceptReview } from
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import { useMemo } from "react";
 
+const FULL_DETAIL_TITLE_ID = "topology-full-detail-title";
 
 interface TopologyInspectorSurfacesProps {
   grayAreaOpen?: boolean;
@@ -528,20 +529,23 @@ export function TopologyInspectorSurfaces({
         onExited={() => returnFocusIfDropped("ontology-map-canvas")}
       />
     ) : null}
-    {/* Opacity only (`motion="overlay"`); `Surface` owns the matching exit, `inert` and window. */}
+    {/* A centred sheet over the dimmed map: `Dialog` owns trap, Escape, scrim close and focus return. */}
     {heldFullDetailA1Model && FullDetailCard ? (
-      <Surface
+      <Dialog
         open={fullDetailOpen && fullDetailA1Model !== null}
-        motion="overlay"
-        data-testid="topology-full-detail-a1-positioner"
-        data-full-detail-motion-token="--topology-motion-panel-duration"
-        className="fixed inset-0 z-50 overflow-y-auto bg-[color:var(--color-canvas)]"
+        onClose={() => setFullDetailSlug(null)}
+        size="lg"
+        labelledBy={FULL_DETAIL_TITLE_ID}
+        // The card focuses its own heading, the morph's landing point.
+        initialFocus="none"
+        testId="topology-full-detail-a1-positioner"
+        className="p-0"
       >
         <FullDetailCard
           node={heldFullDetailA1Model.node}
           groups={heldFullDetailA1Model.groups}
           reach={heldFullDetailA1Model.reach}
-          breadcrumb={heldFullDetailA1Model.breadcrumb}
+          titleId={FULL_DETAIL_TITLE_ID}
           bodyMarkdown={heldFullDetailA1Model.bodyMarkdown}
           explanationEdit={heldFullDetailA1Model.explanationEdit}
           documentHref={heldFullDetailA1Model.documentHref}
@@ -556,9 +560,8 @@ export function TopologyInspectorSurfaces({
             : undefined}
           onSelectNode={(id) => handleSelect(id)}
           onClose={() => setFullDetailSlug(null)}
-          onBackToMap={() => setFullDetailSlug(null)}
         />
-      </Surface>
+      </Dialog>
     ) : null}
   </>);
 }

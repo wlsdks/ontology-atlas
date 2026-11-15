@@ -15,8 +15,6 @@
   "createBusy": "Writing starter structure…",
   "closeLabel": "Close",
   "closeAriaLabel": "Close the start guide",
-  "moreWaysToggle": "More ways to start",
-  "glossaryToggle": "What domains, capabilities and elements mean",
   "plainModeHint": "Need an easier view? Turn on \"General\" in the gear at the bottom left",
   "errorFallback": "Could not open the folder. Try again.",
   "unsupportedNotice": "This browser can't open local folders. Open it in the desktop app or Chrome/Edge to see your folder as a map.",

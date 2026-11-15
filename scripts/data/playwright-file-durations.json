@@ -156,10 +156,6 @@
       "seconds": 1.915,
       "tests": 2
     },
-    "gateway/download-hero-release.spec.ts": {
-      "seconds": 9.369,
-      "tests": 2
-    },
     "gateway/download-scroll-budget.spec.ts": {
       "seconds": 0,
       "tests": 6

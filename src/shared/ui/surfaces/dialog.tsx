@@ -26,8 +26,11 @@ export interface DialogProps {
   open: boolean;
   /** Escape, a scrim click and the consumer's close button all go through this. */
   onClose: () => void;
-  /** Two fixed prompt widths, or a viewport work surface inside the chrome inset. */
-  size?: "sm" | "md" | "viewport";
+  /**
+   * Two fixed prompt widths; `lg`, a reading sheet whose column owns its scroll and that becomes
+   * `viewport` once its width no longer fits; or a viewport work surface inside the chrome inset.
+   */
+  size?: "sm" | "md" | "lg" | "viewport";
   /**
    * Use `alertdialog` for confirming something irreversible, so assistive tech reads the body
    * at once. Only the role changes; the modal contract stays.
@@ -134,6 +137,9 @@ export function Dialog({
               "relative rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-3)] focus:outline-none",
               size !== "viewport" && "w-[min(var(--dialog-w-sm),calc(100vw-2rem))]",
               size === "md" && "w-[min(var(--dialog-w-md),calc(100vw-2rem))]",
+              // 1008px is the 960px tier plus both chrome insets: below it the sheet fills the inset.
+              size === "lg" &&
+                "flex max-h-[calc(100dvh-var(--chrome-inset)*2)] w-[min(var(--dialog-w-lg),calc(100vw-var(--chrome-inset)*2))] flex-col overflow-hidden max-[1008px]:h-[calc(100dvh-var(--chrome-inset)*2)]",
               size === "viewport" && "h-[calc(100vh-var(--chrome-inset)*2)] w-[calc(100vw-var(--chrome-inset)*2)] max-w-none",
               className,
             )}
