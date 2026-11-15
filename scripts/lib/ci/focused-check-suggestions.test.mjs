@@ -1018,8 +1018,6 @@ describe('focused check suggestions', () => {
       ['src/widgets/ontology-map/ui/camera/use-topology-overview-navigation.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
       ['src/widgets/ontology-map/ui/camera/use-topology-viewport-lifecycle.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
       ['src/shared/lib/derived-hook.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
-      ['src/views/download/lib/hero-atlas-scene.ts', 'tests/e2e/gateway/download-hero-release.spec.ts'],
-      ['src/views/download/ui/HeroAtlas.tsx', 'tests/e2e/gateway/download-hero-release.spec.ts'],
     ];
     for (const [path, spec] of cases) {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);

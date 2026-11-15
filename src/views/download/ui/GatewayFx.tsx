@@ -43,6 +43,12 @@ export function GatewayFx() {
       ];
     };
     const accent = accentRaw.startsWith('#') ? hexRgb(accentRaw) : ([94, 106, 210] as const);
+    const inkOf = (name: string): readonly [number, number, number] => {
+      const raw = styles.getPropertyValue(name).trim();
+      return raw.startsWith('#') ? hexRgb(raw) : accent;
+    };
+    const mapLight = inkOf('--map-indigo');
+    const linkLight = inkOf('--color-indigo-accent');
     const dustRaw = styles.getPropertyValue('--gateway-fx-dust').trim() || '#ececf0';
     const dustInk = dustRaw.startsWith('#') ? hexRgb(dustRaw) : ([236, 236, 240] as const);
 
@@ -63,11 +69,11 @@ export function GatewayFx() {
 
     // Weights stay at most 1: they multiply the `--gateway-fx-blob-alpha` ceiling, the cap.
     const blobs = [
-      { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0, follow: false },
-      { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2, follow: false },
-      { w: 0.5, r: 0.6, cx: 0.52, cy: 0.92, sp: 0.5, ph: 4.4, follow: false },
+      { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0, follow: false, ink: mapLight },
+      { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2, follow: false, ink: linkLight },
+      { w: 0.5, r: 0.6, cx: 0.52, cy: 0.92, sp: 0.5, ph: 4.4, follow: false, ink: mapLight },
       /* Trails a fine pointer with inertia so it reads as weather, not a cursor. */
-      { w: 0.5, r: 0.3, cx: 0.5, cy: 0.45, sp: 0, ph: 0, follow: true },
+      { w: 0.5, r: 0.3, cx: 0.5, cy: 0.45, sp: 0, ph: 0, follow: true, ink: accent },
     ];
     let handX = 0.5;
     let handY = 0.45;
@@ -136,8 +142,8 @@ export function GatewayFx() {
         const r = b.r * Math.max(W, H);
         const g = ctx!.createRadialGradient(x, y, 0, x, y, r);
         const alpha = b.w * blobAlphaCeiling * intensity;
-        g.addColorStop(0, `rgba(${accent[0]},${accent[1]},${accent[2]},${alpha})`);
-        g.addColorStop(1, `rgba(${accent[0]},${accent[1]},${accent[2]},0)`);
+        g.addColorStop(0, `rgba(${b.ink[0]},${b.ink[1]},${b.ink[2]},${alpha})`);
+        g.addColorStop(1, `rgba(${b.ink[0]},${b.ink[1]},${b.ink[2]},0)`);
         ctx!.fillStyle = g;
         ctx!.fillRect(0, 0, W, H);
       }

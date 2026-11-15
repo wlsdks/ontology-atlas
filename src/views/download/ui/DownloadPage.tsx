@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -16,6 +16,7 @@ import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BrandCompanion } from '@/shared/ui/marks/brand-companion';
+import { GithubMark } from '@/shared/ui/marks/github-mark';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
@@ -28,15 +29,12 @@ import {
   windowsAsset,
 } from '../lib/release-state';
 import { useStageGraph } from '../lib/use-stage-graph';
-import { useOpensLine } from '../lib/use-opens-line';
 import { GatewayFx } from './GatewayFx';
-import { HeroAtlas } from './HeroAtlas';
 import { ScreensStage } from './ScreensStage';
 import { ConductionSection } from './ConductionFigure';
 import { ChangeSection } from './ChangeFigure';
 import { StartSection } from './StartFigure';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
-import type { StageGraph } from '../lib/stage-graph';
 
 /**
  * One grid: every section's content sits in `PAGE_GUTTER` + `PAGE_COLUMN`, starting at
@@ -65,7 +63,6 @@ export function DownloadPage() {
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
   /** The tab bar's own function: `/` shows the bar and `/download` hides it, and two lists drift. */
   const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
-  /** One graph for the hero and the conduction figure, so both draw the same map. */
   const graph = useStageGraph();
   /** Decided once for the CTA, trust line and facts strip, or they disagree. */
   const visitorPlatform = useVisitorDesktopPlatform();
@@ -87,10 +84,8 @@ export function DownloadPage() {
           windowsInstaller={windowsInstaller}
           windowsPrimary={windowsPrimary}
           winner={winner}
-          graph={graph}
         />
         <ConductionSection graph={graph} />
-        <DemoSection />
         <ChangeSection graph={graph} />
         <ScreensSection />
         <StartSection />
@@ -186,14 +181,12 @@ function HeroSection({
   windowsInstaller,
   windowsPrimary: heroWindowsPrimary,
   winner,
-  graph,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
   windowsInstaller: ReturnType<typeof windowsAsset>;
   windowsPrimary: boolean;
   winner: 'file' | 'web';
-  graph: StageGraph;
 }) {
   const fileWins = winner === 'file' && published && primaryAsset !== null;
   const t = useTranslations('download');
@@ -203,12 +196,7 @@ function HeroSection({
     const id = requestAnimationFrame(() => setHeroIn(true));
     return () => cancelAnimationFrame(id);
   }, []);
-  const [typing, setTyping] = useState({ typed: 0, total: 0 });
-  const [webCta, setWebCta] = useState<HTMLAnchorElement | null>(null);
-  const webOpensLine = useOpensLine(webCta);
-  const onTyping = useCallback((typed: number, total: number) => {
-    setTyping((prev) => (prev.typed === typed && prev.total === total ? prev : { typed, total }));
-  }, []);
+  const moru = useTranslations('moru');
 
   /**
    * Every branch keeps all four destinations reachable. Windows' unsigned status is stated before
@@ -223,79 +211,96 @@ function HeroSection({
   ];
 
   return (
-    /* As tall as its copy, not the viewport, or the fold holds an empty band instead of the demo. */
     <section
       data-testid="gateway-hero"
-      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col')}
+      className={cn(PAGE_GUTTER, 'gateway-hero relative flex w-full flex-col overflow-x-clip')}
     >
-      {/* Behind the type at every width; the text stacks above it on `z-[1]`. */}
-      <HeroAtlas graph={graph} typed={typing.typed} total={typing.total} />
-
-      {/* Wrappers pass the pointer through, so the stage behind takes the hand wherever the type is not.
-          The container sizes `--text-monument` against the full column, one line per sentence. */}
-      <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16')}>
-        <p
-          className={cn(
-            rise('gateway-t240'),
-            'pointer-events-auto flex w-fit flex-wrap items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-tertiary)]',
-          )}
-        >
-          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
-          <span>{t('eyebrow')}</span>
-        </p>
-
-        <h1
-          // The visible characters are aria-hidden.
-          aria-label={heroSentence(heroLines)}
-          className={cn(
-            'pointer-events-auto mt-6 w-fit break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]',
-          )}
-        >
-          {/* The first line is a step down in ink: the second line is the sentence's subject. */}
-          <HeroTypewriter start={heroIn} lines={heroLines} onProgress={onTyping} />
-        </h1>
-      </div>
-
-      <div
-        className={cn(
-          PAGE_COLUMN,
-          'pointer-events-none relative z-[1] min-w-0 pb-6 pt-7 min-[90rem]:pb-7',
-        )}
-      >
-        {/* Wider than the lead's 40rem so the three English controls share one line at the split. */}
-        <div data-hero-text className="pointer-events-auto min-w-0 max-w-[45rem]">
-          <p
-            className={cn(
-              rise('gateway-t240'),
-              'max-w-[40rem] break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
-            )}
-          >
-            {t('heroLead')}
-          </p>
-
-          {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
-          <DownloadActions
-            scope="hero"
-            className={cn(rise('gateway-t320'), 'mt-9')}
-            fileWins={fileWins}
-            primaryAsset={primaryAsset}
-            windowsInstaller={windowsInstaller}
-            windowsPrimary={heroWindowsPrimary}
-            webRef={setWebCta}
-            webOpensLine={webOpensLine}
-          />
-
-          <TrustLine
-            testId="gateway-hero-trust"
-            className={cn(rise('gateway-t400'), 'mt-5')}
-            windowsPrimary={heroWindowsPrimary}
+      <div aria-hidden className="gateway-hero-stars" />
+      {/*
+        One column on a narrow window: Moru, the claim, the app. From 80rem the claim takes the left
+        and the app the right, where Moru walks along the window's top edge (`.gateway-hero-grid`).
+      */}
+      <div className={cn(PAGE_COLUMN, 'gateway-hero-grid relative min-w-0')}>
+        <div className={cn(rise('gateway-t240'), 'gateway-hero-moru flex justify-center')}>
+          <BrandCompanion
+            context="welcome"
+            labels={{
+              pause: moru('pause'),
+              resume: moru('resume'),
+              still: moru('still'),
+              interact: moru('interact'),
+            }}
           />
         </div>
 
+        {/* The container sizes the headline against this column, one line per sentence. */}
+        <div className="gateway-hero-text @container relative z-[1] flex min-w-0 flex-col items-center text-center min-[80rem]:items-start min-[80rem]:text-left">
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            data-testid="gateway-hero-source"
+            className={cn(
+              rise('gateway-t240'),
+              controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }),
+              'gateway-hero-chip gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label',
+            )}
+          >
+            <GithubMark />
+            <span>{t('eyebrow')}</span>
+          </a>
+
+          <h1
+            // The visible characters are aria-hidden.
+            aria-label={heroSentence(heroLines)}
+            className="gateway-hero-title mt-7 w-fit break-keep [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+          >
+            {/* The first line is a step down in ink: the second line is the sentence's subject. */}
+            <HeroTypewriter start={heroIn} lines={heroLines} />
+          </h1>
+
+          <div
+            data-hero-text
+            className="mt-7 flex min-w-0 max-w-[45rem] flex-col items-center min-[80rem]:items-start"
+          >
+            <p
+              className={cn(
+                rise('gateway-t240'),
+                'max-w-[40rem] break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
+              )}
+            >
+              {t('heroLead')}
+            </p>
+
+            {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
+            <DownloadActions
+              scope="hero"
+              className={cn(rise('gateway-t320'), 'mt-9 justify-center min-[80rem]:justify-start')}
+              fileWins={fileWins}
+              primaryAsset={primaryAsset}
+              windowsInstaller={windowsInstaller}
+              windowsPrimary={heroWindowsPrimary}
+            />
+
+            <TrustLine
+              testId="gateway-hero-trust"
+              className={cn(rise('gateway-t400'), 'mt-5')}
+              windowsPrimary={heroWindowsPrimary}
+            />
+          </div>
+        </div>
+
+        <div
+          id="demo"
+          data-testid="gateway-demo-section"
+          className="gateway-hero-window gateway-window min-w-0 scroll-mt-24"
+        >
+          <DemoStage />
+        </div>
       </div>
 
       <FactsStrip
-        className="relative z-[1]"
+        className="relative z-[1] mt-10"
         published={published}
         primaryAsset={primaryAsset}
         windowsAsset={windowsInstaller}
@@ -303,15 +308,6 @@ function HeroSection({
         sizeOnCta={fileWins}
         heroIn={heroIn}
       />
-      {/* Below the split the plane draws in this plinth under the strip; no graph, no plinth. */}
-      {graph.nodes.length > 0 ? (
-        <div
-          aria-hidden
-          data-testid="gateway-hero-plinth"
-          // Plane height plus the caption's line.
-          className="h-[calc(clamp(0rem,62vw,22rem)+2rem)] min-[90rem]:hidden"
-        />
-      ) : null}
     </section>
   );
 }
@@ -336,8 +332,6 @@ function DownloadActions({
   primaryAsset,
   windowsInstaller,
   windowsPrimary,
-  webRef,
-  webOpensLine = false,
 }: {
   scope: 'hero' | 'closing';
   className?: string;
@@ -345,8 +339,6 @@ function DownloadActions({
   primaryAsset: ReturnType<typeof macosAssetFor>;
   windowsInstaller: ReturnType<typeof windowsAsset>;
   windowsPrimary: boolean;
-  webRef?: (node: HTMLAnchorElement | null) => void;
-  webOpensLine?: boolean;
 }) {
   const t = useTranslations('download');
   const id = TEST_IDS[scope];
@@ -413,13 +405,11 @@ function DownloadActions({
       )}
       {fileWins && scope === 'hero' ? (
         <Link
-          ref={webRef}
           href="/topology"
           data-testid="gateway-hero-web-cta"
           className={cn(
             buttonVariants({ variant: 'ghost', size: 'lg' }),
-            // Opening a line, the text starts at the column edge; the margin keeps the wrap decision.
-            webOpensLine ? 'mr-8 px-0 sm:mr-12' : 'px-4 sm:px-6',
+            'px-4 sm:px-6',
             HERO_CTA_WRAP,
           )}
         >
@@ -464,7 +454,6 @@ function ClosingSection({
   fileWins: boolean;
 }) {
   const t = useTranslations('download');
-  const moru = useTranslations('moru');
   return (
     <section
       data-testid="gateway-closing"
@@ -472,7 +461,6 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <div className="mb-3 w-full max-w-lg"><BrandCompanion context="welcome" labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still'), interact: moru('interact') }} /></div>
         <h2
           id="gateway-closing-title"
           className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
@@ -712,33 +700,6 @@ function ScreensSection() {
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <ScreensStage intro={<SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />} />
-      </div>
-    </section>
-  );
-}
-
-function DemoSection() {
-  const t = useTranslations('download');
-
-  return (
-    <section
-      id="demo"
-      data-testid="gateway-demo-section"
-      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24')}
-    >
-      {/* The stage is narrower than the column, so from 90rem the head stands beside it instead of centring. `pb-9` discounts the caption. */}
-      <div
-        className={cn(
-          PAGE_COLUMN,
-          'min-w-0 min-[90rem]:grid min-[90rem]:grid-cols-[minmax(0,1fr)_minmax(0,var(--gateway-stage-max))] min-[90rem]:gap-12',
-        )}
-      >
-        <div data-testid="gateway-demo-head" className="min-w-0 min-[90rem]:self-center min-[90rem]:pb-9">
-          <SectionIntro eyebrow={t('demoEyebrow')} title={t('demoTitle')} sub={t('demoSub')} />
-        </div>
-        <div className="gateway-scroll-stage mt-9 min-w-0 min-[90rem]:mt-0">
-          <DemoStage />
-        </div>
       </div>
     </section>
   );

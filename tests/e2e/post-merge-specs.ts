@@ -35,7 +35,6 @@ export const POST_MERGE_SPECS = [
   "motion-sampler.spec.ts",
   "map/frame-loop/map-layout-morph.spec.ts",
   // Download page animation, frame budgets and layout sweeps
-  "gateway/download-hero-release.spec.ts",
   "gateway/download-scroll-budget.spec.ts",
   "gateway/download-still.spec.ts",
   "gateway/gateway-reading-reach.spec.ts",

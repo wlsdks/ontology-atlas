@@ -132,13 +132,4 @@ export const rules = [
     reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
     matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
   },
-  {
-    order: 1035,
-    command: 'pnpm exec playwright test tests/e2e/gateway/download-hero-release.spec.ts',
-    reason: 'the download hero or its renderer changed; leaving /download must give back its WebGL context and page',
-    matches: [
-      /^src\/views\/download\/(?:lib\/hero-atlas-scene\.ts|ui\/HeroAtlas\.tsx|lib\/gateway-frame-loop\.ts)$/,
-      /^tests\/e2e\/(?:gateway\/download-hero-release\.spec|heap-census)\.ts$/,
-    ],
-  },
 ];
