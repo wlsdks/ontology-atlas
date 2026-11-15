@@ -21,8 +21,6 @@
   "factRequiresLabel": "動作環境",
   "factChangelogLabel": "変更履歴",
   "factChangelogValue": "{tag}の変更内容",
-  "factSourceLabel": "ソース",
-  "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "リリースページにある{file}のチェックサムファイル",
   "demoProvisionalNote": "アプリのウィンドウを1回のテイクで撮った{seconds}秒。カットも早送りもしておらず、音声もありません。",
   "acpUserLabel": "あなた",

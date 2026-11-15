@@ -21,8 +21,6 @@
   "factRequiresLabel": "Requires",
   "factChangelogLabel": "Changelog",
   "factChangelogValue": "What changed in {tag}",
-  "factSourceLabel": "Source",
-  "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "The checksum file for {file} on the release page",
   "demoProvisionalNote": "{seconds}s from one take of the app window. Nothing is cut or sped up, and there is no sound.",
   "acpUserLabel": "You",

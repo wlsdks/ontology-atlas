@@ -101,7 +101,6 @@ export const VOCABULARY = {
         'architecture.patternLabels.feature-sliced-design': "the architecture pattern's own name",
         'footer.license': "the licence's own name",
         'footer.stack': "technology names",
-        'download.factSourceValue': "the repository's own name (owner/repo)",
         'docsVault.agentSetup.connectionClaudeCursor': "product names",
         'agentConnect.claudeCode': "a product name and a file name",
         'settings.projectForm.fields.linksPlaceholder': "example URLs",
