@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { despeckle, holdBody, inkFringe, ivoryFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
+import { despeckle, faintMarks, holdBody, inkFringe, ivoryFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
@@ -465,6 +465,31 @@ test('a stone hairline between ink and ivory takes the ivory even where it joins
   assert.deepEqual(at(cleaned, 25, 48), SKIN, 'the edge of the body away from ink was erased');
   assert.deepEqual(at(cleaned, 30, 53), SKIN, 'a hairline beside another colour was erased');
   assert.deepEqual([at(cleaned, 23, 29), at(cleaned, 10, 30)], [SKIN, SKIN], 'the body lost pixels');
+});
+
+test('a faint gray whisker on the belly becomes ink, a shorter gray piece there takes the ivory, and gray anywhere else stays', () => {
+  const { data, paint, at } = canvas(64);
+  paint(2, 2, 62, 62, INK);
+  paint(4, 4, 60, 60, IVORY);
+  paint(4, 4, 60, 16, SKIN);
+  paint(10, 24, 18, 25, FRINGE_GRAY);
+  paint(10, 25, 18, 26, HAZE_GRAY);
+  paint(30, 24, 32, 26, FRINGE_GRAY);
+  paint(20, 8, 26, 9, FRINGE_GRAY);
+  paint(40, 6, 50, 12, IVORY);
+  paint(42, 8, 48, 9, FRINGE_GRAY);
+  paint(10, 40, 24, 46, FRINGE_GRAY);
+  paint(40, 50, 46, 51, FRINGE_GRAY);
+  data.fill(0, (50 * 64 + 46) * 4, (50 * 64 + 47) * 4);
+  const drawn = faintMarks(data, 64);
+  assert.deepEqual([10, 14, 17].map(x => at(drawn, x, 24)), [INK, INK, INK], 'a faint whisker on the belly stayed gray');
+  assert.deepEqual([10, 14, 17].map(x => at(drawn, x, 25)), [IVORY, IVORY, IVORY], 'the haze under the redrawn whisker stayed gray');
+  assert.deepEqual([at(drawn, 30, 24), at(drawn, 31, 25)], [IVORY, IVORY], 'a gray piece shorter than a drawn pixel stayed on the belly');
+  assert.deepEqual(at(drawn, 22, 8), FRINGE_GRAY, 'gray on the body fill, away from the belly, changed');
+  assert.deepEqual(at(drawn, 44, 8), FRINGE_GRAY, 'gray on a smaller ivory area than the belly changed');
+  assert.deepEqual([at(drawn, 10, 40), at(drawn, 23, 45)], [FRINGE_GRAY, FRINGE_GRAY], 'a gray surface larger than a mark changed');
+  assert.deepEqual([at(drawn, 40, 50), at(drawn, 45, 50)], [FRINGE_GRAY, FRINGE_GRAY], 'gray that reaches the outside of the drawing changed');
+  assert.deepEqual([at(drawn, 3, 30), at(drawn, 30, 30), at(drawn, 30, 10)], [INK, IVORY, SKIN], 'the outline, the belly or the body changed');
 });
 
 test('every stone pixel beside a resting whisker belongs to the body, at both exported sizes', async () => {

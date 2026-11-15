@@ -127,6 +127,17 @@ side and otherwise touches only ink does too, so two crumbs a hairline joined
 go together. Stone beside indigo, blush, haze or the silhouette is left alone;
 crumbs of that kind remain, most of them at the tail tip.
 
+A whisker drawn faint has an ink core thinner than a speck, so cleaning left
+the whole stroke in the fade's dark gray: a smudge where the whisker should be
+(`magic-fish`, `star-sneeze`, `pup-peek`, `bubble-chase`). A dark-gray piece
+enclosed in the drawing, no larger than a facial mark, that meets the belly
+ivory by a side is that mark. One at least a drawn pixel long becomes ink, and
+the gray within half a drawn pixel of it dissolves; a shorter one dissolves
+into the fill. Dark gray on a prop's ivory, on the silhouette, on the body
+fill or larger than a mark stays. In one frame of `connect` the piece runs
+from the left whisker to the flipper outline, so that whisker gains a short
+tail.
+
 Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
 halves in length and a filled square stays a filled rectangle within a pixel of
 its true size wherever it sits on the grid. An upright or level ink stroke, or

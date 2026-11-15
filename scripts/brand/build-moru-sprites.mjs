@@ -91,6 +91,8 @@ const FREE_INK = PALETTE[COLORS.indexOf('6d73d2')];
 const FRINGE = new Set(['555451', '777572'].map(hex => parseInt(hex, 16)));
 /** The lighter step of the same fade; within reach of ink it is fringe, not a drawn surface. */
 const HAZE = new Set(['99968f'].map(hex => parseInt(hex, 16)));
+/** Work pixels along one side of a drawn pixel. */
+const DRAWN_PIXEL = 4;
 /** Work pixels, half a drawn pixel: the outline's soft edge reaches this far from its ink. */
 const FRINGE_REACH = 2;
 const isOpaque = (data, p) => data[p * 4 + 3] !== 0;
@@ -226,6 +228,47 @@ export function ivoryFringe(data, size) {
   repaint(thin, (_, onInk) => onInk);
   repaint(stoneMask(), piece => piece.length < CRUMB_AREA);
   return out;
+}
+
+/**
+ * A whisker drawn faint has an ink core thinner than a speck, so cleaning leaves the whole stroke
+ * in the dark gray of ink's fade. Such a piece on the belly (the frame's largest ivory area), no
+ * larger than a mark, is the mark: one at least `DRAWN_PIXEL` long becomes ink and its own soft
+ * edge dissolves; a shorter one dissolves into the fill. Props keep their gray. O(pixels).
+ */
+export function faintMarks(data, size) {
+  const total = size * size, faint = new Uint8Array(total), pale = new Uint8Array(total), seen = new Uint8Array(total), ivory = pack(...IVORY), strokes = [], crumbs = [];
+  const colourAt = p => isOpaque(data, p) ? pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) : -1;
+  for (let p = 0; p < total; p++) { const colour = colourAt(p); if (FRINGE.has(colour)) faint[p] = 1; else if (colour === ivory) pale[p] = 1; }
+  let belly = [];
+  for (let start = 0; start < total; start++) {
+    if (!pale[start] || seen[start]) continue;
+    const area = floodGroup(start, pale, seen, size);
+    if (area.length > belly.length) belly = area;
+  }
+  pale.fill(0);
+  for (const p of belly) pale[p] = 1;
+  for (let start = 0; start < total; start++) {
+    if (!faint[start] || seen[start]) continue;
+    const piece = floodGroup(start, faint, seen, size);
+    let x0 = size, y0 = size, x1 = 0, y1 = 0, enclosed = true, onBelly = false;
+    for (const p of piece) {
+      const x = p % size, y = (p - x) / size;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      eightNeighbours(p, size, n => {
+        if (!isOpaque(data, n)) enclosed = false;
+        else if (pale[n]) onBelly ||= Math.abs(n - p) === 1 || Math.abs(n - p) === size;
+      });
+    }
+    const span = Math.max(x1 - x0, y1 - y0) + 1;
+    if (!enclosed || !onBelly || x0 === 0 || y0 === 0 || x1 === size - 1 || y1 === size - 1 || span > size * MARK_SPAN_SHARE) continue;
+    (span >= DRAWN_PIXEL ? strokes : crumbs).push(...piece);
+  }
+  if (!strokes.length && !crumbs.length) return data;
+  const inked = Buffer.from(data), taken = new Uint8Array(total);
+  for (const p of strokes) { inked.set([...PALETTE[0], 255], p * 4); taken[p] = 1; }
+  const edge = [...fringeOf(inked, size, strokes, taken), ...fringeOf(inked, size, strokes, taken, HAZE)].map(([p]) => p);
+  return paintedOver(inked, size, [...crumbs.filter(p => !taken[p]), ...edge]);
 }
 
 /** Ink components drawn inside a fill and small enough to be one facial mark; O(pixels). */
@@ -540,7 +583,7 @@ export async function buildMoru() {
       if (i === 0 || i === count - 1) return reference;
       try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
       catch (error) { throw new Error(`${clip.id} frame ${i + 1}: ${error.message}`); }
-    }).map(f => ivoryFringe(inkFringe(liftFreeInk(despeckle(f, size), size), size), size));
+    }).map(f => ivoryFringe(faintMarks(inkFringe(liftFreeInk(despeckle(f, size), size), size), size), size));
     if (clip.restingBody) frames = holdBody(frames, size);
     for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
       const reduced = reduceMoru(f, size, exported);
