@@ -6,8 +6,6 @@
   "browserUnavailable": "企画フォルダはmacOSアプリでのみ利用できます。",
   "loading": "選択したフォルダを読み込み中…",
   "empty": "対応する文書や画像がありません。",
-  "folderLabel": "フォルダ：{folder}",
-  "pathLabel": "パス：{path}",
   "observedAt": "フォルダー一覧の取得：{time}",
   "observationLimit": "次の確認までにファイルが変わることがあります。",
   "findFile": "ファイル名またはパスを探す",
@@ -50,5 +48,6 @@
   "imageUnnamed": "画像{line}:{column}",
   "startTitle": "企画とデザインをひとつに",
   "startBody": "企画フォルダを開いて、Markdown文書とデザイン画像をまとめて確認できます。",
-  "designImages": "デザイン画像"
+  "designImages": "デザイン画像",
+  "close": "閉じる"
 }

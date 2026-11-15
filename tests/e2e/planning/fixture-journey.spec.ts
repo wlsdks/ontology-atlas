@@ -66,12 +66,8 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await history.scrollIntoViewIfNeeded();
   const historyBox = await history.boundingBox();
   expect(historyBox!.y + historyBox!.height).toBeLessThanOrEqual(navigation!.y + 1);
-  await page.getByTestId('app-shell-body-slot').evaluate((slot) => { slot.scrollTop = slot.scrollHeight; });
-  await expect.poll(async () => {
-    const slot = await page.getByTestId('app-shell-body-slot').boundingBox();
-    const action = await page.getByRole('button', { name: planning.openMap }).boundingBox();
-    return slot!.y + slot!.height - (action!.y + action!.height);
-  }).toBeLessThanOrEqual(40);
+  const mapBox = await page.getByRole('button', { name: planning.openMap }).boundingBox();
+  expect(mapBox!.y + mapBox!.height).toBeLessThanOrEqual(navigation!.y + 1);
   await history.focus();
   await expect(history).toBeFocused();
   await page.keyboard.press('Tab');
@@ -209,12 +205,11 @@ test('a readable folder does not hide an unreadable or replaced document', async
   await page.goto('/ko/planning/');
   await page.getByRole('button', { name: '폴더 선택' }).click();
   const folderObservation = page.getByText(planning.observedAt.split('{time}')[0], { exact: false });
-  await expect(folderObservation).toBeVisible();
   const releaseDocument = async () => {
     await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseDocument?: () => void }).releaseDocument))).toBe(true);
     await page.evaluate(() => (window as unknown as { releaseDocument: () => void }).releaseDocument());
   };
-  await page.getByRole('button', { name: 'plan.md' }).click();
+  await expect(page.getByRole('button', { name: 'plan.md' })).toHaveAttribute('aria-current', 'true');
   await releaseDocument();
   await expect(page.getByText(planning.fileUnavailable)).toBeVisible();
   await expect(folderObservation).toBeVisible();
@@ -397,10 +392,12 @@ test('mocked native Planning keeps the selected document across explicit evidenc
   await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeHidden();
   await details.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeVisible();
-  await expect(page.getByText(planning.historyLimit)).toBeVisible();
-  await page.keyboard.press('Enter');
+  const scope = page.getByRole('dialog', { name: planning.details });
+  await expect(scope.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeVisible();
+  await expect(scope.getByText(planning.historyLimit)).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeHidden();
+  await expect(details).toBeFocused();
   await expect(page.getByText(planning.historyBrief)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
   await expect(page.getByAltText('design')).toHaveAttribute('src', /^blob:/);
@@ -408,12 +405,15 @@ test('mocked native Planning keeps the selected document across explicit evidenc
   for (const width of [320, 600, 768, 834, 1024, 1440, 1920, 2560]) {
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const detailsBox = await details.boundingBox();
-    expect(detailsBox?.height).toBeGreaterThanOrEqual(width <= 768 ? 44 : 40);
-    expect(detailsBox?.width).toBeGreaterThanOrEqual(40);
     await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
-    if (width === 1440) expect((await page.locator('section').filter({ has: page.getByText('경로: plans/checkout.md') }).boundingBox())?.y).toBeLessThan(260);
+    if (width === 1440) expect((await page.locator('[data-planning-path]').boundingBox())?.y).toBeLessThan(260);
   }
+  await page.setViewportSize({ width: 600, height: 900 });
+  await page.getByRole('button', { name: planning.backPlanning }).click();
+  await expect(page.getByRole('button', { name: 'plans/checkout.md' })).toBeFocused();
+  expect((await details.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await page.getByRole('button', { name: 'plans/checkout.md' }).click();
+  await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 720 });
   if (process.env.PLANNING_CAPTURE_DIR) {
     for (const width of [320, 1440]) {
@@ -437,12 +437,12 @@ test('mocked native Planning keeps the selected document across explicit evidenc
   await expect(page.getByRole('button', { name: '지도 열기' })).toBeFocused();
 });
 
-test('file names lead the list while relative paths disambiguate and remain searchable', async ({ page }) => {
+test('files sit under one heading per folder with its count, and paths stay searchable', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
     const original = win.__TAURI_INTERNALS__.invoke;
-    const paths = ['alpha/checkout.md', 'beta/deep/checkout.md', 'readme.md'];
+    const paths = ['alpha/checkout.md', 'beta/deep/checkout.md', 'alpha/billing.md', 'readme.md'];
     win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
       if (cmd === 'planning_supported') return true;
       if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
@@ -454,23 +454,30 @@ test('file names lead the list while relative paths disambiguate and remain sear
   await page.goto('/ko/planning/');
   await page.getByRole('button', { name: '폴더 선택' }).click();
   const list = page.getByRole('region', { name: planning.findFile });
+  const rows = page.locator('[data-planning-file-list]').getByRole('button');
   const alpha = list.getByRole('button', { name: 'alpha/checkout.md', exact: true });
   const beta = list.getByRole('button', { name: 'beta/deep/checkout.md', exact: true });
   await expect(alpha).toBeVisible();
   await expect(beta).toBeVisible();
-  expect(await alpha.innerText()).toBe('checkout.md\nalpha');
-  expect(await beta.innerText()).toBe('checkout.md\nbeta/deep');
+  expect(await alpha.innerText()).toBe('checkout.md');
+  expect(await beta.innerText()).toBe('checkout.md');
+  const alphaFolder = list.getByRole('group', { name: 'alpha', exact: true });
+  await expect(alphaFolder.getByRole('button')).toHaveCount(2);
+  await expect(alphaFolder).toContainText('2');
+  await expect(list.getByRole('group', { name: 'beta/deep', exact: true }).getByRole('button')).toHaveCount(1);
+  expect(await rows.evaluateAll((rows) => rows.map((row) => row.getAttribute('aria-label')))).toEqual(['readme.md', 'alpha/checkout.md', 'alpha/billing.md', 'beta/deep/checkout.md']);
   const search = page.getByRole('textbox', { name: planning.findFile });
   await search.fill('checkout.md');
-  await expect(list.getByRole('button')).toHaveCount(2);
+  await expect(rows).toHaveCount(2);
+  await expect(page.getByText(planning.noContentSearch)).toBeVisible();
   await search.fill('beta/deep');
-  await expect(list.getByRole('button')).toHaveCount(1);
+  await expect(rows).toHaveCount(1);
   await beta.focus();
   await page.keyboard.press('Enter');
   await expect(beta).toHaveAttribute('aria-current', 'true');
   await expect(page.getByRole('heading', { name: 'beta/deep/checkout.md' })).toBeVisible();
   await search.clear();
-  await expect(list.getByRole('button')).toHaveCount(3);
+  await expect(rows).toHaveCount(4);
   await expect(beta).toHaveAttribute('aria-current', 'true');
   await expect(page.getByRole('button', { name: planning.openHistory })).toBeVisible();
   await expect(page.getByText(planning.historyBrief)).toBeVisible();
@@ -501,7 +508,7 @@ test('switching folders clears the old folder search, while cancelling preserves
   await page.getByRole('button', { name: '폴더 선택' }).click();
   await expect(search).toHaveValue('old');
   await page.getByRole('button', { name: '폴더 선택' }).click();
-  await expect(page.getByText('폴더: /tmp/folder-3')).toBeVisible();
+  await expect(page.locator('[data-planning-folder-path]')).toHaveText('/tmp/folder-3');
   await expect(search).toHaveValue('');
   await expect(page.getByRole('button', { name: 'new.md' })).toBeVisible();
 });
@@ -526,11 +533,11 @@ test('late inventory from a previous folder never replaces the new selection', a
   });
   await page.goto('/ko/planning/');
   await page.getByRole('button', { name: '폴더 선택' }).click();
-  await expect(page.getByText('폴더: /tmp/folder-1')).toBeVisible();
+  await expect(page.locator('[data-planning-folder-path]')).toHaveText('/tmp/folder-1');
   await page.getByRole('button', { name: '폴더 선택' }).click();
   await expect(page.getByRole('button', { name: 'new.md' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => (window as unknown as { oldScanFinished: boolean }).oldScanFinished)).toBe(true);
-  await expect(page.getByText('폴더: /tmp/folder-2')).toBeVisible();
+  await expect(page.locator('[data-planning-folder-path]')).toHaveText('/tmp/folder-2');
   await expect(page.getByRole('button', { name: 'old.md' })).toHaveCount(0);
 });
 
@@ -590,7 +597,7 @@ test('return waits for delayed images and never restores a replaced document', a
   await page.getByRole('button', { name: '폴더 선택' }).click();
   await page.getByRole('button', { name: 'plan.md' }).click();
   await expect(page.getByAltText('delayed')).toBeVisible();
-  const reader = page.locator('section').filter({ has: page.getByText('경로: plan.md') });
+  const reader = page.locator('[data-planning-reader]');
   await reader.evaluate((node) => { node.scrollTop = node.scrollHeight; node.dispatchEvent(new Event('scroll')); });
   const saved = await reader.evaluate((node) => node.scrollTop);
   expect(saved).toBeGreaterThan(600);
