@@ -10,8 +10,8 @@ import {
   neuralTracts,
   type NeuralGraph,
   type NeuralTracts,
-  neuralSignalProgress,
 } from "../../model/dome-view/neural-cells";
+import { isOutwardHop, type NeuralImpact } from "../../model/dome-view/neural-impact";
 import { standingDomainTitles, type TitleCandidate } from "../../model/dome-view/neural-titles";
 import { isPathLensEdge } from "../../model/visibility/path-lens";
 import { labelFontFamily } from "../../render/labels";
@@ -21,34 +21,32 @@ import { radiusForKind, type TopologyWorld, type WorldNode } from "../world/topo
 import { litDrawnStateCounts, passState } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
+import {
+  abx, aby, acx, acy, aGroup, at, AXON_BANDS, ax, ay, bandWidthPx, ensureAxons, glowSprite, litAxon, litEdge,
+  litFarNode, litHop, stamp, taperedAxon, traceAxon,
+} from "./neural-axons";
+import { litRaster } from "./neural-lit-raster";
+import { impactStrength, lastLit, LIT_DOT_T, neuralSpreadFrame, paintSpread, SIGNAL_GLOW_ALPHA } from "./neural-spread";
 import type { NodeLayer } from "./node-layer";
 
 /** The words Neural paints, composed by the view that owns the locale. */
 export interface NeuralLabels {
   domainMeta: (counts: { capabilities: number; elements: number; stale: number }) => string;
-  focusFacts: (facts: { stale: boolean; needs: number; usedBy: number }) => string;
+  /** `impact` is present on a selection whose impact reaches past its direct dependents. */
+  focusFacts: (facts: { stale: boolean; needs: number; usedBy: number; impact?: number }) => string;
 }
 
-/** A tapered axon is stroked in this many pieces, each a sub-curve of the same quadratic. */
-const AXON_BANDS = 4;
 /** Depth is drawn in this many alpha steps, so lines batch into a bounded number of strokes. */
 const DEPTH_TONES = 3;
 const AXON_DOT_T = 0.95;
-const LIT_DOT_T = 0.96;
 const NAME_GRID_PX = 48;
-const SPRITE_PX = 64;
 const PLATE_EDGE_ALPHA = 0.2;
-/** Points per lit axon a receded domain title must keep clear of. */
-const LIT_PATH_SAMPLES = 10;
-const LIT_PATH_PAD_PX = 4;
 /** A cluster's soft pool reaches this far past its members' half-span. */
 const CLUSTER_POOL_REACH = 1.6;
 /** An axon's end dot is this much brighter than its stroke. */
 const AXON_DOT_GAIN = 1.7;
 /** A domain's or the project's ring under its body. */
 const RING_ALPHA = 0.8;
-/** The travelling signal's glow under its dot. */
-const SIGNAL_GLOW_ALPHA = 0.85;
 /** A name's rank: dependencies first, then nearness, one dependency weighing a quarter of the depth. */
 const NAME_DEPTH_WEIGHT = 4;
 /** A rest name's alpha before depth fades it. */
@@ -63,19 +61,19 @@ const PLATE_FACT_LESS_PX = 0.5;
 /** The plate holds two lines of names and this many paddings of air. */
 const PLATE_LINES = 2;
 const PLATE_PAD_SHARE = 1.8;
+/** How far, in name heights, a focus's name may stand off its first places to keep clear of lit axons. */
+const NAME_NUDGE_LINES = 1.2;
+/** A selection's indirect dependents take at most this share of the name budget, nearest first. */
+const INDIRECT_NAME_SHARE = 0.25;
 /** At most this many names are tried per drawn name, so a dense frame stops early. */
 const NAME_TRIES_PER_NAME = 4;
 /** Off-screen cells this far past an edge may still put a name on screen. */
 const NAME_CULL_MARGIN_PX = 160;
 
+/** A cell at distance d starts to lift this share of a hop before the signal reaches it. */
+const CELL_LIFT_HOPS = 0.15;
+
 let tokens: NeuralTokens | null = null;
-const sprites = new Map<string, HTMLCanvasElement | null>();
-/**
- * The signal plays once per focus: the selection and the hover each keep their own start, so a hover
- * ending over another cell returns to the selection without replaying its signal.
- */
-const signals = { selected: { key: null as string | null, startMs: 0 }, hovered: { key: null as string | null, startMs: 0 } };
-let activeSignal: { key: string | null; startMs: number } = signals.selected;
 /** Measured label widths per font, so a label is measured once rather than once per placement try. */
 const labelWidths = new Map<string, Map<string, number>>();
 const LABEL_WIDTH_FONTS_MAX = 8;
@@ -87,75 +85,16 @@ let sa = new Float64Array(0);
 let su = new Float64Array(0);
 let restAlpha = new Float64Array(0);
 let order = new Int32Array(0);
-let ax = new Float64Array(0);
-let ay = new Float64Array(0);
-let acx = new Float64Array(0);
-let acy = new Float64Array(0);
-let abx = new Float64Array(0);
-let aby = new Float64Array(0);
-let aGroup = new Int8Array(0);
-
 function ensure(nodes: number, edges: number): void {
   if (sx.length < nodes) {
     sx = new Float64Array(nodes); sy = new Float64Array(nodes); sr = new Float64Array(nodes);
     sa = new Float64Array(nodes); su = new Float64Array(nodes); order = new Int32Array(nodes);
     restAlpha = new Float64Array(nodes);
   }
-  if (ax.length < edges) {
-    ax = new Float64Array(edges); ay = new Float64Array(edges); acx = new Float64Array(edges);
-    acy = new Float64Array(edges); abx = new Float64Array(edges); aby = new Float64Array(edges);
-    aGroup = new Int8Array(edges);
-  }
-}
-
-/** A soft radial light of one ink, rasterised once and stamped scaled. */
-function glowSprite(ink: string): HTMLCanvasElement | null {
-  if (sprites.has(ink)) return sprites.get(ink)!;
-  const canvas = typeof document === "undefined" ? null : document.createElement("canvas");
-  const g = canvas?.getContext("2d") ?? null;
-  if (canvas && g) {
-    canvas.width = canvas.height = SPRITE_PX;
-    const half = SPRITE_PX / 2;
-    const gradient = g.createRadialGradient(half, half, 0, half, half, half);
-    gradient.addColorStop(0, ink);
-    gradient.addColorStop(1, "transparent");
-    g.fillStyle = gradient;
-    g.fillRect(0, 0, SPRITE_PX, SPRITE_PX);
-  }
-  sprites.set(ink, canvas && g ? canvas : null);
-  return sprites.get(ink)!;
-}
-
-function stamp(ctx: CanvasRenderingContext2D, sprite: HTMLCanvasElement | null, x: number, y: number, r: number, alpha: number): void {
-  if (sprite === null || alpha <= 0.004 || r <= 0.5) return;
-  ctx.globalAlpha = alpha;
-  ctx.drawImage(sprite, x - r, y - r, r * 2, r * 2);
-}
-
-const at = (p0: number, p1: number, p2: number, t: number) => (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
-/** The control of the sub-curve on [t0, t1]: the quadratic's blossom at (t0, t1). */
-const subControl = (p0: number, p1: number, p2: number, t0: number, t1: number) =>
-  (1 - t0) * (1 - t1) * p0 + ((1 - t0) * t1 + t0 * (1 - t1)) * p1 + t0 * t1 * p2;
-
-function taperedAxon(ctx: CanvasRenderingContext2D, i: number, startPx: number, endPx: number): void {
-  for (let band = 0; band < AXON_BANDS; band += 1) {
-    const t0 = band / AXON_BANDS;
-    const t1 = (band + 1) / AXON_BANDS;
-    ctx.lineWidth = startPx + (endPx - startPx) * Math.sqrt((t0 + t1) / 2);
-    ctx.beginPath();
-    ctx.moveTo(at(ax[i], acx[i], abx[i], t0), at(ay[i], acy[i], aby[i], t0));
-    ctx.quadraticCurveTo(subControl(ax[i], acx[i], abx[i], t0, t1), subControl(ay[i], acy[i], aby[i], t0, t1),
-      at(ax[i], acx[i], abx[i], t1), at(ay[i], acy[i], aby[i], t1));
-    ctx.stroke();
-  }
+  ensureAxons(edges);
 }
 
 let tractCache: { world: TopologyWorld; epoch: number; tracts: NeuralTracts } | null = null;
-
-/** True while a focus's signal is still on its way, so the frame loop draws until it arrives. */
-export function isNeuralSignalTravelling(nowMs: number, reducedMotion: boolean): boolean {
-  return tokens !== null && activeSignal.key !== null && neuralSignalProgress(nowMs, activeSignal.startMs, tokens.signalMs, reducedMotion) < 1;
-}
 
 /** Zooming in past the whole-cloud fit grows the cells with the camera, up to `zoomGrowMax`. */
 function zoomGrowthOf(camScale: number, restFitScale: number | null, t: NeuralTokens): number {
@@ -307,17 +246,11 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   const focusId = hoverRamp > 0.001 ? hoveredNodeId : litAxons !== null ? null : colorFocusedNodeId;
   const ramp = litAxons !== null ? 1 : focusId === null ? 0 : focusId === hoveredNodeId ? hoverRamp : Math.min(1, Math.max(0, focusRampById.get(focusId) ?? 0));
   const sets = litAxons !== null ? axonEnds(world.edges, litAxons) : focusId !== null && ramp > 0.001 ? neuralFocusSets(world.edges, focusId) : null;
+  const indexOf = nodeIndexOf(world.nodes);
+  const { impact, hopOf, spread, travel } = neuralSpreadFrame({ graph, nodes: world.nodes, indexOf, focusId,
+    focusedNodeId: frame.focusedNodeId, hoveredNodeId, sets, litAxons, now, reducedMotion }, t);
   const veilCell = 1 - (1 - t.veil) * ramp;
   const veilAxon = 1 - (1 - t.axonVeil) * ramp;
-  const signalKey = litAxons !== null ? [...litAxons].join("\u0001") : focusId;
-  const signalSlot = focusId !== null && focusId === hoveredNodeId ? signals.hovered : signals.selected;
-  if (signalSlot === signals.selected) signals.hovered.key = null;
-  if (signalKey !== signalSlot.key) {
-    signalSlot.key = signalKey;
-    signalSlot.startMs = now;
-  }
-  activeSignal = signalSlot;
-  const travel = signalKey === null ? 1 : neuralSignalProgress(now, signalSlot.startMs, t.signalMs, reducedMotion);
 
   const zoomGrowth = zoomGrowthOf(camScale, frame.domeFitScale ?? null, t);
   let drawn = 0;
@@ -332,9 +265,18 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     sr[i] = radiusForKind(node.kind, frame.tokens) * node.magnitudeScale * camScale *
       neuralRadiusScale(world, node, f.s, camScale, frame.domeFitScale ?? null);
     su[i] = f.u;
-    const lit = sets === null || node.id === focusId || sets.needs.has(node.id) || sets.usedBy.has(node.id);
     restAlpha[i] = f.a * neural * (1 - (1 - t.farAlpha) * f.u);
-    sa[i] = restAlpha[i] * (lit ? 1 : veilCell);
+    const hop = hopOf === null ? -1 : hopOf[i];
+    const needed = sets !== null && sets.needs.has(node.id);
+    if (hop > 0 && !needed) {
+      const lift = Math.min(1, Math.max(0, (spread - hop + CELL_LIFT_HOPS) / CELL_LIFT_HOPS));
+      if (lift >= 1) lastLit.liftedCells += 1;
+      sa[i] = restAlpha[i] * (veilCell + (1 - veilCell) * impactStrength(t, hop) * lift);
+    } else {
+      if (hop > 0) lastLit.liftedCells += 1;
+      const lit = sets === null || node.id === focusId || needed || (hopOf === null && sets.usedBy.has(node.id));
+      sa[i] = restAlpha[i] * (lit ? 1 : veilCell);
+    }
     order[i] = i;
   }
 
@@ -363,11 +305,9 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
 
   // Axons at rest, batched by group: (inside or between clusters) × depth tone × source kind.
   let axons = 0;
-  const indexOf = nodeIndexOf(world.nodes);
-  const litEdges: number[] = [];
-  const litRole: boolean[] = [];
-  const litFar: number[] = [];
-  for (const edge of world.edges) {
+  let litCount = 0;
+  for (let edgeIndex = 0; edgeIndex < world.edges.length; edgeIndex += 1) {
+    const edge = world.edges[edgeIndex];
     if (!isNeuralDependency(edge)) continue;
     const s = indexOf.get(edge.sourceId);
     const e = indexOf.get(edge.targetId);
@@ -381,13 +321,20 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     const minY = Math.min(ay[axons], aby[axons], acy[axons]);
     const maxY = Math.max(ay[axons], aby[axons], acy[axons]);
     if (maxX < 0 || minX > width || maxY < 0 || minY > height) continue;
-    const axonLit = litAxons !== null && litAxons.has(axonKey(edge));
-    const needs = axonLit || (sets !== null && edge.sourceId === focusId);
-    const usedBy = !axonLit && sets !== null && edge.targetId === focusId;
-    if (needs || usedBy) {
-      litEdges.push(axons);
-      litRole.push(usedBy);
-      litFar.push(needs ? e : s);
+    const needs = (litAxons !== null && litAxons.has(axonKey(edge))) || (sets !== null && edge.sourceId === focusId);
+    const hop = needs ? 0
+      : hopOf !== null ? (isOutwardHop(hopOf[e], hopOf[s]) ? hopOf[s] : -1)
+      : sets !== null && edge.targetId === focusId ? 1 : -1;
+    // A selection's dependency lights once its hop starts and stops receding once the hop arrives.
+    const started = hop === 0 || (hop > 0 && (hopOf === null || spread > hop - 1));
+    if (started) {
+      litAxon[litCount] = axons;
+      litFarNode[litCount] = hop === 0 ? e : s;
+      litEdge[litCount] = edgeIndex;
+      litHop[litCount] = hop;
+      litCount += 1;
+    }
+    if (started && (hopOf === null || hop === 0 || spread >= hop)) {
       aGroup[axons] = -1;
     } else {
       const cross = graph.clusterOf.get(edge.sourceId) !== graph.clusterOf.get(edge.targetId) ? 1 : 0;
@@ -397,6 +344,8 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     }
     axons += 1;
   }
+  lastLit.edges = world.edges;
+  lastLit.litCount = litCount;
   ctx.lineCap = "round";
   ctx.strokeStyle = ink.arc;
   ctx.fillStyle = ink.arc;
@@ -409,17 +358,13 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     const startPx = capability ? t.axonCapPx : t.axonElementPx;
     let any = false;
     for (let band = 0; band < AXON_BANDS; band += 1) {
-      const t0 = band / AXON_BANDS;
-      const t1 = (band + 1) / AXON_BANDS;
       ctx.globalAlpha = alpha;
-      ctx.lineWidth = startPx + (t.axonEndPx - startPx) * Math.sqrt((t0 + t1) / 2);
+      ctx.lineWidth = bandWidthPx(band, startPx, t.axonEndPx);
       ctx.beginPath();
       for (let i = 0; i < axons; i += 1) {
         if (aGroup[i] !== group) continue;
         any = true;
-        ctx.moveTo(at(ax[i], acx[i], abx[i], t0), at(ay[i], acy[i], aby[i], t0));
-        ctx.quadraticCurveTo(subControl(ax[i], acx[i], abx[i], t0, t1), subControl(ay[i], acy[i], aby[i], t0, t1),
-          at(ax[i], acx[i], abx[i], t1), at(ay[i], acy[i], aby[i], t1));
+        traceAxon(ctx, i, band / AXON_BANDS, (band + 1) / AXON_BANDS);
       }
       if (!any) break;
       ctx.stroke();
@@ -475,13 +420,14 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   }
   passState.drawnNodeCount = drawn;
 
-  // The lit axons, the focus's ring, and the signal travelling each lit axon once.
+  // The lit axons, the focus's ring, and the signal: once along each lit axon, or a selection's spread.
   const focusIndex = focusId === null ? undefined : indexOf.get(focusId);
   if (sets !== null) {
     const whiteGlow = glowSprite(ink.strong);
-    for (let k = 0; k < litEdges.length; k += 1) {
-      const i = litEdges[k];
-      const lineInk = litRole[k] ? ink.reach : ink.arc;
+    for (let k = 0; k < litCount; k += 1) {
+      if (hopOf !== null && litHop[k] > 0) continue;
+      const i = litAxon[k];
+      const lineInk = litHop[k] > 0 ? ink.reach : ink.arc;
       ctx.globalAlpha = t.litAlpha * ramp * neural;
       ctx.strokeStyle = lineInk;
       ctx.shadowColor = lineInk;
@@ -503,6 +449,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
         ctx.fill();
       }
     }
+    if (hopOf !== null) paintSpread(ctx, t, litCount, spread, ramp * neural, whiteGlow);
     if (focusIndex !== undefined) {
       ctx.globalAlpha = ramp * neural;
       ctx.strokeStyle = ink.strong;
@@ -513,8 +460,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     }
   }
 
-  const lit = { edges: litEdges, far: litFar, farIsTarget: litRole.map((usedBy) => !usedBy) };
-  paintNeuralNames(ctx, frame, graph, evidence, labels, { focusId, focusIndex, sets, ramp, lit, zoomGrowth }, pools);
+  paintNeuralNames(ctx, frame, graph, evidence, labels, { focusId, focusIndex, sets, ramp, litCount, hopOf, impact, spread, zoomGrowth }, pools);
   ctx.globalAlpha = 1;
 }
 
@@ -529,7 +475,11 @@ function paintNeuralNames(
     focusIndex: number | undefined;
     sets: { needs: Set<string>; usedBy: Set<string> } | null;
     ramp: number;
-    lit: { edges: readonly number[]; far: readonly number[]; farIsTarget: readonly boolean[] };
+    /** How many of `litAxon`, `litFarNode` and `litHop` this frame filled. */
+    litCount: number;
+    hopOf: Int32Array | null;
+    impact: NeuralImpact | null;
+    spread: number;
     zoomGrowth: number;
   },
   pools: ReadonlyMap<string, { minX: number; maxX: number; minY: number; maxY: number; top: number; a: number; depth: number }>,
@@ -541,7 +491,8 @@ function paintNeuralNames(
   const cells = new BoxGrid();
   const names = new BoxGrid();
   const boxes: typeof passState.drawnLabelBoxes = [];
-  for (let i = 0; i < world.nodes.length; i += 1) {
+  // A focus's names may cross a receded cell, so the cells are gathered only at rest.
+  for (let i = 0; i < world.nodes.length && focus.sets === null; i += 1) {
     if (sa[i] <= 0.05) continue;
     const r = sr[i] + 2;
     cells.add({ minX: sx[i] - r, minY: sy[i] - r, maxX: sx[i] + r, maxY: sy[i] + r });
@@ -579,45 +530,65 @@ function paintNeuralNames(
   };
   const focusId = focus.focusId;
   const sets = focus.sets;
-  // Where each lit axon arrives at its far end, and how many leave the focus to the right.
+  const { hopOf, spread } = focus;
+  // Where each lit axon arrives at its far end, and how many of the focus's own leave it to the right.
   const arrival = new Map<number, { dx: number; dy: number }>();
-  const litPath = new BoxGrid();
+  const litPath = litRaster;
+  litPath.reset(width, height);
   let litRight = 0;
-  for (let k = 0; k < focus.lit.edges.length; k += 1) {
-    const e = focus.lit.edges[k];
-    const far = focus.lit.far[k];
-    const [fx, fy, nx] = focus.lit.farIsTarget[k] ? [abx[e], aby[e], ax[e]] : [ax[e], ay[e], abx[e]];
+  let litOwn = 0;
+  for (let k = 0; k < focus.litCount; k += 1) {
+    const e = litAxon[k];
+    const far = litFarNode[k];
+    const farIsTarget = litHop[k] === 0;
+    const fx = farIsTarget ? abx[e] : ax[e];
+    const fy = farIsTarget ? aby[e] : ay[e];
+    const nx = farIsTarget ? ax[e] : abx[e];
     const into = arrival.get(far) ?? { dx: 0, dy: 0 };
     const len = Math.hypot(acx[e] - fx, acy[e] - fy) || 1;
     into.dx += (acx[e] - fx) / len;
     into.dy += (acy[e] - fy) / len;
     arrival.set(far, into);
-    if (acx[e] > nx) litRight += 1;
-    for (let j = 1; j < LIT_PATH_SAMPLES; j += 1) {
-      const x = at(ax[e], acx[e], abx[e], j / LIT_PATH_SAMPLES);
-      const y = at(ay[e], acy[e], aby[e], j / LIT_PATH_SAMPLES);
-      litPath.add({ minX: x - LIT_PATH_PAD_PX, minY: y - LIT_PATH_PAD_PX, maxX: x + LIT_PATH_PAD_PX, maxY: y + LIT_PATH_PAD_PX });
+    if (litHop[k] <= 1) {
+      litOwn += 1;
+      if (acx[e] > nx) litRight += 1;
     }
+    litPath.markAxon(e);
   }
+  const impactSize = focus.impact?.distance.size ?? 0;
   const plate = focusId !== null && focus.focusIndex !== undefined && sets !== null && labels
     ? placeFocusPlate(ctx, frame, focus.focusIndex, labels.focusFacts({
       stale: neuralCellIsStale(evidence, focusId), needs: sets.needs.size, usedBy: sets.usedBy.size,
-    }), family, litRight * 2 <= focus.lit.edges.length)
+      ...(impactSize > sets.usedBy.size ? { impact: impactSize } : {}),
+    }), family, litRight * 2 <= litOwn)
     : null;
+  lastLit.plateFacts = plate?.facts ?? null;
   if (plate) names.add(plate.box);
+  if (focus.focusIndex !== undefined && sets !== null) {
+    const f = focus.focusIndex;
+    const ring = sr[f] + t.focusRingGapPx + t.focusRingPx;
+    names.add({ minX: sx[f] - ring, minY: sy[f] - ring, maxX: sx[f] + ring, maxY: sy[f] + ring });
+  }
 
-  // Capability names beside their cells at rest; with a focus, its two sets first, each name on
-  // the side its arriving axons leave free.
+  // Capability names beside their cells at rest; with a focus, its direct ends first and then a
+  // selection's arrived dependents nearest first, each name on the side its arriving axons leave free.
   const candidates: number[] = [];
+  // A selection's dependent is named once its hop has arrived.
+  const nameStep = (i: number) => {
+    const id = world.nodes[i].id;
+    if (sets === null) return 0;
+    if (sets.needs.has(id)) return 1;
+    if (hopOf === null) return sets.usedBy.has(id) ? 1 : 0;
+    return hopOf[i] > 0 && spread >= hopOf[i] ? hopOf[i] : 0;
+  };
   for (let i = 0; i < world.nodes.length; i += 1) {
     const node = world.nodes[i];
     if (node.id === focusId || sa[i] <= 0.05) continue;
     if (sx[i] < -NAME_CULL_MARGIN_PX || sx[i] > width + NAME_CULL_MARGIN_PX || sy[i] < -NAME_CULL_MARGIN_PX || sy[i] > height + NAME_CULL_MARGIN_PX) continue;
-    const hot = sets !== null && (sets.needs.has(node.id) || sets.usedBy.has(node.id));
-    if (sets !== null ? hot : node.kind === "capability") candidates.push(i);
+    if (sets !== null ? nameStep(i) > 0 : node.kind === "capability") candidates.push(i);
   }
   const rank = (i: number) => (graph.dependencyCount.get(world.nodes[i].id) ?? 0) - su[i] * NAME_DEPTH_WEIGHT;
-  candidates.sort((a, b) => rank(b) - rank(a));
+  candidates.sort(sets !== null ? (a, b) => nameStep(a) - nameStep(b) || rank(b) - rank(a) : (a, b) => rank(b) - rank(a));
   const hot = sets !== null;
   const font = `${hot ? FONT_WEIGHT.emphasis : FONT_WEIGHT.signature} ${t.namePx}px ${family}`;
   const placeName = (i: number): boolean => {
@@ -635,14 +606,21 @@ function paintNeuralNames(
       [sx[i], sy[i] - gap - t.namePx * 0.5, "center", 0, -1],
     ];
     if (into) tries.sort((a, b) => (a[3] * into.dx + a[4] * into.dy) - (b[3] * into.dx + b[4] * into.dy));
-    for (const clearOfLit of hot ? [true, false] : [false]) {
-      for (const [x, y, align] of tries) {
+    // Clear of every lit axon, a name may also stand a line off each side before it crosses one.
+    const nudge = t.namePx * NAME_NUDGE_LINES;
+    const nudged = hot ? tries.flatMap(([x, y, align, dx, dy]): (typeof tries)[number][] => dy === 0
+      ? [[x, y - nudge, align, dx, dy], [x, y + nudge, align, dx, dy]]
+      : [[x, y + dy * nudge, align, dx, dy]]) : [];
+    const direct = nameStep(i) === 1;
+    for (const clearOfLit of hot ? (direct ? [true, false] : [true]) : [false]) {
+      for (const [x, y, align] of clearOfLit ? [...tries, ...nudged] : tries) {
         const box = boxFor(node.label, x, y, align, t.namePx);
         if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
-        // A focus's names may cross a receded cell, never another name, and a lit axon only if no side is clear.
+        // A focus's names may cross a receded cell, never another name or the focus's ring; only a
+        // direct end's name may cross a lit axon, and only if no side is clear.
         if (names.hits(box) || (!hot && cells.hits(box)) || (clearOfLit && litPath.hits(box))) continue;
         const alpha = (hot ? focus.ramp : REST_NAME_ALPHA * (1 - (1 - t.farAlpha) * su[i])) * neural;
-        write(node.label, x, y, align, font, hot ? ink.strong : ink.name, alpha, t.nameHaloPx);
+        write(node.label, x, y, align, font, hot && direct ? ink.strong : ink.name, alpha, t.nameHaloPx);
         names.add(box);
         boxes.push({ nodeId: node.id, text: node.label, ...box });
         return true;
@@ -654,7 +632,14 @@ function paintNeuralNames(
   const nameBudget = Math.round(t.nameBudget * focus.zoomGrowth);
   const placeNames = () => {
     const tries = Math.min(candidates.length, nameBudget * NAME_TRIES_PER_NAME);
-    for (let k = 0; k < tries && named < nameBudget; k += 1) if (placeName(candidates[k])) named += 1;
+    let indirect = 0;
+    for (let k = 0; k < tries && named < nameBudget; k += 1) {
+      const far = nameStep(candidates[k]) > 1;
+      if (far && indirect >= nameBudget * INDIRECT_NAME_SHARE) break;
+      if (!placeName(candidates[k])) continue;
+      named += 1;
+      if (far) indirect += 1;
+    }
   };
 
   // Each domain's name stands above its cluster, nearest first; a title that would sit on another
@@ -664,14 +649,19 @@ function paintNeuralNames(
   const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
   const summaries = clusterSummaries(frame, graph, evidence);
   const litClusters = new Set<string>();
-  if (focusId !== null) {
-    const own = graph.clusterOf.get(focusId);
+  const lightClusterOf = (id: string) => {
+    const own = graph.clusterOf.get(id);
     if (own !== undefined) litClusters.add(own);
-  } else if (sets !== null) {
-    for (const id of [...sets.needs, ...sets.usedBy]) {
-      const own = graph.clusterOf.get(id);
-      if (own !== undefined) litClusters.add(own);
+  };
+  if (focusId !== null) {
+    lightClusterOf(focusId);
+    if (focus.impact !== null && sets !== null) {
+      for (const id of sets.needs) lightClusterOf(id);
+      for (const [id, distance] of focus.impact.distance) if (distance <= spread) lightClusterOf(id);
     }
+  } else if (sets !== null) {
+    for (const id of sets.needs) lightClusterOf(id);
+    for (const id of sets.usedBy) lightClusterOf(id);
   }
   const freeLeft = Math.max(t.titlePinPx, (frame.panelInsets?.left ?? 0) + t.domainNameGapPx);
   const freeRight = width - Math.max(t.titlePinPx, (frame.panelInsets?.right ?? 0) + t.domainNameGapPx);

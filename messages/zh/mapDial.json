@@ -22,6 +22,7 @@
   "connectionCount": "{count, number} 条关系",
   "keyNeeds": "依赖",
   "keyNeededBy": "被依赖",
+  "keyNeededByIndirectly": "间接依赖它的概念",
   "keyDomainNeeds": "它依赖的领域",
   "keyDomainNeededBy": "依赖它的领域",
   "keyRelates": "相关",

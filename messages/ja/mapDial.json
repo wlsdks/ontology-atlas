@@ -22,6 +22,7 @@
   "connectionCount": "関係{count, number}件",
   "keyNeeds": "依存先",
   "keyNeededBy": "依存元",
+  "keyNeededByIndirectly": "間接的な依存元",
   "keyDomainNeeds": "このドメインの依存先",
   "keyDomainNeededBy": "このドメインへの依存元",
   "keyRelates": "関連",

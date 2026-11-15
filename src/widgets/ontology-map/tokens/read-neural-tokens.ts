@@ -10,14 +10,18 @@ export interface NeuralTokens {
   signalPx: number; signalGlowPx: number; focusRingGapPx: number; focusRingPx: number;
   domainNamePx: number; domainMetaPx: number; domainNameGapPx: number; domainMetaGapPx: number;
   namePx: number; nameGapPx: number; nameHaloPx: number; nameBudget: number; platePadPx: number; plateRadiusPx: number;
-  /** `--motion-expressive`: one signal's travel along a lit axon. */
+  /** A selection's dependents light at these strengths: distance 1, distance 2, and distance 3 and more. */
+  impactNear: number; impactMid: number; impactFar: number;
+  /** `--motion-expressive`: one signal's travel along a lit axon, and one hop of a selection's spread. */
   signalMs: number;
+  /** `--motion-choreography`: the longest a selection's whole spread may take. */
+  spreadMs: number;
   inks: {
     strong: string; name: string; arc: string; reach: string; project: string; warning: string; ground: string; halo: string; plate: string;
   };
 }
 
-type NumberKey = Exclude<keyof NeuralTokens, "inks" | "signalMs">;
+type NumberKey = Exclude<keyof NeuralTokens, "inks" | "signalMs" | "spreadMs">;
 
 const NUMBER_KEYS: readonly NumberKey[] = [
   "capPx", "capGainPx", "elementPx", "elementGainPx", "domainPx", "projectPx", "nucleusShare", "nucleusAlpha", "ringGapPx", "ringPx",
@@ -25,6 +29,7 @@ const NUMBER_KEYS: readonly NumberKey[] = [
   "axonEndPx", "axonDotPx", "axonBow", "tractPull", "tractGain", "veil", "axonVeil", "titleVeil", "zoomGrowMax", "titlePinPx", "litStartPx", "litEndPx", "litAlpha", "litGlowPx",
   "litDotPx", "signalPx", "signalGlowPx", "focusRingGapPx", "focusRingPx", "domainNamePx", "domainMetaPx", "domainNameGapPx",
   "domainMetaGapPx", "namePx", "nameGapPx", "nameHaloPx", "nameBudget", "platePadPx", "plateRadiusPx",
+  "impactNear", "impactMid", "impactFar",
 ];
 
 /** `capGainPx` → `--map-neural-cap-gain-px`. */
@@ -63,9 +68,14 @@ export function readNeuralTokens(): NeuralTokens {
     if (!ink) missing.push(cssVar);
     inks[key] = ink;
   }
-  const expressive = style.getPropertyValue("--motion-expressive").trim();
-  const signalMs = expressive.endsWith("ms") ? Number(expressive.slice(0, -2)) : Number(expressive.replace(/s$/, "")) * 1000;
-  if (!Number.isFinite(signalMs) || signalMs <= 0) missing.push("--motion-expressive");
+  const durationMs = (cssVar: string) => {
+    const raw = style.getPropertyValue(cssVar).trim();
+    const ms = raw.endsWith("ms") ? Number(raw.slice(0, -2)) : Number(raw.replace(/s$/, "")) * 1000;
+    if (!Number.isFinite(ms) || ms <= 0) missing.push(cssVar);
+    return ms;
+  };
+  const signalMs = durationMs("--motion-expressive");
+  const spreadMs = durationMs("--motion-choreography");
   if (missing.length > 0) throw new Error(`Neural tokens missing: ${missing.join(", ")}`);
-  return { ...numbers, signalMs, inks };
+  return { ...numbers, signalMs, spreadMs, inks };
 }

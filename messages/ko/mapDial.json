@@ -22,6 +22,7 @@
   "connectionCount": "관계 {count, number}개",
   "keyNeeds": "의존하는 개념",
   "keyNeededBy": "이 개념에 의존하는 개념",
+  "keyNeededByIndirectly": "이 개념에 간접으로 의존하는 개념",
   "keyDomainNeeds": "이 도메인이 의존하는 도메인",
   "keyDomainNeededBy": "이 도메인에 의존하는 도메인",
   "keyRelates": "관련",

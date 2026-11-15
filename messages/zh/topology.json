@@ -173,6 +173,7 @@
   "light3d": {
     "legendLabel": "3D 地图图例",
     "focusFacts": "依赖 {needs} · 被依赖 {users}",
+    "focusImpact": "影响范围 {count}",
     "dependenciesHidden": "已隐藏 {count} 个依赖"
   },
   "analysis": {
