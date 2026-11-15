@@ -61,7 +61,8 @@ test("Neural is drawn on canvas 2D under ?neuralgl=off", async ({ page }) => {
   await expect(page.getByTestId("map-neural-gl")).toHaveCount(0);
 });
 
-test("a browser that cannot open WebGL2 draws Neural on canvas 2D and never loads the painter", async ({ page }) => {
+/** Stubs `getContext("webgl2")` to fail and returns the scripts that carried the WebGL painter. */
+async function withoutWebgl2(page: Page): Promise<string[]> {
   await page.addInitScript(() => {
     const getContext = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string, ...rest: unknown[]) {
@@ -74,9 +75,22 @@ test("a browser that cannot open WebGL2 draws Neural on canvas 2D and never load
     const body = await response.text().catch(() => "");
     if (body.includes("WebGLRenderer")) painterScripts.push(response.url());
   });
+  return painterScripts;
+}
+
+test("a browser that cannot open WebGL2 draws Neural on canvas 2D and never loads the painter", async ({ page }) => {
+  const painterScripts = await withoutWebgl2(page);
   await openNeural(page, "");
   await expect.poll(() => painter(page)).toBe("canvas");
   expect(await glState(page)).not.toBe("webgl");
+  expect(painterScripts).toEqual([]);
+});
+
+test("?neuralgl=force without a WebGL2 context asks for no three.js chunk", async ({ page }) => {
+  const painterScripts = await withoutWebgl2(page);
+  await openNeural(page, "&neuralgl=force");
+  await expect.poll(() => painter(page)).toBe("canvas");
+  expect(await glState(page)).toBe("unaccelerated");
   expect(painterScripts).toEqual([]);
 });
 

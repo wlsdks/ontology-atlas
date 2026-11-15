@@ -36,8 +36,9 @@ the loop already draws: no shader term depends on time.
 Each step leaves the canvas-2D painter drawing the same frame:
 
 1. `?neuralgl=off`.
-2. No WebGL2, or `webglAccelerated()` false, unless `?neuralgl=force` (which
-   does not override a missing WebGL2).
+2. No WebGL2 context (`webgl2Available()`, a throwaway context opened before
+   the chunk is requested), or `webglAccelerated()` false, unless
+   `?neuralgl=force` (which does not override a missing WebGL2).
 3. The chunk import or `createNeuralGl` failing.
 4. A lost context: canvas 2D until Neural is next entered.
 

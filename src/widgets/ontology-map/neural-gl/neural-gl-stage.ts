@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import { webglAccelerated } from "@/shared/lib/map-canvas/webgl-probe";
+import { webgl2Available, webglAccelerated } from "@/shared/lib/map-canvas/webgl-probe";
 
 import type { NeuralFrame, NeuralSurface } from "../ui/frame-draw/neural-frame";
 import type { NeuralGl } from "./neural-gl";
@@ -80,7 +80,7 @@ export function createNeuralGlStage(dependencies: NeuralGlStageDependencies, opt
   const mode = params.get("neuralgl");
   const load = options.load ?? loadNeuralGl;
   const accelerated = options.accelerated ?? webglAccelerated;
-  const hasWebgl2 = options.hasWebgl2 ?? (() => typeof WebGL2RenderingContext !== "undefined");
+  const hasWebgl2 = options.hasWebgl2 ?? webgl2Available;
 
   let state: NeuralGlState = "idle";
   let gl: NeuralGl | null = null;
