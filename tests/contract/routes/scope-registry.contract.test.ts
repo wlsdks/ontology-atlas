@@ -110,7 +110,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
   { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "frame meter display preference" },
-  { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (map dome view) preference, off (2D) by default" },
+  { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (the tree) preference, off (2D) by default" },
   { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
     { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "Retired view preference, read only for migration" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },

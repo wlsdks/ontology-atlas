@@ -14,9 +14,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 
 - **Click node** → on the Flat map the selection is made in place: the camera frames the selection and its lit reach between the panels, zooming in only while every far end it showed stays in view ([`flat-dial.md`](flat-dial.md)), INDEX stays open from 1280 px wide (below that, and in every other view, it folds for the selection), the chrome under the panel fades where it stands (in Hex too, which keeps its two-press Escape), and the right-side panel opens. Clicking the selected node again keeps it; a background click or Escape deselects. A selection from any other source (double-click, Enter, search, INDEX, a panel link, a deep link, an arrow key) frames the node; on the Flat graph INDEX, search, a panel link and a deep link frame it as a click does ([`flat-dial.md`](flat-dial.md)). One Escape clears a Flat selection and its chrome and, whatever made the selection, returns the camera to where it was before the selection framed it unless the reader has panned or zoomed since; a selection a deep link arrived on returns to the overview. The panel: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
-- **Drag empty canvas** → the map moves with the pointer in every view; in Strata and Neural a drag that starts on the structure turns it instead, and one that starts beside it pans. Panning in Strata or Neural also stops idle rotation, so the structure does not resume turning after the pan. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Strata every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
-- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, Strata, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers.
-- **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or Strata's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
+- **Drag empty canvas** → the map moves with the pointer in every view; in 3D a drag turns the tree instead (see **3D** below). At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
+- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, 3D and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers.
+- **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or the tree's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
 - **Double-click node** (or **Enter** on the focused map) → on the Flat overview, selects and zooms in to the node, never toggling a selected one off; one Escape clears the selection and returns the camera it moved from unless the reader moved the view since; inside a realm, opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
@@ -170,9 +170,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   bootstrap from found docs, create a node, open Topology INDEX, open the new-concept editor (`/topology/?workbench=create`),
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Five map views, chosen in one picker** — the current-view chip in the top tool
+- **Four map views, chosen in one picker** — the current-view chip in the top tool
   lane opens **Flat** (the ordinary 2D map, default), **Hex board**,
-  **Domain structure**, **Strata**, and **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
+  **Domain structure**, and **3D**. The **Hex board** gives every capability one hexagonal tile: a domain is a
   contiguous region of tiles around its title tile, the project sits at the centre
   with the folder's concept count (the map INDEX's rule),
   and empty cells between regions keep them apart. A tile's brightness and its row
@@ -202,12 +202,15 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   A concept one view does not draw leaves into, or
   rises out of, its nearest drawn ancestor, and the arriving view takes over
   without replaying its own entrance. A press, a wheel, a key, a resize, a display
-  change or a hidden tab lands the travel at once. Into Strata or Neural, out of
-  Neural, and into Flat past 6,500 or 6,300 concepts, the old picture
+  change or a hidden tab lands the travel at once. A pick into or out of 3D
+  travels the same way: each concept lands on the tree mark that draws it, and a
+  concept folded into a closed branch lands on that branch's mark. Into Flat past
+  6,500 concepts, and into or out of Domain structure, the old picture
   crossfades instead, as every pick does under reduced motion; a view reached by
   address or from another tab switches without motion. Gate:
   `tests/e2e/map/frame-loop/map-layout-morph.spec.ts`.
-  The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
+  A stored Cone, Strata or Neural choice, and the addresses `?view=strata` and
+  `?view=coupling`, open 3D.
 
   **Domain structure** opens named project/domain/capability/element membership
   without spatial zoom. Press a container to browse its direct children and use
@@ -222,103 +225,42 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   `?constellation=<folder UUID>`; `?constellation=new` opens the creation editor.
   The set is durable task context, not a new graph kind or relation.
 
-  **Strata** (2026-09-06, the default 3D view since 2026-09-25)
-  lays the four kinds out as stacked planes — project on top, then domain,
-  capability, element — each drawn as a lit translucent floor, so
-  "which level is this on" is a glance rather than an inference. Each plane's
-  name stands **beside its own rim** (2026-09-26), just outside the plane's right
-  edge or else its left, re-placed as you orbit or morph, and only where it lands
-  on nothing: no concept, no other name, no other plane and none of the map's
-  chrome. Concept names and relation captions give way to it, and hovering a name
-  raises its plane's ring. A plane with no clear place beside it stays unnamed
-  rather than named somewhere else; the colour key along the bottom names every
-  kind. Measured on the product's own ontology: all four names at 1512x949, three
-  at 1040x720. The names replaced a rail at the right edge (2026-09-06) and a
-  stack in the bottom-right corner (2026-09-07) that named no plane in
-  particular. On a Strata plane
-  a node keeps its parent's bearing, which makes every containment drop short,
-  near-vertical and unable to cross a sibling's; a node whose parent is not in the
-  map falls to the outer rim of its own plane, where "nothing above holds this"
-  is a position rather than a missing line. Neural uses all real relations instead of containment coordinates and
-  lets relations decide all three coordinates. Switching between any two runs the
-  same continuous morph — nodes travel, they do not cut — and the choice is
-  remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
-  overlapping node pairs at 1512x982, and none of them are same-tier. Geometry:
-  `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view/strata.ts`; gate:
-  `tests/contract/map/strata-fit-fill.contract.test.ts`.
-- **The lit 3D map** (2026-09-25) — Strata and Neural are drawn as light in the
-  canvas-2D engine. Each Strata plane is a translucent floor in its kind's colour
-  with a faint polar grid, and every domain owns a band of the capability and
-  element floors, the same sector its descendants' bearings never leave. Nodes
-  emit a halo in their kind colour, and **evidence is the light**: a current
-  concept emits fully, a stale one keeps a dimmer core and wears a 1 px amber
-  ring, and an unknown one emits nothing and wears a dashed ring. The states come
-  from the rule the MCP server uses (one Git walk in the
-  app); the web has no Git walk, so everything there is unknown and the legend
-  (bottom left: kinds and evidence counts) says so. Neural gathers its clusters
-  around the domains. **A click only selects**; a double-click or Enter flies the
-  node to the front in 800 ms and frames its family, and Esc or Home flies back
-  to the view it left. A focus lights one subtree, apex to leaves, and sinks the
-  rest into a deeper fog (down to 0.28 at the back); particles run only along
-  that subtree's dependency edges. Pitch stays between 0.15 and 0.95 rad, so the
-  floors are always seen from above. Reduced motion: no spin, no particles, the
-  fly-to arrives at once. Gate: `tests/e2e/map/3d/map-3d-lit-strata.spec.ts`.
-- **Strata at scale** (2026-10-01) — once a capability or element plane is too
-  dense to read as discs (median lane gap under 0.9 disc diameters, or more than
-  1,500 of its discs on screen), it crossfades to **dust**: one mark per concept
-  at its own place, and each domain's containment into that plane becomes **one
-  light sheet** down to its slice instead of a line per child. Every evidence
-  state stays in the dust with its own mark: a current concept is a dot in its
-  kind colour lifted toward white, a stale one an amber ring, and an unknown one
-  a dim ring in its kind colour. Over the lit floor a stale ring stands
-  4.7-6.7:1 from the floor and a ring's open centre 4.0-5.1:1 from a current
-  dot; an unknown ring is dim on purpose, 2.1-2.4:1 from the floor. At overview
-  density the marks merge into lanes that show only the proportions, and a
-  capability's amber sits close to the warning amber, so one concept's evidence
-  takes a hover or a zoom. The web measures no evidence, so all its dust is
-  unknown rings; a new Git walk in the app crossfades the marks over 120 ms. A
-  **dependency** with a dust end rides one counted chord per ordered pair of
-  domains, tapering to an arrowhead at the domain it depends on and wider for
-  more dependencies, drawn only for the pointed or focused domain. The legend
-  counts every dependency that is not drawn, as lines or chords, and says to
-  point at a domain to show its own. The concept nearest the pointer (within
-  6 px, else the sheet under it), a hovered domain, or the focused concept's
-  domain resolves that slice back to discs and lines. The pick is held while the
-  dome orbits, coasts or flies, read again once it rests, and released when the
-  pointer leaves the map, which wakes a sleeping map to fade the slice out. Zoom
-  resolves a plane once its lanes open past 0.9 disc diameters with fewer than
-  1,500 of its discs on screen; at 10,000 concepts the element plane reaches
-  only about 0.45 of the disc level at the closest zoom. Every change of level
-  is a 120 ms opacity crossfade that advances at most one 60 Hz frame per drawn
-  frame, the same under reduced motion. Measured on the static export at
-  1512x982 @2x, 10,000 concepts went from 59 ms of script and 46,809 draw calls
-  per frame (15 fps) to 10.3 ms and 1,031 (91 fps idle, 89 fps orbiting, 71 fps
-  pointing). With 8,422 dependencies, three in four inside a domain, and
-  evidence 85% stale, it takes 7.7 ms and 1,086 calls (119, 116 and 73 fps). The
-  sample vault and anything below the threshold draw pixel-identically. Model:
-  `src/widgets/ontology-map/model/dome-view/strata-lod.ts`.
-- **Neural composition and readable 3D connections** — Neural uses deterministic
-  relation communities as a layout aid, with tighter local groups, lit cell bodies,
-  and shallow connection arcs. Group proximity is inferred layout, not a new domain
-  or an accepted relation. Strata keeps containment straight; other 3D
-  relations have bounded curves whose paint, pointer hit test, and measurement
-  share the same live endpoints. Reciprocal facts take opposite arcs. Labels are
-  larger in 3D; after closing the detail panel, Fit Map remains available to
-  leave retained selection and return to the whole map. Relation types, depth occlusion, ink floors,
-  keyboard navigation, and reduced-motion behavior remain part of the contract.
-- **A click lands on the concept you are pointing at, in every 3D arrangement**
-  (2026-09-06) — the pointer answers with whatever the frame painted under the
-  cursor, and the small pressable ring around a dot no longer competes with a
-  painted disc. Before, a near, larger concept could answer for a smaller one
-  drawn beside it: measured on the sample vault by pointing at each drawn centre
-  in turn, 4 of 125 answered wrongly in the Cone at 1512x982 and 12 of 125 at
-  834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
-- **Relations stay visible at rest in 3D, on any screen** (2026-09-06, extended
-  2026-09-07) — depth still fades a line towards the back, but its ink now stops
-  at a floor instead of reaching 3.5% of a near line's, and the stroke itself
-  never falls below one device pixel, which is what made the same frames read
-  half as strongly on a screen that is not Retina. Measured at 1512x982 against
-  the canvas ground, containment lines (Cone / Strata / Cloud): at device pixel
-  ratio 2, 1.26 / 1.33 / 1.14 : 1 before the floor and 2.44 / 2.26 / 2.51 : 1
-  now; at ratio 1, 1.29 / 1.25 / 1.27 : 1 before and 2.72 / 2.33 / 2.52 : 1 now.
-  The 2D map is untouched at either ratio.
+  **3D** (2026-11-15) draws the ontology as one tree, a picture the flat map does
+  not give. The project is the trunk, each domain a bough, each capability a
+  branch end and each element a leaf, so what belongs to what is the shape itself.
+  A concept hangs under one parent: one that two domains hold is drawn once, and
+  concepts under no domain share one loose bough. Siblings keep the order of
+  their ids, so adding a capability moves nothing in another domain. Each domain's
+  name stands beside its crown with its capability and element counts, the
+  project's under the trunk, and a capability's wherever it covers no mark and no
+  other name. No relation line is drawn at rest. The address carries `?view=3d`.
+- **Pointing and selecting in 3D** — pointing at a concept lights its path down
+  to the trunk, draws what it needs and what uses it as arcs (64 at most) and
+  names their far ends; a line beside the pointer gives its kind, whether it is
+  stale, and how many concepts it needs, is used by and holds. **A click only
+  selects**: it keeps that light, opens the compact panel and leaves the rail in
+  place; a click on empty ground or Escape clears it. Enter flies to the selected
+  concept. Arrow keys walk the tree: Up to the parent, Down to the first child,
+  Left and Right to the siblings.
+- **Evidence is leaf colour** — a stale element is an amber leaf, and a stale
+  capability or domain, or a folded branch that holds stale concepts, carries an
+  amber dot, by the same rule and Git walk as the MCP server. Where the evidence
+  was not read (the web, or a folder without Git history) nothing is amber and
+  one line under the legend says so.
+- **Turning and zooming the tree** — a drag turns the tree about its trunk and
+  tilts it between 0.17 and 0.70 rad, resisting at either end; letting go while
+  still moving keeps it turning and slows it like friction. The camera fits the
+  shape the tree sweeps through a whole turn, so turning never resizes it. A
+  wheel notch, a pinch and `+` / `-` zoom about the pointer or the centre; `0`
+  and Fit return to the resting view.
+- **The tree at scale** — a frame draws at most 1,500 marks. A branch whose
+  children would sit closer than a readable gap folds into one ringed mark that
+  carries their count and their amber; zooming in opens the nearest branches
+  first, and a click on a folded mark flies in until it opens. A selected or
+  pointed concept and the ends of its arcs are always drawn, whatever is folded
+  around them. Model: `src/widgets/ontology-map/model/tree-view/tree-detail.ts`.
+- **Growth** — the first time a folder opens in 3D in a session, the tree grows
+  from the trunk outward over `--motion-expressive`; the replay tile grows it
+  again. A view switch that arrives in 3D does not replay it, the first input
+  settles it, and reduced motion draws the tree grown and lands every flight at
+  once. At rest the tree draws no frame.
