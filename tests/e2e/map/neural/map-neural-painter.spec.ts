@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { liveInstances } from "../../heap-census";
 import { waitForDomeEntered, waitForMapStill } from "../../settle";
+import { dogfoodVault, probe } from "./neural-dogfood";
 
 /**
  * Which painter draws Neural, pinned by URL: three.js under `?neuralgl=force`, canvas 2D under
@@ -136,4 +138,137 @@ test("the WebGL painter draws no frame while Neural rests", async ({ page }) => 
   // measurement window: a map at rest draws no frame, so the painter's count must hold across one second.
   await page.waitForTimeout(1_000);
   expect(await frames()).toBe(before);
+});
+
+type Point = { x: number; y: number };
+
+/** RGBA (0..255) the WebGL painter drew at each point, read inside its next frame. */
+const glPixels = (page: Page, points: Point[]) =>
+  page.evaluate((at) => (window as unknown as MapWindow).__atlasMapNeuralGl.sample(at), points).then((rgba) => rgba ?? []);
+
+/** RGBA (0..255) of the map canvas at each point, which the canvas-2D painter draws on. */
+const canvasPixels = (page: Page, points: Point[]) =>
+  page.evaluate((at) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="ontology-map-canvas"]')!;
+    const scale = canvas.width / canvas.getBoundingClientRect().width;
+    const ctx = canvas.getContext("2d")!;
+    return at.map((p) => Array.from(ctx.getImageData(Math.round(p.x * scale), Math.round(p.y * scale), 1, 1).data));
+  }, points);
+
+/** The stale warning ink after shading: its hue and saturation, at any brightness above the ground. */
+function isAmber([r, g, b]: number[]): boolean {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max < 40 || max === min) return false;
+  const hue = (max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60;
+  const h = hue < 0 ? hue + 360 : hue;
+  return h >= 32 && h <= 55 && (max - min) / max >= 0.5;
+}
+
+const luminance = ([r, g, b]: number[]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+/** Waits for Neural's crossfade to finish, so neither painter draws over Flat's last frame. */
+async function waitForNeuralAlone(page: Page): Promise<void> {
+  await expect.poll(() => page.evaluate(() => document.querySelector<HTMLElement>('[data-testid="map-neural-gl"]')?.style.opacity)).toBe("1");
+  await waitForMapStill(page);
+}
+
+/** Drops the WebGL context, so the canvas-2D painter draws the same frame on the map canvas. */
+async function fallBackToCanvas(page: Page): Promise<void> {
+  await page.evaluate(() => (window as unknown as MapWindow).__atlasMapNeuralGl.lose());
+  await expect.poll(() => painter(page)).toBe("canvas");
+  await waitForMapStill(page);
+}
+
+/** This repository's vault in the desktop runtime, where the Git walk calls some concepts stale. */
+async function openDogfoodNeural(page: Page): Promise<void> {
+  const vault = dogfoodVault();
+  await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
+  await page.goto("/ko/?guides=off&e2e=1&neuralgl=force", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
+  await page.getByTestId("topology-view-3d").click();
+  await page.getByTestId("topology-view-3d-choice-neural").click();
+  await expect.poll(() => probe(page, (p) => p.nodes().some((n) => n.id === "capability:mcp-tool-server")), { timeout: 60_000 }).toBe(true);
+  await waitForDomeEntered(page, 60_000);
+  await expect(page.getByTestId("topology-neural-legend")).toHaveAttribute("data-evidence-availability", "measured", { timeout: 30_000 });
+  await expect.poll(() => painter(page)).toBe("webgl");
+  const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
+  await waitForNeuralAlone(page);
+}
+
+/** Cells on screen, clear of the canvas edges. */
+async function cellsOnScreen(page: Page): Promise<ProbeNode[]> {
+  const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  return (await page.evaluate(() => (window as unknown as MapWindow).__atlasMap.nodes())).filter(
+    (n) => !n.hidden && n.radius >= 2 && n.x > 40 && n.x < box.width - 40 && n.y > 40 && n.y < box.height - 40,
+  );
+}
+
+/** The cells whose disc no other cell's disc reaches. */
+const apart = (cells: ProbeNode[]) =>
+  cells.filter((c) => cells.every((o) => o === c || Math.hypot(o.x - c.x, o.y - c.y) > o.radius + c.radius + 1));
+
+/** Left of a cell's centre: clear of a capability's nucleus and of the name, which sits to the right. */
+const bodyPoint = (c: ProbeNode): Point => ({ x: c.x - c.radius * 0.6, y: c.y });
+
+test.describe("the WebGL painter against the canvas painter on the same frame", () => {
+  test.setTimeout(180_000);
+
+  test("as many cells read amber under the sphere's shading as on the canvas painter", async ({ page }) => {
+    await openDogfoodNeural(page);
+    const points = apart((await cellsOnScreen(page)).filter((c) => c.kind !== "project")).map(bodyPoint);
+    const glAmber = (await glPixels(page, points)).filter(isAmber).length;
+    await fallBackToCanvas(page);
+    const canvasAmber = (await canvasPixels(page, points)).filter(isAmber).length;
+    expect(canvasAmber, "the dogfood vault draws stale cells").toBeGreaterThan(0);
+    expect(glAmber).toBe(canvasAmber);
+  });
+
+  test("where a nearer cell covers a farther one, the overlap shows the nearer cell's ink", async ({ page }) => {
+    await openDogfoodNeural(page);
+    const cells = (await cellsOnScreen(page)).filter((c) => c.kind !== "project");
+    const glBodies = await glPixels(page, cells.map(bodyPoint));
+    const amberCell = new Map(cells.map((c, k) => [c.id, isAmber(glBodies[k])]));
+    // Overlapping pairs of a stale and a current cell, probed in the middle of their shared lens.
+    const overlaps: Point[] = [];
+    for (const a of cells) {
+      for (const b of cells) {
+        const d = Math.hypot(b.x - a.x, b.y - a.y);
+        if (a.id >= b.id || amberCell.get(a.id) === amberCell.get(b.id) || d >= a.radius + b.radius - 2 || d <= Math.abs(a.radius - b.radius)) continue;
+        const along = (d - b.radius + a.radius) / 2;
+        overlaps.push({ x: a.x + ((b.x - a.x) / d) * along, y: a.y + ((b.y - a.y) / d) * along });
+      }
+    }
+    expect(overlaps.length, "the dogfood vault draws a stale and a current cell overlapping").toBeGreaterThan(0);
+    const gl = (await glPixels(page, overlaps)).map(isAmber);
+    await fallBackToCanvas(page);
+    // The canvas painter strokes cells far to near, so its overlap shows the nearer cell.
+    const canvas = (await canvasPixels(page, overlaps)).map(isAmber);
+    expect(gl).toEqual(canvas);
+  });
+
+  test("with a concept selected, a near rest cell draws brighter than a far one, as depth orders them on canvas", async ({ page }) => {
+    await openNeural(page, "&neuralgl=force");
+    await expect.poll(() => painter(page)).toBe("webgl");
+    const focus = await largestCell(page);
+    const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+    await page.mouse.click(box.x + focus.x, box.y + focus.y);
+    await expect.poll(() => page.evaluate(() => (window as unknown as MapWindow).__atlasMap.selection().nodeId)).toBe(focus.id);
+    await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
+    await waitForNeuralAlone(page);
+    const lit = await probe(page, (p) => {
+      const n = p.dome()!.neural;
+      return [n.focusId, ...n.needs, ...n.usedBy, ...Object.keys(n.impact ?? {})];
+    });
+    const rest = apart(await cellsOnScreen(page)).filter((c) => c.kind === "element" && !lit.includes(c.id));
+    expect(rest.length, "rest elements stand clear on screen").toBeGreaterThan(3);
+    const glLight = (await glPixels(page, rest)).map(luminance);
+    await fallBackToCanvas(page);
+    const canvasLight = (await canvasPixels(page, rest)).map(luminance);
+    const near = canvasLight.indexOf(Math.max(...canvasLight));
+    const far = canvasLight.indexOf(Math.min(...canvasLight));
+    expect(canvasLight[near] / canvasLight[far], "the frame spreads the rest cells in depth").toBeGreaterThan(1.05);
+    expect(glLight[near]).toBeGreaterThan(glLight[far]);
+  });
 });
