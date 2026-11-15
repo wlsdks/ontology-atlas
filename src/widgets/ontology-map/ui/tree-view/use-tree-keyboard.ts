@@ -1,6 +1,7 @@
 "use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import type { MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { keyboardZoomIntent } from "../../interaction/keyboard-zoom";
 import type { TreeDrawList, TreeModel } from "../../model/tree-view/types";
@@ -97,7 +98,7 @@ export function useTreeKeyboard({ model, motion, list, selectedNode, navigationS
       return;
     }
     if (e.key === "Enter") {
-      if (selectedNode < 0) return;
+      if (selectedNode < 0 || isImeComposing(e)) return;
       e.preventDefault();
       motion.flyTo(selectedNode);
       return;
