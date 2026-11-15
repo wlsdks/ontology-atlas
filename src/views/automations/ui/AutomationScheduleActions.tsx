@@ -1,40 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { AutomationRowMenu } from './AutomationRowMenu';
 
-export function AutomationScheduleActions({ round, runner, notAllowedSentenceId = null, onEdit }: {
-  round: RoundRecord;
-  runner: RoundsRunnerValue;
-  /** While set, "Run now" waits and names why; Resume stays, because resuming here allows. */
-  notAllowedSentenceId?: string | null;
-  onEdit: () => void;
-}) {
-  const t = useTranslations('automations');
-  const [confirmRemove, setConfirmRemove] = useState(false);
+/** One pending change at a time per schedule, and whether the last one failed. */
+export function useScheduleChange() {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
-  const removeButton = useRef<HTMLButtonElement>(null);
-  const cancelButton = useRef<HTMLButtonElement>(null);
-  /* Set when the question closes, so focus goes back to the Remove that remounts in its place. */
-  const returnFocus = useRef(false);
-  const detailId = `automation-actions-${round.id}`;
-
-  useEffect(() => {
-    if (confirmRemove) {
-      cancelButton.current?.focus();
-    } else if (returnFocus.current) {
-      returnFocus.current = false;
-      removeButton.current?.focus();
-    }
-  }, [confirmRemove]);
-
-  const change = async (action: () => Promise<boolean>) => {
+  const run = async (action: () => Promise<boolean>) => {
     setPending(true);
     setFailed(false);
     try {
@@ -45,67 +24,82 @@ export function AutomationScheduleActions({ round, runner, notAllowedSentenceId 
       setPending(false);
     }
   };
+  return { pending, failed, run };
+}
 
-  const closeConfirm = () => {
-    returnFocus.current = true;
-    setConfirmRemove(false);
-  };
+export type ScheduleChange = ReturnType<typeof useScheduleChange>;
 
+/** The id of the line the run-now press points to while another schedule runs. */
+export const AUTOMATIONS_RUNNING_ID = 'automations-running';
+
+/** `Run now` stands as itself; the rest wait in the row's menu. */
+export const AutomationScheduleActions = forwardRef<HTMLButtonElement, {
+  round: RoundRecord;
+  runner: RoundsRunnerValue;
+  change: ScheduleChange;
+  /** While set, "Run now" waits and names why; Resume stays, because resuming here allows. */
+  notAllowedSentenceId: string | null;
+  onEdit: () => void;
+  onRemove: () => void;
+}>(function AutomationScheduleActions({ round, runner, change, notAllowedSentenceId, onEdit, onRemove }, menuTrigger) {
+  const t = useTranslations('automations');
+  const [menuOpen, setMenuOpen] = useState(false);
+  return <>
+    <Button variant="ghost" size="sm" onClick={() => runner.runNow(round.id)}
+      disabled={runner.running !== null || change.pending || notAllowedSentenceId !== null}
+      aria-describedby={notAllowedSentenceId ?? (runner.running ? AUTOMATIONS_RUNNING_ID : undefined)}
+      data-testid="automations-run-now" className="atlas-touch-floor whitespace-nowrap px-2.5">
+      {t('runNow')}
+    </Button>
+    <AutomationRowMenu ref={menuTrigger} label={t('moreActions', { name: round.name })} open={menuOpen} onOpenChange={setMenuOpen}
+      disabled={change.pending}
+      items={[
+        { label: t('edit'), icon: <Pencil size={ICON_SIZE.sm} aria-hidden />, testId: 'automations-edit', onSelect: onEdit },
+        {
+          label: round.enabled ? t('pause') : t('resume'),
+          icon: round.enabled ? <Pause size={ICON_SIZE.sm} aria-hidden /> : <Play size={ICON_SIZE.sm} aria-hidden />,
+          testId: 'automations-toggle',
+          onSelect: () => void change.run(() => runner.setEnabled(round.id, !round.enabled)),
+        },
+        { label: t('remove'), icon: <Trash2 size={ICON_SIZE.sm} aria-hidden />, testId: 'automations-remove', danger: true, onSelect: onRemove },
+      ]} />
+  </>;
+});
+
+/** Stands under the row until answered; Escape is Cancel. */
+export function AutomationRemoveConfirm({ round, runner, change, onClose }: {
+  round: RoundRecord;
+  runner: RoundsRunnerValue;
+  change: ScheduleChange;
+  onClose: () => void;
+}) {
+  const t = useTranslations('automations');
+  const cancelButton = useRef<HTMLButtonElement>(null);
+  const questionId = `automation-remove-${round.id}-question`;
+  useEffect(() => cancelButton.current?.focus(), []);
   return (
-    <div className="space-y-3">
-      {/* The question replaces the buttons; Escape or Cancel gives them back with focus on Remove. */}
-      {confirmRemove ? (
-        <div id={`${detailId}-remove`} role="group" aria-labelledby={`${detailId}-question`}
-          data-testid="automations-remove-confirm"
-          className="flex flex-wrap items-center gap-x-3 gap-y-2"
-          onKeyDown={(event) => {
-            if (event.key !== 'Escape' || pending) return;
-            event.stopPropagation();
-            closeConfirm();
-          }}>
-          <p id={`${detailId}-question`} className="min-w-0 text-body text-[color:var(--color-text-primary)]">
-            {t('removeQuestion', { name: round.name })}
-          </p>
-          {/* One unit, or at narrow widths the danger button wraps alone away from Cancel. */}
-          <div className="flex shrink-0 items-center gap-2" data-testid="automations-remove-answers">
-            <Button ref={cancelButton} variant="outline" size="sm" disabled={pending} className="atlas-touch-floor"
-              onClick={closeConfirm}>{t('cancel')}</Button>
-            <Button variant="danger" size="sm" disabled={pending} className="atlas-touch-floor" data-confirm-step
-              data-testid="automations-confirm-remove"
-              onClick={() => void change(async () => {
-                const removed = await runner.remove(round.id);
-                if (removed) document.getElementById('main')?.focus();
-                return removed;
-              })}><Trash2 size={ICON_SIZE.sm} aria-hidden />{t('removeConfirm')}</Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => runner.runNow(round.id)}
-            disabled={runner.running !== null || pending || notAllowedSentenceId !== null}
-            aria-describedby={notAllowedSentenceId ?? (runner.running ? `${detailId}-busy` : undefined)}
-            data-testid="automations-run-now" className="atlas-touch-floor">
-            <Play size={ICON_SIZE.sm} aria-hidden />{t('runNow')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={onEdit} disabled={pending} aria-label={t('editNamed', { name: round.name })}
-            data-testid="automations-edit" className="atlas-touch-floor">
-            <Pencil size={ICON_SIZE.sm} aria-hidden />{t('edit')}
-          </Button>
-          <Button variant="outline" size="sm" disabled={pending}
-            onClick={() => void change(() => runner.setEnabled(round.id, !round.enabled))}
-            data-testid="automations-toggle" className="atlas-touch-floor">
-            {round.enabled ? <Pause size={ICON_SIZE.sm} aria-hidden /> : <Play size={ICON_SIZE.sm} aria-hidden />}
-            {round.enabled ? t('pause') : t('resume')}
-          </Button>
-          <Button ref={removeButton} variant="outline" size="sm" onClick={() => setConfirmRemove(true)}
-            disabled={pending} aria-label={t('removeNamed', { name: round.name })}
-            data-testid="automations-remove" className="atlas-touch-floor">
-            <Trash2 size={ICON_SIZE.sm} aria-hidden />{t('remove')}
-          </Button>
-          {runner.running ? <p id={`${detailId}-busy`} className="text-body text-[color:var(--color-text-tertiary)]">{t('running', { name: runner.running.roundName })}</p> : null}
-        </div>
-      )}
-      {failed ? <p role="alert" className="text-body text-[color:var(--color-danger-text)]">{t('changeFailed')}</p> : null}
+    <div role="group" aria-labelledby={questionId} data-testid="automations-remove-confirm"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || change.pending) return;
+        event.stopPropagation();
+        onClose();
+      }}>
+      <p id={questionId} className="min-w-0 text-body text-[color:var(--color-text-primary)]">
+        {t('removeQuestion', { name: round.name })}
+      </p>
+      {/* One unit, or at narrow widths the danger button wraps alone away from Cancel. */}
+      <div className="flex shrink-0 items-center gap-2" data-testid="automations-remove-answers">
+        <Button ref={cancelButton} variant="outline" size="sm" disabled={change.pending} className="atlas-touch-floor"
+          onClick={onClose}>{t('cancel')}</Button>
+        <Button variant="danger" size="sm" disabled={change.pending} className="atlas-touch-floor" data-confirm-step
+          data-testid="automations-confirm-remove"
+          onClick={() => void change.run(async () => {
+            const removed = await runner.remove(round.id);
+            if (removed) document.getElementById('main')?.focus();
+            return removed;
+          })}><Trash2 size={ICON_SIZE.sm} aria-hidden />{t('removeConfirm')}</Button>
+      </div>
     </div>
   );
 }

@@ -24,6 +24,8 @@ import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
 import { AutomationLaneFacts, AutomationListPanel } from "./AutomationListFrame";
+import { AutomationHistoryHeading, AutomationRunHistory, AutomationUnrecorded } from "./AutomationRunHistory";
+import { AUTOMATIONS_RUNNING_ID } from "./AutomationScheduleActions";
 import { AutomationScheduleArtwork } from "./AutomationScheduleArtwork";
 import listStyles from "./automation-list-frame.module.css";
 
@@ -72,12 +74,9 @@ export function AutomationsPage({
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
   const rounds = useMemo(() => allRounds.filter((round) => isLaneRound(round, lane)), [allRounds, lane]);
   const requestedRound = params.get("round");
-  const linkedRound = rounds.find((round) => round.id === requestedRound) ?? null;
-  const selected = selectedId === undefined
-    ? linkedRound ?? rounds[0] ?? null
-    : rounds.find((round) => round.id === selectedId) ?? null;
-  // The link's filter holds until the person picks a row themselves.
-  const documentLedger = useDocumentLedger(runner, lane === "documents", selectedId === undefined ? linkedRound : null);
+  // A link's schedule stays selected until the person picks a row or shows every run.
+  const selected = rounds.find((round) => round.id === (selectedId === undefined ? requestedRound : selectedId)) ?? null;
+  const history = useLaneHistory(runner, lane, rounds, selected);
 
   const selectLane = (nextLane: AutomationLane) => {
     const query = new URLSearchParams(params.toString());
@@ -207,24 +206,33 @@ export function AutomationsPage({
                 <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
                 <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="grid min-w-0 gap-8">
                   <AutomationListPanel title={t(`${lane}.preview.title`)} count={rounds.length}
-                    columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
+                    columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`), t("actionsColumn")]}
                     trailing={<>
-                      {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
+                      {runner.running ? <p id={AUTOMATIONS_RUNNING_ID} role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
                     </>}>
-                    <ul data-testid="automations-list" className="flex flex-col">
-                      {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
-                        expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
-                        onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
-                    </ul>
+                    {rounds.map((round, index) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
+                      selected={selected?.id === round.id} tabbable={selected ? selected.id === round.id : index === 0}
+                      onSelect={() => setSelectedId(round.id)} onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
                   </AutomationListPanel>
-                  {documentLedger && runner ? <section data-testid="automations-run-ledger" aria-labelledby="automations-run-ledger-title" className="min-w-0">
-                    <RoundsLedger entries={documentLedger.entries} locale={locale} titleFor={documentLedger.titleFor}
-                      onOpenPage={(slug) => router.push(`/docs/?slug=${encodeURIComponent(slug.replace(/\.md$/, ""))}`)}
-                      running={runner.running && rounds.some((round) => round.id === runner.running?.roundId) ? runner.running : null}
-                      heading={<h2 id="automations-run-ledger-title" className={listStyles.panelTitle}>
-                        {t("historyTitle")}
-                        {documentLedger.round ? <span className="ml-2 font-normal text-[color:var(--color-text-tertiary)]">· {documentLedger.round.name}</span> : null}
-                      </h2>} />
+                  {history ? <section data-testid="automations-run-ledger" data-history-round={selected?.id}
+                    aria-labelledby="automations-run-ledger-title" className="flex min-w-0 flex-col gap-3">
+                    {lane === "documents" && history.ran ? (
+                      <>
+                        <AutomationUnrecorded unrecorded={history.unrecorded} />
+                        <RoundsLedger entries={history.entries} locale={locale} titleFor={history.titleFor}
+                          onOpenPage={(slug) => router.push(`/docs/?slug=${encodeURIComponent(slug.replace(/\.md$/, ""))}`)}
+                          running={runner.running && (selected ? runner.running.roundId === selected.id : rounds.some((round) => round.id === runner.running?.roundId)) ? runner.running : null}
+                          heading={<AutomationHistoryHeading name={selected?.name ?? null} onShowAll={() => setSelectedId(null)} />} />
+                      </>
+                    ) : (
+                      <>
+                        <AutomationHistoryHeading name={selected?.name ?? null} onShowAll={() => setSelectedId(null)} />
+                        {selected && "query" in selected && selected.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]">
+                          <span className="text-[color:var(--color-text-tertiary)]">{t("scopeLabel")} · </span>{selected.query}</p> : null}
+                        <AutomationUnrecorded unrecorded={history.unrecorded} />
+                        {history.ran || history.unrecorded.length === 0 ? <AutomationRunHistory key={selected?.id ?? ""} entries={history.entries} named={!selected} /> : null}
+                      </>
+                    )}
                   </section> : null}
                   <AutomationLaneFacts facts={[
                     { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
@@ -244,16 +252,26 @@ export function AutomationsPage({
 }
 
 /**
- * The Documents lane's passes, narrowed to the schedule a link named; null until one has run,
- * because the schedule list already says nothing has.
+ * The lane's runs, narrowed to the selected schedule; null until the lane has run at all,
+ * because the schedule list already says nothing has. The Documents lane keeps its asleep spans.
  */
-function useDocumentLedger(runner: RoundsRunnerValue | null, shown: boolean, round: RoundRecord | null) {
+function useLaneHistory(runner: RoundsRunnerValue | null, lane: AutomationLane, rounds: readonly RoundRecord[], selected: RoundRecord | null) {
   const vault = useLocalVault();
   const ledger = runner?.ledger ?? EMPTY_LEDGER;
-  const entries = useMemo(() => shown ? ledger.filter((entry) => entry.kind !== "ontology"
-    && (!round || entry.roundId === round.id || entry.outcome === "asleep")) : EMPTY_LEDGER, [ledger, round, shown]);
+  const laneEntries = useMemo(() => ledger.filter((entry) => lane === "ontology" ? entry.kind === "ontology" : entry.kind !== "ontology"), [ledger, lane]);
+  const entries = useMemo(() => selected ? laneEntries.filter((entry) => entry.roundId === selected.id || entry.outcome === "asleep") : laneEntries,
+    [laneEntries, selected]);
   const pageTitles = useMemo(() => new Map((vault.manifest?.docs ?? []).map((doc) => [doc.slug, doc.title])), [vault.manifest]);
-  if (!entries.some((entry) => entry.outcome !== "asleep")) return null;
+  const laneUnrecorded = rounds.flatMap((round) => {
+    const unrecorded = runner?.unrecorded.get(round.id);
+    return unrecorded ? [{ roundId: round.id, unrecorded }] : [];
+  });
+  if (!laneEntries.some((entry) => entry.outcome !== "asleep") && laneUnrecorded.length === 0) return null;
   const titleFor = (slug: string) => pageTitles.get(slug.replace(/\.md$/, "")) || slug.replace(/^wiki\//, "").replace(/\.md$/, "");
-  return { entries, round, titleFor };
+  return {
+    entries,
+    ran: entries.some((entry) => entry.outcome !== "asleep"),
+    unrecorded: laneUnrecorded.filter((item) => !selected || item.roundId === selected.id).map((item) => item.unrecorded),
+    titleFor,
+  };
 }

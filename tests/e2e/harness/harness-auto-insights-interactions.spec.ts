@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { box } from './harness-auto-insights-harness';
 import { installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
 import { installDesktopBridge } from '../rounds-desktop-bridge';
+import { waitForAnimationsDone } from '../settle';
 
 test.describe('Architecture toolbar', () => {
   test.beforeEach(async ({ page, context }) => {
@@ -33,25 +34,32 @@ test.describe('Architecture toolbar', () => {
 });
 
 test.describe('Automations remove confirm', () => {
-  test('the question replaces the row, takes focus, and Escape gives it back', async ({ page }) => {
+  test('the question stands under its row, takes focus, and Escape gives it back', async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await installDesktopBridge(page, { seedRounds: true });
     await page.goto('/en/');
     await page.getByRole('button', { name: /Open.*folder/i }).first().click();
     await expect(page.getByTestId('app-nav-rail')).toBeVisible();
     await page.goto('/ko/automations/?guides=off&kind=documents');
-    const remove = page.getByTestId('automations-remove').filter({ visible: true }).first();
-    await expect(remove).toBeVisible({ timeout: 30_000 });
-    const trigger = await box(remove);
-    await remove.click();
+    const row = page.locator('[data-schedule-row]').filter({ visible: true }).first();
+    const menu = row.getByTestId('automations-row-menu');
+    await expect(menu).toBeVisible({ timeout: 30_000 });
+    const rowBox = await box(row);
+    await menu.click();
+    const rowMenu = page.getByRole('menu');
+    // A click sent while the menu still opens makes the driver scroll the page under it.
+    await waitForAnimationsDone(rowMenu);
+    await rowMenu.getByTestId('automations-remove').click();
     const confirm = page.getByTestId('automations-confirm-remove').filter({ visible: true }).first();
     await expect(confirm).toBeVisible();
     const group = await box(page.getByTestId('automations-remove-confirm').filter({ visible: true }).first());
-    /* 59px lower and under a divider before: the question stands where the row stood. */
-    expect(Math.abs(group.y - trigger.y), 'the confirm opened away from its trigger').toBeLessThanOrEqual(8);
+    /* The question belongs to the row it asks about: no divider or other row between them. */
+    expect(group.y - (rowBox.y + rowBox.height), 'the confirm opened away from its row').toBeLessThanOrEqual(16);
+    expect(group.y, 'the confirm covered its row').toBeGreaterThanOrEqual(rowBox.y + rowBox.height);
+    expect((await box(row)).y, 'the row moved when the question opened').toBe(rowBox.y);
     await expect(page.getByRole('button', { name: '취소', exact: true })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(confirm).toHaveCount(0);
-    await expect(page.getByTestId('automations-remove').filter({ visible: true }).first()).toBeFocused();
+    await expect(menu).toBeFocused();
   });
 });
