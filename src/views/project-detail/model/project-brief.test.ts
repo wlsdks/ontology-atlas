@@ -45,4 +45,9 @@ describe("splitProjectBrief", () => {
     expect(splitProjectBrief(null)).toEqual({ lead: "", sections: [] });
     expect(splitProjectBrief("")).toEqual({ lead: "", sections: [] });
   });
+  it("keeps a heading that is only hashes and one with inner hashes", () => {
+    expect(splitProjectBrief("## #").sections[0].title).toBe("#");
+    expect(splitProjectBrief("## C# and F#  ").sections[0].title).toBe("C# and F");
+    expect(splitProjectBrief("## Use #tags here").sections[0].title).toBe("Use #tags here");
+  });
 });

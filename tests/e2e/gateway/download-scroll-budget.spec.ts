@@ -115,29 +115,25 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   await arm(page);
   // measurement window: part of the leg
   await page.waitForTimeout(2000);
-  const figureTop = await page.evaluate(() => {
-    const host =
-      [...document.querySelectorAll<HTMLElement>("*")].find(
-        (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
-      ) ?? document.scrollingElement!;
-    const figure = document.querySelector('[data-testid="download-conduction-figure"]')!;
-    return figure.getBoundingClientRect().top + host.scrollTop - 80;
-  });
+  const topOf = (testId: string) =>
+    page.evaluate((id) => {
+      const host =
+        [...document.querySelectorAll<HTMLElement>("*")].find(
+          (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
+        ) ?? document.scrollingElement!;
+      const target = document.querySelector(`[data-testid="${id}"]`)!;
+      return target.getBoundingClientRect().top + host.scrollTop - 80;
+    }, testId);
+  // The clip sits in the hero, so the leg parks on it while it plays before it reaches the figures.
+  const demoTop = await topOf("gateway-demo-section");
+  await wheelTo(page, (top) => top >= demoTop);
+  // measurement window: part of the leg
+  await page.waitForTimeout(4000);
+  const figureTop = await topOf("download-conduction-figure");
   await wheelTo(page, (top) => top >= figureTop);
   await page.getByTestId("download-conduction-figure").scrollIntoViewIfNeeded();
   const figure = page.getByTestId("download-conduction-figure");
   await expect(figure).toHaveAttribute("data-conduction-state", /finished|still/, { timeout: 150_000 });
-  const demoTop = await page.evaluate(() => {
-    const host =
-      [...document.querySelectorAll<HTMLElement>("*")].find(
-        (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
-      ) ?? document.scrollingElement!;
-    const demo = document.querySelector('[data-testid="gateway-demo-section"]')!;
-    return demo.getBoundingClientRect().top + host.scrollTop - 80;
-  });
-  await wheelTo(page, (top) => top >= demoTop);
-  // measurement window: part of the leg
-  await page.waitForTimeout(4000);
   for (const id of ["download-change-figure", "download-start-figure"]) {
     const showpiece = page.getByTestId(id);
     const top = await showpiece.evaluate((element) => {

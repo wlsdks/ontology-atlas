@@ -4,8 +4,9 @@ import { localDate } from './briefing-model';
 const MERGE_PREFIX = /^Merge #(\d+)(?: #\d+)*:\s*/i;
 const HOSTED_MERGE = /^Merge pull request #(\d+) from \S+/i;
 const TRAILING_PR = /\(#(\d+)\)\s*$/;
-const CONVENTIONAL_HEAD = /^[\p{L}\p{N}_-]+(?:\(([^()]*)\))?(!)?:/u;
+const CONVENTIONAL_HEAD = /^([\p{L}\p{N}_-]+)(?:\(([^()]*)\))?(!)?:/u;
 const NAMED_GROUP_LIMIT = 7;
+const KINDS_NAMED = 5;
 const NOTABLE_LIMIT = 3;
 const SIZE_FLOOR_FILES = 30;
 const SIZE_MEDIAN_FACTOR = 3;
@@ -15,7 +16,13 @@ export interface DigestChange {
   number: number | null;
   files: number;
   concepts: string[];
+  /** The conventional-commit type exactly as its author typed it (`feat`, `fix`); null without one. */
+  type: string | null;
 }
+
+export interface WorkKind { type: string; count: number }
+/** The five most used commit types, most first, and how many changes carry another type or none. */
+export interface WorkKinds { kinds: WorkKind[]; other: number }
 
 export type DigestGroupKind = 'label' | 'directory' | 'other';
 export interface DigestGroup {
@@ -37,6 +44,8 @@ export interface ChangeDigest {
   grouping: 'label' | 'directory';
   groups: DigestGroup[];
   notable: NotableChange[];
+  /** Null when under half the titles carry a commit type. */
+  kinds: WorkKinds | null;
 }
 
 /**
@@ -90,8 +99,31 @@ export function pullRequestNumber(subject: string): number | null {
 }
 
 export function titleLabel(subject: string, message?: string): string | null {
-  const label = CONVENTIONAL_HEAD.exec(ownTitle(subject, message))?.[1]?.trim().toLowerCase();
+  const label = CONVENTIONAL_HEAD.exec(ownTitle(subject, message))?.[2]?.trim().toLowerCase();
   return label || null;
+}
+
+export function commitType(subject: string, message?: string): string | null {
+  return CONVENTIONAL_HEAD.exec(ownTitle(subject, message))?.[1] ?? null;
+}
+
+/** Counts commit types as written, ties by name; null when under half the changes carry one. O(changes + types log types). */
+export function workKinds(changes: readonly Pick<DigestChange, 'type'>[]): WorkKinds | null {
+  const counts = new Map<string, number>();
+  for (const { type } of changes) if (type) counts.set(type, (counts.get(type) ?? 0) + 1);
+  let typed = 0;
+  for (const count of counts.values()) typed += count;
+  if (!typed || typed * 2 < changes.length) return null;
+  const kinds = [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, KINDS_NAMED).map(([type, count]) => ({ type, count }));
+  return { kinds, other: changes.length - kinds.reduce((sum, kind) => sum + kind.count, 0) };
+}
+
+/** How many of `changes` fall under each named kind, with the remainder last. O(changes). */
+export function kindCounts(changes: readonly Pick<DigestChange, 'type'>[], kinds: WorkKinds): number[] {
+  const index = new Map(kinds.kinds.map((kind, position) => [kind.type, position]));
+  const counts = Array.from({ length: kinds.kinds.length + 1 }, () => 0);
+  for (const { type } of changes) counts[(type !== null ? index.get(type) : undefined) ?? kinds.kinds.length] += 1;
+  return counts;
 }
 
 export function isRevert(commit: BriefingCommit) {
@@ -99,7 +131,7 @@ export function isRevert(commit: BriefingCommit) {
 }
 
 export function isMarkedBreaking(commit: BriefingCommit) {
-  return CONVENTIONAL_HEAD.exec(ownTitle(commit.subject, commit.message))?.[2] === '!' || Boolean(commit.message?.includes('BREAKING CHANGE'));
+  return CONVENTIONAL_HEAD.exec(ownTitle(commit.subject, commit.message))?.[3] === '!' || Boolean(commit.message?.includes('BREAKING CHANGE'));
 }
 
 /** The top-level directory holding most of a change's files; ties go to the name that sorts first. */
@@ -164,6 +196,7 @@ export function buildChangeDigest(commits: readonly BriefingCommit[], conceptsBy
     number: pullRequestNumber(commit.subject),
     files: new Set(commit.paths).size,
     concepts: [...new Set(commit.paths.flatMap(path => conceptsByPath.get(path) ?? []))],
+    type: commitType(commit.subject, commit.message),
   }));
   const labels = changes.map(change => titleLabel(change.commit.subject, change.commit.message));
   const labelled = labels.filter(Boolean).length;
@@ -193,6 +226,7 @@ export function buildChangeDigest(commits: readonly BriefingCommit[], conceptsBy
     grouping,
     groups,
     notable: pickNotable(changes),
+    kinds: workKinds(changes),
   };
 }
 

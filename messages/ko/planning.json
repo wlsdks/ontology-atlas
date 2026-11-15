@@ -6,8 +6,6 @@
   "browserUnavailable": "기획 폴더는 macOS 앱에서만 사용할 수 있어요.",
   "loading": "선택한 폴더를 읽고 있어요…",
   "empty": "지원하는 문서나 이미지가 없어요.",
-  "folderLabel": "폴더: {folder}",
-  "pathLabel": "경로: {path}",
   "observedAt": "폴더 목록 조회: {time}",
   "observationLimit": "다음 확인 전에 파일이 바뀔 수 있어요.",
   "findFile": "파일명 또는 경로 찾기",
@@ -50,5 +48,6 @@
   "imageUnnamed": "이미지 {line}:{column}",
   "startTitle": "기획과 디자인을 한곳에서",
   "startBody": "기획 폴더를 열어 마크다운 문서와 디자인 시안을 함께 살펴보세요.",
-  "designImages": "디자인 이미지"
+  "designImages": "디자인 이미지",
+  "close": "닫기"
 }

@@ -12,7 +12,7 @@ test('paints the still companion at a deep-linked welcome before any interaction
   await page.getByTestId('first-run-starter-open').click();
   await page.getByTestId('vault-guide-pick-existing').click();
   await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
-  await page.goto('/en/download/?guides=off#gateway-closing-title', { waitUntil: 'networkidle' });
+  await page.goto('/en/download/?guides=off', { waitUntil: 'networkidle' });
   const stage = page.locator('[data-moru-playground]');
   await stage.locator('img').first().evaluate(image => (image as HTMLImageElement).decode());
   const clip = await stage.boundingBox();
@@ -145,3 +145,30 @@ test('reduced motion offers still feedback without starting any animation', asyn
   await expect(page.getByRole('menuitem', { name: 'Moru · reduced motion' })).toBeDisabled();
   expect(await pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).length)).toBe(0);
 });
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+  test(`the download hero's source link takes its own press beside Moru at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/en/download/?guides=off');
+    const link = page.getByTestId('gateway-hero-source');
+    await expect(link).toHaveAttribute('href', 'https://github.com/wlsdks/ontology-atlas');
+    await expect(page.getByRole('button', { name: 'Pet Moru' })).toBeVisible();
+    // The link overlaps the empty rows of Moru's cell on a narrow window, so every point is asked.
+    const misses = await link.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      const missed: string[] = [];
+      for (const x of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+        for (const y of [0.2, 0.5, 0.8]) {
+          const hit = document.elementFromPoint(box.left + box.width * x, box.top + box.height * y);
+          if (!hit || !element.contains(hit)) missed.push(`${x},${y}`);
+        }
+      }
+      return missed;
+    });
+    expect(misses, 'points of the link that another element covers').toEqual([]);
+    const menu = page.getByRole('button', { name: 'Pet Moru' });
+    await menu.click({ button: 'right' });
+    const item = await page.getByRole('menuitem').boundingBox();
+    expect(item!.height, 'the menu is drawn at its own size, not at Moru\'s 2x').toBeLessThan(48);
+  });
+}

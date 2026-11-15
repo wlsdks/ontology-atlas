@@ -99,16 +99,13 @@ describe('HeroTypewriter', () => {
     expect(200 * longStep).toBeLessThanOrEqual(1800);
   });
 
-  it('reports every typed count after it is on screen, ending on the total', () => {
-    const heard: [number, number][] = [];
-    render(<HeroTypewriter lines={LINES} start onProgress={(typed, total) => heard.push([typed, total])} />);
-    expect(heard[0]).toEqual([0, TOTAL]);
+  it('types one character per step and ends on the whole sentence', () => {
+    render(<HeroTypewriter lines={LINES} start />);
+    expect(typedCount()).toBe(0);
     act(() => void vi.advanceTimersByTime(typingStepMs(TOTAL) * 3 + 1));
-    expect(heard.at(-1)).toEqual([3, TOTAL]);
     expect(typedCount()).toBe(3);
     act(() => void vi.advanceTimersByTime(5000));
-    expect(heard.at(-1)).toEqual([TOTAL, TOTAL]);
-    for (let i = 1; i < heard.length; i += 1) expect(heard[i][0]).toBeGreaterThan(heard[i - 1][0]);
+    expect(typedCount()).toBe(TOTAL);
   });
 
   it('a late tick shows every character the clock has earned, and only the newest lands', () => {
@@ -121,16 +118,6 @@ describe('HeroTypewriter', () => {
     const landing = on.filter((c) => c.classList.contains('gateway-type-land'));
     expect(landing, 'several characters landed at once').toHaveLength(1);
     expect(landing[0]).toBe(on.at(-1));
-  });
-
-  it('under reduced motion the first report is already the whole sentence', () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
-    );
-    const heard: [number, number][] = [];
-    render(<HeroTypewriter lines={LINES} start onProgress={(typed, total) => heard.push([typed, total])} />);
-    expect(heard).toEqual([[TOTAL, TOTAL]]);
   });
 
   it('joins the two lines into one sentence in heroSentence', () => {
