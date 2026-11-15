@@ -24,7 +24,7 @@ interface Options {
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "beginExpandedIndexSelection">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "projectBySlug">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "setHoverEdge" | "setMeaningEditorState" | "setSelectedEdge">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "structure" | "view3d">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "structure">;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
     | "interactionSelectedSlugRef"
@@ -73,7 +73,7 @@ export function useTopologyNavigationActions({
   topologyAgentOrchestration, topologyInspectorState
 }: Options) {
   const { interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed } = topologyCanvasFocus;
-  const { structure, view3d } = topologyPreferences;
+  const { structure } = topologyPreferences;
   const { setHoverEdge, setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
   const { projectBySlug } = topologyGraphProjection;
   const { beginExpandedIndexSelection } = topologyIndexPresentation;
@@ -131,19 +131,12 @@ export function useTopologyNavigationActions({
 
   const handleDatasheetClose = useCallback(() => {
     const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
-    // On the 3D dome ✕ only folds the panel (the first Esc step, `nodePopoverDismissed`) and keeps
-    // the selection;
-    // the dome has no expansion to collapse. Deselect is a background click or the second Esc.
-    if (view3d) {
-      setNodePopoverDismissed(true);
-    } else {
-      handleClose();
-    }
+    handleClose();
     if (typeof window === "undefined") return;
     window.requestAnimationFrame(() => {
       restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
     });
-  }, [handleClose, panelDatasheetModel?.nodeId, view3d, setNodePopoverDismissed]);
+  }, [handleClose, panelDatasheetModel?.nodeId]);
   return { handleClose, handleSelect, handleReplayPastWalk, handleDatasheetClose, handleChatSuggestionAction, handleAcpMapIntent } as const;
 }
 

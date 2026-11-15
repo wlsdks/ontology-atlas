@@ -7,6 +7,8 @@ export { conceptDegrees } from './morph/glide';
 export { extractRealmSubtree } from './model/realm/realm';
 export { predictMapLayoutTarget } from './morph/map-marks';
 export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
+export { OntologyTreeMap } from './ui/OntologyTreeMap';
+export type { TreeMapLabels } from './ui/OntologyTreeMap';
 export type { HexPlacementRecord } from './model/board/hex-board';
 export type { DialLabels, DialMemory } from './dial/types';
 export { capabilityTierRead } from './dial/placement';

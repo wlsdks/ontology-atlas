@@ -37,6 +37,7 @@ import { readHexPlacement } from "../model/map-canvas/hex-board-placement-store"
 import { useMapEvidenceStates } from "../model/map-canvas/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/map-canvas/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
+import { TopologyTreeSurface } from "./TopologyTreeSurface";
 import { DomainStructureMap } from "@/widgets/ontology-map";
 import { TopologyFlatKey } from "./TopologyScopeReadout";
 
@@ -147,7 +148,7 @@ export function TopologyMapRenderer({
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
   const { nodePanelMounted } = topologyInspectorState;
-  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !structure && !hexBoard });
+  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !structure && !hexBoard && !view3d });
   const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
   const missingStructureDocuments = useMemo(() => new Set(ontologyInsight?.nodes.filter(node => node.hasOwnDocument === false).map(node => node.id)), [ontologyInsight]);
   const dialEvidence = mapEvidence.availability === "reading" ? null : mapEvidence.states;
@@ -231,6 +232,23 @@ export function TopologyMapRenderer({
               navigationSpeed={navigationSpeed}
             />
             </ErrorBoundary>
+          ) : morph.surface === "tree" ? (
+            <TopologyTreeSurface
+              nodes={nodes}
+              edges={edges}
+              insightNodes={ontologyInsight?.nodes}
+              vaultKey={vaultIdentity}
+              selectedId={canvasSelectedSlug}
+              onSelect={select}
+              onPaneClick={clear}
+              onDrawnCountChange={onDrawnCountChange}
+              reducedMotion={reducedMotion}
+              arrivedByMorph={morph.arrivedByMorph}
+              synthEvidence={topologyGraphProjection.synthEvidence}
+              navigationSpeed={navigationSpeed}
+              fitToken={combinedFitToken}
+              growthReplayToken={growthReplayToken}
+            />
           ) : morph.surface === "structure" ? (
             <DomainStructureMap
               key={vaultIdentity}
