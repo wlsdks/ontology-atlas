@@ -6,7 +6,7 @@ export const rules = [
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
       /^src\/views\/download\/(?:lib\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/LoopSection\.tsx$/,
+      /^src\/views\/download\/ui\/[A-Za-z]+Section\.tsx$/,
     ],
   },
   {
@@ -16,7 +16,7 @@ export const rules = [
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
       /^src\/views\/download\/(?:lib\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/LoopSection\.tsx$/,
+      /^src\/views\/download\/ui\/[A-Za-z]+Section\.tsx$/,
     ],
   },
   {

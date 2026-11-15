@@ -49,7 +49,7 @@ test.describe("download — still", () => {
         (el) => [...el.querySelectorAll("*")].filter((n) => getComputedStyle(n).visibility === "hidden").length,
       );
       expect(hidden, "headline characters stay hidden without a script to type them").toBe(0);
-      for (const id of ["gateway-hero-trust", "gateway-demo-section", "gateway-loop-cards", "gateway-screens-section", "gateway-start-steps"]) {
+      for (const id of ["gateway-hero-trust", "gateway-demo-section", "gateway-loop-cards", "gateway-screens-section", "gateway-start-steps", "gateway-source-section"]) {
         const section = page.getByTestId(id);
         await section.scrollIntoViewIfNeeded();
         await expect(section).toBeVisible();

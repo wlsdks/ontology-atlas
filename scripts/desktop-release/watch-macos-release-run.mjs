@@ -218,6 +218,7 @@ function refreshDownloadPage(options) {
   console.log(`[desktop-release-run] refreshing /download for ${options.tag}`);
 
   const generated = "src/views/download/model/macos-release.generated.ts";
+  const repoFacts = "src/views/download/model/repo-facts.generated.ts";
   /*
    * ⚠️ `run` answers with a **string** on success and with the raw spawn result when a failure is
    * allowed. Reading `.status` off both crashed this function on its first real outing, after the
@@ -255,12 +256,19 @@ function refreshDownloadPage(options) {
     ["git", ["fetch", "origin", "main", "--quiet"]],
     ["git", ["checkout", "-B", branch, "origin/main", "--quiet"]],
     ["pnpm", ["download:release-facts", "--", `--tag=${options.tag}`]],
-    ["git", ["add", "--", generated]],
+    // The star and fork counts ride along so their printed day is this release's. A failed read
+    // writes nothing, and the release facts still go out with the older day.
+    ["pnpm", ["download:repo-facts"], { optional: true }],
+    ["git", ["add", "--", generated, repoFacts]],
     ["git", ["commit", "--quiet", "-m", `chore: point /download at ${options.tag}`]],
     ["git", ["push", "--quiet", "-u", "origin", branch]],
   ];
-  for (const [bin, args] of steps) {
+  for (const [bin, args, { optional = false } = {}] of steps) {
     const step = attempted(bin, args);
+    if (!step.ok && optional) {
+      console.log(`[desktop-release-run] ${bin} ${args.join(" ")} skipped: ${step.output}`);
+      continue;
+    }
     if (!step.ok) {
       console.log(`[desktop-release-run] ${bin} ${args.join(" ")} failed: ${step.output}`);
       console.log("[desktop-release-run] finish the /download refresh by hand; the release is fine.");
