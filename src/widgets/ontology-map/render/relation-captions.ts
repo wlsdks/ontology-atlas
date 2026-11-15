@@ -18,17 +18,6 @@ export function captionNormal(from: { x: number; y: number }, to: { x: number; y
   return { x: (sign * dy) / length, y: (-sign * dx) / length };
 }
 
-export function captionWithinFlatBudget(edge: {
-  attended: boolean;
-  touchesFocus: boolean;
-  spine: boolean;
-  folded: boolean;
-}): boolean {
-  if (edge.attended) return true;
-  if (edge.folded) return false;
-  return edge.touchesFocus || edge.spine;
-}
-
 export function placeRelationCaptions(
   candidates: readonly RelationCaption[],
   reserved: readonly CaptionReservation[],

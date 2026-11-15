@@ -1,4 +1,3 @@
-import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
@@ -10,7 +9,6 @@ import type { EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm } from "../../render/cluster-chips";
 import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-depth-parallax";
-import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import { HIT_TOUCH_SLACK_PX, hitTestWorld, worldToScreen } from "../camera/topology-camera-math";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { radiusForKind, type TopologyWorld } from "../world/topology-world";
@@ -36,7 +34,6 @@ export function collectHoverAvoidRects(
   height: number,
   tokens: OntologyMapTokens,
   clustered: ReadonlySet<string> | null,
-  domeFrame: ReadonlyMap<string, DomeNodeFrame> | null,
   canvasOrigin: { x: number; y: number }, pointer: {
     x: number;
     y: number;
@@ -52,10 +49,9 @@ export function collectHoverAvoidRects(
   for (const node of dialFrame ? [] : world.nodes) {
     if (clustered?.has(node.id)) continue;
     if ((alphas.get(node.id) ?? 1) < 0.05) continue;
-    const off = domeFrame?.get(node.id);
-    const screen = worldToScreen(camera, width, height, node.x + (off?.dx ?? 0), node.y + (off?.dy ?? 0));
+    const screen = worldToScreen(camera, width, height, node.x, node.y);
     if (Math.abs(screen.x - pointer.x) > HOVER_AVOID_REACH_PX || Math.abs(screen.y - pointer.y) > HOVER_AVOID_REACH_PX) continue;
-    const r = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value * (off?.s ?? 1);
+    const r = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
     const rr = r + HOVER_AVOID_MARGIN_PX;
     out.push({ x: canvasOrigin.x + screen.x - rr, y: canvasOrigin.y + screen.y - rr, w: 2 * rr, h: 2 * rr });
   }
@@ -78,8 +74,8 @@ export function createPointerHitTests(ctx: PointerContext) {
   const {
     worldRef, cameraRef, viewportRef, focusedSlugRef, hoveredNodeIdRef, reducedMotionRef,
     overviewScaleRef, selectedEdgeRef, clusterChipsRef, clusteredIdsRef, expandPrefRef,
-    clusterBarLabelsRef, realmParallaxRef, realmTierKindsRef, domeRuntimeRef, neuralRampRef,
-    tierRevealRef, pathEdgeIdsRef, visitedTrailRef, domeFrameNow,
+    clusterBarLabelsRef, realmParallaxRef, realmTierKindsRef,
+    tierRevealRef, pathEdgeIdsRef, visitedTrailRef,
   } = ctx;
 
   /**
@@ -104,8 +100,6 @@ export function createPointerHitTests(ctx: PointerContext) {
     const batchSize = expandPrefRef?.current.batchSize ?? DEFAULT_EXPAND.batchSize;
     const barLabels = clusterBarLabelsRef?.current ?? undefined;
     const focusedSlug = focusedSlugRef.current;
-    // 3D view — the same frame offset the draw added to the chip anchor and parent.
-    const chipDomeFrame = domeFrameNow();
     for (const chip of chips) {
       // Dockability is **the same condition as the draw**: can the parent node be
       // found in the graph. A batch-reveal `+N More` chip has a synthetic parent id
@@ -126,8 +120,7 @@ export function createPointerHitTests(ctx: PointerContext) {
       if (form === "badge" || form === "bar") {
         // S10 defect 2 — the node-docked shape. Derived with **the same** rectangle function as the draw.
         if (!parentNode || !tokens) continue;
-        const chipOff = chipDomeFrame?.get(parentNode.id);
-        const parentScreen = worldToScreen(camera, width, height, parentNode.x + (chipOff?.dx ?? 0), parentNode.y + (chipOff?.dy ?? 0));
+        const parentScreen = worldToScreen(camera, width, height, parentNode.x, parentNode.y);
         const nodeScreenRadius = radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value;
         rect =
           form === "bar"
@@ -149,8 +142,7 @@ export function createPointerHitTests(ctx: PointerContext) {
               clusterBadgeLabel(chip.count, chip.expanded),
               scale);
       } else {
-        const chipOff = chipDomeFrame?.get(chip.parentId);
-        const screen = worldToScreen(camera, width, height, chip.anchor.x + (chipOff?.dx ?? 0), chip.anchor.y + (chipOff?.dy ?? 0));
+        const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
         rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded), scale);
       }
       if (px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h) {
@@ -193,21 +185,11 @@ export function createPointerHitTests(ctx: PointerContext) {
     // S10 defect 3 — the depth-based tier override during realm expansion (the same map as the draw).
     const realmTierKinds = realmTierKindsRef?.current ?? null;
     // S5 — with realm parallax active, apply the same band offsets to hit testing as
-    // the draw. 3D view — compose the offsets and perspective factor from the **same
-    // frame map** the draw rendered (so a click mid-rotation is judged in this
-    // frame's coordinates).
+    // the draw.
     const parallax = realmParallaxRef?.current ?? null;
-    const domeFrame = domeFrameNow();
-    const renderOffsetForNode =
-      parallax || domeFrame
-        ? (node: { id: string; x: number; y: number; kind: "project" | "domain" | "capability" | "element" }) => {
-          const pOff = parallax
-            ? depthParallaxOffsetFor(parallax.depthById.get(node.id), parallax.depth2, parallax.depth3)
-            : ZERO_PARALLAX;
-          const dOff = domeFrame?.get(node.id);
-          return { x: pOff.x + (dOff?.dx ?? 0), y: pOff.y + (dOff?.dy ?? 0) };
-        }
-        : undefined;
+    const renderOffsetForNode = parallax
+      ? (node: { id: string }) => depthParallaxOffsetFor(parallax.depthById.get(node.id), parallax.depth2, parallax.depth3)
+      : undefined;
     return hitTestWorld(
       world,
       camera,
@@ -227,11 +209,7 @@ export function createPointerHitTests(ctx: PointerContext) {
           realmTierKinds,
           // The alpha the draw used this frame — every see-through channel from one source.
           lastDrawnNodeAlphas()),
-      renderOffsetForNode,
-      // 3D perspective factor — the same s the draw multiplied by, applied to the hit disc too.
-      domeFrame ? (node) => domeFrame.get(node.id)?.s ?? 1 : undefined,
-      // 3D depth — among overlapping discs the nearer (brighter, larger) node wins.
-      domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined);
+      renderOffsetForNode);
   };
 
   /**
@@ -260,12 +238,7 @@ export function createPointerHitTests(ctx: PointerContext) {
     const focusedNodeId = focusedSlugRef.current;
     // The cache key — every input that decides the candidate list. It holds all three
     // camera axes, so a pan or zoom makes a new key every frame while a still camera
-    // keeps the same one. 3D view — edge endpoints also need the same frame offsets as
-    // the draw for hover and clicks to follow the drawn curve. The frame generation
-    // (frameEpoch) is in the key: mid-rotation every frame has new coordinates, while a
-    // still view keeps the same generation.
-    const domeFrame = domeFrameNow();
-    const domeEpoch = domeFrame ? (domeRuntimeRef?.current?.frameEpoch ?? 0) : -1;
+    // keeps the same one.
     const selectedEdge = selectedEdgeRef?.current ?? null;
     const pathIds = pathEdgeIdsRef?.current ?? null;
     const visited = visitedTrailRef?.current ?? [];
@@ -282,7 +255,6 @@ export function createPointerHitTests(ctx: PointerContext) {
       pathIds ? [...pathIds].sort().join(",") : "",
       visited.join(","),
       dial?.contextOnly ?? false,
-      domeEpoch
     ].join("|");
     // Sets and maps are compared **by reference** — comparing only sizes lets a
     // different collection of the same size through, which is the quietest kind of
@@ -313,27 +285,19 @@ export function createPointerHitTests(ctx: PointerContext) {
       const node = world.nodeById.get(id);
       if (!node)
         return undefined;
-      // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
-      const domeS = domeFrame?.get(id)?.s ?? 1;
-      return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
+      return radiusForKind(node.kind, tokens) * node.magnitudeScale * scale + HIT_TOUCH_SLACK_PX;
     };
     const candidates: EdgeHitCandidate[] = [];
-    // The same live projected curve as paint, including assembly and orbit.
-    // Averaging endpoint offsets onto the flat bow misses the visible 3D line.
     const cam = cameraRef.current;
-    const ZERO = { dx: 0, dy: 0, s: 1 };
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId))
         continue;
-      const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
-      const offB = domeFrame?.get(edge.targetId) ?? ZERO;
-      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
       candidates.push({
         edge,
         ...clipBranchRelation(dial, edge.sourceId, edge.targetId, {
-          a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
-          b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
-          control: worldToScreen(cam, width, height, control.x, control.y),
+          a: worldToScreen(cam, width, height, edge.ax, edge.ay),
+          b: worldToScreen(cam, width, height, edge.bx, edge.by),
+          control: worldToScreen(cam, width, height, edge.controlX, edge.controlY),
         }),
         aRadius: bodyRadius(edge.sourceId),
         bRadius: bodyRadius(edge.targetId),

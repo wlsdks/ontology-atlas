@@ -16,8 +16,6 @@ import {
   type SelectionCamera,
   type SelectionSource
 } from "../../model/camera/flat-selection-camera";
-import { commitDomeEntrySweep } from "../../model/dome-view/frame";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
 import {
   type RealmTransitionState
@@ -64,9 +62,7 @@ interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
   overviewScaleRef: RefObject<number>;
-  view3dRef: RefObject<boolean>;
   realmTransitionRef: RefObject<RealmTransitionState>;
-  domeRuntimeRef: RefObject<DomeRuntime | null>;
   realmDataRef: RefObject<RealmRuntimeData | null>;
   expandedParentsRef: RefObject<ReadonlySet<string>>;
   cameraTokens: <T extends { safeInsetLeft: number; safeInsetRight: number; }>(tokens: T) => T;
@@ -103,9 +99,7 @@ export function useTopologyFocusNavigation({
   worldRef,
   viewportRef,
   overviewScaleRef,
-  view3dRef,
   realmTransitionRef,
-  domeRuntimeRef,
   realmDataRef,
   expandedParentsRef,
   cameraTokens,
@@ -132,7 +126,7 @@ export function useTopologyFocusNavigation({
   const flyToNode = useCallback((slug: string) => {
     const phase = realmTransitionRef.current.phase;
     const realm = phase === "active" ? realmDataRef.current : null;
-    if (view3dRef.current || (phase !== "idle" && !realm?.flat)) return;
+    if (phase !== "idle" && !realm?.flat) return;
     const raw = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -151,38 +145,15 @@ export function useTopologyFocusNavigation({
     });
     focusLeashPxRef.current = branchTargetLeash(world.nodeById.get(slug)!, target, width, height, tokens);
     moveCamera(target, raw);
-  }, [cameraGestureRevisionRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, selectionCameraRef, focusLeashPxRef, moveCamera, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, view3dRef, viewportRef, worldRef]);
+  }, [cameraGestureRevisionRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, selectionCameraRef, focusLeashPxRef, moveCamera, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, viewportRef, worldRef]);
 
   useEffect(() => {
-    if (lastFocusedSlugRef.current === focusedSlug && (focusedSlug === null || view3dRef.current || handledInitialFocus.current)) return;
+    if (lastFocusedSlugRef.current === focusedSlug && (focusedSlug === null || handledInitialFocus.current)) return;
     const preselectedOnArrival = !handledInitialFocus.current && focusedSlug !== null && lastFocusedSlugRef.current === focusedSlug;
     const releasedSlug = lastFocusedSlugRef.current;
     const releasedLeash = focusLeashPxRef.current;
-        /*
-         * In 3D a click only selects: the camera and pose stay put, and flying to a node is its own gesture
-         * (double-click or Enter, consumed by the dome frame, `DOME_FLY_MS`). A selection stops the attention
-         * spin; the nudge off the inspector is undone on deselect. Esc and Home fly back, a click does not.
-         */
-        if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
-      handledInitialFocus.current = true;
-      lastFocusedSlugRef.current = focusedSlug;
-      egoRevealBatchesRef.current = 1;
-      selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
-      const dome = domeRuntimeRef.current;
-      if (focusedSlug !== null) {
-        dome.spinArmed = false;
-        commitDomeEntrySweep(dome);
-      } else if (dome.nudgeReturn !== null) {
-        dome.flyRequest = { slug: null, unnudge: true };
-      }
-      lastActiveMsRef.current = performance.now();
-      return;
-    }
-
-    const requested3d = view3dRef.current;
     let raf = 0;
     const resolveFocus = () => {
-      if (view3dRef.current !== requested3d) return;
       const tokens = readOntologyMapTokensOrNull();
       const world = worldRef.current;
       const { width, height } = viewportRef.current;
@@ -302,7 +273,7 @@ export function useTopologyFocusNavigation({
     };
     raf = requestAnimationFrame(resolveFocus);
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, panelInsetsRef, flyToNode, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
+  }, [focusedSlug, panelInsetsRef, flyToNode, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, realmTransitionRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
 
   return { flyToNode };
 }

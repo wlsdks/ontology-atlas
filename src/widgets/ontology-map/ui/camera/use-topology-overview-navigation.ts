@@ -5,9 +5,6 @@ import {
   type RefObject
 } from "react";
 import type { CameraTarget } from "../../engine/camera";
-import { DOME_PITCH_DEFAULT, DOME_POSE_MS, domeNearestYawTurn } from "../../model/dome-view/orbit";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeModel } from "../../model/dome-view/types";
 import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
@@ -35,8 +32,6 @@ interface Dependencies {
   dampingRef: RefObject<number>;
   cameraAngularFreqRef: RefObject<number | null>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
-  domeRuntimeRef: RefObject<DomeRuntime | null>;
-  domeFitTarget: (model: DomeModel, yaw: number, pitch: number, width: number, height: number, tokens: OntologyMapTokens) => CameraTarget | null;
   lastActiveMsRef: RefObject<number>;
   overviewFitRef: RefObject<"full" | "spine">;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
@@ -59,8 +54,6 @@ export function useTopologyOverviewNavigation({
   dampingRef,
   cameraAngularFreqRef,
   beginCameraTween,
-  domeRuntimeRef,
-  domeFitTarget,
   lastActiveMsRef,
   overviewFitRef,
   spotlightIdsRef,
@@ -105,35 +98,6 @@ export function useTopologyOverviewNavigation({
       beginCameraTween(target);
       return;
     }
-    // 3D "reset" — the way back after spinning the dome until you are lost.
-    // Eases the pose to the default (yaw 0.55, pitch 0.34) and fits the camera
-    // to that pose's dome bbox. The yaw target is the equivalent angle nearest
-    // the current one, so it never takes the long way round.
-    const dome = domeRuntimeRef.current;
-    if (dome !== null && dome.active) {
-      const targetYaw = domeNearestYawTurn(0.55, dome.yaw);
-      dome.yawVel = 0;
-      // Drop the landing target too — new input and an explicit reset always win.
-      dome.yawSnap = null;
-      dome.pitchVel = 0;
-      dome.orbiting = false;
-      dome.poseTween = { startYaw: dome.yaw, startPitch: dome.pitch, targetYaw, targetPitch: DOME_PITCH_DEFAULT, startMs: performance.now(), durationMs: DOME_POSE_MS };
-      // Auto-align is the explicit reset that sends the pose home, and it is
-      // the one place the attention spin is rearmed after user interaction
-      // lowered `spinArmed`.
-      dome.spinArmed = true;
-      const target = domeFitTarget(dome.model, targetYaw, DOME_PITCH_DEFAULT, width, height, tokens);
-      if (target !== null) {
-        cameraTargetRef.current = target;
-        dome.fitScale = target.tscale;
-        userDrivenCameraRef.current = false;
-        dampingRef.current = tokens.cameraDampingDefault;
-        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        beginCameraTween(target);
-        lastActiveMsRef.current = performance.now();
-        return;
-      }
-    }
     // Expand-all is a lens and its frame is the lens fit: the overview fit reserves the tool lane,
     // docking chips and readout, which would shrink and move the expanded map on "fit" or
     // "auto-arrange". One lens, one frame.
@@ -157,6 +121,6 @@ export function useTopologyOverviewNavigation({
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, cameraTokens, clusteredIdsRef, dampingRef, domeFitTarget, domeRuntimeRef, expandedParentsRef, hasInitializedRef, lastActiveMsRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFitRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, cameraTokens, clusteredIdsRef, dampingRef, expandedParentsRef, hasInitializedRef, lastActiveMsRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFitRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
   return { runOverviewFit };
 }
