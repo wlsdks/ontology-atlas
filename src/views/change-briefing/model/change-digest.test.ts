@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
-import { buildChangeDigest, changeBody, changeTitle, directoryCounts, titleWithoutHead, latestChangeDay, mainDirectory, pullRequestNumber, titleLabel } from './change-digest';
+import { buildChangeDigest, changeBody, changeTitle, commitType, directoryCounts, kindCounts, titleWithoutHead, latestChangeDay, mainDirectory, pullRequestNumber, titleLabel } from './change-digest';
 
 let sequence = 0;
 function change(subject: string, options: { files?: number; paths?: string[]; message?: string; at?: string } = {}): BriefingCommit {
@@ -158,6 +158,37 @@ describe('groups', () => {
   it('finds the local day of the newest change', () => {
     expect(latestChangeDay([change('a', { at: '2026-11-10T12:00:00' }), change('b', { at: '2026-11-13T12:00:00' })])).toBe('2026-11-13');
     expect(latestChangeDay([])).toBeNull();
+  });
+});
+
+describe('kinds of work', () => {
+  it.each([
+    ['Merge #3: feat(Brand)!: adopt motions', 'feat'],
+    ['Fix: keep the camera', 'Fix'],
+    ['Merge pull request #12 from someone/branch', 'refactor'],
+    ['Revert "feat: adopt motions"', null],
+    ['A sentence (with brackets): not a type', null],
+  ])('reads the commit type of %j as its author typed it', (subject, type) => {
+    expect(commitType(subject, `${subject}\n\nrefactor(map): split the painter`)).toBe(type);
+  });
+
+  it('names the five most used types, sums the rest under other and adds up to the headline', () => {
+    const typed = (type: string, count: number) => Array.from({ length: count }, (_, index) => change(`${type}(map): work ${index}`));
+    const commits = [...typed('fix', 9), ...typed('feat', 12), ...typed('docs', 4), ...typed('refactor', 5), ...typed('test', 2), ...typed('chore', 2), ...typed('perf', 1), change('Update the readme')];
+    const digest = buildChangeDigest(commits, noConcepts);
+    expect(digest.kinds).toEqual({ kinds: [{ type: 'feat', count: 12 }, { type: 'fix', count: 9 }, { type: 'refactor', count: 5 }, { type: 'docs', count: 4 }, { type: 'chore', count: 2 }], other: 4 });
+    expect(digest.kinds!.kinds.reduce((sum, kind) => sum + kind.count, digest.kinds!.other)).toBe(digest.changes);
+  });
+
+  it('draws no kinds when under half the titles carry a type', () => {
+    expect(buildChangeDigest([change('fix: one'), change('Update the readme'), change('Bump the version')], noConcepts).kinds).toBeNull();
+    expect(buildChangeDigest([change('fix: one'), change('Update the readme')], noConcepts).kinds).not.toBeNull();
+  });
+
+  it('splits a group into the period kinds with the remainder last', () => {
+    const digest = buildChangeDigest([change('fix(map): a'), change('fix(map): b'), change('feat(map): c'), change('Update the map')], noConcepts);
+    expect(kindCounts(digest.groups[0].changes, digest.kinds!)).toEqual([2, 1, 0]);
+    expect(kindCounts(digest.groups.at(-1)!.changes, digest.kinds!)).toEqual([0, 0, 1]);
   });
 });
 
