@@ -860,13 +860,13 @@ describe("coupling cloud lets relations decide positions", () => {
     }
   });
 
-  it("turns about the clusters' ring axis, or a small rotation swings the cloud off screen", () => {
+  it("keeps the clusters' centre near the spin axis, or a small rotation swings the cloud off screen", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const hearts = nodes.filter((node) => node.kind === "domain").map((node) => cloud.coords.get(node.id)!);
     expect(hearts.length).toBeGreaterThan(1);
     const mx = hearts.reduce((sum, c) => sum + c.px, 0) / hearts.length;
     const mz = hearts.reduce((sum, c) => sum + c.pz, 0) / hearts.length;
-    expect(Math.hypot(mx, mz)).toBeLessThan(1e-6);
+    expect(Math.hypot(mx, mz)).toBeLessThan(DOME_FIT_RADIUS * 0.1);
   });
 
   it("keeps the radius on the dome scale, so camera fit and fog apply alike to both layouts", () => {

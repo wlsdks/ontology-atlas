@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clusterRadius, clusterRingAnchors } from './cluster-ring';
+import { clusterRadius, clusterVolumeAnchors } from './cluster-volume';
 import { standingDomainTitles, type TitleCandidate } from './neural-titles';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { DOME_FIT_RADIUS, DOME_FOCAL } from './projection';
@@ -11,7 +11,7 @@ const SCREEN_PX_PER_UNIT = 2.4;
 
 function candidatesAt(members: number[], yaw: number): TitleCandidate[] {
   const radii = members.map(clusterRadius);
-  const anchors = clusterRingAnchors(radii, DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT);
+  const { anchors } = clusterVolumeAnchors(radii, DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT);
   const reach = Math.max(...anchors.map((a, i) => Math.hypot(a.x, a.y, a.z) + radii[i]));
   const norm = DOME_FIT_RADIUS / reach;
   const [cy, sy, cp, sp] = [Math.cos(yaw), Math.sin(yaw), Math.cos(DOME_PITCH_DEFAULT), Math.sin(DOME_PITCH_DEFAULT)];

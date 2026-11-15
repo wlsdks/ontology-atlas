@@ -1,5 +1,5 @@
 import { BarnesHutOctree, CollisionHashGrid } from './cloud-spatial-index';
-import { clusterRadius, clusterRingAnchors } from './cluster-ring';
+import { clusterRadius, clusterVolumeAnchors } from './cluster-volume';
 import { findCouplingGroups } from './coupling-groups';
 import { clusterDomainOf } from './neural-cells';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
@@ -103,7 +103,7 @@ export function createCouplingCloudRelaxer(
   }
 
   /*
-   * Each domain is drawn toward its ring anchor (`cluster-ring.ts`, in id order)
+   * Each domain is drawn toward its anchor (`cluster-volume.ts`, in id order)
    * and its members toward the domain, so "whose is this" has a place. A layout aid over the
    * declared `contains` chain; no edge is invented and springs decide inside a cluster.
    */
@@ -120,12 +120,11 @@ export function createCouplingCloudRelaxer(
   const membersOf = new Uint32Array(domainIds.length);
   for (let i = 0; i < n; i += 1) if (domainIndexOf[i] >= 0) membersOf[domainIndexOf[i]] += 1;
   const reachOf = Float64Array.from(membersOf, clusterRadius);
-  // Concepts no domain reaches, the project among them, gather as one group at the ring's centre.
+  // Concepts no domain reaches, the project among them, gather as one group at the pack's centre.
   let looseCount = 0;
   for (let i = 0; i < n; i += 1) if (domainIndexOf[i] < 0) looseCount += 1;
   const looseReach = domainIds.length >= 2 ? clusterRadius(looseCount) : Infinity;
-  const anchors = clusterRingAnchors(Array.from(reachOf), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT, Number.isFinite(looseReach) ? looseReach : 0);
-  const looseY = anchors.length > 0 ? anchors[0].y : 0;
+  const { anchors, centre } = clusterVolumeAnchors(Array.from(reachOf), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT, Number.isFinite(looseReach) ? looseReach : 0);
   const anchorX = Float64Array.from(anchors, (a) => a.x);
   const anchorY = Float64Array.from(anchors, (a) => a.y);
   const anchorZ = Float64Array.from(anchors, (a) => a.z);
@@ -148,7 +147,7 @@ export function createCouplingCloudRelaxer(
         if (domainIndexOf[i] >= 0) continue;
         const r = Math.hypot(px[i], pz[i]) || 1;
         const k = Math.min(1, (looseReach * CLOUD_SEED_SHARE_OF_REACH) / r);
-        px[i] *= k; pz[i] *= k; py[i] = looseY;
+        px[i] = centre.x + px[i] * k; py[i] = centre.y; pz[i] = centre.z + pz[i] * k;
       }
     }
     for (let i = 0; i < n; i += 1) {
@@ -169,9 +168,9 @@ export function createCouplingCloudRelaxer(
     }
     for (let i = 0; i < n; i += 1) {
       const slot = domainIndexOf[i];
-      const cx = slot >= 0 ? anchorX[slot] : 0;
-      const cy = slot >= 0 ? anchorY[slot] : looseY;
-      const cz = slot >= 0 ? anchorZ[slot] : 0;
+      const cx = slot >= 0 ? anchorX[slot] : centre.x;
+      const cy = slot >= 0 ? anchorY[slot] : centre.y;
+      const cz = slot >= 0 ? anchorZ[slot] : centre.z;
       const reach = slot >= 0 ? reachOf[slot] : looseReach;
       const dx = px[i] - cx;
       const dy = py[i] - cy;
@@ -412,7 +411,7 @@ export function createCouplingCloudRelaxer(
   const roundY = new Float64Array(n);
   const roundZ = new Float64Array(n);
   /**
-   * Members pressed against their cluster's reach form a slab that is thin across the ring, so a side
+   * Members pressed against their cluster's reach form a slab that is thin along one axis, so the
    * cluster reads narrow. The drawn copy stretches each cluster's thinner axes (radial, tangential,
    * height) until their spread matches its widest, inside its reach; the relaxation is untouched. O(n).
    */
@@ -475,7 +474,7 @@ export function createCouplingCloudRelaxer(
     let mx = 0;
     let my = 0;
     let mz = 0;
-    // Clusters' rings are centred on the spin axis by construction.
+    // The cluster volume is centred on the origin by construction.
     if (domainIds.length < 2) {
       for (let i = 0; i < n; i += 1) {
         mx += roundX[i];
