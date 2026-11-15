@@ -1,24 +1,50 @@
 'use client';
 
-import type { CSSProperties } from 'react';
-import { CalendarClock, ChevronDown, Pause, Play } from 'lucide-react';
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { CalendarClock, Pause, Play } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { cadenceKey, cadenceMinutes, type RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { cn } from '@/shared/lib/cn';
-import { RowButton, RowDisclosure } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { AutomationAllowHere } from './AutomationAllowHere';
-import { AutomationScheduleActions } from './AutomationScheduleActions';
-import { AutomationRunHistory } from './AutomationRunHistory';
+import { AutomationRemoveConfirm, AutomationScheduleActions, useScheduleChange } from './AutomationScheduleActions';
+import { useRunLead, useUnrecordedText, WARNING_INK } from './AutomationRunHistory';
 import { automationDate } from './automation-date';
-import { AUTOMATION_ROW_GRID, AUTOMATION_ROW_PAD } from './AutomationListFrame';
+import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './AutomationListFrame';
 
-export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdit, arrival }: {
+const ROW_SELECTOR = '[data-schedule-row]';
+
+/** Up and Down walk the schedule rows; Enter and Space select the focused one. */
+function onRowKeyDown(event: KeyboardEvent<HTMLDivElement>, select: () => void) {
+  if (event.target !== event.currentTarget) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    select();
+    return;
+  }
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  const rows = [...(event.currentTarget.closest('[role="rowgroup"]')?.querySelectorAll<HTMLElement>(ROW_SELECTOR) ?? [])];
+  const next = rows[rows.indexOf(event.currentTarget) + (event.key === 'ArrowDown' ? 1 : -1)];
+  if (!next) return;
+  event.preventDefault();
+  next.focus();
+}
+
+/** A full-width line under the schedule's row: never folded, there while its state holds. */
+function RowStrip({ children, testId }: { children: ReactNode; testId?: string }) {
+  return <div role="row" data-testid={testId} className="bg-[color:var(--color-overlay-1)]">
+    <div role="gridcell" aria-colspan={4} className="px-[var(--card-pad)] py-3">{children}</div>
+  </div>;
+}
+
+export function AutomationScheduleRow({ round, runner, selected, tabbable, onSelect, onEdit, arrival }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;
-  expanded: boolean;
-  onToggle: () => void;
+  selected: boolean;
+  /** The one row the Tab key lands on; the arrows reach the rest. */
+  tabbable: boolean;
+  onSelect: () => void;
   onEdit: () => void;
   arrival?: { className?: string; style?: CSSProperties };
 }) {
@@ -26,10 +52,17 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdi
   const cadenceText = useTranslations('library.rounds.cadence');
   const ledgerText = useTranslations('library.rounds.ledger');
   const locale = useLocale();
-  const entries = runner.ledger.filter((entry) => entry.roundId === round.id);
+  const runLead = useRunLead();
+  const unrecordedText = useUnrecordedText();
+  const change = useScheduleChange();
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const recorded = runner.ledger.findLast((entry) => entry.roundId === round.id);
   const unrecorded = runner.unrecorded.get(round.id);
-  const recorded = entries.at(-1);
-  const last = unrecorded && (!recorded || Date.parse(unrecorded.endedAt) >= Date.parse(recorded.endedAt)) ? unrecorded : recorded;
+  const lastIsUnrecorded = unrecorded !== undefined && (!recorded || Date.parse(unrecorded.endedAt) >= Date.parse(recorded.endedAt));
+  const last = lastIsUnrecorded ? unrecorded : recorded;
+  const lead = !lastIsUnrecorded && recorded ? runLead(recorded) : null;
+  const summary = lastIsUnrecorded ? unrecordedText(unrecorded) : lead ? lead.text : t('noRuns');
   const running = runner.running?.roundId === round.id;
   const key = cadenceKey(round.cadence);
   const time = 'daily' in round.cadence ? round.cadence.daily : '09:00';
@@ -38,56 +71,75 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdi
     : key === 'hours' ? cadenceText('everyHours', { count: minutes! / 60 })
     : key === 'hour' || key === '6h' ? t(`cadence.${key}`)
     : t(key === 'daily' ? 'cadence.dailyAt' : 'cadence.weekdaysAt', { time });
-  const detailId = `automation-detail-${round.id}`;
   const notHere = runner.notAllowedHere.has(round.id);
   const onHere = round.enabled && !notHere;
   const allowSentenceId = `automation-allow-${round.id}`;
+  const StateIcon = running ? Play : onHere ? CalendarClock : Pause;
+
+  const closeConfirm = () => {
+    setConfirmRemove(false);
+    menuTrigger.current?.focus();
+  };
 
   return (
-    // A divided row inside the list panel; the expanded row and its detail share one raised surface.
-    <li style={arrival?.style} className={cn('min-w-0 border-t border-[color:var(--color-divider)] transition-[background-color] motion-reduce:transition-none',
-      expanded && 'bg-[color:var(--color-overlay-1)]', arrival?.className)}>
-      <RowButton onClick={onToggle} aria-expanded={expanded} aria-controls={detailId}
-        data-testid={`automation-${round.id}`} className={cn('w-full text-left', AUTOMATION_ROW_PAD)} hoverSurface="lift">
-        <span className="mt-1 flex w-4 flex-none self-start justify-center text-[color:var(--color-text-tertiary)]">
-          {running ? <Play size={ICON_SIZE.md} aria-hidden /> : onHere ? <CalendarClock size={ICON_SIZE.md} aria-hidden /> : <Pause size={ICON_SIZE.md} aria-hidden />}
-        </span>
-        <span className={AUTOMATION_ROW_GRID}>
-          <span data-automation-col="name" className="col-span-2 min-w-0 md:col-span-1">
-            <span className="block break-words text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{round.name}</span>
-            <span className="mt-1 block text-body text-[color:var(--color-text-tertiary)]">
+    <div role="presentation" style={arrival?.style} className={cn('min-w-0 border-t border-[color:var(--color-divider)] max-md:first:border-t-0', arrival?.className)}>
+      <div role="row" aria-selected={selected} tabIndex={tabbable ? 0 : -1} data-schedule-row data-testid={`automation-${round.id}`}
+        onClick={onSelect} onKeyDown={(event) => onRowKeyDown(event, onSelect)}
+        className={cn(AUTOMATION_ROW_GRID, 'cursor-pointer py-3.5 transition-[background-color] motion-reduce:transition-none',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+          selected ? 'bg-[color:var(--color-overlay-2)]' : 'hover:bg-[color:var(--color-overlay-1)]')}>
+        <div role="gridcell" data-automation-col="name" className={AUTOMATION_CELL.name}>
+          <span title={round.name} className="block truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{round.name}</span>
+          <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-tertiary)]">
+            <StateIcon size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+            <span className="truncate">
               {running ? `${t('state.running')} · ${ledgerText(runner.running?.phase === 'agent' ? 'phaseAgent' : 'phaseChecking')}`
                 : onHere ? t('state.on') : round.enabled ? t('allowHere.state') : t('state.paused')}
             </span>
           </span>
-          <span data-automation-col="cadence" className="min-w-0 text-body text-[color:var(--color-text-secondary)]">
-            <span className="block">{cadence}</span>
-            <span className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">
-              {onHere ? t('nextRunAt', { time: automationDate(locale, round.nextDueAt) }) : notHere ? t('allowHere.noNextRun') : t('noNextRun')}
-            </span>
-          </span>
-          <span data-automation-col="outcome" className="min-w-0 text-body text-[color:var(--color-text-secondary)] md:text-right">
-            <span className="block">{last ? t(`outcome.${last.outcome}`) : t('outcome.none')}</span>
-            {last ? <time dateTime={last.endedAt} className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">{automationDate(locale, last.endedAt)}</time> : null}
-            {last && last === unrecorded ? <span className="mt-1 block text-label text-[color:var(--color-amber-source-a90)]">{t('unrecorded.short')}</span> : null}
-          </span>
-        </span>
-        <ChevronDown size={ICON_SIZE.lg} aria-hidden className={cn('size-4 flex-none self-center text-[color:var(--color-text-tertiary)] transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
-      </RowButton>
-
-      {notHere ? (
-        <AutomationAllowHere round={round} runner={runner} cadence={cadence}
-          changed={runner.changedSinceAllowed.has(round.id)} sentenceId={allowSentenceId} />
-      ) : null}
-
-      {/* The row's inset, then the w-4 icon slot and gap-3: detail text starts on the name's line. */}
-      <RowDisclosure id={detailId} open={expanded} className="pb-5 pl-[calc(var(--card-pad)+1.75rem)] pr-[var(--card-pad)]">
-        <div className="space-y-5 border-t border-[color:var(--color-divider)] pt-4">
-        {'query' in round && round.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]"><span className="text-[color:var(--color-text-tertiary)]">{t('scopeLabel')} · </span>{round.query}</p> : null}
-        <AutomationRunHistory entries={entries} unrecorded={unrecorded} />
-        <AutomationScheduleActions round={round} runner={runner} notAllowedSentenceId={notHere ? allowSentenceId : null} onEdit={onEdit} />
         </div>
-      </RowDisclosure>
-    </li>
+        <div role="gridcell" data-automation-col="cadence" className={AUTOMATION_CELL.cadence}>
+          <span className="block truncate text-body text-[color:var(--color-text-secondary)]">{cadence}</span>
+          <span className="mt-0.5 block truncate text-label text-[color:var(--color-text-tertiary)]">
+            {onHere ? t('nextRunAt', { time: automationDate(locale, round.nextDueAt) }) : notHere ? t('allowHere.noNextRun') : t('noNextRun')}
+          </span>
+        </div>
+        <div role="gridcell" data-automation-col="outcome" className={AUTOMATION_CELL.outcome}>
+          <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {last ? t(`outcome.${last.outcome}`) : t('outcome.none')}
+          </span>
+          <span data-testid="automation-summary" title={summary} data-run-note={lead?.note ?? undefined}
+            className={cn('mt-0.5 block truncate text-body', lead?.warning || lastIsUnrecorded ? WARNING_INK : 'text-[color:var(--color-text-secondary)]')}>
+            {summary}
+          </span>
+          <span className="mt-0.5 block min-h-[var(--leading-label)] truncate text-label text-[color:var(--color-text-tertiary)]">
+            {last ? <time dateTime={last.endedAt}>{automationDate(locale, last.endedAt)}</time> : null}
+            {lastIsUnrecorded ? <span className={WARNING_INK}> · {t('unrecorded.short')}</span> : null}
+          </span>
+        </div>
+        {/* The actions answer their own presses; none of them selects the row. */}
+        <div role="gridcell" className={AUTOMATION_CELL.actions} onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}>
+          <AutomationScheduleActions ref={menuTrigger} round={round} runner={runner} change={change}
+            notAllowedSentenceId={notHere ? allowSentenceId : null} onEdit={onEdit} onRemove={() => setConfirmRemove(true)} />
+        </div>
+      </div>
+      {notHere ? (
+        <RowStrip>
+          <AutomationAllowHere round={round} runner={runner} cadence={cadence}
+            changed={runner.changedSinceAllowed.has(round.id)} sentenceId={allowSentenceId} />
+        </RowStrip>
+      ) : null}
+      {confirmRemove ? (
+        <RowStrip>
+          <AutomationRemoveConfirm round={round} runner={runner} change={change} onClose={closeConfirm} />
+        </RowStrip>
+      ) : null}
+      {change.failed ? (
+        <RowStrip>
+          <p role="alert" className="text-body text-[color:var(--color-danger-text)]">{t('changeFailed')}</p>
+        </RowStrip>
+      ) : null}
+    </div>
   );
 }

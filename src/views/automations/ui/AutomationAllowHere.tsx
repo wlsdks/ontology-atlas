@@ -42,20 +42,21 @@ export function AutomationAllowHere({ round, runner, cadence, changed, sentenceI
   if (typeof round.limit === 'number') parts.push(t('allowHere.limit', { count: round.limit }));
 
   return (
-    <div data-testid="automation-allow-here" data-allow-changed={changed ? 'true' : 'false'} className="pb-4 pl-11 pr-4">
-      <div className="space-y-2 border-t border-[color:var(--color-divider)] pt-3">
-        <p id={sentenceId} role="status" className="text-body text-[color:var(--color-status-warning)]">
+    <div data-testid="automation-allow-here" data-allow-changed={changed ? 'true' : 'false'}
+      className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
+      <div className="min-w-0 flex-1 space-y-1">
+        <p id={sentenceId} role="status" className="break-words text-body text-[color:var(--color-status-warning)]">
           {changed ? t('allowHere.changed') : round.enabled ? t('allowHere.waiting') : t('allowHere.paused')}
         </p>
         <p data-testid="automation-allow-here-line" className="break-words text-body text-[color:var(--color-text-secondary)]">
           {parts.join(' · ')}
         </p>
-        <Button variant="outline" size="sm" data-testid="automation-allow-here-button" className="atlas-touch-floor"
-          onClick={() => setFailed(!runner.allow(round.id))}>
-          <ShieldCheck size={ICON_SIZE.sm} aria-hidden />{t('allowHere.button')}
-        </Button>
         {failed ? <p role="alert" className="text-body text-[color:var(--color-danger-text)]">{t('changeFailed')}</p> : null}
       </div>
+      <Button variant="outline" size="sm" data-testid="automation-allow-here-button" className="atlas-touch-floor self-start md:self-center"
+        onClick={() => setFailed(!runner.allow(round.id))}>
+        <ShieldCheck size={ICON_SIZE.sm} aria-hidden />{t('allowHere.button')}
+      </Button>
     </div>
   );
 }

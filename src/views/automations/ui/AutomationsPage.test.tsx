@@ -62,6 +62,12 @@ function renderPage(value: RoundsRunnerValue | null = runner(), onOpenDocumentSc
   );
 }
 
+/** Opens a schedule row's menu and presses one of its items. */
+function chooseFromRowMenu(roundId: string, itemTestId: string) {
+  fireEvent.click(within(screen.getByTestId(`automation-${roundId}`)).getByTestId('automations-row-menu'));
+  fireEvent.click(within(screen.getByRole('menu')).getByTestId(itemTestId));
+}
+
 afterEach(() => {
   search = '';
   mocks.push.mockClear();
@@ -150,11 +156,13 @@ describe('Automations manager', () => {
     };
     renderPage(runner({ rounds: [round], state: { v: 1, rounds: [round] }, ledger: [entry] }));
 
-    expect(screen.getByTestId('automation-ontology-1')).toHaveTextContent(en.automations.outcome.reviewed);
-    expect(screen.getByTestId('automations-last-run')).not.toHaveTextContent(en.automations.outcome.reviewed);
+    const row = screen.getByTestId('automation-ontology-1');
+    expect(row).toHaveTextContent(en.automations.outcome.reviewed);
+    expect(within(row).getByTestId('automation-summary')).toHaveAttribute('title', 'Review only · one source binding gap');
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('one source binding gap');
-    fireEvent.click(screen.getByRole('button', { name: 'Tool activity' }));
-    expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');
+    expect(screen.getByTestId('automations-last-run')).not.toHaveTextContent('query_ontology');
+    fireEvent.click(screen.getByRole('button', { name: en.automations.toolActivity }));
+    expect(screen.getByRole('dialog', { name: en.automations.toolActivity })).toHaveTextContent('query_ontology');
   });
 
   it.each(['ontology', 'documents'] as const)('draws an empty %s lane as one stage around an example schedule', (lane) => {
@@ -191,8 +199,8 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-new')).toBe(button);
     expect(screen.getByTestId('automations-list-count')).toHaveTextContent('1');
     const row = screen.getByTestId('automation-first');
-    expect(row).toHaveAttribute('aria-expanded', 'false');
-    expect(row.closest('li')?.className).toMatch(/arriving|motion-swap-in/);
+    expect(row).toHaveAttribute('aria-selected', 'false');
+    expect(row.parentElement?.className).toMatch(/arriving|motion-swap-in/);
     const leaving = screen.queryByTestId('automations-empty-workbench');
     if (leaving) expect(leaving.closest('[aria-hidden="true"]')).not.toBeNull();
   });
@@ -254,21 +262,30 @@ describe('Automations manager', () => {
     expect(unreachable.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('opens the schedule a link names, not the first one in the lane, and narrows the run history to it', () => {
+  it('selects the schedule a link names and narrows the run history to it, until Show all', () => {
     search = 'kind=documents&round=second';
     const first: RoundRecord = { id: 'first', kind: 'consistency', name: 'First check', enabled: true, onStale: 'mark',
       cadence: { every: 'hour' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
     const ledger = [pass({ id: 'p-first', roundId: 'first' }), pass({ id: 'p-second', roundId: 'second' })];
     renderPage(runner({ rounds: [first, { ...first, id: 'second', name: 'Second check' }], ledger }));
-    expect(screen.getByTestId('automation-second')).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('automation-second')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-selected', 'false');
     const history = screen.getByTestId('automations-run-ledger');
     expect(within(history).getByRole('heading', { level: 2 })).toHaveTextContent('Second check');
     expect(within(history).getByTestId('round-ledger-pass-p-second')).toBeInTheDocument();
     expect(within(history).queryByTestId('round-ledger-pass-p-first')).toBeNull();
 
     fireEvent.click(screen.getByTestId('automation-first'));
+    expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-selected', 'true');
+    expect(within(history).getByRole('heading', { level: 2 })).toHaveTextContent('First check');
     expect(within(history).getByTestId('round-ledger-pass-p-first')).toBeInTheDocument();
+    expect(within(history).queryByTestId('round-ledger-pass-p-second')).toBeNull();
+
+    fireEvent.click(within(history).getByRole('button', { name: en.automations.showAll }));
+    expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-selected', 'false');
+    expect(within(history).getByRole('heading', { level: 2 })).toHaveTextContent(en.automations.historyTitle);
+    expect(within(history).getByTestId('round-ledger-pass-p-first')).toBeInTheDocument();
+    expect(within(history).getByTestId('round-ledger-pass-p-second')).toBeInTheDocument();
   });
 
   it('draws the documents run history only once a document pass has run', () => {
@@ -294,11 +311,11 @@ describe('Automations manager', () => {
       startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:08:01Z', outcome: 'failed', checked: 0, stale: [],
       written: [], refused: [], called: [], agentTurns: 0, summary: 'No such file or directory (os error 2)', trigger: 'clock' };
     const view = renderPage(runner({ rounds: [round], ledger: [failed] }));
-    expect(screen.getByTestId('automations-last-run'))
+    expect(screen.getByTestId('automation-summary'))
       .toHaveTextContent(en.automations.failedError.replace('{detail}', 'No such file or directory (os error 2)'));
     view.unmount();
     renderPage(runner({ rounds: [round], ledger: [{ ...failed, summary: 'no-manifest' }] }));
-    expect(screen.getByTestId('automations-last-run')).toHaveTextContent(en.automations.failedFolderNotRead);
+    expect(screen.getByTestId('automation-summary')).toHaveTextContent(en.automations.failedFolderNotRead);
   });
 
   it('names the page a run put back and why, instead of a failure with no result', () => {
@@ -313,15 +330,15 @@ describe('Automations manager', () => {
         { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
       ] };
     renderPage(runner({ rounds: [round], ledger: [putBack] }));
-    const last = screen.getByTestId('automations-last-run');
-    expect(last).toHaveTextContent([
+    const summary = screen.getByTestId('automation-summary');
+    expect(summary).toHaveTextContent([
       en.automations.undone.restored.replace('{page}', 'wiki/plan.md'),
       en.library.rounds.ledger.undoneReason.notDraft,
       en.library.rounds.ledger.undoneCopy.replace('{copy}', '.ontology-atlas/undone/undo/wiki/plan.md'),
     ].join(' '));
-    expect(last).toHaveTextContent(`${en.automations.leftAsIs.replace('{page}', 'wiki/theirs.md')} ${en.library.rounds.ledger.undoneReason.notDraft}`);
-    expect(last).not.toHaveTextContent(en.automations.failedNoResult);
-    expect(screen.getByTestId('automations-left-as-is')).toHaveTextContent(en.automations.leftAsIs.replace('{page}', 'wiki/notes.md'));
+    expect(summary).toHaveTextContent(`${en.automations.leftAsIs.replace('{page}', 'wiki/theirs.md')} ${en.library.rounds.ledger.undoneReason.notDraft}`);
+    expect(summary).not.toHaveTextContent(en.automations.failedNoResult);
+    expect(screen.getByTestId('round-ledger-left-as-is')).toHaveTextContent('wiki/notes.md');
   });
 
   it('says on the row when a run could not be written, and which file refused it', () => {
@@ -340,7 +357,7 @@ describe('Automations manager', () => {
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', lastPassAt: '2026-09-21T06:00:00Z', nextDueAt: '2026-09-21T12:00:00Z' };
     const value = runner({ rounds: [review] });
     renderPage(value);
-    fireEvent.click(screen.getByRole('button', { name: en.automations.editNamed.replace('{name}', 'Source gaps') }));
+    chooseFromRowMenu('rev', 'automations-edit');
     expect(screen.getByRole('heading', { name: en.automations.ontology.sheet.editTitle })).toBeInTheDocument();
     expect(screen.getByTestId('ontology-automation-name')).toHaveValue('Source gaps');
     expect(screen.getByTestId('ontology-automation-focus')).toHaveValue('source binding gaps');
@@ -356,7 +373,7 @@ describe('Automations manager', () => {
     const review: RoundRecord = { id: 'rev', kind: 'ontology', name: 'Source gaps', enabled: true,
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T12:00:00Z' };
     renderPage(runner({ rounds: [review] }));
-    fireEvent.click(screen.getByTestId('automations-edit'));
+    chooseFromRowMenu('rev', 'automations-edit');
     fireEvent.click(screen.getByRole('radio', { name: 'Minutes' }));
     expect(screen.getByTestId('ontology-automation-allow')).toHaveTextContent(en.automations.allowAndSave);
     expect(screen.getByTestId('ontology-automation-widens')).toHaveTextContent(en.automations.editWidens);
@@ -368,7 +385,7 @@ describe('Automations manager', () => {
       cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
     const onEdit = vi.fn();
     renderPage(runner({ rounds: [check] }), vi.fn(), onEdit);
-    fireEvent.click(screen.getByTestId('automations-edit'));
+    chooseFromRowMenu('docs', 'automations-edit');
     expect(onEdit).toHaveBeenCalledWith(check);
   });
 
@@ -390,40 +407,48 @@ describe('Automations manager', () => {
       .toHaveAttribute('href', '/agents/');
   });
 
-  it('selects and collapses schedule details, and targets actions to the selected schedule', () => {
+  it('selects a row without unfolding it, and its own actions neither select it nor act on another row', () => {
     const first: RoundRecord = { id: 'first', kind: 'ontology', name: 'First review', enabled: true,
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
     const second: RoundRecord = { ...first, id: 'second', name: 'Second review', enabled: false };
     const value = runner({ rounds: [first, second] });
     renderPage(value);
+    const list = screen.getByTestId('automations-list-panel');
     const firstRow = screen.getByTestId('automation-first');
     const secondRow = screen.getByTestId('automation-second');
-    expect(firstRow).toHaveAttribute('aria-expanded', 'true');
+    expect(list.querySelectorAll('[aria-expanded]')).toHaveLength(0);
+    expect(firstRow).toHaveAttribute('aria-selected', 'false');
     expect(secondRow).toHaveTextContent(en.automations.noNextRun);
+
     fireEvent.click(secondRow);
-    expect(firstRow).toHaveAttribute('aria-expanded', 'false');
-    expect(secondRow).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.click(screen.getByRole('button', { name: en.automations.runNow }));
-    expect(value.runNow).toHaveBeenCalledWith('second');
-    fireEvent.click(screen.getByRole('button', { name: en.automations.resume }));
+    expect(secondRow).toHaveAttribute('aria-selected', 'true');
+    expect(list.querySelectorAll('[aria-expanded]')).toHaveLength(0);
+
+    fireEvent.click(within(firstRow).getByRole('button', { name: en.automations.runNow }));
+    expect(value.runNow).toHaveBeenCalledWith('first');
+    expect(secondRow).toHaveAttribute('aria-selected', 'true');
+    chooseFromRowMenu('second', 'automations-toggle');
     expect(value.setEnabled).toHaveBeenCalledWith('second', true);
-    fireEvent.click(secondRow);
-    expect(screen.queryByRole('button', { name: en.automations.runNow })).not.toBeInTheDocument();
+    expect(firstRow).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('keeps the newest result visible while older results are available on demand', async () => {
+  it('lists every run of the lane newest first under its schedule name, a page at a time', () => {
     const round: RoundRecord = { id: 'history', kind: 'ontology', name: 'History', enabled: true,
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
-    const entry: RoundPassEntry = { v: 1, id: 'old', roundId: round.id, roundName: round.name,
+    const entry: RoundPassEntry = { v: 1, id: 'run-0', roundId: round.id, roundName: round.name,
       kind: 'ontology', startedAt: '2026-09-20T08:00:00Z', endedAt: '2026-09-20T08:01:00Z',
       outcome: 'reviewed', checked: 0, stale: [], written: [], refused: [], called: [], agentTurns: 1,
-      summary: 'Older finding', trigger: 'clock' };
-    renderPage(runner({ rounds: [round], ledger: [entry, { ...entry, id: 'new', summary: 'Latest finding' }] }));
-    expect(within(screen.getByTestId('automations-last-run')).getByText('Latest finding')).toBeVisible();
-    expect(screen.queryByText('Older finding')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText('Earlier runs · 1'));
-    expect(await screen.findByText('Older finding')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Earlier runs · 1' })).toHaveAttribute('aria-expanded', 'true');
+      summary: 'Finding 0', trigger: 'clock' };
+    const ledger = Array.from({ length: 12 }, (_, index) => ({ ...entry, id: `run-${index}`, summary: `Finding ${index}` }));
+    renderPage(runner({ rounds: [round], ledger }));
+    const history = screen.getByTestId('automations-history');
+    const runs = within(history).getAllByRole('listitem');
+    expect(runs).toHaveLength(10);
+    expect(runs[0]).toHaveTextContent('Finding 11');
+    expect(runs[0]).toHaveTextContent('History');
+    fireEvent.click(screen.getByRole('button', { name: 'Show 2 more runs' }));
+    expect(within(history).getAllByRole('listitem')).toHaveLength(12);
+    expect(screen.queryByTestId('automations-history-more')).toBeNull();
   });
 
   it('says why a document pass redrafted nothing, in the sentence the Library ledger uses', () => {
@@ -434,9 +459,8 @@ describe('Automations manager', () => {
       startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:08:01Z', outcome: 'stale', checked: 4, stale: ['wiki/budget'],
       written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'manual', note: 'no-agent' };
     renderPage(runner({ rounds: [round], ledger: [entry] }));
-    const last = screen.getByTestId('automations-last-run');
-    expect(last).toHaveTextContent('Checked 4 documents.');
-    expect(within(last).getByText(en.library.rounds.ledger.noAgent)).toHaveAttribute('data-run-note', 'no-agent');
+    expect(screen.getByTestId('automation-summary')).toHaveTextContent('Checked 4 documents.');
+    expect(screen.getByTestId('round-ledger-pass-no-agent')).toHaveTextContent(en.library.rounds.ledger.noAgent);
   });
 
   it('leads a review that never ran with the reason, and never with a sentence claiming it finished', () => {
@@ -451,10 +475,10 @@ describe('Automations manager', () => {
       { ...base, id: 'no-agent', note: 'no-agent', agentTurns: 0, endedAt: '2026-09-25T14:00:00Z' },
     ];
     renderPage(runner({ rounds: [round], ledger }));
+    expect(screen.getByTestId('automation-summary')).toHaveTextContent(en.automations.noAgentReview);
     const last = screen.getByTestId('automations-last-run');
     expect(last).toHaveTextContent(en.automations.noAgentReview);
     expect(last).not.toHaveTextContent(en.automations.noSummary);
-    fireEvent.click(screen.getByText('Earlier runs · 2'));
     const history = screen.getByTestId('automations-history');
     expect(within(history).getByText(en.automations.failedNoResult)).toBeInTheDocument();
     expect(within(history).getByText(en.library.rounds.ledger.stopped)).toHaveAttribute('data-run-note', 'stopped');
@@ -473,12 +497,14 @@ describe('Automations manager', () => {
     const row = screen.getByTestId('automation-shared');
     expect(row).toHaveTextContent(en.automations.allowHere.state);
     expect(row).toHaveTextContent(en.automations.allowHere.noNextRun);
-    expect(screen.getByTestId('automation-allow-here')).toHaveTextContent(en.automations.allowHere.waiting);
+    const strip = screen.getByTestId('automation-allow-here');
+    expect(strip).toHaveTextContent(en.automations.allowHere.waiting);
+    expect(strip.closest('[role="row"]')?.previousElementSibling).toBe(row);
     const line = screen.getByTestId('automation-allow-here-line');
     expect(line).toHaveTextContent('confluence · ENG');
     expect(line).toHaveTextContent('looks for “pages changed today”');
     expect(line).toHaveTextContent('at most 20 new documents per run');
-    const runNow = screen.getByRole('button', { name: en.automations.runNow });
+    const runNow = within(row).getByRole('button', { name: en.automations.runNow });
     expect(runNow).toBeDisabled();
     expect(runNow).toHaveAccessibleDescription(en.automations.allowHere.waiting);
 
@@ -491,12 +517,14 @@ describe('Automations manager', () => {
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
     const value = runner({ rounds: [round], remove: vi.fn(async () => false) });
     renderPage(value);
-    fireEvent.click(screen.getByTestId('automations-remove'));
+    chooseFromRowMenu('confirmed', 'automations-remove');
     expect(value.remove).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: en.automations.cancel })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: en.automations.cancel }));
     expect(screen.queryByTestId('automations-confirm-remove')).not.toBeInTheDocument();
+    expect(screen.getByTestId('automations-row-menu')).toHaveFocus();
     expect(value.remove).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('automations-remove'));
+    chooseFromRowMenu('confirmed', 'automations-remove');
     fireEvent.click(screen.getByTestId('automations-confirm-remove'));
     await waitFor(() => expect(value.remove).toHaveBeenCalledWith(round.id));
     expect(await screen.findByRole('alert')).toHaveTextContent(en.automations.changeFailed);
