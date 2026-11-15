@@ -14,7 +14,6 @@ import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeViewKind } from "../../model/dome-view/types";
 import { stepFocusRamp } from "../../model/visibility/focus-state";
 import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata-lod";
-import { createStrataStage, sampleStrataStage } from "../../model/dome-view/strata-stage";
 import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../../render/dome-view/dome-light";
 import {
   buildFootprintSteps,
@@ -207,7 +206,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   hiddenDependenciesSentRef,
   flatDialRef,
 }: Dependencies) {
-  const strataStage = createStrataStage();
   let litInkKey = "";
   let litInks: Pick<DomeLightFrame, "kindRgb" | "warningRgb" | "focusRgb"> | null = null;
   const resolveLitInks = (tokens: OntologyMapTokens) => {
@@ -260,9 +258,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             ...inks,
             evidence: domeEvidenceRef.current,
             reducedMotion: reducedMotionRef.current,
-            sampleStage: dome.model.arrangement === "strata"
-                ? (litIds) => sampleStrataStage(dome, litIds, strataStage)
-                : null,
             lod,
         };
     };

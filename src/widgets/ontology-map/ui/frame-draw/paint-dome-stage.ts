@@ -6,7 +6,7 @@ import {
 } from "../../model/dome-view/ink";
 import type { DomeViewKind } from "../../model/dome-view/types";
 import { draw as domeRingsDraw } from "../../render/dome-view/dome-rings";
-import { drawStrataStage, hexToRgb } from "../../render/dome-view/dome-light";
+import { hexToRgb } from "../../render/dome-view/dome-light";
 import {
   drawStrataLodChords,
   drawStrataLodSheets,
@@ -23,7 +23,6 @@ import {
   domeEdgeIndexReused,
   domeNodeFrameReused,
   drawnScreenRadiusByIdReused,
-  litSectorIdsReused,
   lodChords,
 } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
@@ -52,8 +51,8 @@ let lodDependsInk: {
 } | null = null;
 
 export function paintDomeStage(frame: FrameInputs, focus: FrameFocus, edges: EdgePrep) {
-  const { tokens, farT, world, domeLight, domeRings, domeRingAlpha, domeTierRaisedKind, ctx, domeOn } = frame;
-  const { project, camX, camY, camScale, halfW, halfH, litOn, litFocusRamp, lod } = focus;
+  const { tokens, farT, world, domeRings, domeRingAlpha, domeTierRaisedKind, ctx, domeOn } = frame;
+  const { project, camX, camY, camScale, halfW, halfH, litFocusRamp, lod } = focus;
   const { edgeAlphaReused, edgeEnds } = edges;
   const domeHaloColor = domeOn ? lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT) : "";
   let edgeDrawOrder: readonly WorldEdge[] = world.edges;
@@ -77,15 +76,6 @@ export function paintDomeStage(frame: FrameInputs, focus: FrameFocus, edges: Edg
     domeEdgeOrderReused.length = 0;
     for (let i = 0; i < domeEdgeIndexReused.length; i += 1) domeEdgeOrderReused.push(edges[domeEdgeIndexReused[i]]);
     edgeDrawOrder = domeEdgeOrderReused;
-  }
-  if (litOn && domeLight !== null && domeLight.sampleStage !== null) {
-    drawStrataStage(
-      ctx,
-      domeLight.sampleStage(litSectorIdsReused.size > 0 ? litSectorIdsReused : null),
-      { kindRgb: domeLight.kindRgb, focusRgb: domeLight.focusRgb },
-      project,
-      domeFogAlpha,
-      1 - 0.55 * litFocusRamp);
   }
   let domeRingsState: Parameters<typeof domeRingsDraw>[1] | null = null;
   let domeRingsTokens: Parameters<typeof domeRingsDraw>[2] | null = null;

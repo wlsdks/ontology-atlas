@@ -3,7 +3,7 @@ import { lerpColorHex } from "../../render/grid";
 import { worldToScreen } from "../camera/topology-camera-math";
 import { domeFamily } from "../frame-cache/structure";
 import type { WorldEdge } from "../world/topology-world";
-import { EMPTY_NEIGHBOR_SET, passState, litSectorIdsReused, lodHoverEgoReused } from "./frame-state";
+import { EMPTY_NEIGHBOR_SET, passState, lodHoverEgoReused } from "./frame-state";
 import { resetNodeVisualCacheFor } from "./node-visual";
 import type { FrameInputs } from "./frame-begin";
 import { lastDialFrame } from "../../dial/frame/frame";
@@ -82,16 +82,6 @@ export function prepareFocus(frame: FrameInputs) {
   const litFocusId = litOn ? colorFocusedNodeId : null;
   const litFocusRamp = litFocusId !== null ? Math.min(1, Math.max(0, focusRampById.get(litFocusId) ?? 0)) : 0;
   const inLitLine = (id: string): boolean => litFocusId !== null && (id === litFocusId || domeAncestryColorNodes.has(id));
-  litSectorIdsReused.clear();
-  if (litFocusId !== null) {
-    let cursor: string | null | undefined = litFocusId;
-    for (let hop = 0; cursor && hop < 8; hop += 1) {
-      const kind = world.nodeById.get(cursor)?.kind;
-      if (kind === "domain" || kind === "capability")
-        litSectorIdsReused.add(cursor);
-      cursor = parentOf(cursor);
-    }
-  }
   const lod = litOn && domeLight !== null && domeLight.lod !== null && domeLight.lod.active ? domeLight.lod : null;
   if (lod !== null) {
     if (passState.lodPresenceReused.length < world.nodes.length)

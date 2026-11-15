@@ -14,14 +14,6 @@ export type EvidenceLight = "current" | "stale" | "unknown";
 const EMISSIVE_HALO_PEAK_ALPHA = 0.55;
 const EMISSIVE_HALO_REACH = 3.5;
 
-/** Floors: disc fill, grid ink, band ink, and the lit band, as alpha of the kind colour. */
-const STAGE_DISC_ALPHA = 0.08;
-const STAGE_GRID_ALPHA = 0.14;
-const STAGE_BAND_ALPHA = 0.16;
-/** The second band strength, so two neighbouring domains do not fuse into one annulus. */
-const STAGE_BAND_ALT_ALPHA = 0.07;
-const STAGE_LIT_BAND_ALPHA = 0.24;
-
 function rgba(rgb: Rgb, alpha: number): string {
   const a = alpha <= 0 ? 0 : alpha >= 1 ? 1 : alpha;
   return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
@@ -59,8 +51,6 @@ export interface DomeLightFrame {
   focusRgb: Rgb;
   /** node id → evidence state. An id that is absent is `unknown`; null means nothing measured. */
   evidence: ReadonlyMap<string, EvidenceLight> | null;
-  /** Samples the Strata floors for this frame's lit sectors; null for arrangements with none. */
-  sampleStage: ((litIds: ReadonlySet<string> | null) => StrataStageDraw) | null;
   /** Reduced motion: no particles. The light itself is still, so it stays. */
   reducedMotion: boolean;
   lod: StrataLodState | null;
@@ -77,130 +67,6 @@ export function focusFogFactor(u: number, focusRamp: number): number {
   const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
   return 1 - focusRamp * (1 - FOCUS_FOG_FAR) * c;
 }
-
-/* ── Stage ─────────────────────────────────────────────────────────────── */
-
-interface StagePathLike {
-  kind: string;
-  a: number;
-  xs: readonly number[];
-  ys: readonly number[];
-  us: readonly number[];
-  length: number;
-}
-
-export interface StrataStageDraw {
-  discs: readonly StagePathLike[];
-  grid: readonly StagePathLike[];
-  spokes: readonly StagePathLike[];
-  bands: readonly (StagePathLike & { alt: boolean; lit: boolean })[];
-}
-
-export interface StageInks {
-  kindRgb: Readonly<Record<string, Rgb>>;
-  /** The focus ink a lit band takes. */
-  focusRgb: Rgb;
-}
-
-/** Depth fog quantised into this many buckets, so a grid is a handful of strokes, not hundreds. */
-const FOG_BUCKETS = 6;
-const bucketPaths: Path2D[] = [];
-
-/**
- * Draws the floors, before the rings and relations — a floor is the stage, not an actor.
- * `project` maps a world point to the screen (the same projection the nodes used), `fog` is
- * the depth fog the nodes and rings take, and `presence` scales everything (1 at rest; the
- * focus sinks the floor with the rest of the structure).
- */
-export function drawStrataStage(
-  ctx: CanvasRenderingContext2D,
-  stage: StrataStageDraw,
-  inks: StageInks,
-  project: (wx: number, wy: number) => { x: number; y: number },
-  fog: (u: number) => number,
-  presence: number,
-): void {
-  if (presence <= 0.01) return;
-  const prevAlpha = ctx.globalAlpha;
-  ctx.globalAlpha = 1;
-
-  // Discs — one fill each. A fill cannot fog per point; the disc is the faintest layer and a
-  // single alpha keeps it a surface rather than a gradient that fights the grid's own fog.
-  for (const disc of stage.discs) {
-    const rgb = inks.kindRgb[disc.kind];
-    if (!rgb || disc.length < 3) continue;
-    ctx.fillStyle = rgba(rgb, STAGE_DISC_ALPHA * disc.a * presence);
-    ctx.beginPath();
-    for (let i = 0; i < disc.length; i += 1) {
-      const p = project(disc.xs[i], disc.ys[i]);
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Bands — filled annular sectors, over the disc and under the grid.
-  for (const band of stage.bands) {
-    const rgb = band.lit ? inks.focusRgb : inks.kindRgb[band.kind];
-    if (!rgb || band.length < 4) continue;
-    const alpha = band.lit ? STAGE_LIT_BAND_ALPHA : band.alt ? STAGE_BAND_ALT_ALPHA : STAGE_BAND_ALPHA;
-    // A lit band is the one thing on the floor the focus asks you to look at, so it keeps its
-    // strength while the rest of the floor sinks.
-    ctx.fillStyle = rgba(rgb, alpha * band.a * (band.lit ? 1 : presence));
-    ctx.beginPath();
-    for (let i = 0; i < band.length; i += 1) {
-      const p = project(band.xs[i], band.ys[i]);
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Grid rings and spokes — hairlines in the kind colour, fogged by depth in buckets.
-  ctx.lineWidth = 0.75;
-  ctx.lineCap = "butt";
-  ctx.setLineDash([]);
-  const strokeFogged = (paths: readonly StagePathLike[]) => {
-    const byKind = new Map<string, StagePathLike[]>();
-    for (const path of paths) {
-      const list = byKind.get(path.kind);
-      if (list) list.push(path);
-      else byKind.set(path.kind, [path]);
-    }
-    for (const [kind, list] of byKind) {
-      const rgb = inks.kindRgb[kind];
-      if (!rgb) continue;
-      for (let b = 0; b < FOG_BUCKETS; b += 1) bucketPaths[b] = new Path2D();
-      let a = 0;
-      for (const path of list) {
-        a = Math.max(a, path.a);
-        for (let i = 0; i + 1 < path.length; i += 1) {
-          const u = (path.us[i] + path.us[i + 1]) / 2;
-          const bucket = Math.min(FOG_BUCKETS - 1, Math.floor(u * FOG_BUCKETS));
-          const p0 = project(path.xs[i], path.ys[i]);
-          const p1 = project(path.xs[i + 1], path.ys[i + 1]);
-          bucketPaths[bucket].moveTo(p0.x, p0.y);
-          bucketPaths[bucket].lineTo(p1.x, p1.y);
-        }
-      }
-      for (let b = 0; b < FOG_BUCKETS; b += 1) {
-        const u = (b + 0.5) / FOG_BUCKETS;
-        const alpha = STAGE_GRID_ALPHA * a * presence * fog(u);
-        if (alpha <= 0.004) continue;
-        ctx.strokeStyle = rgba(rgb, alpha);
-        ctx.stroke(bucketPaths[b]);
-      }
-    }
-  };
-  strokeFogged(stage.grid);
-  strokeFogged(stage.spokes);
-
-  ctx.globalAlpha = prevAlpha;
-}
-
-/* ── Emissive halo ─────────────────────────────────────────────────────── */
 
 /** Sprite side in device pixels. The halo is a smooth gradient, so scaling it up is invisible. */
 const HALO_SPRITE_PX = 128;

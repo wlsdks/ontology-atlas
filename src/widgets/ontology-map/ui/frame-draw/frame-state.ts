@@ -30,7 +30,6 @@ export const BACKGROUND_DIM_WHEN_EXPANDED = 0.8;
 export const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 export const effectiveAlphaByIdReused = new Map<string, number>();
 export const domeEdgeIndexReused: number[] = [];
-export const litSectorIdsReused = new Set<string>();
 export const domeNodeFrameReused: DomeNodeFrame[] = [];
 export const domeEdgeFrameAReused: DomeNodeFrame[] = [];
 export const domeEdgeFrameBReused: DomeNodeFrame[] = [];
