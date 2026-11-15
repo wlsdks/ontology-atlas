@@ -1,7 +1,7 @@
 import { egoRestSink } from "../../model/visibility/focus-state";
 import { effectiveNodeAlpha, nodeTierAlpha } from "../../model/visibility/tier-visibility";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
-import { passState, domeNodeFrameReused, effectiveAlphaByIdReused, lodHoverEgoReused } from "./frame-state";
+import { passState, effectiveAlphaByIdReused } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
 
@@ -10,9 +10,9 @@ let effectiveAlphaByIndexReused = new Float64Array(0);
 export function computeNodeAlpha(frame: FrameInputs, focus: FrameFocus) {
   const { world, previewEdge, clusteredIds, realmTierKinds, zoomRatio, tierReveal, focusedNodeId,
     selectedEdge, spotlightIds, spotlightRamp, expandRevealById, bornNodeIds, appearById,
-    egoRevealById, realmOutsideReturnAlphaById, focusRampById, tokens, agentFocusNodeId,
-    emphasisById, clusterChips, spotlightRevealActive, trailLensActive, isTrailKept, domeOn } = frame;
-  const { neighborsOfFocusedRaw, neighborsOfFocused, lod } = focus;
+    egoRevealById, realmOutsideReturnAlphaById, focusRampById, tokens,
+    clusterChips, spotlightRevealActive, trailLensActive, isTrailKept } = frame;
+  const { neighborsOfFocused } = focus;
   if (passState.effectiveAlphaWorld?.deref() !== world) {
     effectiveAlphaByIdReused.clear();
     passState.effectiveAlphaWorld = new WeakRef(world);
@@ -61,26 +61,6 @@ export function computeNodeAlpha(frame: FrameInputs, focus: FrameFocus) {
     let outAlpha = returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha;
     if ((focusedNodeId !== null || selectedEdge !== null) && !isEgoMember && !trailLensActive) {
       outAlpha *= egoRestSink(focusRampById.get(node.id) ?? 0, tokens.egoRestAlpha);
-    }
-    if (domeOn) {
-      const domeA = domeNodeFrameReused[nodeIndex].a;
-      let presence = 1;
-      if (lod !== null) {
-        presence = lod.presence[nodeIndex] ?? 1;
-        if (presence < 1) {
-          const attended = Math.max(
-            isPairMember || trailKept || previewEndpoint || node.id === agentFocusNodeId ? 1 : 0,
-            focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocusedRaw.has(node.id))
-              ? (egoRevealById.get(node.id) ?? 0)
-              : 0,
-            lodHoverEgoReused.has(node.id) ? (emphasisById.get(node.id) ?? 0) : 0,
-            spotlightReveal,
-            bornReveal);
-          if (attended > presence) presence = attended;
-        }
-        passState.lodPresenceReused[nodeIndex] = presence;
-      }
-      if (domeA > 0) outAlpha = outAlpha + (presence - outAlpha) * domeA;
     }
     effectiveAlphaById.set(node.id, outAlpha);
     effectiveAlphaByIndex[nodeIndex] = outAlpha;

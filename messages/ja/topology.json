@@ -170,20 +170,6 @@
     "error": "説明を保存できませんでした。",
     "conflict": "このファイルは先にほかの場所（別のエディターやエージェント）で変更されたため、保存しませんでした。入力した内容は残っています。もう一度保存すると、その内容で説明を置き換えます。"
   },
-  "light3d": {
-    "legendLabel": "3Dマップの凡例",
-    "kindsHeading": "種類",
-    "evidenceHeading": "根拠",
-    "current": "最新{count, number}",
-    "stale": "古い{count, number}",
-    "unknown": "不明{count, number}",
-    "noteReading": "Gitの履歴を読み込み中です。読み終わるまではすべて不明です。",
-    "noteAppOnly": "アプリがGitの履歴から根拠を確認します。ここではすべて不明です。",
-    "noteUnreadable": "Gitの履歴を読み取れなかったため、すべて不明です。",
-    "noteNoPaths": "コードのパスを書いた概念がないため、すべて不明です。",
-    "dependenciesHidden": "依存{count}件を非表示",
-    "dependenciesHiddenHint": "ドメインにポインタを合わせると、そのドメイン自身の依存を表示します。"
-  },
   "analysis": {
     "pathChipUnresolved": "パス：{source} → 目的地を選択",
     "pathChipEndpoints": "{source} → {target}",

@@ -75,7 +75,7 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
   index: { scope: "global", note: "expanded|collapsed" },
   recent: { scope: "global", note: "auto|1|7|30" },
   ask: { scope: "global", note: "enumeration of intent kinds" },
-  view: { scope: "global", note: "map view enumeration: hex, structure, strata, coupling" },
+  view: { scope: "global", note: "map view enumeration: hex, structure, 3d; strata and coupling read as 3d" },
 };
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -110,13 +110,13 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
   { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "frame meter display preference" },
-  { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (map dome view) preference, off (2D) by default" },
+  { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (the tree) preference, off (2D) by default" },
   { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
     { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "Retired view preference, read only for migration" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.hex-relief", kind: "storage", scope: "global", note: "Hex board relief pose preference — off by default" },
-  { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D arrangement basis: ownership (dome, default) / coupling (force cloud)" },
+  { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "Retired 3D arrangement preference, never read; removed on the next pick" },
   { key: "atlas.appearance.map-drag-speed", kind: "storage", scope: "global", note: "Map drag speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.appearance.map-zoom-speed", kind: "storage", scope: "global", note: "Map zoom speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "status chip on/off preference" },

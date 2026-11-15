@@ -19,25 +19,7 @@ interface Point {
   y: number;
 }
 
-/**
- * Optional depth argument to `worldToScreen`: `z` is recession behind the layout plane, `focal` the
- * weak-perspective focal length (`s = focal / (focal + z)`), `lift` a constant plane spacing.
- * Omitted, the output is the original formula (`topology-camera-math.test.ts`, `dome-view.test.ts`).
- */
-export interface DepthTerm {
-  z: number;
-  lift: number;
-  focal: number;
-}
-
-export function worldToScreen(camera: CameraAxes, viewportWidth: number, viewportHeight: number, wx: number, wy: number, depth?: DepthTerm): Point {
-  if (depth !== undefined) {
-    const s = depth.focal / (depth.focal + depth.z);
-    return {
-      x: (wx - camera.x.value) * s * camera.scale.value + viewportWidth / 2,
-      y: ((wy - camera.y.value) * s + depth.lift * s) * camera.scale.value + viewportHeight / 2,
-    };
-  }
+export function worldToScreen(camera: CameraAxes, viewportWidth: number, viewportHeight: number, wx: number, wy: number): Point {
   return {
     x: (wx - camera.x.value) * camera.scale.value + viewportWidth / 2,
     y: (wy - camera.y.value) * camera.scale.value + viewportHeight / 2,
@@ -73,7 +55,7 @@ export function fitWorldTarget(
 
 /**
  * The courtesy ring outside a node's painted disc, in screen px. An element draws
- * at 7 px world radius and can be under 4 px on screen in 3D, which is not a
+ * at 7 px world radius and can be under 4 px on screen when zoomed out, which is not a
  * pressable target on its own; this is what makes it one. It is a **slack ring,
  * not a second disc** — `hitTestWorld` ranks painted ink above it (see there).
  */
@@ -97,22 +79,9 @@ export function hitTestWorld(
    * no offset (the common case).
    */
   renderOffsetForNode?: (node: WorldNode) => Point,
-  /**
-   * 3D view — multiply the hit disc by the same perspective factor
-   * (`DomeNodeFrame.s`) the draw multiplied the node radius by. Omitted means 1
-   * (the previous 2D behaviour unchanged).
-   */
-  radiusScaleForNode?: (node: WorldNode) => number,
-  /**
-   * 3D view: the node's normalised depth (0 near, 1 far, `DomeNodeFrame.u`). When given, the
-   * nearer node wins overlapping discs and distance breaks ties among equal depths. Omitted,
-   * distance alone decides.
-   */
-  depthForNode?: (node: WorldNode) => number,
 ): string | null {
   let bestId: string | null = null;
   let bestDistance = Infinity;
-  let bestDepth = Infinity;
   let bestOnInk = false;
   for (const node of world.nodes) {
     if (isHittable && !isHittable(node)) continue;
@@ -127,26 +96,18 @@ export function hitTestWorld(
     // The disc the draw actually paints (`frame-draw/paint-nodes.ts`'s `screenRadius`)
     // and, around it, the courtesy ring that makes a 7 px element pressable.
     const drawnRadius =
-      radiusForKind(node.kind, tokens) * node.magnitudeScale * (radiusScaleForNode ? radiusScaleForNode(node) : 1) * camera.scale.value;
+      radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
     const effRadius = drawnRadius + HIT_TOUCH_SLACK_PX;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);
     // Compare positively — a NaN coordinate (mocked or unprojected) cannot pass `<=`.
     if (!(distance <= effRadius)) continue;
     // Is the cursor on this node's **painted** disc, or only inside its slack ring?
     const onInk = distance <= drawnRadius;
-    const depth = depthForNode ? depthForNode(node) : 0;
-    /*
-     * Rank: ink first, then depth, then distance. The slack ring is a courtesy for small targets,
-     * not an occluder, so it decides only among points on no painted disc; depth orders real
-     * overlaps.
-     */
-    const better = onInk === bestOnInk
-      ? depth < bestDepth - 1e-6 || (Math.abs(depth - bestDepth) <= 1e-6 && distance < bestDistance)
-      : onInk;
+    // Ink first, then distance: the slack ring is a courtesy for small targets, not an occluder.
+    const better = onInk === bestOnInk ? distance < bestDistance : onInk;
     if (better) {
       bestId = node.id;
       bestDistance = distance;
-      bestDepth = depth;
       bestOnInk = onInk;
     }
   }
@@ -412,38 +373,6 @@ export function computeLensFitTarget(
 }
 
 /**
- * The cone's own fit: fill the free canvas, not the safe rect, since the overview fit's static insets
- * describe the 2D map. Free canvas = canvas minus measured panels (`interaction/free-area.ts`) minus
- * the `insets` bands; `nodeRadiusPx` is subtracted (`DOME_NODE_PX`). No padding beyond `fill`.
- */
-export function computeDomeFitCameraTarget(
-  /** The projected bounds of the node **centres** (world units). */
-  bounds: { minX: number; minY: number; maxX: number; maxY: number },
-  viewportWidth: number,
-  viewportHeight: number,
-  /** Live panel obstruction plus the cone's own top/bottom bands, in screen px. */
-  insets: { left: number; right: number; top: number; bottom: number },
-  /** Half the widest disc the cone draws, in screen px. */
-  nodeRadiusPx: number,
-  tokens: Pick<OntologyMapTokens, "cameraScaleMax" | "cameraScaleMin"> & { domeFitFill: number },
-): CameraTarget {
-  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
-  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
-  const fill = tokens.domeFitFill > 0 ? tokens.domeFitFill : 1;
-  const availW = Math.max(1, effW * fill - nodeRadiusPx * 2);
-  const availH = Math.max(1, effH * fill - nodeRadiusPx * 2);
-  const spanX = Math.max(1e-6, bounds.maxX - bounds.minX);
-  const spanY = Math.max(1e-6, bounds.maxY - bounds.minY);
-  const tscale = Math.min(
-    tokens.cameraScaleMax,
-    Math.min(availW / spanX, availH / spanY),
-  );
-  const centerX = (bounds.minX + bounds.maxX) / 2;
-  const centerY = (bounds.minY + bounds.maxY) / 2;
-  return { ...centerForInsets(centerX, centerY, insets, tscale), tscale };
-}
-
-/**
  * Pan envelope with no focus: around the fit when `cameraPanLeash` is set, else the world bbox
  * plus slack. The leash serves surfaces with no Fit Map control; it takes the fit as its
  * reference, so it does not depend on vault size. With `leash <= 0` the bbox envelope applies.
@@ -665,55 +594,6 @@ export function computeFocusCameraTarget(
       : computeUnfocusedPanBounds(overviewBounds, scale, tokens);
   const clamped = clampPointToPanBounds(centred.tx, centred.ty, leash);
   return { tx: clamped.x, ty: clamped.y, tscale: scale };
-}
-
-/**
- * The camera target for a 3D dome selection reframe — **the same contract** as the
- * ego-fit branch of `computeFocusCameraTarget` (`focusBboxMargin` multiplicative
- * padding, the same safe-inset grammar, the same zoom-in ceiling), with different
- * inputs: the bbox is not the 2D ego but the **dome ego bbox projected at the
- * target pose** (`model/dome-view/projection.ts#domeEgoWorldBounds`), and the zoom-out floor
- * is not 2D's `overviewEntryScale` but the **dome fit zoom** (`scaleFloor`) —
- * because the dome's projected bbox is wider than the 2D spine, so its fit zoom
- * lives below the 2D floor (see the `DomeRuntime.fitScale` JSDoc). The insets are
- * re-read here so `readSafeInsets`'s label-allowance rule is not reimplemented at
- * every call site.
- */
-export function computeDomeFocusCameraTarget(
-  egoBounds: { minX: number; minY: number; maxX: number; maxY: number },
-  tokens: OntologyMapTokens,
-  viewportWidth: number,
-  viewportHeight: number,
-  overviewEntryScale: number,
-  scaleFloor: number | null,
-  /** The world point the selected node projects to at the target pose — the same anchor as the focus pan leash. */
-  focusAnchor?: { x: number; y: number } | null,
-): CameraTarget {
-  const marginRatio = tokens.focusBboxMargin;
-  const centerX = (egoBounds.minX + egoBounds.maxX) / 2;
-  const centerY = (egoBounds.minY + egoBounds.maxY) / 2;
-  const w = Math.max(1, (egoBounds.maxX - egoBounds.minX) * marginRatio);
-  const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
-  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
-  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
-  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
-  const fitScale = Math.min(effW / w, effH / h);
-  const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
-  const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleFloor ?? 0, fitScale));
-  const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
-  // Keep the target **inside** the focus pan leash's envelope
-  // (`cameraFocusPanMargin`) — the dome's ego neighbours project asymmetrically onto
-  // the tiers above rather than around the subject, so the bbox centre can fall
-  // outside the leash; the elastic clamp then pulls the camera back after the tween
-  // arrives and «sliding after landing» becomes visible (measured 38 units). A target
-  // inside the envelope makes arrival mean a stop.
-  if (focusAnchor && tokens.cameraFocusPanMargin > 0) {
-    const m = tokens.cameraFocusPanMargin;
-    target.tx = Math.min(focusAnchor.x + m, Math.max(focusAnchor.x - m, target.tx));
-    target.ty = Math.min(focusAnchor.y + m, Math.max(focusAnchor.y - m, target.ty));
-  }
-  return target;
 }
 
 /**

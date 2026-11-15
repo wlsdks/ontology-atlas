@@ -67,7 +67,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug" | "isSynthetic">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "view3d" | "structure">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "structure">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
@@ -93,7 +93,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
     | "drawerOpen"
     | "realmActive"
   >;
-  topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "handleCanvasPointerDownCapture" | "nodePopoverDismissed">;
+  topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "handleCanvasPointerDownCapture">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "startStepsVisible" | "renderedIndexState" | "dismissStartSteps" | "readoutStackRef">;
   topologyCreateIntent: Pick<
     ReturnType<typeof useTopologyCreateIntent>,
@@ -120,7 +120,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     topologyShortcutHelpPhoneVisible
   } = topologyCreateIntent;
   const { startStepsVisible, renderedIndexState, dismissStartSteps, readoutStackRef } = topologyIndexPresentation;
-  const { handleCanvasPointerDownCapture, nodePopoverDismissed } = topologyCanvasFocus;
+  const { handleCanvasPointerDownCapture } = topologyCanvasFocus;
   const {
     topologyOverlayState, handleScaffoldStarter, starterScaffolding, starterRecoveryActive, starterScaffoldFailed, dismissStarterRecovery, emptyTopologyNodeCount,
     clearTopologyFilters, topologyRenderState, mapMountTaskReady, drawerOpen, realmActive
@@ -131,11 +131,11 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, view3d, structure } = topologyPreferences;
+  const { t, structure } = topologyPreferences;
   const { canvasSelectedSlug, localGraphProjects, isSynthetic, ontologyMapGraph, resolvedRealmSlug } = topologyGraphProjection;
-  const { handleClose, handleSelect } = topologyNavigationActions;
+  const { handleSelect } = topologyNavigationActions;
   const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
-  const railRecedes = !view3d && selectedNodeFocusActive;
+  const railRecedes = selectedNodeFocusActive;
   const [railReceded, setRailReceded] = useState(false);
   if (railRecedes && !railReceded) setRailReceded(true);
   const railMotion = railRecedes ? "map-chrome-recede-out pointer-events-none" : `${railReceded ? "map-overlay-in " : ""}pointer-events-auto`;
@@ -266,25 +266,20 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
         <div className="contents" data-testid="topology-utility-rail">
           {structure || createNodeOpen ||
             topologyBlockingOverlayActive ||
-            selectedEdgeOwnsRightRail ||
-            (view3d && selectedNodeFocusActive && !nodePopoverDismissed) ? null : (
+            selectedEdgeOwnsRightRail ? null : (
             <TopologyFitControl
               className={railMotion}
               inert={railRecedes}
               mobileObscured={renderedIndexState === "expanded"}
               density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
-              onFitView={() => {
-                if (view3d) handleClose();
-                setFitViewToken((t) => t + 1);
-              }}
+              onFitView={() => setFitViewToken((t) => t + 1)}
             />
           )}
           {/* One slot below the fit tile; on phones only in overview and focus, clear of the
              path/health rail. */}
           {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
-            topologyBlockingOverlayActive ||
-            (view3d && selectedNodeFocusActive) ? null : (
+            topologyBlockingOverlayActive ? null : (
             <Tooltip content={t('controls.shortcutsTooltip')} side="left">
               <ChromeTile
                 inert={railRecedes}
@@ -337,8 +332,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
              (`ontology-map/model/ambient/growth-replay.ts`); desktop only. */}
           {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
-            topologyBlockingOverlayActive ||
-            (view3d && selectedNodeFocusActive) ? null : (
+            topologyBlockingOverlayActive ? null : (
             <div
               inert={railRecedes}
               className={`${railMotion} topology-ui-scale absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block`}

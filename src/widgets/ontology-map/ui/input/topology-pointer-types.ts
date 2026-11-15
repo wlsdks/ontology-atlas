@@ -10,7 +10,6 @@ import type { ClusterBarLabels } from "../../render/cluster-chips";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { DepthParallaxOffset } from "../../model/realm/realm-depth-parallax";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { WorldOffset } from "../../interaction/node-drag";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { PinchWheelStream } from "../../interaction/wheel";
@@ -144,7 +143,7 @@ export interface PointerHandlerRefs {
   /** Density gate — this frame's cluster chips (world anchors), for chip hit testing. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
   /** The last committed node tap, so the next one can be read as a double-click. */
-  lastTapRef?: Ref<{ nodeId: string; at: number; x?: number; y?: number } | null>;
+  lastTapRef?: Ref<{ nodeId: string; at: number } | null>;
   /**
    * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
    * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
@@ -184,20 +183,6 @@ export interface PointerHandlerRefs {
    * (null while no realm is active).
    */
   realmTierKindsRef?: Ref<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>;
-  /**
-   * The dome runtime the loop owns (`model/dome-view/`). The hit test reads the same `frame` map the
-   * draw last rendered; node vs empty-space is decided by the same `hitTestWorld` as 2D.
-   */
-  domeRuntimeRef?: Ref<DomeRuntime | null>;
-  neuralRampRef?: Ref<number>;
-  /**
-   * 3D — whether the empty-space drag in flight is **an orbit rotation** (true) or
-   * **a camera pan** (false). `pointerdown` decides once and it does not change until
-   * that gesture ends — deciding per move flips the gesture's identity whenever the
-   * hand grazes the dome's boundary. The rule is `DOME_GRIP_MARGIN` in
-   * `model/dome-view/`.
-   */
-  domeGripRef?: Ref<boolean>;
   /**
    * Slice C (the dev/non-dev mode toggle) — a mirror of the tier gate config (it has
    * to be **the same** config as the draw for hit testing and pan clamping to stay in

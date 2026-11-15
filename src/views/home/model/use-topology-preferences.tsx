@@ -1,6 +1,6 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapArrangement, useMapDragSpeed, useMapZoomSpeed, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapDragSpeed, useMapZoomSpeed, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { useAudiencePlain } from "@/shared/lib/preferences/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -36,13 +36,10 @@ export function useTopologyPreferences() {
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
   // App-wide stores the DOM glyphs also subscribe to, so canvas and DOM swap in lockstep.
   const canvasBackground = useCanvasBackground();
-  // Opt-in: the ownership Cone tree or the relation-driven Cloud.
   const view3d = useView3d();
   const structure = useDomainStructure();
   /** `OntologyHexBoardMap`. */
   const hexBoard = useHexBoard();
-  /** See the `MapArrangement` doc-block. */
-  const mapArrangement = useMapArrangement();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
   const expand = useExpand();
@@ -63,6 +60,6 @@ export function useTopologyPreferences() {
     expand, t, audiencePlain, setAudiencePlain, reducedMotion, tMeaningEditor, relationVocabulary,
     relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, structure, hexBoard, businessFlowRequestText,
     tKinds, tWorkbench, tAtlasGit, kindCountsTitle, tTopologyKeyboardWalk, glyphSet, canvasBackground,
-    mapArrangement, footprint, navigationSpeed
+    footprint, navigationSpeed
   };
 }

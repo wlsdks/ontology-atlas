@@ -290,23 +290,3 @@ export function measureNameObstacles(canvas: Element, sides: { left: boolean; ri
   }
   return out;
 }
-
-/** Air the fit keeps between the drawing and a bottom strip. */
-const BOTTOM_OBSTACLE_GAP_PX = 8;
-
-/**
- * Bottom height taken by a strip declared with `data-map-fit-obstacle="bottom"`, in px, or 0.
- * The strip declares itself because its size alone does not identify it as a panel.
- */
-export function measureBottomFitObstacle(canvas: Element): number {
-  const c = canvas.getBoundingClientRect();
-  if (c.width <= 0 || c.height <= 0) return 0;
-  let reserve = 0;
-  for (const el of canvas.ownerDocument.querySelectorAll('[data-map-fit-obstacle="bottom"]')) {
-    const box = el.getBoundingClientRect();
-    if (box.width <= 0 || box.height <= 0) continue;
-    if (box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
-    reserve = Math.max(reserve, c.bottom - box.top + BOTTOM_OBSTACLE_GAP_PX);
-  }
-  return Math.round(reserve);
-}

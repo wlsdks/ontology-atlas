@@ -34,7 +34,7 @@ export function relaxNodeSeparation(nodes: SeparationNode[], options: Separation
   /*
    * An inactive `i` scans only the ascending active list, so its cost is O(active) instead of
    * O(N) while pairs and their order stay identical; order is the result, since coordinates
-   * change in place. This matters where nothing folds (the 3D dome lays out every node).
+   * change in place. This matters where nothing folds and every node is laid out.
    */
   let activeIdx: number[] | null = null;
   if (active !== null) {

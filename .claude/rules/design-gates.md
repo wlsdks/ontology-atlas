@@ -33,7 +33,7 @@ gate's own incident history belongs in that gate file's header, not here.
 - Measure interaction states where WCAG applies: hover contrast is measured in
   a real hover (`hover-contrast.spec.ts`).
 - Canvas pickers and inspectors are compared with recorded paint commands, not
-  with a shared formula (`map-3d-edge-picking.spec.ts`).
+  with a shared formula.
 - Shell-command gates parse non-comment lines and compare exact commands, not
   prefixes.
 
