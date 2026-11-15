@@ -26,6 +26,7 @@ import {
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
+  predictTreeTarget,
   type FlatDialState,
 } from "@/widgets/ontology-map";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -173,7 +174,7 @@ export function TopologyMapRenderer({
     anchorId: canvasSelectedSlug ?? null,
     degreeOf: () => conceptDegrees(edges),
     targetFor: (to) => (host) =>
-      predictMapLayoutTarget(
+      to === "3d" ? predictTreeTarget(nodes, edges, host) : predictMapLayoutTarget(
         to,
         { nodes, edges, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), expandStructure: expand.structure, overviewFit, expandedParents, dialLabels, dialMemory: flatRingMemory.current() },
         host,
