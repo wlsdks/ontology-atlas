@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  TREE_PITCH_MAX,
-  TREE_PITCH_MIN,
   TREE_POSE_REST,
   aimTreeProjector,
   clampTreePitch,
@@ -19,6 +17,8 @@ const CANVAS = { width: 1512, height: 982 };
 /** A panel covers the right third. */
 const FREE: TreeRect = { x: 0, y: 0, width: 1000, height: 982 };
 const SPHERE = { centre: [0.5, 6, -1] as const, radius: 7 };
+const TREE_PITCH_MIN = clampTreePitch(-Infinity);
+const TREE_PITCH_MAX = clampTreePitch(Infinity);
 
 function pose(overrides: Partial<TreePose> = {}): TreePose {
   return { ...TREE_POSE_REST, ...overrides };

@@ -4,15 +4,15 @@ import type { TreeLayout, TreePose, TreeProjector, TreeRect, TreeScreenPoint } f
 const TAU = Math.PI * 2;
 
 /** Always looking down: below the minimum the boughs stack into one line, above the maximum the trunk vanishes. */
-export const TREE_PITCH_MIN = 0.17;
-export const TREE_PITCH_MAX = 0.7;
+const TREE_PITCH_MIN = 0.17;
+const TREE_PITCH_MAX = 0.7;
 const TREE_PITCH_REST = 0.42;
 /** A pressed wall gives at most 0.55 x this, so the lower limit still looks from above. */
 const TREE_PITCH_STRETCH_RAD = 0.16;
 
 /** Below the minimum the whole tree is a small island; the maximum lets a leaf head fill the free area. */
-export const TREE_ZOOM_MIN = 0.75;
-export const TREE_ZOOM_MAX = 32;
+const TREE_ZOOM_MIN = 0.75;
+const TREE_ZOOM_MAX = 32;
 
 /** Camera distance in tree radii: perspective that reads as depth without bending the crown. */
 const TREE_CAMERA_DISTANCE_RADII = 3;
