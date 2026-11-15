@@ -31,19 +31,22 @@ test.describe("project agent dock", () => {
 
   test("the ask opens the dock beside the page and seats the brief request", async ({ page }) => {
     await page.goto("/en/project/fallback/?slug=storefront&guides=off");
-    const ask = page.getByTestId("project-detail-brief-ask");
-    await expect(ask).toBeVisible({ timeout: 30_000 });
+    const actions = page.getByTestId("project-detail-actions");
+    await expect(actions).toBeVisible({ timeout: 30_000 });
 
-    // The runtime probe answers after the page paints, so the copy button may stand first.
-    await expect(ask).toHaveAttribute("data-agent-route", "agent", { timeout: 30_000 });
-    const open = page.getByTestId("project-detail-brief-ask-open");
-    await expect(open).toBeVisible({ timeout: 30_000 });
+    // The runtime probe answers after the page paints, so the copy route may stand first.
+    await expect(actions).toHaveAttribute("data-agent-route", "agent", { timeout: 30_000 });
+    await page.getByTestId("project-detail-more").click();
+    await page.getByTestId("project-detail-brief-ask").click();
+    const open = page.getByRole("dialog").getByTestId("project-detail-brief-ask-open");
+    await expect(open).toBeVisible();
     await expect(page.getByTestId("project-detail-brief-ask-copy")).toHaveCount(0);
 
     const frame = page.getByTestId("project-agent-dock-frame");
     await expect(frame).toHaveAttribute("data-dock-state", "empty");
 
     await open.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(frame).toHaveAttribute("data-dock-state", "open");
     const dock = page.getByTestId("project-agent-dock");
     await expect(dock).toBeVisible();
@@ -60,6 +63,6 @@ test.describe("project agent dock", () => {
     await dock.getByTestId("acp-dock-close").click();
     await expect(frame).toHaveAttribute("data-dock-state", "put-away");
     await expect(frame).toHaveAttribute("inert", "");
-    await expect(page.getByTestId("project-detail-brief-ask-open")).toBeVisible();
+    await expect(page.getByTestId("project-detail-more")).toBeVisible();
   });
 });
