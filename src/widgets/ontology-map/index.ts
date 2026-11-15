@@ -35,8 +35,6 @@ export { refreshIndexDependentTokens } from './tokens/read-map-tokens';
 export { ambientSleepFactor, isAmbientAsleep } from './model/ambient/ambient-sleep';
 export { PLAIN_TIER_REVEAL, RECENT_SPOTLIGHT_REVEAL_MAX } from './model/visibility/tier-visibility';
 export { OntologyMapEdgePanel } from './ui/OntologyMapEdgePanel';
-export { layoutCone } from './model/dome-view/cone-layout';
-export type { ConeInputNode, ConeKind } from './model/dome-view/cone-layout';
 /**
  * Where the last frame drew each node's name and disc, for chrome outside the map that must
  * leave what it explains in view (the guided tour's card).

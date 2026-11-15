@@ -260,3 +260,120 @@
   );
 }
 
+
+/*
+ * The hero's app window: the product is the picture. The light behind it is still; the clip, the
+ * field and Moru are what move.
+ */
+.gateway-window {
+  position: relative;
+  isolation: isolate;
+}
+
+.gateway-window::before {
+  content: '';
+  position: absolute;
+  /* Centred on the window's top edge, so half of it rises above the frame like a horizon. */
+  inset: -11rem -6% auto -6%;
+  height: 24rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 50% at 50% 50%, var(--gateway-hero-light-core) 0%, transparent 100%),
+    radial-gradient(34% 44% at 20% 56%, var(--gateway-hero-light-wing) 0%, transparent 100%),
+    radial-gradient(34% 44% at 80% 56%, var(--gateway-hero-light-wing) 0%, transparent 100%);
+  filter: blur(36px);
+}
+
+.gateway-window-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  box-shadow: var(--gateway-window-shadow);
+}
+
+/* One line of light along the top edge, brightest at the centre. */
+.gateway-window-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0 12% auto 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--gateway-window-edge), transparent);
+}
+
+/* Twice the native cell on whole pixels, so each drawn pixel stays a square. */
+.gateway-hero-moru {
+  zoom: 2;
+}
+
+/*
+ * A still field of square stars in the mascot's pixel grain: one element, each star a 2px shadow
+ * on a 2px grid. It fades out before the window so the product's own picture stays clean.
+ */
+.gateway-hero-stars {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 34rem;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+}
+
+.gateway-hero-stars::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(50% - 800px);
+  width: 2px;
+  height: 2px;
+  box-shadow:
+    662px 484px 0 0 var(--gateway-star-dim),
+    808px 332px 0 0 var(--gateway-star-dim),
+    148px 420px 0 0 var(--gateway-star-indigo),
+    192px 186px 0 0 var(--gateway-star-indigo),
+    118px 464px 0 0 var(--gateway-star-indigo),
+    438px 18px 0 0 var(--gateway-star-dim),
+    888px 214px 0 0 var(--gateway-star-dim),
+    492px 46px 0 0 var(--gateway-star-indigo),
+    868px 30px 0 0 var(--gateway-star-indigo),
+    252px 484px 0 0 var(--gateway-star-dim),
+    1290px 320px 0 0 var(--gateway-star-indigo),
+    126px 294px 0 0 var(--gateway-star-indigo),
+    812px 24px 0 0 var(--gateway-star-dim),
+    94px 284px 0 0 var(--gateway-star-dim),
+    592px 214px 0 0 var(--gateway-star-dim),
+    1106px 60px 0 0 var(--gateway-star-indigo),
+    630px 286px 0 0 var(--gateway-star-dim),
+    210px 296px 0 0 var(--gateway-star-indigo),
+    1308px 96px 0 0 var(--gateway-star),
+    198px 280px 0 0 var(--gateway-star-dim),
+    1154px 30px 0 0 var(--gateway-star-indigo),
+    420px 254px 0 0 var(--gateway-star-indigo),
+    874px 396px 0 0 var(--gateway-star),
+    952px 298px 0 0 var(--gateway-star),
+    740px 152px 0 0 var(--gateway-star-dim),
+    368px 356px 0 0 var(--gateway-star-dim),
+    166px 294px 0 0 var(--gateway-star-dim),
+    1074px 252px 0 0 var(--gateway-star),
+    1492px 228px 0 0 var(--gateway-star-dim),
+    1246px 36px 0 0 var(--gateway-star-dim),
+    1048px 214px 0 0 var(--gateway-star-dim),
+    1550px 174px 0 0 var(--gateway-star-dim),
+    1000px 214px 0 0 var(--gateway-star-dim),
+    1368px 38px 0 0 var(--gateway-star-indigo),
+    1172px 404px 0 0 var(--gateway-star),
+    696px 354px 0 0 var(--gateway-star),
+    1216px 254px 0 0 var(--gateway-star-indigo),
+    934px 34px 0 0 var(--gateway-star-dim),
+    552px 242px 0 0 var(--gateway-star-dim),
+    124px 374px 0 0 var(--gateway-star-dim),
+    1324px 294px 0 0 var(--gateway-star),
+    582px 366px 0 0 var(--gateway-star),
+    1368px 176px 0 0 var(--gateway-star-dim),
+    944px 180px 0 0 var(--gateway-star-dim),
+    1250px 58px 0 0 var(--gateway-star),
+    120px 110px 0 0 var(--gateway-star-dim);
+}

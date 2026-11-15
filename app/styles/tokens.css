@@ -349,6 +349,18 @@
   --gateway-fx-cursor-ring: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   /*
+   * The hero's light is the map's own indigo, spilling from behind the app window that shows the
+   * map, with the link blue at its sides. Alpha caps keep it under the headline's ink.
+   */
+  --gateway-hero-light-core: color-mix(in srgb, var(--map-indigo) 58%, transparent);
+  --gateway-hero-light-wing: color-mix(in srgb, var(--color-indigo-accent) 26%, transparent);
+  --gateway-window-edge: color-mix(in srgb, var(--map-indigo-bright) 70%, transparent);
+  --gateway-window-shadow: 0 48px 140px var(--color-shadow-a46);
+  --gateway-star: color-mix(in srgb, var(--color-text-primary) 62%, transparent);
+  --gateway-star-dim: color-mix(in srgb, var(--color-text-primary) 26%, transparent);
+  --gateway-star-indigo: color-mix(in srgb, var(--map-indigo-bright) 80%, transparent);
+
+  /*
    * Origin = max(gutter, (viewport - `--page-max`) / 2): the single x every gateway element and the
    * camera reservation read. Registered with `@property` so JS can read the resolved length via
    * `parseFloat`; hand-written atomics stay unregistered so typos are not hidden.
