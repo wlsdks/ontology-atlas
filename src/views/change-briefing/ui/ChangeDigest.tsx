@@ -4,7 +4,9 @@ import { useId, useMemo, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
+import { FeatureStage } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
+import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
 import type { BriefingRange } from '../model/briefing-model';
 import { changeTitle, type ChangeDigest as Digest, type NotableChange, type NotableReason } from '../model/change-digest';
 import type { TimelineUnit } from '../model/digest-timeline';
@@ -18,6 +20,8 @@ const NO_CHANGES: never[] = [];
 /** Two or three cards share the row; a lone card takes half of it rather than the whole width. */
 const CARD_COLUMNS = ['md:grid-cols-2', 'md:grid-cols-2', 'md:grid-cols-3'] as const;
 const NO_NOTABLE = new Set<string>();
+/** Even space above and below the stage; on wide screens the frame's bottom breath and main's padding (72px) are the lower half. */
+const STAGE_BELOW_BAND = 'flex flex-1 flex-col py-8 md:py-10 lg:pt-18 lg:pb-0';
 
 interface ChangeDigestProps {
   digest: Digest;
@@ -34,7 +38,7 @@ interface ChangeDigestProps {
 }
 
 /** The count and when it happened share one band: the figure on the right is the count spread over time. */
-function HeadlineBand({ count, children, figure }: { count: number; children: ReactNode; figure: ReactNode }) {
+function HeadlineBand({ count, children, figure }: { count: number; children?: ReactNode; figure: ReactNode }) {
   return <section data-testid="change-digest-headline" className="grid items-start gap-x-6 gap-y-8 lg:grid-cols-3">
     <div className="min-w-0 space-y-3">
       <h2 className={cn('font-mono text-hero-lg leading-display-tight font-[var(--font-weight-strong)] tabular-nums', count ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-tertiary)]')}>{count.toLocaleString()}</h2>
@@ -79,9 +83,13 @@ export function ChangeDigest({ digest, range, unit, selection, onSelection, part
 }
 
 /** An empty period keeps the band: zero, what to do next, and the empty axis of the period. */
-export function EmptyDigest({ range, unit, children }: { range: BriefingRange; unit: TimelineUnit; children: ReactNode }) {
-  return <div data-testid="change-digest-empty">
-    <HeadlineBand count={0} figure={<DigestTimeline unit={unit} range={range} changes={NO_CHANGES} notable={NO_NOTABLE} />}>{children}</HeadlineBand>
+/** The band keeps its place with a quiet zero and an empty axis; what to do about it stands centred in the height below. */
+export function EmptyDigest({ range, unit, title, action }: { range: BriefingRange; unit: TimelineUnit; title: ReactNode; action?: ReactNode }) {
+  return <div data-testid="change-digest-empty" className="flex flex-1 flex-col">
+    <HeadlineBand count={0} figure={<DigestTimeline unit={unit} range={range} changes={NO_CHANGES} notable={NO_NOTABLE} />} />
+    <div className={STAGE_BELOW_BAND}>
+      <FeatureStage art={() => <div className="flex justify-center"><BrandPortrait expression="curious" /></div>} title={title} action={action} />
+    </div>
   </div>;
 }
 

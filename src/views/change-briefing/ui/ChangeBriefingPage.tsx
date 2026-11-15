@@ -420,10 +420,8 @@ export function ChangeBriefingPage() {
         {digestStatus === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void chooseRepository()}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
         {(digestStatus === 'readError' || digestStatus === 'stale' || digestStatus === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={readAgain}>{t('retry')}</Button>}
       </section>}
-      {view === 'digest' && !digestStatus && status === 'empty' && range && <EmptyDigest range={range} unit={timelineUnit(period, range)}>
-        <p className="text-body-lg text-[color:var(--color-text-secondary)]">{digestCopy('empty')}</p>
-        {latestDay !== null && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>}
-      </EmptyDigest>}
+      {view === 'digest' && !digestStatus && status === 'empty' && range && <EmptyDigest range={range} unit={timelineUnit(period, range)} title={digestCopy('empty')}
+        action={latestDay !== null && <Button size="lg" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>} />}
       {!digestStatus && digest && range && <ChangeDigest digest={digest} range={range} unit={timelineUnit(period, range)} selection={digestSelection} onSelection={setDigestSelection} partialCount={data?.status !== 'partial' ? null : data.partialReasons.some(reason => reason === 'commit-limit' || reason === 'byte-limit') ? data.commits.length : 'limited'}
         conceptTitle={id => conceptTitles.get(id) ?? id} formatTime={formatTime}
         pullUrl={number => githubRepository ? `https://github.com/${githubRepository}/pull/${number}` : null} onOpen={openChange} />}

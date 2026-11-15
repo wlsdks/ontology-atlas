@@ -77,8 +77,9 @@ The digest uses the workbench page width.
 
 A read cut short by the change or size limit says how many of the newest
 changes were counted; any other limited read says only that it is limited. An empty
-period shows zero and, when history holds a newer change, offers the latest
-changes. While history is read, the waiting mark stands in the centre of the
+period keeps the band with a quiet zero and the empty axis; below it, centred in
+the remaining height, the shared empty stage says nothing was merged and, when
+history holds a newer change, offers the latest changes. While history is read, the waiting mark stands in the centre of the
 content area.
 
 ## Originals
