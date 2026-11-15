@@ -7,15 +7,19 @@ import { cn } from '@/shared/lib/cn';
 
 import { fillStep, type ImportCell, type ImportMatrix } from '../model/import-matrix';
 
-/** The smallest square that still holds a two-line row header and an abbreviated `1.2k`. */
+/** The smallest cell that still holds a two-line row header and an abbreviated `1.2k`. */
 const CELL_MIN_PX = 34;
-const CELL_MAX_PX = 72;
+/** Cells widen to fill the figure, but past this a count floats in an empty slab. */
+const CELL_WIDTH_MAX_PX = 176;
+const CELL_HEIGHT_MAX_PX = 96;
 /** Unmeasured (first paint, a test renderer), cells take this size. */
 const CELL_FALLBACK_PX = 48;
-/** Below this a count of four digits or more abbreviates (`1.2k`). */
+/** Below this width a count of four digits or more abbreviates (`1.2k`). */
 const COMPACT_BELOW_PX = 52;
-/** Below this the column header names the role by its number instead of its name. */
+/** Below this width the column header names the role by its number instead of its name. */
 const COLUMN_NAME_MIN_PX = 48;
+/** Below this figure width the row header keeps only its number and name, so the columns fit. */
+const ROW_HEADER_DETAIL_MIN_PX = 480;
 const GRID_GAP_PX = 1;
 /* Two `text-label` lines, so a two-word name such as "Shared foundation" wraps instead of cutting. */
 const COLUMN_HEADER_PX = 34;
@@ -69,12 +73,36 @@ function useFigureSize(heightBound: boolean): [FigureSize, (element: HTMLDivElem
   return [size, attach];
 }
 
-function cellSizePx(roles: number, size: FigureSize, rowHeaderPx: number): number {
-  if (size.width === 0 || roles === 0) return CELL_FALLBACK_PX;
+interface CellSize {
+  widthPx: number;
+  heightPx: number;
+}
+
+/** Width fills the figure; height follows the width until the window or the cap stops it. */
+function cellSize(roles: number, size: FigureSize, rowHeaderPx: number): CellSize {
+  if (size.width === 0 || roles === 0) return { widthPx: CELL_FALLBACK_PX, heightPx: CELL_FALLBACK_PX };
   const gaps = roles * GRID_GAP_PX;
-  const byWidth = (size.width - rowHeaderPx - gaps) / roles;
-  const byHeight = size.height > 0 ? (size.height - COLUMN_HEADER_PX - gaps) / roles : Infinity;
-  return Math.max(CELL_MIN_PX, Math.min(CELL_MAX_PX, Math.floor(Math.min(byWidth, byHeight))));
+  const byWidth = Math.floor((size.width - rowHeaderPx - gaps) / roles);
+  const widthPx = Math.max(CELL_MIN_PX, Math.min(CELL_WIDTH_MAX_PX, byWidth));
+  const byHeight = size.height > 0 ? Math.floor((size.height - COLUMN_HEADER_PX - gaps) / roles) : Infinity;
+  const heightPx = Math.max(CELL_MIN_PX, Math.min(CELL_HEIGHT_MAX_PX, widthPx, byHeight));
+  return { widthPx, heightPx };
+}
+
+/** The row header column's width, read again whenever its content or detail line changes. */
+function useRowHeaderWidth(): [number, (header: HTMLElement | null) => void] {
+  const [widthPx, setWidthPx] = useState(ROW_HEADER_FALLBACK_PX);
+  const observer = useRef<ResizeObserver | null>(null);
+  const attach = useCallback((header: HTMLElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!header) return;
+    setWidthPx(header.offsetWidth);
+    if (typeof ResizeObserver === 'undefined') return;
+    observer.current = new ResizeObserver(() => setWidthPx(header.offsetWidth));
+    observer.current.observe(header);
+  }, []);
+  return [widthPx, attach];
 }
 
 export function ArchitectureImportMatrix({
@@ -107,13 +135,12 @@ export function ArchitectureImportMatrix({
   const t = useTranslations('architecture');
   const locale = useLocale();
   const [size, attachFigure] = useFigureSize(heightBound);
-  const [rowHeaderPx, setRowHeaderPx] = useState(ROW_HEADER_FALLBACK_PX);
-  const measureRowHeader = useCallback((node: HTMLElement | null) => {
-    if (node) setRowHeaderPx(node.offsetWidth);
-  }, []);
+  const [rowHeaderPx, measureRowHeader] = useRowHeaderWidth();
   const roles = matrix.order.length;
-  const cellPx = cellSizePx(roles, size, rowHeaderPx);
-  const compact = cellPx < COMPACT_BELOW_PX;
+  const { widthPx: cellWidthPx, heightPx: cellHeightPx } = cellSize(roles, size, rowHeaderPx);
+  const compact = cellWidthPx < COMPACT_BELOW_PX;
+  const namesColumns = cellWidthPx >= COLUMN_NAME_MIN_PX;
+  const showsRowDetail = size.width === 0 || size.width >= ROW_HEADER_DETAIL_MIN_PX;
   /* `1.2k` in every locale: developers read it, and the Korean `1.2천` doubles the glyph width. */
   const countFormat = compact
     ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
@@ -180,11 +207,10 @@ export function ArchitectureImportMatrix({
           role="group"
           aria-label={t('matrixLabel')}
           data-testid="architecture-matrix"
-          data-cell-px={cellPx}
           className="grid w-max"
           style={{
-            gridTemplateColumns: `max-content repeat(${roles}, ${cellPx}px)`,
-            gridTemplateRows: `${COLUMN_HEADER_PX}px repeat(${roles}, ${cellPx}px)`,
+            gridTemplateColumns: `max-content repeat(${roles}, ${cellWidthPx}px)`,
+            gridTemplateRows: `${COLUMN_HEADER_PX}px repeat(${roles}, ${cellHeightPx}px)`,
             gap: GRID_GAP_PX,
           }}
           onPointerLeave={() => setPointed(null)}
@@ -200,12 +226,12 @@ export function ArchitectureImportMatrix({
                 column === pointedColumn || column === markedColumn
                   ? 'text-[color:var(--color-text-primary)]'
                   : 'text-[color:var(--color-text-tertiary)]',
-                cellPx < COLUMN_NAME_MIN_PX && 'font-mono tabular-nums',
+                !namesColumns && 'font-mono tabular-nums',
               )}
               data-testid={`architecture-column-${id}`}
             >
               <span className="line-clamp-2 break-words">
-                {cellPx < COLUMN_NAME_MIN_PX ? String(column + 1).padStart(2, '0') : roleLabel(id)}
+                {namesColumns ? roleLabel(id) : String(column + 1).padStart(2, '0')}
               </span>
             </span>
           ))}
@@ -243,10 +269,12 @@ export function ArchitectureImportMatrix({
                     {roleLabel(id)}
                   </span>
                 </span>
-                <span className="truncate text-caption text-[color:var(--color-text-quaternary)]">
-                  <span className="font-mono">{pathLabelOf(id)}</span>
-                  {modules === null ? null : ` · ${t('moduleCount', { count: modules })}`}
-                </span>
+                {showsRowDetail ? (
+                  <span className="truncate text-caption text-[color:var(--color-text-quaternary)]">
+                    <span className="font-mono">{pathLabelOf(id)}</span>
+                    {modules === null ? null : ` · ${t('moduleCount', { count: modules })}`}
+                  </span>
+                ) : null}
               </button>,
               ...row.map((cell, column) => (
                 <MatrixCell

@@ -136,8 +136,8 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
 - **The picture is one import table** (2026-11-15). Rows and columns are the profile's roles
   in profile order; the cell at row A, column B counts the imports the last record observed
   from A into B. A row header carries the role's number, name, path pattern in mono and module
-  count; a column header its name, or its number when cells are narrow. Cells are equal
-  squares on one grid with a 1px gap. An allowed pair with imports shows its count in tabular
+  count; a column header its name, or its number when cells are narrow. Cells are one size
+  on one grid with a 1px gap. An allowed pair with imports shows its count in tabular
   mono on a neutral fill that steps up with the square root of its share of the busiest pair;
   an allowed pair with none shows a faint dot, so the rule itself is on the picture; a
   forbidden pair with none is empty; a pair the record counted against the rules is the only
@@ -162,11 +162,14 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   with no file opened; without a listing they are the modules the role's recorded concepts sit
   in, and the pane says why. Nothing in the pane or table unfolds in place.
 - **At workbench width the screen does not scroll** (2026-08-30). From `xl` the pane is a 380px
-  column with a hairline on its left and scrolls inside itself; the table's cells size to the
-  room left, from 34 to 72px, so seven roles stand whole at 1280×800 and 1512×945 and twelve
-  roles fit at 1280×800. Below 52px a count of four digits abbreviates (`1.2k`). Below `xl`
-  the pane stacks under the table and choosing a role scrolls it into view; below `md` the
-  table may scroll sideways inside its own area, never the page.
+  column with a hairline on its left and scrolls inside itself; the table's cells widen to
+  fill the room left, from 34 to 176px, and are as tall as they are wide until the window or
+  96px stops them, so the table spans the column, seven roles stand whole at 1280×800 and
+  1512×945 and twelve roles fit at 1280×800. Below 52px of width a count of four digits
+  abbreviates (`1.2k`). Below `xl` the pane stacks under the table and choosing a role scrolls
+  it into view. Under 480px of table room a row header keeps only its number and name, so seven
+  roles fit a 390px phone; more roles may scroll sideways inside the table's own area, never
+  the page.
 - **A role's sentence can be written in the reader's language** (2026-09-03). Beside
   `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
   `summary_views_ko`. The screen shows the locale line to a reader in that locale
