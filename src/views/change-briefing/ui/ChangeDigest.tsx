@@ -35,9 +35,9 @@ interface ChangeDigestProps {
 
 /** The count and when it happened share one band: the figure on the right is the count spread over time. */
 function HeadlineBand({ count, children, figure }: { count: number; children: ReactNode; figure: ReactNode }) {
-  return <section data-testid="change-digest-headline" className="grid items-end gap-x-6 gap-y-8 lg:grid-cols-3">
+  return <section data-testid="change-digest-headline" className="grid items-start gap-x-6 gap-y-8 lg:grid-cols-3">
     <div className="min-w-0 space-y-3">
-      <h2 className={cn('font-mono text-hero-lg font-[var(--font-weight-strong)] tabular-nums', count ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-tertiary)]')}>{count.toLocaleString()}</h2>
+      <h2 className={cn('font-mono text-hero-lg leading-display-tight font-[var(--font-weight-strong)] tabular-nums', count ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-tertiary)]')}>{count.toLocaleString()}</h2>
       {children}
     </div>
     <div className="min-w-0 lg:col-span-2">{figure}</div>
