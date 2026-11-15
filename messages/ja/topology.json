@@ -173,6 +173,7 @@
   "light3d": {
     "legendLabel": "3Dマップの凡例",
     "focusFacts": "依存先{needs} · 依存元{users}",
+    "focusImpact": "影響範囲{count}",
     "dependenciesHidden": "依存{count}件を非表示"
   },
   "analysis": {

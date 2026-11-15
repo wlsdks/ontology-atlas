@@ -63,7 +63,8 @@ export function useTopologyCameraPolicy({
   /*
    * The chrome can change size between camera moments: the detail panel grows when its content
    * arrives, the key wraps, INDEX folds while the agent dock is open. A size change re-measures
-   * the name boxes once, in the next frame, and asks for that frame; at rest nothing runs.
+   * once, in the next frame, and asks for that frame: the name boxes in Flat, the side insets a
+   * 3D title stands between otherwise. At rest nothing runs.
    */
   const watchChrome = useCallback((canvasEl: HTMLCanvasElement) => {
     if (typeof ResizeObserver === "undefined") return;
@@ -75,8 +76,15 @@ export function useTopologyCameraPolicy({
           fresh.frame = 0;
           const canvas = canvasRef.current;
           const insets = panelInsetsRef.current;
-          if (!canvas || !insets || view3dRef.current) return;
-          panelInsetsRef.current = { ...insets, nameObstacles: measureNameObstacles(canvas, { left: true, right: true }) };
+          if (!canvas || !insets) return;
+          if (view3dRef.current) {
+            const box = canvas.getBoundingClientRect();
+            const measured = measureCanvasInsets(canvas, { x: box.x, y: box.y, width: box.width, height: box.height });
+            if (measured.left === insets.left && measured.right === insets.right) return;
+            panelInsetsRef.current = { ...insets, left: measured.left, right: measured.right };
+          } else {
+            panelInsetsRef.current = { ...insets, nameObstacles: measureNameObstacles(canvas, { left: true, right: true }) };
+          }
           lastActiveMsRef.current = performance.now();
         });
       }), watched: new Set(), frame: 0 };
@@ -117,7 +125,7 @@ export function useTopologyCameraPolicy({
      */
     const flat = !view3dRef.current;
     panelInsetsRef.current = { left: measured.left, right: measured.right, nameObstacles: flat ? measureNameObstacles(canvasEl, { left: true, right: true }, panels) : [] };
-    if (flat) watchChrome(canvasEl);
+    watchChrome(canvasEl);
     return {
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),

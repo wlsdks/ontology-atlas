@@ -173,6 +173,7 @@
   "light3d": {
     "legendLabel": "3D 지도 범례",
     "focusFacts": "의존 {needs} · 사용처 {users}",
+    "focusImpact": "영향 범위 {count}",
     "dependenciesHidden": "의존 {count, number}개 숨김"
   },
   "analysis": {

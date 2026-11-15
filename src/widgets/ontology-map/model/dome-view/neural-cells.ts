@@ -24,6 +24,8 @@ export interface NeuralGraph {
   clusterOf: ReadonlyMap<string, string>;
   /** Dependencies in either direction, per concept. */
   dependencyCount: ReadonlyMap<string, number>;
+  /** Concept id → the concepts that depend on it directly, without self-dependencies. */
+  dependentsOf: ReadonlyMap<string, readonly string[]>;
   domainIds: readonly string[];
 }
 
@@ -54,12 +56,17 @@ export function neuralGraphOf(nodes: readonly NeuralNodeInput[], edges: readonly
   const clusterOf = clusterDomainOf(nodes);
   const domainIds = nodes.filter((node) => node.kind === 'domain').map((node) => node.id);
   const dependencyCount = new Map<string, number>();
+  const dependentsOf = new Map<string, string[]>();
   for (const edge of edges) {
     if (!isNeuralDependency(edge)) continue;
     dependencyCount.set(edge.sourceId, (dependencyCount.get(edge.sourceId) ?? 0) + 1);
     dependencyCount.set(edge.targetId, (dependencyCount.get(edge.targetId) ?? 0) + 1);
+    if (edge.sourceId === edge.targetId) continue;
+    const dependents = dependentsOf.get(edge.targetId);
+    if (dependents) dependents.push(edge.sourceId);
+    else dependentsOf.set(edge.targetId, [edge.sourceId]);
   }
-  const graph = { clusterOf, dependencyCount, domainIds: domainIds.sort() };
+  const graph = { clusterOf, dependencyCount, dependentsOf, domainIds: domainIds.sort() };
   graphs.set(edges, graph);
   return graph;
 }

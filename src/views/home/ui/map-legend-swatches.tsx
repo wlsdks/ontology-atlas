@@ -7,10 +7,11 @@ export function KindDot({ radius, ink, ring = false }: { radius: number; ink: st
   );
 }
 
-export function ArcSwatch({ ink }: { ink: string }) {
+/** `strength` is the stroke's opacity, as a CSS value, where the canvas draws the ink weaker. */
+export function ArcSwatch({ ink, strength }: { ink: string; strength?: string }) {
   return (
     <svg aria-hidden width="22" height="14" viewBox="0 0 22 14">
-      <path d="M2 11 Q11 1 20 11" fill="none" strokeWidth="1.6" strokeLinecap="round" style={{ stroke: ink }} />
+      <path d="M2 11 Q11 1 20 11" fill="none" strokeWidth="1.6" strokeLinecap="round" style={{ stroke: ink, strokeOpacity: strength }} />
     </svg>
   );
 }

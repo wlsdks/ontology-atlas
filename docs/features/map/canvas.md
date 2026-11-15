@@ -293,7 +293,22 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   back. A focus veils everything else, lights what it depends on in the arc ink and
   what depends on it in the reach ink, names each far end on the side its axon
   leaves free, and sets a plate with its name and counts beside it, on the side with
-  fewer lit axons. A receded cell keeps a third of its rest opacity
+  fewer lit axons. Pointing at a concept lights only those direct ends. **Selecting
+  it lights its impact**: every concept that depends on it, directly or through
+  others, over the same `depends_on` axons and at its fewest hops. The map lights the
+  whole impact, which equals MCP's `impact` (direction incoming) when the call's
+  depth and limit cover it; the default call stops at depth 2 and 100 results.
+  The change travels outward hop by hop: a
+  signal runs along each axon that carries it one hop further, from the end nearer
+  the selection, and each dependent lifts from the veil as the signal reaches it.
+  One hop takes `--motion-expressive`; when the whole spread would take longer than
+  `--motion-choreography`, every hop shortens equally to fit it. Then the map rests.
+  Distance 1, distance 2 and distance 3 or more light at three falling strengths
+  (`--map-neural-impact-near`, `-mid`, `-far`), the weaker ones thinner as well;
+  an axon between two concepts at the same distance stays receded. The plate adds
+  the impact count when it reaches past the direct dependents, the legend adds the
+  indirect key, and indirect dependents are named nearest first within a quarter of
+  the name budget. Reduced motion lights the whole impact at once. A receded cell keeps a third of its rest opacity
   (`--map-neural-veil`) and a receded title a little less (`--map-neural-title-veil`). While the detail panel is open and the camera sits at
   the rest fit, the whole cloud glides into the area the panel leaves free, on the
   camera transition a panel opening uses, and returns when it closes; zoomed or
@@ -304,7 +319,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   reduced motion shows none and the fly-to arrives at once. Auto-arrange, Fit Map
   and `0` glide a turned cloud back to its rest pose and fit it; under reduced
   motion it arrives at once. The legend
-  at the bottom centre names capability, element and stale, and the two arc keys
-  with a focus. Pitch stays between 0.15 and 0.95 rad. After closing the detail
+  at the bottom centre names capability, element and stale, the two arc keys
+  with a focus, and the indirect key with a selection that has indirect dependents. Pitch stays between 0.15 and 0.95 rad. After closing the detail
   panel, Fit Map leaves the retained selection and returns to the whole map. Gates:
   `tests/e2e/map/neural/`.
