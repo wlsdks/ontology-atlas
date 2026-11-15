@@ -13,7 +13,7 @@ import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type CameraTweenEase } from "../../model/camera/camera-easing";
 import { recordSelectionCamera, selectionZoomBase, type SelectionCamera } from "../../model/camera/flat-selection-camera";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
+import type { DomeFitTarget, DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeModel } from "../../model/dome-view/types";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
 import {
@@ -51,7 +51,7 @@ interface Dependencies {
   cameraAngularFreqRef: RefObject<number | null>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase) => void;
   domeRuntimeRef: RefObject<DomeRuntime | null>;
-  domeFitTarget: (model: DomeModel, yaw: number, pitch: number, width: number, height: number, tokens: OntologyMapTokens) => CameraTarget | null;
+  domeFitTarget: (model: DomeModel, yaw: number, pitch: number, width: number, height: number, tokens: OntologyMapTokens) => DomeFitTarget | null;
   lastActiveMsRef: RefObject<number>;
   overviewFitRef: RefObject<"full" | "spine">;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;

@@ -20,12 +20,13 @@ import { CANVAS_SPRING_PAN_MS, cameraTransitionDurationMs, type CameraKeyframe, 
 import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
-  domeTurnBounds,
   domeWorldBounds,
 } from "../../model/dome-view/projection";
+import type { DomeFitTarget } from "../../model/dome-view/runtime";
+import { domeTurnReach } from "../../model/dome-view/turn-follow";
 import type { DomeModel } from "../../model/dome-view/types";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeDomeFitCameraTarget } from "./topology-camera-math";
+import { computeDomeFitCameraTarget, domeFitFreeHalfSize } from "./topology-camera-math";
 
 interface Dependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -152,8 +153,8 @@ export function useTopologyCameraPolicy({
       width: number,
       height: number,
       tokens: OntologyMapTokens,
-    ): CameraTarget | null => {
-      const bounds = model.arrangement === "coupling" ? domeTurnBounds(model, pitch) : domeWorldBounds(model, yaw, pitch);
+    ): DomeFitTarget | null => {
+      const bounds = domeWorldBounds(model, yaw, pitch);
       if (bounds === null) return null;
       const canvasEl = canvasRef.current;
       let left = tokens.safeInsetLeft;
@@ -185,6 +186,7 @@ export function useTopologyCameraPolicy({
         right: Math.max(panels.right, edges.right?.reach ?? 0),
       };
       let target = computeDomeFitCameraTarget(bounds, width, height, panels, DOME_NODE_FIT_ALLOWANCE_PX, tokens);
+      let used = panels;
       if (chromed.left !== panels.left || chromed.right !== panels.right) {
         const centred = computeDomeFitCameraTarget(bounds, width, height, chromed, DOME_NODE_FIT_ALLOWANCE_PX, tokens);
         const costsNothing = centred.tscale >= target.tscale * (1 - 1e-6);
@@ -192,7 +194,10 @@ export function useTopologyCameraPolicy({
           edges.left && { left: 0, right: edges.left.reach, top: edges.left.top, bottom: edges.left.bottom },
           edges.right && { left: width - edges.right.reach, right: width, top: edges.right.top, bottom: edges.right.bottom },
         ].some((rect) => rect && domeReachesRect(model, yaw, pitch, target, width, height, rect, DOME_NODE_FIT_ALLOWANCE_PX));
-        if (costsNothing || covered) target = centred;
+        if (costsNothing || covered) {
+          target = centred;
+          used = chromed;
+        }
       }
       /*
        * Strata's tier names stand beside their rims in the free map between the
@@ -202,7 +207,10 @@ export function useTopologyCameraPolicy({
        * finds no clear place beside its rim goes unnamed, and the drawing keeps the width.
        */
       domeFitInsetsRef.current = chromed;
-      return target;
+      if (model.arrangement !== "coupling") return target;
+      // Neural fits the pose it is asked for; turning from it then zooms out only as far as each yaw needs.
+      const free = domeFitFreeHalfSize(width, height, used, DOME_NODE_FIT_ALLOWANCE_PX, tokens);
+      return { ...target, turn: domeTurnReach(model, yaw, pitch, free) ?? undefined };
     },
     [canvasRef, domeFitInsetsRef],
   );

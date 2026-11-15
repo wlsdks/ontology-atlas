@@ -154,28 +154,6 @@ export function domeWorldBounds(
   return { minX, minY, maxX, maxY };
 }
 
-/** Yaws the Neural fit samples over a whole turn. */
-const DOME_TURN_SAMPLES = 24;
-
-/**
- * Neural's fit: every node's projected box over a whole turn at `pitch`, so turning never carries a
- * cluster out of the window; the pitch a person drags is theirs to frame. O(DOME_TURN_SAMPLES · N).
- */
-export function domeTurnBounds(
-  model: DomeModel,
-  pitch: number,
-): { minX: number; minY: number; maxX: number; maxY: number } | null {
-  let union: { minX: number; minY: number; maxX: number; maxY: number } | null = null;
-  for (let k = 0; k < DOME_TURN_SAMPLES; k += 1) {
-    const b = domeWorldBounds(model, (k * 2 * Math.PI) / DOME_TURN_SAMPLES, pitch);
-    if (b === null) return null;
-    union = union === null
-      ? b
-      : { minX: Math.min(union.minX, b.minX), minY: Math.min(union.minY, b.minY), maxX: Math.max(union.maxX, b.maxX), maxY: Math.max(union.maxY, b.maxY) };
-  }
-  return union;
-}
-
 /**
  * The `allowancePx` argument pads each centre by its disc. The 3D fit asks it of the right-edge chrome
  * before the drawing uses that column.
