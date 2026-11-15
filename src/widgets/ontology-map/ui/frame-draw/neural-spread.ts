@@ -1,23 +1,18 @@
 import { neuralSignalProgress, type NeuralGraph } from "../../model/dome-view/neural-cells";
 import { impactHopsByIndex, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../model/dome-view/neural-impact";
 import type { NeuralTokens } from "../../tokens/read-neural-tokens";
-import { at, AXON_BANDS, ax, abx, aby, acx, acy, ay, bandWidthPx, litAxon, litEdge, litHop, stamp, traceAxon } from "./neural-axons";
 
 /**
- * A focus's signal and a selection's spread: when each started, how far it has come, the impact it
- * lights, and the strokes of the lit dependents. Also what the last frame lit, for the map probe.
+ * A focus's signal and a selection's spread: when each started, how far it has come, and the impact
+ * it lights. Also what the last frame lit, for the map probe.
  */
 
-export const LIT_DOT_T = 0.96;
-/** The travelling signal's glow under its dot. */
-export const SIGNAL_GLOW_ALPHA = 0.85;
 /** Distances at and past this one light at the far strength. */
 const FAR_DISTANCE = 3;
-/** 0 for distance 1, 1 for the middle step, 2 for far: one batched stroke per strength and band. */
-const strengthStep = (distance: number) => (distance <= 1 ? 0 : distance < FAR_DISTANCE ? 1 : 2);
-const STEP_DISTANCES = [1, FAR_DISTANCE - 1, FAR_DISTANCE] as const;
-/** A weaker step is also thinner, down to this share of a lit axon's width at zero strength. */
-const IMPACT_WIDTH_FLOOR = 0.45;
+/** 0 for distance 1, 1 for the middle step, 2 for far: a painter batches one stroke per step. */
+export const impactStepOf = (distance: number) => (distance <= 1 ? 0 : distance < FAR_DISTANCE ? 1 : 2);
+/** A distance in each step of {@link impactStepOf}. */
+export const IMPACT_STEP_DISTANCES = [1, FAR_DISTANCE - 1, FAR_DISTANCE] as const;
 
 interface Signal { key: string | null; startMs: number; impact: NeuralImpact | null; hops: number; hopMs: number }
 /**
@@ -55,6 +50,9 @@ export const lastLit = {
   liftedCells: 0,
   plateFacts: null as string | null,
   edges: [] as readonly { sourceId: string; targetId: string }[],
+  /** The frame's lit list: world edge index and hop, of which `litCount` are this frame's. */
+  litEdge: new Int32Array(0) as Int32Array,
+  litHop: new Int32Array(0) as Int32Array,
   litCount: 0,
 };
 
@@ -65,8 +63,8 @@ export const lastLit = {
 export function lastNeuralLit() {
   const axons: { sourceId: string; targetId: string; hop: number }[] = [];
   for (let k = 0; k < lastLit.litCount; k += 1) {
-    const edge = lastLit.edges[litEdge[k]];
-    if (edge) axons.push({ sourceId: edge.sourceId, targetId: edge.targetId, hop: litHop[k] });
+    const edge = lastLit.edges[lastLit.litEdge[k]];
+    if (edge) axons.push({ sourceId: edge.sourceId, targetId: edge.targetId, hop: lastLit.litHop[k] });
   }
   return {
     axons,
@@ -161,63 +159,4 @@ export function neuralSpreadFrame(input: SpreadInput, t: NeuralTokens): Readonly
   lastLit.hops = impact?.hops ?? 0;
   lastLit.liftedCells = 0;
   return spreadFrame;
-}
-
-/**
- * A selection's dependents in the reach ink, hop k lighting from its nearer end as its signal runs out,
- * and each strength drawn as one stroke per band. O(lit axons) per frame.
- */
-export function paintSpread(ctx: CanvasRenderingContext2D, t: NeuralTokens, litCount: number, spread: number, alpha: number, glow: HTMLCanvasElement | null): void {
-  const reach = t.inks.reach;
-  const runOf = (k: number) => Math.min(1, Math.max(0, spread - (litHop[k] - 1)));
-  ctx.strokeStyle = reach;
-  ctx.fillStyle = reach;
-  for (let step = 0; step < STEP_DISTANCES.length; step += 1) {
-    const strength = impactStrength(t, STEP_DISTANCES[step]);
-    const widthShare = IMPACT_WIDTH_FLOOR + (1 - IMPACT_WIDTH_FLOOR) * strength;
-    let any = false;
-    ctx.shadowColor = reach;
-    ctx.shadowBlur = step === 0 ? t.litGlowPx : 0;
-    for (let band = 0; band < AXON_BANDS; band += 1) {
-      const t1 = (band + 1) / AXON_BANDS;
-      ctx.globalAlpha = t.litAlpha * alpha * strength;
-      ctx.lineWidth = bandWidthPx(band, t.litStartPx, t.litEndPx) * widthShare;
-      ctx.beginPath();
-      for (let k = 0; k < litCount; k += 1) {
-        if (litHop[k] <= 0 || strengthStep(litHop[k]) !== step) continue;
-        any = true;
-        const t0 = Math.max(band / AXON_BANDS, 1 - runOf(k));
-        if (t0 < t1) traceAxon(ctx, litAxon[k], t0, t1);
-      }
-      if (!any) break;
-      ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
-    if (!any) continue;
-    ctx.beginPath();
-    for (let k = 0; k < litCount; k += 1) {
-      if (litHop[k] <= 0 || strengthStep(litHop[k]) !== step) continue;
-      const i = litAxon[k];
-      const x = at(ax[i], acx[i], abx[i], LIT_DOT_T);
-      const y = at(ay[i], acy[i], aby[i], LIT_DOT_T);
-      ctx.moveTo(x + t.litDotPx, y);
-      ctx.arc(x, y, t.litDotPx, 0, Math.PI * 2);
-    }
-    ctx.fill();
-  }
-  // The signal runs from the end nearer the selection, the dependency's target, to its dependent.
-  ctx.fillStyle = t.inks.strong;
-  ctx.beginPath();
-  for (let k = 0; k < litCount; k += 1) {
-    const run = litHop[k] > 0 ? runOf(k) : 1;
-    if (run <= 0 || run >= 1) continue;
-    const i = litAxon[k];
-    const x = at(ax[i], acx[i], abx[i], 1 - run);
-    const y = at(ay[i], acy[i], aby[i], 1 - run);
-    stamp(ctx, glow, x, y, t.signalGlowPx, SIGNAL_GLOW_ALPHA * alpha);
-    ctx.moveTo(x + t.signalPx, y);
-    ctx.arc(x, y, t.signalPx, 0, Math.PI * 2);
-  }
-  ctx.globalAlpha = alpha;
-  ctx.fill();
 }
