@@ -30,7 +30,7 @@ import type { OntologyMapProps } from "../OntologyMap";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { type TopologyWorld } from "../world/topology-world";
-import { isNeuralSignalTravelling } from "../frame-draw/paint-neural";
+import { isNeuralSignalTravelling } from "../frame-draw/neural-spread";
 
 export const IDLE_GRACE_MS = 1200;
 const VIEWPORT_SETTLE_FRAMES = 2;
