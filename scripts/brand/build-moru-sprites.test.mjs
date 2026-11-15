@@ -7,7 +7,7 @@ import { despeckle, faintMarks, holdBody, inkFringe, ivoryFringe, liftFreeInk, m
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
-const INK = [23, 25, 35], SKIN = [214, 211, 201], IVORY = [255, 241, 215], FREE_INK = [109, 115, 210], FRINGE_GRAY = [85, 84, 81], HAZE_GRAY = [153, 150, 143];
+const INK = [23, 25, 35], SKIN = [214, 211, 201], IVORY = [255, 241, 215], FREE_INK = [109, 115, 210], FRINGE_GRAY = [85, 84, 81], MID_FRINGE_GRAY = [119, 117, 114], HAZE_GRAY = [153, 150, 143];
 
 function canvas(size) {
   const data = Buffer.alloc(size * size * 4);
@@ -490,6 +490,26 @@ test('a faint gray whisker on the belly becomes ink, a shorter gray piece there 
   assert.deepEqual([at(drawn, 10, 40), at(drawn, 23, 45)], [FRINGE_GRAY, FRINGE_GRAY], 'a gray surface larger than a mark changed');
   assert.deepEqual([at(drawn, 40, 50), at(drawn, 45, 50)], [FRINGE_GRAY, FRINGE_GRAY], 'gray that reaches the outside of the drawing changed');
   assert.deepEqual([at(drawn, 3, 30), at(drawn, 30, 30), at(drawn, 30, 10)], [INK, IVORY, SKIN], 'the outline, the belly or the body changed');
+});
+
+test('a still pose of 32px or more keeps none of the dark gray that ink fades through', async () => {
+  const { poses } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  const cleaned = Object.entries(poses).filter(([, pose]) => pose.nativeSize >= 32);
+  assert.ok(cleaned.length >= 15, 'the still poses are missing from the catalogue');
+  for (const [name, pose] of cleaned) {
+    const { data } = await sharp(`assets/brand/moru/${pose.path}`).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    let faded = 0;
+    for (let p = 0; p < data.length; p += 4) if (data[p + 3] && [FRINGE_GRAY, MID_FRINGE_GRAY].some(gray => gray.every((channel, i) => data[p + i] === channel))) faded++;
+    assert.equal(faded, 0, `${name} was exported without the cleaning its clips get`);
+  }
+});
+
+test('the 64px motion rows the app plays are the rows this export wrote', async () => {
+  const { runtime, clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  for (const [state, id] of Object.entries(runtime)) {
+    const played = await readFile(`public/brand/mascot-${state}-row.png`);
+    assert.deepEqual(played, await readFile(`assets/brand/moru/${clips[id].sprite64}`), `the app still plays an older ${state} row`);
+  }
 });
 
 test('every stone pixel beside a resting whisker belongs to the body, at both exported sizes', async () => {

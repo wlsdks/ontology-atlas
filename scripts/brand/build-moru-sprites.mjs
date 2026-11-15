@@ -65,6 +65,8 @@ function translate(data, size, dx, dy) {
 const WORK = 256;
 /** A thin stroke's soft edge is about half opaque; a higher cutoff drops the stroke. */
 const CLIP_ALPHA_CUTOFF = 128;
+/** Exported pixels along one side of the smallest still face. */
+const MICRO_FACE = 16;
 /** Enclosed ink no wider or taller than this share of the cell is one facial mark. */
 const MARK_SPAN_SHARE = 5 / 32;
 /** Work pixels, half a drawn pixel: marks this close in size can be one drawing made twice. */
@@ -557,6 +559,9 @@ function registerBody(frame, reference, size, airborneOrigin, scaleReference) {
   return out;
 }
 
+/** The cleaning every body frame gets on the work grid; each pass relies on the ones before it. */
+const cleanedFrame = (frame, size) => ivoryFringe(faintMarks(inkFringe(liftFreeInk(despeckle(frame, size), size), size), size), size);
+
 export async function buildMoru() {
   const spec = JSON.parse(await readFile(join(ROOT, 'moru-source.json'), 'utf8'));
   const clips = {}, framesBySize = { 64: {}, 128: {} };
@@ -583,7 +588,7 @@ export async function buildMoru() {
       if (i === 0 || i === count - 1) return reference;
       try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
       catch (error) { throw new Error(`${clip.id} frame ${i + 1}: ${error.message}`); }
-    }).map(f => ivoryFringe(faintMarks(inkFringe(liftFreeInk(despeckle(f, size), size), size), size), size));
+    }).map(f => cleanedFrame(f, size));
     if (clip.restingBody) frames = holdBody(frames, size);
     for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
       const reduced = reduceMoru(f, size, exported);
@@ -617,9 +622,11 @@ export async function buildMoru() {
   }
   const poses = {};
   for (let i = 0; i < spec.poses.names.length; i++) {
-    const name = spec.poses.names[i], size = i === 15 ? 16 : i === 14 ? 32 : 128;
+    const name = spec.poses.names[i], size = i === 15 ? MICRO_FACE : i === 14 ? 32 : 128;
     const source = spec.poses.overrides?.[name] ?? { source: spec.poses.source, columns: 4, rows: 4, index: i };
-    let frame = await cell(source.source, source.columns, source.rows, source.index, size);
+    // The 16px face has no room for the reduction to redraw its marks, so it is cut at its own size.
+    let frame = size === MICRO_FACE ? await cell(source.source, source.columns, source.rows, source.index, size)
+      : reduceMoru(cleanedFrame(await cell(source.source, source.columns, source.rows, source.index, WORK), WORK), WORK, size);
     const box = bounds(frame, size);
     frame = translate(frame, size, Math.floor((size - (box[2] - box[0])) / 2) - box[0], Math.floor((size - (box[3] - box[1])) / 2) - box[1]);
     await put(join(ROOT, `poses/moru-${name}.png`), await png(frame, size));
@@ -635,7 +642,11 @@ export async function buildMoru() {
   const canonical = 'assets/brand/mascot';
   for (const [name, source] of Object.entries({ 'full-64': 'moru-full-64.png', 'presentation-128': 'moru-full-128.png', 'compact-32': poses['compact-portrait'].path, 'micro-16': poses['micro-portrait'].path })) await put(`${canonical}/mascot-${name}.png`, await readFile(join(ROOT, source)));
   await put(`${canonical}/mascot-welcome-32.png`, await readFile(join(ROOT, poses['compact-portrait'].path)));
-  for (const [state, id] of Object.entries({ walk: 'wave', read: 'source-read', success: 'dance', waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) await put(`${canonical}/mascot-${state}-row-64.png`, await strip(framesBySize[64][id], 64));
+  for (const [state, id] of Object.entries({ walk: 'wave', read: 'source-read', success: 'dance', waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) {
+    const row = await strip(framesBySize[64][id], 64);
+    // The app plays the public copy, so it is written with its master rather than left to the icon installer.
+    for (const file of [`${canonical}/mascot-${state}-row-64.png`, `public/brand/mascot-${state}-row.png`]) await put(file, row);
+  }
   for (const size of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) await put(join(ROOT, `icons/atlas-compass-${size}.png`), await sharp(join(ROOT, spec.compass)).resize(size, size).png().toBuffer());
   const proof = [];
   for (const [row, background] of ['#171923', '#fff8ed'].entries()) {
