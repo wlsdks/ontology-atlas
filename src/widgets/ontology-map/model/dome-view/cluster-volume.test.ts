@@ -87,10 +87,24 @@ describe('clusterVolumeAnchors', () => {
     expect(Math.abs(box.top + box.bottom) / (box.top - box.bottom)).toBeLessThan(SETTLED);
   });
 
-  it.each([4, 9, 13])('packs %i equal clusters into more than one row', (count) => {
-    const { discs } = drawn(equal(count));
-    const rows = new Set(discs.map((d) => Math.round(d.y / d.r)));
+  it.each([3, 4, 9, 13])('packs %i equal clusters round a loose group into more than one row', (count) => {
+    const { discs } = drawn(equal(count), 1);
+    const rows = new Set(discs.slice(0, count).map((d) => Math.round(d.y / d.r)));
     expect(rows.size).toBeGreaterThan(1);
+  });
+
+  it.each([
+    [[42, 42, 42]],
+    [[62, 47, 37]],
+    [[20, 20, 20, 20]],
+    [[30, 29, 28, 27]],
+    [[33, 31, 29, 28]],
+  ])('stands near-equal clusters %j round the loose group, not in one row', (members) => {
+    const { discs } = drawn(members, 1);
+    const titled = discs.slice(0, members.length);
+    const width = Math.max(...titled.map((d) => d.x + d.r)) - Math.min(...titled.map((d) => d.x - d.r));
+    const height = Math.max(...titled.map((d) => d.y + d.r)) - Math.min(...titled.map((d) => d.y - d.r));
+    expect(width / height).toBeLessThan(2);
   });
 
   it('stands four like clusters round a loose group one to each quarter of the pack', () => {

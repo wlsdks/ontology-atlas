@@ -27,11 +27,19 @@ const LENS_PASSES = 3;
  * into one flat row, and rounder than 1.4 the title band no longer settles clear at 30 clusters.
  */
 const PACK_ASPECT_WIDE = 1.4;
-/** Four like clusters packed wide stand three in a row over one, a quarter of the pack bare; packed round they stand two by two. */
-const PACK_ASPECT_ROUND = 1;
+/**
+ * Like clusters packed wide can stand in one row, or three over one with a quarter of the pack bare.
+ * Packed round, four stand two by two; three leave their row only once the pack is taller than wide.
+ */
+const PACK_ASPECT_RETRIES = [1, 0.8];
 /** A quarter of the pack's box holding less than this share of the clusters' area reads as a hole. */
 const BARE_QUARTER_SHARE = 0.05;
 const QUARTER_SAMPLES = 32;
+/** Three or more clusters in a box this many times as wide as tall stand in one row; two side by side stay under it. */
+const FLAT_PACK_ASPECT = 2.8;
+const FLAT_PACK_MIN_CLUSTERS = 3;
+/** Past this many clusters neither shape occurred (sampled to 500), and further settles of 200 would spend the time budget. */
+const REPACK_MAX_CLUSTERS = 16;
 /** Candidate positions round each placed cluster. */
 const PACK_DIRECTIONS = 24;
 /** Depth spans this share of the pack's drawn height: deep enough that turning shows parallax, shallow enough that far clusters stay legible. */
@@ -285,17 +293,25 @@ function depthLevels(reach: readonly number[], order: readonly number[], x: Floa
   return level;
 }
 
+interface Pack {
+  shapes: readonly Footprint[];
+  x: Float64Array;
+  y: Float64Array;
+}
+
 /**
- * The smallest share of the titled clusters' disc area that one quarter of their box holds,
- * 0.25 when the four hold alike. Sampled on a grid: O(QUARTER_SAMPLES² · k).
+ * Whether the titled clusters stand in one flat row or leave a quarter of their box bare.
+ * Disc area per quarter is sampled on a grid: O(QUARTER_SAMPLES² · k).
  */
-function barestQuarterShare(shapes: readonly Footprint[], x: Float64Array, y: Float64Array): number {
+function packReadsPoorly({ shapes, x, y }: Pack): { poorly: boolean; barestQuarter: number } {
   let left = Infinity;
   let right = -Infinity;
   let bottom = Infinity;
   let top = -Infinity;
+  let titled = 0;
   shapes.forEach((s, i) => {
     if (s.w === 0) return;
+    titled += 1;
     left = Math.min(left, x[i] - s.r);
     right = Math.max(right, x[i] + s.r);
     bottom = Math.min(bottom, y[i] - s.r);
@@ -311,14 +327,16 @@ function barestQuarterShare(shapes: readonly Footprint[], x: Float64Array, y: Fl
     }
   }
   const all = held[0] + held[1] + held[2] + held[3];
-  return all === 0 ? 0.25 : Math.min(...held) / all;
+  const barestQuarter = all === 0 ? 0.25 : Math.min(...held) / all;
+  const flat = titled >= FLAT_PACK_MIN_CLUSTERS && right - left > FLAT_PACK_ASPECT * (top - bottom);
+  return { poorly: flat || barestQuarter < BARE_QUARTER_SHARE, barestQuarter };
 }
 
 interface Arranged {
   points: Point3[];
   height: number;
   focal: number;
-  barestQuarter: number;
+  pack: Pack;
 }
 
 /**
@@ -347,7 +365,7 @@ function arrange(
   const depth = Array.from(level, (l) => depthHalf * (l / MIDDLE_LEVEL - 1));
   let drawn = backProject(radii, x, y, depth, focal, restYaw, pitch);
   for (let pass = 0; pass < LENS_PASSES; pass += 1) drawn = backProject(radii, x, y, depth, drawn.focal, restYaw, pitch);
-  return { ...drawn, barestQuarter: barestQuarterShare(shapes, x, y) };
+  return { ...drawn, pack: { shapes, x, y } };
 }
 
 /**
@@ -391,11 +409,9 @@ function backProject(
 }
 
 /**
- * Cluster centres filling a volume: packed `gap` apart where the rest pose draws them, with room for
- * a title above each, then set at depth levels that differ between screen neighbours. A loose group
- * of `centreRadius` sits first, at the pack's centre. Turning may bring two clusters across each other.
- * A wide pack that leaves a quarter bare is packed again round, and the fuller of the two stays.
- * O(k² · PACK_DIRECTIONS) per pass; 200 clusters took 18-21 ms on an M-series Mac (2026-11-15), budget 50 ms.
+ * Cluster centres filling a volume: packed `gap` apart in the rest pose with room for a title each, at depth levels that
+ * differ between screen neighbours, a loose group of `centreRadius` at the centre. A small pack that reads poorly is packed
+ * again rounder. O(k² · PACK_DIRECTIONS) per pass; one settle of 200 clusters took 18-21 ms (M-series, 2026-11-15), budget 50 ms.
  */
 export function clusterVolumeAnchors(
   radii: readonly number[],
@@ -421,9 +437,15 @@ export function clusterVolumeAnchors(
     return settled;
   };
   let placed = settle(PACK_ASPECT_WIDE);
-  if (placed.barestQuarter < BARE_QUARTER_SHARE) {
-    const round = settle(PACK_ASPECT_ROUND);
-    if (round.barestQuarter > placed.barestQuarter) placed = round;
+  let barest = packReadsPoorly(placed.pack);
+  if (radii.length <= REPACK_MAX_CLUSTERS) {
+    for (let retry = 0; barest.poorly && retry < PACK_ASPECT_RETRIES.length; retry += 1) {
+      const repacked = settle(PACK_ASPECT_RETRIES[retry]);
+      const read = packReadsPoorly(repacked.pack);
+      if (read.poorly && read.barestQuarter <= barest.barestQuarter) continue;
+      placed = repacked;
+      barest = read;
+    }
   }
   const anchors = placed.points.slice(0, radii.length);
   return { anchors, centre: loose === null ? { x: 0, y: 0, z: 0 } : placed.points[loose] };
