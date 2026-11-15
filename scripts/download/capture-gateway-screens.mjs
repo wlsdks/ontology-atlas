@@ -37,7 +37,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
 
-import { MAP_SCREEN } from "./map-screen.mjs";
+import { MAP_SCREEN, NEURAL_SCREEN } from "./map-screen.mjs";
 import { readPlanningFile, walkPlanningFolder } from "./planning-inventory.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -208,9 +208,13 @@ function automationFiles(locale) {
   const ko = locale === "ko";
   const roundName = ko ? KO.roundName : "Library sources check";
   const day = 86_400_000;
+  // The pictures are taken in UTC; until today's 09:00 UTC pass has ended, the latest pass is
+  // yesterday's, so no run is dated ahead of the page's clock.
+  const todaysPassEnd = new Date().setUTCHours(9, 1, 0, 0);
+  const latestPassDay = Date.now() > todaysPassEnd ? Date.now() : Date.now() - day;
   const at = (offsetDays, hour, minute = 0) => {
-    const date = new Date(Date.now() + offsetDays * day);
-    date.setHours(hour, minute, 0, 0);
+    const date = new Date(latestPassDay + offsetDays * day);
+    date.setUTCHours(hour, minute, 0, 0);
     return date.toISOString();
   };
   const stalePage = PAGES.find((page) => page.stale);
@@ -251,8 +255,8 @@ function automationFiles(locale) {
     trigger: "clock",
   });
   const ledger = [
-    pass(-1, "held", [], ko ? fill(KO.passHeld, { count: PAGES.length }) : `${PAGES.length} pages checked; every source still matches.`),
-    pass(0, "stale", [`wiki/${stalePage.slug}.md`], ko ? fill(KO.passStale, { count: PAGES.length }) : `${PAGES.length} pages checked; 1 page's source changed.`),
+    pass(-1, "held", [], ko ? KO.passHeld : "Every source still matches."),
+    pass(0, "stale", [`wiki/${stalePage.slug}.md`], ko ? KO.passStale : "1 page's source changed."),
   ];
   return {
     ".ontology-atlas/rounds.json": rounds,
@@ -366,6 +370,31 @@ function relativeTime(iso) {
   if (days < 7) return `${days} days ago`;
   const weeks = Math.round(days / 7);
   return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+}
+
+const NODE_SLUG = /^[a-z0-9][a-z0-9/-]*$/;
+const REVISION = /^[0-9a-f]{40}$/;
+
+/** A concept's commits newest first, as the desktop app's `vault_node_revisions` lists them. */
+function nodeRevisions(slug, maxRevisions) {
+  if (!NODE_SLUG.test(slug)) return [];
+  const count = Number.isInteger(maxRevisions) && maxRevisions > 0 ? maxRevisions : 8;
+  return git("log", `-n${count}`, "--pretty=format:%H %cI", "--no-renames", "--", `docs/ontology/${slug}.md`)
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => {
+      const [revision, isoTime] = line.trim().split(" ");
+      return { slug, isoTime, revision };
+    });
+}
+
+function nodeRevisionContent(slug, revision) {
+  if (!NODE_SLUG.test(slug) || !REVISION.test(revision)) return null;
+  try {
+    return git("show", `${revision}:docs/ontology/${slug}.md`);
+  } catch {
+    return null;
+  }
 }
 
 function gitHistory(limit, onlyPath) {
@@ -535,6 +564,10 @@ function makeBridge(overlay, unstubbed) {
         };
       case "git_history":
         return gitHistory(input.limit, input.path);
+      case "vault_node_revisions":
+        return input.slugs.flatMap((slug) => nodeRevisions(slug, input.maxRevisions));
+      case "vault_node_revision_content":
+        return nodeRevisionContent(input.slug, input.revision);
       case "git_diff":
         return { count: 0, files: [], diff: "", truncated: false };
       case "git_commit_diff":
@@ -765,7 +798,7 @@ async function main() {
     await page.getByTestId("first-run-open").click();
     await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
 
-    for (const screen of [...SCREENS, MAP_SCREEN]) {
+    for (const screen of [...SCREENS, MAP_SCREEN, NEURAL_SCREEN]) {
       if (ONLY ? !ONLY.has(screen.name) : screen.explicit) continue;
       if (screen.locales && !screen.locales.includes(locale)) continue;
       await page.goto(`${BASE_URL}/${locale}${screen.route}`);
