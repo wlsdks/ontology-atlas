@@ -28,6 +28,16 @@ describe("pickTreeMark", () => {
     expect(pickTreeMark(list, 105, 100, 2)).toBe(-1);
   });
 
+  it("prefers a farther mark under the point to a nearer mark whose slop reaches it", () => {
+    const list = listOf([mark(1, 200, 200, 3, 5.2), mark(2, 207, 200, 3, 5.1)]);
+    expect(pickTreeMark(list, 200, 200, 6)).toBe(1);
+  });
+
+  it("picks nothing for a point that is not a number", () => {
+    const list = listOf([mark(1, 100, 100, 10, 2)]);
+    expect(pickTreeMark(list, Number.NaN, 100, 6)).toBe(-1);
+  });
+
   it("picks nothing on empty canvas", () => {
     const list = listOf([mark(1, 100, 100, 10, 2), mark(2, 300, 100, 10, 1)]);
     expect(pickTreeMark(list, 200, 100, 6)).toBe(-1);

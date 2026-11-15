@@ -13,8 +13,18 @@ import type {
   TreeNodeKind,
   TreeRect,
 } from "./types";
+import { TREE_ARC_BUDGET } from "./types";
 
-const SIZES: TreeNameSizes = { domain: 20, domainSub: 12, capability: 13, element: 11, gap: 4, pad: 3 };
+const SIZES: TreeNameSizes = {
+  project: 24,
+  domain: 20,
+  domainSub: 12,
+  capability: 13,
+  element: 11,
+  gap: 4,
+  pad: 3,
+  leading: 1.5,
+};
 const CHAR_PX = 7;
 const measure = (text: string) => text.length * CHAR_PX;
 const noSub = () => null;
@@ -48,7 +58,7 @@ function modelOf(specs: NodeSpec[], needs: [number, number][] = []): TreeModel {
   return {
     count,
     ids,
-    labels: specs.map((s, i) => s.label ?? `name ${i}`),
+    labels: specs.map((s, i) => s.label ?? (s.kind === "fork" ? "" : `name ${i}`)),
     kinds: specs.map((s) => s.kind),
     parent,
     subtreeEnd,
@@ -143,18 +153,19 @@ function crown(capabilities: number, elements: number): NodeSpec[] {
 }
 
 /** A k x k lattice of capability marks `stepPx` apart, all under one domain. */
-function lattice(k: number, stepPx: number) {
+function lattice(k: number, stepPx: number, originX = 0, originY = 0) {
   const model = modelOf(crown(k * k, 0));
   const marks: TreeDrawMark[] = [];
   for (let i = 0; i < k * k; i += 1) {
-    marks.push(mark(2 + i, (i % k) * stepPx + stepPx / 2, Math.floor(i / k) * stepPx + stepPx / 2, 5));
+    const x = originX + (i % k) * stepPx + stepPx / 2;
+    marks.push(mark(2 + i, x, originY + Math.floor(i / k) * stepPx + stepPx / 2, 5));
   }
-  const free: TreeRect = { x: 0, y: 0, width: k * stepPx, height: k * stepPx };
+  const free: TreeRect = { x: originX, y: originY, width: k * stepPx, height: k * stepPx };
   return { model, list: listOf(marks), free };
 }
 
 describe("treeNameCandidates", () => {
-  it("names the trunk like a domain block only when it has an id and never names a fork", () => {
+  it("names the trunk like a domain block only when it has an id", () => {
     const specs: NodeSpec[] = [
       { kind: "project", parent: -1 },
       { kind: "fork", parent: 0 },
@@ -178,11 +189,61 @@ describe("treeNameCandidates", () => {
     expect(candidatesOf(list, model, null, noSub, 60).map((c) => c.node)).toEqual([]);
   });
 
+  it("offers a labelled fork as the loose shoot and never an unlabelled fork", () => {
+    const model = modelOf([
+      { kind: "project", parent: -1, id: null },
+      { kind: "fork", parent: 0, label: "not in a domain" },
+      { kind: "fork", parent: 0 },
+    ]);
+    const list = listOf([mark(1, 100, 100), mark(2, 300, 100)]);
+    expect(candidatesOf(list, model).map((c) => c.node)).toEqual([1]);
+  });
+
+  it("sizes a name block by its font, with a sub line only when there is one", () => {
+    const model = modelOf([{ kind: "project", parent: -1 }, { kind: "domain", parent: 0 }]);
+    const list = listOf([mark(0, 100, 300), mark(1, 100, 100)]);
+    const subOf = (node: number) => (node === 0 ? "domains 1" : null);
+    const heights = candidatesOf(list, model, null, subOf).map((c) => [c.node, c.height]);
+    expect(heights).toEqual([
+      [1, SIZES.domain * SIZES.leading],
+      [0, (SIZES.project + SIZES.domainSub) * SIZES.leading],
+    ]);
+  });
+
+  it("orders capabilities of equal element count by id", () => {
+    const model = modelOf([
+      { kind: "project", parent: -1, id: null },
+      { kind: "domain", parent: 0, label: "" },
+      { kind: "capability", parent: 1, id: "b" },
+      { kind: "capability", parent: 1, id: "a" },
+    ]);
+    const list = listOf([mark(3, 100, 100), mark(2, 300, 100)]);
+    expect(candidatesOf(list, model).map((c) => c.node)).toEqual([3, 2]);
+  });
+
   it("pins the closed mark that holds a folded arc end", () => {
     const model = modelOf(crown(2, 1), [[2, 5]]);
     const list = listOf([mark(1, 50, 50), mark(2, 100, 100), mark(4, 200, 100, 4, true)]);
     const named = candidatesOf(list, model, focusOn(2, [5]));
     expect(named.filter((c) => c.pinned).map((c) => c.node).sort()).toEqual([2, 4]);
+  });
+
+  it("pins the concepts that depend on the focus", () => {
+    const model = modelOf(crown(3, 0));
+    const list = listOf([mark(2, 100, 100), mark(3, 200, 100), mark(4, 300, 100)]);
+    const named = candidatesOf(list, model, focusOn(2, [], [4]));
+    expect(named.filter((c) => c.pinned).map((c) => c.node).sort()).toEqual([2, 4]);
+  });
+
+  it("pins no arc end past the arc budget, taking needs before used-by", () => {
+    const model = modelOf(crown(TREE_ARC_BUDGET + 3, 0));
+    const nodes = Array.from({ length: TREE_ARC_BUDGET + 3 }, (_, i) => 2 + i);
+    const list = listOf(nodes.map((node, i) => mark(node, (i % 10) * 200, Math.floor(i / 10) * 100)));
+    const needs = nodes.slice(1, TREE_ARC_BUDGET + 2);
+    const usedBy = nodes.slice(TREE_ARC_BUDGET + 2);
+    const named = candidatesOf(list, model, focusOn(nodes[0]!, needs, usedBy));
+    const pinned = named.filter((c) => c.pinned).map((c) => c.node);
+    expect(pinned.sort((a, b) => a - b)).toEqual(nodes.slice(0, TREE_ARC_BUDGET + 1));
   });
 });
 
@@ -235,6 +296,38 @@ describe("placeTreeNames", () => {
     expect(placedNodes(place(list, candidatesOf(list, model, focusOn(5)), free))).toEqual([5]);
   });
 
+  it("places the focus name before the name of a nearer arc end", () => {
+    const model = modelOf(crown(2, 0), [[2, 3]]);
+    const list = listOf([mark(2, 20, 30), mark(3, 20, 30)]);
+    const free: TreeRect = { x: 0, y: 0, width: 260, height: 60 };
+    expect(placedNodes(place(list, candidatesOf(list, model, focusOn(2, [3])), free))).toEqual([2]);
+  });
+
+  it("places the same names in a free area away from the origin", () => {
+    const home = lattice(12, 40);
+    const away = lattice(12, 40, 700, 300);
+    const boxesOf = (l: ReturnType<typeof lattice>, dx: number, dy: number) => {
+      const out = place(l.list, candidatesOf(l.list, l.model), l.free);
+      return out.boxes.slice(0, out.count).map((b) => [b.node, b.x - dx, b.y - dy, b.side]);
+    };
+    const atHome = boxesOf(home, 0, 0);
+    expect(atHome.length).toBeGreaterThan(10);
+    expect(boxesOf(away, 700, 300)).toEqual(atHome);
+  });
+
+  // Above, below and left fall outside the free area, so the second name has only its right side.
+  it("keeps the padding between two names", () => {
+    const model = modelOf(crown(2, 0));
+    const lineHeight = SIZES.capability * SIZES.leading;
+    const free: TreeRect = { x: 0, y: 0, width: 300, height: 60 };
+    const withGap = (gapPx: number) => {
+      const list = listOf([mark(2, 20, 20), mark(3, 20, 20 + lineHeight + gapPx)]);
+      return placedNodes(place(list, candidatesOf(list, model), free));
+    };
+    expect(withGap(SIZES.pad - 1)).toEqual([2]);
+    expect(withGap(SIZES.pad + 1)).toEqual([2, 3]);
+  });
+
   it("keeps a kept name on its recorded side while free and drops it when that side collides", () => {
     const model = modelOf(crown(1, 0));
     const name = candidatesOf(listOf([mark(2, 200, 200)]), model);
@@ -262,13 +355,15 @@ describe("placeTreeNames", () => {
     expect(out.dropped).toBe(2);
   });
 
-  it("reuses the pooled boxes between placements", () => {
-    const model = modelOf(crown(1, 0));
-    const list = listOf([mark(2, 200, 200)]);
-    const out = place(list, candidatesOf(list, model));
-    const box = out.boxes[0];
-    place(list, candidatesOf(list, model), WIDE, null, out);
-    expect(out.boxes[0]).toBe(box);
+  it("holds only the latest names in a reused placement", () => {
+    const model = modelOf(crown(2, 0));
+    const both = listOf([mark(2, 200, 200), mark(3, 600, 600)]);
+    const out = place(both, candidatesOf(both, model));
+    expect(out.count).toBe(2);
+    const one = listOf([mark(3, 600, 600)]);
+    place(one, candidatesOf(one, model), WIDE, null, out);
+    expect(placedNodes(out)).toEqual([3]);
+    expect(out.dropped).toBe(0);
   });
 
   it("tests a number of occupants that grows linearly with the candidates", () => {

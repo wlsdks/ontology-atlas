@@ -10,10 +10,9 @@ import type {
   TreeNodeKind,
   TreeRect,
 } from "./types";
+import { TREE_ARC_BUDGET } from "./types";
 
-/** A name line is its font size times this; a domain block stacks the name and its sub line. */
-const NAME_LEADING = 1.25;
-/** Side length of the overlap grid's cells, CSS pixels: about two capability name heights. */
+/** Side length of the overlap grid's cells, CSS pixels: a few name heights. */
 const PLACE_CELL_PX = 48;
 
 const RANK_BLOCK = 0;
@@ -21,6 +20,9 @@ const RANK_PINNED = 1;
 const RANK_CAPABILITY = 2;
 const RANK_ELEMENT = 3;
 const UNNAMED = -1;
+
+const PIN_ARC_END = 1;
+const PIN_FOCUS = 2;
 
 /** Placement tries the sides in their `TreeNameSide` order: right, left, above, below. */
 const FIRST_SIDE: TreeNameSide = 0;
@@ -38,7 +40,7 @@ let elementHead = new Int32Array(0);
 /**
  * Fills `out[0..n)` with the names worth trying, in placement order, and returns n.
  * O(m log m) for m marks: one pass over the marks and the focus, then a heap sort.
- * `measure` is called with "domain" for every domain block (trunk, domains, the loose shoot).
+ * A sub line is sized `domainSub` and measured as "domain" text scaled to that size.
  */
 export function treeNameCandidates(
   list: TreeDrawList,
@@ -60,30 +62,25 @@ export function treeNameCandidates(
   for (let i = 0; i < count; i += 1) {
     const mark = list.marks[i]!;
     const node = mark.node;
-    const rank = rankOf(node, model, pinnedMark[i] === 1, spacedMark[i] === 1);
+    const pinned = pinnedMark[i]! > 0;
+    const rank = rankOf(node, model, pinned, spacedMark[i] === 1);
     if (rank === UNNAMED) continue;
     const text = model.labels[node] ?? "";
     if (text === "") continue;
+    const kind = model.kinds[node]!;
+    const sub = rank === RANK_BLOCK ? subOf(node) : null;
+    const subWidth = sub ? (measure(sub, "domain") * sizes.domainSub) / sizes.domain : 0;
     const candidate = (out[n] ??= emptyCandidate());
     candidate.node = node;
     candidate.text = text;
+    candidate.sub = sub;
     candidate.x = mark.x;
     candidate.y = mark.y;
     candidate.radius = mark.radius;
+    candidate.width = Math.max(measure(text, kind), subWidth);
+    candidate.height = (fontSizeOf(kind, sizes) + (sub ? sizes.domainSub : 0)) * sizes.leading;
     candidate.priority = rank;
-    candidate.pinned = pinnedMark[i] === 1;
-    if (rank === RANK_BLOCK) {
-      const sub = subOf(node);
-      const subWidth = sub ? (measure(sub, "domain") * sizes.domainSub) / sizes.domain : 0;
-      candidate.sub = sub;
-      candidate.width = Math.max(measure(text, "domain"), subWidth);
-      candidate.height = (sizes.domain + (sub ? sizes.domainSub : 0)) * NAME_LEADING;
-    } else {
-      const kind = model.kinds[node]!;
-      candidate.sub = null;
-      candidate.width = measure(text, kind);
-      candidate.height = fontSizeOf(kind, sizes) * NAME_LEADING;
-    }
+    candidate.pinned = pinned;
     n += 1;
   }
 
@@ -104,7 +101,7 @@ function rankOf(node: number, model: TreeModel, pinned: boolean, spaced: boolean
     case "domain":
       return RANK_BLOCK;
     case "fork":
-      return node === model.looseRoot ? RANK_BLOCK : UNNAMED;
+      return RANK_BLOCK;
     case "capability":
       return pinned ? RANK_PINNED : RANK_CAPABILITY;
     case "element":
@@ -115,10 +112,18 @@ function rankOf(node: number, model: TreeModel, pinned: boolean, spaced: boolean
   }
 }
 
+/** A fork is named only as the loose shoot, whose caption is its label. */
 function fontSizeOf(kind: TreeNodeKind, sizes: TreeNameSizes): number {
-  if (kind === "capability") return sizes.capability;
-  if (kind === "element") return sizes.element;
-  return sizes.domain;
+  switch (kind) {
+    case "project":
+      return sizes.project;
+    case "domain":
+      return sizes.domain;
+    case "element":
+      return sizes.element;
+    default:
+      return sizes.capability;
+  }
 }
 
 function emptyCandidate(): TreeNameCandidate {
@@ -140,17 +145,22 @@ function growCandidateScratch(nodes: number, marks: number): void {
   }
 }
 
+/** Pins the focus and the ends of the arcs the painter draws: `needs`, then `usedBy`, within the budget. */
 function pinFocus(focus: TreeFocus, model: TreeModel): void {
-  pinHolder(focus.node, model);
-  for (let i = 0; i < focus.needs.length; i += 1) pinHolder(focus.needs[i]!, model);
-  for (let i = 0; i < focus.usedBy.length; i += 1) pinHolder(focus.usedBy[i]!, model);
+  pinHolder(focus.node, model, PIN_FOCUS);
+  const needs = Math.min(focus.needs.length, TREE_ARC_BUDGET);
+  const usedBy = Math.min(focus.usedBy.length, TREE_ARC_BUDGET - needs);
+  for (let i = 0; i < needs; i += 1) pinHolder(focus.needs[i]!, model, PIN_ARC_END);
+  for (let i = 0; i < usedBy; i += 1) pinHolder(focus.usedBy[i]!, model, PIN_ARC_END);
 }
 
 /** Pins the node's mark, or the closed mark it is folded into. O(depth). */
-function pinHolder(node: number, model: TreeModel): void {
+function pinHolder(node: number, model: TreeModel, pin: number): void {
   let at = node;
   while (at >= 0 && at < model.count && markOfNode[at]! < 0) at = model.parent[at]!;
-  if (at >= 0 && at < model.count) pinnedMark[markOfNode[at]!] = 1;
+  if (at < 0 || at >= model.count) return;
+  const mark = markOfNode[at]!;
+  pinnedMark[mark] = Math.max(pinnedMark[mark]!, pin);
 }
 
 /**
@@ -210,9 +220,13 @@ function cellHash(cx: number, cy: number): number {
   return Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663);
 }
 
-/** Rank, then capabilities by element count and id, then the nearer mark. */
+/** Rank; the focus before arc ends; capabilities by element count and id; then the nearer mark. */
 function compareCandidates(a: TreeNameCandidate, b: TreeNameCandidate, model: TreeModel): number {
   if (a.priority !== b.priority) return a.priority - b.priority;
+  if (a.priority === RANK_PINNED) {
+    const byPin = pinnedMark[markOfNode[b.node]!]! - pinnedMark[markOfNode[a.node]!]!;
+    if (byPin !== 0) return byPin;
+  }
   if (a.priority === RANK_CAPABILITY) {
     const byElements = model.elements[b.node]! - model.elements[a.node]!;
     if (byElements !== 0) return byElements;
@@ -259,7 +273,7 @@ let gridRows = 0;
 /**
  * Places `candidates[0..count)` greedily in array order (ascending `priority`), each on the
  * first side that is inside `free` and keeps `spacing.pad` from every mark and placed box.
- * With `keep`, only kept nodes are tried, each on its recorded side. O(c + m) with a grid.
+ * With `keep`, only kept nodes are tried, each on its recorded side. Expected O(c + m) with a grid.
  */
 export function placeTreeNames(
   candidates: readonly TreeNameCandidate[],
@@ -346,9 +360,9 @@ function resetGrid(free: TreeRect, occupants: number): void {
 }
 
 function insertOccupant(occupant: number, x0: number, y0: number, x1: number, y1: number, free: TreeRect): void {
-  const c0 = Math.max(0, Math.floor((x0 - free.x) / PLACE_CELL_PX));
+  const c0 = Math.max(0, Math.min(gridCols - 1, Math.floor((x0 - free.x) / PLACE_CELL_PX)));
   const c1 = Math.min(gridCols - 1, Math.floor((x1 - free.x) / PLACE_CELL_PX));
-  const r0 = Math.max(0, Math.floor((y0 - free.y) / PLACE_CELL_PX));
+  const r0 = Math.max(0, Math.min(gridRows - 1, Math.floor((y0 - free.y) / PLACE_CELL_PX)));
   const r1 = Math.min(gridRows - 1, Math.floor((y1 - free.y) / PLACE_CELL_PX));
   for (let row = r0; row <= r1; row += 1) {
     for (let col = c0; col <= c1; col += 1) {
@@ -382,9 +396,9 @@ function isClear(
   padPx: number,
   query: number,
 ): boolean {
-  const c0 = Math.max(0, Math.floor((box.x - padPx - free.x) / PLACE_CELL_PX));
+  const c0 = Math.max(0, Math.min(gridCols - 1, Math.floor((box.x - padPx - free.x) / PLACE_CELL_PX)));
   const c1 = Math.min(gridCols - 1, Math.floor((box.x + box.width + padPx - free.x) / PLACE_CELL_PX));
-  const r0 = Math.max(0, Math.floor((box.y - padPx - free.y) / PLACE_CELL_PX));
+  const r0 = Math.max(0, Math.min(gridRows - 1, Math.floor((box.y - padPx - free.y) / PLACE_CELL_PX)));
   const r1 = Math.min(gridRows - 1, Math.floor((box.y + box.height + padPx - free.y) / PLACE_CELL_PX));
   for (let row = r0; row <= r1; row += 1) {
     for (let col = c0; col <= c1; col += 1) {
