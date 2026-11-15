@@ -14,8 +14,8 @@ import {
 import type { TreeLayout, TreeModel, TreePose, TreeRect, TreeScreenPoint } from "./types";
 
 const CANVAS = { width: 1512, height: 982 };
-/** A panel covers the right third. */
-const FREE: TreeRect = { x: 0, y: 0, width: 1000, height: 982 };
+/** Off-centre and wide, so the fit must use the shorter side and the area's own corner. */
+const FREE: TreeRect = { x: 300, y: 50, width: 1200, height: 300 };
 const SPHERE = { centre: [0.5, 6, -1] as const, radius: 7 };
 const TREE_PITCH_MIN = clampTreePitch(-Infinity);
 const TREE_PITCH_MAX = clampTreePitch(Infinity);
@@ -70,22 +70,38 @@ function depthAt(layout: TreeLayout, node: number, at: TreePose): number {
 }
 
 describe("tree camera", () => {
-  it("keeps the tree's sphere inside the free area at zoom 1 for every yaw and pitch", () => {
+  it("fits the tree's sphere inside the free area at zoom 1 for every yaw and pitch, filling its shorter side", () => {
     const projector = createTreeProjector();
     const out = point();
-    const surface = spherePoints(600);
+    const surface = spherePoints(2000);
     for (const pitch of [TREE_PITCH_MIN, TREE_POSE_REST.pitch, TREE_PITCH_MAX]) {
       for (let step = 0; step < 24; step++) {
         aimTreeProjector(projector, SPHERE, pose({ yaw: (step / 24) * Math.PI * 2, pitch }), CANVAS, FREE);
+        let top = Infinity;
+        let bottom = -Infinity;
         for (const [x, y, z] of surface) {
           projector.project(x, y, z, out);
           expect(out.x).toBeGreaterThanOrEqual(FREE.x);
           expect(out.x).toBeLessThanOrEqual(FREE.x + FREE.width);
           expect(out.y).toBeGreaterThanOrEqual(FREE.y);
           expect(out.y).toBeLessThanOrEqual(FREE.y + FREE.height);
+          top = Math.min(top, out.y);
+          bottom = Math.max(bottom, out.y);
         }
+        expect(bottom - top).toBeGreaterThanOrEqual(0.9 * FREE.height);
       }
     }
+  });
+
+  it("draws a nearer point at a larger scale", () => {
+    const projector = createTreeProjector();
+    const near = point();
+    const far = point();
+    aimTreeProjector(projector, SPHERE, pose({ yaw: 0.8 }), CANVAS, FREE);
+    projector.project(SPHERE.centre[0], SPHERE.centre[1] + 2, SPHERE.centre[2], near);
+    projector.project(SPHERE.centre[0], SPHERE.centre[1] - 2, SPHERE.centre[2], far);
+    expect(near.depth).toBeLessThan(far.depth);
+    expect(near.scale).toBeGreaterThan(far.scale);
   });
 
   it("bounds every depth in the sphere by near and far, which do not change with yaw", () => {
@@ -131,16 +147,52 @@ describe("tree camera", () => {
     const from = pose({ yaw: 1.1, zoom: 1.6, panX: -40, panY: 25 });
     const to = pose();
     const world: [number, number, number] = [3, 9, 2];
+    const elsewhere: [number, number, number] = [-4, 3, 1];
+    const elsewhereBefore = point();
     aimTreeProjector(projector, SPHERE, from, CANVAS, FREE);
     projector.project(...world, before);
+    projector.project(...elsewhere, elsewhereBefore);
     for (const factor of [1.7, 0.6]) {
       zoomTreePoseAbout(from, factor, before.x, before.y, FREE, to);
-      expect(to.zoom).not.toBe(from.zoom);
       aimTreeProjector(projector, SPHERE, to, CANVAS, FREE);
       projector.project(...world, after);
       expect(after.x).toBeCloseTo(before.x, 6);
       expect(after.y).toBeCloseTo(before.y, 6);
+      projector.project(...elsewhere, after);
+      expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeCloseTo(
+        Math.hypot(elsewhereBefore.x - before.x, elsewhereBefore.y - before.y) * factor,
+        6,
+      );
     }
+  });
+
+  it("keeps the canvas centre fixed when zooming with an empty free area", () => {
+    const projector = createTreeProjector();
+    const before = point();
+    const after = point();
+    const empty: TreeRect = { x: 0, y: 0, width: 0, height: 0 };
+    const to = pose();
+    aimTreeProjector(projector, SPHERE, pose(), CANVAS, empty);
+    projector.project(...SPHERE.centre, before);
+    expect([before.x, before.y]).toEqual([CANVAS.width / 2, CANVAS.height / 2]);
+    zoomTreePoseAbout(pose(), 2, CANVAS.width / 2, CANVAS.height / 2, empty, to);
+    aimTreeProjector(projector, SPHERE, to, CANVAS, empty);
+    projector.project(...SPHERE.centre, after);
+    expect([after.x, after.y]).toEqual([before.x, before.y]);
+  });
+
+  it("clamps zoom at both limits", () => {
+    const out = pose();
+    const zoomed = (factor: number) => {
+      zoomTreePoseAbout(pose(), factor, 400, 200, FREE, out);
+      return out.zoom;
+    };
+    expect(zoomed(1e6)).toBeGreaterThan(1);
+    expect(Number.isFinite(zoomed(1e6))).toBe(true);
+    expect(zoomed(1e9)).toBe(zoomed(1e6));
+    expect(zoomed(1e-6)).toBeLessThan(1);
+    expect(zoomed(1e-6)).toBeGreaterThan(1e-3);
+    expect(zoomed(1e-9)).toBe(zoomed(1e-6));
   });
 
   it("mixes yaw the short way round", () => {
@@ -149,6 +201,14 @@ describe("tree camera", () => {
     expect(out.yaw).toBeCloseTo(0, 9);
     mixTreePose(pose({ yaw: 3 }), pose({ yaw: -3 }), 1, out);
     expect(out.yaw).toBeCloseTo(2 * Math.PI - 3, 9);
+  });
+
+  it("mixes pitch and pan linearly and zoom geometrically", () => {
+    const out = pose();
+    mixTreePose(pose({ pitch: 0.2, zoom: 1, panX: -10, panY: 40 }), pose({ pitch: 0.6, zoom: 4, panX: 30, panY: 0 }), 0.5, out);
+    expect(out.pitch).toBeCloseTo(0.4, 9);
+    expect(out.zoom).toBeCloseTo(2, 9);
+    expect([out.panX, out.panY]).toEqual([10, 20]);
   });
 
   it("brings a faced node to the near side the short way, keeping pitch and zoom", () => {

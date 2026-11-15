@@ -7,7 +7,7 @@ const TAU = Math.PI * 2;
 const TREE_PITCH_MIN = 0.17;
 const TREE_PITCH_MAX = 0.7;
 const TREE_PITCH_REST = 0.42;
-/** A pressed wall gives at most 0.55 x this, so the lower limit still looks from above. */
+/** The rubber band's overshoot approaches this, so a pressed lower wall still looks from above. */
 const TREE_PITCH_STRETCH_RAD = 0.16;
 
 /** Below the minimum the whole tree is a small island; the maximum lets a leaf head fill the free area. */
@@ -17,7 +17,7 @@ const TREE_ZOOM_MAX = 32;
 /** Camera distance in tree radii: perspective that reads as depth without bending the crown. */
 const TREE_CAMERA_DISTANCE_RADII = 3;
 /** Share of the free area's shorter half-side the tree sphere's silhouette fills at zoom 1. */
-const TREE_FIT_FILL = 0.94;
+const TREE_FIT_FILL = 0.96;
 /** Below this the coast is at rest, or its exponential tail keeps the loop awake. */
 const TREE_YAW_REST_RAD_PER_MS = 0.000005;
 
@@ -52,7 +52,7 @@ class OrbitTreeProjector implements TreeProjector {
     canvas: { width: number; height: number },
     free: TreeRect,
   ): void {
-    const hasFree = free.width > 0 && free.height > 0;
+    const hasFree = hasArea(free);
     const rectX = hasFree ? free.x : 0;
     const rectY = hasFree ? free.y : 0;
     const rectWidth = hasFree ? free.width : canvas.width;
@@ -88,6 +88,11 @@ class OrbitTreeProjector implements TreeProjector {
     out.scale = scale;
     out.depth = depth;
   }
+}
+
+/** An empty free area makes the projector centre on the whole canvas instead. */
+function hasArea(free: TreeRect): boolean {
+  return free.width > 0 && free.height > 0;
 }
 
 /** A sphere of `radius` centred on the view axis shows as a disc of this many world units at scale 1. */
@@ -134,11 +139,17 @@ export function zoomTreePoseAbout(
 ): void {
   const zoom = Math.min(TREE_ZOOM_MAX, Math.max(TREE_ZOOM_MIN, pose.zoom * factor));
   const ratio = zoom / pose.zoom;
-  const offsetX = x - (free.x + free.width / 2);
-  const offsetY = y - (free.y + free.height / 2);
   out.yaw = pose.yaw;
   out.pitch = pose.pitch;
   out.zoom = zoom;
+  // Without a free area the canvas centre is unknown here, so zoom keeps the pan (no anchor shift).
+  if (!hasArea(free)) {
+    out.panX = pose.panX;
+    out.panY = pose.panY;
+    return;
+  }
+  const offsetX = x - (free.x + free.width / 2);
+  const offsetY = y - (free.y + free.height / 2);
   out.panX = offsetX - (offsetX - pose.panX) * ratio;
   out.panY = offsetY - (offsetY - pose.panY) * ratio;
 }

@@ -24,46 +24,64 @@ function markRadiusScale(scale: number): number {
 
 /**
  * Per-node scratch, grown with the vault and reused: no allocation once warm.
- * `screen` holds x, y, scale, depth per node; `heap` is the open frontier.
+ * `screen` holds x, y, scale, depth per node; `heap` is the open frontier; `kept`
+ * buffers the children an opening node will push.
  */
 let screen = new Float64Array(0);
 let heap = new Int32Array(0);
 let heapSize = 0;
-let revealStamp = new Uint32Array(0);
+let kept = new Int32Array(0);
+/** A revealed node or one of its ancestors: never culled, a mark held in reserve. */
+let pathStamp = new Uint32Array(0);
+/** An ancestor of a revealed node: open whatever the spacing. */
+let ancestorStamp = new Uint32Array(0);
 let revealEpoch = 0;
+/** Reveal-path nodes not yet in the frontier; each holds one mark and one visit in reserve. */
+let pathUnqueued = 0;
 const probe: TreeScreenPoint = { x: 0, y: 0, scale: 0, depth: 0 };
 
 function ensureScratch(count: number): void {
   if (heap.length >= count) return;
   screen = new Float64Array(count * 4);
   heap = new Int32Array(count);
-  revealStamp = new Uint32Array(count);
+  kept = new Int32Array(count);
+  pathStamp = new Uint32Array(count);
+  ancestorStamp = new Uint32Array(count);
   revealEpoch = 0;
 }
 
-function stampRevealed(parent: Int32Array, count: number, reveal: readonly number[]): void {
+/** Returns how many distinct nodes lie on reveal paths. */
+function stampRevealed(parent: Int32Array, count: number, reveal: readonly number[]): number {
   revealEpoch++;
   if (revealEpoch === 0xffffffff) {
-    revealStamp.fill(0);
+    pathStamp.fill(0);
+    ancestorStamp.fill(0);
     revealEpoch = 1;
   }
+  let pathNodes = 0;
   for (const target of reveal) {
-    let node = target;
-    while (node >= 0 && node < count && revealStamp[node] !== revealEpoch) {
-      revealStamp[node] = revealEpoch;
-      node = parent[node];
+    if (target < 0 || target >= count) continue;
+    if (pathStamp[target] !== revealEpoch) pathNodes++;
+    pathStamp[target] = revealEpoch;
+    for (let node = parent[target]; node >= 0 && ancestorStamp[node] !== revealEpoch; node = parent[node]) {
+      if (pathStamp[node] !== revealEpoch) pathNodes++;
+      ancestorStamp[node] = revealEpoch;
+      pathStamp[node] = revealEpoch;
     }
   }
+  return pathNodes;
 }
 
-function isRevealed(node: number): boolean {
-  return revealStamp[node] === revealEpoch;
+function onRevealPath(node: number): boolean {
+  return pathStamp[node] === revealEpoch;
 }
 
-/** Revealed nodes leave the frontier first, then nearest first; ties by index keep the cut deterministic. */
+function holdsRevealed(node: number): boolean {
+  return ancestorStamp[node] === revealEpoch;
+}
+
+/** Nearest first; ties by index keep the cut deterministic. */
 function popsBefore(a: number, b: number): boolean {
-  const revealedA = isRevealed(a);
-  if (revealedA !== isRevealed(b)) return revealedA;
   const depthA = screen[a * 4 + 3];
   const depthB = screen[b * 4 + 3];
   return depthA !== depthB ? depthA < depthB : a < b;
@@ -171,22 +189,63 @@ function emitMark(input: TreeDetailInput, out: TreeDrawList, node: number, close
   mark.tone = toneOf(mark.depth, projector);
 }
 
-/** Counts direct children by jumping subtrees; stops at `limit + 1`, each step a visit. */
-function countChildren(subtreeEnd: Int32Array, node: number, limit: number, out: TreeDrawList): number {
-  const end = subtreeEnd[node];
-  let children = 0;
-  for (let child = node + 1; child < end; child = subtreeEnd[child]) {
-    children++;
+/**
+ * Buffers the children in view into `kept`, one visit each; -1 when the ones off the reveal
+ * paths need more than `markRoom` marks or `visitLimit` runs out first. Reveal-path children
+ * hold marks reserved for them already.
+ */
+function keepChildrenInView(input: TreeDetailInput, node: number, markRoom: number, visitLimit: number, padPx: number, out: TreeDrawList): number {
+  const { layout, projector, view } = input;
+  const { subtreeEnd } = layout.model;
+  if (markRoom < 0) return -1;
+  let count = 0;
+  let unreserved = 0;
+  for (let child = node + 1; child < subtreeEnd[node]; child = subtreeEnd[child]) {
+    if (out.visited >= visitLimit) return -1;
     out.visited++;
-    if (children > limit) break;
+    if (onRevealPath(child)) {
+      kept[count++] = child;
+      continue;
+    }
+    if (outsideView(layout, child, projector, view, padPx)) continue;
+    if (unreserved++ >= markRoom) return -1;
+    kept[count++] = child;
   }
-  return children;
+  return count;
+}
+
+function enqueue(layout: TreeLayout, projector: TreeProjector, node: number): void {
+  if (onRevealPath(node)) pathUnqueued--;
+  storeScreen(layout, node, projector);
+  pushFrontier(node);
+}
+
+function isKept(node: number, count: number): boolean {
+  for (let k = 0; k < count; k++) if (kept[k] === node) return true;
+  return false;
+}
+
+/** Buffers the children of `node` that lead to a revealed node: O(reveal x depth), one visit each. */
+function keepRevealPathChildren(input: TreeDetailInput, node: number, markRoom: number, visitCap: number, out: TreeDrawList): number {
+  const { parent } = input.layout.model;
+  let count = 0;
+  for (const target of input.reveal) {
+    let child = target;
+    while (child >= 0 && parent[child] !== node) child = parent[child];
+    if (child < 0 || isKept(child, count)) continue;
+    if (count >= markRoom || out.visited >= visitCap) break;
+    out.visited++;
+    kept[count++] = child;
+  }
+  return count;
 }
 
 /**
  * Best-first over the preorder arrays: the nearest pending node opens when its children's
- * projected spacing reaches the threshold and the budget still holds a mark for each of them;
- * otherwise it is one mark and its subtree folds in O(1). O(v log v), v <= 4 x the budget.
+ * projected spacing reaches the threshold and the budget still holds a mark for each child
+ * in view; otherwise it is one mark and its subtree folds in O(1). O(v log v), v <= 4 x budget.
+ * Every reveal-path node not yet queued holds one mark and one visit in reserve, so a
+ * revealed node is drawn whenever the budget covers its path.
  */
 export function cutTreeDetail(input: TreeDetailInput, out: TreeDrawList): void {
   const { layout, projector, view, markBudget } = input;
@@ -197,45 +256,42 @@ export function cutTreeDetail(input: TreeDetailInput, out: TreeDrawList): void {
   out.folded = 0;
   if (model.count === 0 || markBudget < 1) return;
   ensureScratch(model.count);
-  stampRevealed(model.parent, model.count, input.reveal);
+  pathUnqueued = stampRevealed(model.parent, model.count, input.reveal);
   heapSize = 0;
   const visitCap = TREE_VISITS_PER_MARK * markBudget;
   const sizes = input.marks;
   const padPx = Math.max(sizes.project, sizes.domain, sizes.capability, sizes.element, sizes.bud);
 
   out.visited++;
-  if (!isRevealed(0) && outsideView(layout, 0, projector, view, padPx)) return;
-  storeScreen(layout, 0, projector);
-  pushFrontier(0);
+  if (!onRevealPath(0) && outsideView(layout, 0, projector, view, padPx)) return;
+  enqueue(layout, projector, 0);
 
-  let budgetBinds = false;
   while (heapSize > 0) {
     const node = popFrontier();
     const end = subtreeEnd[node];
     const hasChildren = end > node + 1;
     const drawsWhenOpen = kinds[node] !== "fork";
-    let open = false;
-    if (hasChildren && !budgetBinds && (isRevealed(node) || wantsOpen(input, node))) {
-      const markRoom = markBudget - out.count - heapSize - (drawsWhenOpen ? 1 : 0);
-      const limit = Math.min(markRoom, (visitCap - out.visited) >> 1);
-      if (limit > 0 && countChildren(subtreeEnd, node, limit, out) <= limit) {
-        open = true;
-        for (let child = node + 1; child < end; child = subtreeEnd[child]) {
-          out.visited++;
-          if (!isRevealed(child) && outsideView(layout, child, projector, view, padPx)) continue;
-          storeScreen(layout, child, projector);
-          pushFrontier(child);
-        }
-      } else {
-        budgetBinds = true;
-      }
+    const forced = holdsRevealed(node);
+    let pushed = -1;
+    if (hasChildren && (forced || wantsOpen(input, node))) {
+      const markRoom = markBudget - out.count - heapSize - (drawsWhenOpen ? 1 : 0) - pathUnqueued;
+      pushed = keepChildrenInView(input, node, markRoom, visitCap - pathUnqueued, padPx, out);
     }
-    if (!open && hasChildren) out.folded += end - node - 1;
+    const open = pushed >= 0;
+    let shown = 0;
+    if (!open && forced) {
+      // A revealed node keeps a mark of its own even when its ancestor closes for the budget.
+      pushed = keepRevealPathChildren(input, node, markBudget - out.count - heapSize - 1, visitCap, out);
+      for (let k = 0; k < pushed; k++) shown += subtreeEnd[kept[k]] - kept[k];
+    }
+    for (let k = 0; k < pushed; k++) enqueue(layout, projector, kept[k]);
+    if (!open && hasChildren) out.folded += end - node - 1 - shown;
     if (!open || drawsWhenOpen) emitMark(input, out, node, !open && hasChildren);
   }
   sortFarToNear(out.marks, out.count);
 }
 
+/** The layout gives a node only branches or only leaves, so its first child picks the threshold. */
 function wantsOpen(input: TreeDetailInput, node: number): boolean {
   const { layout } = input;
   const leafHead = layout.model.kinds[node + 1] === "element";

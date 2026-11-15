@@ -99,15 +99,15 @@ function buildTree(root: Spec): TreeLayout {
 
 const UNIT = 10;
 /** Orthographic: 10 px per world unit at scale 1, depth grows with z. */
-function flatProjector(): TreeProjector {
+function flatProjector(scale = 1): TreeProjector {
   return {
     unit: UNIT,
     near: 90,
     far: 110,
     project(x: number, y: number, z: number, out: TreeScreenPoint) {
-      out.x = 500 + x * UNIT;
-      out.y = 500 - y * UNIT;
-      out.scale = 1;
+      out.x = 500 + x * UNIT * scale;
+      out.y = 500 - y * UNIT * scale;
+      out.scale = scale;
       out.depth = 100 + z;
     },
   };
@@ -210,6 +210,32 @@ describe("cutTreeDetail", () => {
     expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 20, leafPitchPx: 10 }))).toEqual(["capability", "domain", "element", "project"]);
     expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 20, leafPitchPx: 10.01 }))).toEqual(["capability", "domain", "project"]);
     expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 20.01, leafPitchPx: 0 }))).toEqual(["domain", "project"]);
+    expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 30, leafPitchPx: 25 }))).toEqual(["domain", "project"]);
+    expect(kindsDrawn(SMALL, cut(SMALL, { projector: flatProjector(2), openPitchPx: 30, leafPitchPx: 25 }))).toEqual(["capability", "domain", "project"]);
+  });
+
+  it("takes a lone child's spacing from the length of its branch", () => {
+    const layout = buildTree({ kind: "project", at: [0, 5, 0], children: [{ kind: "domain", at: [0, 8, 0] }] });
+    expect(drawn(cut(layout, { openPitchPx: 30 })).has(1)).toBe(true);
+    expect(drawn(cut(layout, { openPitchPx: 30.01 })).has(1)).toBe(false);
+  });
+
+  it("draws no mark for an open fork", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [{ kind: "fork", at: [1, 6, 0], children: [{ kind: "capability", at: [0, 7, 0] }, { kind: "capability", at: [2, 7, 0] }] }],
+    });
+    expect([...drawn(cut(layout, { openPitchPx: 0 })).keys()].sort()).toEqual([0, 2, 3]);
+  });
+
+  it("sizes each mark by its kind times the projected scale", () => {
+    const list = cut(SMALL, { projector: flatProjector(2), openPitchPx: 0, leafPitchPx: 0 });
+    expect(list.count).toBe(SMALL.model.count);
+    for (const mark of list.marks.slice(0, list.count)) {
+      const kind = SMALL.model.kinds[mark.node] as Exclude<TreeNodeKind, "fork">;
+      expect(mark.radius).toBe(SIZES[kind] * 2);
+    }
   });
 
   it("draws a closed node as one mark that folds its whole subtree", () => {
@@ -238,6 +264,38 @@ describe("cutTreeDetail", () => {
     for (const budget of [1, 2, 5, 12]) expect(cut(layout, { leafPitchPx: 0, markBudget: budget }).count).toBeLessThanOrEqual(budget);
   });
 
+  it("closes only a node whose children overflow the budget and still opens the nodes after it", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [
+        { kind: "capability", at: [-3, 6, -5], children: leaves(50, -3, 7, -5, 0.2) },
+        { kind: "capability", at: [3, 6, 5], children: leaves(3, 3, 7, 5, 0.5) },
+      ],
+    });
+    const marks = drawn(cut(layout, { leafPitchPx: 0, markBudget: 10 }));
+    expect(marks.get(1)).toBe(true);
+    expect(marks.get(52)).toBe(false);
+    for (const leaf of [53, 54, 55]) expect(marks.has(leaf)).toBe(true);
+  });
+
+  it("draws every node under an unbounded budget", () => {
+    expect(cut(SMALL, { openPitchPx: 0, leafPitchPx: 0, markBudget: Infinity }).count).toBe(SMALL.model.count);
+    expect(cut(SMALL, { openPitchPx: 0, leafPitchPx: 0, markBudget: 2 ** 31 }).count).toBe(SMALL.model.count);
+  });
+
+  it("counts only the children in view against the budget", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [{ kind: "capability", at: [0, 6, 0], children: leaves(1600, 0, 7, 0, 0.5) }],
+    });
+    const list = cut(layout, { openPitchPx: 0, leafPitchPx: 0 });
+    expect(drawn(list).get(1)).toBe(false);
+    expect(list.count).toBeGreaterThan(150);
+    expect(list.count).toBeLessThan(TREE_MARK_BUDGET);
+  });
+
   it("visits at most four times the budget on a 10,000-node layout", () => {
     const layout = bigTree();
     expect(layout.model.count).toBeGreaterThan(10_000);
@@ -264,6 +322,85 @@ describe("cutTreeDetail", () => {
     const leftHalf = cut(layout, { leafPitchPx: 0, view: { x: 0, y: 0, width: 500, height: 1000 } });
     expect(everything.visited - leftHalf.visited).toBeGreaterThanOrEqual(50);
     expect([...drawn(leftHalf).keys()].every((n) => n < 5)).toBe(true);
+  });
+
+  it("draws every leaf whose mark touches the view", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [
+        {
+          kind: "capability",
+          at: [20, 6, 0],
+          children: [19.6, 19.8, 20, 20.2, 20.4].map((x) => ({ kind: "element" as const, at: [x, 7, 0] as [number, number, number] })),
+        },
+      ],
+    });
+    const viewEdgePx = 700;
+    const list = cut(layout, { leafPitchPx: 0, view: { x: 0, y: 0, width: viewEdgePx, height: 1000 } });
+    const touching = [2, 3, 4, 5, 6].filter((leaf) => 500 + layout.position[leaf * 3] * UNIT - SIZES.element <= viewEdgePx);
+    expect(touching).toEqual([2, 3, 4, 5]);
+    expect(touching.filter((leaf) => drawn(list).has(leaf))).toEqual(touching);
+  });
+
+  it("draws a revealed node that lies outside the view", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [
+        { kind: "capability", at: [-20, 6, 0], children: leaves(3, -20, 7, 0, 1) },
+        { kind: "capability", at: [20, 6, 0], children: leaves(50, 20, 7, 0, 0.1) },
+      ],
+    });
+    const leftHalf = { x: 0, y: 0, width: 500, height: 1000 };
+    expect(drawn(cut(layout, { leafPitchPx: 0, view: leftHalf })).has(6)).toBe(false);
+    expect(drawn(cut(layout, { leafPitchPx: 0, view: leftHalf, reveal: [6] })).has(6)).toBe(true);
+  });
+
+  it("keeps a revealed node itself closed when its spacing closes it", () => {
+    expect(drawn(cut(SMALL, { openPitchPx: Infinity, leafPitchPx: Infinity, reveal: [1] })).get(1)).toBe(true);
+    const forked = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [{ kind: "fork", at: [1, 6, 0], children: leaves(2, 1, 7, 0, 0.1) }],
+    });
+    const fork = cut(forked, { openPitchPx: 0, leafPitchPx: 10, reveal: [1] }).marks.find((m) => m.node === 1)!;
+    expect([fork.closed, fork.radius]).toEqual([true, SIZES.bud]);
+  });
+
+  it("draws a revealed node alone under an ancestor whose children overflow the budget", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [{ kind: "capability", at: [0, 6, 0], children: leaves(20, 0, 7, 0, 0.5) }],
+    });
+    const list = cut(layout, { leafPitchPx: Infinity, markBudget: 3, reveal: [7] });
+    const marks = drawn(list);
+    expect(list.count).toBe(3);
+    expect(marks.get(1)).toBe(true);
+    expect(marks.get(7)).toBe(false);
+    expect(list.folded).toBe(19);
+  });
+
+  it("never exceeds the budget when the reveal path is longer than it", () => {
+    const chain = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [{ kind: "domain", at: [0, 6, 0], children: [{ kind: "capability", at: [0, 7, 0], children: [{ kind: "element", at: [0, 8, 0] }] }] }],
+    });
+    expect(cut(chain, { openPitchPx: 0, leafPitchPx: 0, markBudget: 2, reveal: [3] }).count).toBeLessThanOrEqual(2);
+  });
+
+  it("keeps a revealed node's mark when its ancestor's off-view children use up the visits", () => {
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 5, 0],
+      children: [{ kind: "capability", at: [0, 6, 0], children: leaves(1600, 0, 7, 0, 0.5) }],
+    });
+    const middle = 2 + 800;
+    const list = cut(layout, { openPitchPx: 0, leafPitchPx: 0, markBudget: 10, reveal: [middle] });
+    expect(list.visited).toBeLessThanOrEqual(40);
+    expect(drawn(list).get(middle)).toBe(false);
   });
 
   it("draws a revealed node and opens its ancestors when spacing would close them", () => {
