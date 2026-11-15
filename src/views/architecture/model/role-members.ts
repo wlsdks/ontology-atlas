@@ -3,9 +3,16 @@ import type { ArchitectureProfile } from '@/entities/architecture-profile';
 import type { RoleConcept } from './role-concepts';
 import type { RoleSourceModule } from './source-modules';
 
-/** What one band holds: names in display order and where they came from. */
+/** One module of a role, with the recorded concepts that sit in it. */
+export interface RoleMember {
+  name: string;
+  /** Repo-relative path from the source listing; null for a module known only through concepts. */
+  path: string | null;
+  concepts: number;
+}
+
 export interface RoleMembers {
-  names: string[];
+  members: RoleMember[];
   source: 'modules' | 'concepts' | 'none';
 }
 
@@ -38,9 +45,21 @@ export function conceptModuleName(path: string, pattern: string): string | null 
   return parts[base.length] ?? null;
 }
 
+function conceptsPerModule(patterns: readonly string[], concepts: readonly RoleConcept[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const concept of concepts) {
+    const name = patterns
+      .map((pattern) => conceptModuleName(concept.path, pattern))
+      .find((found): found is string => found !== null);
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /**
- * Members per role: source modules when a listing exists, else the modules recorded concepts sit
- * in, most-recorded first. O(R·(M + C·P)) for roles, modules, concepts and patterns.
+ * Members per role: source modules in listing order when a listing exists, else the modules
+ * recorded concepts sit in, most recorded first. O(R·(M + C·P)) for roles, modules, concepts and
+ * patterns.
  */
 export function buildRoleMembers(
   profile: ArchitectureProfile,
@@ -49,22 +68,19 @@ export function buildRoleMembers(
 ): Record<string, RoleMembers> {
   const out: Record<string, RoleMembers> = {};
   for (const role of profile.roles) {
+    const counts = conceptsPerModule(role.paths, concepts[role.id] ?? []);
     const listed = modules?.[role.id] ?? [];
     if (listed.length > 0) {
-      out[role.id] = { names: listed.map((module) => module.name), source: 'modules' };
+      out[role.id] = {
+        members: listed.map((module) => ({ name: module.name, path: module.path, concepts: counts.get(module.name) ?? 0 })),
+        source: 'modules',
+      };
       continue;
     }
-    const counts = new Map<string, number>();
-    for (const concept of concepts[role.id] ?? []) {
-      const name = role.paths
-        .map((pattern) => conceptModuleName(concept.path, pattern))
-        .find((found): found is string => found !== null);
-      if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-    }
-    const names = [...counts]
+    const members = [...counts]
       .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
-      .map(([name]) => name);
-    out[role.id] = { names, source: names.length > 0 ? 'concepts' : 'none' };
+      .map(([name, count]) => ({ name, path: null, concepts: count }));
+    out[role.id] = { members, source: members.length > 0 ? 'concepts' : 'none' };
   }
   return out;
 }

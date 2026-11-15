@@ -12,23 +12,16 @@ test.describe('Architecture toolbar', () => {
     await mountHarnessVault(page);
   });
 
-  test('below xl a pressed role scrolls to its answer and the rules stay reachable', async ({ page }) => {
+  test('below xl choosing a role scrolls its pane into view', async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 720 });
     await page.goto('/ko/architecture/?view=architecture&guides=off');
-    const box0 = page.getByTestId('architecture-graph-box-views');
-    await expect(box0).toBeVisible({ timeout: 30_000 });
-    await box0.click();
-    const detail = page.getByTestId('architecture-role-detail-motion');
-    await expect(detail).toBeAttached();
+    const role = page.getByTestId('architecture-role-views');
+    await expect(role).toBeVisible({ timeout: 30_000 });
+    await role.click();
+    const detail = page.getByTestId('architecture-role-detail');
+    await expect(detail).toHaveAttribute('data-role', 'views');
     await expect
-      .poll(async () => (await detail.boundingBox())?.y ?? Infinity, { message: 'the role detail stayed under the fold' })
-      .toBeLessThan(720 - 40);
-
-    const toggle = page.getByTestId('architecture-inspector-toggle');
-    await expect(toggle, 'no control reaches the rules below xl').toBeVisible();
-    await toggle.click();
-    await expect
-      .poll(async () => (await page.getByTestId('architecture-blueprint').boundingBox())?.y ?? Infinity)
+      .poll(async () => (await detail.boundingBox())?.y ?? Infinity, { message: 'the role pane stayed under the fold' })
       .toBeLessThan(720 - 40);
   });
 });

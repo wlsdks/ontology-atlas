@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Check, ChevronDown, PanelRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bot, Check, ChevronDown } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import {
@@ -12,59 +12,39 @@ import {
   type ArchitectureProfile,
   type ArchitectureProfileProblem,
 } from '@/entities/architecture-profile';
-import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
+import type { ArchitectureRecord } from '@/entities/architecture-record';
 import type { AcpTurnActivity } from '@/features/acp-session';
-import type { RoleConcept } from '../model/role-concepts';
-import type { RoleSourceModule } from '../model/source-modules';
-import type { DraftPreviewSource } from '../model/draft-preview';
-import type {
-  ArchitectureAgentRequest,
-  ArchitectureAgentRoute,
-} from '../model/architecture-agent';
+import { useVaultSessionIdentityScope } from '@/entities/vault-session';
+import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
-import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
+import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
+import { Button, Surface } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { Link } from '@/i18n/navigation';
-import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
-import { useVaultSessionIdentityScope } from '@/entities/vault-session';
 
-/** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
-const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
-const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
-import { Button, CloseButton, RowButton, Surface, Tooltip } from '@/shared/ui';
-import { ArchitectureFlow } from './ArchitectureFlow';
-import { ArchitectureRules } from './ArchitectureRules';
+import type { ArchitectureAgentRequest, ArchitectureAgentRoute } from '../model/architecture-agent';
+import type { DraftPreviewSource } from '../model/draft-preview';
+import { arrivalRole, buildImportMatrix, roleImports, type ImportCell } from '../model/import-matrix';
+import type { RoleConcept } from '../model/role-concepts';
+import { buildRoleMembers, patternPathLabel } from '../model/role-members';
+import type { RoleSourceModule } from '../model/source-modules';
 import { ArchitectureDraftHero } from './ArchitectureDraftHero';
-import { HARNESS_GUTTER_LEFT, HARNESS_GUTTER_X } from './harness-frame';
-import { buildArchitectureGraph } from '../model/graph-layout';
+import { ArchitectureImportMatrix } from './ArchitectureImportMatrix';
+import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
+import { ArchitectureVerdict } from './ArchitectureVerdict';
+import { HARNESS_GUTTER_LEFT } from './harness-frame';
 
-/**
- * The workbench columns, written out because runtime-assembled class names are invisible to the
- * CSS compiler. The canvas owns the screen until a concrete answer opens beside it.
- */
-const XL_COLUMNS = {
-  closed: 'xl:grid-cols-[minmax(0,1fr)_0px]',
-  inspector: 'xl:grid-cols-[minmax(0,1fr)_380px]',
-} as const;
+const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
+const EMPTY_EDGES: ArchitectureRecord['brief']['conformance']['violations'] = [];
+/** The width from which the table, verdict and pane share one window-high row (`xl`). */
+const WORKBENCH_MIN_PX = 1280;
 
-type RecordState = ArchitectureRecordStatus | 'missing';
-
-const STATUS_DOT_CLASS: Record<RecordState, string> = {
-  conforms: 'bg-[color:var(--color-success-a45)]',
-  violated: 'bg-[color:var(--color-danger-text)]',
-  unknown: 'bg-[color:var(--color-amber-source-a50)]',
-  missing: 'bg-[color:var(--color-text-quaternary)]',
-};
-
-/** The same document with another role selected; defaults stay bare and obsolete stage parameters are dropped. */
+/** The same document with another role selected; obsolete stage parameters are dropped. */
 function buildArchitectureHref(role: string | null, pathname: string): string {
   /* Preserve orthogonal route flags (`guides=off`, fixtures, view options). */
-  const query = new URLSearchParams(
-    typeof window === 'undefined' ? undefined : window.location.search,
-  );
+  const query = new URLSearchParams(typeof window === 'undefined' ? undefined : window.location.search);
   query.delete('stage');
   query.delete('role');
   if (role) query.set('role', role);
@@ -73,17 +53,14 @@ function buildArchitectureHref(role: string | null, pathname: string): string {
 }
 
 function writeArchitectureAddress(role: string | null): void {
-  window.history.replaceState(
-    window.history.state,
-    '',
-    buildArchitectureHref(role, window.location.pathname),
-  );
+  window.history.replaceState(window.history.state, '', buildArchitectureHref(role, window.location.pathname));
 }
 
 function readArchitectureRole(): string | null {
   if (typeof window === 'undefined') return null;
   return new URL(window.location.href).searchParams.get('role');
 }
+
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 /* Long enough to read a sentence naming the task, unlike `useCopyFeedback`'s 1.5s one-word confirmation. */
 const COPY_FEEDBACK_MS = 4000;
@@ -113,7 +90,6 @@ export function ArchitectureWorkbench({
   profiles: ArchitectureProfile[];
   /** Embedded in the Harness destination: the identity below replaces this view's own header. */
   embedded?: boolean;
-
   /** Architecture documents this surface could not read, named rather than silently dropped. */
   profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -124,12 +100,12 @@ export function ArchitectureWorkbench({
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   /** Whether this surface can list a source folder at all — false in a browser, by nature. */
   sourceListingCapable?: boolean;
-  /** Which absence the stage names when it cannot list source modules. */
+  /** Which absence the pane names when it cannot list source modules. */
   sourceUnavailableReason?: 'browser' | 'unbound' | null;
   /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
   recordsLoaded?: boolean;
-  /** Per profile slug, the recorded concepts joined into each role (the click-open detail). */
+  /** Per profile slug, the recorded concepts joined into each role. */
   conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
   agentRoute?: ArchitectureAgentRoute;
   agentLabel?: string | null;
@@ -146,6 +122,7 @@ export function ArchitectureWorkbench({
   const t = useTranslations('architecture');
   const tReview = useTranslations('analysisWorkbench');
   const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
+  const stacked = useViewportBelow(WORKBENCH_MIN_PX);
   /* The locale picks which reviewed sentence shows; `summary_<role>` stays the fact briefs, prompts and CLI lines print. */
   const locale = useLocale();
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
@@ -154,71 +131,19 @@ export function ArchitectureWorkbench({
     [profiles, selectedSlug],
   );
 
-  /*
-   * At `xl` the scopes, rules, receipt and chosen role open in a dock beside the canvas, which keeps
-   * the height; stacked under it they were squeezed out of reach. Below `xl` the page stays a
-   * stacked document.
-   */
-  const [inspector, setInspector] = useState<'role' | 'rules' | null>(() => {
-    return readArchitectureRole() !== null ? 'role' : null;
-  });
-  const inspectorOpen = inspector !== null && !contextDockOpen;
-  const stackedGutter = embedded ? HARNESS_GUTTER_X : 'px-5 md:px-8';
-  const columnLayout = contextDockOpen ? 'context' : inspectorOpen ? 'inspector' : 'closed';
-  const flowHostRef = useRef<HTMLDivElement | null>(null);
-  const previousColumnLayout = useRef(columnLayout);
-  useLayoutEffect(() => {
-    const from = previousColumnLayout.current;
-    previousColumnLayout.current = columnLayout;
-    const host = flowHostRef.current;
-    if (from === columnLayout || !host || typeof host.animate !== 'function') return;
-    if (typeof window.matchMedia !== 'function' || !window.matchMedia('(min-width: 1280px)').matches) return;
-    const style = getComputedStyle(host);
-    const raw = style.getPropertyValue('--motion-fast').trim();
-    const duration = (Number.parseFloat(raw) || 0) * (raw.endsWith('ms') ? 1 : 1000);
-    if (duration <= 0) return;
-    host.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration,
-      easing: style.getPropertyValue('--motion-ease').trim() || undefined,
-    });
-  }, [columnLayout]);
-  const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
-
-  /* Owned here because the canvas and the panel answering it sit in different grid rows. */
-  /* The chosen role is in the address: a selected dependency is shareable state, and a deep link is how an agent is handed a state. */
-  const [selectedRole, setSelectedRole] = useState<string | null>(
-    () => readArchitectureRole(),
-  );
-
+  /* The chosen role is in the address: a selected role is shareable state, and a deep link is how an agent is handed a state. */
+  const [chosenRole, setChosenRole] = useState<string | null>(() => readArchitectureRole());
+  /* The other end of the cell last chosen; it marks a column and a row of the pane. */
+  const [markedRole, setMarkedRole] = useState<string | null>(null);
   /* Back and forward move the selected role, since the address is screen state. */
   useEffect(() => {
     const syncFromHistory = () => {
-      const role = readArchitectureRole();
-      setSelectedRole(role);
-      setInspector(role === null ? null : 'role');
+      setChosenRole(readArchitectureRole());
+      setMarkedRole(null);
     };
     window.addEventListener('popstate', syncFromHistory);
     return () => window.removeEventListener('popstate', syncFromHistory);
   }, []);
-  /* A role click answers about that role only; the profile's rules have their own button. One dock, two contents, never both. */
-
-  function openInspector(kind: 'role' | 'rules', trigger?: HTMLElement | SVGElement) {
-    if (contextDockOpen && selected) { onOpenReview?.(selected.slug, selectedRole); return; }
-    if (trigger) inspectorTriggerRef.current = trigger;
-    setInspector(kind);
-  }
-
-  /**
-   * Closing the role panel lets go of the role and clears `?role=`, or a reload would reopen a
-   * closed panel and a pressed face would stand without its answer. Closing the rules panel keeps
-   * the selection.
-   */
-  const closeInspector = useCallback(() => {
-    if (inspector === 'role') setSelectedRole(null);
-    setInspector(null);
-    writeArchitectureAddress(null);
-    window.requestAnimationFrame(() => inspectorTriggerRef.current?.focus());
-  }, [inspector]);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
   /* Which task the last copy carried, so the confirmation names it. */
@@ -235,36 +160,40 @@ export function ArchitectureWorkbench({
     return () => window.clearTimeout(timer);
   }, [copyFeedbackMs, copyState]);
 
-  const selectedRecord = selected ? recordsByProfile[selected.slug] ?? null : null;
-  const roleTraffic = selectedRecord?.brief.conformance.observedRoleEdges;
-  /** Violated crossings as `from>to`; rows without a role are skipped, as in `buildRoleLedgers`. */
-  const violatedPairs = useMemo(() => {
-    const pairs = new Set<string>();
-    for (const row of selectedRecord?.brief.conformance.violations ?? []) {
-      if (!row || typeof row !== 'object') continue;
-      const { fromRole, toRole } = row as { fromRole?: unknown; toRole?: unknown };
-      if (typeof fromRole === 'string' && typeof toRole === 'string') pairs.add(`${fromRole}>${toRole}`);
-    }
-    return pairs;
-  }, [selectedRecord]);
-  /* The canvas's pure, memoized drawing built again for the words; lifting it would cost the flow its ownership. */
-  const rulesGraph = useMemo(
-    () => (selected ? buildArchitectureGraph(buildArchitectureLayout(selected), roleTraffic ?? []) : null),
-    [selected, roleTraffic],
+  const record = selected ? recordsByProfile[selected.slug] ?? null : null;
+  const conformance = record?.brief.conformance ?? null;
+  const violations = conformance?.violations ?? EMPTY_EDGES;
+  const matrix = useMemo(
+    () => (selected ? buildImportMatrix(selected, conformance?.observedRoleEdges ?? [], violations) : null),
+    [selected, conformance, violations],
   );
-  useEffect(() => {
-    if (!inspectorOpen) return undefined;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      closeInspector();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [closeInspector, inspectorOpen]);
+  const selectedModules = selected ? sourceModulesByProfile[selected.slug] ?? null : null;
+  const selectedConcepts = useMemo(
+    () => (selected ? conceptsByProfile[selected.slug] ?? {} : {}),
+    [conceptsByProfile, selected],
+  );
+  const members = useMemo(
+    () => (selected ? buildRoleMembers(selected, selectedModules, selectedConcepts) : {}),
+    [selected, selectedModules, selectedConcepts],
+  );
+  const reachOf = useMemo(() => {
+    const reach = new Map<string, string[]>();
+    if (!selected) return reach;
+    for (const edge of buildArchitectureLayout(selected).edges) {
+      reach.set(edge.from, [...(reach.get(edge.from) ?? []), edge.to]);
+    }
+    /* In profile order, the order of the table's columns. */
+    const rank = new Map(selected.roles.map((role, index) => [role.id, index]));
+    for (const targets of reach.values()) targets.sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
+    return reach;
+  }, [selected]);
+
+  /* A role the profile does not have is not honoured; the pane says so and shows the arrival role. */
+  const chosenInProfile = chosenRole !== null && (matrix?.order.includes(chosenRole) ?? false);
+  const activeRole = matrix ? (chosenInProfile ? chosenRole : arrivalRole(matrix, violations)) : null;
 
   /* One button with a derived default task, and a chooser offering the other two with a line each. */
-  const primaryAgentKind: ArchitectureAgentTaskKind =
-    selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
+  const primaryAgentKind: ArchitectureAgentTaskKind = conformance?.status === 'conforms' ? 'change' : 'verify';
   /* A task chosen from the menu stays on the button until another is picked. */
   const [chosenAgent, setChosenAgent] = useState<{ slug: string; kind: ArchitectureAgentTaskKind } | null>(null);
   /* Derived, not reset: a choice for one profile must not follow the person to another. */
@@ -293,9 +222,7 @@ export function ArchitectureWorkbench({
     let inner = 0;
     const frame = window.requestAnimationFrame(() => {
       inner = window.requestAnimationFrame(() => {
-        taskMenuRef.current
-          ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
-          ?.focus();
+        taskMenuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
       });
     });
     return () => {
@@ -305,30 +232,107 @@ export function ArchitectureWorkbench({
       window.cancelAnimationFrame(inner);
     };
   }, [taskMenuOpen]);
-  const agentReceipt = selectedRecord
+
+  /* Below `xl` the pane stacks under the table, so a choice scrolls to it. */
+  const paneRef = useRef<HTMLElement>(null);
+  const revealPane = useRef(false);
+  useEffect(() => {
+    if (!revealPane.current) return;
+    revealPane.current = false;
+    if (!stacked) return;
+    window.requestAnimationFrame(() => paneRef.current?.scrollIntoView({ block: 'nearest' }));
+  }, [activeRole, markedRole, stacked]);
+
+  /* An unreadable document is named with the parser's sentence instead of failing every profile. */
+  const profileNotices =
+    profileProblems.length === 0 ? null : (
+      <div className="mb-3 flex flex-col gap-1">
+        {profileProblems.map((problem) => (
+          <p
+            key={`${problem.documentSlug}\u0000${problem.message}`}
+            role="status"
+            data-testid="architecture-profile-problem"
+            className="m-0 border-l border-[color:var(--color-border-strong)] pl-3 text-body text-[color:var(--color-text-tertiary)]"
+          >
+            {t('profileUnreadable', { document: problem.documentSlug, message: problem.message })}
+          </p>
+        ))}
+      </div>
+    );
+
+  if (!selected || !matrix) {
+    return (
+      <ArchitectureDraftHero
+        embedded={embedded}
+        notices={profileNotices ? <div className="mb-5 w-full max-w-[var(--git-setup-measure)]">{profileNotices}</div> : null}
+        agentRoute={agentRoute}
+        agentLabel={agentLabel}
+        onAgentRequest={onAgentRequest}
+        draftHandoffContext={draftHandoffContext}
+        draftSource={draftSource}
+        agentWorking={contextDockOpen}
+      />
+    );
+  }
+
+  const roleLabel = (id: string) => (t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id);
+  const patternLabel = (name: string) => (t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name);
+  const roleById = new Map(selected.roles.map((role) => [role.id, role]));
+  const moduleCountOf = (id: string): number | null => {
+    const roleMembers = members[id];
+    return roleMembers && roleMembers.source !== 'none' ? roleMembers.members.length : selectedModules ? 0 : null;
+  };
+  const moduleTotal = matrix.order.some((id) => moduleCountOf(id) !== null)
+    ? matrix.order.reduce((sum, id) => sum + (moduleCountOf(id) ?? 0), 0)
+    : null;
+
+  const measured = record?.brief.measured ?? null;
+  const recordDate = measured ? measured.at.slice(0, 10) : '';
+  const recordStamp = measured
+    ? `${
+        measured.source.kind === 'git'
+          ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
+          : t('recordCheckedFolder', { date: recordDate })
+      }${measured.source.kind === 'git' && measured.source.dirty ? ` ${t('recordDirty')}` : ''}`
+    : null;
+  const ruleSentence = selected.dependencyPolicy === 'lower-only' ? t('dependencyLowerOnly') : t('dependencyExplicit');
+
+  const cellSentence = (cell: ImportCell): string => {
+    const ends = { from: roleLabel(cell.from), to: roleLabel(cell.to) };
+    switch (cell.kind) {
+      case 'self':
+        return t('cell.self', { role: roleLabel(cell.from) });
+      case 'violation':
+        return t('cell.violation', { ...ends, count: cell.violations });
+      case 'observed':
+        return t('cell.observed', { ...ends, count: cell.count });
+      case 'uncounted':
+        return t('cell.uncounted', { ...ends, count: cell.count });
+      case 'allowed':
+        return conformance ? t('cell.allowed', ends) : t('cell.allowedUnmeasured', ends);
+      case 'forbidden':
+        return conformance ? t('cell.forbidden', ends) : t('cell.forbiddenUnmeasured', ends);
+    }
+  };
+
+  const agentReceipt = record
     ? {
-        profileContentHash: selectedRecord.profile.contentHash,
-        measuredAt: selectedRecord.brief.measured.at,
-        source: selectedRecord.brief.measured.source,
-        status: selectedRecord.brief.conformance.status,
-        violationCount: selectedRecord.brief.conformance.violationCount,
-        unmappedEdges: selectedRecord.brief.conformance.unknown?.unmappedEdges ?? null,
-        unruledEdges: selectedRecord.brief.conformance.unknown?.unruledEdges ?? null,
+        profileContentHash: record.profile.contentHash,
+        measuredAt: record.brief.measured.at,
+        source: record.brief.measured.source,
+        status: record.brief.conformance.status,
+        violationCount: record.brief.conformance.violationCount,
+        unmappedEdges: record.brief.conformance.unknown?.unmappedEdges ?? null,
+        unruledEdges: record.brief.conformance.unknown?.unruledEdges ?? null,
       }
     : null;
   const promptFor = (kind: ArchitectureAgentTaskKind) =>
-    selected
-      ? buildArchitectureAgentPrompt(
-          selected,
-          handoffContexts[selected.slug] ?? null,
-          {
-            kind,
-            stage: 'understand',
-            selectedRole,
-            receipt: agentReceipt,
-          },
-        )
-      : '';
+    buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null, {
+      kind,
+      stage: 'understand',
+      selectedRole: chosenInProfile ? chosenRole : null,
+      receipt: agentReceipt,
+    });
   const agentTasks: { kind: ArchitectureAgentTaskKind; label: string; hint: string }[] = [
     {
       kind: 'verify',
@@ -355,128 +359,6 @@ export function ArchitectureWorkbench({
             ? t('copyHandoffError')
             : idleAgentLabel;
 
-  /* The detail panel's facts come from the same layout the canvas draws, so they never disagree. */
-  /* `selected` is null on the zero-profile screen, which renders an empty stage, so derived maps must survive it. */
-  const roleLayout = useMemo(
-    () => (selected ? buildArchitectureLayout(selected) : null),
-    [selected],
-  );
-  const roleOrder = roleLayout?.rows.flat() ?? [];
-
-  /* A role the profile does not have is not honoured, or the card would state a false dependency rule. Derived, not corrected by an effect; the address stays as sent. */
-  const activeRole = selectedRole && roleOrder.includes(selectedRole) ? selectedRole : null;
-
-  /* Below `xl` the detail stacks after the canvas, so a press scrolls to it; a `?role=` link does not jump. */
-  const roleDetailRef = useRef<HTMLDivElement>(null);
-  const rulesSectionRef = useRef<HTMLElement>(null);
-  const revealRoleDetail = useRef(false);
-  useEffect(() => {
-    if (!revealRoleDetail.current || activeRole === null) return;
-    revealRoleDetail.current = false;
-    if (window.matchMedia('(min-width: 1280px)').matches) return;
-    window.requestAnimationFrame(() => roleDetailRef.current?.scrollIntoView({ block: 'nearest' }));
-  }, [activeRole]);
-  const roleIndexOf = new Map(roleOrder.map((id, index) => [id, index + 1]));
-  const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
-  const roleSummaryOf = new Map(
-    (selected?.roles ?? [])
-      .map((role) => [role.id, role.summaries[locale] ?? role.summary] as const)
-      .filter((entry): entry is readonly [string, string] => typeof entry[1] === 'string'),
-  );
-  const roleReachOf = useMemo(() => {
-    const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
-    for (const edge of roleLayout?.edges ?? []) map.get(edge.from)?.push(edge.to);
-    /* In the screen's chain order, not the profile's listing order, so the drawing and the card agree. */
-    const rank = new Map(roleOrder.map((id, index) => [id, index]));
-    for (const targets of map.values()) {
-      targets.sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
-    }
-    return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
-  }, [roleLayout]);
-
-  /* An unreadable document is named with the parser's sentence instead of failing every profile. */
-  const profileNotices = profileProblems.length === 0 ? null : (
-    <div className="mb-3 flex flex-col gap-1">
-      {profileProblems.map((problem) => (
-        <p
-          key={`${problem.documentSlug}\u0000${problem.message}`}
-          role="status"
-          data-testid="architecture-profile-problem"
-          className="m-0 border-l border-[color:var(--color-amber-source-a50)] pl-3 text-body text-[color:var(--color-text-tertiary)]"
-        >
-          {t('profileUnreadable', { document: problem.documentSlug, message: problem.message })}
-        </p>
-      ))}
-    </div>
-  );
-
-  if (!selected) {
-    return (
-      <ArchitectureDraftHero
-        embedded={embedded}
-        notices={profileNotices ? <div className="mb-5 w-full max-w-[var(--git-setup-measure)]">{profileNotices}</div> : null}
-        agentRoute={agentRoute}
-        agentLabel={agentLabel}
-        onAgentRequest={onAgentRequest}
-        draftHandoffContext={draftHandoffContext}
-        draftSource={draftSource}
-        agentWorking={contextDockOpen}
-      />
-    );
-  }
-
-  const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
-  /*
-   * A receipt is a dated measurement, not a live claim: no record keeps the amber "Source check
-   * required"; a record shows its stamp with counts beside the result and says this surface cannot
-   * re-probe the source.
-   */
-  const record = recordsByProfile[selected.slug] ?? null;
-  const conformance = record?.brief.conformance ?? null;
-  const measured = record?.brief.measured ?? null;
-  const recordDate = measured ? measured.at.slice(0, 10) : '';
-  const recordDirty = measured?.source.kind === 'git' && measured.source.dirty;
-  const recordCounts = conformance
-    ? [
-        t('recordCounts', {
-          violations: conformance.violationCount,
-          unmapped: (conformance.unknown?.unmappedEdges ?? 0) + (conformance.unknown?.unruledEdges ?? 0),
-        }),
-        ...(conformance.excludedByUsage !== undefined
-          ? [t('recordTypeOnly', { count: conformance.excludedByUsage })]
-          : []),
-      ].join(' · ')
-    : null;
-  const recordStamp = measured
-    ? `${
-        measured.source.kind === 'git'
-          ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
-          : t('recordCheckedFolder', { date: recordDate })
-      }${recordDirty ? ` ${t('recordDirty')}` : ''}`
-    : null;
-  const recordState: RecordState = conformance?.status ?? 'missing';
-  const shortDate = measured
-    ? new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(measured.at))
-    : '';
-  /* One phrase on the header: a live agent turn first, then the last record's result, then its absence. */
-  const statusPhrase = agentActivity
-    ? t(`agentActivity.${agentActivity.state}`)
-    : conformance === null
-      ? t('statusNotScanned')
-      : conformance.status === 'conforms'
-        ? t('statusClean', { date: shortDate })
-        : conformance.status === 'violated'
-          ? t('statusViolated', { count: conformance.violationCount, date: shortDate })
-          : t('statusUnknownResult', { date: shortDate });
-  const patternLabel = (name: string) =>
-    t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
-  /* An untranslated free-text axis gets no explanation: inventing one would infer from a name (`docs/DECISIONS.md`). */
-  const axisBody = (axis: string) =>
-    t.has(`patternAxes.${axis}.body`) ? t(`patternAxes.${axis}.body`) : '';
-  const roleLabel = (id: string) =>
-    t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
-
   async function copyHandoff(text: string, taskLabel: string | null = null) {
     const token = ++copyRequest.current;
     setCopyState('pending');
@@ -495,127 +377,147 @@ export function ArchitectureWorkbench({
   function runAgentTask(kind: ArchitectureAgentTaskKind, taskLabel: string | null = null) {
     if (!selected) return;
     setTaskMenuOpen(false);
+    const roleId = chosenInProfile ? chosenRole : null;
     if (agentRoute === 'agent') {
-      setInspector(null);
-      writeArchitectureAddress(selectedRole);
-      onAgentRequest?.({ kind, prompt: promptFor(kind), profileSlug: selected.slug, roleId: selectedRole });
+      onAgentRequest?.({ kind, prompt: promptFor(kind), profileSlug: selected.slug, roleId });
       return;
     }
     void copyHandoff(promptFor(kind), taskLabel);
   }
-
   const runRequestedTask = () =>
-    runAgentTask(
-      requestedAgentKind,
-      agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? null,
+    runAgentTask(requestedAgentKind, agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? null);
+
+  function selectRole(id: string, marked: string | null) {
+    if (!selected) return;
+    setChosenRole(id);
+    setMarkedRole(marked);
+    revealPane.current = true;
+    writeArchitectureAddress(id);
+    if (contextDockOpen) onOpenReview?.(selected.slug, id);
+  }
+
+  const activeIndex = activeRole === null ? -1 : matrix.order.indexOf(activeRole);
+  const activeMembers = activeRole ? members[activeRole] ?? { members: [], source: 'none' as const } : null;
+  const sourceNote =
+    sourceListingCapable || !sourceUnavailableReason ? null : (
+      <div className="mt-1">
+        <p className="break-keep text-label text-[color:var(--color-text-quaternary)]" data-testid="architecture-source-unavailable">
+          {t(sourceUnavailableReason === 'unbound' ? 'sourceListingUnbound' : 'sourceListingUnavailable')}
+        </p>
+        {/* A browser can never read a source folder, so the note names the installed app; the app never offers its own download. */}
+        {offersInstalledApp ? (
+          <Link
+            href="/download"
+            className={controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', className: 'mt-2 w-fit' })}
+            data-testid="architecture-get-installed-app"
+          >
+            {t('getInstalledApp')}
+          </Link>
+        ) : null}
+      </div>
     );
+
   const agentActionIcon =
     agentRoute === 'clipboard' && copyState === 'copied' ? (
       <Check size={ICON_SIZE.sm} aria-hidden />
     ) : (
       <Bot size={ICON_SIZE.sm} aria-hidden />
     );
+
   return (
-    <main inert={contextDockOpen && reviewUsesSheet} className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]">
+    <main
+      inert={contextDockOpen && reviewUsesSheet}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]"
+    >
       <div
         data-testid="architecture-layout-scroll"
         className={cn(
-          /* One non-scrolling row at workbench width: the canvas owns the height and docks open beside it. */
-          'architecture-workbench-grid grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] xl:grid-rows-1 xl:overflow-hidden',
-          contextDockOpen ? 'grid-rows-1 overflow-hidden' : 'lg:grid-cols-[220px_minmax(0,1fr)]',
-          contextDockOpen ? 'xl:grid-cols-1' : XL_COLUMNS[inspectorOpen ? 'inspector' : 'closed'],
+          'grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] xl:grid-rows-1 xl:overflow-hidden',
+          contextDockOpen ? 'xl:grid-cols-1' : 'xl:grid-cols-[minmax(0,1fr)_380px]',
         )}
       >
-        {/* The canvas takes the full width with the columns under it; inside a column a seven-role graph was cut. */}
-        {/* Embedded, the gutter is the Harness shell's (`harness-frame.ts`); with a dock open only the start line pays the cap. */}
-        <div
+        <section
           className={cn(
-            'min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3',
-            !embedded
-              ? 'md:px-8'
-              : inspectorOpen
-                ? cn(HARNESS_GUTTER_LEFT, 'pr-5 md:pr-10')
-                : HARNESS_GUTTER_X,
+            'flex min-w-0 flex-col pb-5 pr-5 pt-4 md:pr-8 xl:min-h-0 xl:pb-4',
+            embedded ? HARNESS_GUTTER_LEFT : 'pl-5 md:pl-8',
           )}
           data-testid="architecture-flow-panel"
         >
-          {/* Embedded, this header holds only a problem report, collapsing to zero otherwise: the ladder has no canvas height to spare at 1280x800. */}
-          <header className={cn('shrink-0 px-1', !embedded && 'mb-3')}>
-            {embedded ? null : (
-              <div className="min-w-0">
-                <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                  {t('eyebrow')}
-                </p>
-                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
-                    {t('title')}
-                  </h1>
-                  <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
-                    {selected.title}
-                  </span>
-                </div>
-                <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
-                  {t('description')}
-                </p>
-              </div>
-            )}
-            {profileNotices ? <div className={embedded ? 'mb-3' : 'mt-3'}>{profileNotices}</div> : null}
-          </header>
-          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
-              {embedded ? (
-                <h2 className="min-w-0 max-w-[20rem] truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                  {selected.title}
-                </h2>
+          {embedded ? null : (
+            <header className="mb-4 min-w-0">
+              <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                {t('eyebrow')}
+              </p>
+              <h1 className="mt-1 text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
+                {t('title')}
+              </h1>
+              <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{t('description')}</p>
+            </header>
+          )}
+          {profileNotices}
+          <div className="mb-4 flex min-w-0 shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex min-w-0 items-baseline gap-3">
+              <h2 className="min-w-0 max-w-[20rem] truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {selected.title}
+              </h2>
+              {selected.patterns[0] ? (
+                <span className="truncate text-body text-[color:var(--color-text-tertiary)]">
+                  {selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · ')}
+                </span>
               ) : null}
-              {/* The result is the door to its history: the issues and records it summarises. */}
-              {recordsLoaded ? (
-                onOpenReview ? (
-                  <Tooltip content={tReview('history')} side="bottom">
-                    <button
-                      type="button"
-                      data-testid="architecture-review-open"
-                      data-architecture-status={recordState}
-                      onClick={() => {
-                        setInspector(null);
-                        onOpenReview(selected.slug, selectedRole);
-                      }}
-                      className="-mx-2 inline-flex h-8 min-w-0 items-center gap-2 rounded-chip px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+            </div>
+            {profiles.length > 1 ? (
+              <div role="group" aria-label={t('profileSwitch')} className="flex min-w-0 flex-wrap items-center gap-1">
+                {profiles.map((profile) =>
+                  profile.slug === selected.slug ? (
+                    <span
+                      key={profile.uid}
+                      aria-current="true"
+                      data-testid="architecture-profile-current"
+                      className={controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', active: true })}
                     >
-                      <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', STATUS_DOT_CLASS[recordState])} />
-                      <span className="truncate" data-testid="architecture-status">{statusPhrase}</span>
+                      {profile.title}
+                      <ProfileScope profile={profile} />
+                    </span>
+                  ) : (
+                    <button
+                      key={profile.uid}
+                      type="button"
+                      data-testid="architecture-profile-option"
+                      onClick={() => {
+                        setSelectedSlug(profile.slug);
+                        setChosenRole(null);
+                        setMarkedRole(null);
+                        writeArchitectureAddress(null);
+                        if (contextDockOpen) onOpenReview?.(profile.slug, null);
+                      }}
+                      className={controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverSurface: 'lift' })}
+                    >
+                      {profile.title}
+                      <ProfileScope profile={profile} />
                     </button>
-                  </Tooltip>
-                ) : (
-                  <p
-                    className="m-0 flex min-w-0 items-center gap-2 text-body text-[color:var(--color-text-tertiary)]"
-                    data-architecture-status={recordState}
-                  >
-                    <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', STATUS_DOT_CLASS[recordState])} />
-                    <span className="truncate" data-testid="architecture-status">{statusPhrase}</span>
-                  </p>
-                )
+                  ),
+                )}
+              </div>
+            ) : null}
+            {agentActivity ? (
+              <span className="truncate text-body text-[color:var(--color-text-tertiary)]" data-testid="architecture-agent-activity">
+                {t(`agentActivity.${agentActivity.state}`)}
+              </span>
+            ) : null}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {/* The history of findings and records this verdict summarises. */}
+              {recordsLoaded && onOpenReview ? (
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className="atlas-touch-floor text-[color:var(--color-text-secondary)]"
+                  data-testid="architecture-review-open"
+                  onClick={() => onOpenReview(selected.slug, chosenInProfile ? chosenRole : null)}
+                >
+                  {tReview('history')}
+                </Button>
               ) : null}
-              <div className="ml-auto flex shrink-0 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="md"
-                className="atlas-touch-floor shrink-0 text-[color:var(--color-text-secondary)] max-md:w-10 max-md:px-0"
-                onClick={(event) => {
-                  if (!window.matchMedia('(min-width: 1280px)').matches) {
-                    rulesSectionRef.current?.scrollIntoView({ block: 'start' });
-                    rulesSectionRef.current?.focus({ preventScroll: true });
-                    return;
-                  }
-                  if (inspector === 'rules') closeInspector();
-                  else openInspector('rules', event.currentTarget);
-                }}
-                aria-expanded={inspector === 'rules'}
-                aria-controls="architecture-blueprint"
-                data-testid="architecture-inspector-toggle"
-              >
-                <PanelRight size={ICON_SIZE.sm} aria-hidden />
-                <span className="max-md:sr-only">{t('inspectorTitle')}</span>
-              </Button>
               <div
                 ref={taskMenuRef}
                 className="relative flex shrink-0 items-stretch"
@@ -623,15 +525,15 @@ export function ArchitectureWorkbench({
                 onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
                   if (!taskMenuOpen) return;
                   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-                  const items = [
-                    ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
-                  ];
+                  const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
                   if (items.length === 0) return;
                   const at = items.indexOf(document.activeElement as HTMLButtonElement);
                   /* From the trigger, ArrowDown enters at the top and ArrowUp at the bottom, like a native menu. */
                   const next =
                     at === -1
-                      ? event.key === 'ArrowDown' ? 0 : items.length - 1
+                      ? event.key === 'ArrowDown'
+                        ? 0
+                        : items.length - 1
                       : (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
                   items[next]?.focus();
                   event.preventDefault();
@@ -670,7 +572,6 @@ export function ArchitectureWorkbench({
                   className="atlas-touch-floor -ml-px min-w-9 rounded-l-none px-2"
                   disabled={agentRoute === 'checking'}
                   aria-haspopup="menu"
-                  aria-expanded={taskMenuOpen}
                   aria-label={t('agentTaskMenu')}
                   data-testid="architecture-agent-task-menu"
                   onClick={() => setTaskMenuOpen((value) => !value)}
@@ -678,10 +579,7 @@ export function ArchitectureWorkbench({
                   <ChevronDown
                     size={ICON_SIZE.sm}
                     aria-hidden
-                    className={cn(
-                      'transition-transform motion-reduce:transition-none',
-                      taskMenuOpen && 'rotate-180',
-                    )}
+                    className={cn('transition-transform motion-reduce:transition-none', taskMenuOpen && 'rotate-180')}
                   />
                 </Button>
                 <Surface
@@ -702,7 +600,7 @@ export function ArchitectureWorkbench({
                       data-architecture-agent-task={task.kind}
                       aria-current={task.kind === requestedAgentKind ? 'true' : undefined}
                       onClick={() => {
-                        if (selected) setChosenAgent({ slug: selected.slug, kind: task.kind });
+                        setChosenAgent({ slug: selected.slug, kind: task.kind });
                         runAgentTask(task.kind, task.label);
                         taskMenuTriggerRef.current?.focus();
                       }}
@@ -719,9 +617,7 @@ export function ArchitectureWorkbench({
                       <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                         {task.label}
                       </span>
-                      <span className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
-                        {task.hint}
-                      </span>
+                      <span className="break-keep text-caption text-[color:var(--color-text-tertiary)]">{task.hint}</span>
                     </button>
                   ))}
                   {agentRoute === 'clipboard' ? (
@@ -738,346 +634,108 @@ export function ArchitectureWorkbench({
                     : t('copiedHandoff')
                   : agentRoute === 'clipboard' && copyState === 'error'
                     ? t('copyHandoffError')
-                  : ''}
+                    : ''}
               </span>
-              </div>
+            </div>
           </div>
-          <div ref={flowHostRef} className="relative flex min-h-0 flex-1">
-              <ArchitectureFlow
-                profile={selected}
-                modules={selectedModules}
-                concepts={conceptsByProfile[selected.slug] ?? {}}
+
+          <ArchitectureVerdict
+            conformance={conformance}
+            loading={!recordsLoaded}
+            crossRoleImports={matrix.crossRoleImports}
+            layers={matrix.order.length}
+            modules={moduleTotal}
+            stamp={recordStamp}
+            rule={ruleSentence}
+            roleLabel={roleLabel}
+          />
+
+          <div className="mt-5 flex min-h-0 flex-1 flex-col">
+            {recordsLoaded ? (
+              <ArchitectureImportMatrix
+                matrix={matrix}
+                measured={conformance !== null}
+                heightBound={!stacked}
+                selectedRole={activeRole}
+                markedRole={markedRole}
                 roleLabel={roleLabel}
-                roleTraffic={roleTraffic}
-                violatedPairs={violatedPairs}
-                selected={selectedRole}
-                roleInspectorOpen={inspector === 'role'}
-                onSelect={(id, trigger) => {
-                  const shouldClear = selectedRole === id && inspector === 'role';
-                  const next = shouldClear ? null : id;
-                  setSelectedRole(next);
-                  if (next !== null) revealRoleDetail.current = true;
-                  /* Choosing a role opens the dock; choosing it again clears both. */
-                  if (next === null) setInspector(null);
-                  else if (contextDockOpen) onOpenReview?.(selected.slug, next);
-                  else openInspector('role', trigger);
-                  writeArchitectureAddress(next);
-                }}
+                pathLabelOf={(id) => (roleById.get(id)?.paths ?? []).map(patternPathLabel).join(' ')}
+                moduleCountOf={moduleCountOf}
+                sentenceOf={cellSentence}
+                onSelectRole={(id) => selectRole(id, null)}
+                onSelectCell={(cell) => selectRole(cell.from, cell.from === cell.to ? null : cell.to)}
               />
-          </div>
-        </div>
-
-        {/* Below `xl` two stacked sections via `display: contents`; at `xl` a column mounted only when asked for. */}
-        <div
-          id="architecture-inspector"
-          data-testid="architecture-inspector"
-          data-architecture-inspector-open={inspectorOpen ? 'true' : 'false'}
-          data-architecture-inspector={inspector ?? 'none'}
-          className={cn(
-            contextDockOpen ? 'hidden' : 'contents',
-            inspectorOpen
-              ? [
-                  'xl:col-start-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:overflow-y-auto',
-                  'xl:border-l xl:border-[color:var(--color-border-soft)]',
-                  /* A panel that scrolls must say so: macOS hides its overlay scrollbar until something moves. */
-                  '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
-                ].join(' ')
-              : 'xl:hidden',
-          )}
-        >
-          <div className="hidden shrink-0 items-center justify-between gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 xl:flex">
-            <h2 className="min-w-0 truncate text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-              {inspector === 'role' && activeRole !== null ? roleLabel(activeRole) : t('inspectorTitle')}
-            </h2>
-            <div className="flex shrink-0 items-center gap-1">
-              <span className="text-caption text-[color:var(--color-text-quaternary)]">
-                {t('inspectorEscHint')}
-              </span>
-              <CloseButton
-                onClick={closeInspector}
-                label={t('inspectorClose')}
-                data-testid="architecture-inspector-close"
-              />
-            </div>
-          </div>
-
-          {/* The answer to the canvas's selection: what is actually in the chosen layer. */}
-          <div
-            ref={roleDetailRef}
-            data-testid="architecture-role-detail-slot"
-            className={cn(
-              'mt-5 scroll-mt-3 lg:col-span-2 xl:mt-0 xl:shrink-0',
-              stackedGutter,
-              'xl:px-4 xl:py-3',
-              inspector === 'role' ? undefined : 'xl:hidden',
-            )}
-          >
-            {activeRole === null ? (
-              <div
-                className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] text-body text-[color:var(--color-text-tertiary)]"
-                data-testid="architecture-role-detail-empty"
-              >
-                {/* A declined `?role=` must be stated, or it looks identical to not having picked yet; the address stays as the sender wrote it. */}
-                {selectedRole === null ? null : (
-                  <p
-                    className="mb-2 text-[color:var(--color-text-secondary)]"
-                    data-testid="architecture-role-not-in-profile"
-                  >
-                    {t('roleNotInProfile', { role: selectedRole })}
-                  </p>
-                )}
-                <p className="m-0">{t('selectRoleHint')}</p>
-              </div>
             ) : (
-              <div
-                key={activeRole}
-                className="topology-chrome-in origin-left"
-                data-testid="architecture-role-detail-motion"
+              <p
+                className="m-auto py-16 text-body text-[color:var(--color-text-tertiary)]"
+                role="status"
+                data-testid="architecture-record-loading"
               >
-                <ArchitectureRoleDetail
-                  roleId={activeRole}
-                  vaultKey={vaultKey}
-                  index={roleIndexOf.get(activeRole) ?? 1}
-                  label={roleLabel(activeRole)}
-                  summary={roleSummaryOf.get(activeRole) ?? null}
-                  paths={rolePathsOf.get(activeRole) ?? []}
-                  reach={roleReachOf.get(activeRole) ?? []}
-                  modules={selectedModules === null ? null : selectedModules[activeRole] ?? []}
-                  concepts={(conceptsByProfile[selected.slug] ?? {})[activeRole] ?? []}
-                  edgeParticipants={EMPTY_EDGE_PARTICIPANTS}
-                  roleLabel={roleLabel}
-                  sinkLabel={t('reachNone')}
-                  reachInlineLabel={(targets) => t('reachInline', { targets })}
-                  moduleCountLabel={(count) => t('moduleCount', { count })}
-                  moreLabel={(count) => t('moreOccupants', { count })}
-                  showFewerLabel={t('fewerOccupants')}
-                  layerConceptsLabel={(count) => t('layerConcepts', { count })}
-                />
-              </div>
+                {t('recordLoading')}
+              </p>
             )}
-          </div>
-
-          {/* The absence is explained in the dock, not over the canvas, where it cost the chain its height. */}
-          {sourceListingCapable || !sourceUnavailableReason ? null : (
-            <div
-              className={cn(
-                'border-b border-[color:var(--color-border-soft)] py-3 lg:col-span-2 xl:shrink-0',
-                stackedGutter,
-                'xl:px-4',
-                /* Why a module count is missing belongs with the role whose modules are missing. */
-                inspector === 'role' ? undefined : 'xl:hidden',
-              )}
-            >
-              <p
-                className="break-keep text-caption text-[color:var(--color-text-quaternary)]"
-                data-testid="architecture-source-unavailable"
-              >
-                {t(
-                  sourceUnavailableReason === 'unbound'
-                    ? 'sourceListingUnbound'
-                    : 'sourceListingUnavailable',
-                )}
-              </p>
-              {/* A browser can never read a source folder, so the note names the installed app; the app never offers its own download. */}
-              {offersInstalledApp ? (
-                <Link
-                  href="/download"
-                  className={controlClass({
-                    shape: 'chip',
-                    size: 'sm',
-                    tone: 'secondary',
-                    className: 'mt-2 w-fit',
-                  })}
-                  data-testid="architecture-get-installed-app"
-                >
-                  {t('getInstalledApp')}
-                </Link>
-              ) : null}
-            </div>
-          )}
-
-        {/* One inset down the dock, so its sections share a left edge. */}
-        {/* `shrink-0`, not `min-h-0`: a shrinkable child in a scrolling flex column paints over the list beneath it. */}
-        <section ref={rulesSectionRef} id="architecture-blueprint" className={cn(
-          'min-w-0 scroll-mt-3 py-5 md:py-8 lg:col-span-2 xl:shrink-0',
-          stackedGutter,
-          'xl:px-4 xl:py-3',
-          inspector === 'rules' ? undefined : 'xl:hidden',
-        )} aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
-          <div className="flex w-full max-w-5xl flex-col xl:max-w-none">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              {/* The kind of drawing leads: the axis names the question and the pattern the answer (C4: clarify the diagram type and scope). */}
-              <div className="min-w-0">
-                <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                  {t('roles')}
-                </p>
-                <h2
-                  id="architecture-blueprint-title"
-                  className="mt-1 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
-                  data-testid="architecture-pattern-heading"
-                >
-                  {selected.patterns.length > 0
-                    ? selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · ')
-                    : t('patternsUndeclared')}
-                </h2>
-                {/* The sentence below opens with the axis name, so it is not repeated here. */}
-                <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
-                  <span className="block">
-                    {selected.dependencyPolicy === 'lower-only'
-                      ? t('dependencyLowerOnly')
-                      : t('dependencyExplicit')}
-                  </span>
-                  <span className="mt-1 block">
-                    {selected.dependencyUsages.length === 1 &&
-                    selected.dependencyUsages[0] === 'value'
-                      ? t('dependencyUsagesValue')
-                      : t('dependencyUsagesAll')}
-                  </span>
-                  {/* The scanner always allows same-role imports (`rule: 'same-role'`), so the screen says so; one span per sentence keeps it apart from the governed-usages sentence. */}
-                  <span className="mt-1 block">{t('dependencySameRole')}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* The pattern is the heading, so one sentence says what the axis means instead of repeating chips. */}
-            {selected.patterns.length > 0 ? (
-              <p
-                className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-quaternary)]"
-                data-testid="architecture-axis-explainer"
-              >
-                {selected.patterns.map((pattern) => axisBody(pattern.axis)).join(' ')}
-              </p>
-            ) : null}
-
-            {/* The record behind the header's status phrase: its result, counts and what it was measured against. */}
-            <div
-              className="mt-4 border-t border-[color:var(--color-divider)] pt-3"
-              data-testid="architecture-source-check"
-            >
-              <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                {t('lastCheck')}
-              </p>
-              {conformance && recordCounts && recordStamp ? (
-                <>
-                  <p
-                    className="mt-1.5 flex items-start gap-2 break-keep text-body text-[color:var(--color-text-secondary)]"
-                    data-testid="architecture-record-summary"
-                  >
-                    <span
-                      aria-hidden
-                      data-testid="architecture-record-marker"
-                      className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', STATUS_DOT_CLASS[recordState])}
-                    />
-                    <span>{`${t(`recordStatus.${conformance.status}`)} · ${recordCounts}`}</span>
-                  </p>
-                  <p
-                    className="mt-1 break-keep text-caption text-[color:var(--color-text-tertiary)]"
-                    data-testid="architecture-record-stamp"
-                  >
-                    {recordStamp}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="mt-1.5 text-body text-[color:var(--color-text-secondary)]">
-                    {t('sourceCheckRequired')}
-                  </p>
-                  <p
-                    className="mt-1 break-keep text-caption text-[color:var(--color-text-tertiary)]"
-                    data-testid="architecture-source-check-next"
-                  >
-                    {t('sourceCheckNext')}
-                  </p>
-                </>
-              )}
-            </div>
           </div>
         </section>
-          {rulesGraph === null ? null : (
-          /* One band per role carries name, globs and allowances, with arrows down the gutter; a diagram plus a list said everything twice. */
-          <ArchitectureRules
-            graph={rulesGraph}
-            violatedPairs={violatedPairs}
-            legendPermitted={t('legendPermitted')}
-            legendTraffic={t('legendTraffic')}
-            legendSkipHint={t('legendSkipHint')}
-            legendViolated={t('legendViolated')}
-            directionLabel={t('ladderDirection')}
-            hiddenAtWorkbench={inspector !== 'rules'}
-            className={cn(stackedGutter, 'xl:px-4')}
-          />
+
+        <aside
+          ref={paneRef}
+          id="architecture-inspector"
+          data-testid="architecture-inspector"
+          className={cn(
+            contextDockOpen ? 'hidden' : 'block',
+            'min-w-0 scroll-mt-3 border-t border-[color:var(--color-border-soft)] px-5 py-5 md:px-8',
+            'xl:min-h-0 xl:overflow-y-auto xl:border-l xl:border-t-0 xl:px-5 xl:py-4',
+            /* A pane that scrolls must say so: macOS hides its overlay scrollbar until something moves. */
+            '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
           )}
-
-        <aside className={cn(
-          'border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] py-4 lg:col-span-2 xl:shrink-0 xl:border-b-0',
-          stackedGutter,
-          'xl:px-4',
-          inspector === 'rules' ? undefined : 'xl:hidden',
-        )}>
-          <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-            {t('profileList')}
-          </h2>
-          <div className="mt-3 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-col">
-            {profiles.map((profile) => {
-              const current = profile.slug === selected.slug;
-              const content = (
-                <span className="min-w-0">
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className="block min-w-0 truncate text-body-lg font-[var(--font-weight-signature)]">
-                      {profile.title}
-                    </span>
-                    {current ? (
-                      <span className="shrink-0 text-caption text-[color:var(--color-text-tertiary)]">
-                        {t('profileCurrent')}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
-                    {profile.scopePaths.join(' · ')}
-                  </span>
-                  {/* Tertiary, not quaternary: a clickable row's selected state composites where quaternary fails AA (`docs/DESIGN-SYSTEM.md`, quaternary ink). */}
-                  <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
-                    {t('railRoles', { count: profile.roles.length })}
-                    {profile.patterns[0] ? ` · ${patternLabel(profile.patterns[0].name)}` : ''}
-                  </span>
-                </span>
-              );
-              if (current) {
-                return (
-                  <div
-                    key={profile.uid}
-                    aria-current="true"
-                    data-testid="architecture-profile-current"
-                    className="flex w-full items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-3 py-2 text-left"
-                  >
-                    {content}
-                  </div>
-                );
-              }
-              return (
-                <RowButton
-                  key={profile.uid}
-                  data-testid="architecture-profile-option"
-                  hoverInk="strong"
-                  hoverSurface="lift"
-                  onClick={() => { setSelectedSlug(profile.slug); if (contextDockOpen) onOpenReview?.(profile.slug, null); }}
-                  className="w-full justify-start px-3 py-2 text-left"
-                >
-                  {content}
-                </RowButton>
-              );
-            })}
-          </div>
+        >
+          {chosenRole !== null && !chosenInProfile ? (
+            <p className="mb-4 break-keep text-body text-[color:var(--color-text-secondary)]" data-testid="architecture-role-not-in-profile">
+              {t('roleNotInProfile', { role: chosenRole })}
+            </p>
+          ) : null}
+          {activeRole && activeMembers ? (
+            <div key={`${vaultKey}:${activeRole}`} className="topology-chrome-in origin-left" data-testid="architecture-role-detail-motion">
+              <ArchitectureRoleDetail
+                roleId={activeRole}
+                index={activeIndex + 1}
+                label={roleLabel(activeRole)}
+                summary={(() => {
+                  const role = roleById.get(activeRole);
+                  return role ? role.summaries[locale] ?? role.summary ?? null : null;
+                })()}
+                paths={roleById.get(activeRole)?.paths ?? []}
+                mayImport={reachOf.get(activeRole) ?? []}
+                imports={roleImports(matrix, activeRole, 'out')}
+                importedBy={roleImports(matrix, activeRole, 'in')}
+                measured={conformance !== null}
+                maxCount={matrix.maxCount}
+                markedRole={markedRole}
+                members={activeMembers}
+                concepts={selectedConcepts[activeRole] ?? []}
+                roleLabel={roleLabel}
+                sourceNote={sourceNote}
+              />
+            </div>
+          ) : null}
         </aside>
-
-        </div>
-
-        <div
-          aria-hidden
-          data-testid="architecture-bottom-tab-reserve"
-          className="h-[var(--topology-mobile-bottom-tab-reserve)] lg:hidden"
-        />
       </div>
+      <div
+        aria-hidden
+        data-testid="architecture-bottom-tab-reserve"
+        className="h-[var(--topology-mobile-bottom-tab-reserve)] shrink-0 lg:hidden"
+      />
     </main>
+  );
+}
+
+/** Profiles in one repository differ by where they apply; the chip names that scope after the title. */
+function ProfileScope({ profile }: { profile: ArchitectureProfile }) {
+  if (profile.scopePaths.length === 0) return null;
+  // Tertiary, not quaternary: a pressed chip's surface composites where quaternary fails AA.
+  return (
+    <span className="ml-1.5 truncate font-mono text-[color:var(--color-text-tertiary)]">
+      {profile.scopePaths.join(' · ')}
+    </span>
   );
 }

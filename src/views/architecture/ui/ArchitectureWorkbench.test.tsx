@@ -173,8 +173,15 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
   });
 });
 
+const VIOLATION = {
+  fromRole: 'shared',
+  toRole: 'features',
+  from: 'src/shared/lib/x.ts',
+  to: 'src/features/cart/index.ts',
+};
+
 describe('ArchitectureWorkbench', () => {
-  it('names a live agent turn in the header instead of the last record', () => {
+  it('names a live agent turn in the header', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -189,7 +196,7 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByTestId('architecture-status')).toHaveTextContent('Agent is inspecting source');
+    expect(screen.getByTestId('architecture-agent-activity')).toHaveTextContent('Agent is inspecting source');
   });
 
   it('starts an in-tab inspection from the header action instead of navigating to Map', () => {
@@ -221,27 +228,22 @@ describe('ArchitectureWorkbench', () => {
   it('writes the chosen role into the address without erasing unrelated route state', () => {
     window.history.replaceState({}, '', '/ko/architecture/?guides=off&fixture=storefront');
     renderWorkbench();
-    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
     expect(window.location.search).toBe('?guides=off&fixture=storefront&role=views');
   });
 
-  it('opens with the profile, its status and every role, with the rules a click away', () => {
+  it('draws the rule alone before a record: a dot where an import is allowed, nothing where it is not', () => {
     renderWorkbench();
-    expect(screen.getByRole('heading', { name: 'Architecture' })).toBeInTheDocument();
-    expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
-    expect(screen.getByTestId('architecture-status')).toHaveTextContent('Not scanned yet');
-    expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Rules apply to connections that pull in running code. Connections that pull in only type definitions are shown but never counted as violations.',
-      ),
-    ).toBeInTheDocument();
-    const currentProfile = screen.getByTestId('architecture-profile-current');
-    expect(currentProfile).toHaveAttribute('aria-current', 'true');
-    expect(currentProfile).toHaveTextContent('Current');
-    expect(currentProfile.tagName).toBe('DIV');
-    expect(screen.queryByTestId('architecture-profile-option')).toBeNull();
+    expect(screen.getByTestId('architecture-status')).toHaveTextContent('Not checked yet');
+    expect(screen.getByTestId('architecture-cell-views-shared')).toHaveAttribute('data-cell-kind', 'allowed');
+    expect(screen.getByTestId('architecture-cell-views-shared')).toHaveAccessibleName(
+      'Views → Shared foundation · allowed by the rules',
+    );
+    expect(screen.getByTestId('architecture-cell-shared-views')).toHaveAttribute('data-cell-kind', 'forbidden');
+    expect(screen.getByTestId('architecture-cell-views-views')).toHaveAttribute('data-cell-kind', 'self');
+    expect(screen.queryByTestId('architecture-violation-count')).toBeNull();
+    expect(screen.getByTestId('architecture-imports-routing')).toHaveTextContent('Fills in after a source check');
+    expect(document.querySelector('[aria-expanded]')).toBeNull();
   });
 
   it('keeps only another profile actionable and turns the new current profile into a fact', () => {
@@ -258,128 +260,101 @@ describe('ArchitectureWorkbench', () => {
     expect(option).toHaveTextContent(hexagonal.title);
     fireEvent.click(option);
     expect(screen.getByTestId('architecture-profile-current')).toHaveTextContent(hexagonal.title);
-    expect(screen.getByTestId('architecture-graph-box-adapter')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-role-adapter')).toBeInTheDocument();
   });
 
-  it('draws each role once, in profile order, and no arc before a record exists', () => {
-    renderWorkbench();
-    const graph = screen.getByTestId('architecture-graph');
-    const order = [...graph.querySelectorAll('[data-graph-box]')].map((box) => box.getAttribute('data-graph-box'));
-    expect(order).toEqual(['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared']);
-    expect(graph).toHaveAttribute('data-arc-count', '0');
-    expect(screen.queryByTestId('architecture-arcs')).toBeNull();
-    expect(screen.queryByTestId('architecture-legend')).toBeNull();
-    /* The glob appears only in the detail panel of a selected role. */
-    expect(screen.queryByText('src/shared/**')).toBeNull();
-  });
-
-  it('draws one arc per observed crossing between roles, each named by its sentence', () => {
-    renderWithRecord(buildRecord({ observedRoleEdges: FSD_TRAFFIC, violations: [{ fromRole: 'shared', toRole: 'features' }] }));
-    const arcs = [...screen.getByTestId('architecture-arcs').querySelectorAll('[data-arc-from]')].map(
-      (arc) => `${arc.getAttribute('data-arc-from')}>${arc.getAttribute('data-arc-to')}`,
+  it('names the violation as its pair and count, and leads with the violation count', () => {
+    renderWithRecord(buildRecord({ violationCount: 1, observedRoleEdges: FSD_TRAFFIC, violations: [VIOLATION] }));
+    expect(screen.getByTestId('architecture-violation-count')).toHaveTextContent('1');
+    expect(screen.getByTestId('architecture-violation-count').className).toContain('--color-danger-text');
+    const violation = screen.getByTestId('architecture-cell-shared-features');
+    expect(violation).toHaveAttribute('data-cell-kind', 'violation');
+    expect(violation).toHaveAccessibleName('Shared foundation → Features · 1 import against the rules');
+    expect(screen.getByTestId('architecture-cell-features-shared')).toHaveAccessibleName(
+      'Features → Shared foundation · 97 imports · allowed by the rules',
     );
-    expect(arcs.sort()).toEqual(['features>shared', 'shared>features', 'views>shared', 'views>widgets', 'widgets>shared']);
-    expect(screen.getByRole('img', { name: 'Features → Shared foundation: 97 imports' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('img', { name: 'Shared foundation → Features: 1 import against the rules' }),
-    ).toBeInTheDocument();
-  });
-
-  it('draws a violation dashed in the danger tone with one short label, and keys both marks', () => {
-    renderWithRecord(buildRecord({ observedRoleEdges: FSD_TRAFFIC, violations: [{ fromRole: 'shared', toRole: 'features' }] }));
-    const violation = screen.getByTestId('architecture-arc-shared-features');
-    expect(violation).toHaveAttribute('data-arc-violated', 'true');
-    expect(violation.querySelector('[data-arc-stroke]')).toHaveAttribute('stroke-dasharray', '4 4');
-    expect(violation.querySelector('[data-arc-stroke]')?.getAttribute('class')).toContain('--color-danger-text');
-    expect(screen.getByTestId('architecture-arc-violation-shared-features')).toHaveTextContent(
-      'Shared foundation → Features 1',
-    );
-    const legend = screen.getByTestId('architecture-legend');
-    expect(legend).toHaveTextContent('allowed import · width is count');
-    expect(legend).toHaveTextContent('import against the rules');
-  });
-
-  it('draws nothing red and keys no violation when the record has none', () => {
-    renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0, observedRoleEdges: FSD_TRAFFIC.slice(0, 4) }));
-    expect(screen.queryAllByTestId(/^architecture-arc-violation-/)).toHaveLength(0);
-    expect(screen.getByTestId('architecture-legend')).not.toHaveTextContent('import against the rules');
-  });
-
-  it('brightens and numbers the arcs of a chosen band and dims the rest', () => {
-    renderWithRecord(buildRecord({ observedRoleEdges: FSD_TRAFFIC }));
-    expect(screen.queryAllByTestId(/^architecture-arc-count-/)).toHaveLength(0);
-    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
-    expect(screen.getByTestId('architecture-arc-views-widgets')).toHaveAttribute('data-arc-state', 'bright');
-    expect(screen.getByTestId('architecture-arc-features-shared')).toHaveAttribute('data-arc-state', 'dim');
-    expect(screen.getByTestId('architecture-arc-count-views-widgets')).toHaveTextContent('56');
-    expect(screen.getByTestId('architecture-arc-count-views-shared')).toHaveTextContent('61');
-    expect(screen.queryByTestId('architecture-arc-count-features-shared')).toBeNull();
-  });
-
-  /* Allowed-but-unobserved rules are not drawn: the arcs are the code's, the rules live in the panel. */
-  it('draws only observed crossings for an explicit profile', () => {
-    renderWithRecord(
-      buildRecord({
-        observedRoleEdges: [{ fromRole: 'adapter', toRole: 'application', count: 4 }],
-      }),
-      HEXAGONAL_PROFILE_FRONTMATTER,
-    );
-    const arcs = [...screen.getByTestId('architecture-arcs').querySelectorAll('[data-arc-from]')];
-    expect(arcs.map((arc) => `${arc.getAttribute('data-arc-from')}>${arc.getAttribute('data-arc-to')}`)).toEqual([
-      'adapter>application',
+    expect(screen.getByTestId('architecture-figure-imports')).toHaveTextContent('303');
+    expect(screen.getAllByRole('button').filter((button) => button.className.includes('--color-danger'))).toEqual([
+      violation,
     ]);
   });
 
-  it("writes a role's reach in role names in its detail panel", () => {
-    const profile = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
-    render(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[profile]} />
-      </NextIntlClientProvider>,
+  it('arrives on the role that broke the rules and shows its evidence in the pane', () => {
+    renderWithRecord(buildRecord({ violationCount: 1, observedRoleEdges: FSD_TRAFFIC, violations: [VIOLATION] }));
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
+    expect(screen.getByTestId('architecture-role-shared')).toHaveAttribute('aria-pressed', 'true');
+    const imports = screen.getByTestId('architecture-imports-shared');
+    expect(imports.querySelector('[data-violated="true"]')).toHaveTextContent(
+      'src/shared/lib/x.ts → src/features/cart/index.ts',
     );
-    fireEvent.click(screen.getByTestId('architecture-graph-box-adapter'));
-    expect(screen.getByTestId('architecture-reach-adapter')).toHaveTextContent(
-      'may depend on Application · Ports · Domain',
-    );
+    expect(screen.getByTestId('architecture-imported-by-shared')).toHaveTextContent('Features');
+    /* Arrival is not a choice, so the address stays bare. */
+    expect(window.location.search).toBe('');
+  });
 
-    fireEvent.click(screen.getByTestId('architecture-graph-box-domain'));
-    expect(screen.getByTestId('architecture-reach-domain')).toHaveTextContent(
-      'depends on no other role',
+  it('states a clean record as zero with the success dot and nothing red', () => {
+    renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0, observedRoleEdges: FSD_TRAFFIC.slice(0, 4) }));
+    expect(screen.getByTestId('architecture-violation-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('architecture-violation-count').className).not.toContain('--color-danger');
+    expect(screen.getByTestId('architecture-status').querySelector('[class*="--color-status-success"]')).not.toBeNull();
+    expect(document.querySelectorAll('[data-cell-kind="violation"]')).toHaveLength(0);
+    /* Arrival falls to the first role that imports another. */
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'views');
+  });
+
+  it('says why an unknown result is unknown instead of a bare status', () => {
+    renderWithRecord(buildRecord({ status: 'unknown', violationCount: 0 }));
+    expect(screen.getByTestId('architecture-unknown-reasons')).toHaveTextContent(
+      'Not conclusive: 2 imports from files in no layer',
     );
   });
 
-  it('selects a role, says so, and answers with that role in the panel', () => {
-    renderWorkbench();
-    const views = screen.getByTestId('architecture-graph-box-views');
-    expect(views).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByTestId('architecture-role-detail-empty')).toBeInTheDocument();
-
-    fireEvent.click(views);
-    expect(views).toHaveAttribute('aria-pressed', 'true');
+  it('moves the pane to a chosen row and marks the other end of a chosen cell', () => {
+    renderWithRecord(buildRecord({ violationCount: 1, observedRoleEdges: FSD_TRAFFIC, violations: [VIOLATION] }));
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
     expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'views');
-    expect(screen.getByTestId('architecture-role-detail-motion')).toHaveClass('topology-chrome-in');
-    expect(screen.queryByTestId('architecture-role-detail-empty')).toBeNull();
+    expect(window.location.search).toBe('?role=views');
 
-    fireEvent.click(screen.getByTestId('architecture-graph-box-shared'));
-    expect(views).toHaveAttribute('aria-pressed', 'false');
-    const shared = screen.getByTestId('architecture-graph-box-shared');
-    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
+    fireEvent.click(screen.getByTestId('architecture-cell-features-shared'));
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'features');
+    expect(screen.getByTestId('architecture-imports-features').querySelector('[data-marked="true"]')).toHaveAttribute(
+      'data-other-role',
+      'shared',
+    );
+    expect(screen.getByTestId('architecture-readout')).toHaveTextContent('Features → Shared foundation · 97 imports');
+  });
 
-    /* Closing the panel lets go of the role, so no pressed band sits without an answer. */
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(shared).toHaveAttribute('aria-pressed', 'false');
-    expect(shared).toHaveAttribute('aria-expanded', 'false');
+  it('moves between cells with the arrow keys, one tab stop for the whole table', () => {
+    renderWithRecord(buildRecord({ violationCount: 1, observedRoleEdges: FSD_TRAFFIC, violations: [VIOLATION] }));
+    const tabbable = [...document.querySelectorAll('[data-cell-kind]')].filter(
+      (cell) => cell.getAttribute('tabindex') === '0',
+    );
+    expect(tabbable).toHaveLength(1);
+    const start = screen.getByTestId('architecture-cell-views-widgets');
+    start.focus();
+    fireEvent.keyDown(start, { key: 'ArrowRight' });
+    expect(screen.getByTestId('architecture-cell-views-features')).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
+    expect(screen.getByTestId('architecture-cell-widgets-features')).toHaveFocus();
+    expect(screen.getByTestId('architecture-readout')).toHaveTextContent('Widgets → Features');
+  });
 
-    fireEvent.click(shared);
-    expect(shared).toHaveAttribute('aria-pressed', 'true');
-    expect(shared).toHaveAttribute('aria-expanded', 'true');
+  it("follows each role's declared reach under an explicit rule, and writes it in role names", () => {
+    renderWithRecord(
+      buildRecord({ violationCount: 0, status: 'conforms', observedRoleEdges: [{ fromRole: 'adapter', toRole: 'application', count: 4 }] }),
+      HEXAGONAL_PROFILE_FRONTMATTER,
+    );
+    expect(screen.getByTestId('architecture-cell-adapter-application')).toHaveAttribute('data-cell-kind', 'observed');
+    expect(screen.getByTestId('architecture-cell-adapter-domain')).toHaveAttribute('data-cell-kind', 'allowed');
+    expect(screen.getByTestId('architecture-cell-application-adapter')).toHaveAttribute('data-cell-kind', 'forbidden');
+    expect(screen.getByTestId('architecture-reach-adapter')).toHaveTextContent('Application · Domain · Ports');
 
-    fireEvent.click(shared);
-    expect(screen.getByTestId('architecture-role-detail-empty')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('architecture-role-domain'));
+    expect(screen.getByTestId('architecture-reach-domain')).toHaveTextContent('None');
   });
 
   /* Modules come from a read-only directory walk, never an import scan, so they exist only with a listing. */
-  it("fills the band and the panel with the source modules a role's globs contain, when a listing exists", () => {
+  it("lists every source module a role's globs contain, with the concepts recorded in each", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -395,24 +370,28 @@ describe('ArchitectureWorkbench', () => {
               shared: [{ name: 'cn.ts', path: 'src/shared/lib/cn.ts', kind: 'file' }],
             },
           }}
+          conceptsByProfile={{
+            [profile.slug]: {
+              views: [
+                { slug: 'elements/home', title: 'Home', kind: 'element', path: 'src/views/home/ui/Home.tsx', dependsOn: [], relatesTo: [] },
+              ],
+            },
+          }}
         />
       </NextIntlClientProvider>,
     );
-
-    const views = screen.getByTestId('architecture-band-views');
-    expect(views).toHaveTextContent('home');
-    expect(views).toHaveTextContent('docs-vault');
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveAccessibleName('Views · 2 modules');
-    expect(screen.getByTestId('architecture-band-widgets').querySelectorAll('[data-testid="architecture-member-chip"]')).toHaveLength(0);
-
-    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    expect(screen.getByTestId('architecture-role-views')).toHaveTextContent('2 modules');
+    expect(screen.getByTestId('architecture-figure-modules')).toHaveTextContent('3');
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
     const listed = screen.getByTestId('architecture-modules-views');
     expect(listed).toHaveTextContent('home');
-    expect(listed).toHaveTextContent('src/views/docs-vault');
+    expect(listed).toHaveTextContent('docs-vault');
+    expect(listed).toHaveTextContent('1 concept');
+    expect(screen.getByTestId('architecture-concepts-views')).toHaveTextContent('Home');
+    expect(screen.queryByTestId('architecture-source-unavailable')).toBeNull();
   });
 
-  /* Reviewed concepts are the meaning layer, separate from source modules, answering the selection alike. */
-  it("fills the band with the modules recorded concepts sit in, and the panel with the concepts", () => {
+  it('falls back to the modules recorded concepts sit in where source cannot be listed', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -421,26 +400,30 @@ describe('ArchitectureWorkbench', () => {
           conceptsByProfile={{
             [profile.slug]: {
               views: [
-                {
-                  slug: 'elements/home',
-                  title: 'Home',
-                  kind: 'element',
-                  path: 'src/views/home/ui/Home.tsx',
-                  dependsOn: [],
-                  relatesTo: [],
-                },
+                { slug: 'elements/home', title: 'Home', kind: 'element', path: 'src/views/home/ui/Home.tsx', dependsOn: [], relatesTo: [] },
               ],
             },
           }}
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByTestId('architecture-band-views')).toHaveTextContent('home');
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
+    expect(screen.getByTestId('architecture-modules-views')).toHaveTextContent('home');
+    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
-    const detail = screen.getByTestId('architecture-concepts-views');
-    expect(detail).toHaveTextContent(en.architecture.layerConcepts.replace('{count}', '1'));
-    expect(detail).toHaveTextContent('Home');
+  it('declines a linked role the profile lacks, and still answers with a role', () => {
+    window.history.replaceState({}, '', '/ko/architecture/?role=not-a-real-role');
+    renderWorkbench();
+    expect(screen.getByTestId('architecture-role-not-in-profile')).toHaveTextContent('not-a-real-role');
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'routing');
+  });
+
+  it('honours a linked role on arrival', () => {
+    window.history.replaceState({}, '', '/ko/architecture/?role=entities');
+    renderWithRecord(buildRecord({ violationCount: 1, observedRoleEdges: FSD_TRAFFIC, violations: [VIOLATION] }));
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'entities');
+    expect(screen.queryByTestId('architecture-role-not-in-profile')).toBeNull();
   });
 
   it('keeps the workbench focused on architecture facts instead of demo playback or prose stages', () => {
@@ -448,8 +431,6 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.queryByTestId('architecture-graph-run')).not.toBeInTheDocument();
     expect(screen.queryByTestId('architecture-walk')).not.toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(screen.queryByText('Architecture-first agent plan')).not.toBeInTheDocument();
-    expect(screen.queryByText('Verify the actual change')).not.toBeInTheDocument();
   });
 
   it('copies an executable architecture handoff instead of a generic prompt', async () => {
@@ -529,33 +510,13 @@ describe('ArchitectureWorkbench', () => {
   });
 });
 
-/*
- * A receipt is a snapshot, not a live claim: the header states its result and date in one phrase,
- * and the rules panel carries the stamp and counts beside the verdict.
- */
+/* A receipt is a snapshot, not a live claim: the stamp says when and from what it was taken. */
 describe('ArchitectureWorkbench — persisted conformance receipt', () => {
-  it('states a violated record as a count and a date in one header phrase', () => {
+  it('stamps a git receipt with its date, commit and the dependency rule', () => {
     renderWithRecord(buildRecord());
-    const status = screen.getByTestId('architecture-status');
-    expect(status).toHaveTextContent(/^3 imports against the rules · checked /);
-    expect(status.closest('[data-architecture-status]')).toHaveAttribute('data-architecture-status', 'violated');
-  });
-
-  it('states a clean record without naming a count', () => {
-    renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
-    expect(screen.getByTestId('architecture-status')).toHaveTextContent(/^No import against the rules · checked /);
-  });
-
-  it('renders a git receipt as a dated stamp with counts beside the verdict, never a bare status', () => {
-    renderWithRecord(buildRecord());
-    expect(screen.getByTestId('architecture-record-summary')).toHaveTextContent(
-      'Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges',
-    );
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
-      'Checked 2026-08-27 at commit a8df66d',
+      'Checked 2026-08-27 at commit a8df66d · Each layer may import only the layers below it.',
     );
-    // The receipt replaces the "not measured" line; both at once would be two claims.
-    expect(screen.queryByText('Source check required')).toBeNull();
   });
 
   it('marks a dirty git measurement as taken with uncommitted edits', () => {
@@ -577,34 +538,25 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     const stamp = screen.getByTestId('architecture-record-stamp');
     expect(stamp).toHaveTextContent('Checked 2026-08-27 against a content fingerprint of the source folder');
     expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
-    expect(screen.getByTestId('architecture-record-summary')).toHaveTextContent(
-      'Conforms · 0 rule violations · 2 dependencies with no assigned role',
-    );
   });
 
-  it('wears the existing signal tone families: error for violated, success for conforms, amber for unknown', () => {
-    const { unmount } = renderWithRecord(buildRecord());
-    expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-danger');
-    unmount();
-
-    const conforming = renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
-    expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-success');
-    conforming.unmount();
-
-    renderWithRecord(buildRecord({ status: 'unknown', violationCount: 0 }));
-    expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-amber-source');
-  });
-
-  /* It names the command that writes the record, and offers no control to measure source itself. */
-  it('tells the reader what produces the missing measurement, without offering to run it', () => {
+  it('says what fills the table when no record exists yet', () => {
     renderWorkbench();
-    expect(screen.getByText('Source check required')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-record-summary')).toBeNull();
-    const next = screen.getByTestId('architecture-source-check-next');
-    expect(next).toHaveTextContent('atlas architecture --record');
-    expect(next).toHaveTextContent('.ontology-atlas/architecture/profile-slug.json');
-    expect(next).toHaveTextContent('never changes the reviewed structure');
-    expect(screen.getByTestId('architecture-source-check').querySelector('button, a')).toBeNull();
+    expect(screen.getByTestId('architecture-verdict')).toHaveTextContent(
+      'Check the source and the table fills with the imports between layers.',
+    );
+    expect(screen.getByTestId('architecture-agent-action')).toHaveTextContent('Copy the “Inspect source” task');
+  });
+
+  it('says the record is still loading instead of drawing an empty table', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench profiles={[profile]} recordsLoaded={false} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('architecture-record-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-matrix')).toBeNull();
   });
 });
 
@@ -646,15 +598,15 @@ describe("the role sentence in the reader's language", () => {
     );
   }
 
-  it('prints the Korean sentence in the role dock at ko', () => {
+  it('prints the Korean sentence in the pane at ko', () => {
     renderIn('ko');
-    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
     expect(screen.getByTestId('architecture-role-summary-views')).toHaveTextContent(KOREAN_VIEWS);
   });
 
   it('prints the canonical English sentence at en', () => {
     renderIn('en');
-    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
     expect(screen.getByTestId('architecture-role-summary-views')).toHaveTextContent(
       'One module per route-level screen',
     );
@@ -663,7 +615,6 @@ describe("the role sentence in the reader's language", () => {
   /* A profile translated one role at a time shows reviewed English for the rest, never a blank. */
   it('falls back to the canonical sentence for a role nobody translated', () => {
     renderIn('ko');
-    fireEvent.click(screen.getByTestId('architecture-graph-box-routing'));
     expect(screen.getByTestId('architecture-role-summary-routing')).toHaveTextContent(
       'Locale-prefixed Next entry wrappers.',
     );
@@ -691,6 +642,6 @@ describe('an unreadable architecture document', () => {
     expect(notice).toHaveAttribute('role', 'status');
     expect(notice).toHaveTextContent('architecture/broken');
     expect(notice).toHaveTextContent('summary_ghost_ko describes a role that does not exist.');
-    expect(screen.getByTestId('architecture-graph-box-views')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-role-views')).toBeInTheDocument();
   });
 });

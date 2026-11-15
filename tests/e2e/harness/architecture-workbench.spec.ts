@@ -3,7 +3,6 @@ import { expect, test, type Page } from '@playwright/test';
 import { seedFirstRunSeen } from '../first-run-seed';
 import { HARNESS_VAULT_ROOT, installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
 import { useDogfoodSample } from '../sample-source';
-import { waitForAnimationsDone, waitForBoxStill } from '../settle';
 
 test.use({ viewport: { width: 1512, height: 945 } });
 
@@ -57,8 +56,8 @@ async function openRecordedStorefront(page: Page) {
       internals.invoke = (command, args = {}) => {
         const path = String(args.relativePath ?? '').replace(/^\/+|\/+$/g, '');
         if (args.rootPath !== vaultRoot || !path.startsWith('.ontology-atlas')) return inner(command, args);
-        if (command === 'vault_path_exists') {
-          return Promise.resolve(path in files || Object.keys(files).some((file) => file.startsWith(`${path}/`)));
+        if (command === 'vault_path_exists' && (path in files || Object.keys(files).some((file) => file.startsWith(`${path}/`)))) {
+          return Promise.resolve(true);
         }
         if (command === 'read_vault_binary_file' && path in files) {
           const body = new TextEncoder().encode(files[path]);
@@ -78,8 +77,14 @@ async function openRecordedStorefront(page: Page) {
             const [name, child] = file.slice(prefix.length).split('/');
             entries.set(name!, child ? 'directory' : 'file');
           }
-          if (entries.size === 0) return Promise.reject(new Error(`No such file or directory (os error 2): ${path}`));
-          return Promise.resolve([...entries].map(([name, kind]) => ({ name, kind })));
+          if (entries.size === 0) return inner(command, args);
+          /* The fixture's own entries (the project-source binding) stay beside the served record. */
+          return (inner(command, args) as Promise<Array<{ name: string; kind: string }>>)
+            .catch(() => [])
+            .then((own) => [
+              ...own.filter((entry) => !entries.has(entry.name)),
+              ...[...entries].map(([name, kind]) => ({ name, kind })),
+            ]);
         }
         return inner(command, args);
       };
@@ -88,48 +93,7 @@ async function openRecordedStorefront(page: Page) {
   );
   await mountHarnessVault(page);
   await page.goto('/ko/architecture/?view=architecture&guides=off');
-  await expect(page.getByTestId('architecture-arcs')).toBeVisible({ timeout: 60_000 });
-}
-
-/** Every text mark in the picture, each probed at its centre and four inset corners. */
-function readOverlaps(page: Page) {
-  return page.evaluate(() => {
-    const marks = [
-      ...document.querySelectorAll<HTMLElement>('[data-graph-box] span:not(:has(span))'),
-    ].filter((mark) => (mark.textContent ?? '').trim() && getComputedStyle(mark).visibility === 'visible');
-    const covered: string[] = [];
-    for (const mark of marks) {
-      const rect = mark.getBoundingClientRect();
-      const inset = Math.min(2, rect.width / 4, rect.height / 4);
-      const points = [
-        [rect.left + rect.width / 2, rect.top + rect.height / 2],
-        [rect.left + inset, rect.top + inset],
-        [rect.right - inset, rect.top + inset],
-        [rect.left + inset, rect.bottom - inset],
-        [rect.right - inset, rect.bottom - inset],
-      ] as const;
-      for (const [x, y] of points) {
-        const hit = document.elementFromPoint(x, y);
-        if (hit !== mark && !mark.contains(hit)) {
-          covered.push(`${mark.textContent} is under ${hit?.outerHTML.slice(0, 80) ?? 'nothing'}`);
-          break;
-        }
-      }
-    }
-    const labels = [
-      ...document.querySelectorAll('[data-testid^="architecture-arc-count-"], [data-testid^="architecture-arc-violation-"]'),
-      ...marks,
-    ].map((node) => ({ text: node.textContent, rect: node.getBoundingClientRect() }));
-    for (let i = 0; i < labels.length; i += 1) {
-      for (let j = i + 1; j < labels.length; j += 1) {
-        const [a, b] = [labels[i]!.rect, labels[j]!.rect];
-        if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
-          covered.push(`${labels[i]!.text} touches ${labels[j]!.text}`);
-        }
-      }
-    }
-    return { marks: marks.length, covered };
-  });
+  await expect(page.getByTestId('architecture-matrix')).toBeVisible({ timeout: 60_000 });
 }
 
 test('the agent task chooser offers a re-check and an improvement search beside the derived task', async ({ page }) => {
@@ -147,7 +111,7 @@ test('the agent task chooser offers a re-check and an improvement search beside 
     });
   });
   await page.goto('/ko/architecture/?view=architecture&guides=off');
-  await expect(page.getByTestId('architecture-graph')).toBeVisible();
+  await expect(page.getByTestId('architecture-matrix')).toBeVisible();
 
   const trigger = page.getByTestId('architecture-agent-task-menu');
   await expect(page.getByTestId('architecture-agent-task-popover')).toHaveCount(0);
@@ -167,8 +131,8 @@ test('the agent task chooser offers a re-check and an improvement search beside 
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  /* Escape closed the menu only; no dock was open, and none opened. */
-  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute('data-architecture-inspector', 'none');
+  /* Escape closed the menu only; the role pane stays. */
+  await expect(page.getByTestId('architecture-inspector')).toBeVisible();
 
   await trigger.click();
   await menu.getByTestId('architecture-agent-task-improve').click();
@@ -182,208 +146,105 @@ test('the agent task chooser offers a re-check and an improvement search beside 
 
 test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
   await page.goto('/ko/architecture/?view=architecture&stage=plan');
-  await expect(page.getByTestId('architecture-graph')).toBeVisible();
+  await expect(page.getByTestId('architecture-matrix')).toBeVisible();
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
   await expect(page.locator('pre[aria-label]')).toHaveCount(0);
 
-  await page.getByTestId('architecture-graph-box-application').click();
+  await page.getByTestId('architecture-role-application').click();
   const address = new URL(page.url()).searchParams;
   expect(address.get('stage')).toBeNull();
   expect(address.get('role')).toBe('application');
 });
 
-test('keyboard opens, closes, restores focus, and reopens the selected role', async ({ page }) => {
-  await page.goto('/ko/architecture/?view=architecture&guides=off');
 
-  const rules = page.getByTestId('architecture-inspector-toggle');
-  await rules.focus();
-  await page.keyboard.press('Space');
-  await expect(page.getByTestId('architecture-rules')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(rules).toBeFocused();
-
-  const role = page.getByTestId('architecture-graph-box-application');
-  await role.focus();
-  await page.keyboard.press('Enter');
-  await expect(role).toHaveAttribute('aria-pressed', 'true');
-  await expect(role).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute('data-architecture-inspector', 'role');
-
-  await page.keyboard.press('Escape');
-  await expect(role).toBeFocused();
-  await expect(role).toHaveAttribute('aria-pressed', 'false');
-  await expect(role).toHaveAttribute('aria-expanded', 'false');
-
-  await page.keyboard.press('Space');
-  await expect(role).toHaveAttribute('aria-expanded', 'true');
-  await expect(role).toHaveAttribute('aria-pressed', 'true');
-
-  /* The role dock takes width from the picture, never a role from view. */
-  await waitForAnimationsDone(page.locator('body'));
-  await waitForBoxStill(page.getByTestId('architecture-graph'));
-  const stage = await page.getByTestId('architecture-stage').boundingBox();
-  for (const box of await page.locator('[data-graph-box]').all()) {
-    const rect = (await box.boundingBox())!;
-    expect(rect.x + rect.width).toBeLessThanOrEqual(stage!.x + stage!.width + 1);
-  }
+test('the violation is a cell named by its pair and count, under a numeral equal to the record', async ({ page }) => {
+  await openRecordedStorefront(page);
+  await expect(page.getByTestId('architecture-violation-count')).toHaveText(
+    String(STOREFRONT_RECORD.brief.conformance.violationCount),
+  );
+  const violation = page.getByTestId('architecture-cell-shared-features');
+  await expect(violation).toHaveAttribute('data-cell-kind', 'violation');
+  await expect(violation).toHaveAccessibleName('공유 기반 → 피처 · 규칙을 거스르는 import 1개');
+  await expect(violation).toHaveText('1');
+  await expect(page.locator('[data-cell-kind="violation"]')).toHaveCount(1);
 });
 
-test('a link carries the chosen role, and refuses one the profile lacks', async ({ page }) => {
-  await page.goto('/ko/architecture/?view=architecture');
+test("arriving selects the violation's source role and lists that role's modules", async ({ page }) => {
+  await openRecordedStorefront(page);
+  await expect(page.getByTestId('architecture-role-shared')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
+  await expect(page.getByTestId('architecture-modules-shared')).toContainText('ui');
+  await expect(page.getByTestId('architecture-imports-shared')).toContainText('src/shared/lib/x.ts');
+});
 
-  await page.getByTestId('architecture-graph-box-application').click();
-  expect(new URL(page.url()).searchParams.get('role')).toBe('application');
+test('choosing another row header moves the pane and the address to that role', async ({ page }) => {
+  await openRecordedStorefront(page);
+  await page.getByTestId('architecture-role-features').click();
+  await expect(page.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'features');
+  await expect(page.getByTestId('architecture-modules-features')).toContainText('cart');
+  expect(new URL(page.url()).searchParams.get('role')).toBe('features');
 
   await page.reload();
-  await expect(page.getByTestId('architecture-graph-box-application')).toHaveAttribute('aria-pressed', 'true');
-
-  /* Deselecting takes it back out, so the bare address keeps meaning "nothing chosen". */
-  await page.getByTestId('architecture-graph-box-application').click();
-  expect(new URL(page.url()).searchParams.get('role')).toBeNull();
-
-  /* A role the profile lacks gets no detail panel, and the screen says the link was declined. */
-  await page.goto('/ko/architecture/?role=not-a-real-role');
-  await expect(page.locator('[data-testid^="architecture-concepts-"]')).toHaveCount(0);
-  const notice = page.getByTestId('architecture-role-not-in-profile');
-  await expect(notice).toBeVisible();
-  await expect(notice).toContainText('not-a-real-role');
-
-  await page.goto('/ko/architecture/?view=architecture');
-  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute('data-architecture-inspector', 'none');
-  await expect(notice).toHaveCount(0);
-  /* The button opens the profile's rules, never a role's answer: nothing has been chosen. */
-  await page.getByTestId('architecture-inspector-toggle').click();
-  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute('data-architecture-inspector', 'rules');
-  await expect(page.getByTestId('architecture-rules')).toBeVisible();
-
-  await page.goto('/ko/architecture/?role=application');
-  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute('data-architecture-inspector', 'role');
-  await expect(page.getByTestId('architecture-role-detail-empty')).toHaveCount(0);
-  await expect(notice).toHaveCount(0);
+  await expect(page.getByTestId('architecture-role-features')).toHaveAttribute('aria-pressed', 'true', { timeout: 60_000 });
 });
 
-for (const [width, height] of [
-  [1512, 945],
-  [1280, 800],
-] as const) {
-  test(`at ${width}x${height} every role band is in view before a scan, with no arc, scroll or covered label`, async ({ page }) => {
-    await seedFirstRunSeen(page);
-    await useDogfoodSample(page);
-    await page.setViewportSize({ width, height });
-    await page.goto('/ko/architecture/?view=architecture&guides=off');
-    const graph = page.getByTestId('architecture-graph');
-    await expect(graph).toBeVisible({ timeout: 60_000 });
-    await page.evaluate(() => document.fonts.ready);
-    await waitForBoxStill(graph);
+test('nothing on the architecture tab unfolds in place', async ({ page }) => {
+  await openRecordedStorefront(page);
+  await expect(page.getByTestId('architecture-role-detail')).toBeVisible();
+  /* The app shell's own disclosures (folder switcher, settings) are outside the sub-tab. */
+  await expect(page.getByRole('tabpanel').locator('[aria-expanded]')).toHaveCount(0);
+});
 
-    await expect(page.locator('[data-graph-box]')).toHaveCount(7);
-    await expect(graph).toHaveAttribute('data-arc-count', '0');
-    await expect(page.getByTestId('architecture-legend')).toHaveCount(0);
-    await expect(page.getByTestId('architecture-status')).toHaveText('아직 검사하지 않음');
-
-    const fit = await page.evaluate(() => {
-      const stage = document.querySelector('[data-testid="architecture-stage"]') as HTMLElement;
-      const frame = stage.getBoundingClientRect();
-      const outside = [...document.querySelectorAll('[data-graph-box]')]
-        .filter((box) => {
-          const rect = box.getBoundingClientRect();
-          return rect.top < frame.top - 1 || rect.bottom > frame.bottom + 1 || rect.right > frame.right + 1;
-        })
-        .map((box) => box.getAttribute('data-graph-box'));
-      return {
-        outside,
-        stageScrolls: stage.scrollHeight > stage.clientHeight + 1,
-        pageScrollsSideways: document.documentElement.scrollWidth > window.innerWidth,
-        bandsScrollSideways: [...document.querySelectorAll('[data-testid^="architecture-band-"]')].filter(
-          (band) => band.scrollWidth > band.clientWidth + 1,
-        ).length,
-      };
-    });
-    expect(fit.outside, `${fit.outside.join(', ')} out of view`).toEqual([]);
-    expect(fit.stageScrolls).toBe(false);
-    expect(fit.pageScrollsSideways).toBe(false);
-    expect(fit.bandsScrollSideways).toBe(0);
-
-    const overlaps = await readOverlaps(page);
-    expect(overlaps.marks).toBeGreaterThan(14);
-    expect(overlaps.covered, overlaps.covered.join('\n')).toEqual([]);
+test('at 1280x800 the verdict, every cell and the pane are in view and the page does not scroll', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openRecordedStorefront(page);
+  await page.evaluate(() => document.fonts.ready);
+  const fit = await page.evaluate(() => {
+    const inView = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight + 1 && rect.right <= window.innerWidth + 1;
+    };
+    const grid = document.querySelector('[data-testid="architecture-matrix"]')!;
+    const frame = grid.parentElement!.getBoundingClientRect();
+    const clipped = [...grid.querySelectorAll('[data-cell-kind]')]
+      .filter((cell) => {
+        const rect = cell.getBoundingClientRect();
+        return !inView(cell) || rect.bottom > frame.bottom + 1 || rect.right > frame.right + 1;
+      })
+      .map((cell) => cell.getAttribute('data-testid'));
+    const layout = document.querySelector('[data-testid="architecture-layout-scroll"]') as HTMLElement;
+    return {
+      cells: grid.querySelectorAll('[data-cell-kind]').length,
+      clipped,
+      pageScrolls:
+        document.documentElement.scrollHeight > window.innerHeight + 1 ||
+        document.documentElement.scrollWidth > window.innerWidth + 1,
+      layoutScrolls: layout.scrollHeight > layout.clientHeight + 1,
+      verdictInView: inView(document.querySelector('[data-testid="architecture-violation-count"]')!),
+      paneInView: inView(document.querySelector('[data-testid="architecture-role-detail"] h2')!),
+    };
   });
-}
+  expect(fit.cells).toBe(49);
+  expect(fit.clipped, `${fit.clipped.join(', ')} clipped`).toEqual([]);
+  expect(fit.pageScrolls).toBe(false);
+  expect(fit.layoutScrolls).toBe(false);
+  expect(fit.verdictInView).toBe(true);
+  expect(fit.paneInView).toBe(true);
+});
 
-test('an explicit (hexagonal) profile draws the same bands and no rule arc before a scan', async ({ page }) => {
+test("an explicit (hexagonal) profile allows the cells each role's reach names, wherever they fall", async ({ page }) => {
   await page.goto('/en/architecture/?view=architecture&guides=off');
-  const graph = page.getByTestId('architecture-graph');
-  await expect(graph).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByTestId('architecture-band-adapter')).toBeVisible();
-  await expect(page.getByTestId('architecture-band-domain')).toBeVisible();
-  /* Allowed-but-unobserved rules stay in the rules panel; the arcs are only the code's imports. */
-  await expect(graph).toHaveAttribute('data-arc-count', '0');
-  await expect(page.locator('[data-arc-from]')).toHaveCount(0);
+  await expect(page.getByTestId('architecture-matrix')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByTestId('architecture-cell-adapter-domain')).toHaveAttribute('data-cell-kind', 'allowed');
+  await expect(page.getByTestId('architecture-cell-domain-adapter')).toHaveAttribute('data-cell-kind', 'forbidden');
+  await expect(page.getByTestId('architecture-status')).toHaveText('Not checked yet');
 });
 
-test('a recorded profile draws observed imports as named arcs, the violation dashed in red', async ({ page }) => {
-  await openRecordedStorefront(page);
-  const graph = page.getByTestId('architecture-graph');
-  await expect(graph).toHaveAttribute('data-arc-count', '9');
-  await expect(page.getByTestId('architecture-status')).toContainText('거스르는 import 1개');
-
-  const violation = page.getByTestId('architecture-arc-shared-features');
-  await expect(violation).toHaveAttribute('data-arc-violated', 'true');
-  await expect(violation.locator('[data-arc-stroke]')).toHaveAttribute('stroke-dasharray', '4 4');
-  await expect(page.getByTestId('architecture-arc-violation-shared-features')).toBeVisible();
-  await expect(page.getByRole('img', { name: /→ .*: 규칙을 거스르는 import 1개$/ })).toHaveCount(1);
-  for (const hit of await page.locator('[data-testid^="architecture-arc-hit-"]').all()) {
-    await expect(hit).toHaveAccessibleName(/ → /);
-  }
-  await expect(page.getByTestId('architecture-legend')).toBeVisible();
-
-  await waitForAnimationsDone(graph);
-  const overlaps = await readOverlaps(page);
-  expect(overlaps.covered, overlaps.covered.join('\n')).toEqual([]);
-});
-
-test('choosing a band brightens and numbers its arcs, and hovering an arc names it', async ({ page }) => {
-  await openRecordedStorefront(page);
-  await page.getByTestId('architecture-graph-box-views').click();
-  await expect(page.getByTestId('architecture-arc-views-widgets')).toHaveAttribute('data-arc-state', 'bright');
-  await expect(page.getByTestId('architecture-arc-features-shared')).toHaveAttribute('data-arc-state', 'dim');
-  await expect(page.getByTestId('architecture-arc-count-views-widgets')).toHaveText('56');
-  await expect(page.getByTestId('architecture-arc-count-views-shared')).toHaveText('61');
-  await expect(page.getByTestId('architecture-arc-count-features-shared')).toHaveCount(0);
-  await waitForAnimationsDone(page.getByTestId('architecture-graph'));
-  const overlaps = await readOverlaps(page);
-  expect(overlaps.covered, overlaps.covered.join('\n')).toEqual([]);
-
-  /* Hover the stroke itself, at half its length, not the centre of its bounding box. */
-  const point = await page.getByTestId('architecture-arc-hit-features-shared').evaluate((path) => {
-    const stroke = path as SVGPathElement;
-    const at = stroke.getPointAtLength(stroke.getTotalLength() / 2);
-    const screen = new DOMPoint(at.x, at.y).matrixTransform(stroke.getScreenCTM()!);
-    return { x: screen.x, y: screen.y };
-  });
-  await page.mouse.move(point.x, point.y);
-  await expect(page.getByRole('tooltip')).toContainText('피처 → 공유 기반 97');
-});
-
-test('below xl the arc column narrows, then gives way to each band naming its strongest import', async ({ page }) => {
-  await page.setViewportSize({ width: 1040, height: 720 });
-  await openRecordedStorefront(page);
-  await expect(page.getByTestId('architecture-graph')).toHaveAttribute('data-arc-count', '9');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
-  /* Without a side dock, the rules toggle brings the rules section on screen instead. */
-  await page.getByTestId('architecture-inspector-toggle').click();
-  await expect(page.getByTestId('architecture-rules')).toBeInViewport();
-
-  await page.setViewportSize({ width: 560, height: 900 });
-  await expect(page.getByTestId('architecture-graph')).toHaveAttribute('data-arc-count', '0');
-  await expect(page.getByTestId('architecture-strongest-out-views')).toContainText('61');
-  await expect(page.getByTestId('architecture-strongest-out-shared')).toContainText('1');
-  const sideways = await page.evaluate(() => ({
-    page: document.documentElement.scrollWidth > window.innerWidth,
-    bands: [...document.querySelectorAll('[data-testid^="architecture-band-"]')].filter(
-      (band) => band.scrollWidth > band.clientWidth + 1,
-    ).length,
-  }));
-  expect(sideways).toEqual({ page: false, bands: 0 });
+test('a link to a role the profile lacks is declined in words', async ({ page }) => {
+  await page.goto('/ko/architecture/?view=architecture&role=not-a-real-role');
+  const notice = page.getByTestId('architecture-role-not-in-profile');
+  await expect(notice).toBeVisible({ timeout: 60_000 });
+  await expect(notice).toContainText('not-a-real-role');
+  await expect(page.getByTestId('architecture-role-detail')).toBeVisible();
 });
