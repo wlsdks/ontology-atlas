@@ -23,9 +23,26 @@ has none, it reads widening windows back from today (7, 31 and 366 days, then
 the whole history) and opens the day of the newest change it finds. The digest
 is built only from local history; it makes no agent, model or network request.
 
+The digest uses the workbench page width.
+
 - **Headline.** One number: the changes merged in the period, with the count of
-  distinct files they touched.
-- **Worth a look.** At most three changes, each listed once, filled in this
+  distinct files they touched. Under it, the kinds of work: each title's
+  conventional-commit type exactly as its author typed it (`feat`, `fix`), the
+  five most used first and the rest, including titles without a type, summed
+  under "Other changes". The line is not drawn when under half the titles carry
+  a type.
+- **Timeline.** Beside the headline, when the period's changes were merged. A
+  day draws its 24 hours with one tick per change at its local commit minute;
+  ticks too close to draw apart stack upward. A week, a month or custom dates up
+  to 62 days draw one column per day, and a year or longer custom dates one
+  column per week starting Monday, each column's height the square root of its
+  count. Notable changes take the accent. Each tick or column is a button named
+  by its time or date and count; pointing at or focusing it names its newest
+  title, and pressing it selects that change in its group. An empty period
+  draws the empty axis.
+- **Worth a look.** Cards of equal height, each leading with its reason, then
+  the title, number and time, and up to three recorded concepts it touches,
+  linking to the map. Pressing a card selects that change. At most three changes, each listed once, filled in this
   order: reverts (title starting with "revert" after any `Merge #N:` prefix, or
   "This reverts commit" in the message); changes marked breaking by their author
   (`!` before the title's colon, or "BREAKING CHANGE" in the message); changes
@@ -39,19 +56,27 @@ is built only from local history; it makes no agent, model or network request.
   When under half the titles in the period carry a label, changes group by the top-level
   directory holding most of their files instead. The seven largest groups are
   named, ordered by count then name; every other change joins "Other changes",
-  always last, so the group counts add up to the headline. The largest named
-  group's bar carries the accent; the rest are neutral.
-- Pressing a group expands it in place to its changes (title, `#number`, time),
-  40 at a time, and names up to three recorded concepts whose implementation
-  paths the group's files touch, each linking to the map. A change's GitHub link
-  appears only when the repository has exactly one github.com remote.
-- Pressing a change opens its original in Originals; going back returns focus
-  to that row with the group still expanded.
+  always last, so the group counts add up to the headline. The groups are a
+  list beside the selected group, nothing unfolds in place. Each group shows
+  its count, its newest title and a bar of its count against the largest group,
+  split into the headline's kinds of work; the largest named group's bar
+  carries the accent, the rest are neutral steps.
+- One group is always selected, the first on arrival; arrow keys, Home and End
+  move the selection. Beside the list the selected group names up to three
+  recorded concepts whose implementation paths its files touch, each linking to
+  the map, and lists its changes (time, title, `#number`) newest first, 40 at a
+  time. On narrow screens the list sits above the selected group.
+- Pressing a change shows its detail (description, changed files, read commit)
+  in place of the lower part of the list, with a way back to the list. A
+  change's GitHub link appears only when the repository has exactly one
+  github.com remote. Reading the commit opens it in Originals; going back
+  returns focus to that row with the same group and change selected.
 
 A read cut short by the change or size limit says how many of the newest
 changes were counted; any other limited read says only that it is limited. An empty
 period shows zero and, when history holds a newer change, offers the latest
-changes.
+changes. While history is read, the waiting mark stands in the centre of the
+content area.
 
 ## Originals
 
