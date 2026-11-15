@@ -266,10 +266,12 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   settles it, and reduced motion draws the tree grown and lands every flight at
   once. At rest the tree draws no frame.
 - **Neural** — the ontology as cells and dependencies. Each domain's concepts
-  gather in their own cluster, set on a ring round the spin axis and sized by its
-  member count, so no two clusters meet at the rest pose (seen from 0.85 rad above;
-  turning may pass one across another). Concepts no domain reaches gather as one
-  small group round the project at the ring's centre. Relations and deterministic
+  gather in their own cluster, sized by its member count. Clusters are packed where
+  the rest pose draws them (seen from 0.85 rad above), nearest the centre first, and
+  set at seven depth levels so that screen neighbours stand at different depths: no
+  two clusters meet at rest, a nearer cluster draws larger, and turning shows
+  parallax and may pass one across another. Concepts no domain reaches gather as one
+  small group round the project. Relations and deterministic
   relation communities settle positions inside a cluster. Group proximity is
   inferred layout, not a new domain or an accepted relation. A concept is a filled
   cell in the strong ink, a capability larger and with a dark nucleus, both growing
@@ -280,7 +282,13 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   by colour, and containment is not drawn as a line: only declared `depends_on`
   relations are, as tapered axons that bow a little inside a cluster and share one
   tract through the gap between clusters. Paint, pointer hit test and measurement
-  use the same route. Every domain carries its name and a count line (capabilities,
+  use the same route. Where the browser opens a hardware WebGL2 context, three.js
+  paints the frame on a canvas beside the map canvas: a cell is a lit sphere that
+  hides what stands behind it, an axon is a ribbon, and each cluster carries a
+  faint shell round its own cells. Without that context, or when the painter's code
+  or context fails, the canvas painter draws the same frame as flat discs and lines
+  with no shell; picking, names and every count are the same in both
+  (`src/widgets/ontology-map/neural-gl/README.md`). Every domain carries its name and a count line (capabilities,
   elements, stale) above its cluster, placed before any capability name. Titles
   stand nearest first: a title that would sit on another cluster or a nearer title
   fades out, and with a focus a receded title gives way to the lit names. While any
