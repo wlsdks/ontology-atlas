@@ -10,14 +10,17 @@ routes: [/automations]
 
 ### `/automations` — Schedules and their results
 
-The installed app keeps Ontology and Documents in separate tabs. Each schedule row
-shows its state, cadence, next due time, and latest result. Opening a row reveals
-its latest report and the Run now, Edit, Pause/Resume, and Remove actions (removal requires
-an inline confirmation);
-older runs expand on demand. Document results retain checked counts, stale pages,
-updated files, and tool receipts when recorded. An empty lane presents one first
-schedule action. A lane with schedules is one list panel whose column header uses the row's own grid, with the
-three facts after it. While a lane has no schedule, or the screen cannot hold one yet, the page is
+The installed app keeps Ontology and Documents in separate tabs. A lane with schedules is one
+table panel, a run history under it and the three facts after that. Every schedule row has one
+height and never unfolds: the name with its state (Scheduled, Paused, Off on this Mac, Running),
+the cadence with the next run under it, the latest result with its one-sentence summary (cut to
+one line, the full sentence on hover) and its time, and at the right end **Run now** and a `…`
+menu holding Edit, Pause or Resume, and Remove. The menu opens above its trigger, right edges
+aligned. Remove asks under the row before it removes, and focus returns to the menu's button
+when the question is cancelled. Pressing a row, or Enter on it, selects it: the run history then
+reads "Run history · <name>", shows only that schedule's runs, and a **Show all** chip clears the
+selection. The row's own buttons never select it. With nothing selected the history shows every
+run of the lane. An empty lane presents one first schedule action. While a lane has no schedule, or the screen cannot hold one yet, the page is
 one stage centred in the window: an artwork of an example schedule (its name marked "e.g. …", with
 the default cadence) over a time line whose runs each leave a result, a title, one sentence for the
 state and the one action. Saving the first schedule fades the stage into the list while the new row
@@ -41,7 +44,7 @@ Unreadable or malformed files remain protected from overwrite; when Atlas cannot
 `.ontology-atlas/rounds.json`, as after the folder moved, the screen names that file and asks
 to check the folder is where Atlas opened it, instead of asking for the file to be fixed.
 Switching lanes temporarily disables the previous lane's create action until navigation
-commits. A link that names a schedule (`?round=<id>`) opens that schedule's row.
+commits. A link that names a schedule (`?round=<id>`) selects that schedule's row.
 
 A document schedule is a rule the Library keeps on its own while Atlas is open on this Mac:
 what to check, how often, and what it may write. **Pages still match their sources** hashes
@@ -56,21 +59,26 @@ naming the refusal in the run. Schedules live in `.ontology-atlas/rounds.json` a
 in `.ontology-atlas/rounds-ledger.jsonl`. Decision:
 `docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`.
 
-The Documents lane owns its run history. Once a document pass has run, a **Run history**
-section stands below the schedule list: the ledger of passes on a time axis, newest first,
+Each lane owns its run history, drawn below the schedule list once a pass of that lane has run.
+The Ontology lane lists its runs newest first, each naming its schedule while nothing is
+selected, with its result, the pages to review and, when the agent used or was refused a tool,
+a **Tool activity** button that opens the record in a centred dialog; a long history shows ten
+runs at a time with a button for the next ten. The Documents lane draws the ledger of passes on
+a time axis, newest first,
 with columns for time, schedule and result. A held pass is one quiet line; a pass that found a
 stale page, wrote, refused or failed is a card naming its pages, each a press into Wiki; a pass
 in flight stands at the top while it runs. Sleep gaps stay out until the person ticks the
 checkbox that counts them, which appears only when a gap was recorded. Before any document
 pass has run, or with only sleep gaps recorded, nothing is drawn: the schedule list already
-says nothing has run. A `?round=<id>` link narrows the history to that schedule, named beside
-the heading, until the person opens or closes a row. The retired Library address
+says nothing has run. A selected schedule that has not run yet says so under the heading.
+The retired Library address
 `/library/?tab=rounds` replaces itself with `/automations/?kind=documents`, keeping `round`.
 Decision: `docs/records/decisions/2026-11-14-automations-own-run-records-*.md`.
 
-A failed run states what stopped it and what to do next,
+A failed run states what stopped it and what to do next, on its row and in the history,
 and a run that found no agent links to Agents. A run whose result or next time could not be
-written still moves the schedule on, and its row says which file refused the write.
+written still moves the schedule on; its row marks the result "Not recorded" and the run
+history says which file refused the write.
 
 Times follow this Mac's wall clock: a run falls on the first minute the clock reads the
 cadence's grid, and a next run computed in another time zone moves to this one's grid and is
@@ -106,6 +114,7 @@ A schedule runs, by the clock or by Run now, only when the folder has it on and 
 allowed it exactly as it now reads: its kind, cadence, places, focus or query, what it
 does to a stale page, and its cap. `rounds.json` travels with the folder, so a clone can
 arrive with a round switched on; such a round, or one the folder changed since, shows
-"Not on this Mac", its whole definition in words, and one press that allows it. Saving,
+"Off on this Mac" on its row and, in a full-width strip always open under that row, its whole
+definition in words and one press that allows it; Run now waits until then. Saving,
 editing or resuming a schedule here allows it, pausing keeps the allowance, and removing
 forgets it.
