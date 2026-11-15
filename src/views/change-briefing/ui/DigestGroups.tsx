@@ -17,15 +17,15 @@ const CONCEPTS_SHOWN = 3;
 const DIRECTORIES_SHOWN = 4;
 const PATHS_SHOWN = 6;
 
-/** Neutral steps for the period's kinds in rank order, then the remainder; the bars separate them by 1px. */
+/** The neutral ladder for the period's kinds, loudest first; the remainder is the quietest step. */
 const KIND_INKS = [
+  'bg-[color:var(--color-text-primary)]',
   'bg-[color:var(--color-text-secondary)]',
   'bg-[color:var(--color-text-tertiary)]',
   'bg-[color:var(--color-text-quaternary)]',
   'bg-[color:var(--color-indigo-a46)]',
-  'bg-[color:var(--color-indigo-a28)]',
 ] as const;
-const OTHER_KIND_INK = 'bg-[color:var(--color-indigo-a16)]';
+const OTHER_KIND_INK = 'bg-[color:var(--color-indigo-a28)]';
 const ACCENT_INK = 'bg-[color:var(--color-indigo-accent)]';
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
@@ -119,6 +119,14 @@ function GroupOption({ group, kinds, selected, accent, share, optionRef, onPress
       {segments.map((value, index) => value > 0 && <span key={index} className={cn('h-full min-w-px first:rounded-l-micro last:rounded-r-micro', accent ? ACCENT_INK : !kinds ? KIND_INKS[2] : index < kinds.kinds.length ? KIND_INKS[index] : OTHER_KIND_INK)} style={{ flexGrow: value }} />)}
     </span>
   </div>;
+}
+
+/** The period's kinds as one segmented bar, in the legend's order and inks. */
+export function KindsBar({ kinds }: { kinds: WorkKinds }) {
+  const counts = [...kinds.kinds.map(kind => kind.count), kinds.other];
+  return <span aria-hidden data-testid="change-digest-kinds-bar" className="flex h-2 w-full gap-px">
+    {counts.map((count, index) => count > 0 && <span key={index} className={cn('h-full min-w-px first:rounded-l-micro last:rounded-r-micro', index < kinds.kinds.length ? KIND_INKS[index] : OTHER_KIND_INK)} style={{ flexGrow: count }} />)}
+  </span>;
 }
 
 /** A kinds line in the period's ink order, for a whole period or one group. */

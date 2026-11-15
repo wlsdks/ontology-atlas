@@ -8,7 +8,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import type { BriefingRange } from '../model/briefing-model';
 import { changeTitle, type ChangeDigest as Digest, type NotableChange, type NotableReason } from '../model/change-digest';
 import type { TimelineUnit } from '../model/digest-timeline';
-import { ConceptLinks, DigestGroups, KindsLine, PAGE_SIZE, type DigestSelection } from './DigestGroups';
+import { ConceptLinks, DigestGroups, KindsBar, KindsLine, PAGE_SIZE, type DigestSelection } from './DigestGroups';
 import { DigestSummarySeat } from './DigestSummarySeat';
 import { DigestTimeline } from './DigestTimeline';
 
@@ -67,7 +67,10 @@ export function ChangeDigest({ digest, range, unit, selection, onSelection, part
     {partialCount !== null && <p role="status" data-testid="change-digest-partial" className="text-body text-[color:var(--color-status-warning)]">{partialCount === 'limited' ? t('partialOther') : t('partial', { count: partialCount })}</p>}
     <HeadlineBand count={digest.changes} figure={<DigestTimeline unit={unit} range={range} changes={changes} notable={notable} onSelect={reveal} />}>
       <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t('headline', { count: digest.changes, files: digest.files })}</p>
-      {digest.kinds && <KindsLine kinds={digest.kinds} counts={[...digest.kinds.kinds.map(kind => kind.count), digest.kinds.other]} label={t('kinds')} className="text-body" />}
+      {digest.kinds && <div className="space-y-2.5 pt-2">
+        <KindsBar kinds={digest.kinds} />
+        <KindsLine kinds={digest.kinds} counts={[...digest.kinds.kinds.map(kind => kind.count), digest.kinds.other]} label={t('kinds')} className="text-body" />
+      </div>}
     </HeadlineBand>
     {digest.notable.length > 0 && <NotableCards notable={digest.notable} conceptTitle={conceptTitle} formatTime={formatTime} onReveal={reveal} />}
     <DigestSummarySeat />
