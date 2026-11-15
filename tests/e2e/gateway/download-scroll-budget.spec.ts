@@ -124,27 +124,18 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
       const target = document.querySelector(`[data-testid="${id}"]`)!;
       return target.getBoundingClientRect().top + host.scrollTop - 80;
     }, testId);
-  // The clip sits in the hero, so the leg parks on it while it plays before it reaches the figures.
+  // The clip sits in the hero, so the leg parks on it while it plays before it reaches the cards.
   const demoTop = await topOf("gateway-demo-section");
   await wheelTo(page, (top) => top >= demoTop);
   // measurement window: part of the leg
   await page.waitForTimeout(4000);
-  const figureTop = await topOf("download-conduction-figure");
-  await wheelTo(page, (top) => top >= figureTop);
-  await page.getByTestId("download-conduction-figure").scrollIntoViewIfNeeded();
-  const figure = page.getByTestId("download-conduction-figure");
-  await expect(figure).toHaveAttribute("data-conduction-state", /finished|still/, { timeout: 150_000 });
-  for (const id of ["download-change-figure", "download-start-figure"]) {
-    const showpiece = page.getByTestId(id);
-    const top = await showpiece.evaluate((element) => {
-      const host =
-        [...document.querySelectorAll<HTMLElement>("*")].find(
-          (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
-        ) ?? document.scrollingElement!;
-      return element.getBoundingClientRect().top + host.scrollTop - 80;
-    });
+  // Each block's drawing plays its entrance while the leg rests on it.
+  for (const id of ["gateway-loop-cards", "gateway-start-steps"]) {
+    const top = await topOf(id);
     await wheelTo(page, (scrolled) => scrolled >= top);
-    await expect(showpiece).toHaveAttribute("data-showpiece-state", /finished|still/, { timeout: 60_000 });
+    await expect(page.getByTestId(id)).toHaveAttribute("data-gateway-entrance", /entering|still/);
+    // measurement window: part of the leg
+    await page.waitForTimeout(1500);
   }
   await wheelTo(page, () => false);
   // measurement window: part of the leg

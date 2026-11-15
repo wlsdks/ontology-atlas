@@ -386,13 +386,14 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  it('walks decision → app window → conduction → screens → colophon, with the decision before the window', () => {
+  it('walks decision → app window → the three moments → screens → the steps → colophon', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('gateway-hero-cta');
-    const conduction = screen.getByTestId('download-conduction-figure');
+    const loop = screen.getByTestId('gateway-loop-cards');
+    const steps = screen.getByTestId('gateway-start-steps');
     const demo = screen.getByTestId('demo-stage');
     const architecture = screen.getByTestId('gateway-architecture-capture');
     const library = screen.getByTestId('gateway-library-capture');
@@ -401,10 +402,11 @@ describe('DownloadPage', () => {
     for (const [earlier, later] of [
       [heading, primaryCta],
       [primaryCta, demo],
-      [demo, conduction],
-      [conduction, architecture],
+      [demo, loop],
+      [loop, architecture],
       [architecture, library],
-      [library, colophon],
+      [library, steps],
+      [steps, colophon],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,

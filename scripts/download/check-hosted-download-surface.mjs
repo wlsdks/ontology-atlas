@@ -180,8 +180,6 @@ function assertOkJson(page, path) {
  * literal `"undefined"`, which the page template renders in the same slot, so needle and haystack
  * match and the guard passes.
  */
-const stripKeyTags = (title) => title.replace(/<\/?key>/g, "");
-
 function assertIncludes(text, label, needles) {
   const unusable = needles.filter((needle) => typeof needle !== "string" || needle.length === 0);
   if (unusable.length > 0) {
@@ -265,9 +263,9 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // with `\n` (the headline) never matches, so the headline is not a needle. One needle per section,
     // so a section dropping out of a deployment is caught.
     downloadCopy.eyebrow,
-    stripKeyTags(downloadCopy.change.title),
+    downloadCopy.loop?.title,
     downloadCopy.screens.title,
-    stripKeyTags(downloadCopy.start.title),
+    downloadCopy.start?.title,
     // The **last** place the honesty facts live. Since the verification rail was
     // removed, the only thing stating signing, notarisation, and "nothing is sent to a
     // server" is the hero's trust line — if that line drops out of a deployment, the page
