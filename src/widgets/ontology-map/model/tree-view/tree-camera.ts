@@ -16,8 +16,10 @@ const TREE_ZOOM_MAX = 32;
 
 /** Camera distance in tree radii: perspective that reads as depth without bending the crown. */
 const TREE_CAMERA_DISTANCE_RADII = 3;
-/** Share of the free area's shorter half-side the tree sphere's silhouette fills at zoom 1. */
+/** Share of the free area's binding side the tree's swept silhouette fills at zoom 1. */
 const TREE_FIT_FILL = 0.96;
+/** Pitch steps of the silhouette table; the Lipschitz margin it costs is under 1% of the height. */
+const TREE_FIT_PITCH_STEPS = 128;
 /** Below this the coast is at rest, or its exponential tail keeps the loop awake. */
 const TREE_YAW_REST_RAD_PER_MS = 0.000005;
 
@@ -29,14 +31,150 @@ export const TREE_POSE_REST: Readonly<TreePose> = Object.freeze({
   panY: 0,
 });
 
-/** Orbits the tree's sphere centre; the camera looks along -z after yaw, from above by `pitch`. */
+/**
+ * What the tree shows over every yaw, in world units at the orbit centre's depth (screen offset
+ * divided by unit x zoom). `halfWidth` and `height` are the worst case over the settled pitch
+ * range; `middleUp` is the swept box's vertical middle at each step of that range.
+ */
+interface TreeSilhouette {
+  orbitY: number;
+  radius: number;
+  distance: number;
+  halfWidth: number;
+  height: number;
+  middleUp: Float64Array;
+}
+
+const silhouettes = new WeakMap<TreeLayout, TreeSilhouette>();
+
+/** O(V log V) once per layout; every later aim reads the cache in O(1). */
+function silhouetteOf(layout: TreeLayout): TreeSilhouette {
+  let silhouette = silhouettes.get(layout);
+  if (!silhouette) {
+    silhouette = scanSilhouette(layout);
+    silhouettes.set(layout, silhouette);
+  }
+  return silhouette;
+}
+
+/**
+ * A point at height y and distance r from the trunk axis sweeps a circle as the tree turns.
+ * Over that circle the projected height is monotone in the point's offset toward the camera,
+ * so its extremes sit at offsets +-r; the projected half-width peaks at r·D / sqrt(K² - cos²p·r²)
+ * with K = D - sin p·(y - orbitY). Every level set of these is a line in the (r, y) plane, so
+ * the extremes over the tree lie on the convex hull of its (r, y) profile.
+ */
+function scanSilhouette(layout: TreeLayout): TreeSilhouette {
+  const { position, control } = layout;
+  const count = layout.model.count;
+  const orbitY = layout.centre[1];
+  const profileR: number[] = [0];
+  const profileY: number[] = [0];
+  let farthest = Math.abs(orbitY);
+  const addPoint = (x: number, y: number, z: number) => {
+    const r = Math.hypot(x, z);
+    profileR.push(r);
+    profileY.push(y);
+    farthest = Math.max(farthest, Math.hypot(r, y - orbitY));
+  };
+  for (let node = 0; node < count; node++) {
+    addPoint(position[node * 3], position[node * 3 + 1], position[node * 3 + 2]);
+    addPoint(control[node * 6], control[node * 6 + 1], control[node * 6 + 2]);
+    addPoint(control[node * 6 + 3], control[node * 6 + 4], control[node * 6 + 5]);
+  }
+  const radius = Math.max(layout.radius, farthest) || 1;
+  const distance = radius * TREE_CAMERA_DISTANCE_RADII;
+  const hull = profileHull(profileR, profileY);
+  const middleUp = new Float64Array(TREE_FIT_PITCH_STEPS + 1);
+  const box = { top: 0, bottom: 0, halfWidth: 0 };
+  let height = 0;
+  let halfWidth = 0;
+  for (let step = 0; step <= TREE_FIT_PITCH_STEPS; step++) {
+    sweptBoxAt(pitchAtStep(step), hull, orbitY, distance, box);
+    height = Math.max(height, box.top - box.bottom);
+    halfWidth = Math.max(halfWidth, box.halfWidth);
+    middleUp[step] = (box.top + box.bottom) / 2;
+  }
+  // Every projected coordinate moves at most `slope` per radian of pitch, so between steps the
+  // box can grow by half a step's worth, and the interpolated middle can drift by as much.
+  const slope = (distance * radius * (distance + 2 * radius)) / (distance - radius) ** 2;
+  const stepRad = (TREE_PITCH_MAX - TREE_PITCH_MIN) / TREE_FIT_PITCH_STEPS;
+  return {
+    orbitY,
+    radius,
+    distance,
+    halfWidth: halfWidth + (slope * stepRad) / 2,
+    height: height + 2 * slope * stepRad,
+    middleUp,
+  };
+}
+
+function pitchAtStep(step: number): number {
+  return TREE_PITCH_MIN + ((TREE_PITCH_MAX - TREE_PITCH_MIN) * step) / TREE_FIT_PITCH_STEPS;
+}
+
+/** Upper convex hull plus lower convex hull of the (r, y) points (monotone chain), as [r, y] pairs. */
+function profileHull(rs: number[], ys: number[]): Float64Array {
+  const order = rs.map((_, i) => i).sort((a, b) => rs[a] - rs[b] || ys[a] - ys[b]);
+  const chain: number[] = [];
+  const turnsLeft = (a: number, b: number, c: number) =>
+    (rs[b] - rs[a]) * (ys[c] - ys[a]) - (ys[b] - ys[a]) * (rs[c] - rs[a]) > 0;
+  for (const pass of [order, [...order].reverse()]) {
+    const start = chain.length;
+    for (const i of pass) {
+      while (chain.length >= start + 2 && !turnsLeft(chain[chain.length - 2], chain[chain.length - 1], i)) chain.pop();
+      chain.push(i);
+    }
+    chain.pop();
+  }
+  if (chain.length === 0) chain.push(order[0]);
+  const hull = new Float64Array(chain.length * 2);
+  chain.forEach((i, k) => {
+    hull[k * 2] = rs[i];
+    hull[k * 2 + 1] = ys[i];
+  });
+  return hull;
+}
+
+function sweptBoxAt(
+  pitch: number,
+  hull: Float64Array,
+  orbitY: number,
+  distance: number,
+  out: { top: number; bottom: number; halfWidth: number },
+): void {
+  const cos = Math.cos(pitch);
+  const sin = Math.sin(pitch);
+  out.top = -Infinity;
+  out.bottom = Infinity;
+  out.halfWidth = 0;
+  for (let k = 0; k < hull.length; k += 2) {
+    const r = hull[k];
+    const h = hull[k + 1] - orbitY;
+    for (const toward of [r, -r]) {
+      const up = (distance * (cos * h - sin * toward)) / (distance - sin * h - cos * toward);
+      out.top = Math.max(out.top, up);
+      out.bottom = Math.min(out.bottom, up);
+    }
+    const reach = distance - sin * h;
+    out.halfWidth = Math.max(out.halfWidth, (distance * r) / Math.sqrt(reach * reach - cos * cos * r * r));
+  }
+}
+
+/** The swept box's vertical middle at `pitch`, interpolated; overshoot past the range holds the end. */
+function middleUpAt(silhouette: TreeSilhouette, pitch: number): number {
+  const at = ((clampTreePitch(pitch) - TREE_PITCH_MIN) / (TREE_PITCH_MAX - TREE_PITCH_MIN)) * TREE_FIT_PITCH_STEPS;
+  const step = Math.min(TREE_FIT_PITCH_STEPS - 1, Math.floor(at));
+  const t = at - step;
+  return silhouette.middleUp[step] * (1 - t) + silhouette.middleUp[step + 1] * t;
+}
+
+/** Orbits a point on the trunk axis; the camera looks along -z after yaw, from above by `pitch`. */
 class OrbitTreeProjector implements TreeProjector {
   unit = 1;
   near = 0;
   far = 0;
-  private centreX = 0;
-  private centreY = 0;
-  private centreZ = 0;
+  private orbitY = 0;
   private cosYaw = 1;
   private sinYaw = 0;
   private cosPitch = 1;
@@ -46,38 +184,34 @@ class OrbitTreeProjector implements TreeProjector {
   private originX = 0;
   private originY = 0;
 
-  aim(
-    layout: Pick<TreeLayout, "centre" | "radius">,
-    pose: TreePose,
-    canvas: { width: number; height: number },
-    free: TreeRect,
-  ): void {
+  aim(layout: TreeLayout, pose: TreePose, canvas: { width: number; height: number }, free: TreeRect): void {
     const hasFree = hasArea(free);
     const rectX = hasFree ? free.x : 0;
     const rectY = hasFree ? free.y : 0;
     const rectWidth = hasFree ? free.width : canvas.width;
     const rectHeight = hasFree ? free.height : canvas.height;
-    const radius = layout.radius > 0 ? layout.radius : 1;
-    this.centreX = layout.centre[0];
-    this.centreY = layout.centre[1];
-    this.centreZ = layout.centre[2];
+    const silhouette = silhouetteOf(layout);
+    this.orbitY = silhouette.orbitY;
     this.cosYaw = Math.cos(pose.yaw);
     this.sinYaw = Math.sin(pose.yaw);
     this.cosPitch = Math.cos(pose.pitch);
     this.sinPitch = Math.sin(pose.pitch);
-    this.distance = radius * TREE_CAMERA_DISTANCE_RADII;
+    this.distance = silhouette.distance;
     this.zoom = pose.zoom;
-    this.unit = (Math.max(0, Math.min(rectWidth, rectHeight)) / 2) * TREE_FIT_FILL / silhouetteRadius(radius);
-    this.near = this.distance - radius;
-    this.far = this.distance + radius;
+    const widthUnit = silhouette.halfWidth > 0 ? rectWidth / (2 * silhouette.halfWidth) : Infinity;
+    const heightUnit = silhouette.height > 0 ? rectHeight / silhouette.height : Infinity;
+    const fitUnit = Math.min(widthUnit, heightUnit);
+    this.unit = Number.isFinite(fitUnit) ? Math.max(0, fitUnit) * TREE_FIT_FILL : 1;
+    this.near = silhouette.distance - silhouette.radius;
+    this.far = silhouette.distance + silhouette.radius;
     this.originX = rectX + rectWidth / 2 + pose.panX;
-    this.originY = rectY + rectHeight / 2 + pose.panY;
+    this.originY = rectY + rectHeight / 2 + pose.panY + middleUpAt(silhouette, pose.pitch) * this.unit * pose.zoom;
   }
 
   project(x: number, y: number, z: number, out: TreeScreenPoint): void {
-    const dx = x - this.centreX;
-    const dy = y - this.centreY;
-    const dz = z - this.centreZ;
+    const dx = x;
+    const dy = y - this.orbitY;
+    const dz = z;
     const across = this.cosYaw * dx + this.sinYaw * dz;
     const toward = -this.sinYaw * dx + this.cosYaw * dz;
     const up = this.cosPitch * dy - this.sinPitch * toward;
@@ -95,20 +229,17 @@ function hasArea(free: TreeRect): boolean {
   return free.width > 0 && free.height > 0;
 }
 
-/** A sphere of `radius` centred on the view axis shows as a disc of this many world units at scale 1. */
-function silhouetteRadius(radius: number): number {
-  const d = TREE_CAMERA_DISTANCE_RADII;
-  return (radius * d) / Math.sqrt(d * d - 1);
-}
-
 export function createTreeProjector(): TreeProjector {
   return new OrbitTreeProjector();
 }
 
-/** `zoom = 1` fits the tree's sphere in `free` at every yaw; `canvas` stands in when `free` is empty. */
+/**
+ * `zoom = 1` fits the tree's silhouette swept over every yaw in `free`, its box centred, with one
+ * scale for the whole settled pitch range; `canvas` stands in when `free` is empty.
+ */
 export function aimTreeProjector(
   p: TreeProjector,
-  layout: Pick<TreeLayout, "centre" | "radius">,
+  layout: TreeLayout,
   pose: TreePose,
   canvas: { width: number; height: number },
   free: TreeRect,
@@ -167,8 +298,8 @@ function nearestYaw(target: number, current: number): number {
 
 /** Turns the node to the near side the short way; pitch, zoom and pan stay as in `from`. */
 export function treePoseFacing(layout: TreeLayout, node: number, from: TreePose, out: TreePose): void {
-  const dx = layout.position[node * 3] - layout.centre[0];
-  const dz = layout.position[node * 3 + 2] - layout.centre[2];
+  const dx = layout.position[node * 3];
+  const dz = layout.position[node * 3 + 2];
   const onAxis = Math.hypot(dx, dz) < 1e-6;
   // After yaw the node's offset toward the camera is r·sin(θ − yaw), greatest at yaw = θ − π/2.
   const yaw = onAxis ? from.yaw : nearestYaw(Math.atan2(dz, dx) - Math.PI / 2, from.yaw);
