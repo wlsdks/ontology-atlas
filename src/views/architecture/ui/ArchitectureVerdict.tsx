@@ -2,10 +2,12 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 
-import type { ArchitectureRecord } from '@/entities/architecture-record';
+import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
 import { cn } from '@/shared/lib/cn';
 
 type Conformance = ArchitectureRecord['brief']['conformance'];
+/** What the verdict stands on: a record's result, or why there is none to show yet. */
+type VerdictState = ArchitectureRecordStatus | 'loading' | 'missing';
 
 /**
  * The answer the tab is opened for: how many imports break the rules, as the screen's one large
@@ -34,6 +36,7 @@ export function ArchitectureVerdict({
   roleLabel: (id: string) => string;
 }) {
   const t = useTranslations('architecture');
+  const state: VerdictState = conformance?.status ?? (loading ? 'loading' : 'missing');
   const format = new Intl.NumberFormat(useLocale());
   const figures = [
     ...(conformance ? [{ key: 'imports', value: crossRoleImports, label: t('figureCrossImports') }] : []),
@@ -52,7 +55,7 @@ export function ArchitectureVerdict({
   ].filter((reason): reason is string => reason !== null);
 
   return (
-    <section className="shrink-0" data-testid="architecture-verdict" data-architecture-status={conformance?.status ?? (loading ? 'loading' : 'missing')}>
+    <section className="shrink-0" data-testid="architecture-verdict" data-architecture-status={state}>
       <div className="flex min-w-0 flex-wrap items-end gap-x-10 gap-y-3">
         {conformance ? (
           <div className="min-w-0">

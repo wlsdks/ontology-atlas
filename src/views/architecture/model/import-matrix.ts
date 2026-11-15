@@ -1,4 +1,8 @@
-import { buildArchitectureLayout, type ArchitectureProfile } from '@/entities/architecture-profile';
+import {
+  buildArchitectureLayout,
+  type ArchitectureLayout,
+  type ArchitectureProfile,
+} from '@/entities/architecture-profile';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 
 /**
@@ -76,7 +80,7 @@ export function buildImportMatrix(
 ): ImportMatrix {
   const order = profile.roles.map((role) => role.id);
   const indexOf = new Map(order.map((id, index) => [id, index]));
-  const allowed = new Set(buildArchitectureLayout(profile).edges.map((edge) => `${edge.from}>${edge.to}`));
+  const allowed = allowedPairs(buildArchitectureLayout(profile));
 
   const cells: ImportCell[][] = order.map((from) =>
     order.map((to) => ({
@@ -117,6 +121,11 @@ export function buildImportMatrix(
     }
   }
   return { order, cells, maxCount, crossRoleImports };
+}
+
+/** `from>to` for every pair the rules allow: lower roles under `lower-only`, declared reach under `explicit`. */
+function allowedPairs(layout: ArchitectureLayout): Set<string> {
+  return new Set(layout.edges.map((edge) => `${edge.from}>${edge.to}`));
 }
 
 function cellKind(cell: ImportCell): ImportCellKind {
