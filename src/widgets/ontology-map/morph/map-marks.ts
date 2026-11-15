@@ -12,7 +12,6 @@ import { readFlatGraphTokens } from "../flat-graph/tokens";
 import type { FlatGraphTokens } from "../flat-graph/types";
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
-import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view/runtime";
 import type { HexPlacementRecord } from "../model/board/hex-board";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
@@ -53,7 +52,6 @@ function ontologyMapMarks({
   width,
   height,
   tokens, alphaOf,
-  domeFrame,
 }: {
   world: TopologyWorld;
   camera: CameraAxes;
@@ -61,19 +59,17 @@ function ontologyMapMarks({
   height: number;
   tokens: OntologyMapTokens;
   alphaOf: (id: string) => number;
-  domeFrame: ReadonlyMap<string, DomeNodeFrame> | null;
 }): MapLayoutMark[] {
   const scale = camera.scale.value;
   const marks: MapLayoutMark[] = [];
   for (const node of world.nodes) {
-    const frame = domeFrame?.get(node.id);
-    const alpha = alphaOf(node.id) * (frame ? frame.a : 1);
+    const alpha = alphaOf(node.id);
     if (alpha <= HITTABLE_MIN_TIER_ALPHA) continue;
     marks.push({
       id: node.id,
-      x: (node.x + (frame?.dx ?? 0) - camera.x.value) * scale + width / 2,
-      y: (node.y + (frame?.dy ?? 0) - camera.y.value) * scale + height / 2,
-      size: radiusForKind(node.kind, tokens) * node.magnitudeScale * (frame?.s ?? 1) * scale,
+      x: (node.x - camera.x.value) * scale + width / 2,
+      y: (node.y - camera.y.value) * scale + height / 2,
+      size: radiusForKind(node.kind, tokens) * node.magnitudeScale * scale,
       ...markStyle(node.kind, tokens),
       alpha,
     });
@@ -84,8 +80,7 @@ function ontologyMapMarks({
 export function readOntologyMapMarks({
   worldRef,
   cameraRef,
-  viewportRef,
-  domeRuntimeRef, }: {
+  viewportRef, }: {
     worldRef: {
         current: TopologyWorld | null;
     };
@@ -97,9 +92,6 @@ export function readOntologyMapMarks({
             width: number;
             height: number;
         };
-    };
-    domeRuntimeRef: {
-        current: DomeRuntime | null;
     };
 }): MapLayoutMark[] {
   const world = worldRef.current;
@@ -117,7 +109,6 @@ export function readOntologyMapMarks({
     }
     return marks;
   }
-  const dome = domeRuntimeRef.current;
   const drawn = lastDrawnNodeAlphas();
   return ontologyMapMarks({
     world,
@@ -126,7 +117,6 @@ export function readOntologyMapMarks({
     height,
     tokens,
     alphaOf: (id) => drawn.get(id) ?? 0,
-    domeFrame: dome !== null && dome.rampClock > 0 ? dome.frame : null,
   });
 }
 
@@ -244,7 +234,7 @@ function predictOntologyMapMarks({
     if (folded.has(id)) return false;
     return isSpineNode(node) || (node.parentId !== null && expandedParents.has(node.parentId));
   };
-  return ontologyMapMarks({ world, camera, width: box.width, height: box.height, tokens, alphaOf: (id) => (drawn(id) ? 1 : 0), domeFrame: null });
+  return ontologyMapMarks({ world, camera, width: box.width, height: box.height, tokens, alphaOf: (id) => (drawn(id) ? 1 : 0) });
 }
 
 export interface MapLayoutTargetInput {

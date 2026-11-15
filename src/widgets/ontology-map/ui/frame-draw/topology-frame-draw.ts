@@ -1,10 +1,9 @@
 import { computeNodeAlpha } from "./node-alpha";
 import { beginFrame } from "./frame-begin";
-import { beginNodeLayer, paintStrataDust } from "./node-layer";
+import { beginNodeLayer } from "./node-layer";
 import { paintBackdrop } from "./paint-backdrop";
 import { paintClusterChips } from "./paint-chips";
 import { paintBranchContext, paintDial, prepareBranchContext } from "./paint-dial";
-import { paintDomeStage } from "./paint-dome-stage";
 import { paintEdges } from "./paint-edges";
 import { paintLabels } from "./paint-labels";
 import { paintNodes } from "./paint-nodes";
@@ -17,13 +16,10 @@ import type { FrameDrawParams } from "./frame-draw-params";
 export type { FrameDrawParams } from "./frame-draw-params";
 export {
   lastDrawnLabelBoxes,
-  lastDrawnLod,
   lastDrawnNodeAlphas,
   lastDrawnNodeCount,
   lastDrawnRelationCaptions,
   lastDrawnSkyTimeMs,
-  lastHiddenDependencies,
-  lastLitStateCounts,
   setMapComets,
 } from "./frame-state";
 
@@ -41,17 +37,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       alpha.effectiveAlphaByIndex[index] = branch.alphas.get(node.id) ?? 0;
     });
   }
-  const edges = prepareEdges(frame, focus, alpha);
-  const stage = paintDomeStage(frame, focus, edges);
-  paintEdges(frame, focus, alpha, edges, stage);
+  const edges = prepareEdges(frame, alpha);
+  paintEdges(frame, focus, alpha, edges);
   const layer = beginNodeLayer(frame);
   if (branch) {
     const context = paintBranchContext(frame, branch);
     paintRelationCaptions(frame, edges, layer, context.reservations, context.safe);
     return;
   }
-  paintStrataDust(frame, focus, layer);
-  paintNodes(frame, focus, alpha, stage, layer);
+  paintNodes(frame, focus, alpha, layer);
   paintWardingRing(frame, focus, layer);
   const chipReservations = paintClusterChips(frame, focus, alpha, layer);
   const safeRect = paintLabels(frame, focus, alpha, layer, chipReservations);

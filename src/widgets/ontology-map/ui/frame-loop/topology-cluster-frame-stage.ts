@@ -18,11 +18,6 @@ type SourceRef<T> = { current: T; };
 export interface ClusterFrameResult {
   effectiveExpanded: ReadonlySet<string>;
   frameClusteredIds: ReadonlySet<string>;
-  /**
-   * What the classic density gate folds while the dial exempts the flat map from it:
-   * a view that draws every concept captions within this. Null when the frame's fold is that budget.
-   */
-  captionFoldedIds: ReadonlySet<string> | null;
   frameChips: readonly ClusterChip[];
   batchAppearVisible: Set<string>;
 }
@@ -59,7 +54,6 @@ export function clusterBatchShownCount(
 interface ClusterStructure {
   effectiveExpanded: ReadonlySet<string>;
   clusteredIds: ReadonlySet<string>;
-  captionFoldedIds: ReadonlySet<string> | null;
   gateChips: readonly ClusterChip[];
   /** A focused hub's hidden neighbours, counted on the "neighbours +N" chip under it. */
   egoHiddenCount: number;
@@ -103,7 +97,6 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
   const result: ClusterFrameResult = {
     effectiveExpanded: new Set(),
     frameClusteredIds: new Set(),
-    captionFoldedIds: null,
     frameChips: [],
     batchAppearVisible: new Set(),
   };
@@ -335,17 +328,9 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
       frameClusteredIds = new Set<string>([...frameClusteredIds, ...hiddenFromBatch]);
     }
     prevBatchVisibleRef.current = batchAppearVisible;
-    const classicGate = world.dial && liveRealmRootId === null
-      ? computeTopologyClusterState(
-        { nodeById: world.nodeById, childrenByParent: world.childrenByParent, clusterMetaByParent: world.clusterMetaByParent },
-        effectiveExpanded,
-        heldOpen,
-      ).clusteredIds
-      : null;
     return {
       effectiveExpanded,
       clusteredIds: frameClusteredIds,
-      captionFoldedIds: classicGate ? new Set([...classicGate, ...frameClusteredIds]) : null,
       gateChips: clusterState.chips,
       egoHiddenCount,
       moreChips,
@@ -402,7 +387,6 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
     }
     result.effectiveExpanded = structure.effectiveExpanded;
     result.frameClusteredIds = structure.clusteredIds;
-    result.captionFoldedIds = structure.captionFoldedIds;
     const scopeRoot = realmDataRef.current?.rootId;
     result.frameChips = scopeRoot ? frameChips.filter(chip => chip.parentId !== scopeRoot) : frameChips;
     result.batchAppearVisible = structure.batchAppearVisible;

@@ -7,7 +7,6 @@ import { useTopologyTrailInputs } from "./use-topology-trail-inputs";
 
 import { useTopologyActivityState } from "./use-topology-activity-state";
 import { useTopologyCameraState } from "../camera/use-topology-camera-state";
-import { useTopologyDomeState } from "./use-topology-dome-state";
 import { useTopologyInteractionState } from "../input/use-topology-interaction-state";
 import { useTopologyPresentationState } from "./use-topology-presentation-state";
 import { useTopologyRealmState } from "../world/use-topology-realm-state";
@@ -21,7 +20,6 @@ export type { UseTopologyLoopArgs } from "./topology-loop-contract";
 import { useTopologyCameraNavigation } from "../camera/use-topology-camera-navigation";
 import { useTopologyCameraPolicy } from "../camera/use-topology-camera-policy";
 import { useTopologyClusterExpansion } from "../world/use-topology-cluster-expansion";
-import { useTopologyDomeTransitions } from "./use-topology-dome-transitions";
 import { useTopologyFocusNavigation } from "../camera/use-topology-focus-navigation";
 import { useTopologyGrowthReplay } from "../world/use-topology-growth-replay";
 import { useTopologyInput } from "../input/use-topology-input";
@@ -41,12 +39,9 @@ import {
 
 import {
   DEFAULT_EXPAND,
-  DEFAULT_MAP_ARRANGEMENT,
   DEFAULT_MAP_NAVIGATION_SPEED,
 } from "@/shared/lib/preferences/appearance-preferences";
-import type { DomeViewKind } from "../../model/dome-view/types";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
-import { createStrataLodState, type StrataLodState } from "../../model/dome-view/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../../model/visibility/tier-visibility";
 import type { TopologyPointerHandlers } from "../input/topology-pointer-types";
 
@@ -64,8 +59,6 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
   handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
-  raiseDomeTier: (kind: DomeViewKind | null) => void;
-  setDomeTierNameWidths: (widths: Readonly<Record<string, number>>) => void;
   readLayoutMarks: () => MapLayoutMark[];
 };
 
@@ -74,16 +67,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine",
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
     constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
-    onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
+    onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange,
     onZoomTierChange, onContextMenuNode, onContextMenuPane,
     agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null,
     selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster,
     onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null,
     visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null,
     trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL,
-    glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
+    glyphSet = "geometric", canvasBackground = "dot", footprint = null,
     expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
-    onWalkDeadEnd = null, domeEvidence, dialLabels, evidenceStates, impactLens, onFlatDialChange, onHiddenDependenciesChange,
+    onWalkDeadEnd = null, dialLabels, evidenceStates, impactLens, onFlatDialChange,
     relationCaptions, reviewQuestionIds, flatRingMemory = null, loadProgress = null, placingTierRead = false,
   } = args;
   const {
@@ -138,16 +131,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     prevPinnedNodeIdRef,
   } = useTopologyWorldState();
   const {
-    view3dRef, pendingFlatCameraRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
-    domeFocusPendingRef, domeFitPendingRef, domeFitDurationRef, flatFitPendingRef, onDomeTierAnchorsChangeRef,
-    domeTierRaisedKindRef, domeTierAnchorsSentRef, domeTierNameWidthsRef,
-    domeFitInsetsRef,
-  } = useTopologyDomeState({
-    view3d,
-    mapArrangement,
-    onDomeTierAnchorsChange,
-  });
-  const {
     lastActiveCausesRef, idleDebugEnabledRef, lastFrameTimeRef, navYieldUntilRef, reducedMotionRef,
     selectionPulseRef, pulsesRef, hasDependsEdgesRef, hasContainsEdgesRef, lastActiveMsRef, lastInputMsRef,
     prevCameraSampleRef, wakeFrameLoopRef,
@@ -178,7 +161,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewFit,
   });
   const {
-    pointerMachineRef, dragHistoryRef, domeGripRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
+    pointerMachineRef, dragHistoryRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
     lastFocusedSlugRef, panelEmphasisNodeIdRef, hoveredNodeIdRef, hoveredEdgeRef, onHoverEdgeRef,
     selectedEdgeRef, drawnHoveredNodeIdRef, focusLeashPxRef, lastTapRef, selectionSourceRef,
   } = useTopologyInteractionState({
@@ -187,14 +170,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onHoverEdge,
     selectedEdge,
   });
-  const { cameraTokens, domeFitTarget, beginCameraTween } = useTopologyCameraPolicy({
+  const { cameraTokens, beginCameraTween } = useTopologyCameraPolicy({
     canvasRef,
     panelInsetsRef,
-    domeFitInsetsRef,
     reducedMotionRef,
     cameraTweenRef,
     cameraRef,
-    view3dRef,
     lastActiveMsRef,
   });
   useTopologyObserverBindings({
@@ -204,8 +185,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onZoomTierChange,
     onDrawnCountChangeRef,
     onDrawnCountChange,
-    onDomeTierAnchorsChangeRef,
-    onDomeTierAnchorsChange,
     onHoverEdgeRef,
     onHoverEdge,
     onEnterRealmRef,
@@ -234,22 +213,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     glyphStyleRef,
     glyphSet,
   });
-  useTopologyDomeTransitions({
-    mapArrangementRef,
-    mapArrangement,
-    domeWorldSourceRef,
-    lastActiveMsRef,
-    view3dRef,
-    view3d,
-    domeFitPendingRef,
-    domeFitDurationRef,
-    flatFitPendingRef,
-    domeRuntimeRef,
-    lastInputMsRef,
-    detailPanelVisible,
-    realmTransitionRef,
-    focusedSlugRef,
-  });
   useTopologyAppearanceEffects({
     expandPrefRef,
     expand,
@@ -275,12 +238,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     relationCaptions,
     reviewQuestionIds,
   });
-  const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(domeEvidence ?? null);
-  const domeLodRef = useRef<StrataLodState>(createStrataLodState());
-  useEffect(() => {
-    domeEvidenceRef.current = domeEvidence ?? null;
-    lastActiveMsRef.current = performance.now();
-  }, [domeEvidence, lastActiveMsRef]);
   const flatDialRef = useRef<FlatDialFrameProps>({ labels: null, evidence: null, impactLens: false, onChange: undefined, sent: null });
   useEffect(() => {
     const dial = flatDialRef.current;
@@ -290,11 +247,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dial.onChange = onFlatDialChange;
     lastActiveMsRef.current = performance.now();
   }, [dialLabels, evidenceStates, impactLens, onFlatDialChange, lastActiveMsRef]);
-  const onHiddenDependenciesChangeRef = useRef(onHiddenDependenciesChange);
-  const hiddenDependenciesSentRef = useRef(-1);
-  useEffect(() => {
-    onHiddenDependenciesChangeRef.current = onHiddenDependenciesChange;
-  }, [onHiddenDependenciesChange]);
   useTopologyClusterExpansion({
     prevExpandedParentsRef,
     expandedParents,
@@ -311,7 +263,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     userDrivenCameraRef,
     cameraAngularFreqRef,
     beginCameraTween,
-    domeRuntimeRef,
   });
   useTopologyTrailInputs({
     panelEmphasisNodeIdRef,
@@ -335,7 +286,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef,
     userDrivenCameraRef,
     hasInitializedRef,
-    domeRuntimeRef,
     overviewScaleRef,
     cameraAngularFreqRef,
     pendingSpotlightFitRef,
@@ -367,7 +317,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     assembleOnOpen,
     arrivingDocuments,
     fittedDataSourceKeyRef,
-    pendingFlatCameraRef,
     dialLabels: dialLabels ?? null,
     flatRingMemory,
     loadProgress,
@@ -416,9 +365,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef,
     cameraAngularFreqRef,
     beginCameraTween,
-    domeRuntimeRef,
-    domeFitTarget,
-    lastActiveMsRef,
     overviewFitRef,
     spotlightIdsRef,
     runSpotlightFitRef,
@@ -436,7 +382,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     runOverviewFit,
     cameraTargetRef,
     overviewScaleRef,
-    domeRuntimeRef,
     clusteredIdsRef,
     tierRevealRef,
     growthReplayAppearRef,
@@ -457,8 +402,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef,
     cameraAngularFreqRef,
     beginCameraTween,
-    domeRuntimeRef,
-    domeFitTarget,
     lastActiveMsRef,
     overviewFitRef,
     spotlightIdsRef,
@@ -481,7 +424,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     previousConstellationFocusIdRef,
     focusedSlugRef,
     selectedEdgeRef,
-    domeFocusPendingRef,
     reframeViewportRef,
     selectionCameraRef,
     cameraGestureRevisionRef,
@@ -528,9 +470,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     worldRef,
     viewportRef,
     overviewScaleRef,
-    view3dRef,
     realmTransitionRef,
-    domeRuntimeRef,
     realmDataRef,
     expandedParentsRef,
     cameraTokens,
@@ -543,7 +483,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectionSourceRef,
   });
   useTopologyRealmTransition({
-    view3d, cameraTokens, dialLabels, realmRootId,
+    cameraTokens, dialLabels, realmRootId,
     prevRealmRootIdRef,
     lastActiveMsRef,
     worldRef,
@@ -577,39 +517,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useTopologyFrameLoop({
     canvasRef,
-    projection: { domeRuntimeRef, cameraRef, reducedMotionRef, neuralRampRef },
+    motion: { reducedMotionRef },
     recovery: { lastActiveMsRef, viewportRebuildPendingRef, wakeFrameLoopRef },
-    domeFrameStage: {
-      view3dRef,
-      realmTransitionRef,
-      domeRuntimeRef,
-      domeWorldSourceRef,
-      domeModelBuildRef,
-      mapArrangementRef,
-      domeFitPendingRef,
-      domeFitDurationRef,
-      flatFitPendingRef,
-      domeFocusPendingRef,
-      cameraRef,
-      cameraTargetRef,
-      dampingRef,
-      cameraAngularFreqRef,
-      userDrivenCameraRef,
-      overviewScaleRef,
-      overviewFitRef,
-      expandedParentsRef,
-      clusteredIdsRef,
-      pointerMachineRef,
-      bgPointerRef,
-      reducedMotionRef,
-      lastInputMsRef,
-      lastActiveMsRef,
-      ambientSleepDelayRef,
-      viewportRef,
-      beginCameraTween,
-      cameraTokens,
-      domeFitTarget,
-    },
     worldMotionFrameStage: {
       simRef,
       nodeDragRef,
@@ -629,14 +538,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       prevPinnedNodeIdRef,
       clusteredIdsRef,
       expandedParentsRef,
-      view3dRef,
-      domeRuntimeRef,
       realmDataRef,
       realmTransitionRef,
       realmActiveHandedOffRef,
       wardingFitRef,
       reducedMotionRef,
-      pendingFlatCameraRef,
       cameraGestureRevisionRef,
       cameraRef,
       cameraTargetRef,
@@ -668,7 +574,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       ambientSleepDelayRef,
       selectedEdgeRef,
       pointerMachineRef,
-      domeRuntimeRef,
       focusLeashPxRef,
       userDrivenCameraRef,
       clusteredIdsRef,
@@ -715,7 +620,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       focusedSlugRef,
       onEnterRealmRef,
       realmEnterTargetRef,
-      domeRuntimeRef,
       getRealmCaption,
     },
     revealFrameStage: {
@@ -752,11 +656,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       prevCameraSampleRef,
       lastInputMsRef,
       ambientSleepDelayRef,
-      domeRuntimeRef,
-      view3dRef,
       realmTransitionRef,
-      domeFocusPendingRef,
-      bgPointerRef,
       growthReplayRef,
       growthReplayAppearRef,
       endGrowthReplay,
@@ -773,8 +673,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       trailLensPropRef,
       trailBrushPropRef,
       panelHoverPropRef,
-            neuralRampRef,
-      mapArrangementRef,
       drawnTrailLensRef,
       trailLensRampRef,
       visitedTrailRef,
@@ -784,10 +682,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       spotlightIdsRef,
       idleDebugEnabledRef,
       lastActiveCausesRef,
-      domeLodRef,
     },
     presentationFrameStage: {
-            domeRuntimeRef,
       clusterChipsRef,
       clusteredIdsRef,
       realmTierKindsRef,
@@ -800,8 +696,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       spotlightDashOffsetRef,
       trailLensOpenedAtRef,
       trailLensRampRef,
-      view3dRef,
-      neuralRampRef,
             animatedBgRef,
             lastInputMsRef,
             ambientSleepDelayRef,
@@ -846,19 +740,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       depthDotPatternsRef,
       expandPrefRef,
       getClusterBarLabels,
-      mapArrangementRef,
-      domeTierRaisedKindRef,
       drawnTrailLensRef,
       drawnNodeCountRef,
       onDrawnCountChangeRef,
-      domeTierAnchorsSentRef,
-      onDomeTierAnchorsChangeRef,
-      domeTierNameWidthsRef,
-      domeFitInsetsRef,
-      domeEvidenceRef,
-      domeLodRef,
-      onHiddenDependenciesChangeRef,
-      hiddenDependenciesSentRef,
       flatDialRef,
     },
   });
@@ -875,7 +759,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     viewportRef,
     pointerMachineRef,
     dragHistoryRef,
-    domeGripRef,
     camStartAtDownRef,
     canvasRectRef,
     canvasRef,
@@ -903,8 +786,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredClusterIdRef,
     realmParallaxRef,
     realmTierKindsRef,
-    domeRuntimeRef,
-    neuralRampRef,
     tierRevealRef,
         pathEdgeIdsRef,
     visitedTrailRef,
@@ -937,11 +818,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       clusteredIdsRef,
       clusterChipsRef,
       previewEdgeHeldRef,
-      domeRuntimeRef,
-      domeModelBuildRef,
-      domeLodRef,
-      neuralRampRef,
-      reducedMotionRef,
       appearRef,
     },
     interaction: {
@@ -974,19 +850,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     },
   });
 
-  const raiseDomeTier = useCallback((kind: DomeViewKind | null) => {
-    if (domeTierRaisedKindRef.current === kind) return;
-    domeTierRaisedKindRef.current = kind;
-    lastActiveMsRef.current = performance.now();
-  }, [domeTierRaisedKindRef, lastActiveMsRef]);
-
-  const setDomeTierNameWidths = useCallback((widths: Readonly<Record<string, number>>) => {
-    domeTierNameWidthsRef.current = widths;
-    lastActiveMsRef.current = performance.now();
-  }, [domeTierNameWidthsRef, lastActiveMsRef]);
-
   const readLayoutMarks = useCallback(
-    () => readOntologyMapMarks({ worldRef, cameraRef, viewportRef, domeRuntimeRef }), [cameraRef, domeRuntimeRef, viewportRef, worldRef]);
+    () => readOntologyMapMarks({ worldRef, cameraRef, viewportRef }), [cameraRef, viewportRef, worldRef]);
 
-  return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, ...handlers, ...wrappedHandlers };
+  return { canvasRef, containerRef, readLayoutMarks, ...handlers, ...wrappedHandlers };
 }

@@ -1,6 +1,5 @@
 import {
   CLUSTER_CHIP_LABEL_PRIORITY,
-  NODE_DISC_LABEL_PRIORITY,
   type ReservedBox,
 } from "../../render/label-layout";
 import {
@@ -9,7 +8,7 @@ import {
   clusterChipScale,
 } from "../../render/cluster-chips";
 import { radiusForKind } from "../world/topology-world";
-import { BACKGROUND_DIM_WHEN_EXPANDED, ZERO_DOME_FRAME } from "./frame-state";
+import { BACKGROUND_DIM_WHEN_EXPANDED } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
 import type { NodeAlpha } from "./node-alpha";
@@ -24,11 +23,11 @@ let clusterChipHoverAnim: {
 
 export function paintClusterChips(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, layer: NodeLayer): ReservedBox[] {
   const { camera, hoveredClusterId, clusterChips, reducedMotion, now, world, tokens, spotlightIds,
-    chipRevealById, expand, clusterBarLabels, focusedNodeId, tierNameBoxes, spotlightSink,
-    trailLensActive, trailRamp, domeOn, domeFrameFor } = frame;
+    chipRevealById, expand, clusterBarLabels, focusedNodeId, spotlightSink,
+    trailLensActive, trailRamp } = frame;
   const { project } = focus;
   const { effectiveAlphaById } = alpha;
-  const { ctx, nodeDiscReservations } = layer;
+  const { ctx } = layer;
   const chipScale = clusterChipScale(camera.scale.value);
   if (clusterChipHoverAnim !== null && clusterChipHoverAnim.id !== hoveredClusterId) {
     clusterChipHoverAnim = null;
@@ -48,9 +47,8 @@ export function paintClusterChips(frame: FrameInputs, focus: FrameFocus, alpha: 
       }
     }
     const parentNode = world.nodeById.get(chip.parentId);
-    const chipDOff = parentNode ? domeFrameFor(parentNode.id) : ZERO_DOME_FRAME;
-    const screen = project(chip.anchor.x + chipDOff.dx, chip.anchor.y + chipDOff.dy);
-    const parentScreen = parentNode ? project(parentNode.x + chipDOff.dx, parentNode.y + chipDOff.dy) : null;
+    const screen = project(chip.anchor.x, chip.anchor.y);
+    const parentScreen = parentNode ? project(parentNode.x, parentNode.y) : null;
     const nodeScreenRadius = parentNode
       ? radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value
       : undefined;
@@ -103,14 +101,6 @@ export function paintClusterChips(frame: FrameInputs, focus: FrameFocus, alpha: 
         hoverInk: tokens.indigoBright,
       });
     ctx.globalAlpha = 1;
-  }
-  if (domeOn && tierNameBoxes !== null) {
-    for (const box of tierNameBoxes) {
-      nodeDiscReservations.push({
-        priority: NODE_DISC_LABEL_PRIORITY,
-        bbox: { minX: box.minX, maxX: box.maxX, minY: box.minY, maxY: box.maxY },
-      });
-    }
   }
   return chipReservations;
 }

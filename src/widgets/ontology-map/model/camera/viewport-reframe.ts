@@ -1,7 +1,6 @@
 export interface ViewportReframeState {
   /** Map pan, wheel or pinch. */
   userDriven: boolean;
-  domeActive: boolean;
   focused: boolean;
   pairFocused: boolean;
   realmActive: boolean;
@@ -11,8 +10,6 @@ export interface ViewportReframeState {
 
 export type ViewportReframeMode =
   | "preserve"
-  | "dome-focus"
-  | "dome-overview"
   | "focus"
   | "realm"
   | "spotlight"
@@ -26,9 +23,6 @@ export type ViewportReframeMode =
 export function resolveViewportReframeMode(state: ViewportReframeState): ViewportReframeMode {
   // The program never steals a camera or edge-pair context the user holds.
   if (state.userDriven || state.pairFocused) return "preserve";
-
-  // The dome has its own reframe that keeps yaw and pitch.
-  if (state.domeActive) return state.focused ? "dome-focus" : "dome-overview";
 
   // The selected node is the most specific reading target, even inside realms and lenses.
   if (state.focused) return "focus";

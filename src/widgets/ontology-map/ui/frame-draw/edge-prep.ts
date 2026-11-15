@@ -1,11 +1,10 @@
 import { edgeTierAlpha } from "../../model/visibility/tier-visibility";
 import type { RelationCaption } from "../../render/relation-captions";
 import { selectAmbientDependsComets, selectEgoContainsComets } from "../../render/edge-fireflies";
-import { isSpineNode, type TopologyWorld, type WorldEdge } from "../world/topology-world";
+import type { TopologyWorld, WorldEdge } from "../world/topology-world";
 import { edgeRevealProgress } from "../../expressive/edge-reveal";
 import { passState } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
 import type { NodeAlpha } from "./node-alpha";
 
 const EMPTY_EGO_COMET_EDGES: ReadonlySet<WorldEdge> = new Set();
@@ -34,13 +33,12 @@ function edgeEndsFor(world: TopologyWorld): {
 const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 const edgeRestDimByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 
-export function prepareEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha) {
+export function prepareEdges(frame: FrameInputs, alpha: NodeAlpha) {
   const { focusedNodeId, world, selectedEdge, focusRampById, egoRevealById, reducedMotion,
-    clusteredIds, domeLight, trailLensActive } = frame;
-  const { parentOf, litOn, litFocusId } = focus;
+    clusteredIds, trailLensActive } = frame;
   const { effectiveAlphaByIndex } = alpha;
   const egoCometEdges =
-    focusedNodeId === null || litOn
+    focusedNodeId === null
       ? EMPTY_EGO_COMET_EDGES
       : selectEgoContainsComets(world.edges, world.edgeIndexByNode.get(focusedNodeId)).edges;
   let edgeAlphaReused = edgeAlphaByEdges.get(world.edges);
@@ -66,10 +64,6 @@ export function prepareEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeA
       : 1;
   const captionCandidates: RelationCaption[] = [];
   passState.drawnRelationCaptions = [];
-  const isSpineEndpoint = (id: string): boolean => {
-    const node = world.nodeById.get(id);
-    return node !== undefined && isSpineNode(node);
-  };
   const edgeEnds = edgeEndsFor(world);
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
@@ -82,27 +76,13 @@ export function prepareEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeA
           sourceIndex >= 0 ? effectiveAlphaByIndex[sourceIndex] : 1,
           targetIndex >= 0 ? effectiveAlphaByIndex[targetIndex] : 1);
   }
-  const inLitSubtree = (id: string): boolean => {
-    if (litFocusId === null) return false;
-    let cursor: string | null | undefined = id;
-    for (let hop = 0; cursor && hop < 8; hop += 1) {
-      if (cursor === litFocusId) return true;
-      cursor = parentOf(cursor);
-    }
-    return false;
-  };
-  const litComets = litOn && litFocusId !== null && domeLight !== null && !domeLight.reducedMotion;
   const ambientDependsComets = selectAmbientDependsComets(
     world.edges,
-    (i) => {
-      const edge = world.edges[i];
-      if (edge.kind !== "depends" || edgeAlphaReused[i] <= 0.02) return false;
-      return !litOn || (litComets && (inLitSubtree(edge.sourceId) || inLitSubtree(edge.targetId)));
-    },
+    (i) => world.edges[i].kind === "depends" && edgeAlphaReused[i] > 0.02,
     ambientDependsCometsReused);
   return {
     egoCometEdges, edgeAlphaReused, edgeLiftReused, edgeRestDimReused, edgeFocusRamp, edgeRevealAt,
-    captionCandidates, isSpineEndpoint, edgeEnds, ambientDependsComets,
+    captionCandidates, ambientDependsComets,
   };
 }
 

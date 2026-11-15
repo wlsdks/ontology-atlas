@@ -27,13 +27,6 @@ export function useTopologyInteractionState({
 
   const dragHistoryRef = useRef<{ x: number; y: number; t: number; }[]>([]);
 
-  /**
-   * What an empty-space drag means in 3D: starting inside the dome's grip
-   * orbits it, starting outside pans the camera as in 2D. `pointerdown` decides
-   * once, using `DOME_GRIP_MARGIN`.
-   */
-  const domeGripRef = useRef(false);
-
   const camStartAtDownRef = useRef({ x: 0, y: 0 });
 
   const canvasRectRef = useRef<{ left: number; top: number; } | null>(null);
@@ -66,11 +59,11 @@ export function useTopologyInteractionState({
   /** The focus leash in screen pixels, set at the selection dive (`focusLeashPx`). */
   const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
 
-  const lastTapRef = useRef<{ nodeId: string; at: number; x?: number; y?: number; } | null>(null);
+  const lastTapRef = useRef<{ nodeId: string; at: number; } | null>(null);
   /** Read once by the next selection change; a selection the map did not make carries none. */
   const selectionSourceRef = useRef<{ slug: string; source: SelectionSource; } | null>(null);
   return {
-    pointerMachineRef, dragHistoryRef, domeGripRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
+    pointerMachineRef, dragHistoryRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
     lastFocusedSlugRef, panelEmphasisNodeIdRef, hoveredNodeIdRef, hoveredEdgeRef, onHoverEdgeRef,
     selectedEdgeRef, drawnHoveredNodeIdRef, focusLeashPxRef, lastTapRef, selectionSourceRef,
   };

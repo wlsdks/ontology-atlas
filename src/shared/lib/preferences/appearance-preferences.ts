@@ -228,11 +228,7 @@ export function useMapZoomSpeed(): MapSpeed {
 
 /* ── 3D view (map view mode) ────────────────────────────────────────────── */
 
-/**
- * Whether the map is drawn with a 3D arrangement rather than the flat map. Off by default: the 3D
- * arrangement raises edge crossings about 3x, and crossing count dominates graph readability.
- * Geometry: `src/widgets/ontology-map/model/dome-view/`.
- */
+/** Whether the map opens in the 3D view rather than the flat map. Off by default. */
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
 const DEFAULT_VIEW_3D = false;
@@ -312,11 +308,6 @@ export function useHexRelief(): boolean {
   const getServerSnapshot = useCallback(() => DEFAULT_HEX_RELIEF, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
-
-/** The widget's 3D engine still takes an arrangement; no preference stores or reads one. */
-export type MapArrangement = "strata" | "coupling";
-
-export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "strata";
 
 /** Never read: the 3D flag alone opens 3D, whatever arrangement an older build kept here. */
 const RETIRED_MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
