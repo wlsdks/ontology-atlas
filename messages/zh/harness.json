@@ -13,6 +13,7 @@
   "conditionSettingsContext": "仅在设置中接入时",
   "capMergedValue": "{used} / {cap}（默认上限）",
   "capOver": "超出上限",
+  "capLimit": "默认上限 {cap}",
   "driftLineMark": "相互对应的行并排显示，没有对应的行用+标出。",
   "driftSideMarked": "与 {other} 文件不对应的行 {count} 行",
   "driftSideShared": "所有行都与 {other} 文件对应",
@@ -52,9 +53,10 @@
   "reread": "重新读取文件",
   "toolFilterAria": "只显示一个代理工具",
   "toolAll": "全部",
-  "problemsAria": "需要修复的问题",
   "problemHookMissing": "hook 脚本不存在：{path}",
   "problemCodexCap": "Codex 读取的 AGENTS.md 超过了默认 32 KiB 上限（{size}）",
+  "problemCount": "{count} 个问题",
+  "problemShow": "{count, plural, =1 {查看} other {查看第一个}}",
   "sections": {
     "context": {
       "title": "上下文",
@@ -106,5 +108,5 @@
   "detailEvent": "事件",
   "detailStatus": "状态",
   "detailDeclared": "声明",
-  "back": "返回列表"
+  "close": "关闭"
 }

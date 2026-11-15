@@ -140,11 +140,11 @@ function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: strin
 }
 
 /** Amber only for what fails; every other status stays neutral. */
-export function ItemStatus({ item, t }: { item: SetupItem; t: TranslateFn }) {
+export function ItemStatus({ item, oneLine = false, t }: { item: SetupItem; oneLine?: boolean; t: TranslateFn }) {
   const tags = statusTags(item);
   if (tags.length === 0) return null;
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
+    <span className={cn('flex items-center gap-1.5', oneLine ? 'min-w-0 flex-nowrap' : 'flex-wrap')}>
       {tags.map((tag) => {
         const { text } = tagText(tag, item, t);
         return (
@@ -181,12 +181,15 @@ export function SetupItemDetail({
   report,
   current,
   headingId,
+  action,
   t,
 }: {
   item: SetupItem;
   report: HarnessReport;
   current: boolean;
   headingId?: string;
+  /** A control that sits beside the heading, such as a dialog's close button. */
+  action?: ReactNode;
   t: TranslateFn;
 }) {
   const capped = item.ruleId === 'agents-md' || item.ruleId === 'nested-agents-md';
@@ -195,9 +198,12 @@ export function SetupItemDetail({
   const sides = item.pairPaths ?? (shown ? [shown] : null);
   return (
     <div data-testid={current ? 'harness-item-detail' : undefined} data-harness-item={item.key}>
-      <h2 id={headingId} className="break-all font-mono text-body-lg text-[color:var(--color-text-primary)]">
-        {item.label}
-      </h2>
+      <div className="flex items-start gap-3">
+        <h2 id={headingId} className="min-w-0 flex-1 break-all font-mono text-body-lg text-[color:var(--color-text-primary)]">
+          {item.label}
+        </h2>
+        {action}
+      </div>
       <dl className="mt-1 divide-y divide-[color:var(--color-overlay-1)]">
         {item.label !== item.path ? (
           <Fact label={t('detailPath')}>
