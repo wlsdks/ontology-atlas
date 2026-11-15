@@ -474,18 +474,6 @@ describe('DownloadPage', () => {
     expect(note).toHaveTextContent(new RegExp(`${DEMO_CLIPS[0].seconds}s`, 'i'));
   });
 
-  it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
-    renderDownloadPage();
-
-    // The shoot sends this message verbatim; backticks render as code.
-    const prompt = screen.getByTestId('gateway-demo-prompt');
-    const sentence = enMessages.download.demoAgentPrompt;
-    expect(prompt.querySelector('blockquote')!.textContent).toBe(sentence.replaceAll('`', ''));
-    const codes = [...prompt.querySelectorAll('code')].map((node) => node.textContent);
-    expect(codes).toEqual([...sentence.matchAll(/`([^`]+)`/g)].map((match) => match[1]));
-    expect(codes).toContain('find_path');
-  });
-
   it('names exactly one version while no build is out', () => {
     renderDownloadPage();
 

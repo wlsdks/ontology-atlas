@@ -11,7 +11,7 @@
   "heroWindowsCta": "Windows x64 beta",
   "heroPlaygroundCta": "Playground",
   "windowsUnsignedShort": "unsigned",
-  "demoHeading": "People and agents reading the same meaning",
+  "demoHeading": "The app, recorded on this repository's folder",
   "demoEyebrow": "Demo",
   "demoPlay": "Play",
   "heroTitleLine1": "Agents change your code.",
@@ -27,11 +27,9 @@
   "factSourceLabel": "Source",
   "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "The checksum file for {file} on the release page",
-  "demoTitle": "Inspect the context your agent reads",
-  "demoSub": "This recorded demo selects a concept and its evidence, then Codex follows a recorded path in the same folder. It shows a bounded lookup, not a complete change-impact check.",
-  "demoPromptLabel": "What Codex was asked in this take",
-  "demoAgentPrompt": "Use only `get_concept` and `find_path` to explain the path from `capabilities/mcp-tool-server` to `capabilities/ontology-map` in one sentence. Do not change files.",
-  "demoProvisionalNote": "{seconds}s from one take. Only the agent's thinking time is cut; nothing is sped up, and there is no sound.",
+  "demoTitle": "Follow a day of changes through the app",
+  "demoSub": "Recorded in the app on this repository's own folder. The map marks the concepts changed in the last seven days, and one of them opens with what it depends on. Changes groups the day's merged work, Git reads a commit as the concepts it changed, and Harness lists the hooks that stop an agent before it acts.",
+  "demoProvisionalNote": "{seconds}s from one take of the app window. Nothing is cut or sped up; the pointer is not recorded, and there is no sound.",
   "acpUserLabel": "You",
   "change": {
     "eyebrow": "After a commit",
@@ -71,7 +69,7 @@
       "planning": "The docs folder of this repository, read in place: a file list on the left, FEATURES.md open on the right. Nothing is copied or edited. Captured from the app.",
       "automations": "A weekday check of that sample library, and the run that found one wiki page's source had changed. Captured from the app.",
       "projects": "Ontology Atlas on one page: its domains, concepts, library and harness together. Captured from the app.",
-      "changes": "One week of this repository's history, listed as commits: what changed, in which files. Captured from the app.",
+      "changes": "One day of this repository's history: the changes merged that day, grouped by the area they touched. Captured from the app.",
       "git": "The Git history of this repository's ontology folder, read as the concepts each commit changed. Captured from the app."
     }
   },

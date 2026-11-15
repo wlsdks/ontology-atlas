@@ -12,7 +12,6 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
-import { availableDemoClips } from '../model/demo-clips';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
@@ -720,7 +719,6 @@ function ScreensSection() {
 
 function DemoSection() {
   const t = useTranslations('download');
-  const hasClip = availableDemoClips().length > 0;
 
   return (
     <section
@@ -737,38 +735,12 @@ function DemoSection() {
       >
         <div data-testid="gateway-demo-head" className="min-w-0 min-[90rem]:self-center min-[90rem]:pb-9">
           <SectionIntro eyebrow={t('demoEyebrow')} title={t('demoTitle')} sub={t('demoSub')} />
-          {hasClip ? <DemoPrompt text={t('demoAgentPrompt')} label={t('demoPromptLabel')} /> : null}
         </div>
         <div className="gateway-scroll-stage mt-9 min-w-0 min-[90rem]:mt-0">
           <DemoStage />
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * The request the take was filmed on, so a visitor can read
- * what the agent answers. The chat scene's user-bubble shape: it is what a person typed.
- */
-function DemoPrompt({ text, label }: { text: string; label: string }) {
-  return (
-    <figure data-testid="gateway-demo-prompt" className="mt-7 min-w-0 max-w-[40rem]">
-      <figcaption className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
-        {label}
-      </figcaption>
-      <blockquote className="mt-1.5 break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-body leading-body text-[color:var(--color-text-secondary)]">
-        {text.split('`').map((part, i) =>
-          i % 2 === 1 ? (
-            <code key={i} className="font-mono text-[color:var(--color-text-primary)] [overflow-wrap:anywhere]">
-              {part}
-            </code>
-          ) : (
-            part
-          ),
-        )}
-      </blockquote>
-    </figure>
   );
 }
 
