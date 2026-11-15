@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { despeckle, inkFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
+import { despeckle, holdBody, inkFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
@@ -170,7 +170,9 @@ test('every catalogue export has complete frames, clear margins and a shared neu
     }
     for (const file of [clip.gif, clip.webp]) {
       const metadata = await sharp(`${root}/${file}`, { animated: true }).metadata();
-      assert.equal(metadata.pages, clip.frames, `${name}: ${file} lost frames`);
+      // WebP folds a pose identical to the one before it into that pose's delay; GIF rounds each delay to 10 ms.
+      if (file === clip.gif) assert.equal(metadata.pages, clip.frames, `${name}: ${file} lost frames`);
+      else assert.equal(metadata.delay.reduce((total, ms) => total + ms, 0), clip.durationsMs.reduce((total, ms) => total + ms, 0), `${name}: ${file} lost playing time`);
       assert.equal(metadata.width, 256); assert.equal(metadata.pageHeight, 256);
     }
     if (clip.source) {
@@ -205,7 +207,7 @@ function enclosedInk(buffer, size) {
     if (!enclosed) continue;
     const rows = Array.from({ length: y1 - y0 + 1 }, () => Array(x1 - x0 + 1).fill('.'));
     for (const p of group) rows[(p - p % size) / size - y0][p % size - x0] = '#';
-    marks.push({ x0, y0, width: x1 - x0 + 1, height: y1 - y0 + 1, drawing: rows.map(row => row.join('')).join('/') });
+    marks.push({ x0, y0, width: x1 - x0 + 1, height: y1 - y0 + 1, pixels: group, drawing: rows.map(row => row.join('')).join('/') });
   }
   return marks;
 }
@@ -431,6 +433,50 @@ test('the resting face shows two identical level eyes at both exported sizes', a
     assert.equal(eyes.length, 2, `${size}px resting face does not show two eyes of one height`);
     assert.equal(eyes[0].drawing, eyes[1].drawing, `${size}px resting eyes differ`);
     assert.equal(eyes[0].y0, eyes[1].y0, `${size}px resting eyes are not level`);
+  }
+});
+
+test('a resting clip keeps the first pose and redraws only the mark that changed in its place', () => {
+  const draw = ({ shift, leftEye, rightEyeX, crease, crumb }) => {
+    const { data, paint } = canvas(64);
+    paint(8 + shift, 8, 56 + shift, 56, INK);
+    paint(10 + shift, 10, 54 + shift, 54, SKIN);
+    paint(...leftEye, INK);
+    paint(rightEyeX, 20, rightEyeX + 4, 28, INK);
+    if (crease) paint(20, 44, 30, 46, INK);
+    if (crumb) paint(45, 46, 47, 48, INK);
+    return data;
+  };
+  const resting = { shift: 0, leftEye: [20, 20, 24, 28], rightEyeX: 36, crease: true, crumb: false };
+  const closing = draw({ shift: 1, leftEye: [18, 26, 26, 28], rightEyeX: 37, crease: false, crumb: true });
+  const [first, held, last] = holdBody([draw(resting), closing, draw(resting)], 64);
+  const expected = canvas(64);
+  expected.data.set(draw(resting));
+  expected.paint(20, 20, 24, 28, SKIN);
+  expected.paint(18, 26, 26, 28, INK);
+  assert.deepEqual(held, expected.data, 'the pose kept its own outline, a mark the first pose never had, or lost a mark it could not see');
+  assert.deepEqual([first, last], [draw(resting), draw(resting)], 'the first or the last pose changed');
+});
+
+test('between its first and last pose the blink changes only its facial marks, and the eyes do close', async () => {
+  const { clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  for (const [file, size] of [[clips.blink.sprite64, 64], [clips.blink.sprite, 128]]) {
+    const resting = await frameOf(`assets/brand/moru/${file}`, 0, size);
+    const markInk = frame => new Set(enclosedInk(frame, size).flatMap(mark => mark.pixels));
+    const restingInk = markInk(resting);
+    let changedPoses = 0;
+    for (let frame = 1; frame < clips.blink.frames - 1; frame++) {
+      const pose = await frameOf(`assets/brand/moru/${file}`, frame, size), poseInk = markInk(pose);
+      let changed = 0;
+      for (let p = 0; p < size * size; p++) {
+        if (pose.compare(resting, p * 4, p * 4 + 4, p * 4, p * 4 + 4) === 0) continue;
+        const besideMark = [-size - 1, -size, -size + 1, -1, 0, 1, size - 1, size, size + 1].some(step => restingInk.has(p + step) || poseInk.has(p + step));
+        assert.ok(besideMark, `${size}px blink pose ${frame} redraws the body at ${p % size},${Math.floor(p / size)}`);
+        changed++;
+      }
+      if (changed) changedPoses++;
+    }
+    assert.ok(changedPoses >= 8, `${size}px blink closes the eyes in only ${changedPoses} poses`);
   }
 });
 

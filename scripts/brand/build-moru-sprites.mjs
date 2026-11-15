@@ -232,6 +232,41 @@ function unsharedPixels(a, b, size) {
   return a.pixels.length + b.pixels.length - 2 * shared;
 }
 
+/** Pixels between the boxes of two marks along the wider axis; zero when the boxes meet. */
+function boxGap(a, b) {
+  return Math.max(0, a.x0 - b.x0 - b.w, b.x0 - a.x0 - a.w, a.y0 - b.y0 - b.h, b.y0 - a.y0 - a.h);
+}
+
+/**
+ * A clip whose body rests keeps its first pose, the reference, in every pose between the first
+ * and the last. Each of a pose's facial marks claims the reference mark nearest it within
+ * `FILL_REACH`, one each; the claimed mark is redrawn from the pose unless the two are one
+ * drawing within `TWIN_TOLERANCE`. A pose mark that claims nothing is source noise.
+ * O(poses × (pixels + marks² × mark pixels)).
+ */
+export function holdBody(frames, size) {
+  const reference = frames[0], kept = enclosedMarks(reference, size);
+  const within = (a, b) => Math.abs(a - b) <= TWIN_TOLERANCE;
+  const oneDrawing = (a, b) => within(a.x0, b.x0) && within(a.y0, b.y0) && within(a.w, b.w) && within(a.h, b.h)
+    && unsharedPixels(a, b, size) <= Math.min(a.pixels.length, b.pixels.length) * TWIN_UNSHARED_SHARE;
+  const centreDistance = (a, b) => Math.hypot(a.x0 + a.w / 2 - b.x0 - b.w / 2, a.y0 + a.h / 2 - b.y0 - b.h / 2);
+  return frames.map((frame, i) => {
+    if (i === 0 || i === frames.length - 1) return frame;
+    const pairs = enclosedMarks(frame, size).flatMap(mark => kept.map(own => ({ mark, own, gap: boxGap(mark, own), apart: centreDistance(mark, own), held: oneDrawing(mark, own) })))
+      .filter(pair => pair.gap <= FILL_REACH)
+      .sort((a, b) => b.held - a.held || a.gap - b.gap || a.apart - b.apart);
+    const claimed = new Set(), redrawn = [];
+    for (const pair of pairs) {
+      if (claimed.has(pair.own) || claimed.has(pair.mark)) continue;
+      claimed.add(pair.own).add(pair.mark);
+      if (!pair.held) redrawn.push(pair);
+    }
+    const out = paintedOver(reference, size, redrawn.flatMap(pair => pair.own.pixels));
+    for (const { mark } of redrawn) for (const p of mark.pixels) if (isOpaque(out, p)) frame.copy(out, p * 4, p * 4, p * 4 + 4);
+    return out;
+  });
+}
+
 /**
  * Each mark reduces to its own size, never by where it sits; a size exactly between two takes
  * the smaller, which keeps the gap beside it. Marks of one reduced size that match the largest
@@ -464,6 +499,7 @@ export async function buildMoru() {
       try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
       catch (error) { throw new Error(`${clip.id} frame ${i + 1}: ${error.message}`); }
     }).map(f => inkFringe(liftFreeInk(despeckle(f, size), size), size));
+    if (clip.restingBody) frames = holdBody(frames, size);
     for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
       const reduced = reduceMoru(f, size, exported);
       let shaved = 0;

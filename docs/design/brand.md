@@ -133,6 +133,16 @@ identically. A mark takes the place within one pixel that covers and touches
 the least other ink; where the face is too crowded for a clear place, it may
 touch.
 
+The source redraws the whole figure in every pose, so a clip in which only the
+face moves showed its outline, tail and flippers crawling by a pixel from pose
+to pose. A clip that declares `restingBody` in `moru-source.json` (today
+`blink`, the waiting mark) keeps its first pose in every pose between the first
+and the last. Each facial mark of a pose claims the nearest mark of the first
+pose within one and a half drawn pixels, one each: a mark that is the same
+drawing within half a drawn pixel stays the first pose's own, a mark that
+changed is redrawn in its place, and a mark that claims nothing is source
+noise. A mark the pose lost to its outline stays as the first pose drew it.
+
 Outline ink is 1.14:1 on the app canvas and reads only beside a fill, so ink
 drawn away from every fill (a note, a fishing line, an emphasis tick) is
 exported in indigo `#6D73D2`, and a detached piece smaller than four drawn
@@ -267,8 +277,8 @@ The repository [license](../../LICENSE) remains unchanged.
   compass fan-out, binary templates and exact installed motion rows.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
   identical level eyes at both sizes, the floor line of every grounded clip,
-  the cleaning, reduction, facial-mark and free-ink rules, a nonempty clip
-  inventory, frame count, hard alpha, margins and loop seams.
+  the cleaning, reduction, facial-mark, resting-body and free-ink rules, a
+  nonempty clip inventory, frame count, hard alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
   cover evidence, Stop, visibility, reduced motion and finite work behavior. Companion tests cover independent decorative play and pause/resume.
 - Motion approval additionally requires a real recording through
