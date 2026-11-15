@@ -32,6 +32,7 @@ import { useStageGraph } from '../lib/use-stage-graph';
 import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
+import { OpenSourceSection } from './OpenSourceSection';
 import { SectionIntro } from './SectionIntro';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 
@@ -87,6 +88,7 @@ export function DownloadPage() {
         <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection />
+        <OpenSourceSection />
         <ClosingSection
           published={published}
           primaryAsset={primaryAsset}

@@ -386,7 +386,7 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  it('walks decision → app window → the three moments → screens → the steps → colophon', () => {
+  it('walks decision → app window → the three moments → screens → the steps → the source → colophon', () => {
     publishRelease();
     renderDownloadPage();
 
@@ -394,6 +394,7 @@ describe('DownloadPage', () => {
     const primaryCta = screen.getByTestId('gateway-hero-cta');
     const loop = screen.getByTestId('gateway-loop-cards');
     const steps = screen.getByTestId('gateway-start-steps');
+    const source = screen.getByTestId('gateway-source-repository');
     const demo = screen.getByTestId('demo-stage');
     const architecture = screen.getByTestId('gateway-architecture-capture');
     const library = screen.getByTestId('gateway-library-capture');
@@ -406,7 +407,8 @@ describe('DownloadPage', () => {
       [loop, architecture],
       [architecture, library],
       [library, steps],
-      [steps, colophon],
+      [steps, source],
+      [source, colophon],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
