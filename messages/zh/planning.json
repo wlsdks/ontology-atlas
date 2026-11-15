@@ -6,8 +6,6 @@
   "browserUnavailable": "规划文件夹仅在 macOS 应用中可用。",
   "loading": "正在读取所选文件夹…",
   "empty": "没有找到支持的文档或图片。",
-  "folderLabel": "文件夹：{folder}",
-  "pathLabel": "路径：{path}",
   "observedAt": "文件夹列表读取时间：{time}",
   "observationLimit": "文件可能在下次检查前发生变化。",
   "findFile": "查找文件名或路径",
@@ -50,5 +48,6 @@
   "imageUnnamed": "图片 {line}:{column}",
   "startTitle": "集中查看规划与设计",
   "startBody": "打开规划文件夹，在同一处阅读 Markdown 文档和设计图片。",
-  "designImages": "设计图片"
+  "designImages": "设计图片",
+  "close": "关闭"
 }
