@@ -137,7 +137,13 @@
     --map-neural-axon-bow: 0.25;
     --map-neural-tract-pull: 0.35;
     --map-neural-tract-gain: 1.5;
-    --map-neural-veil: 0.2;
+    --map-neural-veil: 0.33;
+    /* A receded domain title keeps a little less than a receded cell. */
+    --map-neural-title-veil: 0.3;
+    /* Zooming in grows cells with the camera, up to this many times their size at the fit. */
+    --map-neural-zoom-grow-max: 2.5;
+    /* A cluster's title stays at least this far below the canvas top while the cluster is on screen. */
+    --map-neural-title-pin-px: 96;
     --map-neural-axon-veil: 0.13;
     --map-neural-lit-start-px: 3.2;
     --map-neural-lit-end-px: 1.2;

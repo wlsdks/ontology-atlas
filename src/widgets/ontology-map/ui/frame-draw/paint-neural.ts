@@ -12,6 +12,7 @@ import {
   type NeuralTracts,
   neuralSignalProgress,
 } from "../../model/dome-view/neural-cells";
+import { standingDomainTitles, type TitleCandidate } from "../../model/dome-view/neural-titles";
 import { labelFontFamily } from "../../render/labels";
 import { readNeuralTokens, type NeuralTokens } from "../../tokens/read-neural-tokens";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
@@ -34,7 +35,6 @@ const DEPTH_TONES = 3;
 const AXON_DOT_T = 0.95;
 const LIT_DOT_T = 0.96;
 const NAME_GRID_PX = 48;
-const DOMAIN_DIM_IN_FOCUS = 0.45;
 const SPRITE_PX = 64;
 const PLATE_EDGE_ALPHA = 0.2;
 /** Points per lit axon a receded domain title must keep clear of. */
@@ -50,6 +50,7 @@ let sy = new Float64Array(0);
 let sr = new Float64Array(0);
 let sa = new Float64Array(0);
 let su = new Float64Array(0);
+let restAlpha = new Float64Array(0);
 let order = new Int32Array(0);
 let ax = new Float64Array(0);
 let ay = new Float64Array(0);
@@ -63,6 +64,7 @@ function ensure(nodes: number, edges: number): void {
   if (sx.length < nodes) {
     sx = new Float64Array(nodes); sy = new Float64Array(nodes); sr = new Float64Array(nodes);
     sa = new Float64Array(nodes); su = new Float64Array(nodes); order = new Int32Array(nodes);
+    restAlpha = new Float64Array(nodes);
   }
   if (ax.length < edges) {
     ax = new Float64Array(edges); ay = new Float64Array(edges); acx = new Float64Array(edges);
@@ -219,6 +221,9 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   if (focusId !== signal.focusId) signal = { focusId, startMs: now };
   const travel = focusId === null ? 1 : neuralSignalProgress(now, signal.startMs, t.signalMs, reducedMotion);
 
+  // Zooming in past the fit grows the cells with the camera, up to `zoomGrowMax`.
+  const fitScale = frame.domeFitScale ?? null;
+  const zoomGrowth = fitScale !== null && fitScale > 0 ? Math.min(t.zoomGrowMax, Math.max(1, camScale / fitScale)) : 1;
   let drawn = 0;
   litDrawnStateCounts.current = 0;
   litDrawnStateCounts.stale = 0;
@@ -229,10 +234,11 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     sx[i] = toScreenX(node.x + f.dx);
     sy[i] = toScreenY(node.y + f.dy);
     const perspective = (radiusForKind(node.kind, frame.tokens) * node.magnitudeScale * f.s * camScale) / DOME_NODE_PX[node.kind];
-    sr[i] = neuralCellRadiusPx(node.kind, graph.dependencyCount.get(node.id) ?? 0, sizes) * perspective;
+    sr[i] = neuralCellRadiusPx(node.kind, graph.dependencyCount.get(node.id) ?? 0, sizes) * perspective * zoomGrowth;
     su[i] = f.u;
     const lit = sets === null || node.id === focusId || sets.needs.has(node.id) || sets.usedBy.has(node.id);
-    sa[i] = f.a * neural * (1 - (1 - t.farAlpha) * f.u) * (lit ? 1 : veilCell);
+    restAlpha[i] = f.a * neural * (1 - (1 - t.farAlpha) * f.u);
+    sa[i] = restAlpha[i] * (lit ? 1 : veilCell);
     order[i] = i;
   }
 
@@ -240,15 +246,18 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
 
   // Cluster light: one soft pool behind each cluster, centred on its members.
   const arcGlow = glowSprite(ink.arc);
-  const pools = new Map<string, { minX: number; maxX: number; minY: number; maxY: number; top: number; a: number }>();
+  const pools = new Map<string, { minX: number; maxX: number; minY: number; maxY: number; top: number; a: number; depth: number }>();
   for (let i = 0; i < n; i += 1) {
     const domain = graph.clusterOf.get(world.nodes[i].id);
     if (domain === undefined || sa[i] <= 0.01) continue;
-    const pool = pools.get(domain) ?? { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, top: Infinity, a: 0 };
+    const pool = pools.get(domain) ?? { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, top: Infinity, a: 0, depth: 0 };
     pool.minX = Math.min(pool.minX, sx[i]); pool.maxX = Math.max(pool.maxX, sx[i]);
     pool.minY = Math.min(pool.minY, sy[i]); pool.maxY = Math.max(pool.maxY, sy[i]);
     pool.top = Math.min(pool.top, sy[i] - sr[i]);
-    pool.a = Math.max(pool.a, world.nodes[i].kind === "domain" ? sa[i] : 0);
+    if (world.nodes[i].kind === "domain") {
+      pool.a = Math.max(pool.a, restAlpha[i]);
+      pool.depth = su[i];
+    }
     pools.set(domain, pool);
   }
   for (const pool of pools.values()) {
@@ -406,7 +415,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   }
 
   const lit = { edges: litEdges, far: litFar, farIsTarget: litRole.map((usedBy) => !usedBy) };
-  paintNeuralNames(ctx, frame, graph, evidence, labels, { focusId, focusIndex, sets, ramp, lit }, pools);
+  paintNeuralNames(ctx, frame, graph, evidence, labels, { focusId, focusIndex, sets, ramp, lit, zoomGrowth }, pools);
   ctx.globalAlpha = 1;
 }
 
@@ -422,8 +431,9 @@ function paintNeuralNames(
     sets: { needs: Set<string>; usedBy: Set<string> } | null;
     ramp: number;
     lit: { edges: readonly number[]; far: readonly number[]; farIsTarget: readonly boolean[] };
+    zoomGrowth: number;
   },
-  pools: ReadonlyMap<string, { minX: number; maxX: number; maxY: number; top: number; a: number }>,
+  pools: ReadonlyMap<string, { minX: number; maxX: number; minY: number; maxY: number; top: number; a: number; depth: number }>,
 ): void {
   const t = tokens!;
   const ink = t.inks;
@@ -527,50 +537,46 @@ function paintNeuralNames(
     return false;
   };
   let named = 0;
-  if (hot) for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
+  const nameBudget = Math.round(t.nameBudget * focus.zoomGrowth);
+  if (hot) for (const i of candidates) if (named < nameBudget && placeName(i)) named += 1;
 
-  // At rest every domain's name stands above its cluster. With a focus a receded title moves
-  // below its cluster, or gives way, to keep clear of the lit names and axons.
+  // Each domain's name stands above its cluster, nearest first; a title that would sit on another
+  // cluster or a nearer title gives way. With a focus a receded title also yields to the lit names.
   const nameFont = `${FONT_WEIGHT.strong} ${t.domainNamePx}px ${family}`;
   const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
   const summaries = clusterSummaries(frame, graph, evidence);
   const focusCluster = focusId === null ? undefined : graph.clusterOf.get(focusId);
-  const domainOrder = [...pools.entries()].sort((a, b) => b[1].a - a[1].a || (summaries.get(b[0])?.capabilities ?? 0) - (summaries.get(a[0])?.capabilities ?? 0));
-  for (const [domainId, pool] of domainOrder) {
+  const titles: (TitleCandidate & { label: string; meta: string | null; x: number; nameY: number; metaY: number; nameBox: Box; a: number })[] = [];
+  for (const [domainId, pool] of pools) {
     if (pool.a <= 0.05) continue;
     const node = world.nodeById.get(domainId);
     if (!node) continue;
     const summary = summaries.get(domainId);
     const meta = labels && summary ? labels.domainMeta(summary) : null;
     const x = (pool.minX + pool.maxX) / 2;
-    const titleAt = (metaY: number) => {
-      const nameY = metaY - t.domainNameGapPx;
-      ctx.font = nameFont;
-      const nameBox = boxFor(node.label, x, nameY, "center", t.domainNamePx);
-      ctx.font = metaFont;
-      const metaBox = meta ? boxFor(meta, x, metaY, "center", t.domainMetaPx) : nameBox;
-      const box = {
-        minX: Math.min(nameBox.minX, metaBox.minX), minY: nameBox.minY,
-        maxX: Math.max(nameBox.maxX, metaBox.maxX), maxY: metaBox.maxY,
-      };
-      return { nameY, metaY, nameBox, box };
-    };
-    const above = titleAt(pool.top - t.domainMetaGapPx);
-    const below = titleAt(pool.maxY + t.domainMetaGapPx + t.domainNameGapPx);
-    const receded = focusCluster !== undefined && focusCluster !== domainId;
-    const free = (b: Box) => !names.hits(b) && !(receded && litPath.hits(b));
-    const chosen = !hot ? above
-      : free(above.box) && !cells.hits(above.box) ? above
-      : free(below.box) && !cells.hits(below.box) ? below
-      : free(above.box) ? above : null;
-    if (chosen === null) continue;
-    const title = chosen;
+    // While any of the cluster is on screen its title stays inside the top of the canvas.
+    const onScreen = pool.maxY > 0 && pool.minY < height && pool.maxX > 0 && pool.minX < width;
+    const metaY = Math.max(pool.top - t.domainMetaGapPx, onScreen ? t.titlePinPx + t.domainNameGapPx : -Infinity);
+    const nameY = metaY - t.domainNameGapPx;
+    ctx.font = nameFont;
+    const nameBox = boxFor(node.label, x, nameY, "center", t.domainNamePx);
+    ctx.font = metaFont;
+    const metaBox = meta ? boxFor(meta, x, metaY, "center", t.domainMetaPx) : nameBox;
+    const box = { minX: Math.min(nameBox.minX, metaBox.minX), minY: nameBox.minY, maxX: Math.max(nameBox.maxX, metaBox.maxX), maxY: metaBox.maxY };
+    const disc = { x, y: (pool.minY + pool.maxY) / 2, r: Math.max(pool.maxX - pool.minX, pool.maxY - pool.minY) / 2 };
+    titles.push({ id: domainId, box, disc, depth: pool.depth, label: node.label, meta, x, nameY, metaY, nameBox, a: pool.a });
+  }
+  const standing = standingDomainTitles(titles);
+  for (const title of titles) {
+    if (!standing.has(title.id)) continue;
+    const receded = focusCluster !== undefined && focusCluster !== title.id;
+    if (hot && (names.hits(title.box) || (receded && litPath.hits(title.box)))) continue;
     if (title.box.maxX < -200 || title.box.minX > width + 200 || title.box.maxY < -40 || title.box.minY > height + 40) continue;
-    const dim = (receded ? 1 - (1 - DOMAIN_DIM_IN_FOCUS) * focus.ramp : 1) * pool.a * neural;
-    write(node.label, x, title.nameY, "center", nameFont, ink.strong, 0.96 * dim, t.nameHaloPx + 1);
-    if (meta) write(meta, x, title.metaY, "center", metaFont, ink.name, 0.85 * dim, t.nameHaloPx);
+    const dim = (receded ? 1 - (1 - t.titleVeil) * focus.ramp : 1) * title.a;
+    write(title.label, title.x, title.nameY, "center", nameFont, ink.strong, 0.96 * dim, t.nameHaloPx + 1);
+    if (title.meta) write(title.meta, title.x, title.metaY, "center", metaFont, ink.name, 0.85 * dim, t.nameHaloPx);
     names.add(title.box);
-    boxes.push({ nodeId: domainId, text: node.label, ...title.nameBox });
+    boxes.push({ nodeId: title.id, text: title.label, ...title.nameBox });
   }
 
   if (!hot) {
@@ -583,7 +589,7 @@ function paintNeuralNames(
       names.add(box);
       boxes.push({ nodeId: world.nodes[i].id, text: label, ...box });
     }
-    for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
+    for (const i of candidates) if (named < nameBudget && placeName(i)) named += 1;
   }
 
   if (plate && focusId !== null) {

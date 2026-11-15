@@ -159,6 +159,8 @@ export interface FrameDrawParams {
   } | null) | null;
   domeLight?: DomeLightFrame | null;
   neuralLabels?: NeuralLabels | null;
+  /** The camera scale the dome was last fitted at; Neural grows its cells past it. */
+  domeFitScale?: number | null;
   trailLensRamp?: number;
   dial?: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null;
 }

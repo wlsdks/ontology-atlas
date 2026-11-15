@@ -5,7 +5,7 @@ export interface NeuralTokens {
   glowReach: number; glowAlpha: number; farAlpha: number; clusterGlowAlpha: number; clusterGlowPadPx: number;
   axonAlpha: number; tractAlpha: number; axonCapPx: number; axonElementPx: number; axonEndPx: number; axonDotPx: number;
   axonBow: number; tractPull: number; tractGain: number;
-  veil: number; axonVeil: number;
+  veil: number; axonVeil: number; titleVeil: number; zoomGrowMax: number; titlePinPx: number;
   litStartPx: number; litEndPx: number; litAlpha: number; litGlowPx: number; litDotPx: number;
   signalPx: number; signalGlowPx: number; focusRingGapPx: number; focusRingPx: number;
   domainNamePx: number; domainMetaPx: number; domainNameGapPx: number; domainMetaGapPx: number;
@@ -22,7 +22,7 @@ type NumberKey = Exclude<keyof NeuralTokens, "inks" | "signalMs">;
 const NUMBER_KEYS: readonly NumberKey[] = [
   "capPx", "capGainPx", "elementPx", "elementGainPx", "domainPx", "projectPx", "nucleusShare", "nucleusAlpha", "ringGapPx", "ringPx",
   "glowReach", "glowAlpha", "farAlpha", "clusterGlowAlpha", "clusterGlowPadPx", "axonAlpha", "tractAlpha", "axonCapPx", "axonElementPx",
-  "axonEndPx", "axonDotPx", "axonBow", "tractPull", "tractGain", "veil", "axonVeil", "litStartPx", "litEndPx", "litAlpha", "litGlowPx",
+  "axonEndPx", "axonDotPx", "axonBow", "tractPull", "tractGain", "veil", "axonVeil", "titleVeil", "zoomGrowMax", "titlePinPx", "litStartPx", "litEndPx", "litAlpha", "litGlowPx",
   "litDotPx", "signalPx", "signalGlowPx", "focusRingGapPx", "focusRingPx", "domainNamePx", "domainMetaPx", "domainNameGapPx",
   "domainMetaGapPx", "namePx", "nameGapPx", "nameHaloPx", "nameBudget", "platePadPx", "plateRadiusPx",
 ];
