@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -11,7 +10,7 @@ import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * Neural, lit, on the dogfood vault, opened through the installed-app runtime with the Git walk
- * answered from this repository's real history; each claim is measured on the drawn result.
+ * answered by a fixed clock; each claim is measured on the drawn result.
  */
 
 const REPO = path.resolve(__dirname, "../../../..");
@@ -36,13 +35,17 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-function gitTime(repoRelative: string): string | null {
-  try {
-    const out = execFileSync("git", ["log", "-1", "--format=%cI", "--", repoRelative], { cwd: REPO }).toString().trim();
-    return out || null;
-  } catch {
-    return null;
-  }
+/** Every document was last written at this time. */
+const DOC_CHANGED_AT = "2026-06-01T00:00:00+00:00";
+
+/**
+ * One source path in four changed after the documents, chosen by the path's own text. A CI checkout
+ * carries one commit, whose history calls nothing stale, so the clock is the spec's own.
+ */
+function sourceChangedAt(repoRelative: string): string {
+  let sum = 0;
+  for (const ch of repoRelative) sum += ch.codePointAt(0)!;
+  return sum % 4 === 0 ? "2026-07-01T00:00:00+00:00" : "2026-05-01T00:00:00+00:00";
 }
 
 const idOf = (kind: string, slug: string) => `${kind}:${slug.split("/").pop()}`;
@@ -71,14 +74,14 @@ function dogfoodVault(): { files: Record<string, string>; changes: Record<string
     if (changes[p]) return changes[p]!;
     const abs = path.join(REPO, p);
     const exists = existsSync(abs);
-    const change = { exists, isDir: exists && statSync(abs).isDirectory(), lastChangedAt: exists ? gitTime(p) : null };
+    const change = { exists, isDir: exists && statSync(abs).isDirectory(), lastChangedAt: exists ? sourceChangedAt(p) : null };
     changes[p] = change;
     return change;
   };
   const stale = new Set<string>();
   for (const doc of docs) {
     const docKey = `${doc.slug}.md`;
-    changes[docKey] = { exists: true, isDir: false, lastChangedAt: gitTime(path.join("docs/ontology", doc.rel)) };
+    changes[docKey] = { exists: true, isDir: false, lastChangedAt: DOC_CHANGED_AT };
     const paths = new Set<string>();
     if (doc.path) paths.add(doc.path);
     for (const e of doc.elements) {
@@ -130,6 +133,8 @@ async function openNeural(page: Page, runtime: "desktop" | "web" = "desktop", wi
     await page.getByTestId("topology-view-3d").click();
     await page.getByTestId("topology-view-3d-choice-neural").click();
   }
+  // The starter's own Neural may already be drawn; the claims are about this vault.
+  await expect.poll(() => probe(page, (p) => p.nodes().some((n) => n.id === "capability:mcp-tool-server")), { timeout: 60_000 }).toBe(true);
   await waitForDomeEntered(page, 60_000);
   const legend = page.getByTestId("topology-neural-legend");
   if (runtime === "desktop") await expect(legend).toHaveAttribute("data-evidence-availability", "measured", { timeout: 30_000 });
@@ -138,37 +143,44 @@ async function openNeural(page: Page, runtime: "desktop" | "web" = "desktop", wi
 
 /**
  * Pixels of the map canvas in the stale warning ink, counted in the page; `region` limits the
- * count to a disc in canvas CSS px.
+ * count to a disc in canvas CSS px. A pixel counts only when its four neighbours carry the ink too:
+ * the map canvas is opaque, so Linux antialiases its names per subpixel, and those one-pixel
+ * fringes have the same hue as the ink.
  */
 async function countAmber(page: Page, region?: { x: number; y: number; r: number }): Promise<number> {
   return page.evaluate((disc) => {
     const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="ontology-map-canvas"]')!;
     const ctx = canvas.getContext("2d")!;
     const scale = canvas.width / canvas.getBoundingClientRect().width;
-    const x0 = disc ? Math.max(0, Math.floor((disc.x - disc.r) * scale)) : 0;
-    const y0 = disc ? Math.max(0, Math.floor((disc.y - disc.r) * scale)) : 0;
-    const x1 = disc ? Math.min(canvas.width, Math.ceil((disc.x + disc.r) * scale)) : canvas.width;
-    const y1 = disc ? Math.min(canvas.height, Math.ceil((disc.y + disc.r) * scale)) : canvas.height;
+    const x0 = disc ? Math.max(0, Math.floor((disc.x - disc.r) * scale) - 1) : 0;
+    const y0 = disc ? Math.max(0, Math.floor((disc.y - disc.r) * scale) - 1) : 0;
+    const x1 = disc ? Math.min(canvas.width, Math.ceil((disc.x + disc.r) * scale) + 1) : canvas.width;
+    const y1 = disc ? Math.min(canvas.height, Math.ceil((disc.y + disc.r) * scale) + 1) : canvas.height;
     if (x1 <= x0 || y1 <= y0) return 0;
-    const data = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
     const w = x1 - x0;
-    let count = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      if (disc) {
-        const px = (x0 + ((i / 4) % w) + 0.5) / scale;
-        const py = (y0 + Math.floor(i / 4 / w) + 0.5) / scale;
-        if (Math.hypot(px - disc.x, py - disc.y) > disc.r) continue;
-      }
-      const r = data[i]! / 255;
-      const g = data[i + 1]! / 255;
-      const b = data[i + 2]! / 255;
+    const h = y1 - y0;
+    const data = ctx.getImageData(x0, y0, w, h).data;
+    const inked = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p += 1) {
+      const r = data[p * 4]! / 255;
+      const g = data[p * 4 + 1]! / 255;
+      const b = data[p * 4 + 2]! / 255;
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       if (max === min) continue;
       const s = (max - min) / max;
-      const h = (max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60;
-      const hue = h < 0 ? h + 360 : h;
-      if (hue >= 32 && hue <= 55 && s >= 0.55 && max >= 0.3) count += 1;
+      const hh = (max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4) * 60;
+      const hue = hh < 0 ? hh + 360 : hh;
+      if (hue >= 32 && hue <= 55 && s >= 0.55 && max >= 0.3) inked[p] = 1;
+    }
+    let count = 0;
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const p = y * w + x;
+        if (!inked[p] || !inked[p - 1] || !inked[p + 1] || !inked[p - w] || !inked[p + w]) continue;
+        if (disc && Math.hypot((x0 + x + 0.5) / scale - disc.x, (y0 + y + 0.5) / scale - disc.y) > disc.r) continue;
+        count += 1;
+      }
     }
     return count;
   }, region ?? null);
