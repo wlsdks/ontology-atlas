@@ -37,6 +37,7 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapProps } from "../OntologyMap";
 import { worldToScreen } from "../camera/topology-camera-math";
 import type { NeuralLabels } from "../frame-draw/paint-neural";
+import type { NeuralSurface } from "../frame-draw/neural-frame";
 import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "../frame-draw/topology-frame-draw";
 import { reportFlatDial, type FlatDialFrameProps } from "../loop/topology-loop-contract";
 import { dialFrameSummary } from "../../dial/frame/frame";
@@ -134,6 +135,7 @@ interface Dependencies {
   onHiddenDependenciesChangeRef: RefObject<((count: number) => void) | undefined>;
   hiddenDependenciesSentRef: RefObject<number>;
   flatDialRef: RefObject<FlatDialFrameProps>;
+  neuralSurface: NeuralSurface;
 }
 
 /** Advance visual ramps, publish hit-test visibility, paint the canvas, and report screen anchors. */
@@ -208,6 +210,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   onHiddenDependenciesChangeRef,
   hiddenDependenciesSentRef,
   flatDialRef,
+  neuralSurface,
 }: Dependencies) {
   let litInkKey = "";
   let litInks: Pick<DomeLightFrame, "kindRgb" | "warningRgb" | "focusRgb"> | null = null;
@@ -479,6 +482,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
                 : null,
             domeLight: domeLightFor(tokens, domeLod),
             neuralLabels: neuralLabelsRef.current,
+            neuralSurface,
             domeFitScale: domeRuntimeRef.current?.restFit?.target.tscale ?? domeRuntimeRef.current?.fitScale ?? null,
             paintAnimatedBackground: animatedBgRef.current
                 ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)

@@ -1,4 +1,5 @@
 import type { NeuralLabels } from "./paint-neural";
+import type { NeuralSurface } from "./neural-frame";
 import type { DialWorld } from '../../dial/types';
 import type { PanelInsets } from "../../interaction/free-area";
 import type { CameraAxes } from "../../engine/camera";
@@ -159,6 +160,8 @@ export interface FrameDrawParams {
   } | null) | null;
   domeLight?: DomeLightFrame | null;
   neuralLabels?: NeuralLabels | null;
+  /** Draws Neural's cells, axons and light instead of the canvas-2D strokes, when it can. */
+  neuralSurface?: NeuralSurface | null;
   /** The camera scale the dome was last fitted at; Neural grows its cells past it. */
   domeFitScale?: number | null;
   trailLensRamp?: number;

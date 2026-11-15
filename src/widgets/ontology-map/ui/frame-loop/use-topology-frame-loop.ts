@@ -3,6 +3,7 @@ import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import { clearDialFrame, lastDialFrame } from "../../dial/frame/frame";
 import type { CameraAxes } from "../../engine/camera";
 import { createLightFrameStage } from "../../light/light-frame-stage";
+import { createNeuralGlStage } from "../../neural-gl/neural-gl-stage";
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import { shouldSkipFrame } from "../../model/ambient/idle-gate";
 import { projectDomeEdgeControl } from '../../model/dome-view/dome-edge';
@@ -32,7 +33,7 @@ interface Configuration {
   realmFrameStage: Parameters<typeof createRealmFrameStage>[0];
   revealFrameStage: Parameters<typeof createRevealFrameStage>[0];
   frameGate: Omit<Parameters<typeof createFrameGate>[0], "lightActiveRef">;
-  presentationFrameStage: Omit<Parameters<typeof createPresentationFrameStage>[0], "ctx" | "domeEdgeControlForFrame" | "nodeLayerRef">;
+  presentationFrameStage: Omit<Parameters<typeof createPresentationFrameStage>[0], "ctx" | "domeEdgeControlForFrame" | "nodeLayerRef" | "neuralSurface">;
 }
 
 const frameRequests = new Set<() => void>();
@@ -87,8 +88,14 @@ export function useTopologyFrameLoop(configuration: Configuration) {
 
     const nodeLayerRef: { current: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
         } = { current: null };
-    const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, domeEdgeControlForFrame, nodeLayerRef });
-    const light = createLightFrameStage({ canvasRef, refs: configuration.presentationFrameStage, lightActiveRef, requestFrame });
+    const wakeOnce = () => {
+      lastActiveMsRef.current = performance.now();
+      requestFrame();
+    };
+    const neuralContextRef = { current: false };
+    const neural = createNeuralGlStage({ canvasRef, requestFrame: wakeOnce, claimContext: () => light.standDown(), contextHeldRef: neuralContextRef });
+    const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, domeEdgeControlForFrame, nodeLayerRef, neuralSurface: neural.surface });
+    const light = createLightFrameStage({ canvasRef, refs: configuration.presentationFrameStage, lightActiveRef, requestFrame, contextHeldElsewhereRef: neuralContextRef });
 
     const { view3dRef, trailLensPropRef, lastInputMsRef, ambientSleepDelayRef } = configuration.frameGate;
     const { animatedBgRef } = configuration.presentationFrameStage;
@@ -153,7 +160,9 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         frameChips,
         batchAppearVisible);
       light.prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, frameClusteredIds);
+      neural.beginFrame(dpr);
       runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, clusterFrame.captionFoldedIds, realmFrame.realmDial);
+      neural.endFrame();
       if (lastDialFrame()?.branchMembersAnimating) lastActiveMsRef.current = now;
       light.afterPaint();
       stillFocusId = focusedNodeId;
@@ -238,6 +247,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       canvas.removeEventListener("contextlost", onContextLost);
       canvas.removeEventListener("contextrestored", onContextRestored);
       still.release();
+      neural.dispose();
       light.dispose();
     };
 

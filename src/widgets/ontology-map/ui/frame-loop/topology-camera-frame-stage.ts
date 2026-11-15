@@ -5,7 +5,7 @@ import type { PointerMachineState } from "../../interaction/pointer-state-machin
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import { createFocusRampClock } from "../../model/visibility/focus-state";
 import { easeAnchoredZoom, easeCameraKeyframe, type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
+import { domeFitFocusLeash, type DomeRuntime } from "../../model/dome-view/runtime";
 import type { GrowthReplay } from "../../model/ambient/growth-replay";
 import {
   depthParallaxFactorForDepth,
@@ -251,6 +251,16 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
       }
     }
 
+    // In 3D, leash the pan to the focused node's drawn place; aimed at a Neural fit, to the free area it fills.
+    const domeFocus = (() => {
+      const dome = domeRuntimeRef.current;
+      if (dome === null || dome.rampClock <= 0 || focusedNodeId === null) return null;
+      const off = dome.frame.get(focusedNodeId);
+      const node = world.nodeById.get(focusedNodeId);
+      if (!off || !node) return null;
+      const anchor = { x: node.x + off.dx, y: node.y + off.dy };
+      return domeFitFocusLeash(anchor, cameraTargetRef.current, cameraRef.current.scale.value) ?? { anchor, leashPx: null };
+    })();
     const { camera, farT, zoomRatio } = stepTopologyPhysics({
       world,
       camera: cameraRef.current,
@@ -277,19 +287,12 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
         domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
           ? domeRuntimeRef.current.drawnBounds
           : null,
-      focusAnchorOverride: (() => {
-        const dome = domeRuntimeRef.current;
-        if (dome === null || dome.rampClock <= 0 || focusedNodeId === null) return null;
-        const off = dome.frame.get(focusedNodeId);
-        const node = world.nodeById.get(focusedNodeId);
-        if (!off || !node) return null;
-        return { x: node.x + off.dx, y: node.y + off.dy };
-      })(),
+      focusAnchorOverride: domeFocus?.anchor ?? null,
       scaleMinOverride:
         domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
           ? domeRuntimeRef.current.fitScale
           : null,
-      focusLeashPx: focusLeashPxRef.current,
+      focusLeashPx: domeFocus?.leashPx ?? focusLeashPxRef.current,
       reducedMotion: reducedMotionRef.current,
       userDrivenCamera: userDrivenCameraRef.current,
       freezeCamera,

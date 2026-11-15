@@ -8,6 +8,7 @@ import { blankComments } from "../../../scripts/quality/source-language/inventor
 const LICENSED = {
   "src/shared/lib/map-canvas/webgl-probe.ts": "the renderer probe that decides whether WebGL is hardware",
   "src/widgets/ontology-map/light/light-layer.ts": "the map's light layer, which draws light only",
+  "src/widgets/ontology-map/neural-gl/neural-gl.ts": "Neural's three.js painter, loaded on first entry to Neural",
   "src/views/library/expressive/constellation-scene.ts": "the Library constellation's three.js scene",
 } as const;
 
@@ -26,7 +27,7 @@ function opensWebgl(file: string, source: string): boolean {
 describe("WebGL context census", () => {
   const openers = productSources().filter((file) => opensWebgl(file, readFileSync(file, "utf8")));
 
-  it("opens a WebGL context only in the probe, the light layer and the Library three.js scene", () => {
+  it("opens a WebGL context only in the probe, the light layer, Neural's painter and the Library three.js scene", () => {
     expect(openers.filter((file) => !(file in LICENSED))).toEqual([]);
   });
 

@@ -411,6 +411,20 @@ export function computeLensFitTarget(
   return { ...centerForInsets(fit.tx, fit.ty, insets, fit.tscale), tscale: fit.tscale };
 }
 
+/** Half the area a dome fit fills round its centre, in screen px: the free canvas times the fill, less a disc. */
+export function domeFitFreeHalfSize(
+  viewportWidth: number,
+  viewportHeight: number,
+  insets: { left: number; right: number; top: number; bottom: number },
+  nodeRadiusPx: number,
+  tokens: { domeFitFill: number },
+): { halfW: number; halfH: number } {
+  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
+  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  const fill = tokens.domeFitFill > 0 ? tokens.domeFitFill : 1;
+  return { halfW: Math.max(1, effW * fill - nodeRadiusPx * 2) / 2, halfH: Math.max(1, effH * fill - nodeRadiusPx * 2) / 2 };
+}
+
 /**
  * The cone's own fit: fill the free canvas, not the safe rect, since the overview fit's static insets
  * describe the 2D map. Free canvas = canvas minus measured panels (`interaction/free-area.ts`) minus
@@ -427,11 +441,9 @@ export function computeDomeFitCameraTarget(
   nodeRadiusPx: number,
   tokens: Pick<OntologyMapTokens, "cameraScaleMax" | "cameraScaleMin"> & { domeFitFill: number },
 ): CameraTarget {
-  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
-  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
-  const fill = tokens.domeFitFill > 0 ? tokens.domeFitFill : 1;
-  const availW = Math.max(1, effW * fill - nodeRadiusPx * 2);
-  const availH = Math.max(1, effH * fill - nodeRadiusPx * 2);
+  const free = domeFitFreeHalfSize(viewportWidth, viewportHeight, insets, nodeRadiusPx, tokens);
+  const availW = free.halfW * 2;
+  const availH = free.halfH * 2;
   const spanX = Math.max(1e-6, bounds.maxX - bounds.minX);
   const spanY = Math.max(1e-6, bounds.maxY - bounds.minY);
   const tscale = Math.min(
