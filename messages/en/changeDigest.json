@@ -26,5 +26,5 @@
   "timelineWeeks": "Merged by week",
   "groupsByScope": "Changes by scope",
   "groupsByDirectory": "Changes by directory",
-  "backToList": "Back to the list"
+  "close": "Close"
 }

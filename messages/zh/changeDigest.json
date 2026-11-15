@@ -26,5 +26,5 @@
   "timelineWeeks": "按周的合并",
   "groupsByScope": "按范围的变更",
   "groupsByDirectory": "按目录的变更",
-  "backToList": "返回列表"
+  "close": "关闭"
 }

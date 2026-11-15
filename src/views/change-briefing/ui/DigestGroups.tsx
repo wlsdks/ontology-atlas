@@ -2,7 +2,7 @@
 
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft } from 'lucide-react';
+import { X } from 'lucide-react';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -27,6 +27,12 @@ const KIND_INKS = [
 ] as const;
 const OTHER_KIND_INK = 'bg-[color:var(--color-indigo-a28)]';
 const ACCENT_INK = 'bg-[color:var(--color-indigo-accent)]';
+/**
+ * From 820px of pane (51.25rem) an opened change sits beside the full list, split by a hairline;
+ * below it the list shortens and the change stacks under it.
+ */
+const SPLIT_WIDE = '@[51.25rem]/scope:grid @[51.25rem]/scope:grid-cols-2 @[51.25rem]/scope:items-start';
+const DETAIL_FRAME = 'mt-4 space-y-4 border-t border-[color:var(--color-border-soft)] pt-4 @[51.25rem]/scope:sticky @[51.25rem]/scope:top-6 @[51.25rem]/scope:mt-0 @[51.25rem]/scope:ml-3 @[51.25rem]/scope:border-t-0 @[51.25rem]/scope:border-l @[51.25rem]/scope:pl-6 @[51.25rem]/scope:pt-3';
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export interface DigestSelection {
@@ -165,7 +171,8 @@ function GroupPanel({ group, kinds, selection, onSelection, conceptTitle, format
     select(null);
     requestAnimationFrame(() => listRef.current?.querySelector<HTMLElement>(`[data-change-hash="${CSS.escape(hash ?? '')}"]`)?.focus());
   }
-  return <section aria-labelledby={headingId} data-digest-list={group.key} data-testid="change-digest-group" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+  return <section aria-labelledby={headingId} data-digest-list={group.key} data-testid="change-digest-group" className="@container/scope rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+    onKeyDown={event => { if (event.key === 'Escape' && opened) { event.preventDefault(); back(); } }}>
     <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
       <h3 id={headingId} className="flex min-w-0 items-baseline gap-3 text-title font-[var(--font-weight-strong)]">
         <span className={cn('truncate', group.kind === 'other' ? 'text-[color:var(--color-text-secondary)]' : 'text-[color:var(--color-text-primary)]')}>{name}</span>
@@ -177,13 +184,17 @@ function GroupPanel({ group, kinds, selection, onSelection, conceptTitle, format
       <span className="text-label text-[color:var(--color-text-tertiary)]">{t('concepts')}</span>
       <ConceptLinks ids={group.concepts} conceptTitle={conceptTitle} />
     </div>}
-    <ul ref={listRef} className={cn('relative -mx-3 mt-4 border-t border-[color:var(--color-border-soft)] pt-1', opened && 'atlas-scroll-quiet max-h-50 overflow-y-auto', listOverflows && '[mask-image:linear-gradient(to_bottom,black_calc(100%_-_var(--tabbar-edge-fade)),transparent)]')}>
-      {group.changes.slice(0, shown).map(change => <li key={change.commit.hash}>
-        <ChangeRow change={change} time={formatTime(change.commit.committedAt)} headless={group.kind === 'label'} selected={change === opened} onPress={() => select(change === opened ? null : change.commit.hash)} />
-      </li>)}
-    </ul>
-    {remaining > 0 && !opened && <Button className="atlas-touch-floor atlas-touch-floor-wide mt-2" variant="ghost" size="sm" onClick={() => onSelection({ ...selection, shown: { ...selection.shown, [group.key]: shown + PAGE_SIZE } })}>{t('more', { count: Math.min(PAGE_SIZE, remaining) })}</Button>}
-    {opened && <ChangeDetail change={opened} time={formatTime(opened.commit.committedAt)} conceptTitle={conceptTitle} url={opened.number === null ? null : pullUrl(opened.number)} onOpen={onOpen} onBack={back} />}
+    <div data-change-split={opened ? 'open' : 'closed'} className={cn('mt-4 border-t border-[color:var(--color-border-soft)]', opened && SPLIT_WIDE)}>
+      <div className="min-w-0">
+        <ul ref={listRef} data-change-list className={cn('relative -mx-3 pt-1', opened && 'atlas-scroll-quiet max-h-50 overflow-y-auto @[51.25rem]/scope:max-h-none @[51.25rem]/scope:overflow-visible', listOverflows && '[mask-image:linear-gradient(to_bottom,black_calc(100%_-_var(--tabbar-edge-fade)),transparent)] @[51.25rem]/scope:[mask-image:none]')}>
+          {group.changes.slice(0, shown).map(change => <li key={change.commit.hash}>
+            <ChangeRow change={change} time={formatTime(change.commit.committedAt)} headless={group.kind === 'label'} selected={change === opened} onPress={() => select(change === opened ? null : change.commit.hash)} />
+          </li>)}
+        </ul>
+        {remaining > 0 && <Button className={cn('atlas-touch-floor atlas-touch-floor-wide mt-2', opened && 'hidden @[51.25rem]/scope:inline-flex')} variant="ghost" size="sm" onClick={() => onSelection({ ...selection, shown: { ...selection.shown, [group.key]: shown + PAGE_SIZE } })}>{t('more', { count: Math.min(PAGE_SIZE, remaining) })}</Button>}
+      </div>
+      {opened && <ChangeDetail change={opened} time={formatTime(opened.commit.committedAt)} conceptTitle={conceptTitle} url={opened.number === null ? null : pullUrl(opened.number)} onOpen={onOpen} onClose={back} />}
+    </div>
   </section>;
 }
 
@@ -202,7 +213,7 @@ function ChangeRow({ change, time, headless, selected, onPress }: { change: Dige
   </RowButton>;
 }
 
-function ChangeDetail({ change, time, conceptTitle, url, onOpen, onBack }: { change: DigestChange; time: string; url: string | null; onBack: () => void } & Pick<DigestGroupsProps, 'conceptTitle' | 'onOpen'>) {
+function ChangeDetail({ change, time, conceptTitle, url, onOpen, onClose }: { change: DigestChange; time: string; url: string | null; onClose: () => void } & Pick<DigestGroupsProps, 'conceptTitle' | 'onOpen'>) {
   const t = useTranslations('changeDigest');
   const briefing = useTranslations('changeBriefing');
   const { commit } = change;
@@ -210,11 +221,13 @@ function ChangeDetail({ change, time, conceptTitle, url, onOpen, onBack }: { cha
   const paths = [...new Set(commit.paths)];
   const directories = directoryCounts(paths);
   const body = changeBody(commit.subject, commit.message);
-  return <div data-testid="change-detail" className="mt-4 space-y-4 border-t border-[color:var(--color-border-soft)] pt-4">
-    <button type="button" onClick={onBack} className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'touch-hit-expand gap-2 text-body' })}><ArrowLeft size={ICON_SIZE.sm} aria-hidden />{t('backToList')}</button>
-    <div className="space-y-1">
-      <p className="break-words text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{title}</p>
-      <p className="font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">{[change.number !== null ? `#${change.number}` : null, time, commit.hash.slice(0, 8)].filter(Boolean).join(' · ')}</p>
+  return <div data-testid="change-detail" className={DETAIL_FRAME}>
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0 space-y-1">
+        <p className="break-words text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{title}</p>
+        <p className="font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">{[change.number !== null ? `#${change.number}` : null, time, commit.hash.slice(0, 8)].filter(Boolean).join(' · ')}</p>
+      </div>
+      <Button className="atlas-touch-floor atlas-touch-floor-wide -mr-2 -mt-1 shrink-0 gap-1.5" variant="ghost" size="sm" onClick={onClose}><X size={ICON_SIZE.sm} aria-hidden />{t('close')}</Button>
     </div>
     {body.length > 0 && <p className="whitespace-pre-line text-body text-[color:var(--color-text-secondary)]">{body.join('\n')}</p>}
     {change.concepts.length > 0 && <div className="flex flex-wrap items-center gap-2">

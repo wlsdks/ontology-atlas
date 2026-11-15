@@ -62,9 +62,36 @@ test('selects a group, opens a change in its detail, then its original and retur
   await expect(row).toBeFocused();
   await expect(map).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('change-detail')).toHaveCount(1);
-  await detail.getByRole('button', { name: 'Back to the list', exact: true }).click();
+  await detail.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.getByTestId('change-detail')).toHaveCount(0);
   await expect(row).toBeFocused();
+  await row.click();
+  await expect(detail).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('change-detail')).toHaveCount(0);
+  await expect(row).toBeFocused();
+});
+
+test('opens a change beside the whole list where the scope pane is wide, and under a shortened list where it is not', async ({ page }) => {
+  await open(page, 'digest');
+  const rows = page.locator('[data-digest-list="label:map"] [data-change-hash]');
+  await expect(rows).toHaveCount(18);
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await rows.nth(2).click();
+  const detail = page.getByTestId('change-detail');
+  await expect(detail).toBeVisible();
+  const wide = await page.evaluate(() => {
+    const list = document.querySelector('[data-digest-list="label:map"] [data-change-list]')!.getBoundingClientRect();
+    const shown = document.querySelector('[data-testid="change-detail"]')!.getBoundingClientRect();
+    return { listRight: list.right, listHeight: list.height, detailLeft: shown.left };
+  });
+  expect(wide.detailLeft).toBeGreaterThanOrEqual(wide.listRight);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect.poll(() => page.evaluate(() => {
+    const list = document.querySelector('[data-digest-list="label:map"] [data-change-list]')!.getBoundingClientRect();
+    const shown = document.querySelector('[data-testid="change-detail"]')!.getBoundingClientRect();
+    return shown.top >= list.bottom && list.height < 18 * 40;
+  })).toBe(true);
 });
 
 test('reads the kinds of work from commit types and adds them up to the headline', async ({ page }) => {

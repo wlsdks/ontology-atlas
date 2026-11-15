@@ -26,5 +26,5 @@
   "timelineWeeks": "주별 머지",
   "groupsByScope": "스코프별 변경",
   "groupsByDirectory": "디렉터리별 변경",
-  "backToList": "목록으로"
+  "close": "닫기"
 }
