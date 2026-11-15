@@ -8,6 +8,7 @@ const pipeline = vi.hoisted(() => {
     return result;
   });
   const gate = run("gate");
+  const dome = run("dome", true);
   const motion = run("motion");
   const camera = run("camera", { camera: {}, farT: 0, zoomRatio: 1, focusedNodeId: null });
   const clusters = run("clusters", { effectiveExpanded: new Set(), batchAppearVisible: new Set() });
@@ -18,7 +19,7 @@ const pipeline = vi.hoisted(() => {
   const lightAfterPaint = run("light-after-paint");
   const lightRender = run("light-render");
   const lightDispose = vi.fn();
-  return { order, gate, motion, camera, clusters, realm, reveal, presentation, lightPrepare, lightAfterPaint, lightRender, lightDispose };
+  return { order, gate, dome, motion, camera, clusters, realm, reveal, presentation, lightPrepare, lightAfterPaint, lightRender, lightDispose };
 });
 
 const still = vi.hoisted(() => {
@@ -61,6 +62,7 @@ vi.mock("./topology-frame-gate", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./topology-frame-gate")>()),
   createFrameGate: vi.fn(() => pipeline.gate),
 }));
+vi.mock("./topology-dome-frame-stage", () => ({ createDomeFrameStage: vi.fn(() => pipeline.dome) }));
 vi.mock("./topology-world-motion-frame-stage", () => ({ createWorldMotionFrameStage: vi.fn(() => pipeline.motion) }));
 vi.mock("./topology-camera-frame-stage", () => ({ createCameraFrameStage: vi.fn(() => pipeline.camera) }));
 vi.mock("./topology-cluster-frame-stage", () => ({ createClusterFrameStage: vi.fn(() => pipeline.clusters) }));
@@ -83,11 +85,12 @@ function configuration(canvas: HTMLCanvasElement) {
   // Stages are substituted above; only the scheduler's own configuration is real.
   return {
     canvasRef: { current: canvas },
-    motion: { reducedMotionRef: { current: false } },
+    projection: { domeRuntimeRef: { current: null }, cameraRef: { current: {} }, reducedMotionRef: { current: false }, neuralRampRef: { current: 0 } },
     recovery: { lastActiveMsRef: { current: 0 }, viewportRebuildPendingRef: { current: false }, wakeFrameLoopRef: { current: () => {} } },
-    worldMotionFrameStage: {}, cameraFrameStage: {}, clusterFrameStage: {},
+    domeFrameStage: {}, worldMotionFrameStage: {}, cameraFrameStage: {}, clusterFrameStage: {},
     realmFrameStage: {}, revealFrameStage: {},
     frameGate: {
+            view3dRef: { current: false },
       trailLensPropRef: { current: null }, lastInputMsRef: { current: 0 }, ambientSleepDelayRef: { current: undefined },
     },
     presentationFrameStage: { animatedBgRef: { current: null } },
@@ -104,6 +107,7 @@ describe("topology frame scheduling", () => {
     vi.clearAllMocks();
     pipeline.order.length = 0;
     pipeline.gate.mockImplementation(() => { pipeline.order.push("gate"); return readyFrame; });
+    pipeline.dome.mockImplementation(() => { pipeline.order.push("dome"); return true; });
     request = vi.fn((callback: FrameRequestCallback) => { nextFrame = callback; return 17; });
     cancel = vi.fn();
     vi.stubGlobal("requestAnimationFrame", request);
@@ -120,7 +124,7 @@ describe("topology frame scheduling", () => {
   it("runs stages in dependency order and passes the same frame clock to reveal", () => {
     const { unmount, rerender } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
     act(() => nextFrame(1234));
-    expect(pipeline.order).toEqual(["gate", "motion", "camera", "clusters", "realm", "reveal", "light-prepare", "presentation", "light-after-paint", "light-render"]);
+    expect(pipeline.order).toEqual(["gate", "dome", "motion", "camera", "clusters", "realm", "reveal", "light-prepare", "presentation", "light-after-paint", "light-render"]);
     expect(pipeline.reveal.mock.calls[0]?.slice(0, 2)).toEqual([1234, 0.016]);
     expect(pipeline.lightPrepare.mock.calls[0]?.[0]).toBe(1234);
     expect(pipeline.presentation).toHaveBeenCalledOnce();
@@ -142,11 +146,12 @@ describe("topology frame scheduling", () => {
     unmount();
   });
 
-  it("reschedules after a gate yield without drawing a partial frame", () => {
-    pipeline.gate.mockImplementation(() => { pipeline.order.push("gate"); return FRAME_NOT_READY; });
+  it.each(["gate", "dome"] as const)("reschedules after a %s yield without drawing a partial frame", (stage) => {
+    if (stage === "gate") pipeline.gate.mockImplementation(() => { pipeline.order.push("gate"); return FRAME_NOT_READY; });
+    else pipeline.dome.mockImplementation(() => { pipeline.order.push("dome"); return false; });
     const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
     act(() => nextFrame(1234));
-    expect(pipeline.order).toEqual(["gate"]);
+    expect(pipeline.order).toEqual(stage === "gate" ? ["gate"] : ["gate", "dome"]);
     expect(pipeline.presentation).not.toHaveBeenCalled();
     expect(request).toHaveBeenCalledTimes(2);
     unmount();
@@ -176,7 +181,7 @@ describe("topology frame scheduling", () => {
   it("restarts when an original camera policy dependency is replaced", () => {
     const state = configuration(canvas);
     const { rerender, unmount } = renderHook(() => useTopologyFrameLoop({ ...state }));
-    state.worldMotionFrameStage = { ...state.worldMotionFrameStage, beginCameraTween: vi.fn() };
+    state.domeFrameStage = { ...state.domeFrameStage, beginCameraTween: vi.fn() };
     rerender();
     expect(createFrameGate).toHaveBeenCalledTimes(2);
     expect(cancel).toHaveBeenCalledOnce();
@@ -292,6 +297,7 @@ describe("a flat map where only the comets move", () => {
     still.state.comets = [];
     still.state.drawn = [{ kind: "depends", t: 0.25, sourceId: "a", targetId: "b" }];
     pipeline.gate.mockImplementation(() => stillFrame);
+    pipeline.dome.mockImplementation(() => true);
     nextFrame = null;
     request = vi.fn((callback: FrameRequestCallback) => {
       nextFrame = callback;

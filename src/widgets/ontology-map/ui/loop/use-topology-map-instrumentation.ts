@@ -6,21 +6,28 @@ import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { measureCanvasInsets } from "../../interaction/free-area";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { ClusterChip } from "../../model/layout/density-gate";
+import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
+import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { ForceSimulation } from "../../model/layout/force-layout";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
 import type { OntologyMapProps } from "../OntologyMap";
+import type { StrataLodState } from "../../model/dome-view/strata-lod";
 import {
   lastDrawnLabelBoxes,
+  lastDrawnLod,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
   lastDrawnSkyTimeMs,
+  lastLitStateCounts,
   setMapComets,
 } from "../frame-draw/topology-frame-draw";
 import type {
   NodeDragState,
   TopologyPointerHandlers,
 } from "../input/topology-pointer-types";
+import { lastTierPlanes } from "../frame-loop/topology-presentation-frame-stage";
 import { describeLastDialFrame, lastDialFrame } from "../../dial/frame/frame";
 import type { DialProbe } from "../../dial/types";
 import { requestOntologyMapFrame } from "../frame-loop/use-topology-frame-loop";
@@ -42,6 +49,11 @@ export interface TopologyMapInstrumentationSources {
     clusteredIdsRef: SourceRef<ReadonlySet<string>>;
     clusterChipsRef: SourceRef<readonly ClusterChip[]>;
     previewEdgeHeldRef: SourceRef<OntologyMapProps["previewEdge"]>;
+    domeRuntimeRef: SourceRef<DomeRuntime | null>;
+    domeModelBuildRef: SourceRef<unknown>;
+    domeLodRef: SourceRef<StrataLodState>;
+    neuralRampRef: SourceRef<number>;
+    reducedMotionRef: SourceRef<boolean>;
     appearRef: SourceRef<Map<string, number>>;
   };
   interaction: {
@@ -92,6 +104,11 @@ export function useTopologyMapInstrumentation({
     clusteredIdsRef,
     clusterChipsRef,
     previewEdgeHeldRef,
+    domeRuntimeRef,
+    domeModelBuildRef,
+    domeLodRef,
+    neuralRampRef,
+    reducedMotionRef,
     appearRef,
   } = scene;
   const {
@@ -159,16 +176,26 @@ export function useTopologyMapInstrumentation({
         const sim = simRef.current;
         const clustered = clusteredIdsRef.current;
         const preview = previewEdgeHeldRef.current;
+        // In 3D the instrument reports the **drawn** coordinates. Reading
+        // anything but the frame map the draw last produced would measure the
+        // instrument's own imagination rather than the screen (the same
+        // principle as the edge instrument below). Mid-rotation it is still
+        // *this frame's* coordinates.
+        const domeFrame =
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.frame
+            : null;
         const drawnAlphas = lastDrawnNodeAlphas();
         return world.nodes.map((n) => {
+          const dOff = domeFrame?.get(n.id) ?? { dx: 0, dy: 0, s: 1 };
           return {
             id: n.id,
             kind: n.kind,
             label: n.label,
             // The inverse of screenToWorld, using the same camera, so they
             // cannot disagree.
-            x: (n.x - camera.x.value) * camera.scale.value + width / 2,
-            y: (n.y - camera.y.value) * camera.scale.value + height / 2,
+            x: (n.x + dOff.dx - camera.x.value) * camera.scale.value + width / 2,
+            y: (n.y + dOff.dy - camera.y.value) * camera.scale.value + height / 2,
             /** ★ Not checking this produced six wrong answers: a node absent from the sim pans instead of dragging. */
             draggable: sim?.hasNode(n.id) ?? false,
             /** W6 agent ring — reports the same decision the draw uses
@@ -196,7 +223,8 @@ export function useTopologyMapInstrumentation({
             radius: tokens
               ? radiusForKind(n.kind, tokens) *
               n.magnitudeScale *
-              camera.scale.value
+              camera.scale.value *
+              dOff.s
               : 0,
           };
         });
@@ -213,9 +241,20 @@ export function useTopologyMapInstrumentation({
         const clustered = clusteredIdsRef.current;
         const toScreenX = (x: number) => (x - camera.x.value) * camera.scale.value + width / 2;
         const toScreenY = (y: number) => (y - camera.y.value) * camera.scale.value + height / 2;
+        // The same per-endpoint frame offsets the draw uses
+        // (`projectEdgePoints`).
+        const domeFrame =
+          domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+            ? domeRuntimeRef.current.frame
+            : null;
+        const EDGE_ZERO = { dx: 0, dy: 0, s: 1 };
+        const edgeOff = (nodeId: string) => domeFrame?.get(nodeId) ?? EDGE_ZERO;
                 return world.edges
           .filter((e) => !clustered?.has(e.sourceId) && !clustered?.has(e.targetId))
           .map((e) => {
+            const offA = edgeOff(e.sourceId);
+            const offB = edgeOff(e.targetId);
+            const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
             const visible = true;
                     return {
                         sourceId: e.sourceId,
@@ -223,10 +262,10 @@ export function useTopologyMapInstrumentation({
                         kind: e.kind,
                         visible,
                         hidden: !visible,
-                        ax: toScreenX(e.ax),
-                        ay: toScreenY(e.ay),
-                        bx: toScreenX(e.bx),
-                        by: toScreenY(e.by),
+                        ax: toScreenX(e.ax + offA.dx),
+                        ay: toScreenY(e.ay + offA.dy),
+                        bx: toScreenX(e.bx + offB.dx),
+                        by: toScreenY(e.by + offB.dy),
                         /**
                          * ★ So the instrument measures **the curve that is drawn**, not its
                          * chord. The draw path is `quadraticCurveTo(control, b)`
@@ -234,8 +273,8 @@ export function useTopologyMapInstrumentation({
                          * crossings that are not on screen and misses crossings that are —
                          * measuring an approximation rather than the map.
                          */
-                        controlX: toScreenX(e.controlX),
-                        controlY: toScreenY(e.controlY),
+                        controlX: toScreenX(control.x),
+                        controlY: toScreenY(control.y),
                     };
                 });
             },
@@ -323,6 +362,86 @@ export function useTopologyMapInstrumentation({
                 });
             },
             /**
+             * Dome pose — where the dome is looking and whether it still spins by
+             * itself. Canvas pixels cannot distinguish yaw, pitch or the armed state
+             * from outside, so this is the window for verifying the auto-spin stop,
+             * the pitch range and the selection reframe. Null in 2D (dome off), which
+             * is distinguishable from the instrument being absent.
+             */
+            dome: () => {
+                const d = domeRuntimeRef.current;
+                if (d === null)
+                    return null;
+                return {
+                    yaw: d.yaw,
+                    pitch: d.pitch,
+                    /*
+                     * The pose the pointer commanded; its gap from `yaw` is how far the dome trails the hand, which
+                     * pixels cannot show.
+                     */
+                    yawTarget: d.yawTarget,
+                    pitchTarget: d.pitchTarget,
+                    yawVel: d.yawVel,
+                    pitchVel: d.pitchVel,
+                    orbiting: d.orbiting,
+                    spinArmed: d.spinArmed,
+                    /*
+                     * Tier torsion (follow-through) — **from outside the canvas this is
+                     * the only thing that says whether the dome reacts to its own
+                     * motion.** Pixels cannot tell a ring that lagged from a ring simply
+                     * drawn that way. Requiring this to be non-zero during a
+                     * programmatic pose move is what makes "a click reframe does not turn
+                     * as a rigid block" verifiable from outside.
+                     */
+                    lag: { ...d.lag },
+                    /*
+                     * The meaningful landing a release aimed at. From outside the canvas
+                     * there is no way to tell inertia that happened to stop from a stop
+                     * that was aimed; this value is that distinction.
+                     */
+                    yawSnap: d.yawSnap,
+                    poseTween: d.poseTween !== null,
+                    active: d.active,
+                    ramp: d.rampClock / DOME_ASSEMBLE_TOTAL_MS,
+                    /*
+                     * Is the entry sweep still putting the pose down? It has its **own**
+                     * clock, 1500 ms against the assembly's 1120 ms (`dome-view/`), so
+                     * `ramp >= 1` is not "the dome has arrived" — the last 380 ms of turning
+                     * happens after it. E2E had no way to see that and slept 4 seconds to
+                     * cover both, which asserts the machine's speed rather than the dome's
+                     * state; the idle gate already reads this flag for the same reason.
+                     */
+                    entryArmed: d.entryArmed,
+                    settling: domeModelBuildRef.current !== null,
+                    /*
+                     * The fly-to in effect (the node it framed) and how many drawn nodes wore each evidence light in the
+                     * last frame, so a spec can compare it with the legend's counts.
+                     */
+                    flight: d.flight?.slug ?? null,
+                    flyPending: d.flyRequest !== null,
+                    light: lastLitStateCounts(),
+                    lod: {
+                        active: domeLodRef.current.active,
+                        capability: domeLodRef.current.planeResolve.capability,
+                        element: domeLodRef.current.planeResolve.element,
+                        spacingPx: { ...domeLodRef.current.spacingPx },
+                        gap: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeGap },
+                        count: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeCount },
+                        hoverSlot: domeLodRef.current.hoverSlot,
+                        hoverRamp: domeLodRef.current.hoverSlot >= 0 ? domeLodRef.current.ramps[domeLodRef.current.hoverSlot] ?? 0 : 0,
+                        focusSlot: domeLodRef.current.focusSlot,
+                        sheets: domeLodRef.current.shapeCount,
+                        dust: lastDrawnLod().dust,
+                        dustStates: lastDrawnLod().dustStates,
+                        evidenceRamp: domeLodRef.current.evidenceRamp,
+                        chords: lastDrawnLod().chords,
+                        chordEdges: lastDrawnLod().represented,
+                        hiddenEdges: lastDrawnLod().hidden,
+                        settling: domeLodRef.current.settling,
+                    },
+                };
+            },
+            /**
              * The node the map points at via hover, whether the cursor is over the canvas or a side-panel row.
              * The canvas has no DOM, so pixels cannot say which node.
              */
@@ -367,6 +486,8 @@ export function useTopologyMapInstrumentation({
             /** Whether the drawn attention motion has landed; cheap enough to poll every frame. */
             dialMotionSettled: () => lastDialFrame()?.branchMembersAnimating !== true,
             relationCaptions: () => lastDrawnRelationCaptions(),
+            /** Strata's planes as the last frame drew them — what the tier names are placed against. */
+            tierPlanes: () => lastTierPlanes(),
             chips: () => {
                 const world = worldRef.current;
                 const clustered = clusteredIdsRef.current;
@@ -417,6 +538,9 @@ export function useTopologyMapInstrumentation({
         canvasRef,
         clusterChipsRef,
         clusteredIdsRef,
+        domeLodRef,
+        domeModelBuildRef,
+        domeRuntimeRef,
         drawnFarTRef,
         drawnHoveredNodeIdRef,
         focusedSlugRef,
@@ -429,10 +553,12 @@ export function useTopologyMapInstrumentation({
         lastActiveMsRef,
         lastInputMsRef,
         mapLensKindRef,
+        neuralRampRef,
         nodeDragRef,
         pathEdgeIdsRef,
         pointerMachineRef,
         previewEdgeHeldRef,
+        reducedMotionRef,
         selectedEdgeRef,
         simRef,
         spotlightIdsRef,

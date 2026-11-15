@@ -2,6 +2,9 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "../../model/visibility/focus-state";
 import { computeDragTugSets } from "../../interaction/drag-tug";
 import { hitTestEdges } from "./topology-edge-hit";
+import { commitDomeEntrySweep } from "../../model/dome-view/frame";
+import { ORBIT_PITCH_PER_PX, ORBIT_YAW_PER_PX, resistDomePitch } from "../../model/dome-view/orbit";
+import { isInsideDomeGrip, solveDomePlanePoint } from "../../model/dome-view/projection";
 import { computeGrabOffsetWorld, computePinWorld } from "../../interaction/node-drag";
 import { transitionPointerState } from "../../interaction/pointer-state-machine";
 import { screenToWorld } from "../camera/topology-camera-math";
@@ -29,8 +32,8 @@ export function createPointerMoveHandler(
     viewportRef, pointerMachineRef, dragHistoryRef, focusedSlugRef, hoveredNodeIdRef,
     rippleStartRef, simRef, heatRef, nodeDragRef, dragAffectedSetRef, dragStartPosRef,
     activeTouchesRef, pinchRef, hoveredEdgeRef, clusterChipsRef, clusteredIdsRef,
-    hoveredClusterIdRef, onHoverEdge, onHoverCluster, noteUserCameraGesture,
-    scaleWithinZoomBounds, currentRect, clearEdgeHover,
+    hoveredClusterIdRef, domeGripRef, onHoverEdge, onHoverCluster, noteUserCameraGesture,
+    domeFrameNow, domeInteractive, scaleWithinZoomBounds, currentRect, clearEdgeHover,
     clearClusterHover, releaseCameraForZoom,
   } = ctx;
 
@@ -100,19 +103,65 @@ export function createPointerMoveHandler(
     if (next.phase === "dragging") {
       const sim = simRef.current;
       const { width, height } = viewportRef.current;
+      const dome = domeInteractive();
+      // A settling layout rewrites every coordinate, so a drag begun on one of its nodes drags the dome.
+      const grabbedNodeId = dome?.settling ? null : pressedNodeId;
+      // 3D in-plane node drag — the node vs empty-space decision (pressedNodeId) was
+      // already made by the same hit test as 2D. One screen point corresponds to
+      // infinitely many depths, so a node moves **only within its own kind plane**
+      // (`solveDomePlanePoint`) — preserving z's typed fact (the kind tier). The force
+      // simulation belongs to the 2D layout and is untouched here (only the dome
+      // coordinates move — session only, the 2D arrangement is unchanged).
+      if (dome && nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
+        const grabNode = world.nodeById.get(grabbedNodeId);
+        const coord = dome.model.coords.get(grabbedNodeId);
+        if (grabNode && coord) {
+          const grabFrame = dome.frame.get(grabbedNodeId);
+          const renderedX = grabNode.x + (grabFrame?.dx ?? 0);
+          const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
+          const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+          const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
+          // Grabbing a node is intervention — release the attention spin (①).
+          dome.spinArmed = false;
+          commitDomeEntrySweep(dome);
+          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
+          dome.drag = {
+            nodeId: grabbedNodeId,
+            spring: { px: coord.px, pz: coord.pz, vx: 0, vz: 0 },
+            targetPx: coord.px,
+            targetPz: coord.pz,
+          };
+        }
+      }
+      if (dome && nodeDragRef.current !== null && dome.drag !== null) {
+        clearEdgeHover();
+        clearClusterHover();
+        const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+        const pin = computePinWorld(pw.x, pw.y, nodeDragRef.current.offset);
+        const coord = dome.model.coords.get(dome.drag.nodeId);
+        if (coord) {
+          const solved = solveDomePlanePoint(dome.model, coord.py, pin.x, pin.y, dome.yaw + dome.lag[world.nodeById.get(dome.drag.nodeId)?.kind ?? "element"], dome.pitch);
+          if (solved) {
+            dome.drag.targetPx = solved.px;
+            dome.drag.targetPz = solved.pz;
+          }
+        }
+        e.currentTarget.style.cursor = "grabbing";
+        return;
+      }
       // Start a node pin-drag the moment we cross into dragging on a node.
-      if (nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
-        const grabNode = world.nodeById.get(pressedNodeId);
+      if (nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
+        const grabNode = world.nodeById.get(grabbedNodeId);
         if (grabNode) {
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
           const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
-          sim.pin(pressedNodeId, grabNode.x, grabNode.y);
-          nodeDragRef.current = { nodeId: pressedNodeId, offset };
+          sim.pin(grabbedNodeId, grabNode.x, grabNode.y);
+          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
           heatRef.current = NODE_DRAG_HEAT_MS;
           // C1 B1/B2 — capture the tug/settle-restriction set + start position
           // once, at grab time (not recomputed per frame).
-          const tugSets = computeDragTugSets(world.neighborMap, pressedNodeId);
-          dragAffectedSetRef.current = { draggedId: pressedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
+          const tugSets = computeDragTugSets(world.neighborMap, grabbedNodeId);
+          dragAffectedSetRef.current = { draggedId: grabbedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
           dragStartPosRef.current = { x: grabNode.x, y: grabNode.y };
         }
       }
@@ -136,6 +185,26 @@ export function createPointerMoveHandler(
       // above), so "something is in my hand right now" reads as the same word in both cases.
       e.currentTarget.style.cursor = "grabbing";
       const dragSpeed = navigationSpeedRef.current.drag;
+      if (dome && domeGripRef.current) {
+        const history = dragHistoryRef.current;
+        const last = history[history.length - 1];
+        const dx = last ? point.x - last.x : 0;
+        const dy = last ? point.y - last.y : 0;
+        dome.yawTarget += dx * ORBIT_YAW_PER_PX * dragSpeed;
+        dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX * dragSpeed);
+        dome.orbiting = true;
+        dome.spinArmed = false;
+        commitDomeEntrySweep(dome);
+        dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
+        if (dragHistoryRef.current.length > 10)
+          dragHistoryRef.current.shift();
+        return;
+      }
+      // Panning is intervention too: the dome must not resume idle rotation on release.
+      if (dome) {
+        dome.spinArmed = false;
+        commitDomeEntrySweep(dome);
+      }
       const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]
         ?? next.downPoint
         ?? point;
@@ -191,7 +260,7 @@ export function createPointerMoveHandler(
           ? {
             x: e.clientX,
             y: e.clientY,
-            avoid: collectHoverAvoidRects(world, cameraRef.current, viewportRef.current.width, viewportRef.current.height, tokens, clusteredIdsRef?.current ?? null, { x: e.clientX - point.x, y: e.clientY - point.y }, point),
+            avoid: collectHoverAvoidRects(world, cameraRef.current, viewportRef.current.width, viewportRef.current.height, tokens, clusteredIdsRef?.current ?? null, domeFrameNow(), { x: e.clientX - point.x, y: e.clientY - point.y }, point),
           }
           : null);
       }
@@ -241,6 +310,23 @@ export function createPointerMoveHandler(
       }
       if (chipHit !== null)
         e.currentTarget.style.cursor = "pointer";
+      /*
+       * 3D — over empty space **the cursor names two zones.** The rule differs by
+       * position (inside the dome = rotate, outside = move), and with nothing on
+       * screen saying so, that rule may as well not exist. A feature you can only
+       * discover by dragging is the «drag-only discovery» this repository forbids.
+       *
+       * `grab` = grab and rotate (over the dome) · `move` = grab and move (outside).
+       * Over a node or chip their own cursors have already won, so those are untouched.
+       */
+      if (chipHit === null && hitNodeId === null) {
+        const dome = domeInteractive();
+        if (dome !== null) {
+          const view = viewportRef.current;
+          const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
+          e.currentTarget.style.cursor = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y) ? "grab" : "move";
+        }
+      }
     }
     if (next.phase !== "idle" || focusedSlugRef.current)
       return; // The ripple is idle plus unfocused only (existing contract).

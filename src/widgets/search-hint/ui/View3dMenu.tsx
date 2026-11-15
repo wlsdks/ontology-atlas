@@ -18,8 +18,13 @@ import type { MapLayoutView } from '@/shared/lib/map-canvas/map-layout-morph-sto
  * current view reads from one place. Rows name the visible shape, never the internal key.
  */
 
-/** Ordered by distance from the flat map: 3D lifts the same map, Domain structure redraws it. */
-const CHOICES: readonly MapLayoutView[] = ['flat', 'hex', '3d', 'structure'];
+/** The flat-plane views first, then the two views drawn in depth. */
+const CHOICES: readonly MapLayoutView[] = ['flat', 'hex', 'structure', '3d', 'neural'];
+
+/** Neural keeps the message key its row had as the `coupling` arrangement. */
+export function viewMessageKey(view: MapLayoutView): string {
+  return view === 'neural' ? 'coupling' : view;
+}
 
 /**
  * The canvas is the one surface a dismissing press must not also act on. Matched by
@@ -166,12 +171,12 @@ export function View3dMenu({
                     : 'text-[color:var(--map-panel-text-primary)]',
                 )}
               >
-                {t(`view3dChoice.${choice}`)}
+                {t(`view3dChoice.${viewMessageKey(choice)}`)}
               </span>
               {/* What the row answers; balanced so a two-line hint in this 240px picker
                   never leaves one word alone on its second line. */}
               <span className="break-keep text-balance text-label text-[color:var(--map-panel-text-secondary)]">
-                {t(`view3dChoiceHint.${choice}`)}
+                {t(`view3dChoiceHint.${viewMessageKey(choice)}`)}
               </span>
             </button>
           );

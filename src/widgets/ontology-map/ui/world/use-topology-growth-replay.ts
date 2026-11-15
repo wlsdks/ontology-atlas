@@ -5,6 +5,7 @@ import {
   type RefObject
 } from "react";
 import type { CameraTarget } from "../../engine/camera";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { createGrowthReplay, type GrowthReplay } from "../../model/ambient/growth-replay";
 import { computeZoomRatio, nodeTierAlpha, type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
@@ -20,6 +21,7 @@ interface Dependencies {
   runOverviewFit: () => void;
   cameraTargetRef: RefObject<CameraTarget>;
   overviewScaleRef: RefObject<number>;
+  domeRuntimeRef: RefObject<DomeRuntime | null>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   tierRevealRef: RefObject<TierRevealConfig>;
   growthReplayAppearRef: RefObject<Map<string, number>>;
@@ -39,6 +41,7 @@ export function useTopologyGrowthReplay({
   runOverviewFit,
   cameraTargetRef,
   overviewScaleRef,
+  domeRuntimeRef,
   clusteredIdsRef,
   tierRevealRef,
   growthReplayAppearRef,
@@ -70,12 +73,14 @@ export function useTopologyGrowthReplay({
     const now = performance.now();
     /*
      * Schedule only what the screen will show: the density gate hides elements at overview altitude.
-     * Tier alpha is read at the fit target scale, where the camera is heading.
+     * Tier alpha is read at the fit target scale, where the camera is heading; 3D draws every tier.
      */
     const zoomRatio = computeZoomRatio(cameraTargetRef.current.tscale, overviewScaleRef.current * tokens.overviewEntryRatio);
+    const dome = domeRuntimeRef.current;
+    const domeOn = dome !== null && dome.active;
     const clustered = clusteredIdsRef.current;
     const shown = world.nodes.filter(
-      (n) => !clustered.has(n.id) && nodeTierAlpha(n.kind, n.isHub, zoomRatio, tierRevealRef.current) > 0.05,
+      (n) => !clustered.has(n.id) && (domeOn || nodeTierAlpha(n.kind, n.isHub, zoomRatio, tierRevealRef.current) > 0.05),
     );
     growthReplayRef.current = createGrowthReplay(
       shown.map((n) => ({ id: n.id, kind: n.kind, parentId: n.parentId })),
@@ -84,7 +89,7 @@ export function useTopologyGrowthReplay({
     growthReplayAppearRef.current = new Map();
     lastActiveMsRef.current = now;
     onGrowthReplayingChangeRef.current?.(true);
-  }, [cameraTargetRef, clusteredIdsRef, endGrowthReplay, growthReplayAppearRef, growthReplayRef, growthReplayToken, growthReplayTokenSeenRef, lastActiveMsRef, onGrowthReplayingChangeRef, overviewScaleRef, reducedMotionRef, runOverviewFit, tierRevealRef, worldRef]);
+  }, [cameraTargetRef, clusteredIdsRef, domeRuntimeRef, endGrowthReplay, growthReplayAppearRef, growthReplayRef, growthReplayToken, growthReplayTokenSeenRef, lastActiveMsRef, onGrowthReplayingChangeRef, overviewScaleRef, reducedMotionRef, runOverviewFit, tierRevealRef, worldRef]);
 
   // Esc — the app-wide "put this away" key, and the one exit that needs no
   // pointer. Registered only while a replay is in flight so it never competes

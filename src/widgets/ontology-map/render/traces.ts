@@ -140,6 +140,41 @@ export interface TraceDrawState {
    * attention channels stay orthogonal to this ramp.
    */
   level?: 0 | 1 | 2;
+  /** 3D view — line-width multiplier (depth falloff). Defaults to 1, i.e. 2D. */
+  widthScale?: number;
+  /**
+   * 3D view — **the smallest stroke this line may be drawn at, in CSS px**, after
+   * the depth multiplier. The caller derives it from the ratio the canvas is
+   * rasterising at (`model/dome-view/ink.ts#domeEdgeMinWidthPx`), so what is really
+   * held is a width in *device* pixels: below one device pixel the rasteriser
+   * spreads the stroke's alpha over the two pixel rows it straddles and the peak
+   * contrast collapses, which is how the depth-ink floor's whole gain disappeared
+   * at DPR 1 while measuring intact at DPR 2.
+   *
+   * It floors the **base** width, before the directional taper and after the
+   * per-level factor, so source→target still reads from width and the near lines,
+   * already above it, are untouched. Far lines that were below it tie at the
+   * floor — the cartographic hairline minimum, and the reason depth keeps being
+   * carried by alpha, halo, node fog, size and draw order rather than by a stroke
+   * too thin to raster.
+   *
+   * Omitted/0 means 2D or an interaction-exempt line: no floor, byte-identical
+   * output.
+   */
+  minWidthPx?: number;
+  /**
+   * 3D view — **depth halo**. Just before the ink, the same curve is stroked
+   * once in the canvas background colour slightly wider, cutting that much out
+   * of whatever was already drawn behind it. Rationale, values, and why this is
+   * not a glow: `domeHaloPx` in `model/dome-view/`
+   * (Everts et al. 2009, IEEE TVCG 15(6)).
+   *
+   * `px` is the **half-width in screen px**; `alpha` is the final opacity at
+   * that spot — the caller computes both from the depth and the line's own
+   * alpha. Omitted/`null` means 2D: zero extra strokes.
+   */
+  halo?: { color: string; px: number; alpha: number;
+    } | null;
   /**
    * The comet tail is the only moving mark this module paints; honouring `prefers-reduced-motion`
    * here keeps the canvas fully static.
@@ -250,6 +285,12 @@ function normalInk(state: TraceDrawState, tokens: TraceTokens, isDepends: boolea
         width += HOVER_LIFT_WIDTH_PX * hoverLift;
     }
     return { stroke, width };
+}
+function finishWidth(state: TraceDrawState, raw: number): number {
+    let width = raw;
+    width *= state.widthScale ?? 1;
+    const minWidthPx = state.minWidthPx ?? 0;
+    return minWidthPx > width ? minWidthPx : width;
 }
 function quadAt(a: Point, c: Point, b: Point, t: number, axis: "x" | "y"): number {
     const u = 1 - t;
@@ -500,6 +541,34 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
         ? state.reveal
         : null;
     const span = reveal ? revealSpan(reveal) : null;
+    width = finishWidth(state, width);
+    /*
+     * Depth halo — goes down **before** the ink. This one stroke is what creates
+     * front-to-back in 3D: edges are painted far-to-near this frame (painter order
+     * in the caller), so stroking the background colour slightly wider here erases
+     * that much of the far lines already drawn.
+     *
+     * The halo is never dashed — a dashed halo leaves gaps where it cuts, so it
+     * reads as a dotted shadow rather than as occlusion.
+     */
+    const halo = state.halo;
+    if (halo && halo.px > 0.05 && halo.alpha > 0.01) {
+        const prevAlpha = ctx.globalAlpha;
+        const prevCap = ctx.lineCap;
+        const prevJoin = ctx.lineJoin;
+        ctx.globalAlpha = halo.alpha;
+        ctx.strokeStyle = halo.color;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = Math.max(0.35, width) + halo.px * 2;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
+        ctx.stroke();
+        ctx.globalAlpha = prevAlpha;
+        ctx.lineCap = prevCap;
+        ctx.lineJoin = prevJoin;
+    }
     if (reveal && span) {
         const base = normalInk(state, tokens, isDepends, clamp01(reveal.baseLift));
         const baseDim = clamp01(reveal.baseDim ?? 0);
@@ -507,7 +576,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
             base.stroke = mixHex(base.stroke, tokens.edgeDim, baseDim);
             base.width += (1 - base.width) * baseDim;
         }
-        const baseWidth = base.width;
+        const baseWidth = finishWidth(state, base.width);
         if (reveal.from === "a") {
             strokeBody(ctx, state, stroke, width, 0, span.hi);
             strokeBody(ctx, state, base.stroke, baseWidth, span.hi, 1);

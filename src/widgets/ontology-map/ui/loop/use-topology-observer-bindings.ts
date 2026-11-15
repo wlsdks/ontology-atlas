@@ -6,6 +6,7 @@ import {
   type RefObject
 } from "react";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
+import { type TierNameAnchor } from "../../model/dome-view/tier-names";
 import { type ZoomTier } from "../../model/visibility/tier-visibility";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
 
@@ -16,6 +17,8 @@ interface Dependencies {
   onZoomTierChange: ((tier: ZoomTier) => void) | undefined;
   onDrawnCountChangeRef: RefObject<((drawn: number) => void) | undefined>;
   onDrawnCountChange: ((drawn: number) => void) | undefined;
+  onDomeTierAnchorsChangeRef: RefObject<((anchors: readonly TierNameAnchor[] | null) => void) | undefined>;
+  onDomeTierAnchorsChange: ((anchors: readonly TierNameAnchor[] | null) => void) | undefined;
   onHoverEdgeRef: RefObject<((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined>;
   onHoverEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined;
   onEnterRealmRef: RefObject<((slug: string) => void) | undefined>;
@@ -52,6 +55,8 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   onZoomTierChange,
   onDrawnCountChangeRef,
   onDrawnCountChange,
+  onDomeTierAnchorsChangeRef,
+  onDomeTierAnchorsChange,
   onHoverEdgeRef,
   onHoverEdge,
   onEnterRealmRef,
@@ -91,7 +96,8 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   useEffect(() => {
     onZoomTierChangeRef.current = onZoomTierChange;
     onDrawnCountChangeRef.current = onDrawnCountChange;
-  }, [onZoomTierChange, onDrawnCountChange, onZoomTierChangeRef, onDrawnCountChangeRef]);
+    onDomeTierAnchorsChangeRef.current = onDomeTierAnchorsChange;
+  }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange, onZoomTierChangeRef, onDrawnCountChangeRef, onDomeTierAnchorsChangeRef]);
 
   useEffect(() => {
     onHoverEdgeRef.current = onHoverEdge;

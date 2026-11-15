@@ -33,6 +33,43 @@ export interface Point {
 }
 
 /** Six points of a regular hexagon, flat-top-rotated -90° (prototype: `a = i*60 - 90` degrees). */
+/**
+ * Light-source offset of the depth shading, as a multiple of the radius — up and
+ * to the left. Rationale: the `depthShade` doc-block (Sun & Perona 1998 — the
+ * visual system's "light comes from above, slightly left" assumption).
+ */
+const NODE_DEPTH_SHADE_LIGHT_OFFSET = 0.4;
+/** Max black alpha at the shaded rim. Any stronger and the disc reads as a hole. */
+const NODE_DEPTH_SHADE_MAX_ALPHA = 0.5;
+/**
+ * Below this screen radius (px) the shading is skipped — on a 3–4px disc the
+ * gradient reads as noise rather than volume, and all that is left is the cost
+ * of building a gradient object per node.
+ */
+const NODE_DEPTH_SHADE_MIN_RADIUS_PX = 3.5;
+
+/**
+ * Depth-shading gradient cache, keyed by rounded (radius, strength). Coordinates
+ * are deliberately not in the key: the gradient is built **around the origin**
+ * and moved into place with `translate` at draw time.
+ */
+const shadeGradientCache = new Map<string, CanvasGradient>();
+const SHADE_CACHE_MAX = 512;
+
+function buildDepthShade(ctx: CanvasRenderingContext2D, r: number, strength: number): CanvasGradient {
+  const shade = ctx.createRadialGradient(
+    // Where the light comes from — up and slightly left; that spot stays untouched.
+    -r * NODE_DEPTH_SHADE_LIGHT_OFFSET,
+    -r * NODE_DEPTH_SHADE_LIGHT_OFFSET,
+    r * 0.05,
+    0,
+    0,
+    r * 1.25);
+  shade.addColorStop(0, "rgba(0, 0, 0, 0)");
+  shade.addColorStop(0.55, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength * 0.35).toFixed(3)})`);
+    shade.addColorStop(1, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength).toFixed(3)})`);
+    return shade;
+}
 export function hexPoints(cx: number, cy: number, r: number): Point[] {
     const points: Point[] = [];
     for (let i = 0; i < 6; i += 1) {
@@ -153,6 +190,38 @@ export interface NodeShapeDrawState {
      * `"fill"`.
      */
     glyphStyle?: "fill" | "line";
+    /**
+     * 3D view — **depth shading** strength, 0..1. At 0 (the default) not a single
+     * extra stroke is issued.
+     *
+     * The human visual system resolves shading ambiguity by assuming light comes
+     * from above and slightly to the left (Sun & Perona, *Nature Neuroscience*
+     * 1(3), 1998). So laying a single luminance gradient in that direction over a
+     * disc makes it read as a **sphere** — the cheapest way to stop the dots from
+     * looking like stickers in 3D.
+     *
+     * **The dark side is darkened; the lit side is never brightened.** A highlight
+     * or rim light on the opposite side would be exactly the glow the charter
+     * bans. All this uses is one black alpha: zero new hues, no bleed, no motion.
+     */
+    depthShade?: number;
+    /**
+     * 3D view — **far-side detail factor**, 0..1
+     * (`model/dome-view/ink.ts#domeDetailFactor`). At 1 (the default) the result is
+     * pixel-identical to before. It folds to 0 on the rear hemisphere, and only
+     * **supplementary strokes** recede: the outline stroke (fill set only — in the
+     * line set the outline *is* the mark, so it never folds) and the domain pin
+     * ticks. The disc fill, being the mark itself, is untouched at any value. The
+     * falloff is C¹ continuous (smoothstep), so a stroke can never pop out
+     * mid-rotation.
+     */
+    detail?: number;
+    /**
+     * 3D view: floor for the rim against depth fog, at least 1. The caller passes
+     * `max(1, DOME_RIM_FOG_FLOOR / fog)`; the outline is drawn at that share of its unfogged alpha,
+     * overriding the far-side detail fade, so a node always keeps a visible edge.
+     */
+    rimAlphaScale?: number;
 }
 /** Pure descriptor for render style only; the kind→silhouette mapping is invariant. */
 export interface GlyphStyleDescriptor {
@@ -285,6 +354,11 @@ export function projectPinTicks(cx: number, cy: number, r: number): PinTick[] {
  */
 function resolveBodyFill(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, farT: number, fill: string, sheenTop: string): string | CanvasGradient {
     if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T)
+        return fill;
+    // When the far-side detail factor has converged sheenTop onto fill (identical
+    // string), both stops are the same colour — return the flat fill early instead
+    // of building that gradient. Pixel-identical.
+    if (sheenTop === fill)
         return fill;
     const grad = ctx.createLinearGradient(x, y - r, x, y + r);
     grad.addColorStop(0, sheenTop);
@@ -535,7 +609,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // The alpha the frame handed us (tier × dim × appear ramp × …). Every
     // sub-stroke below multiplies into it and restores it; none replaces it.
     const entryAlpha = ctx.globalAlpha;
-    const { kind, screenX: x, screenY: y, screenRadius: r, farT, egoState, fill, stroke, lineWidth, dash, hub, sheenTop, countLabel, isHovered, hoverEmphasis, selectionPulse, agentFocus, spotlightRing, now, reducedMotion, glyphStyle, } = state;
+    const { kind, screenX: x, screenY: y, screenRadius: r, farT, egoState, fill, stroke, lineWidth, dash, hub, sheenTop, countLabel, isHovered, hoverEmphasis, selectionPulse, agentFocus, spotlightRing, now, reducedMotion, glyphStyle, depthShade = 0, detail = 1, rimAlphaScale = 1, } = state;
     const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
     // Every painter restores the dash to [], so dash state on entry is empty; only dashed nodes make
     // the native calls.
@@ -557,17 +631,80 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // silhouette path was already traced identically above.
     ctx.fillStyle = lineOnly ? tokens.holeFill : resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
     ctx.fill();
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = lineWidth * lineWidthScale;
-    ctx.stroke();
+    /*
+     * Depth shading (3D) — see the `depthShade` doc-block above. This re-fills
+     * **the very path just filled** (canvas `fill` does not clear the current
+     * path), so the silhouette cannot drift. Skipped below the minimum radius,
+     * where the gradient would be noise rather than volume.
+     */
+    if (depthShade > 0.01 && r >= NODE_DEPTH_SHADE_MIN_RADIUS_PX) {
+        /*
+         * **The gradient is cached.** This branch runs per node in 3D, and every
+         * canvas gradient object is born fresh: 125 nodes × 120Hz is 15,000 per
+         * second, and the bill arrives not as frame time but as a stutter the moment
+         * GC steps in.
+         *
+         * The key is the **rounded radius and strength**. Those two alone fix the
+         * gradient's shape (both the centre offset and the stops are functions of r
+         * and strength), and differences below 0.5px / 0.05 are indistinguishable on
+         * screen. Coordinates stay out of the key because `translate` below moves the
+         * gradient into place.
+         */
+        const key = `${Math.round(r * 2)}:${Math.round(depthShade * 20)}`;
+        let shade = shadeGradientCache.get(key);
+        if (!shade) {
+            shade = buildDepthShade(ctx, r, depthShade);
+            // Keep the cache from growing without bound: the radius × strength
+            // combinations are finite, but zoom is continuous, so a long session
+            // reaches thousands of entries. On overflow just clear it — these objects
+            // are not expensive enough to justify an LRU.
+            if (shadeGradientCache.size > SHADE_CACHE_MAX)
+                shadeGradientCache.clear();
+            shadeGradientCache.set(key, shade);
+        }
+        // Undone by an inverse translate instead of save/restore: the base transform is a pure DPR scale,
+        // so translate(x, y) then translate(-x, -y) restores it exactly.
+        ctx.translate(x, y);
+        ctx.fillStyle = shade;
+        ctx.fill();
+        ctx.translate(-x, -y);
+    }
+    /*
+     * Outline — governed by the far-side detail factor (see the `detail`
+     * doc-block). In the fill set the outline is a **supplementary stroke** laid
+     * over the fill, so on the rear hemisphere it fades continuously by alpha and
+     * is then skipped. In the line set (lineOnly) the outline *is* the mark and
+     * survives at any depth — on that path the "never make a node vanish"
+     * contract rests on this stroke.
+     */
+    const strokeFade = lineOnly ? 1 : detail;
+    // The rim floor outranks the far-side fade (`rimAlphaScale` doc-block): the
+    // fade may take a supplementary stroke away, but not the edge that says a node
+    // is there. With `rimAlphaScale` at 1 this is `entryAlpha × strokeFade`, the
+    // previous expression exactly.
+    const rimAlpha = Math.min(1, entryAlpha * Math.max(strokeFade, rimAlphaScale));
+    if (Math.abs(rimAlpha - entryAlpha) < 1e-6) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth * lineWidthScale;
+        ctx.stroke();
+    }
+    else if (rimAlpha > 0.01) {
+        const prevAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = rimAlpha;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth * lineWidthScale;
+        ctx.stroke();
+        ctx.globalAlpha = prevAlpha;
+    }
     if (hasDash)
         ctx.setLineDash([]);
     // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
     // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
-    if (kind === "domain" && egoState !== "dim") {
+    // Far-side detail factor also folds the tick alpha on the rear hemisphere, continuously.
+    if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
         const s = r * DOMAIN_HALF_EXTENT_RATIO;
         if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
-            ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT));
+            ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT)) * detail;
             ctx.strokeStyle = stroke;
             ctx.lineWidth = 1;
             for (const t of domainPinTicks(x, y, s)) {

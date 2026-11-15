@@ -283,12 +283,13 @@ export function useFlatMapView(): boolean {
   return useMapView() === "flat";
 }
 
-/** The picker's view from its stored flags; 3D wins over the flat-plane views. */
+/** The picker's view from its stored flags; 3D and Neural win over the flat-plane views. */
 export function useMapView(): MapLayoutView {
   const view3d = useView3d();
+  const neural = useSyncExternalStore(subscribe, readNeuralArrangement, () => false);
   const structure = useDomainStructure();
   const hexBoard = useHexBoard();
-  return view3d ? "3d" : hexBoard ? "hex" : structure ? "structure" : "flat";
+  return view3d ? (neural ? "neural" : "3d") : hexBoard ? "hex" : structure ? "structure" : "flat";
 }
 
 const HEX_RELIEF_KEY = "atlas.appearance.hex-relief";
@@ -309,15 +310,34 @@ export function useHexRelief(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** Never read: the 3D flag alone opens 3D, whatever arrangement an older build kept here. */
-const RETIRED_MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
+export type MapArrangement = "strata" | "coupling";
+
+export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "strata";
+
+/**
+ * With the 3D flag on, `coupling` here opens Neural, the value older builds stored for it; any
+ * other value, Strata's included, opens the 3D tree. Picking any other view removes it.
+ */
+const MAP_ARRANGEMENT_KEY = "atlas.appearance.map-arrangement";
+const NEURAL_ARRANGEMENT = "coupling";
+
+function readNeuralArrangement(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(MAP_ARRANGEMENT_KEY) === NEURAL_ARRANGEMENT;
+  } catch {
+    return false;
+  }
+}
 
 export function writeMapView(view: MapLayoutView): void {
   if (typeof window === "undefined") return;
+  const neural = view === "neural";
   const writes: Array<[string, string]> = [
     [HEX_BOARD_KEY, view === "hex" ? "on" : "off"],
     [STRUCTURE_KEY, view === "structure" ? "on" : "off"],
-    [VIEW_3D_KEY, view === "3d" ? "on" : "off"],
+    ...(neural ? [[MAP_ARRANGEMENT_KEY, NEURAL_ARRANGEMENT] as [string, string]] : []),
+    [VIEW_3D_KEY, view === "3d" || neural ? "on" : "off"],
   ];
   for (const [key, value] of writes) {
     let unchanged = false;
@@ -330,8 +350,9 @@ export function writeMapView(view: MapLayoutView): void {
       } catch {}
     }
   }
-  for (const retired of [RETIRED_VIEW_KEY, RETIRED_TERRITORIES_KEY, RETIRED_MAP_ARRANGEMENT_KEY]) {
-    try { window.localStorage.removeItem(retired); } catch {}
+  const removed = neural ? [RETIRED_VIEW_KEY, RETIRED_TERRITORIES_KEY] : [RETIRED_VIEW_KEY, RETIRED_TERRITORIES_KEY, MAP_ARRANGEMENT_KEY];
+  for (const key of removed) {
+    try { window.localStorage.removeItem(key); } catch {}
   }
   notifyPreferenceChange();
 }

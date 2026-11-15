@@ -30,3 +30,5 @@ const TRAIL_SWELL_PHASE_EXP = 2.11;
 export const TRAIL_STAR_TWINKLE = 0.14;
 export const TRAIL_STAR_TWINKLE_MS = 3200;
 export const TRAIL_STAR_TWINKLE_SPREAD_MS = 1400;
+export const TRAIL_HALO_PX = 3.2;
+export const TRAIL_HALO_ALPHA = 0.3;

@@ -8,6 +8,7 @@ import { projectFlickLanding, sampleReleaseVelocity } from "../../engine/momentu
 import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId } from "../../model/visibility/focus-state";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../../model/visibility/tier-visibility";
 import { hitTestEdges } from "./topology-edge-hit";
+import { clampOrbitReleaseVelocity, domeFacingYaws, projectOrbitLanding, snapOrbitLanding, ORBIT_PITCH_PER_PX, ORBIT_YAW_PER_PX } from "../../model/dome-view/orbit";
 import { INITIAL_POINTER_MACHINE_STATE, resolveClickAction, transitionPointerState } from "../../interaction/pointer-state-machine";
 import { computeUnfocusedPanBounds } from "../camera/topology-camera-math";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
@@ -20,6 +21,8 @@ import type { TopologyPointerHandlers } from "./topology-pointer-types";
  * children and keeps the selection instead of undoing the first tap.
  */
 export const DOUBLE_TAP_WINDOW_MS = 350;
+/** How far apart (CSS px) two presses may land and still be one 3D double-click. */
+const DOUBLE_TAP_SLOP_PX = 8;
 
 export function createPointerReleaseHandlers(
   ctx: PointerContext,
@@ -31,7 +34,7 @@ export function createPointerReleaseHandlers(
     nodeDragRef, dragStartPosRef, overviewScaleRef, activeTouchesRef, pinchRef, selectedEdgeRef,
     clusterChipsRef, lastTapRef, tierRevealRef, onSelect, onFlyToNode, onSelectEdge, onPaneClick,
     onToggleCluster, onExpandEgoNeighbors, onExpandClusterBatch, noteUserCameraGesture,
-    clearEdgeHover, clearClusterHover,
+    domeInteractive, clearEdgeHover, clearClusterHover,
   } = ctx;
 
   const { hitTestClusterChip, buildEdgeCandidates } = hits;
@@ -66,6 +69,19 @@ export function createPointerReleaseHandlers(
     // camera flick, no click commit (the state machine already suppressed the
     // click for a drag).
     if (nodeDragRef.current !== null) {
+      // 3D in-plane drag release — there is no simulation pin (none was set on grab).
+      // Only `released` is marked so the spring settles onto the last target point (the
+      // loop clears it once it sees the settle) — the velocity is not reset to 0 on release.
+      {
+        const dome = domeInteractive();
+        if (dome && dome.drag !== null && dome.drag.nodeId === nodeDragRef.current.nodeId) {
+          dome.drag.released = true;
+          nodeDragRef.current = null;
+          if (canvasRef?.current)
+            canvasRef.current.style.cursor = "";
+          return;
+        }
+      }
       simRef.current?.clearPin();
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, tokens.nodeReleaseSettleMs);
@@ -81,6 +97,32 @@ export function createPointerReleaseHandlers(
     }
     if (wasDragging) {
       const dragSpeed = navigationSpeedRef.current.drag;
+      {
+        const dome = domeInteractive();
+        if (dome && dome.orbiting) {
+          dome.orbiting = false;
+          dome.yaw = dome.yawTarget;
+          dome.pitch = dome.pitchTarget;
+          if (!reducedMotionRef.current) {
+            const release = sampleReleaseVelocity({
+              history: dragHistoryRef.current,
+              releaseTime: performance.now(),
+              windowMs: tokens.cameraReleaseVelocityWindowMs,
+              minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
+            });
+            if (release.isFlick) {
+              dome.yawVel = clampOrbitReleaseVelocity(release.vx * ORBIT_YAW_PER_PX * dragSpeed);
+              dome.pitchVel = clampOrbitReleaseVelocity(release.vy * ORBIT_PITCH_PER_PX * dragSpeed);
+              const landing = projectOrbitLanding(dome.yaw, dome.yawVel);
+              dome.yawSnap = snapOrbitLanding(landing, domeFacingYaws(dome.model));
+            }
+            else {
+              dome.yawSnap = null;
+            }
+          }
+          return;
+        }
+      }
       const release = sampleReleaseVelocity({
         history: dragHistoryRef.current,
         releaseTime: performance.now(),
@@ -146,11 +188,28 @@ export function createPointerReleaseHandlers(
     if (commitClick !== null && commitClick.nodeId !== null && lastTapRef) {
       const now = performance.now();
       const last = lastTapRef.current;
-      const nodeId = commitClick.nodeId;
+      /*
+       * 3D: a double-click belongs to the node the first click hit; a neighbour name can land under the
+       * cursor, so two presses within a few pixels count as one gesture on one thing.
+       */
+      const sameSpot = domeInteractive() !== null &&
+        last !== null &&
+        clickPoint !== null &&
+        last.x !== undefined &&
+        last.y !== undefined &&
+        Math.hypot(clickPoint.x - last.x, clickPoint.y - last.y) <= DOUBLE_TAP_SLOP_PX;
+      const nodeId = sameSpot && last !== null ? last.nodeId : commitClick.nodeId;
       if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
         lastTapRef.current = null;
         if (focusedSlugRef.current !== nodeId)
           onSelect?.(nodeId, "canvas-dblclick");
+        // 3D: the double-click is the fly-to — the one gesture that moves the view to a node
+        // (`DOME_FLY_MS`). The single click before it only selected.
+        const flyDome = domeInteractive();
+        if (flyDome !== null) {
+          flyDome.flyRequest = { slug: nodeId };
+          return;
+        }
         const chip = lastDialFrame() ? undefined : clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
         if (chip && onToggleCluster) {
           onToggleCluster(nodeId);
@@ -160,7 +219,7 @@ export function createPointerReleaseHandlers(
         onFlyToNode?.(nodeId);
         return;
       }
-      lastTapRef.current = { nodeId, at: now };
+      lastTapRef.current = { nodeId, at: now, x: clickPoint?.x, y: clickPoint?.y };
     }
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
     if (action.type === "select") {
@@ -238,6 +297,23 @@ export function createPointerReleaseHandlers(
     clearEdgeHover();
     clearClusterHover();
     const tokens = readOntologyMapTokensOrNull();
+    // 3D — cleanly end any orbit or in-plane drag in flight (the spring runs to settle).
+    // There is no simulation pin, so it is not handed to the 2D pin cleanup block below
+    // (keeping free heat from shaking the hidden 2D layout).
+    {
+      const dome = domeInteractive();
+      if (dome) {
+        dome.orbiting = false;
+        dome.yawTarget = dome.yaw;
+        dome.pitchTarget = dome.pitch;
+        if (dome.drag !== null) {
+          dome.drag.released = true;
+          nodeDragRef.current = null;
+          if (canvasRef?.current)
+            canvasRef.current.style.cursor = "";
+        }
+      }
+    }
     // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
     if (nodeDragRef.current !== null) {
       simRef.current?.clearPin();

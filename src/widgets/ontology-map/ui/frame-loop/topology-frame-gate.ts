@@ -1,3 +1,4 @@
+import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import { MOTION } from "@/shared/motion";
 import {
   type RefObject
@@ -8,10 +9,15 @@ import { MAX_FRAME_DELTA_SECONDS } from "../../engine/spring";
 import { type PointerMachineState } from "../../interaction/pointer-state-machine";
 import { ambientSleepFactor, isAmbientAsleep } from "../../model/ambient/ambient-sleep";
 import { easeInOutCubic } from "../../model/camera/camera-easing";
+import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
+import { clampDomePitch } from "../../model/dome-view/orbit";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { stepGrowthReplay, type GrowthReplay } from "../../model/ambient/growth-replay";
+import type { StrataLodState } from "../../model/dome-view/strata-lod";
 import {
   extendsGrace,
   isCameraUnsettled,
+  isDomeSpinAnimating,
   isEgoTailAnimating,
   isSceneActive,
   shouldSkipFrame,
@@ -56,7 +62,11 @@ interface Dependencies {
   prevCameraSampleRef: RefObject<{ x: number; y: number; s: number; } | null>;
   lastInputMsRef: RefObject<number>;
   ambientSleepDelayRef: RefObject<number | undefined>;
+  domeRuntimeRef: RefObject<DomeRuntime | null>;
+  view3dRef: RefObject<boolean>;
   realmTransitionRef: RefObject<RealmTransitionState>;
+  domeFocusPendingRef: RefObject<{ slug: string | null; } | null>;
+  bgPointerRef: RefObject<{ x: number; y: number; } | null>;
   growthReplayRef: RefObject<GrowthReplay | null>;
   growthReplayAppearRef: RefObject<Map<string, number>>;
   endGrowthReplay: () => void;
@@ -73,6 +83,8 @@ interface Dependencies {
   trailLensPropRef: RefObject<RefObject<boolean> | null>;
   trailBrushPropRef: RefObject<RefObject<string | null> | null>;
   panelHoverPropRef: RefObject<RefObject<string | null> | null>;
+    neuralRampRef: RefObject<number>;
+  mapArrangementRef: RefObject<MapArrangement>;
   drawnTrailLensRef: RefObject<boolean>;
   trailLensRampRef: RefObject<number>;
   visitedTrailRef: RefObject<readonly string[]>;
@@ -83,6 +95,7 @@ interface Dependencies {
   idleDebugEnabledRef: RefObject<boolean>;
   lastActiveCausesRef: RefObject<{ t: number; causes: string[]; } | null>;
   lightActiveRef: RefObject<boolean>;
+  domeLodRef: RefObject<StrataLodState>;
 }
 interface FrameResult {
   tokens: OntologyMapTokens;
@@ -128,7 +141,11 @@ export function createFrameGate({
   prevCameraSampleRef,
   lastInputMsRef,
   ambientSleepDelayRef,
+  domeRuntimeRef,
+  view3dRef,
   realmTransitionRef,
+  domeFocusPendingRef,
+  bgPointerRef,
   growthReplayRef,
   growthReplayAppearRef,
   endGrowthReplay,
@@ -154,6 +171,7 @@ export function createFrameGate({
   idleDebugEnabledRef,
   lastActiveCausesRef,
   lightActiveRef,
+  domeLodRef,
 }: Dependencies) {
   const result = {} as FrameResult;
   return function runFrameGate(
@@ -260,7 +278,7 @@ export function createFrameGate({
             }
         }
         // The navigation yield sits **ahead of** the idle gate: whatever the
-        // activity flags say (comets, growth, lenses), a screen that is
+        // activity flags say (auto-spin, comets, assembly ramp), a screen that is
         // being left does not get drawn.
         if (now < navYieldUntilRef.current) {
             return FRAME_NOT_READY;
@@ -287,6 +305,43 @@ export function createFrameGate({
             // Comets and the fresh breathe sleep rather than switch off (`model/ambient/ambient-sleep.ts`).
             const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             const ambientAsleep = isAmbientAsleep(ambientFactor);
+            // Does the dome still have to move — assembly/teardown ramp, auto-spin,
+            // orbit inertia, twist spring-back, flat-drag spring, or the reset
+            // ease. The auto-spin stops while the pointer is over the canvas
+            // (bgPointer present) so an aimed-at node cannot slide out from under
+            // the cursor.
+            const domeRt = domeRuntimeRef.current;
+            const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
+            const domeMotion = (domeTargetOn && (domeRt === null || domeRt.rampClock < DOME_ASSEMBLE_TOTAL_MS)) ||
+                (domeRt !== null &&
+                    ((!domeTargetOn && domeRt.rampClock > 0) ||
+                        domeRt.yawVel !== 0 ||
+                        domeRt.pitchVel !== 0 ||
+                        domeRt.drag !== null ||
+                        domeRt.poseTween !== null ||
+                        /*
+                         * Every motion in flight must be named here or the idle gate freezes mid-animation: `yawSnap` keeps
+                         * closing after velocity is 0, and `entryArmed` (1500 ms) outlasts the assembly clock (1120 ms).
+                         */
+                        domeRt.yawSnap !== null ||
+                        domeRt.morph !== null ||
+                        domeRt.entryArmed ||
+                        domeLodRef.current.settling ||
+                        (domeLodRef.current.pointerSlot >= 0 && bgPointerRef.current === null) ||
+                        domeFocusPendingRef.current !== null ||
+                        Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
+                        domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
+                        // Keep rAF awake only while auto-spin can run; `!ambientAsleep` ties it to the `ambient-sleep.ts`
+                        // contract so 3D can fall asleep.
+                        (!domeRt.orbiting &&
+                            isDomeSpinAnimating({
+                                domeOn: domeTargetOn,
+                                reducedMotion: reducedMotionRef.current,
+                                ambientAsleep,
+                                spinArmed: domeRt.spinArmed,
+                                pointerOverCanvas: bgPointerRef.current !== null,
+                                assembled: domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
+                            }))));
             // Growth replay — advance every node's appear value for this frame, and end
             // it when the last node has fully appeared. Nothing is left behind:
             // `appearRef` still holds every node at 1. The deliberate exits are listed
@@ -360,7 +415,8 @@ export function createFrameGate({
             const activeBesidesLight = extendsGrace(idleFlags) ||
                 previewTransitionRef.current !== null ||
                 realmTransitionRef.current.phase === "entering" ||
-                realmTransitionRef.current.phase === "exiting";
+                realmTransitionRef.current.phase === "exiting" ||
+                domeMotion;
             const active = activeBesidesLight || idleFlags.lightActive;
             result.awake = active;
             result.lightOnly = !activeBesidesLight && idleFlags.lightActive;
@@ -368,7 +424,8 @@ export function createFrameGate({
                 !isSceneActive(idleFlags, pulsesRef.current.length) &&
                     previewTransitionRef.current === null &&
                     realmTransitionRef.current.phase !== "entering" &&
-                    realmTransitionRef.current.phase !== "exiting";
+                    realmTransitionRef.current.phase !== "exiting" &&
+                    !domeMotion;
             if (active) {
                 if (activeBesidesLight)
                     lastActiveMsRef.current = now;
@@ -382,6 +439,8 @@ export function createFrameGate({
                             causes.push(k);
                     if (realmTransitionRef.current.phase !== "idle")
                         causes.push("realmTransition");
+                    if (domeMotion)
+                        causes.push("domeMotion");
                     if (previewTransitionRef.current !== null)
                         causes.push("previewEdge");
                     lastActiveCausesRef.current = { t: now, causes };

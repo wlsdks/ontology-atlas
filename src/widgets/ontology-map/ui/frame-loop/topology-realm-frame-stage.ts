@@ -1,6 +1,7 @@
 import type { DialWorld } from '../../dial/types';
 import type { CameraAxes } from "../../engine/camera";
 import type { ClusterChip } from "../../model/layout/density-gate";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { parseClusterMoreChipId } from "../../model/visibility/focus-state";
 import { computeVisibleWardingRadius } from "../../model/realm/realm";
 import type { DepthParallaxOffset } from "../../model/realm/realm-depth-parallax";
@@ -65,6 +66,7 @@ export interface RealmFrameStageSources {
   focusedSlugRef: SourceRef<string | null>;
   onEnterRealmRef: SourceRef<((slug: string) => void) | undefined>;
   realmEnterTargetRef: SourceRef<string | null>;
+  domeRuntimeRef: SourceRef<DomeRuntime | null>;
   getRealmCaption: () => string | null;
 }
 
@@ -79,6 +81,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
     focusedSlugRef,
     onEnterRealmRef,
     realmEnterTargetRef,
+    domeRuntimeRef,
     getRealmCaption,
   } = sources;
   const result: RealmFrameResult = {
@@ -226,8 +229,11 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
         // updating every frame while the focused node exists, so it follows
         // the camera even mid-fade-out instead of freezing in place.
         if (node) {
-          const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
-          const s = worldToScreen(camera, width, height, node.x, node.y);
+          // In 3D the button follows the node's drawn ring position and
+          // perspective scale too.
+          const dFrame = domeRuntimeRef.current?.frame.get(node.id);
+          const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
+          const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
           // Single source for the position — the expand control's rect
           // computation reads the same function.
           const orbit = orbitButtonRect(s.x, s.y, rr);
