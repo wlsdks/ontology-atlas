@@ -11,6 +11,7 @@ import type { OntologyMapDetailPanelLabels } from "./types";
 const labels = {
   noConnections: "no relations recorded yet · relations are declared in frontmatter",
   domainLinks: (count: number) => `${count} links with this domain`,
+  openFullDetail: "View details",
 } as OntologyMapDetailPanelLabels;
 
 const reachRow = (id: string, line: ReachRow["line"], extra: Partial<ReachRow> = {}): ReachRow => ({
@@ -34,6 +35,7 @@ function renderZone(props: Partial<React.ComponentProps<typeof RelationsZone>> &
           labels={labels}
           onSelectConnection={onSelectConnection}
           onHoverConnection={onHoverConnection}
+          onOpenFullDetail={props.onOpenFullDetail}
         />
       </div>
     </NextIntlClientProvider>,
@@ -43,6 +45,7 @@ function renderZone(props: Partial<React.ComponentProps<typeof RelationsZone>> &
 
 const group = (container: HTMLElement, key: string) => container.querySelector<HTMLElement>(`[data-datasheet-group="${key}"]`)!;
 const rowIds = (scope: HTMLElement) => [...scope.querySelectorAll("[data-datasheet-connection]")].map((row) => row.getAttribute("data-datasheet-connection"));
+const otherLinks = (count: number) => enMessages.conceptReach.otherLinks.replace("{count, number}", String(count));
 const listLines = (scope: HTMLElement) => scope.querySelectorAll("ul > li > button").length;
 
 afterEach(() => vi.useRealTimers());
@@ -73,10 +76,10 @@ describe("RelationsZone reach groups", () => {
     expect(container.querySelector("[data-datasheet-group]")).toBeNull();
   });
 
-  it("drops both headings when only other links exist, and folds those into one line", () => {
+  it("drops both headings when only other links exist, and counts those on one line", () => {
     const { container } = renderZone({ reach: { needs: [], neededBy: [], other: [reachRow("capability:search", "relates")] } });
     expect(container.querySelector('[data-datasheet-group="needs"]')).toBeNull();
-    expect(screen.getByRole("button", { name: enMessages.conceptReach.otherLinks.replace("{count, number}", "1") })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByTestId("map-detail-panel-reach-counts")).toHaveTextContent(otherLinks(1));
     expect(screen.queryByText(labels.noConnections)).toBeNull();
   });
 
@@ -204,40 +207,41 @@ describe("RelationsZone keyboard", () => {
   });
 });
 
-describe("RelationsZone folded lines", () => {
-  it("folds relates and broader concepts into one other-links line whose rows keep the map's samples", () => {
-    const { container } = renderZone({
-      reach: {
-        needs: [reachRow("capability:pay", "needs")],
-        neededBy: [],
-        other: [reachRow("capability:search", "relates"), reachRow("capability:commerce", "broader")],
-      },
-    });
-    expect(rowIds(group(container, "other"))).toEqual([]);
-    fireEvent.click(screen.getByRole("button", { name: enMessages.conceptReach.otherLinks.replace("{count, number}", "2") }));
-    expect(rowIds(group(container, "other"))).toEqual(["capability:search", "capability:commerce"]);
-    expect([...group(container, "other").querySelectorAll("[data-reach-sample]")].map((s) => s.getAttribute("data-reach-sample"))).toEqual(["relates", "broader"]);
+describe("RelationsZone counts line", () => {
+  const twoOther = [reachRow("capability:search", "relates"), reachRow("capability:commerce", "broader")];
+  const elements = buildV2ConnectionGroups([conn("element:form", "contains", "outgoing")]);
+
+  it("counts other links and what the concept contains on one line that opens full detail", () => {
+    const onOpenFullDetail = vi.fn();
+    const { container } = renderZone({ reach: { needs: [reachRow("capability:pay", "needs")], neededBy: [], other: twoOther }, groups: elements, onOpenFullDetail });
+    const line = screen.getByRole("button", { name: `${otherLinks(2)} · Implementation elements 1 · ${labels.openFullDetail}` });
+    expect(line).not.toHaveAttribute("aria-expanded");
+    fireEvent.click(line);
+    expect(onOpenFullDetail).toHaveBeenCalledTimes(1);
+    expect(rowIds(container)).toEqual(["capability:pay"]);
+  });
+
+  it("is plain text when the panel has no full-detail step", () => {
+    renderZone({ reach: { needs: [], neededBy: [], other: twoOther }, groups: elements });
+    expect(screen.getByTestId("map-detail-panel-reach-counts").tagName).toBe("P");
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it.each([
     ["capability", [conn("element:form", "contains", "outgoing"), conn("element:store", "contains", "outgoing")], "Implementation elements 2"],
     ["domain", [conn("capability:cart", "contains", "outgoing"), conn("element:store", "contains", "outgoing"), conn("element:form", "contains", "outgoing")], "1 capability · 2 elements"],
     ["project", [conn("domain:orders", "contains", "outgoing")], "Domains 1"],
-  ])("names what a %s contains in one line that opens in place", (kind, rows, text) => {
-    const { container } = renderZone({ kind, groups: buildV2ConnectionGroups(rows) });
-    const line = screen.getByRole("button", { name: text });
-    fireEvent.click(line);
-    expect(rowIds(group(container, "contains"))).toHaveLength(rows.length);
-    expect(line).toHaveAttribute("aria-expanded", "true");
+  ])("names what a %s contains by count", (kind, rows, text) => {
+    renderZone({ kind, groups: buildV2ConnectionGroups(rows) });
+    expect(screen.getByTestId("map-detail-panel-reach-counts")).toHaveTextContent(text);
   });
 
-  it("holds at most the two folded lines, and never an evidence or code-location group", () => {
+  it("never holds an evidence or code-location group", () => {
     const { container } = renderZone({
       reach: { needs: [reachRow("capability:pay", "needs")], neededBy: [], other: [reachRow("capability:search", "relates")] },
       groups: buildV2ConnectionGroups([conn("element:form", "contains", "outgoing"), conn("domain:orders", "contains", "incoming")]),
     });
-    expect([...container.querySelectorAll("[data-reach-line]")].map((line) => line.getAttribute("data-reach-line"))).toEqual(["other", "contains"]);
-    expect([...container.querySelectorAll("[data-datasheet-group]")].map((g) => g.getAttribute("data-datasheet-group"))).toEqual(["needs", "neededBy", "other", "contains"]);
+    expect([...container.querySelectorAll("[data-datasheet-group]")].map((g) => g.getAttribute("data-datasheet-group"))).toEqual(["needs", "neededBy"]);
   });
 });
 

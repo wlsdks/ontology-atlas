@@ -88,6 +88,15 @@ describe("Dialog modality contract", () => {
     expect(dialog.className).toContain("w-[min(var(--dialog-w-md),calc(100vw-2rem))]");
   });
 
+  it("caps the lg sheet at its token and the inset, and lets its content own the scroll", () => {
+    render(<Harness size={"lg" as never} />);
+    const dialog = openDialog();
+    expect(dialog.className).toContain("w-[min(var(--dialog-w-lg),calc(100vw-var(--chrome-inset)*2))]");
+    expect(dialog.className).toContain("max-h-[calc(100dvh-var(--chrome-inset)*2)]");
+    expect(dialog.className).toContain("overflow-hidden");
+    expect(dialog.className).not.toContain("--dialog-w-sm");
+  });
+
   it("fills the viewport inside the chrome inset when size=viewport", () => {
     render(<Harness size={"viewport" as never} />);
     const dialog = openDialog();

@@ -125,7 +125,6 @@ test.describe("web smoke 1: gateway", () => {
 
     // The gateway's two next actions are alive (disabled or absent means it is broken).
     await expect(page.getByTestId("first-run-starter-open")).toBeEnabled();
-    await page.getByTestId("first-run-starter-more-toggle").click();
     await expect(page.getByTestId("first-run-starter-create")).toBeEnabled();
   });
 });

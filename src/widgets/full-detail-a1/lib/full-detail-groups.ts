@@ -8,15 +8,12 @@ import {
   type ConnectionSourceEdge,
   type ConnectionSourceNode,
   type DatasheetConnection,
-  isContainmentRelation,
 } from "@/entities/knowledge-graph";
 
 export interface FullDetailConnectionRow {
   id: string;
   title: string;
   kind: string;
-  /** true = containment edge (solid trace mark); false = depends/related (dashed). */
-  containment: boolean;
   /** How many containment-children the ROW's own node has — 0 when it's a
    * leaf. Rendered as a compact engraved count only when > 0. */
   childCount: number;
@@ -70,7 +67,7 @@ export function buildFullDetailGroups(
   changedIds?: ReadonlySet<string>,
 ): FullDetailGroups {
   // The role split and per-bucket dedup live in the shared `groupConnectionsByRole`, so the compact
-  // popover shows the same numbers; this adds `childCount`, `fresh` and `containment` per row.
+  // popover shows the same numbers; this adds `childCount` and `fresh` per row.
   const connections = buildConnections(nodeId, nodes, edges);
   const grouped = groupConnectionsByRole(connections);
   const childCounts = containmentChildCounts(edges);
@@ -79,7 +76,6 @@ export function buildFullDetailGroups(
     id: connection.id,
     title: connection.title,
     kind: connection.kind,
-    containment: isContainmentRelation(connection.relationType),
     childCount: childCounts.get(connection.id) ?? 0,
     fresh: changedIds?.has(connection.id) ?? false,
   });

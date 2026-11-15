@@ -68,23 +68,20 @@ describe("FirstRunStarterModule three-term glossary", () => {
   });
 
   it.each(["ko", "en"] as const)(
-    "names the three words on its closed toggle and opens the ShortcutSheet definitions (%s)",
+    "names the glossary with its own title and opens the ShortcutSheet definitions in a dialog (%s)",
     (locale) => {
       const messages = locale === "ko" ? koMessages : enMessages;
       const words = messages.searchWidgets.shortcuts.glossary;
       renderWithLocale(locale);
 
-      const toggle = screen.getByTestId("first-run-starter-glossary-toggle");
-      expect(toggle).toHaveTextContent(messages.firstRunStarter.glossaryToggle);
-      for (const term of [words.domainTerm, words.capabilityTerm, words.elementTerm]) {
-        expect(toggle.textContent?.toLowerCase()).toContain(term.toLowerCase().slice(0, -1));
-      }
-      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      const open = screen.getByTestId("first-run-starter-glossary-open");
+      expect(open).toHaveTextContent(words.title);
+      expect(open).not.toHaveAttribute("aria-expanded");
       expect(screen.queryByText(words.domainDefinition)).not.toBeInTheDocument();
 
-      fireEvent.click(toggle);
-      expect(toggle).toHaveAttribute("aria-expanded", "true");
-      const glossary = screen.getByTestId("first-run-starter-glossary");
+      fireEvent.click(open);
+      const dialog = screen.getByRole("dialog", { name: words.title });
+      const glossary = within(dialog).getByTestId("first-run-starter-glossary");
       expect(glossary.tagName).toBe("DL");
       const body = within(glossary);
       for (const term of ["domain", "capability", "element"] as const) {
@@ -96,7 +93,7 @@ describe("FirstRunStarterModule three-term glossary", () => {
 
   it("renders in map hierarchy order domain, capability, element", () => {
     renderWithLocale("ko");
-    fireEvent.click(screen.getByTestId("first-run-starter-glossary-toggle"));
+    fireEvent.click(screen.getByTestId("first-run-starter-glossary-open"));
 
     const glossary = screen.getByTestId("first-run-starter-glossary");
     const terms = [

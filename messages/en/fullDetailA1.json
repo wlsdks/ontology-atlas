@@ -1,7 +1,4 @@
 {
-  "backToMap": "← Map",
-  "breadcrumbSeparator": "/",
-  "census": "{concepts} concepts · {relations} relations",
   "freshOn": "Recently updated",
   "freshOff": "Stale",
   "copyLink": "Copy concept link",
@@ -9,30 +6,19 @@
   "close": "Close",
   "groups": {
     "containsTitle": "Contains",
-    "containsCaption": "Direct parts of this concept, not dependencies",
     "usedByTitle": "Incoming relations",
-    "usedByCaption": "Relations from other concepts to this one; not all of them are dependencies.",
     "dependsOnTitle": "Outgoing relations",
-    "dependsOnCaption": "Relations from this concept to others; not all of them are dependencies.",
     "belongsToTitle": "Part of",
-    "belongsToCaption": "Concepts that directly contain this one as a part",
     "relatedTitle": "Related",
-    "relatedCaption": "Recorded as related, with no direction",
     "freshDotTitle": "Recently updated",
     "directLinks": "Direct relations {count, number}",
     "domainCount": "{count, plural, one {# domain} other {# domains}}",
     "domainLinks": "{count, plural, one {# relation} other {# relations}} with this domain",
-    "emptyGroup": "{title}: none"
+    "caption": "Incoming and outgoing relations are not all dependencies."
   },
   "reach": {
-    "leadIn": "From this concept,",
-    "stepUnit": "step",
-    "afterSteps": "away it reaches",
+    "summary": "{count, plural, one {# concept} other {# concepts}} within {depth, plural, one {# step} other {# steps}} · {total} in all",
     "stepsAria": "Steps away from this concept",
-    "ofTotal": "{count} / {total}",
-    "mostlyNone": "No other concepts are connected.",
-    "mostlyOne": "Distribution: {a} ({aCount}).",
-    "mostlyTwo": "Largest groups: {a} ({aCount}), {b} ({bCount}).",
     "selfDomainLabel": "this domain",
     "noDomainLabel": "no domain",
     "domainsHidden": "{count} more domains are not shown in these bars"

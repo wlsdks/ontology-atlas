@@ -1,16 +1,13 @@
 import type { FocusEvent, KeyboardEvent, PointerEvent } from "react";
 import { RowButton } from "@/shared/ui";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
-import type { GraphLineKind } from "../../flat-graph/attention";
 import { shownReachRows } from "./map-datasheet";
-import { GROUP_GLYPH_SLOT, GROUP_ROW_LIST, ReachLineSample } from "./RelationGroupShell";
+import { GROUP_GLYPH_SLOT, GROUP_ROW_LIST } from "./RelationGroupShell";
 
 export interface ReachListRow {
   id: string;
   label: string;
   kind: string;
-  /** Drawn before the glyph where one list mixes line kinds (the other links). */
-  sample?: GraphLineKind;
   /** A partner domain's link count, shown in the right slot instead of a reason. */
   links?: number | null;
   /** The recorded reason; null shows the "no reason" slot, undefined shows nothing. */
@@ -61,7 +58,7 @@ export function ConnectionGroup({
   return (
     <ul className={GROUP_ROW_LIST} data-reach-list={groupKey}>
       {shown.map((row) => (
-        <li key={`${groupKey}:${row.id}:${row.sample ?? ""}`}>
+        <li key={`${groupKey}:${row.id}`}>
           <RowButton
             size="sm"
             data-reach-row=""
@@ -77,7 +74,6 @@ export function ConnectionGroup({
             onKeyDown={(event) => handlers.onKeyDown(row, event)}
             className="rounded-chip hover:bg-[color:var(--map-panel-row-hover)] focus-visible:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]"
           >
-            {row.sample ? <ReachLineSample shape={row.sample} /> : null}
             <span className={GROUP_GLYPH_SLOT}>
               <OntologyMapKindGlyph kind={row.kind} />
             </span>

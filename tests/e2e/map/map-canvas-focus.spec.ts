@@ -29,7 +29,7 @@ test.describe("map canvas focus on the dogfood vault", () => {
         await expect(menu).toHaveCount(0);
         await expect.poll(() => activeTestId(page)).toBe("ontology-map-canvas");
     });
-    for (const action of ["back", "close"] as const) {
+    for (const action of ["scrim", "close"] as const) {
         test(`full detail ${action} preserves the selected concept and its inspector`, async ({ page }) => {
             await arrive(page, { width: 1512, height: 949 });
             const domain = await pickDomain(page);
@@ -42,7 +42,9 @@ test.describe("map canvas focus on the dogfood vault", () => {
             await page.getByTestId("map-detail-panel-open-full-detail").click();
             const fullDetail = page.getByTestId("topology-full-detail-a1-positioner");
             await expect(fullDetail).toBeVisible();
-            if (action === "back") await fullDetail.getByRole("button", { name: "← 지도", exact: true }).click();
+            await waitForAnimationsDone(fullDetail);
+            // The scrim is the dialog's parent; a click on its corner lands outside the sheet.
+            if (action === "scrim") await page.mouse.click(8, 8);
             else await page.getByTestId("full-detail-a1-close").click();
             await expect(fullDetail).toHaveCount(0);
             await expect(panel).toHaveAttribute("data-selected-node-id", selected!);
