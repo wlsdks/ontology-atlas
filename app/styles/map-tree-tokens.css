@@ -1,0 +1,60 @@
+/*
+ * The 3D view drawn as a tree (src/widgets/ontology-map/tree-view). Numbers only: its inks are
+ * the flat map's `--map-graph-*` and `--color-status-warning`. `-px` values are CSS pixels where
+ * the projector's scale is 1; shares mix an ink toward the map ground; alphas are 0..1.
+ */
+@layer base {
+  :root {
+    --map-tree-mark-project-px: 10;
+    --map-tree-mark-domain-px: 13;
+    --map-tree-mark-capability-px: 6.5;
+    --map-tree-mark-element-px: 3;
+    --map-tree-mark-bud-px: 5;
+
+    --map-tree-name-domain-px: 24;
+    --map-tree-name-domain-sub-px: 12.5;
+    --map-tree-name-capability-px: 12.5;
+    --map-tree-name-element-px: 11.5;
+    --map-tree-name-gap-px: 6;
+    --map-tree-name-pad-px: 3;
+
+    --map-tree-open-pitch-px: 18;
+    --map-tree-leaf-pitch-px: 7;
+    --map-tree-element-name-pitch-px: 22;
+    --map-tree-pick-slop-px: 6;
+
+    --map-tree-tone-far: 0.42;
+    --map-tree-branch-min-px: 0.9;
+    --map-tree-branch-ink: 0.5;
+    --map-tree-branch-core-share: 0.34;
+    --map-tree-branch-core-min-px: 2.4;
+    --map-tree-branch-core-ink: 0.78;
+    --map-tree-mark-ink: 0.92;
+    --map-tree-ring-share: 0.24;
+    --map-tree-ring-min-px: 1.2;
+    --map-tree-domain-core-share: 0.42;
+    --map-tree-closed-ring-gap-px: 2.5;
+    --map-tree-closed-ring-px: 1.2;
+    --map-tree-stale-dot-share: 0.5;
+    --map-tree-stale-dot-min-px: 2.2;
+    --map-tree-arc-width-px: 1.5;
+    --map-tree-arc-halo-px: 4;
+    --map-tree-arc-bow: 0.22;
+    --map-tree-arc-gap-px: 2;
+    --map-tree-focus-veil-alpha: 0.5;
+    --map-tree-focus-ring-gap-px: 5;
+    --map-tree-focus-ring-px: 1.5;
+    --map-tree-name-project-px: 17;
+    --map-tree-name-halo-px: 4;
+    --map-tree-domain-name-halo-px: 6;
+    --map-tree-name-sub-ink: 0.62;
+    --map-tree-name-leading: 1.25;
+    --map-tree-backdrop-alpha: 0.09;
+    --map-tree-backdrop-reach: 1.1;
+    --map-tree-canopy-alpha: 0.12;
+    --map-tree-canopy-reach: 1;
+    --map-tree-pool-alpha: 0.55;
+    --map-tree-pool-reach: 7;
+    --map-tree-pool-flatten: 0.38;
+  }
+}
