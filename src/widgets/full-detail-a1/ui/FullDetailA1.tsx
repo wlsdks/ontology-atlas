@@ -265,6 +265,7 @@ export function FullDetailA1({
         <h2
           id={titleId}
           ref={headingRef}
+          data-testid="full-detail-a1-title"
           tabIndex={-1}
           className="mt-1 [overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)] focus:outline-none"
         >
