@@ -28,7 +28,7 @@ const ACT_SPANS = [
   [0.75, 1],
 ] as const;
 /** How long each act plays. */
-const ACT_MS = [6500, 7000, 7500, 6500];
+const ACT_MS = [5000, 5400, 5750, 5000];
 const FILM_MIN_WIDTH = 768;
 const FACTS: HarnessFacts = facts;
 
