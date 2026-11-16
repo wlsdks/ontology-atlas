@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-15T22:22:52.817Z",
+  "npmDependencyCutoff": "2026-11-16T17:31:50.756Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.107.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.107.2",
         "args": []
       }
     },
@@ -654,7 +654,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.65",
+        "package": "@compass-ai/nova@1.1.66",
         "args": [
           "acp"
         ]
