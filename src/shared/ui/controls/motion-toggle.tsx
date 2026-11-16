@@ -9,10 +9,10 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 /**
- * The pause for motion that starts by itself, shared by the download page and looping stages.
- * Under reduced motion nothing loops, so the control has nothing to stop and is not offered.
+ * The download page's pause for motion that starts by itself. Under reduced motion nothing
+ * loops, so the control has nothing to stop and is not offered.
  */
-export interface MotionPauseLabels {
+interface MotionPauseLabels {
   pause: string;
   play: string;
 }

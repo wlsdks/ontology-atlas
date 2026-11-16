@@ -3,9 +3,8 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * One pause for everything that moves by itself (WCAG 2.2.2): the download page's clip, Moru,
- * looping scenes and canvas field, and every looping feature-stage artwork. Remembered in this
- * browser only, as a convenience; the key predates the stages and keeps an existing choice.
+ * One pause for everything on the download page that moves by itself (WCAG 2.2.2): its clip, Moru,
+ * looping scenes and canvas field. Remembered in this browser only, as a convenience.
  */
 const KEY = 'atlas.download.motion';
 const listeners = new Set<() => void>();

@@ -123,7 +123,7 @@ function useHandRate(hand: RefObject<HTMLElement | null>, rate: number) {
  * An example schedule at work: the dial's hand sweeps, each turn Moru reads the code the ontology
  * links and sets one proposal in the review tray, and the tray only ever waits for the person.
  */
-export function AutomationScheduleArtwork({ engaged, reduced, paused, name, cadence }: FeatureStageMotion & { name: string; cadence: string }) {
+export function AutomationScheduleArtwork({ engaged, reduced, name, cadence }: FeatureStageMotion & { name: string; cadence: string }) {
   const t = useTranslations('automations');
   const sceneRef = useRef<HTMLDivElement>(null);
   const cell = useRef<HTMLSpanElement>(null);
@@ -137,18 +137,16 @@ export function AutomationScheduleArtwork({ engaged, reduced, paused, name, cade
   }, [reduced]);
 
   useEffect(() => {
-    // Paused, Moru holds the frame he is on; no gesture starts until motion is played again.
-    if (paused) return;
     dispatch({ type: engaged ? 'engage' : 'disengage', resting: restsOnNeutralPose(cell.current) });
-  }, [engaged, paused]);
+  }, [engaged]);
   useHandRate(hand, engaged ? ENGAGED_HAND_RATE : 1);
 
   const full = scene.tray.slips === REVIEW_TRAY_LIMIT;
   useEffect(() => {
-    if (!full || paused) return undefined;
+    if (!full) return undefined;
     const timer = window.setTimeout(() => dispatch({ type: 'tray-cleared' }), FULL_TRAY_HOLD_MS);
     return () => window.clearTimeout(timer);
-  }, [full, paused]);
+  }, [full]);
 
   const loopEnded = useCallback(() => dispatch({ type: 'loop-end' }), []);
   const handCameRound = () => dispatch({ type: 'run', resting: restsOnNeutralPose(cell.current) });
