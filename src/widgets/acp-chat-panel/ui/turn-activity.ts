@@ -3,8 +3,8 @@ import { readToolFallbackTarget, type AcpEvent } from '@/features/acp-session';
 import { toolLabel, withKindFallback, type ToolLabel } from './tool-label';
 
 /**
- * What the agent is doing right now, read only from what the turn has reported. Nothing here is
- * guessed from elapsed time: with no open tool call and no answer text, the turn is `thinking`.
+ * What the agent is doing right now, read only from what the turn has reported. With no open
+ * tool call the turn is `thinking`, unless answer text is still arriving.
  */
 export type TurnActivityKind = 'thinking' | 'reading' | 'searching' | 'writing' | 'running' | 'answering';
 
@@ -19,6 +19,9 @@ export interface TurnActivity {
 }
 
 const SETTLED = new Set(['completed', 'failed', 'cancelled']);
+
+/** Text counts as still arriving for this long after the turn's last update; the turn clock ticks once a second. */
+export const TEXT_ARRIVING_MS = 2_500;
 
 const KNOWN_TOOL_KIND: Readonly<Record<string, TurnActivityKind>> = {
   connect: 'reading',
@@ -55,6 +58,11 @@ export function turnActivity(
   events: readonly AcpEvent[],
   lastUserEventIndex: number,
   vaultServerName: string,
+  /**
+   * Whether the turn's last update is recent enough to call its text still arriving. An agent
+   * that says a sentence and then goes quiet is thinking again, not writing.
+   */
+  textArriving: boolean,
 ): TurnActivity {
   let steps = 0;
   let open: ToolEvent | null = null;
@@ -70,6 +78,6 @@ export function turnActivity(
     const label = withKindFallback(toolLabel(open.title, vaultServerName), open.title, vaultServerName, open.toolKind);
     return { kind: kindOf(open, label), label, target: readToolFallbackTarget(open.rawInput)?.value ?? null, steps };
   }
-  const answering = last?.kind === 'agent' && last.text.trim().length > 0;
+  const answering = textArriving && last?.kind === 'agent' && last.text.trim().length > 0;
   return { kind: answering ? 'answering' : 'thinking', label: null, target: null, steps };
 }
