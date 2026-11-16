@@ -843,6 +843,10 @@ describe("ProjectDetailPage", () => {
       expect(screen.getByRole("img", { name: staleWords })).toHaveAttribute("title", staleWords);
       expect(screen.getByTestId("project-detail-stale-legend")).toHaveTextContent(`◐${staleWords}`);
       expect(screen.getByTestId("project-detail-domain-stale")).toHaveTextContent("◐ 1");
+      expect(row).toHaveAccessibleName(expect.stringMatching(/^MCP Server .*mcp\/src\/server\.mjs changed after this document was written\.$/));
+      expect(row).toHaveAccessibleDescription("Opens it on the map.");
+      const option = screen.getAllByTestId("project-detail-domain-option").find((el) => el.getAttribute("aria-label")?.includes("with a source changed"));
+      expect(option).toHaveAccessibleName(expect.not.stringContaining("◐"));
     });
 
     it("draws no stale mark when evidence was not measured, names why, and says the empty sentence beside it", () => {
@@ -924,7 +928,11 @@ describe("ProjectDetailPage", () => {
 
       expect(screen.getByTestId("project-detail-changed-heading")).toHaveTextContent("Changed in the last 7 days · 2");
       const rows = screen.getAllByTestId("project-detail-changed-row");
-      expect(rows.map((row) => row.textContent)).toEqual(["MCP Servertoday", "CLIyesterday"]);
+      // The name is what the row shows, then where it opens.
+      expect(rows).toEqual([
+        screen.getByRole("link", { name: "MCP Server today", description: "Opens it on the map." }),
+        screen.getByRole("link", { name: "CLI yesterday", description: "Opens it on the map." }),
+      ]);
       expect(screen.getByTestId("project-detail-changed-map-link")).toHaveAttribute("href", "/topology/?recent=auto");
       expect(screen.getByTestId("project-detail-capability-changed")).toHaveAccessibleName(enMessages.topology.index.freshTitle);
     });

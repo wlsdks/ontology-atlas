@@ -158,7 +158,6 @@
     "toCheckStaleMoved": "{path} changed after this document was written.",
     "toCheckStaleGone": "{path} is no longer in the code folder.",
     "toCheckNoDefinition": "This document has no definition sentence.",
-    "toCheckOpenDocAria": "Open the document {name}",
     "toCheckDialogTitle": "To check in {project}",
     "toCheckGroupStale": "Code changed after the document · {count}",
     "toCheckGroupNoDefinition": "No definition · {count}",
@@ -174,7 +173,10 @@
     "toCheckEvidenceAppOnly": "The desktop app reads Git history to find capabilities whose source file changed after their document.",
     "toCheckEvidenceUnreadable": "Git history could not be read, so it is unknown whether source files changed after their documents.",
     "toCheckEvidenceNoPaths": "No capability names a source file, so there is nothing to compare with Git history.",
-    "toCheckRaisedNote": "Needs a decision: “{note}”"
+    "toCheckRaisedNote": "Needs a decision: “{note}”",
+    "rowOpensDocument": "Opens its document.",
+    "rowOpensMap": "Opens it on the map.",
+    "domainStaleWords": "{count, plural, one {# capability} other {# capabilities}} with a source changed after the document"
   },
   "editor": {
     "documentTitleEdit": "Edit project · Ontology Atlas",

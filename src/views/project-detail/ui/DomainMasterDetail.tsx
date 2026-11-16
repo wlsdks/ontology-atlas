@@ -38,7 +38,7 @@ export interface DomainMasterDetailLabels {
   showMore: (count: number) => string;
   elementCount: (count: number) => string;
   mapLinkLabel: string;
-  /** The map's domain caption for its stale capabilities. */
+  /** The domain's stale capabilities in words: its option's name and its count's tooltip. */
   domainStale: (count: number) => string;
   /** Names the amber mark in words: the legend item, the dot's tooltip and its accessible name. */
   staleMark: string;

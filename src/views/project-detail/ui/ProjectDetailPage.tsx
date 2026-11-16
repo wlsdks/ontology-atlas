@@ -213,7 +213,6 @@ export function ProjectDetailPage({
 }: Props) {
   const t = useTranslations("projectPages.detail");
   const tMapDial = useTranslations("mapDial");
-  const tHex = useTranslations("topology.hexBoard");
   const tIndex = useTranslations("topology.index");
   const failureSentence = useFailureSentence();
   const router = useRouter();
@@ -668,7 +667,7 @@ export function ProjectDetailPage({
               showMore: (count) => tMapDial("moreMembers", { count }),
               elementCount: (count) => t("capabilityElementCount", { count }),
               mapLinkLabel: t("domainRowMapLink"),
-              domainStale: (count) => tHex("domainStale", { count }),
+              domainStale: (count) => t("domainStaleWords", { count }),
               staleMark: t("compositionStaleLegend"),
               recentMark: tIndex("freshTitle"),
             }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -36,10 +37,14 @@ export function ChangedSection({
   const tIndex = useTranslations("topology.index");
   const tAge = useTranslations("editProvenance.age");
   const arrival = useArrival(changed.visible.length > 0);
+  const rowId = useId();
   const ageOf = (days: number) => (days === 0 ? t("changedToday") : days === 1 ? tAge("yesterday") : tAge("daysAgo", { count: days }));
 
   return (
     <section data-testid="project-detail-changed" aria-labelledby="project-detail-changed-title" className="min-w-0">
+      <span id={`${rowId}-opens`} hidden>
+        {t("rowOpensMap")}
+      </span>
       <SectionHeadingLine
         heading={
           <span className="flex min-w-0 items-center gap-2">
@@ -75,14 +80,17 @@ export function ChangedSection({
               <Link
                 href={getTopologyFocusHref(row.id)}
                 data-testid="project-detail-changed-row"
-                aria-label={t("domainCapabilityLinkAria", { name: row.name })}
+                aria-labelledby={`${rowId}-${row.id}-name ${rowId}-${row.id}-age`}
+                aria-describedby={`${rowId}-opens`}
                 className={ROW_CLASS}
               >
                 <OntologyMapKindGlyph kind={row.kind} size={ICON_SIZE.sm} className="shrink-0" />
-                <span title={row.name} className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
+                <span id={`${rowId}-${row.id}-name`} title={row.name} className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
                   {row.name}
                 </span>
-                <span className="shrink-0 text-right text-label tabular-nums text-[color:var(--color-text-tertiary)]">{ageOf(row.agoDays)}</span>
+                <span id={`${rowId}-${row.id}-age`} className="shrink-0 text-right text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                  {ageOf(row.agoDays)}
+                </span>
               </Link>
             </motion.li>
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -162,30 +162,36 @@ function ToCheckRowLink({ row }: { row: ToCheckRow }) {
   const opensDocument = REVIEW_REASONS.has(row.reason) && row.docSlug !== null;
   const href = opensDocument ? buildDocsVaultHref({ slug: row.docSlug! }) : getTopologyFocusHref(row.nodeId);
   const sentence = sentenceOf(row);
+  const id = useId();
+  const labelledBy = [`${id}-name`, row.domainName ? `${id}-domain` : null, `${id}-reason`].filter(Boolean).join(" ");
   return (
     <Link
       href={href}
       data-testid="project-detail-to-check-row"
       data-reason={row.reason}
-      aria-label={opensDocument ? t("toCheckOpenDocAria", { name: row.name }) : t("domainCapabilityLinkAria", { name: row.name })}
+      aria-labelledby={labelledBy}
+      aria-describedby={`${id}-opens`}
       className={ROW_CLASS}
     >
       <span className="flex min-w-0 items-center gap-2">
         <OntologyMapKindGlyph kind={row.kind} size={ICON_SIZE.sm} className="shrink-0" />
-        <span title={row.name} className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
+        <span id={`${id}-name`} title={row.name} className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
           {row.name}
         </span>
         {row.domainName ? (
-          <span title={row.domainName} className="max-w-[45%] shrink-0 truncate text-right text-label text-[color:var(--color-text-tertiary)]">
+          <span id={`${id}-domain`} title={row.domainName} className="max-w-[45%] shrink-0 truncate text-right text-label text-[color:var(--color-text-tertiary)]">
             {row.domainName}
           </span>
         ) : null}
       </span>
       <span className="flex min-w-0 items-center gap-2 pl-[calc(var(--icon-sm)+0.5rem)]">
         {row.reason === "stale" ? <span aria-hidden className={STALE_DOT_CLASS} /> : null}
-        <span title={sentence} className="min-w-0 truncate text-label leading-label text-[color:var(--color-text-secondary)]">
+        <span id={`${id}-reason`} title={sentence} className="min-w-0 truncate text-label leading-label text-[color:var(--color-text-secondary)]">
           {sentence}
         </span>
+      </span>
+      <span id={`${id}-opens`} className="sr-only">
+        {opensDocument ? t("rowOpensDocument") : t("rowOpensMap")}
       </span>
     </Link>
   );
