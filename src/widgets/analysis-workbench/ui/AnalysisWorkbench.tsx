@@ -252,11 +252,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   /** Offered beside each review request, wherever that request stands. */
   const fillNotesChip = onRequest && relationNoteGaps > 0 && context.mode === 'meaning'
     ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null;
-  const sections = [
-    ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
-    ...(facts ? [{ key: 'meaning', label: t('meaning') }] : []),
-    { key: 'history', label: t('history') },
-  ];
   const subjectKind = contextKind && !(tab === 'conversation' && conversationLabel) ? contextKind : null;
   /** The lit tab already says "conversation", so beside a kind the eyebrow keeps only the kind. */
   const conversationNamedByTab = tab === 'conversation' && subjectKind !== null;
@@ -273,8 +268,11 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
        * TabBar, not SegmentedControl: these are views, not a value; panels carry the matching
        * workbench-tabpanel-* id.
        */}
-      {sections.length > 1 ? <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
-        <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={sections} />
+      {/* The results section alone needs no strip. */}
+      {conversation || facts ? <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
+        <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
+          ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []), ...(facts ? [{ key: 'meaning', label: t('meaning') }] : []), { key: 'history', label: t('history') },
+        ]} />
       </div> : null}
       <CloseButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-1" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose} />
     </header>
