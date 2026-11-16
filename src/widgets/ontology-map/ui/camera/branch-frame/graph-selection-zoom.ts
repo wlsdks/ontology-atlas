@@ -179,9 +179,11 @@ export interface DomainSelectionZoomInput {
  * A domain's selection zooms in until its star fills the free map: the score grows with the
  * separation of its two closest members up to `apartPx` and no further, so the frame takes the
  * largest scale at which the star still fits, or the least at which those members stand `apartPx` apart.
+ * A domain with fewer than two members spaces the closest two marks of its star instead.
  */
 export function domainSelectionZoom(input: DomainSelectionZoomInput): SelectionZoomIn {
-  const nearest = nearestPairDistance(input.members);
+  const members = nearestPairDistance(input.members);
+  const nearest = Number.isFinite(members) ? members : nearestPairDistance(input.starAt(input.maxScale));
   const readsAt = (scale: number) => nearest * scale >= input.apartPx;
   return { maxScale: input.maxScale, readsAt, scoreAt: (scale) => [Math.min(nearest * scale, input.apartPx)], marksAt: input.starAt };
 }

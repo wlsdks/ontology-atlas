@@ -74,7 +74,7 @@ function fanMiddle(
   if (!byId) fanMiddleCache.set(layout, (byId = new Map()));
   const known = byId.get(capabilityId);
   if (known !== undefined) return known;
-  const dotPx = graphDiscRadiusPx("element", 0, tokens, 1);
+  const dotPx = Math.max(graphDiscRadiusPx("element", 0, tokens, 1), tokens.elementOpenMaxPx);
   const radius = Math.max(tokens.selectedDiscPx + tokens.selectedRingGapPx + tokens.selectedRingPx + dotPx + tokens.nameGapPx + FAN_AIR_PX, ((natural.length - 1) * tokens.elementNameSpacingPx) / (2 * (Math.PI - TITLE_WEDGE)));
   const step = natural.length > 1 ? Math.min((2 * (Math.PI - TITLE_WEDGE)) / (natural.length - 1), tokens.elementNameSpacingPx / radius) : 0;
   const width = step * (natural.length - 1);
@@ -129,7 +129,8 @@ export function openedElements(
     natural.push({ id, x, y, turn: turnOf(x, y) });
   }
   if (natural.length === 0) return null;
-  const clearPx = selectedRadiusPx + tokens.selectedRingGapPx + tokens.selectedRingPx + graphDiscRadiusPx("element", 0, tokens, growth) + tokens.nameGapPx;
+  // A selected capability's dots open up to their open maximum, so the fan clears the ring by that, not by the resting dot.
+  const clearPx = selectedRadiusPx + tokens.selectedRingGapPx + tokens.selectedRingPx + Math.max(graphDiscRadiusPx("element", 0, tokens, growth), tokens.elementOpenMaxPx) + tokens.nameGapPx;
   const pitchPx = tokens.elementNameSpacingPx;
   let legible = Infinity;
   for (let i = 0; i < natural.length; i += 1) {

@@ -9,6 +9,7 @@ import {
 } from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
+import { lastOpenedDomainStar } from "../../../flat-graph/frame";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
 import { domainTitleBlocks, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
 import { domainStarIds, domainStarRooms, openRadiusPx } from "../../../flat-graph/open-star";
@@ -63,10 +64,10 @@ function graphSelectionFrame(
     const opened = [...capabilities, ...elements].flatMap((of) => {
       const node = world.nodeById.get(of);
       const room = rooms.get(of);
-      return node && room ? [{ node, room, own: radius(of) }] : [];
+      return node && room ? [{ node, room, own: radius(of), nearestOwn: room.nearestId === null ? 0 : radius(room.nearestId) }] : [];
     });
-    const starAt = (scale: number): FramedMark[] => [...block, ...opened.map(({ node, room, own }) => {
-      const r = openRadiusPx(own, room, scale, domainPx, paint);
+    const starAt = (scale: number): FramedMark[] => [...block, ...opened.map(({ node, room, own, nearestOwn }) => {
+      const r = openRadiusPx(own, room, scale, domainPx, paint, nearestOwn);
       return { x: node.x, y: node.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } };
     })];
     const zoom = domainSelectionZoom({
@@ -100,13 +101,19 @@ function graphSelectionFrame(
     return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
   });
   const element = !model.capabilityById.has(id) && model.domainOf.has(id);
+  // A member of the star open on the map keeps the zoom that opened it: its own mark always fits there, so the frame only pans.
+  const inOpenStar = domainId !== null && domainId === lastOpenedDomainStar();
+  const capped = Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio);
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
     staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, hubCaption: dial.labels?.evidenceUnmeasured?.() ?? null, near, framed: element ? whole : near, domainId,
-    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
+    entryScale: band.entryScale, maxScale: inOpenStar ? Math.max(capped, camera.tscale) : capped,
   });
   const farEnds = [...whole].filter((of) => !near.has(of)).flatMap((of) => world.nodeById.get(of) ?? []);
-  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
+  const own = world.nodeById.get(id)!;
+  const disc = radius(id);
+  const sets = inOpenStar ? [marks(whole), marks(near), [{ x: own.x, y: own.y, box: { minX: -disc, maxX: disc, minY: -disc, maxY: disc } }]] : [marks(whole), marks(near)];
+  return selectionFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
 }
 
 /**

@@ -334,3 +334,41 @@ export function graphMotionOf(worldKey: object, attention: GraphAttention): Grap
   if (!motion) motions.set(worldKey, (motion = new GraphMotion(attention)));
   return motion;
 }
+
+/**
+ * The opened star's clock where no attention runs (the map beside an open dock): the focused concept's
+ * star opens over `riseMs` while the one it replaced closes on the same mix. Settled at once under reduced motion.
+ */
+export class StarClock {
+  id: string | null;
+  previous: string | null = null;
+  mix = 1;
+  private changedAt = Number.NEGATIVE_INFINITY;
+
+  constructor(id: string | null) {
+    this.id = id;
+  }
+
+  get settled(): boolean {
+    return this.mix >= 1;
+  }
+
+  advance(id: string | null, now: number, reducedMotion: boolean): void {
+    if (id !== this.id) {
+      this.previous = this.id;
+      this.id = id;
+      this.changedAt = now;
+    }
+    this.mix = reducedMotion ? 1 : eased(ENTRY_CURVE, (now - this.changedAt) / FLAT_MOTION.riseMs);
+    if (this.mix >= 1) this.previous = null;
+  }
+}
+
+const starClocks = new WeakMap<object, StarClock>();
+
+/** The star clock of one world, created settled on the concept it first sees. */
+export function starClockOf(worldKey: object, id: string | null): StarClock {
+  let clock = starClocks.get(worldKey);
+  if (!clock) starClocks.set(worldKey, (clock = new StarClock(id)));
+  return clock;
+}

@@ -14,7 +14,7 @@ import { directItemId } from "./layout";
 import {
   arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
-import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
+import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, starClockOf, waveDelays, type GraphMotion, type StarClock } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
@@ -357,9 +357,10 @@ interface FrameState {
  * One opened star: its rooms, in world units read at the frame's scale (`world`) or in this
  * frame's px, the radius of the disc it opens round, and how far it has opened.
  */
-interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; fixedPx: number; share: number }
+/** One opened star: rooms in world units (`world`) or screen px; a domain star's fixed disc is the domain's, grown with the zoom. */
+interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; domain: boolean; fixedPx: number; share: number }
 const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
-const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, fixedPx: 0, share: 0 });
+const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domain: false, fixedPx: 0, share: 0 });
 const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false } as FrameState;
 
 /**
@@ -483,7 +484,7 @@ function openedRadius(id: string, own: number): number {
     const star = F.stars[i]!;
     const room = star.rooms.get(id);
     if (room === undefined) continue;
-    const open = openRadiusPx(own, room, star.world ? F.scale : 1, star.fixedPx, F.P);
+    const open = openRadiusPx(own, room, star.world ? F.scale : 1, star.fixedPx, F.P, room.nearestId === null ? 0 : radiusNow(room.nearestId));
     r = Math.max(r, own + (open - own) * star.share);
   }
   return r;
@@ -495,39 +496,57 @@ function dotRadius(id: string): number {
   return openedRadius(id, radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1));
 }
 
-function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, fixedPx: number, share: number): void {
+function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, domain: boolean, fixedPx: number, share: number): void {
   const star = F.stars[F.starCount]!;
   star.rooms = rooms;
   star.world = world;
+  star.domain = domain;
   if (star.fixedPx !== fixedPx) star.fixedPx = fixedPx;
   if (star.share !== share) star.share = share;
   F.starCount += 1;
 }
 
-const fanRoomCache = new Map<string, { scale: number; open: number; ringPx: number; rooms: ReadonlyMap<string, StarRoom> }>();
-const FAN_ROOMS_KEPT = 4;
+interface FanRooms { world: ReadonlyMap<string, StarRoom> | null; fanned: ReadonlyMap<string, StarRoom> | null; ringPx: number }
+const fanRoomCache = new WeakMap<FlatGraphLayout, Map<string, FanRooms>>();
 
-/**
- * A selected capability's elements' rooms in screen px round its centre, beside its selection
- * ring: where its fan draws them, or where they stand once the zoom shows them apart. Made again
- * only when the zoom or the fan changes. O(n²), n = the capability's elements.
- */
-function fanRooms(capabilityId: string, fan: OpenedElements | null, ringPx: number): ReadonlyMap<string, StarRoom> {
-  const open = fan?.open ?? 0;
-  const known = fanRoomCache.get(capabilityId);
-  if (known && known.scale === F.scale && known.open === open && known.ringPx === ringPx) return known.rooms;
+/** A capability's elements' rooms round its centre: `fan` offsets in px, or their own places in world units. O(n²), n = its elements. */
+function elementRooms(capabilityId: string, fan: OpenedElements | null): ReadonlyMap<string, StarRoom> {
   const centre = F.layout.positions.get(capabilityId);
   const points: StarPoint[] = [];
   for (const id of F.model.capabilityById.get(capabilityId)?.elementIds ?? []) {
     const offset = fan?.offsets.get(id);
     const at = F.layout.positions.get(id);
-    if (offset) points.push({ id, kind: "element", x: offset.x, y: offset.y });
-    else if (at && centre) points.push({ id, kind: "element", x: (at.x - centre.x) * F.scale, y: (at.y - centre.y) * F.scale });
+    if (fan) {
+      if (offset) points.push({ id, kind: "element", x: offset.x, y: offset.y });
+    } else if (at && centre) points.push({ id, kind: "element", x: at.x - centre.x, y: at.y - centre.y });
   }
-  const rooms = starRooms(points, ORIGIN, F.P);
-  if (!known && fanRoomCache.size >= FAN_ROOMS_KEPT) fanRoomCache.clear();
-  fanRoomCache.set(capabilityId, { scale: F.scale, open, ringPx, rooms });
-  return rooms;
+  return starRooms(points, ORIGIN, F.P);
+}
+
+/**
+ * A selected capability's elements' rooms beside its selection ring. Unfanned, they stand in their
+ * own places, kept once per layout in world units; fully fanned, the fan's px places hold at any zoom
+ * and are kept per ring; only a half-closed fan, which moves with the zoom, is measured each frame.
+ */
+function setFanStar(capabilityId: string, fan: OpenedElements | null, ringPx: number, share: number): void {
+  let byCapability = fanRoomCache.get(F.layout);
+  if (!byCapability) fanRoomCache.set(F.layout, (byCapability = new Map()));
+  let known = byCapability.get(capabilityId);
+  if (!known) byCapability.set(capabilityId, (known = { world: null, fanned: null, ringPx: 0 }));
+  if (fan === null) {
+    known.world ??= elementRooms(capabilityId, null);
+    setStar(known.world, true, false, ringPx, share);
+    return;
+  }
+  if (fan.open < 1) {
+    setStar(elementRooms(capabilityId, fan), false, false, ringPx, share);
+    return;
+  }
+  if (known.fanned === null || known.ringPx !== ringPx) {
+    known.fanned = elementRooms(capabilityId, fan);
+    known.ringPx = ringPx;
+  }
+  setStar(known.fanned, false, false, ringPx, share);
 }
 
 /** The fan drawn for `capabilityId` this frame, if any. */
@@ -539,18 +558,41 @@ function fanOf(capabilityId: string): OpenedElements | null {
 /** A capability's elements open round its selection ring. */
 function setCapabilityStar(capabilityId: string, share: number): void {
   const ringPx = selectedDiscRadius(radiusNow(capabilityId), F.P, F.growth) + F.P.selectedRingGapPx + F.P.selectedRingPx;
-  setStar(fanRooms(capabilityId, fanOf(capabilityId), ringPx), false, ringPx, share);
+  setFanStar(capabilityId, fanOf(capabilityId), ringPx, share);
 }
 
-/** This frame's opened stars: the selected domain's or capability's, and the one a change just left while it closes. */
-function planOpenStars(selected: string | null, attention: GraphAttention, motion: GraphMotion, mix: number): void {
+let openDomainId: string | null = null;
+
+/** The domain whose star the last Flat frame drew open, arriving or closing; null when it drew none. */
+export function lastOpenedDomainStar(): string | null {
+  return openDomainId;
+}
+
+/**
+ * This frame's opened stars: the selected domain's or capability's, and the one a change just left
+ * while it closes, on the attention's mix or, beside an open dock where no attention runs, the star clock's.
+ */
+function planOpenStars(selected: string | null, attention: GraphAttention, motion: GraphMotion, mix: number, clock: StarClock): void {
   const { model, P, layout } = F;
   F.starCount = 0;
   F.starNow = false;
+  openDomainId = null;
   const domainPx = graphDiscRadiusPx("domain", 0, P, F.growth);
+  const setDomainStar = (id: string, share: number) => {
+    setStar(domainStarRooms(model, layout, id, P), true, true, domainPx, share);
+    openDomainId ??= id;
+  };
+  if (F.contextMode) {
+    if (selected !== null && model.domainById.has(selected)) {
+      setDomainStar(selected, clock.mix);
+      F.starNow = true;
+    }
+    if (clock.previous !== null && model.domainById.has(clock.previous)) setDomainStar(clock.previous, 1 - clock.mix);
+    return;
+  }
   const arriving = (id: string) => (attention.selected && attention.focusId === id ? mix : 1);
   if (selected !== null && model.domainById.has(selected)) {
-    setStar(domainStarRooms(model, layout, selected, P), true, domainPx, arriving(selected));
+    setDomainStar(selected, arriving(selected));
     F.starNow = true;
   } else if (F.selectedId !== null && model.capabilityById.has(F.selectedId)) {
     setCapabilityStar(F.selectedId, arriving(F.selectedId));
@@ -558,7 +600,7 @@ function planOpenStars(selected: string | null, attention: GraphAttention, motio
   }
   const left = motion.previous.focusId;
   if (motion.settled || !motion.previous.selected || left === null || left === selected || mix >= 1) return;
-  if (model.domainById.has(left)) setStar(domainStarRooms(model, layout, left, P), true, domainPx, 1 - mix);
+  if (model.domainById.has(left)) setDomainStar(left, 1 - mix);
   else if (left === F.leavingId && model.capabilityById.has(left)) setCapabilityStar(left, 1 - mix);
 }
 
@@ -819,7 +861,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   }
 }
 
-function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: GraphMotion) {
+function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: GraphMotion, clock: StarClock) {
   const attention = motion.current;
   const mix = motion.baseMix;
   const { model, scene } = input.dial;
@@ -850,13 +892,6 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.evidence = measured ? evidence : null;
   const selected = contextMode ? null : input.focusedNodeId;
   F.selectedId = selected !== null && selected !== model.projectId && !model.domainById.has(selected) ? selected : null;
-  if (F.selectedId !== null) {
-    const own = radiusNow(F.selectedId);
-    const grown = selectedDiscRadius(own, P, growth);
-    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
-    const r = own + (grown - own) * share;
-    if (F.selectedR !== r) F.selectedR = r;
-  }
   F.opened.length = 0;
   if (F.selectedId !== null) {
     const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
@@ -867,12 +902,22 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
   if (F.leavingId !== null) {
     const own = radiusNow(F.leavingId);
-    const r = own + (selectedDiscRadius(own, P, growth) - own) * (1 - mix);
-    if (F.leavingR !== r) F.leavingR = r;
     const elements = openedElements(model, layout, F.leavingId, P, selectedDiscRadius(own, P, growth), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
-  planOpenStars(input.focusedNodeId, attention, motion, mix);
+  planOpenStars(input.focusedNodeId, attention, motion, mix, clock);
+  // The selection's growth adds to the star's, whose shares run on the same mix: a retarget between them is one blend, never the rest radius.
+  if (F.selectedId !== null) {
+    const own = radiusNow(F.selectedId);
+    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
+    const r = openedRadius(F.selectedId, own) + (selectedDiscRadius(own, P, growth) - own) * share;
+    if (F.selectedR !== r) F.selectedR = r;
+  }
+  if (F.leavingId !== null) {
+    const own = radiusNow(F.leavingId);
+    const r = openedRadius(F.leavingId, own) + (selectedDiscRadius(own, P, growth) - own) * (1 - mix);
+    if (F.leavingR !== r) F.leavingR = r;
+  }
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
   F.lineKinds = 0;
@@ -1108,7 +1153,9 @@ function stepRadius(id: string): number {
   const room = F.starNow ? star.rooms.get(id) : undefined;
   if (room === undefined) return own;
   // Names stand where the star has fully opened, so they never move as it opens.
-  return star.world ? openRadiusPx(own, room, stepGrowthNow[1]!, graphDiscRadiusPx("domain", 0, F.P, stepGrowthNow[0]!), F.P) : openRadiusPx(own, room, 1, star.fixedPx, F.P);
+  const nearestOwn = room.nearestId === null ? 0 : radiusOf(room.nearestId, stepGrowthNow[0]!, stepGrowthNow[1]!);
+  const fixedPx = star.domain ? graphDiscRadiusPx("domain", 0, F.P, stepGrowthNow[0]!) : star.fixedPx;
+  return openRadiusPx(own, room, star.world ? stepGrowthNow[1]! : 1, fixedPx, F.P, nearestOwn);
 }
 
 /**
@@ -1729,7 +1776,9 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const layout = input.dial.scene.graph!;
   motion.advance(attention, input.now, input.reducedMotion, (a) => wavesOf(a, layout));
   const mix = motion.settled ? 1 : Math.min(motion.progress, UNSETTLED_MIX);
-  const built = buildPlan(input, tokens, motion);
+  const clock = starClockOf(input.worldKey, input.focusedNodeId);
+  clock.advance(input.focusedNodeId, input.now, input.reducedMotion);
+  const built = buildPlan(input, tokens, motion, clock);
   const ground = input.mapTokens.canvasBgNear;
   const warning = tokens.inks.warning;
   if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };
@@ -1739,7 +1788,7 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const drawn = drawnFlowKeys.items;
   const result: DialFrameResult = {
     branchScene: undefined,
-    branchMembersAnimating: motion.active,
+    branchMembersAnimating: motion.active || (contextMode && !clock.settled),
     contextOnly: contextMode,
     drawnCount: built.plan.discs.length + built.plan.domains.length + built.plan.dots.length + built.plan.project.length,
     tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows, labelBoxes: built.labelBoxes,

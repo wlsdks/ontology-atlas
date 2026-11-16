@@ -26,6 +26,8 @@ import { computeEffectiveCameraScaleMax, computeOverviewCameraTarget, computeOve
 const TOKENS = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("../../../flat-graph/tokens", async (actual) => ({ ...(await actual<object>()), readFlatGraphTokens: () => TOKENS.current }));
 vi.mock("../../../dial/fit", () => ({ createMeasureText: () => measureText }));
+const OPEN_STAR = vi.hoisted(() => ({ domainId: null as string | null }));
+vi.mock("../../../flat-graph/frame", async (actual) => ({ ...(await actual<object>()), lastOpenedDomainStar: () => OPEN_STAR.domainId }));
 vi.mock("../../../render/labels", async (actual) => ({ ...(await actual<object>()), labelFontFamily: () => "sans-serif" }));
 
 import { selectionFrameTarget, type FramedMark } from "../../../model/camera/flat-selection-camera";
@@ -137,10 +139,13 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
     const boxes = [{ x: home.x, y: home.y, minX: -half, maxX: half, minY: Math.min(-domainR, title.topPx), maxY: Math.max(domainR, title.bottomPx) }];
     const rooms = domainStarRooms(model, layout, domainId, paint);
     const { capabilities, elements } = domainStarIds(model, domainId);
-    for (const id of [...capabilities, ...elements]) {
+    const ownOf = (id: string) => {
       const capability = model.capabilityById.get(id);
-      const own = graphDiscRadiusPx(capability ? "capability" : "element", capability?.elementIds.length ?? 0, paint, paint.growthMax);
-      const r = openRadiusPx(own, rooms.get(id)!, scale, domainR, paint);
+      return graphDiscRadiusPx(capability ? "capability" : "element", capability?.elementIds.length ?? 0, paint, paint.growthMax);
+    };
+    for (const id of [...capabilities, ...elements]) {
+      const room = rooms.get(id)!;
+      const r = openRadiusPx(ownOf(id), room, scale, domainR, paint, room.nearestId === null ? 0 : ownOf(room.nearestId));
       boxes.push({ ...at(id), minX: -r, maxX: r, minY: -r, maxY: r });
     }
     const span = (lo: "minX" | "minY", hi: "maxX" | "maxY", axis: "x" | "y") =>
@@ -220,6 +225,26 @@ describe("a selection framed between both panels", () => {
     expect(pastRatioCap, "a domain selection zooms past the ratio a capability's selection keeps to").toBeGreaterThan(0);
     expect(short, "a domain that stops short of filling the free map").toEqual([]);
     expect(over, "a domain whose closest members stand past the widest separation").toEqual([]);
+  });
+
+  it.each([
+    ["docs", 1280, 800, docsManifest], ["docs", 1410, 840, docsManifest], ["storefront", 1280, 800, storefrontManifest],
+  ])("never zooms out for a member pressed in the star a domain opened, in the %s vault at %ix%i", (_, width, height, manifest) => {
+    const map = vaultMap(manifest, { width, height });
+    const lowered: string[] = [];
+    try {
+      for (const domain of map.model.domains) {
+        const landed = map.frame(domain.id, map.rest) ?? map.rest;
+        OPEN_STAR.domainId = domain.id;
+        for (const member of domainStarIds(map.model, domain.id).capabilities) {
+          const pressed = map.frame(member, landed, map.rest.tscale) ?? landed;
+          if (pressed.tscale < landed.tscale * (1 - 1e-9)) lowered.push(`${member}: ${(pressed.tscale / landed.tscale).toFixed(2)} of the landing`);
+        }
+      }
+    } finally {
+      OPEN_STAR.domainId = null;
+    }
+    expect(lowered).toEqual([]);
   });
 
   it.each([
@@ -365,5 +390,17 @@ describe("a domain selection's zoom", () => {
     expect(zoom.readsAt(1), "30 px apart at 1x").toBe(false);
     expect(zoom.readsAt(44 / 30), "44 px apart once the distinct pair is").toBe(true);
     expect(zoom.scoreAt(1)[0], "the coincident pair does not pin the score at zero").toBeCloseTo(30, 9);
+  });
+
+  it.each([
+    ["one capability and ten elements", [{ x: 0, y: 0 }], [{ x: 0, y: 0 }, ...Array.from({ length: 10 }, (_, i) => ({ x: 20 + i * 20, y: 10 }))]],
+    ["only direct elements", [], Array.from({ length: 6 }, (_, i) => ({ x: i * 20, y: 0 }))],
+  ])("zooms in with %s, spacing the closest two marks of its star", (_, members, marks) => {
+    const star = [disc(60, 40, 20), ...marks.map((m) => disc(m.x, m.y, 3))];
+    const zoom = domainSelectionZoom({ members, apartPx: 160, starAt: () => star, maxScale: 20 });
+    expect(zoom.readsAt(1), "20 px apart at 1x").toBe(false);
+    expect(zoom.scoreAt(2)[0]!, "the score still grows with the zoom").toBeGreaterThan(zoom.scoreAt(1)[0]!);
+    const landed = selectionFrameTarget({ tx: 60, ty: 0, tscale: 1 }, [star], viewport, free, margin, 0.5, zoom)!;
+    expect(landed.tscale, "the frame zooms in").toBeGreaterThan(1);
   });
 });

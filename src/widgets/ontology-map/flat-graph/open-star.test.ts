@@ -5,9 +5,13 @@ import { openRadiusPx, starRooms, type StarPoint } from "./open-star";
 const TOKENS = { capOpenMaxPx: 24, elementOpenMaxPx: 10, openFill: 0.8 };
 const OWN_PX = 3;
 
-function radii(points: readonly StarPoint[], scale = 1, fixed: { x: number; y: number } | null = null, fixedPx = 0): Map<string, number> {
+function radii(points: readonly StarPoint[], scale = 1, fixed: { x: number; y: number } | null = null, fixedPx = 0, own: ReadonlyMap<string, number> = new Map()): Map<string, number> {
   const rooms = starRooms(points, fixed, TOKENS);
-  return new Map(points.map((p) => [p.id, openRadiusPx(OWN_PX, rooms.get(p.id)!, scale, fixedPx, TOKENS)]));
+  const ownOf = (id: string | null) => (id === null ? 0 : own.get(id) ?? OWN_PX);
+  return new Map(points.map((p) => {
+    const room = rooms.get(p.id)!;
+    return [p.id, openRadiusPx(ownOf(p.id), room, scale, fixedPx, TOKENS, ownOf(room.nearestId))];
+  }));
 }
 
 const capability = (id: string, x: number, y = 0): StarPoint => ({ id, kind: "capability", x, y });
@@ -29,6 +33,12 @@ describe("an opened star's marks", () => {
     expect(radii(crowded, 1.5).get("b")!).toBeGreaterThan(near.get("b")!);
   });
 
+  it("never make a pair overlap that cleared at rest, when one mark's own radius already passes its share", () => {
+    const r = radii([capability("c", 0), element("e", 12)], 1, null, 0, new Map([["c", 9.5], ["e", 2.5]]));
+    expect(r.get("c")!).toBe(9.5);
+    expect(r.get("c")! + r.get("e")!).toBeLessThanOrEqual(12 + 1e-9);
+  });
+
   it("give a capability the larger share of the room it shares with an element, and leave air between them", () => {
     const r = radii([capability("c", 0), element("e", 25)]);
     expect(r.get("c")!).toBeGreaterThan(r.get("e")! * 2);
@@ -48,6 +58,6 @@ describe("an opened star's marks", () => {
 
   it("never draw under their own radius", () => {
     const rooms = starRooms([element("e", 0), element("f", 1)], null, TOKENS);
-    expect(openRadiusPx(4.5, rooms.get("e")!, 1, 0, TOKENS)).toBe(4.5);
+    expect(openRadiusPx(4.5, rooms.get("e")!, 1, 0, TOKENS, 4.5)).toBe(4.5);
   });
 });
