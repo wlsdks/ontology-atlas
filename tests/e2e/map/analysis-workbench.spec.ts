@@ -88,7 +88,7 @@ test('Architecture exposes version history without requiring an agent process', 
   await page.goto('/en/architecture/?guides=off');
   await page.getByTestId('architecture-review-open').click();
   await expect(page.getByTestId('analysis-workbench')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Findings & history' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: en.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('architecture-inspector')).toBeHidden();
 });
 

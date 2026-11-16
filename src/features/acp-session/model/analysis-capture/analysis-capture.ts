@@ -294,8 +294,15 @@ export function createAnalysisTurnObserver(
   };
 }
 
+const FINDINGS_BLOCK_FENCE = '```atlas-analysis';
+
+/** Only a request that asks for the findings block is an analysis; any other turn stays in the conversation. */
+export function requestsAnalysisFindings(requestText: string): boolean {
+  return requestText.includes(FINDINGS_BLOCK_FENCE);
+}
+
 export const ANALYSIS_FINDINGS_INSTRUCTION = [
   'Keep the answer useful as plain Markdown. Cite exact ontology slugs and preserve unknowns; do not invent a maintainability percentage or treat a suspicion as a confirmed defect.',
-  'At the end, include one ```atlas-analysis JSON block shaped {"findings":[{"category":"definition|boundary|relation|evidence|architecture","title":"...","detail":"...","targetSlugs":["exact authored slug"],"evidenceSlugs":["slug read in full this turn"],"roleIds":[],"relation":null,"suggestedAction":"..."}]}.',
+  `At the end, include one ${FINDINGS_BLOCK_FENCE} JSON block shaped {"findings":[{"category":"definition|boundary|relation|evidence|architecture","title":"...","detail":"...","targetSlugs":["exact authored slug"],"evidenceSlugs":["slug read in full this turn"],"roleIds":[],"relation":null,"suggestedAction":"..."}]}.`,
   'Use the appropriate single category value. A relation, when relevant, is {"from":"slug","to":"slug","type":"declared relation type"}. Only cite actual full-body reads. Keep unmeasured source/runtime impact unknown. An empty findings array means no findings in this bounded review, never proof that the whole system is correct.',
 ].join('\n');

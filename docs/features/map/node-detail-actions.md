@@ -28,7 +28,7 @@ routes: [/topology]
   confirmation whose file could not be read, connections without a recorded
   reason, then the edit conflict and summary lines. The first fact is one row
   of the panel's row height: a warning icon, the sentence and its action
-  (**Open document**, or **Meaning review** for missing reasons) as a quiet
+  (**Open document**, or **Ontology review** for missing reasons) as a quiet
   chip at the right edge, set off by a hairline, never a filled or bordered
   box. The rest open under a plain "+N more". A concept with no review mark
   shows no row and no review word. A project's source receipt sits below it,
@@ -37,7 +37,7 @@ routes: [/topology]
   **Details**. A menu holding one action is that action, named by it: a
   capability, element or project shows **Edit relations** itself, while a
   domain, which can also create a linked concept, keeps the **Edit** menu.
-  **More** starts with **Meaning review**, then **Ask agent** in the installed
+  **More** starts with **Ontology review**, then **Ask agent** in the installed
   app and **Copy prompt**, then explore overlooked areas, the document and the
   realm. A menu opens directly above its trigger with their right edges
   aligned, on the app's raised menu surface with the popover shadow and a

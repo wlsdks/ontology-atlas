@@ -12,6 +12,9 @@ enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, cli/src/comman
 
 Atlas keeps each in-app ACP analysis as a separate Markdown file under
 `.ontology-atlas/analyses/` in the folder captured when the request starts.
+An analysis is a turn whose request asks for the findings block; an ordinary
+chat turn stays in the conversation and writes no record. Runs that earlier
+versions recorded for ordinary turns stay on disk and are left out of the list.
 Map, Analysis, and Architecture use the same format. An analysis can be
 reopened after a session closes, exported, inspected through MCP or CLI, or
 used as the parent of another analysis.
@@ -22,9 +25,9 @@ relation criteria remain in [the Atlas specification](../ONTOLOGY-ATLAS-SPEC.md#
 
 ## Reading and acting
 
-The map's **Meaning review** action opens the existing right context dock.
-Meaning, findings/history, and conversation occupy that same space. The
-conversation stays mounted when the section changes. The meaning view shows
+The map's **Ontology review** action opens the existing right context dock.
+Role & connections, Review results, and Conversation occupy that same space.
+The conversation stays mounted when the section changes. The first view shows
 the selected concept's definition, its kind criterion, directional relation
 sentences, stored rationale, and links to the declaring document. A missing
 rationale is visible as missing. Optional canvas captions name up to 24
@@ -33,8 +36,8 @@ target. Captions yield to concept labels, node shapes, and viewport chrome.
 Overview gives directional relations priority. Symmetric association labels
 appear when the person selects or points at their concept or connection.
 
-**Analyze with AI**, **Run a new analysis**, and **Analyze further from this
-version** explicitly send the visible task to the connected ACP runtime.
+**Ask AI to review**, **Request a new review**, and **Continue the review from
+this result** explicitly send the visible task to the connected ACP runtime.
 Ordinary drafts and the existing Flow prefill still require Send. These
 analysis actions ask for a read-only assessment; ontology/code writes keep
 their existing approval boundary. A follow-up records the exact parent run
