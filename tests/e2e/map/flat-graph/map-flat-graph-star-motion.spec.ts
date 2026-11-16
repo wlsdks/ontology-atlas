@@ -255,7 +255,9 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       const prior = was.get(id);
       if (prior === undefined || Math.abs(r - prior) < 1e-3) continue;
       changed = true;
-      const speed = Math.abs(r - prior) / dt;
+      // The map steps a mark by its own frame's time, never less than one 60 Hz frame; the sampler's
+      // animation frames may fall closer together than the map's, so a step is read over at least one.
+      const speed = Math.abs(r - prior) / Math.max(dt, FRAME_MS);
       if (speed > radiusPxPerMs) {
         radiusPxPerMs = speed;
         worst = `${id} ${prior.toFixed(2)} -> ${r.toFixed(2)} px in ${dt.toFixed(1)} ms at ${Math.round(now.t - pressAt)} ms`;
