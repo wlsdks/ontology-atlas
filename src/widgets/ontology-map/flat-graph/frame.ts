@@ -67,7 +67,7 @@ const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
 interface Light { x: number; y: number; r: number; ink: string; alpha: number }
 /** `markR` is the drawn radius of the name's mark, read only by a leader. */
-interface Name { name: PlacedName; x: number; y: number; ink: number; color: string; halo: number; markR: number }
+interface Name { name: PlacedName; x: number; y: number; ink: number; room: number; color: string; halo: number; markR: number }
 interface Ring { x: number; y: number; r: number; alpha: number; ink: string }
 type LabelBox = DialFrameResult["labelBoxes"][number];
 
@@ -118,7 +118,7 @@ const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
 const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
-const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0, markR: 0 }));
+const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, room: 1, color: "", halo: 0, markR: 0 }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -216,6 +216,7 @@ function nameMark(name: PlacedName, x: number, y: number, ink: number, color: st
   if (n.x !== x) n.x = x;
   if (n.y !== y) n.y = y;
   if (n.ink !== ink) n.ink = ink;
+  if (n.room !== 1) n.room = 1;
   n.color = color;
   if (n.halo !== halo) n.halo = halo;
   return n;
@@ -520,7 +521,16 @@ function drawnRadius(id: string, target: number): number {
 
 /** The drawn radius: the selected concept's toward the selected radius, an opened star's marks toward the room they have at this frame's zoom. */
 function discRadius(id: string): number {
-  return drawnRadius(id, id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : openedRadius(id, radiusNow(id)));
+  const own = radiusNow(id);
+  return noteGrown(id, own, drawnRadius(id, id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : openedRadius(id, own)));
+}
+
+/** Marks drawn past their resting radius this frame: the only marks a name gives way to. */
+const grownIds = new Set<string>();
+
+function noteGrown(id: string, rest: number, r: number): number {
+  if (r > rest + MARK_REST_PX) grownIds.add(id);
+  return r;
 }
 
 /** `own` grown by every opened star that holds `id` into the room it has at this frame's zoom. O(stars). */
@@ -538,7 +548,8 @@ function openedRadius(id: string, own: number): number {
 /** An element dot's drawn radius: a lit dot stands out, and an opened star grows it. */
 function dotRadius(id: string): number {
   if (id === F.selectedId || id === F.leavingId) return discRadius(id);
-  return drawnRadius(id, openedRadius(id, radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1)));
+  const rest = radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
+  return noteGrown(id, rest, drawnRadius(id, openedRadius(id, rest)));
 }
 
 function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, domain: boolean, fixedPx: number): void {
@@ -686,8 +697,8 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   loadNameInk(n);
   let ink = scratch[0]! * share;
   if (ink <= DRAWN_INK) return;
-  const rank = nameRank(n);
-  if (rank > 0) ink *= smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at, !holdsPlace(n)));
+  const room = grownMarks.size > 0 && nameRank(n) > 0 ? smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at, !holdsPlace(n))) : 1;
+  ink *= room;
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
@@ -702,6 +713,7 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   if (mark.x !== x) mark.x = x;
   if (mark.y !== y) mark.y = y;
   if (mark.ink !== ink) mark.ink = ink;
+  if (mark.room !== room) mark.room = room;
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
   const markR = n.leader ? (n.role === "element" ? dotRadius(n.id) : discRadius(n.id)) : 0;
@@ -729,11 +741,21 @@ function nameRank(n: PlacedName): number {
   if (n.role !== "capability" && n.role !== "element") return 4;
   return n.role === "capability" ? 2 : 3;
 }
-const ROOM_MARKS = [L.project, L.domains, L.discs, L.dots];
+const grownMarks = new FrameList<Disc | Dot>();
+
+/** This frame's discs and dots an opened star or a selection grew, gathered once before the names. O(marks). */
+function collectGrownMarks(): void {
+  grownMarks.restart();
+  if (grownIds.size === 0) return;
+  for (const list of [L.discs, L.dots]) {
+    for (let i = 0; i < list.size; i += 1) if (grownIds.has(list.items[i]!.id)) grownMarks.add(list.items[i]!);
+  }
+}
 
 /**
  * The air, in px, between a name's glyphs anchored at `at` and the nearest name drawn before it, less
- * the pad two names keep between them, and with `offMarks` the nearest mark not its own. O(marks + names).
+ * the pad two names keep between them, and with `offMarks` the nearest grown mark not its own. Only
+ * while a star or a selection grows marks: O(grown marks + names) per name.
  */
 function nameRoom(n: PlacedName, at: Point, offMarks: boolean): number {
   const pad = F.P.namePadPx;
@@ -742,11 +764,12 @@ function nameRoom(n: PlacedName, at: Point, offMarks: boolean): number {
   const minY = at.y + n.box.minY + pad;
   const maxY = at.y + n.box.maxY - pad;
   let room = Infinity;
-  if (offMarks) for (const list of ROOM_MARKS) {
-    for (let i = 0; i < list.size; i += 1) {
-      const m = list.items[i]!;
+  if (offMarks) {
+    for (let i = 0; i < grownMarks.size; i += 1) {
+      const m = grownMarks.items[i]!;
       if (m.id === n.id) continue;
-      room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);    }
+      room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+    }
   }
   for (let i = 0; i < L.names.size; i += 1) {
     const o = L.names.items[i]!;
@@ -754,7 +777,8 @@ function nameRoom(n: PlacedName, at: Point, offMarks: boolean): number {
     const ox = o.x - o.name.dx;
     const oy = o.y - o.name.dy;
     const apart = Math.max(ox + o.name.box.minX + pad - maxX, minX - (ox + o.name.box.maxX - pad), oy + o.name.box.minY + pad - maxY, minY - (oy + o.name.box.maxY - pad));
-    room = Math.min(room, apart - pad);  }
+    room = Math.min(room, apart - pad);
+  }
   return room;
 }
 
@@ -961,6 +985,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   let drawn = drawnRadii.get(input.worldKey);
   if (!drawn) drawnRadii.set(input.worldKey, (drawn = new Map()));
   F.drawn = drawn; F.now = input.now; F.reducedMotion = input.reducedMotion; F.lagging = false;
+  grownIds.clear();
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
   stepGrowthNow[0] = stepGrowth;
@@ -1122,6 +1147,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
     discRadius: stepRadius, elementSpacingPx, hubCaption: unmeasuredLine,
   });
+  collectGrownMarks();
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
   const chrome = input.nameObstacles ?? NO_BOXES;
@@ -1716,7 +1742,7 @@ const pool = emptyDialFrameMarks();
 type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
-const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false, alpha: 1, room: 1 }));
 const probeGlyphs = markPool<GlyphMark>(() => ({ id: "", kind: "element", x: 0, y: 0, r: 0, egoState: "normal", fill: null, stroke: null, hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
@@ -1822,6 +1848,8 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
     text.backed = n.name.backed === true;
+    if (text.alpha !== n.ink) text.alpha = n.ink;
+    if (text.room !== n.room) text.room = n.room;
     setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
     probeTextList.add(text);
   }

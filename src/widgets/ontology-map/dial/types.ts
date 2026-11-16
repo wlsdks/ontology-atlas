@@ -150,6 +150,10 @@ export interface TextMark { id: string | null; role: TextRole; text: string; lin
     }[] | null;
   /** Drawn on the canvas ground because a lit line runs under it. */
   backed?: boolean;
+  /** The share of its full ink the name is drawn with, where the painter tracks it. */
+  alpha?: number;
+  /** The share of its ink a name keeps beside the marks and names that crowd it: 1 when none does. */
+  room?: number;
 }
 interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;
 }
@@ -224,6 +228,8 @@ export interface DialProbe {
         held: number;
     };
   texts: { id: string | null; role: TextRole; text: string; box: Box; font: string; backed: boolean;
+    /** The share of full ink drawn, and the share crowding left it (1 when nothing crowds it). */
+    alpha: number; room: number;
     }[];
   glyphs: DialPick[];
   blocks: { id: string; box: Box; alpha: number }[];

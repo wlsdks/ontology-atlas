@@ -77,20 +77,54 @@ const model = dogfoodModel();
 const scene = buildFlatGraphScene(model, TOKENS.layout, null);
 const layout = scene.graph!;
 
+/** A synthetic map of `domains` domains of `capsPer` capabilities with one to `2 * elsPer` elements each and a web of needs. */
+function syntheticModel(domains: number, capsPer: number, elsPer: number): DialModel {
+  const nodes: TreeInputNode[] = [{ id: "project:p", label: "Project", kind: "project" }];
+  const edges: TreeInputEdge[] = [];
+  const caps: string[] = [];
+  for (let d = 0; d < domains; d += 1) {
+    const domainId = `domain:d${d}`;
+    nodes.push({ id: domainId, label: `Domain number ${d}`, kind: "domain" });
+    edges.push({ source: "project:p", target: domainId, kind: "contains", relationType: "contains" });
+    for (let c = 0; c < capsPer; c += 1) {
+      const capId = `capability:d${d}c${c}`;
+      nodes.push({ id: capId, label: `Capability ${d} ${c} name`, kind: "capability" });
+      edges.push({ source: domainId, target: capId, kind: "contains", relationType: "contains" });
+      caps.push(capId);
+      for (let e = 0; e < 1 + ((c * 7 + d * 3) % (2 * elsPer)); e += 1) {
+        nodes.push({ id: `element:d${d}c${c}e${e}`, label: `Element ${d} ${c} ${e}`, kind: "element" });
+        edges.push({ source: capId, target: `element:d${d}c${c}e${e}`, kind: "contains", relationType: "contains" });
+      }
+    }
+  }
+  caps.forEach((id, i) => {
+    edges.push({ source: id, target: caps[(i * 37 + 11) % caps.length]!, kind: "depends", relationType: "depends_on" });
+    if (i % 3 === 0) edges.push({ source: id, target: caps[(i * 53 + 5) % caps.length]!, kind: "depends", relationType: "depends_on" });
+  });
+  const tree = readContainmentTree(nodes, edges);
+  const dependencies = rollDomainDependencies(tree, edges);
+  return buildDialModel({
+    tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)),
+    elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id), relates: rollRelatesCapabilityPairs(tree, edges), direct: directRelations(edges),
+  });
+}
+
 type Mark = { x: number; y: number; r: number };
 
-/** A camera centred on `centreId`, at a zoom given per frame as a ratio of the fitting scale. */
-function cameraOn(centreId: string, worldKey: object) {
-  const e = layout.extent;
+/** A camera centred on `centreId` (the map's middle when null) of `world`'s map, at a zoom given per frame as a ratio of the fitting scale. */
+function cameraOn(centreId: string | null, worldKey: object, world = { model, scene }) {
+  const { model: m, scene: sc } = world;
+  const graph = sc.graph!;
+  const e = graph.extent;
   const fit = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY));
-  const centre = layout.positions.get(centreId)!;
+  const centre = centreId === null ? { x: (e.minX + e.maxX) / 2, y: (e.minY + e.maxY) / 2 } : graph.positions.get(centreId)!;
   const ctx = silentContext();
   return (zoomRatio: number, over: Partial<DialFrameInput>): DialFrameInput => {
     const scale = fit * zoomRatio;
     const toScreen = (x: number, y: number): Point => ({ x: W / 2 + (x - centre.x) * scale, y: H / 2 + (y - centre.y) * scale });
     return {
-      ctx, dial: { model, scene, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, labels: LABELS }, worldKey,
-      nodeScreen: (id) => { const p = layout.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio,
+      ctx, dial: { model: m, scene: sc, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, labels: LABELS }, worldKey,
+      nodeScreen: (id) => { const p = graph.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio,
       viewportWidth: W, viewportHeight: H, freeRect: { minX: 0, minY: 0, maxX: W, maxY: H },
       mapTokens: { canvasBgNear: "#101014" } as unknown as OntologyMapTokens, dialTokens: {} as DialFrameInput["dialTokens"], labels: LABELS, evidence: null,
       hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
@@ -163,6 +197,45 @@ function crowdedNames(ids: ReadonlySet<string>): string[] {
 }
 
 afterEach(() => clearDialFrame());
+
+type Probe = NonNullable<ReturnType<typeof describeLastDialFrame>>;
+
+/** The probe once the map settles at each zoom with nothing selected. */
+function restingFrames(camera: ReturnType<typeof cameraOn>, zooms: readonly number[]): { zoom: number; texts: Probe["texts"]; discs: Probe["discs"] }[] {
+  let now = 0;
+  return zooms.map((zoom) => {
+    framesUntilSettled(camera, {}, new Set(), now, zoom, zoom, FRAME_MS);
+    now += 10_000;
+    const { texts, discs } = describeLastDialFrame(W, H)!;
+    return { zoom, texts, discs };
+  });
+}
+
+/** Well inside the viewport, where a name has room on every side. */
+const INSET_PX = 160;
+
+describe("the resting overview", () => {
+  const sweep = [0.5, 0.7, 1, 1.4, 2, 2.8, 4, 5.6, 8];
+
+  it("lets no mark or name crowd an admitted name, and zooming in keeps every capability name still well in view", () => {
+    let named = new Set<string>();
+    for (const { zoom, texts, discs } of restingFrames(cameraOn(null, {}), sweep)) {
+      expect(texts.filter((t) => t.room !== 1).map((t) => t.text), `zoom ${zoom}`).toEqual([]);
+      const inView = new Set(discs.filter((d) => d.x > INSET_PX && d.x < W - INSET_PX && d.y > INSET_PX && d.y < H - INSET_PX).map((d) => d.id));
+      const now = new Set(texts.filter((t) => t.role === "capability").map((t) => t.id!));
+      expect([...named].filter((id) => inView.has(id) && !now.has(id)), `zoom ${zoom} drops no name the zoom below drew`).toEqual([]);
+      named = now;
+    }
+  });
+
+  it("lets no mark or name crowd an admitted name on a 1,800-concept map", () => {
+    const big = syntheticModel(12, 20, 6);
+    const world = { model: big, scene: buildFlatGraphScene(big, TOKENS.layout, null) };
+    for (const { zoom, texts } of restingFrames(cameraOn("domain:d3", {}, world), [2, 4])) {
+      expect(texts.filter((t) => t.room !== 1).map((t) => t.text), `zoom ${zoom}`).toEqual([]);
+    }
+  });
+});
 
 describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer"])("the %s star while the camera zooms", (domainId) => {
   const { capabilities, elements } = domainStarIds(model, domainId);
