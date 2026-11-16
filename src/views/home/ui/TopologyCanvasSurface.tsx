@@ -67,7 +67,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug" | "isSynthetic">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "neural" | "structure">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "neural" | "structure" | "hexBoard">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
@@ -131,7 +131,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, neural, structure } = topologyPreferences;
+  const { t, neural, structure, hexBoard } = topologyPreferences;
   const { canvasSelectedSlug, localGraphProjects, isSynthetic, ontologyMapGraph, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
@@ -334,11 +334,11 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             </Tooltip>
           )}
           {/* Replays the ontology appearing in containment order
-             (`ontology-map/model/ambient/growth-replay.ts`); desktop only. */}
-          {structure || createNodeOpen ||
+             (`ontology-map/model/ambient/growth-replay.ts`); desktop only, and only on the
+             Flat map and the 3D tree, the two views that draw a concept's appear ramp. */}
+          {structure || neural || hexBoard || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
-            topologyBlockingOverlayActive ||
-            (neural && selectedNodeFocusActive) ? null : (
+            topologyBlockingOverlayActive ? null : (
             <div
               inert={railRecedes}
               className={`${railMotion} topology-ui-scale absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block`}
