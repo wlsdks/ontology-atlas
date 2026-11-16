@@ -254,6 +254,8 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   /** The lit tab already says "conversation", so beside a kind the eyebrow keeps only the kind. */
   const conversationNamedByTab = tab === 'conversation' && subjectKind !== null;
   const hasTabStrip = Boolean(conversation || facts);
+  /** A lone section is no tab panel: no tab in the document would label it. */
+  const loneSectionRole = hasTabStrip ? null : { role: undefined, 'aria-labelledby': undefined };
   return <section ref={panelRef} data-testid="analysis-workbench" onKeyDown={(event) => {
     if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); onClose(); }
   }} className="flex min-h-0 flex-1 flex-col gap-3 break-keep text-body text-[color:var(--color-text-primary)] [&_summary]:content-center [@media(pointer:coarse)]:[&_summary]:min-h-[var(--touch-target-min)]">
@@ -294,7 +296,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       </div>
       <div className={DIVIDED}>{facts}</div>
     </div> : null}
-    {tab === 'history' ? <div role={hasTabStrip ? 'tabpanel' : undefined} id="workbench-tabpanel-history" aria-labelledby={hasTabStrip ? 'workbench-tab-history' : undefined} className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
+    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" {...loneSectionRole} className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
       {facts ? null : <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t('reviewPurpose')}</p>}
       {/*
        * The trigger shows only latest plus a short date and time; the id moves to the option
