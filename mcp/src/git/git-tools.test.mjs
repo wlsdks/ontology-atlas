@@ -108,6 +108,31 @@ test('collectPathLastChanges reuses one history walk while keeping filesystem fa
   }
 });
 
+test('collectPathLastChanges reads every path as a name, whatever the path or the inherited environment', () => {
+  const { root, vault } = makeRepo();
+  const previous = process.env.GIT_ICASE_PATHSPECS;
+  try {
+    mkdirSync(join(root, 'src'));
+    writeFileSync(join(root, 'src', 'pay.ts'), 'pay\n');
+    commitAt(root, '2026-09-10T00:00:00Z', 'pay');
+    const dated = (repoPaths) => {
+      const change = collectPathLastChanges({ repoRoot: root, vaultRoot: vault, repoPaths }).changes.get('src/pay.ts');
+      return Date.parse(change.lastChangedAt);
+    };
+    const paid = Date.parse('2026-09-10T00:00:00Z');
+    // An exclude pattern would drop the other path; malformed magic would fail the walk.
+    assert.equal(dated(['src/pay.ts', ':!src']), paid);
+    assert.equal(dated(['src/pay.ts', ':@x']), paid);
+    // Git refuses literal paths beside an inherited case-folding setting.
+    process.env.GIT_ICASE_PATHSPECS = '1';
+    assert.equal(dated(['src/pay.ts']), paid);
+  } finally {
+    if (previous === undefined) delete process.env.GIT_ICASE_PATHSPECS;
+    else process.env.GIT_ICASE_PATHSPECS = previous;
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collectPathLastChanges separates paths, bounds, and HEAD when reusing dates', () => {
   const { root, vault } = makeDatedRepo();
   try {

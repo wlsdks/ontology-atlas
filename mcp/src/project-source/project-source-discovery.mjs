@@ -10,7 +10,7 @@ import { existsSync, realpathSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, parse, resolve, sep } from 'node:path';
 
-import { hardenedGitArgv } from '../git/hardened-git.mjs';
+import { gitEnv, hardenedGitArgv } from '../git/hardened-git.mjs';
 
 import {
   PROJECT_SOURCE_MANIFEST_FILES,
@@ -51,6 +51,7 @@ function gitRoot(vaultRoot) {
   try {
     const found = execFileSync('git', hardenedGitArgv(vaultRoot, ['rev-parse', '--show-toplevel']), {
       encoding: 'utf8',
+      env: gitEnv(),
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
     return found ? canonical(found) : null;

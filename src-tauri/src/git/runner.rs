@@ -37,6 +37,7 @@ pub(super) struct GitRun {
 /// Carried by every call so a hostile repo cannot run code via its config:
 /// `safe.bareRepository=explicit` refuses a bare repo committed as tracked files (the
 /// `<project>/atlas` path delivers config);`core.fsmonitor=false` blocks the no-click `status` hook.
+/// Every call also reads its paths as plain names (`read_pathspecs_literally`).
 const BASE_HARDENING: &[&str] = &[
     "-c",
     "safe.bareRepository=explicit",
@@ -53,14 +54,32 @@ const HOOKS_HARDENING: &[&str] = &["-c", "core.hooksPath=/dev/null"];
 /// never reach one. Added on top of the base flags for network invocations.
 const NETWORK_HARDENING: &[&str] = &["-c", "protocol.ext.allow=never"];
 
+/// Every path handed to Git is a name a vault, repository or page chose, so it is
+/// never pathspec magic or a glob. Git refuses the literal setting beside an
+/// inherited glob, noglob or icase one, so those are removed.
+fn read_pathspecs_literally(command: &mut Command) {
+    command
+        .env("GIT_LITERAL_PATHSPECS", "1")
+        .env_remove("GIT_GLOB_PATHSPECS")
+        .env_remove("GIT_NOGLOB_PATHSPECS")
+        .env_remove("GIT_ICASE_PATHSPECS");
+}
+
+/// The root of every runner: base hardening, literal paths, no credential prompt.
+fn git_command() -> Command {
+    let mut command = Command::new("git");
+    command.args(BASE_HARDENING);
+    read_pathspecs_literally(&mut command);
+    silence_git_credential_prompts(&mut command);
+    command
+}
+
 /// A `git` command with the base + hooks hardening and prompt silencing applied.
 /// Used by config discovery, the source inspector, and `git_probe` —
 /// none of which run `commit`, so disabling hooks is always correct for them.
 pub(crate) fn hardened_base_command() -> Command {
-    let mut command = Command::new("git");
-    command.args(BASE_HARDENING);
+    let mut command = git_command();
     command.args(HOOKS_HARDENING);
-    silence_git_credential_prompts(&mut command);
     command
 }
 
@@ -227,23 +246,7 @@ pub(super) fn run_git_read(cwd: &Path, args: &[&str]) -> Result<GitRun, String> 
 }
 
 fn run_git_with_read_policy(cwd: &Path, args: &[&str], local_read: bool) -> Result<GitRun, String> {
-    let mut command = Command::new("git");
-    if local_read {
-        command
-            .env("GIT_NO_LAZY_FETCH", "1")
-            .env("GIT_ALLOW_PROTOCOL", "");
-    }
-    command.args(BASE_HARDENING);
-    // Every verb but the snapshot commit runs with hooks off; commit keeps them so
-    // the user's pre-commit hook still guards the write.
-    if subcommand_of(args) != Some("commit") {
-        command.args(HOOKS_HARDENING);
-    }
-    silence_git_credential_prompts(&mut command);
-    command.args(filter_overrides_for(cwd).iter());
-    command.args(with_diff_family_guard(args)).current_dir(cwd);
-    let output = command
-        .env("GIT_OPTIONAL_LOCKS", "0")
+    let output = read_policy_command(cwd, args, local_read)
         .output()
         .map_err(|err| coded("git-not-runnable", err))?;
     Ok(GitRun {
@@ -251,6 +254,26 @@ fn run_git_with_read_policy(cwd: &Path, args: &[&str], local_read: bool) -> Resu
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
         stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
     })
+}
+
+fn read_policy_command(cwd: &Path, args: &[&str], local_read: bool) -> Command {
+    let mut command = git_command();
+    if local_read {
+        command
+            .env("GIT_NO_LAZY_FETCH", "1")
+            .env("GIT_ALLOW_PROTOCOL", "");
+    }
+    // Every verb but the snapshot commit runs with hooks off; commit keeps them so
+    // the user's pre-commit hook still guards the write.
+    if subcommand_of(args) != Some("commit") {
+        command.args(HOOKS_HARDENING);
+    }
+    command.args(filter_overrides_for(cwd).iter());
+    command
+        .args(with_diff_family_guard(args))
+        .current_dir(cwd)
+        .env("GIT_OPTIONAL_LOCKS", "0");
+    command
 }
 
 /// Guards against a credential helper or `SSH_ASKPASS` opening a window nobody
@@ -273,11 +296,9 @@ pub(super) fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, Strin
 
     // Network verbs are fetch/pull, never commit, so hooks stay off (a `pull` must not
     // run a hostile `post-merge`/`post-checkout` hook just because the user clicked it).
-    let mut command = Command::new("git");
-    command.args(BASE_HARDENING);
+    let mut command = git_command();
     command.args(HOOKS_HARDENING);
     command.args(NETWORK_HARDENING);
-    silence_git_credential_prompts(&mut command);
     command.args(filter_overrides_for(cwd).iter());
     command
         .args(with_diff_family_guard(args))

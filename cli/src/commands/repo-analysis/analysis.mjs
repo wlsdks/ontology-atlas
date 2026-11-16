@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { hardenedGitArgs } from '../../lib/git/hardened-git.mjs';
+import { gitEnv, hardenedGitArgs } from '../../lib/git/hardened-git.mjs';
 
 import {
   collectFindings,
@@ -38,6 +38,7 @@ function currentCommit(rootPath) {
   const result = spawnSync('git', hardenedGitArgs(rootPath, ['rev-parse', '--short', 'HEAD']), {
     cwd: rootPath,
     encoding: 'utf8',
+    env: gitEnv(),
   });
   return result.status === 0 ? result.stdout.trim() : null;
 }

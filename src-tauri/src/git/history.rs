@@ -55,11 +55,7 @@ fn read(root: &Path, args: &[&str], max_bytes: u64) -> Result<(bool, String), St
         .current_dir(root)
         .env("GIT_OPTIONAL_LOCKS", "0")
         .env("GIT_ALLOW_PROTOCOL", "")
-        .env("GIT_NO_LAZY_FETCH", "1")
-        .env("GIT_LITERAL_PATHSPECS", "1")
-        .env_remove("GIT_GLOB_PATHSPECS")
-        .env_remove("GIT_NOGLOB_PATHSPECS")
-        .env_remove("GIT_ICASE_PATHSPECS");
+        .env("GIT_NO_LAZY_FETCH", "1");
     command_output::run(command, READ_DEADLINE, max_bytes).map_err(|error| {
         coded(
             match error {
