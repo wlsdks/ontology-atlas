@@ -432,6 +432,7 @@ function ClosingSection({
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <div className="gateway-closing-stage @container flex min-w-0 flex-col items-center px-6 py-16 text-center sm:py-20">
+          <div aria-hidden className="gateway-closing-light" />
           <h2
             id="gateway-closing-title"
             className="max-w-full [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"

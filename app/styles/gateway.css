@@ -470,20 +470,27 @@
 .gateway-closing-stage {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
   border-radius: var(--radius-sheet);
   border: 1px solid var(--color-border-soft);
   background: var(--color-canvas);
 }
 
+/* The light is clipped in its own layer, so the panel never clips the text under text zoom. */
+.gateway-closing-light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 /* Blurred like the hero's light, so it fades instead of ending on the gradient's edge. */
-.gateway-closing-stage::before {
+.gateway-closing-light::before {
   content: '';
   position: absolute;
   inset: -40% -10% auto -10%;
   height: 100%;
-  z-index: -1;
-  pointer-events: none;
   background:
     radial-gradient(40% 50% at 50% 50%, var(--gateway-hero-light-core) 0%, transparent 100%),
     radial-gradient(30% 40% at 22% 56%, var(--gateway-hero-light-wing) 0%, transparent 100%),
@@ -491,12 +498,11 @@
   filter: blur(48px);
 }
 
-.gateway-closing-stage::after {
+.gateway-closing-light::after {
   content: '';
   position: absolute;
   inset: 0 12% auto 12%;
   height: 1px;
-  pointer-events: none;
   background: linear-gradient(90deg, transparent, var(--gateway-window-edge), transparent);
 }
 
