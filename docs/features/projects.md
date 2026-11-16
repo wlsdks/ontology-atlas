@@ -33,15 +33,25 @@ in-page filtering.
 #### Empty state
 - No projects at all → guidance to create a project document; the header's "New project" action remains available
 
-### `/project/[slug]` — Project detail (a brief of the product, 2026-11-15)
+### `/project/[slug]` — Project detail (the brief beside what to check, 2026-11-17)
 
-One page, no tabs, one level below `/projects`, read in the order a person
-explains a product: what it is, what it is made of, then one quiet closing
-line (2026-11-15, decision "The project page reads as a brief: what it is,
-then what it is made of", which overturned the 2026-09-19 composition board
-after the owner could not tell what it showed). The page is one column of
-sections separated by spacing and a hairline; no section sits in a box, and
-nothing on the page unfolds in place: no `<details>`, no chevron row.
+One page, no tabs, one level below `/projects`. It answers four questions in
+order, the first three inside the first screen: what the product is, what to
+check now and why, what changed lately in the recorded meaning, and what it is
+made of; then one quiet closing line. The 2026-11-15 decision "The project
+page reads as a brief" set the order and removed the boxes; the 2026-11-17
+decision "The project page sets what to check and what changed beside the
+brief" narrowed its one column after the owner asked why the right half was
+empty. Sections are separated by spacing and a hairline; no section sits in a
+box, and nothing on the page unfolds in place: no `<details>`, no chevron row.
+
+#### The band beside the brief
+- Under 64rem of page column everything is one column: name, lead text, actions, "To check", "Changed". From 64rem the brief sits beside "To check" and "Changed" runs under both as one strip of three equal slots; from 90rem the brief, "To check" and "Changed" sit side by side. The arrangement changes by container width only; nothing animates between them
+- **To check** lists at most three concepts of this project, each with one typed reason, ranked: raised for a person, changed after a person checked it, a source file changed after the document was written, could not be checked, no definition sentence. No reason takes more than two slots while another has a row waiting. A row is the kind glyph, the name, its domain, and the reason as a sentence (a stale row names the file); it opens the concept on the map, or its document when the reason is about the document. The heading carries the total, and "View all N" opens a centred dialog with every row grouped by reason
+- One sentence under the heading says where the stale count comes from: how many capabilities have a source file that changed after their document, that Git history is being read, that only the desktop app reads it, that it could not be read, or that no capability names a file. Its height is reserved for the tallest of these, so it does not move when the Git walk ends
+- **Changed** lists at most three concepts of this project changed in the adaptive recent window (seven days by default; Git dates in the app, file dates on the web), name and day, each opening the concept on the map; "View on the map" opens the map's recent filter
+- Three row slots are always reserved in both lists, so rows arriving after the Git walk shift nothing (band and page height step 0 px, sampled per frame)
+- Evidence states come from the one Git walk the map uses (`useMapEvidenceStates` in `src/features/vault-ontology/`, shared per folder load); the page computes no new fact, writes nothing and sends nothing
 
 #### Identity
 - Breadcrumb `Projects › {Name}`; the map door left it, since the rail already holds the map
@@ -62,16 +72,17 @@ Beside the name where the page column is at least 64rem wide (`@5xl` of `project
 
 #### What it is made of
 - One heading line, "Composition", carrying this project's counts in words: domains, capabilities, elements and the relations among them
-- The domains as master and detail. Left, about two fifths: a listbox ordered by concept count; each row is the domain glyph, the name, a bar and the count. The bar's length is the domain's concept count against the largest domain's, and its two neutral segments, a 1px seam apart, are capabilities and elements (one legend line above the list). One row is always selected, the first on arrival; arrow keys, Home and End move the selection and focus
-- Right: the selected domain's name, the first sentence of its own summary when it has one, its capability and element counts, then its capabilities as rows (kind glyph, name, the elements under it when above zero), each opening that concept on the map; twelve, then "View N more"; and "Open this domain in the map". Below `@3xl` of the page column the list sits above the selected domain
+- One legend line: the bar's two segments, what its length means, and, only when evidence was measured, the amber half-disc ("source changed after the document")
+- The domains as master and detail across the whole page column (list `4fr`, at least 20rem; detail `8fr`). Left: a listbox ordered by concept count; each row is the domain glyph, the name, a bar, the count of its capabilities whose source changed (amber, when above zero) and the concept count. The bar's length is the domain's concept count against the largest domain's, and its two neutral segments, a 1px seam apart, are capabilities and elements. Past twelve rows the list scrolls inside itself. One row is always selected, the first on arrival; arrow keys, Home and End move the selection and focus
+- Right: the selected domain's name with "Open this domain in the map" and its capability and element counts on the heading line, the first sentence of its own summary when it has one, then its capabilities as a grid of one, two or three columns (kind glyph, name, an amber dot when its source changed after its document, a teal dot when it changed in the recent window, the elements under it when above zero), each opening that concept on the map; twelve, then "View N more". Both dots carry their meaning as an accessible name and a tooltip. The detail reserves its height, so selecting another domain never changes the page height. Below `@3xl` of the page column the list sits above the selected domain
 - When nested domains make the rows' sum exceed the heading's counts, one note under the list says a concept in several domains counts once per domain
 - A project with no domains says so in one line with the door to connect one on the map
 
 #### Closing line
-One quiet line under a hairline: the folder's source and wiki page counts with the Library door, only when the folder has any (with "Sources and wiki pages count the whole folder" when it holds several projects); the Harness door only where the desktop app can read the folder; the first connected project (dependency or `relates` graph) and how many more; and the slug with the Markdown path this page is drawn from, or the updated date when no document is known.
+One quiet line under a hairline: the Harness door only where the desktop app can read the folder, the Changes door, the folder's source and wiki page counts with the Library door, only when the folder has any (with "Sources and wiki pages count the whole folder" when it holds several projects); the first connected project (dependency or `relates` graph) and how many more; and the slug with the Markdown path this page is drawn from, or the updated date when no document is known.
 
 #### Mobile / narrow
-- The actions take their own row under the lead text; the domain list sits above the selected domain
+- The actions take their own row under the lead text, then "To check" and "Changed" one under the other; the domain list sits above the selected domain
 - Search palette (`⌘K`, this page's own project palette) and shortcut sheet (`?`, the shell's) open as overlays (not a route change) so context isn't lost
 
 #### Empty / not-found
