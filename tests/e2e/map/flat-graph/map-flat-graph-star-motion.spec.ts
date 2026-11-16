@@ -48,8 +48,15 @@ const OVERVIEW_CAPABILITY_NAMES: Record<string, { fewest: number; most: number }
 
 /** A domain's census and reach rows share one slot under its name, so their cross-fade is no crossing. */
 const CAPTION_ROLES = new Set(["units", "status"]);
-/** A name whose ink, once it starts to fall, is gone within this many painted frames is leaving and may be crossed. */
-const LEAVING_FRAMES = 10;
+/**
+ * A crossing (name on name, name on a disc not its own, unbacked name on a grown dot) is excused in a
+ * painted frame when at least one name of the pair has less ink than in the painted frame before, and
+ * that pair's crossing run lasts at most this many painted frames in a row. So a name that starts to
+ * fall when crossed and recovers once the two part is fine, as is a name on its way out; a name that
+ * holds or gains ink while crossed is a defect in that frame; a longer run is a defect for all its
+ * frames. Two copies of one concept's name trading sides follow the same rule.
+ */
+const CROSSING_RUN_FRAMES = 10;
 /** Ink below this is gone. */
 const GONE_INK = 0.05;
 
@@ -130,8 +137,8 @@ async function stopSampling(page: Page): Promise<{ samples: Sample[]; pressAt: n
  * (one held in place with no side clear of the marks) draws on the canvas ground, so it is checked
  * against other names, not against marks.
  */
-/** One crossing in a frame: its pair, whether it is an unbacked name on a grown dot, and whether one of its names is leaving. */
-type Crossing = { pair: string; dot: boolean; leaving: boolean };
+/** One crossing in a frame: its pair, whether it is an unbacked name on a grown dot, and whether a name of the pair lost ink since the painted frame before. */
+type Crossing = { pair: string; dot: boolean; falling: boolean };
 
 const nameKey = ([id, role, , , , , , , side]: SampledName): string => `${role} ${id} ${side}`;
 
@@ -140,47 +147,26 @@ const nameKey = ([id, role, , , , , , , side]: SampledName): string => `${role} 
  * grown element dot, in `now`. A domain's census and reach rows share one slot, so their cross-fade
  * is no crossing; a name whose ink is gone crosses nothing.
  */
-function crossingsOf(now: Sample, group: ReadonlySet<string>, leaving: (key: string) => boolean): Crossing[] {
+function crossingsOf(now: Sample, before: Sample | null, group: ReadonlySet<string>): Crossing[] {
   const marks = now.marks.filter(([id]) => group.has(id));
   const names = now.names.filter(([id, , , , , , alpha]) => group.has(id) && alpha >= GONE_INK);
+  const inkBefore = new Map((before?.names ?? []).map((n) => [nameKey(n), n[6]]));
+  const falls = (n: SampledName) => n[6] < (inkBefore.get(nameKey(n)) ?? -1);
   const out: Crossing[] = [];
   for (let a = 0; a < names.length; a += 1) {
     const [ia, ra, minX, maxX, minY, maxY, , backed] = names[a]!;
-    const leavingA = leaving(nameKey(names[a]!));
     for (const [im, x, y, r, grown, disc] of marks) {
       if (im === ia || (!disc && (!grown || backed))) continue;
       const gap = Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minY - y, 0, y - maxY));
-      if (gap < r - OVERLAP_PX) out.push({ pair: `${ra} ${ia} on ${im}`, dot: !disc, leaving: leavingA });
+      if (gap < r - OVERLAP_PX) out.push({ pair: `${ra} ${ia} on ${im}`, dot: !disc, falling: falls(names[a]!) });
     }
     for (let b = a + 1; b < names.length; b += 1) {
       const [ib, rb, bMinX, bMaxX, bMinY, bMaxY] = names[b]!;
       if (ib === ia && CAPTION_ROLES.has(ra) && CAPTION_ROLES.has(rb)) continue;
       if (Math.min(maxX, bMaxX) > Math.max(minX, bMinX) && Math.min(maxY, bMaxY) > Math.max(minY, bMinY)) {
-        out.push({ pair: [`${ra} ${ia}`, `${rb} ${ib}`].sort().join(" on "), dot: false, leaving: leavingA || leaving(nameKey(names[b]!)) });
+        const pair = [`${ra} ${ia} ${names[a]![8]}`, `${rb} ${ib} ${names[b]![8]}`].sort().join(" on ");
+        out.push({ pair, dot: false, falling: falls(names[a]!) || falls(names[b]!) });
       }
-    }
-  }
-  return out;
-}
-
-/**
- * Per painted frame, the names leaving in it: names whose ink is falling in a run that, from its
- * first falling frame, is gone within `LEAVING_FRAMES` painted frames. A name that falls and then
- * holds at a lower ink is not leaving. O(painted frames × names × `LEAVING_FRAMES`).
- */
-function leavingNames(painted: readonly Sample[]): Set<string>[] {
-  const inks = painted.map((s) => new Map(s.names.map((n) => [nameKey(n), n[6]])));
-  const out = painted.map(() => new Set<string>());
-  const gone = (f: number, key: string) => f >= inks.length || (inks[f]!.get(key) ?? 0) < GONE_INK;
-  for (let f = 1; f < painted.length; f += 1) {
-    for (const [key, alpha] of inks[f]!) {
-      const was = inks[f - 1]!.get(key);
-      if (was === undefined || !(alpha < was)) continue;
-      let start = f;
-      while (start > 1 && (inks[start - 1]!.get(key) ?? -1) < (inks[start - 2]!.get(key) ?? -1)) start -= 1;
-      let leaves = false;
-      for (let g = start; g <= start + LEAVING_FRAMES && !leaves; g += 1) leaves = gone(g, key);
-      if (leaves) out[f]!.add(key);
     }
   }
   return out;
@@ -206,7 +192,7 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
   const radiusSign = new Map<string, number>();
   const radiusReversals = new Set<string>();
   const prePress = samples.filter((s) => s.t < pressAt);
-  const standing = new Set(fromOverview && prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, group, () => false).map((c) => c.pair)) : []);
+  const standing = new Set(fromOverview && prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, null, group).map((c) => c.pair)) : []);
   const standingSeen = [...standing];
   // A sample that repeats the one before is the same painted frame, judged once.
   const painted: Sample[] = [];
@@ -218,7 +204,8 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
     if (signature !== lastPainted) painted.push(sample);
     lastPainted = signature;
   }
-  const leaving = leavingNames(painted);
+  /** Per painted frame from the press on, its crossings in each group, the standing ones left out. */
+  const judged: { at: string; crossings: Crossing[] }[] = [];
   for (let i = 0; i < samples.length; i += 1) {
     const now = samples[i]!;
     const at = `${Math.round(now.t - pressAt)} ms, zoom ${now.zoom.toFixed(2)}`;
@@ -237,29 +224,20 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
         }
       }
       if (pairs > 0) overlapFrames += 1;
-      // Names are judged from the last frame before the press on: what stood before it is the overview's.
-      if (i < prePress.length - 1 || paintedAt[i] === -1) continue;
-      const leavingNow = leaving[paintedAt[i]!]!;
-      let crossings = 0;
-      let onDots = 0;
-      for (const c of crossingsOf(now, group, (key) => leavingNow.has(key))) {
-        if (standing.has(c.pair)) {
-          stillStanding.add(c.pair);
-          continue;
-        }
-        if (c.leaving) continue;
-        if (c.dot) {
-          onDots += 1;
-          dotPairs.add(`${c.pair} at ${at}`);
-        } else {
-          crossings += 1;
-          namePairs.add(`${c.pair} at ${at}`);
+    }
+    // Names are judged from the last frame before the press on: what stood before it is the overview's.
+    if (i >= prePress.length - 1 && paintedAt[i] !== -1) {
+      const f = paintedAt[i]!;
+      const crossings: Crossing[] = [];
+      for (const group of groups) {
+        for (const c of crossingsOf(now, f > 0 ? painted[f - 1]! : null, group)) {
+          if (standing.has(c.pair)) stillStanding.add(c.pair);
+          else crossings.push(c);
         }
       }
-      if (onDots > 0) dotFrames += 1;
-      if (crossings > 0) nameFrames += 1;
+      judged.push({ at, crossings });
+      for (const pair of standing) if (!stillStanding.has(pair)) standing.delete(pair);
     }
-    if (i >= prePress.length - 1 && paintedAt[i] !== -1) for (const pair of standing) if (!stillStanding.has(pair)) standing.delete(pair);
     if (i === 0) continue;
     const before = samples[i - 1]!;
     const dt = now.t - before.t;
@@ -304,6 +282,25 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       lastChange = now.t;
     }
   }
+  // A pair's crossing run: the painted frames in a row it crosses in. O(painted frames × crossings).
+  const runStart = new Map<string, number>();
+  const defects = judged.map(() => [] as Crossing[]);
+  for (let f = 0; f < judged.length; f += 1) {
+    const crossing = new Set(judged[f]!.crossings.map((c) => c.pair));
+    for (const pair of [...runStart.keys()]) if (!crossing.has(pair)) runStart.delete(pair);
+    for (const c of judged[f]!.crossings) {
+      if (!runStart.has(c.pair)) runStart.set(c.pair, f);
+      const start = runStart.get(c.pair)!;
+      if (f - start + 1 > CROSSING_RUN_FRAMES) {
+        for (let g = start; g <= f; g += 1) for (const d of judged[g]!.crossings) if (d.pair === c.pair && !defects[g]!.includes(d)) defects[g]!.push(d);
+      } else if (!c.falling) defects[f]!.push(c);
+    }
+  }
+  defects.forEach((list, f) => {
+    if (list.some((c) => !c.dot)) nameFrames += 1;
+    if (list.some((c) => c.dot)) dotFrames += 1;
+    for (const c of list) (c.dot ? dotPairs : namePairs).add(`${c.pair} at ${judged[f]!.at}`);
+  });
   const gaps = samples.slice(1).map((s, i) => [s.t, s.t - samples[i]!.t] as const);
   const afterPress = gaps.filter(([t]) => t > pressAt).slice(0, 3).map(([, gap]) => gap);
   const sorted = gaps.map(([, gap]) => gap).sort((a, b) => a - b);
