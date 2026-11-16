@@ -25,7 +25,7 @@ const ACT_SPANS: readonly (readonly [number, number])[] = [
   [0.78, 1],
 ];
 /** How long each act plays: the opened file is typed line by line, so it gets the longest. */
-const ACT_MS = [4500, 9500, 5000, 6000, 6500];
+const ACT_MS = [3450, 7300, 3850, 4600, 5000];
 
 /** The four-act choreography's clock: it holds while the second act opens one file. */
 function filmClock(p: number): number {
