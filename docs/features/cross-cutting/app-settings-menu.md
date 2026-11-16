@@ -36,7 +36,9 @@ routes: []
   allowances on this computer (MCP servers, scheduled checks and chat auto-approve per folder), recent folders, each forget behind a two-press `ArmedChip`);
   Ontology folder (folder, path, shape, documents, import, and what the folder keeps: agent
   connections (MCP), schedules, Git, project sources); About (current app or website version,
-  automatic update check On · Off, what's new, keyboard shortcuts, source, licences, copy
+  automatic update check On · Off, and when a version waits with its notice put away the
+  result line names it and carries the install, restart or show-notice action; what's new,
+  keyboard shortcuts, source, licences, copy
   diagnostics, show log folder).
 - **Search** sits at the head of the left list. Typing replaces the pane with results grouped
   by pane; ↑ ↓ move, Enter opens, Escape clears the query before it closes the sheet. A setting
