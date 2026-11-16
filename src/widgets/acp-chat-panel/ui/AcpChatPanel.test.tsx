@@ -97,6 +97,7 @@ import {
   AcpChatPanel,
   type AcpOntologyRelationPreview,
 } from './AcpChatPanel';
+import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { TURN_DONE_HOLD_MS } from './chat-panel/TurnWorkStage';
 
@@ -188,6 +189,7 @@ async function startUserTurn(text: string) {
 /** The work detail is collapsed by default. Checks that measure a tool row expand it explicitly first. */
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
   bridge.available = true;
   bridge.sent = [];
   bridge.listener = null;
@@ -368,13 +370,46 @@ describe('chat panel: draws only what happened', () => {
     await waitFor(() =>
       expect(bridge.sent.find((m) => m.method === 'session/set_mode')).toMatchObject({ params: { modeId: 'default' } }),
     );
+    // Until the tool confirms it left plan mode, the picker keeps reading plan.
+    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off');
+    replyTo('session/set_mode', {});
+    await waitFor(() => expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'on'));
     expect(picker).toHaveTextContent('approvalOption.auto');
-    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'on');
 
     fireEvent.click(picker);
     fireEvent.click(screen.getByRole('option', { name: /modeName\.plan/ }));
     await waitFor(() => expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off'));
     expect(picker).not.toHaveTextContent('approvalOption.auto');
+  });
+
+  it('forgets a choice kept for an earlier scope when a mode is picked', async () => {
+    recordApproval('auto-approve', '/vault', 'chat', 'a scope this build no longer answers');
+    await bootSession({}, { currentModeId: 'default', availableModes: [{ id: 'default', name: 'Default' }, { id: 'plan', name: 'Plan' }] });
+    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off');
+
+    fireEvent.click(screen.getByTestId('acp-chat-mode'));
+    fireEvent.click(screen.getByRole('option', { name: /modeName\.plan/ }));
+    expect(readMachineApprovals().allowed('auto-approve', '/vault', 'chat')).toBeNull();
+  });
+
+  it('opens the next conversation in the folder on auto-approve, and reads plan while a resumed one is in plan mode', async () => {
+    const modes = { currentModeId: 'default', availableModes: [{ id: 'default', name: 'Default' }, { id: 'plan', name: 'Plan' }] };
+    await bootSession({}, modes);
+    fireEvent.click(screen.getByTestId('acp-chat-mode'));
+    fireEvent.click(screen.getByRole('option', { name: /approvalOption\.auto/ }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'on'));
+    cleanup();
+    bridge.sent = [];
+
+    await bootSession({}, modes);
+    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'on');
+    expect(screen.getByTestId('acp-chat-mode')).toHaveTextContent('approvalOption.auto');
+    cleanup();
+    bridge.sent = [];
+
+    await bootSession({}, { ...modes, currentModeId: 'plan' });
+    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off');
+    expect(screen.getByTestId('acp-chat-mode')).toHaveTextContent('modeName.plan');
   });
 
   /** The whole request stays one disclosure away; the transcript opens on the readable sentence only. */

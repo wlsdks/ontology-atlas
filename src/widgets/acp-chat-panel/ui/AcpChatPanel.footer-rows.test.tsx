@@ -78,6 +78,7 @@ async function bootPanel() {
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
   bridge.sent = [];
   bridge.listener = null;
 });

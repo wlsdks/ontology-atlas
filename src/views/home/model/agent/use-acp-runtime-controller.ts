@@ -1,12 +1,12 @@
 import { isGuardedRuntime, type InvestigationSendGuard } from "@/features/acp-session";
 import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
-import { keptAwayRuntimeId, useChatWidth } from "@/widgets/acp-chat-panel";
+import { keptAwayRuntimeId, useChatWidth, useRememberedTool } from "@/widgets/acp-chat-panel";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const ACP_SESSION_START_AFTER_REFLOW_MS = 240;
 
-export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void) {
+export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void, vaultRoot: string | null) {
   const [acpRuntimes, setAcpRuntimes] = useState<
     Array<{ id: string; label: string; icon: string | null; brandInk: string | null }>
   >([]);
@@ -77,12 +77,20 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void)
     };
   }, []);
 
+  const chooseAcpRuntime = useRememberedTool({
+    vaultRoot,
+    runtimes: acpRuntimes,
+    runtimeId: acpRuntimeId,
+    setRuntimeId: setAcpRuntimeId,
+    held: typeof pendingAgentChatRuntimeId === "string",
+  });
   const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
 
   return {
     acpRuntimes,
     acpRuntimeId,
     setAcpRuntimeId,
+    chooseAcpRuntime,
     acpPresentationVisible,
     setAcpPresentationVisible,
     pendingAgentChatRuntimeId,

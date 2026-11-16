@@ -3,8 +3,8 @@
 export const MACHINE_APPROVALS_STORAGE_KEY = 'ontology-atlas:machine-approvals';
 const VERSION = 1;
 
-export type ApprovalSubject = 'connector' | 'round';
-const SUBJECTS: readonly ApprovalSubject[] = ['connector', 'round'];
+export type ApprovalSubject = 'connector' | 'round' | 'auto-approve';
+const SUBJECTS: readonly ApprovalSubject[] = ['connector', 'round', 'auto-approve'];
 
 /** `[subject, absolute folder, id, the definition allowed]`. */
 export type ApprovalEntry = readonly [ApprovalSubject, string, string, string];

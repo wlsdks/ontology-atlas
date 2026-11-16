@@ -147,6 +147,7 @@ export function AcpChatPanelBody({
     captureTaskBaseline,
     autoDecide,
     systemPromptAppendix,
+    rememberChoices: true,
   });
 
   const turnHeld = status === 'thinking' || pending !== null;
