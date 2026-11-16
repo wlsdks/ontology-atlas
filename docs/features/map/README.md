@@ -17,10 +17,10 @@ Domain structure uses recorded direct membership and named breadcrumbs.
 
 ### Optional continued analysis
 
-The map keeps an **Analysis status** entry visible without a selection. It names
-the selected concept/set or one unambiguous recorded project. Multiple projects
-need a scope choice; an empty folder offers first construction. Opening the map
-does not scan source or start a model call.
+A selected concept's **More** menu and a routed concept set offer the code
+check. Nothing is offered without a selection, so the map's corner carries no
+standing analysis entry. Opening the map does not scan source or start a model
+call.
 
 In the installed app, open the inspector, confirm the bound code folder and
 choose **Inspect**. Source-folder recovery grants local read access without

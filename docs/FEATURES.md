@@ -159,8 +159,8 @@ The [external reference permission review](design/external-reference-permissions
 records the original terms for twelve design resources and the techniques
 selected for Atlas's existing design system.
 
-The map offers optional continued analysis through its stable Analysis status
-entry and existing bounded inspector. Explicit Analyze next sends one selected
+The map offers optional continued analysis from a selected concept or concept
+set through the existing bounded inspector. Explicit Analyze next sends one selected
 question to guarded ACP; exact saved results remain dated evidence, and Prepare
 improvement opens an unsent editable request. Opening the map never starts paid
 analysis. Counts, agent-reported tasks, source freshness and meaning acceptance

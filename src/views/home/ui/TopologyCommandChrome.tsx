@@ -41,7 +41,6 @@ import type { NodeDatasheetDerivation } from "../model/inspector/use-node-datash
 
 interface TopologyCommandChromeProps {
   grayAreaAction?: {label:string;onOpen:()=>void};
-  grayAreaContinuation?: {label:string;subject:string;description:string;countLabel?:string;onOpen:()=>void};
   routeState: import("@/views/home/model/route-state/url-state").HomeRouteState;
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   setVaultAgentPrefill: React.Dispatch<React.SetStateAction<{ text: string; nonce: number; } | null>>;
@@ -120,7 +119,7 @@ interface TopologyCommandChromeProps {
 }
 
 export function TopologyCommandChrome({
-  grayAreaAction, grayAreaContinuation,
+  grayAreaAction,
   routeState, setRouteState, setVaultAgentPrefill, setOntologySearchOpen, setTopologyRelayoutToken, toast,
   expandAllActive, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
@@ -160,11 +159,6 @@ export function TopologyCommandChrome({
   if (inspectorOwnsRightRail && !rightChromeReceded) setRightChromeReceded(true);
   const rightChromeMotion = (arrival: string) =>
     inspectorOwnsRightRail ? "map-chrome-recede-out pointer-events-none" : `${rightChromeReceded ? "map-overlay-in" : arrival} pointer-events-auto`;
-  const analysisLabel = grayAreaContinuation
-    ? `${grayAreaContinuation.label} · ${grayAreaContinuation.subject}${grayAreaContinuation.countLabel ? ` · ${grayAreaContinuation.countLabel}` : ""}`
-    : "";
-  const [recedingAnalysisLabel, setRecedingAnalysisLabel] = useState(analysisLabel);
-  if (!inspectorOwnsRightRail && recedingAnalysisLabel !== analysisLabel) setRecedingAnalysisLabel(analysisLabel);
 
   return (<>
     <div
@@ -453,18 +447,20 @@ export function TopologyCommandChrome({
                   className="relative flex items-center gap-[var(--topology-utility-lane-gap)]"
                   data-testid="topology-utility-action-row"
                 >
-                  {/* ScanSearch, not HelpCircle: this opens the meaning workbench, and the question
-                     mark means the shortcut sheet. */}
-                  <ChromeChip
-                    icon={<ScanSearch />}
-                    aria-label={tWorkbench('meaningTitle')}
-                    title={tWorkbench('meaningTitle')}
-                    active={meaningWorkbenchOpen}
-                    aria-pressed={meaningWorkbenchOpen}
-                    compact={topologyUtilityChromeCompact || searchLaneCrowded}
-                    data-testid="topology-meaning-workbench-toggle"
-                    onClick={toggleMeaningWorkbench}
-                  >{tWorkbench('meaningTitle')}</ChromeChip>
+                  {/* The agent tile opens the same dock, so this second door stands only where
+                     that tile cannot: the web, which has no agent to talk to. */}
+                  {llmBridgeAvailable ? null : (
+                    <ChromeChip
+                      icon={<ScanSearch />}
+                      aria-label={tWorkbench('meaningTitle')}
+                      title={tWorkbench('meaningTitle')}
+                      active={meaningWorkbenchOpen}
+                      aria-pressed={meaningWorkbenchOpen}
+                      compact={topologyUtilityChromeCompact || searchLaneCrowded}
+                      data-testid="topology-meaning-workbench-toggle"
+                      onClick={toggleMeaningWorkbench}
+                    >{tWorkbench('meaningTitle')}</ChromeChip>
+                  )}
                   {/* The name comes only from `vaultAgentPanel.title`, shared by chip, tooltip,
                      aria and panel header.
                      Desktop only: the web has no safe place for the key, so no door that will not
@@ -648,11 +644,6 @@ export function TopologyCommandChrome({
                   />
                 </div>
               </div>
-          {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
-            <ChromeChip inert={inspectorOwnsRightRail} className={`${rightChromeMotion("")} min-w-0 max-w-full`} onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
-              {inspectorOwnsRightRail ? recedingAnalysisLabel : analysisLabel}
-            </ChromeChip>
-          </Tooltip> : null}
           </div>
           </div>
         </>

@@ -25,14 +25,12 @@ interface Options {
   onOpen:()=>void;
   onPrepare:(packet:string,contextLabel:string,basis?:{snapshot:GrayAreaSnapshot;projectUid:string;sourceRoot:string})=>void;
   onChooseScope?:()=>void;
-  onEmptyVault?:()=>void;
-  onConnectVault?:()=>void;
   runtime?:{id:string;label:string}|null;
   busy?:boolean;
   onAnalyze?:(text:string,snapshot:GrayAreaSnapshot,projectUid:string,guard:InvestigationSendGuard,sourceRoot:string,label:string)=>void;
 }
 function routeKey(route:HomeRouteState){return JSON.stringify([route.selectedSlug,route.pathSourceSlug,route.pathTargetSlug]);}
-export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPath,vaultHandle,vaultLoaded=true,locale,routeState,setRouteState,onOpen,onPrepare,onChooseScope,onEmptyVault,onConnectVault,runtime,busy,onAnalyze}:Options){
+export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPath,vaultHandle,vaultLoaded=true,locale,routeState,setRouteState,onOpen,onPrepare,onChooseScope,runtime,busy,onAnalyze}:Options){
   const t=useTranslations('grayArea');
   const idBySlug=useMemo(()=>new Map(nodes.flatMap(n=>{const slug=resolveNodeDocument(n).ownSlug;return slug?[[slug,n.id] as const]:[];})),[nodes]);
   const memberIdentities=useMemo(()=>{
@@ -51,7 +49,6 @@ export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPa
     const slugs=memberSlugs?.size?memberSlugs:new Set(selectedSlug?[selectedSlug]:[]);
     const projects=docs.filter(d=>d.frontmatter.kind==='project');
     const matches=docs.filter(d=>(slugs.has(d.slug)||slugs.has(idBySlug.get(d.slug)??''))&&typeof d.frontmatter.uid==='string');
-    if(!slugs.size&&projects.length===1&&typeof projects[0].frontmatter.uid==='string')matches.push(projects[0]);
     if(!matches.length)return null;
     const domains=new Set(matches.map(d=>d.frontmatter.kind==='domain'?d.slug:d.frontmatter.domain).filter((s):s is string=>typeof s==='string'));
     const eligible=projects.filter(p=>matches.some(d=>d.slug===p.slug)||[...(Array.isArray(p.frontmatter.domains)?p.frontmatter.domains:[])].some(d=>domains.has(String(d))));
@@ -93,24 +90,14 @@ export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPa
     });
   },[idBySlug,setRouteState]);
   const selection=useMemo(()=>active?{...active,key:JSON.stringify([active.key,manifestKey])}:null,[active,manifestKey]);
-  const [inspectionStatus,setInspectionStatus]=useState<{key:string;time:string;count:number}|null>(null);
-  const receiveInspection=useCallback((snapshot:GrayAreaSnapshot,count:number)=>{
-    const key=JSON.stringify([vaultPath,snapshot.basis.projectSlug,[...snapshot.basis.selectedUids].sort()]);
-    setInspectionStatus(current=>current?.key===key&&current.time===snapshot.measuredAt&&current.count===count?current:{key,time:snapshot.measuredAt,count});
-  },[vaultPath]);
-  const observed=selected&&inspectionStatus?.key===selected.key?inspectionStatus:null;
   const history=useInvestigationHistory(vaultLoaded?vaultHandle:null);
   const previous=selected?.projectUid&&history?latestScopedInvestigation(history.runs,{projectUid:selected.projectUid,projectSlug:selected.projectSlug,uids:selected.uids}):null;
-  const subject=!vaultLoaded?t('continuation.localFolderAction'):selected?.label??t(docs.length?'continuation.chooseScopeAction':'continuation.emptyVaultAction');
-  const description=!vaultLoaded?t('localFolderRequired'):previous?t('continuation.previousResult',{time:previous.createdAt}):observed?`${t('continuation.knownSuggestions',{count:observed.count})} · ${observed.time}`:t(selected?'continuation.notInspected':docs.length?'continuation.chooseScope':'continuation.emptyVault');
-  const openContinuation=!vaultLoaded?()=>onConnectVault?.():selected?launch:docs.length?()=>onChooseScope?.():()=>onEmptyVault?.();
   return {
     open,
     action:selected?{label:t('entry'),onOpen:launch}:undefined,
-    continuationAction:{label:t('continuation.entry'),subject,description,countLabel:previous?t('continuation.previousResultAction'):observed?t('continuation.questionCount',{count:observed.count}):undefined,onOpen:openContinuation},
     inspector:selection?<GrayAreaInspector open={open} vaultPath={vaultPath} vaultHandle={vaultHandle} selection={selection} onClose={close} onFocus={focus} onNarrowScope={()=>{close();onChooseScope?.();}}
     runtimeLabel={runtime?.label} canAnalyze={Boolean(runtime&&onAnalyze&&!busy)} busyConversation={busy}
-    onInspection={receiveInspection} previousResultAt={previous?.createdAt}
+    previousResultAt={previous?.createdAt}
     onAnalyze={runtime&&onAnalyze&&selection.projectUid?(text,candidate,snapshot,sourceRoot)=>{
       if(!vaultPath||busy)return;
       const epoch=inspectionEpoch.current;
