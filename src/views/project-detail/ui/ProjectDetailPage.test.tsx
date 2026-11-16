@@ -158,6 +158,8 @@ const BASE_EDGES = [
 ];
 
 const mocks = vi.hoisted(() => ({
+  evidenceReads: 0,
+  dialogGroupings: 0,
   insightNodes: [] as unknown[],
   insightEdges: [] as unknown[],
   evidence: {
@@ -202,10 +204,24 @@ vi.mock("@/features/vault-ontology", () => ({
     insight: { nodes: mocks.insightNodes, edges: mocks.insightEdges },
     error: null,
   }),
-  useMapEvidenceStates: () => mocks.evidence,
+  useMapEvidenceStates: () => {
+    mocks.evidenceReads += 1;
+    return mocks.evidence;
+  },
   useAdaptiveRecentChanges: () => mocks.recent,
   useVaultConceptFacts: () => mocks.conceptFacts,
 }));
+
+vi.mock("../model/project-to-check", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../model/project-to-check")>();
+  return {
+    ...actual,
+    groupRowsByReason: (...args: Parameters<typeof actual.groupRowsByReason>) => {
+      mocks.dialogGroupings += 1;
+      return actual.groupRowsByReason(...args);
+    },
+  };
+});
 
 vi.mock("@/features/project-data-source", () => ({
   useProjects: () => ({
@@ -291,6 +307,8 @@ function openMoreMenu() {
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
     nav.search = "";
+    mocks.evidenceReads = 0;
+    mocks.dialogGroupings = 0;
     mocks.evidence = { availability: "app-only", states: new Map(), movedPaths: new Map(), stalePaths: new Map() };
     mocks.recent = { reading: false, windowDays: 7, rows: [], recentNodeIds: new Set() };
     mocks.conceptFacts = new Map();
@@ -320,6 +338,20 @@ describe("ProjectDetailPage", () => {
       readFile: vi.fn(),
       inputProps: {},
     };
+  });
+
+  it("reads no evidence for a slug that names no project", () => {
+    mocks.projectsMode = "local";
+    mocks.projects = [];
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <LocalVaultProvider>
+          <ProjectDetailPage slug="missing" />
+        </LocalVaultProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("project-detail-identity")).not.toBeInTheDocument();
+    expect(mocks.evidenceReads).toBe(0);
   });
 
   it("clears the same slug's static initial fact once the local source settles", async () => {
@@ -895,6 +927,7 @@ describe("ProjectDetailPage", () => {
       renderPage();
 
       expect(screen.getAllByTestId("project-detail-to-check-row")).toHaveLength(3);
+      expect(mocks.dialogGroupings, "a closed dialog groups nothing").toBe(0);
       fireEvent.click(screen.getByTestId("project-detail-to-check-view-all"));
       const dialog = screen.getByRole("dialog");
       expect(within(dialog).getByText("No definition · 4")).toBeInTheDocument();

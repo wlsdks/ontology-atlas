@@ -37,6 +37,7 @@ const EMPTY_DOCS: readonly VaultDoc[] = [];
 const NO_STATES: ReadonlyMap<string, MapEvidenceState> = new Map();
 const NO_PATHS: ReadonlyMap<string, string> = new Map();
 const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
+const NO_CONCEPTS: ReturnType<typeof buildEvidenceConcepts> = [];
 
 /**
  * Stale-while-revalidate, shared by every screen that reads evidence: a screen that mounts reads the
@@ -113,18 +114,22 @@ export function useMapEvidenceStates({
   const nativeRootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const bridge = isGitBridgeAvailable();
 
+  // Nothing is built on the web or for a view that draws no evidence.
+  const measurable = enabled && bridge && nativeRootPath !== null;
   const concepts = useMemo(
     () =>
-      buildEvidenceConcepts(
-        docs,
-        (nodes ?? []).map((node) => ({
-          id: node.id,
-          docSlug: node.hasOwnDocument === false ? null : (node.evidenceIds[0] ?? null),
-        })),
-      ),
-    [docs, nodes],
+      measurable
+        ? buildEvidenceConcepts(
+            docs,
+            (nodes ?? []).map((node) => ({
+              id: node.id,
+              docSlug: node.hasOwnDocument === false ? null : (node.evidenceIds[0] ?? null),
+            })),
+          )
+        : NO_CONCEPTS,
+    [measurable, docs, nodes],
   );
-  const noPaths = concepts.every((concept) => concept.evidencePaths.length === 0);
+  const noPaths = useMemo(() => concepts.every((concept) => concept.evidencePaths.length === 0), [concepts]);
   const repoPaths = useMemo(() => [...new Set(concepts.flatMap((concept) => concept.evidencePaths))].sort(), [concepts]);
   const vaultPaths = useMemo(
     () => concepts.map((concept) => concept.docPath).filter((path): path is string => path != null).sort(),
@@ -161,6 +166,7 @@ export function useMapEvidenceStates({
   const reading = changes === null && failedKey !== key;
   return useMemo<MapEvidence>(() => {
     if (!bridge || !nativeRootPath) return unmeasured('app-only');
+    if (!enabled) return unmeasured('reading');
     if (noPaths) return unmeasured('no-paths');
     if (reading) return unmeasured('reading');
     if (!changes) return unmeasured('unreadable');
@@ -181,7 +187,7 @@ export function useMapEvidenceStates({
       else if (gone) stalePaths.set(row.id, { path: gone, gone: true, changedAt: null });
     }
     return { availability: 'measured', states, movedPaths, stalePaths };
-  }, [bridge, nativeRootPath, noPaths, reading, changes, concepts]);
+  }, [bridge, nativeRootPath, enabled, noPaths, reading, changes, concepts]);
 }
 
 function unmeasured(availability: Exclude<MapEvidenceAvailability, 'measured'>): MapEvidence {

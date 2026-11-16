@@ -9,6 +9,7 @@ const git = vi.hoisted(() => ({
   root: "/vault",
   docs: [] as { slug: string; frontmatter: Record<string, unknown> }[],
   vault: null as unknown,
+  builds: 0,
 }));
 
 const DOCS = [
@@ -27,6 +28,16 @@ vi.mock("@/shared/lib/vault-folder/select-open-vault-handle", () => ({
 vi.mock("@/shared/lib/vault-folder/tauri-vault-fs", () => ({
   getTauriVaultRootPath: () => git.root,
 }));
+vi.mock("@/shared/lib/git/evidence-states", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/shared/lib/git/evidence-states")>();
+  return {
+    ...actual,
+    buildEvidenceConcepts: (...args: Parameters<typeof actual.buildEvidenceConcepts>) => {
+      git.builds += 1;
+      return actual.buildEvidenceConcepts(...args);
+    },
+  };
+});
 vi.mock("@/shared/lib/git/tauri-git", () => ({
   isGitBridgeAvailable: () => git.bridge,
   gitPathsLastChange: git.walk,
@@ -57,6 +68,7 @@ beforeEach(() => {
   resetSharedEvidenceWalk();
   git.bridge = true;
   git.root = "/vault";
+  git.builds = 0;
   git.docs = DOCS;
   git.vault = { status: "ready", handle: { name: "vault" }, manifest: { get docs() { return git.docs; } }, lastLoadedAt: 1 };
   git.walk.mockReset();
@@ -153,6 +165,27 @@ describe("useMapEvidenceStates", () => {
     await waitFor(() => expect(result.current.availability).toBe("measured"));
     expect(result.current.stalePaths.get("capability:pay")).toEqual({ path: "src/pay.ts", gone: false, changedAt: CODE_TIME });
     expect(result.current.movedPaths.get("capability:pay")).toBe("src/pay.ts");
+  });
+
+  it("builds the concepts once for repeated renders, and not at all on the web or for a view that draws no evidence", async () => {
+    const page = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    await waitFor(() => expect(page.result.current.availability).toBe("measured"));
+    page.rerender();
+    page.rerender();
+    expect(git.builds).toBe(1);
+    page.unmount();
+
+    git.builds = 0;
+    const hidden = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: false }));
+    hidden.rerender();
+    expect(git.builds).toBe(0);
+    hidden.unmount();
+
+    git.bridge = false;
+    const web = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    web.rerender();
+    expect(git.builds).toBe(0);
+    expect(git.walk).toHaveBeenCalledTimes(1);
   });
 
   it("reads as app-only and never walks without the desktop Git bridge", () => {

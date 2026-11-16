@@ -11,7 +11,7 @@ import { Button, Dialog, DialogBody, DialogFooter, OntologyMapKindGlyph } from "
 import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { TO_CHECK_REASONS, type ProjectToCheck, type ToCheckReason, type ToCheckRow } from "../../model/project-to-check";
+import { groupRowsByReason, type ProjectToCheck, type ToCheckReason, type ToCheckRow } from "../../model/project-to-check";
 import { CrossFadeText, SECTION_HEADING_CLASS, STALE_DOT_CLASS, SectionHeadingLine, rowMotion, useArrival } from "./now-parts";
 
 /** A group in the dialog lists this many rows; the rest are named by count and live on the map. */
@@ -209,17 +209,6 @@ function ToCheckDialog({
   rows: readonly ToCheckRow[];
 }) {
   const t = useTranslations("projectPages.detail");
-  const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
-  const groupHeading: Record<ToCheckReason, (count: number) => string> = {
-    raised: (count) => tReview("raisedHeader", { count }),
-    "changed-since-review": (count) => tReview("changedHeader", { count }),
-    stale: (count) => t("toCheckGroupStale", { count }),
-    unverifiable: (count) => tReview("unverifiableHeader", { count }),
-    "definition-missing": (count) => t("toCheckGroupNoDefinition", { count }),
-  };
-  const groups = TO_CHECK_REASONS.map((reason) => ({ reason, rows: rows.filter((row) => row.reason === reason) })).filter(
-    (group) => group.rows.length > 0,
-  );
   return (
     <Dialog
       open={open}
@@ -233,25 +222,7 @@ function ToCheckDialog({
         {t("toCheckDialogTitle", { project: projectName })}
       </h2>
       <DialogBody className="mt-3 space-y-5 overscroll-contain pb-4">
-        {groups.map((group) => (
-          <section key={group.reason} aria-label={groupHeading[group.reason](group.rows.length)}>
-            <h3 className="text-body font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-secondary)]">
-              {groupHeading[group.reason](group.rows.length)}
-            </h3>
-            <ul className="-mx-2 mt-1.5 flex flex-col gap-px">
-              {group.rows.slice(0, DIALOG_ROWS_PER_REASON).map((row) => (
-                <li key={`${row.reason}:${row.nodeId}`} className="min-w-0">
-                  <ToCheckRowLink row={row} />
-                </li>
-              ))}
-            </ul>
-            {group.rows.length > DIALOG_ROWS_PER_REASON ? (
-              <p className="mt-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                {t("toCheckDialogMore", { count: group.rows.length - DIALOG_ROWS_PER_REASON })}
-              </p>
-            ) : null}
-          </section>
-        ))}
+        <ToCheckDialogGroups rows={rows} />
       </DialogBody>
       <DialogFooter>
         <Button type="button" variant="outline" size="sm" onClick={onClose} className="atlas-touch-floor">
@@ -260,4 +231,36 @@ function ToCheckDialog({
       </DialogFooter>
     </Dialog>
   );
+}
+
+/** Rendered only inside the open dialog, so a closed dialog groups nothing. */
+function ToCheckDialogGroups({ rows }: { rows: readonly ToCheckRow[] }) {
+  const t = useTranslations("projectPages.detail");
+  const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
+  const groupHeading: Record<ToCheckReason, (count: number) => string> = {
+    raised: (count) => tReview("raisedHeader", { count }),
+    "changed-since-review": (count) => tReview("changedHeader", { count }),
+    stale: (count) => t("toCheckGroupStale", { count }),
+    unverifiable: (count) => tReview("unverifiableHeader", { count }),
+    "definition-missing": (count) => t("toCheckGroupNoDefinition", { count }),
+  };
+  return groupRowsByReason(rows).map((group) => (
+    <section key={group.reason} aria-label={groupHeading[group.reason](group.rows.length)}>
+      <h3 className="text-body font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-secondary)]">
+        {groupHeading[group.reason](group.rows.length)}
+      </h3>
+      <ul className="-mx-2 mt-1.5 flex flex-col gap-px">
+        {group.rows.slice(0, DIALOG_ROWS_PER_REASON).map((row) => (
+          <li key={`${row.reason}:${row.nodeId}`} className="min-w-0">
+            <ToCheckRowLink row={row} />
+          </li>
+        ))}
+      </ul>
+      {group.rows.length > DIALOG_ROWS_PER_REASON ? (
+        <p className="mt-1.5 text-label text-[color:var(--color-text-tertiary)]">
+          {t("toCheckDialogMore", { count: group.rows.length - DIALOG_ROWS_PER_REASON })}
+        </p>
+      ) : null}
+    </section>
+  ));
 }

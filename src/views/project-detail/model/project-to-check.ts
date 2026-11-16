@@ -116,6 +116,13 @@ export function buildProjectToCheck(input: ProjectToCheckInput): ProjectToCheck 
   return { rows, conceptCount: highestReasonRows.length, visible: selectVisibleRows(highestReasonRows) };
 }
 
+/** Every reason that has rows, in rank order: the dialog's groups. */
+export function groupRowsByReason(rows: readonly ToCheckRow[]): { reason: ToCheckReason; rows: ToCheckRow[] }[] {
+  return TO_CHECK_REASONS.map((reason) => ({ reason, rows: rows.filter((row) => row.reason === reason) })).filter(
+    (group) => group.rows.length > 0,
+  );
+}
+
 /**
  * Fills the slots in rank order, holding each reason to `SLOTS_PER_REASON` while another reason
  * waits; a slot nobody else can use goes back to the held rows.
