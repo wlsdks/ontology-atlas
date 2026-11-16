@@ -6,6 +6,7 @@
  */
 
 import { SPRING, springSettleMs, springState } from "@/shared/motion/spring";
+import { MOTION } from "@/shared/motion/tokens";
 import type { CameraTarget } from "../../engine/camera";
 import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS, easeZoomScale, zoomStepProgress } from "../motion-physics";
 
@@ -29,7 +30,7 @@ export interface CameraTween {
 
 export type CameraTweenAltitude = "follows-camera" | "held-at-target";
 
-/** `"spring"` rides `SPRING.canvas`: the selection frame and its undo. */
+/** `"spring"`: the selection frame and its undo; a pan rides `SPRING.canvas`, a zoom `selectionZoomKeyframe`. */
 export type CameraTweenEase = "out" | "spring";
 
 export function easeOutCubic(t: number): number {
@@ -43,6 +44,40 @@ export const CAMERA_TRANSITION_MAX_MS = CAMERA_TWEEN_MAX_MS;
 
 /** The canvas spring first reaches its target near 415 ms, so it ends inside the camera budget. */
 export const CANVAS_SPRING_PAN_MS = Math.min(CAMERA_TRANSITION_MAX_MS, springSettleMs(SPRING.canvas));
+
+/** A selection's zoom takes this long per octave it crosses, so no frame steps the zoom more than about 5 %. */
+export const SELECTION_ZOOM_MS_PER_OCTAVE = MOTION.slow.duration * 1000;
+/** A selection's zoom never takes longer than this, however far it zooms. */
+export const SELECTION_ZOOM_MAX_MS = 2 * SELECTION_ZOOM_MS_PER_OCTAVE;
+/** Below this many octaves a selection only pans, and rides the spring. */
+const SELECTION_ZOOM_MIN_OCTAVES = 0.01;
+
+const octavesBetween = (start: CameraKeyframe, target: CameraKeyframe) =>
+  Math.abs(Math.log2(Math.max(target.scale, SCALE_EPSILON) / Math.max(start.scale, SCALE_EPSILON)));
+
+/**
+ * A selection frame's duration: the canvas spring's for a pan, else `SELECTION_ZOOM_MS_PER_OCTAVE`
+ * for each octave of zoom, at least the spring's and at most `SELECTION_ZOOM_MAX_MS`.
+ */
+export function selectionTweenDurationMs(start: CameraKeyframe, target: CameraKeyframe): number {
+  const octaves = octavesBetween(start, target);
+  if (octaves < SELECTION_ZOOM_MIN_OCTAVES) return CANVAS_SPRING_PAN_MS;
+  return Math.min(SELECTION_ZOOM_MAX_MS, Math.max(CANVAS_SPRING_PAN_MS, octaves * SELECTION_ZOOM_MS_PER_OCTAVE));
+}
+
+/**
+ * A selection's zoom at progress `p`: the scale moves in log space on a sine ease, whose speed
+ * peaks at π/2 of the mean in the middle and never turns back, and the pan follows the same ease.
+ */
+export function selectionZoomKeyframe(start: CameraKeyframe, target: CameraKeyframe, p: number): CameraKeyframe {
+  const t = p <= 0 ? 0 : p >= 1 ? 1 : p;
+  const e = (1 - Math.cos(Math.PI * t)) / 2;
+  return {
+    x: start.x + (target.x - start.x) * e,
+    y: start.y + (target.y - start.y) * e,
+    scale: start.scale * Math.pow(target.scale / start.scale, e),
+  };
+}
 
 /**
  * Screen-pan distance (px) that alone earns the full duration; pan is world Δ × mean
@@ -151,6 +186,7 @@ export function easeCameraKeyframe(
   const p = durationMs <= 0 ? 1 : elapsedMs / durationMs;
   if (ease === "spring") {
     if (p >= 1) return { ...target };
+    if (octavesBetween(start, target) >= SELECTION_ZOOM_MIN_OCTAVES) return selectionZoomKeyframe(start, target, p);
     const e = springState(SPRING.canvas, Math.max(0, elapsedMs) / 1000).x;
     return {
       x: start.x + (target.x - start.x) * e,

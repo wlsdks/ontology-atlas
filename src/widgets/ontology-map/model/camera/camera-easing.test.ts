@@ -8,6 +8,9 @@ import {
   easeAnchoredZoom,
   easeCameraKeyframe,
   easeInOutCubic,
+  SELECTION_ZOOM_MAX_MS,
+  SELECTION_ZOOM_MS_PER_OCTAVE,
+  selectionTweenDurationMs,
   type CameraKeyframe,
   type ZoomEase,
   VAN_WIJK_RHO,
@@ -272,5 +275,35 @@ describe("van Wijk path keeps optical flow constant", () => {
     }
     expect(CANVAS_SPRING_PAN_MS).toBeLessThanOrEqual(CAMERA_TRANSITION_MAX_MS);
     expect(easeCameraKeyframe(start, target, CANVAS_SPRING_PAN_MS, CANVAS_SPRING_PAN_MS, 1856, "spring")).toEqual(target);
+  });
+});
+
+describe("a selection's zoom", () => {
+  const FRAME_MS = 1000 / 60;
+
+  it.each([[1.2], [2], [3.67], [5.47], [8]])("takes its time from the octaves it crosses, between the spring's pan and the cap, zooming %fx", (ratio) => {
+    const start = { x: 0, y: 0, scale: 1 };
+    const target = { x: 40, y: -20, scale: ratio };
+    const ms = selectionTweenDurationMs(start, target);
+    expect(ms).toBe(Math.min(SELECTION_ZOOM_MAX_MS, Math.max(CANVAS_SPRING_PAN_MS, Math.log2(ratio) * SELECTION_ZOOM_MS_PER_OCTAVE)));
+    expect(selectionTweenDurationMs(target, start), "out takes as long as in").toBe(ms);
+  });
+
+  it("keeps a pan on the spring's duration", () => {
+    expect(selectionTweenDurationMs({ x: 0, y: 0, scale: 2 }, { x: 300, y: 0, scale: 2 })).toBe(CANVAS_SPRING_PAN_MS);
+  });
+
+  it.each([[3.67], [5.47], [1 / 5.47]])("moves the zoom one way, never more than 8 %% in a 60 Hz frame, and lands on its target, zooming %fx", (ratio) => {
+    const start = { x: 0, y: 0, scale: 1 };
+    const target = { x: 60, y: 30, scale: ratio };
+    const ms = selectionTweenDurationMs(start, target);
+    let was = start.scale;
+    for (let t = FRAME_MS; t < ms; t += FRAME_MS) {
+      const { scale } = easeCameraKeyframe(start, target, t, ms, 1856, "spring");
+      expect(Math.sign(scale - was), `turns back at ${t.toFixed(0)} ms`).toBe(Math.sign(ratio - 1));
+      expect(Math.abs(Math.log(scale / was)), `steps past 8 % at ${t.toFixed(0)} ms`).toBeLessThanOrEqual(Math.log(1.08));
+      was = scale;
+    }
+    expect(easeCameraKeyframe(start, target, ms, ms, 1856, "spring")).toEqual(target);
   });
 });

@@ -16,7 +16,7 @@ import {
   type EdgeFitObstacle,
   type PanelInsets
 } from "../../interaction/free-area";
-import { CANVAS_SPRING_PAN_MS, cameraTransitionDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
+import { cameraTransitionDurationMs, selectionTweenDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
@@ -236,7 +236,7 @@ export function useTopologyCameraPolicy({
     const cam = cameraRef.current;
     const start: CameraKeyframe = { x: cam.x.value, y: cam.y.value, scale: cam.scale.value };
     const tgt: CameraKeyframe = { x: target.tx, y: target.ty, scale: target.tscale };
-    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? (ease === "spring" ? CANVAS_SPRING_PAN_MS : cameraTransitionDurationMs(start, tgt)), ease, altitude };
+    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? (ease === "spring" ? selectionTweenDurationMs(start, tgt) : cameraTransitionDurationMs(start, tgt)), ease, altitude };
   }, [cameraRef, cameraTweenRef, reducedMotionRef]);
   return { cameraTokens, domeFitTarget, beginCameraTween };
 }
