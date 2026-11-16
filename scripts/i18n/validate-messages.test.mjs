@@ -98,8 +98,8 @@ describe('i18n message catalog', () => {
     const downloadCopy = { en: JSON.stringify(en.download), ko: JSON.stringify(ko.download) };
     assert.doesNotMatch(downloadCopy.en, /Not signed yet|Open Anyway|certificate pending/i);
     assert.doesNotMatch(downloadCopy.ko, /아직 서명되지 않음|확인 없이 열기|인증서 준비 중/);
-    assert.match(en.download.trustLine, /Signed and notarized by Apple/);
-    assert.match(ko.download.trustLine, /Apple 서명·공증/);
+    assert.match(en.download.trustLine, /Checked by Apple/);
+    assert.match(ko.download.trustLine, /Apple이 검사한/);
 
     for (const gone of ['releaseNotesHeading', 'releaseNotesSource', 'releaseNotesCaption']) {
       assert.equal(en.download[gone], undefined, `download.${gone} must stay removed`);
