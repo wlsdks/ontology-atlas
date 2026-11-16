@@ -17,6 +17,9 @@ import { useCallback, useMemo, useState } from "react";
 import { selectTopologyPathRouteState } from "../route-state/url-state";
 import { useTaskReviewBaseline } from "./use-task-review-baseline";
 
+/** The line from a container to its member already says containment, so the map captions it with nothing. */
+const CONTAINMENT_TYPES: ReadonlySet<string> = new Set(["contains", "belongs_to"]);
+
 /** `onTurnStarted` below hands the investigation capture only the exact investigation request. */
 const everyRequestItReceives = () => true;
 
@@ -102,7 +105,7 @@ export function useTopologyAnalysisReview({
       ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
       : focus ? edge.from === focus || edge.to === focus : true).filter((edge) => edge.type !== 'belongs_to' && !edge.label?.trim()).length;
   }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge]);
-  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, ontologyInsight, relationVocabulary, relationRegister]);
+  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) ? new Map((ontologyInsight?.edges ?? []).filter((edge) => !CONTAINMENT_TYPES.has(edge.type)).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, ontologyInsight, relationVocabulary, relationRegister]);
   const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);
   const openAnalysisEvidence = useCallback((slug: string) => {
     const nodeId = chatNodeIndex.get(slug);
