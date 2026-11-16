@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { parseArchitectureRecord, type ArchitectureRecord } from '@/entities/architecture-record';
 import { analysisTextDigest, readAnalysisHistory } from '@/entities/analysis-record';
+import { isReviewResult } from '@/widgets/analysis-workbench';
 import { architectureRecordFromAnalysis } from './analysis-architecture-record';
 
 const EMPTY_RECORDS: Readonly<Record<string, ArchitectureRecord>> = Object.freeze({});
@@ -60,7 +61,7 @@ export function useArchitectureRecords(
           let page;
           try { page = await readAnalysisHistory(handle, { cursor }); } catch { break; }
           for (const run of page.records) {
-            if (run.recordType !== 'run' || run.mode !== 'architecture' || !run.scope.profileSlug || !wanted.has(run.scope.profileSlug)) continue;
+            if (run.recordType !== 'run' || run.mode !== 'architecture' || !run.scope.profileSlug || !wanted.has(run.scope.profileSlug) || !isReviewResult(run)) continue;
             const slug = run.scope.profileSlug;
             wanted.delete(slug);
             // A newer attempt without a compatible measurement must not let a legacy receipt stand for it.

@@ -18,14 +18,14 @@ Closing the dock restores focus there so Enter can reopen it without navigating
 from the start of the map.
 
 #### Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)
-- **Meaning, findings/history, and conversation share one context dock.** In
+- **Role & connections, Review results, and Conversation share one context dock.** In
   the installed app the agent tile is the map toolbar's one door to it; the web,
-  which has no agent tile, keeps a Meaning review tile there. A selected concept
-  exposes Meaning review in both. It explains the
+  which has no agent tile, keeps an Ontology review tile there. A selected concept
+  exposes Ontology review in both. It explains the
   normative kind criteria, actual directional relations, stored rationale and
   missing rationale. Optional relation captions avoid concept labels and shapes.
-  Explicit AI analysis actions capture immutable Markdown records in the active
-  folder; ordinary drafts still require Send. Historical answers, source/profile
+  Explicit AI review actions capture immutable Markdown records in the active
+  folder; an ordinary chat turn writes none, and ordinary drafts still require Send. Historical answers, source/profile
   snapshots, observed Architecture measurements, and reasoned keep/dismiss
   records remain inspectable. Qualified current questions may mark map labels
   with `?`; no report or review automatically edits meaning. Architecture and

@@ -308,7 +308,7 @@
     "editRelation": "지도에서 이 관계 고치기",
     "close": "닫기",
     "openDoc": "열기",
-    "noReason": "이 관계의 이유는 아직 기록되지 않았어요. 의미 검토에서 에이전트에게 채우게 할 수 있어요."
+    "noReason": "이 관계의 이유는 아직 기록되지 않았어요. 온톨로지 검토에서 에이전트에게 채우게 할 수 있어요."
   },
   "edgeSentence": {
     "contains": "{from}{fromJosa} {to}{toJosa} 포함해요.",

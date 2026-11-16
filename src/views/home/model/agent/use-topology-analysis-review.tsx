@@ -11,11 +11,15 @@ import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import type { AnalysisCaptureContext } from "@/features/acp-session";
 import { analysisGraphFromInsight, useAnalysisCapture } from "@/features/acp-session";
 import { investigationCaptureContext } from '../gray-area/investigation-context';
+import { isRecordedReviewRequest } from '@/widgets/analysis-workbench';
 import { useRouter } from "@/i18n/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { edgeSentenceValues, normalizeEdgeSentenceKey } from "../../lib/authoring/edge-sentence";
 import { selectTopologyPathRouteState } from "../route-state/url-state";
 import { useTaskReviewBaseline } from "./use-task-review-baseline";
+
+/** `onTurnStarted` below hands the investigation capture only the exact investigation request. */
+const everyRequestItReceives = () => true;
 
 interface Options {
   investigationBasis?:ReturnType<typeof useAcpRuntimeController>['investigationBasis'];
@@ -80,8 +84,8 @@ export function useTopologyAnalysisReview({
     projectSlug: meaningAnalysisContext.scope.projectSlug,
   });
   const investigationContext = useMemo(()=>investigationCaptureContext(meaningAnalysisContext,investigationBasis,gitVaultPath,vault.manifest?.docs??[]),[investigationBasis,gitVaultPath,vault.manifest,meaningAnalysisContext]);
-  const ordinaryCapture = useAnalysisCapture(meaningAnalysisContext);
-  const investigationCapture = useAnalysisCapture(investigationContext??meaningAnalysisContext);
+  const ordinaryCapture = useAnalysisCapture(meaningAnalysisContext, isRecordedReviewRequest);
+  const investigationCapture = useAnalysisCapture(investigationContext??meaningAnalysisContext, everyRequestItReceives);
   const [captureKind,setCaptureKind] = useState<'meaning'|'investigation'>('meaning');
   const analysisCapture = {
     ...(captureKind==='investigation'?investigationCapture:ordinaryCapture),
