@@ -22,7 +22,7 @@ export function CrossFadeText({
   className,
   id,
   testId,
-  wrap = false,
+  wrapWithin,
   reducedMotion,
   as = "span",
 }: {
@@ -30,18 +30,24 @@ export function CrossFadeText({
   className?: string;
   id?: string;
   testId?: string;
-  /** Wraps instead of truncating; the caller reserves the lines. */
-  wrap?: boolean;
+  /**
+   * Wraps instead of truncating, and holds the height of the tallest of these texts, so a swap
+   * among them moves nothing below. Drawn as invisible pseudo-content, out of the text and the tree.
+   */
+  wrapWithin?: readonly string[];
   reducedMotion: boolean;
   as?: "span" | "h2" | "p";
 }) {
   const Tag = as;
   return (
     <Tag id={id} data-testid={testId} className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)] [grid-template-areas:'text']", className)}>
+      {wrapWithin?.map((sizer) => (
+        <span key={sizer} aria-hidden data-sizer={sizer} className="invisible min-w-0 text-pretty [grid-area:text] before:content-[attr(data-sizer)]" />
+      ))}
       <AnimatePresence initial={false}>
         <motion.span
           key={text}
-          className={cn("min-w-0 [grid-area:text]", wrap ? "text-pretty" : "truncate")}
+          className={cn("min-w-0 [grid-area:text]", wrapWithin ? "text-pretty" : "truncate")}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: reducedMotion ? MOTION.fast : EXIT_TRANSITION }}

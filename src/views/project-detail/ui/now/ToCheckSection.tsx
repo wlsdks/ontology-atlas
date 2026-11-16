@@ -54,6 +54,16 @@ export function ToCheckSection({
         : availability === "app-only" ? t("toCheckEvidenceAppOnly")
           : availability === "unreadable" ? t("toCheckEvidenceUnreadable")
             : t("toCheckEvidenceNoPaths");
+  // Every sentence the line can become after it starts reading; the widest count stands in for the stale one.
+  const evidenceLines =
+    availability === "app-only"
+      ? [evidenceLine]
+      : [
+          t("toCheckEvidenceReading"),
+          t("toCheckEvidenceMeasured", { stale: capabilityTotal, total: capabilityTotal }),
+          t("toCheckEvidenceUnreadable"),
+          t("toCheckEvidenceNoPaths"),
+        ];
 
   return (
     <section data-testid="project-detail-to-check" aria-labelledby="project-detail-to-check-title" className="min-w-0">
@@ -85,8 +95,8 @@ export function ToCheckSection({
         as="p"
         testId="project-detail-evidence-line"
         reducedMotion={reducedMotion}
-        wrap
-        className="mt-0.5 min-h-[2lh] text-label leading-label text-[color:var(--color-text-tertiary)]"
+        wrapWithin={evidenceLines}
+        className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
         text={evidenceLine}
       />
       <ul
