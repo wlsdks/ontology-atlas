@@ -6,8 +6,6 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES, type CelebrationMotion, type PlayMotion, type WorkMotion } from './moru-rows';
 
-export type { CelebrationMotion, PlayMotion, WorkMotion } from './moru-rows';
-
 /** Company for pending work, one finite welcome, or a curious look beside a dead end; parents own status and Stop. */
 export function BrandWaitingMark({
   active,
