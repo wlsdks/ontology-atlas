@@ -23,8 +23,7 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
     bodyChildren: 19,
     readyState: "complete",
     markers: {
-      ontologyNav: true,
-      sourceVaultNav: false,
+      mapNav: true,
       libraryNav: true,
     },
     width: 1280,
@@ -69,8 +68,7 @@ test("WebView verification waits for the latest snapshot that passes route gates
     bodyChildren: 19,
     readyState: "complete",
     markers: {
-      ontologyNav: true,
-      sourceVaultNav: false,
+      mapNav: true,
       libraryNav: true,
       topologyMapEngine: "v2",
       ontologyMapCanvasInkPixels: 0,

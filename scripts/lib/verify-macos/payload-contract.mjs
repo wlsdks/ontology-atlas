@@ -184,8 +184,8 @@ export function validateWebviewVerifyPayload(payload, {
     });
     if (librarySurfaceError) return librarySurfaceError;
   } else {
-    if (payload.markers.ontologyNav !== true) {
-      return "WebView did not report the ontology navigation marker";
+    if (payload.markers.mapNav !== true) {
+      return "WebView did not report the map navigation marker";
     }
     if (payload.markers.libraryNav !== true) {
       return "WebView did not report the Library navigation marker";
