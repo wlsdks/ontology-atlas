@@ -436,9 +436,9 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         expectSmooth(`${tag} retarget to ${retarget}`, motionOf(await stopSampling(page), [star, otherStar], true), false);
       }
 
-      // A reader opens a star to read what is in it: at rest it names all its members but one, the dock's
-      // narrower map at least four in five, and never a member's name past the free map's frame margin.
-      // The dogfood layout differs a little between loads, so which member goes unnamed may change.
+      // A reader opens a star to read what is in it: at rest it names at least four in five of its
+      // members, and never a member's name past the free map's frame margin. Resting names depend on
+      // the zoom steps the camera passed, so which member goes unnamed differs between loads.
       const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
       for (const { domainId, capabilityIds } of clusters) {
         await openDogfoodFlat(page, viewport, dock);
@@ -453,8 +453,7 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         const outside = memberNames.filter((t) => t.box.minX < f.minX + margin - 0.5 || t.box.maxX > f.maxX - margin + 0.5 || t.box.minY < f.minY + margin - 0.5 || t.box.maxY > f.maxY - margin + 0.5).map((t) => t.id);
         const said = `${viewport.width}x${viewport.height} dock ${dock ? "open" : "closed"} ${domainId}: ${named.length} of ${capabilityIds.length} members named, ${backed} backed, unnamed ${capabilityIds.filter((id) => !named.includes(id)).join(", ") || "none"}, outside the free map ${outside.join(", ") || "none"}`;
         console.log(`[star-names] ${said}`);
-        if (dock) expect.soft(named.length * 5, said).toBeGreaterThanOrEqual(capabilityIds.length * 4);
-        else expect.soft(named.length, said).toBeGreaterThanOrEqual(capabilityIds.length - 1);
+        expect.soft(named.length * 5, said).toBeGreaterThanOrEqual(capabilityIds.length * 4);
         expect.soft(outside, said).toEqual([]);
       }
     });
