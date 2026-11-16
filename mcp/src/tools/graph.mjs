@@ -429,8 +429,10 @@ const MEANING_NEXT_ACTION_HINTS = Object.freeze({
     'The source receipt is unusable. Re-bind the project to its code folder '
     + 'with connect_project_source.',
   record_source_role:
-    'A source file is bound but its role (production / test) is unrecorded. '
-    + 'Record it so evidence counts mean the same thing everywhere.',
+    'No concept in this project names its code file yet. Find the file that '
+    + 'carries each capability or element (find_evidence, read_source) and '
+    + 'record it as that node\'s `path:` with patch_concept; leave out a '
+    + 'concept whose file you cannot identify.',
   review_inventory_limit:
     'The source inventory hit its bound, so this evidence is partial. Narrow '
     + 'the bound source folder, or read the limit before trusting the counts.',
