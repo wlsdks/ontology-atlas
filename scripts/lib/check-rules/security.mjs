@@ -18,6 +18,7 @@ const SECURITY_CONTRACTS = [
   'tests/contract/security/acp-gate-safe-modes.contract.test.ts',
   'tests/contract/security/acp-runtime-gate.contract.test.ts',
   'tests/contract/security/acp-permission-option-choice.contract.test.ts',
+  'tests/contract/security/acp-standing-approval.contract.test.ts',
   'tests/contract/security/acp-session-scope.contract.test.ts',
   'tests/contract/security/acp-disk-disclosure.contract.test.ts',
   'tests/contract/security/web-csp-parity.contract.test.ts',

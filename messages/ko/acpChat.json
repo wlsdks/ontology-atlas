@@ -181,6 +181,15 @@
   "model": "모델",
   "mode": "작업 방식",
   "modeUnverified": "{name} · 확인 안 됨",
+  "approval": "승인",
+  "approvalOption": {
+    "ask": "매번 묻기",
+    "auto": "자동 승인"
+  },
+  "approvalHint": {
+    "ask": "쓰기 전에 항상 물어요.",
+    "auto": "이 폴더 안 파일 수정과 개념·관계 추가·수정은 묻지 않고 진행해요. 셸 명령, 폴더 밖, 삭제, 커밋은 계속 물어요."
+  },
   "modeUnverifiedHint": "이 방식은 아직 확인 안 했어요.",
   "runtimePicker": "대화할 에이전트",
   "tool": {
@@ -314,6 +323,7 @@
     "modeMovedServerGate": "에이전트가 이 대화를 {mode} 방식으로 옮겼어요. 이 방식은 파일 수정을 먼저 묻지 않고 받아들여요. Atlas 도구를 거치는 변경은 서버에서 그대로 승인을 받아요.",
     "autoAllowed": "묻지 않고 {detail}에 썼어요. 위키 서식에 맞아서요.",
     "autoRefused": "묻지 않고 거절했어요 · {detail}. 이 대화에 허용된 범위 밖이라서요.",
+    "autoApproved": "자동 승인: {target}",
     "openPage": "열기",
     "askNext": "다음엔 묻기"
   },

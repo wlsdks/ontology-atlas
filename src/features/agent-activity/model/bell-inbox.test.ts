@@ -213,6 +213,32 @@ describe('deriveBellInbox: results', () => {
     expect(decision?.id).toBe('r-far');
   });
 
+  it('never counts or shows an auto-approved write as a person\'s allow', () => {
+    const endAt = NOW - 2 * MINUTE;
+    const inbox = deriveBellInbox({
+      sessions: [session({ id: 'task:1', startAt: endAt - 3 * MINUTE, endAt })],
+      notifications: [
+        { id: 'task:1:end', kind: 'task-end', at: endAt, node: null, counts: { added: 2, edited: 0, removed: 0 }, agent: 'claude-code' },
+      ],
+      receipts: [
+        receipt({ id: 'r-pressed', updatedAt: new Date(endAt - MINUTE).toISOString() }),
+        receipt({ id: 'r-auto-in', approvedBy: 'auto-approve', updatedAt: new Date(endAt - MINUTE).toISOString() }),
+        receipt({ id: 'r-auto-far', approvedBy: 'auto-approve', request: '개념 추가', updatedAt: new Date(endAt - 60 * MINUTE).toISOString() }),
+        receipt({ id: 'r-pressed-far', request: '개념 추가', updatedAt: new Date(endAt - 61 * MINUTE).toISOString() }),
+      ],
+      work: IDLE,
+      readAt: 0,
+      nowMs: NOW,
+    });
+    const task = inbox.results.find((row) => row.kind === 'task');
+    if (task?.kind !== 'task') throw new Error('expected a task row');
+    expect(task).toMatchObject({ allowed: 1, autoApproved: 1 });
+    expect(inbox.results.filter((row) => row.kind === 'decision').map((row) => row.kind === 'decision' && [row.id, row.autoApproved]))
+      .toEqual([['r-auto-far', true], ['r-pressed-far', false]]);
+    const history = inbox.history.flatMap((group) => group.rows).filter((row) => row.kind === 'human-decision');
+    expect(history.map((row) => [row.id, row.autoApproved])).toEqual([['decision:r-auto-far', true], ['decision:r-pressed-far', false]]);
+  });
+
   /*
    * ⚠️ Keyed on the subject alone the fold could invert a decision: reject, retry, allow on
    * the same request folds into one row, the newer row wins, and the panel prints

@@ -227,6 +227,20 @@ describe('ACP client: permission policy', () => {
     expect(autoAllowed).toHaveBeenCalledWith(expect.objectContaining({ filePath: '/vault/notes.md' }));
   });
 
+  it('still allows an in-vault read under a dot folder, and hands the edit card the hidden verdict', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => null);
+    createAcpClient(t.transport, { verdict: async () => 'allow-inside-vault-hidden' as const, askUser });
+
+    t.emit(permissionRequest('/vault/.claude/settings.json', 8, 'read'));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 8)).toEqual({ outcome: 'selected', optionId: 'allow' }));
+    expect(askUser).not.toHaveBeenCalled();
+
+    t.emit(permissionRequest('/vault/.claude/settings.json', 9, 'edit'));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 9)).toBeTruthy());
+    expect(askUser).toHaveBeenCalledWith(expect.objectContaining({ pathVerdict: 'allow-inside-vault-hidden' }));
+  });
+
   it('allows a read by our server on behalf of the app when it carries a vault-relative path; `read_source` is called as `sources/…`', async () => {
     // Rust judges absolute paths only, so vault-relative `sources/...` reads need this allowance.
     const t = fakeTransport();

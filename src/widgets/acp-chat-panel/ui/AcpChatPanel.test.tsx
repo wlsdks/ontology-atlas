@@ -324,6 +324,36 @@ describe('chat panel: draws only what happened', () => {
     expect(screen.getByTestId('acp-chat-choices')).toBeInTheDocument();
   });
 
+  it('offers Approval with no modes, marks Auto-approve at rest, and then passes an in-folder edit with a transcript line', async () => {
+    await bootSession();
+    expect(screen.queryByTestId('acp-chat-mode')).toBeNull();
+    const approval = screen.getByTestId('acp-chat-approval');
+    expect(approval).toHaveTextContent('approvalOption.ask');
+    const restingClass = approval.closest('.relative')!.className;
+
+    fireEvent.click(approval);
+    fireEvent.click(screen.getByRole('option', { name: /approvalOption\.auto/ }));
+    expect(approval).toHaveTextContent('approvalOption.auto');
+    expect(approval.closest('.relative')!.className).not.toBe(restingClass);
+    expect(approval.closest('.relative')!.className).toContain('--color-status-warning');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Tidy the refund notes.' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    bridge.verdict = 'allow-inside-vault';
+    act(() => emit({
+      jsonrpc: '2.0', id: 77, method: 'session/request_permission',
+      params: {
+        sessionId: 's-1',
+        options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+        toolCall: { toolCallId: 'edit-77', title: 'Edit', kind: 'edit', rawInput: { file_path: '/vault/capabilities/refund.md' } },
+      },
+    }));
+    await waitFor(() => expect(bridge.sent.find((m) => m.id === 77)).toMatchObject({ result: { outcome: { optionId: 'allow' } } }));
+    expect(screen.getByText('notice.autoApproved:{"target":"refund.md"}')).toBeInTheDocument();
+    expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+  });
+
   /** The whole request stays one disclosure away; the transcript opens on the readable sentence only. */
   it('a request the app built stands as only a readable sentence, and the full text stays once expanded', async () => {
     await bootSession();

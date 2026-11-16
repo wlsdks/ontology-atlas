@@ -457,7 +457,7 @@ export function Select({
                 {/* Labels never truncate: a truncated list cannot be chosen from. */}
                 <span className="block whitespace-nowrap">{option.label}</span>
                 {option.description ? (
-                  <span className="mt-0.5 block truncate text-label text-[color:var(--color-text-quaternary)]">
+                  <span className="mt-0.5 block max-w-[20rem] whitespace-normal text-label text-[color:var(--color-text-quaternary)]">
                     {option.description}
                   </span>
                 ) : null}

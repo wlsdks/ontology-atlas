@@ -17,6 +17,7 @@ import {
 import { GATED_SESSION_MODE } from './runtime-wiring/runtime-gate';
 import { isPermissionProfileMode, modeKeepsGate } from './session-choices/mode-safety';
 import { investigationPermissionVerified, type InvestigationSendGuard } from './investigation/guard';
+import { standingApproval } from './permissions/standing-approval';
 import { readReportedPlan, type ReportedPlan } from './investigation/reported-plan';
 import { isDiagnosticStderr } from './trouble/acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './session-choices/slash-commands';
@@ -33,10 +34,11 @@ import {
   type AcpTransport,
 } from './acp-client';
 import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
-import type {
-  AcpWorkDecision,
-  AcpWorkReceipt,
-  AcpWorkResult,
+import {
+  ACP_STANDING_APPROVER,
+  type AcpWorkDecision,
+  type AcpWorkReceipt,
+  type AcpWorkResult,
 } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { unavailableTaskBaseline, type TaskBaselineCaptureResult } from './task-baseline';
 
@@ -76,7 +78,10 @@ export type AcpEvent =
       kind: 'notice';
       id: string;
       text: string;
-      /** What `auto-allowed` allowed: the vault-relative path the screen judged. */
+      /**
+       * What `auto-allowed` allowed (the vault-relative path the screen judged), or what
+       * `auto-approved` passed under the person's auto-approve choice (a file or tool name).
+       */
       detail?: string;
       /**
        * The mode the adapter moved this session into, verbatim as the adapter names it. Present
@@ -185,6 +190,7 @@ function workReceipt({
   decision,
   result,
   at,
+  approvedByStandingChoice,
 }: {
   request: AcpPermissionRequest;
   sessionId: string | null;
@@ -194,6 +200,7 @@ function workReceipt({
   decision: AcpWorkDecision;
   result: AcpWorkResult;
   at: string;
+  approvedByStandingChoice: boolean;
 }): AcpWorkReceipt {
   const changeSet = buildOntologyChangeSet(request.toolName ?? 'ontology-write', request.rawInput);
   const toolCallId = request.toolCallId ?? `${changeSet.toolName}:${at}`;
@@ -233,6 +240,7 @@ function workReceipt({
     ...(explicitOrigin && request.writerCorrelation ? {
       writerCorrelation: { ...request.writerCorrelation, terminal: decision === 'allowed' ? 'pending' as const : 'not-observed' as const },
     } : {}),
+    ...(approvedByStandingChoice ? { approvedBy: ACP_STANDING_APPROVER } : {}),
   };
 }
 
@@ -499,12 +507,20 @@ export function useAcpSession({
   const permissionDecisionTimerRef = useRef<number | null>(null);
   /** Held alongside state so the `tool_call_update` callback reads the latest approval target. */
   const approvedOntologyWriteRef = useRef<AcpPermissionRequest | null>(null);
-  const approvedReceiptRef = useRef<{
+  /** Allowed ontology writes awaiting their terminal update, by receipt id; auto-approve overlaps them. */
+  const approvedReceiptsRef = useRef(new Map<string, {
     toolCallId: string | null;
     receipt: AcpWorkReceipt;
-  } | null>(null);
+  }>());
   const latestUserRequestRef = useRef<string | null>(null);
   const onWorkReceiptRef = useRef(onWorkReceipt);
+  /** The person's auto-approve choice for this conversation. Memory only; every session starts off. */
+  const [autoApprove, setAutoApproveState] = useState(false);
+  const autoApproveRef = useRef(false);
+  const setAutoApprove = useCallback((on: boolean) => {
+    autoApproveRef.current = on;
+    setAutoApproveState(on);
+  }, []);
 
   useEffect(() => {
     onWorkReceiptRef.current = onWorkReceipt;
@@ -677,13 +693,12 @@ export function useAcpSession({
             };
           }),
         );
-        if (!nextStatus) return;
-        if (TERMINAL_TOOL_STATES.has(nextStatus)) onToolSettledRef.current?.(id, nextStatus);
-        const approvedReceipt = approvedReceiptRef.current;
-        if (
-          TERMINAL_TOOL_STATES.has(nextStatus) &&
-          approvedOntologyWriteRef.current?.toolCallId === id
-        ) {
+        if (!nextStatus || !TERMINAL_TOOL_STATES.has(nextStatus)) return;
+        onToolSettledRef.current?.(id, nextStatus);
+        const approvedReceipt = [...approvedReceiptsRef.current.values()]
+          .find((entry) => entry.toolCallId === id) ?? null;
+        const trackedWrite = approvedOntologyWriteRef.current?.toolCallId === id;
+        if (approvedReceipt || trackedWrite) {
           const receiptMatches = approvedReceipt?.toolCallId === id;
           const originMatches = !approvedReceipt?.receipt.origin
             || approvedReceipt.receipt.origin.sessionId === updateContext.sessionId;
@@ -704,11 +719,11 @@ export function useAcpSession({
                 writerCorrelation: { ...approvedReceipt.receipt.writerCorrelation, terminal: result as 'completed' | 'failed' | 'cancelled' },
               } : {}),
             });
-            approvedReceiptRef.current = null;
+            approvedReceiptsRef.current.delete(approvedReceipt.receipt.id);
           }
           // Legacy receipts have no explicit origin or correlation; the same live session and tool id still
           // close the UI state, but stay unverified.
-          if (!approvedReceipt || (receiptMatches && originMatches && writerMatches)) {
+          if (trackedWrite && (!approvedReceipt || (receiptMatches && originMatches && writerMatches))) {
             setApprovedOntologyWriteTracked(null);
           }
         }
@@ -721,6 +736,8 @@ export function useAcpSession({
   const askUser = useCallback((request: AcpPermissionRequest) => {
     request = snapshotPermissionRequest(request);
     const generation = generationRef.current;
+    // A request that arrived before the person turned auto-approve on still shows its card.
+    const autoApproveAtArrival = autoApproveRef.current;
     const activeStart = activeTurnRef.current?.start ?? null;
     const origin = {
       sessionGeneration: generation,
@@ -731,6 +748,23 @@ export function useAcpSession({
         ? { outcome: activeStart.text, nonGoals: null, structure: 'unstructured' as const }
         : null,
       taskBaseline: activeTurnRef.current?.taskBaseline ?? null,
+    };
+    const recordOntologyWrite = (decision: AcpWorkDecision, approvedByStandingChoice: boolean) => {
+      const receipt = workReceipt({
+        request,
+        sessionId: sessionIdRef.current,
+        runtimeId,
+        userRequest: latestUserRequestRef.current,
+        origin,
+        decision,
+        result: decision === 'allowed' ? 'pending' : 'not-run',
+        at: new Date().toISOString(),
+        approvedByStandingChoice,
+      });
+      emitWorkReceipt(receipt);
+      if (decision === 'allowed') {
+        approvedReceiptsRef.current.set(receipt.id, { toolCallId: request.toolCallId, receipt });
+      }
     };
     const present = () => new Promise<string | null>((resolve) => {
       // A question that waited in the queue may outlive its session: answered-by-nobody beats
@@ -761,6 +795,23 @@ export function useAcpSession({
         resolve(allow.optionId);
         return;
       }
+      // Only a person's live turn can carry their standing choice; a request outside one asks.
+      const standing = decided === null && origin.turn
+        ? standingApproval(request, {
+            enabled: autoApproveAtArrival && autoApproveRef.current,
+            vaultRoot,
+            vaultMcpServerName: hasVaultMcpServer(mcpServers) ? VAULT_MCP_SERVER_NAME : null,
+          })
+        : null;
+      if (standing) {
+        push({ kind: 'notice', id: nextEventId(), text: 'auto-approved', detail: standing.target });
+        if (request.reviewKind === 'ontology-write') {
+          recordOntologyWrite('allowed', true);
+          setApprovedOntologyWriteTracked(request);
+        }
+        resolve(standing.optionId);
+        return;
+      }
       pendingResolverRef.current = resolve;
       setPending({
         request,
@@ -768,24 +819,7 @@ export function useAcpSession({
         resolve: (optionId) => {
           const selectedKind = request.options.find((option) => option.optionId === optionId)?.kind;
           const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
-          if (ontologyWrite) {
-            const decision: AcpWorkDecision = selectedKind === 'allow_once' ? 'allowed' : 'rejected';
-            const at = new Date().toISOString();
-            const receipt = workReceipt({
-              request,
-              sessionId: sessionIdRef.current,
-              runtimeId,
-              userRequest: latestUserRequestRef.current,
-              origin,
-              decision,
-              result: decision === 'allowed' ? 'pending' : 'not-run',
-              at,
-            });
-            emitWorkReceipt(receipt);
-            approvedReceiptRef.current = decision === 'allowed'
-              ? { toolCallId: request.toolCallId, receipt }
-              : null;
-          }
+          if (ontologyWrite) recordOntologyWrite(selectedKind === 'allow_once' ? 'allowed' : 'rejected', false);
           const settlesBeforeWrite =
             request.reviewKind === 'ontology-write' &&
             selectedKind === 'allow_once' &&
@@ -815,7 +849,7 @@ export function useAcpSession({
     });
     askChainRef.current = result.catch(() => null);
     return result;
-  }, [approvalSettleMs, emitWorkReceipt, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
+  }, [approvalSettleMs, emitWorkReceipt, mcpServers, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
@@ -826,6 +860,7 @@ export function useAcpSession({
      */
     if (clientRef.current || startingRef.current) return;
     startingRef.current = true;
+    setAutoApprove(false);
     const generation = generationRef.current;
     /** Did someone close this after I started? */
     const stale = () => generationRef.current !== generation;
@@ -929,6 +964,7 @@ export function useAcpSession({
           pendingResolverRef.current = null;
           setPending(null);
           setApprovedOntologyWriteTracked(null);
+          approvedReceiptsRef.current.clear();
           /*
            * Dispose the client of a finished session, or pending calls never finish and `clientRef` blocks
            * `start()` from restarting.
@@ -1107,6 +1143,7 @@ export function useAcpSession({
     resetDiagnostics,
     runtimeId,
     setApprovedOntologyWriteTracked,
+    setAutoApprove,
     setChoices,
     setStatusTracked,
     updateEvents,
@@ -1273,15 +1310,15 @@ export function useAcpSession({
     pendingResolverRef.current?.(null);
     pendingResolverRef.current = null;
     setPending(null);
-    const approvedReceipt = approvedReceiptRef.current;
-    if (approvedReceipt) {
+    setAutoApprove(false);
+    for (const approvedReceipt of approvedReceiptsRef.current.values()) {
       emitWorkReceipt({
         ...approvedReceipt.receipt,
         updatedAt: new Date().toISOString(),
         result: 'cancelled',
       });
-      approvedReceiptRef.current = null;
     }
+    approvedReceiptsRef.current.clear();
     setApprovedOntologyWriteTracked(null);
     // Release the lock even if it was starting — otherwise it can never start again.
     startingRef.current = false;
@@ -1295,7 +1332,7 @@ export function useAcpSession({
     setReportedPlan(null);
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
-  }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setStatusTracked]);
+  }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setAutoApprove, setStatusTracked]);
 
   const stopIdleChain = useCallback(async () => {
     const settled = statusRef.current === 'ready' || statusRef.current === 'error';
@@ -1349,6 +1386,8 @@ export function useAcpSession({
     sessions,
     choices,
     reportedPlan,
+    autoApprove,
+    setAutoApprove,
     chooseModel,
     chooseMode,
     start,

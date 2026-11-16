@@ -51,6 +51,8 @@ export type BellResult =
       /** Human decisions made inside this task's window. */
       allowed: number;
       rejected: number;
+      /** Writes the conversation's auto-approve choice passed; nobody pressed for these. */
+      autoApproved: number;
     }
   | {
       kind: 'decision';
@@ -63,6 +65,8 @@ export type BellResult =
       request: string;
       tool: string;
       decision: AcpWorkDecision;
+      /** True when the auto-approve choice allowed it, not a person's press. */
+      autoApproved: boolean;
       result: AcpWorkResult;
       items: number;
     };
@@ -87,6 +91,8 @@ export interface BellHistoryRow {
   running: boolean;
   /** `human-decision` only: what the person answered, and what came of it. */
   decision: AcpWorkDecision | null;
+  /** `human-decision` only: the auto-approve choice answered instead of the person. */
+  autoApproved: boolean;
   result: AcpWorkResult | null;
 }
 
@@ -206,7 +212,7 @@ function leadingWrite(counts: AgentWriteCounts): string {
 function resultSubject(row: BellResult): string {
   return row.kind === 'task'
     ? `task|${leadingWrite(row.counts)}|${row.node?.slug ?? ''}|${row.agent ?? ''}`
-    : `decision|${row.decision}|${row.request}|${row.agent ?? ''}`;
+    : `decision|${row.decision}|${row.autoApproved}|${row.request}|${row.agent ?? ''}`;
 }
 
 /**
@@ -308,8 +314,9 @@ export function deriveBellInbox({
       counts: end.counts ?? session.counts ?? emptyCounts(),
       durationMs: Math.max(0, session.endAt - session.startAt),
       node: end.node,
-      allowed: decided.filter((receipt) => receipt.decision === 'allowed').length,
+      allowed: decided.filter((receipt) => receipt.decision === 'allowed' && !receipt.approvedBy).length,
       rejected: decided.filter((receipt) => receipt.decision === 'rejected').length,
+      autoApproved: decided.filter((receipt) => receipt.approvedBy !== undefined).length,
     });
   }
 
@@ -325,6 +332,7 @@ export function deriveBellInbox({
       request: receipt.request,
       tool: receipt.tool,
       decision: receipt.decision,
+      autoApproved: receipt.approvedBy !== undefined,
       result: receipt.result,
       items: receipt.items.length,
     };
@@ -359,6 +367,7 @@ export function deriveBellInbox({
         durationMs: start && end ? Math.max(0, end.at - start.at) : null,
         running: !end,
         decision: null,
+        autoApproved: false,
         result: null,
       });
       continue;
@@ -376,6 +385,7 @@ export function deriveBellInbox({
       durationMs: null,
       running: false,
       decision: null,
+      autoApproved: false,
       result: null,
     });
   }
@@ -400,6 +410,7 @@ export function deriveBellInbox({
       durationMs: null,
       running: false,
       decision: receipt.decision,
+      autoApproved: receipt.approvedBy !== undefined,
       result: receipt.result,
     });
   }

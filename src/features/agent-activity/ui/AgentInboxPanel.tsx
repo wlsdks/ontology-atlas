@@ -116,6 +116,7 @@ export interface ResultFactLineModel {
   age: string | null;
   allowed: number | null;
   denied: number | null;
+  autoApproved: number;
   /** Everything else this row has to say — a decision's effect, a result that is not `completed`. */
   summaryFacts: BellFact[];
 }
@@ -135,6 +136,7 @@ function resultFacts(
       age,
       allowed: decided ? row.allowed : null,
       denied: decided ? row.rejected : null,
+      autoApproved: row.autoApproved,
       summaryFacts: [],
     };
   }
@@ -148,7 +150,7 @@ function resultFacts(
   if (row.decision === 'allowed' && row.result !== 'completed') {
     facts.push({ label: t(`receiptResult.${row.result}`), tone: 'warning' });
   }
-  return { agent, duration: null, age, allowed: null, denied: null, summaryFacts: facts };
+  return { agent, duration: null, age, allowed: null, denied: null, autoApproved: 0, summaryFacts: facts };
 }
 
 function ResultFactLine({
@@ -192,6 +194,13 @@ function ResultFactLine({
       </span>,
       <span key="denied" className="shrink-0 tabular-nums">
         {t('decidedRejected', { count: facts.denied })}
+      </span>,
+    );
+  }
+  if (facts.autoApproved > 0) {
+    parts.push(
+      <span key="auto-approved" className="shrink-0 tabular-nums">
+        {t('decidedAutoApproved', { count: facts.autoApproved })}
       </span>,
     );
   }
@@ -453,9 +462,7 @@ export function AgentInboxPanel({
                         >
                           {row.kind === 'task'
                             ? writeSentence(t, row.counts)
-                            : row.decision === 'allowed'
-                              ? t('decisionAllowed')
-                              : t('decisionRejected')}
+                            : t(decisionKey(row))}
                         </span>
                         {row.kind === 'task' && row.node ? (
                           <>
@@ -691,6 +698,12 @@ const HISTORY_LABEL_KEY: Readonly<Record<BellHistoryRow['kind'], string>> = {
   'vault-problem': 'event.vaultProblem',
 };
 
+/** Who answered matters: a write nobody pressed must never read as the person's allow. */
+function decisionKey(row: Pick<BellHistoryRow, 'decision' | 'autoApproved'>): string {
+  if (row.decision === 'rejected') return 'decisionRejected';
+  return row.autoApproved ? 'decisionAutoApproved' : 'decisionAllowed';
+}
+
 function HistoryRow({
   row,
   age,
@@ -711,7 +724,7 @@ function HistoryRow({
     row.kind === 'task-end'
       ? writeSentence(t, row.counts)
       : row.kind === 'human-decision'
-        ? t(row.decision === 'rejected' ? 'decisionRejected' : 'decisionAllowed')
+        ? t(decisionKey(row))
         : t(HISTORY_LABEL_KEY[row.kind]);
 
   const detail = (() => {

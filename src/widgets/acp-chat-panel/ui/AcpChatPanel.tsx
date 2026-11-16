@@ -123,6 +123,8 @@ export function AcpChatPanelBody({
     sessions,
     choices,
     reportedPlan,
+    autoApprove,
+    setAutoApprove,
     chooseModel,
     chooseMode,
     start,
@@ -322,7 +324,9 @@ export function AcpChatPanelBody({
       choices={choices}
       busy={busy}
       toolIsPicker={toolIsPicker}
+      autoApprove={autoApprove}
       onChooseMode={(value) => void chooseMode(value)}
+      onChooseAutoApprove={setAutoApprove}
     />
   );
 
