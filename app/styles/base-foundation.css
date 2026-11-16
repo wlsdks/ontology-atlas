@@ -192,6 +192,18 @@
     transform: none;
   }
 
+  /* Acted work has no neutral hold: the 24 poses run end to end for as long as the work does. */
+  @keyframes atlasWorkStep {
+    from { background-position-x: 0; }
+    to { background-position-x: -1536px; }
+  }
+
+  .atlas-waiting-mark[data-moru-pace='work'] {
+    animation-name: atlasWorkStep;
+    animation-duration: calc(var(--motion-base) * 16);
+    animation-timing-function: steps(24, end);
+  }
+
   /* A dead end is not pending work: the tilt is slower than the waiting blink, and it begins
      late in its neutral hold so the first tilt follows the screen's entrance. */
   .atlas-waiting-mark[data-moru-motion='curious'] {

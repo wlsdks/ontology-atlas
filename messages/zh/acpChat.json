@@ -237,6 +237,14 @@
     "unfinished": "未完成",
     "declined": "你已拒绝"
   },
+  "work": {
+    "thinking": "正在思考",
+    "answering": "正在写回答",
+    "steps": "{count} 步",
+    "plan": "任务 {done}/{total}",
+    "done": "已完成",
+    "progressLabel": "代理工作进度"
+  },
   "workGroup": "工作详情 · {count} 步",
   "workGroupActive": "进行中 · {count} 步",
   "resize": "调整对话面板大小",
