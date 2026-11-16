@@ -293,6 +293,22 @@
   width: 100%;
 }
 
+.gateway-hero-title {
+  --gateway-title-measure: 9.55;
+}
+
+:root:lang(en) .gateway-hero-title {
+  --gateway-title-measure: 10.3;
+}
+
+:root:lang(ja) .gateway-hero-title {
+  --gateway-title-measure: 14.2;
+}
+
+:root:lang(zh) .gateway-hero-title {
+  --gateway-title-measure: 9.2;
+}
+
 /* The cell's empty rows under Moru overlap the link, which stays on top and takes its own press. */
 .gateway-hero-chip {
   position: relative;
@@ -334,8 +350,9 @@
     align-self: center;
   }
 
+  /* Sized so the longest sentence fills the column; the measure is that line in em plus 4% slack. */
   .gateway-hero-title {
-    font-size: clamp(2.25rem, 8cqw, 4.5rem);
+    font-size: clamp(1.75rem, calc(100cqw / var(--gateway-title-measure)), 4.75rem);
   }
 
   .gateway-hero-chip {
@@ -440,6 +457,47 @@
     animation: motionStaggerIn var(--motion-slow) var(--motion-ease) both;
     animation-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger) * 3);
   }
+}
+
+.gateway-step-rule {
+  background: linear-gradient(90deg, var(--color-border-strong), transparent);
+}
+
+/*
+ * The closing invitation under the same light as the hero window, so the page ends where it began:
+ * a horizon of light along the top edge and the headline beneath it.
+ */
+.gateway-closing-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-sheet);
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-canvas);
+}
+
+/* Blurred like the hero's light, so it fades instead of ending on the gradient's edge. */
+.gateway-closing-stage::before {
+  content: '';
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 50% at 50% 50%, var(--gateway-hero-light-core) 0%, transparent 100%),
+    radial-gradient(30% 40% at 22% 56%, var(--gateway-hero-light-wing) 0%, transparent 100%),
+    radial-gradient(30% 40% at 78% 56%, var(--gateway-hero-light-wing) 0%, transparent 100%);
+  filter: blur(48px);
+}
+
+.gateway-closing-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0 12% auto 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--gateway-window-edge), transparent);
 }
 
 /* The hero window's light at card size: it falls from the top of each drawing. */
