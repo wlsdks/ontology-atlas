@@ -107,6 +107,27 @@ describe("buildProjectToCheck", () => {
     expect(rows.map((r) => r.nodeId)).toEqual(["capability:pay"]);
   });
 
+  it("shows a concept once, under its highest-ranked reason, and counts concepts rather than reasons", () => {
+    const nodes = [concept("pay", "capability", "Pay"), concept("ship", "capability", "Ship")];
+    const result = buildProjectToCheck(
+      input({
+        nodes,
+        reviewRows: [{ slug: "docs/pay", title: "Pay", reason: "raised", note: "One or two?" }],
+        stalePaths: new Map([["capability:pay", { path: "src/pay.ts", gone: false, changedAt: "2026-11-10T00:00:00Z" }]]),
+        findingsBySlug: new Map([
+          ["docs/pay", { findings: ["definition-missing"] }],
+          ["docs/ship", { findings: ["definition-missing"] }],
+        ]),
+      }),
+    );
+    expect(result.visible.map((r) => [r.reason, r.nodeId])).toEqual([
+      ["raised", "capability:pay"],
+      ["definition-missing", "capability:ship"],
+    ]);
+    expect(result.conceptCount).toBe(2);
+    expect(reasonsOf(result.rows)).toEqual(["raised", "stale", "definition-missing", "definition-missing"]);
+  });
+
   it("names the domain a row belongs to", () => {
     const nodes = [concept("a", "capability", "A")];
     const findingsBySlug = new Map([["docs/a", { findings: ["definition-missing"] }]]);

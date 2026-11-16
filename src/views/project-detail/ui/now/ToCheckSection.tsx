@@ -52,7 +52,7 @@ export function ToCheckSection({
   const t = useTranslations("projectPages.detail");
   const [dialogOpen, setDialogOpen] = useState(false);
   const arrival = useArrival(toCheck.visible.length > 0);
-  const total = toCheck.rows.length;
+  const total = toCheck.conceptCount;
   const reading = reviewReading || availability === "reading";
   const evidenceLine =
     availability === "measured" ? t("toCheckEvidenceMeasured", { stale: staleCount, measured: comparedCount })
@@ -85,7 +85,7 @@ export function ToCheckSection({
           />
         }
         door={
-          total > toCheck.visible.length ? (
+          toCheck.rows.length > toCheck.visible.length ? (
             <button
               type="button"
               data-testid="project-detail-to-check-view-all"

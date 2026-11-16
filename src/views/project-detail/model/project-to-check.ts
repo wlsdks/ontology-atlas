@@ -46,9 +46,11 @@ export interface ProjectToCheckInput {
 }
 
 export interface ProjectToCheck {
-  /** Every row, grouped by reason in rank order. */
+  /** Every row, grouped by reason in rank order; a concept appears once per reason it has. */
   rows: ToCheckRow[];
-  /** At most `TO_CHECK_SLOTS`, in the same order as `rows`. */
+  /** How many distinct concepts the rows name. */
+  conceptCount: number;
+  /** At most `TO_CHECK_SLOTS`, one per concept under its highest-ranked reason, in `rows` order. */
   visible: ToCheckRow[];
 }
 
@@ -108,7 +110,10 @@ export function buildProjectToCheck(input: ProjectToCheckInput): ProjectToCheck 
   }
 
   const rows = TO_CHECK_REASONS.flatMap((reason) => groups.get(reason)!.sort(reason === "stale" ? byStaleUrgency : byName));
-  return { rows, visible: selectVisibleRows(rows) };
+  const firstRowPerConcept = new Map<string, ToCheckRow>();
+  for (const row of rows) if (!firstRowPerConcept.has(row.nodeId)) firstRowPerConcept.set(row.nodeId, row);
+  const highestReasonRows = [...firstRowPerConcept.values()];
+  return { rows, conceptCount: highestReasonRows.length, visible: selectVisibleRows(highestReasonRows) };
 }
 
 /**
