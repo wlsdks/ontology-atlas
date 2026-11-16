@@ -54,7 +54,8 @@ const CAPTION_ROLES = new Set(["units", "status"]);
  * that pair's crossing run lasts at most this many painted frames in a row. So a name that starts to
  * fall when crossed and recovers once the two part is fine, as is a name on its way out; a name that
  * holds or gains ink while crossed is a defect in that frame; a longer run is a defect for all its
- * frames. Two copies of one concept's name trading sides follow the same rule.
+ * frames. The first frame of a run is not asked for falling ink: a name answers a mark that grew
+ * into it in the frame after. Two copies of one concept's name trading sides follow the same rule.
  */
 const CROSSING_RUN_FRAMES = 10;
 /** Ink below this is gone. */
@@ -295,7 +296,7 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       const start = runStart.get(c.pair)!;
       if (f - start + 1 > CROSSING_RUN_FRAMES) {
         for (let g = start; g <= f; g += 1) for (const d of judged[g]!.crossings) if (d.pair === c.pair && !defects[g]!.includes(d)) defects[g]!.push(d);
-      } else if (!c.falling) defects[f]!.push(c);
+      } else if (!c.falling && f > start) defects[f]!.push(c);
     }
   }
   defects.forEach((list, f) => {

@@ -34,13 +34,14 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         const home = rest.discs.find((d) => d.id === domainId)!;
         const restStar = readStar(rest, domainId, elementsOf);
         await pressDomain(page, domainId);
+        const owned = new Set([domainId, ...rest.clusters.find((c) => c.domainId === domainId)!.capabilityIds].flatMap((id) => elementsOf.get(id) ?? []));
+        const elementsRead = async () => readStar(await readDial(page), domainId, elementsOf).marks.filter((m) => m.kind === "element").length;
+        // The dock's lens may hide an element outside what it reviews; without it every element draws.
+        if (!dock) await expect.poll(elementsRead, `every element of the ${domainId} star is read`).toBe(owned.size);
         const star = readStar(await readDial(page), domainId, elementsOf);
         const said = describeStar(star);
-        const owned = new Set([domainId, ...rest.clusters.find((c) => c.domainId === domainId)!.capabilityIds].flatMap((id) => elementsOf.get(id) ?? []));
         const read = star.marks.filter((m) => m.kind === "element").length;
-        // The dock's lens may hide an element outside what it reviews; without it every element draws.
         if (dock) expect(read, `the star's elements are read: ${said}`).toBeGreaterThan(owned.size > 0 ? 0 : -1);
-        else expect(read, `every element of the star is read: ${said}`).toBe(owned.size);
         expect(star.fillShare >= STAR_FILL_SHARE || star.nearestMembersPx >= apartMax - 0.5, `the star fills the free map or its members stand the widest apart: ${said}`).toBe(true);
         const floors = openRadiusFloors(star, elementsOf, open);
         const under = star.marks.filter((m) => m.kind !== "domain" && m.r < floors.get(m.id)!).map((m) => `${m.id} ${m.r.toFixed(2)} < ${floors.get(m.id)!.toFixed(2)}`);
