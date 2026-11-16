@@ -295,7 +295,7 @@ test.describe("the concept panel's first screen holds its parts", () => {
     });
   }
 
-  test("a calm concept emphasises nothing, and missing reasons put meaning review on the warning row", async ({ page }) => {
+  test("a calm concept emphasises nothing, and missing reasons warn without a review action where no agent can write them", async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1512, height: 949 });
     await openVault(page);
@@ -305,8 +305,9 @@ test.describe("the concept panel's first screen holds its parts", () => {
     await expect(panel.getByTestId("map-detail-panel-judgment")).toHaveCount(0);
     await expect(panel.getByTestId("map-detail-panel-definition")).toHaveText(TYPICAL_DEFINITION);
     await select(page, "capability:hub");
-    await expect(panel).toHaveAttribute("data-panel-emphasis", "meaning-review");
-    await expect(panel.getByTestId("map-detail-panel-judgment-action")).toHaveAttribute("data-judgment-action", "meaning-review");
+    await expect(panel).toHaveAttribute("data-panel-emphasis", "judgment");
+    await expect(panel.getByTestId("map-detail-panel-judgment")).toBeVisible();
+    await expect(panel.getByTestId("map-detail-panel-judgment-action")).toHaveCount(0);
   });
 
   test("the reach block stays where it first painted", async ({ page }) => {

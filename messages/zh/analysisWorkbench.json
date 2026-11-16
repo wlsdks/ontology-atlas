@@ -49,14 +49,7 @@
   "recordProblems": "{count} 个结果文件无法读取",
   "definitionMissing": "没有可用的定义预览。",
   "openDefinition": "阅读定义与边界",
-  "kindCriteria": "每种类型应包含什么？",
-  "relations": "这些关联的语义",
-  "relationGuide": "从所指的主体读向它的目标。关系类型表明主张，记录的理由则说明它为何属于这里。",
-  "rationaleMissingGroup": "{count} 个关联没有记录理由。接受某种解读之前，先让智能体去调查。",
   "rationaleMissingShort": "无理由",
-  "showConnection": "显示此关联",
-  "declaringDocument": "阅读声明它的文档",
-  "selectNode": "在地图上选择一个概念或关联，查看它的职责和连接理由。",
   "meaningPrompt": "仅使用 Atlas 的读取工具，审阅此本体中的业务语义。用 get_concepts(body: \"full\") 读取相关的定义和边界。说明缺失的定义、混杂的职责、相互矛盾的关系、缺少的理由和缺失的业务规则。区分已记录的事实、假设和未知。不要修改文件夹。引用时使用准确的 slug。",
   "architecturePrompt": "对照已记录的业务职责和当前实现，分析这个架构。用 Atlas 的完整正文读取方式读取规则配置和相关概念，再通过受支持的架构工具检查源码。用依据说明依赖违反、改动影响、未知的覆盖范围和具体的可维护性改进。不要编造可维护性百分比。本次分析期间不要修改本体或代码。",
   "basis": {
@@ -79,9 +72,6 @@
   "unknownCount": "未知",
   "measurementScope": "这些数字描述的是已记录的扫描及其声明的规则。得出可维护性的结论之前，先看未知的覆盖范围。",
   "observationDetails": "度量与依赖依据",
-  "showRelationMeaning": "在地图上标注关系语义",
-  "captionGuide": "为所选概念的每条关联标注含义。标签显示在不重叠的位置，最多 24 个。",
-  "captionHelp": "如何阅读关联标签",
   "loadingHistory": "正在加载审阅结果…",
   "targetSelected": "目标已在地图上选中。",
   "targetSelectedSheet": "目标已在地图上选中。关闭此面板即可看到。",
@@ -97,7 +87,6 @@
   "earlierQuestionsNote": "已加载的结果中没有忽略这些问题的记录。之后出现的空结果或已取消的审阅不会让它们得到解决。",
   "targetUnavailable": "当前地图上没有这个目标。请查看它记录的依据，或重新请求审阅。",
   "findingsEyebrow": "{count, plural, =0 {提出的问题} other {提出的问题 # 项}}",
-  "relationsEyebrow": "关联",
   "fillNotes": "补写 {count} 条缺失的关联理由",
   "relationNotesPrompt": "仅使用 Atlas 工具，把此范围内每个关联背后缺失的理由写成一句话，放进 `relation_notes`。对每个理由为空的关系：先用 get_concepts(body: \"full\") 读取两端文档，再对来源文档（frontmatter 中列出目标的那份）使用 patch_concept 提出备注，传入 expected_mtime 并保留其他所有键；使用该文件夹自身的语言书写。备注要说明这个主张在此代码库中为何成立，而不是说 A 包含 B 或依赖 B。文档没有给出理由时，什么都不写，并把这一对列入未决问题。`domain:` 反向指针与父级的包含关系共用同一条理由：只写在父文档上，绝不写在子文档上。本轮最多写 {limit} 条备注；结束时说明还剩多少条。",
   "meaningTransitions": {
@@ -105,10 +94,8 @@
     "readFailed": "无法读取语义判断记录",
     "title": "语义决定",
     "boundary": "不可变的审阅快照。保存的字节不能验证某个人的身份，也不能批准代码，或证明检查、合并或部署。",
-    "openFolder": "打开你的本体文件夹，查看语义决定。",
     "unavailable": "语义决定历史需要在受支持的电脑上使用桌面应用。",
     "loading": "正在加载语义决定…",
-    "empty": "此文件夹中没有归档的语义决定快照。",
     "listLabel": "语义决定快照",
     "selected": "所选决定",
     "action": "语义操作",
@@ -189,8 +176,5 @@
       "unknown": "未知"
     }
   },
-  "reviewPurpose": "检查记录的职责、范围和连接原因是否符合产品的实际目标。",
-  "definitionEyebrow": "职责与范围",
-  "recordedDefinition": "记录的说明 · 原文",
-  "recordedReason": "记录的连接原因 · 原文"
+  "reviewPurpose": "检查记录的职责、范围和连接原因是否符合产品的实际目标。"
 }

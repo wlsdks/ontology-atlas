@@ -49,14 +49,7 @@
   "recordProblems": "읽지 못한 결과 파일 {count}개",
   "definitionMissing": "짧은 요약이 없어요. 원문에서 역할과 범위를 확인할 수 있어요.",
   "openDefinition": "정의와 경계 읽기",
-  "kindCriteria": "각 종류에는 무엇을 담나요?",
-  "relations": "이 연결은 어떤 뜻인가요?",
-  "relationGuide": "문장에 나온 주체에서 대상을 향해 읽어요. 관계 종류는 어떤 주장인지, 기록된 이유는 왜 연결했는지 설명해요.",
-  "rationaleMissingGroup": "이유가 기록되지 않은 연결 {count}개예요. 해석을 받아들이기 전에 AI에게 근거를 확인하게 하세요.",
   "rationaleMissingShort": "이유 없음",
-  "showConnection": "이 연결 보기",
-  "declaringDocument": "연결을 선언한 문서",
-  "selectNode": "지도에서 개념이나 연결을 고르면 맡은 역할과 연결된 이유를 볼 수 있어요.",
   "meaningPrompt": "이 온톨로지의 비즈니스 의미를 Atlas 읽기 도구만 사용해 검토해 주세요. 관련 정의와 경계를 get_concepts(body: \"full\")로 읽으세요. 빠진 정의, 섞인 책임, 모순된 관계, 연결 이유와 비즈니스 규칙의 빈칸을 설명해 주세요. 기록된 사실, 가설, 모르는 내용을 구분하고 정확한 slug를 인용하세요. 폴더를 수정하지 마세요.",
   "architecturePrompt": "기록된 비즈니스 책임과 현재 구현에 비추어 아키텍처를 분석해 주세요. 프로필과 관련 개념을 Atlas 전체 본문으로 읽고 지원되는 아키텍처 도구로 소스를 검사하세요. 정해진 의존 규칙과 다른 연결, 변경 영향, 분석하지 못한 범위와 구체적인 유지보수 개선안을 근거와 함께 설명하세요. 기준 없는 유지보수 백분율을 만들지 마세요. 이 분석 중 온톨로지와 코드를 수정하지 마세요.",
   "basis": {
@@ -79,9 +72,6 @@
   "unknownCount": "미확인",
   "measurementScope": "기록 당시 검사와 선언된 규칙의 결과예요. 유지보수성을 판단하기 전에 분석하지 못한 범위도 확인하세요.",
   "observationDetails": "측정과 의존 관계 근거",
-  "showRelationMeaning": "지도에 연결의 뜻 표시",
-  "captionGuide": "고른 개념의 연결마다 뜻을 표시해요. 글자가 겹치지 않는 곳에 최대 24개를 표시해요.",
-  "captionHelp": "연결 표시 읽는 법",
   "loadingHistory": "검토 결과를 읽고 있어요…",
   "targetSelected": "지도에서 해당 항목을 선택했어요.",
   "targetSelectedSheet": "지도에서 해당 항목을 선택했어요. 이 창을 닫으면 볼 수 있어요.",
@@ -97,7 +87,6 @@
   "earlierQuestionsNote": "불러온 결과에서 기각되지 않은 질문이에요. 나중 검토가 비어 있거나 취소되어도 해결된 것으로 보지 않아요.",
   "targetUnavailable": "현재 지도에서 이 대상을 찾지 못했어요. 기록 당시 근거를 확인하거나 새로 검토를 요청하세요.",
   "findingsEyebrow": "{count, plural, =0 {짚은 질문} other {짚은 질문 #개}}",
-  "relationsEyebrow": "연결",
   "fillNotes": "빠진 연결 이유 {count}개 채우기",
   "relationNotesPrompt": "이 범위에서 이유가 비어 있는 연결마다, 그 연결이 성립하는 까닭을 한 문장으로 `relation_notes`에 적어 주세요. Atlas 도구만 써요. 연결마다 두 문서를 get_concepts(body: \"full\")로 읽고, 대상을 나열한 쪽(출발 문서)에 patch_concept(expected_mtime 포함, 다른 키는 그대로)로 제안해요. 이 폴더가 쓰는 언어로 적고, 'A가 B를 포함한다'처럼 연결을 되풀이하는 문장은 이유가 아니에요. 문서에 까닭이 없으면 적지 말고 미해결 질문으로 남기세요. `domain:` 되가리킴은 부모의 포함과 같은 연결이므로 부모 문서에만 적고 자식 쪽에는 적지 마세요. 이번 턴에는 최대 {limit}개까지, 끝에 몇 개가 남았는지 말해 주세요.",
   "meaningTransitions": {
@@ -105,10 +94,8 @@
     "readFailed": "의미 판단 기록을 읽지 못했어요",
     "title": "의미 판단",
     "boundary": "바꿀 수 없는 검토 기록이에요. 저장된 바이트는 사람의 신원, 코드 승인, 검사·병합·배포를 증명하지 않아요.",
-    "openFolder": "온톨로지 폴더를 열면 의미 판단 기록을 볼 수 있어요.",
     "unavailable": "의미 판단 기록은 데스크톱 앱에서 볼 수 있어요.",
     "loading": "의미 판단 기록을 읽고 있어요…",
-    "empty": "이 폴더에 보관된 의미 판단 기록이 없어요.",
     "listLabel": "의미 판단 기록",
     "selected": "선택한 판단",
     "action": "의미 판단",
@@ -189,8 +176,5 @@
       "unknown": "미확인"
     }
   },
-  "reviewPurpose": "개념이 맡은 역할과 범위, 연결된 이유가 실제 제품과 맞는지 확인해요.",
-  "definitionEyebrow": "역할과 범위",
-  "recordedDefinition": "문서에 적힌 설명 · 원문",
-  "recordedReason": "기록된 연결 이유 · 원문"
+  "reviewPurpose": "개념이 맡은 역할과 범위, 연결된 이유가 실제 제품과 맞는지 확인해요."
 }
