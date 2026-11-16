@@ -40,11 +40,10 @@ vi.mock('@/i18n/locales', async (importOriginal) => {
   };
 });
 
+// `projects` and `library` render under 200 characters before the vault loads, so they stay out.
 const PUBLIC_STATIC_PATHS = [
-  'projects',
   'download',
   'topology',
-  'library',
   'guide',
   'changelog',
   ...GUIDE_PAGES.filter((page) => page.segment !== GUIDE_ENTRY_PAGE.segment).map(
@@ -77,12 +76,22 @@ describe('public sitemap', () => {
     }
   });
 
-  it('does not claim every static page changed at build time', async () => {
+  it('dates a static page by the last commit to its words, never by the build', async () => {
+    const before = Date.now();
     const entries = await sitemap();
     const staticEntries = entries.filter((entry) => !entry.url.includes('/project/'));
 
     expect(staticEntries.length).toBeGreaterThan(0);
-    for (const entry of staticEntries) expect(entry.lastModified).toBeUndefined();
+    const dates = new Set<string>();
+    for (const entry of staticEntries) {
+      if (entry.lastModified === undefined) continue;
+      const at = new Date(entry.lastModified).getTime();
+      expect(Number.isNaN(at)).toBe(false);
+      expect(at).toBeLessThanOrEqual(before);
+      dates.add(String(entry.lastModified));
+    }
+    // Pages with different sources do not all change in one commit.
+    expect(dates.size).not.toBe(1);
   });
 
   it('keeps each canonical paired with its English, Korean, and x-default URLs', async () => {
