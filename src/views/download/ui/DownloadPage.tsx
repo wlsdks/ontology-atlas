@@ -402,7 +402,7 @@ function DownloadActions({
           href="/topology"
           data-testid="gateway-hero-web-cta"
           className={cn(
-            buttonVariants({ variant: 'ghost', size: 'lg' }),
+            buttonVariants({ variant: 'outline', size: 'lg' }),
             'px-4 sm:px-6',
             HERO_CTA_WRAP,
           )}
