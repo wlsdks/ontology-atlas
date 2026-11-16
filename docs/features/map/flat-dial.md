@@ -282,7 +282,12 @@ zoom and at most twice that; a pure pan is one slide on the canvas spring. A
 second selection mid-move retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
-zoomed since; a selection a deep link arrived on returns to the overview. An
+zoomed since; a chain that began on the overview fit returns to the fit of the
+free map as it is by then, so a dock opened or closed under the selection does
+not leave the overview at its old size, and a selection a deep link arrived on
+returns to the overview. Opening or closing the dock or the INDEX while a
+concept is selected runs no overview fit: the selection keeps its camera, and a
+move already in flight keeps its motion and only changes its destination. An
 arrow-key walk recentres as it goes, which is the reader travelling: letting go
 after it stays where the walk arrived.
 
