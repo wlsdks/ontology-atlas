@@ -27,6 +27,15 @@ export const rules = [
     ],
   },
   {
+    order: 5019,
+    command: 'pnpm exec playwright test tests/e2e/map/flat-graph/map-flat-graph-star-motion.spec.ts',
+    reason: "an opened Flat star's radii, camera zoom or names in motion changed",
+    matches: [
+      /^src\/widgets\/ontology-map\/flat-graph\/frame\.ts$/,
+      /^src\/widgets\/ontology-map\/model\/camera\/camera-easing\.ts$/,
+    ],
+  },
+  {
     order: 5020,
     command: 'pnpm exec playwright test tests/e2e/map/map-open-folder-stays-named.spec.ts',
     reason: "the INDEX folder name during vault re-reads changed",
