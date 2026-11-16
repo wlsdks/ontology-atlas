@@ -18,15 +18,18 @@ Closing the dock restores focus there so Enter can reopen it without navigating
 from the start of the map.
 
 #### Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)
-- **Conversation, Role & connections, and Review results share one context dock.** In
-  the installed app the agent tile is the map toolbar's one door to it, Conversation
-  is its first tab, and a selected concept's panel carries **Ask** in its footer; the
-  web, which has no agent tile, keeps an Ontology review tile there and no
-  Conversation tab. A selected concept exposes Ontology review in both. A requested
-  review that finishes while its conversation is in view opens as its result under
-  Review results; a save that finishes anywhere else arrives as a toast with a link. It explains the
-  normative kind criteria, actual directional relations, stored rationale and
-  missing rationale. Optional relation captions avoid concept labels and shapes.
+- **Conversation and Review results share one context dock.** In the installed app
+  the agent tile is the map toolbar's one door to it, Conversation is its first tab,
+  and a selected concept's panel carries **Ask** in its footer; the web, which has no
+  agent tile, keeps an Ontology review tile there and shows Review results alone,
+  without a tab strip. A selected concept exposes Ontology review in both, and it
+  opens on Review results, where **Ask AI to review** and the offer to fill missing
+  connection reasons stand above the saved results. A requested review that finishes
+  while its conversation is in view opens as its result; a save that finishes
+  anywhere else arrives as a toast with a link. The map dock has no criteria tab
+  (2026-11-16): the concept panel and its full detail already show a concept's
+  definition and connections. Relation captions are drawn while the dock is open.
+  The recorded meaning judgments appear below the results only when there are some.
   Explicit AI review actions capture immutable Markdown records in the active
   folder; an ordinary chat turn writes none, and ordinary drafts still require Send. Historical answers, source/profile
   snapshots, observed Architecture measurements, and reasoned keep/dismiss

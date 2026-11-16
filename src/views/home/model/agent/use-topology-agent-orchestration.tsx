@@ -145,6 +145,7 @@ export function useTopologyAgentOrchestration({
     setCreateNodeOpen(false);
   }, [workbenchOpenRef, requestWorkbenchSection, cancelAcpSessionStart, agentChatUsesRuntime, setOntologySearchOpen, setCreateNodeOpen, setChatMounted, setAcpChatOpen, setAcpDockFrameOpen, setVaultAgentOpen, setMeaningWorkbenchOpen]);
   const handleWorkbenchSectionChange = useCallback((tab: 'meaning' | 'history' | 'conversation') => {
+    if (tab === 'meaning') return;
     workbenchSectionRef.current = tab;
     if (tab === 'conversation' && agentChatUsesRuntime && !workbenchOpenRef.current.agent) {
       setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);

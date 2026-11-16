@@ -37,10 +37,12 @@ async function record(): Promise<{ value: MeaningTransitionV2; artifacts: Map<st
 beforeEach(() => { vi.clearAllMocks(); archive.available = true; archive.observe.mockResolvedValue({ canonicalPath: '/vault', device: 1, inode: 2 }); });
 
 describe('MeaningTransitionHistory', () => {
-  it('states unsupported browser or platform capability without reading history', () => {
+  it('draws nothing and reads no history where the platform cannot keep the archive', () => {
     archive.available = false;
-    render(<MeaningTransitionHistory handle={handle('/vault')} open />);
-    expect(screen.getByText('unavailable')).toBeInTheDocument();
+    const onStateChange = vi.fn();
+    const view = render(<MeaningTransitionHistory handle={handle('/vault')} open onStateChange={onStateChange} />);
+    expect(view.container).toBeEmptyDOMElement();
+    expect(onStateChange).toHaveBeenLastCalledWith('unavailable');
     expect(archive.history).not.toHaveBeenCalled();
   });
 

@@ -92,17 +92,6 @@ test('Architecture exposes version history without requiring an agent process', 
   await expect(page.getByTestId('architecture-inspector')).toBeHidden();
 });
 
-test('the map meaning action returns an open history dock to meaning without closing it', async ({ page }) => {
-  await page.setViewportSize({ width: 1040, height: 720 });
-  await page.goto('/en/topology/?e2e=1&guides=off&index=collapsed');
-  await page.getByTestId('topology-meaning-workbench-toggle').click();
-  const panel = page.getByTestId('analysis-workbench');
-  await panel.getByRole('tab', { name: en.analysisWorkbench.history }).click();
-  await expect(panel.getByRole('tab', { name: en.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true');
-  await page.getByTestId('topology-meaning-workbench-toggle').click();
-  await expect(panel.getByRole('tab', { name: en.analysisWorkbench.meaning })).toHaveAttribute('aria-selected', 'true');
-});
-
 test.describe('keyboard review at the app minimum window', () => {
   test.use({ viewport: { width: 1040, height: 720 } });
   test('an opening review answers Escape before its focus handoff finishes', async ({ page }) => {

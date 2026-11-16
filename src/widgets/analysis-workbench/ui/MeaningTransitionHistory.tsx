@@ -24,11 +24,10 @@ async function textDigest(text: string): Promise<string> {
  */
 export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pending' | 'empty' | 'records' | 'error';
 
-export function MeaningTransitionHistory({ handle, open, foldWhenQuiet = false, onStateChange }: {
+/** Draws nothing while quiet; the caller's own empty state speaks for a quiet archive. */
+export function MeaningTransitionHistory({ handle, open, onStateChange }: {
   handle: FileSystemDirectoryHandle | null;
   open: boolean;
-  /** Draws nothing while quiet; the caller shows its own empty state. */
-  foldWhenQuiet?: boolean;
   onStateChange?: (state: MeaningTransitionArchiveState) => void;
 }) {
   const t = useTranslations('analysisWorkbench.meaningTransitions');
@@ -128,16 +127,16 @@ export function MeaningTransitionHistory({ handle, open, foldWhenQuiet = false, 
     ? { action: selected.meaningDecision.action, at: selected.meaningDecision.actionAt, task: selected.task.label }
     : selected ? { action: selected.decision.disposition, at: selected.createdAt, task: selected.task.label } : null, [selected]);
 
-  if (foldWhenQuiet && archiveState !== 'records' && archiveState !== 'error') return null;
+  const current = loaded?.handle === handle ? loaded : null;
+  const nothingToShow = archiveState !== 'records' && archiveState !== 'error' && !current?.problems.length && (current?.nextOffset ?? null) === null;
+  if (nothingToShow) return null;
   return <section aria-labelledby="meaning-transition-history-title" className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
     <div className="space-y-1">
       <h3 id="meaning-transition-history-title" className="text-body-lg font-[var(--font-weight-strong)]">{t('title')}</h3>
       <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
     </div>
-    {!handle ? <p>{t('openFolder')}</p> : !available ? <p>{t('unavailable')}</p> : null}
     {pending ? <p role="status">{t('loading')}</p> : null}
     {[{ scope: 'list', detail: listError, summary: t('readFailed') }, { scope: 'artifact', detail: artifactError, summary: t('artifactReadFailed') }].map(({ scope, detail, summary }) => detail ? <div key={scope} className="space-y-2"><p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{summary}</p><Disclosure summary={workbench('errorDetails')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{detail}</pre></Disclosure></div> : null)}
-    {available && !pending && loaded?.handle === handle && records.length === 0 && !listError ? <p>{t('empty')}</p> : null}
     {records.length ? <div className="space-y-2" aria-label={t('listLabel')}>{records.map((record) => <RowButton key={record.eventId} active={record === selected} aria-pressed={record === selected} className="w-full" onClick={() => selectRecord(record.eventId)}>
       <span className="min-w-0 flex-1 text-left"><span className="block truncate font-[var(--font-weight-emphasis)]">{record.task.label}</span><span className="block text-caption text-[color:var(--color-text-secondary)]">{new Date(record.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })} · {record.schema === 'atlas-meaning-transition/v2' ? t(`phase.${record.phase}`) : t('legacy')}</span></span>
     </RowButton>)}</div> : null}

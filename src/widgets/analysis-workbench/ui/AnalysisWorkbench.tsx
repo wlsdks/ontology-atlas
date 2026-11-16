@@ -69,7 +69,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   onFindingsChange?: (findings: readonly AnalysisFinding[]) => void;
 }) {
   const t = useTranslations('analysisWorkbench');
-  const glossary = useTranslations('searchWidgets.shortcuts.glossary');
   const kindLabel = useTranslations('kinds');
   const locale = useLocale();
   const panelRef = useRef<HTMLElement>(null);
@@ -104,11 +103,13 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       window.requestAnimationFrame(restore);
     };
   }, [open, returnFocusSelector]);
-  const [section, setSection] = useState({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionRequest?.tab ?? initialTab });
+  /** Without `facts` the criteria section does not exist, so a request for it lands on the results. */
+  const sectionWithFacts = (requested: Tab): Tab => requested === 'meaning' && !facts ? 'history' : requested;
+  const [section, setSection] = useState({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionWithFacts(sectionRequest?.tab ?? initialTab) });
   if (section.nonce !== requestNonce || section.viewNonce !== sectionRequest?.nonce) {
     const requestedTab = section.viewNonce !== sectionRequest?.nonce && sectionRequest
       ? sectionRequest.tab : requestNonce !== undefined && section.nonce !== requestNonce ? 'conversation' : section.tab;
-    setSection({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: requestedTab });
+    setSection({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionWithFacts(requestedTab) });
   }
   const tab = section.tab;
   const sectionRequestNonce = sectionRequest?.nonce;
@@ -248,6 +249,14 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  /** Offered beside each review request, wherever that request stands. */
+  const fillNotesChip = onRequest && relationNoteGaps > 0 && context.mode === 'meaning'
+    ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null;
+  const sections = [
+    ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
+    ...(facts ? [{ key: 'meaning', label: t('meaning') }] : []),
+    { key: 'history', label: t('history') },
+  ];
   const subjectKind = contextKind && !(tab === 'conversation' && conversationLabel) ? contextKind : null;
   /** The lit tab already says "conversation", so beside a kind the eyebrow keeps only the kind. */
   const conversationNamedByTab = tab === 'conversation' && subjectKind !== null;
@@ -264,11 +273,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
        * TabBar, not SegmentedControl: these are views, not a value; panels carry the matching
        * workbench-tabpanel-* id.
        */}
-      <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
-        <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
-          ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []), { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') },
-        ]} />
-      </div>
+      {sections.length > 1 ? <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
+        <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={sections} />
+      </div> : null}
       <CloseButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-1" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose} />
     </header>
     {error ? <div data-testid="analysis-workbench-error" className="flex flex-col gap-1">
@@ -276,7 +283,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       {error.detail ? <FailureDetail summary={t('errorDetails')} detail={error.detail} /> : null}
     </div> : null}
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
-    {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1">
+    {tab === 'meaning' && facts ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1">
       <div className="flex flex-col gap-2">
         <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t(context.mode === 'meaning' ? 'reviewPurpose' : 'architectureCriteria')}</p>
         {/*
@@ -285,14 +292,14 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
          */}
         {onRequest ? <div className="flex flex-wrap items-center gap-2">
           <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
-          {relationNoteGaps > 0 && context.mode === 'meaning' ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null}
+          {fillNotesChip}
         </div> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
         <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       </div>
-      <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
+      <div className={DIVIDED}>{facts}</div>
     </div> : null}
     {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
-      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} foldWhenQuiet={!runs.length} onStateChange={setDecisionArchive} />
+      {facts ? null : <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t('reviewPurpose')}</p>}
       {/*
        * The trigger shows only latest plus a short date and time; the id moves to the option
        * description so the value never truncates.
@@ -300,6 +307,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       {runs.length ? <div className="agent-panel-stage-swap flex flex-wrap items-center gap-2">
         <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} />
         {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
+        {fillNotesChip}
         {context.handle ? <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip> : null}
       </div> : null}
       {!context.handle ? <p>{t('openFolder')}</p> : null}
@@ -317,6 +325,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
         </span>}
         action={<>
           {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip> : null}
+          {fillNotesChip}
           <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip>
           {onRequest ? <p className="basis-full text-balance pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
         </>}
@@ -365,6 +374,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       </> : null}
       {loaded?.handle === context.handle && loaded?.cursor ? <Chip size="lg" onClick={() => void refresh(loaded.cursor)}>{t('loadOlder')}</Chip> : null}
       {loaded?.handle === context.handle && loaded?.problems.length ? <Disclosure summary={t('recordProblems', { count: loaded.problems.length })}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{loaded.problems.join('\n')}</pre></Disclosure> : null}
+      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} onStateChange={setDecisionArchive} />
     </div> : null}
     {conversation ? <div role="tabpanel" id="workbench-tabpanel-conversation" aria-labelledby="workbench-tab-conversation" className={cn('min-h-0 flex-1 flex-col', tab === 'conversation' ? 'flex' : 'hidden')} inert={tab !== 'conversation'}>{conversation}</div> : null}
     {saved && saved.status !== 'saved' ? <div role="status" data-testid="analysis-workbench-save" className="flex shrink-0 flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-secondary)]">
