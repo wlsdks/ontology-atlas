@@ -308,7 +308,7 @@
     "editRelation": "在地图上修正此关系",
     "close": "关闭",
     "openDoc": "打开",
-    "noReason": "这条关系还没有记录理由。可以在意义审查中让智能体补上。"
+    "noReason": "这条关系还没有记录理由。可以在本体审阅中让智能体补上。"
   },
   "edgeSentence": {
     "contains": "{from} 包含 {to}。",

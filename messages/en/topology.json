@@ -308,7 +308,7 @@
     "editRelation": "Fix this relation on the map",
     "close": "Close",
     "openDoc": "open",
-    "noReason": "No reason is recorded for this relation yet. Meaning review can have the agent write one."
+    "noReason": "No reason is recorded for this relation yet. Ontology review can have the agent write one."
   },
   "edgeSentence": {
     "contains": "{from} contains {to}.",

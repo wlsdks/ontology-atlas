@@ -116,7 +116,7 @@ Project source-path repair opens the exact affected concept and its recorded
 relative path. Missing, stale or out-of-project targets require remeasurement;
 copied handoffs keep that target without disclosing the private source root.
 
-Meaning review explains the roles, boundaries and connections to examine before
+Ontology review explains the roles, boundaries and connections to examine before
 offering AI analysis. Original descriptions and connection rationales expand in
 place; previews retain a nonblank authored description or a complete opening
 paragraph within 320 characters, including the canonical `## Definition` section.
