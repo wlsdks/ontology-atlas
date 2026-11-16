@@ -445,7 +445,13 @@ function sideNames(input: NameShape, id: string, role: "capability" | "element",
   if (!isStarMember(input, id)) return [...onRow, ...offRow];
   // Half a row up or down a name still sits beside its disc, so it needs no leader.
   const slid = [diagonal(1, -rise / 2, false), diagonal(-1, -rise / 2, false), diagonal(1, rise / 2, false), diagonal(-1, rise / 2, false)];
-  return [...onRow, ...slid, ...offRow];
+  // Below or above, a name may also end at its disc's right edge or start at its left edge, out of a neighbour's way.
+  const flush = (dy: number, edge: 1 | -1): PlacedName[] => [{
+    id, role, text, font: f, dx: edge * r, dy, align: edge === 1 ? "right" : "left",
+    box: { minX: edge === 1 ? r - w - t.namePadPx : -r - t.namePadPx, maxX: edge === 1 ? r + t.namePadPx : -r + w + t.namePadPx, minY: dy - half, maxY: dy + half },
+  }];
+  const alongRow = [flush(below, 1), flush(below, -1), flush(-below, 1), flush(-below, -1)];
+  return [...onRow, ...slid, ...alongRow, ...offRow];
 }
 
 /** Text runs with each digit centred in a cell as wide as the widest digit, so figures align as `tnum` would. */

@@ -334,6 +334,26 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
   },
 );
 
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "names each member of the opened %s star whose disc stands inside the free map, its name kept inside it along its row",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const margin = TOKENS.paint.frameMarginPx;
+    const unnamed: string[] = [];
+    for (const edge of [-60, 0, 60, 120, 180, 240]) {
+      const camera = cameraOn(domainId, {});
+      const free = { minX: 0, minY: 0, maxX: W / 2 + edge, maxY: H };
+      const rest = framesUntilSettled(camera, { freeRect: free }, star, 0, 1, 1, FRAME_MS);
+      framesUntilSettled(camera, { focusedNodeId: domainId, freeRect: free }, star, rest.end + FRAME_MS, 1, 2.5, 600);
+      const { texts, discs } = describeLastDialFrame(W, H)!;
+      const inside = capabilities.filter((id) => discs.some((d) => d.id === id && d.x > INSET_PX && d.x + d.r < free.maxX - margin && d.y > INSET_PX && d.y < H - INSET_PX));
+      unnamed.push(...inside.filter((id) => !texts.some((t) => t.id === id && t.role === "capability")).map((id) => `${id} with the free map ending ${edge} px past the middle`));
+    }
+    expect(unnamed).toEqual([]);
+  },
+);
+
 describe("a mark's drawn radius across frames", () => {
   it("takes its radius at once when it comes back on screen, however long it was away", () => {
     const worldKey = {};
