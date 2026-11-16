@@ -32,6 +32,7 @@ import { useStageGraph } from '../lib/use-stage-graph';
 import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
+import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
 import { FilmSection } from './FilmSection';
@@ -102,6 +103,7 @@ export function DownloadPage() {
         <ScreensSection />
         <StartSection />
         <OpenSourceSection />
+        <FaqSection />
         <ClosingSection
           published={published}
           primaryAsset={primaryAsset}

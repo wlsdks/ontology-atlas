@@ -185,5 +185,35 @@
   "motion": {
     "pause": "Pause motion",
     "play": "Play motion"
+  },
+  "faq": {
+    "eyebrow": "Questions",
+    "title": "What people ask before installing",
+    "items": {
+      "what": {
+        "q": "What is Ontology Atlas?",
+        "a": "An open-source app that keeps a map of what your code does and why, as Markdown files in your repository. You and your coding agents read the same map."
+      },
+      "agents": {
+        "q": "Which coding agents work with it?",
+        "a": "Claude Code, Codex, Cursor and Antigravity read the map over MCP. In the desktop app, Claude Code and Codex connect with one button each."
+      },
+      "privacy": {
+        "q": "Does my code leave my computer?",
+        "a": "Atlas has no account and no backend of its own. The map is read and written in a folder on your computer. A coding agent you connect talks to its own provider, as it already does."
+      },
+      "price": {
+        "q": "Is it free?",
+        "a": "Yes. It is MIT licensed: use it at work, fork it, or build it from source."
+      },
+      "difference": {
+        "q": "How is it different from a code graph or a code search index?",
+        "a": "Those are computed from the code. Atlas records what the code is for and why, which the code alone cannot say, and you review every change to that record as a Markdown diff. A line on the map is a declared relationship, not proof of runtime impact."
+      },
+      "platforms": {
+        "q": "What does it run on?",
+        "a": "macOS on Apple Silicon, notarized (Apple scanned it for malware), and a Windows x64 beta. The map also opens in the browser without installing anything."
+      }
+    }
   }
 }
