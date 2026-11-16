@@ -64,7 +64,11 @@ export function ChangedSection({
           </Link>
         }
       />
-      <ul data-testid="project-detail-changed-rows" className="relative -mx-2 mt-2 flex min-h-[calc(3*2rem+2px)] flex-col gap-px">
+      {/* A column of three slots, or one strip of three equal slots while the band has two columns. */}
+      <ul
+        data-testid="project-detail-changed-rows"
+        className="relative -mx-2 mt-2 grid min-h-[calc(3*2rem+2px)] grid-cols-1 content-start gap-px @5xl/project-page:min-h-8 @5xl/project-page:grid-cols-3 @5xl/project-page:gap-x-8 @[90rem]/project-page:min-h-[calc(3*2rem+2px)] @[90rem]/project-page:grid-cols-1 @[90rem]/project-page:gap-x-0"
+      >
         <AnimatePresence initial mode="popLayout">
           {changed.visible.map((row, index) => (
             <motion.li key={row.id} layout="position" className="min-w-0" {...rowMotion({ index: index + arrivalOffset, arrival, reducedMotion })}>
@@ -84,7 +88,7 @@ export function ChangedSection({
           ))}
         </AnimatePresence>
         {!reading && changed.visible.length === 0 ? (
-          <li data-testid="project-detail-changed-empty" className="px-2 py-2 text-body text-[color:var(--color-text-secondary)]">
+          <li data-testid="project-detail-changed-empty" className="col-span-full flex min-h-8 items-center px-2 py-1.5 text-body text-[color:var(--color-text-secondary)]">
             {tIndex("recentEmptyHint", { days: windowDays })}
           </li>
         ) : null}

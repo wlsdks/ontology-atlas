@@ -158,7 +158,6 @@
     "toCheckStaleMoved": "이 문서를 쓴 뒤에 {path} 파일이 바뀌었어요.",
     "toCheckStaleGone": "{path} 파일이 코드 폴더에 없어요.",
     "toCheckNoDefinition": "이 문서에 정의 문장이 없어요.",
-    "toCheckStaleHint": "오래됨: 역량 문서가 가리키는 코드가 문서를 쓴 뒤에 바뀌었다는 뜻이에요.",
     "toCheckOpenDocAria": "{name} 문서 열기",
     "toCheckDialogTitle": "{project}에서 확인할 것",
     "toCheckGroupStale": "문서를 쓴 뒤 코드가 바뀜 · {count}",
@@ -168,7 +167,13 @@
     "changedViewOnMap": "지도에서 보기",
     "changedReading": "바뀐 날짜를 읽는 중이에요",
     "changedToday": "오늘",
-    "surfaceOpenChanges": "변경 열기"
+    "surfaceOpenChanges": "변경 열기",
+    "compositionStaleLegend": "문서를 쓴 뒤 근거 파일이 바뀐 역량",
+    "toCheckEvidenceMeasured": "역량 {total}개 중 {stale}개는 문서를 쓴 뒤에 근거 파일이 바뀌었어요.",
+    "toCheckEvidenceReading": "근거 파일과 문서를 비교하려고 Git 기록을 읽는 중이에요.",
+    "toCheckEvidenceAppOnly": "문서를 쓴 뒤 근거 파일이 바뀐 역량은 데스크톱 앱이 Git 기록으로 찾아요.",
+    "toCheckEvidenceUnreadable": "Git 기록을 읽지 못해서 문서를 쓴 뒤 근거 파일이 바뀌었는지 알 수 없어요.",
+    "toCheckEvidenceNoPaths": "근거 파일을 적은 역량이 없어서 Git 기록과 비교할 것이 없어요."
   },
   "editor": {
     "documentTitleEdit": "프로젝트 편집 · Ontology Atlas",

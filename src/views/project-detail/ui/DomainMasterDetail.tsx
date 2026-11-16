@@ -40,6 +40,7 @@ export interface DomainMasterDetailLabels {
   mapLinkLabel: string;
   /** The map's domain caption for its stale capabilities. */
   domainStale: (count: number) => string;
+  /** Names the amber mark in words: the legend item, the dot's tooltip and its accessible name. */
   staleMark: string;
   recentMark: string;
 }
@@ -49,6 +50,8 @@ export interface CompositionMarks {
   /** Empty unless the walk was measured, so unknown never draws as stale. */
   staleIds: ReadonlySet<string>;
   changedIds: ReadonlySet<string>;
+  /** Reserved while the walk reads, so the legend item arrives without moving the list. */
+  staleLegend: "shown" | "reserved" | "absent";
 }
 
 /**
@@ -120,6 +123,19 @@ export function DomainMasterDetail({
             </span>
           </p>
           <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.legendCaption}</span>
+          {marks.staleLegend === "absent" ? null : (
+            <motion.span
+              data-testid="project-detail-stale-legend"
+              aria-hidden={marks.staleLegend === "reserved"}
+              className="flex items-center gap-1.5 text-label text-[color:var(--color-text-tertiary)]"
+              initial={false}
+              animate={{ opacity: marks.staleLegend === "shown" ? 1 : 0 }}
+              transition={MOTION.fast}
+            >
+              <span aria-hidden className="text-[color:var(--color-status-warning)]">◐</span>
+              {labels.staleMark}
+            </motion.span>
+          )}
         </div>
         <DomainList
           domains={domains}
@@ -301,11 +317,13 @@ function DomainLengthBar({ domain, maxTotal, reducedMotion }: { domain: DomainCo
 /** A fixed slot for the two dots, so a mark arriving after the Git walk moves no text. */
 function CapabilityMarks({ stale, changed, labels }: { stale: boolean; changed: boolean; labels: DomainMasterDetailLabels }) {
   return (
-    <span aria-hidden className="flex w-4 shrink-0 items-center justify-end gap-1">
+    <span className="flex w-4 shrink-0 items-center justify-end gap-1">
       <AnimatePresence initial={false}>
         {stale ? (
           <motion.span
             key="stale"
+            role="img"
+            aria-label={labels.staleMark}
             title={labels.staleMark}
             data-testid="project-detail-capability-stale"
             className={STALE_DOT_CLASS}
@@ -318,6 +336,8 @@ function CapabilityMarks({ stale, changed, labels }: { stale: boolean; changed: 
         {changed ? (
           <motion.span
             key="changed"
+            role="img"
+            aria-label={labels.recentMark}
             title={labels.recentMark}
             data-testid="project-detail-capability-changed"
             className={RECENT_DOT_CLASS}

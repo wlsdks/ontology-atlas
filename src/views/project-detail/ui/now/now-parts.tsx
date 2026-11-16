@@ -22,7 +22,7 @@ export function CrossFadeText({
   className,
   id,
   testId,
-  title,
+  wrap = false,
   reducedMotion,
   as = "span",
 }: {
@@ -30,17 +30,18 @@ export function CrossFadeText({
   className?: string;
   id?: string;
   testId?: string;
-  title?: string;
+  /** Wraps instead of truncating; the caller reserves the lines. */
+  wrap?: boolean;
   reducedMotion: boolean;
   as?: "span" | "h2" | "p";
 }) {
   const Tag = as;
   return (
-    <Tag id={id} data-testid={testId} title={title} className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)] [grid-template-areas:'text']", className)}>
+    <Tag id={id} data-testid={testId} className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)] [grid-template-areas:'text']", className)}>
       <AnimatePresence initial={false}>
         <motion.span
           key={text}
-          className="min-w-0 truncate [grid-area:text]"
+          className={cn("min-w-0 [grid-area:text]", wrap ? "text-pretty" : "truncate")}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: reducedMotion ? MOTION.fast : EXIT_TRANSITION }}

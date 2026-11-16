@@ -158,7 +158,6 @@
     "toCheckStaleMoved": "この文書を書いた後に{path}が変更されました。",
     "toCheckStaleGone": "{path}はもうコードフォルダにありません。",
     "toCheckNoDefinition": "この文書には定義の文がありません。",
-    "toCheckStaleHint": "古い：ケイパビリティの文書が指すコードが、文書を書いた後に変更されたという意味です。",
     "toCheckOpenDocAria": "文書{name}を開く",
     "toCheckDialogTitle": "{project}で確認すること",
     "toCheckGroupStale": "文書の後にコードが変更 · {count}",
@@ -168,7 +167,13 @@
     "changedViewOnMap": "マップで見る",
     "changedReading": "変更日を読み取っています",
     "changedToday": "今日",
-    "surfaceOpenChanges": "変更を開く"
+    "surfaceOpenChanges": "変更を開く",
+    "compositionStaleLegend": "文書を書いた後にコードファイルが変わったケイパビリティ",
+    "toCheckEvidenceMeasured": "ケイパビリティ{total}件中{stale}件は、文書を書いた後にコードファイルが変更されました。",
+    "toCheckEvidenceReading": "コードファイルと文書を比べるため、Gitの履歴を読み取っています。",
+    "toCheckEvidenceAppOnly": "文書を書いた後にコードファイルが変わったケイパビリティは、デスクトップアプリがGitの履歴から見つけます。",
+    "toCheckEvidenceUnreadable": "Gitの履歴を読み取れなかったため、文書を書いた後にコードファイルが変わったかは分かりません。",
+    "toCheckEvidenceNoPaths": "コードファイルを書いたケイパビリティがないため、Gitの履歴と比べるものがありません。"
   },
   "editor": {
     "documentTitleEdit": "プロジェクトを編集 · Ontology Atlas",

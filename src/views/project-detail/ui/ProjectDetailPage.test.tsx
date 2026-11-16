@@ -838,8 +838,10 @@ describe("ProjectDetailPage", () => {
       expect(row).toHaveAttribute("data-reason", "stale");
       expect(row).toHaveTextContent("mcp/src/server.mjs changed after this document was written.");
       expect(row).toHaveAttribute("href", "/topology/?mode=focus&p=capability%3Amcp-server");
-      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent("Evidence read from Git history: 1 stale of 1 capabilities");
-      expect(screen.getByTestId("project-detail-capability-stale")).toBeInTheDocument();
+      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent("1 of 1 capability has a source file");
+      const staleWords = enMessages.projectPages.detail.compositionStaleLegend;
+      expect(screen.getByRole("img", { name: staleWords })).toHaveAttribute("title", staleWords);
+      expect(screen.getByTestId("project-detail-stale-legend")).toHaveTextContent(`◐${staleWords}`);
       expect(screen.getByTestId("project-detail-domain-stale")).toHaveTextContent("◐ 1");
     });
 
@@ -855,9 +857,10 @@ describe("ProjectDetailPage", () => {
       renderPage();
 
       expect(screen.queryByTestId("project-detail-to-check-row")).not.toBeInTheDocument();
-      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent(enMessages.topology.hexBoard.evidenceUnreadable);
+      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent(enMessages.projectPages.detail.toCheckEvidenceUnreadable);
       expect(screen.getByTestId("project-detail-to-check-empty")).toHaveTextContent(enMessages.projectPages.detail.toCheckEmpty);
       expect(screen.queryByTestId("project-detail-capability-stale")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("project-detail-stale-legend")).not.toBeInTheDocument();
       expect(screen.queryByTestId("project-detail-domain-stale")).not.toBeInTheDocument();
     });
 
@@ -908,7 +911,7 @@ describe("ProjectDetailPage", () => {
       const rows = screen.getAllByTestId("project-detail-changed-row");
       expect(rows.map((row) => row.textContent)).toEqual(["MCP Servertoday", "CLIyesterday"]);
       expect(screen.getByTestId("project-detail-changed-map-link")).toHaveAttribute("href", "/topology/?recent=auto");
-      expect(screen.getByTestId("project-detail-capability-changed")).toBeInTheDocument();
+      expect(screen.getByTestId("project-detail-capability-changed")).toHaveAccessibleName(enMessages.topology.index.freshTitle);
     });
 
     it("says it is reading change dates instead of claiming nothing changed", () => {

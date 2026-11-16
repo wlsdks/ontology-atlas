@@ -45,16 +45,15 @@ export function ToCheckSection({
   arrivalOffset?: number;
 }) {
   const t = useTranslations("projectPages.detail");
-  const tHex = useTranslations("topology.hexBoard");
   const [dialogOpen, setDialogOpen] = useState(false);
   const arrival = useArrival(toCheck.visible.length > 0);
   const total = toCheck.rows.length;
   const evidenceLine =
-    availability === "measured" ? tHex("evidenceMeasured", { stale: staleCount, total: capabilityTotal })
-      : availability === "reading" ? tHex("evidenceReading")
-        : availability === "app-only" ? tHex("evidenceAppOnly")
-          : availability === "unreadable" ? tHex("evidenceUnreadable")
-            : tHex("evidenceNoPaths");
+    availability === "measured" ? t("toCheckEvidenceMeasured", { stale: staleCount, total: capabilityTotal })
+      : availability === "reading" ? t("toCheckEvidenceReading")
+        : availability === "app-only" ? t("toCheckEvidenceAppOnly")
+          : availability === "unreadable" ? t("toCheckEvidenceUnreadable")
+            : t("toCheckEvidenceNoPaths");
 
   return (
     <section data-testid="project-detail-to-check" aria-labelledby="project-detail-to-check-title" className="min-w-0">
@@ -86,8 +85,8 @@ export function ToCheckSection({
         as="p"
         testId="project-detail-evidence-line"
         reducedMotion={reducedMotion}
-        title={availability === "measured" ? t("toCheckStaleHint") : undefined}
-        className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
+        wrap
+        className="mt-0.5 min-h-[2lh] text-label leading-label text-[color:var(--color-text-tertiary)]"
         text={evidenceLine}
       />
       <ul

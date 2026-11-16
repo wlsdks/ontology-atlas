@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 import projectPages from "../../../messages/ko/projectPages.json";
-import topology from "../../../messages/ko/topology.json";
 
 const detail = projectPages.detail;
 
@@ -44,7 +43,7 @@ test.describe("project page reads as a brief", () => {
 
   test("on the web no stale row is drawn, and the evidence line says only the app reads Git", async ({ page }) => {
     await openProjectPage(page);
-    await expect(page.getByTestId("project-detail-evidence-line")).toHaveText(topology.hexBoard.evidenceAppOnly);
+    await expect(page.getByTestId("project-detail-evidence-line")).toHaveText(detail.toCheckEvidenceAppOnly);
     await expect(page.locator('[data-testid="project-detail-to-check-row"][data-reason="stale"]')).toHaveCount(0);
     await expect(page.getByTestId("project-detail-capability-stale")).toHaveCount(0);
     await expect(page.getByTestId("project-detail-to-check-heading")).toContainText(detail.toCheckHeading.split(" ·")[0]!);
@@ -83,8 +82,17 @@ test.describe("project page reads as a brief", () => {
           changed: box("project-detail-changed"),
           toCheckHeights: heights("project-detail-to-check-row"),
           changedHeights: heights("project-detail-changed-row"),
+          changedSlots: getComputedStyle(document.querySelector('[data-testid="project-detail-changed-rows"]')!).gridTemplateColumns.split(" ").length,
         };
       });
+      if (width < 1920) {
+        // Two columns: what changed is one strip under the brief and what to check, in three slots.
+        const rowBottom = Math.max(band.lead.bottom, band.toCheck.bottom);
+        expect(band.changed.left, "the strip starts at the brief's left edge").toBeCloseTo(band.lead.left, 0);
+        expect(band.changed.right, "the strip ends at what to check's right edge").toBeCloseTo(band.toCheck.right, 0);
+        expect(band.changed.top - rowBottom, "the strip sits right under the taller of the two").toBeLessThanOrEqual(48);
+        expect(band.changedSlots, "what changed lays its rows in three slots").toBe(3);
+      }
       const gaps = {
         "brief to what to check": band.toCheck.left - band.lead.right,
         "what to check to the column edge": band.column.right - Math.max(band.toCheck.right, band.changed.right),

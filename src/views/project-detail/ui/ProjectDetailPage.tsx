@@ -461,12 +461,12 @@ export function ProjectDetailPage({
       <ProjectDetailTopBar slug={slug} projectName={displayName ?? project.name} />
 
       {/*
-        Band A. From a 64rem page column the brief sits beside what to check and what changed, with
-        the name and actions above them; from 90rem those two sit side by side. Narrower, one column.
+        Band A. From a 64rem page column the brief sits beside what to check, with what changed as one
+        strip under both; from 90rem the three sit side by side. Narrower, one column.
       */}
       <div
         data-testid="project-detail-identity"
-        className="mt-8 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'now'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:gap-y-6 @5xl/project-page:[grid-template-areas:'name_actions'_'text_now'] @[90rem]/project-page:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        className="mt-8 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'check'_'changed'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:[grid-template-areas:'name_actions'_'text_check'_'changed_changed'] @[90rem]/project-page:grid-cols-[calc((100%-3rem)*5/12)_minmax(0,1fr)_minmax(0,1fr)] @[90rem]/project-page:[grid-template-areas:'name_actions_actions'_'text_check_changed']"
       >
         <div className="min-w-0 [grid-area:name]">
           <div className="flex min-w-0 items-center gap-3">
@@ -557,10 +557,10 @@ export function ProjectDetailPage({
           )}
         </div>
 
-        {/* One hairline in the gap beside the brief; A3 under A2, or beside it from 90rem. */}
+        {/* Hairlines sit in the gaps: beside the brief, above the strip, and between the wide band's columns. */}
         <div
           data-testid="project-detail-now"
-          className="relative grid min-w-0 grid-cols-1 content-start gap-x-12 gap-y-5 border-t border-[color:var(--color-divider)] pt-5 [grid-area:now] @5xl/project-page:border-t-0 @5xl/project-page:pt-0 @5xl/project-page:before:absolute @5xl/project-page:before:inset-y-0 @5xl/project-page:before:-left-6 @5xl/project-page:before:w-px @5xl/project-page:before:bg-[color:var(--color-divider)] @[90rem]/project-page:grid-cols-2"
+          className="relative min-w-0 border-t border-[color:var(--color-divider)] pt-5 [grid-area:check] @5xl/project-page:border-t-0 @5xl/project-page:pt-0 @5xl/project-page:before:absolute @5xl/project-page:before:inset-y-0 @5xl/project-page:before:-left-6 @5xl/project-page:before:w-px @5xl/project-page:before:bg-[color:var(--color-divider)]"
         >
           <ToCheckSection
             projectName={displayName ?? project.name}
@@ -570,15 +570,15 @@ export function ProjectDetailPage({
             capabilityTotal={projectCapabilities.length}
             reducedMotion={reducedMotion}
           />
-          <div className="relative min-w-0 border-t border-[color:var(--color-divider)] pt-5 @[90rem]/project-page:border-t-0 @[90rem]/project-page:pt-0 @[90rem]/project-page:before:absolute @[90rem]/project-page:before:inset-y-0 @[90rem]/project-page:before:-left-6 @[90rem]/project-page:before:w-px @[90rem]/project-page:before:bg-[color:var(--color-divider)]">
-            <ChangedSection
-              changed={changed}
-              windowDays={recentChanges.windowDays}
-              reading={recentChanges.reading}
-              reducedMotion={reducedMotion}
-              arrivalOffset={TO_CHECK_ROWS_BEFORE_CHANGED}
-            />
-          </div>
+        </div>
+        <div className="relative -mt-1 min-w-0 border-t border-[color:var(--color-divider)] pt-5 [grid-area:changed] @5xl/project-page:mt-0 @[90rem]/project-page:border-t-0 @[90rem]/project-page:pt-0 @[90rem]/project-page:before:absolute @[90rem]/project-page:before:inset-y-0 @[90rem]/project-page:before:-left-6 @[90rem]/project-page:before:w-px @[90rem]/project-page:before:bg-[color:var(--color-divider)]">
+          <ChangedSection
+            changed={changed}
+            windowDays={recentChanges.windowDays}
+            reading={recentChanges.reading}
+            reducedMotion={reducedMotion}
+            arrivalOffset={TO_CHECK_ROWS_BEFORE_CHANGED}
+          />
         </div>
       </div>
 
@@ -639,7 +639,11 @@ export function ProjectDetailPage({
           <DomainMasterDetail
             domains={domainComposition.domains}
             maxTotal={domainComposition.maxTotal}
-            marks={{ staleIds, changedIds: changed.changedIds }}
+            marks={{
+              staleIds,
+              changedIds: changed.changedIds,
+              staleLegend: evidenceMeasured ? "shown" : evidence.availability === "reading" ? "reserved" : "absent",
+            }}
             labels={{
               listLabel: t("metricDomains"),
               capabilityUnit: t("domainCapabilityLabel"),
@@ -660,7 +664,7 @@ export function ProjectDetailPage({
               elementCount: (count) => t("capabilityElementCount", { count }),
               mapLinkLabel: t("domainRowMapLink"),
               domainStale: (count) => tHex("domainStale", { count }),
-              staleMark: tHex("legendStale"),
+              staleMark: t("compositionStaleLegend"),
               recentMark: tIndex("freshTitle"),
             }}
           />
