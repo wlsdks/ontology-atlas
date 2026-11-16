@@ -470,6 +470,75 @@
   background: linear-gradient(90deg, var(--color-border-strong), transparent);
 }
 
+.gateway-step-track {
+  overflow-x: clip;
+}
+
+.gateway-step-spark {
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--map-indigo-bright) 80%, var(--color-text-primary));
+  filter: drop-shadow(0 0 6px var(--map-indigo-bright));
+}
+
+.gateway-step-lit {
+  opacity: 0;
+  border: 1px solid var(--map-indigo-bright);
+  background: var(--gateway-closing-glow);
+  box-shadow: 0 0 18px var(--gateway-hero-light-core);
+}
+
+/*
+ * One cycle walks the three steps: a step's button lights as if pressed, then light runs its rule
+ * toward the next. Each step starts a third of a cycle after the one before.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-gateway-steps-motion] {
+    --gateway-steps-cycle: 7.5s;
+  }
+
+  [data-gateway-steps-motion] .gateway-step-spark {
+    animation: gatewayStepSpark var(--gateway-steps-cycle) var(--motion-ease) infinite both;
+  }
+
+  [data-gateway-steps-motion] .gateway-step-lit {
+    animation: gatewayStepLit var(--gateway-steps-cycle) var(--motion-ease) infinite both;
+  }
+
+  [data-gateway-steps-motion] .gateway-step-press {
+    animation: gatewayStepPress var(--gateway-steps-cycle) var(--motion-ease) infinite both;
+  }
+
+  /* After the shorthands, which would reset these. */
+  [data-gateway-steps-motion] :is(.gateway-step-spark, .gateway-step-lit, .gateway-step-press) {
+    animation-delay: calc(var(--gateway-step, 0) * var(--gateway-steps-cycle) / 3);
+    animation-play-state: paused;
+  }
+
+  [data-gateway-steps-motion='running'] :is(.gateway-step-spark, .gateway-step-lit, .gateway-step-press) {
+    animation-play-state: running;
+  }
+}
+
+@keyframes gatewayStepLit {
+  0% { opacity: 0; }
+  5%, 30% { opacity: 1; }
+  42%, 100% { opacity: 0; }
+}
+
+@keyframes gatewayStepPress {
+  0%, 2% { transform: scale(1); }
+  4% { transform: scale(0.94); }
+  8%, 100% { transform: scale(1); }
+}
+
+/* The streak is two fifths of the rule, so 250% of its own width carries it the whole way. */
+@keyframes gatewayStepSpark {
+  0%, 12% { opacity: 0; transform: translateX(-100%); }
+  16% { opacity: 1; }
+  32% { opacity: 1; transform: translateX(250%); }
+  35%, 100% { opacity: 0; transform: translateX(250%); }
+}
+
 /*
  * The closing scene: light held behind the headline rather than poured from the top, a hairline
  * border lit only along its upper edge, a dot grid that fades before the edges, and a ring of the
