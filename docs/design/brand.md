@@ -265,7 +265,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | First run / missing page, route error, startup failure, missing project and an unread harness, schedule or Git status | Playful companion / curious `BrandPortrait` → `public/brand/mascot-curious-row-128.png` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
-| Open Graph | `public/og-image.png`, 1200×630 |
+| Open Graph | `public/og/<locale>.png` per locale and `public/og-image.png` (English, the `x-default`), 1200×630, from `pnpm og:build`; the copy comes from each locale's hero headline |
 | README en/ko/ja/zh | Compass lockup and Moru showcase; expandable motion samples |
 | Menu bar | `src-tauri/icons/tray-template.png` |
 
