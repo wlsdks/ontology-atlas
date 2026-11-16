@@ -44,7 +44,7 @@ interface TopologyInspectorSurfacesProps {
   tSummaryFreshness: ReturnType<typeof useTranslations<"summaryFreshness">>;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleEnterRealm">;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpPresentationVisible">;
-  homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "openMeaningWorkbench" | "meaningWorkbenchOpen">;
+  homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "openMeaningWorkbench">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "askAgentAboutSelectedNode">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedGraphNode" | "resolvedRealmSlug">;
   topologySourceActions: Pick<
@@ -159,7 +159,7 @@ export function TopologyInspectorSurfaces({
   } = topologySourceActions;
   const { canvasSelectedGraphNode, resolvedRealmSlug } = topologyGraphProjection;
   const { askAgentAboutSelectedNode } = topologyAgentOrchestration;
-  const { openMeaningWorkbench, meaningWorkbenchOpen } = homeWorkbenchController;
+  const { openMeaningWorkbench } = homeWorkbenchController;
   const { acpPresentationVisible } = acpRuntimeController;
   const { handleEnterRealm } = topologyRouteControls;
   const panelShown = Boolean(!grayAreaOpen && nodePanelMounted && panelDatasheetModel);
@@ -441,7 +441,7 @@ export function TopologyInspectorSurfaces({
        it. */}
     {heldEdgePanelModel ? (
       <Surface
-        open={edgePanelOpen && !meaningWorkbenchOpen}
+        open={edgePanelOpen}
         data-testid="topology-edge-popover-positioner"
         // With the dock open, globals.css moves this card left by the dock width, like the node
         // inspector.

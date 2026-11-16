@@ -14,7 +14,7 @@ import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface, WidgetErrorFallback } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
-import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
+import { AnalysisWorkbench } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useTranslations } from 'next-intl';
@@ -39,7 +39,6 @@ interface TopologyAgentDockProps {
     | "relationNoteGaps"
     | "openAnalysisEvidence"
     | "showAnalysisRelation"
-    | "meaningRelations"
     | "captureTaskBaseline"
   >;
   topologyAgentActivity: Pick<
@@ -77,8 +76,6 @@ interface TopologyAgentDockProps {
     | "setAnalysisParentRequestText"
     | "setAcpDockFrameOpen"
     | "setAcpChatOpen"
-    | "showRelationMeaning"
-    | "setShowRelationMeaning"
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect" | "handleChatSuggestionAction" | "handleAcpMapIntent">;
   topologyAgentOrchestration: Pick<
@@ -122,8 +119,7 @@ export function TopologyAgentDock({
   const {
     meaningWorkbenchPresence, acpDockFrameOpen, meaningWorkbenchOpen, reviewUsesSheet, acpChatOpen,
     workbenchSectionRequest, setMeaningWorkbenchOpen, setAnalysisFindings, setAnalysisParentRunId,
-    setAnalysisParentRequestText, setAcpDockFrameOpen, setAcpChatOpen, showRelationMeaning,
-    setShowRelationMeaning
+    setAnalysisParentRequestText, setAcpDockFrameOpen, setAcpChatOpen
   } = homeWorkbenchController;
   const {
     chatMounted, chatWidth, scheduleAcpSessionStart, setChatMounted, agentOpeningRequest,
@@ -132,7 +128,7 @@ export function TopologyAgentDock({
   const { acpTurnStartedAtRef, acpMcpServers, handleAcpTurnActivityChange, handleAcpWorkReceipt } = topologyAgentActivity;
   const {
     meaningAnalysisContext, analysisCapture, relationNoteGaps, openAnalysisEvidence, showAnalysisRelation,
-    meaningRelations, captureTaskBaseline
+    captureTaskBaseline
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
   const draftStore = useMemo(() => createChatDraftStore(vault.handle), [vault.handle]);
@@ -259,7 +255,7 @@ export function TopologyAgentDock({
                 relationNoteGaps={relationNoteGaps}
                 onSectionChange={handleWorkbenchSectionChange}
                 onFitContentChange={setWorkbenchFitsContent}
-                initialTab={meaningWorkbenchOpen ? 'meaning' : 'conversation'}
+                initialTab={meaningWorkbenchOpen ? 'history' : 'conversation'}
                 onClose={() => { setMeaningWorkbenchOpen(false); closeVaultAgent(); }}
                 onEvidence={openAnalysisEvidence}
                 onFindingsChange={setAnalysisFindings}
@@ -285,19 +281,6 @@ export function TopologyAgentDock({
                     setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);
                   } else openVaultAgent();
                 } : undefined}
-                facts={<MeaningContext
-                  showLabels={showRelationMeaning}
-                  onShowLabelsChange={setShowRelationMeaning}
-                  node={selectedOntologyNode ? { ...selectedOntologyNode, title: selectedOntologyNode.display ?? selectedOntologyNode.title } : null}
-                  relations={meaningRelations}
-                  reasonsAction={!!agentChatUsesRuntime && relationNoteGaps > 0}
-                  onEvidence={openAnalysisEvidence}
-                  onSelectRelation={(id) => {
-                    const edge = ontologyInsight?.edges.find((item) => item.id === id);
-                    if (!edge) return;
-                    showAnalysisRelation({ sourceId: edge.from, targetId: edge.to, relationType: edge.type, declaredBySlug: edge.evidenceIds[0] ?? null });
-                  }}
-                />}
                 conversation={acpRuntime && gitVaultPath ? <>
                   {investigationRefused?<p role="status" className="mb-2 text-caption text-[color:var(--color-text-secondary)]">{tGray('continuation.refused')}</p>:null}
                   <AcpChatPanel

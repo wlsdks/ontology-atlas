@@ -14,7 +14,6 @@ import { investigationCaptureContext } from '../gray-area/investigation-context'
 import { isRecordedReviewRequest } from '@/widgets/analysis-workbench';
 import { useRouter } from "@/i18n/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { edgeSentenceValues, normalizeEdgeSentenceKey } from "../../lib/authoring/edge-sentence";
 import { selectTopologyPathRouteState } from "../route-state/url-state";
 import { useTaskReviewBaseline } from "./use-task-review-baseline";
 
@@ -34,7 +33,7 @@ interface Options {
     | "interactionSelectedSlugRef"
     | "setSelectedRelationActive"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "relationVocabulary" | "relationRegister">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "relationVocabulary" | "relationRegister">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "selectedEdge" | "setMeaningEditorState" | "setSelectedEdge">;
   homeWorkbenchController: Pick<
     ReturnType<typeof useHomeWorkbenchController>,
@@ -42,7 +41,6 @@ interface Options {
     | "analysisParentRequestText"
     | "meaningWorkbenchOpen"
     | "acpDockFrameOpen"
-    | "showRelationMeaning"
     | "analysisFindings"
   >;
   topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "ontologyInsight" | "vault" | "gitVaultPath" | "selectedOntologyNode">;
@@ -52,9 +50,9 @@ export function useTopologyAnalysisReview({
   topologyAuthoring, topologyPreferences, topologyCanvasFocus, topologyNavigationActions, investigationBasis
 }: Options) {
   const { ontologyInsight, vault, gitVaultPath, selectedOntologyNode } = topologyVaultReadModel;
-  const { analysisParentRunId, analysisParentRequestText, meaningWorkbenchOpen, acpDockFrameOpen, showRelationMeaning, analysisFindings } = homeWorkbenchController;
+  const { analysisParentRunId, analysisParentRequestText, meaningWorkbenchOpen, acpDockFrameOpen, analysisFindings } = homeWorkbenchController;
   const { selectedEdge, setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
-  const { t, relationVocabulary, relationRegister } = topologyPreferences;
+  const { relationVocabulary, relationRegister } = topologyPreferences;
   const { chatNodeIndex, setFullDetailSlug, interactionSelectedSlugRef, setSelectedRelationActive } = topologyCanvasFocus;
   const { handleSelect } = topologyNavigationActions;
 
@@ -95,24 +93,7 @@ export function useTopologyAnalysisReview({
       return (investigate?investigationCapture:ordinaryCapture).onTurnStarted(start);
     },[investigationContext,investigationBasis,investigationCapture,ordinaryCapture]),
   };
-  const meaningRelations = useMemo(() => {
-    if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return [];
-    const focus = selectedOntologyNode?.id;
-    const nodes = new Map(ontologyInsight.nodes.map((node) => [node.id, node]));
-    return ontologyInsight.edges.filter((edge) => selectedEdge
-      ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
-      : focus ? edge.from === focus || edge.to === focus : false).map((edge) => {
-        const from = nodes.get(edge.from); const to = nodes.get(edge.to);
-        const key = normalizeEdgeSentenceKey(edge.type);
-        return {
-          id: edge.id,
-          sentence: t(`edgeSentence.${key}`, edgeSentenceValues(key, from?.display ?? from?.title ?? edge.from, to?.display ?? to?.title ?? edge.to)),
-          typeLabel: relationVocabulary(edge.type, relationRegister), why: edge.label?.trim() || null,
-          declaredBy: edge.evidenceIds[0] ?? null
-        };
-      });
-  }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge, t, relationVocabulary, relationRegister]);
-  // Scoped edges without `relation_notes`, following the selection like `meaningRelations`.
+  // Scoped edges without `relation_notes`, following the selection.
   // `belongs_to` back-pointers are excluded: their reason lives on the parent's containment line.
   const relationNoteGaps = useMemo(() => {
     if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return 0;
@@ -121,7 +102,7 @@ export function useTopologyAnalysisReview({
       ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
       : focus ? edge.from === focus || edge.to === focus : true).filter((edge) => edge.type !== 'belongs_to' && !edge.label?.trim()).length;
   }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge]);
-  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) && showRelationMeaning ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, showRelationMeaning, ontologyInsight, relationVocabulary, relationRegister]);
+  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, ontologyInsight, relationVocabulary, relationRegister]);
   const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);
   const openAnalysisEvidence = useCallback((slug: string) => {
     const nodeId = chatNodeIndex.get(slug);
@@ -142,6 +123,6 @@ export function useTopologyAnalysisReview({
   }, [interactionSelectedSlugRef, setExpandAllActive, setFullDetailSlug, setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive]);
   return {
     mapRelationCaptions, mapReviewQuestionIds, meaningAnalysisContext, analysisCapture, relationNoteGaps,
-    openAnalysisEvidence, showAnalysisRelation, meaningRelations, captureTaskBaseline
+    openAnalysisEvidence, showAnalysisRelation, captureTaskBaseline
   } as const;
 }
