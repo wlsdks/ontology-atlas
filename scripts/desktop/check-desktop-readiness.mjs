@@ -191,8 +191,8 @@ if (/trailingSlash\s*:\s*true/.test(nextConfig)) {
   fail("next.config.ts must keep trailingSlash: true for static out/ routes");
 }
 
-if (pkg.scripts?.build === "pnpm docs-vault:build && pnpm messages:build && next build") {
-  pass("build script refreshes docs-vault and composes message catalogues before next build");
+if (pkg.scripts?.build === "pnpm docs-vault:build && pnpm messages:build && next build && node scripts/web/localize-html-lang.mjs") {
+  pass("build script refreshes docs-vault and composes message catalogues before next build, then gives localized pages their own html lang");
 } else {
   fail("package.json build script must refresh docs-vault and compose message catalogues before next build");
 }
@@ -579,10 +579,11 @@ if (
   //
   // 2026-08-19: the old needle pair (Windows unsigned warning, Windows download)
   // left the page when the install section was deleted. The hero trust line is
-  // promoted to a required needle because it is **the last place the honesty facts
-  // live** — if that one line drops out of a deployment, signing, notarisation, and
-  // "nothing is sent to a server" appear nowhere on the page.
+  // promoted to a required needle because it carries the Apple check (notarisation)
+  // and the Windows unsigned fact; the no-backend fact is the open-source section's
+  // needle, `source.local.title`.
   hostedDownloadSurfaceScript.includes("downloadCopy.trustLine") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.source?.local?.title") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.primaryCtaPublished") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.webCta") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
@@ -978,7 +979,7 @@ if (
   readText("docs/guide/trust.md").includes("Get-FileHash <file> -Algorithm SHA256") &&
   // Claiming signing requires the release asset chain to actually sign, notarise,
   // and verify.
-  (!/notarized/.test(enMessages.download?.trustLine ?? "") ||
+  (!/notarized|Checked by Apple/.test(enMessages.download?.trustLine ?? "") ||
     (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_COMMAND &&
       [
         'args: ["desktop:sign"]',

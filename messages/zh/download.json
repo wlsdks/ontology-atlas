@@ -6,15 +6,15 @@
   "webCta": "免安装，在浏览器中试用",
   "windowsDownloadCta": "下载 Windows x64 测试版",
   "factMinOsSuffix": "及以上",
-  "trustLine": "已由 Apple 签名并公证 · 没有 Atlas 后端",
-  "trustLineWindows": "未签名测试版 · SmartScreen 可能警告 · 没有 Atlas 后端",
+  "trustLine": "免费 · 无需注册 · 已通过 Apple 恶意软件检查",
+  "trustLineWindows": "免费 · 无需注册 · 未签名测试版，SmartScreen 可能会警告",
   "heroWindowsCta": "Windows x64 测试版",
-  "heroPlaygroundCta": "在线体验",
+  "heroPlaygroundCta": "在浏览器中试用",
   "windowsUnsignedShort": "未签名",
   "demoHeading": "打开本仓库文件夹的应用录屏",
   "demoPlay": "播放",
-  "heroTitleLine1": "代码由智能体来写，",
-  "heroTitleLine2": "你来读地图。",
+  "heroTitleLine1": "AI 改过的代码，",
+  "heroTitleLine2": "在地图上一目了然。",
   "heroLead": "Ontology Atlas 是一款开源应用，把代码构建了什么、为什么这样组织，以 Markdown 的形式留在你的仓库里。Claude Code 和 Codex 通过 MCP 读取同一个文件夹，提交之后，地图会标出需要重新确认的概念。",
   "factUnpublished": "尚未发布",
   "factVersionLabel": "版本",
@@ -134,6 +134,31 @@
     "relations": {
       "label": "关系",
       "body": "这些概念之间的关系，以名称写在每个文件顶部的信息栏中。"
+    }
+  },
+  "film": {
+    "label": "Markdown 如何变成地图",
+    "acts": {
+      "1": {
+        "title": "本体就是普通的 Markdown 文件",
+        "body": "每个概念都是仓库里的一个 .md 文件，人和智能体读的是同一份文件。"
+      },
+      "2": {
+        "title": "开头几行就是图谱",
+        "body": "domain 是它的归属，kind 是概念的类型，dependencies 是它依赖的概念。这几行就成了地图上的点和线。"
+      },
+      "3": {
+        "title": "每个文件找到自己的位置",
+        "body": "每个概念都落在包含它的概念旁边。"
+      },
+      "4": {
+        "title": "关系自己连成线",
+        "body": "文件里写下的 {relations} 条关系，直接成为概念之间的连线。"
+      },
+      "5": {
+        "title": "你和智能体读同一张地图",
+        "body": "这是本仓库的真实地图：{concepts} 个概念，{relations} 条关系。"
+      }
     }
   },
   "motion": {
