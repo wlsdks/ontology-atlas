@@ -76,7 +76,8 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChoo
       onChooseAutoApprove(true);
       return;
     }
-    if (autoApprove) onChooseAutoApprove(false);
+    // Unconditional, so a choice kept for an earlier scope is forgotten too.
+    onChooseAutoApprove(false);
     if (!value.startsWith(MODE_PREFIX)) return;
     const modeId = value.slice(MODE_PREFIX.length);
     if (modeId !== choices.currentModeId) onChooseMode(modeId);

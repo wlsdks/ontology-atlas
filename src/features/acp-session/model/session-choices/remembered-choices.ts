@@ -66,6 +66,15 @@ function write(change: (remembered: Remembered) => void): void {
   }
 }
 
+export function forgetRememberedChoices(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nothing was readable, so nothing is kept.
+  }
+}
+
 export function rememberedTool(folder: string | null): string | null {
   return folder ? (read().tools.get(folder)?.[1] ?? null) : null;
 }

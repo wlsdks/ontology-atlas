@@ -97,6 +97,7 @@ import {
   AcpChatPanel,
   type AcpOntologyRelationPreview,
 } from './AcpChatPanel';
+import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { TURN_DONE_HOLD_MS } from './chat-panel/TurnWorkStage';
 
@@ -379,6 +380,16 @@ describe('chat panel: draws only what happened', () => {
     fireEvent.click(screen.getByRole('option', { name: /modeName\.plan/ }));
     await waitFor(() => expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off'));
     expect(picker).not.toHaveTextContent('approvalOption.auto');
+  });
+
+  it('forgets a choice kept for an earlier scope when a mode is picked', async () => {
+    recordApproval('auto-approve', '/vault', 'chat', 'a scope this build no longer answers');
+    await bootSession({}, { currentModeId: 'default', availableModes: [{ id: 'default', name: 'Default' }, { id: 'plan', name: 'Plan' }] });
+    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off');
+
+    fireEvent.click(screen.getByTestId('acp-chat-mode'));
+    fireEvent.click(screen.getByRole('option', { name: /modeName\.plan/ }));
+    expect(readMachineApprovals().allowed('auto-approve', '/vault', 'chat')).toBeNull();
   });
 
   it('opens the next conversation in the folder on auto-approve, and reads plan while a resumed one is in plan mode', async () => {

@@ -23,6 +23,7 @@ import { rememberModel, rememberedModel } from './session-choices/remembered-cho
 import { readReportedPlan, type ReportedPlan } from './investigation/reported-plan';
 import { isDiagnosticStderr } from './trouble/acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './session-choices/slash-commands';
+import { modeCopyKey } from './session-choices/mode-copy';
 import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './runtime-wiring/vault-mcp-server';
 import { latestSession, orderSessionsByRecency } from './session-recency';
 import { keepToolOutput, type ToolOutputEvidence } from './tool-calls/tool-output';
@@ -411,6 +412,8 @@ export function useAcpSession({
     observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null;
     cancelRequested: boolean;
     taskBaseline: TaskBaselineCaptureResult | null;
+    /** A source-bound investigation the app composed; it asks for no edits, so every write shows its card. */
+    investigation: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Commands the agent found in this folder — putting skills in the vault makes them appear here. */
@@ -747,7 +750,7 @@ export function useAcpSession({
     request = snapshotPermissionRequest(request);
     const generation = generationRef.current;
     // A request that arrived before the person turned auto-approve on still shows its card.
-    const autoApproveAtArrival = autoApproveNow();
+    const autoApproveAtArrival = autoApproveNow() && activeTurnRef.current?.investigation !== true;
     const activeStart = activeTurnRef.current?.start ?? null;
     const origin = {
       sessionGeneration: generation,
@@ -808,7 +811,8 @@ export function useAcpSession({
       // Only a person's live turn can carry their standing choice; a request outside one asks.
       const standing = decided === null && origin.turn
         ? standingApproval(request, {
-            enabled: autoApproveAtArrival && autoApproveNow(),
+            // The picker reads the plan mode there, so the app does not answer behind it.
+            enabled: autoApproveAtArrival && autoApproveNow() && modeCopyKey(choicesRef.current.currentModeId) !== 'plan',
             vaultRoot,
             vaultMcpServerName: hasVaultMcpServer(mcpServers) ? VAULT_MCP_SERVER_NAME : null,
           })
@@ -1072,6 +1076,8 @@ export function useAcpSession({
       ) {
         choices = { ...choices, currentModelId: keptModelId };
       }
+      // `setModel` swallows the rejection a stop causes, so a superseded start ends here.
+      if (stale()) return;
 
       /*
        * **Raise the permission gate.** codex is not held by config isolation and only by the session
@@ -1239,7 +1245,7 @@ export function useAcpSession({
       try { observer = onTurnStarted?.(start) ?? null; } catch (error) {
         keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
       }
-      activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null };
+      activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null, investigation: Boolean(guard) };
       setReportedPlan(null);
       latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: userEventId, text });

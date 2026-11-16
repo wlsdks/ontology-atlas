@@ -1537,9 +1537,17 @@ describe('auto-approve — the person answers once for the folder', () => {
     await act(async () => { await chat.result.current.stop(); });
     chat.unmount();
 
-    const elsewhere = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/other', rememberChoices: true }));
+    const elsewhere = await startSession({ vaultRoot: '/other' });
     expect(elsewhere.result.current.autoApprove).toBe(false);
+    await startTurn(elsewhere.result);
+    await act(async () => { bridge.listener?.(fileEdit(405, '/other/capabilities/refund.md')); });
+    await waitFor(() => expect(elsewhere.result.current.pending?.request.requestId).toBe(405));
+    expect(answerOf(405)).toBeUndefined();
+    await act(async () => { elsewhere.result.current.pending?.resolve('reject'); });
+    await act(async () => { await elsewhere.result.current.stop(); });
     elsewhere.unmount();
+    bridge.holdPrompt = false;
+    bridge.pendingPrompt = null;
 
     const round = await startSession({ rememberChoices: false });
     expect(round.result.current.autoApprove).toBe(false);
@@ -1551,6 +1559,37 @@ describe('auto-approve — the person answers once for the folder', () => {
     expect(answerOf(404)).toBeUndefined();
     await act(async () => { round.result.current.pending?.resolve('reject'); });
     await act(async () => { await round.result.current.stop(); });
+  });
+
+  it('shows the card while the conversation is in plan mode, where the picker reads plan', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    bridge.sessionModes = { currentModeId: 'plan', availableModes: [{ id: 'default', name: 'Default' }, { id: 'plan', name: 'Plan' }] };
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(fileEdit(406, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(406));
+    expect(answerOf(406)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('shows the card during a source-bound investigation the app composed', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    bridge.sessionModes = { currentModeId: 'read-only', availableModes: [{ id: 'read-only', name: 'Read only', _meta: { kind: 'plan' } }] };
+    const servers = [{ name: 'atlas-vault', command: '/verified/mcp', args: [], env: [{ name: 'OATLAS_WRITE_CONSENT', value: 'on' }] }];
+    const { result } = await startSession({ runtimeId: 'codex-acp', mcpServers: servers });
+    act(() => result.current.setAutoApprove(true));
+    bridge.holdPrompt = true;
+    void result.current.sendInvestigation('Investigate this selected question.', { runtimeId: 'codex-acp', revalidate: async () => true });
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+
+    await act(async () => { bridge.listener?.(fileEdit(407, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(407));
+    expect(answerOf(407)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
   });
 
   it('marks auto-approved Atlas writes as the standing choice and closes each receipt when its write ends', async () => {
@@ -1692,6 +1731,21 @@ describe('the model a person chose is kept for the folder and tool', () => {
       hook.unmount();
     }
     expect(setModelCalls()).toEqual([]);
+  });
+
+  it('asks for the kept model before it applies the permission gate', async () => {
+    bridge.sessionModels = MODELS;
+    const first = await startSession({ runtimeId: 'codex-acp' });
+    await act(async () => { await first.result.current.chooseModel('large'); });
+    await act(async () => { await first.result.current.stop(); });
+    first.unmount();
+    bridge.sent = [];
+
+    const next = await startSession({ runtimeId: 'codex-acp' });
+    expect(next.result.current.choices.currentModelId).toBe('large');
+    const order = bridge.sent.map((message) => message.method).filter((method) => method === 'session/set_model' || method === 'session/set_mode');
+    expect(order).toEqual(['session/set_model', 'session/set_mode']);
+    await act(async () => { await next.result.current.stop(); });
   });
 
   it('leaves the adapter on its own model when the kept one is no longer offered', async () => {

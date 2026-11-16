@@ -21,7 +21,8 @@ export { matchSlashCommands, slashQuery } from "./model/session-choices/slash-co
 export type { AcpSlashCommand } from "./model/session-choices/slash-commands";
 export { claudeLoginRepairCommand } from "./model/trouble/claude-login-repair";
 export { modeCopyKey } from "./model/session-choices/mode-copy";
-export { rememberTool, rememberedTool } from "./model/session-choices/remembered-choices";
+export { forgetRememberedChoices, rememberTool, rememberedTool } from "./model/session-choices/remembered-choices";
+export { standingChoiceKept } from "./model/permissions/standing-choice";
 export { withoutErrorEcho } from "./model/trouble/error-echo";
 export { linkSlugs } from "./model/map-presentation/link-slugs";
 export { readToolFallbackTarget, readToolPathArgument, readToolTargets } from "./model/tool-calls/tool-targets";

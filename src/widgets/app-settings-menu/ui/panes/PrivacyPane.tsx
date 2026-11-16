@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { FileText } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
+import { forgetRememberedChoices, standingChoiceKept } from '@/features/acp-session';
 import { useUpdateAutoCheck } from '@/features/app-update';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
@@ -37,6 +38,8 @@ interface FolderAllowances {
 function byFolder(items: readonly MachineApprovalItem[]): FolderAllowances[] {
   const folders = new Map<string, FolderAllowances>();
   for (const item of items) {
+    // A choice kept for an earlier scope reads as off in chat, so it is not listed as on here.
+    if (item.subject === 'auto-approve' && !standingChoiceKept(item.folder)) continue;
     const entry = folders.get(item.folder) ?? { folder: item.folder, connectors: 0, rounds: 0, autoApprove: false };
     if (item.subject === 'connector') entry.connectors += 1;
     else if (item.subject === 'round') entry.rounds += 1;
@@ -257,6 +260,7 @@ export function PrivacyPane({
                 onConfirm={async () => {
                   try {
                     await forgetRecent(recentVaults);
+                    forgetRememberedChoices();
                     setForgetFailed(false);
                   } catch {
                     setForgetFailed(true);

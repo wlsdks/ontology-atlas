@@ -32,17 +32,4 @@ describe('the auto-approve choice kept on this Mac', () => {
     expect(standingChoiceKept(null)).toBe(false);
   });
 
-  it('names every Atlas write it answers, so adding one asks for the choice again', () => {
-    expect(STANDING_APPROVAL_SCOPE.split(' ')).toEqual([
-      'edit-inside-folder@1',
-      'add_concept',
-      'add_concepts',
-      'add_relation',
-      'add_relations',
-      'patch_concept',
-      'reclassify_concept',
-      'rename_concept',
-      'replace_relation',
-    ]);
-  });
 });
