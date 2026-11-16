@@ -328,13 +328,12 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
 );
 
 it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
-  "lets no name hold or gain ink over a domain's disc while a member of the opened %s star is pressed",
+  "lets no name, the pressed member's included, hold or gain ink over a disc not its own while a member of the opened %s star is pressed",
   (domainId) => {
     const { capabilities, elements } = domainStarIds(model, domainId);
     const star = new Set([domainId, ...capabilities, ...elements]);
-    const free = { minX: 0, minY: 0, maxX: W / 2 + 120, maxY: H };
     const breaches: string[] = [];
-    for (const zoom of [2.5, 3, 3.3]) {
+    for (const [zoom, free] of [2.5, 3, 3.3, 3.6].flatMap((z) => [{ minX: 0, minY: 0, maxX: W / 2 + 120, maxY: H }, { minX: 0, minY: 0, maxX: W, maxY: H }].map((f) => [z, f] as const))) {
       for (const member of capabilities) {
         const camera = cameraOn(domainId, {});
         const rest = framesUntilSettled(camera, { freeRect: free }, star, 0, 1, 1, FRAME_MS);
@@ -343,10 +342,9 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
         for (let i = 1, now = opened.end + FRAME_MS; i <= 40; i += 1, now += FRAME_MS) {
           paintFlatGraphFrame(camera(zoom, { focusedNodeId: member, freeRect: free, now }), TOKENS);
           const probe = describeLastDialFrame(W, H)!;
-          const domains = probe.discs.filter((d) => d.id !== null && model.domainById.has(d.id));
           for (const n of [...probe.texts, ...probe.fadingTexts]) {
             if (n.id === null || n.alpha < (before.get(`${n.role} ${n.id} ${n.side}`) ?? 0)) continue;
-            for (const d of domains) {
+            for (const d of probe.discs) {
               if (d.id !== n.id && Math.hypot(Math.max(n.box.minX - d.x, 0, d.x - n.box.maxX), Math.max(n.box.minY - d.y, 0, d.y - n.box.maxY)) < d.r - 0.5) breaches.push(`${member} at ${zoom}, frame ${i}: ${n.role} ${n.text} on ${d.id}`);
             }
           }

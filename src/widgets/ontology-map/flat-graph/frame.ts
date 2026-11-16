@@ -832,11 +832,11 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
     target = scratch[0]! * share;
   }
   glideName(row);
-  // A name arrives only where it is clear and leaves at full pace where it is not; the selection's
-  // name stays with it over marks at every zoom, and waits only for its own rows to glide apart.
+  // A name arrives only where it is clear and leaves at full pace where it is not. The selection's name
+  // gives way only to a disc drawn past its resting radius: names below it give way to it, and its plate covers dots.
   if (target > DRAWN_INK && grownMarks.size > 0) {
     const held = n.id === F.attention.focusId && !CAPTION_ROWS.has(n.role);
-    room = nameRoom(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, !held) > ROOM_GONE_PX ? 1 : 0;
+    room = nameRoom(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, held) > ROOM_GONE_PX ? 1 : 0;
     // The selection's name stays put while its star's dots move out past it, so it draws on its plate while one crosses it.
     if (held && !backed) backed = onGrownDot(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy);
     target *= room;
@@ -903,33 +903,36 @@ function collectGrownMarks(): void {
   for (let i = 0; i < L.dots.size; i += 1) if (grownIds.has(L.dots.items[i]!.id)) grownMarks.add(L.dots.items[i]!);
 }
 
+/** The air, in px, between a box and a circle's edge; below zero over it. */
+function boxAir(minX: number, maxX: number, minY: number, maxY: number, m: Disc | Dot): number {
+  return Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r;
+}
+
 /**
  * The air, in px, between a name's glyphs where this frame draws them, from `x`, `y`, and the names
- * drawn before it, less the pad two names keep; with `others`, also the nearest disc not its own and
- * grown dot (none for a backed name, whose plate covers them). Rows of one concept count only while
- * one of them glides off its place, as a domain's census and reach rows share one slot. Only while
- * marks grow: O(discs + domains + grown dots + names) per name.
+ * drawn before it, less the pad two names keep, and the nearest disc not its own and grown dot (none
+ * for a backed name, whose plate covers them). A `held` name (the selection's) measures only its own
+ * rows and the discs drawn past their resting radius. Rows of one concept count only while one of
+ * them glides off its place, as a domain's census and reach rows share one slot. Only while marks
+ * grow: O(discs + domains + grown dots + names) per name.
  */
-function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolean): number {
+function nameRoom(n: PlacedName, at: Point, x: number, y: number, held: boolean): number {
   const pad = F.P.namePadPx;
   const minX = x + n.box.minX + pad;
   const maxX = x + n.box.maxX - pad;
   const minY = y + n.box.minY + pad;
   const maxY = y + n.box.maxY - pad;
   let room = Infinity;
-  if (others) {
+  if (held) {
+    // Admission may rest the selection's name over a disc on its plate; one still shrinking from a closed star was not there.
+    for (let i = 0; i < grownDiscCount; i += 1) if (grownMarks.items[i]!.id !== n.id) room = Math.min(room, boxAir(minX, maxX, minY, maxY, grownMarks.items[i]!));
+  } else {
     // Domains and the project draw from their own lists; a name gives way to them like any disc.
     for (const list of discLists) {
-      for (let i = 0; i < list.size; i += 1) {
-        const m = list.items[i]!;
-        if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
-      }
+      for (let i = 0; i < list.size; i += 1) if (list.items[i]!.id !== n.id) room = Math.min(room, boxAir(minX, maxX, minY, maxY, list.items[i]!));
     }
     if (n.backed !== true) {
-      for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
-        const m = grownMarks.items[i]!;
-        if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
-      }
+      for (let i = grownDiscCount; i < grownMarks.size; i += 1) if (grownMarks.items[i]!.id !== n.id) room = Math.min(room, boxAir(minX, maxX, minY, maxY, grownMarks.items[i]!));
     }
   }
   const gliding = Math.abs(x - at.x) > NAME_REST_PX || Math.abs(y - at.y) > NAME_REST_PX;
@@ -938,7 +941,7 @@ function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolea
     const ox = o.x - o.name.dx;
     const oy = o.y - o.name.dy;
     if (o.name.id === n.id && (CAPTION_ROWS.has(n.role) && CAPTION_ROWS.has(o.name.role) || (!gliding && Math.abs(ox - at.x) <= NAME_REST_PX && Math.abs(oy - at.y) <= NAME_REST_PX))) continue;
-    if (!others && o.name.id !== n.id) continue;
+    if (held && o.name.id !== n.id) continue;
     const apart = Math.max(ox + o.name.box.minX + pad - maxX, minX - (ox + o.name.box.maxX - pad), oy + o.name.box.minY + pad - maxY, minY - (oy + o.name.box.maxY - pad));
     room = Math.min(room, apart - pad);
   }
