@@ -214,6 +214,22 @@ function restingFrames(camera: ReturnType<typeof cameraOn>, zooms: readonly numb
 /** Well inside the viewport, where a name has room on every side. */
 const INSET_PX = 160;
 
+it("draws a selected element's dot and name at every zoom the reader leaves it at", () => {
+  const missing: string[] = [];
+  for (const id of model.capabilityOf.keys()) {
+    const camera = cameraOn(id, {});
+    let now = 0;
+    for (const zoom of [4, 2, 1.5, 1, 0.5]) {
+      framesUntilSettled(camera, { focusedNodeId: id, reducedMotion: true }, new Set(), now, zoom, zoom, FRAME_MS);
+      now += 10_000;
+      const probe = describeLastDialFrame(W, H)!;
+      if (!probe.glyphs.some((g) => g.id === id)) missing.push(`${id} dot at zoom ${zoom}`);
+      if (!probe.texts.some((t) => t.id === id && t.role === "element")) missing.push(`${id} name at zoom ${zoom}`);
+    }
+  }
+  expect(missing.slice(0, 6)).toEqual([]);
+});
+
 describe("the resting overview", () => {
   const sweep = [0.5, 0.7, 1, 1.4, 2, 2.8, 4, 5.6, 8];
 

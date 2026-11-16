@@ -928,7 +928,9 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     if (uncovered <= DRAWN_INK) continue;
     const elAt = screenOf(el);
     const r = dotRadius(el);
-    const clear = it.direct ? ROOM_WHOLE_PX : Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - discRadius(it.id) - r;
+    // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
+    const coverR = it.direct || el === F.selectedId || el === F.leavingId ? 0 : discRadius(it.id);
+    const clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
     const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
     alphas.set(el, 1);
