@@ -138,6 +138,7 @@
   },
   "film": {
     "label": "How Markdown becomes the map",
+    "actsLabel": "Jump to a scene",
     "acts": {
       "1": {
         "title": "Your ontology is plain Markdown",
@@ -163,6 +164,7 @@
   },
   "harnessFilm": {
     "label": "The harness at a glance",
+    "actsLabel": "Jump to a scene",
     "acts": {
       "1": {
         "title": "What your agent reads first",
