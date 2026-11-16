@@ -32,6 +32,14 @@ describe('turnActivity', () => {
     expect(activity.steps).toBe(2);
   });
 
+  it('reads a dotted vault call reported as a command as the read it is', () => {
+    const rawInput = { server: 'atlas-vault', tool: 'get_concept', arguments: { slug: 'domains/map' } };
+    const activity = turnActivity([user, tool('t1', 'mcp.atlas-vault.get_concept', 'execute', 'in_progress', rawInput)], 0, 'atlas-vault', true);
+    expect(activity.kind).toBe('reading');
+    expect(activity.label).toEqual({ kind: 'known', text: 'read' });
+    expect(activity.target).toBe('domains/map');
+  });
+
   it.each([
     ['mcp__atlas-vault__find_evidence', 'other', 'searching'],
     ['mcp__atlas-vault__patch_concept', 'other', 'writing'],

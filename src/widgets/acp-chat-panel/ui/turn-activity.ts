@@ -1,6 +1,6 @@
 import { readToolFallbackTarget, type AcpEvent } from '@/features/acp-session';
 
-import { toolLabel, withKindFallback, type ToolLabel } from './tool-label';
+import { canonicalToolTitle, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
 
 /**
  * What the agent is doing right now, read only from what the turn has reported. With no open
@@ -75,7 +75,8 @@ export function turnActivity(
     if (!SETTLED.has(event.status)) open = event;
   }
   if (open) {
-    const label = withKindFallback(toolLabel(open.title, vaultServerName), open.title, vaultServerName, open.toolKind);
+    const title = canonicalToolTitle(open.title, open.rawInput);
+    const label = withKindFallback(toolLabel(title, vaultServerName), title, vaultServerName, open.toolKind);
     return { kind: kindOf(open, label), label, target: readToolFallbackTarget(open.rawInput)?.value ?? null, steps };
   }
   const answering = textArriving && last?.kind === 'agent' && last.text.trim().length > 0;

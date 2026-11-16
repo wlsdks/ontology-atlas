@@ -98,6 +98,20 @@ export function withKindFallback(
   return kind ? { kind: 'kind', text: kind } : label;
 }
 
+const DOTTED_MCP_TITLE = /^mcp\.([^.]+)\.([^.]+)$/;
+
+/**
+ * Codex titles a call `mcp.<server>.<tool>` and titles ordinary commands as well, so the dotted
+ * spelling becomes `mcp__<server>__<tool>` only when the call's own envelope names the same tool.
+ */
+export function canonicalToolTitle(title: string, rawInput: unknown): string {
+  const dotted = DOTTED_MCP_TITLE.exec(title.trim());
+  if (!dotted || !rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return title;
+  const [, server, tool] = dotted;
+  const envelope = rawInput as Record<string, unknown>;
+  return envelope.server === server && envelope.tool === tool ? `mcp__${server}__${tool}` : title;
+}
+
 /**
  * `mcp__atlas-vault__add_concept` → `{ kind: 'known', text: 'addNode' }`
  * `mcp__other__do_thing`          → `{ kind: 'raw',   text: 'do_thing' }`

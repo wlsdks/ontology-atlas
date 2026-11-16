@@ -760,6 +760,32 @@ describe('chat panel: draws only what happened', () => {
     );
   });
 
+  it('names and counts a vault call that arrives in the dotted spelling', async () => {
+    await bootSession();
+    await startUserTurn('go');
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-dotted',
+          title: 'mcp.atlas-vault.list_concepts',
+          kind: 'execute',
+          status: 'completed',
+          rawInput: { server: 'atlas-vault', tool: 'list_concepts', arguments: { kind: 'domain' } },
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 4, nodes: [] }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute('data-tool-outcome', '4'),
+    );
+    const row = document.querySelector('[data-acp-entry="tool"]');
+    expect(row).toHaveAttribute('data-tool-label', 'known');
+    expect(row?.querySelector('[data-tool-label-text]')?.textContent).toBe('tool.read');
+  });
+
   it('never puts a count beside a call that failed', async () => {
     await bootSession();
     emit({

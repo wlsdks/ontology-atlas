@@ -16,7 +16,7 @@ import { Chip, Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 
 import { splitAppRequest } from '../request-parts';
-import { isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from '../tool-label';
+import { canonicalToolTitle, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from '../tool-label';
 import { toolRowPhase, workingShimmer } from '../working-ink';
 import { ChatMarkdown } from '../chat-markdown/ChatMarkdown';
 import { CHAT_MARKDOWN, WORK_MARKDOWN } from './markdown-classes';
@@ -126,16 +126,17 @@ export const TranscriptEntry = memo(function TranscriptEntry({
   }
   if (event.kind === 'tool') {
 
+    const title = canonicalToolTitle(event.title, event.rawInput);
     const rawLabel = withKindFallback(
-      toolLabel(event.title, VAULT_MCP_SERVER_NAME),
-      event.title,
+      toolLabel(title, VAULT_MCP_SERVER_NAME),
+      title,
       VAULT_MCP_SERVER_NAME,
       event.toolKind,
     );
     const read = readToolOutcome(
       event.rawOutput,
       event.status,
-      isVaultTool(event.title, VAULT_MCP_SERVER_NAME),
+      isVaultTool(title, VAULT_MCP_SERVER_NAME),
       live,
     );
 
