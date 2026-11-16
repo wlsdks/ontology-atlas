@@ -157,6 +157,27 @@
       }
     }
   },
+  "harnessFilm": {
+    "label": "一眼看清 harness",
+    "acts": {
+      "1": {
+        "title": "智能体最先读的指令",
+        "body": "AGENTS.md、CLAUDE.md 和规则文件：智能体动手前读的文件，集中在一个界面。"
+      },
+      "2": {
+        "title": "执行前拦下的钩子",
+        "body": "无法撤销的命令在执行前就被钩子拦下。看清哪个钩子拦下什么。"
+      },
+      "3": {
+        "title": "完成后运行的检查",
+        "body": "类型检查、Lint 和测试：智能体完成的工作由什么来验证。"
+      },
+      "4": {
+        "title": "这个仓库真实的 harness",
+        "body": "指令文件 {instructions} 个，钩子 {hooks} 个，检查 {checks} 项。"
+      }
+    }
+  },
   "motion": {
     "pause": "暂停动效",
     "play": "恢复动效"

@@ -132,13 +132,14 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   // Each block's drawing plays while the leg rests on it.
   const stops = [
     { id: "gateway-film", attribute: "data-gateway-film", value: /playing/ },
+    { id: "gateway-harness", attribute: "data-gateway-harness", value: /playing/ },
     { id: "gateway-loop-cards", attribute: "data-gateway-scene-motion", value: /running/ },
     { id: "gateway-start-steps", attribute: "data-gateway-entrance", value: /entering|still/ },
   ];
   for (const { id, attribute, value } of stops) {
     const top = await topOf(id);
-    // The film is pinned through a tall block, so the leg parks halfway down it, mid-scene.
-    const park = id === "gateway-film" ? top + viewport.height * 1.4 : top;
+    // The films are pinned through tall blocks, so the leg parks partway down each, mid-scene.
+    const park = id === "gateway-film" || id === "gateway-harness" ? top + viewport.height * 1.4 : top;
     await wheelTo(page, (scrolled) => scrolled >= park);
     await expect(page.getByTestId(id)).toHaveAttribute(attribute, value);
     // measurement window: part of the leg

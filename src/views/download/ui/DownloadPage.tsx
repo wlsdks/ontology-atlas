@@ -35,6 +35,7 @@ import { LoopSection, StartSection } from './LoopSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
 import { FilmSection } from './FilmSection';
+import { HarnessFilm } from './HarnessFilm';
 import { MotionToggle } from './MotionToggle';
 import { useMotionPaused } from '../lib/motion-pause';
 import { SectionIntro } from './SectionIntro';
@@ -96,6 +97,7 @@ export function DownloadPage() {
         />
         <ProofNumbers graph={graph} />
         <FilmSection graph={graph} />
+        <HarnessFilm />
         <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection />
