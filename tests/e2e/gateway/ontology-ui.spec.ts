@@ -29,7 +29,7 @@ test.describe("ontology view UI", () => {
     const primary = page.getByTestId("gateway-hero-cta");
     await expect(primary).toBeVisible();
 
-    await expect(page.getByText(/Signed and notarized by Apple/i).first()).toBeVisible();
+    await expect(page.getByText(/Checked by Apple/i).first()).toBeVisible();
     await expect(page.getByText(/Open Anyway/i)).toHaveCount(0);
     await expect(page.getByText(/Not signed yet/i)).toHaveCount(0);
 

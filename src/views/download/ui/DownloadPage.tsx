@@ -17,7 +17,7 @@ import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BrandCompanion } from '@/shared/ui/marks/brand-companion';
 import { GithubMark } from '@/shared/ui/marks/github-mark';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
   MACOS_RELEASE,
@@ -143,6 +143,18 @@ export function DownloadPage() {
                 <span className="font-mono">{tFooter('stack')}</span>
                 <MotionToggle testId="gateway-footer-motion-toggle" className="gap-1.5 sm:ml-auto" />
               </div>
+              <p className="mt-3 text-[color:var(--color-text-tertiary)]">
+                {tFooter('contact.lead')}{' '}
+                <a
+                  href={MAKER_LINKEDIN_URL}
+                  target="_blank"
+                  rel="noreferrer noopener me"
+                  data-testid="download-footer-contact"
+                  className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'underline underline-offset-2' })}
+                >
+                  {tFooter('contact.link')}
+                </a>
+              </p>
               {/* Nominative use; marks follow the stricter rule in docs/features/agents.md. */}
               <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
                 {tFooter('trademarks')}
@@ -404,7 +416,7 @@ function DownloadActions({
           href="/topology"
           data-testid="gateway-hero-web-cta"
           className={cn(
-            buttonVariants({ variant: 'ghost', size: 'lg' }),
+            buttonVariants({ variant: 'outline', size: 'lg' }),
             'px-4 sm:px-6',
             HERO_CTA_WRAP,
           )}

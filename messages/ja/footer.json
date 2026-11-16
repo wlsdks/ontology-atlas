@@ -3,5 +3,9 @@
   "thirdPartyLicenses": "サードパーティライセンス",
   "github": "GitHub",
   "stack": "ローカルファースト · Next.js · TypeScript · Canvas 2D · MCP",
-  "trademarks": "Claude Code、Codex、Cursorをはじめとするここに記載の製品名は、各社の商標です。Ontology Atlasはこれらの企業と提携しておらず、承認も受けていません。名前は接続先を示すために使っています。"
+  "trademarks": "Claude Code、Codex、Cursorをはじめとするここに記載の製品名は、各社の商標です。Ontology Atlasはこれらの企業と提携しておらず、承認も受けていません。名前は接続先を示すために使っています。",
+  "contact": {
+    "lead": "質問やアイデアがあれば、気軽に連絡してください。",
+    "link": "LinkedInでDMを送る"
+  }
 }
