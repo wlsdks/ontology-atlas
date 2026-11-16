@@ -85,14 +85,15 @@ function usePhaseLayers(phase: UpdatePhase) {
 
 /**
  * The live region stays mounted and empty while nothing is drawn, so a card that arrives already
- * filled (a hidden download finishing) is still announced.
+ * filled (a hidden download finishing) is still announced. It carries no `status` role: an empty
+ * status on every screen would answer each screen's own lookup of its status.
  */
 export function UpdateToast(props: UpdateToastProps) {
   const open = isDrawn(props.phase) && !props.hidden;
   const { mounted } = usePanelPresence(open, FADE_OUT_MS);
   const layers = usePhaseLayers(props.phase);
   return (
-    <div role="status" aria-live="polite" data-testid="app-update-live">
+    <div aria-live="polite" data-testid="app-update-live">
       {mounted && layers ? <UpdateCard {...props} open={open} layers={layers} /> : null}
     </div>
   );
