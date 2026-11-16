@@ -371,23 +371,15 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       >
         <canvas ref={canvas} aria-hidden className="gateway-film-canvas absolute inset-0 h-full w-full" />
         {film ? <div aria-hidden className="gateway-film-vignette pointer-events-none absolute inset-0" /> : null}
-        <ol
-          className={cn(
-            film
-              ? 'absolute inset-x-0 bottom-[9svh] grid place-items-center px-6'
-              : 'sr-only',
-          )}
-        >
+        {film ? (
+        <ol className="absolute inset-x-0 bottom-[9svh] grid place-items-center px-6">
           {ACTS.map((act, i) => (
             <li
               key={act}
               ref={(node) => {
                 captions.current[i] = node;
               }}
-              className={cn(
-                'flex max-w-[40rem] flex-col items-center text-center [grid-area:1/1]',
-                film && 'invisible opacity-0',
-              )}
+              className="invisible flex max-w-[40rem] flex-col items-center text-center opacity-0 [grid-area:1/1]"
             >
               <span className="font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)]">
                 {String(act).padStart(2, '0')} / 04
@@ -401,18 +393,19 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
             </li>
           ))}
         </ol>
+        ) : null}
       </div>
       {film ? null : (
         <div className={PAGE_GUTTER}>
-          <ol aria-hidden className={cn(PAGE_COLUMN, 'mt-8 grid gap-6 @container sm:grid-cols-2 lg:grid-cols-4')}>
+          <ol className={cn(PAGE_COLUMN, 'mt-8 grid gap-6 @container sm:grid-cols-2 lg:grid-cols-4')}>
             {ACTS.map((act) => (
               <li key={act} className="min-w-0">
                 <span className="font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]">
                   {String(act).padStart(2, '0')}
                 </span>
-                <p className="mt-2 text-title leading-title text-[color:var(--color-text-primary)]">
+                <h3 className="mt-2 text-title leading-title text-[color:var(--color-text-primary)]">
                   {t(`acts.${act}.title`)}
-                </p>
+                </h3>
                 <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {t(`acts.${act}.body`, counts)}
                 </p>
