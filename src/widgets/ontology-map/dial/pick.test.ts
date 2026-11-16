@@ -65,6 +65,24 @@ describe("pickDial", () => {
     expect(pickDial(picks, rows, 30, 0, HIT_TOUCH_SLACK_PX)).toBe("other-name");
   });
 
+  it("picks a mark drawn smaller than its reach anywhere within that reach, the nearest centre where reaches overlap", () => {
+    const dot = (id: string, x: number, solid: boolean): DialPick => ({ id, x, y: 0, r: 2, solid, reachPx: 10 });
+    const picks = [dot("left", 0, true), dot("right", 16, false)];
+    expect(pickDial(picks, [], 0, 9.5, HIT_TOUCH_SLACK_PX), "past the slack, inside the reach").toBe("left");
+    expect(pickDial(picks, [], 7.9, 0, HIT_TOUCH_SLACK_PX)).toBe("left");
+    expect(pickDial(picks, [], 8.1, 0, HIT_TOUCH_SLACK_PX)).toBe("right");
+    expect(pickDial(picks, [], 0, 10.5, HIT_TOUCH_SLACK_PX), "outside the reach").toBeNull();
+  });
+
+  it("keeps a point on a drawn disc for that disc over a neighbour's wider reach and nearer centre", () => {
+    const big = { ...disc("big", 0, 0, 12), solid: true, reachPx: 12 };
+    const dot = { ...disc("dot", 15, 0, 2), solid: true, reachPx: 10 };
+    expect(pickDial([dot, big], [], 11, 0, HIT_TOUCH_SLACK_PX)).toBe("big");
+    const cap = { ...disc("cap", 0, 0, 5), reachPx: 10 };
+    const element = { ...disc("element", 7, 0, 1), reachPx: 10 };
+    expect(pickDial([cap, element], [], 4.5, 0, HIT_TOUCH_SLACK_PX), "on the drawn cap, nearer the element's centre").toBe("cap");
+  });
+
   it("returns null outside every disc, slack ring and row", () => {
     expect(pickDial([disc("cap", 0, 0, 4)], [row("r", 50, 50, 60, 60)], 30, 30, HIT_TOUCH_SLACK_PX)).toBeNull();
     expect(pickDial([], [], 0, 0, HIT_TOUCH_SLACK_PX)).toBeNull();

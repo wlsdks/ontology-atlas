@@ -120,7 +120,6 @@ test("selecting a domain counts its partner domains under its name as the panel 
   await openVault(page);
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
   const orders = await domainNode(page, "orders");
-  const clickedZoom = (await readDial(page)).zoomRatio;
   await page.mouse.click(box.x + orders.x, box.y + orders.y);
   await page.waitForFunction((id) => window.__atlasMap!.selection().nodeId === id, orders.id);
   await page.mouse.move(box.x + 2, box.y + box.height - 2);
@@ -129,8 +128,6 @@ test("selecting a domain counts its partner domains under its name as the panel 
 
   const dial = await readDial(page);
   expect(await domainLines(page, dial), "every partner's line draws").toEqual(ORDERS_LINES);
-  // A domain is framed as its reach, so it may zoom out to bring a partner between the panels.
-  expect(dial.zoomRatio, "a domain selection never zooms in").toBeLessThanOrEqual(clickedZoom + 1e-9);
 
   const members = new Set(dial.clusters.find((c) => c.domainId === orders.id)!.capabilityIds);
   const under = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).flatMap((s) => dial.discs

@@ -116,7 +116,7 @@ const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", 
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const labelBoxPool = markPool<LabelBox>(() => ({ nodeId: "", text: "", minX: 0, minY: 0, maxX: 0, maxY: 0 }));
-const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0, solid: false }));
+const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0, solid: false, reachPx: 0 }));
 const POOLS = [segments, dots, discs, glows, lights, arcMarks, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, chordPool];
 const selectionRing: Ring = { x: 0, y: 0, r: 0, alpha: 0, ink: "" };
 const agentRing: Ring = { x: 0, y: 0, r: 0, alpha: 1, ink: "" };
@@ -161,6 +161,7 @@ function elementPick(id: string, at: Point): DialPick {
   if (p.x !== at.x) p.x = at.x;
   if (p.y !== at.y) p.y = at.y;
   if (p.r !== r) p.r = r;
+  p.reachPx = Math.max(r, F.P.pickMinPx);
   return p;
 }
 
@@ -600,6 +601,7 @@ function pickOf(d: Disc): DialPick {
   if (p.x !== d.x) p.x = d.x;
   if (p.y !== d.y) p.y = d.y;
   if (p.r !== d.r) p.r = d.r;
+  p.reachPx = Math.max(d.r, F.P.pickMinPx);
   return p;
 }
 

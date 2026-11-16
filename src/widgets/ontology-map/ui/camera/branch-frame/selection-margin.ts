@@ -5,7 +5,7 @@ import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { readDialTokens } from "../../../dial/tokens";
 import type { DialModel, DialWorld } from "../../../dial/types";
 import {
-  SELECTION_NUDGE_MARGIN_PX, reachFrameSets, reachFrameTarget, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
+  SELECTION_NUDGE_MARGIN_PX, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
 } from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
@@ -14,8 +14,8 @@ import { domainTitleBlocks, nameReachBox, selectedDiscRadius, type NameReachInpu
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../topology-camera-math";
-import { elementSelectionZoom, graphSelectionZoom } from "./graph-selection-zoom";
+import { computeEffectiveCameraScaleMax } from "../topology-camera-math";
+import { domainSelectionZoom, elementSelectionZoom, graphSelectionZoom } from "./graph-selection-zoom";
 
 const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();
 
@@ -30,17 +30,16 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
  * domain with every side their names may take, preferring the whole lit reach when it already
  * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
- * A domain is its reach to other domains instead: it never zooms in, and zooms out as far as the
- * map's own fit to bring every partner between the panels.
+ * A domain frames its own star (disc, name block and member discs) instead, zooming in only until
+ * its members stand apart to press; partner domains may leave the view.
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
-  band: { entryScale: number; maxScale: number; minScale: number; zoomBase: number },
+  band: { entryScale: number; maxScale: number; zoomBase: number },
 ): CameraTarget | null {
   const { model } = dial;
   const paint = readFlatGraphTokens().paint;
   const growth = paint.growthMax;
-  const attention = cachedGraphAttention(model, id, true);
   const radius = (of: string) => {
     if (model.domainById.has(of)) return graphDiscRadiusPx("domain", 0, paint, growth);
     const cap = model.capabilityById.get(of);
@@ -49,19 +48,39 @@ function graphSelectionFrame(
   };
   const measureText = createMeasureText();
   const fontFamily = labelFontFamily();
+  if (model.domainById.has(id)) {
+    const titles = domainTitleBlocks({ model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily });
+    const members = model.domainById.get(id)!.capabilityIds;
+    /** A mark as the frame holds it: the drawn disc, and the whole block of a domain's name under it when `withName`. */
+    const blocks = (ids: Iterable<string>, withName: boolean) => [...ids].flatMap((of): FramedMark[] => {
+      const node = world.nodeById.get(of);
+      if (!node) return [];
+      const r = radius(of);
+      const title = withName ? titles.get(of) : undefined;
+      const half = Math.max(r, title?.halfWidthPx ?? 0);
+      return [{ x: node.x, y: node.y, box: { minX: -half, maxX: half, minY: Math.min(-r, title?.topPx ?? 0), maxY: Math.max(r, title?.bottomPx ?? 0) } }];
+    });
+    // Members come along as discs: their names are re-admitted at whatever zoom the frame lands on.
+    const star = [...blocks([id], true), ...blocks(members, false)];
+    const zoom = domainSelectionZoom({
+      members: members.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartPx, star,
+      maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
+    });
+    return selectionFrameTarget(camera, [star], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
+  }
+  const attention = cachedGraphAttention(model, id, true);
   const elementLabel = (of: string) => world.nodeById.get(of)?.label ?? null;
   const input: NameReachInput = {
     model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily, growth,
     selected: true, focusId: id, named: attention.named, lit: attention.lit, reach: attention.reach, discRadius: radius,
     elementLabel, staleByDomain: staleBound(model),
   };
-  const domainId = model.domainById.has(id) ? id : model.domainOf.get(id) ?? null;
+  const domainId = model.domainOf.get(id) ?? null;
   const near = new Set([id]);
   const whole = new Set([id]);
   if (domainId !== null) near.add(domainId);
   const owner = model.capabilityOf.get(id);
   if (owner) near.add(owner);
-  if (model.domainById.has(id)) for (const cap of model.domainById.get(id)!.capabilityIds) near.add(cap);
   for (const line of attention.lines) {
     for (const end of [line.from, line.to]) {
       whole.add(end);
@@ -73,36 +92,6 @@ function graphSelectionFrame(
     const node = world.nodeById.get(of);
     return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
   });
-  if (model.domainById.has(id)) {
-    const partners = new Set(attention.lines.map((line) => (line.from === id ? line.to : line.from)));
-    const titles = domainTitleBlocks({ model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily });
-    /**
-     * A mark as the frame holds it: the drawn disc, and the whole block of a domain's name under it
-     * when `withName`.
-     */
-    const blocks = (ids: Iterable<string>, withName: boolean) => [...ids].flatMap((of): FramedMark[] => {
-      const node = world.nodeById.get(of);
-      if (!node) return [];
-      const r = radius(of);
-      const title = withName ? titles.get(of) : undefined;
-      const half = Math.max(r, title?.halfWidthPx ?? 0);
-      return [{ x: node.x, y: node.y, box: { minX: -half, maxX: half, minY: Math.min(-r, title?.topPx ?? 0), maxY: Math.max(r, title?.bottomPx ?? 0) } }];
-    });
-    // Members come along as discs: their names are re-admitted at whatever zoom the frame lands on,
-    // so holding every side one might take would cost the reach the picture is about.
-    const own = [...blocks([id], true), ...blocks([...near].filter((of) => of !== id), false)];
-    // Every partner's disc, and as much of their names as asks no more zoom-out than the map's own fit.
-    const sets = [[...own, ...blocks(partners, true)], ...reachFrameSets(own, blocks(partners, false))];
-    const extent = dial.scene.graph!.extent;
-    const domainDisc = graphDiscRadiusPx("domain", 0, paint, growth);
-    const mapFit = (span: number, extentSpan: number) => (span - paint.frameMarginPx * 2 - domainDisc * 2) / Math.max(extentSpan, 1e-6);
-    // No partner asks a smaller scale than the one holding every domain of the map, disc and all;
-    // below it the frame would only show what the overview already does, and the camera's own
-    // minimum would lift the scale back without moving the pan computed for it.
-    const mapScale = Math.min(mapFit(free.maxX - free.minX, extent.maxX - extent.minX), mapFit(free.maxY - free.minY, extent.maxY - extent.minY));
-    const floor = Math.max(mapScale, band.minScale);
-    return reachFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, floor);
-  }
   const element = !model.capabilityById.has(id) && model.domainOf.has(id);
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
@@ -120,7 +109,7 @@ function graphSelectionFrame(
  */
 export function selectionSlideTarget(
   world: TopologyWorld, dial: DialWorld | null | undefined, id: string, camera: CameraTarget, viewport: { width: number; height: number },
-  insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax" | "cameraMinZoomRatio" | "cameraScaleMin">,
+  insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax">,
   overviewScale: number,
   zoomBase: number,
 ): CameraTarget | null {
@@ -130,8 +119,7 @@ export function selectionSlideTarget(
     const free = { minX: insets.safeInsetLeft, maxX: viewport.width - insets.safeInsetRight, minY: insets.safeInsetTop, maxY: viewport.height - insets.safeInsetBottom };
     const entryScale = overviewScale * insets.overviewEntryRatio;
     const maxScale = computeEffectiveCameraScaleMax(entryScale, insets.cameraMaxZoomRatio, insets.cameraScaleMax, world.dialScaleMax ?? undefined);
-    const minScale = computeEffectiveCameraScaleMin(entryScale, insets.cameraMinZoomRatio, insets.cameraScaleMin);
-    return graphSelectionFrame(world, dial, id, camera, viewport, free, { entryScale, maxScale, minScale, zoomBase });
+    return graphSelectionFrame(world, dial, id, camera, viewport, free, { entryScale, maxScale, zoomBase });
   }
   const span = viewport.width - insets.safeInsetLeft - insets.safeInsetRight;
   return selectionNudgeTarget(camera, node, viewport.width, { left: insets.safeInsetLeft, right: insets.safeInsetRight }, branchSelectionMargin(world, dial, id, camera.tscale, span));
