@@ -2,8 +2,6 @@
 
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import type { AnalysisCompatibility, AnalysisRun } from '@/entities/analysis-record';
 import { CloseButton, Dialog, DialogBody } from '@/shared/ui';
@@ -19,11 +17,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** Everything a review leaves for audit, kept off the results list: plain sections, nothing folded. */
-export function ReviewRecordDialog({ open, onClose, run, compatibility, problems, actions, decisions }: {
+export function ReviewRecordDialog({ open, onClose, run, compatibility, answer, problems, actions, decisions }: {
   open: boolean;
   onClose: () => void;
   run: AnalysisRun;
   compatibility: AnalysisCompatibility | null;
+  /** The agent's Markdown, rendered where the security registry lists the sink. */
+  answer: ReactNode;
   problems: readonly string[];
   actions: ReactNode;
   decisions: ReactNode;
@@ -45,7 +45,7 @@ export function ReviewRecordDialog({ open, onClose, run, compatibility, problems
       </div>
       <div className="flex flex-wrap gap-2">{actions}</div>
       <Section title={t('answer')}>
-        <div className="flex flex-col gap-3 break-words"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{run.answer}</ReactMarkdown></div>
+        <div className="flex flex-col gap-3 break-words">{answer}</div>
       </Section>
       {cited.length ? <Section title={t('evidence')}>
         {cited.map((slug) => <div key={slug} className="flex flex-col gap-1">

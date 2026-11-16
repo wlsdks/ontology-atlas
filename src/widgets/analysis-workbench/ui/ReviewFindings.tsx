@@ -32,10 +32,10 @@ export const FindingRow = forwardRef<HTMLButtonElement, {
     className: 'h-full w-full flex-col items-start gap-1 px-3 py-2.5 text-left',
   })}>
     <span className="flex w-full min-w-0 items-start gap-2">
-      <span className={cn('line-clamp-2 min-w-0 flex-1 text-body leading-body font-[var(--font-weight-strong)]', dismissed ? 'text-[color:var(--color-text-tertiary)]' : 'text-[color:var(--color-text-primary)]')}>{finding.title}</span>
+      <span className={cn('line-clamp-2 min-w-0 flex-1 text-body leading-body font-[var(--font-weight-strong)]', dismissed ? 'text-[color:var(--color-text-secondary)]' : 'text-[color:var(--color-text-primary)]')}>{finding.title}</span>
       {disposition ? <DispositionBadge disposition={disposition} /> : null}
     </span>
-    <span className={cn('line-clamp-2 w-full text-label leading-label', dismissed ? 'text-[color:var(--color-text-quaternary)]' : 'text-[color:var(--color-text-secondary)]')}>{finding.detail}</span>
+    <span className={cn('line-clamp-2 w-full text-label leading-label', dismissed ? 'text-[color:var(--color-text-tertiary)]' : 'text-[color:var(--color-text-secondary)]')}>{finding.detail}</span>
   </button>;
 });
 

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, requestsAnalysisFindings, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
@@ -430,6 +432,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     </div> : null}
   </section>
   {selected ? <ReviewRecordDialog open={recordOpen} onClose={() => setRecordOpen(false)} run={selected} compatibility={compatibility}
+    answer={<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown>}
       problems={loaded?.handle === context.handle ? loaded.problems : []}
       actions={<>
         <Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip>
