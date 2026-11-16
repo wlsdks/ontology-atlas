@@ -643,11 +643,12 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
         paint();
       });
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
+    // Captured: the page scrolls an inner container, whose scroll events do not bubble to window.
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
     return () => {
       observer.disconnect();
       unregister();
-      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scroll', onScroll, { capture: true });
       cancelAnimationFrame(pending);
     };
   }, [film, scene, labelled, namedCapabilities, closeUp, frontmatter]);
