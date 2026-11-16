@@ -8,6 +8,7 @@ import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { getTopologyFocusHref } from "@/entities/project";
 import type { MapEvidenceAvailability } from "@/features/vault-ontology";
 import { Button, Dialog, DialogBody, DialogFooter, OntologyMapKindGlyph } from "@/shared/ui";
+import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { TO_CHECK_REASONS, type ProjectToCheck, type ToCheckReason, type ToCheckRow } from "../../model/project-to-check";
@@ -33,6 +34,7 @@ export function ToCheckSection({
   availability,
   staleCount,
   comparedCount,
+  reviewReading,
   reducedMotion,
   arrivalOffset = 0,
 }: {
@@ -42,6 +44,8 @@ export function ToCheckSection({
   staleCount: number;
   /** The project's capabilities the walk compared: the sentence's denominator. */
   comparedCount: number;
+  /** The review queue has not been read yet, so its absence says nothing. */
+  reviewReading: boolean;
   reducedMotion: boolean;
   arrivalOffset?: number;
 }) {
@@ -49,6 +53,7 @@ export function ToCheckSection({
   const [dialogOpen, setDialogOpen] = useState(false);
   const arrival = useArrival(toCheck.visible.length > 0);
   const total = toCheck.rows.length;
+  const reading = reviewReading || availability === "reading";
   const evidenceLine =
     availability === "measured" ? t("toCheckEvidenceMeasured", { stale: staleCount, measured: comparedCount })
       : availability === "reading" ? t("toCheckEvidenceReading")
@@ -102,6 +107,7 @@ export function ToCheckSection({
       />
       <ul
         data-testid="project-detail-to-check-rows"
+        aria-busy={reading}
         className="relative -mx-2 mt-2 flex min-h-[calc(3*2.75rem+2px)] flex-col gap-px"
       >
         <AnimatePresence initial mode="popLayout">
@@ -110,12 +116,20 @@ export function ToCheckSection({
               <ToCheckRowLink row={row} />
             </motion.li>
           ))}
+          {toCheck.visible.length === 0 && !reading ? (
+            <motion.li
+              key="empty"
+              data-testid="project-detail-to-check-empty"
+              className="px-2 py-1.5 text-pretty text-body leading-body text-[color:var(--color-text-secondary)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: reducedMotion ? MOTION.fast : EXIT_TRANSITION }}
+              transition={reducedMotion ? MOTION.fast : MOTION.base}
+            >
+              {t("toCheckEmpty")}
+            </motion.li>
+          ) : null}
         </AnimatePresence>
-        {toCheck.visible.length === 0 && availability !== "reading" ? (
-          <li data-testid="project-detail-to-check-empty" className="px-2 py-1.5 text-pretty text-body leading-body text-[color:var(--color-text-secondary)]">
-            {t("toCheckEmpty")}
-          </li>
-        ) : null}
       </ul>
       <ToCheckDialog open={dialogOpen} onClose={() => setDialogOpen(false)} projectName={projectName} rows={toCheck.rows} />
     </section>

@@ -18,12 +18,18 @@ function reviewMarksKey(docs: readonly VaultDoc[]): string {
   return marks.join("\u0001");
 }
 
+export interface ProjectReviewRows {
+  rows: ReviewQueueRow[];
+  /** True until the first queue is read; a later re-read keeps the previous rows on screen. */
+  reading: boolean;
+}
+
 /**
  * The folder's review queue by the rule `/docs` uses (`buildReviewQueue`): raised documents, and
  * confirmed ones whose meaning changed since or could not be read. Bodies are read from the open
  * folder, or from the bundled sample's content.
  */
-export function useProjectReviewRows(docs: readonly VaultDoc[]): ReviewQueueRow[] {
+export function useProjectReviewRows(docs: readonly VaultDoc[]): ProjectReviewRows {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
   const staticSource = useStaticVaultSource();
@@ -49,5 +55,6 @@ export function useProjectReviewRows(docs: readonly VaultDoc[]): ReviewQueueRow[
     };
   }, [key, docs, bundled, fileHandles]);
 
-  return key && result?.key === key ? result.rows : NO_ROWS;
+  if (!key) return { rows: NO_ROWS, reading: false };
+  return { rows: result?.rows ?? NO_ROWS, reading: result === null };
 }

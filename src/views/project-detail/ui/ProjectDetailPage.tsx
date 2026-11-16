@@ -329,7 +329,7 @@ export function ProjectDetailPage({
   // The map's own walk and window, so the page and the map name the same states and days.
   const evidence = useMapEvidenceStates({ nodes: insightNodeList, enabled: true });
   const recentChanges = useAdaptiveRecentChanges();
-  const reviewRows = useProjectReviewRows(vaultDocs);
+  const review = useProjectReviewRows(vaultDocs);
   const conceptFacts = useVaultConceptFacts();
 
   if (!slug) {
@@ -384,7 +384,7 @@ export function ProjectDetailPage({
   const toCheck = buildProjectToCheck({
     nodes: insightNodes,
     projectSlug: project.slug,
-    reviewRows,
+    reviewRows: review.rows,
     stalePaths: evidenceMeasured ? evidence.stalePaths : NO_STALE_PATHS,
     findingsBySlug: conceptFacts,
     domainNameById,
@@ -572,6 +572,7 @@ export function ProjectDetailPage({
             availability={evidenceAvailability}
             staleCount={staleIds.size}
             comparedCount={comparedCapabilities}
+            reviewReading={review.reading}
             reducedMotion={reducedMotion}
           />
         </div>
