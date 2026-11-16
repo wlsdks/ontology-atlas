@@ -452,11 +452,17 @@ pub(crate) fn acp_permission_verdict(
     file_path: Option<String>,
 ) -> String {
     let verdict = permission_verdict_for_session(&sessions, &session_id, file_path.as_deref());
+    verdict_wire_name(verdict).to_string()
+}
+
+/// The exact strings `tauri-acp.ts` declares as `AcpPermissionVerdict`.
+fn verdict_wire_name(verdict: acp::permission_verdict::PermissionVerdict) -> &'static str {
     match verdict {
-        acp::permission_verdict::PermissionVerdict::AllowInsideVault => {
-            "allow-inside-vault".to_string()
+        acp::permission_verdict::PermissionVerdict::AllowInsideVault => "allow-inside-vault",
+        acp::permission_verdict::PermissionVerdict::AllowInsideVaultHidden => {
+            "allow-inside-vault-hidden"
         }
-        acp::permission_verdict::PermissionVerdict::Ask => "ask".to_string(),
+        acp::permission_verdict::PermissionVerdict::Ask => "ask",
     }
 }
 
@@ -689,6 +695,21 @@ mod tests {
         let mut pids = result.unwrap();
         pids.sort_unstable();
         assert_eq!(pids, vec![11, 22]);
+    }
+
+    #[test]
+    fn every_verdict_reaches_the_screen_under_its_serialized_name() {
+        use acp::permission_verdict::PermissionVerdict;
+        for verdict in [
+            PermissionVerdict::AllowInsideVault,
+            PermissionVerdict::AllowInsideVaultHidden,
+            PermissionVerdict::Ask,
+        ] {
+            assert_eq!(
+                serde_json::to_value(verdict).unwrap(),
+                serde_json::Value::from(verdict_wire_name(verdict))
+            );
+        }
     }
 
     #[test]

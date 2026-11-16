@@ -181,6 +181,15 @@
   "model": "Model",
   "mode": "Mode",
   "modeUnverified": "{name} · Not checked",
+  "approval": "Approval",
+  "approvalOption": {
+    "ask": "Ask every time",
+    "auto": "Auto-approve"
+  },
+  "approvalHint": {
+    "ask": "Always asks before a write.",
+    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, anything outside the folder, deletions and commits still ask."
+  },
   "modeUnverifiedHint": "Not checked yet.",
   "runtimePicker": "Agent to chat with",
   "tool": {
@@ -314,6 +323,7 @@
     "modeMovedServerGate": "The agent moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval.",
     "autoAllowed": "{detail} was written without asking: it matches the wiki page format.",
     "autoRefused": "Denied without asking · {detail}. It is outside what this conversation may do.",
+    "autoApproved": "Auto-approved: {target}",
     "openPage": "Open",
     "askNext": "Ask next time"
   },

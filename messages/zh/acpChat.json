@@ -181,6 +181,15 @@
   "model": "模型",
   "mode": "模式",
   "modeUnverified": "{name} · 未检查",
+  "approval": "批准",
+  "approvalOption": {
+    "ask": "每次询问",
+    "auto": "自动批准"
+  },
+  "approvalHint": {
+    "ask": "写入前总是先询问。",
+    "auto": "此文件夹内的文件编辑，以及添加或修改概念和关系，会直接进行，不再询问。Shell 命令、文件夹以外的内容、删除和提交仍会询问。"
+  },
   "modeUnverifiedHint": "尚未检查。",
   "runtimePicker": "选择对话的智能体",
   "tool": {
@@ -314,6 +323,7 @@
     "modeMovedServerGate": "智能体把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。通过 Atlas 工具做出的更改，仍会在服务器端等待你的批准。",
     "autoAllowed": "{detail} 已直接写入，未经询问：它符合 Wiki 页面格式。",
     "autoRefused": "已直接拒绝，未经询问 · {detail}。它超出了此对话可以做的范围。",
+    "autoApproved": "已自动批准：{target}",
     "openPage": "打开",
     "askNext": "下次先询问"
   },

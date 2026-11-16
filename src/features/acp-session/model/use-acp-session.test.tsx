@@ -23,7 +23,7 @@ const bridge = vi.hoisted(() => ({
   failSetMode: false,
   /** The `modes` block `session/new` answers with. Null means the adapter advertised none. */
   sessionModes: null as unknown,
-  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault',
+  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault' | 'allow-inside-vault-hidden',
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -1453,6 +1453,169 @@ describe('autoDecide — the screen answers a permission it can judge', () => {
     await waitFor(() => expect(result.current.pending?.request.reviewKind).toBe('ontology-write'));
     expect(bridge.sent.some((message) => message.id === 302 && 'result' in message)).toBe(false);
     await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('auto-approve — the person answers once for the conversation', () => {
+  const OPTIONS = [
+    { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+    { kind: 'allow_always', name: 'Allow all edits this session', optionId: 'allow-always' },
+    { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+  ];
+  const fileEdit = (id: number, path: string) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `edit-${id}`, title: `Edit ${path}`, kind: 'edit', rawInput: { file_path: path } } },
+  });
+  const atlasWrite = (id: number, tool: string) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `write-${id}`, title: `mcp__atlas-vault__${tool}`, kind: 'other', rawInput: { slug: `capabilities/${id}` } } },
+  });
+  const answerOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+
+  async function startSession(options: Partial<Parameters<typeof useAcpSession>[0]> = {}) {
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], ...options }));
+    const starting = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBeGreaterThan(0));
+    await act(async () => { bridge.release?.(); await starting; });
+    return hook;
+  }
+
+  async function startTurn(result: { current: ReturnType<typeof useAcpSession> }) {
+    bridge.holdPrompt = true;
+    void result.current.send('Tidy the refund notes.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+  }
+
+  it('answers an in-folder file edit with allow_once, leaves no card and says so once', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(fileEdit(401, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(answerOf(401)).toBe('allow'));
+    expect(result.current.pending).toBeNull();
+    expect(result.current.events.filter((event) => event.kind !== 'user')).toEqual([
+      expect.objectContaining({ text: 'auto-approved', detail: 'refund.md' }),
+    ]);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('shows the card for the same edit while it is off, and starts every new conversation off', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    const switching = result.current.switchSession(null);
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    await act(async () => { bridge.release?.(); await switching; });
+    expect(result.current.autoApprove).toBe(false);
+
+    await act(async () => { bridge.listener?.(fileEdit(402, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(402));
+    expect(answerOf(402)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('marks auto-approved Atlas writes as the standing choice and closes each receipt when its write ends', async () => {
+    bridge.holdPrompt = true;
+    const receipts: AcpWorkReceipt[] = [];
+    const { result } = await startSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    act(() => result.current.setAutoApprove(true));
+    void result.current.send('Add the refund concepts.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+
+    await act(async () => {
+      bridge.listener?.(atlasWrite(501, 'add_concept'));
+      bridge.listener?.(atlasWrite(502, 'add_relation'));
+    });
+    await waitFor(() => expect(answerOf(502)).toBe('allow'));
+    expect(answerOf(501)).toBe('allow');
+    expect(result.current.pending).toBeNull();
+    expect(receipts).toEqual([
+      expect.objectContaining({ tool: 'add_concept', decision: 'allowed', result: 'pending', approvedBy: 'auto-approve' }),
+      expect.objectContaining({ tool: 'add_relation', decision: 'allowed', result: 'pending', approvedBy: 'auto-approve' }),
+    ]);
+
+    for (const toolCallId of ['write-501', 'write-502']) {
+      act(() => bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
+        sessionUpdate: 'tool_call_update', toolCallId, status: 'completed',
+      } } })));
+    }
+    await waitFor(() => expect(receipts).toHaveLength(4));
+    expect(receipts.slice(2)).toEqual([
+      expect.objectContaining({ tool: 'add_concept', result: 'completed', approvedBy: 'auto-approve' }),
+      expect.objectContaining({ tool: 'add_relation', result: 'completed', approvedBy: 'auto-approve' }),
+    ]);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it.each([
+    ['the Rust verdict asks', 'ask'],
+    ['the resolved path lands in a dot folder', 'allow-inside-vault-hidden'],
+  ] as const)('shows the card for an in-folder edit when %s', async (_reason, verdict) => {
+    bridge.permissionVerdict = verdict;
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(fileEdit(403, '/vault/docs/gitconfig')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(403));
+    expect(answerOf(403)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('shows the card for an in-folder edit that arrives outside any turn', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+
+    await act(async () => { bridge.listener?.(fileEdit(404, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(404));
+    expect(answerOf(404)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('refuses an Atlas write outside any turn as before, with no receipt and no notice', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    const { result } = await startSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    act(() => result.current.setAutoApprove(true));
+
+    await act(async () => { bridge.listener?.(atlasWrite(503, 'add_concept')); });
+    await waitFor(() => expect(answerOf(503)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+    expect(receipts).toEqual([]);
+    expect(result.current.events.some((event) => event.kind === 'notice')).toBe(false);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('still shows the card for an Atlas deletion', async () => {
+    bridge.holdPrompt = true;
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    void result.current.send('Remove the old refund concept.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+
+    await act(async () => { bridge.listener?.(atlasWrite(601, 'delete_concept')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(601));
+    expect(answerOf(601)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it("lets the screen's own refusal win over auto-approve", async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    const { result } = await startSession({ autoDecide: () => ({ reject: 'outside-round-scope' }) });
+    act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(fileEdit(701, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(answerOf(701)).toBe('reject'));
+    expect(result.current.events.some((event) => event.kind === 'notice' && event.text === 'auto-approved')).toBe(false);
     await act(async () => { await result.current.stop(); });
   });
 });
