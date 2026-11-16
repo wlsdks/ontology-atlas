@@ -11,6 +11,11 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
       },
+      {
+        // The search crawlers of answer engines, named so a later wildcard change cannot drop them.
+        userAgent: ['OAI-SearchBot', 'ChatGPT-User', 'Claude-SearchBot', 'Claude-User', 'PerplexityBot', 'Google-Extended'],
+        allow: '/',
+      },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

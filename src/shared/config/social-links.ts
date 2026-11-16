@@ -17,5 +17,8 @@ export function xProfileUrl(): string | null {
   return X_HANDLE ? `https://x.com/${X_HANDLE}` : null;
 }
 
+/** The maker's LinkedIn profile: the page's direct line to the person behind it. */
+export const MAKER_LINKEDIN_URL = 'https://www.linkedin.com/in/writedev/';
+
 /** This repo's public URL — the chrome and the gateway share this value. */
 export const GITHUB_REPO_URL = 'https://github.com/wlsdks/ontology-atlas';
