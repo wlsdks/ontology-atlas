@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { GitCommitHorizontal, MousePointer2, SquareTerminal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -283,7 +283,15 @@ export function StartSection() {
   const tAnalyze = useTranslations('topology.startSteps.analyze');
   const tRail = useTranslations('navRail');
   const tConnect = useTranslations('agentConnect');
-  const [steps, entrance] = useEntrance();
+  const [stepsEntrance, entrance] = useEntrance();
+  const [stepsMotion, pathMotion] = useInViewMotion();
+  const steps = useCallback(
+    (node: HTMLElement | null) => {
+      stepsEntrance(node);
+      stepsMotion(node);
+    },
+    [stepsEntrance, stepsMotion],
+  );
 
   const rows = [
     { title: t('step1.title'), body: t('step1.body'), press: tFirst('openTitle') },
@@ -305,6 +313,7 @@ export function StartSection() {
           ref={steps}
           data-testid="gateway-start-steps"
           data-gateway-entrance={entrance}
+          data-gateway-steps-motion={pathMotion}
           className="mt-12 grid min-w-0 gap-x-8 gap-y-10 @min-[52rem]:grid-cols-3"
         >
           {rows.map((row, index) => (
@@ -317,15 +326,24 @@ export function StartSection() {
                 >
                   {String(index + 1).padStart(2, '0')}
                 </span>
-                <span aria-hidden className="gateway-step-rule h-px min-w-0 flex-1" />
+                {/* A point of light runs each rule to the next step, whose button then lights. */}
+                <span aria-hidden className="gateway-step-track relative h-px min-w-0 flex-1">
+                  <span className="gateway-step-rule absolute inset-0" />
+                  <span
+                    className="gateway-step-spark absolute -top-px left-0 h-[3px] w-2/5 rounded-full"
+                    style={{ '--gateway-step': index } as CSSProperties}
+                  />
+                </span>
               </Line>
               {/* The button the step presses, drawn small in the app's own word. */}
               <Line index={index * 2 + 1} className="mt-5">
                 <span
                   aria-hidden
-                  className="inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
+                  className="gateway-step-press relative inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
+                  style={{ '--gateway-step': index } as CSSProperties}
                 >
-                  {row.press}
+                  <span className="gateway-step-lit absolute -inset-px rounded-[inherit]" />
+                  <span className="relative">{row.press}</span>
                 </span>
               </Line>
               <h3 className={cn(CARD_TITLE, 'mt-4')}>{row.title}</h3>
