@@ -256,6 +256,49 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
   },
 );
 
+const CAPTION_ROLES = new Set(["units", "status"]);
+
+/**
+ * Every name the last frame painted whose glyphs cross another name, a disc not its own, or an
+ * element dot grown past its resting radius while the name draws on no backing. A domain's census
+ * and reach rows share one slot, so their cross-fade is no crossing.
+ */
+function nameBreaches(): string[] {
+  const probe = describeLastDialFrame(W, H)!;
+  const names = [...probe.texts, ...probe.fadingTexts].filter((n) => n.id !== null);
+  const under = (b: Probe["texts"][number]["box"], m: Mark) => Math.hypot(Math.max(b.minX - m.x, 0, m.x - b.maxX), Math.max(b.minY - m.y, 0, m.y - b.maxY)) < m.r - 0.5;
+  const breaches: string[] = [];
+  names.forEach((n, i) => {
+    for (const d of probe.discs) if (d.id !== n.id && under(n.box, d)) breaches.push(`${n.role} ${n.text} on ${d.id}`);
+    for (const g of probe.glyphs) if (g.id !== n.id && g.grown && !n.backed && under(n.box, g)) breaches.push(`${n.role} ${n.text} on grown ${g.id}`);
+    for (const o of names.slice(i + 1)) {
+      if (o.id === n.id && CAPTION_ROLES.has(o.role) && CAPTION_ROLES.has(n.role)) continue;
+      const b = n.box;
+      if (Math.min(b.maxX, o.box.maxX) > Math.max(b.minX, o.box.minX) && Math.min(b.maxY, o.box.maxY) > Math.max(b.minY, o.box.minY)) breaches.push(`${n.role} ${n.text} on ${o.role} ${o.text}`);
+    }
+  });
+  return breaches;
+}
+
+describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])("the opened %s star at rest", (domainId) => {
+  const { capabilities, elements } = domainStarIds(model, domainId);
+  const star = new Set([domainId, ...capabilities, ...elements]);
+
+  it.each([2, 2.5, 3, 3.6])("names every member at zoom %s, a name over its star's grown dots only on a backing and none on a disc or a name", (zoom) => {
+    const camera = cameraOn(domainId, {});
+    const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+    framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, zoom, 600);
+    const { texts, discs } = describeLastDialFrame(W, H)!;
+    // The camera here centres the domain rather than framing the star, so only members well in view are asked for.
+    const inView = capabilities.filter((id) => discs.some((d) => d.id === id && d.x > INSET_PX && d.x < W - INSET_PX && d.y > INSET_PX && d.y < H - INSET_PX));
+    const named = inView.filter((id) => texts.some((t) => t.id === id && t.role === "capability"));
+    const backed = texts.filter((t) => t.backed && capabilities.includes(t.id ?? "")).length;
+    console.log(`[star names] ${domainId} at zoom ${zoom}: ${named.length} of ${inView.length} in view named, ${backed} backed`);
+    expect(inView.filter((id) => !named.includes(id))).toEqual([]);
+    expect(nameBreaches().slice(0, 6)).toEqual([]);
+  });
+});
+
 describe("a mark's drawn radius across frames", () => {
   it("takes its radius at once when it comes back on screen, however long it was away", () => {
     const worldKey = {};
@@ -322,7 +365,7 @@ function nameInks(camera: ReturnType<typeof cameraOn>, over: Partial<DialFrameIn
 /** Every name the last frame painted, a name no longer admitted included while its ink runs out. */
 function paintedInks(): Map<string, number> {
   const probe = describeLastDialFrame(W, H)!;
-  return new Map([...probe.texts, ...probe.fadingTexts].map((t) => [`${t.role} ${t.id}`, t.alpha]));
+  return new Map([...probe.texts, ...probe.fadingTexts].map((t) => [`${t.role} ${t.id} ${t.side}`, t.alpha]));
 }
 
 /** Name ink steps of 0.2 or more while the camera travels from the overview's middle to `domainId` at `zoomTo`, a press's path. */
@@ -346,8 +389,10 @@ function inkJumpsOnTheWay(domainId: string, zoomTo: number): string[] {
     const s = (1 - Math.cos(Math.PI * Math.min(1, i / 42))) / 2;
     paintFlatGraphFrame(frame(Math.pow(zoomTo, s), { x: from.x + (to.x - from.x) * s, y: from.y + (to.y - from.y) * s }, { now: now + (i - 1) * FRAME_MS, focusedNodeId: domainId }), TOKENS);
     const after = paintedInks();
+    // A name that comes in over the canvas edge takes its ink at once, as the star-motion spec allows.
+    const overEdge = new Set(describeLastDialFrame(W, H)!.texts.filter((t) => t.box.minX <= 0 || t.box.minY <= 0 || t.box.maxX >= W || t.box.maxY >= H).map((t) => `${t.role} ${t.id} ${t.side}`));
     for (const [name, alpha] of after) {
-      const was = before.get(name) ?? 0;
+      const was = before.get(name) ?? (overEdge.has(name) ? alpha : 0);
       if (Math.abs(alpha - was) >= 0.2) jumps.push(`frame ${i}: ${name} ${was.toFixed(2)} -> ${alpha.toFixed(2)}`);
     }
     before = after;

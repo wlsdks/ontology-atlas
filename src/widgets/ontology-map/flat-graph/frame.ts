@@ -380,7 +380,7 @@ interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; d
 interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
 /** Per world: its frame count, and what each mark drew and in which of those frames. */
 interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius>; names: Map<string, DrawnName[]>; namesBefore: DrawnName[]; namesNow: DrawnName[] }
-/** One name's drawn ink, the frame it last drew, the frame it was last admitted in and the last it was admitted off screen. */
+/** One name's drawn ink on one side of its mark, the frame it last drew, the frame it was last admitted in and the last it was admitted off screen. */
 interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number; offScreen: number; stepped: number }
 const drawnRadii = new WeakMap<object, DrawnMarks>();
 /** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
@@ -728,17 +728,25 @@ function loadNameInk(n: PlacedName): void {
 }
 
 /** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
-/** The record of `n`'s drawn ink in this world, made on its first admission. O(rows of its concept). */
+/**
+ * The record of `n`'s drawn ink in this world, one per side of its mark, so a name that changes
+ * side fades out where it stood and in where it goes. O(rows of its concept).
+ */
 function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
   let rows = F.names.names.get(n.id);
   if (!rows) F.names.names.set(n.id, (rows = []));
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i]!;
-    if (row.name.role === n.role && row.wasFocus === wasFocus) return row;
+    if (row.name.role === n.role && row.wasFocus === wasFocus && sideOf(row.name) === sideOf(n)) return row;
   }
   const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1, offScreen: -1, stepped: -1 };
   rows.push(row);
   return row;
+}
+
+/** Which side of its mark a name stands on: its alignment and whether it sits above, on or below the mark's row. */
+function sideOf(n: PlacedName): number {
+  return (n.align === "left" ? 0 : n.align === "right" ? 3 : 6) + Math.sign(n.dy) + 1;
 }
 
 /**
@@ -835,6 +843,8 @@ function holdsPlace(n: PlacedName): boolean {
 
 const NAME_RANKS = 5;
 const nameRanks: number[] = [];
+/** This frame's admitted names, each on the side it draws: an open star's member may trade its side for one clear of chrome. */
+const plannedNames: PlacedName[] = [];
 
 /** Which names win where two would cross: places held, then names the lit picture asks for, capabilities, elements, and captions last. */
 function nameRank(n: PlacedName): number {
@@ -842,13 +852,17 @@ function nameRank(n: PlacedName): number {
   if (n.role !== "capability" && n.role !== "element") return 4;
   return n.role === "capability" ? 2 : 3;
 }
+/** This frame's grown discs, then its grown dots from `grownDiscCount` on. */
 const grownMarks = new FrameList<Disc | Dot>();
+let grownDiscCount = 0;
 
 /** This frame's discs and dots an opened star or a selection grew, gathered once before the names. O(marks). */
 function collectGrownMarks(): void {
   grownMarks.restart();
+  grownDiscCount = 0;
   if (grownIds.size === 0) return;
   for (let i = 0; i < L.discs.size; i += 1) if (grownIds.has(L.discs.items[i]!.id)) grownMarks.add(L.discs.items[i]!);
+  grownDiscCount = grownMarks.size;
   for (let i = 0; i < L.dots.size; i += 1) if (grownIds.has(L.dots.items[i]!.id)) grownMarks.add(L.dots.items[i]!);
 }
 
@@ -865,7 +879,9 @@ function nameRoom(n: PlacedName, at: Point, offMarks: boolean): number {
   const maxY = at.y + n.box.maxY - pad;
   let room = Infinity;
   if (offMarks) {
-    for (let i = 0; i < grownMarks.size; i += 1) {
+    // A backed name's plate covers the dots under it; only discs crowd it.
+    const end = n.backed === true ? grownDiscCount : grownMarks.size;
+    for (let i = 0; i < end; i += 1) {
       const m = grownMarks.items[i]!;
       if (m.id === n.id) continue;
       room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
@@ -1266,12 +1282,25 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   // order they rank; with nothing grown no name gives way, and admission's order stands. O(names).
   const ranked = grownMarks.size > 0;
   const ranks = nameRanks;
+  const planned = plannedNames;
   ranks.length = admission.names.length;
+  planned.length = admission.names.length;
   for (let nIndex = 0; nIndex < admission.names.length;) {
     const end = nameBlockEnd(admission.names, nIndex);
-    const show = blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
+    let show = blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
+    planned[nIndex] = admission.names[nIndex]!;
+    // An open star's member whose side runs under chrome takes the best of its other sides that clears it.
+    const alternates = show ? undefined : admission.alternates.get(admission.names[nIndex]!.id);
+    if (alternates !== undefined && end === nIndex + 1) {
+      for (let k = 0; k < alternates.length && !show; k += 1) {
+        if (blockShows(alternates, k, k + 1, chrome, null)) {
+          planned[nIndex] = alternates[k]!;
+          show = true;
+        }
+      }
+    }
     for (let i = nIndex; i < end; i += 1) {
-      const n = admission.names[i]!;
+      const n = i === nIndex ? planned[i]! : (planned[i] = admission.names[i]!);
       if (!ranked && show) planName(n, alphas, n.id === leaving ? mix : 1, false);
       ranks[i] = ranked && show ? nameRank(n) : -1;
     }
@@ -1279,8 +1308,8 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   }
   if (ranked) {
     for (let rank = 0; rank < NAME_RANKS; rank += 1) {
-      for (let i = 0; i < admission.names.length; i += 1) {
-        const n = admission.names[i]!;
+      for (let i = 0; i < planned.length; i += 1) {
+        const n = planned[i]!;
         if (ranks[i] === rank) planName(n, alphas, n.id === leaving ? mix : 1, false);
       }
     }
@@ -1868,8 +1897,8 @@ const pool = emptyDialFrameMarks();
 type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
-const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false, alpha: 1, room: 1, fading: false }));
-const probeGlyphs = markPool<GlyphMark>(() => ({ id: "", kind: "element", x: 0, y: 0, r: 0, egoState: "normal", fill: null, stroke: null, hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false, alpha: 1, room: 1, fading: false, side: 0 }));
+const probeGlyphs = markPool<GlyphMark>(() => ({ id: "", kind: "element", x: 0, y: 0, r: 0, egoState: "normal", fill: null, stroke: null, hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false, grown: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
 const probeStripList = new FrameList(pool.strips);
@@ -1954,6 +1983,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (glyph.x !== d.x) glyph.x = d.x;
     if (glyph.y !== d.y) glyph.y = d.y;
     if (glyph.r !== d.r) glyph.r = d.r;
+    glyph.grown = grownIds.has(d.id);
     probeGlyphList.add(glyph);
   }
   const arcInk = inkIndex(tokens.inks.arc);
@@ -1975,6 +2005,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
     text.backed = n.name.backed === true;
     text.fading = n.fading;
+    text.side = sideOf(n.name);
     if (text.alpha !== n.ink) text.alpha = n.ink;
     if (text.room !== n.room) text.room = n.room;
     setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);

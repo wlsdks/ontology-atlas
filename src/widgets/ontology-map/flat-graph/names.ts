@@ -39,6 +39,8 @@ export interface NameAdmission {
   sides: ReadonlyMap<string, number>;
   /** Where each fanned element's name is anchored, in world units; every other name is anchored at its concept. */
   anchors: ReadonlyMap<string, Point>;
+  /** An open star's member's other acceptable sides, best first: where its name goes when its side runs under chrome. */
+  alternates: ReadonlyMap<string, readonly PlacedName[]>;
 }
 
 export interface NameInput {
@@ -393,7 +395,19 @@ function projectName(input: NameInput): PlacedName | null {
   };
 }
 
-type NameShape = Pick<NameInput, "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach" | "openStarId">;
+type NameShape = Pick<NameInput, "model" | "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach" | "openStarId">;
+
+/** The domain whose star is open, null while none is or a capability's elements are. */
+function openDomainStar(input: Pick<NameInput, "model" | "openStarId">): string | null {
+  const id = input.openStarId ?? null;
+  return id !== null && input.model.domainById.has(id) ? id : null;
+}
+
+/** Whether `id` is a member capability of the open domain star: a reader opens a star to read every one of them. */
+function isStarMember(input: Pick<NameInput, "model" | "openStarId">, id: string): boolean {
+  const domainId = openDomainStar(input);
+  return domainId !== null && input.model.capabilityById.has(id) && input.model.domainOf.get(id) === domainId;
+}
 
 /** An element dot's radius as its name keeps clear of it: the dot at this growth, or larger where an opened star grows it. */
 function elementDotRadius(input: Pick<NameInput, "tokens" | "growth" | "discRadius" | "openStarId">, id: string): number {
@@ -415,9 +429,9 @@ function sideNames(input: NameShape, id: string, role: "capability" | "element",
     [{ id, role, text, font: f, dx: x, dy: 0, align: "left", box: { minX: x - t.namePadPx, maxX: x + w + t.namePadPx, minY: -half, maxY: half } }],
     [{ id, role, text, font: f, dx: -x, dy: 0, align: "right", box: { minX: -x - w - t.namePadPx, maxX: -x + t.namePadPx, minY: -half, maxY: half } }],
   ];
-  if (!input.named.has(id)) return sides;
   const below = x + px / 2;
   const centred = (dy: number): PlacedName[] => [{ id, role, text, font: f, dx: 0, dy, align: "center", box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: dy - half, maxY: dy + half } }];
+  if (!input.named.has(id) && !isStarMember(input, id)) return sides;
   const rise = px + t.namePadPx * 2;
   const diagonal = (side: 1 | -1, dy: number): PlacedName[] => [{
     id, role, text, font: f, dx: side * x, dy, align: side === 1 ? "left" : "right",
@@ -625,6 +639,9 @@ function hubCaptionBox(input: NameInput): Box | null {
   return { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx };
 }
 
+/** The highest side cost with no dot of the open star under the name. */
+const CLEAR_SIDE = 3;
+
 /** How many capabilities a folded star names at rest: its most connected ones stand for the mass. */
 const FOLDED_STAR_NAMES = 2;
 
@@ -716,8 +733,9 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       litMarks.add(box);
     }
   }
-  // While a star is open, every element dot at the radius it draws once the star has opened, a lit
-  // dot standing out: a name takes a side clear of them when one is free. O(elements).
+  // A resting element dot never crowds a name, so the overview names over dots. An open domain star
+  // keeps names off the dots it grows, at their opened radius; a capability's star off every dot,
+  // a lit one standing out. O(elements).
   const starDots = new Occupancy(CELL_PX / scale);
   const keepOffDot = (id: string) => {
     const r = input.discRadius(id) * (input.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
@@ -725,7 +743,12 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     if (!at || fan?.offsets.has(id)) return;
     starDots.add(worldBox(at, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
   };
-  if ((input.openStarId ?? null) !== null) {
+  const starDomain = openDomainStar(input);
+  if (starDomain !== null) {
+    const d = model.domainById.get(starDomain)!;
+    for (const capId of d.capabilityIds) for (const id of model.capabilityById.get(capId)?.elementIds ?? []) keepOffDot(id);
+    for (const id of d.directElementIds) keepOffDot(id);
+  } else if ((input.openStarId ?? null) !== null) {
     for (const id of model.capabilityOf.keys()) keepOffDot(id);
     for (const d of model.domains) for (const id of d.directElementIds) keepOffDot(id);
   }
@@ -794,6 +817,12 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
   // the selection and the agent's focus keeps to the sides clear of title blocks when any is, and
   // drops when each of those prints over a concept's name; an element also keeps off discs and the ring.
+  // A leader may not run through a name already set down. O(names) per off-row try.
+  const leaderClearAt = (at: Point, group: readonly PlacedName[]) => !group.some((n) => {
+    if (!n.leader) return false;
+    const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
+    return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
+  });
   const tryPlace = (cand: Candidate, force: boolean, mayOverprint = force) => {
     const at = anchor(cand.id);
     const all = cand.tries();
@@ -804,12 +833,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
     const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
     const offRing = (group: readonly PlacedName[]) => !(yields && cand.element) || !onRing(at, group);
-    // A leader may not run through a name already set down. O(names) per off-row try.
-    const leaderClear = (group: readonly PlacedName[]) => !group.some((n) => {
-      if (!n.leader) return false;
-      const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
-      return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
-    });
+    const leaderClear = (group: readonly PlacedName[]) => leaderClearAt(at, group);
     // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
     const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
@@ -840,13 +864,86 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       conceptNames.add(at, n.box);
     }
   };
+  const alternates = new Map<string, PlacedName[]>();
+  const sideCosts: number[] = [];
+  /**
+   * Each side of an open star's member: -1 over a name, a disc or a leader's path, else lower for a
+   * side clear of its star's dots (`CLEAR_SIDE` and below), clear of the lit lines and inside the
+   * overview's extent, which does not bound an opened star's camera. Returns how many sides are
+   * acceptable, only clear ones when `clearOnly`.
+   */
+  const memberCosts = (at: Point, all: readonly PlacedName[][], clearOnly: boolean): number => {
+    sideCosts.length = all.length;
+    let open = 0;
+    for (let i = 0; i < all.length; i += 1) {
+      const group = all[i]!;
+      // Across the whole step, as names are held apart: the zoom may rest anywhere inside it.
+      if (hits(words, at, group) || group.some((n) => stepScales.some((s) => marks.hits(worldBox(at, n.box, s)))) || !leaderClearAt(at, group)) {
+        sideCosts[i] = -1;
+        continue;
+      }
+      const dots = group.reduce((sum, n) => sum + Math.max(...stepScales.map((s) => starDots.count(worldBox(at, n.box, s)))), 0);
+      sideCosts[i] = dots * 4 + (crossed(at, group) ? 2 : 0) + (inside(at, group) ? 0 : 1);
+      if (!clearOnly || sideCosts[i]! <= CLEAR_SIDE) open += 1;
+    }
+    return open;
+  };
+  type Member = { id: string; at: Point; all: PlacedName[][] };
+  /**
+   * Names a member on its cheapest side, drawn backed over the dots it crosses past `CLEAR_SIDE`,
+   * and keeps its other acceptable sides, best first. O(sides log sides + sides × cells touched).
+   */
+  const placeMember = ({ id, at, all }: Member) => {
+    memberCosts(at, all, false);
+    let best = -1;
+    for (let i = 0; i < all.length; i += 1) if (sideCosts[i]! >= 0 && (best < 0 || sideCosts[i]! < sideCosts[best]!)) best = i;
+    const backs = (i: number) => sideCosts[i]! > CLEAR_SIDE || crossed(at, all[i]!);
+    sides.set(id, best);
+    for (const n of all[best]!) {
+      if (backs(best)) n.backed = true;
+      place(n);
+      conceptNames.add(at, n.box);
+    }
+    const others = all.flatMap((group, i) => (i !== best && sideCosts[i]! >= 0 && group.length === 1 ? [i] : []))
+      .sort((a, b) => sideCosts[a]! - sideCosts[b]! || a - b)
+      .map((i) => {
+        if (backs(i)) all[i]![0]!.backed = true;
+        return all[i]![0]!;
+      });
+    if (others.length > 0) alternates.set(id, others);
+  };
+  /**
+   * Names the open star's members, the one with the fewest acceptable sides first, so a member with
+   * room on several sides leaves a crowded neighbour its one side. Clear sides go first; a member with
+   * none takes, in a second round, a backed side. O(members² × sides × cells touched).
+   */
+  const placeStarMembers = () => {
+    const members: Member[] = pending.filter((c) => !ids.has(c.id) && isStarMember(input, c.id)).map((c) => ({ id: c.id, at: anchor(c.id), all: c.tries() }));
+    for (const clearOnly of [true, false]) {
+      for (;;) {
+        let pick: Member | null = null;
+        let fewest = Infinity;
+        for (const m of members) {
+          if (ids.has(m.id)) continue;
+          const open = memberCosts(m.at, m.all, clearOnly);
+          if (open > 0 && open < fewest) {
+            fewest = open;
+            pick = m;
+          }
+        }
+        if (pick === null) break;
+        placeMember(pick);
+      }
+    }
+  };
   // The focus wins over every name, then capabilities over elements.
   const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
   // A name the step below showed stays wherever a side is clear of names; with none it goes, and still counts against its star.
   if (seed) for (const cand of pending) if (seed.ids.has(cand.id)) tryPlace(cand, true, false);
   for (const cand of pending) if (!ids.has(cand.id) && cand.id === input.focusId) tryPlace(cand, true);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id) && ahead(cand)) tryPlace(cand, true);
-  if (input.lit !== null) for (const cand of pending) if (!ids.has(cand.id) && !cand.element && input.lit.has(cand.id)) tryPlace(cand, false);
+  if (starDomain !== null) placeStarMembers();
+  if (input.lit !== null) for (const cand of pending) if (!ids.has(cand.id) && !cand.element && input.lit.has(cand.id) && !isStarMember(input, cand.id)) tryPlace(cand, false);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id)) tryPlace(cand, true);
   // A folded star is a mass: at rest it names only its most connected few, and a folded orphan group none.
   const folded = (roomKey: string) => crowdShare(layout, roomKey, tokens, lowest, input.growth) < 1;
@@ -882,7 +979,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   }
   const anchors = new Map<string, Point>();
   if (fan) for (const id of fan.offsets.keys()) anchors.set(id, anchor(id));
-  return { step, names, ids, sides, anchors };
+  return { step, names, ids, sides, anchors, alternates };
 }
 
 const degreeCache = new WeakMap<DialModel, Map<string, number>>();
