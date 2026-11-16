@@ -828,13 +828,14 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
   if (!fading) {
     loadNameInk(n);
     target = scratch[0]! * share;
-    if (target > DRAWN_INK) {
-      room = grownMarks.size > 0 && nameRank(n) > 0 ? smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at, !holdsPlace(n))) : 1;
-      target *= room;
-    }
-    if (target <= DRAWN_INK) target = 0;
   }
   glideName(row);
+  // The selection's name stays with it at every zoom; every other name arrives only where it is clear.
+  if (target > DRAWN_INK && n.id !== F.attention.focusId) {
+    room = grownMarks.size > 0 ? smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy)) : 1;
+    target *= room;
+  }
+  if (target <= DRAWN_INK) target = 0;
   const ink = drawnNameInk(row, target);
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
@@ -896,24 +897,25 @@ function collectGrownMarks(): void {
 }
 
 /**
- * The air, in px, between a name's glyphs anchored at `at` and the nearest name drawn before it, less
- * the pad two names keep between them, and with `offMarks` the nearest grown mark not its own. Only
- * while a star or a selection grows marks: O(grown marks + names) per name.
+ * The air, in px, between a name's glyphs where this frame draws them, from `x`, `y`, and the nearest
+ * disc not its own, grown dot (none for a backed name, whose plate covers them) or name drawn before
+ * it, less the pad two names keep. Only while marks grow: O(discs + grown dots + names) per name.
  */
-function nameRoom(n: PlacedName, at: Point, offMarks: boolean): number {
+function nameRoom(n: PlacedName, x: number, y: number): number {
   const pad = F.P.namePadPx;
-  const minX = at.x + n.box.minX + pad;
-  const maxX = at.x + n.box.maxX - pad;
-  const minY = at.y + n.box.minY + pad;
-  const maxY = at.y + n.box.maxY - pad;
+  const minX = x + n.box.minX + pad;
+  const maxX = x + n.box.maxX - pad;
+  const minY = y + n.box.minY + pad;
+  const maxY = y + n.box.maxY - pad;
   let room = Infinity;
-  if (offMarks) {
-    // A backed name's plate covers the dots under it; only discs crowd it.
-    const end = n.backed === true ? grownDiscCount : grownMarks.size;
-    for (let i = 0; i < end; i += 1) {
+  for (let i = 0; i < L.discs.size; i += 1) {
+    const m = L.discs.items[i]!;
+    if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+  }
+  if (n.backed !== true) {
+    for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
       const m = grownMarks.items[i]!;
-      if (m.id === n.id) continue;
-      room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+      if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
     }
   }
   for (let i = 0; i < L.names.size; i += 1) {

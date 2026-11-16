@@ -403,8 +403,8 @@ function paintedInks(): Map<string, number> {
   return new Map([...probe.texts, ...probe.fadingTexts].map((t) => [`${t.role} ${t.id} ${t.side}`, t.alpha]));
 }
 
-/** Name ink steps of 0.2 or more while the camera travels from the overview's middle to `domainId` at `zoomTo`, a press's path. */
-function inkJumpsOnTheWay(domainId: string, zoomTo: number): string[] {
+/** Paints a press's path, the camera travelling from the overview's middle to `domainId` at `zoomTo`, and calls `visit` after each of its frames. */
+function pressPath(domainId: string, zoomTo: number, visit: (frame: number) => void): void {
   const e = layout.extent;
   const fit = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY));
   const from = { x: (e.minX + e.maxX) / 2, y: (e.minY + e.maxY) / 2 };
@@ -418,22 +418,66 @@ function inkJumpsOnTheWay(domainId: string, zoomTo: number): string[] {
   };
   let now = 0;
   for (let i = 0; i < 30; i += 1, now += FRAME_MS) paintFlatGraphFrame(frame(1, from, { now }), TOKENS);
-  const jumps: string[] = [];
-  let before = paintedInks();
+  visit(0);
   for (let i = 1; i <= 60; i += 1) {
     const s = (1 - Math.cos(Math.PI * Math.min(1, i / 42))) / 2;
     paintFlatGraphFrame(frame(Math.pow(zoomTo, s), { x: from.x + (to.x - from.x) * s, y: from.y + (to.y - from.y) * s }, { now: now + (i - 1) * FRAME_MS, focusedNodeId: domainId }), TOKENS);
+    visit(i);
+  }
+}
+
+/** Name ink steps of 0.2 or more on a press's path to `domainId` at `zoomTo`. */
+function inkJumpsOnTheWay(domainId: string, zoomTo: number): string[] {
+  const jumps: string[] = [];
+  let before = new Map<string, number>();
+  pressPath(domainId, zoomTo, (i) => {
     const after = paintedInks();
-    // A name that comes in over the canvas edge takes its ink at once, as the star-motion spec allows.
-    const overEdge = new Set(describeLastDialFrame(W, H)!.texts.filter((t) => t.box.minX <= 0 || t.box.minY <= 0 || t.box.maxX >= W || t.box.maxY >= H).map((t) => `${t.role} ${t.id} ${t.side}`));
-    for (const [name, alpha] of after) {
-      const was = before.get(name) ?? (overEdge.has(name) ? alpha : 0);
-      if (Math.abs(alpha - was) >= 0.2) jumps.push(`frame ${i}: ${name} ${was.toFixed(2)} -> ${alpha.toFixed(2)}`);
+    if (i > 0) {
+      // A name that comes in over the canvas edge takes its ink at once, as the star-motion spec allows.
+      const overEdge = new Set(describeLastDialFrame(W, H)!.texts.filter((t) => t.box.minX <= 0 || t.box.minY <= 0 || t.box.maxX >= W || t.box.maxY >= H).map((t) => `${t.role} ${t.id} ${t.side}`));
+      for (const [name, alpha] of after) {
+        const was = before.get(name) ?? (overEdge.has(name) ? alpha : 0);
+        if (Math.abs(alpha - was) >= 0.2) jumps.push(`frame ${i}: ${name} ${was.toFixed(2)} -> ${alpha.toFixed(2)}`);
+      }
     }
     before = after;
-  }
+  });
   return jumps;
 }
+
+/**
+ * Every name on a press's path whose ink rises or holds while its glyphs cross a disc not its own,
+ * another name doing the same, or an element dot grown past its resting radius while it draws on
+ * no backing. A name whose ink falls is on its way out and may be crossed.
+ */
+function arrivalBreachesOnTheWay(domainId: string, zoomTo: number): string[] {
+  const breaches: string[] = [];
+  let before = new Map<string, number>();
+  pressPath(domainId, zoomTo, (i) => {
+    const probe = describeLastDialFrame(W, H)!;
+    const key = (t: Probe["texts"][number]) => `${t.role} ${t.id} ${t.side}`;
+    const arriving = [...probe.texts, ...probe.fadingTexts].filter((t) => t.id !== null && t.alpha >= (before.get(key(t)) ?? 0));
+    const under = (b: Probe["texts"][number]["box"], m: Mark) => Math.hypot(Math.max(b.minX - m.x, 0, m.x - b.maxX), Math.max(b.minY - m.y, 0, m.y - b.maxY)) < m.r - 0.5;
+    arriving.forEach((n, k) => {
+      for (const d of probe.discs) if (d.id !== n.id && under(n.box, d)) breaches.push(`frame ${i}: ${n.role} ${n.text} on ${d.id}`);
+      for (const g of probe.glyphs) if (g.id !== n.id && g.grown && !n.backed && under(n.box, g)) breaches.push(`frame ${i}: ${n.role} ${n.text} on grown ${g.id}`);
+      for (const o of arriving.slice(k + 1)) {
+        if (o.id === n.id && CAPTION_ROLES.has(o.role) && CAPTION_ROLES.has(n.role)) continue;
+        const b = n.box;
+        if (Math.min(b.maxX, o.box.maxX) > Math.max(b.minX, o.box.minX) && Math.min(b.maxY, o.box.maxY) > Math.max(b.minY, o.box.minY)) breaches.push(`frame ${i}: ${n.role} ${n.text} on ${o.role} ${o.text}`);
+      }
+    });
+    before = paintedInks();
+  });
+  return breaches;
+}
+
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "lets a name's ink rise or hold on the way to the pressed %s only where the frame drawn leaves it clear",
+  (domainId) => {
+    expect(arrivalBreachesOnTheWay(domainId, 3).slice(0, 6)).toEqual([]);
+  },
+);
 
 describe("a name's drawn ink across frames", () => {
   it.each(["domain:human-workbench", "domain:code-evidence", "domain:agent-access"])(
