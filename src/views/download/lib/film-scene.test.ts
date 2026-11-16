@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildFilmScene } from './film-scene';
+import { buildFilmScene, pickCloseUp } from './film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>
@@ -52,5 +52,24 @@ describe('buildFilmScene', () => {
     expect(at('capability:a1').file).toBe('a1.md');
     expect(scene.edges).toHaveLength(graph.edges.length);
     expect(scene.edges.every((e) => e.reveal >= 0 && e.reveal <= 1)).toBe(true);
+  });
+});
+
+describe('pickCloseUp', () => {
+  it('opens a capability held by a domain, with the dependencies it declares', () => {
+    const graph: StageGraph = {
+      nodes: [node('p', 'project'), node('d', 'domain'), node('c', 'capability'), node('lone', 'capability'), node('e', 'element')],
+      edges: [edge('p', 'd', 'contains'), edge('d', 'c', 'contains'), edge('p', 'lone', 'contains'), edge('c', 'e', 'depends'), edge('lone', 'e', 'depends')],
+    };
+    const scene = buildFilmScene(graph);
+    const pick = pickCloseUp(scene);
+    expect(pick && scene.nodes[pick.index].id).toBe('c');
+    expect(pick && scene.nodes[pick.parent].id).toBe('d');
+    expect(pick?.dependencies.map((i) => scene.nodes[i].id)).toEqual(['e']);
+  });
+
+  it('opens nothing when no capability declares a dependency', () => {
+    const scene = buildFilmScene({ nodes: [node('p', 'project'), node('d', 'domain')], edges: [edge('p', 'd', 'contains')] });
+    expect(pickCloseUp(scene)).toBeNull();
   });
 });

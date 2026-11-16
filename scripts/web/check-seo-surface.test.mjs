@@ -29,13 +29,14 @@ function sitemap(routes) {
   return `<urlset>${urls.join('')}</urlset>`;
 }
 
-function page({ canonical, route, title, description, body = '', robots = 'index, follow' }) {
+function page({ canonical, route, title, description, body = '', robots = 'index, follow', lang }) {
+  const htmlLang = lang ?? canonical?.match(/\/([a-z]{2})\//)?.[1] ?? 'en';
   const links = route
     ? Object.entries(alternates(route))
         .map(([lang, href]) => `<link rel="alternate" hrefLang="${lang}" href="${href}"/>`)
         .join('')
     : '';
-  return `<!doctype html><html><head><title>${title}</title>
+  return `<!doctype html><html lang="${htmlLang}"><head><title>${title}</title>
 <meta name="description" content="${description}"/><meta name="robots" content="${robots}"/>
 ${canonical ? `<link rel="canonical" href="${canonical}"/>` : ''}${links}</head><body>${body}</body></html>`;
 }
@@ -64,7 +65,7 @@ test('a coherent export is green', () => {
 
 test('rule 1: a sitemap URL whose canonical points elsewhere fails', () => {
   const input = greenExport();
-  input.pages.set('/ko/guide/', page({ canonical: `${ORIGIN}/en/guide/`, route: 'guide', title: 'G', description: 'G' }));
+  input.pages.set('/ko/guide/', page({ canonical: `${ORIGIN}/en/guide/`, route: 'guide', title: 'G', description: 'G', lang: 'ko' }));
   assert.deepEqual(rules(input), ['1-sitemap-self-canonical', '2-no-foreign-canonical-in-sitemap']);
 });
 
@@ -154,4 +155,13 @@ test('evaluateLocaleCluster reports a missing x-default', () => {
   const head = parseHead(page({ canonical: `${ORIGIN}/en/guide/`, route: 'guide', title: 't', description: 'd' }));
   const entry = { loc: `${ORIGIN}/en/guide/`, alternates: { en: `${ORIGIN}/en/guide/` } };
   assert.ok(evaluateLocaleCluster({ label: 'x', head, entry }).some((p) => p.includes('x-default')));
+});
+
+test('rule 6: a localized page that declares English in its HTML fails', () => {
+  const input = greenExport();
+  input.pages.set(
+    '/ko/guide/',
+    page({ canonical: `${ORIGIN}/ko/guide/`, route: 'guide', title: 'G', description: 'G', lang: 'en' }),
+  );
+  assert.deepEqual(rules(input), ['6-html-lang']);
 });
