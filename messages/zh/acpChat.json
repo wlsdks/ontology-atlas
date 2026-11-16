@@ -181,13 +181,10 @@
   "model": "模型",
   "mode": "模式",
   "modeUnverified": "{name} · 未检查",
-  "approval": "批准",
   "approvalOption": {
-    "ask": "每次询问",
     "auto": "自动批准"
   },
   "approvalHint": {
-    "ask": "写入前总是先询问。",
     "auto": "此文件夹内的文件编辑，以及添加或修改概念和关系，会直接进行，不再询问。Shell 命令、文件夹以外的内容、删除和提交仍会询问。"
   },
   "modeUnverifiedHint": "尚未检查。",
