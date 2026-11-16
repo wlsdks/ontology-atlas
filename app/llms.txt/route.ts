@@ -43,6 +43,10 @@ ${guide}
 - [MCP server](${REPO}/blob/main/mcp/README.md): the tools an agent calls
 - [CLI](${REPO}/blob/main/cli/README.md)
 - [License (MIT)](${REPO}/blob/main/LICENSE)
+
+## Optional
+
+- [The whole guide in one file](${SITE_URL}/llms-full.txt)
 `;
   return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
