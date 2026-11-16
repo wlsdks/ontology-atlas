@@ -17,6 +17,7 @@ import {
 } from "../model/containment-tree";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { paintFlatGraphFrame } from "./frame";
+import { segmentCrossesBox } from "./names";
 import { domainStarIds } from "./open-star";
 import { buildFlatGraphScene } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
@@ -408,6 +409,71 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
       unnamed.push(...inside.filter((id) => !texts.some((t) => t.id === id && t.role === "capability")).map((id) => `${id} with the free map ending ${edge} px past the middle`));
     }
     expect(unnamed).toEqual([]);
+  },
+);
+
+/** Where each member name in `ids` the last frame drew stands from its disc. */
+function nameOffsets(ids: readonly string[]): Map<string, string> {
+  const { texts, discs } = describeLastDialFrame(W, H)!;
+  return new Map(texts.filter((t) => t.role === "capability" && ids.includes(t.id ?? "")).map((t) => {
+    const d = discs.find((x) => x.id === t.id)!;
+    return [t.id!, `${Math.round(t.box.minX - d.x)},${Math.round(t.box.minY - d.y)}`];
+  }));
+}
+
+/**
+ * Each name in `moved` the last frame drew across the line from its domain while a side on its row was
+ * clear of every line from the domain, of names, of discs not its own and grown dots, and inside the
+ * free map by the margin; the clear side is padded so a side the step's zoom sweep may close is not asked for.
+ */
+function namesOnSpokes(domainId: string, capabilities: readonly string[], moved: ReadonlySet<string>, free: { minX: number; minY: number; maxX: number; maxY: number }): string[] {
+  const { texts, discs, glyphs } = describeLastDialFrame(W, H)!;
+  const P = TOKENS.paint;
+  const hub = discs.find((d) => d.id === domainId)!;
+  const spokes = capabilities.flatMap((id) => discs.filter((d) => d.id === id)).map((d) => [hub.x, hub.y, d.x, d.y] as const);
+  const onSpoke = (b: Probe["texts"][number]["box"]) => spokes.some(([x0, y0, x1, y1]) => segmentCrossesBox(x0, y0, x1, y1, b));
+  const under = (b: Probe["texts"][number]["box"], m: Mark) => Math.hypot(Math.max(b.minX - m.x, 0, m.x - b.maxX), Math.max(b.minY - m.y, 0, m.y - b.maxY)) < m.r;
+  const breaches: string[] = [];
+  for (const t of texts.filter((x) => x.role === "capability" && moved.has(x.id ?? ""))) {
+    const disc = discs.find((d) => d.id === t.id)!;
+    if (!segmentCrossesBox(hub.x, hub.y, disc.x, disc.y, t.box)) continue;
+    const w = t.box.maxX - t.box.minX;
+    const h = t.box.maxY - t.box.minY;
+    const x = disc.r + P.nameGapPx;
+    const pad = P.namePadPx * 2;
+    const box = (dx0: number, dy0: number) => ({ minX: disc.x + dx0 - pad, maxX: disc.x + dx0 + w + pad, minY: disc.y + dy0 - pad, maxY: disc.y + dy0 + h + pad });
+    const row = [box(x, -h / 2), box(-x - w, -h / 2), box(-w / 2, x), box(-w / 2, -x - h)];
+    const clear = row.find((b) => !onSpoke(b)
+      && b.minX >= free.minX + P.frameMarginPx && b.maxX <= free.maxX - P.frameMarginPx && b.minY >= free.minY + P.frameMarginPx && b.maxY <= free.maxY - P.frameMarginPx
+      && !texts.some((o) => o !== t && Math.min(b.maxX, o.box.maxX) > Math.max(b.minX, o.box.minX) && Math.min(b.maxY, o.box.maxY) > Math.max(b.minY, o.box.minY))
+      && !discs.some((d) => d.id !== t.id && under(b, d)) && !glyphs.some((g) => g.grown && under(b, g)));
+    if (clear) breaches.push(t.text);
+  }
+  return breaches;
+}
+
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "moves a member of the opened %s star whose side leaves the free map off the line from its domain while a side on its row is clear, the panel closed or open",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const lens = { contextAlphas: new Map([...layout.positions.keys()].map((id) => [id, 1])) };
+    const breaches: string[] = [];
+    for (const over of [{}, lens]) {
+      for (const [zoom, edge] of [1.8, 2, 2.5, 3.2].flatMap((z) => [0, 30, 60, 120, 180, 240].map((e) => [z, e] as const))) {
+        const sides: Map<string, string>[] = [];
+        const free = { minX: 0, minY: 0, maxX: W / 2 + edge, maxY: H };
+        for (const freeRect of [{ minX: 0, minY: 0, maxX: W, maxY: H }, free]) {
+          const camera = cameraOn(domainId, {});
+          const rest = framesUntilSettled(camera, { ...over, freeRect }, star, 0, 1, 1, FRAME_MS);
+          framesUntilSettled(camera, { ...over, focusedNodeId: domainId, freeRect }, star, rest.end + FRAME_MS, 1, zoom, 600);
+          sides.push(nameOffsets(capabilities));
+        }
+        const moved = new Set([...sides[1]!].filter(([id, at]) => sides[0]!.get(id) !== at).map(([id]) => id));
+        breaches.push(...namesOnSpokes(domainId, capabilities, moved, free).map((text) => `${text} at ${zoom} with the free map ending ${edge} px past the middle${over === lens ? ", panel open" : ""}`));
+      }
+    }
+    expect(breaches).toEqual([]);
   },
 );
 

@@ -798,6 +798,17 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   }
   const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens, scale, input.growth, input.discRadius) : [];
   const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, span(at, n.box)));
+  // An open domain star draws a line from its disc to each member, lit or not: a member's name keeps off it as off a lit line.
+  const spokes: [number, number, number, number][] = [];
+  const hubAt = starDomain === null ? undefined : layout.positions.get(starDomain);
+  if (hubAt) for (const id of model.domainById.get(starDomain!)!.capabilityIds) {
+    const p = layout.positions.get(id);
+    if (p) spokes.push([hubAt.x, hubAt.y, p.x, p.y]);
+  }
+  const onSpoke = (at: Point, group: readonly PlacedName[]) => group.some((n) => {
+    const b = span(at, n.box);
+    return spokes.some(([x0, y0, x1, y1]) => segmentCrossesBox(x0, y0, x1, y1, b));
+  });
   for (const c of layout.clusters) {
     let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId), layout.compactTitles && input.focusId !== c.domainId);
     if (titleMayRise(input, c.domainId) && polylines.length > 0) {
@@ -924,14 +935,17 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   };
   type Member = { id: string; at: Point; all: PlacedName[][] };
   /**
-   * Names a member on its cheapest side, drawn backed over the dots it crosses past `CLEAR_SIDE`,
-   * and keeps its other acceptable sides, best first. O(sides log sides + sides × cells touched).
+   * Names a member on its cheapest side, backed over dots or a line it crosses; its other sides go off
+   * every line first. The first side ignores spokes: off one it can take a neighbour's last side inside
+   * the free map, which admission cannot see. O(sides log sides + sides × (cells touched + members)).
    */
   const placeMember = ({ id, at, all }: Member) => {
     memberCosts(at, all, false);
     let best = -1;
     for (let i = 0; i < all.length; i += 1) if (sideCosts[i]! >= 0 && (best < 0 || sideCosts[i]! < sideCosts[best]!)) best = i;
-    const backs = (i: number) => sideCosts[i]! > CLEAR_SIDE || crossed(at, all[i]!);
+    const lined = (i: number) => crossed(at, all[i]!) || onSpoke(at, all[i]!);
+    const backs = (i: number) => sideCosts[i]! > CLEAR_SIDE || lined(i);
+    const order = (i: number) => sideCosts[i]! + (lined(i) && !crossed(at, all[i]!) ? 2 : 0);
     sides.set(id, best);
     for (const n of all[best]!) {
       if (backs(best)) n.backed = true;
@@ -939,7 +953,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       conceptNames.add(at, n.box);
     }
     const others = all.flatMap((group, i) => (i !== best && sideCosts[i]! >= 0 && group.length === 1 ? [i] : []))
-      .sort((a, b) => sideCosts[a]! - sideCosts[b]! || a - b)
+      .sort((a, b) => order(a) - order(b) || a - b)
       .map((i) => {
         if (backs(i)) all[i]![0]!.backed = true;
         return all[i]![0]!;
