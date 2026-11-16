@@ -32,7 +32,12 @@ export const rules = [
     reason: "an opened Flat star's radii, camera zoom or names in motion changed",
     matches: [
       /^src\/widgets\/ontology-map\/flat-graph\/frame\.ts$/,
+      /^src\/widgets\/ontology-map\/flat-graph\/motion\.ts$/,
+      /^src\/widgets\/ontology-map\/flat-graph\/open-star\.ts$/,
+      /^src\/widgets\/ontology-map\/flat-graph\/names\.ts$/,
       /^src\/widgets\/ontology-map\/model\/camera\/camera-easing\.ts$/,
+      /^src\/widgets\/ontology-map\/ui\/camera\/use-topology-camera-policy\.ts$/,
+      /^app\/styles\/map-graph-tokens\.css$/,
     ],
   },
   {

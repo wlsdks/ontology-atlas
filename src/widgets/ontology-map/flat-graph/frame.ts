@@ -375,10 +375,6 @@ interface FrameState {
   closingRooms: ReadonlyMap<string, StarRoom> | null;
   lineKinds: number;
 }
-/**
- * One opened star: its rooms, in world units read at the frame's scale (`world`) or in this
- * frame's px, the radius of the disc it opens round, and how far it has opened.
- */
 /** One opened star: rooms in world units (`world`) or screen px; a domain star's fixed disc is the domain's, grown with the zoom. */
 interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; domain: boolean; fixedPx: number }
 interface DrawnRadius { r: number; perMs: number; at: number; frame: number }

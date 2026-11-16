@@ -11,8 +11,8 @@ const RADIUS_STEP_PX = 3.4;
 /** The largest change of a name's drawn ink per 60 Hz frame. */
 const NAME_INK_STEP_PER_FRAME = 0.2;
 const FRAME_MS = 1000 / 60;
-/** The press shows on the map within this, in ms. */
-const FIRST_FRAME_MS = 50;
+/** The press shows on the map by this animation frame after it. */
+const FIRST_FRAME = 3;
 const OVERLAP_PX = 0.5;
 /** A retarget lands this far into an opening. */
 const RETARGET_AFTER_MS = 150;
@@ -34,6 +34,11 @@ interface Motion {
   nameFrames: number;
   namePairs: string[];
   firstFrameMs: number;
+  /** The animation frame after the press that first changed the map. */
+  firstFrame: number;
+  /** The longest of the first three frame intervals after the press, and the median interval, in ms. */
+  pressFrameMs: number;
+  medianFrameMs: number;
   totalMs: number;
   zoomReversals: number;
   radiusReversals: string[];
@@ -179,17 +184,21 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       lastChange = now.t;
     }
   }
+  const gaps = samples.slice(1).map((s, i) => [s.t, s.t - samples[i]!.t] as const);
+  const afterPress = gaps.filter(([t]) => t > pressAt).slice(0, 3).map(([, gap]) => gap);
+  const sorted = gaps.map(([, gap]) => gap).sort((a, b) => a - b);
   const rest = samples.at(-1)?.names.filter(([id]) => groups.some((g) => g.has(id))) ?? [];
   return {
+    pressFrameMs: Math.max(0, ...afterPress), medianFrameMs: sorted[Math.floor(sorted.length / 2)] ?? 0,
     restNames: rest.length, backedNames: rest.filter(([, , , , , , , backed]) => backed).length,
     radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6),
-    firstFrameMs: firstChange - pressAt, totalMs: lastChange - pressAt, zoomReversals, radiusReversals: [...radiusReversals].slice(0, 6),
+    firstFrameMs: firstChange - pressAt, firstFrame: samples.filter((s) => s.t > pressAt && s.t <= firstChange).length, totalMs: lastChange - pressAt, zoomReversals, radiusReversals: [...radiusReversals].slice(0, 6),
   };
 }
 
 function report(name: string, m: Motion): string {
   return `[star-motion] ${name}: radius ${m.radiusPxPerMs.toFixed(3)} px/ms (${m.worst}), radius step ${m.radiusStepPx.toFixed(2)} px, name ink step ${m.inkStep.toFixed(3)} (${m.worstInk}), zoom step ${(m.zoomStep * 100).toFixed(1)} % per frame, `
-    + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on marks ${m.namePairs.join(", ")}, first frame ${m.firstFrameMs.toFixed(0)} ms, total ${m.totalMs.toFixed(0)} ms, `
+    + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on marks ${m.namePairs.join(", ")}, first frame ${m.firstFrameMs.toFixed(0)} ms (frame ${m.firstFrame}; press frames up to ${m.pressFrameMs.toFixed(1)} ms against a median ${m.medianFrameMs.toFixed(1)} ms), total ${m.totalMs.toFixed(0)} ms, `
     + `zoom reversals ${m.zoomReversals}, radius reversals ${m.radiusReversals.join(", ") || "none"}, names at rest ${m.restNames} (${m.backedNames} backed)`;
 }
 
@@ -202,7 +211,7 @@ function expectSmooth(name: string, m: Motion, opening: boolean): void {
   expect.soft(m.zoomStep, `${name}: no zoom step past the limit: ${said}`).toBeLessThanOrEqual(ZOOM_STEP_PER_FRAME);
   expect.soft(m.overlapFrames, `${name}: no frame draws two marks of the star over each other: ${said}`).toBe(0);
   expect.soft(m.nameFrames, `${name}: no frame draws a name over another name or over a mark not its own: ${said}`).toBe(0);
-  expect.soft(m.firstFrameMs, `${name}: the press shows at once: ${said}`).toBeLessThanOrEqual(FIRST_FRAME_MS);
+  expect.soft(m.firstFrame, `${name}: the press shows at once: ${said}`).toBeLessThanOrEqual(FIRST_FRAME);
   if (opening) {
     expect.soft(m.restNames, `${name}: the opened star keeps names at rest: ${said}`).toBeGreaterThan(0);
     expect.soft(m.zoomReversals, `${name}: the zoom never turns back while the star opens: ${said}`).toBe(0);
