@@ -33,7 +33,7 @@ describe('planning stage scene', () => {
   it('draws a settled scene with a held pose and no loop under reduced motion', () => {
     const { container } = render(
       <NextIntlClientProvider locale="en" messages={en}>
-        <PlanningSourceArtwork arriving={false} engaged={false} reduced paused={false} />
+        <PlanningSourceArtwork arriving={false} engaged={false} reduced />
       </NextIntlClientProvider>,
     );
     const scene = container.querySelector('[data-planning-folder-scene]')!;

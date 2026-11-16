@@ -28,7 +28,7 @@ const loopEnd = { type: 'loop-end' } as const;
 function renderArtwork(reduced: boolean) {
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <AutomationScheduleArtwork arriving={false} engaged={false} reduced={reduced} paused={false} name="e.g. Ontology check" cadence="Every 6 hours" />
+      <AutomationScheduleArtwork arriving={false} engaged={false} reduced={reduced} name="e.g. Ontology check" cadence="Every 6 hours" />
     </NextIntlClientProvider>,
   );
 }

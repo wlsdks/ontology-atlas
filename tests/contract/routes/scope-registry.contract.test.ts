@@ -176,7 +176,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:first-run-starter-dismissed:v1", kind: "storage", scope: "global", note: "first-run card, one time only (session)" },
   { key: "demo:vault-start-steps-dismissed:v1", kind: "storage", scope: "global", note: "first-steps card, one time only (session); withdrawn once the last step is passed" },
   { key: "vault-open-guide:auto:v1", kind: "storage", scope: "global", note: "open-folder guide, one time only" },
-  { key: "atlas.download.motion", kind: "storage", scope: "global", note: "The motion pause shared by the download page and looping feature stages (`motion-pause.ts`, WCAG 2.2.2): a per-browser convenience, never vault data" },
+  { key: "atlas.download.motion", kind: "storage", scope: "global", note: "The download page's motion pause (`motion-pause.ts`, WCAG 2.2.2): a per-browser convenience, never vault data" },
   { key: "ontology-atlas:last-route", kind: "storage", scope: "global", note: "**Nobody reads it**: route restoration was retired on 2026-07-30 (`locale-redirect.tsx`). It is a dead key rather than a defect, so this registry records only the fact and leaves deletion as a separate matter" },
 
   // ── Things that *define* the scope (they are the answer to "which vault") ──
