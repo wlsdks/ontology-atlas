@@ -35,6 +35,7 @@ export { ChromeChip, CHROME_STATUS_CHIP_CLASS, CHROME_CHIP_COMPACT_BELOW_XL } fr
 export { GithubMark } from './marks/github-mark';
 export { ServiceMark, resolveServiceMark } from './marks/service-mark';
 export { XMark } from './marks/x-mark';
+export { LinkedInMark } from './marks/linkedin-mark';
 export { GetAppLink } from './controls/get-app-link';
 export { CompactCopyButton } from './controls/compact-copy-button';
 export { SimilarNodeWarning } from './ontology-node/similar-node-warning';
