@@ -255,9 +255,10 @@ members already stand that far apart keeps its zoom. Member names are not held i
 again at whatever zoom it lands on. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
-judgments, so a click on a concept stays a small move,
-the rest of the map stays in view, and framing the landed view again moves
-nothing. The fit bisects
+judgments, so a click on a capability or an element stays a small move,
+the rest of the map stays in view (a domain's zoom is the exception: it is
+taken for its members and may leave its partners outside), and framing the
+landed view again moves nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on

@@ -5,6 +5,7 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import { HIT_TOUCH_SLACK_PX } from "../../../../src/widgets/ontology-map/ui/camera/topology-camera-math";
 
 const VIEWPORT = { width: 1920, height: 1080 };
 const IDLE_WINDOW_MS = 3_000;
@@ -169,9 +170,9 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
   const onMark = (p: { x: number; y: number }) =>
     dial.discs.some((d) => Math.hypot(d.x - p.x, d.y - p.y) <= d.r) ||
     dial.texts.some((t) => p.x >= t.box.minX - 1 && p.x <= t.box.maxX + 1 && p.y >= t.box.minY - 1 && p.y <= t.box.maxY + 1);
-  // Under half the reach drawn, so the point lies well past the few pixels of slack Neural and edges share.
+  // Only discs whose slack ring, shared with Neural and edge hits, stops short of the point: the reach alone must answer it.
   const points = dial.discs
-    .filter((d) => capabilities.has(d.id) && d.r < pickMin / 2)
+    .filter((d) => capabilities.has(d.id) && d.r + HIT_TOUCH_SLACK_PX < reach)
     .flatMap((d) => Array.from({ length: 8 }, (_, k) => ({ id: d.id, x: d.x + reach * Math.cos((k * Math.PI) / 4), y: d.y + reach * Math.sin((k * Math.PI) / 4) })))
     .filter((p) => nearestId(p) === p.id && !onMark(p));
   expect(points.length, "small capabilities with a clear point at the edge of their reach").toBeGreaterThan(0);

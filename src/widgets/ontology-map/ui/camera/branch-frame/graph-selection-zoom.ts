@@ -150,11 +150,17 @@ export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoo
   return { maxScale: input.maxScale, readsAt, scoreAt, marksAt: reading.marksAt };
 }
 
-/** The least distance between two of `points`, Infinity for fewer than two. O(n²), n a domain's members. */
+/**
+ * The least distance between two of `points` that do not coincide, Infinity when no such pair exists:
+ * no zoom can part coincident points, so they neither block the zoom nor ask for all of it. O(n²), n a domain's members.
+ */
 function nearestPairDistance(points: readonly { x: number; y: number }[]): number {
   let least = Infinity;
   for (let i = 0; i < points.length; i += 1) {
-    for (let j = i + 1; j < points.length; j += 1) least = Math.min(least, Math.hypot(points[i]!.x - points[j]!.x, points[i]!.y - points[j]!.y));
+    for (let j = i + 1; j < points.length; j += 1) {
+      const distance = Math.hypot(points[i]!.x - points[j]!.x, points[i]!.y - points[j]!.y);
+      if (distance > 0) least = Math.min(least, distance);
+    }
   }
   return least;
 }

@@ -27,6 +27,8 @@ vi.mock("../../../flat-graph/tokens", async (actual) => ({ ...(await actual<obje
 vi.mock("../../../dial/fit", () => ({ createMeasureText: () => measureText }));
 vi.mock("../../../render/labels", async (actual) => ({ ...(await actual<object>()), labelFontFamily: () => "sans-serif" }));
 
+import { selectionFrameTarget, type FramedMark } from "../../../model/camera/flat-selection-camera";
+import { domainSelectionZoom } from "./graph-selection-zoom";
 import { selectionSlideTarget } from "./selection-margin";
 
 function measureText(text: string, font: string): number {
@@ -317,5 +319,34 @@ describe("a capability selection that zooms in", () => {
     }
     expect(zoomed, "some capability selection zooms in").toBeGreaterThan(0);
     expect(lost).toEqual([]);
+  });
+});
+
+describe("a domain selection's zoom", () => {
+  const viewport = { width: 1920, height: 1080 };
+  const margin = 24;
+  /** 700 px between the margins across, ample height. */
+  const free = { minX: 400, maxX: 400 + 700 + margin * 2, minY: 100, maxY: 1000 };
+  const disc = (x: number, y: number, half: number): FramedMark => ({ x, y, box: { minX: -half, maxX: half, minY: -half, maxY: half } });
+  const fits = (marks: readonly FramedMark[], scale: number) =>
+    Math.max(...marks.map((m) => m.x * scale + m.box.maxX)) - Math.min(...marks.map((m) => m.x * scale + m.box.minX)) <= free.maxX - free.minX - margin * 2;
+
+  it("stops where the star stops fitting the free map, short of the separation it aims at", () => {
+    const members = Array.from({ length: 17 }, (_, k) => ({ x: k * 25, y: 0 }));
+    const star = [disc(200, 40, 20), ...members.map((m) => disc(m.x, m.y, 5))];
+    const zoom = domainSelectionZoom({ members, apartPx: 44, star, maxScale: 4 });
+    const landed = selectionFrameTarget({ tx: 200, ty: 0, tscale: 1 }, [star], viewport, free, margin, 0.5, zoom)!;
+    expect(landed.tscale, "the selection zooms in").toBeGreaterThan(1.5);
+    expect(fits(star, landed.tscale), "the star fits where it lands").toBe(true);
+    expect(fits(star, landed.tscale * 1.02), "a little further and the star would not fit").toBe(false);
+    expect(25 * landed.tscale, "the members stop short of the separation").toBeLessThan(44);
+  });
+
+  it("parts the nearest members that do not coincide, so two on one spot neither block nor exhaust the zoom", () => {
+    const members = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 30, y: 0 }];
+    const zoom = domainSelectionZoom({ members, apartPx: 44, star: [], maxScale: 4 });
+    expect(zoom.readsAt(1), "30 px apart at 1x").toBe(false);
+    expect(zoom.readsAt(44 / 30), "44 px apart once the distinct pair is").toBe(true);
+    expect(zoom.scoreAt(1)[0], "the coincident pair does not pin the score at zero").toBeCloseTo(30, 9);
   });
 });
