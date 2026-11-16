@@ -160,6 +160,8 @@ export interface DialMarks { inks: string[]; strips: StripMark[]; discs: DiscMar
 export interface DialPick { id: string; x: number; y: number; r: number;
   /** A disc that owns every point inside it, ahead of any name or element dot drawn over it. */
   solid?: boolean;
+  /** How far from its centre a pointer on no drawn mark still picks it, when that is wider than `r` plus the slack. */
+  reachPx?: number;
 }
 export interface DialRowAction { type: "branch-members"; domainId: string; direction: "more" | "less" }
 export interface DialRowPick {

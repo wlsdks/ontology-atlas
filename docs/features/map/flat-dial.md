@@ -60,7 +60,10 @@ the first fit fills the free map. Concepts outside every domain sit in an
 empty corner. Every domain and capability keeps a disc and a pick target,
 whether or not its name has room, and a pointer inside a disc picks that disc
 even where an element dot is drawn over it. An element dot answers the pointer
-once it is drawn, ahead of a name but only outside every disc. A concept outside an open lens draws nothing and answers nothing.
+once it is drawn, ahead of a name but only outside every disc. A disc or dot
+drawn smaller than `--map-graph-pick-min-px` keeps its size but answers within
+that radius of its centre when no drawn mark or name is under the pointer; the
+nearest centre wins where two such areas overlap. A concept outside an open lens draws nothing and answers nothing.
 
 A name, with its caption or count line, is not drawn where any of its lines
 would reach under the chrome over the map: a side panel (out to the canvas
@@ -242,25 +245,23 @@ none sits on a lit disc; the selection's ring keeps
 the domain named. An element's picture is its lines, whether a capability or a domain holds it, so it zooms in only while
 every far end, named, still fits, and only until its own name stands clear of
 the names and discs beside it; when the far ends do not fit at the current zoom
-it keeps that zoom. A domain selection never zooms in, because its picture is its
-reach: it holds its own disc and name, its member star as discs, and every
-partner domain's disc, and centres that set on the free map, clear of the
-explorer and the detail panel by the frame margin. The partners come named with
-their discs when that asks no more zoom-out than the map's own fit — the scale
-at which every domain of the map, disc and all, stands between the panels. It
-zooms out toward that fit only as far as it needs, and when even that cannot
-hold every partner it keeps the partners nearest to it, in order of distance,
-up to the first one that no longer fits with them. Member names are not held in
-the frame; they are admitted again at whatever zoom it lands on. A zoom
+it keeps that zoom. A domain selection frames its own star: its disc, its name
+and count line, and its member capabilities as discs, inside the free map by
+the frame margin. Partner domains do not drive the frame and may leave the
+view; their lines still draw. It zooms in, under the same ratio cap, until its
+two closest member capabilities stand `--map-graph-domain-apart-px` apart on
+screen, never past the scale at which the whole star still fits; a domain whose
+members already stand that far apart keeps its zoom. Member names are not held in the frame; they are admitted
+again at whatever zoom it lands on. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
-judgments, so a click on a concept stays a small move,
-the rest of the map stays in view, and framing the landed view again moves
-nothing. The fit bisects
+judgments, so a click on a capability or an element stays a small move,
+the rest of the map stays in view (a domain's zoom is the exception: it is
+taken for its members and may leave its partners outside), and framing the
+landed view again moves nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
-move is the least pan that frames, with any zoom — a domain's reach takes the
-middle of the free map instead, so a domain click may travel — as one slide on
+move is the least pan that frames, with any zoom, as one slide on
 the canvas spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
