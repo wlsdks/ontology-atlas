@@ -28,7 +28,6 @@ export function useHomeWorkbenchController() {
   const requestWorkbenchSection = useCallback((tab: WorkbenchSection) => {
     setWorkbenchSectionRequest((current) => ({ tab, nonce: current.nonce + 1 }));
   }, []);
-  const workbenchSectionRef = useRef<WorkbenchSection>("history");
   const openMeaningWorkbench = useCallback(() => {
     setVaultAgentOpen(false);
     setMeaningWorkbenchOpen(true);
@@ -61,7 +60,6 @@ export function useHomeWorkbenchController() {
     workbenchSectionRequest,
     workbenchOpenRef,
     requestWorkbenchSection,
-    workbenchSectionRef,
     openMeaningWorkbench,
     toggleMeaningWorkbench,
     analysisFindings,

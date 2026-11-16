@@ -18,10 +18,7 @@ async function textDigest(text: string): Promise<string> {
   return `sha256:${[...hash].map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
-/**
- * What the archive has to say. Everything but `records` and `error` is a quiet state: nothing to
- * pick, only a sentence about why.
- */
+/** What the archive has to say. Everything but `records` and `error` is quiet: nothing to pick. */
 export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pending' | 'empty' | 'records' | 'error';
 
 /** Draws nothing while quiet; the caller's own empty state speaks for a quiet archive. */

@@ -37,7 +37,7 @@ function InlineAlert({ children }: { children: ReactNode }) {
   return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
 }
 
-export function AnalysisWorkbench({ context, contextLabel, conversationLabel = null, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
+export function AnalysisWorkbench({ context, contextLabel, conversationLabel = null, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'history', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
   conversationLabel?: string | null;
@@ -58,8 +58,8 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   capture?: { state: AnalysisSaveState | null; setState: (state: AnalysisSaveState) => void };
   onRequest?: (text: string, parentRunId: string | null) => void;
   /**
-   * Relations in scope with an empty `relation_notes`; above zero the Meaning view offers to have
-   * the agent write them.
+   * Relations in scope with an empty `relation_notes`; above zero the results section offers to
+   * have the agent write them.
    */
   relationNoteGaps?: number;
   onClose: () => void;
@@ -103,13 +103,11 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       window.requestAnimationFrame(restore);
     };
   }, [open, returnFocusSelector]);
-  /** Without `facts` the criteria section does not exist, so a request for it lands on the results. */
-  const sectionWithFacts = (requested: Tab): Tab => requested === 'meaning' && !facts ? 'history' : requested;
-  const [section, setSection] = useState({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionWithFacts(sectionRequest?.tab ?? initialTab) });
+  const [section, setSection] = useState({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionRequest?.tab ?? initialTab });
   if (section.nonce !== requestNonce || section.viewNonce !== sectionRequest?.nonce) {
     const requestedTab = section.viewNonce !== sectionRequest?.nonce && sectionRequest
       ? sectionRequest.tab : requestNonce !== undefined && section.nonce !== requestNonce ? 'conversation' : section.tab;
-    setSection({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: sectionWithFacts(requestedTab) });
+    setSection({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: requestedTab });
   }
   const tab = section.tab;
   const sectionRequestNonce = sectionRequest?.nonce;
@@ -255,6 +253,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const subjectKind = contextKind && !(tab === 'conversation' && conversationLabel) ? contextKind : null;
   /** The lit tab already says "conversation", so beside a kind the eyebrow keeps only the kind. */
   const conversationNamedByTab = tab === 'conversation' && subjectKind !== null;
+  const hasTabStrip = Boolean(conversation || facts);
   return <section ref={panelRef} data-testid="analysis-workbench" onKeyDown={(event) => {
     if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); onClose(); }
   }} className="flex min-h-0 flex-1 flex-col gap-3 break-keep text-body text-[color:var(--color-text-primary)] [&_summary]:content-center [@media(pointer:coarse)]:[&_summary]:min-h-[var(--touch-target-min)]">
@@ -269,7 +268,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
        * workbench-tabpanel-* id.
        */}
       {/* The results section alone needs no strip. */}
-      {conversation || facts ? <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
+      {hasTabStrip ? <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
         <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
           ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []), ...(facts ? [{ key: 'meaning', label: t('meaning') }] : []), { key: 'history', label: t('history') },
         ]} />
@@ -283,20 +282,19 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
     {tab === 'meaning' && facts ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1">
       <div className="flex flex-col gap-2">
-        <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t(context.mode === 'meaning' ? 'reviewPurpose' : 'architectureCriteria')}</p>
+        <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t('architectureCriteria')}</p>
         {/*
          * The primary is the same chip box in filled indigo, so only the fill separates it from its
          * neighbour.
          */}
         {onRequest ? <div className="flex flex-wrap items-center gap-2">
           <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
-          {fillNotesChip}
         </div> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
         <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       </div>
       <div className={DIVIDED}>{facts}</div>
     </div> : null}
-    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
+    {tab === 'history' ? <div role={hasTabStrip ? 'tabpanel' : undefined} id="workbench-tabpanel-history" aria-labelledby={hasTabStrip ? 'workbench-tab-history' : undefined} className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
       {facts ? null : <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t('reviewPurpose')}</p>}
       {/*
        * The trigger shows only latest plus a short date and time; the id moves to the option
@@ -328,6 +326,11 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
           {onRequest ? <p className="basis-full text-balance pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
         </>}
       /></div> : null}
+      {/* A failed read hides the empty state, and the request must not go with it. */}
+      {onRequest && error && !runs.length ? <div data-testid="analysis-history-request" className="flex flex-wrap items-center gap-2">
+        <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
+        {fillNotesChip}
+      </div> : null}
       {runs.length ? <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
       {selected ? <>
         {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>

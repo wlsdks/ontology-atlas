@@ -23,8 +23,9 @@ from the start of the map.
   and a selected concept's panel carries **Ask** in its footer; the web, which has no
   agent tile, keeps an Ontology review tile there and shows Review results alone,
   without a tab strip. A selected concept exposes Ontology review in both, and it
-  opens on Review results, where **Ask AI to review** and the offer to fill missing
-  connection reasons stand above the saved results. A requested review that finishes
+  opens on Review results; in the installed app **Ask AI to review** and the offer to
+  fill missing connection reasons stand above the saved results, and the web shows
+  the saved results only. A requested review that finishes
   while its conversation is in view opens as its result; a save that finishes
   anywhere else arrives as a toast with a link. The map dock has no criteria tab
   (2026-11-16): the concept panel and its full detail already show a concept's

@@ -118,6 +118,21 @@ describe('analysis context workbench', () => {
     expect(empty).toHaveTextContent(messages.analysisWorkbench.agentUnavailableWithDecisions);
     expect(screen.queryByText(messages.analysisWorkbench.meaningTransitions.unavailable)).not.toBeInTheDocument();
   });
+  it('keeps the review request and the fill offer on an empty archive, and through a failed read', async () => {
+    archive.read.mockResolvedValue({ records: [], problems: [], nextCursor: null, totalFiles: 0, scanned: 0 });
+    const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest: vi.fn(), relationNoteGaps: 3 };
+    const loaded = render(wrapper(<AnalysisWorkbench {...props} />));
+    const empty = await screen.findByTestId('analysis-history-empty');
+    expect(empty).toContainElement(screen.getByRole('button', { name: messages.analysisWorkbench.analyze }));
+    expect(empty).toContainElement(screen.getByTestId('workbench-fill-notes'));
+    loaded.unmount();
+    archive.read.mockRejectedValue(new Error('disk'));
+    render(wrapper(<AnalysisWorkbench {...props} />));
+    const request = await screen.findByTestId('analysis-history-request');
+    expect(screen.queryByTestId('analysis-history-empty')).not.toBeInTheDocument();
+    expect(request).toContainElement(screen.getByRole('button', { name: messages.analysisWorkbench.analyze }));
+    expect(request).toContainElement(screen.getByTestId('workbench-fill-notes'));
+  });
   it('does not offer an inert refresh or loaded-empty claim before a folder is attached', () => {
     render(wrapper(<AnalysisWorkbench context={{ ...context, handle: null }} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
     expect(screen.getByText(messages.analysisWorkbench.openFolder)).toBeVisible();
@@ -138,8 +153,9 @@ describe('analysis context workbench', () => {
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {} };
     const single = render(wrapper(<AnalysisWorkbench {...props} />));
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
     single.unmount();
-    render(wrapper(<AnalysisWorkbench {...props} facts={<p>Criteria</p>} conversation={<div>Live conversation</div>} />));
+    render(wrapper(<AnalysisWorkbench {...props} initialTab="meaning" facts={<p>Criteria</p>} conversation={<div>Live conversation</div>} />));
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([messages.analysisWorkbench.conversation, messages.analysisWorkbench.meaning, messages.analysisWorkbench.history]);
     expect(screen.getByText('Criteria')).toBeVisible();
   });

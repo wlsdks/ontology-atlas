@@ -43,7 +43,6 @@ interface Options {
     | "setAcpDockFrameOpen"
     | "setVaultAgentOpen"
     | "setMeaningWorkbenchOpen"
-    | "workbenchSectionRef"
     | "setAnalysisParentRunId"
     | "setAnalysisParentRequestText"
     | "acpChatOpen"
@@ -94,7 +93,7 @@ export function useTopologyAgentOrchestration({
   } = acpRuntimeController;
   const {
     workbenchOpenRef, requestWorkbenchSection, setAcpChatOpen, setAcpDockFrameOpen, setVaultAgentOpen,
-    setMeaningWorkbenchOpen, workbenchSectionRef, setAnalysisParentRunId, setAnalysisParentRequestText,
+    setMeaningWorkbenchOpen, setAnalysisParentRunId, setAnalysisParentRequestText,
     acpChatOpen, vaultAgentOpen, acpDockFrameOpen, meaningWorkbenchOpen, reviewUsesSheet
   } = homeWorkbenchController;
   const { setCreateNodeOpen } = topologyAuthoring;
@@ -145,12 +144,10 @@ export function useTopologyAgentOrchestration({
     setCreateNodeOpen(false);
   }, [workbenchOpenRef, requestWorkbenchSection, cancelAcpSessionStart, agentChatUsesRuntime, setOntologySearchOpen, setCreateNodeOpen, setChatMounted, setAcpChatOpen, setAcpDockFrameOpen, setVaultAgentOpen, setMeaningWorkbenchOpen]);
   const handleWorkbenchSectionChange = useCallback((tab: 'meaning' | 'history' | 'conversation') => {
-    if (tab === 'meaning') return;
-    workbenchSectionRef.current = tab;
     if (tab === 'conversation' && agentChatUsesRuntime && !workbenchOpenRef.current.agent) {
       setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);
     }
-  }, [agentChatUsesRuntime, setAcpChatOpen, setAcpDockFrameOpen, setChatMounted, workbenchOpenRef, workbenchSectionRef]);
+  }, [agentChatUsesRuntime, setAcpChatOpen, setAcpDockFrameOpen, setChatMounted, workbenchOpenRef]);
 
   /** The same keys as the empty-chat chips, so one idea is not phrased two ways. */
   const firstWordsLabels = useMemo<FirstWordsLabels>(

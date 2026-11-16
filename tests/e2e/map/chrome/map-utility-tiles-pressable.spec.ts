@@ -48,11 +48,14 @@ test("no map utility tile is left visible under an open panel", async ({ page })
       const buttons = rail ? [...rail.querySelectorAll<HTMLElement>("button, a")] : [];
       return buttons.map((b) => {
         const r = b.getBoundingClientRect();
-        const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        // A card can stand on half a tile and miss its centre, so both edges are asked too.
+        const cover = [2, r.width / 2, r.width - 2]
+          .map((dx) => document.elementFromPoint(r.x + dx, r.y + r.height / 2))
+          .find((el) => !(b.contains(el) || el === b));
         return {
           label: (b.getAttribute("aria-label") ?? "").trim(),
-          covered: !(b.contains(el) || el === b),
-          coveredBy: (el?.closest("[data-testid]") as HTMLElement | null)?.dataset.testid ?? el?.tagName ?? "none",
+          covered: cover !== undefined,
+          coveredBy: (cover?.closest("[data-testid]") as HTMLElement | null)?.dataset.testid ?? cover?.tagName ?? "none",
         };
       });
     });
@@ -64,7 +67,7 @@ test("no map utility tile is left visible under an open panel", async ({ page })
 
   // Open the relation card by clicking a drawn relation's own curve.
   const box = (await page.locator("canvas").first().boundingBox())!;
-  const point = await page.evaluate(() => {
+  const relationPoint = () => page.evaluate(() => {
     const m = (window as unknown as { __atlasMap?: Record<string, (...a: unknown[]) => unknown> }).__atlasMap!;
     const nodes = m.nodes() as Array<{ id: string; alpha: number; hidden: boolean; x: number; y: number; radius: number }>;
     const alpha = new Map(nodes.map((n) => [n.id, n.alpha]));
@@ -88,11 +91,32 @@ test("no map utility tile is left visible under an open panel", async ({ page })
     }
     return null;
   });
-  expect(point, "그릴 수 있는 관계선을 못 찾았다").not.toBeNull();
-  await page.mouse.click(box.x + point!.x, box.y + point!.y);
-  await waitForMapStill(page);
-  await expect(page.getByTestId("map-edge-panel")).toBeVisible();
+  const openRelationCard = async () => {
+    const point = await relationPoint();
+    expect(point, "그릴 수 있는 관계선을 못 찾았다").not.toBeNull();
+    await page.mouse.click(box.x + point!.x, box.y + point!.y);
+    await waitForMapStill(page);
+    await expect(page.getByTestId("map-edge-panel")).toBeVisible();
+  };
+  await openRelationCard();
 
   const withCard = await tiles();
   expect(withCard.filter((t) => t.covered), JSON.stringify(withCard)).toEqual([]);
+
+  // Beside an open dock the card moves left with the tiles, so it still stands on them.
+  const capability = await page.evaluate(() => {
+    const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ kind: string; hidden: boolean; alpha: number; x: number; y: number }> } }).__atlasMap;
+    const c = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const node = m.nodes().find((n) => !n.hidden && n.alpha > 0.5 && n.kind === "capability" && n.x > 420 && n.x < c.width - 420 && n.y > 120 && n.y < c.height - 120)!;
+    return { x: c.left + node.x, y: c.top + node.y };
+  });
+  await page.mouse.click(capability.x, capability.y);
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+  await page.getByTestId("map-detail-panel-action-meaning").click();
+  await expect(page.getByTestId("analysis-workbench")).toBeVisible();
+  await waitForMapStill(page);
+  await openRelationCard();
+
+  const besideDock = await tiles();
+  expect(besideDock.filter((t) => t.covered), JSON.stringify(besideDock)).toEqual([]);
 });

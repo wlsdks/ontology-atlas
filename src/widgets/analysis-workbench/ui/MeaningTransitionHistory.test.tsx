@@ -46,6 +46,14 @@ describe('MeaningTransitionHistory', () => {
     expect(archive.history).not.toHaveBeenCalled();
   });
 
+  it('draws nothing once the archive has loaded with no records', async () => {
+    archive.history.mockResolvedValue({ records: [], problems: [], nextOffset: null });
+    const onStateChange = vi.fn();
+    const view = render(<MeaningTransitionHistory handle={handle('/vault')} open onStateChange={onStateChange} />);
+    await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith('empty'));
+    expect(view.container).toBeEmptyDOMElement();
+  });
+
   it('shows separate authority facts and exact retained bytes as inert text', async () => {
     const fixture = await record();
     archive.history.mockResolvedValue({ records: [fixture.value], problems: [], totalMembers: 1, scanned: 1, nextOffset: null });
