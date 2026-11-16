@@ -80,7 +80,7 @@ interface Motion {
   dotPairs: string[];
   /** Names that fell while crossed and were still drawn `LEAVING_FRAMES` painted frames after they started to fall. */
   lingering: string[];
-  /** Crossings already drawn in the last frame before the press, the resting overview's own, skipped until they part. */
+  /** Crossings already drawn in the overview's last frame before a press from it, which the press does not own, skipped until they part. */
   standing: string[];
   firstFrameMs: number;
   /** The animation frame after the press that first changed the map. */
@@ -175,7 +175,7 @@ function crossingsOf(now: Sample, prev: Sample | null, group: ReadonlySet<string
   return out;
 }
 
-function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[]): Motion {
+function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[], fromOverview: boolean): Motion {
   let radiusPxPerMs = 0;
   let worst = "";
   let radiusStepPx = 0;
@@ -198,7 +198,7 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
   /** Per name on its way out: the frame its ink started to fall, and whether a crossing was let pass for it. */
   const leaving = new Map<string, { since: number; crossed: boolean }>();
   const prePress = samples.filter((s) => s.t < pressAt);
-  const standing = new Set(prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, null, group).map((c) => c.pair)) : []);
+  const standing = new Set(fromOverview && prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, null, group).map((c) => c.pair)) : []);
   const standingSeen = [...standing];
   let lastPainted = "";
   for (let i = 0; i < samples.length; i += 1) {
@@ -418,13 +418,13 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         await startSampling(page, watched);
         await press(page, domainId);
         await selected(page, domainId);
-        expectSmooth(`${tag} domain press`, motionOf(await stopSampling(page), [star]), true);
+        expectSmooth(`${tag} domain press`, motionOf(await stopSampling(page), [star], true), true);
 
         const member = [...(await readDial(page)).discs].filter((d) => clusters.find((c) => c.domainId === domainId)!.capabilityIds.includes(d.id)).sort((a, b) => a.r - b.r)[0]!.id;
         await startSampling(page, watched);
         await press(page, member);
         await selected(page, member);
-        expectSmooth(`${tag} member press`, motionOf(await stopSampling(page), [star]), false);
+        expectSmooth(`${tag} member press`, motionOf(await stopSampling(page), [star], false), false);
 
         if (!dock) {
           await press(page, domainId);
@@ -434,7 +434,7 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
           await page.getByTestId("ontology-map-canvas").focus();
           await page.keyboard.press("Escape");
           await selected(page, null);
-          expectSmooth(`${tag} deselect`, motionOf(await stopSampling(page), [star]), false);
+          expectSmooth(`${tag} deselect`, motionOf(await stopSampling(page), [star], false), false);
         }
 
         await openDogfoodFlat(page, viewport, dock);
@@ -446,7 +446,7 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         await page.waitForTimeout(RETARGET_AFTER_MS);
         const retarget = await pressWhileMoving(page, [other, member]);
         await selected(page, retarget);
-        expectSmooth(`${tag} retarget to ${retarget}`, motionOf(await stopSampling(page), [star, otherStar]), false);
+        expectSmooth(`${tag} retarget to ${retarget}`, motionOf(await stopSampling(page), [star, otherStar], true), false);
       }
 
       // A reader opens a star to read what is in it: at rest it names its members but those no side fits for, the dock's narrower map at least four in five.
