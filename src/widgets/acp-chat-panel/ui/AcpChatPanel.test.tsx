@@ -100,6 +100,7 @@ import {
 import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { TURN_DONE_HOLD_MS } from './chat-panel/TurnWorkStage';
+import { CELEBRATION_MOTIONS } from '@/shared/ui/marks/moru-rows';
 
 /** The agent sends one line. */
 function emit(payload: unknown) {
@@ -2750,7 +2751,7 @@ describe('first download: a starting indicator alone is not enough (2026-08-19)'
     await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-kind', 'answering'));
     act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
     await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-phase', 'done'));
-    expect(screen.getByTestId('brand-waiting-mark')).toHaveAttribute('data-moru-motion', 'success');
+    expect(CELEBRATION_MOTIONS).toContain(screen.getByTestId('brand-waiting-mark').getAttribute('data-moru-motion'));
 
     // The next turn takes the row back to work; a permission request and Stop both clear it.
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Second question' } });
