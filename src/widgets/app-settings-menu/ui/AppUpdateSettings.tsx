@@ -1,11 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { RefreshCw } from 'lucide-react';
 
 import {
-  readUpdateMemory,
   useAppUpdateContext,
   useUpdateAutoCheck,
   writeUpdateAutoCheck,
@@ -19,9 +17,9 @@ import { useRunningVersion } from '../model/use-running-version';
 import { DETAIL_TOGGLE_CHIP, SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 
 /**
- * The running version, a manual check (the only way back to a version whose toast was
- * dismissed) and the automatic-check switch. Download, install and restart stay in the toast.
- * Not drawn on the web, where a tab cannot replace itself.
+ * The running version, a manual check and the automatic-check switch. Download, install and
+ * restart live in the notice; while the notice is put away, the result line names the pending
+ * version and carries its one action. Not drawn on the web, where a tab cannot replace itself.
  */
 export function AppUpdateSettings() {
   const t = useTranslations('settingsAbout');
@@ -30,15 +28,35 @@ export function AppUpdateSettings() {
   const autoCheck = useUpdateAutoCheck();
 
   const format = useFormatter();
-  const phaseKind = update?.phase.kind;
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- the phase is the re-read signal, not an input
-  const memory = useMemo(() => readUpdateMemory(), [phaseKind]);
 
   if (!isDesktopShell() || !update) return null;
 
   const phase = update.phase;
   const checking = phase.kind === 'checking';
+  const { pendingVersion, readyVersion } = update;
+  // The notice is put away: the line states the fact and carries the action the card would.
+  const awayAction: { text: string; label: string; onClick: () => void } | null =
+    phase.kind === 'downloading' && update.noticeHidden
+      ? {
+          text: t('appUpdate.resultDownloadingHidden', { version: phase.version }),
+          label: t('appUpdate.actionShowNotice'),
+          onClick: update.showNotice,
+        }
+      : phase.kind === 'idle' && pendingVersion
+        ? pendingVersion === readyVersion
+          ? {
+              text: t('appUpdate.resultReadyHidden', { version: pendingVersion }),
+              label: t('appUpdate.actionRestart'),
+              onClick: update.restart,
+            }
+          : {
+              text: t('appUpdate.resultAvailableHidden', { version: pendingVersion }),
+              label: t('appUpdate.actionInstall'),
+              onClick: update.install,
+            }
+        : null;
   const outcome = (() => {
+    if (awayAction) return awayAction.text;
     switch (phase.kind) {
       case 'current':
         return t('appUpdate.resultCurrent');
@@ -98,9 +116,9 @@ export function AppUpdateSettings() {
         settingId="update-auto"
         caption={[
           autoCheck === 'on' ? t('appUpdate.autoOn') : t('appUpdate.autoOff'),
-          memory?.lastCheckedAt
+          update.lastCheckedAt
             ? t('appUpdate.autoLast', {
-                when: format.dateTime(new Date(memory.lastCheckedAt), {
+                when: format.dateTime(new Date(update.lastCheckedAt), {
                   month: 'long',
                   day: 'numeric',
                   hour: 'numeric',
@@ -108,8 +126,8 @@ export function AppUpdateSettings() {
                 }),
               })
             : t('appUpdate.autoNever'),
-          memory?.dismissedVersion
-            ? t('appUpdate.autoDismissed', { version: memory.dismissedVersion })
+          update.dismissedVersion
+            ? t('appUpdate.autoDismissed', { version: update.dismissedVersion })
             : null,
         ]
           .filter(Boolean)
@@ -129,20 +147,27 @@ export function AppUpdateSettings() {
         }
       />
       </SettingsGroup>
-      <p
-        data-testid="app-settings-update-result"
-        data-phase={phase.kind}
-        role="status"
-        aria-live="polite"
-        className={cn(
-          'min-w-0 text-label leading-label empty:hidden',
-          phase.kind === 'failed'
-            ? 'text-[color:var(--color-status-warning)]'
-            : 'text-[color:var(--color-text-tertiary)]',
-        )}
-      >
-        {outcome ?? ''}
-      </p>
+      <div className="flex min-w-0 items-center gap-2">
+        <p
+          data-testid="app-settings-update-result"
+          data-phase={phase.kind}
+          role="status"
+          aria-live="polite"
+          className={cn(
+            'min-w-0 flex-1 text-label leading-label empty:hidden',
+            phase.kind === 'failed'
+              ? 'text-[color:var(--color-status-warning)]'
+              : 'text-[color:var(--color-text-tertiary)]',
+          )}
+        >
+          {outcome ?? ''}
+        </p>
+        {awayAction ? (
+          <Chip size="sm" tone="secondary" data-testid="app-settings-update-away-action" onClick={awayAction.onClick}>
+            {awayAction.label}
+          </Chip>
+        ) : null}
+      </div>
     </div>
   );
 }
