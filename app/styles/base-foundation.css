@@ -289,6 +289,15 @@
     animation-play-state: running;
   }
 
+  /* The stage's pause (WCAG 2.2.2) holds every self-started loop in its artwork where it stands;
+     resuming continues from the same frame. */
+  [data-motion-paused] .planning-sheet-drift,
+  [data-motion-paused] .automation-dial-hand,
+  [data-motion-paused] .atlas-waiting-mark[data-waiting-motion],
+  [data-motion-paused] .atlas-moru-greeting[data-waiting-motion] {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .planning-sheet-drift,
     .automation-dial-hand {

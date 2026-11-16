@@ -6,16 +6,23 @@ import { motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
+import { useMotionPaused } from '@/shared/motion/motion-pause';
+
+import { MotionToggle } from '../controls/motion-toggle';
 
 const ARRIVAL_MS = MOTION.choreography.duration * 1000;
 /** The pulse's length as a fraction of its line. */
 const PULSE_LENGTH = 0.16;
 
-/** What the stage tells its artwork: `arriving` for one choreography after mount, `engaged` while the action is hovered or focused. */
+/**
+ * What the stage tells its artwork: `arriving` for one choreography after mount, `engaged` while the
+ * action is hovered or focused, `paused` while the person has paused motion that loops by itself.
+ */
 export interface FeatureStageMotion {
   arriving: boolean;
   engaged: boolean;
   reduced: boolean;
+  paused: boolean;
 }
 
 /**
@@ -31,12 +38,15 @@ export function FeatureStage({
   action,
   note,
   artWidth = 'compact',
+  artLoops = false,
   className,
   ...rest
 }: {
   art: (state: FeatureStageMotion) => ReactNode;
   /** `wide` for a scene whose figures stand side by side; the compact slot suits one figure. */
   artWidth?: 'compact' | 'wide';
+  /** The artwork keeps moving by itself after it arrives, so the stage offers the shared pause (WCAG 2.2.2). */
+  artLoops?: boolean;
   title: ReactNode;
   /** `h1` where the page has no header bar naming it. */
   titleAs?: 'h1' | 'h2';
@@ -48,6 +58,10 @@ export function FeatureStage({
   [data: `data-${string}`]: string | boolean | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
+  const motionPaused = useMotionPaused();
+  const offersPause = artLoops && !reduced;
+  const paused = offersPause && motionPaused;
+  const artSlot = artWidth === 'wide' ? 'max-w-md' : 'max-w-72';
   const [arriving, setArriving] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -68,7 +82,7 @@ export function FeatureStage({
       transition={reduced ? MOTION.fast : MOTION.expressive}
       className={cn('mx-auto my-auto flex w-full max-w-[var(--measure-stage-column)] flex-col items-center py-6 text-center', className)}
     >
-      <div data-feature-stage-art aria-hidden className={cn('relative w-full', artWidth === 'wide' ? 'max-w-md' : 'max-w-72')}>
+      <div data-feature-stage-art data-motion-paused={paused || undefined} aria-hidden className={cn('relative w-full', artSlot, offersPause && 'order-first')}>
         {/* The plate the artwork stands on: a dot grid and one indigo light, both fading out before the column's edge. */}
         <div className="pointer-events-none absolute -inset-x-24 -inset-y-12 bg-[radial-gradient(var(--color-overlay-3)_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(closest-side,black,transparent)]" />
         <motion.div
@@ -77,7 +91,7 @@ export function FeatureStage({
           animate={{ opacity: hovered || focused ? 1 : 0.6 }}
           transition={reduced ? MOTION.fast : arriving ? MOTION.choreography : MOTION.slow}
         />
-        <div className="relative">{art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced })}</div>
+        <div className="relative">{art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced, paused })}</div>
       </div>
       <Title className="mt-10 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</Title>
       {body ? <p className="mt-4 max-w-md text-balance text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p> : null}
@@ -94,6 +108,12 @@ export function FeatureStage({
         </div>
       ) : null}
       {note ? <div className="mt-3 flex max-w-md items-center justify-center gap-2 text-body text-[color:var(--color-text-secondary)]">{note}</div> : null}
+      {/* Drawn just under the artwork on the plate's edge, but last in the tab order: `order` draws it there. */}
+      {offersPause ? (
+        <div className={cn('relative -order-1 h-0 w-full', artSlot)}>
+          <MotionToggle testId="feature-stage-motion-toggle" className="absolute right-0 top-2" />
+        </div>
+      ) : null}
     </motion.section>
   );
 }

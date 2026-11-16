@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { useMotionPaused } from './motion-pause';
+import { useMotionPaused } from '@/shared/motion/motion-pause';
 
 export type InViewMotion = 'paused' | 'running' | undefined;
 

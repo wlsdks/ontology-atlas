@@ -5,14 +5,13 @@ import { useTranslations } from 'next-intl';
 
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { cn } from '@/shared/lib/cn';
+import { setMotionPaused, useMotionPaused } from '@/shared/motion/motion-pause';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { setMotionPaused, useMotionPaused } from '../lib/motion-pause';
-
 /**
- * The page's pause for motion that starts by itself. Under reduced motion nothing loops, so the
- * control has nothing to stop and is not offered.
+ * The pause for motion that starts by itself, shared by the download page and looping stages.
+ * Under reduced motion nothing loops, so the control has nothing to stop and is not offered.
  */
 export function MotionToggle({ className, testId }: { className?: string; testId: string }) {
   const t = useTranslations('download.motion');

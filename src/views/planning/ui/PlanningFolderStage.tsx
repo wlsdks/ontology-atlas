@@ -20,6 +20,7 @@ export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
     data-testid="planning-stage"
     data-planning-state={choose ? 'no-folder' : 'unsupported'}
     artWidth="wide"
+    artLoops
     art={(motion) => <PlanningSourceArtwork {...motion} />}
     title={t('startTitle')}
     body={t(choose ? 'startBody' : 'browserUnavailable')}

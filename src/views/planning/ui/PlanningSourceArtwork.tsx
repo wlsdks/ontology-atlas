@@ -89,7 +89,7 @@ const SHEET_POSE: Record<Side, { from: TargetAndTransition; lean: TargetAndTrans
  * A planning folder opening: Moru opens it, a Markdown page and a screen mock rise out beside him
  * and fill in, and he keeps looking from one to the other. Reduced motion draws the settled scene.
  */
-export function PlanningSourceArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
+export function PlanningSourceArtwork({ arriving, engaged, reduced, paused }: FeatureStageMotion) {
   const t = useTranslations('planning');
   const scene = useRef<HTMLDivElement>(null);
   const cell = useRef<HTMLSpanElement>(null);
@@ -102,9 +102,11 @@ export function PlanningSourceArtwork({ arriving, engaged, reduced }: FeatureSta
   }, [reduced]);
 
   useEffect(() => {
+    // Paused, Moru holds the frame he is on; no gesture starts until motion is played again.
+    if (paused) return;
     const resting = restsOnNeutralPose(cell.current);
     setMoru((current) => (engaged ? planningOnEngage(current, resting) : { ...current, hopOwed: false }));
-  }, [engaged]);
+  }, [engaged, paused]);
 
   const loopEnded = useCallback(() => setMoru(planningAfterLoop), []);
   const gestureEnded = (event: AnimationEvent<HTMLSpanElement>) => {

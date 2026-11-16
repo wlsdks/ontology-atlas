@@ -182,7 +182,7 @@ export function AutomationsPage({
                 aria-labelledby={staged ? `automations-tab-${lane}` : undefined}
                 inert={stage.exiting} aria-hidden={stage.exiting || undefined}
                 className={cn("flex min-w-0 flex-1 flex-col", stage.exiting && "motion-swap-out pointer-events-none absolute inset-0")}>
-                <FeatureStage data-testid="automations-empty-workbench" artWidth="wide"
+                <FeatureStage data-testid="automations-empty-workbench" artWidth="wide" artLoops
                   art={(motionState) => <AutomationScheduleArtwork {...motionState}
                     name={t("ghostExample", { name: lane === "ontology" ? t("ontology.defaultName") : tRounds("name.consistency") })}
                     cadence={lane === "ontology" ? t("cadence.6h") : t("cadence.hour")} />}
