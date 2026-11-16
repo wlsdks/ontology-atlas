@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { OntologyTreeMap, type OntologyMapEdge, type OntologyMapNode, type TreeMapLabels } from "@/widgets/ontology-map";
-import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "../model/map-canvas/use-map-evidence-states";
+import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "@/features/vault-ontology";
 import { ArcSwatch, KindDot } from "./map-legend-swatches";
 
 /**

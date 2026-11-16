@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, typ
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -49,7 +49,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs"
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
 import { ProjectAgentDock } from "./parts/ProjectAgentDock";
-import { useOntologyInsight } from "@/features/vault-ontology";
+import { useOntologyInsight, type StaleEvidencePath } from "@/features/vault-ontology";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
@@ -63,9 +63,20 @@ import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/c
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { splitProjectBrief } from "../model/project-brief";
 import { resolveProjectLead } from "../model/project-lead";
+import { buildProjectToCheck, isProjectConcept } from "../model/project-to-check";
+import { buildProjectChanged } from "../model/project-changed";
 import { DomainMasterDetail } from "./DomainMasterDetail";
+import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFacts";
+import { ToCheckSection } from "./now/ToCheckSection";
+import { ChangedSection } from "./now/ChangedSection";
+import { SECTION_HEADING_CLASS } from "./now/now-parts";
 import { ProjectActions } from "./ProjectActions";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
+
+const NO_IDS: ReadonlySet<string> = new Set();
+const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
+/** A2's three rows come before A3's in reading order, so A3's arrival continues the stagger. */
+const TO_CHECK_ROWS_BEFORE_CHANGED = 3;
 
 /* A lead paragraph needs no picture, and a remote one would be a request the reader did not ask for. */
 const LEAD_MARKDOWN_COMPONENTS: Components = { img: ({ alt }) => <span>{alt}</span> };
@@ -196,6 +207,7 @@ export function ProjectDetailPage({
 }: Props) {
   const t = useTranslations("projectPages.detail");
   const tMapDial = useTranslations("mapDial");
+  const tIndex = useTranslations("topology.index");
   const failureSentence = useFailureSentence();
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
@@ -306,6 +318,7 @@ export function ProjectDetailPage({
   const vaultDocs = useVaultDocs();
   // One manifest, so sources and wiki pages are counted from the same folder.
   const vaultManifest = useVaultManifest();
+  const reducedMotion = useReducedMotion() ?? false;
 
   if (!slug) {
     return (
@@ -333,324 +346,395 @@ export function ProjectDetailPage({
       );
   }
 
-  const projectDoc = findProjectDocInList(vaultDocs, project.slug);
-  const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
-  const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
-  const soleProject = insightNodes.filter((node) => node.kind === "project").length <= 1;
-  const domainsOverlap =
-    domainComposition.domains.reduce((sum, row) => sum + row.total, 0) > metrics.capabilities + metrics.elements;
-  // Sources and wiki pages are the folder's; nothing ties a file to one project.
-  const librarySources = vaultManifest?.sources?.length ?? 0;
-  const libraryWikiPages = countWikiPages(vaultDocs);
-  const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
-  const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
-
-  const canManageProject = projectMutations.canEdit;
-  /* A sentence in the page's language inside `saveErrorPrefix`; the raw error goes to the console only. */
-  const projectSaveErrorMessage = (err: unknown) => {
-    if (err instanceof VaultConflictError) return t("saveErrorConflict");
-    const failure = failureSentence(err, t("saveErrorGeneric"));
-    if (failure.detail) console.error("project save failed", failure.detail);
-    return failure.sentence;
-  };
-  const saveProjectField = async (
-    field: "name" | "description",
-    next: string,
-  ) => {
-    if (!project || !canManageProject) return;
-    try {
-      // Edits the display key when the document has one, the word the person sees.
-      await projectMutations.patchProject(
-        project.slug,
-        field === "name"
-          ? projectHasDisplayName(project, locale)
-            ? { displayName: { locale, value: next } }
-            : { name: next }
-          : { description: next.trim() ? next : null },
-      );
-      showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
-    } catch (err) {
-      const message = projectSaveErrorMessage(err);
-      showToast(t("saveErrorPrefix", { message }), "error");
-      throw err;
-    }
-  };
-
-  const heroTagline = resolveProjectTagline({ description: project.description });
-  const dedupedBodyContent = stripDuplicateHeading(bodyContent, project.name);
-  const leadParagraph = bodyContent ? resolveProjectLead(dedupedBodyContent ?? bodyContent, heroTagline) : "";
-  const heroMeta = [
-    project.isHub ? t("heroLabelHub") : soleProject ? null : t("heroLabel"),
-    // statusLabel(undefined) is a truthy "—" that would survive the filter.
-    project.status ? statusLabel(project.status) : null,
-    t("heroUpdatedAt", { date: formatDate(project.updatedAt) }),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const projectHref = getProjectRuntimeDetailHref(project.slug);
-  const documentHref = projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/";
-  const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
-  const hasLibrary = librarySources + libraryWikiPages > 0;
-  const quietLinkClass = controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand" });
-
   return (
-    <ProjectDetailShell
-      dockOpen={agent.route === "agent" && Boolean(agent.runtime && nativeVaultRootPath) && agent.open}
-      dock={
-        agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
-          <ProjectAgentDock
-            open={agent.open}
-            projectName={displayName ?? project.name}
-            runtime={agent.runtime}
-            runtimes={agent.runtimes}
-            onRuntimeChange={agent.setRuntimeId}
-            vaultRoot={nativeVaultRootPath}
-            mcpServers={agent.mcpServers}
-            openingRequest={agent.openingRequest}
-            knownSlugs={agentKnownSlugs}
-            onClose={() => agent.setOpen(false)}
-            chatWidth={chatWidth}
-          />
-        ) : null
-      }
-    >
-      <ProjectDetailTopBar slug={slug} projectName={displayName ?? project.name} />
+    <ProjectNowFactsReader nodes={insightNodeList} docs={vaultDocs}>
+      {(facts) => renderProject(project, facts)}
+    </ProjectNowFactsReader>
+  );
 
-      {/* Name and actions share the first line only where the page column is wide enough for both. */}
-      <header
-        data-testid="project-detail-identity"
-        className="mt-8 grid min-w-0 grid-cols-1 gap-x-10 gap-y-5 [grid-template-areas:'name'_'text'_'actions'] @5xl/project-page:grid-cols-[minmax(0,1fr)_auto] @5xl/project-page:[grid-template-areas:'name_actions'_'text_text']"
+  // After the guards, so the Git walk and the review reads run only for a found project.
+  function renderProject(project: Project, { evidence, recentChanges, review, conceptFacts }: ProjectNowFacts) {
+    const projectDoc = findProjectDocInList(vaultDocs, project.slug);
+    const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
+    const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
+    const soleProject = insightNodes.filter((node) => node.kind === "project").length <= 1;
+    const domainsOverlap =
+      domainComposition.domains.reduce((sum, row) => sum + row.total, 0) > metrics.capabilities + metrics.elements;
+    // Sources and wiki pages are the folder's; nothing ties a file to one project.
+    const librarySources = vaultManifest?.sources?.length ?? 0;
+    const libraryWikiPages = countWikiPages(vaultDocs);
+    const projectCapabilities = insightNodes.filter((node) => node.kind === "capability" && isProjectConcept(node, project.slug));
+    // Only capabilities the walk could compare count; when none of this project's can be, it has no paths.
+    const comparedCapabilities = projectCapabilities.filter((node) => evidence.states.has(node.id)).length;
+    const evidenceAvailability =
+      evidence.availability === "measured" && comparedCapabilities === 0 ? "no-paths" : evidence.availability;
+    const evidenceMeasured = evidenceAvailability === "measured";
+    const staleIds = evidenceMeasured
+      ? new Set(projectCapabilities.filter((node) => evidence.states.get(node.id) === "stale").map((node) => node.id))
+      : NO_IDS;
+    const domainNameById = new Map<string, string>();
+    for (const domain of domainComposition.domains) {
+      domainNameById.set(domain.id, domain.title);
+      for (const capability of domain.capabilities) if (!domainNameById.has(capability.id)) domainNameById.set(capability.id, domain.title);
+    }
+    const toCheck = buildProjectToCheck({
+      nodes: insightNodes,
+      projectSlug: project.slug,
+      reviewRows: review.rows,
+      stalePaths: evidenceMeasured ? evidence.stalePaths : NO_STALE_PATHS,
+      findingsBySlug: conceptFacts,
+      domainNameById,
+    });
+    const changed = buildProjectChanged(recentChanges.reading ? [] : recentChanges.rows, insightNodes, project.slug);
+    const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
+    const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
+
+    const canManageProject = projectMutations.canEdit;
+    /* A sentence in the page's language inside `saveErrorPrefix`; the raw error goes to the console only. */
+    const projectSaveErrorMessage = (err: unknown) => {
+      if (err instanceof VaultConflictError) return t("saveErrorConflict");
+      const failure = failureSentence(err, t("saveErrorGeneric"));
+      if (failure.detail) console.error("project save failed", failure.detail);
+      return failure.sentence;
+    };
+    const saveProjectField = async (
+      field: "name" | "description",
+      next: string,
+    ) => {
+      if (!project || !canManageProject) return;
+      try {
+        // Edits the display key when the document has one, the word the person sees.
+        await projectMutations.patchProject(
+          project.slug,
+          field === "name"
+            ? projectHasDisplayName(project, locale)
+              ? { displayName: { locale, value: next } }
+              : { name: next }
+            : { description: next.trim() ? next : null },
+        );
+        showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
+      } catch (err) {
+        const message = projectSaveErrorMessage(err);
+        showToast(t("saveErrorPrefix", { message }), "error");
+        throw err;
+      }
+    };
+
+    const heroTagline = resolveProjectTagline({ description: project.description });
+    const dedupedBodyContent = stripDuplicateHeading(bodyContent, project.name);
+    const leadParagraph = bodyContent ? resolveProjectLead(dedupedBodyContent ?? bodyContent, heroTagline) : "";
+    const heroMeta = [
+      project.isHub ? t("heroLabelHub") : soleProject ? null : t("heroLabel"),
+      // statusLabel(undefined) is a truthy "—" that would survive the filter.
+      project.status ? statusLabel(project.status) : null,
+      t("heroUpdatedAt", { date: formatDate(project.updatedAt) }),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    const projectHref = getProjectRuntimeDetailHref(project.slug);
+    const documentHref = projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/";
+    const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
+    const hasLibrary = librarySources + libraryWikiPages > 0;
+    const quietLinkClass = controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand" });
+
+    return (
+      <ProjectDetailShell
+        dockOpen={agent.route === "agent" && Boolean(agent.runtime && nativeVaultRootPath) && agent.open}
+        dock={
+          agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
+            <ProjectAgentDock
+              open={agent.open}
+              projectName={displayName ?? project.name}
+              runtime={agent.runtime}
+              runtimes={agent.runtimes}
+              onRuntimeChange={agent.setRuntimeId}
+              vaultRoot={nativeVaultRootPath}
+              mcpServers={agent.mcpServers}
+              openingRequest={agent.openingRequest}
+              knownSlugs={agentKnownSlugs}
+              onClose={() => agent.setOpen(false)}
+              chatWidth={chatWidth}
+            />
+          ) : null
+        }
       >
-        <div className="min-w-0 [grid-area:name]">
-          <div className="flex min-w-0 items-center gap-3">
-            <OntologyMapKindGlyph kind="project" size={ICON_SIZE.lg} className="shrink-0" />
-            <InlineEditable
-              as="h1"
-              value={displayName ?? project.name}
-              editable={canManageProject}
-              onSave={(next) => saveProjectField("name", next)}
-              ariaLabel={t("inlineNameAria")}
-              className={`min-w-0 text-pretty ${PAGE_TITLE}`}
+        <ProjectDetailTopBar slug={slug} projectName={displayName ?? project.name} />
+
+        {/*
+          Band A. From a 64rem page column the brief sits beside what to check, with what changed as one
+          strip under both; from 90rem the three sit side by side. Narrower, one column.
+        */}
+        <div
+          data-testid="project-detail-identity"
+          className="mt-8 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'check'_'changed'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:[grid-template-areas:'name_actions'_'text_check'_'changed_changed'] @[90rem]/project-page:grid-cols-[calc((100%-3rem)*5/12)_minmax(0,1fr)_minmax(0,1fr)] @[90rem]/project-page:[grid-template-areas:'name_actions_actions'_'text_check_changed']"
+        >
+          <div className="min-w-0 [grid-area:name]">
+            <div className="flex min-w-0 items-center gap-3">
+              <OntologyMapKindGlyph kind="project" size={ICON_SIZE.lg} className="shrink-0" />
+              <InlineEditable
+                as="h1"
+                value={displayName ?? project.name}
+                editable={canManageProject}
+                onSave={(next) => saveProjectField("name", next)}
+                ariaLabel={t("inlineNameAria")}
+                className={`min-w-0 text-pretty ${PAGE_TITLE}`}
+              />
+            </div>
+            <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{heroMeta}</p>
+          </div>
+
+          <div className="min-w-0 [grid-area:actions] @5xl/project-page:justify-self-end">
+            <ProjectActions
+              project={project}
+              displayName={displayName ?? null}
+              canManage={canManageProject}
+              fullEditHref={getProjectEditHref(project.slug, { returnTo: projectHref })}
+              projectHref={projectHref}
+              documentHref={documentHref}
+              handoffSnippet={buildAgentHandoffSnippet(project.slug)}
+              brief={{
+                prompt: t("briefPrompt", { slug: project.slug, doc: projectDoc?.path ?? `${project.slug}.md` }),
+                explanation:
+                  agent.route === "agent"
+                    ? t("briefAskAgent")
+                    : briefIsStructured
+                      ? t("briefAskStructured")
+                      : t("briefAskUnstructured"),
+                startAgent: agent.route === "agent" ? agent.start : null,
+              }}
+              review={{
+                inputProps: constructionReview.inputProps,
+                openPicker: constructionReview.openPicker,
+                reading: constructionReview.status === "reading",
+              }}
             />
           </div>
-          <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{heroMeta}</p>
+
+          <div data-testid="project-detail-body" className="min-w-0 [grid-area:text]">
+            <InlineEditable
+              as="p"
+              multiline
+              value={heroTagline ?? project.description}
+              editable={canManageProject}
+              onSave={(next) => saveProjectField("description", next)}
+              ariaLabel={t("inlineDescriptionAria")}
+              placeholder={t("inlineDescriptionPlaceholder")}
+              dataTestId="project-detail-description"
+              className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
+            />
+            {leadParagraph ? (
+              <div
+                data-testid="project-detail-lead"
+                className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
+              </div>
+            ) : null}
+            {bodyContent ? (
+              <Link
+                href={documentHref}
+                data-testid="project-detail-body-continue"
+                className={cn(quietLinkClass, "mt-3")}
+              >
+                {t("bodyContinue")}
+              </Link>
+            ) : (
+              <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
+                {t("bodyEmptyHint")}
+              </p>
+            )}
+            {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
+            {canManageProject ? null : (
+              <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                <span
+                  data-testid="project-detail-readonly-badge"
+                  className="min-w-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)]"
+                >
+                  {t("readOnlyBadge")}
+                </span>
+                <OpenVaultCta testId="project-detail-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />
+              </div>
+            )}
+          </div>
+
+          {/* Hairlines sit in the gaps: beside the brief, above the strip, and between the wide band's columns. */}
+          <div
+            data-testid="project-detail-now"
+            className="relative min-w-0 border-t border-[color:var(--color-divider)] pt-5 [grid-area:check] @5xl/project-page:border-t-0 @5xl/project-page:pt-0 @5xl/project-page:before:absolute @5xl/project-page:before:inset-y-0 @5xl/project-page:before:-left-6 @5xl/project-page:before:w-px @5xl/project-page:before:bg-[color:var(--color-divider)]"
+          >
+            <ToCheckSection
+              projectName={displayName ?? project.name}
+              toCheck={toCheck}
+              availability={evidenceAvailability}
+              staleCount={staleIds.size}
+              comparedCount={comparedCapabilities}
+              reviewReading={review.reading}
+              reducedMotion={reducedMotion}
+            />
+          </div>
+          <div className="relative -mt-1 min-w-0 border-t border-[color:var(--color-divider)] pt-5 [grid-area:changed] @5xl/project-page:mt-0 @[90rem]/project-page:border-t-0 @[90rem]/project-page:pt-0 @[90rem]/project-page:before:absolute @[90rem]/project-page:before:inset-y-0 @[90rem]/project-page:before:-left-6 @[90rem]/project-page:before:w-px @[90rem]/project-page:before:bg-[color:var(--color-divider)]">
+            <ChangedSection
+              changed={changed}
+              windowDays={recentChanges.windowDays}
+              reading={recentChanges.reading}
+              reducedMotion={reducedMotion}
+              arrivalOffset={TO_CHECK_ROWS_BEFORE_CHANGED}
+            />
+          </div>
         </div>
 
-        <div className="min-w-0 [grid-area:actions]">
-          <ProjectActions
-            project={project}
-            displayName={displayName ?? null}
-            canManage={canManageProject}
-            fullEditHref={getProjectEditHref(project.slug, { returnTo: projectHref })}
-            projectHref={projectHref}
-            documentHref={documentHref}
-            handoffSnippet={buildAgentHandoffSnippet(project.slug)}
-            brief={{
-              prompt: t("briefPrompt", { slug: project.slug, doc: projectDoc?.path ?? `${project.slug}.md` }),
-              explanation:
-                agent.route === "agent"
-                  ? t("briefAskAgent")
-                  : briefIsStructured
-                    ? t("briefAskStructured")
-                    : t("briefAskUnstructured"),
-              startAgent: agent.route === "agent" ? agent.start : null,
-            }}
-            review={{
-              inputProps: constructionReview.inputProps,
-              openPicker: constructionReview.openPicker,
-              reading: constructionReview.status === "reading",
-            }}
-          />
-        </div>
+        {constructionReview.status === "ready" || constructionReview.status === "blocked" ? (
+          <div ref={reviewOutcomeRef} tabIndex={-1} role="region"
+            aria-label={t("constructionReview.resultRegion")}
+            data-testid="construction-review-outcome" className="scroll-mt-6 focus:outline-none">
+            {constructionReview.status === "ready" && constructionReview.review ? (
+              <ConstructionReviewPanel
+                key={`${constructionReview.review.sourceDigest}:${constructionReview.review.planDigest}`}
+                review={constructionReview.review}
+              />
+            ) : null}
 
-        <div data-testid="project-detail-body" className="min-w-0 [grid-area:text]">
-          <InlineEditable
-            as="p"
-            multiline
-            value={heroTagline ?? project.description}
-            editable={canManageProject}
-            onSave={(next) => saveProjectField("description", next)}
-            ariaLabel={t("inlineDescriptionAria")}
-            placeholder={t("inlineDescriptionPlaceholder")}
-            dataTestId="project-detail-description"
-            className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
-          />
-          {leadParagraph ? (
-            <div
-              data-testid="project-detail-lead"
-              className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
+            {constructionReview.status === "blocked" && constructionReview.errorState ? (
+              <section
+                data-testid="construction-review-error"
+                data-envelope-state={constructionReview.errorState}
+                className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)] sm:px-5"
+              >
+                <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
+                  {t("constructionReview.errorTitle")}
+                </h2>
+                <p className="mt-1.5 text-body leading-prose text-[color:var(--color-text-secondary)]">
+                  {t(`constructionReview.errors.${constructionReview.errorState}`)}
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={openReviewPicker}
+                  data-testid="construction-review-retry" className="atlas-touch-floor atlas-touch-floor-wide mt-4">
+                  {t("constructionReview.retryFile")}
+                </Button>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
+
+        <section
+          data-testid="project-detail-composition"
+          aria-labelledby="project-detail-composition-title"
+          className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-8"
+        >
+          <div className="mb-5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h2
+              id="project-detail-composition-title"
+              className={SECTION_HEADING_CLASS}
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
-            </div>
-          ) : null}
-          {bodyContent ? (
-            <Link
-              href={documentHref}
-              data-testid="project-detail-body-continue"
-              className={cn(quietLinkClass, "mt-3")}
-            >
-              {t("bodyContinue")}
-            </Link>
+              {t("compositionHeading")}
+            </h2>
+            <p data-testid="project-detail-composition-counts" className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
+              {t("compositionCounts", {
+                domains: metrics.domains,
+                capabilities: metrics.capabilities,
+                elements: metrics.elements,
+                relations: metrics.relations,
+              })}
+            </p>
+          </div>
+          {domainComposition.domains.length > 0 ? (
+            <DomainMasterDetail
+              domains={domainComposition.domains}
+              maxTotal={domainComposition.maxTotal}
+              marks={{
+                staleIds,
+                changedIds: changed.changedIds,
+                staleLegend: evidenceMeasured ? "shown" : evidenceAvailability === "reading" ? "reserved" : "absent",
+              }}
+              labels={{
+                listLabel: t("metricDomains"),
+                capabilityUnit: t("domainCapabilityLabel"),
+                elementUnit: t("domainElementLabel"),
+                legendCaption: t("domainRowsLegendCaption"),
+                overlapNote: domainsOverlap ? t("domainOverlapNote") : "",
+                optionAria: (row) =>
+                  t("domainOptionAria", {
+                    title: row.title,
+                    total: row.total,
+                    capabilities: row.capabilityCount,
+                    elements: row.elementCount,
+                  }),
+                counts: (row) => t("domainCounts", { capabilities: row.capabilityCount, elements: row.elementCount }),
+                capabilityLinkAria: (title) => t("domainCapabilityLinkAria", { name: title }),
+                capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
+                showMore: (count) => tMapDial("moreMembers", { count }),
+                elementCount: (count) => t("capabilityElementCount", { count }),
+                mapLinkLabel: t("domainRowMapLink"),
+                domainStale: (count) => t("domainStaleWords", { count }),
+                staleMark: t("compositionStaleLegend"),
+                recentMark: tIndex("freshTitle"),
+              }}
+            />
           ) : (
-            <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
-              {t("bodyEmptyHint")}
+            <p
+              data-testid="project-detail-composition-empty"
+              className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body-lg text-[color:var(--color-text-secondary)]"
+            >
+              {t("domainEmptyTitle")}
+              <Link href="/topology/?workbench=create" data-testid="project-detail-composition-empty-action" className={quietLinkClass}>
+                {t("domainEmptyAction")}
+              </Link>
             </p>
           )}
-          {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
-          {canManageProject ? null : (
-            <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-              <span
-                data-testid="project-detail-readonly-badge"
-                className="min-w-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)]"
-              >
-                {t("readOnlyBadge")}
+        </section>
+
+        {/* One quiet line: what else the folder holds, where this project connects, and the file it is drawn from. */}
+        <footer
+          data-testid="project-detail-closing"
+          className="mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]"
+        >
+          {hasLibrary ? (
+            <span data-testid="project-detail-library-line" className="flex flex-wrap items-baseline gap-x-3">
+              <span className="tabular-nums">
+                {t("libraryCounts", { sources: librarySources, wikiPages: libraryWikiPages })}
+                {soleProject ? null : ` · ${t("surfaceFolderScope")}`}
               </span>
-              <OpenVaultCta testId="project-detail-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />
-            </div>
-          )}
-        </div>
-      </header>
-
-      {constructionReview.status === "ready" || constructionReview.status === "blocked" ? (
-        <div ref={reviewOutcomeRef} tabIndex={-1} role="region"
-          aria-label={t("constructionReview.resultRegion")}
-          data-testid="construction-review-outcome" className="scroll-mt-6 focus:outline-none">
-          {constructionReview.status === "ready" && constructionReview.review ? (
-            <ConstructionReviewPanel
-              key={`${constructionReview.review.sourceDigest}:${constructionReview.review.planDigest}`}
-              review={constructionReview.review}
-            />
-          ) : null}
-
-          {constructionReview.status === "blocked" && constructionReview.errorState ? (
-            <section
-              data-testid="construction-review-error"
-              data-envelope-state={constructionReview.errorState}
-              className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)] sm:px-5"
-            >
-              <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
-                {t("constructionReview.errorTitle")}
-              </h2>
-              <p className="mt-1.5 text-body leading-prose text-[color:var(--color-text-secondary)]">
-                {t(`constructionReview.errors.${constructionReview.errorState}`)}
-              </p>
-              <Button type="button" variant="outline" size="sm" onClick={openReviewPicker}
-                data-testid="construction-review-retry" className="atlas-touch-floor atlas-touch-floor-wide mt-4">
-                {t("constructionReview.retryFile")}
-              </Button>
-            </section>
-          ) : null}
-        </div>
-      ) : null}
-
-      <section
-        data-testid="project-detail-composition"
-        aria-labelledby="project-detail-composition-title"
-        className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-8"
-      >
-        <div className="mb-5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h2
-            id="project-detail-composition-title"
-            className="text-title font-[var(--font-weight-strong)] tracking-title text-[color:var(--color-text-primary)]"
-          >
-            {t("compositionHeading")}
-          </h2>
-          <p data-testid="project-detail-composition-counts" className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
-            {t("compositionCounts", {
-              domains: metrics.domains,
-              capabilities: metrics.capabilities,
-              elements: metrics.elements,
-              relations: metrics.relations,
-            })}
-          </p>
-        </div>
-        {domainComposition.domains.length > 0 ? (
-          <DomainMasterDetail
-            domains={domainComposition.domains}
-            maxTotal={domainComposition.maxTotal}
-            labels={{
-              listLabel: t("metricDomains"),
-              capabilityUnit: t("domainCapabilityLabel"),
-              elementUnit: t("domainElementLabel"),
-              legendCaption: t("domainRowsLegendCaption"),
-              overlapNote: domainsOverlap ? t("domainOverlapNote") : "",
-              optionAria: (row) =>
-                t("domainOptionAria", {
-                  title: row.title,
-                  total: row.total,
-                  capabilities: row.capabilityCount,
-                  elements: row.elementCount,
-                }),
-              counts: (row) => t("domainCounts", { capabilities: row.capabilityCount, elements: row.elementCount }),
-              capabilityLinkAria: (title) => t("domainCapabilityLinkAria", { name: title }),
-              capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
-              showMore: (count) => tMapDial("moreMembers", { count }),
-              elementCount: (count) => t("capabilityElementCount", { count }),
-              mapLinkLabel: t("domainRowMapLink"),
-            }}
-          />
-        ) : (
-          <p
-            data-testid="project-detail-composition-empty"
-            className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body-lg text-[color:var(--color-text-secondary)]"
-          >
-            {t("domainEmptyTitle")}
-            <Link href="/topology/?workbench=create" data-testid="project-detail-composition-empty-action" className={quietLinkClass}>
-              {t("domainEmptyAction")}
-            </Link>
-          </p>
-        )}
-      </section>
-
-      {/* One quiet line: what else the folder holds, where this project connects, and the file it is drawn from. */}
-      <footer
-        data-testid="project-detail-closing"
-        className="mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]"
-      >
-        {hasLibrary ? (
-          <span data-testid="project-detail-library-line" className="flex flex-wrap items-baseline gap-x-3">
-            <span className="tabular-nums">
-              {t("libraryCounts", { sources: librarySources, wikiPages: libraryWikiPages })}
-              {soleProject ? null : ` · ${t("surfaceFolderScope")}`}
+              <Link href="/library/" prefetch={false} className={quietLinkClass}>
+                {t("surfaceOpenLibrary")}
+              </Link>
             </span>
-            <Link href="/library/" prefetch={false} className={quietLinkClass}>
-              {t("surfaceOpenLibrary")}
+          ) : null}
+          {nativeVaultRootPath !== null ? (
+            <Link href="/architecture/" prefetch={false} data-testid="project-detail-harness-link" className={quietLinkClass}>
+              {t("surfaceOpenHarness")}
             </Link>
-          </span>
-        ) : null}
-        {nativeVaultRootPath !== null ? (
-          <Link href="/architecture/" prefetch={false} data-testid="project-detail-harness-link" className={quietLinkClass}>
-            {t("surfaceOpenHarness")}
+          ) : null}
+          <Link href="/changes/" prefetch={false} data-testid="project-detail-changes-link" className={quietLinkClass}>
+            {t("surfaceOpenChanges")}
           </Link>
-        ) : null}
-        {connectedProjects.length > 0 ? (
-          <span data-testid="project-detail-connected" className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-            {t("connectedTitle")}
-            <Link href={getProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
-              {projectDisplayName(connectedProjects[0], locale)}
-            </Link>
-            {connectedProjects.length > 1 ? <span>{t("connectedMoreNote", { count: connectedProjects.length - 1 })}</span> : null}
-          </span>
-        ) : null}
-        {/* The slug and Markdown path a person types next; slug and date when the document is unknown. */}
-        <p data-testid="project-detail-footer" className="ml-auto min-w-0 break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
-          {projectDoc
-            ? t.rich("footerSummaryDoc", { slug: project.slug, path: projectDoc.path, value: (chunks) => <span>{chunks}</span> })
-            : t.rich("footerSummary", {
-                slug: project.slug,
-                date: formatDate(project.updatedAt),
-                value: (chunks) => <span>{chunks}</span>,
-              })}
-        </p>
-      </footer>
+          {connectedProjects.length > 0 ? (
+            <span data-testid="project-detail-connected" className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+              {t("connectedTitle")}
+              <Link href={getProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
+                {projectDisplayName(connectedProjects[0], locale)}
+              </Link>
+              {connectedProjects.length > 1 ? <span>{t("connectedMoreNote", { count: connectedProjects.length - 1 })}</span> : null}
+            </span>
+          ) : null}
+          {/* The slug and Markdown path a person types next; slug and date when the document is unknown. */}
+          <p data-testid="project-detail-footer" className="ml-auto min-w-0 break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
+            {projectDoc
+              ? t.rich("footerSummaryDoc", { slug: project.slug, path: projectDoc.path, value: (chunks) => <span>{chunks}</span> })
+              : t.rich("footerSummary", {
+                  slug: project.slug,
+                  date: formatDate(project.updatedAt),
+                  value: (chunks) => <span>{chunks}</span>,
+                })}
+          </p>
+        </footer>
 
-      <SearchPalette
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        projects={related}
-        onSelect={handleSearchSelect}
-        containerLabel={null}
-      />
-    </ProjectDetailShell>
-  );
+        <SearchPalette
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          projects={related}
+          onSelect={handleSearchSelect}
+          containerLabel={null}
+        />
+      </ProjectDetailShell>
+    );
+  }
 }
