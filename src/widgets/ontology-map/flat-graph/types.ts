@@ -87,12 +87,16 @@ export interface FlatGraphPaintTokens {
   frameMarginPx: number;
   /** Least air between a selection's ring and its domain disc that a selection's framing zooms in for. */
   selectedDiscGapPx: number;
-  /** The most a selection's framing zooms in, as a multiple of the zoom the reader clicked at. */
+  /** The most a capability or element selection's framing zooms in, as a multiple of the zoom the reader clicked at. */
   selectZoomMaxRatio: number;
   /** The least radius the pointer picks a mark within, whatever its drawn size. */
   pickMinPx: number;
-  /** Screen distance a domain selection zooms in to put between its two closest member capabilities. */
-  domainApartPx: number;
+  /** The most screen distance a domain selection zooms in to put between its two closest member capabilities. */
+  domainApartMaxPx: number;
+  /** An opened star's marks grow into this share of the room to their nearest neighbour, up to the open maxima. */
+  openFill: number;
+  capOpenMaxPx: number;
+  elementOpenMaxPx: number;
   /** A backed name's backing: corner radius, padding around the glyphs, the ground's alpha in it, and the blur its edge fades over. */
   backingRadiusPx: number;
   backingPadXPx: number;

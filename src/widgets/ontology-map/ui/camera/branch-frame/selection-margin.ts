@@ -11,6 +11,7 @@ import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
 import { domainTitleBlocks, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
+import { domainStarIds, domainStarRooms, openRadiusPx } from "../../../flat-graph/open-star";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
@@ -30,8 +31,9 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
  * domain with every side their names may take, preferring the whole lit reach when it already
  * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
- * A domain frames its own star (disc, name block and member discs) instead, zooming in only until
- * its members stand apart to press; partner domains may leave the view.
+ * A domain frames its own star (disc, name block, member discs and their elements) instead, zooming
+ * in until that star fills the free map or its members stand `domainApartMaxPx` apart; partner
+ * domains may leave the view.
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
@@ -50,23 +52,28 @@ function graphSelectionFrame(
   const fontFamily = labelFontFamily();
   if (model.domainById.has(id)) {
     const titles = domainTitleBlocks({ model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily });
-    const members = model.domainById.get(id)!.capabilityIds;
-    /** A mark as the frame holds it: the drawn disc, and the whole block of a domain's name under it when `withName`. */
-    const blocks = (ids: Iterable<string>, withName: boolean) => [...ids].flatMap((of): FramedMark[] => {
+    const home = world.nodeById.get(id);
+    const title = titles.get(id);
+    const domainPx = radius(id);
+    const half = Math.max(domainPx, title?.halfWidthPx ?? 0);
+    const block: FramedMark[] = home ? [{ x: home.x, y: home.y, box: { minX: -half, maxX: half, minY: Math.min(-domainPx, title?.topPx ?? 0), maxY: Math.max(domainPx, title?.bottomPx ?? 0) } }] : [];
+    // Members and their elements as the opened star draws them at each scale; names are re-admitted where the frame lands.
+    const { capabilities, elements } = domainStarIds(model, id);
+    const rooms = domainStarRooms(model, dial.scene.graph!, id, paint);
+    const opened = [...capabilities, ...elements].flatMap((of) => {
       const node = world.nodeById.get(of);
-      if (!node) return [];
-      const r = radius(of);
-      const title = withName ? titles.get(of) : undefined;
-      const half = Math.max(r, title?.halfWidthPx ?? 0);
-      return [{ x: node.x, y: node.y, box: { minX: -half, maxX: half, minY: Math.min(-r, title?.topPx ?? 0), maxY: Math.max(r, title?.bottomPx ?? 0) } }];
+      const room = rooms.get(of);
+      return node && room ? [{ node, room, own: radius(of) }] : [];
     });
-    // Members come along as discs: their names are re-admitted at whatever zoom the frame lands on.
-    const star = [...blocks([id], true), ...blocks(members, false)];
+    const starAt = (scale: number): FramedMark[] => [...block, ...opened.map(({ node, room, own }) => {
+      const r = openRadiusPx(own, room, scale, domainPx, paint);
+      return { x: node.x, y: node.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } };
+    })];
     const zoom = domainSelectionZoom({
-      members: members.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartPx, star,
-      maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
+      members: capabilities.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartMaxPx, starAt, maxScale: band.maxScale,
     });
-    return selectionFrameTarget(camera, [star], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
+    // Panned as it draws at the deepest zoom, the star's largest: one set whatever scale the frame starts from, so a landing frames to itself.
+    return selectionFrameTarget(camera, [starAt(band.maxScale)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
   }
   const attention = cachedGraphAttention(model, id, true);
   const elementLabel = (of: string) => world.nodeById.get(of)?.label ?? null;

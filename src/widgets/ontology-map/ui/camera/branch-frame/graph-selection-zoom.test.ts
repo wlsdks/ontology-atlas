@@ -13,6 +13,7 @@ import type { DialLabels, DialModel, DialWorld } from "../../../dial/types";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
 import { admitNamesAt, domainTitleBlocks, hubBlockReachPx, stepScale, zoomStep } from "../../../flat-graph/names";
+import { domainStarIds, domainStarRooms, openRadiusPx } from "../../../flat-graph/open-star";
 import { buildFlatGraphScene } from "../../../flat-graph/scene";
 import { resolveFlatGraphTokens } from "../../../flat-graph/tokens";
 import {
@@ -20,7 +21,7 @@ import {
   rollRelatesDomainPairs, type TreeInputEdge, type TreeInputNode,
 } from "../../../model/containment-tree";
 import type { TopologyWorld } from "../../world/topology-world";
-import { computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../topology-camera-math";
 
 const TOKENS = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("../../../flat-graph/tokens", async (actual) => ({ ...(await actual<object>()), readFlatGraphTokens: () => TOKENS.current }));
@@ -127,15 +128,19 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
     for (const [i, p] of members.entries()) for (const q of members.slice(i + 1)) least = Math.min(least, Math.hypot(p.x - q.x, p.y - q.y) * camera.tscale);
     return least;
   };
-  /** Whether a domain's disc, name block and member discs, at their largest, outgrow the free map less its margin at `scale`. */
+  /** Whether a domain's disc and name block, its member discs and their elements, opened at `scale`, outgrow the free map less its margin there. */
   const starFills = (domainId: string, scale: number) => {
     const home = at(domainId);
     const title = titleBlocks.get(domainId)!;
     const domainR = graphDiscRadiusPx("domain", 0, paint, paint.growthMax);
     const half = Math.max(domainR, title.halfWidthPx);
     const boxes = [{ x: home.x, y: home.y, minX: -half, maxX: half, minY: Math.min(-domainR, title.topPx), maxY: Math.max(domainR, title.bottomPx) }];
-    for (const id of model.domainById.get(domainId)!.capabilityIds) {
-      const r = graphDiscRadiusPx("capability", model.capabilityById.get(id)?.elementIds.length ?? 0, paint, paint.growthMax);
+    const rooms = domainStarRooms(model, layout, domainId, paint);
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    for (const id of [...capabilities, ...elements]) {
+      const capability = model.capabilityById.get(id);
+      const own = graphDiscRadiusPx(capability ? "capability" : "element", capability?.elementIds.length ?? 0, paint, paint.growthMax);
+      const r = openRadiusPx(own, rooms.get(id)!, scale, domainR, paint);
       boxes.push({ ...at(id), minX: -r, maxX: r, minY: -r, maxY: r });
     }
     const span = (lo: "minX" | "minY", hi: "maxX" | "maxY", axis: "x" | "y") =>
@@ -196,24 +201,25 @@ describe("a selection framed between both panels", () => {
   it.each([
     ["docs", 1410, 840, docsManifest], ["docs", 1920, 1080, docsManifest],
     ["storefront", 1410, 840, storefrontManifest], ["storefront", 1920, 1080, storefrontManifest],
-  ])("zooms a domain in until its closest members stand the domain separation apart, or as far as its star fits or its ratio cap allows, in the %s vault at %ix%i", (_, width, height, manifest) => {
+  ])("zooms a domain in until its star fills the free map, its closest members stand the widest separation apart or the camera's deepest zoom, past the ratio cap, in the %s vault at %ix%i", (_, width, height, manifest) => {
     const map = vaultMap(manifest, { width, height });
-    const apart = paint.domainApartPx;
+    const apart = paint.domainApartMaxPx;
     const short: string[] = [];
-    let zoomedIn = 0;
+    const over: string[] = [];
+    let pastRatioCap = 0;
+    const deepest = computeEffectiveCameraScaleMax(map.fit * INSETS.overviewEntryRatio, INSETS.cameraMaxZoomRatio, INSETS.cameraScaleMax, undefined);
     for (const start of [map.rest, { ...map.rest, tscale: map.rest.tscale / 2 }]) {
       for (const domain of map.model.domains) {
-        const before = map.membersApartPx(domain.id, start);
         const landed = map.frame(domain.id, start) ?? start;
         const after = map.membersApartPx(domain.id, landed);
-        if (before >= apart) expect(landed.tscale, `${domain.id} already stands ${before.toFixed(1)} px apart`).toBeCloseTo(start.tscale, 9);
-        if (landed.tscale > start.tscale) zoomedIn += 1;
-        const capped = landed.tscale >= start.tscale * paint.selectZoomMaxRatio * (1 - 1e-9);
-        if (after < apart - 1e-6 && !capped && !map.starFills(domain.id, landed.tscale * 1.02)) short.push(`${domain.id} from ${start.tscale.toFixed(3)}: ${after.toFixed(1)} px at ${landed.tscale.toFixed(3)}`);
+        if (landed.tscale > start.tscale * paint.selectZoomMaxRatio) pastRatioCap += 1;
+        if (after > apart * 1.02) over.push(`${domain.id}: ${after.toFixed(1)} px apart at ${landed.tscale.toFixed(3)}`);
+        if (after < apart - 1e-6 && landed.tscale < deepest * (1 - 1e-9) && !map.starFills(domain.id, landed.tscale * 1.02)) short.push(`${domain.id} from ${start.tscale.toFixed(3)}: ${after.toFixed(1)} px at ${landed.tscale.toFixed(3)}`);
       }
     }
-    expect(zoomedIn, "some domain selection zooms in").toBeGreaterThan(0);
-    expect(short).toEqual([]);
+    expect(pastRatioCap, "a domain selection zooms past the ratio a capability's selection keeps to").toBeGreaterThan(0);
+    expect(short, "a domain that stops short of filling the free map").toEqual([]);
+    expect(over, "a domain whose closest members stand past the widest separation").toEqual([]);
   });
 
   it.each([
@@ -334,7 +340,7 @@ describe("a domain selection's zoom", () => {
   it("stops where the star stops fitting the free map, short of the separation it aims at", () => {
     const members = Array.from({ length: 17 }, (_, k) => ({ x: k * 25, y: 0 }));
     const star = [disc(200, 40, 20), ...members.map((m) => disc(m.x, m.y, 5))];
-    const zoom = domainSelectionZoom({ members, apartPx: 44, star, maxScale: 4 });
+    const zoom = domainSelectionZoom({ members, apartPx: 44, starAt: () => star, maxScale: 4 });
     const landed = selectionFrameTarget({ tx: 200, ty: 0, tscale: 1 }, [star], viewport, free, margin, 0.5, zoom)!;
     expect(landed.tscale, "the selection zooms in").toBeGreaterThan(1.5);
     expect(fits(star, landed.tscale), "the star fits where it lands").toBe(true);
@@ -342,9 +348,20 @@ describe("a domain selection's zoom", () => {
     expect(25 * landed.tscale, "the members stop short of the separation").toBeLessThan(44);
   });
 
+  it("stops once its two closest members stand the widest separation apart, with room left to fill", () => {
+    const members = [{ x: 0, y: 0 }, { x: 25, y: 0 }];
+    const star = [disc(12, 30, 20), ...members.map((m) => disc(m.x, m.y, 5))];
+    const zoom = domainSelectionZoom({ members, apartPx: 160, starAt: () => star, maxScale: 20 });
+    const landed = selectionFrameTarget({ tx: 12, ty: 0, tscale: 1 }, [star], viewport, free, margin, 0.5, zoom)!;
+    expect(25 * landed.tscale, "the members reach the separation").toBeGreaterThanOrEqual(160 - 1e-6);
+    expect(25 * landed.tscale, "and stop within a refined sample of it").toBeLessThan(160 * 1.02);
+    expect(fits(star, landed.tscale * 1.5), "the star had room to grow further").toBe(true);
+    expect(selectionFrameTarget(landed, [star], viewport, free, margin, 0.5, zoom), "framing its own landing moves nothing").toBeNull();
+  });
+
   it("parts the nearest members that do not coincide, so two on one spot neither block nor exhaust the zoom", () => {
     const members = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 30, y: 0 }];
-    const zoom = domainSelectionZoom({ members, apartPx: 44, star: [], maxScale: 4 });
+    const zoom = domainSelectionZoom({ members, apartPx: 44, starAt: () => [], maxScale: 4 });
     expect(zoom.readsAt(1), "30 px apart at 1x").toBe(false);
     expect(zoom.readsAt(44 / 30), "44 px apart once the distinct pair is").toBe(true);
     expect(zoom.scoreAt(1)[0], "the coincident pair does not pin the score at zero").toBeCloseTo(30, 9);

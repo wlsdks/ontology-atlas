@@ -64,6 +64,8 @@ export interface NameInput {
   /** The concept a connected agent is working on: always named, like the focus. */
   agentFocusId: string | null;
   attentionKey: string;
+  /** The concept whose opened star `discRadius` grows, so names admitted beside it are kept apart from names at rest. */
+  openStarId?: string | null;
   discRadius(id: string): number;
   elementSpacingPx: number;
   /** The line the project carries under its disc while it has one; names keep off its row. */
@@ -391,7 +393,13 @@ function projectName(input: NameInput): PlacedName | null {
   };
 }
 
-type NameShape = Pick<NameInput, "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach">;
+type NameShape = Pick<NameInput, "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach" | "openStarId">;
+
+/** An element dot's radius as its name keeps clear of it: the dot at this growth, or larger where an opened star grows it. */
+function elementDotRadius(input: Pick<NameInput, "tokens" | "growth" | "discRadius" | "openStarId">, id: string): number {
+  const dotPx = input.tokens.elementDotPx * input.growth;
+  return (input.openStarId ?? null) === null ? dotPx : Math.max(dotPx, input.discRadius(id));
+}
 
 function sideNames(input: NameShape, id: string, role: "capability" | "element", text: string): PlacedName[][] {
   const { tokens: t, measureText, fontFamily } = input;
@@ -400,7 +408,7 @@ function sideNames(input: NameShape, id: string, role: "capability" | "element",
   const weight = role === "capability" ? FONT_WEIGHT.emphasis : input.lit?.has(id) ? FONT_WEIGHT.signature : 400;
   const f = font(weight, px, fontFamily);
   const w = measureText(text, f);
-  const r = role === "capability" ? input.discRadius(id) : t.elementDotPx * input.growth;
+  const r = role === "capability" ? input.discRadius(id) : elementDotRadius(input, id);
   const x = r + t.nameGapPx;
   const half = px / 2 + t.namePadPx;
   const sides: PlacedName[][] = [
@@ -542,7 +550,7 @@ function fannedNames(input: NameShape, id: string, text: string, offset: Point):
   const { tokens: t } = input;
   const f = font(FONT_WEIGHT.signature, t.elementNamePx, input.fontFamily);
   const w = input.measureText(text, f);
-  const x = t.elementDotPx * input.growth + t.nameGapPx;
+  const x = elementDotRadius(input, id) + t.nameGapPx;
   const half = t.elementNamePx / 2 + t.namePadPx;
   const side = offset.x >= 0 ? 1 : -1;
   const row = (dy: number): PlacedName[] => [{
@@ -700,13 +708,26 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   };
   if (fan) {
     // A fanned dot is a mark a name keeps off while any side is clear of it; a forced name with none may still stand.
-    const r = (tokens.elementDotPx * input.growth) / scale;
     for (const id of fan.offsets.keys()) {
+      const r = elementDotRadius(input, id) / scale;
       const at = anchor(id);
       const box = { minX: at.x - r, maxX: at.x + r, minY: at.y - r, maxY: at.y + r };
       marks.add(box);
       litMarks.add(box);
     }
+  }
+  // Elements an opened star grows past their dot: a name takes a side clear of them when one is free. O(elements).
+  const dotPx = tokens.elementDotPx * input.growth;
+  const grownDots = new Occupancy(CELL_PX / scale);
+  const keepOffGrownDot = (id: string) => {
+    const r = input.discRadius(id);
+    const at = layout.positions.get(id);
+    if (r <= dotPx || !at || fan?.offsets.has(id)) return;
+    grownDots.add(worldBox(at, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
+  };
+  if ((input.openStarId ?? null) !== null) {
+    for (const id of model.capabilityOf.keys()) keepOffGrownDot(id);
+    for (const d of model.domains) for (const id of d.directElementIds) keepOffGrownDot(id);
   }
   const place = (n: PlacedName) => {
     const at = anchor(n.id);
@@ -787,7 +808,8 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
     const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
-    let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
+    const offGrownDots = (group: readonly PlacedName[]) => free(group) && !group.some((n) => grownDots.hits(worldBox(at, n.box, scale)));
+    let fit = (chooseSide(tries, offGrownDots, (group) => lit && crossed(at, group)) ?? chooseSide(tries, free, (group) => lit && crossed(at, group)))?.side;
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!fit && force) {
       const clearNow = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
@@ -918,8 +940,8 @@ export function admittedNames(input: NameInput): NameAdmission {
     cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, hubCaption: input.hubCaption, rest: new Map(), focus: new Map() };
     caches.set(input.layout, cache);
   }
-  if (input.lit !== null || input.agentFocusId !== null) {
-    const focusKey = `${step}|${input.attentionKey}|${input.agentFocusId ?? ""}`;
+  if (input.lit !== null || input.agentFocusId !== null || (input.openStarId ?? null) !== null) {
+    const focusKey = `${step}|${input.attentionKey}|${input.agentFocusId ?? ""}|${input.openStarId ?? ""}`;
     const hit = cache.focus.get(focusKey);
     if (hit) return hit;
     if (cache.focus.size >= FOCUS_CACHE_MAX) cache.focus.clear();

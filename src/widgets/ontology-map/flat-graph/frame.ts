@@ -4,7 +4,7 @@ import type { MeasureText } from "../dial/label-marks";
 import { emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "../dial/frame/marks";
 import { dialChordPresence, recordDialFrame } from "../dial/frame/frame";
 import { dialPlacementLine, dialPlacementOf } from "../dial/placement";
-import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point, StripMark, TextMark } from "../dial/types";
+import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, GlyphMark, Point, StripMark, TextMark } from "../dial/types";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { labelFontFamily } from "../render/labels";
 import { AGENT_FOCUS_RING_OFFSET } from "../render/node-shapes";
@@ -18,6 +18,7 @@ import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion 
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
+import { domainStarRooms, openRadiusPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -50,7 +51,7 @@ function measureTextOf(model: DialModel): MeasureText {
 }
 
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
-interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
+interface Dot { id: string; x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; spoke: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
 /** `fadeStart` and `fadeEnd` are the shares of the curve that fade in from transparent at each end. */
@@ -105,7 +106,7 @@ class FrameList<T> {
 }
 
 const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, spoke: false, alpha: 0 }));
-const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
+const dots = markPool<Dot>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
@@ -156,7 +157,7 @@ function dotRow(p: DialPick): DialRowPick {
 function elementPick(id: string, at: Point): DialPick {
   const p = pickPool.take();
   p.id = id;
-  const r = Math.max(ELEMENT_PICK_PX, radiusNow(id));
+  const r = Math.max(ELEMENT_PICK_PX, dotRadius(id));
   p.solid = false;
   if (p.x !== at.x) p.x = at.x;
   if (p.y !== at.y) p.y = at.y;
@@ -346,9 +347,20 @@ interface FrameState {
   leavingR: number;
   /** How far the project's own focus shows: its spokes and glow. */
   projectShare: number;
+  /** The opened stars this frame grows; the first is the current selection's when `starNow`. */
+  stars: OpenStarSlot[];
+  starCount: number;
+  starNow: boolean;
   lineKinds: number;
 }
-const F = { stamp: 0, opened: [] as FrameState["opened"] } as FrameState;
+/**
+ * One opened star: its rooms, in world units read at the frame's scale (`world`) or in this
+ * frame's px, the radius of the disc it opens round, and how far it has opened.
+ */
+interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; fixedPx: number; share: number }
+const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
+const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, fixedPx: 0, share: 0 });
+const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false } as FrameState;
 
 /**
  * A domain's hue. The map rests achromatic, so every mark takes the neutral ink until attention
@@ -459,9 +471,95 @@ function radiusNow(id: string): number {
   return F.radii.get(id) ?? radiusAt(id, F.growth);
 }
 
-/** The drawn radius: the selected concept's grows to the selected radius with the attention mix. */
+/** The drawn radius: the selected concept's grows to the selected radius with the attention mix, an opened star's marks into their room. */
 function discRadius(id: string): number {
-  return id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : radiusNow(id);
+  return id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : openedRadius(id, radiusNow(id));
+}
+
+/** `own` grown by every opened star that holds `id`, each as far as it has opened. O(stars). */
+function openedRadius(id: string, own: number): number {
+  let r = own;
+  for (let i = 0; i < F.starCount; i += 1) {
+    const star = F.stars[i]!;
+    const room = star.rooms.get(id);
+    if (room === undefined) continue;
+    const open = openRadiusPx(own, room, star.world ? F.scale : 1, star.fixedPx, F.P);
+    r = Math.max(r, own + (open - own) * star.share);
+  }
+  return r;
+}
+
+/** An element dot's drawn radius: a lit dot stands out, and an opened star grows it. */
+function dotRadius(id: string): number {
+  if (id === F.selectedId || id === F.leavingId) return discRadius(id);
+  return openedRadius(id, radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1));
+}
+
+function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, fixedPx: number, share: number): void {
+  const star = F.stars[F.starCount]!;
+  star.rooms = rooms;
+  star.world = world;
+  if (star.fixedPx !== fixedPx) star.fixedPx = fixedPx;
+  if (star.share !== share) star.share = share;
+  F.starCount += 1;
+}
+
+const fanRoomCache = new Map<string, { scale: number; open: number; ringPx: number; rooms: ReadonlyMap<string, StarRoom> }>();
+const FAN_ROOMS_KEPT = 4;
+
+/**
+ * A selected capability's elements' rooms in screen px round its centre, beside its selection
+ * ring: where its fan draws them, or where they stand once the zoom shows them apart. Made again
+ * only when the zoom or the fan changes. O(n²), n = the capability's elements.
+ */
+function fanRooms(capabilityId: string, fan: OpenedElements | null, ringPx: number): ReadonlyMap<string, StarRoom> {
+  const open = fan?.open ?? 0;
+  const known = fanRoomCache.get(capabilityId);
+  if (known && known.scale === F.scale && known.open === open && known.ringPx === ringPx) return known.rooms;
+  const centre = F.layout.positions.get(capabilityId);
+  const points: StarPoint[] = [];
+  for (const id of F.model.capabilityById.get(capabilityId)?.elementIds ?? []) {
+    const offset = fan?.offsets.get(id);
+    const at = F.layout.positions.get(id);
+    if (offset) points.push({ id, kind: "element", x: offset.x, y: offset.y });
+    else if (at && centre) points.push({ id, kind: "element", x: (at.x - centre.x) * F.scale, y: (at.y - centre.y) * F.scale });
+  }
+  const rooms = starRooms(points, ORIGIN, F.P);
+  if (!known && fanRoomCache.size >= FAN_ROOMS_KEPT) fanRoomCache.clear();
+  fanRoomCache.set(capabilityId, { scale: F.scale, open, ringPx, rooms });
+  return rooms;
+}
+
+/** The fan drawn for `capabilityId` this frame, if any. */
+function fanOf(capabilityId: string): OpenedElements | null {
+  for (let i = 0; i < F.opened.length; i += 1) if (F.opened[i]!.elements.capabilityId === capabilityId) return F.opened[i]!.elements;
+  return null;
+}
+
+/** A capability's elements open round its selection ring. */
+function setCapabilityStar(capabilityId: string, share: number): void {
+  const ringPx = selectedDiscRadius(radiusNow(capabilityId), F.P, F.growth) + F.P.selectedRingGapPx + F.P.selectedRingPx;
+  setStar(fanRooms(capabilityId, fanOf(capabilityId), ringPx), false, ringPx, share);
+}
+
+/** This frame's opened stars: the selected domain's or capability's, and the one a change just left while it closes. */
+function planOpenStars(selected: string | null, attention: GraphAttention, motion: GraphMotion, mix: number): void {
+  const { model, P, layout } = F;
+  F.starCount = 0;
+  F.starNow = false;
+  const domainPx = graphDiscRadiusPx("domain", 0, P, F.growth);
+  const arriving = (id: string) => (attention.selected && attention.focusId === id ? mix : 1);
+  if (selected !== null && model.domainById.has(selected)) {
+    setStar(domainStarRooms(model, layout, selected, P), true, domainPx, arriving(selected));
+    F.starNow = true;
+  } else if (F.selectedId !== null && model.capabilityById.has(F.selectedId)) {
+    setCapabilityStar(F.selectedId, arriving(F.selectedId));
+    F.starNow = true;
+  }
+  const left = motion.previous.focusId;
+  if (motion.settled || !motion.previous.selected || left === null || left === selected || mix >= 1) return;
+  if (model.domainById.has(left)) setStar(domainStarRooms(model, layout, left, P), true, domainPx, 1 - mix);
+  else if (left === F.leavingId && model.capabilityById.has(left)) setCapabilityStar(left, 1 - mix);
 }
 
 function segmentOnScreen(a: Point, b: Point): boolean {
@@ -535,7 +633,7 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   if (mark.ink !== ink) mark.ink = ink;
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
-  const markR = n.leader ? (n.role === "element" ? radiusNow(n.id) * LIT_DOT_SHARE : discRadius(n.id)) : 0;
+  const markR = n.leader ? (n.role === "element" ? dotRadius(n.id) : discRadius(n.id)) : 0;
   if (mark.markR !== markR) mark.markR = markR;
   L.names.add(mark);
 }
@@ -706,8 +804,9 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     }
     if (onScreen(elAt)) {
       const d = dots.take();
-      const r = el === F.selectedId || el === F.leavingId ? discRadius(el) : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
+      const r = dotRadius(el);
       const alpha = DOT_ALPHA * shown;
+      d.id = el;
       if (d.x !== elAt.x) d.x = elAt.x;
       if (d.y !== elAt.y) d.y = elAt.y;
       if (d.r !== r) d.r = r;
@@ -773,6 +872,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     const elements = openedElements(model, layout, F.leavingId, P, selectedDiscRadius(own, P, growth), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
+  planOpenStars(input.focusedNodeId, attention, motion, mix);
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
   F.lineKinds = 0;
@@ -896,7 +996,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const admitUnder = (a: GraphAttention) => admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
-    lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
+    lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, openStarId: F.starNow ? input.focusedNodeId : null, agentFocusId: contextMode ? null : input.agentFocusNodeId,
     selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
     discRadius: stepRadius, elementSpacingPx, hubCaption: unmeasuredLine,
   });
@@ -1003,7 +1103,12 @@ function hubCaptionFont(px: number, family: string): string {
 const stepGrowthNow = new Float64Array(2);
 const LINE_TRIMS = new Float64Array(2);
 function stepRadius(id: string): number {
-  return radiusOf(id, stepGrowthNow[0]!, stepGrowthNow[1]!);
+  const own = radiusOf(id, stepGrowthNow[0]!, stepGrowthNow[1]!);
+  const star = F.stars[0]!;
+  const room = F.starNow ? star.rooms.get(id) : undefined;
+  if (room === undefined) return own;
+  // Names stand where the star has fully opened, so they never move as it opens.
+  return star.world ? openRadiusPx(own, room, stepGrowthNow[1]!, graphDiscRadiusPx("domain", 0, F.P, stepGrowthNow[0]!), F.P) : openRadiusPx(own, room, 1, star.fixedPx, F.P);
 }
 
 /**
@@ -1480,11 +1585,13 @@ type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
 const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false }));
+const probeGlyphs = markPool<GlyphMark>(() => ({ id: "", kind: "element", x: 0, y: 0, r: 0, egoState: "normal", fill: null, stroke: null, hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
 const probeStripList = new FrameList(pool.strips);
 const probeTextList = new FrameList(pool.texts);
-const UNUSED_PROBE_LISTS = [pool.squares, pool.ticks, pool.rails, pool.glyphs, pool.numerals, pool.leaders, pool.plates, pool.extraTexts];
+const probeGlyphList = new FrameList(pool.glyphs);
+const UNUSED_PROBE_LISTS = [pool.squares, pool.ticks, pool.rails, pool.numerals, pool.leaders, pool.plates, pool.extraTexts];
 const arcKeys: string[] = [];
 
 function inkIndex(ink: string): number {
@@ -1541,6 +1648,8 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   probeDiscList.restart();
   probeStripList.restart();
   probeTextList.restart();
+  probeGlyphList.restart();
+  probeGlyphs.reset();
   probeDiscs.reset();
   probeStrips.reset();
   probeTexts.reset();
@@ -1552,6 +1661,16 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
     const d = plan.domains[dIndex]!;
     probeDisc(d, fill, ground, tokens);
+  }
+  // An element's dot is the probe's glyph: its drawn centre and radius.
+  for (let dIndex = 0; dIndex < plan.dots.length; dIndex += 1) {
+    const d = plan.dots[dIndex]!;
+    const glyph = probeGlyphs.take();
+    glyph.id = d.id;
+    if (glyph.x !== d.x) glyph.x = d.x;
+    if (glyph.y !== d.y) glyph.y = d.y;
+    if (glyph.r !== d.r) glyph.r = d.r;
+    probeGlyphList.add(glyph);
   }
   const arcInk = inkIndex(tokens.inks.arc);
   const reachInk = inkIndex(tokens.inks.reach);
@@ -1578,6 +1697,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   probeDiscList.seal();
   probeStripList.seal();
   probeTextList.seal();
+  probeGlyphList.seal();
 }
 
 const UNSETTLED_MIX = 0.999;

@@ -168,22 +168,22 @@ function nearestPairDistance(points: readonly { x: number; y: number }[]): numbe
 export interface DomainSelectionZoomInput {
   /** The domain's member capabilities, in world units. */
   members: readonly { x: number; y: number }[];
-  /** Screen distance between two members' centres at which each can be pressed apart from the other. */
+  /** The most screen distance between the two closest members' centres the zoom reaches for. */
   apartPx: number;
-  /** The domain's star as the frame holds it at every zoom, the domain's own block first. */
-  star: readonly FramedMark[];
+  /** The domain's star as the frame draws it at a scale, the domain's own block first. */
+  starAt(scale: number): readonly FramedMark[];
   maxScale: number;
 }
 
 /**
- * A domain's selection reads once its two closest member capabilities stand `apartPx` apart on
- * screen. The score grows with that separation up to `apartPx` and no further, so the frame zooms
- * in to the least scale that reaches it, or as far as the star still fits.
+ * A domain's selection zooms in until its star fills the free map: the score grows with the
+ * separation of its two closest members up to `apartPx` and no further, so the frame takes the
+ * largest scale at which the star still fits, or the least at which those members stand `apartPx` apart.
  */
 export function domainSelectionZoom(input: DomainSelectionZoomInput): SelectionZoomIn {
   const nearest = nearestPairDistance(input.members);
   const readsAt = (scale: number) => nearest * scale >= input.apartPx;
-  return { maxScale: input.maxScale, readsAt, scoreAt: (scale) => [Math.min(nearest * scale, input.apartPx)], marksAt: () => input.star };
+  return { maxScale: input.maxScale, readsAt, scoreAt: (scale) => [Math.min(nearest * scale, input.apartPx)], marksAt: input.starAt };
 }
 
 /**
