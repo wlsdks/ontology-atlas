@@ -16,6 +16,8 @@ export interface SelectionCamera {
   gesture: number;
   /** The chain began on a selection the page arrived with, so there is no earlier view to return to. */
   arrived?: boolean;
+  /** The chain began on the overview fit, so a deselect fits the free map as it is by then. */
+  fromOverview?: boolean;
 }
 
 /** Room inside the free canvas for the node's disc, ring and the start of its name. */
@@ -300,15 +302,17 @@ export function selectionZoomBase(memory: SelectionCamera | null, current: Camer
 /** Selections that follow one another without a reader move share the view the first one left. */
 export function recordSelectionCamera(
   memory: SelectionCamera | null,
-  move: { slug: string; framed: boolean; current: CameraTarget; landed: CameraTarget; gesture: number; arrived?: boolean },
+  move: { slug: string; framed: boolean; current: CameraTarget; landed: CameraTarget; gesture: number; arrived?: boolean; fromOverview?: boolean },
 ): SelectionCamera {
   const chained = memory !== null && untouched(memory, move.current, move.gesture);
   const restore = chained ? memory.restore : move.current;
   const arrived = chained ? memory.arrived === true : move.arrived === true;
-  return { slug: move.slug, framed: move.framed, restore: { ...restore }, landed: { ...move.landed }, gesture: move.gesture, arrived };
+  const fromOverview = chained ? memory.fromOverview === true : move.fromOverview === true;
+  return { slug: move.slug, framed: move.framed, restore: { ...restore }, landed: { ...move.landed }, gesture: move.gesture, arrived, fromOverview };
 }
 
-export type DeselectCamera = { kind: "return"; target: CameraTarget } | { kind: "overview" } | { kind: "stay" };
+/** `refit` returns as `return` does, to the overview fit of the free map as it is now. */
+export type DeselectCamera = { kind: "return"; target: CameraTarget } | { kind: "refit" } | { kind: "overview" } | { kind: "stay" };
 
 /** `readerMoved` covers a selection no memory describes, such as a deep link framed on arrival. */
 export function deselectCamera(
@@ -320,5 +324,6 @@ export function deselectCamera(
   if (memory === null) return readerMoved ? { kind: "stay" } : { kind: "overview" };
   if (!untouched(memory, current, gesture)) return { kind: "stay" };
   if (memory.arrived) return { kind: "overview" };
+  if (memory.fromOverview) return { kind: "refit" };
   return sameCameraTarget(current, memory.restore) ? { kind: "stay" } : { kind: "return", target: { ...memory.restore } };
 }
