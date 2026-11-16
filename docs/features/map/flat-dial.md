@@ -263,11 +263,23 @@ speed it last drew: a critically damped step that gathers and sheds speed over
 than two 60 Hz frames moves it only as far as such a frame would. Opening,
 pressing a member, deselecting and pressing another domain mid-move therefore
 show no jump in size, and an element dot fades as its own capability's disc grows
-over it. Names draw by rank (titles and the selection's name, the far ends of its
-lines, capabilities, elements, caption rows); a name fades as it nears a mark
-that is not its own or a name drawn before it, except the first two ranks, which
-stay named beside a dimmed or fanned dot. Member names are not held in the frame; they are admitted
-again at whatever zoom it lands on. A zoom
+over it. An opened domain star names its members, the one with the fewest
+free sides first: each takes a side clear of every other name, every disc not
+its own and every dot the star has grown, inside the free map by the frame
+margin. The sides are beside the disc, half a row up or down, and below or
+above it, where the name may also end at the disc's right edge or start at its
+left. A member with no clear side takes one that crosses only the star's dots
+and draws on a backing; a member with neither goes unnamed and the detail panel
+still lists it. At least four members in five are named at rest; which one goes
+unnamed can differ between loads, because a zoom step's resting names are
+seeded from the steps the camera passed. A domain's caption rows rank lowest
+and give way to any disc. While marks grow, names draw by rank (titles and the
+selection's name, the far ends of its lines, capabilities, elements, caption
+rows), and a name is drawn only where the painted frame leaves it clear of
+every disc not its own, every grown dot and every name drawn before it:
+crossed, its ink falls at once and returns when the two part. The selection's
+own name row stays and draws on its backing in any frame a grown dot crosses
+it. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
 judgments, so a click on a capability or an element stays a small move,
