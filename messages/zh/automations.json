@@ -169,5 +169,8 @@
       "cadence": "频率",
       "last": "上次结果"
     }
+  },
+  "scene": {
+    "reviewTray": "待审阅"
   }
 }

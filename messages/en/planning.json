@@ -48,6 +48,8 @@
   "imageUnnamed": "Image {line}:{column}",
   "startTitle": "Your plans and designs, together",
   "startBody": "Open a planning folder to read Markdown documents and design images in one place.",
-  "designImages": "Design images",
-  "close": "Close"
+  "close": "Close",
+  "scene": {
+    "documentHeading": "Requirements"
+  }
 }

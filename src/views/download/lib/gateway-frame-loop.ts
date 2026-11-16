@@ -10,7 +10,7 @@ import {
   ambientSleepFactor,
   isAmbientAsleep,
 } from '@/widgets/ontology-map';
-import { isMotionPaused } from './motion-pause';
+import { isMotionPaused } from '@/shared/motion/motion-pause';
 
 interface GatewayFrameTick {
   t: number;

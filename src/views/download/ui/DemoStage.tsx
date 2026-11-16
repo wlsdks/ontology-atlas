@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
 import { controlClass } from '@/shared/ui/control-class';
-import { useMotionPaused } from '../lib/motion-pause';
+import { useMotionPaused } from '@/shared/motion/motion-pause';
 
 /**
  * Playback contract: one per-locale clip, muted, no captions. Reduced motion keeps the poster and

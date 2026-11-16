@@ -16,7 +16,7 @@ import {
   type Mark,
   type ReadingSpot,
 } from '../lib/harness-scene';
-import { isMotionPaused } from '../lib/motion-pause';
+import { isMotionPaused } from '@/shared/motion/motion-pause';
 
 const ACTS = [1, 2, 3, 4] as const;
 const FILM_MIN_WIDTH = 768;
