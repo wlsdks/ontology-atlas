@@ -6,7 +6,7 @@ import {
   useRef
 } from "react";
 import type { ClusterChip } from "../../model/layout/density-gate";
-import { type GrowthReplay } from "../../model/ambient/growth-replay";
+import { settleGrowthReplay, type GrowthReplay } from "../../model/ambient/growth-replay";
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
 
@@ -158,13 +158,21 @@ export function useTopologyVisibilityState({
   const onGrowthReplayingChangeRef = useRef<typeof onGrowthReplayingChange>(onGrowthReplayingChange);
 
   /**
-   * Ends the replay and announces it once. Every exit — the second press, Esc, a
-   * node click, a canvas drag, and reaching the end — funnels through here, so
-   * the control's active tone can never outlive the motion it describes.
+   * Every exit funnels through here: the second press, Esc, a node click, a canvas drag and reaching
+   * the end. A stop before the end announces at once and lets the map rise back, so the control's
+   * active tone never outlives the growth and no node cuts in.
    */
   const endGrowthReplay = useCallback(() => {
-    if (growthReplayRef.current === null) return;
-    growthReplayRef.current = null;
+    const replay = growthReplayRef.current;
+    if (replay === null) return;
+    const now = performance.now();
+    if (now >= replay.endMs) {
+      growthReplayRef.current = null;
+      if (!replay.settling) onGrowthReplayingChangeRef.current?.(false);
+      return;
+    }
+    if (replay.settling) return;
+    growthReplayRef.current = settleGrowthReplay(replay, now, growthReplayAppearRef.current);
     onGrowthReplayingChangeRef.current?.(false);
   }, []);
 
