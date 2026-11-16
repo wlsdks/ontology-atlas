@@ -299,6 +299,25 @@ describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning
   });
 });
 
+/** How far a member's disc stands left of the panel for its name to be asked for: room for a name's gap. */
+const PANEL_GAP_PX = 20;
+
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "names each member of the opened %s star beside a panel on a side clear of the panel",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {});
+    const panel = { minX: W / 2 + 60, maxX: W, minY: 0, maxY: H };
+    const rest = framesUntilSettled(camera, { nameObstacles: [panel] }, star, 0, 1, 1, FRAME_MS);
+    framesUntilSettled(camera, { focusedNodeId: domainId, nameObstacles: [panel] }, star, rest.end + FRAME_MS, 1, 2.5, 600);
+    const { texts, discs } = describeLastDialFrame(W, H)!;
+    const clearOfPanel = capabilities.filter((id) => discs.some((d) => d.id === id && d.x > INSET_PX && d.x + d.r < panel.minX - PANEL_GAP_PX && d.y > INSET_PX && d.y < H - INSET_PX));
+    expect(clearOfPanel.filter((id) => !texts.some((t) => t.id === id && t.role === "capability"))).toEqual([]);
+    expect(texts.filter((t) => capabilities.includes(t.id ?? "") && t.box.maxX > panel.minX).map((t) => t.text)).toEqual([]);
+  },
+);
+
 describe("a mark's drawn radius across frames", () => {
   it("takes its radius at once when it comes back on screen, however long it was away", () => {
     const worldKey = {};
