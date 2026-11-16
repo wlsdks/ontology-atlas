@@ -1,9 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
 import type { AnalysisCompatibility, AnalysisRun } from '@/entities/analysis-record';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { CloseButton, Dialog, DialogBody } from '@/shared/ui';
 
 const TITLE_ID = 'review-record-title';
@@ -29,10 +30,18 @@ export function ReviewRecordDialog({ open, onClose, run, compatibility, answer, 
   decisions: ReactNode;
 }) {
   const t = useTranslations('analysisWorkbench');
+  /* Capture phase: focus on the dialog container still reaches the map's Escape, which would close the review too. */
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || isImeComposing(event)) return;
+      event.preventDefault(); event.stopPropagation(); onClose();
+    };
+    window.addEventListener('keydown', close, true);
+    return () => window.removeEventListener('keydown', close, true);
+  }, [open, onClose]);
   const cited = [...new Set([...run.evidence.map((item) => item.slug), ...run.findings.flatMap((finding) => finding.evidenceSlugs)])];
   return <Dialog open={open} onClose={onClose} size="lg" labelledBy={TITLE_ID} testId="review-record-dialog">
-    {/* The map closes its review on any Escape nobody prevented; this one belongs to the dialog. */}
-    <div className="contents" onKeyDown={(event) => { if (event.key === 'Escape') event.preventDefault(); }}>
     <div className="flex shrink-0 items-start justify-between gap-4 pb-3">
       <h2 id={TITLE_ID} className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('recordDetails')}</h2>
       <CloseButton label={t('closeRecord')} onClick={onClose} />
@@ -63,6 +72,5 @@ export function ReviewRecordDialog({ open, onClose, run, compatibility, answer, 
       {problems.length ? <Section title={t('recordProblems', { count: problems.length })}><pre className={PRE}>{problems.join('\n')}</pre></Section> : null}
       {decisions}
     </DialogBody>
-    </div>
   </Dialog>;
 }

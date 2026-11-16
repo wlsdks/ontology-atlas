@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, requestsAnalysisFindings, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
 import { Chip, CloseButton, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
@@ -24,6 +25,9 @@ const LIST_VIEW = 'list';
 type Tab = 'meaning' | 'history' | 'conversation';
 const KNOWN_KINDS = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme'];
 const EMPTY_RECORDS: AnalysisRecord[] = [];
+const EMPTY_PROBLEMS: string[] = [];
+/* The fix request names its record by id inside a quoted argument; anything else is not offered. */
+const PLAIN_RECORD_ID = /^[A-Za-z0-9_-]{1,200}$/;
 
 /** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
 /**
@@ -141,7 +145,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     && isReviewResult(record)), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
   const olderPage = loaded?.handle === context.handle ? loaded.cursor : null;
-  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !olderPage && !readPending && !error;
+  const problems = loaded?.handle === context.handle ? loaded.problems : EMPTY_PROBLEMS;
+  /* An unreadable record is not an empty archive: it may be the only review there is. */
+  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !olderPage && !readPending && !error && !problems.length;
   const saved = saveState?.handle === context.handle ? saveState : null;
   const fitsContent = open && tab === 'history' && emptyArchive;
   useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
@@ -160,7 +166,8 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     toast.show(t('save.saved'), 'success', { label: t('viewSaved'), onClick: showResult });
   }, [saved, open, tab, t, toast, setSelectedId, setTab]);
   const sameScope = selected ? analysisScopeKey(selected.mode, selected.scope) === analysisScopeKey(context.mode, context.scope) : false;
-  const compatibility = checked?.run === selected && checked.context === context ? checked.state : null;
+  /* Records are create-only, so a re-read run with the same id keeps its checked basis. */
+  const compatibility = checked && checked.run.id === selected?.id && checked.context === context ? checked.state : null;
   const overlayReady = !!selected && selected.qualification.status === 'grounded' && sameScope && compatibility?.status === 'current';
   const historyShown = open && tab === 'history';
   const dispositionOf = (run: AnalysisRun, finding: AnalysisFinding): FindingDisposition | null => latestFindingReview(records, run.id, finding.id)?.disposition ?? null;
@@ -222,8 +229,28 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     const visible = historyShown && overlayReady && selected
       ? selected.findings.filter((finding) => latestFindingReview(records, selected.id, finding.id)?.disposition !== 'dismiss') : [];
     onFindingsChange?.(visible);
-    return () => onFindingsChange?.([]);
   }, [onFindingsChange, historyShown, overlayReady, records, selected]);
+  useEffect(() => () => onFindingsChange?.([]), [onFindingsChange]);
+  /*
+   * Capture phase: the map closes its review on any Escape nobody prevented, and a text click
+   * leaves focus outside every element handler of this panel.
+   */
+  const detailShown = historyShown && shownView !== LIST_VIEW && !recordOpen;
+  useEffect(() => {
+    if (!detailShown) return;
+    const findingId = shownView.slice(shownView.indexOf(':') + 1);
+    const goBack = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || isImeComposing(event)) return;
+      const target = event.target;
+      const panel = panelRef.current;
+      /* A text click leaves focus on the body or the route container, an ancestor of this panel. */
+      if (!panel || !(target instanceof Node) || !(panel.contains(target) || target.contains(panel))) return;
+      event.preventDefault(); event.stopPropagation();
+      returnRowRef.current = findingId; setNotice(null); setView(LIST_VIEW);
+    };
+    window.addEventListener('keydown', goBack, true);
+    return () => window.removeEventListener('keydown', goBack, true);
+  }, [detailShown, shownView]);
   /* Back from a finding lands on its row; the row's frame stops being inert in this same commit. */
   useLayoutEffect(() => {
     const panel = historyPanelRef.current;
@@ -266,9 +293,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     setNotice(null);
     setView(LIST_VIEW);
   }
-  /* Names the finding and its documents; carries no findings fence, so it is never recorded as a review. */
-  function requestFix(finding: AnalysisFinding) {
-    onRequest?.(t('fixPrompt', { title: finding.title, detail: finding.detail, evidence: finding.evidenceSlugs.join(', ') || '-' }), null);
+  /* Names the record and position only: recorded text may hold the findings fence, and must never make this a review. */
+  function requestFix(run: AnalysisRun, finding: AnalysisFinding) {
+    onRequest?.(t('fixPrompt', { recordId: run.id, position: run.findings.indexOf(finding) + 1 }), null);
     setTab('conversation');
   }
   /* The record schema accepts an empty rationale, so one press judges and a reason is optional. */
@@ -304,10 +331,13 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const refreshButton = context.handle ? <IconButton size="lg" hoverSurface="lift" hoverInk="strong" label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null;
   function findingList(run: AnalysisRun, leaving: boolean) {
     const status = compatibility?.status;
+    /* A cancelled or failed review is not a clean one, so it never reads as nothing to check. */
+    const finished = run.origin.outcome === 'completed';
     return <div data-testid={leaving ? undefined : 'review-finding-list'} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h3 className="text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-          {t('toCheck', { count: openFindings.length })}
+          {finished ? t('toCheck', { count: openFindings.length }) : t(`outcome.${run.origin.outcome}`)}
+          {!finished && run.findings.length ? ` · ${t('toCheck', { count: openFindings.length })}` : null}
           {dismissedFindings.length ? <span className="text-[color:var(--color-text-tertiary)]"> · {t('dismissedCount', { count: dismissedFindings.length })}</span> : null}
         </h3>
         {/* The trigger carries the review's date; the id moves to the option description. */}
@@ -323,7 +353,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('trustLine')}</p>
       {status === 'stale' || status === 'unknown' ? <p className="text-label leading-label text-[color:var(--color-status-warning)]">{t(status === 'stale' ? 'basisStaleLine' : 'basisUnknownLine')}</p> : null}
       {run.observations.map((observation, index) => <ArchitectureObservation key={`${observation.toolCallId}:${index}`} result={observation.result} />)}
-      {run.findings.length === 0 ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t('noFindings')}</p>
+      {run.findings.length === 0 ? finished ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t('noFindings')}</p> : null
         : <ul className="grid auto-rows-fr gap-2">{[...openFindings, ...dismissedFindings].map((finding) => <li key={finding.id} className="min-w-0">
           <FindingRow finding={finding} disposition={dispositionOf(run, finding)} onOpen={() => openFinding(run, finding)} />
         </li>)}</ul>}
@@ -336,7 +366,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     const { run, finding } = target;
     return <FindingDetail finding={finding} disposition={dispositionOf(run, finding)} evidence={evidenceConcepts(run, finding)}
       reason={reviewText} busy={busy} onReasonChange={setReviewText} onBack={() => backToList(finding.id)}
-      onFix={onRequest ? () => requestFix(finding) : null} onJudge={writable ? (disposition) => void review(finding, disposition) : null}
+      onFix={onRequest && context.mode === 'meaning' && PLAIN_RECORD_ID.test(run.id) ? () => requestFix(run, finding) : null} onJudge={writable ? (disposition) => void review(finding, disposition) : null}
       onEvidence={onEvidence ?? null} />;
   }
   const subjectKind = contextKind && !(tab === 'conversation' && conversationLabel) ? contextKind : null;
@@ -347,7 +377,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const loneSectionRole = hasTabStrip ? null : { role: undefined, 'aria-labelledby': undefined };
   /* The dialog sits outside the section: Escape inside it must not bubble to the section's close. */
   return <><section ref={panelRef} data-testid="analysis-workbench" onKeyDown={(event) => {
-    if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); onClose(); }
+    if (event.key === 'Escape' && !event.defaultPrevented && !isImeComposing(event)) { event.stopPropagation(); onClose(); }
   }} className="flex min-h-0 flex-1 flex-col gap-3 break-keep text-body text-[color:var(--color-text-primary)] [&_summary]:content-center [@media(pointer:coarse)]:[&_summary]:min-h-[var(--touch-target-min)]">
     {/*
      * flex-wrap: below about 330px the tab strip drops to its own line instead of truncating the
@@ -408,7 +438,12 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
         </>}
       /></div> : null}
       {/* A failed read hides the empty state, and the request must not go with it. */}
-      {onRequest && error && !runs.length ? <div data-testid="analysis-history-request" className="flex flex-wrap items-center gap-2">
+      {!selected && problems.length ? <div data-testid="analysis-history-problems" className="flex flex-wrap items-center gap-2">
+        <p role="status" className="min-w-0 flex-1 text-label leading-label text-[color:var(--color-status-warning)]">{t('recordProblems', { count: problems.length })}</p>
+        {refreshButton}
+        <pre className="basis-full whitespace-pre-wrap break-words text-caption leading-caption text-[color:var(--color-text-secondary)]">{problems.join('\n')}</pre>
+      </div> : null}
+      {onRequest && (error || problems.length > 0) && !runs.length ? <div data-testid="analysis-history-request" className="flex flex-wrap items-center gap-2">
         <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
         {fillNotesChip}
       </div> : null}
@@ -433,7 +468,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   </section>
   {selected ? <ReviewRecordDialog open={recordOpen} onClose={() => setRecordOpen(false)} run={selected} compatibility={compatibility}
     answer={<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown>}
-      problems={loaded?.handle === context.handle ? loaded.problems : []}
+      problems={problems}
       actions={<>
         <Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip>
         {onRequest ? <Chip size="lg" onClick={() => { setRecordOpen(false); request(true); }}>{t('followUp')}</Chip> : null}

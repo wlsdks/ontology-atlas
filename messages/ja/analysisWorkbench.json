@@ -174,6 +174,6 @@
   "haveFixed": "修正を依頼",
   "sourceDocuments": "根拠の文書{count}件",
   "recordDetails": "記録の詳細",
-  "fixPrompt": "Atlasのレビューで挙げられた問いを修正してください。\n問い：{title}\n内容：{detail}\n根拠の文書：{evidence}\nこれらの文書をAtlasのツール（get_concepts、body: \"full\"）で読んでください。何が誤っていて、どう直すかをまず文章で提案し、そのあとpatch_conceptなどのAtlasの書き込みツールで反映してください。書き込みはそれぞれ、この会話で人の許可を待ちます。文書に修正の根拠がない箇所は書かず、未解決の問いとして残してください。",
+  "fixPrompt": "{recordId}として記録されたAtlasのレビューの{position}番目の問いを修正してください。\nquery_ontology(operation: \"analysis_record\", recordId: \"{recordId}\")で記録を読み、findingsの{position}番目の項目を確認してください。その問いの根拠の文書をAtlasのツール（get_concepts、body: \"full\"）で読んでください。何が誤っていて、どう直すかをまず文章で提案し、そのあとpatch_conceptなどのAtlasの書き込みツールで反映してください。文書に修正の根拠がない箇所は書かず、未解決の問いとして残してください。",
   "closeRecord": "記録の詳細を閉じる"
 }

@@ -174,6 +174,6 @@
   "haveFixed": "Have it fixed",
   "sourceDocuments": "{count, plural, one {# source document} other {# source documents}}",
   "recordDetails": "Record details",
-  "fixPrompt": "Fix this question from an Atlas review.\nQuestion: {title}\nDetail: {detail}\nSource documents: {evidence}\nRead those documents with Atlas tools (get_concepts with body \"full\"). First say in sentences what is wrong and how you would correct it, then apply the correction with the Atlas write tools such as patch_concept; each write still waits for the person's permission in this chat. Where the documents give no reason for a correction, write nothing there and leave it as an open question.",
+  "fixPrompt": "Fix finding {position} of the Atlas review recorded as {recordId}.\nRead the record with query_ontology(operation: \"analysis_record\", recordId: \"{recordId}\") and take finding {position} from its findings. Read that finding's source documents with Atlas tools (get_concepts with body \"full\"). First say in sentences what is wrong and how you would correct it, then apply the correction with the Atlas write tools such as patch_concept. Where the documents give no reason for a correction, write nothing there and leave it as an open question.",
   "closeRecord": "Close record details"
 }

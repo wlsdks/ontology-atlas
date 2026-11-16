@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useLayoutEffect, useRef, type KeyboardEvent } from 'react';
+import { forwardRef, useLayoutEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft } from 'lucide-react';
 
@@ -56,12 +56,8 @@ export function FindingDetail({ finding, disposition, evidence, reason, busy, on
   const backRef = useRef<HTMLButtonElement>(null);
   /* The list frame that held focus turns inert in the same commit, so focus must land here before paint. */
   useLayoutEffect(() => { backRef.current?.focus({ preventScroll: true }); }, []);
-  const goBackOnEscape = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || event.defaultPrevented) return;
-    event.preventDefault(); event.stopPropagation(); onBack();
-  };
   const paragraphs = finding.detail.split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
-  return <div className="flex flex-col gap-4" onKeyDown={goBackOnEscape}>
+  return <div className="flex flex-col gap-4">
     <Button ref={backRef} variant="ghost" size="sm" className="-ml-2 self-start" onClick={onBack}><ChevronLeft size={16} aria-hidden />{t('backToList')}</Button>
     <div className="flex flex-col gap-2">
       <h3 className="break-words text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{finding.title}</h3>

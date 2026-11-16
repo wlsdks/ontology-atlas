@@ -174,6 +174,6 @@
   "haveFixed": "让它修正",
   "sourceDocuments": "依据文档 {count} 份",
   "recordDetails": "记录详情",
-  "fixPrompt": "请修正 Atlas 审阅中提出的问题。\n问题：{title}\n内容：{detail}\n依据文档：{evidence}\n请用 Atlas 工具（get_concepts，body: \"full\"）阅读这些文档。先用句子说明哪里有误、打算如何修正，再用 patch_concept 等 Atlas 写入工具应用修正；每次写入仍会在本对话中等待人的许可。文档中没有修正依据的地方不要写入，留作未解决的问题。",
+  "fixPrompt": "请修正记录为 {recordId} 的 Atlas 审阅中的第 {position} 个问题。\n用 query_ontology(operation: \"analysis_record\", recordId: \"{recordId}\") 读取该记录，并找到 findings 中的第 {position} 项。用 Atlas 工具（get_concepts，body: \"full\"）阅读该问题的依据文档。先用句子说明哪里有误、打算如何修正，再用 patch_concept 等 Atlas 写入工具应用修正。文档中没有修正依据的地方不要写入，留作未解决的问题。",
   "closeRecord": "关闭记录详情"
 }

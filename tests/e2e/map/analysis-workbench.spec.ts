@@ -153,6 +153,13 @@ test.describe('review results as a short list', () => {
     await back.click();
     await expect(rows.nth(2)).toBeFocused();
 
+    // A text click leaves focus on the page; Escape still steps back one level, not out of the review.
+    await rows.nth(0).click();
+    await page.locator('[data-review-view="finding"]').getByText(/^Finding 1 explains/).click();
+    await page.keyboard.press('Escape');
+    await expect(rows.nth(0)).toBeFocused();
+    await expect(page.getByTestId('analysis-workbench')).toBeVisible();
+
     const door = page.getByRole('button', { name: en.analysisWorkbench.recordDetails, exact: true });
     await door.click();
     const dialog = page.getByRole('dialog', { name: en.analysisWorkbench.recordDetails });
@@ -160,6 +167,12 @@ test.describe('review results as a short list', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(door).toBeFocused();
+    await expect(page.getByTestId('analysis-workbench')).toBeVisible();
+
+    await door.click();
+    await dialog.getByText('The original answer from the agent.').click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
     await expect(page.getByTestId('analysis-workbench')).toBeVisible();
   });
 });
