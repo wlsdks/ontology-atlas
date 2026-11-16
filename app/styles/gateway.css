@@ -294,15 +294,15 @@
 }
 
 .gateway-hero-title {
-  --gateway-title-measure: 9.55;
+  --gateway-title-measure: 6.05;
 }
 
 :root:lang(en) .gateway-hero-title {
-  --gateway-title-measure: 10.3;
+  --gateway-title-measure: 9.6;
 }
 
 :root:lang(ja) .gateway-hero-title {
-  --gateway-title-measure: 14.2;
+  --gateway-title-measure: 12.2;
 }
 
 :root:lang(zh) .gateway-hero-title {
@@ -648,6 +648,14 @@
   0%, 100% { opacity: 0.55; }
   45% { opacity: 1; }
   60% { opacity: 0.55; }
+}
+
+/* The film's edges sink into the page, so the pinned stage has no frame. */
+.gateway-film-vignette {
+  background:
+    linear-gradient(180deg, var(--color-canvas) 0%, transparent 14%, transparent 62%, var(--color-canvas) 100%),
+    linear-gradient(90deg, var(--color-canvas) 0%, transparent 12%, transparent 88%, var(--color-canvas) 100%);
+  opacity: 0.85;
 }
 
 /* The hero window's light at card size: it falls from the top of each drawing. */

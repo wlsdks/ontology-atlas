@@ -1,14 +1,20 @@
 {
   "availableTitle": "Version {version} is available",
-  "availableBody": "Install it now, or keep working and update later.",
+  "availableBody": "Get it now, or finish what you are doing first.",
   "install": "Install update",
   "downloadingTitle": "Downloading {version}",
-  "downloadingPercent": "{percent} downloaded.",
-  "downloadingUnknown": "Downloading: the size is not reported.",
+  "downloadingProgress": "{percent} · {received} / {total} MB",
+  "downloadingUnknown": "Downloading.",
+  "progressLabel": "Download progress",
+  "hide": "Hide",
   "readyTitle": "{version} is ready",
   "readyBody": "Restart to finish. Your open folder stays where it is.",
   "restart": "Restart now",
   "failedTitle": "The update could not be installed",
-  "failedBody": "You can download the latest version from the releases page instead.",
-  "dismiss": "Not now"
+  "failedBody": "Please try again in a moment.",
+  "retry": "Try again",
+  "close": "Close",
+  "dismiss": "Not now",
+  "settingsTriggerPending": "{label}, new version {version} available",
+  "settingsTriggerReady": "{label}, new version {version} installed, restart needed"
 }

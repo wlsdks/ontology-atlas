@@ -13,11 +13,12 @@
   ],
   "scripts": {
     "brand:sprites": "node scripts/brand/build-moru-sprites.mjs",
+    "og:build": "node scripts/brand/build-og-cards.mjs",
     "prepare": "node scripts/prepare-worktree.mjs",
     "predev": "node scripts/web/clean-next-dev-cache.mjs && pnpm docs-vault:build && pnpm messages:build",
     "dev": "next dev",
     "dev:route-smoke": "node scripts/web/check-dev-locale-routes.mjs",
-    "build": "pnpm docs-vault:build && pnpm messages:build && next build",
+    "build": "pnpm docs-vault:build && pnpm messages:build && next build && node scripts/web/localize-html-lang.mjs",
     "build:static": "node scripts/web/build-static-export.mjs",
     "test:build:static": "node --test scripts/web/build-static-export.test.mjs",
     "desktop:check": "node scripts/desktop/check-desktop-readiness.mjs",

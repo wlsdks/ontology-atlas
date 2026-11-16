@@ -43,7 +43,9 @@ export function parseHead(html) {
     }
   }
   const title = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
+  const lang = html.match(/<html\b[^>]*\blang="([^"]*)"/i);
   return {
+    lang: lang ? lang[1] : '',
     canonicals,
     alternates,
     noindex: /\bnoindex\b/i.test(robots),
@@ -126,6 +128,11 @@ export function evaluateSeoSurface({ sitemapXml, pages, messages }) {
       continue;
     }
     if (head.noindex) fail('1-sitemap-self-canonical', `${entry.loc} is noindex`);
+    /* A crawler that runs no script reads the language from the HTML itself. */
+    const ownLang = Object.entries(entry.alternates ?? {}).find(([lang, href]) => href === entry.loc && lang !== 'x-default')?.[0];
+    if (ownLang && head.lang !== ownLang) {
+      fail('6-html-lang', `${entry.loc} declares <html lang="${head.lang}"> but is the ${ownLang} page`);
+    }
     for (const problem of evaluateLocaleCluster({ label: entry.loc, head, entry })) {
       fail('1-sitemap-self-canonical', problem);
     }

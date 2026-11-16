@@ -34,7 +34,10 @@ export function downloadStructuredData(locale: string, description: string) {
     description,
     url: `${SITE_URL}/${locale}/download/`,
     inLanguage: locale,
-    image: `${SITE_URL}/og-image.png`,
+    image: `${SITE_URL}/og/${locale}.png`,
+    // What an answer engine can cite beside the claim: the app's own map, and the guide.
+    screenshot: `${SITE_URL}/gateway/projects.${locale === 'ko' ? 'ko' : 'en'}.png`,
+    softwareHelp: { '@type': 'CreativeWork', url: `${SITE_URL}/${locale}/guide/` },
     sameAs: [GITHUB_REPO_URL],
     author: SITE_PUBLISHER,
     publisher: SITE_PUBLISHER,
