@@ -99,6 +99,14 @@ describe("buildProjectToCheck", () => {
     expect(buildProjectToCheck(input({ nodes })).rows).toEqual([]);
   });
 
+  it("lists a missing definition once, for the document that lacks it, not for the concepts it names", () => {
+    const pay = concept("pay", "capability", "Pay");
+    const stub = (slug: string): KnowledgeGraphNode => ({ ...concept(slug, "element", slug), evidenceIds: ["docs/pay"], hasOwnDocument: false });
+    const findingsBySlug = new Map([["docs/pay", { findings: ["definition-missing"] }]]);
+    const { rows } = buildProjectToCheck(input({ nodes: [pay, stub("ledger"), stub("gateway")], findingsBySlug }));
+    expect(rows.map((r) => r.nodeId)).toEqual(["capability:pay"]);
+  });
+
   it("names the domain a row belongs to", () => {
     const nodes = [concept("a", "capability", "A")];
     const findingsBySlug = new Map([["docs/a", { findings: ["definition-missing"] }]]);

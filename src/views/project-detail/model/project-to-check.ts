@@ -100,7 +100,8 @@ export function buildProjectToCheck(input: ProjectToCheckInput): ProjectToCheck 
     if (stale) {
       groups.get("stale")!.push({ ...rowFor(node, "stale"), path: stale.path, pathGone: stale.gone, pathChangedAt: stale.changedAt });
     }
-    const slug = node.evidenceIds[0];
+    // A concept without its own document borrows the slug of the document that named it.
+    const slug = node.hasOwnDocument === false ? undefined : node.evidenceIds[0];
     if (slug && input.findingsBySlug.get(slug)?.findings.includes(MISSING_DEFINITION_CODE)) {
       groups.get("definition-missing")!.push(rowFor(node, "definition-missing"));
     }
