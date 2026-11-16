@@ -1,4 +1,7 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { routing } from '@/i18n/routing';
 import { buildPageMetadata, type PageMetadataLocales } from './page-metadata';
 
 // Next replaces the whole top-level openGraph/twitter key when merging metadata, so every card
@@ -11,13 +14,26 @@ describe('buildPageMetadata', () => {
     description: 'Get the app.',
   };
 
-  it('always carries the site OG image and site name, even without a page image', () => {
-    const meta = buildPageMetadata(base);
-    const og = meta.openGraph as { images: unknown[]; siteName?: string };
-    expect(og.images).toEqual([
-      { url: '/og-image.png', width: 1200, height: 630, alt: 'Ontology Atlas' },
-    ]);
-    expect(og.siteName).toBe('Ontology Atlas');
+  it.each(['en', 'ko', 'ja', 'zh'])(
+    'always carries the %s site card and site name, even without a page image',
+    (locale) => {
+      const meta = buildPageMetadata({ ...base, locale });
+      const og = meta.openGraph as { images: unknown[]; siteName?: string };
+      expect(og.images).toEqual([
+        { url: `/og/${locale}.png`, width: 1200, height: 630, alt: 'Ontology Atlas' },
+      ]);
+      expect(og.siteName).toBe('Ontology Atlas');
+      expect((meta.twitter as { images: string[] }).images).toEqual([`/og/${locale}.png`]);
+    },
+  );
+
+  it.each([...routing.locales])('ships the %s card the metadata points at', (locale) => {
+    expect(existsSync(path.join(process.cwd(), 'public', 'og', `${locale}.png`))).toBe(true);
+  });
+
+  it('falls back to the English site card for a locale outside the registry', () => {
+    const meta = buildPageMetadata({ ...base, locale: 'fr' });
+    expect((meta.openGraph as { images: { url: string }[] }).images[0].url).toBe('/og-image.png');
     expect((meta.twitter as { images: string[] }).images).toEqual(['/og-image.png']);
   });
 
