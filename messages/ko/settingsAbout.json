@@ -18,7 +18,7 @@
   "keywords": {
     "version": "버전, 빌드, 릴리스, 정보",
     "updateCheck": "업데이트, 새 버전, 내려받기",
-    "updateAuto": "업데이트, 자동, 매일, 인터넷, 네트워크",
+    "updateAuto": "업데이트, 자동, 주기적, 인터넷, 네트워크",
     "whatsNew": "변경 기록, 릴리스 노트, 바뀐 점, 소식",
     "keyboardShortcuts": "키, 단축키, 핫키, 키 설정",
     "source": "깃허브, 저장소, 오픈소스, 코드",
@@ -74,7 +74,7 @@
     "versionReading": "버전을 읽는 중이에요.",
     "versionUnknown": "버전을 읽지 못했어요. 업데이트 확인을 누르면 다시 읽어요.",
     "versionUnknownRetried": "버전을 읽지 못했어요.",
-    "autoOn": "앱을 열면 하루에 한 번 확인해요.",
+    "autoOn": "4시간마다 확인해요. 앱을 열 때 지난 확인에서 4시간이 지났으면 바로 확인해요.",
     "autoOff": "Atlas가 스스로 확인하지 않아요. 업데이트 확인을 누르면 그때 확인해요.",
     "autoLast": "마지막으로 확인한 때는 {when}이에요.",
     "autoNever": "이 컴퓨터에서는 아직 확인한 적이 없어요.",
@@ -85,6 +85,12 @@
     "resultDownloading": "{version}을 받는 중이에요. 진행률은 우하단 알림에 있어요.",
     "resultReady": "{version} 설치까지 끝났어요. 우하단 알림에서 다시 시작하면 적용돼요.",
     "resultFailed": "업데이트 정보를 가져오지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
-    "resultInstallFailed": "업데이트 설치를 마치지 못했어요. 잠시 뒤 다시 시도해 주세요."
+    "resultInstallFailed": "업데이트 설치를 마치지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    "resultAvailableHidden": "{version} 버전이 나와 있어요.",
+    "resultDownloadingHidden": "{version} 내려받는 중이에요.",
+    "resultReadyHidden": "{version} 설치가 끝났어요. 다시 시작하면 적용돼요.",
+    "actionInstall": "업데이트 설치",
+    "actionShowNotice": "알림 보기",
+    "actionRestart": "지금 다시 시작"
   }
 }

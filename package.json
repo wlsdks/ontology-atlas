@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "brand:sprites": "node scripts/brand/build-moru-sprites.mjs",
+    "og:build": "node scripts/brand/build-og-cards.mjs",
     "prepare": "node scripts/prepare-worktree.mjs",
     "predev": "node scripts/web/clean-next-dev-cache.mjs && pnpm docs-vault:build && pnpm messages:build",
     "dev": "next dev",

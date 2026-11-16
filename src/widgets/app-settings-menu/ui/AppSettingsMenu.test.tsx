@@ -18,7 +18,17 @@ const mocks = vi.hoisted(() => ({
   copyPath: vi.fn(),
   locale: 'en',
   rememberRouteFocusIntent: vi.fn(),
+  updatePendingVersion: null as string | null,
 }));
+
+vi.mock('@/features/app-update', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/app-update')>();
+  return {
+    ...actual,
+    useAppUpdateContext: () => null,
+    usePendingUpdate: () => ({ pendingVersion: mocks.updatePendingVersion, readyVersion: null }),
+  };
+});
 
 vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   isTauriVaultRuntime: () => mocks.isDesktopRuntime,
@@ -163,6 +173,24 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
     );
 
     expect(mocks.rememberRouteFocusIntent).toHaveBeenCalledWith('/docs/');
+  });
+});
+
+describe('AppSettingsMenu pending update sign', () => {
+  beforeEach(() => {
+    mocks.updatePendingVersion = null;
+  });
+
+  it('marks the trigger and names the version only while one is pending', () => {
+    const view = render(<AppSettingsMenu mode="static" />);
+    const trigger = screen.getByTestId('app-settings-trigger');
+    expect(screen.queryByTestId('app-settings-update-badge')).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-label', 'nav.settingsMenu.triggerAria');
+
+    mocks.updatePendingVersion = '2.1.0';
+    view.rerender(<AppSettingsMenu mode="static" />);
+    expect(screen.getByTestId('app-settings-update-badge')).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-label', 'appUpdate.settingsTriggerPending');
   });
 });
 
