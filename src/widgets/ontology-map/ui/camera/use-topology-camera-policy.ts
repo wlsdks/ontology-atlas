@@ -16,7 +16,7 @@ import {
   type EdgeFitObstacle,
   type PanelInsets
 } from "../../interaction/free-area";
-import { cameraTransitionDurationMs, selectionTweenDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
+import { cameraTransitionDurationMs, selectionTweenDurationMs, selectionTweenSpeed, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
@@ -224,9 +224,10 @@ export function useTopologyCameraPolicy({
    * `target` (van Wijk's principle: duration proportional to distance), driven
    * each frame by the rAF loop via `easeCameraKeyframe`. Under
    * `prefers-reduced-motion` it no-ops and clears any tween, so the
-   * physics-step reduced snap owns the jump. Its identity is stable (refs
-   * only), so listing it in the programmatic-move effects' deps never re-fires
-   * them.
+   * physics-step reduced snap owns the jump. A selection that replaces a
+   * running one leaves from the drawn camera at the speed that one had. Its
+   * identity is stable (refs only), so listing it in the programmatic-move
+   * effects' deps never re-fires them.
    */
   const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase, altitude: CameraTweenAltitude = "follows-camera") => {
     if (reducedMotionRef.current) {
@@ -236,7 +237,10 @@ export function useTopologyCameraPolicy({
     const cam = cameraRef.current;
     const start: CameraKeyframe = { x: cam.x.value, y: cam.y.value, scale: cam.scale.value };
     const tgt: CameraKeyframe = { x: target.tx, y: target.ty, scale: target.tscale };
-    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? (ease === "spring" ? selectionTweenDurationMs(start, tgt) : cameraTransitionDurationMs(start, tgt)), ease, altitude };
+    const startMs = performance.now();
+    const running = cameraTweenRef.current;
+    const startSpeed = ease === "spring" && running?.ease === "spring" ? selectionTweenSpeed(running, startMs - running.startMs) : undefined;
+    cameraTweenRef.current = { start, target: tgt, startMs, durationMs: durationOverrideMs ?? (ease === "spring" ? selectionTweenDurationMs(start, tgt) : cameraTransitionDurationMs(start, tgt)), ease, altitude, startSpeed };
   }, [cameraRef, cameraTweenRef, reducedMotionRef]);
   return { cameraTokens, domeFitTarget, beginCameraTween };
 }
