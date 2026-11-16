@@ -92,6 +92,7 @@
     --map-graph-open-fill: 0.82;
     --map-graph-cap-open-max-px: 24;
     --map-graph-element-open-max-px: 10;
+    --map-graph-mark-px-per-ms: 0.1;
     --map-graph-backing-radius-px: 6;
     --map-graph-backing-pad-x-px: 1;
     --map-graph-backing-pad-y-px: 0;

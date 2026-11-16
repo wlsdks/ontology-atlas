@@ -24,7 +24,7 @@ import { resolveFlatGraphTokens } from "./tokens";
 const KINDS = new Set(["project", "domain", "capability", "element"]);
 const W = 1410;
 const H = 840;
-const FRAME_MS = 16;
+const FRAME_MS = 1000 / 60;
 
 function dogfoodModel(): DialModel {
   const d = deriveOntologyFromVault(dogfoodManifest as unknown as VaultManifest);
@@ -62,6 +62,7 @@ function silentContext(): CanvasRenderingContext2D {
     createLinearGradient: () => ({ addColorStop: () => undefined }),
     createRadialGradient: () => ({ addColorStop: () => undefined }),
     getLineDash: () => [],
+    getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
   };
   return new Proxy(state, {
     get: (target, key: string) => (key in methods ? methods[key] : key in target ? target[key] : () => undefined),
@@ -76,93 +77,131 @@ const model = dogfoodModel();
 const scene = buildFlatGraphScene(model, TOKENS.layout, null);
 const layout = scene.graph!;
 
-/** A camera at `zoomRatio` of the fitting scale, centred on `centreId`. */
-function inputAt(centreId: string, zoomRatio: number, worldKey: object): (over: Partial<DialFrameInput>) => DialFrameInput {
+type Mark = { x: number; y: number; r: number };
+
+/** A camera centred on `centreId`, at a zoom given per frame as a ratio of the fitting scale. */
+function cameraOn(centreId: string, worldKey: object) {
   const e = layout.extent;
   const fit = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY));
-  const scale = fit * zoomRatio;
   const centre = layout.positions.get(centreId)!;
-  const toScreen = (x: number, y: number): Point => ({ x: W / 2 + (x - centre.x) * scale, y: H / 2 + (y - centre.y) * scale });
   const ctx = silentContext();
-  return (over) => ({
-    ctx, dial: { model, scene, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, labels: LABELS }, worldKey,
-    nodeScreen: (id) => { const p = layout.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio,
-    viewportWidth: W, viewportHeight: H, freeRect: { minX: 0, minY: 0, maxX: W, maxY: H },
-    mapTokens: { canvasBgNear: "#101014" } as unknown as OntologyMapTokens, dialTokens: {} as DialFrameInput["dialTokens"], labels: LABELS, evidence: null,
-    hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
-    now: 0, reducedMotion: false, domainAppear: 1, elementLabel: (id) => id,
-    ...over,
-  });
+  return (zoomRatio: number, over: Partial<DialFrameInput>): DialFrameInput => {
+    const scale = fit * zoomRatio;
+    const toScreen = (x: number, y: number): Point => ({ x: W / 2 + (x - centre.x) * scale, y: H / 2 + (y - centre.y) * scale });
+    return {
+      ctx, dial: { model, scene, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, labels: LABELS }, worldKey,
+      nodeScreen: (id) => { const p = layout.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio,
+      viewportWidth: W, viewportHeight: H, freeRect: { minX: 0, minY: 0, maxX: W, maxY: H },
+      mapTokens: { canvasBgNear: "#101014" } as unknown as OntologyMapTokens, dialTokens: {} as DialFrameInput["dialTokens"], labels: LABELS, evidence: null,
+      hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
+      now: 0, reducedMotion: false, domainAppear: 1, elementLabel: (id) => id,
+      ...over,
+    };
+  };
 }
 
-/** Every star mark's drawn radius per 16 ms frame from `now` until the motion settles, the settled frame last. */
-function radiiUntilSettled(frame: (over: Partial<DialFrameInput>) => DialFrameInput, focusedNodeId: string | null, ids: readonly string[], from: number): { frames: Map<string, number>[]; end: number } {
-  const frames: Map<string, number>[] = [];
-  let now = from;
-  for (let i = 0; i < 200; i += 1, now += FRAME_MS) {
-    const result = paintFlatGraphFrame(frame({ focusedNodeId, now }), TOKENS);
+/** Each drawn mark in `ids` per 16 ms frame from `from` until the motion settles, the zoom easing from `zoomFrom` to `zoomTo` over `zoomMs`. */
+function framesUntilSettled(
+  camera: ReturnType<typeof cameraOn>, over: Partial<DialFrameInput>, ids: ReadonlySet<string>, from: number, zoomFrom: number, zoomTo: number, zoomMs: number,
+): { frames: Map<string, Mark>[]; end: number } {
+  const frames: Map<string, Mark>[] = [];
+  for (let i = 0, now = from; i < 400; i += 1, now += FRAME_MS) {
+    const t = Math.min(1, (now - from) / zoomMs);
+    const zoom = zoomFrom * Math.pow(zoomTo / zoomFrom, (1 - Math.cos(Math.PI * t)) / 2);
+    const result = paintFlatGraphFrame(camera(zoom, { ...over, now }), TOKENS);
     const probe = describeLastDialFrame(W, H)!;
-    const drawn = new Map([...probe.discs, ...probe.glyphs].map((m) => [m.id, m.r]));
-    frames.push(new Map(ids.flatMap((id) => (drawn.has(id) ? [[id, drawn.get(id)!] as const] : []))));
-    if (!result.branchMembersAnimating) return { frames, end: now };
+    frames.push(new Map([...probe.discs, ...probe.glyphs].filter((m) => m.id !== null && ids.has(m.id)).map((m) => [m.id!, { x: m.x, y: m.y, r: m.r }])));
+    if (t >= 1 && !result.branchMembersAnimating) return { frames, end: now };
   }
-  throw new Error(`${focusedNodeId} never settled`);
+  throw new Error("the star never settled");
 }
 
-/** The largest step one mark's radius takes between frames, beside the change its whole move makes. */
-function widestStep(frames: readonly Map<string, number>[], id: string): { step: number; travel: number; low: number; high: number } {
-  const radii = frames.map((f) => f.get(id)).filter((r): r is number => r !== undefined);
-  let step = 0;
-  for (let i = 1; i < radii.length; i += 1) step = Math.max(step, Math.abs(radii[i]! - radii[i - 1]!));
-  return { step, travel: Math.abs(radii.at(-1)! - radii[0]!), low: Math.min(...radii), high: Math.max(...radii) };
+/** The fastest radius change between frames, in px per ms, and every frame in which two marks overlap past half a pixel. */
+function smoothness(frames: readonly Map<string, Mark>[]): { pxPerMs: number; worst: string; overlaps: string[] } {
+  let pxPerMs = 0;
+  let worst = "";
+  const overlaps: string[] = [];
+  frames.forEach((frame, i) => {
+    const marks = [...frame];
+    for (let a = 0; a < marks.length; a += 1) {
+      for (let b = a + 1; b < marks.length; b += 1) {
+        const [ia, ma] = marks[a]!;
+        const [ib, mb] = marks[b]!;
+        if (Math.hypot(ma.x - mb.x, ma.y - mb.y) < ma.r + mb.r - 0.5) overlaps.push(`frame ${i}: ${ia} x ${ib}`);
+      }
+    }
+    if (i === 0) return;
+    for (const [id, m] of frame) {
+      const was = frames[i - 1]!.get(id);
+      if (!was) continue;
+      const speed = Math.abs(m.r - was.r) / FRAME_MS;
+      if (speed > pxPerMs) {
+        pxPerMs = speed;
+        worst = `frame ${i}: ${id} ${was.r.toFixed(2)} -> ${m.r.toFixed(2)}`;
+      }
+    }
+  });
+  return { pxPerMs, worst, overlaps };
+}
+
+/** Every drawn name in `ids` whose glyphs cross another name's or a disc or dot not its own, in the last painted frame. */
+function crowdedNames(ids: ReadonlySet<string>): string[] {
+  const probe = describeLastDialFrame(W, H)!;
+  const marks = [...probe.discs, ...probe.glyphs].filter((m) => m.id !== null && ids.has(m.id));
+  const names = probe.texts.filter((n) => n.id !== null && ids.has(n.id));
+  const crowded: string[] = [];
+  names.forEach((n, i) => {
+    const b = n.box;
+    for (const m of marks) {
+      if (m.id !== n.id && Math.hypot(Math.max(b.minX - m.x, 0, m.x - b.maxX), Math.max(b.minY - m.y, 0, m.y - b.maxY)) < m.r - 0.5) crowded.push(`${n.text} on ${m.id}`);
+    }
+    for (const o of names.slice(i + 1)) {
+      if (Math.min(b.maxX, o.box.maxX) > Math.max(b.minX, o.box.minX) && Math.min(b.maxY, o.box.maxY) > Math.max(b.minY, o.box.minY)) crowded.push(`${n.text} on ${o.text}`);
+    }
+  });
+  return crowded;
 }
 
 afterEach(() => clearDialFrame());
 
-describe("an opened domain star retargeted to one of its members and back", () => {
-  const domainId = model.domains.find((d) => d.id.endsWith("human-workbench"))!.id;
+describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer"])("the %s star while the camera zooms", (domainId) => {
   const { capabilities, elements } = domainStarIds(model, domainId);
-  const member = capabilities.find((id) => id.endsWith("agent-work-visibility"))!;
-  const ids = [...capabilities, ...elements];
-
-  it("moves every star mark through the frames between its two pictures, never through its rest radius", () => {
-    const frame = inputAt(domainId, 3, {});
-    const opened = radiiUntilSettled(frame, domainId, ids, 0);
-    const toMember = radiiUntilSettled(frame, member, ids, opened.end + FRAME_MS);
-    const back = radiiUntilSettled(frame, domainId, ids, toMember.end + FRAME_MS);
-    for (const [leg, frames] of [["domain to member", [opened.frames.at(-1)!, ...toMember.frames]], ["member to domain", [toMember.frames.at(-1)!, ...back.frames]]] as const) {
-      for (const id of ids) {
-        const radii = frames.map((f) => f.get(id)).filter((r): r is number => r !== undefined);
-        if (radii.length < 2) continue;
-        const { step, travel, low, high } = widestStep(frames, id);
-        const first = radii[0]!;
-        const last = radii.at(-1)!;
-        expect(low, `${leg}: ${id} sinks below both its pictures`).toBeGreaterThanOrEqual(Math.min(first, last) - 0.5);
-        expect(high, `${leg}: ${id} swells past both its pictures`).toBeLessThanOrEqual(Math.max(first, last) + 0.5);
-        expect(step, `${leg}: ${id} jumps in one frame`).toBeLessThanOrEqual(travel * 0.6 + 0.5);
-      }
-    }
-  });
-});
-
-describe("an opened domain star beside an open dock, where no attention runs", () => {
-  const domainId = model.domains.find((d) => d.id.endsWith("human-workbench"))!.id;
-  const { capabilities, elements } = domainStarIds(model, domainId);
-  const ids = [...capabilities, ...elements];
+  const star = new Set([domainId, ...capabilities, ...elements]);
+  const member = capabilities[0]!;
+  const limit = TOKENS.paint.markPxPerMs + 1e-9;
   const contextAlphas = new Map([...layout.positions.keys()].map((id) => [id, 1]));
 
-  it("opens and closes over frames, and stops asking for frames once it settles", () => {
-    const base = inputAt(domainId, 3, {});
-    const frame = (over: Partial<DialFrameInput>) => base({ contextAlphas, ...over });
-    const rest = radiiUntilSettled(frame, null, ids, 0);
-    const opened = radiiUntilSettled(frame, domainId, ids, rest.end + FRAME_MS);
-    const closed = radiiUntilSettled(frame, null, ids, opened.end + FRAME_MS);
-    expect(opened.frames.length, "the star opens over more than one frame").toBeGreaterThan(2);
-    for (const [leg, frames] of [["open", [rest.frames.at(-1)!, ...opened.frames]], ["close", [opened.frames.at(-1)!, ...closed.frames]]] as const) {
-      for (const id of ids) {
-        const { step, travel } = widestStep(frames, id);
-        expect(step, `${leg}: ${id} jumps in one frame`).toBeLessThanOrEqual(travel * 0.6 + 0.5);
+  it.each([["closed", {}], ["open", { contextAlphas }]] as const)(
+    "with the dock %s grows, hands over to a member and closes no faster than its radius limit, two marks never overlapping",
+    (_, dock) => {
+      const camera = cameraOn(domainId, {});
+      const rest = framesUntilSettled(camera, dock, star, 0, 1, 1, FRAME_MS);
+      const opened = framesUntilSettled(camera, { ...dock, focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 3.6, 600);
+      const pressed = framesUntilSettled(camera, { ...dock, focusedNodeId: member }, star, opened.end + FRAME_MS, 3.6, 3.6, FRAME_MS);
+      const closed = framesUntilSettled(camera, dock, star, pressed.end + FRAME_MS, 3.6, 1, 600);
+      const legs = [["open", [rest.frames.at(-1)!, ...opened.frames]], ["member", [opened.frames.at(-1)!, ...pressed.frames]], ["close", [pressed.frames.at(-1)!, ...closed.frames]]] as const;
+      for (const [leg, frames] of legs) {
+        const { pxPerMs, worst, overlaps } = smoothness(frames);
+        expect(pxPerMs, `${leg}: ${worst}`).toBeLessThanOrEqual(limit);
+        expect(overlaps.slice(0, 4), leg).toEqual([]);
       }
-    }
+    },
+  );
+
+  it("names the opened star and a pressed member at rest without a name on another name or on a mark not its own", () => {
+    const camera = cameraOn(domainId, {});
+    const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+    const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 3.6, 600);
+    expect(crowdedNames(star), "the opened star").toEqual([]);
+    framesUntilSettled(camera, { focusedNodeId: member }, star, opened.end + FRAME_MS, 3.6, 3.6, FRAME_MS);
+    expect(crowdedNames(star), "the pressed member").toEqual([]);
+  });
+
+  it("settles at once under reduced motion", () => {
+    const camera = cameraOn(domainId, {});
+    framesUntilSettled(camera, { reducedMotion: true }, star, 0, 3.6, 3.6, FRAME_MS);
+    const opened = framesUntilSettled(camera, { reducedMotion: true, focusedNodeId: domainId }, star, 100, 3.6, 3.6, FRAME_MS);
+    const radii = (frame: Map<string, Mark>) => [...frame].map(([id, m]) => [id, m.r.toFixed(3)]);
+    expect(radii(opened.frames[0]!), "the first frame draws the opened star").toEqual(radii(opened.frames.at(-1)!));
   });
 });

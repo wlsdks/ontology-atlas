@@ -97,6 +97,8 @@ export interface FlatGraphPaintTokens {
   openFill: number;
   capOpenMaxPx: number;
   elementOpenMaxPx: number;
+  /** The fastest a mark's drawn radius moves toward the radius its frame asks for, in px per ms; reduced motion jumps. */
+  markPxPerMs: number;
   /** A backed name's backing: corner radius, padding around the glyphs, the ground's alpha in it, and the blur its edge fades over. */
   backingRadiusPx: number;
   backingPadXPx: number;
