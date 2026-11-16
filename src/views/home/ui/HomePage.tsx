@@ -449,7 +449,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       delete root.dataset.topologyIndex;
     };
   }, [renderedIndexState, view3d, structure, acpDockFrameOpen]);
-  const topologySourceActions = useTopologySourceActions({ toast, v2DatasheetModel, topologyPreferences, topologySourceReadiness, topologyCanvasFocus });
   const topologyInspectorState = useTopologyInspectorState({
     setExpandAllActive, setRouteState, nodeFocus, v2DatasheetModel, mapGraph: ontologyMapGraph, analysisMode, selectedSlug,
     topologyCanvasFocus, topologyVaultReadModel, topologyAuthoring, homeWorkbenchController,
@@ -461,6 +460,15 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
   });
   const { agentDockOpen, runtimeChatOpen, closeVaultAgent, openVaultAgent } = topologyAgentOrchestration;
+  const askAgentFromSource = useCallback((text: string) => {
+    setVaultAgentPrefill({ text, nonce: Date.now() });
+    openVaultAgent();
+  }, [openVaultAgent]);
+  const topologySourceActions = useTopologySourceActions({
+    toast, v2DatasheetModel, topologyPreferences, topologySourceReadiness, topologyCanvasFocus,
+    // Only a ready in-app tool can take the request now; anyone else gets it to paste into their own agent.
+    askAgent: topologyAgentOrchestration.agentChatUsesRuntime ? askAgentFromSource : null,
+  });
   const { setFullDetailSlug } = topologyCanvasFocus;
   const gitVaultPath = topologyVaultReadModel.gitVaultPath;
   const grayArea = useTopologyGrayArea({

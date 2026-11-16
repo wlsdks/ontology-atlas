@@ -21,6 +21,14 @@ routes: [/topology]
   folder. Cancelling the picker or failing to inspect/save preserves the previous
   binding and receipt. The web can read the saved category but cannot bind or
   remeasure a private local folder.
+- **No code locations recorded** → when a measured project has no document that
+  names a `path`, the receipt says that no capability or element names its code
+  file and offers one step. With an in-app agent tool ready the step is **Ask the
+  agent**: it closes the full detail if open and seats a request in the map's
+  chat (find each concept's file, record it in `path`, list the ones it cannot
+  place); sending stays the person's act. Without a ready tool, in the app or on
+  the web, the step is **Copy the request**, which copies the same text for the
+  agent the person already uses.
 - **Receipt privacy/currentness** → the private absolute folder path lives only in
   the vault-local `.ontology-atlas/project-sources.json` sidecar, never in graph
   Markdown, copied handoff text, or MCP output. A new sidecar write also creates
