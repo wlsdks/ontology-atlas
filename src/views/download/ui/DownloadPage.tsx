@@ -34,6 +34,7 @@ import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
+import { FilmSection } from './FilmSection';
 import { MotionToggle } from './MotionToggle';
 import { useMotionPaused } from '../lib/motion-pause';
 import { SectionIntro } from './SectionIntro';
@@ -94,6 +95,7 @@ export function DownloadPage() {
           winner={winner}
         />
         <ProofNumbers graph={graph} />
+        <FilmSection graph={graph} />
         <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection />
