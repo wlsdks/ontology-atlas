@@ -12,6 +12,7 @@ import type { CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   deselectCamera,
   recordSelectionCamera,
+  sameCameraTarget,
   selectionZoomBase,
   type SelectionCamera,
   type SelectionSource
@@ -24,6 +25,7 @@ import {
 } from "../../model/realm/realm-transition";
 import { computeFocusCameraTarget, computeOverviewCameraTarget, focusPanBounds, focusTargetLeashPx, type FocusLeashPx } from "./topology-camera-math";
 import {
+  foldedPanelTokens,
   overviewBoundsFor
 } from "./topology-overview-fit";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
@@ -119,6 +121,18 @@ export function useTopologyFocusNavigation({
 }: Dependencies) {
   const handledInitialFocus = useRef(false);
 
+  /** The overview fit a deselect lands on: the free map as it is now, with no concept's panel open. */
+  const overviewFitTarget = useCallback((world: TopologyWorld, tokens: OntologyMapTokens, measured: OntologyMapTokens, width: number, height: number) => {
+    const bounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    return computeFocusCameraTarget(world, foldedPanelTokens(tokens, measured, canvasRef.current), width, height, null, overviewScaleRef.current * tokens.overviewEntryRatio, null, bounds);
+  }, [canvasRef, clusteredIdsRef, expandedParentsRef, overviewFitRef, overviewScaleRef]);
+
+  /** Whether `current` is that fit now, so a selection made there returns to the fit. */
+  const holdsOverviewFit = useCallback((current: CameraTarget, world: TopologyWorld, tokens: OntologyMapTokens, measured: OntologyMapTokens, width: number, height: number) => {
+    const fit = overviewFitTarget(world, tokens, measured, width, height);
+    return fit !== null && sameCameraTarget(current, fit);
+  }, [overviewFitTarget]);
+
   const moveCamera = useCallback((target: CameraTarget, tokens: OntologyMapTokens, ease?: CameraTweenEase) => {
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
@@ -148,10 +162,11 @@ export function useTopologyFocusNavigation({
     if (!target) return;
     selectionCameraRef.current = recordSelectionCamera(selectionCameraRef.current, {
       slug, framed: true, current: cameraTargetRef.current, landed: target, gesture: cameraGestureRevisionRef.current,
+      fromOverview: !realm && holdsOverviewFit(cameraTargetRef.current, world, raw, tokens, width, height),
     });
     focusLeashPxRef.current = branchTargetLeash(world.nodeById.get(slug)!, target, width, height, tokens);
     moveCamera(target, raw);
-  }, [cameraGestureRevisionRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, selectionCameraRef, focusLeashPxRef, moveCamera, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, view3dRef, viewportRef, worldRef]);
+  }, [cameraGestureRevisionRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, holdsOverviewFit, selectionCameraRef, focusLeashPxRef, moveCamera, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, view3dRef, viewportRef, worldRef]);
 
   useEffect(() => {
     if (lastFocusedSlugRef.current === focusedSlug && (focusedSlug === null || view3dRef.current || handledInitialFocus.current)) return;
@@ -219,7 +234,8 @@ export function useTopologyFocusNavigation({
         // A view the reader moved since the selection framed it is theirs and stays; an untouched one goes back.
         // On the Flat graph a selection no memory describes has no view to go back to and stays.
         const back = memory === null && world.dial?.scene.graph ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
-        if (back.kind === "return") moveCamera(back.target, tokens, memory?.framed ? undefined : "spring");
+        const returnTo = back.kind === "return" ? back.target : back.kind === "refit" ? overviewFitTarget(world, tokens, measured, width, height) : null;
+        if (returnTo) moveCamera(returnTo, tokens, memory?.framed ? undefined : "spring");
         // The released leash must not carry on a pan it was holding short, nor pull back its stretch.
         const anchor = releasedSlug === null ? undefined : world.nodeById.get(releasedSlug);
         const held = cameraTargetRef.current;
@@ -247,7 +263,8 @@ export function useTopologyFocusNavigation({
         const activeDial = realmData?.dial ?? world.dial;
         const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current, selectionZoomBase(memory, current, gesture));
         const landed = nudge ?? current;
-        selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture, arrived: preselectedOnArrival });
+        const fromOverview = !realmActive && holdsOverviewFit(current, world, tokens, measured, width, height);
+        selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture, arrived: preselectedOnArrival, fromOverview });
         const leash = leashFor(width, height, measured);
         focusLeashPxRef.current = node
           ? { x: Math.max(leash.x, Math.abs(node.x - landed.tx) * landed.tscale + 1), y: Math.max(leash.y, Math.abs(node.y - landed.ty) * landed.tscale + 1) }
@@ -269,13 +286,8 @@ export function useTopologyFocusNavigation({
           ?? realmCameraTarget(bounds, measured, width, height, realmData.dial?.overviewPadPx);
       } else {
         const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
-        // A deselect lands where the fit tile will: the folding panel is still on screen, so its side
-        // takes the token and the rail's reach, which is what a fit with no panel measures.
-        const canvas = canvasRef.current;
-        const focusTokens =
-          focusedSlug === null
-            ? { ...measured, safeInsetRight: tokens.safeInsetRight, obstacleInsetRight: canvas ? measureEdgeFitObstacle(canvas, "right")?.reach ?? 0 : 0 }
-            : measured;
+        // A deselect lands where the fit tile will.
+        const focusTokens = focusedSlug === null ? foldedPanelTokens(tokens, measured, canvasRef.current) : measured;
         focusLeashPxRef.current = focusedSlug === null ? null : leashFor(width, height, focusTokens);
         const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
         branchTarget = focusedSlug !== null && !pathPick ? branchFocusTarget(world, realmActive ? realmData?.dial : world.dial, focusedSlug, focusTokens, width, height, { scopedCapability: realmActive && realmData?.flat }) : null;
@@ -294,14 +306,17 @@ export function useTopologyFocusNavigation({
       if (branchTarget && focusedSlug !== null) focusLeashPxRef.current = branchTargetLeash(world.nodeById.get(focusedSlug)!, branchTarget, width, height, measured);
       selectionCameraRef.current =
         target !== null && focusedSlug !== null && !realmActive && !preselectedOnArrival
-          ? recordSelectionCamera(memory, { slug: focusedSlug, framed: true, current: cameraTargetRef.current, landed: target, gesture })
+          ? recordSelectionCamera(memory, {
+            slug: focusedSlug, framed: true, current: cameraTargetRef.current, landed: target, gesture,
+            fromOverview: holdsOverviewFit(cameraTargetRef.current, world, tokens, measured, width, height),
+          })
           : null;
       if (!target) return;
       moveCamera(target, tokens);
     };
     raf = requestAnimationFrame(resolveFocus);
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, panelInsetsRef, flyToNode, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
+  }, [focusedSlug, panelInsetsRef, flyToNode, holdsOverviewFit, overviewFitTarget, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
 
   return { flyToNode };
 }

@@ -144,12 +144,22 @@ export interface GlyphMark { selectionInk?: string; id: string; kind: DialKind; 
     } | null;
     count: string | null;
     stalePip: boolean;
+  /** Drawn past its resting radius: an opened star or a selection grew it. */
+  grown?: boolean;
 }
 type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element" | "status";
 export interface TextMark { id: string | null; role: TextRole; text: string; lines?: readonly string[]; lineHeight?: number; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
     }[] | null;
   /** Drawn on the canvas ground because a lit line runs under it. */
   backed?: boolean;
+  /** The share of its full ink the name is drawn with, where the painter tracks it. */
+  alpha?: number;
+  /** The share of its ink a name keeps beside the marks and names that crowd it: 1 when none does. */
+  room?: number;
+  /** No longer admitted: painted only while its ink runs out. */
+  fading?: boolean;
+  /** Which side of its mark the name stands on, where one name may fade out on one side and in on another. */
+  side?: number;
 }
 interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;
 }
@@ -224,8 +234,14 @@ export interface DialProbe {
         held: number;
     };
   texts: { id: string | null; role: TextRole; text: string; box: Box; font: string; backed: boolean;
+    /** The share of full ink drawn, and the share crowding left it (1 when nothing crowds it). */
+    alpha: number; room: number;
+    /** Which side of its mark the name stands on; 0 where names keep one place. */
+    side: number;
     }[];
-  glyphs: DialPick[];
+  /** Names no longer admitted that the frame still paints while their ink runs out, shaped as `texts`. */
+  fadingTexts: DialProbe["texts"];
+  glyphs: (DialPick & { grown: boolean })[];
   blocks: { id: string; box: Box; alpha: number }[];
     numerals: {
         flowKey: string;

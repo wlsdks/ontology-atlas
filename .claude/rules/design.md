@@ -187,7 +187,9 @@ names the ones a change reaches.
   scripted `repeat: Infinity` loop lists its file in `SCRIPTED_LOOPS`; both in
   the `infinite-motion` contract); a layout property animates only as a
   one-shot reflow per input;
-  the next input settles or retargets any motion; the map draws no frame at
+  the next input settles or retargets any motion; a moving value continues
+  from the value last drawn, with no single-frame jump, measured per frame in
+  the running product; the map draws no frame at
   rest; ambient and infinite motion pauses when hidden or offscreen, except
   loops that show running work, which the `infinite-motion` contract lists and
   which stop with the work. Ambient, decorative and character motion (Moru,

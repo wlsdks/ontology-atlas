@@ -1,4 +1,5 @@
 import { dialOverviewBounds } from "../../dial/fit";
+import { measureEdgeFitObstacle } from "../../interaction/free-area";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import {
   computeFoldedIds,
@@ -21,6 +22,14 @@ export function overviewBoundsFor(
 export function overviewFitTokens<T extends { cameraScaleMin: number; }>(
   tokens: T): T {
     return tokens;
+}
+
+/**
+ * The overview's tokens as a fit with no concept's panel open measures them: the right side takes the
+ * token and the rail's reach, since the panel stays on screen while it folds and unfolds.
+ */
+export function foldedPanelTokens<T extends { safeInsetRight: number }>(tokens: { safeInsetRight: number }, measured: T, canvas: HTMLCanvasElement | null) {
+  return { ...measured, safeInsetRight: tokens.safeInsetRight, obstacleInsetRight: canvas ? measureEdgeFitObstacle(canvas, "right")?.reach ?? 0 : 0 };
 }
 
 

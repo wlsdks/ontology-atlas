@@ -4,7 +4,7 @@ import type { MeasureText } from "../dial/label-marks";
 import { emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "../dial/frame/marks";
 import { dialChordPresence, recordDialFrame } from "../dial/frame/frame";
 import { dialPlacementLine, dialPlacementOf } from "../dial/placement";
-import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point, StripMark, TextMark } from "../dial/types";
+import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, GlyphMark, Point, StripMark, TextMark } from "../dial/types";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { labelFontFamily } from "../render/labels";
 import { AGENT_FOCUS_RING_OFFSET } from "../render/node-shapes";
@@ -12,12 +12,13 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
-  arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+  arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, LIT_DOT_SHARE, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
-import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
+import { DAMPED, dampedStep, FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
+import { domainStarRooms, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -29,7 +30,14 @@ const TAPER_STEPS = 18;
 const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 const DOT_ALPHA = 0.7;
-const LIT_DOT_SHARE = 1.5;
+/**
+ * A dot its capability's disc covers, or a name the drawn marks or an earlier name crowd, fades
+ * on its room: gone once they overlap by half a pixel, whole once a pixel and a half of air parts them.
+ */
+const ROOM_GONE_PX = -0.5;
+const ROOM_WHOLE_PX = 1.5;
+/** The step a name that starts to arrive takes in its first frame: one 60 Hz frame. */
+const NAME_FIRST_STEP_MS = 1000 / 60;
 /** World units a fanned element may sit from its laid-out place before it counts as dragged. */
 const DRAG_SLACK = 1e-6;
 /** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
@@ -50,7 +58,7 @@ function measureTextOf(model: DialModel): MeasureText {
 }
 
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
-interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
+interface Dot { id: string; x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; spoke: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
 /** `fadeStart` and `fadeEnd` are the shares of the curve that fade in from transparent at each end. */
@@ -60,7 +68,8 @@ const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
 interface Light { x: number; y: number; r: number; ink: string; alpha: number }
 /** `markR` is the drawn radius of the name's mark, read only by a leader. */
-interface Name { name: PlacedName; x: number; y: number; ink: number; color: string; halo: number; markR: number }
+/** `fading`: no longer admitted, drawn only while its ink runs out; the probe and picking skip it. */
+interface Name { name: PlacedName; x: number; y: number; ink: number; room: number; color: string; halo: number; markR: number; fading: boolean; backed: boolean }
 interface Ring { x: number; y: number; r: number; alpha: number; ink: string }
 type LabelBox = DialFrameResult["labelBoxes"][number];
 
@@ -105,13 +114,13 @@ class FrameList<T> {
 }
 
 const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, spoke: false, alpha: 0 }));
-const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
+const dots = markPool<Dot>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
 const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
-const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0, markR: 0 }));
+const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, room: 1, color: "", halo: 0, markR: 0, fading: false, backed: false }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -156,7 +165,7 @@ function dotRow(p: DialPick): DialRowPick {
 function elementPick(id: string, at: Point): DialPick {
   const p = pickPool.take();
   p.id = id;
-  const r = Math.max(ELEMENT_PICK_PX, radiusNow(id));
+  const r = Math.max(ELEMENT_PICK_PX, dotRadius(id));
   p.solid = false;
   if (p.x !== at.x) p.x = at.x;
   if (p.y !== at.y) p.y = at.y;
@@ -209,6 +218,9 @@ function nameMark(name: PlacedName, x: number, y: number, ink: number, color: st
   if (n.x !== x) n.x = x;
   if (n.y !== y) n.y = y;
   if (n.ink !== ink) n.ink = ink;
+  if (n.room !== 1) n.room = 1;
+  n.fading = false;
+  n.backed = name.backed === true;
   n.color = color;
   if (n.halo !== halo) n.halo = halo;
   return n;
@@ -338,17 +350,52 @@ interface FrameState {
   evidence: DialEvidenceView | null;
   /** The fans this frame draws open: the selection's, and a deselected capability's while it closes. */
   opened: { elements: OpenedElements; share: number }[];
-  /** The selected capability, element or orphan, drawn at the selected radius; null otherwise. */
+  /** The selected capability, element or orphan, drawn toward the selected radius; null otherwise. */
   selectedId: string | null;
   selectedR: number;
   /** The concept a change just deselected, shrinking back from the selected radius; null otherwise. */
   leavingId: string | null;
   leavingR: number;
+  /** What each mark drew last, so this frame's radius moves from it at no more than `markPxPerMs`. */
+  drawn: Map<string, DrawnRadius>;
+  /** This world's frame count, so a mark knows whether it drew in the frame before. */
+  frame: number;
+  /** This world's drawn names: each one's ink, and those the frame before drew. */
+  names: DrawnMarks;
+  now: number;
+  reducedMotion: boolean;
+  /** Whether a drawn radius still trails the radius its frame asks for, so the loop paints on. */
+  lagging: boolean;
   /** How far the project's own focus shows: its spokes and glow. */
   projectShare: number;
+  /** The opened stars this frame grows; the first is the current selection's when `starNow`. */
+  stars: OpenStarSlot[];
+  starCount: number;
+  starNow: boolean;
+  /** The rooms of the star the reader left while its marks still shrink, else null. */
+  closingRooms: ReadonlyMap<string, StarRoom> | null;
   lineKinds: number;
 }
-const F = { stamp: 0, opened: [] as FrameState["opened"] } as FrameState;
+/** One opened star: rooms in world units (`world`) or screen px; a domain star's fixed disc is the domain's, grown with the zoom. */
+interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; domain: boolean; fixedPx: number }
+interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
+/** Per world: its frame count, and what each mark drew and in which of those frames. */
+interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius>; names: Map<string, DrawnName[]>; namesBefore: DrawnName[]; namesNow: DrawnName[] }
+/**
+ * One name's drawn ink and offset from its mark on one side of the mark, the frame it last drew, the
+ * frame it was last admitted in and the last it was admitted off screen.
+ */
+interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; dx: number; dy: number; at: number; frame: number; admitted: number; offScreen: number; stepped: number; glided: number; glidedAt: number }
+const drawnRadii = new WeakMap<object, DrawnMarks>();
+/** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
+const MARK_STEP_MAX_MS = 34;
+/** Nearer its target than this a radius takes it: a fiftieth of a pixel is not seen. */
+const MARK_REST_PX = 0.02;
+/** Nearer its place than this a gliding name takes it. */
+const NAME_REST_PX = 0.05;
+const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
+const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domain: false, fixedPx: 0 });
+const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null } as FrameState;
 
 /**
  * A domain's hue. The map rests achromatic, so every mark takes the neutral ink until attention
@@ -459,9 +506,183 @@ function radiusNow(id: string): number {
   return F.radii.get(id) ?? radiusAt(id, F.growth);
 }
 
-/** The drawn radius: the selected concept's grows to the selected radius with the attention mix. */
+/**
+ * The radius `id` draws this frame: `target`, approached from the radius and speed the frame before
+ * drew, so a mark grows, shrinks and retargets with no jump in size or in speed. A frame later than
+ * `MARK_STEP_MAX_MS` moves it as that long a frame would. A mark the frame before did not draw (it
+ * was off screen, or the map slept) and reduced motion take the target at once. Settled once per
+ * mark and frame.
+ */
+function drawnRadius(id: string, wanted: number, limit = Infinity): number {
+  // A mark heads for the room it has when that is smaller than its radius, so it settles there.
+  const target = Math.min(wanted, limit);
+  let last = F.drawn.get(id);
+  if (!last) {
+    F.drawn.set(id, (last = { r: target, perMs: 0, at: F.now, frame: F.frame }));
+    return target;
+  }
+  if (last.frame === F.frame) return last.r;
+  const continuing = last.frame === F.frame - 1;
+  const stepMs = Math.min(Math.max(0, F.now - last.at), MARK_STEP_MAX_MS);
+  let r = target;
+  let perMs = 0;
+  if (continuing && !F.reducedMotion && Math.abs(target - last.r) > MARK_REST_PX) {
+    r = dampedStep(last.r, last.perMs, target, stepMs, FLAT_MOTION.riseMs, F.P.markPxPerMs);
+    perMs = DAMPED.perMs;
+    F.lagging = true;
+  }
+  // However its speed carried it, a mark never passes the room it has at this frame's zoom.
+  if (r > limit) {
+    r = limit;
+    perMs = Math.min(perMs, 0);
+  }
+  if (last.r !== r) last.r = r;
+  last.perMs = perMs;
+  last.at = F.now;
+  last.frame = F.frame;
+  return r;
+}
+
+/** The drawn radius: the selected concept's toward the selected radius, an opened star's marks toward the room they have at this frame's zoom. */
 function discRadius(id: string): number {
-  return id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : radiusNow(id);
+  const own = radiusNow(id);
+  if (id === F.selectedId || id === F.leavingId) return noteGrown(id, own, drawnRadius(id, id === F.selectedId ? F.selectedR : F.leavingR));
+  return noteGrown(id, own, drawnRadius(id, openedRadius(id, own), roomLimit(id, own)));
+}
+
+/** The largest radius `id` may draw at this frame's zoom in every star that holds it, open or closing. O(stars). */
+function roomLimit(id: string, own: number): number {
+  let limit = Infinity;
+  for (let i = 0; i < F.starCount; i += 1) {
+    const star = F.stars[i]!;
+    const room = star.rooms.get(id);
+    if (room !== undefined) limit = Math.min(limit, roomLimitPx(own, room, star.world ? F.scale : 1, star.fixedPx, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+  }
+  const closing = F.closingRooms?.get(id);
+  if (closing !== undefined) limit = Math.min(limit, roomLimitPx(own, closing, F.scale, graphDiscRadiusPx("domain", 0, F.P, F.growth), closing.nearestId === null ? 0 : radiusNow(closing.nearestId)));
+  return limit;
+}
+
+/** Marks drawn past their resting radius this frame: the only marks a name gives way to. */
+const grownIds = new Set<string>();
+
+function noteGrown(id: string, rest: number, r: number): number {
+  if (r > rest + MARK_REST_PX) grownIds.add(id);
+  return r;
+}
+
+/** `own` grown by every opened star that holds `id` into the room it has at this frame's zoom. O(stars). */
+function openedRadius(id: string, own: number): number {
+  let r = own;
+  for (let i = 0; i < F.starCount; i += 1) {
+    const star = F.stars[i]!;
+    const room = star.rooms.get(id);
+    if (room === undefined) continue;
+    r = Math.max(r, openRadiusPx(own, room, star.world ? F.scale : 1, star.fixedPx, F.P, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+  }
+  return r;
+}
+
+/** An element dot's drawn radius: a lit dot stands out, and an opened star grows it. */
+function dotRadius(id: string): number {
+  if (id === F.selectedId || id === F.leavingId) return discRadius(id);
+  const rest = radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
+  return noteGrown(id, rest, drawnRadius(id, openedRadius(id, rest), roomLimit(id, rest)));
+}
+
+function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, domain: boolean, fixedPx: number): void {
+  const star = F.stars[F.starCount]!;
+  star.rooms = rooms;
+  star.world = world;
+  star.domain = domain;
+  if (star.fixedPx !== fixedPx) star.fixedPx = fixedPx;
+  F.starCount += 1;
+}
+
+interface FanRooms { world: ReadonlyMap<string, StarRoom> | null; fanned: ReadonlyMap<string, StarRoom> | null; ringPx: number }
+const fanRoomCache = new WeakMap<FlatGraphLayout, Map<string, FanRooms>>();
+
+/** A capability's elements' rooms round its centre: `fan` offsets in px, or their own places in world units. O(n²), n = its elements. */
+function elementRooms(capabilityId: string, fan: OpenedElements | null): ReadonlyMap<string, StarRoom> {
+  const centre = F.layout.positions.get(capabilityId);
+  const points: StarPoint[] = [];
+  for (const id of F.model.capabilityById.get(capabilityId)?.elementIds ?? []) {
+    const offset = fan?.offsets.get(id);
+    const at = F.layout.positions.get(id);
+    if (fan) {
+      if (offset) points.push({ id, kind: "element", x: offset.x, y: offset.y });
+    } else if (at && centre) points.push({ id, kind: "element", x: at.x - centre.x, y: at.y - centre.y });
+  }
+  return starRooms(points, ORIGIN, F.P);
+}
+
+/**
+ * A selected capability's elements' rooms beside its selection ring. Unfanned, they stand in their
+ * own places, kept once per layout in world units; fully fanned, the fan's px places hold at any zoom
+ * and are kept per ring; only a half-closed fan, which moves with the zoom, is measured each frame.
+ */
+function setFanStar(capabilityId: string, fan: OpenedElements | null, ringPx: number): void {
+  let byCapability = fanRoomCache.get(F.layout);
+  if (!byCapability) fanRoomCache.set(F.layout, (byCapability = new Map()));
+  let known = byCapability.get(capabilityId);
+  if (!known) byCapability.set(capabilityId, (known = { world: null, fanned: null, ringPx: 0 }));
+  if (fan === null) {
+    known.world ??= elementRooms(capabilityId, null);
+    setStar(known.world, true, false, ringPx);
+    return;
+  }
+  if (fan.open < 1) {
+    setStar(elementRooms(capabilityId, fan), false, false, ringPx);
+    return;
+  }
+  if (known.fanned === null || known.ringPx !== ringPx) {
+    known.fanned = elementRooms(capabilityId, fan);
+    known.ringPx = ringPx;
+  }
+  setStar(known.fanned, false, false, ringPx);
+}
+
+/** The fan drawn for `capabilityId` this frame, if any. */
+function fanOf(capabilityId: string): OpenedElements | null {
+  for (let i = 0; i < F.opened.length; i += 1) if (F.opened[i]!.elements.capabilityId === capabilityId) return F.opened[i]!.elements;
+  return null;
+}
+
+/** A capability's elements open round its selection ring as it is drawn this frame. */
+function setCapabilityStar(capabilityId: string): void {
+  const ringPx = discRadius(capabilityId) + F.P.selectedRingGapPx + F.P.selectedRingPx;
+  setFanStar(capabilityId, fanOf(capabilityId), ringPx);
+}
+
+let openDomainId: string | null = null;
+/** A domain whose star the reader left while its marks still shrink: they keep within its rooms. */
+let closingDomainId: string | null = null;
+
+/** The domain whose star the last Flat frame drew open, or still drew closing; null when it drew none. */
+export function lastOpenedDomainStar(): string | null {
+  return openDomainId;
+}
+
+/**
+ * This frame's opened star: the focused domain's, or the selected capability's elements. A star
+ * a change just left needs none: its marks shrink from what they drew, at the drawn radius's pace.
+ */
+function planOpenStars(focused: string | null): void {
+  const { model, P, layout } = F;
+  F.starCount = 0;
+  F.starNow = false;
+  const focusedDomain = focused !== null && model.domainById.has(focused) ? focused : null;
+  if (openDomainId !== null && openDomainId !== focusedDomain) closingDomainId = openDomainId;
+  if (closingDomainId === focusedDomain) closingDomainId = null;
+  F.closingRooms = closingDomainId === null ? null : domainStarRooms(model, layout, closingDomainId, P);
+  if (focusedDomain !== null) {
+    setStar(domainStarRooms(model, layout, focusedDomain, P), true, true, graphDiscRadiusPx("domain", 0, P, F.growth));
+    F.starNow = true;
+    openDomainId = focusedDomain;
+  } else if (F.selectedId !== null && model.capabilityById.has(F.selectedId)) {
+    setCapabilityStar(F.selectedId);
+    F.starNow = true;
+  }
 }
 
 function segmentOnScreen(a: Point, b: Point): boolean {
@@ -513,12 +734,115 @@ function loadNameInk(n: PlacedName): void {
 }
 
 /** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
+/**
+ * The record of `n`'s drawn ink in this world, one per side of its mark: a name that changes side
+ * fades out where it stood and in where it goes, and one that moves along its side glides. O(rows
+ * of its concept).
+ */
+function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
+  let rows = F.names.names.get(n.id);
+  if (!rows) F.names.names.set(n.id, (rows = []));
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (row.name.role === n.role && row.wasFocus === wasFocus && sideOf(row.name) === sideOf(n)) return row;
+  }
+  const row: DrawnName = { name: n, wasFocus, alpha: 0, dx: n.dx, dy: n.dy, at: F.now, frame: -1, admitted: -1, offScreen: -1, stepped: -1, glided: -1, glidedAt: F.now };
+  rows.push(row);
+  return row;
+}
+
+/** Which side of its mark a name stands on: right, left, above or below; two names on different sides never overlap. */
+function sideOf(n: PlacedName): number {
+  return n.align === "left" ? 0 : n.align === "right" ? 1 : n.dy < 0 ? 2 : 3;
+}
+
+/**
+ * Moves a name's drawn offset from its mark toward the offset its admission placed it at, at most a
+ * `FLAT_MOTION.riseMs` share of the way per ms, so a name moving along its side glides. Once a frame.
+ */
+function glideName(row: DrawnName): void {
+  if (row.glided === F.frame) return;
+  const continuing = row.glided === F.frame - 1;
+  const stepMs = Math.min(Math.max(0, F.now - row.glidedAt), MARK_STEP_MAX_MS);
+  row.glided = F.frame;
+  row.glidedAt = F.now;
+  const n = row.name;
+  if (!continuing || F.reducedMotion) {
+    row.dx = n.dx;
+    row.dy = n.dy;
+    return;
+  }
+  const share = Math.min(1, stepMs / FLAT_MOTION.riseMs);
+  row.dx = Math.abs(n.dx - row.dx) < NAME_REST_PX ? n.dx : row.dx + (n.dx - row.dx) * share;
+  row.dy = Math.abs(n.dy - row.dy) < NAME_REST_PX ? n.dy : row.dy + (n.dy - row.dy) * share;
+  if (row.dx !== n.dx || row.dy !== n.dy) F.lagging = true;
+}
+
+/**
+ * The ink a name draws this frame: its target approached from what the frame before drew, at most
+ * full ink per `FLAT_MOTION.riseMs` arriving and per `exitMs` leaving. A name the frame before did
+ * not draw starts from nothing, unless it was admitted off screen then (a pan brought it on
+ * screen); reduced motion and the map's first frame take the target at once.
+ */
+function drawnNameInk(row: DrawnName, target: number): number {
+  // A name planned twice in one frame draws the ink its first plan stepped to.
+  if (row.stepped === F.frame) return row.alpha;
+  row.stepped = F.frame;
+  let alpha = target;
+  if (!F.reducedMotion && F.frame > 1) {
+    const continuing = row.frame === F.frame - 1;
+    if (continuing || row.offScreen !== F.frame - 1) {
+      const from = continuing ? row.alpha : 0;
+      const stepMs = continuing ? Math.min(Math.max(0, F.now - row.at), MARK_STEP_MAX_MS) : NAME_FIRST_STEP_MS;
+      alpha = target > from ? Math.min(target, from + stepMs / FLAT_MOTION.riseMs) : Math.max(target, from - stepMs / FLAT_MOTION.exitMs);
+    }
+  }
+  if (alpha !== target) F.lagging = true;
+  row.alpha = alpha;
+  row.at = F.now;
+  if (alpha > 0) {
+    row.frame = F.frame;
+    F.names.namesNow.push(row);
+  }
+  return alpha;
+}
+
 function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: number, wasFocus: boolean): void {
+  const row = drawnNameOf(n, wasFocus);
+  row.admitted = F.frame;
+  row.name = n;
+  placeName(row, alphas, share, false);
+}
+
+/** Plans a name's mark at the ink it draws this frame; `fading` names one no longer admitted, its ink running out. */
+function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: number, fading: boolean): void {
+  const n = row.name;
+  const wasFocus = row.wasFocus;
   const at = screenAt(n.id);
   if (!at || alphas.get(n.id) === 0) return;
-  if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) return;
-  loadNameInk(n);
-  const ink = scratch[0]! * share;
+  if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) {
+    if (!fading) row.offScreen = F.frame;
+    return;
+  }
+  let target = 0;
+  let room = 1;
+  let backed = n.backed === true;
+  if (!fading) {
+    loadNameInk(n);
+    target = scratch[0]! * share;
+  }
+  glideName(row);
+  // A name arrives only where it is clear and leaves at full pace where it is not; the selection's
+  // name stays with it over marks at every zoom, and waits only for its own rows to glide apart.
+  if (target > DRAWN_INK && grownMarks.size > 0) {
+    const held = n.id === F.attention.focusId && !CAPTION_ROWS.has(n.role);
+    room = nameRoom(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, !held) > ROOM_GONE_PX ? 1 : 0;
+    // The selection's name stays put while its star's dots move out past it, so it draws on its plate while one crosses it.
+    if (held && !backed) backed = onGrownDot(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy);
+    target *= room;
+  }
+  if (target <= DRAWN_INK) target = 0;
+  const ink = drawnNameInk(row, target);
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
@@ -527,23 +851,143 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   const color = strong ? inks.nameStrong : inks.name;
   const mark = names.take();
   mark.name = n;
-  const x = at.x + n.dx;
-  const y = at.y + n.dy;
+  const x = at.x + row.dx;
+  const y = at.y + row.dy;
   const halo = n.role === "domain" ? P.domainNameHaloPx : P.nameHaloPx;
   if (mark.x !== x) mark.x = x;
   if (mark.y !== y) mark.y = y;
   if (mark.ink !== ink) mark.ink = ink;
+  if (mark.room !== room) mark.room = room;
+  mark.fading = fading;
+  mark.backed = backed;
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
-  const markR = n.leader ? (n.role === "element" ? radiusNow(n.id) * LIT_DOT_SHARE : discRadius(n.id)) : 0;
+  const markR = n.leader ? (n.role === "element" ? dotRadius(n.id) : discRadius(n.id)) : 0;
   if (mark.markR !== markR) mark.markR = markR;
   L.names.add(mark);
 }
+
+const TITLE_ROLES: ReadonlySet<PlacedName["role"]> = new Set(["project", "domain", "orphans"]);
+
+/**
+ * Titles and the names a lit picture asks for (the selection and its lines' far ends) hold their place
+ * over marks, as admission placed them; a far end's name still gives way to a higher-ranked name, and a
+ * census or reach row is a caption that gives way like any name.
+ */
+function holdsPlace(n: PlacedName): boolean {
+  return TITLE_ROLES.has(n.role) || ((n.role === "capability" || n.role === "element") && F.attention.named.has(n.id));
+}
+
+const NAME_RANKS = 5;
+const nameRanks: number[] = [];
+/** This frame's admitted names, each on the side it draws: an open star's member may trade its side for one clear of chrome. */
+const plannedNames: PlacedName[] = [];
+
+/** Which names win where two would cross: places held, then names the lit picture asks for, capabilities, elements, and captions last. */
+function nameRank(n: PlacedName): number {
+  if (holdsPlace(n)) return n.id === F.attention.focusId || TITLE_ROLES.has(n.role) ? 0 : 1;
+  if (n.role !== "capability" && n.role !== "element") return 4;
+  return n.role === "capability" ? 2 : 3;
+}
+/** This frame's grown discs, then its grown dots from `grownDiscCount` on. */
+const grownMarks = new FrameList<Disc | Dot>();
+let grownDiscCount = 0;
+
+/** This frame's discs and dots an opened star or a selection grew, gathered once before the names. O(marks). */
+function collectGrownMarks(): void {
+  grownMarks.restart();
+  grownDiscCount = 0;
+  if (grownIds.size === 0) return;
+  for (let i = 0; i < L.discs.size; i += 1) if (grownIds.has(L.discs.items[i]!.id)) grownMarks.add(L.discs.items[i]!);
+  grownDiscCount = grownMarks.size;
+  for (let i = 0; i < L.dots.size; i += 1) if (grownIds.has(L.dots.items[i]!.id)) grownMarks.add(L.dots.items[i]!);
+}
+
+/**
+ * The air, in px, between a name's glyphs where this frame draws them, from `x`, `y`, and the names
+ * drawn before it, less the pad two names keep; with `others`, also the nearest disc not its own and
+ * grown dot (none for a backed name, whose plate covers them). Rows of one concept count only while
+ * one of them glides off its place, as a domain's census and reach rows share one slot. Only while
+ * marks grow: O(discs + domains + grown dots + names) per name.
+ */
+function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolean): number {
+  const pad = F.P.namePadPx;
+  const minX = x + n.box.minX + pad;
+  const maxX = x + n.box.maxX - pad;
+  const minY = y + n.box.minY + pad;
+  const maxY = y + n.box.maxY - pad;
+  let room = Infinity;
+  if (others) {
+    // Domains and the project draw from their own lists; a name gives way to them like any disc.
+    for (const list of discLists) {
+      for (let i = 0; i < list.size; i += 1) {
+        const m = list.items[i]!;
+        if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+      }
+    }
+    if (n.backed !== true) {
+      for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
+        const m = grownMarks.items[i]!;
+        if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+      }
+    }
+  }
+  const gliding = Math.abs(x - at.x) > NAME_REST_PX || Math.abs(y - at.y) > NAME_REST_PX;
+  for (let i = 0; i < L.names.size; i += 1) {
+    const o = L.names.items[i]!;
+    const ox = o.x - o.name.dx;
+    const oy = o.y - o.name.dy;
+    if (o.name.id === n.id && (CAPTION_ROWS.has(n.role) && CAPTION_ROWS.has(o.name.role) || (!gliding && Math.abs(ox - at.x) <= NAME_REST_PX && Math.abs(oy - at.y) <= NAME_REST_PX))) continue;
+    if (!others && o.name.id !== n.id) continue;
+    const apart = Math.max(ox + o.name.box.minX + pad - maxX, minX - (ox + o.name.box.maxX - pad), oy + o.name.box.minY + pad - maxY, minY - (oy + o.name.box.maxY - pad));
+    room = Math.min(room, apart - pad);
+  }
+  return room;
+}
+
+/** Whether a name's glyphs drawn from `x`, `y` cross a grown dot not its own this frame. O(grown dots). */
+function onGrownDot(n: PlacedName, x: number, y: number): boolean {
+  const pad = F.P.namePadPx;
+  const minX = x + n.box.minX + pad;
+  const maxX = x + n.box.maxX - pad;
+  const minY = y + n.box.minY + pad;
+  const maxY = y + n.box.maxY - pad;
+  for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
+    const m = grownMarks.items[i]!;
+    if (m.id !== n.id && Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r <= ROOM_GONE_PX) return true;
+  }
+  return false;
+}
+
+/** Every list a disc is drawn from. */
+const discLists: readonly FrameList<Disc>[] = [L.discs, L.domains, L.project];
+
+/** A domain's census and reach rows: one slot under its name, cross-fading. */
+const CAPTION_ROWS: ReadonlySet<PlacedName["role"]> = new Set(["units", "reach"]);
 
 /** Whether a concept's block of names may draw: its concept is not placed this frame, it is the selection, or every line clears the chrome. */
 function blockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[], selectedId: string | null): boolean {
   const at = screenAt(list[from]!.id);
   return !at || nameBlockDraws(list, from, to, at.x, at.y, chrome, selectedId);
+}
+
+/** Whether every line of a block stands inside the free map by the frame margin, as a framed star does. O(block). */
+function blockInsideFree(list: readonly PlacedName[], from: number, to: number): boolean {
+  const at = screenAt(list[from]!.id);
+  if (!at) return true;
+  const f = F.input.freeRect;
+  const m = F.P.frameMarginPx;
+  const pad = F.P.namePadPx;
+  for (let i = from; i < to; i += 1) {
+    const b = list[i]!.box;
+    if (at.x + b.minX + pad < f.minX + m || at.x + b.maxX - pad > f.maxX - m || at.y + b.minY + pad < f.minY + m || at.y + b.maxY - pad > f.maxY - m) return false;
+  }
+  return true;
+}
+
+/** Whether an opened domain star's member block may draw: clear of the chrome and inside the free map. */
+function memberBlockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[]): boolean {
+  return blockShows(list, from, to, chrome, null) && blockInsideFree(list, from, to);
 }
 
 /** The share of its full radius a capability disc is drawn at, 1 for a disc no crowd shrank. */
@@ -679,14 +1123,23 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   const alphas = cacheFor(alphaCache, F.layout);
   loadMarkInk(it.direct ? it.domainId : it.id);
   const itemInk = scratch[0]!;
+  const itemR = it.direct ? 0 : discRadius(it.id);
   for (let i = 0; i < it.elementIds.length; i += 1) {
     const el = it.elementIds[i]!;
     const lit = attention.lit?.has(el) === true;
-    const shown = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(el), F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
+    const uncovered = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(el), F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
+    if (uncovered <= DRAWN_INK) continue;
+    const elAt = screenOf(el);
+    const visible = onScreen(elAt);
+    // A dot off screen keeps no radius, so it neither steps nor keeps the loop awake.
+    const r = visible ? dotRadius(el) : 0;
+    // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
+    const coverR = !visible || el === F.selectedId || el === F.leavingId ? 0 : itemR;
+    const clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
+    const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
     alphas.set(el, 1);
     shownElements.add(el);
-    const elAt = screenOf(el);
     loadMarkInk(el);
     const elInk = scratch[0]!;
     if (!contextMode && segmentOnScreen(itemAt, elAt)) {
@@ -696,7 +1149,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
       if (s.spoke) {
         // A spoke starts outside the selection ring, so the ring stays one unbroken circle.
         const length = Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) || 1;
-        const start = Math.min(1, ((discRadius(it.id) + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
+        const start = Math.min(1, ((itemR + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
         s.x0 = itemAt.x + (elAt.x - itemAt.x) * start;
         s.y0 = itemAt.y + (elAt.y - itemAt.y) * start;
       }
@@ -704,10 +1157,10 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
       if (s.alpha !== alpha) s.alpha = alpha;
       L.segments.add(s);
     }
-    if (onScreen(elAt)) {
+    if (visible) {
       const d = dots.take();
-      const r = el === F.selectedId || el === F.leavingId ? discRadius(el) : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
       const alpha = DOT_ALPHA * shown;
+      d.id = el;
       if (d.x !== elAt.x) d.x = elAt.x;
       if (d.y !== elAt.y) d.y = elAt.y;
       if (d.r !== r) d.r = r;
@@ -736,6 +1189,16 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.contextMode = contextMode; F.scale = input.scale; F.originX = origin.x; F.originY = origin.y;
   F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
   F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth, input.scale); F.orphans = orphansOf(layout);
+  let drawn = drawnRadii.get(input.worldKey);
+  if (!drawn) drawnRadii.set(input.worldKey, (drawn = { frame: 0, marks: new Map(), names: new Map(), namesBefore: [], namesNow: [] }));
+  drawn.frame += 1;
+  const before = drawn.namesBefore;
+  drawn.namesBefore = drawn.namesNow;
+  drawn.namesNow = before;
+  drawn.namesNow.length = 0;
+  F.names = drawn;
+  F.drawn = drawn.marks; F.frame = drawn.frame; F.now = input.now; F.reducedMotion = input.reducedMotion; F.lagging = false;
+  grownIds.clear();
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
   stepGrowthNow[0] = stepGrowth;
@@ -751,26 +1214,23 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.evidence = measured ? evidence : null;
   const selected = contextMode ? null : input.focusedNodeId;
   F.selectedId = selected !== null && selected !== model.projectId && !model.domainById.has(selected) ? selected : null;
-  if (F.selectedId !== null) {
-    const own = radiusNow(F.selectedId);
-    const grown = selectedDiscRadius(own, P, growth);
-    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
-    const r = own + (grown - own) * share;
-    if (F.selectedR !== r) F.selectedR = r;
-  }
   F.opened.length = 0;
-  if (F.selectedId !== null) {
-    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
-    const elements = openedElements(model, layout, F.selectedId, P, selectedDiscRadius(radiusNow(F.selectedId), P, growth), input.scale, growth);
-    if (elements !== null && share > 0) F.opened.push({ elements, share });
-  }
+  F.starCount = 0;
   const left = motion.previous.focusId;
   F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
+  // The selection never stands in its own star, so its radius asks for the selected radius alone; its fan rings what it draws.
+  if (F.selectedId !== null) {
+    const r = selectedDiscRadius(radiusNow(F.selectedId), P, growth);
+    if (F.selectedR !== r) F.selectedR = r;
+    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
+    const elements = openedElements(model, layout, F.selectedId, P, discRadius(F.selectedId), input.scale, growth);
+    if (elements !== null && share > 0) F.opened.push({ elements, share });
+  }
+  planOpenStars(input.focusedNodeId);
   if (F.leavingId !== null) {
-    const own = radiusNow(F.leavingId);
-    const r = own + (selectedDiscRadius(own, P, growth) - own) * (1 - mix);
+    const r = openedRadius(F.leavingId, radiusNow(F.leavingId));
     if (F.leavingR !== r) F.leavingR = r;
-    const elements = openedElements(model, layout, F.leavingId, P, selectedDiscRadius(own, P, growth), input.scale, growth);
+    const elements = openedElements(model, layout, F.leavingId, P, discRadius(F.leavingId), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
@@ -882,7 +1342,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     }
   } else if (F.leavingId !== null && !contextMode) {
     const at = screenAt(F.leavingId);
-    if (at) plan.selection = ring(selectionRing, at.x, at.y, F.leavingR + P.selectedRingGapPx, 1 - mix, inks.project);
+    if (at) plan.selection = ring(selectionRing, at.x, at.y, discRadius(F.leavingId) + P.selectedRingGapPx, 1 - mix, inks.project);
   }
 
   const agentId = contextMode ? null : input.agentFocusNodeId;
@@ -896,19 +1356,52 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const admitUnder = (a: GraphAttention) => admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
-    lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
+    lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, openStarId: F.starNow ? input.focusedNodeId : null, agentFocusId: contextMode ? null : input.agentFocusNodeId,
     selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
     discRadius: stepRadius, elementSpacingPx, hubCaption: unmeasuredLine,
   });
+  collectGrownMarks();
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
   const chrome = input.nameObstacles ?? NO_BOXES;
+  // A name gives way to the names drawn before it, so while names give way they are drawn in the
+  // order they rank; with nothing grown no name gives way, and admission's order stands. O(names).
+  const ranked = grownMarks.size > 0;
+  const ranks = nameRanks;
+  const planned = plannedNames;
+  ranks.length = admission.names.length;
+  planned.length = admission.names.length;
+  const starId = F.starNow && input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId) ? input.focusedNodeId : null;
   for (let nIndex = 0; nIndex < admission.names.length;) {
     const end = nameBlockEnd(admission.names, nIndex);
-    if (blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId)) {
-      for (let i = nIndex; i < end; i += 1) planName(admission.names[i]!, alphas, admission.names[i]!.id === leaving ? mix : 1, false);
+    const id = admission.names[nIndex]!.id;
+    const member = starId !== null && model.capabilityById.has(id) && model.domainOf.get(id) === starId;
+    let show = member ? memberBlockShows(admission.names, nIndex, end, chrome) : blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
+    planned[nIndex] = admission.names[nIndex]!;
+    // An open star's member whose side runs under chrome or out of the free map takes the best of its other sides that clears it.
+    const alternates = show ? undefined : admission.alternates.get(id);
+    if (alternates !== undefined && end === nIndex + 1) {
+      for (let k = 0; k < alternates.length && !show; k += 1) {
+        if (memberBlockShows(alternates, k, k + 1, chrome)) {
+          planned[nIndex] = alternates[k]!;
+          show = true;
+        }
+      }
+    }
+    for (let i = nIndex; i < end; i += 1) {
+      const n = i === nIndex ? planned[i]! : (planned[i] = admission.names[i]!);
+      if (!ranked && show) planName(n, alphas, n.id === leaving ? mix : 1, false);
+      ranks[i] = ranked && show ? nameRank(n) : -1;
     }
     nIndex = end;
+  }
+  if (ranked) {
+    for (let rank = 0; rank < NAME_RANKS; rank += 1) {
+      for (let i = 0; i < planned.length; i += 1) {
+        const n = planned[i]!;
+        if (ranks[i] === rank) planName(n, alphas, n.id === leaving ? mix : 1, false);
+      }
+    }
   }
   // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
   if (leaving !== null) {
@@ -920,6 +1413,12 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       }
       nIndex = end;
     }
+  }
+  // A name the frame before drew that is no longer admitted keeps its place while its ink runs out.
+  const drewBefore = F.names.namesBefore;
+  for (let i = 0; i < drewBefore.length; i += 1) {
+    const row = drewBefore[i]!;
+    if (row.frame !== F.frame && row.admitted !== F.frame) placeName(row, alphas, 1, true);
   }
   const hub = plan.project[0];
   if (hub) {
@@ -969,6 +1468,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const pad = P.namePadPx;
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
     const n = plan.names[nIndex]!;
+    if (n.fading) continue;
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const label = labelBoxPool.take();
@@ -1003,7 +1503,14 @@ function hubCaptionFont(px: number, family: string): string {
 const stepGrowthNow = new Float64Array(2);
 const LINE_TRIMS = new Float64Array(2);
 function stepRadius(id: string): number {
-  return radiusOf(id, stepGrowthNow[0]!, stepGrowthNow[1]!);
+  const own = radiusOf(id, stepGrowthNow[0]!, stepGrowthNow[1]!);
+  const star = F.stars[0]!;
+  const room = F.starNow ? star.rooms.get(id) : undefined;
+  if (room === undefined) return own;
+  // Names stand where the star has fully opened, so they never move as it opens.
+  const nearestOwn = room.nearestId === null ? 0 : radiusOf(room.nearestId, stepGrowthNow[0]!, stepGrowthNow[1]!);
+  const fixedPx = star.domain ? graphDiscRadiusPx("domain", 0, F.P, stepGrowthNow[0]!) : star.fixedPx;
+  return openRadiusPx(own, room, star.world ? stepGrowthNow[1]! : 1, fixedPx, F.P, nearestOwn);
 }
 
 /**
@@ -1370,7 +1877,7 @@ function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], gr
   let feathered = false;
   for (let nIndex = 0; nIndex < marks.length; nIndex += 1) {
     const n = marks[nIndex]!;
-    if (n.name.backed !== true) continue;
+    if (!n.backed) continue;
     if (!feathered) {
       feathered = true;
       ctx.save();
@@ -1479,12 +1986,14 @@ const pool = emptyDialFrameMarks();
 type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
-const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false, alpha: 1, room: 1, fading: false, side: 0 }));
+const probeGlyphs = markPool<GlyphMark>(() => ({ id: "", kind: "element", x: 0, y: 0, r: 0, egoState: "normal", fill: null, stroke: null, hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false, grown: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
 const probeStripList = new FrameList(pool.strips);
 const probeTextList = new FrameList(pool.texts);
-const UNUSED_PROBE_LISTS = [pool.squares, pool.ticks, pool.rails, pool.glyphs, pool.numerals, pool.leaders, pool.plates, pool.extraTexts];
+const probeGlyphList = new FrameList(pool.glyphs);
+const UNUSED_PROBE_LISTS = [pool.squares, pool.ticks, pool.rails, pool.numerals, pool.leaders, pool.plates, pool.extraTexts];
 const arcKeys: string[] = [];
 
 function inkIndex(ink: string): number {
@@ -1541,6 +2050,8 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   probeDiscList.restart();
   probeStripList.restart();
   probeTextList.restart();
+  probeGlyphList.restart();
+  probeGlyphs.reset();
   probeDiscs.reset();
   probeStrips.reset();
   probeTexts.reset();
@@ -1552,6 +2063,17 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
     const d = plan.domains[dIndex]!;
     probeDisc(d, fill, ground, tokens);
+  }
+  // An element's dot is the probe's glyph: its drawn centre and radius.
+  for (let dIndex = 0; dIndex < plan.dots.length; dIndex += 1) {
+    const d = plan.dots[dIndex]!;
+    const glyph = probeGlyphs.take();
+    glyph.id = d.id;
+    if (glyph.x !== d.x) glyph.x = d.x;
+    if (glyph.y !== d.y) glyph.y = d.y;
+    if (glyph.r !== d.r) glyph.r = d.r;
+    glyph.grown = grownIds.has(d.id);
+    probeGlyphList.add(glyph);
   }
   const arcInk = inkIndex(tokens.inks.arc);
   const reachInk = inkIndex(tokens.inks.reach);
@@ -1570,7 +2092,11 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (text.x !== n.x) text.x = n.x;
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
-    text.backed = n.name.backed === true;
+    text.backed = n.backed;
+    text.fading = n.fading;
+    text.side = sideOf(n.name);
+    if (text.alpha !== n.ink) text.alpha = n.ink;
+    if (text.room !== n.room) text.room = n.room;
     setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
     probeTextList.add(text);
   }
@@ -1578,6 +2104,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   probeDiscList.seal();
   probeStripList.seal();
   probeTextList.seal();
+  probeGlyphList.seal();
 }
 
 const UNSETTLED_MIX = 0.999;
@@ -1610,6 +2137,9 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   motion.advance(attention, input.now, input.reducedMotion, (a) => wavesOf(a, layout));
   const mix = motion.settled ? 1 : Math.min(motion.progress, UNSETTLED_MIX);
   const built = buildPlan(input, tokens, motion);
+  // A closing domain star stays the open one until its marks have shrunk, so a member pressed meanwhile keeps its zoom.
+  if (!F.lagging && !(input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId))) openDomainId = null;
+  if (!F.lagging) closingDomainId = null;
   const ground = input.mapTokens.canvasBgNear;
   const warning = tokens.inks.warning;
   if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };
@@ -1619,7 +2149,7 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const drawn = drawnFlowKeys.items;
   const result: DialFrameResult = {
     branchScene: undefined,
-    branchMembersAnimating: motion.active,
+    branchMembersAnimating: motion.active || F.lagging,
     contextOnly: contextMode,
     drawnCount: built.plan.discs.length + built.plan.domains.length + built.plan.dots.length + built.plan.project.length,
     tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows, labelBoxes: built.labelBoxes,

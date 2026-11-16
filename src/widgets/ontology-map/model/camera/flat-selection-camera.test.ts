@@ -53,6 +53,16 @@ describe("flat selection camera", () => {
     expect(deselectCamera(null, view, 0, false)).toEqual({ kind: "overview" });
     expect(deselectCamera(null, view, 0, true)).toEqual({ kind: "stay" });
   });
+
+  it("a chain begun on the overview fit refits the overview on deselect, unless the reader moved the view", () => {
+    const landed = { tx: 90, ty: 10, tscale: 1.6 };
+    const first = recordSelectionCamera(null, { slug: "a", framed: false, current: view, landed: { tx: 50, ty: 0, tscale: 1 }, gesture: 0, fromOverview: true });
+    const linked = recordSelectionCamera(first, { slug: "b", framed: true, current: { tx: 50, ty: 0, tscale: 1 }, landed, gesture: 0 });
+    expect(deselectCamera(linked, landed, 0, false)).toEqual({ kind: "refit" });
+    expect(deselectCamera(linked, landed, 1, false)).toEqual({ kind: "stay" });
+    const clicked = recordSelectionCamera(null, { slug: "a", framed: false, current: view, landed: view, gesture: 0, fromOverview: true });
+    expect(deselectCamera(clicked, view, 0, false)).toEqual({ kind: "refit" });
+  });
 });
 
 describe("flat selection framing", () => {

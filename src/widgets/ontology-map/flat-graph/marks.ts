@@ -26,6 +26,8 @@ const CROWD_DOT_MIN_PX = 0.9;
 
 /** The key under which the concepts with no domain share one room. */
 export const ORPHAN_ROOM = "";
+/** A lit element dot's radius, as a multiple of its resting one. */
+export const LIT_DOT_SHARE = 1.5;
 
 const discRoomCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
 
