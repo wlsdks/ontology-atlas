@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { useStageGraph } from '../lib/use-stage-graph';
 import { LOOP_CHANGED, LOOP_PROPOSAL, LOOP_READ } from '../model/loop-cast';
+import { setMotionPaused } from '../lib/motion-pause';
 import { LoopSection, StartSection } from './LoopSection';
 
 const ROOT = path.resolve(__dirname, '../../../..');
@@ -152,6 +153,15 @@ describe('the loop cards’ scene', () => {
     act(() => document.dispatchEvent(new Event('visibilitychange')));
     expect(cards).toHaveAttribute('data-gateway-scene-motion', 'paused');
     hidden.mockRestore();
+  });
+
+  it('holds still while the page’s motion is paused, in view or not', () => {
+    const { deliver, cards } = watch();
+    act(() => deliver[0]([{ isIntersecting: true }]));
+    act(() => setMotionPaused(true));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'paused');
+    act(() => setMotionPaused(false));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'running');
   });
 
   it('never starts under reduced motion', () => {

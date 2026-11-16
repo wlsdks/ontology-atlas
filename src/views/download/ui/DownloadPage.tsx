@@ -34,6 +34,8 @@ import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
+import { MotionToggle } from './MotionToggle';
+import { useMotionPaused } from '../lib/motion-pause';
 import { SectionIntro } from './SectionIntro';
 import { ClosingConstellation } from './ClosingConstellation';
 import { useInViewMotion } from '../lib/use-in-view-motion';
@@ -135,6 +137,7 @@ export function DownloadPage() {
                 </a>
                 <span aria-hidden>·</span>
                 <span className="font-mono">{tFooter('stack')}</span>
+                <MotionToggle testId="gateway-footer-motion-toggle" className="gap-1.5 sm:ml-auto" />
               </div>
               {/* Nominative use; marks follow the stricter rule in docs/features/agents.md. */}
               <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
@@ -174,6 +177,7 @@ function HeroSection({
     return () => cancelAnimationFrame(id);
   }, []);
   const moru = useTranslations('moru');
+  const motionPaused = useMotionPaused();
 
   /**
    * Every branch keeps all four destinations reachable. Windows' unsigned status is stated before
@@ -201,6 +205,7 @@ function HeroSection({
         <div className={cn(rise('gateway-t240'), 'gateway-hero-moru flex justify-center')}>
           <BrandCompanion
             context="welcome"
+            stilled={motionPaused}
             labels={{
               pause: moru('pause'),
               resume: moru('resume'),
@@ -234,6 +239,7 @@ function HeroSection({
                 <span>{t('news', { tag: MACOS_RELEASE.tag })}</span>
               </Link>
             ) : null}
+            <MotionToggle testId="gateway-motion-toggle" className={HERO_CHIP} />
           </div>
 
           <h1
