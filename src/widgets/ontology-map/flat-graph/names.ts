@@ -3,7 +3,7 @@ import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { domainPartners } from "../model/containment-tree";
 import type { GraphLine } from "./attention";
-import { arcPathInto, crowdShare, emptyArcPath, litLineTrimsInto, ORPHAN_ROOM } from "./marks";
+import { arcPathInto, crowdShare, emptyArcPath, LIT_DOT_SHARE, litLineTrimsInto, ORPHAN_ROOM } from "./marks";
 import { openedElements, type OpenedElements } from "./open";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
@@ -716,18 +716,18 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       litMarks.add(box);
     }
   }
-  // Elements an opened star grows past their dot: a name takes a side clear of them when one is free. O(elements).
-  const dotPx = tokens.elementDotPx * input.growth;
-  const grownDots = new Occupancy(CELL_PX / scale);
-  const keepOffGrownDot = (id: string) => {
-    const r = input.discRadius(id);
+  // While a star is open, every element dot at the radius it draws once the star has opened, a lit
+  // dot standing out: a name takes a side clear of them when one is free. O(elements).
+  const starDots = new Occupancy(CELL_PX / scale);
+  const keepOffDot = (id: string) => {
+    const r = input.discRadius(id) * (input.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
     const at = layout.positions.get(id);
-    if (r <= dotPx || !at || fan?.offsets.has(id)) return;
-    grownDots.add(worldBox(at, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
+    if (!at || fan?.offsets.has(id)) return;
+    starDots.add(worldBox(at, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
   };
   if ((input.openStarId ?? null) !== null) {
-    for (const id of model.capabilityOf.keys()) keepOffGrownDot(id);
-    for (const d of model.domains) for (const id of d.directElementIds) keepOffGrownDot(id);
+    for (const id of model.capabilityOf.keys()) keepOffDot(id);
+    for (const d of model.domains) for (const id of d.directElementIds) keepOffDot(id);
   }
   const place = (n: PlacedName) => {
     const at = anchor(n.id);
@@ -781,6 +781,11 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     return b.minX >= e.minX - reach && b.maxX <= e.maxX + reach && b.minY >= e.minY - reach && b.maxY <= e.maxY + reach;
   });
   const hits = (on: StepOccupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(at, n.box));
+  // Clear of every disc and dot at the radius it stands at once the step's star has opened, across the whole step.
+  const offAllMarks = (at: Point, group: readonly PlacedName[]) => !group.some((n) => stepScales.some((s) => {
+    const box = worldBox(at, n.box, s);
+    return marks.hits(box) || starDots.hits(box);
+  }));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
   const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
     !group.some((n) => titles.hits(at, grown(n.box, gap)));
@@ -808,8 +813,9 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
     const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
-    const offGrownDots = (group: readonly PlacedName[]) => free(group) && !group.some((n) => grownDots.hits(worldBox(at, n.box, scale)));
-    let fit = (chooseSide(tries, offGrownDots, (group) => lit && crossed(at, group)) ?? chooseSide(tries, free, (group) => lit && crossed(at, group)))?.side;
+    const offStarDots = (group: readonly PlacedName[]) => free(group) && !group.some((n) => starDots.hits(worldBox(at, n.box, scale)));
+    // Only a forced name may stand on an element dot of an open star.
+    let fit = (chooseSide(tries, offStarDots, (group) => lit && crossed(at, group)) ?? (force ? chooseSide(tries, free, (group) => lit && crossed(at, group)) : null))?.side;
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!fit && force) {
       const clearNow = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
@@ -817,10 +823,11 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       fit = chooseSide(tries, clearNow, (group) => lit && crossed(at, group))?.side;
     }
     // A name carried up from the step below may stand beside a disc that drifted onto its side, never on another name.
-    if (!fit && force && !mayOverprint) fit = chooseSide(tries, (group) => inside(at, group) && !hits(words, at, group) && leaderClear(group), () => false)?.side;
+    const apartFromNames = (group: readonly PlacedName[]) => inside(at, group) && !hits(words, at, group) && leaderClear(group);
+    if (!fit && force && !mayOverprint) fit = (chooseSide(tries, (group) => apartFromNames(group) && offAllMarks(at, group), () => false) ?? chooseSide(tries, apartFromNames, () => false))?.side;
     if (!fit && mayOverprint && tries.length > 0) {
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && leaderClear(group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
-      const offMarks = cand.element ? apart.filter((group) => !group.some((n) => marks.hits(worldBox(at, n.box, scale)))) : apart;
+      const offMarks = apart.filter((group) => offAllMarks(at, group));
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
       const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
@@ -867,6 +874,11 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   }
   if (polylines.length > 0) {
     for (const n of names) if (input.lit!.has(n.id) && crossed(anchor(n.id), [n])) n.backed = true;
+  }
+  // A held or fanned name that found no side clear of every mark draws on the canvas ground over the mark it crosses.
+  for (const n of names) {
+    const keeps = n.id === input.focusId || input.named.has(n.id) || fan?.offsets.has(n.id) === true;
+    if ((n.role === "capability" || n.role === "element") && keeps && !offAllMarks(anchor(n.id), [n])) n.backed = true;
   }
   const anchors = new Map<string, Point>();
   if (fan) for (const id of fan.offsets.keys()) anchors.set(id, anchor(id));

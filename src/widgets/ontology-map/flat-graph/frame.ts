@@ -12,7 +12,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
-  arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+  arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, LIT_DOT_SHARE, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { DAMPED, dampedStep, FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -38,7 +38,6 @@ const ROOM_GONE_PX = -0.5;
 const ROOM_WHOLE_PX = 1.5;
 /** The step a name that starts to arrive takes in its first frame: one 60 Hz frame. */
 const NAME_FIRST_STEP_MS = 1000 / 60;
-const LIT_DOT_SHARE = 1.5;
 /** World units a fanned element may sit from its laid-out place before it counts as dragged. */
 const DRAG_SLACK = 1e-6;
 /** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
@@ -385,8 +384,8 @@ interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; d
 interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
 /** Per world: its frame count, and what each mark drew and in which of those frames. */
 interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius>; names: Map<string, DrawnName[]>; namesBefore: DrawnName[]; namesNow: DrawnName[] }
-/** One name's drawn ink, the frame it last drew and the frame it was last admitted in. */
-interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number }
+/** One name's drawn ink, the frame it last drew, the frame it was last admitted in and the last it was admitted off screen. */
+interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number; offScreen: number }
 const drawnRadii = new WeakMap<object, DrawnMarks>();
 /** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
 const MARK_STEP_MAX_MS = 34;
@@ -739,7 +738,7 @@ function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
     const row = rows[i]!;
     if (row.name.role === n.role && row.wasFocus === wasFocus) return row;
   }
-  const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1 };
+  const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1, offScreen: -1 };
   rows.push(row);
   return row;
 }
@@ -747,14 +746,14 @@ function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
 /**
  * The ink a name draws this frame: its target approached from what the frame before drew, at most
  * full ink per `FLAT_MOTION.riseMs` arriving and per `exitMs` leaving. A name the frame before did
- * not draw starts from nothing, unless it was admitted then (a pan brought it on screen); reduced
- * motion and the map's first frame take the target at once.
+ * not draw starts from nothing, unless it was admitted off screen then (a pan brought it on
+ * screen); reduced motion and the map's first frame take the target at once.
  */
-function drawnNameInk(row: DrawnName, target: number, wasAdmitted: boolean): number {
+function drawnNameInk(row: DrawnName, target: number): number {
   let alpha = target;
   if (!F.reducedMotion && F.frame > 1) {
     const continuing = row.frame === F.frame - 1;
-    if (continuing || !wasAdmitted) {
+    if (continuing || row.offScreen !== F.frame - 1) {
       const from = continuing ? row.alpha : 0;
       const stepMs = continuing ? Math.min(Math.max(0, F.now - row.at), MARK_STEP_MAX_MS) : NAME_FIRST_STEP_MS;
       alpha = target > from ? Math.min(target, from + stepMs / FLAT_MOTION.riseMs) : Math.max(target, from - stepMs / FLAT_MOTION.exitMs);
@@ -772,19 +771,21 @@ function drawnNameInk(row: DrawnName, target: number, wasAdmitted: boolean): num
 
 function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: number, wasFocus: boolean): void {
   const row = drawnNameOf(n, wasFocus);
-  const wasAdmitted = row.admitted === F.frame - 1;
   row.admitted = F.frame;
   row.name = n;
-  placeName(row, alphas, share, wasAdmitted, false);
+  placeName(row, alphas, share, false);
 }
 
 /** Plans a name's mark at the ink it draws this frame; `fading` names one no longer admitted, its ink running out. */
-function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: number, wasAdmitted: boolean, fading: boolean): void {
+function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: number, fading: boolean): void {
   const n = row.name;
   const wasFocus = row.wasFocus;
   const at = screenAt(n.id);
   if (!at || alphas.get(n.id) === 0) return;
-  if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) return;
+  if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) {
+    if (!fading) row.offScreen = F.frame;
+    return;
+  }
   let target = 0;
   let room = 1;
   if (!fading) {
@@ -796,7 +797,7 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
     }
     if (target <= DRAWN_INK) target = 0;
   }
-  const ink = drawnNameInk(row, target, wasAdmitted);
+  const ink = drawnNameInk(row, target);
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
@@ -1297,7 +1298,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const drewBefore = F.names.namesBefore;
   for (let i = 0; i < drewBefore.length; i += 1) {
     const row = drewBefore[i]!;
-    if (row.frame !== F.frame && row.admitted !== F.frame) placeName(row, alphas, 1, false, true);
+    if (row.frame !== F.frame && row.admitted !== F.frame) placeName(row, alphas, 1, true);
   }
   const hub = plan.project[0];
   if (hub) {

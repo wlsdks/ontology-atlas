@@ -178,7 +178,10 @@ function smoothness(frames: readonly Map<string, Mark>[]): { pxPerMs: number; wo
   return { pxPerMs, worst, overlaps };
 }
 
-/** Every drawn name in `ids` whose glyphs cross another name's or a disc or dot not its own, in the last painted frame. */
+/**
+ * Every drawn name in `ids` whose glyphs cross another name's or a disc or dot not its own, in the
+ * last painted frame; a backed name draws on the canvas ground, so only another name crowds it.
+ */
 function crowdedNames(ids: ReadonlySet<string>): string[] {
   const probe = describeLastDialFrame(W, H)!;
   const marks = [...probe.discs, ...probe.glyphs].filter((m) => m.id !== null && ids.has(m.id));
@@ -187,7 +190,7 @@ function crowdedNames(ids: ReadonlySet<string>): string[] {
   names.forEach((n, i) => {
     const b = n.box;
     for (const m of marks) {
-      if (m.id !== n.id && Math.hypot(Math.max(b.minX - m.x, 0, m.x - b.maxX), Math.max(b.minY - m.y, 0, m.y - b.maxY)) < m.r - 0.5) crowded.push(`${n.text} on ${m.id}`);
+      if (m.id !== n.id && !n.backed && Math.hypot(Math.max(b.minX - m.x, 0, m.x - b.maxX), Math.max(b.minY - m.y, 0, m.y - b.maxY)) < m.r - 0.5) crowded.push(`${n.text} on ${m.id}`);
     }
     for (const o of names.slice(i + 1)) {
       if (Math.min(b.maxX, o.box.maxX) > Math.max(b.minX, o.box.minX) && Math.min(b.maxY, o.box.maxY) > Math.max(b.minY, o.box.minY)) crowded.push(`${n.text} on ${o.text}`);
@@ -229,6 +232,27 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
     const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 3.6, 3.6, FRAME_MS);
     const pinched = framesUntilSettled(camera, { focusedNodeId: domainId }, star, opened.end + FRAME_MS, 3.6, 0.9, 300);
     expect(smoothness(pinched.frames).overlaps.slice(0, 4)).toEqual([]);
+  },
+);
+
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "names the opened %s star, and each member pressed in it, at rest without a name on another name or on a mark not its own",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const crowded: string[] = [];
+    let backed = 0;
+    for (const member of capabilities) {
+      const camera = cameraOn(domainId, {});
+      const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+      const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 3.6, 600);
+      if (member === capabilities[0]) crowded.push(...crowdedNames(star).map((c) => `opened: ${c}`));
+      framesUntilSettled(camera, { focusedNodeId: member }, star, opened.end + FRAME_MS, 3.6, 3.6, FRAME_MS);
+      crowded.push(...crowdedNames(star).map((c) => `${member}: ${c}`));
+      backed += describeLastDialFrame(W, H)!.texts.filter((t) => t.backed && t.id !== null && star.has(t.id) && (t.role === "capability" || t.role === "element")).length;
+    }
+    console.log(`[held names] ${domainId}: ${backed} backed across ${capabilities.length} members`);
+    expect(crowded.slice(0, 6)).toEqual([]);
   },
 );
 
@@ -365,14 +389,6 @@ describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning
     },
   );
 
-  it("names the opened star and a pressed member at rest without a name on another name or on a mark not its own", () => {
-    const camera = cameraOn(domainId, {});
-    const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
-    const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 3.6, 600);
-    expect(crowdedNames(star), "the opened star").toEqual([]);
-    framesUntilSettled(camera, { focusedNodeId: member }, star, opened.end + FRAME_MS, 3.6, 3.6, FRAME_MS);
-    expect(crowdedNames(star), "the pressed member").toEqual([]);
-  });
 
   it("settles at once under reduced motion", () => {
     const camera = cameraOn(domainId, {});

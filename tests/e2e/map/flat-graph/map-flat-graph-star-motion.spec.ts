@@ -17,7 +17,7 @@ const OVERLAP_PX = 0.5;
 /** A retarget lands this far into an opening. */
 const RETARGET_AFTER_MS = 150;
 
-type Sample = { t: number; zoom: number; w: number; h: number; marks: [string, number, number, number][]; names: [string, string, number, number, number, number, number][] };
+type Sample = { t: number; zoom: number; w: number; h: number; marks: [string, number, number, number][]; names: [string, string, number, number, number, number, number, boolean][] };
 
 interface Motion {
   radiusPxPerMs: number;
@@ -25,6 +25,9 @@ interface Motion {
   radiusStepPx: number;
   inkStep: number;
   worstInk: string;
+  /** Names of the watched star drawn once the motion settles, and how many of them draw on a backing. */
+  restNames: number;
+  backedNames: number;
   zoomStep: number;
   overlapFrames: number;
   overlapPairs: string[];
@@ -48,12 +51,12 @@ async function startSampling(page: Page, ids: readonly string[]): Promise<void> 
     addEventListener("keydown", () => { w.__starPressAt ??= performance.now(); }, { capture: true, once: true });
     const tick = (t: number) => {
       type Box = { minX: number; maxX: number; minY: number; maxY: number };
-      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number }[]; texts: { id: string; role: string; box: Box; alpha: number }[] };
+      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number }[]; texts: { id: string; role: string; box: Box; alpha: number; backed: boolean }[] };
       const canvas = document.querySelector<HTMLCanvasElement>("[data-testid='ontology-map-canvas']")!;
       w.__starSamples.push({
         t, zoom: d.zoomRatio, w: canvas.clientWidth, h: canvas.clientHeight,
         marks: [...d.discs, ...d.glyphs].filter((m) => m.id !== null && keep.has(m.id)).map((m) => [m.id!, m.x, m.y, m.r]),
-        names: d.texts.filter((n) => keep.has(n.id)).map((n) => [n.id, n.role, n.box.minX, n.box.maxX, n.box.minY, n.box.maxY, n.alpha]),
+        names: d.texts.filter((n) => keep.has(n.id)).map((n) => [n.id, n.role, n.box.minX, n.box.maxX, n.box.minY, n.box.maxY, n.alpha, n.backed]),
       });
       if (w.__starSampling) requestAnimationFrame(tick);
     };
@@ -73,11 +76,11 @@ async function stopSampling(page: Page): Promise<{ samples: Sample[]; pressAt: n
 }
 
 /**
- * Every frame-to-frame figure the limits read, normalised by the measured frame time. Under a
- * pressed capability (`litPicture`), the names its picture asks for hold the place admission gave
- * them, so capability and element names are checked against other names, not against marks.
+ * Every frame-to-frame figure the limits read, normalised by the measured frame time. A backed name
+ * (one held in place with no side clear of the marks) draws on the canvas ground, so it is checked
+ * against other names, not against marks.
  */
-function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[], litPicture = false): Motion {
+function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[]): Motion {
   let radiusPxPerMs = 0;
   let worst = "";
   let radiusStepPx = 0;
@@ -114,9 +117,9 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       let crossings = 0;
       const at = `${Math.round(now.t - pressAt)} ms, zoom ${now.zoom.toFixed(2)}`;
       for (let a = 0; a < names.length; a += 1) {
-        const [ia, ra, minX, maxX, minY, maxY] = names[a]!;
+        const [ia, ra, minX, maxX, minY, maxY, , backed] = names[a]!;
         for (const [im, x, y, r] of marks) {
-          if (im === ia || (litPicture && (ra === "capability" || ra === "element"))) continue;
+          if (im === ia || backed) continue;
           const gap = Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minY - y, 0, y - maxY));
           if (gap < r - OVERLAP_PX) {
             crossings += 1;
@@ -176,7 +179,9 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       lastChange = now.t;
     }
   }
+  const rest = samples.at(-1)?.names.filter(([id]) => groups.some((g) => g.has(id))) ?? [];
   return {
+    restNames: rest.length, backedNames: rest.filter(([, , , , , , , backed]) => backed).length,
     radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6),
     firstFrameMs: firstChange - pressAt, totalMs: lastChange - pressAt, zoomReversals, radiusReversals: [...radiusReversals].slice(0, 6),
   };
@@ -185,7 +190,7 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
 function report(name: string, m: Motion): string {
   return `[star-motion] ${name}: radius ${m.radiusPxPerMs.toFixed(3)} px/ms (${m.worst}), radius step ${m.radiusStepPx.toFixed(2)} px, name ink step ${m.inkStep.toFixed(3)} (${m.worstInk}), zoom step ${(m.zoomStep * 100).toFixed(1)} % per frame, `
     + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on marks ${m.namePairs.join(", ")}, first frame ${m.firstFrameMs.toFixed(0)} ms, total ${m.totalMs.toFixed(0)} ms, `
-    + `zoom reversals ${m.zoomReversals}, radius reversals ${m.radiusReversals.join(", ") || "none"}`;
+    + `zoom reversals ${m.zoomReversals}, radius reversals ${m.radiusReversals.join(", ") || "none"}, names at rest ${m.restNames} (${m.backedNames} backed)`;
 }
 
 function expectSmooth(name: string, m: Motion, opening: boolean): void {
@@ -199,6 +204,7 @@ function expectSmooth(name: string, m: Motion, opening: boolean): void {
   expect.soft(m.nameFrames, `${name}: no frame draws a name over another name or over a mark not its own: ${said}`).toBe(0);
   expect.soft(m.firstFrameMs, `${name}: the press shows at once: ${said}`).toBeLessThanOrEqual(FIRST_FRAME_MS);
   if (opening) {
+    expect.soft(m.restNames, `${name}: the opened star keeps names at rest: ${said}`).toBeGreaterThan(0);
     expect.soft(m.zoomReversals, `${name}: the zoom never turns back while the star opens: ${said}`).toBe(0);
     expect.soft(m.radiusReversals, `${name}: no radius turns back while the star opens: ${said}`).toEqual([]);
   }
@@ -267,7 +273,7 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         await startSampling(page, watched);
         await press(page, member);
         await selected(page, member);
-        expectSmooth(`${tag} member press`, motionOf(await stopSampling(page), [star], true), false);
+        expectSmooth(`${tag} member press`, motionOf(await stopSampling(page), [star]), false);
 
         if (!dock) {
           await press(page, domainId);
@@ -289,7 +295,7 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         await page.waitForTimeout(RETARGET_AFTER_MS);
         const retarget = await pressWhileMoving(page, [other, member]);
         await selected(page, retarget);
-        expectSmooth(`${tag} retarget to ${retarget}`, motionOf(await stopSampling(page), [star, otherStar], retarget === member), false);
+        expectSmooth(`${tag} retarget to ${retarget}`, motionOf(await stopSampling(page), [star, otherStar]), false);
       }
     });
   }
