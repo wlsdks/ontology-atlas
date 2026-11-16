@@ -72,6 +72,55 @@ describe('UpdateToast', () => {
     expect(within(toast).queryByTestId('app-update-action')).not.toBeInTheDocument();
   });
 
+  it('draws the fill moved, not stretched, to the received share', () => {
+    renderPhase({ kind: 'downloading', version: '2.1.0', received: 9, total: 36 });
+    expect(screen.getByTestId('app-update-fill').style.translate).toBe('-75% 0');
+  });
+
+  it('mounts a fresh fill when the size becomes known, so it never sweeps in from full', () => {
+    const view = renderPhase({ kind: 'downloading', version: '2.1.0', received: 0, total: null });
+    const sweep = within(screen.getByRole('progressbar')).getByText('', { selector: 'span' });
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <UpdateToast phase={{ kind: 'downloading', version: '2.1.0', received: 1, total: 36 }} {...handlers} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('app-update-fill'), 'the sweep element was reused and transitions from no offset').not.toBe(sweep);
+  });
+
+  it('hands one state to the next inside the same card, then drops the old one', () => {
+    const view = renderPhase({ kind: 'available', version: '2.1.0', notes: null });
+    const card = screen.getByTestId('app-update-toast');
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <UpdateToast phase={{ kind: 'downloading', version: '2.1.0', received: 0, total: 10 }} {...handlers} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('app-update-toast'), 'the card was replaced, so its box jumps').toBe(card);
+    expect(card).toHaveAttribute('data-phase', 'downloading');
+    const leaving = card.querySelector('[data-update-layer="leaving"]');
+    expect(leaving, 'the previous state vanished in one frame').toHaveTextContent('2.1.0 버전이 나왔어요');
+    expect(leaving).toHaveAttribute('inert');
+
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(card.querySelector('[data-update-layer="leaving"]')).toBeNull();
+  });
+
+  it('fades the card out with its last state before it leaves', () => {
+    const view = renderPhase({ kind: 'ready', version: '2.1.0' });
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <UpdateToast phase={{ kind: 'idle' }} {...handlers} />
+      </NextIntlClientProvider>,
+    );
+    const card = screen.getByTestId('app-update-toast');
+    expect(card).toHaveAttribute('data-state', 'closed');
+    expect(card).toHaveTextContent('2.1.0 준비됐어요');
+
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(screen.queryByTestId('app-update-toast')).not.toBeInTheDocument();
+  });
+
   it('invents no percentage when the download size is unknown', () => {
     renderPhase({ kind: 'downloading', version: '2.1.0', received: 1_000, total: null });
     const toast = screen.getByTestId('app-update-toast');

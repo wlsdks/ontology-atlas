@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { WorkProgress } from '@/shared/motion/work-progress';
 import { Button } from '@/shared/ui/controls/button';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 import {
@@ -36,28 +37,124 @@ const MORU_CLIPS: Record<DrawnPhase['kind'], { intro: MoruClip | null; loop: Mor
   failed: { intro: null, loop: 'pondering' },
 };
 
-/** The card's rise (`atlasStatusIn` over `--motion-settle`); Moru starts once it has landed. */
-const CARD_LANDING_MS = Math.round(MOTION.settle.duration * 1_000);
+/** `.app-update-card` rises over `--motion-slow`; Moru starts once it has landed. */
+const CARD_LANDING_MS = Math.round(MOTION.slow.duration * 1_000);
+/** `.app-update-card[data-state='closed']` and `.app-update-layer-out` fade over `--motion-base`. */
+const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
 
 function isDrawn(phase: UpdatePhase): phase is DrawnPhase {
   if (phase.kind === 'failed') return phase.operation === 'install';
   return phase.kind === 'available' || phase.kind === 'downloading' || phase.kind === 'ready';
 }
 
-export function UpdateToast({ phase, onInstall, onRestart, onDismiss, onHide }: UpdateToastProps) {
-  if (!isDrawn(phase)) return null;
-  return (
-    <UpdateCard phase={phase} onInstall={onInstall} onRestart={onRestart} onDismiss={onDismiss} onHide={onHide} />
-  );
+interface Layers {
+  readonly current: DrawnPhase;
+  /** The state handing over, drawn underneath while it fades. */
+  readonly leaving: DrawnPhase | null;
+  /** Whether `current` arrived by a handover, so only it crossfades in, never the first state. */
+  readonly handedOver: boolean;
 }
 
-function UpdateCard({ phase, onInstall, onRestart, onDismiss, onHide }: UpdateToastProps & { phase: DrawnPhase }) {
-  const t = useTranslations('appUpdate');
+/** The last drawn state stays on screen while the card fades out, and hands over by crossfade. */
+function usePhaseLayers(phase: UpdatePhase) {
+  const [layers, setLayers] = useState<Layers | null>(() =>
+    isDrawn(phase) ? { current: phase, leaving: null, handedOver: false } : null,
+  );
+  if (isDrawn(phase) && layers?.current !== phase) {
+    setLayers(
+      layers && layers.current.kind !== phase.kind
+        ? { current: phase, leaving: layers.current, handedOver: true }
+        : { current: phase, leaving: layers?.leaving ?? null, handedOver: layers?.handedOver ?? false },
+    );
+  }
+  const leavingKind = layers?.leaving?.kind;
+  useEffect(() => {
+    if (!leavingKind) return;
+    const timer = window.setTimeout(
+      () => setLayers((state) => (state && state.leaving ? { ...state, leaving: null } : state)),
+      FADE_OUT_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [leavingKind]);
+  return layers;
+}
+
+export function UpdateToast(props: UpdateToastProps) {
+  const open = isDrawn(props.phase);
+  const { mounted } = usePanelPresence(open, FADE_OUT_MS);
+  const layers = usePhaseLayers(props.phase);
+  if (!mounted || !layers) return null;
+  return <UpdateCard {...props} open={open} layers={layers} />;
+}
+
+function UpdateCard({
+  open,
+  layers,
+  onInstall,
+  onRestart,
+  onDismiss,
+  onHide,
+}: UpdateToastProps & { open: boolean; layers: Layers }) {
+  const reducedMotion = usePrefersReducedMotion();
   const [landed, setLanded] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setLanded(true), CARD_LANDING_MS);
     return () => window.clearTimeout(timer);
   }, []);
+  const actions = { onInstall, onRestart, onDismiss, onHide };
+
+  return (
+    <div
+      // A live region, but not assertive — it does not break a screen-reader user's flow either.
+      role="status"
+      aria-live="polite"
+      data-testid="app-update-toast"
+      data-phase={layers.current.kind}
+      data-state={open ? 'open' : 'closed'}
+      inert={!open}
+      className={cn(
+        'app-update-card pointer-events-auto fixed z-50 h-36 w-[min(25rem,calc(100vw-2rem))] overflow-clip max-sm:h-30',
+        // Steps aside for a dock, the map's bottom-right instruments and the narrow tab bar, like notifications.
+        'right-[var(--app-toast-right-offset,16px)] bottom-[var(--app-toast-bottom-offset,calc(var(--app-toast-bottom-reserve,0px)_+_16px))]',
+        'rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]',
+      )}
+    >
+      <MoruLight />
+      {layers.leaving && !reducedMotion ? (
+        <PhaseLayer key={`leaving-${layers.leaving.kind}`} phase={layers.leaving} landed={landed} motion="out" {...actions} />
+      ) : null}
+      <PhaseLayer
+        key={layers.current.kind}
+        phase={layers.current}
+        landed={landed}
+        motion={layers.handedOver ? 'in' : 'none'}
+        {...actions}
+      />
+    </div>
+  );
+}
+
+/** The pool of light Moru stands on and his ground shadow; it fades to nothing before the text. */
+function MoruLight() {
+  return (
+    <span aria-hidden className="pointer-events-none absolute bottom-3 left-3 size-32 max-sm:size-16">
+      <span className="absolute top-[72%] left-1/2 h-[130%] w-[150%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,var(--color-indigo-accent-a32),var(--color-indigo-accent-a12)_45%,transparent)]" />
+      <span className="absolute top-[81%] left-1/2 h-[9%] w-[58%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,var(--color-shadow-a42),transparent)]" />
+    </span>
+  );
+}
+
+function PhaseLayer({
+  phase,
+  landed,
+  motion,
+  onInstall,
+  onRestart,
+  onDismiss,
+  onHide,
+}: Omit<UpdateToastProps, 'phase'> & { phase: DrawnPhase; landed: boolean; motion: 'in' | 'out' | 'none' }) {
+  const t = useTranslations('appUpdate');
+  const leaving = motion === 'out';
 
   const title = (() => {
     switch (phase.kind) {
@@ -76,17 +173,8 @@ function UpdateCard({ phase, onInstall, onRestart, onDismiss, onHide }: UpdateTo
     switch (phase.kind) {
       case 'available':
         return summarizeNotes(phase.notes) ?? t('availableBody');
-      case 'downloading': {
-        // With the total unknown, no percentage is invented; it states only that fact.
-        const percent = formatDownloadProgress(phase.received, phase.total);
-        return percent && phase.total !== null
-          ? t('downloadingProgress', {
-              percent,
-              received: formatMegabytes(phase.received),
-              total: formatMegabytes(phase.total),
-            })
-          : t('downloadingUnknown');
-      }
+      case 'downloading':
+        return <DownloadFigures phase={phase} />;
       case 'ready':
         return t('readyBody');
       case 'failed':
@@ -110,43 +198,33 @@ function UpdateCard({ phase, onInstall, onRestart, onDismiss, onHide }: UpdateTo
 
   return (
     <div
-      // A live region, but not assertive — it does not break a screen-reader user's flow either.
-      role="status"
-      aria-live="polite"
-      data-testid="app-update-toast"
-      data-phase={phase.kind}
+      data-update-layer={leaving ? 'leaving' : 'current'}
+      inert={leaving}
       className={cn(
-        // Steps aside for a dock, the map's bottom-right instruments and the narrow tab bar, like notifications.
-        'pointer-events-auto fixed bottom-[var(--app-toast-bottom-offset,calc(var(--app-toast-bottom-reserve,0px)_+_16px))]',
-        'right-[var(--app-toast-right-offset,16px)] z-50 w-[min(24rem,calc(100vw-2rem))]',
-        'flex items-center gap-3 rounded-card border border-[color:var(--color-border-strong)]',
-        'bg-[color:var(--color-elevated)] p-3 shadow-[var(--shadow-elevation-2)]',
-        'motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]',
+        'absolute inset-0 flex items-center p-3',
+        motion === 'in' && 'app-update-layer-in',
+        motion === 'out' && 'app-update-layer-out',
       )}
     >
-      <MoruStage key={phase.kind} phase={phase.kind} landed={landed} />
+      <MoruStage phase={phase.kind} landed={landed} />
 
-      <div className="grid min-w-0 flex-1 gap-1">
+      <div className="ml-[8.25rem] grid min-w-0 flex-1 gap-1 max-sm:ml-[4.5rem]">
         <p
-          data-testid="app-update-title"
+          data-testid={leaving ? undefined : 'app-update-title'}
           className="truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
         >
           {title}
         </p>
         <p
-          data-testid="app-update-detail"
+          data-testid={leaving ? undefined : 'app-update-detail'}
           className="line-clamp-2 min-h-[calc(var(--leading-label)*2)] break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
         >
           {detail}
         </p>
         <div className="mt-1 flex h-8 min-w-0 items-center gap-2">
-          {phase.kind === 'downloading' ? (
-            <div className="min-w-0 flex-1">
-              <WorkProgress phase="running" done={phase.received} total={phase.total} label={t('progressLabel')} />
-            </div>
-          ) : null}
+          {phase.kind === 'downloading' ? <DownloadBar phase={phase} label={t('progressLabel')} /> : null}
           {primary ? (
-            <Button size="sm" onClick={primary.onClick} data-testid="app-update-action">
+            <Button size="sm" onClick={primary.onClick} data-testid={leaving ? undefined : 'app-update-action'}>
               {primary.label}
             </Button>
           ) : null}
@@ -154,7 +232,7 @@ function UpdateCard({ phase, onInstall, onRestart, onDismiss, onHide }: UpdateTo
             size="sm"
             variant="ghost"
             onClick={quiet.onClick}
-            data-testid="app-update-dismiss"
+            data-testid={leaving ? undefined : 'app-update-dismiss'}
             className="touch-hit-expand text-[color:var(--color-text-secondary)]"
           >
             {quiet.label}
@@ -165,7 +243,74 @@ function UpdateCard({ phase, onInstall, onRestart, onDismiss, onHide }: UpdateTo
   );
 }
 
-/** Moru on a softly lit tile: the state's gesture once, then its resting loop. */
+type DownloadingPhase = Extract<UpdatePhase, { kind: 'downloading' }>;
+
+/** Message placeholders swapped for elements; the delimiter cannot occur in translated copy. */
+const SLOT_DELIMITER = '\u0001';
+
+function withSlots(format: (marks: Record<string, string>) => string, slots: Record<string, ReactNode>): ReactNode[] {
+  const marks = Object.fromEntries(Object.keys(slots).map((name) => [name, `${SLOT_DELIMITER}${name}${SLOT_DELIMITER}`]));
+  return format(marks)
+    .split(SLOT_DELIMITER)
+    .map((part, index) => (index % 2 === 1 ? <span key={part}>{slots[part]}</span> : part));
+}
+
+/** The percentage leads the row; numerals are tabular and boxed so a new chunk never shifts it. */
+function DownloadFigures({ phase }: { phase: DownloadingPhase }) {
+  const t = useTranslations('appUpdate');
+  // With the total unknown, no percentage is invented; it states only that fact.
+  const percent = formatDownloadProgress(phase.received, phase.total);
+  if (!percent || phase.total === null) return t('downloadingUnknown');
+  const total = formatMegabytes(phase.total);
+  return (
+    <span data-testid="app-update-figures" className="tabular-nums">
+      {withSlots((marks) => t('downloadingProgress', marks), {
+        percent: (
+          <span className="inline-block min-w-[4ch] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {percent}
+          </span>
+        ),
+        received: (
+          <span className="inline-block text-right" style={{ minWidth: `${total.length}ch` }}>
+            {formatMegabytes(phase.received)}
+          </span>
+        ),
+        total,
+      })}
+    </span>
+  );
+}
+
+function DownloadBar({ phase, label }: { phase: DownloadingPhase; label: string }) {
+  const known = phase.total !== null && phase.total > 0;
+  const ratio = known ? Math.min(1, Math.max(0, phase.received / (phase.total as number))) : 0;
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={known ? 0 : undefined}
+      aria-valuemax={known ? 100 : undefined}
+      aria-valuenow={known ? Math.round(ratio * 100) : undefined}
+      className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
+    >
+      {known ? (
+        // Moved, not stretched: a scaled bar would squash its round end and its lit head.
+        <span
+          key="fill"
+          data-testid="app-update-fill"
+          className="app-update-fill absolute inset-0 rounded-full bg-[color:var(--color-indigo-accent)]"
+          style={{ translate: `${(ratio - 1) * 100}% 0` }}
+        >
+          <span className="absolute inset-y-0 right-0 w-4 rounded-full bg-[linear-gradient(to_right,transparent,var(--color-indigo-hover))]" />
+        </span>
+      ) : (
+        <span key="sweep" className="motion-work-sweep absolute inset-y-0 left-0 w-1/3 rounded-full bg-[color:var(--color-indigo-accent)]" />
+      )}
+    </div>
+  );
+}
+
+/** Moru at the row's native 128px (64px on a narrow window): the state's gesture once, then its loop. */
 function MoruStage({ phase, landed }: { phase: DrawnPhase['kind']; landed: boolean }) {
   const { intro, loop } = MORU_CLIPS[phase];
   const [clip, setClip] = useState<MoruClip>(intro ?? loop);
@@ -173,6 +318,7 @@ function MoruStage({ phase, landed }: { phase: DrawnPhase['kind']; landed: boole
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage || !intro) return;
+    // Every row starts and ends on the shared neutral pose, so the loop follows without a jump.
     const restAfterIntro = (event: Event) => {
       if ((event.target as HTMLElement).dataset.moruMotion === intro) setClip(loop);
     };
@@ -182,18 +328,12 @@ function MoruStage({ phase, landed }: { phase: DrawnPhase['kind']; landed: boole
 
   return (
     <span
+      ref={stageRef}
       aria-hidden
       data-testid="app-update-moru"
-      ref={stageRef}
-      className={cn(
-        'relative flex size-18 shrink-0 items-center justify-center overflow-hidden rounded-card',
-        'border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)]',
-        'shadow-[inset_0_1px_0_var(--color-overlay-2)]',
-      )}
+      className="pointer-events-none absolute bottom-3 left-3 flex size-32 items-end max-sm:size-16"
     >
-      <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_75%_at_50%_35%,var(--color-indigo-accent-a12),transparent)]" />
-      {/* The native 128px row at half its CSS size: one source pixel per device pixel on a 2x screen. */}
-      <span className="relative flex [zoom:0.5]">
+      <span className="flex max-sm:[zoom:0.5]">
         <BrandWaitingMark key={landed ? 'live' : 'held'} active held={!landed} scale={2} motion={clip} initialVisibility="visible" />
       </span>
     </span>
