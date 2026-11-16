@@ -16,6 +16,20 @@ export const STANDING_APPROVAL_ATLAS_WRITES: ReadonlySet<string> = new Set([
   'reclassify_concept',
 ]);
 
+/** Bumped when a check below lets more through, so a kept choice is asked for again. */
+const VAULT_EDIT_RULE = 'edit-inside-folder@1';
+const ATLAS_WRITE_RULES = 'atlas-write-arguments@1';
+
+/**
+ * Everything auto-approve answers, spelled out: the two rule versions and each Atlas write. A choice kept on this Mac holds only while it
+ * equals this, so widening the scope never widens what an earlier press allowed.
+ */
+export const STANDING_APPROVAL_SCOPE = [
+  VAULT_EDIT_RULE,
+  ATLAS_WRITE_RULES,
+  ...[...STANDING_APPROVAL_ATLAS_WRITES].sort(),
+].join(' ');
+
 export interface StandingApprovalContext {
   enabled: boolean;
   /** The opened folder, as the session was started with it. */

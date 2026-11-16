@@ -33,7 +33,7 @@ routes: []
   keys with the Keychain key count, and MCP); Privacy · data (what can leave this computer
   as aligned columns: when it happens, whether it carries folder content, whether Atlas records
   it, and every destination host as a chip, with the audit log path once below the list;
-  allowances on this computer, recent folders, each forget behind a two-press `ArmedChip`);
+  allowances on this computer (MCP servers, scheduled checks and chat auto-approve per folder), recent folders, each forget behind a two-press `ArmedChip`);
   Ontology folder (folder, path, shape, documents, import, and what the folder keeps: agent
   connections (MCP), schedules, Git, project sources); About (current app or website version,
   automatic update check On · Off, what's new, keyboard shortcuts, source, licences, copy

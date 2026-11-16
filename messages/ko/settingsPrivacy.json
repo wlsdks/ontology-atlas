@@ -48,9 +48,10 @@
   "updateChangeAria": "정보에서 자동 업데이트 확인 바꾸기",
   "allowances": {
     "title": "허용 목록",
-    "keywords": "동의 승인 허용 취소 mcp 서버 예약 점검",
-    "empty": "아직 허용한 항목이 없어요. 폴더의 MCP 서버와 예약 점검은 허용하기 전까지 대기해요.",
+    "keywords": "동의 승인 허용 취소 mcp 서버 예약 점검 대화 자동 승인",
+    "empty": "아직 허용한 항목이 없어요. 폴더의 MCP 서버와 예약 점검은 허용하기 전까지 대기하고, 대화는 쓰기 전에 물어요.",
     "counts": "{connectors, plural, =0 {} other {MCP 서버 #개}}{both, select, yes { · } other {}}{rounds, plural, =0 {} other {예약 점검 #개}}",
+    "autoApprove": "대화 자동 승인",
     "forget": "허용 취소",
     "forgetArmed": "한 번 더 누르면 허용 취소",
     "forgetAll": "모두 허용 취소",

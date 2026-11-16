@@ -417,7 +417,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // Names only verified runtimes right after a folder opens; unmeasured ones would read as a
   // guarantee.
   // `isGuardedRuntime` is the one decision, shared with the Agents destination.
-  const acpRuntimeController = useAcpRuntimeController(setAcpChatOpen);
+  const acpRuntimeController = useAcpRuntimeController(setAcpChatOpen, topologyVaultReadModel.gitVaultPath);
   const { chatWidth, acpRuntime } = acpRuntimeController;
   // Derived from this folder's state here, so the chat panel needs no `LocalVaultProvider`.
   const chatSuggestions = useChatSuggestions(projectSourceReadiness.state);

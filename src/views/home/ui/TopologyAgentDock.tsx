@@ -59,7 +59,7 @@ interface TopologyAgentDockProps {
     | "setAgentOpeningRequest"
     | "acpRuntime"
     | "acpRuntimes"
-    | "setAcpRuntimeId"
+    | "chooseAcpRuntime"
     | "setAcpPresentationVisible"
     | "investigationBasis"
   >;
@@ -127,7 +127,7 @@ export function TopologyAgentDock({
   } = homeWorkbenchController;
   const {
     chatMounted, chatWidth, scheduleAcpSessionStart, setChatMounted, agentOpeningRequest,
-    setAgentOpeningRequest, acpRuntime, acpRuntimes, setAcpRuntimeId, setAcpPresentationVisible,investigationBasis
+    setAgentOpeningRequest, acpRuntime, acpRuntimes, chooseAcpRuntime, setAcpPresentationVisible,investigationBasis
   } = acpRuntimeController;
   const { acpTurnStartedAtRef, acpMcpServers, handleAcpTurnActivityChange, handleAcpWorkReceipt } = topologyAgentActivity;
   const {
@@ -307,7 +307,7 @@ export function TopologyAgentDock({
                   runtimeId={acpRuntime.id}
                   runtimeLabel={acpRuntime.label}
                   runtimes={acpRuntimes}
-                  onRuntimeChange={setAcpRuntimeId}
+                  onRuntimeChange={chooseAcpRuntime}
                   vaultRoot={gitVaultPath}
                   mcpServers={acpMcpServers}
                   sessionEnabled={acpChatOpen}

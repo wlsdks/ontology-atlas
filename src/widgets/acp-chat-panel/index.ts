@@ -8,6 +8,7 @@ export { keptAwayRuntimeId } from './model/kept-panels';
 export { AcpChatResizeHandle } from './ui/AcpChatResizeHandle';
 export { AcpDockHeader } from './ui/AcpDockHeader';
 export { useChatWidth } from './model/use-chat-width';
+export { useRememberedTool } from './model/use-remembered-tool';
 export {
   useVaultAgentRuntime,
   type VaultAgentRuntime,
