@@ -1,10 +1,6 @@
 (() => {
                               try {
                               const bodyText = document.body ? document.body.innerText : "";
-                              const links = Array.from(document.querySelectorAll("a")).map((link) => ({
-                                href: link.getAttribute("href") || "",
-                                text: link.textContent || "",
-                              }));
                               const aiSettingsVerification = window.__ontologyAtlasAiSettingsVerify || null;
                               const appUpdateVerification = window.__ontologyAtlasAppUpdateVerify || null;
                               const acpInstallVerification = window.__ontologyAtlasAcpInstallVerify || null;
@@ -302,8 +298,7 @@
                                     window.localStorage.getItem("ontology-atlas:verify-fixture-vault") || "",
                                   verificationFixtureVaultError:
                                     window.__ontologyAtlasVerifyFixtureVaultError || "",
-                                  ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
-                                  sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
+                                  mapNav: Boolean(document.querySelector('nav a[href*="/topology"]')),
                                   libraryNav: Boolean(document.querySelector('nav a[href*="/library"]')),
                                   briefingSurface: aiSettingsVisible(document.querySelector('main[data-briefing-surface] h1')),
                                   briefingRepositoryControl: aiSettingsVisible(document.querySelector('main[data-briefing-surface] header h1 + span + button:not([disabled]):not([data-testid="briefing-settings"])')),
