@@ -46,19 +46,12 @@ const OVERVIEW_CAPABILITY_NAMES: Record<string, { fewest: number; most: number }
   "1280x800": { fewest: 17, most: 17 },
 };
 
-/**
- * Members no side fits for at rest with the dock closed: every side inside the free map by the frame
- * margin crosses a name or a disc not its own, so the name is left out rather than drawn over either.
- */
-const NO_SIDE_FITS: Record<string, readonly string[]> = {
-  "1410x840": ["capability:agent-work-visibility"],
-  "1280x800": ["capability:desktop-download-decision"],
-};
-
 /** A domain's census and reach rows share one slot under its name, so their cross-fade is no crossing. */
 const CAPTION_ROLES = new Set(["units", "status"]);
-/** A name whose ink falls is on its way out and may be crossed, if it is gone within this many frames of starting to fall. */
+/** A name whose ink, once it starts to fall, is gone within this many painted frames is leaving and may be crossed. */
 const LEAVING_FRAMES = 10;
+/** Ink below this is gone. */
+const GONE_INK = 0.05;
 
 interface Motion {
   radiusPxPerMs: number;
@@ -78,8 +71,6 @@ interface Motion {
   /** Frames with a name off its backing over an element dot grown past its resting radius. */
   dotFrames: number;
   dotPairs: string[];
-  /** Names that fell while crossed and were still drawn `LEAVING_FRAMES` painted frames after they started to fall. */
-  lingering: string[];
   /** Crossings already drawn in the overview's last frame before a press from it, which the press does not own, skipped until they part. */
   standing: string[];
   firstFrameMs: number;
@@ -139,37 +130,57 @@ async function stopSampling(page: Page): Promise<{ samples: Sample[]; pressAt: n
  * (one held in place with no side clear of the marks) draws on the canvas ground, so it is checked
  * against other names, not against marks.
  */
-/** One crossing in a frame: its pair, whether it is an unbacked name on a grown dot, and which of its names are falling. */
-type Crossing = { pair: string; dot: boolean; falling: string[] };
+/** One crossing in a frame: its pair, whether it is an unbacked name on a grown dot, and whether one of its names is leaving. */
+type Crossing = { pair: string; dot: boolean; leaving: boolean };
+
+const nameKey = ([id, role, , , , , , , side]: SampledName): string => `${role} ${id} ${side}`;
 
 /**
  * Every name of `group` drawn over another name, over a disc not its own, or off its backing over a
  * grown element dot, in `now`. A domain's census and reach rows share one slot, so their cross-fade
- * is no crossing. A name whose ink is lower than in `prev` is falling.
+ * is no crossing; a name whose ink is gone crosses nothing.
  */
-function crossingsOf(now: Sample, prev: Sample | null, group: ReadonlySet<string>): Crossing[] {
+function crossingsOf(now: Sample, group: ReadonlySet<string>, leaving: (key: string) => boolean): Crossing[] {
   const marks = now.marks.filter(([id]) => group.has(id));
-  const names = now.names.filter(([id]) => group.has(id));
-  const fallingKey = ([id, role, , , , , alpha, , side]: SampledName): string | null => {
-    const inkWas = prev?.names.find(([pid, prole, , , , , , , pside]) => pid === id && prole === role && pside === side)?.[6];
-    return inkWas !== undefined && alpha < inkWas ? `${role} ${id} ${side}` : null;
-  };
+  const names = now.names.filter(([id, , , , , , alpha]) => group.has(id) && alpha >= GONE_INK);
   const out: Crossing[] = [];
   for (let a = 0; a < names.length; a += 1) {
     const [ia, ra, minX, maxX, minY, maxY, , backed] = names[a]!;
-    const fallingA = fallingKey(names[a]!);
+    const leavingA = leaving(nameKey(names[a]!));
     for (const [im, x, y, r, grown, disc] of marks) {
       if (im === ia || (!disc && (!grown || backed))) continue;
       const gap = Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minY - y, 0, y - maxY));
-      if (gap < r - OVERLAP_PX) out.push({ pair: `${ra} ${ia} on ${im}`, dot: !disc, falling: fallingA ? [fallingA] : [] });
+      if (gap < r - OVERLAP_PX) out.push({ pair: `${ra} ${ia} on ${im}`, dot: !disc, leaving: leavingA });
     }
     for (let b = a + 1; b < names.length; b += 1) {
       const [ib, rb, bMinX, bMaxX, bMinY, bMaxY] = names[b]!;
       if (ib === ia && CAPTION_ROLES.has(ra) && CAPTION_ROLES.has(rb)) continue;
       if (Math.min(maxX, bMaxX) > Math.max(minX, bMinX) && Math.min(maxY, bMaxY) > Math.max(minY, bMinY)) {
-        const fallingB = fallingKey(names[b]!);
-        out.push({ pair: [`${ra} ${ia}`, `${rb} ${ib}`].sort().join(" on "), dot: false, falling: [fallingA, fallingB].filter((k): k is string => k !== null) });
+        out.push({ pair: [`${ra} ${ia}`, `${rb} ${ib}`].sort().join(" on "), dot: false, leaving: leavingA || leaving(nameKey(names[b]!)) });
       }
+    }
+  }
+  return out;
+}
+
+/**
+ * Per painted frame, the names leaving in it: names whose ink is falling in a run that, from its
+ * first falling frame, is gone within `LEAVING_FRAMES` painted frames. A name that falls and then
+ * holds at a lower ink is not leaving. O(painted frames × names × `LEAVING_FRAMES`).
+ */
+function leavingNames(painted: readonly Sample[]): Set<string>[] {
+  const inks = painted.map((s) => new Map(s.names.map((n) => [nameKey(n), n[6]])));
+  const out = painted.map(() => new Set<string>());
+  const gone = (f: number, key: string) => f >= inks.length || (inks[f]!.get(key) ?? 0) < GONE_INK;
+  for (let f = 1; f < painted.length; f += 1) {
+    for (const [key, alpha] of inks[f]!) {
+      const was = inks[f - 1]!.get(key);
+      if (was === undefined || !(alpha < was)) continue;
+      let start = f;
+      while (start > 1 && (inks[start - 1]!.get(key) ?? -1) < (inks[start - 2]!.get(key) ?? -1)) start -= 1;
+      let leaves = false;
+      for (let g = start; g <= start + LEAVING_FRAMES && !leaves; g += 1) leaves = gone(g, key);
+      if (leaves) out[f]!.add(key);
     }
   }
   return out;
@@ -194,22 +205,24 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
   let zoomReversals = 0;
   const radiusSign = new Map<string, number>();
   const radiusReversals = new Set<string>();
-  const lingering = new Set<string>();
-  /** Per name on its way out: the frame its ink started to fall, and whether a crossing was let pass for it. */
-  const leaving = new Map<string, { since: number; crossed: boolean }>();
   const prePress = samples.filter((s) => s.t < pressAt);
-  const standing = new Set(fromOverview && prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, null, group).map((c) => c.pair)) : []);
+  const standing = new Set(fromOverview && prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, group, () => false).map((c) => c.pair)) : []);
   const standingSeen = [...standing];
+  // A sample that repeats the one before is the same painted frame, judged once.
+  const painted: Sample[] = [];
+  const paintedAt: number[] = [];
   let lastPainted = "";
+  for (const sample of samples) {
+    const signature = JSON.stringify([sample.zoom, sample.marks, sample.names]);
+    paintedAt.push(signature === lastPainted ? -1 : painted.length);
+    if (signature !== lastPainted) painted.push(sample);
+    lastPainted = signature;
+  }
+  const leaving = leavingNames(painted);
   for (let i = 0; i < samples.length; i += 1) {
     const now = samples[i]!;
-    const prev = i > 0 ? samples[i - 1]! : null;
     const at = `${Math.round(now.t - pressAt)} ms, zoom ${now.zoom.toFixed(2)}`;
     const stillStanding = new Set<string>();
-    const present = new Set<string>();
-    const painted = JSON.stringify([now.zoom, now.marks, now.names]);
-    const repeats = painted === lastPainted;
-    lastPainted = painted;
     for (const group of groups) {
       const marks = now.marks.filter(([id]) => group.has(id));
       let pairs = 0;
@@ -225,39 +238,16 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       }
       if (pairs > 0) overlapFrames += 1;
       // Names are judged from the last frame before the press on: what stood before it is the overview's.
-      // A sample that repeats the one before is the same painted frame, judged once.
-      if (i < prePress.length - 1 || repeats) continue;
-      for (const [id, role, , , , , alpha, , side] of now.names) {
-        if (!group.has(id)) continue;
-        const key = `${role} ${id} ${side}`;
-        present.add(key);
-        const inkWas = prev?.names.find(([pid, prole, , , , , , , pside]) => pid === id && prole === role && pside === side)?.[6];
-        const out = leaving.get(key);
-        if (inkWas !== undefined && alpha < inkWas) {
-          if (!out) leaving.set(key, { since: i, crossed: false });
-          else if (out.crossed && i - out.since >= LEAVING_FRAMES) {
-            lingering.add(`${key} still at ink ${alpha.toFixed(2)} ${i - out.since} frames after it started to leave, at ${at}`);
-            leaving.delete(key);
-          }
-        } else if (out) {
-          // A name whose ink stops falling is no longer leaving: from here a crossing counts against it.
-          leaving.delete(key);
-        }
-      }
+      if (i < prePress.length - 1 || paintedAt[i] === -1) continue;
+      const leavingNow = leaving[paintedAt[i]!]!;
       let crossings = 0;
       let onDots = 0;
-      for (const c of crossingsOf(now, prev, group)) {
+      for (const c of crossingsOf(now, group, (key) => leavingNow.has(key))) {
         if (standing.has(c.pair)) {
           stillStanding.add(c.pair);
           continue;
         }
-        if (c.falling.length > 0) {
-          for (const key of c.falling) {
-            const out = leaving.get(key);
-            if (out) out.crossed = true;
-          }
-          continue;
-        }
+        if (c.leaving) continue;
         if (c.dot) {
           onDots += 1;
           dotPairs.add(`${c.pair} at ${at}`);
@@ -269,8 +259,7 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       if (onDots > 0) dotFrames += 1;
       if (crossings > 0) nameFrames += 1;
     }
-    if (i >= prePress.length - 1 && !repeats) for (const pair of standing) if (!stillStanding.has(pair)) standing.delete(pair);
-    if (!repeats) for (const key of leaving.keys()) if (!present.has(key)) leaving.delete(key);
+    if (i >= prePress.length - 1 && paintedAt[i] !== -1) for (const pair of standing) if (!stillStanding.has(pair)) standing.delete(pair);
     if (i === 0) continue;
     const before = samples[i - 1]!;
     const dt = now.t - before.t;
@@ -322,14 +311,14 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
   return {
     pressFrameMs: Math.max(0, ...afterPress), medianFrameMs: sorted[Math.floor(sorted.length / 2)] ?? 0,
     restNames: rest.length, backedNames: rest.filter(([, , , , , , , backed]) => backed).length,
-    radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6), dotFrames, dotPairs: [...dotPairs].slice(0, 6), lingering: [...lingering].slice(0, 6), standing: standingSeen,
+    radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6), dotFrames, dotPairs: [...dotPairs].slice(0, 6), standing: standingSeen,
     firstFrameMs: firstChange - pressAt, firstFrame: samples.filter((s) => s.t > pressAt && s.t <= firstChange).length, totalMs: lastChange - pressAt, zoomReversals, radiusReversals: [...radiusReversals].slice(0, 6),
   };
 }
 
 function report(name: string, m: Motion): string {
   return `[star-motion] ${name}: radius ${m.radiusPxPerMs.toFixed(3)} px/ms (${m.worst}), radius step ${m.radiusStepPx.toFixed(2)} px, name ink step ${m.inkStep.toFixed(3)} (${m.worstInk}), zoom step ${(m.zoomStep * 100).toFixed(1)} % per frame, `
-    + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on names or discs ${m.namePairs.join(", ")}, ${m.dotFrames} frames with unbacked names on grown dots ${m.dotPairs.join(", ")}, names that lingered while crossed ${m.lingering.join(", ") || "none"}, crossings standing before the press ${m.standing.join(", ") || "none"}, first frame ${m.firstFrameMs.toFixed(0)} ms (frame ${m.firstFrame}; press frames up to ${m.pressFrameMs.toFixed(1)} ms against a median ${m.medianFrameMs.toFixed(1)} ms), total ${m.totalMs.toFixed(0)} ms, `
+    + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on names or discs ${m.namePairs.join(", ")}, ${m.dotFrames} frames with unbacked names on grown dots ${m.dotPairs.join(", ")}, crossings standing before the press ${m.standing.join(", ") || "none"}, first frame ${m.firstFrameMs.toFixed(0)} ms (frame ${m.firstFrame}; press frames up to ${m.pressFrameMs.toFixed(1)} ms against a median ${m.medianFrameMs.toFixed(1)} ms), total ${m.totalMs.toFixed(0)} ms, `
     + `zoom reversals ${m.zoomReversals}, radius reversals ${m.radiusReversals.join(", ") || "none"}, names at rest ${m.restNames} (${m.backedNames} backed)`;
 }
 
@@ -343,7 +332,6 @@ function expectSmooth(name: string, m: Motion, opening: boolean): void {
   expect.soft(m.overlapFrames, `${name}: no frame draws two marks of the star over each other: ${said}`).toBe(0);
   expect.soft(m.nameFrames, `${name}: no frame draws a name whose ink rises or holds over another name or over a disc not its own: ${said}`).toBe(0);
   expect.soft(m.dotFrames, `${name}: no frame draws a name whose ink rises or holds off its backing over an element dot grown past its resting radius: ${said}`).toBe(0);
-  expect.soft(m.lingering, `${name}: a name crossed while its ink falls is gone within ${LEAVING_FRAMES} frames of starting to fall: ${said}`).toEqual([]);
   expect.soft(m.firstFrame, `${name}: the press shows at once: ${said}`).toBeLessThanOrEqual(FIRST_FRAME);
   if (opening) {
     expect.soft(m.restNames, `${name}: the opened star keeps names at rest: ${said}`).toBeGreaterThan(0);
@@ -449,19 +437,26 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         expectSmooth(`${tag} retarget to ${retarget}`, motionOf(await stopSampling(page), [star, otherStar], true), false);
       }
 
-      // A reader opens a star to read what is in it: at rest it names its members but those no side fits for, the dock's narrower map at least four in five.
+      // A reader opens a star to read what is in it: at rest it names all its members but one, the dock's
+      // narrower map at least four in five, and never a member's name past the free map's frame margin.
+      // The dogfood layout differs a little between loads, so which member goes unnamed may change.
+      const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
       for (const { domainId, capabilityIds } of clusters) {
         await openDogfoodFlat(page, viewport, dock);
         await press(page, domainId);
         await selected(page, domainId);
         await settleSelection(page);
-        const texts = (await readDial(page)).texts;
-        const named = capabilityIds.filter((id) => texts.some((t) => t.id === id && t.role === "capability"));
-        const backed = texts.filter((t) => t.backed && capabilityIds.includes(t.id ?? "")).length;
-        const said = `${viewport.width}x${viewport.height} dock ${dock ? "open" : "closed"} ${domainId}: ${named.length} of ${capabilityIds.length} members named, ${backed} backed, unnamed ${capabilityIds.filter((id) => !named.includes(id)).join(", ") || "none"}`;
+        const dial = await readDial(page);
+        const memberNames = dial.texts.filter((t) => t.role === "capability" && capabilityIds.includes(t.id ?? ""));
+        const named = capabilityIds.filter((id) => memberNames.some((t) => t.id === id));
+        const backed = memberNames.filter((t) => t.backed).length;
+        const f = dial.freeRect;
+        const outside = memberNames.filter((t) => t.box.minX < f.minX + margin - 0.5 || t.box.maxX > f.maxX - margin + 0.5 || t.box.minY < f.minY + margin - 0.5 || t.box.maxY > f.maxY - margin + 0.5).map((t) => t.id);
+        const said = `${viewport.width}x${viewport.height} dock ${dock ? "open" : "closed"} ${domainId}: ${named.length} of ${capabilityIds.length} members named, ${backed} backed, unnamed ${capabilityIds.filter((id) => !named.includes(id)).join(", ") || "none"}, outside the free map ${outside.join(", ") || "none"}`;
         console.log(`[star-names] ${said}`);
         if (dock) expect.soft(named.length * 5, said).toBeGreaterThanOrEqual(capabilityIds.length * 4);
-        else expect.soft(capabilityIds.filter((id) => !named.includes(id) && !NO_SIDE_FITS[`${viewport.width}x${viewport.height}`]!.includes(id)), said).toEqual([]);
+        else expect.soft(named.length, said).toBeGreaterThanOrEqual(capabilityIds.length - 1);
+        expect.soft(outside, said).toEqual([]);
       }
     });
   }
