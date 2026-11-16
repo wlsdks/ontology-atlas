@@ -48,10 +48,10 @@ describe('analysis context workbench', () => {
     await waitFor(() => expect(opener).toHaveFocus());
     route.remove(); opener.remove();
   });
-  it('requests localized analysis prose while preserving the structured finding contract', () => {
+  it('requests localized analysis prose while preserving the structured finding contract', async () => {
     const onRequest = vi.fn();
     render(<NextIntlClientProvider locale="ko" messages={ko}><AnalysisWorkbench context={context} contextLabel="Project" open onClose={() => {}} onRequest={onRequest} /></NextIntlClientProvider>);
-    fireEvent.click(screen.getByRole('button', { name: ko.analysisWorkbench.analyze }));
+    fireEvent.click(await screen.findByRole('button', { name: ko.analysisWorkbench.reanalyze }));
     const text = onRequest.mock.calls[0]![0];
     expect(text).toContain('Korean (ko)');
     expect(text).toContain(ANALYSIS_FINDINGS_INSTRUCTION);
@@ -80,10 +80,11 @@ describe('analysis context workbench', () => {
     expect(screen.getByRole('tab', { name: messages.analysisWorkbench.conversation })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('offers to write the missing connection reasons only when there are some, and sends a bounded write request', () => {
+  it('offers to write the missing connection reasons only when there are some, and sends a bounded write request', async () => {
     const onRequest = vi.fn();
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest };
     const view = render(wrapper(<AnalysisWorkbench {...props} relationNoteGaps={0} />));
+    await screen.findByRole('button', { name: messages.analysisWorkbench.reanalyze });
     expect(screen.queryByTestId('workbench-fill-notes')).not.toBeInTheDocument();
     view.rerender(wrapper(<AnalysisWorkbench {...props} relationNoteGaps={7} />));
     const fill = screen.getByTestId('workbench-fill-notes');
@@ -117,6 +118,21 @@ describe('analysis context workbench', () => {
     expect(empty).toHaveTextContent(messages.analysisWorkbench.agentUnavailableWithDecisions);
     expect(screen.queryByText(messages.analysisWorkbench.meaningTransitions.unavailable)).not.toBeInTheDocument();
   });
+  it('keeps the review request and the fill offer on an empty archive, and through a failed read', async () => {
+    archive.read.mockResolvedValue({ records: [], problems: [], nextCursor: null, totalFiles: 0, scanned: 0 });
+    const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest: vi.fn(), relationNoteGaps: 3 };
+    const loaded = render(wrapper(<AnalysisWorkbench {...props} />));
+    const empty = await screen.findByTestId('analysis-history-empty');
+    expect(empty).toContainElement(screen.getByRole('button', { name: messages.analysisWorkbench.analyze }));
+    expect(empty).toContainElement(screen.getByTestId('workbench-fill-notes'));
+    loaded.unmount();
+    archive.read.mockRejectedValue(new Error('disk'));
+    render(wrapper(<AnalysisWorkbench {...props} />));
+    const request = await screen.findByTestId('analysis-history-request');
+    expect(screen.queryByTestId('analysis-history-empty')).not.toBeInTheDocument();
+    expect(request).toContainElement(screen.getByRole('button', { name: messages.analysisWorkbench.analyze }));
+    expect(request).toContainElement(screen.getByTestId('workbench-fill-notes'));
+  });
   it('does not offer an inert refresh or loaded-empty claim before a folder is attached', () => {
     render(wrapper(<AnalysisWorkbench context={{ ...context, handle: null }} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
     expect(screen.getByText(messages.analysisWorkbench.openFolder)).toBeVisible();
@@ -130,8 +146,18 @@ describe('analysis context workbench', () => {
     await screen.findByText('Current answer.');
     view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'conversation', nonce: 1 }} />));
     expect(screen.getByRole('tab', { name: messages.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true');
-    view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'meaning', nonce: 2 }} />));
-    expect(screen.getByRole('tab', { name: messages.analysisWorkbench.meaning })).toHaveAttribute('aria-selected', 'true');
+    view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'conversation', nonce: 2 }} />));
+    expect(screen.getByRole('tab', { name: messages.analysisWorkbench.conversation })).toHaveAttribute('aria-selected', 'true');
+  });
+  it('shows the criteria section only where a screen supplies it, and no tab strip for a single section', () => {
+    const props = { context, contextLabel: 'Refund', open: true, onClose: () => {} };
+    const single = render(wrapper(<AnalysisWorkbench {...props} />));
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+    single.unmount();
+    render(wrapper(<AnalysisWorkbench {...props} initialTab="meaning" facts={<p>Criteria</p>} conversation={<div>Live conversation</div>} />));
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([messages.analysisWorkbench.conversation, messages.analysisWorkbench.meaning, messages.analysisWorkbench.history]);
+    expect(screen.getByText('Criteria')).toBeVisible();
   });
   it('keeps the conversation mounted while opening history and restores an older exact answer', async () => {
     const mounted = vi.fn(); const unmounted = vi.fn();

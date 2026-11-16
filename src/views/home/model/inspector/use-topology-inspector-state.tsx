@@ -210,9 +210,9 @@ export function useTopologyInspectorState({
   // A dismissed panel leaves the selection but frees the rail, so the tiles come back.
   const selectedNodeOwnsRightRail =
     selectedNodeFocusActive && !nodePopoverDismissed && !meaningWorkbenchOpen && !acpDockFrameOpen;
-  // The connection card stands where the node inspector does, so the right-rail tiles and activity
-  // chip step aside.
-  const selectedEdgeOwnsRightRail = edgePanelOpen && !meaningWorkbenchOpen && !acpDockFrameOpen;
+  // The connection card stands where the node inspector does, beside an open dock too, so the
+  // right-rail tiles and activity chip step aside.
+  const selectedEdgeOwnsRightRail = edgePanelOpen;
   const inspectorOwnsRightRail = selectedNodeOwnsRightRail || selectedEdgeOwnsRightRail;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"

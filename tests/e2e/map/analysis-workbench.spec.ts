@@ -26,14 +26,13 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => window.localStorage.setItem('demo:sample-source:v1', 'storefront'));
 });
 
-test('a selected concept opens meaning and draws bounded directional relation captions', async ({ page }) => {
+test('a selected concept opens the review dock, which draws bounded directional relation captions while it is open', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
   await page.goto('/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
   await page.getByTestId('map-detail-panel-more-menu-trigger').click();
   await page.getByTestId('map-detail-panel-action-meaning').click();
   const workbench = page.getByTestId('analysis-workbench');
   await expect(workbench).toBeVisible();
-  await expect(workbench.getByRole('checkbox')).toBeChecked();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __atlasMap?: { relationCaptions?: () => CaptionBox[] } }).__atlasMap?.relationCaptions?.().length ?? 0)).toBeGreaterThan(0);
   const proof = await page.evaluate(() => {
     const api = (window as unknown as { __atlasMap: { relationCaptions: () => CaptionBox[]; labels: () => Array<Omit<CaptionBox, 'edgeId'>> } }).__atlasMap;
@@ -44,7 +43,8 @@ test('a selected concept opens meaning and draws bounded directional relation ca
   expect(proof.captions.length).toBeLessThanOrEqual(24);
   expect(proof.captions.some((caption) => /[→↘↓↙←↖↑↗]/u.test(caption.text))).toBe(true);
   expect(proof.overlaps).toEqual([]);
-  await workbench.getByRole('checkbox').uncheck();
+  await workbench.getByRole('button', { name: en.analysisWorkbench.close }).click();
+  await expect(workbench).toBeHidden();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __atlasMap?: { relationCaptions?: () => CaptionBox[] } }).__atlasMap?.relationCaptions?.().length ?? -1)).toBe(0);
 });
 
@@ -92,17 +92,6 @@ test('Architecture exposes version history without requiring an agent process', 
   await expect(page.getByTestId('architecture-inspector')).toBeHidden();
 });
 
-test('the map meaning action returns an open history dock to meaning without closing it', async ({ page }) => {
-  await page.setViewportSize({ width: 1040, height: 720 });
-  await page.goto('/en/topology/?e2e=1&guides=off&index=collapsed');
-  await page.getByTestId('topology-meaning-workbench-toggle').click();
-  const panel = page.getByTestId('analysis-workbench');
-  await panel.getByRole('tab', { name: en.analysisWorkbench.history }).click();
-  await expect(panel.getByRole('tab', { name: en.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true');
-  await page.getByTestId('topology-meaning-workbench-toggle').click();
-  await expect(panel.getByRole('tab', { name: en.analysisWorkbench.meaning })).toHaveAttribute('aria-selected', 'true');
-});
-
 test.describe('keyboard review at the app minimum window', () => {
   test.use({ viewport: { width: 1040, height: 720 } });
   test('an opening review answers Escape before its focus handoff finishes', async ({ page }) => {
@@ -148,29 +137,3 @@ test.describe('keyboard review at the app minimum window', () => {
     });
   }
 });
-
-for (const width of [1040, 1512]) {
-  test(`showing a relationship reveals its hidden endpoint at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto('/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
-    await page.getByTestId('map-detail-panel-more-menu-trigger').click();
-    await page.getByTestId('map-detail-panel-action-meaning').click();
-    const relation = page.getByTestId('analysis-workbench').getByTestId('meaning-relation').filter({ hasText: 'Product Detail Page' });
-    await relation.getByRole('button', { name: en.analysisWorkbench.showConnection }).click();
-    await expect.poll(() => page.evaluate(() => {
-      const api = (window as unknown as { __atlasMap: {
-        nodes: () => Array<{ id: string; hidden: boolean }>;
-        edges: () => Array<{ sourceId: string; targetId: string }>;
-        relationCaptions: () => CaptionBox[];
-      } }).__atlasMap;
-      return {
-        endpoints: api.nodes().filter((node) => ['capability:cart', 'capability:product-detail'].includes(node.id) && !node.hidden).length,
-        edges: api.edges().filter((edge) => edge.sourceId === 'capability:cart' && edge.targetId === 'capability:product-detail').length,
-        caption: api.relationCaptions().some((caption) => caption.edgeId.includes('product-detail') && caption.edgeId.includes('cart')),
-      };
-    })).toEqual({ endpoints: 2, edges: 1, caption: true });
-    await relation.getByRole('button', { name: en.analysisWorkbench.declaringDocument }).click();
-    await expect(page).not.toHaveURL(/mode=path/);
-    await expect(page.getByTestId('full-detail-a1')).toBeVisible();
-  });
-}

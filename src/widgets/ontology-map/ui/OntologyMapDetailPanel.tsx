@@ -168,7 +168,7 @@ export function OntologyMapDetailPanel({
       ? [{
           id: "reasons-missing" as const,
           line: tPanel("reasonsMissing", { count: reasonsMissing }),
-          action: meaningReview
+          action: meaningReview && onAskAgent
             ? { label: meaningReview.label, emphasis: "meaning-review" as const, onSelect: meaningReview.onOpen }
             : undefined,
         }]

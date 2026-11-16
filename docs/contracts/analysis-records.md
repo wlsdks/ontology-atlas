@@ -29,14 +29,14 @@ relation criteria remain in [the Atlas specification](../ONTOLOGY-ATLAS-SPEC.md#
 ## Reading and acting
 
 The map's **Ontology review** action opens the existing right context dock.
-Conversation (installed app only, and first there), Role & connections, and
-Review results occupy that same space. A requested review that is saved while
-the person is on Conversation selects its run under Review results; no model
-request is replayed by that move.
-The conversation stays mounted when the section changes. The first view shows
-the selected concept's definition, its kind criterion, directional relation
-sentences, stored rationale, and links to the declaring document. A missing
-rationale is visible as missing. Optional canvas captions name up to 24
+Conversation (installed app only, and first there) and Review results occupy
+that same space on the map; Architecture adds its own criteria section between
+them. A requested review that is saved while the person is on Conversation
+selects its run under Review results; no model request is replayed by that
+move. The conversation stays mounted when the section changes. Review results
+opens with the request actions above the saved runs. The selected concept's
+definition, kind and relation sentences are read in the concept panel, where a
+missing rationale is visible as missing. While the dock is open, canvas captions name up to 24
 visible relations where they fit; their arrows follow the actual source and
 target. Captions yield to concept labels, node shapes, and viewport chrome.
 Overview gives directional relations priority. Symmetric association labels

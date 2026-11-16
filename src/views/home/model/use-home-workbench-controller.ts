@@ -3,7 +3,7 @@ import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
-export type WorkbenchSection = "meaning" | "history" | "conversation";
+export type WorkbenchSection = "history" | "conversation";
 
 export function useHomeWorkbenchController() {
   const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
@@ -12,13 +12,12 @@ export function useHomeWorkbenchController() {
   const [meaningWorkbenchOpen, setMeaningWorkbenchOpen] = useState(false);
   const meaningWorkbenchPresence = usePanelPresence(meaningWorkbenchOpen);
   const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
-  const [showRelationMeaning, setShowRelationMeaning] = useState(true);
   const [analysisParentRunId, setAnalysisParentRunId] = useState<string | null>(null);
   const [analysisParentRequestText, setAnalysisParentRequestText] = useState<string | null>(null);
   const [workbenchSectionRequest, setWorkbenchSectionRequest] = useState<{
     tab: WorkbenchSection;
     nonce: number;
-  }>({ tab: "meaning", nonce: 0 });
+  }>({ tab: "history", nonce: 0 });
   const workbenchOpenRef = useRef({ agent: false, meaning: false });
   useLayoutEffect(() => {
     workbenchOpenRef.current = {
@@ -29,25 +28,18 @@ export function useHomeWorkbenchController() {
   const requestWorkbenchSection = useCallback((tab: WorkbenchSection) => {
     setWorkbenchSectionRequest((current) => ({ tab, nonce: current.nonce + 1 }));
   }, []);
-  const workbenchSectionRef = useRef<WorkbenchSection>("meaning");
   const openMeaningWorkbench = useCallback(() => {
     setVaultAgentOpen(false);
     setMeaningWorkbenchOpen(true);
-    requestWorkbenchSection("meaning");
+    requestWorkbenchSection("history");
   }, [requestWorkbenchSection]);
   const toggleMeaningWorkbench = useCallback(() => {
     if (meaningWorkbenchOpen) {
-      // The lit meaning chip is also the way home from history or conversation; only a press on
-      // meaning closes it.
-      if (workbenchSectionRef.current !== "meaning") {
-        requestWorkbenchSection("meaning");
-        return;
-      }
       setMeaningWorkbenchOpen(false);
       return;
     }
     openMeaningWorkbench();
-  }, [meaningWorkbenchOpen, openMeaningWorkbench, requestWorkbenchSection]);
+  }, [meaningWorkbenchOpen, openMeaningWorkbench]);
   const [analysisFindings, setAnalysisFindings] = useState<readonly AnalysisFinding[]>([]);
 
   return {
@@ -61,8 +53,6 @@ export function useHomeWorkbenchController() {
     setMeaningWorkbenchOpen,
     meaningWorkbenchPresence,
     reviewUsesSheet,
-    showRelationMeaning,
-    setShowRelationMeaning,
     analysisParentRunId,
     setAnalysisParentRunId,
     analysisParentRequestText,
@@ -70,7 +60,6 @@ export function useHomeWorkbenchController() {
     workbenchSectionRequest,
     workbenchOpenRef,
     requestWorkbenchSection,
-    workbenchSectionRef,
     openMeaningWorkbench,
     toggleMeaningWorkbench,
     analysisFindings,

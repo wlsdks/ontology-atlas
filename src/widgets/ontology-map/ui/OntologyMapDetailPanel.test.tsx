@@ -961,11 +961,23 @@ describe("OntologyMapDetailPanel: judgment and the one emphasised thing", () => 
     expect(filledControls()).toHaveLength(0);
   });
 
+  it("connections without a reason name the count alone where no agent can write them", () => {
+    renderPanel(undefined, {
+      kind: "capability",
+      meaningReview,
+      groups: reasonedGroups(["first is explained", undefined, undefined]),
+      reach: reachOf(3),
+    });
+    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveTextContent("2 relations have no reason written");
+    expect(screen.queryByTestId("map-detail-panel-judgment-action")).not.toBeInTheDocument();
+  });
+
   it("connections without a reason offer meaning review as the row's quiet action", () => {
     const onOpen = vi.fn();
     renderPanel(undefined, {
       kind: "capability",
       meaningReview: { label: "Meaning review", onOpen },
+      onAskAgent: vi.fn(),
       groups: reasonedGroups(["first is explained", undefined, undefined]),
       reach: reachOf(3),
     });

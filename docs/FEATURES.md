@@ -116,13 +116,11 @@ Project source-path repair opens the exact affected concept and its recorded
 relative path. Missing, stale or out-of-project targets require remeasurement;
 copied handoffs keep that target without disclosing the private source root.
 
-Ontology review explains the roles, boundaries and connections to examine before
-offering AI analysis. Original descriptions and connection rationales expand in
-place; previews retain a nonblank authored description or a complete opening
-paragraph within 320 characters, including the canonical `## Definition` section.
-The full-document action retains the remaining
-sections and boundaries. Selecting a relation keeps its details in the review
-panel instead of opening a duplicate inspector alongside it.
+Ontology review on the map opens the saved review results; in the installed app
+**Ask AI to review** and the offer to fill missing connection reasons stand above
+them. A concept's definition, connections and recorded reasons are read in its
+panel and full detail, not in the dock. Selecting a relation while the dock is
+open shows its card beside the dock.
 Agent reads of that same relation retain the review target. Opening a current
 evidence document exits path selection and opens its full detail.
 Escape also dismisses a review during its opening transition, preserving the
