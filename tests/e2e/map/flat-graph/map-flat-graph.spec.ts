@@ -126,22 +126,17 @@ function membersApartPx(dial: DialProbe, domainId: string): number {
   return Math.min(...members.flatMap((d, i) => members.slice(i + 1).map((e) => Math.hypot(d.x - e.x, d.y - e.y))));
 }
 
-const pickMinPx = (page: Page) => page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-pick-min-px")));
+const tokenPx = (page: Page, name: string) => page.evaluate((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v)), name);
 
-test("a domain selected from a zoomed-out view zooms until its closest members stand two least pick radii apart, and one deselect returns the view", async ({ page }) => {
+test("a domain selected at the overview zooms until its closest members stand the domain separation apart, and one deselect returns the view", async ({ page }) => {
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   await openGraph(page);
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
-  for (let notch = 0; notch < 2; notch += 1) {
-    await page.mouse.move(box.x + box.width * 0.45, box.y + box.height / 2);
-    await page.mouse.wheel(0, 120);
-    await waitForMapStill(page, { what: "camera" });
-  }
-  const apart = (await pickMinPx(page)) * 2;
+  const apart = await tokenPx(page, "--map-graph-domain-apart-px");
   const before = await readDial(page);
   const domainId = [...before.clusters].sort((a, b) => membersApartPx(before, a.domainId) - membersApartPx(before, b.domainId))[0]!.domainId;
-  expect(membersApartPx(before, domainId), "zoomed out, a domain's members stand closer than two pick radii").toBeLessThan(apart);
+  expect(membersApartPx(before, domainId), "at the overview a domain's members stand closer than the domain separation").toBeLessThan(apart);
 
   const home = before.discs.find((d) => d.id === domainId)!;
   await page.mouse.click(box.x + home.x, box.y + home.y);
@@ -166,7 +161,7 @@ test("a capability drawn smaller than the least pick radius answers a pointer th
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   const dial = await openGraph(page);
-  const pickMin = await pickMinPx(page);
+  const pickMin = await tokenPx(page, "--map-graph-pick-min-px");
   const reach = pickMin - 0.5;
   const centres = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => !n.hidden).map((n) => ({ id: n.id, x: n.x, y: n.y })));
   const capabilities = new Set(dial.clusters.flatMap((c) => c.capabilityIds));

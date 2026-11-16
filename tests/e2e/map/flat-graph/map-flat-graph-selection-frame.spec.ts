@@ -223,12 +223,12 @@ async function expectDomainFramed(page: Page, id: string, star: ReadonlySet<stri
 
 /**
  * A selected domain zooms in no further than its ratio of the zoom it was made at, and leaves its two
- * closest members two least pick radii apart on screen, or its star filling the free map.
+ * closest members the domain separation apart on screen, or its star filling the free map.
  */
 async function expectMembersApart(page: Page, id: string, star: ReadonlySet<string>, dial: DialProbe, clickedZoom: number): Promise<void> {
-  const [pickMin, selectZoom, margin] = await page.evaluate(() =>
-    ["--map-graph-pick-min-px", "--map-graph-select-zoom-max-ratio", "--map-graph-frame-margin-px"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
-  expect(pickMin).toBeGreaterThan(0);
+  const [domainApart, selectZoom, margin] = await page.evaluate(() =>
+    ["--map-graph-domain-apart-px", "--map-graph-select-zoom-max-ratio", "--map-graph-frame-margin-px"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
+  expect(domainApart).toBeGreaterThan(0);
   expect(dial.zoomRatio, "a domain zooms in no further than its ratio of the zoom it was made at").toBeLessThanOrEqual(clickedZoom * selectZoom! + 1e-6);
   const members = dial.discs.filter((d) => star.has(d.id) && d.id !== id);
   const apart = Math.min(...members.flatMap((d, i) => members.slice(i + 1).map((e) => Math.hypot(d.x - e.x, d.y - e.y))));
@@ -240,7 +240,7 @@ async function expectMembersApart(page: Page, id: string, star: ReadonlySet<stri
   const spanX = Math.max(...boxes.map((b) => b.maxX)) - Math.min(...boxes.map((b) => b.minX));
   const spanY = Math.max(...boxes.map((b) => b.maxY)) - Math.min(...boxes.map((b) => b.minY));
   const fills = spanX >= (r.maxX - r.minX - margin! * 2) * STAR_FILLS_SHARE || spanY >= (r.maxY - r.minY - margin! * 2) * STAR_FILLS_SHARE;
-  expect(apart >= pickMin! * 2 - EDGE_PX || fills, `closest members ${apart.toFixed(1)} px apart, star ${Math.round(spanX)} x ${Math.round(spanY)} in ${Math.round(r.maxX - r.minX)} x ${Math.round(r.maxY - r.minY)}`).toBe(true);
+  expect(apart >= domainApart! - EDGE_PX || fills, `closest members ${apart.toFixed(1)} px apart, star ${Math.round(spanX)} x ${Math.round(spanY)} in ${Math.round(r.maxX - r.minX)} x ${Math.round(r.maxY - r.minY)}`).toBe(true);
 }
 
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 949 }]) {

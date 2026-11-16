@@ -63,7 +63,7 @@ function graphSelectionFrame(
     // Members come along as discs: their names are re-admitted at whatever zoom the frame lands on.
     const star = [...blocks([id], true), ...blocks(members, false)];
     const zoom = domainSelectionZoom({
-      members: members.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.pickMinPx * 2, star,
+      members: members.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartPx, star,
       maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
     });
     return selectionFrameTarget(camera, [star], viewport, free, paint.frameMarginPx, band.entryScale, zoom);

@@ -194,9 +194,9 @@ describe("a selection framed between both panels", () => {
   it.each([
     ["docs", 1410, 840, docsManifest], ["docs", 1920, 1080, docsManifest],
     ["storefront", 1410, 840, storefrontManifest], ["storefront", 1920, 1080, storefrontManifest],
-  ])("zooms a domain in until its members stand two pick radii apart, or as far as its star fits, in the %s vault at %ix%i", (_, width, height, manifest) => {
+  ])("zooms a domain in until its closest members stand the domain separation apart, or as far as its star fits or its ratio cap allows, in the %s vault at %ix%i", (_, width, height, manifest) => {
     const map = vaultMap(manifest, { width, height });
-    const apart = paint.pickMinPx * 2;
+    const apart = paint.domainApartPx;
     const short: string[] = [];
     let zoomedIn = 0;
     for (const start of [map.rest, { ...map.rest, tscale: map.rest.tscale / 2 }]) {
@@ -206,7 +206,8 @@ describe("a selection framed between both panels", () => {
         const after = map.membersApartPx(domain.id, landed);
         if (before >= apart) expect(landed.tscale, `${domain.id} already stands ${before.toFixed(1)} px apart`).toBeCloseTo(start.tscale, 9);
         if (landed.tscale > start.tscale) zoomedIn += 1;
-        if (after < apart - 1e-6 && !map.starFills(domain.id, landed.tscale * 1.02)) short.push(`${domain.id} from ${start.tscale.toFixed(3)}: ${after.toFixed(1)} px at ${landed.tscale.toFixed(3)}`);
+        const capped = landed.tscale >= start.tscale * paint.selectZoomMaxRatio * (1 - 1e-9);
+        if (after < apart - 1e-6 && !capped && !map.starFills(domain.id, landed.tscale * 1.02)) short.push(`${domain.id} from ${start.tscale.toFixed(3)}: ${after.toFixed(1)} px at ${landed.tscale.toFixed(3)}`);
       }
     }
     expect(zoomedIn, "some domain selection zooms in").toBeGreaterThan(0);
