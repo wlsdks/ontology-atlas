@@ -66,7 +66,9 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChoo
       ? modeOptions
       : [{ value: ASK_EVERY_TIME, label: t('modeName.default'), description: t('modeHint.default') }];
   const currentMode = choices.currentModeId ? `${MODE_PREFIX}${choices.currentModeId}` : '';
-  const resting = autoApprove ? AUTO_APPROVE : modeOptions.length > 0 ? currentMode : ASK_EVERY_TIME;
+  // A kept choice can meet a conversation resumed in plan mode, where nothing runs to approve.
+  const autoApproveAnswers = autoApprove && modeCopyKey(choices.currentModeId) !== 'plan';
+  const resting = autoApproveAnswers ? AUTO_APPROVE : modeOptions.length > 0 ? currentMode : ASK_EVERY_TIME;
   const choose = (value: string) => {
     if (value === AUTO_APPROVE) {
       const asking = modeToLeavePlan(choices);
@@ -82,7 +84,7 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChoo
   return (
     <div
       data-testid="acp-chat-choices"
-      data-auto-approve={autoApprove ? 'on' : 'off'}
+      data-auto-approve={autoApproveAnswers ? 'on' : 'off'}
       className="flex min-w-0 items-center gap-0.5"
     >
       <Select
@@ -101,7 +103,7 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChoo
           PICKER_MIN_WIDTH_CLASS,
           PICKER_MAX_WIDTH_CLASS,
           'shrink',
-          autoApprove ? AUTO_APPROVE_ON_CLASS : yieldsWhileBusy,
+          autoApproveAnswers ? AUTO_APPROVE_ON_CLASS : yieldsWhileBusy,
         )}
       />
     </div>

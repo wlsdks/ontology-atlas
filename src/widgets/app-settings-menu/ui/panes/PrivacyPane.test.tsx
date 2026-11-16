@@ -108,6 +108,23 @@ describe('Privacy · data says what can leave and what this computer remembers',
     expect(screen.getAllByTestId('app-settings-allowances-folder')).toHaveLength(1);
   });
 
+  it('lists a folder whose chat is on auto-approve, and forgetting it makes the chat ask again', () => {
+    recordApproval('auto-approve', '/Users/probe/gamma', 'chat', 'scope');
+    recordApproval('round', '/Users/probe/gamma', 'r1', 'v1');
+    recordApproval('auto-approve', '/Users/probe/delta', 'chat', 'scope');
+    mount();
+    expect(screen.getAllByTestId('app-settings-allowances-folder').map((row) => row.textContent)).toEqual([
+      expect.stringContaining('/Users/probe/gamma · 1 scheduled check · Chat auto-approve'),
+      expect.stringContaining('/Users/probe/delta · Chat auto-approve'),
+    ]);
+    const forget = screen.getAllByTestId('app-settings-allowances-forget')[1]!;
+    fireEvent.click(forget);
+    act(() => {
+      fireEvent.click(forget);
+    });
+    expect(listMachineApprovals().some((item) => item.folder === '/Users/probe/delta')).toBe(false);
+  });
+
   it('forgets every allowance with Forget all', () => {
     recordApproval('round', '/Users/probe/alpha', 'r1', 'v1');
     mount();

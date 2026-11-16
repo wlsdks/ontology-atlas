@@ -185,7 +185,7 @@
     "auto": "Auto-approve"
   },
   "approvalHint": {
-    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, anything outside the folder, deletions and commits still ask."
+    "auto": "File edits in this folder and adding or changing concepts and relations go ahead without asking. Shell commands, anything outside the folder, deletions and commits still ask. It stays on for this folder until you turn it off."
   },
   "modeUnverifiedHint": "Not checked yet.",
   "runtimePicker": "Agent to chat with",

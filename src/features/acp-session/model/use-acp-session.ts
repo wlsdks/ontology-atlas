@@ -18,6 +18,8 @@ import { GATED_SESSION_MODE } from './runtime-wiring/runtime-gate';
 import { isPermissionProfileMode, modeKeepsGate } from './session-choices/mode-safety';
 import { investigationPermissionVerified, type InvestigationSendGuard } from './investigation/guard';
 import { standingApproval } from './permissions/standing-approval';
+import { keepStandingChoice, standingChoiceKept, useStandingChoice } from './permissions/standing-choice';
+import { rememberModel, rememberedModel } from './session-choices/remembered-choices';
 import { readReportedPlan, type ReportedPlan } from './investigation/reported-plan';
 import { isDiagnosticStderr } from './trouble/acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './session-choices/slash-commands';
@@ -154,6 +156,11 @@ export interface UseAcpSessionOptions {
   systemPromptAppendix?: string | null;
   resumeLatest?: boolean;
   putAway?: boolean;
+  /**
+   * Reads and keeps the person's auto-approve and model choices for this folder on this Mac. An
+   * unattended caller leaves it off: it never auto-approves and keeps the adapter's own model.
+   */
+  rememberChoices?: boolean;
 }
 
 const PUT_AWAY_IDLE_STOP_MS = 10 * 60 * 1000;
@@ -355,6 +362,7 @@ export function useAcpSession({
   systemPromptAppendix = null,
   resumeLatest = false,
   putAway = false,
+  rememberChoices = false,
 }: UseAcpSessionOptions) {
   /*
    * The interface language, handed to the agent so a button-started turn has one to answer in.
@@ -514,13 +522,15 @@ export function useAcpSession({
   }>());
   const latestUserRequestRef = useRef<string | null>(null);
   const onWorkReceiptRef = useRef(onWorkReceipt);
-  /** The person's auto-approve choice for this conversation. Memory only; every session starts off. */
-  const [autoApprove, setAutoApproveState] = useState(false);
-  const autoApproveRef = useRef(false);
+  const standingChoice = useStandingChoice(vaultRoot);
+  const autoApprove = rememberChoices && standingChoice;
+  const autoApproveNow = useCallback(
+    () => rememberChoices && standingChoiceKept(vaultRoot),
+    [rememberChoices, vaultRoot],
+  );
   const setAutoApprove = useCallback((on: boolean) => {
-    autoApproveRef.current = on;
-    setAutoApproveState(on);
-  }, []);
+    if (rememberChoices) keepStandingChoice(vaultRoot, on);
+  }, [rememberChoices, vaultRoot]);
 
   useEffect(() => {
     onWorkReceiptRef.current = onWorkReceipt;
@@ -737,7 +747,7 @@ export function useAcpSession({
     request = snapshotPermissionRequest(request);
     const generation = generationRef.current;
     // A request that arrived before the person turned auto-approve on still shows its card.
-    const autoApproveAtArrival = autoApproveRef.current;
+    const autoApproveAtArrival = autoApproveNow();
     const activeStart = activeTurnRef.current?.start ?? null;
     const origin = {
       sessionGeneration: generation,
@@ -798,7 +808,7 @@ export function useAcpSession({
       // Only a person's live turn can carry their standing choice; a request outside one asks.
       const standing = decided === null && origin.turn
         ? standingApproval(request, {
-            enabled: autoApproveAtArrival && autoApproveRef.current,
+            enabled: autoApproveAtArrival && autoApproveNow(),
             vaultRoot,
             vaultMcpServerName: hasVaultMcpServer(mcpServers) ? VAULT_MCP_SERVER_NAME : null,
           })
@@ -849,7 +859,7 @@ export function useAcpSession({
     });
     askChainRef.current = result.catch(() => null);
     return result;
-  }, [approvalSettleMs, emitWorkReceipt, mcpServers, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
+  }, [approvalSettleMs, autoApproveNow, emitWorkReceipt, mcpServers, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
@@ -860,7 +870,6 @@ export function useAcpSession({
      */
     if (clientRef.current || startingRef.current) return;
     startingRef.current = true;
-    setAutoApprove(false);
     const generation = generationRef.current;
     /** Did someone close this after I started? */
     const stale = () => generationRef.current !== generation;
@@ -1052,6 +1061,18 @@ export function useAcpSession({
       sessionIdRef.current = session.sessionId;
       sessionConsentRef.current = vaultWriteConsentOn(mcpServers);
 
+      let choices = session.choices;
+      // Before the gate below, so the gated mode is the last thing this start applies.
+      const keptModelId = rememberChoices ? rememberedModel(vaultRoot, runtimeId) : null;
+      if (
+        keptModelId !== null
+        && keptModelId !== choices.currentModelId
+        && choices.models.some((model) => model.id === keptModelId)
+        && await client.setModel(session.sessionId, keptModelId)
+      ) {
+        choices = { ...choices, currentModelId: keptModelId };
+      }
+
       /*
        * **Raise the permission gate.** codex is not held by config isolation and only by the session
        * mode (measured — `runtime-gate.ts`). It is applied only to runtimes that were measured.
@@ -1060,7 +1081,6 @@ export function useAcpSession({
        * promise that "outside the folder, we ask first" a lie.
        */
       const gatedMode = GATED_SESSION_MODE[runtimeId];
-      let choices = session.choices;
       if (gatedMode) {
         if (await client.setMode(session.sessionId, gatedMode)) {
           /*
@@ -1142,8 +1162,8 @@ export function useAcpSession({
     push,
     resetDiagnostics,
     runtimeId,
+    rememberChoices,
     setApprovedOntologyWriteTracked,
-    setAutoApprove,
     setChoices,
     setStatusTracked,
     updateEvents,
@@ -1185,8 +1205,9 @@ export function useAcpSession({
     if (!client || !sessionId) return;
     if (await client.setModel(sessionId, modelId)) {
       setChoices((prev) => ({ ...prev, currentModelId: modelId }));
+      if (rememberChoices) rememberModel(vaultRoot, runtimeId, modelId);
     }
-  }, [setChoices]);
+  }, [rememberChoices, runtimeId, setChoices, vaultRoot]);
 
   const chooseMode = useCallback(async (modeId: string) => {
     if (!modeKeepsGate(modeId)) return;
@@ -1310,7 +1331,6 @@ export function useAcpSession({
     pendingResolverRef.current?.(null);
     pendingResolverRef.current = null;
     setPending(null);
-    setAutoApprove(false);
     for (const approvedReceipt of approvedReceiptsRef.current.values()) {
       emitWorkReceipt({
         ...approvedReceipt.receipt,
@@ -1332,7 +1352,7 @@ export function useAcpSession({
     setReportedPlan(null);
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
-  }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setAutoApprove, setStatusTracked]);
+  }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setStatusTracked]);
 
   const stopIdleChain = useCallback(async () => {
     const settled = statusRef.current === 'ready' || statusRef.current === 'error';

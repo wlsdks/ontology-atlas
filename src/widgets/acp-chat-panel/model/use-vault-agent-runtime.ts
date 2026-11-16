@@ -11,6 +11,7 @@ import {
 } from "@/features/acp-session";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { keptAwayRuntimeId } from "./kept-panels";
+import { useRememberedTool } from "./use-remembered-tool";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/agent-chat/tauri-acp";
 
@@ -82,7 +83,7 @@ export function useVaultAgentRuntime(
   runtimes: VaultAgentRuntime[];
   runtime: VaultAgentRuntime | null;
   runtimeId: string | null;
-  setRuntimeId: (runtimeId: string | null) => void;
+  setRuntimeId: (runtimeId: string) => void;
   runtimeCheckComplete: boolean;
   serverCheckComplete: boolean;
   serverReady: boolean;
@@ -127,6 +128,7 @@ export function useVaultAgentRuntime(
     };
   }, [bridgeAvailable]);
 
+  const chooseRuntime = useRememberedTool({ vaultRoot, runtimes, runtimeId, setRuntimeId });
   const runtime = runtimes.find((candidate) => candidate.id === runtimeId) ?? null;
   const withConnectors = options.connectors !== false;
   const vaultConnectors = useVaultConnectors(withConnectors ? localVault.handle : null);
@@ -173,7 +175,7 @@ export function useVaultAgentRuntime(
     runtimes,
     runtime,
     runtimeId,
-    setRuntimeId,
+    setRuntimeId: chooseRuntime,
     runtimeCheckComplete,
     serverCheckComplete,
     serverReady,
