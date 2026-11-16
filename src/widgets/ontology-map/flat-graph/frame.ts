@@ -1016,6 +1016,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   const alphas = cacheFor(alphaCache, F.layout);
   loadMarkInk(it.direct ? it.domainId : it.id);
   const itemInk = scratch[0]!;
+  const itemR = it.direct ? 0 : discRadius(it.id);
   for (let i = 0; i < it.elementIds.length; i += 1) {
     const el = it.elementIds[i]!;
     const lit = attention.lit?.has(el) === true;
@@ -1026,7 +1027,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     // A dot off screen keeps no radius, so it neither steps nor keeps the loop awake.
     const r = visible ? dotRadius(el) : 0;
     // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
-    const coverR = !visible || it.direct || el === F.selectedId || el === F.leavingId ? 0 : discRadius(it.id);
+    const coverR = !visible || el === F.selectedId || el === F.leavingId ? 0 : itemR;
     const clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
     const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
@@ -1041,7 +1042,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
       if (s.spoke) {
         // A spoke starts outside the selection ring, so the ring stays one unbroken circle.
         const length = Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) || 1;
-        const start = Math.min(1, ((discRadius(it.id) + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
+        const start = Math.min(1, ((itemR + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
         s.x0 = itemAt.x + (elAt.x - itemAt.x) * start;
         s.y0 = itemAt.y + (elAt.y - itemAt.y) * start;
       }
