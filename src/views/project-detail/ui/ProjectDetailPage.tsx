@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, typ
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -49,7 +49,13 @@ import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs"
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
 import { ProjectAgentDock } from "./parts/ProjectAgentDock";
-import { useOntologyInsight } from "@/features/vault-ontology";
+import {
+  useAdaptiveRecentChanges,
+  useMapEvidenceStates,
+  useOntologyInsight,
+  useVaultConceptFacts,
+  type StaleEvidencePath,
+} from "@/features/vault-ontology";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
@@ -63,9 +69,20 @@ import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/c
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { splitProjectBrief } from "../model/project-brief";
 import { resolveProjectLead } from "../model/project-lead";
+import { buildProjectToCheck, isProjectConcept } from "../model/project-to-check";
+import { buildProjectChanged } from "../model/project-changed";
+import { useProjectReviewRows } from "../model/use-project-review-rows";
 import { DomainMasterDetail } from "./DomainMasterDetail";
+import { ToCheckSection } from "./now/ToCheckSection";
+import { ChangedSection } from "./now/ChangedSection";
+import { SECTION_HEADING_CLASS } from "./now/now-parts";
 import { ProjectActions } from "./ProjectActions";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
+
+const NO_IDS: ReadonlySet<string> = new Set();
+const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
+/** A2's three rows come before A3's in reading order, so A3's arrival continues the stagger. */
+const TO_CHECK_ROWS_BEFORE_CHANGED = 3;
 
 /* A lead paragraph needs no picture, and a remote one would be a request the reader did not ask for. */
 const LEAD_MARKDOWN_COMPONENTS: Components = { img: ({ alt }) => <span>{alt}</span> };
@@ -196,6 +213,8 @@ export function ProjectDetailPage({
 }: Props) {
   const t = useTranslations("projectPages.detail");
   const tMapDial = useTranslations("mapDial");
+  const tHex = useTranslations("topology.hexBoard");
+  const tIndex = useTranslations("topology.index");
   const failureSentence = useFailureSentence();
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
@@ -306,6 +325,12 @@ export function ProjectDetailPage({
   const vaultDocs = useVaultDocs();
   // One manifest, so sources and wiki pages are counted from the same folder.
   const vaultManifest = useVaultManifest();
+  const reducedMotion = useReducedMotion() ?? false;
+  // The map's own walk and window, so the page and the map name the same states and days.
+  const evidence = useMapEvidenceStates({ nodes: insightNodeList, enabled: true });
+  const recentChanges = useAdaptiveRecentChanges();
+  const reviewRows = useProjectReviewRows(vaultDocs);
+  const conceptFacts = useVaultConceptFacts();
 
   if (!slug) {
     return (
@@ -342,6 +367,25 @@ export function ProjectDetailPage({
   // Sources and wiki pages are the folder's; nothing ties a file to one project.
   const librarySources = vaultManifest?.sources?.length ?? 0;
   const libraryWikiPages = countWikiPages(vaultDocs);
+  const evidenceMeasured = evidence.availability === "measured";
+  const projectCapabilities = insightNodes.filter((node) => node.kind === "capability" && isProjectConcept(node, project.slug));
+  const staleIds = evidenceMeasured
+    ? new Set(projectCapabilities.filter((node) => evidence.states.get(node.id) === "stale").map((node) => node.id))
+    : NO_IDS;
+  const domainNameById = new Map<string, string>();
+  for (const domain of domainComposition.domains) {
+    domainNameById.set(domain.id, domain.title);
+    for (const capability of domain.capabilities) if (!domainNameById.has(capability.id)) domainNameById.set(capability.id, domain.title);
+  }
+  const toCheck = buildProjectToCheck({
+    nodes: insightNodes,
+    projectSlug: project.slug,
+    reviewRows,
+    stalePaths: evidenceMeasured ? evidence.stalePaths : NO_STALE_PATHS,
+    findingsBySlug: conceptFacts,
+    domainNameById,
+  });
+  const changed = buildProjectChanged(recentChanges.reading ? [] : recentChanges.rows, insightNodes, project.slug);
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
   const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
 
@@ -416,10 +460,13 @@ export function ProjectDetailPage({
     >
       <ProjectDetailTopBar slug={slug} projectName={displayName ?? project.name} />
 
-      {/* Name and actions share the first line only where the page column is wide enough for both. */}
-      <header
+      {/*
+        Band A. From a 64rem page column the brief sits beside what to check and what changed, with
+        the name and actions above them; from 90rem those two sit side by side. Narrower, one column.
+      */}
+      <div
         data-testid="project-detail-identity"
-        className="mt-8 grid min-w-0 grid-cols-1 gap-x-10 gap-y-5 [grid-template-areas:'name'_'text'_'actions'] @5xl/project-page:grid-cols-[minmax(0,1fr)_auto] @5xl/project-page:[grid-template-areas:'name_actions'_'text_text']"
+        className="mt-8 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'now'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:gap-y-6 @5xl/project-page:[grid-template-areas:'name_actions'_'text_now'] @[90rem]/project-page:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
       >
         <div className="min-w-0 [grid-area:name]">
           <div className="flex min-w-0 items-center gap-3">
@@ -436,7 +483,7 @@ export function ProjectDetailPage({
           <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{heroMeta}</p>
         </div>
 
-        <div className="min-w-0 [grid-area:actions]">
+        <div className="min-w-0 [grid-area:actions] @5xl/project-page:justify-self-end">
           <ProjectActions
             project={project}
             displayName={displayName ?? null}
@@ -509,7 +556,31 @@ export function ProjectDetailPage({
             </div>
           )}
         </div>
-      </header>
+
+        {/* One hairline in the gap beside the brief; A3 under A2, or beside it from 90rem. */}
+        <div
+          data-testid="project-detail-now"
+          className="relative grid min-w-0 grid-cols-1 content-start gap-x-12 gap-y-5 border-t border-[color:var(--color-divider)] pt-5 [grid-area:now] @5xl/project-page:border-t-0 @5xl/project-page:pt-0 @5xl/project-page:before:absolute @5xl/project-page:before:inset-y-0 @5xl/project-page:before:-left-6 @5xl/project-page:before:w-px @5xl/project-page:before:bg-[color:var(--color-divider)] @[90rem]/project-page:grid-cols-2"
+        >
+          <ToCheckSection
+            projectName={displayName ?? project.name}
+            toCheck={toCheck}
+            availability={evidence.availability}
+            staleCount={staleIds.size}
+            capabilityTotal={projectCapabilities.length}
+            reducedMotion={reducedMotion}
+          />
+          <div className="relative min-w-0 border-t border-[color:var(--color-divider)] pt-5 @[90rem]/project-page:border-t-0 @[90rem]/project-page:pt-0 @[90rem]/project-page:before:absolute @[90rem]/project-page:before:inset-y-0 @[90rem]/project-page:before:-left-6 @[90rem]/project-page:before:w-px @[90rem]/project-page:before:bg-[color:var(--color-divider)]">
+            <ChangedSection
+              changed={changed}
+              windowDays={recentChanges.windowDays}
+              reading={recentChanges.reading}
+              reducedMotion={reducedMotion}
+              arrivalOffset={TO_CHECK_ROWS_BEFORE_CHANGED}
+            />
+          </div>
+        </div>
+      </div>
 
       {constructionReview.status === "ready" || constructionReview.status === "blocked" ? (
         <div ref={reviewOutcomeRef} tabIndex={-1} role="region"
@@ -551,7 +622,7 @@ export function ProjectDetailPage({
         <div className="mb-5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <h2
             id="project-detail-composition-title"
-            className="text-title font-[var(--font-weight-strong)] tracking-title text-[color:var(--color-text-primary)]"
+            className={SECTION_HEADING_CLASS}
           >
             {t("compositionHeading")}
           </h2>
@@ -568,6 +639,7 @@ export function ProjectDetailPage({
           <DomainMasterDetail
             domains={domainComposition.domains}
             maxTotal={domainComposition.maxTotal}
+            marks={{ staleIds, changedIds: changed.changedIds }}
             labels={{
               listLabel: t("metricDomains"),
               capabilityUnit: t("domainCapabilityLabel"),
@@ -587,6 +659,9 @@ export function ProjectDetailPage({
               showMore: (count) => tMapDial("moreMembers", { count }),
               elementCount: (count) => t("capabilityElementCount", { count }),
               mapLinkLabel: t("domainRowMapLink"),
+              domainStale: (count) => tHex("domainStale", { count }),
+              staleMark: tHex("legendStale"),
+              recentMark: tIndex("freshTitle"),
             }}
           />
         ) : (
@@ -623,6 +698,9 @@ export function ProjectDetailPage({
             {t("surfaceOpenHarness")}
           </Link>
         ) : null}
+        <Link href="/changes/" prefetch={false} data-testid="project-detail-changes-link" className={quietLinkClass}>
+          {t("surfaceOpenChanges")}
+        </Link>
         {connectedProjects.length > 0 ? (
           <span data-testid="project-detail-connected" className="flex min-w-0 flex-wrap items-baseline gap-x-2">
             {t("connectedTitle")}

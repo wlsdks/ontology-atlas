@@ -11,6 +11,7 @@ import { EXIT_TRANSITION, MOTION, STAGGER } from "@/shared/motion";
 import { SPRING, framerSpring } from "@/shared/motion/spring";
 import { cn } from "@/shared/lib/cn";
 import type { DomainCompositionRow } from "../model/domain-composition";
+import { RECENT_DOT_CLASS, STALE_DOT_CLASS } from "./now/now-parts";
 
 /** Twelve rows read as a list at a glance; the rest waits behind one press. */
 const CAPABILITIES_SHOWN = 12;
@@ -37,6 +38,17 @@ export interface DomainMasterDetailLabels {
   showMore: (count: number) => string;
   elementCount: (count: number) => string;
   mapLinkLabel: string;
+  /** The map's domain caption for its stale capabilities. */
+  domainStale: (count: number) => string;
+  staleMark: string;
+  recentMark: string;
+}
+
+/** The map's two states on a capability: stale by the measured Git walk, changed in the recent window. */
+export interface CompositionMarks {
+  /** Empty unless the walk was measured, so unknown never draws as stale. */
+  staleIds: ReadonlySet<string>;
+  changedIds: ReadonlySet<string>;
 }
 
 /**
@@ -47,10 +59,12 @@ export function DomainMasterDetail({
   domains,
   maxTotal,
   labels,
+  marks,
 }: {
   domains: readonly DomainCompositionRow[];
   maxTotal: number;
   labels: DomainMasterDetailLabels;
+  marks: CompositionMarks;
 }) {
   const [selectedId, setSelectedId] = useState(domains[0]?.id ?? null);
   const selected = domains.find((domain) => domain.id === selectedId) ?? domains[0];
@@ -114,6 +128,7 @@ export function DomainMasterDetail({
           labels={labels}
           reducedMotion={reducedMotion}
           optionRefs={optionRefs}
+          staleIds={marks.staleIds}
           onSelect={setSelectedId}
           onKeyDown={onListKeyDown}
         />
@@ -134,6 +149,7 @@ export function DomainMasterDetail({
             domain={selected}
             labels={labels}
             reducedMotion={reducedMotion}
+            marks={marks}
             reserveShowMore={domains.some((domain) => domain.capabilities.length > CAPABILITIES_SHOWN)}
           />
         </AnimatePresence>
@@ -149,6 +165,7 @@ function DomainList({
   labels,
   reducedMotion,
   optionRefs,
+  staleIds,
   onSelect,
   onKeyDown,
 }: {
@@ -158,6 +175,7 @@ function DomainList({
   labels: DomainMasterDetailLabels;
   reducedMotion: boolean;
   optionRefs: RefObject<Map<string, HTMLLIElement>>;
+  staleIds: ReadonlySet<string>;
   onSelect: (id: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLUListElement>) => void;
 }) {
@@ -177,8 +195,9 @@ function DomainList({
       aria-orientation="vertical"
       data-testid="project-detail-domain-list"
       onKeyDown={onKeyDown}
-      // Name, bar and count are three shared columns, so every bar starts on one x.
-      className="relative -mx-2 grid grid-cols-[auto_minmax(0,max-content)_minmax(3rem,1fr)_auto] gap-y-px overflow-y-auto overscroll-contain"
+      // Name, bar, stale count and total are shared columns, so every bar starts on one x and a
+      // stale count arriving after the Git walk moves nothing.
+      className="relative -mx-2 grid grid-cols-[auto_minmax(0,max-content)_minmax(3rem,1fr)_2.5rem_auto] gap-y-px overflow-y-auto overscroll-contain"
       style={{ maxHeight: `calc(${DOMAIN_ROWS_SHOWN} * ${DOMAIN_ROW_REM}rem + ${DOMAIN_ROWS_SHOWN - 1}px)` }}
     >
       {tint ? (
@@ -199,6 +218,7 @@ function DomainList({
       ) : null}
       {domains.map((domain) => {
         const isSelected = domain.id === selectedId;
+        const staleCount = domain.capabilities.reduce((sum, capability) => sum + (staleIds.has(capability.id) ? 1 : 0), 0);
         return (
           <li
             key={domain.id}
@@ -208,7 +228,7 @@ function DomainList({
             }}
             role="option"
             aria-selected={isSelected}
-            aria-label={labels.optionAria(domain)}
+            aria-label={staleCount > 0 ? `${labels.optionAria(domain)} · ${labels.domainStale(staleCount)}` : labels.optionAria(domain)}
             tabIndex={isSelected ? 0 : -1}
             data-testid="project-detail-domain-option"
             data-domain-id={domain.id}
@@ -219,7 +239,7 @@ function DomainList({
               tone: "secondary",
               hoverSurface: isSelected ? undefined : "lift",
               className: cn(
-                "relative col-span-4 grid grid-cols-subgrid items-center gap-x-3 px-2",
+                "relative col-span-5 grid grid-cols-subgrid items-center gap-x-3 px-2",
                 isSelected && "text-[color:var(--color-text-primary)]",
               ),
             })}
@@ -227,6 +247,23 @@ function DomainList({
             <OntologyMapKindGlyph kind="domain" size={ICON_SIZE.md} className="shrink-0" />
             <span className="min-w-0 truncate">{domain.title}</span>
             <DomainLengthBar domain={domain} maxTotal={maxTotal} reducedMotion={reducedMotion} />
+            <span aria-hidden title={staleCount > 0 ? labels.domainStale(staleCount) : undefined} className="text-right">
+              <AnimatePresence initial={false}>
+                {staleCount > 0 ? (
+                  <motion.span
+                    key={staleCount}
+                    data-testid="project-detail-domain-stale"
+                    className="text-label tabular-nums text-[color:var(--color-status-warning)]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: EXIT_TRANSITION }}
+                    transition={MOTION.fast}
+                  >
+                    ◐ {staleCount}
+                  </motion.span>
+                ) : null}
+              </AnimatePresence>
+            </span>
             <span className="min-w-[2ch] text-right font-mono text-body tabular-nums text-[color:var(--color-text-tertiary)]">
               {domain.total}
             </span>
@@ -261,15 +298,51 @@ function DomainLengthBar({ domain, maxTotal, reducedMotion }: { domain: DomainCo
   );
 }
 
+/** A fixed slot for the two dots, so a mark arriving after the Git walk moves no text. */
+function CapabilityMarks({ stale, changed, labels }: { stale: boolean; changed: boolean; labels: DomainMasterDetailLabels }) {
+  return (
+    <span aria-hidden className="flex w-4 shrink-0 items-center justify-end gap-1">
+      <AnimatePresence initial={false}>
+        {stale ? (
+          <motion.span
+            key="stale"
+            title={labels.staleMark}
+            data-testid="project-detail-capability-stale"
+            className={STALE_DOT_CLASS}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: EXIT_TRANSITION }}
+            transition={MOTION.fast}
+          />
+        ) : null}
+        {changed ? (
+          <motion.span
+            key="changed"
+            title={labels.recentMark}
+            data-testid="project-detail-capability-changed"
+            className={RECENT_DOT_CLASS}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: EXIT_TRANSITION }}
+            transition={MOTION.fast}
+          />
+        ) : null}
+      </AnimatePresence>
+    </span>
+  );
+}
+
 function SelectedDomain({
   domain,
   labels,
   reducedMotion,
+  marks,
   reserveShowMore,
 }: {
   domain: DomainCompositionRow;
   labels: DomainMasterDetailLabels;
   reducedMotion: boolean;
+  marks: CompositionMarks;
   /** Some domain has more rows than are shown, so every detail keeps the line its door sits on. */
   reserveShowMore: boolean;
 }) {
@@ -337,7 +410,13 @@ function SelectedDomain({
               >
                 <Link
                   href={getTopologyFocusHref(capability.id)}
-                  aria-label={labels.capabilityLinkAria(capability.title)}
+                  aria-label={[
+                    labels.capabilityLinkAria(capability.title),
+                    marks.staleIds.has(capability.id) ? labels.staleMark : null,
+                    marks.changedIds.has(capability.id) ? labels.recentMark : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                   data-testid="project-detail-capability-link"
                   className={controlClass({
                     shape: "row",
@@ -350,6 +429,7 @@ function SelectedDomain({
                 >
                   <OntologyMapKindGlyph kind="capability" size={ICON_SIZE.sm} className="shrink-0" />
                   <span title={capability.title} className="min-w-0 flex-1 truncate">{capability.title}</span>
+                  <CapabilityMarks stale={marks.staleIds.has(capability.id)} changed={marks.changedIds.has(capability.id)} labels={labels} />
                   {capability.elementCount > 0 ? (
                     <span aria-hidden className="shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                       {labels.elementCount(capability.elementCount)}

@@ -1,4 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import projectPages from "../../../messages/ko/projectPages.json";
+import topology from "../../../messages/ko/topology.json";
+
+const detail = projectPages.detail;
 
 const PROJECT_PAGE = "/ko/project/storefront/?guides=off";
 
@@ -20,6 +24,80 @@ test.describe("project page reads as a brief", () => {
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height, "the lead paragraph ends below the first screen").toBeLessThanOrEqual(720);
   });
+
+  test("the first screen at 1280x720 holds the lead, what to check, what changed and the composition heading", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openProjectPage(page);
+    const firstToCheck = page.getByTestId("project-detail-to-check-row").or(page.getByTestId("project-detail-to-check-empty")).first();
+    await expect(firstToCheck).toBeVisible();
+    for (const [name, locator] of [
+      ["lead paragraph", page.getByTestId("project-detail-lead")],
+      ["to-check heading", page.getByTestId("project-detail-to-check-heading")],
+      ["first to-check row", firstToCheck],
+      ["changed heading", page.getByTestId("project-detail-changed-heading")],
+      ["composition heading", page.locator("#project-detail-composition-title")],
+    ] as const) {
+      const box = (await locator.boundingBox())!;
+      expect(box.y + box.height, `the ${name} ends below the first screen`).toBeLessThanOrEqual(720);
+    }
+  });
+
+  test("on the web no stale row is drawn, and the evidence line says only the app reads Git", async ({ page }) => {
+    await openProjectPage(page);
+    await expect(page.getByTestId("project-detail-evidence-line")).toHaveText(topology.hexBoard.evidenceAppOnly);
+    await expect(page.locator('[data-testid="project-detail-to-check-row"][data-reason="stale"]')).toHaveCount(0);
+    await expect(page.getByTestId("project-detail-capability-stale")).toHaveCount(0);
+    await expect(page.getByTestId("project-detail-to-check-heading")).toContainText(detail.toCheckHeading.split(" ·")[0]!);
+  });
+
+  test("every row opens where it is judged", async ({ page }) => {
+    await openProjectPage(page);
+    const rows = page.getByTestId("project-detail-to-check-row");
+    for (const row of await rows.all()) {
+      const reason = await row.getAttribute("data-reason");
+      const href = (await row.getAttribute("href"))!;
+      if (reason === "stale" || reason === "definition-missing") expect(href).toMatch(/\/topology\/\?mode=focus&p=/);
+      else expect(href).toMatch(/\/docs\/\?slug=/);
+    }
+    for (const row of await page.getByTestId("project-detail-changed-row").all()) {
+      expect(await row.getAttribute("href")).toMatch(/\/topology\/\?mode=focus&p=/);
+    }
+    await expect(page.getByTestId("project-detail-changed-map-link")).toHaveAttribute("href", /\/topology\/\?recent=auto$/);
+    await expect(page.getByTestId("project-detail-changes-link")).toHaveAttribute("href", /\/changes\/$/);
+  });
+
+  for (const [width, height] of [
+    [1440, 900],
+    [1920, 1080],
+  ] as const) {
+    test(`band A leaves no blank run wider than 12% of the column and keeps rows equal at ${width}x${height}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await openProjectPage(page);
+      const band = await page.evaluate(() => {
+        const box = (testId: string) => document.querySelector(`[data-testid="${testId}"]`)!.getBoundingClientRect();
+        const heights = (testId: string) => [...document.querySelectorAll(`[data-testid="${testId}"]`)].map((el) => Math.round(el.getBoundingClientRect().height));
+        return {
+          column: box("project-detail-identity"),
+          lead: box("project-detail-body"),
+          toCheck: box("project-detail-to-check"),
+          changed: box("project-detail-changed"),
+          toCheckHeights: heights("project-detail-to-check-row"),
+          changedHeights: heights("project-detail-changed-row"),
+        };
+      });
+      const gaps = {
+        "brief to what to check": band.toCheck.left - band.lead.right,
+        "what to check to the column edge": band.column.right - Math.max(band.toCheck.right, band.changed.right),
+      };
+      console.log(`[band A ${width}] column ${Math.round(band.column.width)} gaps ${JSON.stringify(gaps)}`);
+      for (const [name, gap] of Object.entries(gaps)) {
+        expect(gap / band.column.width, `${name} is ${Math.round(gap)}px`).toBeLessThanOrEqual(0.12);
+      }
+      expect(new Set(band.toCheckHeights).size, "to-check rows differ in height").toBeLessThanOrEqual(1);
+      expect(new Set(band.changedHeights).size, "changed rows differ in height").toBeLessThanOrEqual(1);
+      if (width >= 1920) expect(band.changed.top, "what changed does not share a top edge with what to check").toBe(band.toCheck.top);
+    });
+  }
 
   test("domains of different size draw bars of different lengths", async ({ page }) => {
     await openProjectPage(page);
