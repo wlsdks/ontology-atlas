@@ -22,6 +22,8 @@ export interface OntologyMapDetailPanelLabels {
   actionCopyHandoff: string;
   /** Absent without an agent panel (web build); the handoff copy stands in for it. */
   actionAskAgent?: string;
+  /** The footer button's visible word; `actionAskAgent` stays its accessible name. */
+  actionAskAgentShort?: string;
   actionRealm: string;
   /** What asking the agent does; touch has no hover, so the label stays self-sufficient. */
   actionAskAgentTip?: string;

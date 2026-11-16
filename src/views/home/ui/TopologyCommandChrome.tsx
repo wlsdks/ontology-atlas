@@ -36,7 +36,6 @@ import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
 import { TopologyTrailChip } from "./TopologyTrailChip";
-import type { NodeDatasheetDerivation } from "../model/inspector/use-node-datasheet-model";
 
 
 interface TopologyCommandChromeProps {
@@ -64,7 +63,6 @@ interface TopologyCommandChromeProps {
   sampleModeSettled: boolean;
   sampleModeKnown: boolean;
   requestVaultOpen: () => void;
-  v2DatasheetModel: NodeDatasheetDerivation["v2DatasheetModel"];
   topologyAgentActivity: Pick<ReturnType<typeof useTopologyAgentActivity>, "acpLiveWork">;
   homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "meaningWorkbenchOpen" | "toggleMeaningWorkbench">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect" | "handleReplayPastWalk">;
@@ -103,7 +101,6 @@ interface TopologyCommandChromeProps {
     | "selectedNodeFocusActive"
     | "inspectorOwnsRightRail"
     | "activityInboxOpen"
-    | "selectedEdgeOwnsRightRail"
     | "setActivityInboxOpen"
   >;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "structure" | "tWorkbench" | "tAtlasGit">;
@@ -124,7 +121,7 @@ export function TopologyCommandChrome({
   expandAllActive, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
   handleFootprintLens, handleFootprintBrush, pastWalkRows, pastTrailNotice, handleDeletePastWalk,
-  handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen, v2DatasheetModel,
+  handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen,
   topologyPreferences, topologyInspectorState, topologyAuthoring, topologyCanvasFocus,
   topologyVaultReadModel, topologyGraphProjection, topologyAgentOrchestration, topologySceneControls,
   topologyRouteControls, topologyNavigationActions, homeWorkbenchController, topologyAgentActivity,
@@ -138,7 +135,7 @@ export function TopologyCommandChrome({
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
     searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
-    selectedEdgeOwnsRightRail, setActivityInboxOpen
+    setActivityInboxOpen
   } = topologyInspectorState;
   const { createNodeOpen, setSelectedEdge } = topologyAuthoring;
   const { selectedRelationActive, setSelectedRelationActive } = topologyCanvasFocus;
@@ -630,11 +627,10 @@ export function TopologyCommandChrome({
                   {/* Work status is the bell's left segment; one component owns both feeds, outside
                      click and Escape. */}
                   <AgentActivityChip
-                    // Recedes for a datasheet, but not from under an open notification panel:
-                    // pressing a row there focuses its node, which raises the datasheet.
-                    suppressed={
-                      (Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail) && !activityInboxOpen
-                    }
+                    // Recedes with its row while an inspector owns the rail, but not from under an
+                    // open notification panel: pressing a row there focuses its node, which raises
+                    // the inspector.
+                    suppressed={inspectorOwnsRightRail && !activityInboxOpen}
                     liveWork={acpLiveWork}
                     conversationOpen={agentDockOpen}
                     compact={topologyUtilityChromeCompact}

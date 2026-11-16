@@ -18,10 +18,13 @@ Closing the dock restores focus there so Enter can reopen it without navigating
 from the start of the map.
 
 #### Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)
-- **Role & connections, Review results, and Conversation share one context dock.** In
-  the installed app the agent tile is the map toolbar's one door to it; the web,
-  which has no agent tile, keeps an Ontology review tile there. A selected concept
-  exposes Ontology review in both. It explains the
+- **Conversation, Role & connections, and Review results share one context dock.** In
+  the installed app the agent tile is the map toolbar's one door to it, Conversation
+  is its first tab, and a selected concept's panel carries **Ask** in its footer; the
+  web, which has no agent tile, keeps an Ontology review tile there and no
+  Conversation tab. A selected concept exposes Ontology review in both. A requested
+  review that finishes while its conversation is in view opens as its result under
+  Review results; a save that finishes anywhere else arrives as a toast with a link. It explains the
   normative kind criteria, actual directional relations, stored rationale and
   missing rationale. Optional relation captions avoid concept labels and shapes.
   Explicit AI review actions capture immutable Markdown records in the active

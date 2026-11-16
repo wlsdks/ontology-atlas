@@ -61,6 +61,7 @@
     "contextMenuAriaLabel": "{name} 작업",
     "actionCopyHandoff": "프롬프트 복사",
     "actionAskAgent": "에이전트에게 묻기",
+    "actionAskAgentShort": "묻기",
     "actionPath": "경로 찾기",
     "actionMentionDocumentTip": "이 개념은 아직 자기 문서가 없어요. 이 개념을 적어 둔 다른 문서를 열어요",
     "actionAskAgentTip": "지도 옆 에이전트에게 이 개념에 대해 물어봐요",

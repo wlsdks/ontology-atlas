@@ -66,6 +66,20 @@ describe('analysis context workbench', () => {
     expect(sonnerToast.success).toHaveBeenCalledTimes(1);
   });
 
+  it('opens the result of a review that finished while its conversation was in view, and leaves any other save to the toast', async () => {
+    const savedAs = (record: AnalysisRun, id: string) => ({ state: { status: 'saved' as const, id, handle: context.handle, record, error: null }, setState: vi.fn() });
+    const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, initialTab: 'conversation' as const, conversation: <div>Live conversation</div> };
+    const watched = render(wrapper(<AnalysisWorkbench {...props} capture={savedAs(runs[0], runs[0].id)} />));
+    await waitFor(() => expect(screen.getByRole('tab', { name: messages.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true'));
+    await screen.findByText('Current answer.');
+    watched.unmount();
+
+    const chatTurn = { ...runs[0], request: { ...runs[0].request, text: 'What does a refund cover?' } };
+    render(wrapper(<AnalysisWorkbench {...props} capture={savedAs(chatTurn, '7d1f0a52-3c1b-4e0e-8a57-6f2f4f1f9b10')} />));
+    expect(sonnerToast.success).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('tab', { name: messages.analysisWorkbench.conversation })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('offers to write the missing connection reasons only when there are some, and sends a bounded write request', () => {
     const onRequest = vi.fn();
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest };

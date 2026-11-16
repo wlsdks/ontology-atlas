@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { MessageCircle } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { slugDisplaySegment } from "./map-datasheet";
 import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
 
@@ -22,18 +24,22 @@ export function panelActionClass(filled: boolean, size: "row" | "md" = "md"): st
 }
 
 /**
- * The slug an agent takes, the menus, and the step deeper. A document's step is opening the
- * document itself, its one filled control while nothing in the panel needs a person.
+ * The slug an agent takes, the one press to that agent, the menus, and the step deeper. A
+ * document's step is opening the document itself, its one filled control while nothing in the
+ * panel needs a person.
  */
 export function PanelFooter({
   slug,
   labels,
+  onAskAgent,
   menus,
   documentAction,
   onOpenFullDetail,
 }: {
   slug: string;
   labels: OntologyMapDetailPanelLabels;
+  /** Present only where an agent panel exists; the panel covers the map's own agent tile. */
+  onAskAgent?: () => void;
   menus: ReactNode;
   /** Present only for a document selection; replaces the full-detail step. */
   documentAction: { href: string; filled: boolean } | null;
@@ -53,6 +59,19 @@ export function PanelFooter({
       >
         {slugDisplaySegment(slug)}
       </span>
+      {onAskAgent && labels.actionAskAgent ? (
+        <button
+          type="button"
+          onClick={onAskAgent}
+          aria-label={labels.actionAskAgent}
+          title={labels.actionAskAgentTip}
+          data-testid="map-detail-panel-action-ask-agent"
+          className={`${panelActionClass(false)} gap-1`}
+        >
+          <MessageCircle size={ICON_SIZE.sm} aria-hidden />
+          {labels.actionAskAgentShort ?? labels.actionAskAgent}
+        </button>
+      ) : null}
       {menus}
       {documentAction ? (
         <Link

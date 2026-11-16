@@ -61,6 +61,7 @@
     "contextMenuAriaLabel": "{name} 的操作",
     "actionCopyHandoff": "复制提示词",
     "actionAskAgent": "询问智能体",
+    "actionAskAgentShort": "询问",
     "actionPath": "路径",
     "actionMentionDocumentTip": "此概念还没有自己的文档。将打开另一篇提到它的文档",
     "actionAskAgentTip": "就此概念询问地图旁的智能体",
