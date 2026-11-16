@@ -177,3 +177,29 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
   }
   return { nodes, edges };
 }
+
+/** The file the film opens: a capability inside a domain that declares the most dependencies. */
+export interface FilmCloseUp {
+  index: number;
+  parent: number;
+  dependencies: number[];
+}
+
+export function pickCloseUp(scene: FilmScene): FilmCloseUp | null {
+  let best: FilmCloseUp | null = null;
+  scene.nodes.forEach((node, i) => {
+    if (node.kind !== 'capability') return;
+    const holder = scene.edges.find((edge) => edge.contains && edge.to === i);
+    if (!holder || scene.nodes[holder.from]?.kind !== 'domain') return;
+    const dependencies = scene.edges
+      .filter((edge) => !edge.contains && edge.from === i && edge.to !== i)
+      .map((edge) => edge.to);
+    if (dependencies.length === 0) return;
+    /* Two or three reads cleanly on the card; more only lengthens the line. */
+    const score = Math.min(dependencies.length, 3);
+    if (!best || score > Math.min(best.dependencies.length, 3)) {
+      best = { index: i, parent: holder.from, dependencies: dependencies.slice(0, 3) };
+    }
+  });
+  return best;
+}
