@@ -68,12 +68,12 @@ function approvableAtlasWrite(
   return bareName;
 }
 
-/** A null frontmatter value deletes that field and an empty body blanks the node: deletions ask. */
+/** A null or emptied frontmatter value deletes that field and an empty body blanks the node: deletions ask. */
 function patchRemovesContent(rawInput: Record<string, unknown>): boolean {
   const { frontmatter, body } = rawInput;
   if (frontmatter !== undefined) {
     if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) return true;
-    if (Object.values(frontmatter).some((value) => value === null)) return true;
+    if (Object.values(frontmatter).some((value) => value === null || (Array.isArray(value) && value.length === 0))) return true;
   }
   return body !== undefined && (typeof body !== 'string' || body.trim() === '');
 }

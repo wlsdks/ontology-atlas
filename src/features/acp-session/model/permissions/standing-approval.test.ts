@@ -47,7 +47,7 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     { name: 'a Codex Atlas write reported as execute', request: atlasWrite('add_concept', { toolKind: 'execute' }), target: 'add_concept', context: ON },
     { name: 'a rename that leaves overwrite unset', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b' } }), target: 'rename_concept', context: ON },
     { name: 'a rename with overwrite false', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite: false } }), target: 'rename_concept', context: ON },
-    { name: 'a patch that sets fields and a body', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: [] }, body: 'Defines A.' } }), target: 'patch_concept', context: ON },
+    { name: 'a patch that sets fields and a body', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: ['b'] }, body: 'Defines A.' } }), target: 'patch_concept', context: ON },
     { name: 'an edit whose path arguments all name the same file', request: edit({ rawInput: { file_path: '/Users/me/vault/capabilities/refund.md', path: '/Users/me/vault/capabilities/refund.md' } }), target: 'refund.md', context: ON },
     { name: 'a file whose name only contains an instruction stem', request: edit({ filePath: '/Users/me/vault/agents-overview.md' }), target: 'agents-overview.md', context: ON },
   ])('approves $name', ({ request, target, context }) => {
@@ -94,6 +94,7 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     ['a same-length other server writes under the ontology review', atlasWrite('x', { toolName: 'mcp__other-vault__add_concept' }), ON],
     ...[true, 'true', 1, null].map((overwrite) => [`a rename sets overwrite to ${JSON.stringify(overwrite)}`, atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite } }), ON] as const),
     ['a patch clears a frontmatter field', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: null } } }), ON],
+    ['a patch empties a relation list', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { dependencies: [] } } }), ON],
     ['a patch empties the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: '' } }), ON],
     ['a patch leaves only whitespace in the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: ' \n\t' } }), ON],
     ['a patch sends frontmatter that is not an object', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: null } }), ON],
