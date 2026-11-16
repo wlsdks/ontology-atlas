@@ -69,7 +69,7 @@ function validPayload({ markers: markerOverrides, ...overrides } = {}) {
     height: 917,
     // Markers are **merged** — overwriting drops the shell markers and a different
     // check fails first (this misled the author twice while writing these tests).
-    markers: { ontologyNav: true, sourceVaultNav: false, libraryNav: true, ...markerOverrides },
+    markers: { mapNav: true, libraryNav: true, ...markerOverrides },
     ...overrides,
   };
 }
@@ -103,13 +103,13 @@ test("payload contract · briefing requires its rendered surface, including sour
   const payload = validPayload({
     href: "tauri://localhost/ko/changes/",
     bodyText: "Visible briefing content",
-    markers: { ontologyNav: false, libraryNav: false, briefingSurface: true, briefingRepositoryControl: true },
+    markers: { mapNav: false, libraryNav: false, briefingSurface: true, briefingRepositoryControl: true },
   });
   assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/changes/" }), null);
   assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, briefingSurface: false } }, { expectedPath: "/ko/changes/" }), /briefing surface/);
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "Git·PR briefing", markers: { ...payload.markers, briefingRepositoryControl: false } }, { expectedPath: "/ko/changes/" }), /briefing.*control/);
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: " " }, { expectedPath: "/ko/changes/" }), /body text was empty/);
-  assert.match(validateWebviewVerifyPayload({ ...payload, href: "tauri://localhost/ko/agents/" }, { expectedPath: "/ko/changes/" }), /ontology navigation marker|expected/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, href: "tauri://localhost/ko/agents/" }, { expectedPath: "/ko/changes/" }), /map navigation marker|expected/);
 });
 
 test("briefing probe requires the visible repository action in either repository state", () => {
@@ -148,7 +148,7 @@ test("payload contract · Planning requires its rendered surface and enabled fol
   const payload = validPayload({
     href: "tauri://localhost/ko/planning/",
     bodyText: "기획 문서\n폴더 선택",
-    markers: { ontologyNav: false, libraryNav: false, planningSurface: true, planningHeading: "기획 문서", planningFolderControl: true },
+    markers: { mapNav: false, libraryNav: false, planningSurface: true, planningHeading: "기획 문서", planningFolderControl: true },
   });
   assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/planning/" }), null);
   assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, planningSurface: false } }, { expectedPath: "/ko/planning/" }), /planning surface/i);
@@ -197,6 +197,19 @@ test("Planning probe requires a visible heading and an enabled folder action", (
   dom.window.close();
 });
 
+test("navigation probe reports the rail's map and Library links, whatever a link elsewhere says", () => {
+  const probe = readFileSync(new URL("../../src-tauri/src/webview_verify/dom_marker_probe.js", import.meta.url), "utf8");
+  const dom = new JSDOM('<nav><a href="/ko/topology/?focus=main">Map</a><a href="/ko/library/">Library</a></nav><main><a href="/ko/docs/">Ontology</a></main>', { url: "https://localhost/ko/topology/", runScripts: "outside-only" });
+  Object.defineProperty(dom.window.HTMLElement.prototype, "innerText", { get() { return this.textContent; } });
+  const markers = () => JSON.parse(dom.window.eval(probe)).markers;
+  assert.equal(markers().mapNav, true);
+  assert.equal(markers().libraryNav, true);
+  dom.window.document.querySelector('nav a[href*="/topology"]').remove();
+  assert.equal(markers().mapNav, false);
+  assert.equal(markers().libraryNav, true);
+  dom.window.close();
+});
+
 test("payload contract · topology route accepts the current map shell", () => {
   const markers = webviewWorkbenchMarkersForPath("/en/topology/");
   // Body samples are truncated; the route title already proves app identity.
@@ -215,10 +228,10 @@ test("payload contract · a valid payload passes", () => {
 
 test("payload contract accepts the installed shell's consolidated Library navigation", () => {
   const installedStyle = validPayload({
-    markers: { ontologyNav: true, sourceVaultNav: false, libraryNav: true },
+    markers: { mapNav: true, libraryNav: true },
   });
   const missingLibrary = validPayload({
-    markers: { ontologyNav: true, sourceVaultNav: false, libraryNav: false },
+    markers: { mapNav: true, libraryNav: false },
   });
   const navigationCases = [installedStyle, missingLibrary];
   assert.equal(navigationCases.length, 2, "the installed and missing-Library payload inventory must not be empty");
@@ -230,7 +243,7 @@ test("payload contract accepts a rendered Library-only workbench without code de
   const payload = validPayload({
     href: "tauri://localhost/ko/library/",
     bodyText: "자료실\n에이전트\nMCP\n기록\n이 폴더 안\n원문 4\n위키 5",
-    markers: { ontologyNav: false, sourceVaultNav: false, libraryNav: true, librarySurface: true },
+    markers: { mapNav: false, libraryNav: true, librarySurface: true },
   });
   assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/library/" }), null);
   for (const marker of ["libraryNav", "librarySurface"]) {
@@ -241,14 +254,13 @@ test("payload contract accepts a rendered Library-only workbench without code de
   }
   assert.match(
     validateWebviewVerifyPayload({ ...payload, href: "tauri://localhost/ko/docs/" }, { expectedPath: "/ko/library/" }),
-    /ontology navigation marker/,
+    /map navigation marker/,
   );
 });
 
 test("payload contract accepts populated and empty Ontology panels only with rendered content", () => {
   const ontologyMarkers = {
-    ontologyNav: false,
-    sourceVaultNav: false,
+    mapNav: false,
     libraryNav: true,
     librarySurface: true,
     librarySelectedTab: "ontology",
@@ -450,7 +462,7 @@ test("payload contract · confirms reduced motion when it is required", () => {
 });
 
 test("payload contract · reads nested JSON back unchanged", () => {
-  const payload = validPayload({ markers: { ontologyNav: true, nested: { a: [1, 2, { b: "c" }] } } });
+  const payload = validPayload({ markers: { mapNav: true, nested: { a: [1, 2, { b: "c" }] } } });
   const stdout = `noise\n[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\nmore noise\n`;
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
 });
