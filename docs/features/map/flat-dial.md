@@ -246,12 +246,18 @@ the domain named. An element's picture is its lines, whether a capability or a d
 every far end, named, still fits, and only until its own name stands clear of
 the names and discs beside it; when the far ends do not fit at the current zoom
 it keeps that zoom. A domain selection frames its own star: its disc, its name
-and count line, and its member capabilities as discs, inside the free map by
+and count line, its member capabilities and their elements, inside the free map by
 the frame margin. Partner domains do not drive the frame and may leave the
-view; their lines still draw. It zooms in, under the same ratio cap, until its
-two closest member capabilities stand `--map-graph-domain-apart-px` apart on
-screen, never past the scale at which the whole star still fits; a domain whose
-members already stand that far apart keeps its zoom. Member names are not held in the frame; they are admitted
+view; their lines still draw. It zooms in until that star fills the free map,
+without the ratio cap the other selections keep, and stops earlier only when its
+two closest member capabilities already stand `--map-graph-domain-apart-max-px`
+apart, so a domain of two members does not fill the map with them. The star's
+marks open with the room they get: each mark and its nearest neighbour share
+`--map-graph-open-fill` of the distance between them in proportion to their
+largest open radii (`--map-graph-cap-open-max-px`, `--map-graph-element-open-max-px`),
+so few members draw large and many draw smaller, none overlap, and a press
+reaches as far as the drawn radius. A selected capability's fanned elements open
+the same way. Member names are not held in the frame; they are admitted
 again at whatever zoom it lands on. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
