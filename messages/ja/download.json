@@ -138,6 +138,7 @@
   },
   "film": {
     "label": "Markdownがマップになるまで",
+    "actsLabel": "シーンへ移動",
     "acts": {
       "1": {
         "title": "オントロジーはただのMarkdownファイル",
@@ -163,6 +164,7 @@
   },
   "harnessFilm": {
     "label": "ハーネスをひと目で",
+    "actsLabel": "シーンへ移動",
     "acts": {
       "1": {
         "title": "エージェントが最初に読む指示",

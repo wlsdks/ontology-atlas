@@ -9,12 +9,14 @@ import { FONT_WEIGHT } from '@/shared/ui/tokens/font-weight';
 
 import { buildFilmScene, pickCloseUp, type FilmCloseUp, type FilmScene } from '../lib/film-scene';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { isMotionPaused } from '@/shared/motion/motion-pause';
+import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
+import { createFilmClock } from '../lib/film-clock';
+import { FilmActBar } from './FilmActBar';
 import type { StageGraph } from '../lib/stage-graph';
 
 const ACTS = [1, 2, 3, 4, 5] as const;
 
-/** Where each act holds on the scroll: the files, one file opened, the flight, the lines, the map. */
+/** Each act's span of the choreography: the files, one file opened, the flight, the lines, the map. */
 const ACT_SPANS: readonly (readonly [number, number])[] = [
   [0, 0.18],
   [0.18, 0.4],
@@ -22,6 +24,8 @@ const ACT_SPANS: readonly (readonly [number, number])[] = [
   [0.58, 0.78],
   [0.78, 1],
 ];
+/** How long each act plays: the opened file is typed line by line, so it gets the longest. */
+const ACT_MS = [3450, 7300, 3850, 4600, 5000];
 
 /** The four-act choreography's clock: it holds while the second act opens one file. */
 function filmClock(p: number): number {
@@ -524,14 +528,15 @@ function drawCloseUp(
 /** Each caption holds its act's span, fading across the seams; the last one stays. */
 function captionLight(act: number, p: number): number {
   const [start, end] = ACT_SPANS[act - 1];
-  const fadeIn = act === 1 ? 1 : smooth((p - start + 0.02) / 0.05);
-  const fadeOut = act === ACT_SPANS.length ? 1 : 1 - smooth((p - end + 0.03) / 0.05);
+  /* The outgoing caption is gone before the next one rises, so two never overlap. */
+  const fadeIn = act === 1 ? 1 : smooth((p - start - 0.006) / 0.025);
+  const fadeOut = act === ACT_SPANS.length ? 1 : 1 - smooth((p - end + 0.031) / 0.025);
   return Math.min(fadeIn, fadeOut);
 }
 
 /**
- * The page's film: while the visitor scrolls through a tall block, its stage stays pinned and the
- * repository's real concepts go from Markdown files to the map. Without a script or under reduced
+ * The page's film: once its stage is in view it plays by itself, act after act, as the
+ * repository's real concepts go from Markdown files to the map, then rests and plays again. Without a script or under reduced
  * motion the block is short, the finished map is one still frame and the four captions are a list.
  */
 export function FilmSection({ graph }: { graph: StageGraph }) {
@@ -565,10 +570,11 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       { key: null, value: '---', role: null },
     ];
   }, [closeUp, scene, locale]);
-  const block = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const captions = useRef<(HTMLLIElement | null)[]>([]);
+  const fills = useRef<(HTMLSpanElement | null)[]>([]);
+  const seek = useRef<(act: number) => void>(() => {});
   const [film, setFilm] = useState(false);
 
   useEffect(() => {
@@ -590,26 +596,29 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     let h = 0;
     let shown = film ? 0 : 1;
     let clock = 0;
+    let veil = 1;
+    const time = createFilmClock(ACT_SPANS, ACT_MS);
 
-    const progress = () => {
-      const outer = block.current;
-      if (!film || !outer) return 1;
-      const rect = outer.getBoundingClientRect();
-      const travel = outer.offsetHeight - host.offsetHeight;
-      return travel > 0 ? clamp(-rect.top / travel) : 1;
-    };
     const paint = () => {
       const at = drawFilm(ctx, scene, labelled, namedCapabilities, farFirst, palette, glow, w, h, shown, clock);
       if (film && closeUp && shown > 0.18 && shown < 0.4) {
         drawCloseUp(ctx, scene, closeUp, frontmatter, at[closeUp.index], palette, glow, w, h, (shown - 0.18) / 0.22, clock);
       }
       if (!film) return;
+      const light = isMotionPaused() ? 1 : time.fade() * veil;
+      el.style.opacity = String(light);
       captions.current.forEach((caption, i) => {
         if (!caption) return;
-        const light = captionLight(i + 1, shown);
-        caption.style.opacity = String(light);
-        caption.style.transform = `translateY(${(1 - light) * 12}px)`;
-        caption.style.visibility = light > 0.01 ? 'visible' : 'hidden';
+        const lit = captionLight(i + 1, shown) * light;
+        caption.style.opacity = String(lit);
+        caption.style.transform = `translateY(${(1 - lit) * 12}px)`;
+        caption.style.visibility = lit > 0.01 ? 'visible' : 'hidden';
+      });
+      const act = time.act();
+      fills.current.forEach((fill, i) => {
+        if (!fill) return;
+        const [start, end] = ACT_SPANS[i];
+        fill.style.transform = `scaleX(${i < act ? 1 : i > act ? 0 : clamp((shown - start) / (end - start))})`;
       });
     };
     const resize = () => {
@@ -619,7 +628,6 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       el.width = Math.round(w * dpr);
       el.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      shown = progress();
       paint();
     };
     const observer = new ResizeObserver(resize);
@@ -627,29 +635,44 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     resize();
     if (!film) return () => observer.disconnect();
 
-    const unregister = registerGatedFrameClient(host, ({ t: now, dtMs }) => {
-      clock = now;
-      shown += (progress() - shown) * Math.min(1, dtMs / 110);
+    const unregister = registerGatedFrameClient(
+      host,
+      ({ t: now, dtMs, factor }) => {
+        clock = now;
+        /* A visitor who stopped moving sees the film to its end, where it rests on the finished map. */
+        if (factor < 1 && time.resting()) return;
+        shown = time.advance(dtMs);
+        veil = Math.min(1, veil + dtMs / 450);
+        paint();
+      },
+      undefined,
+      { keepAwake: true },
+    );
+    /* Paused, a still frame lands well inside its act, where its picture and caption are whole. */
+    const settle = (act: number) => time.advance(ACT_MS[act]! * 0.45);
+    seek.current = (act) => {
+      time.seek(act);
+      const paused = isMotionPaused();
+      shown = paused ? settle(act) : time.progress();
+      /* A jump fades in from dark instead of cutting; paused, it shows the act at once. */
+      veil = paused ? 1 : 0;
+      paint();
+    };
+    const offPause = subscribeMotionPause(() => {
+      if (!isMotionPaused()) return;
+      /* A film paused before it began would hold a dark first frame: show its first act instead. */
+      if (time.progress() === 0) shown = settle(0);
       paint();
     });
-    // The page's pause stops the frame loop, so a paused film follows the visitor's own scroll
-    // here instead: the acts still advance, the shimmer holds on the clock it stopped at.
-    let pending = 0;
-    const onScroll = () => {
-      if (!isMotionPaused() || pending) return;
-      pending = requestAnimationFrame(() => {
-        pending = 0;
-        shown = progress();
-        paint();
-      });
-    };
-    // Captured: the page scrolls an inner container, whose scroll events do not bubble to window.
-    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    if (isMotionPaused()) {
+      shown = settle(0);
+      paint();
+    }
     return () => {
       observer.disconnect();
       unregister();
-      window.removeEventListener('scroll', onScroll, { capture: true });
-      cancelAnimationFrame(pending);
+      offPause();
+      seek.current = () => {};
     };
   }, [film, scene, labelled, namedCapabilities, closeUp, frontmatter]);
 
@@ -657,12 +680,11 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
 
   return (
     <div
-      ref={block}
       role="region"
       aria-labelledby="gateway-film-title"
       data-testid="gateway-film"
       data-gateway-film={film ? 'playing' : 'still'}
-      className={cn('relative mt-[var(--gateway-section-gap)] w-full', film && 'h-[480svh]')}
+      className="relative mt-[var(--gateway-section-gap)] w-full"
     >
       <h2 id="gateway-film-title" className="sr-only">
         {t('label')}
@@ -671,13 +693,13 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
         ref={stage}
         className={cn(
           'relative w-full overflow-hidden',
-          film ? 'sticky top-0 h-[100svh]' : cn(PAGE_GUTTER, 'h-[34rem]'),
+          film ? 'h-[100svh] max-h-[60rem] min-h-[36rem]' : cn(PAGE_GUTTER, 'h-[34rem]'),
         )}
       >
         <canvas ref={canvas} aria-hidden className="gateway-film-canvas absolute inset-0 h-full w-full" />
         {film ? <div aria-hidden className="gateway-film-vignette pointer-events-none absolute inset-0" /> : null}
         {film ? (
-        <ol className="absolute inset-x-0 bottom-[9svh] grid place-items-center px-6">
+        <ol className="absolute inset-x-0 bottom-[calc(9svh+2rem)] grid place-items-center px-6">
           {ACTS.map((act, i) => (
             <li
               key={act}
@@ -698,6 +720,15 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
             </li>
           ))}
         </ol>
+        ) : null}
+        {film ? (
+          <FilmActBar
+            titles={ACTS.map((act) => t(`acts.${act}.title`))}
+            label={t('actsLabel')}
+            fills={fills}
+            onSeek={(act) => seek.current(act)}
+            className="absolute inset-x-0 bottom-[5svh]"
+          />
         ) : null}
       </div>
       {film ? null : (
