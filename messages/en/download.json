@@ -135,5 +135,9 @@
       "label": "relations",
       "body": "Between those concepts, written as names in the info block at the top of each file."
     }
+  },
+  "motion": {
+    "pause": "Pause motion",
+    "play": "Play motion"
   }
 }
