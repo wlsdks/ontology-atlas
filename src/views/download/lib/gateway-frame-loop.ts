@@ -32,6 +32,8 @@ const INPUT_EVENTS = [
 ] as const;
 
 const clients = new Set<GatewayFrameClient>();
+/** Clients that keep their own time through ambient sleep and rest themselves (the page's films). */
+const wakeful = new Set<GatewayFrameClient>();
 let running = false;
 let rafId = 0;
 let lastInputMs = 0;
@@ -47,14 +49,17 @@ function frame(t: number): void {
   const dtMs = Math.min(Math.max(t - lastT, 0), 64);
   lastT = t;
   const factor = ambientSleepFactor(performance.now(), lastInputMs);
-  if (isAmbientAsleep(factor) || isMotionPaused()) return;
+  if (isMotionPaused()) return;
+  const asleep = isAmbientAsleep(factor);
+  if (asleep && wakeful.size === 0) return;
   const tick: GatewayFrameTick = { t, dtMs, factor };
-  for (const client of clients) {
+  for (const client of asleep ? wakeful : clients) {
     try {
       client(tick);
     } catch (error) {
       /* Unregistered, or a client throwing after clearing its canvas leaves a blank stage forever. */
       clients.delete(client);
+      wakeful.delete(client);
       console.error('[gateway-frame-loop] client removed after throwing', error);
     }
   }
@@ -82,11 +87,13 @@ function stop(): void {
 }
 
 /** The first registration starts the loop and listeners; the last cancellation removes them all. */
-function registerGatewayFrameClient(client: GatewayFrameClient): () => void {
+function registerGatewayFrameClient(client: GatewayFrameClient, keepAwake: boolean): () => void {
   clients.add(client);
+  if (keepAwake) wakeful.add(client);
   if (!running) start();
   return () => {
     clients.delete(client);
+    wakeful.delete(client);
     if (clients.size === 0 && running) stop();
   };
 }
@@ -98,12 +105,14 @@ const GATEWAY_VISIBLE_RATIO = 0.2;
 /**
  * Registers `client` only while at least `GATEWAY_VISIBLE_RATIO` of `owner`'s section is visible
  * and the tab is visible; otherwise the client is unregistered and its canvas holds the last
- * frame. `onChange` hears each switch, so a caller can repaint or reset on return.
+ * frame. `onChange` hears each switch, so a caller can repaint or reset on return. A `keepAwake`
+ * client still ticks through ambient sleep (with `factor` below 1) and must rest itself.
  */
 export function registerGatedFrameClient(
   owner: Element,
   client: GatewayFrameClient,
   onChange?: (live: boolean) => void,
+  { keepAwake = false }: { keepAwake?: boolean } = {},
 ): () => void {
   const section = owner.closest('section') ?? owner;
   let inView = false;
@@ -111,7 +120,7 @@ export function registerGatedFrameClient(
   const sync = (): void => {
     const live = inView && document.visibilityState === 'visible';
     if (live === (unregister !== null)) return;
-    if (live) unregister = registerGatewayFrameClient(client);
+    if (live) unregister = registerGatewayFrameClient(client, keepAwake);
     else {
       unregister?.();
       unregister = null;

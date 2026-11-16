@@ -138,9 +138,7 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   ];
   for (const { id, attribute, value } of stops) {
     const top = await topOf(id);
-    // The films are pinned through tall blocks, so the leg parks partway down each, mid-scene.
-    const park = id === "gateway-film" || id === "gateway-harness" ? top + viewport.height * 1.4 : top;
-    await wheelTo(page, (scrolled) => scrolled >= park);
+    await wheelTo(page, (scrolled) => scrolled >= top);
     await expect(page.getByTestId(id)).toHaveAttribute(attribute, value);
     // measurement window: part of the leg
     await page.waitForTimeout(1500);
