@@ -83,28 +83,17 @@
     "eyebrow": "Open source",
     "title": "Every line is public",
     "sub": "The app, the MCP server and the CLI sit in one repository. Read it, build it yourself, send a fix.",
-    "free": {
-      "title": "Free, and yours to change",
-      "body": "The license is MIT. Use it on a company repository, fork it, or build the app from source."
-    },
-    "local": {
-      "title": "No account and no Atlas backend",
-      "body": "There is no sign-in and no backend run by Atlas. The map is read and written in a folder on your computer. A coding agent you connect talks to its own provider separately."
-    },
-    "files": {
-      "title": "The record is plain Markdown",
-      "body": "One concept is one .md file, kept in your own Git repository. Delete the app and the files stay."
-    },
-    "together": {
-      "title": "Build it with us",
-      "body": "Bugs and ideas arrive as issues, fixes as pull requests."
+    "caption": "Bugs and ideas arrive as issues, fixes as pull requests.",
+    "graph": {
+      "fork": "Fork it",
+      "change": "Change it",
+      "merge": "Send a pull request"
     },
     "stars": "Stars",
     "forks": "Forks",
     "license": "License",
     "licenseValue": "MIT",
     "readOn": "Counts read from GitHub on {date}.",
-    "contents": "In the repository",
     "dir": {
       "app": "Screens and the map renderer",
       "desktop": "The macOS and Windows app",
@@ -113,13 +102,12 @@
       "vault": "This repository's own ontology"
     },
     "star": "Star it on GitHub",
-    "invite": "If it was useful, a star helps the next person find it.",
     "contribute": "Contributing",
     "security": "Security",
     "issues": "Issues",
     "releases": "Releases"
   },
-  "closingTitle": "Ready to open your own folder?",
+  "closingTitle": "Pick a folder and start.",
   "news": "{tag} is out · What changed",
   "numbers": {
     "label": "By the numbers",
