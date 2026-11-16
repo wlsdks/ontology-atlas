@@ -2689,6 +2689,22 @@ describe('first download: a starting indicator alone is not enough (2026-08-19)'
     await screen.findByTestId('acp-turn-work');
   });
 
+  it('reads as thinking again once the agent said a sentence and went quiet', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await bootSession();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Question' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await screen.findByTestId('acp-turn-work');
+      act(() => emit({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: 'I will read the map first.' } } } }));
+      await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-kind', 'answering'));
+      await vi.advanceTimersByTimeAsync(5_000);
+      await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-kind', 'thinking'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('folds the finished stage away after its dance', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {

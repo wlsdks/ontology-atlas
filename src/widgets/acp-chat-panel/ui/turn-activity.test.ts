@@ -16,7 +16,7 @@ const tool = (id: string, title: string, toolKind: string, status: string, rawIn
 
 describe('turnActivity', () => {
   it('reads a turn with nothing reported yet as thinking, with no steps', () => {
-    expect(turnActivity([user], 0, 'atlas-vault')).toEqual({ kind: 'thinking', label: null, target: null, steps: 0 });
+    expect(turnActivity([user], 0, 'atlas-vault', true)).toEqual({ kind: 'thinking', label: null, target: null, steps: 0 });
   });
 
   it('names the open call and its target, and counts every call the turn opened', () => {
@@ -25,7 +25,7 @@ describe('turnActivity', () => {
       tool('t1', 'mcp__atlas-vault__list_concepts', 'read', 'completed'),
       tool('t2', 'mcp__atlas-vault__read_source', 'read', 'in_progress', { path: 'src/views/home/ui/HomePage.tsx' }),
     ];
-    const activity = turnActivity(events, 0, 'atlas-vault');
+    const activity = turnActivity(events, 0, 'atlas-vault', true);
     expect(activity.kind).toBe('reading');
     expect(activity.label).toEqual({ kind: 'known', text: 'readSource' });
     expect(activity.target).toContain('HomePage.tsx');
@@ -41,10 +41,10 @@ describe('turnActivity', () => {
     ['Terminal', 'execute', 'running'],
     ['mcp__other__do_thing', 'other', 'thinking'],
   ])('acts an open %s call (%s) as %s', (title, toolKind, kind) => {
-    expect(turnActivity([user, tool('t1', title, toolKind, 'pending')], 0, 'atlas-vault').kind).toBe(kind);
+    expect(turnActivity([user, tool('t1', title, toolKind, 'pending')], 0, 'atlas-vault', true).kind).toBe(kind);
   });
 
-  it('is answering once answer text follows the last settled call, and ignores earlier turns', () => {
+  it('is answering while answer text arrives after the last settled call, and ignores earlier turns', () => {
     const events: AcpEvent[] = [
       { kind: 'user', id: 'u0', text: 'Earlier' },
       tool('t0', 'Edit', 'edit', 'in_progress'),
@@ -52,6 +52,11 @@ describe('turnActivity', () => {
       tool('t1', 'Grep', 'search', 'completed'),
       { kind: 'agent', id: 'a1', text: 'Here is what I found.' },
     ];
-    expect(turnActivity(events, 2, 'atlas-vault')).toEqual({ kind: 'answering', label: null, target: null, steps: 1 });
+    expect(turnActivity(events, 2, 'atlas-vault', true)).toEqual({ kind: 'answering', label: null, target: null, steps: 1 });
+  });
+
+  it('goes back to thinking when the agent said something and then went quiet', () => {
+    const events: AcpEvent[] = [user, { kind: 'agent', id: 'a1', text: 'I will read the map first.' }];
+    expect(turnActivity(events, 0, 'atlas-vault', false).kind).toBe('thinking');
   });
 });

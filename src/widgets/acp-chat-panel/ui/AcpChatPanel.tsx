@@ -14,7 +14,7 @@ import { RowButton, Surface } from '@/shared/ui';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useTranscriptFollow } from '../model/use-transcript-follow';
 import { splitAppRequest } from './request-parts';
-import { turnActivity } from './turn-activity';
+import { TEXT_ARRIVING_MS, turnActivity } from './turn-activity';
 import { ComposerInput } from './chat-panel/ComposerInput';
 import { ChoicesRow, ComposerFooter } from './chat-panel/ComposerFooter';
 import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/ComposerNotices';
@@ -334,7 +334,7 @@ export function AcpChatPanelBody({
 
   const awaitingAnswer = busy && pending !== null;
   const clockPhase = !busy ? null : awaitingAnswer ? 'awaiting' : 'thinking';
-  const { turnElapsedLabel } = useTurnClock({ clockPhase, t });
+  const { turnElapsedLabel, turnNowMs } = useTurnClock({ clockPhase, t });
 
   const canType = status === 'ready' || status === 'thinking' || status === 'idle' || status === 'starting';
   const canSend = status === 'ready';
@@ -363,7 +363,12 @@ export function AcpChatPanelBody({
     ? {
         turnId: lastUserEventId,
         phase: turnWorkPhase,
-        activity: turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME),
+        activity: turnActivity(
+          events,
+          lastUserEventIndex,
+          VAULT_MCP_SERVER_NAME,
+          lastTurnUpdateAt !== null && (turnNowMs === null || turnNowMs - lastTurnUpdateAt < TEXT_ARRIVING_MS),
+        ),
         plan: reportedPlan,
       }
     : null;
