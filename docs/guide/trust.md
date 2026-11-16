@@ -27,7 +27,7 @@ Atlas-controlled API and runner calls state and record their destination in `.on
 
 ## Signing and Notarization
 
-The macOS app is signed with Apple Developer ID and notarized. It opens without Gatekeeper warnings.
+The macOS app is signed with Apple Developer ID and notarized: Apple has checked it for malware. On first open macOS still asks once to confirm an app downloaded from the internet, and it does not show the warning for an unidentified developer.
 
 A release is published only after it clears signing and notarization verification: a build that fails either check never becomes a release asset. The Windows x64 beta is published unsigned, and only after a Defender scan and install and launch verification. There is no Linux app yet.
 
