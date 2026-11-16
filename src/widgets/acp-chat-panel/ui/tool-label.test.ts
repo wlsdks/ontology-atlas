@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canonicalToolTitle, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
+import { canonicalToolTitle, commandRowWords, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
 import en from '../../../../messages/en.json';
 import ko from '../../../../messages/ko.json';
 
@@ -156,5 +156,24 @@ describe('withKindFallback — an unknown call on our own server reads as its ki
   it('leaves a tool we know by name alone', () => {
     const known = `mcp__${server}__add_concept`;
     expect(withKindFallback(toolLabel(known, server), known, server, 'edit')).toEqual({ kind: 'known', text: 'addNode' });
+  });
+});
+
+describe('commandRowWords: a command is printed once', () => {
+  const raw = (text: string): ToolLabel => ({ kind: 'raw', text });
+
+  it('names the act and keeps the title when the command argument repeats it', () => {
+    expect(commandRowWords(raw('rg --files src'), '/bin/zsh -lc "rg --files src"')).toEqual({
+      label: { kind: 'kind', text: 'execute' },
+      target: 'rg --files src',
+    });
+    expect(commandRowWords(raw('git status --short'), 'git status --short')?.target).toBe('git status --short');
+  });
+
+  it('leaves a title that is not the command, a known label and a call without a command alone', () => {
+    expect(commandRowWords(raw('Terminal'), 'rg --files src')).toBeNull();
+    expect(commandRowWords({ kind: 'known', text: 'read' }, 'read')).toBeNull();
+    expect(commandRowWords(raw('rg --files src'), null)).toBeNull();
+    expect(commandRowWords(raw('  '), 'rg --files src')).toBeNull();
   });
 });

@@ -22,6 +22,12 @@ const MODE_PREFIX = 'mode:';
 const AUTO_APPROVE_ON_CLASS =
   '[&>button]:border-[color:var(--color-amber-source-a25)] [&>button]:bg-[color:var(--color-amber-source-a08)] [&>button>span]:text-[color:var(--color-status-warning)]';
 
+/**
+ * The tool name absorbs a shortfall alone until it reaches its minimum: at this weight the mode
+ * word's share rounds to nothing, and its ellipsis would appear at the first lost fraction of a pixel.
+ */
+const TOOL_GIVES_WAY_FIRST_CLASS = 'shrink-[9999]';
+
 /** Plan mode runs nothing, so auto-approve moves to an offered mode that sends writes to the app. */
 function modeToLeavePlan(choices: SessionState['choices']): string | null {
   if (modeCopyKey(choices.currentModeId) !== 'plan') return null;
@@ -184,14 +190,17 @@ export function ComposerFooter({
             className={cn(
               PICKER_MIN_WIDTH_CLASS,
               PICKER_MAX_WIDTH_CLASS,
-              'shrink-[99]',
+              TOOL_GIVES_WAY_FIRST_CLASS,
               busy ? 'hidden @min-[368px]/composer:block' : 'hidden @min-[320px]/composer:block',
             )}
           />
         ) : (
           <span
             data-testid="acp-chat-runtime-label"
-            className="hidden min-w-0 shrink-[99] truncate text-label leading-label text-[color:var(--color-text-tertiary)] @min-[286px]/composer:inline"
+            className={cn(
+              'hidden min-w-0 truncate text-label leading-label text-[color:var(--color-text-tertiary)] @min-[286px]/composer:inline',
+              TOOL_GIVES_WAY_FIRST_CLASS,
+            )}
           >
             {toolPicker[0]?.label ?? runtimeLabel}
           </span>
