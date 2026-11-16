@@ -37,21 +37,25 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // only inside `no-preference`, so reduced-motion users see everything from the start. The exemption
   // holds only inside that media query, which the test below measures.
   "gateway-scene-read":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-mark":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-dot":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-ring":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-allow":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-pointer":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-press":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-focus":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useSceneMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-constellation-node":
+    "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
+  "gateway-constellation-pulse":
+    "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
   "gateway-step-rule":
     "One-shot draw of the rule after a step number on the download page, declared only inside no-preference; under reduced motion the rule is simply there and the numbers carry the order.",
   "gateway-entrance-line":

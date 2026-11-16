@@ -11,6 +11,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { StageGraph } from '../lib/stage-graph';
 import { fileName, kindOf, LOOP_CHANGED, LOOP_PROPOSAL, LOOP_READ } from '../model/loop-cast';
+import { useInViewMotion } from '../lib/use-in-view-motion';
 import { SectionIntro } from './SectionIntro';
 
 /**
@@ -49,39 +50,6 @@ function useEntrance(): [(node: HTMLElement | null) => void, Entrance] {
   return [setNode, entrance];
 }
 
-/**
- * The loop cards' scene runs only while the row is at least 20% visible in a visible tab, and never
- * under reduced motion. Without a script the attribute never appears, so every line is simply there.
- */
-type SceneMotion = 'paused' | 'running' | undefined;
-
-function useSceneMotion(): [(node: HTMLElement | null) => void, SceneMotion] {
-  const [node, setNode] = useState<HTMLElement | null>(null);
-  const [motion, setMotion] = useState<SceneMotion>(undefined);
-
-  useEffect(() => {
-    if (!node || typeof IntersectionObserver === 'undefined') return;
-    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let seen = false;
-    const update = () => setMotion(seen && !document.hidden ? 'running' : 'paused');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        seen = entries[entries.length - 1].isIntersecting;
-        update();
-      },
-      { threshold: 0.2 },
-    );
-    observer.observe(node);
-    document.addEventListener('visibilitychange', update);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener('visibilitychange', update);
-    };
-  }, [node]);
-
-  return [setNode, motion];
-}
-
 const SECTION = cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24');
 const MONO = 'font-mono text-label leading-label';
 /** Small text starts at tertiary: quaternary falls under 7:1 at label size. */
@@ -100,7 +68,7 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download.loop');
   const tPermission = useTranslations('acpChat.permission');
   const tHeadline = useTranslations('ontologyChangeReview.headline');
-  const [cards, sceneMotion] = useSceneMotion();
+  const [cards, sceneMotion] = useInViewMotion();
 
   const labelOf = useMemo(() => {
     const byId = new Map(graph.nodes.map((node) => [node.id, node.label]));
