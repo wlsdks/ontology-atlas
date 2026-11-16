@@ -266,11 +266,10 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     downloadCopy.loop?.title,
     downloadCopy.screens.title,
     downloadCopy.start?.title,
-    // The **last** place the honesty facts live. Since the verification rail was
-    // removed, the only thing stating signing, notarisation, and "nothing is sent to a
-    // server" is the hero's trust line — if that line drops out of a deployment, the page
-    // carries none of those claims.
+    // The honesty facts: the trust line carries the Apple malware check (notarisation), and
+    // the open-source section is the one place that says there is no Atlas backend.
     downloadCopy.trustLine,
+    downloadCopy.source?.local?.title,
   ]);
   // A deploy can legitimately sit on either side of the release-facts commit:
   // published offers the real file, pending offers the browser map instead.

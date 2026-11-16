@@ -294,19 +294,19 @@
 }
 
 .gateway-hero-title {
-  --gateway-title-measure: 6;
+  --gateway-title-measure: 6.05;
 }
 
 :root:lang(en) .gateway-hero-title {
-  --gateway-title-measure: 10.3;
+  --gateway-title-measure: 9.6;
 }
 
 :root:lang(ja) .gateway-hero-title {
-  --gateway-title-measure: 12;
+  --gateway-title-measure: 12.2;
 }
 
 :root:lang(zh) .gateway-hero-title {
-  --gateway-title-measure: 9;
+  --gateway-title-measure: 9.2;
 }
 
 /* The cell's empty rows under Moru overlap the link, which stays on top and takes its own press. */

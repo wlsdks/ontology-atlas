@@ -242,7 +242,7 @@ describe('DownloadPage', () => {
 
       const web = screen.getByTestId('gateway-hero-web-cta');
       expect(web).toHaveAttribute('href', '/topology');
-      expect(web).toHaveTextContent(/try in the browser/i);
+      expect(web).toHaveTextContent(/try it in the browser/i);
       expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
 
       const row = primary.parentElement!;
@@ -358,7 +358,7 @@ describe('DownloadPage', () => {
   });
 
   // Scoped to Atlas: the updater and a connected agent do use the network.
-  it('states the local-first promise where the download decision is made', () => {
+  it('keeps no sign-up in the hero and the no-backend fact in the open-source section', () => {
     publishRelease();
     renderDownloadPage();
 
