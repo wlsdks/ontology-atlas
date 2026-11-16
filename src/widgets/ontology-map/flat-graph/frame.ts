@@ -933,6 +933,25 @@ function blockShows(list: readonly PlacedName[], from: number, to: number, chrom
   return !at || nameBlockDraws(list, from, to, at.x, at.y, chrome, selectedId);
 }
 
+/** Whether every line of a block stands inside the free map by the frame margin, as a framed star does. O(block). */
+function blockInsideFree(list: readonly PlacedName[], from: number, to: number): boolean {
+  const at = screenAt(list[from]!.id);
+  if (!at) return true;
+  const f = F.input.freeRect;
+  const m = F.P.frameMarginPx;
+  const pad = F.P.namePadPx;
+  for (let i = from; i < to; i += 1) {
+    const b = list[i]!.box;
+    if (at.x + b.minX + pad < f.minX + m || at.x + b.maxX - pad > f.maxX - m || at.y + b.minY + pad < f.minY + m || at.y + b.maxY - pad > f.maxY - m) return false;
+  }
+  return true;
+}
+
+/** Whether an opened domain star's member block may draw: clear of the chrome and inside the free map. */
+function memberBlockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[]): boolean {
+  return blockShows(list, from, to, chrome, null) && blockInsideFree(list, from, to);
+}
+
 /** The share of its full radius a capability disc is drawn at, 1 for a disc no crowd shrank. */
 function crowdKept(d: Disc): number {
   const full = graphDiscRadiusPx("capability", F.model.capabilityById.get(d.id)?.elementIds.length ?? 0, F.P, F.growth);
@@ -1314,15 +1333,18 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const planned = plannedNames;
   ranks.length = admission.names.length;
   planned.length = admission.names.length;
+  const starId = F.starNow && input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId) ? input.focusedNodeId : null;
   for (let nIndex = 0; nIndex < admission.names.length;) {
     const end = nameBlockEnd(admission.names, nIndex);
-    let show = blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
+    const id = admission.names[nIndex]!.id;
+    const member = starId !== null && model.capabilityById.has(id) && model.domainOf.get(id) === starId;
+    let show = member ? memberBlockShows(admission.names, nIndex, end, chrome) : blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
     planned[nIndex] = admission.names[nIndex]!;
-    // An open star's member whose side runs under chrome takes the best of its other sides that clears it.
-    const alternates = show ? undefined : admission.alternates.get(admission.names[nIndex]!.id);
+    // An open star's member whose side runs under chrome or out of the free map takes the best of its other sides that clears it.
+    const alternates = show ? undefined : admission.alternates.get(id);
     if (alternates !== undefined && end === nIndex + 1) {
       for (let k = 0; k < alternates.length && !show; k += 1) {
-        if (blockShows(alternates, k, k + 1, chrome, null)) {
+        if (memberBlockShows(alternates, k, k + 1, chrome)) {
           planned[nIndex] = alternates[k]!;
           show = true;
         }

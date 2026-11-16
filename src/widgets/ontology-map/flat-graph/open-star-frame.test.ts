@@ -318,6 +318,22 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
   },
 );
 
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "draws each member name of the opened %s star inside the free map by the frame margin, or not at all",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {});
+    const free = { minX: 0, minY: 0, maxX: W / 2 + 60, maxY: H };
+    const rest = framesUntilSettled(camera, { freeRect: free }, star, 0, 1, 1, FRAME_MS);
+    framesUntilSettled(camera, { focusedNodeId: domainId, freeRect: free }, star, rest.end + FRAME_MS, 1, 2.5, 600);
+    const margin = TOKENS.paint.frameMarginPx;
+    const { texts } = describeLastDialFrame(W, H)!;
+    const outside = texts.filter((t) => capabilities.includes(t.id ?? "") && (t.box.minX < free.minX + margin || t.box.maxX > free.maxX - margin || t.box.minY < free.minY + margin || t.box.maxY > free.maxY - margin));
+    expect(outside.map((t) => t.text)).toEqual([]);
+  },
+);
+
 describe("a mark's drawn radius across frames", () => {
   it("takes its radius at once when it comes back on screen, however long it was away", () => {
     const worldKey = {};
