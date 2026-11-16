@@ -15,8 +15,10 @@ interface Options {
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "setFullDetailSlug">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "projectSource" | "projectSourceMeasuredAtLabel">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t">;
+  /** Seats a request in the agent chat; `null` where this surface has no chat to open. */
+  askAgent: ((request: string) => void) | null;
 }
-export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPreferences, topologySourceReadiness, topologyCanvasFocus }: Options) {
+export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPreferences, topologySourceReadiness, topologyCanvasFocus, askAgent }: Options) {
   const { t } = topologyPreferences;
   const { projectSource, projectSourceMeasuredAtLabel } = topologySourceReadiness;
   const { setFullDetailSlug } = topologyCanvasFocus;
@@ -53,13 +55,27 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       }
       return;
     }
-    if (
-      action === "record_source_role"
-      || action === "review_inventory_limit"
-    ) {
+    if (action === "record_source_role") {
+      // Finding the file that carries each concept is reading code, so the step is a request an agent can run.
+      const request = t("nodeDatasheet.sourceRoleRequest");
+      if (askAgent) {
+        setFullDetailSlug(null);
+        askAgent(request);
+        return;
+      }
+      await copyHandoffWithFeedback({
+        text: request,
+        copy: copyText,
+        show: toast.show,
+        copiedMessage: t("nodeDatasheet.sourceRoleRequestCopied"),
+        failedMessage: t("nodeDatasheet.handoffCopyFailed"),
+      });
+      return;
+    }
+    if (action === "review_inventory_limit") {
       setFullDetailSlug(v2DatasheetModel.nodeId);
     }
-  }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, setFullDetailSlug]);
+  }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, setFullDetailSlug, askAgent, t, toast]);
   const projectSourceNextAction = projectSource.view?.nextAction.id ?? null;
   const projectSourceNextActionAvailable = Boolean(
     // Nothing is prescribed until the proposal settles, or the button changes and shifts under the
@@ -90,7 +106,9 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       gap: t(`nodeDatasheet.sourceGap_${view.topGap?.id ?? "none"}`),
       // Always an action label; `projectSourceDegraded` owns the notice for surfaces that cannot
       // act.
-      action: t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
+      action: view.nextAction.id === "record_source_role" && !askAgent
+        ? t("nodeDatasheet.sourceAction_record_source_role_copy")
+        : t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
       why: projectSource.repairUnavailable
         ? t("nodeDatasheet.sourceRepairUnavailable")
         : projectSource.repairTarget
@@ -103,6 +121,7 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
     projectSource.repairTarget,
     projectSource.repairUnavailable,
     projectSourceMeasuredAtLabel,
+    askAgent,
     t,
   ]);
   /**
