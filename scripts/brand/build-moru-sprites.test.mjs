@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
+import { NATIVE_ROWS } from './build-moru-companion.mjs';
 import { despeckle, faintMarks, holdBody, inkFringe, ivoryFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
@@ -41,9 +42,21 @@ for (const name of ['moru-companion', 'moru-reactions']) test(`the shipped ${nam
 
 test('large pending marks retain the native scene rather than enlarged low-resolution pixels', async () => {
   const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
-  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave', curious: 'tilt', think: 'thinking', read: 'source-read', search: 'search', write: 'save', code: 'laptop-code', success: 'dance' })) {
+  for (const [state, id] of Object.entries(NATIVE_ROWS)) {
     assert.deepEqual(await readFile(`public/brand/mascot-${state}-row-128.png`), await readFile(`assets/brand/moru/${source.clips[id].sprite}`));
   }
+});
+
+test('every native row swaps on the shared neutral pose except the laptop scene', async () => {
+  const neutral = await frameOf('public/brand/mascot-waiting-row-128.png', 0, 128);
+  const scenes = [];
+  for (const state of Object.keys(NATIVE_ROWS)) {
+    const file = `public/brand/mascot-${state}-row-128.png`, { width } = await sharp(file).metadata();
+    const [first, last] = await Promise.all([frameOf(file, 0, 128), frameOf(file, width / 128 - 1, 128)]);
+    assert.deepEqual(first, last, `${state}: its loop does not close on its first cell`);
+    if (!first.equals(neutral)) scenes.push(state);
+  }
+  assert.deepEqual(scenes, ['code'], 'a row that does not open on the neutral pose would jump when the stage swaps clips');
 });
 
 test('the observed gray right-eye edge stays achromatic instead of turning indigo', () => {

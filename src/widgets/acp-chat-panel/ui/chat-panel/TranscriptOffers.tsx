@@ -6,7 +6,6 @@ import { RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { SuggestionRows } from './SuggestionRows';
-import { TurnWorkStage, type TurnWork } from './TurnWorkStage';
 import type { ChatT } from './types';
 import type { usePresentation } from './use-presentation';
 
@@ -14,7 +13,6 @@ type PresentationState = ReturnType<typeof usePresentation>;
 
 interface TranscriptOffersProps {
   t: ChatT;
-  turnWork: TurnWork | null;
   stoppedWithoutAnswer: boolean;
   presentation: Pick<
     PresentationState,
@@ -28,7 +26,6 @@ interface TranscriptOffersProps {
 
 export function TranscriptOffers({
   t,
-  turnWork,
   stoppedWithoutAnswer,
   presentation,
   presentationOfferRef,
@@ -39,7 +36,6 @@ export function TranscriptOffers({
   const { presentationTrace, presentationBlocked, presentationVisible, heldPresentationTrace, openPresentation } = presentation;
   return (
     <>
-      <TurnWorkStage t={t} work={turnWork} />
       {stoppedWithoutAnswer ? (
         <p
           data-testid="acp-turn-stopped"
