@@ -26,7 +26,7 @@ export function useTurnClock({ clockPhase, t }: { clockPhase: 'awaiting' | 'thin
     if (minutes > 0) return t('elapsedMinutes', { minutes, seconds });
     return t('elapsedSeconds', { seconds });
   })();
-  return { turnElapsedLabel };
+  return { turnElapsedLabel, turnNowMs: clockPhase && turnClock ? turnClock.nowMs : null };
 }
 
 export function useTurnSilence({
