@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { hardenedGitArgs, clearFilterCache } from './hardened-git.mjs';
+import { hardenedGitArgs, clearFilterCache, gitEnv } from './hardened-git.mjs';
 
 // Security regression: a hostile repository must not run code that its own git
 // config asks for when the CLI spawns git in it (with the cwd option, no -C). Each
@@ -156,3 +156,18 @@ for (const scope of Object.keys(FILTER_CASES)) {
     }
   });
 }
+
+test('git reads every path as a name and spawns without a setting that conflicts with that', () => {
+  const argv = hardenedGitArgs(tmpdir(), ['status', '--', 'a']);
+  assert.ok(argv.includes('--literal-pathspecs'));
+  assert.ok(argv.indexOf('--literal-pathspecs') < argv.indexOf('status'), 'a global option precedes the subcommand');
+  const inherited = {
+    PATH: '/usr/bin',
+    GIT_TRACE: '0',
+    GIT_GLOB_PATHSPECS: '1',
+    GIT_NOGLOB_PATHSPECS: '1',
+    GIT_ICASE_PATHSPECS: '1',
+  };
+  assert.deepEqual(gitEnv(inherited), { PATH: '/usr/bin', GIT_TRACE: '0' });
+  assert.equal(inherited.GIT_ICASE_PATHSPECS, '1', 'the caller\'s environment is not changed');
+});
