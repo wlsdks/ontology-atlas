@@ -4,9 +4,58 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
+  /*
+   * The update notice. Arrival and leaving are transitions, so an interrupted one continues from
+   * the drawn value instead of restarting; `@starting-style` makes the rise play once, on mount.
+   */
+  .app-update-card {
+    transition:
+      opacity var(--motion-slow) var(--motion-ease),
+      translate var(--motion-slow) var(--motion-ease);
+  }
+
+  @starting-style {
+    .app-update-card {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+  }
+
+  .app-update-card[data-state='closed'] {
+    opacity: 0;
+    transition-duration: var(--motion-base);
+    pointer-events: none;
+  }
+
+  /* One state hands over to the next by crossfade; the card's box never moves. */
+  .app-update-layer-in {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .app-update-layer-out {
+    animation: overlayFadeOut var(--motion-base) var(--motion-ease-exit) both;
+    pointer-events: none;
+  }
+
+  /* Chunks retarget the running transition, so the fill eases from where it is drawn. */
+  .app-update-fill {
+    transition: translate var(--motion-slow) var(--motion-ease);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .atlas-tooltip[data-state='delayed-open'],
     .atlas-tooltip[data-state='instant-open'] {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .app-update-card,
+    .app-update-fill {
+      transition: none !important;
+    }
+
+    /* Opacity only and at the shortest step; the leaving layer is not drawn at all. */
+    .app-update-layer-in,
+    .app-update-layer-out {
       animation-duration: var(--motion-fast) !important;
     }
   }
