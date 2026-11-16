@@ -344,15 +344,15 @@
       "prompt": "请根据已连接的源码开始构建本体。先用 connection_info 和 list_kinds 了解情况，再从源码中提出领域、能力、实现元素和依据路径；先查找已有的相似概念，在我审阅之前不要写入任何内容。只把我批准的候选分批写入，然后汇报 validate_vault 和 compile_ontology 的结果。"
     },
     "island": {
-      "label": "包括“{firstLabel}”在内的 {count} 项没有与其他内容关联。找出它们该连到哪里",
-      "prompt": "包括“{firstLabel}”（{first}）在内的 {count} 个概念没有与地图的其余部分关联。请以代码为依据，判断它们该归在哪里，并提出关联及其原因。"
+      "label": "{count, plural, =1 {“{firstLabel}”没有与其他内容关联。找出它该连到哪里} other {包括“{firstLabel}”在内的 # 项没有与其他内容关联。找出它们该连到哪里}}",
+      "prompt": "{count, plural, =1 {概念“{firstLabel}”（{first}）没有与地图的其余部分关联。请以代码为依据，判断它该归在哪里，并提出关联及其原因。} other {包括“{firstLabel}”（{first}）在内的 # 个概念没有与地图的其余部分关联。请以代码为依据，判断它们该归在哪里，并提出关联及其原因。}}"
     },
     "containment": {
       "label": "“{slugLabel}”文档说它属于“{domainLabel}”，但“{domainLabel}”文档的列表中没有“{slugLabel}”。核对哪一边是对的，并让两份文档保持一致",
       "prompt": "“{slugLabel}”（{slug}）说它属于“{domainLabel}”（{domain}），但领域一侧缺少对应的链接。请核对这个归属是否正确，如果正确，就让两边保持一致。"
     },
     "evidence": {
-      "label": "有 {count} 项能力还没有说明由哪些代码实现。从“{firstLabel}”开始查找那些代码",
+      "label": "{count, plural, =1 {能力“{firstLabel}”还没有说明由哪些代码实现。查找那些代码} other {有 # 项能力还没有说明由哪些代码实现。从“{firstLabel}”开始查找那些代码}}",
       "prompt": "运行 query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}')，然后先检查“{firstLabel}”（{first}）。这 {count} 项能力还没有写下实现文件路径，也没有关联的元素。请查找实现依据，并提出最小的路径或元素更新。在我审阅之前不要写入；找不到依据时请明说。"
     },
     "explain": {
