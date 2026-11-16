@@ -15,5 +15,6 @@
   "retry": "Try again",
   "close": "Close",
   "dismiss": "Not now",
-  "settingsTriggerPending": "{label}, new version {version} available"
+  "settingsTriggerPending": "{label}, new version {version} available",
+  "settingsTriggerReady": "{label}, new version {version} installed, restart needed"
 }

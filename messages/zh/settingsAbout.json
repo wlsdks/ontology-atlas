@@ -74,7 +74,7 @@
     "versionReading": "正在读取版本…",
     "versionUnknown": "无法读取版本。检查更新时会再次读取。",
     "versionUnknownRetried": "无法读取版本。",
-    "autoOn": "应用打开时检查一次，保持打开期间每 4 小时检查一次。",
+    "autoOn": "每 4 小时检查一次。打开应用时，如果距上次检查已超过 4 小时，会立即检查。",
     "autoOff": "Atlas 不会自行检查。按下“检查更新”时仍会去询问。",
     "autoLast": "上次检查：{when}。",
     "autoNever": "这台电脑上还没检查过。",
@@ -85,6 +85,12 @@
     "resultDownloading": "正在获取 {version}。进度见右下角的通知。",
     "resultReady": "{version} 已安装。请从右下角的通知重启后使用。",
     "resultFailed": "无法获取更新信息。请检查网络连接后重试。",
-    "resultInstallFailed": "更新未能安装完成。请稍后重试。"
+    "resultInstallFailed": "更新未能安装完成。请稍后重试。",
+    "resultAvailableHidden": "新版本 {version} 已可用。",
+    "resultDownloadingHidden": "正在下载 {version}。",
+    "resultReadyHidden": "{version} 已安装完成，重启后生效。",
+    "actionInstall": "安装更新",
+    "actionShowNotice": "显示通知",
+    "actionRestart": "立即重启"
   }
 }

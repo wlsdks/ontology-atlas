@@ -15,5 +15,6 @@
   "retry": "重试",
   "close": "关闭",
   "dismiss": "暂不",
-  "settingsTriggerPending": "{label}，有新版本 {version}"
+  "settingsTriggerPending": "{label}，有新版本 {version}",
+  "settingsTriggerReady": "{label}，新版本 {version} 已安装，需要重启"
 }

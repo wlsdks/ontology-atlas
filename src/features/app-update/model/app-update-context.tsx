@@ -2,47 +2,44 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
-import { useAppUpdate } from './use-app-update';
-import type { UpdatePhase } from './update-state';
+import { useAppUpdate, type UpdateSessionState } from './use-app-update';
 
 /**
- * Exactly one update state machine for the app, or settings and the notice disagree and the
- * periodic timer runs twice. Absent (the web), consumers get `null` and draw nothing.
+ * Exactly one updater wiring for the app, or the periodic timers run twice. Absent (the web),
+ * consumers get `null` and draw nothing.
  */
-export interface AppUpdateValue {
-  readonly phase: UpdatePhase;
-  /** The download card was hidden; the phase is still `downloading`. */
-  readonly noticeHidden: boolean;
-  /** A version a check found available or installed, until a check says current. */
-  readonly pendingVersion: string | null;
-  /** Installed in this session and waiting for a restart. */
-  readonly readyVersion: string | null;
+export interface AppUpdateValue extends UpdateSessionState {
   /** The user pressed it themselves — check now, ignoring the interval. */
   readonly checkNow: () => void;
   readonly install: () => void;
   readonly restart: () => void;
   readonly dismiss: () => void;
   readonly hide: () => void;
+  /** Brings a hidden download card back. */
+  readonly showNotice: () => void;
 }
 
 const AppUpdateContext = createContext<AppUpdateValue | null>(null);
 
 export function AppUpdateProvider({ children }: { children: ReactNode }) {
-  const { phase, noticeHidden, pendingVersion, readyVersion, check, install, restart, dismiss, hide } =
-    useAppUpdate();
+  const { check, install, restart, dismiss, hide, showNotice, ...state } = useAppUpdate();
+  const { phase, noticeHidden, pendingVersion, readyVersion, lastCheckedAt, dismissedVersion } = state;
   const value = useMemo<AppUpdateValue>(
     () => ({
       phase,
       noticeHidden,
       pendingVersion,
       readyVersion,
+      lastCheckedAt,
+      dismissedVersion,
       checkNow: () => void check(true),
       install: () => void install(),
       restart: () => void restart(),
       dismiss,
       hide,
+      showNotice,
     }),
-    [phase, noticeHidden, pendingVersion, readyVersion, check, install, restart, dismiss, hide],
+    [phase, noticeHidden, pendingVersion, readyVersion, lastCheckedAt, dismissedVersion, check, install, restart, dismiss, hide, showNotice],
   );
   return <AppUpdateContext.Provider value={value}>{children}</AppUpdateContext.Provider>;
 }

@@ -1,29 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
   AUTO_CHECK_TICK_MS,
+  CHECK_TIMEOUT_MS,
   DISMISSED_VERSION_KEY,
   LAST_CHECK_KEY,
+  feedServesPlatform,
   phaseAfterCheck,
+  phaseAfterFailedCheck,
   readUpdateAutoCheck,
   shouldCheckForUpdate,
   type UpdatePhase,
 } from './update-state';
-
-/** What the updater remembers here; an unreadable store answers "nothing remembered". */
-export function readUpdateMemory(): { lastCheckedAt: number | null; dismissedVersion: string | null } {
-  try {
-    const last = Number(window.localStorage.getItem(LAST_CHECK_KEY));
-    return {
-      lastCheckedAt: Number.isFinite(last) && last > 0 ? last : null,
-      dismissedVersion: window.localStorage.getItem(DISMISSED_VERSION_KEY) || null,
-    };
-  } catch {
-    return { lastCheckedAt: null, dismissedVersion: null };
-  }
-}
 
 const FIRST_CHECK_DELAY_MS = 4_000;
 
@@ -40,165 +30,246 @@ function writeStored(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
   } catch {
-    /* Even if it cannot be remembered, the update itself continues. */
+    /* Even if it cannot be remembered, the update itself continues; memory below still holds it. */
   }
 }
 
-/**
- * The updater's runtime wiring; every judgement is in `update-state.ts`. The plugin is
- * dynamically imported so a desktop-only module stays out of the web bundle.
+export interface UpdateSessionState {
+  readonly phase: UpdatePhase;
+  /** The download card was hidden; the phase is still `downloading`. */
+  readonly noticeHidden: boolean;
+  /** A version a check found available or installed, until a check says current. */
+  readonly pendingVersion: string | null;
+  /** Installed in this session and waiting for a restart; never offered for download again. */
+  readonly readyVersion: string | null;
+  /** The last successful check, from storage at start and from memory after. */
+  readonly lastCheckedAt: number | null;
+  readonly dismissedVersion: string | null;
+}
+
+const SERVER_STATE: UpdateSessionState = {
+  phase: { kind: 'idle' },
+  noticeHidden: false,
+  pendingVersion: null,
+  readyVersion: null,
+  lastCheckedAt: null,
+  dismissedVersion: null,
+};
+
+/*
+ * The update state lives for the process, not for a mount: the provider remounts when the locale
+ * changes, and a version installed or downloading in this session must survive that.
  */
-export function useAppUpdate() {
-  const [phase, setPhaseState] = useState<UpdatePhase>({ kind: 'idle' });
-  const phaseRef = useRef(phase);
-  const setPhase = useCallback((next: UpdatePhase) => {
-    phaseRef.current = next;
-    setPhaseState(next);
-  }, []);
-  /** The download card was hidden; the download runs on and the next phase speaks again. */
-  const [noticeHidden, setNoticeHidden] = useState(false);
-  /** The newest version a check found, kept after the notice is dismissed. */
-  const [pendingVersion, setPendingVersion] = useState<string | null>(null);
-  /** Installed in this session, waiting for a restart; never offered for download again. */
-  const [readyVersion, setReadyVersionState] = useState<string | null>(null);
-  const readyVersionRef = useRef<string | null>(null);
-  const setReadyVersion = useCallback((version: string) => {
-    readyVersionRef.current = version;
-    setReadyVersionState(version);
-  }, []);
-  const checkInFlight = useRef<Promise<void> | null>(null);
-  // Install once only. Pressing the button twice would download twice.
-  const installing = useRef(false);
+let session: UpdateSessionState | null = null;
+const listeners = new Set<() => void>();
+let lastAttemptAt: number | null = null;
+let consecutiveFailures = 0;
+let checkInFlight: Promise<void> | null = null;
+let manualCheckPending = false;
+let installing = false;
 
-  const runCheck = useCallback(
-    async (manual: boolean) => {
-      if (manual) setPhase({ kind: 'checking' });
-      try {
-        const { check: checkForUpdate } = await import('@tauri-apps/plugin-updater');
-        const update = await checkForUpdate();
-        writeStored(LAST_CHECK_KEY, String(Date.now()));
-        setPendingVersion(update?.version ?? readyVersionRef.current);
-        const next = phaseAfterCheck({
-          found: update ? { version: update.version, notes: update.body ?? null } : null,
-          manual,
-          phase: phaseRef.current,
-          readyVersion: readyVersionRef.current,
-          dismissedVersion: readStored(DISMISSED_VERSION_KEY),
-        });
-        if (next) setPhase(next);
-      } catch (error) {
-        // An automatic check fails quietly and leaves the last-check time alone, so the next tick retries.
-        if (manual) {
-          setPhase({
-            kind: 'failed',
-            operation: 'check',
-            message: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    },
-    [setPhase],
-  );
+function readSession(): UpdateSessionState {
+  if (!session) {
+    const last = Number(readStored(LAST_CHECK_KEY));
+    session = {
+      ...SERVER_STATE,
+      lastCheckedAt: Number.isFinite(last) && last > 0 ? last : null,
+      dismissedVersion: readStored(DISMISSED_VERSION_KEY) || null,
+    };
+  }
+  return session;
+}
 
-  const check = useCallback(
-    async (manual = false) => {
-      if (
-        !shouldCheckForUpdate({
-          isDesktop: isDesktopShell(),
-          now: Date.now(),
-          lastCheckedAt: Number(readStored(LAST_CHECK_KEY)) || null,
-          automatic: readUpdateAutoCheck() === 'on',
-          manual,
-        })
-      ) {
-        return;
-      }
-      if (manual && phaseRef.current.kind === 'downloading') {
-        // The version being downloaded is the answer; a press brings its card back.
-        setNoticeHidden(false);
-        return;
-      }
-      if (checkInFlight.current && !manual) return;
-      // A press waits for the automatic request in flight; two never overlap.
-      while (checkInFlight.current) await checkInFlight.current;
-      const running = runCheck(manual);
-      checkInFlight.current = running;
-      try {
-        await running;
-      } finally {
-        if (checkInFlight.current === running) checkInFlight.current = null;
-      }
-    },
-    [runCheck],
-  );
+function patchSession(patch: Partial<UpdateSessionState>): void {
+  session = { ...readSession(), ...patch };
+  for (const listener of listeners) listener();
+}
 
-  const install = useCallback(async () => {
-    if (installing.current) return;
-    installing.current = true;
-    setNoticeHidden(false);
-    try {
-      const { check: checkForUpdate } = await import('@tauri-apps/plugin-updater');
-      const update = await checkForUpdate();
-      if (!update) {
-        setPhase({ kind: 'idle' });
-        return;
-      }
-      setPendingVersion(update.version);
-      if (update.version === readyVersionRef.current) {
-        setPhase({ kind: 'ready', version: update.version });
-        return;
-      }
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
-      let received = 0;
-      let total: number | null = null;
-      setPhase({ kind: 'downloading', version: update.version, received, total });
+function readPlatform(): string {
+  return window.navigator.platform || window.navigator.userAgent;
+}
 
-      await update.downloadAndInstall((event) => {
-        if (event.event === 'Started') {
-          total = event.data.contentLength ?? null;
-        } else if (event.event === 'Progress') {
-          received += event.data.chunkLength;
-          setPhase({ kind: 'downloading', version: update.version, received, total });
-        }
-      });
+async function fetchUpdate() {
+  const { check } = await import('@tauri-apps/plugin-updater');
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // The plugin's own timeout covers the network; the race also covers a bridge that never answers.
+  const unanswered = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('update check timed out')), CHECK_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([check({ timeout: CHECK_TIMEOUT_MS }), unanswered]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
-      setReadyVersion(update.version);
-      setNoticeHidden(false);
-      setPhase({ kind: 'ready', version: update.version });
-    } catch (error) {
-      setNoticeHidden(false);
-      setPhase({
-        kind: 'failed',
-        operation: 'install',
-        message: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      installing.current = false;
-    }
-  }, [setPhase, setReadyVersion]);
+async function requestCheck(manual: boolean): Promise<void> {
+  lastAttemptAt = Date.now();
+  try {
+    const update = await fetchUpdate();
+    const now = Date.now();
+    consecutiveFailures = 0;
+    writeStored(LAST_CHECK_KEY, String(now));
+    const state = readSession();
+    const next = phaseAfterCheck({
+      found: update ? { version: update.version, notes: update.body ?? null } : null,
+      manual,
+      phase: state.phase,
+      readyVersion: state.readyVersion,
+      dismissedVersion: state.dismissedVersion,
+    });
+    patchSession({
+      lastCheckedAt: now,
+      pendingVersion: update?.version ?? state.readyVersion,
+      ...(next ? { phase: next } : {}),
+    });
+  } catch (error) {
+    consecutiveFailures += 1;
+    // An automatic failure is silent; the due rule decides when it is retried.
+    const next = phaseAfterFailedCheck({
+      manual,
+      readyVersion: readSession().readyVersion,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    if (next) patchSession({ phase: next });
+  }
+}
 
-  const restart = useCallback(async () => {
-    const { relaunch } = await import('@tauri-apps/plugin-process');
-    await relaunch();
-  }, []);
+async function runCheck(manual: boolean): Promise<void> {
+  const running = requestCheck(manual);
+  checkInFlight = running;
+  try {
+    await running;
+  } finally {
+    if (checkInFlight === running) checkInFlight = null;
+  }
+}
 
-  /** "Not now" or "Close": a dismissal is remembered for an offered version only. */
-  const dismiss = useCallback(() => {
-    const current = phaseRef.current;
-    if (current.kind === 'downloading') {
-      setNoticeHidden(true);
+async function checkForUpdates(manual = false): Promise<void> {
+  const state = readSession();
+  if (
+    !shouldCheckForUpdate({
+      isDesktop: isDesktopShell(),
+      now: Date.now(),
+      lastCheckedAt: state.lastCheckedAt,
+      automatic: readUpdateAutoCheck() === 'on',
+      manual,
+      lastAttemptAt,
+      consecutiveFailures,
+      feedServesPlatform: feedServesPlatform(readPlatform()),
+    })
+  ) {
+    return;
+  }
+  if (!manual) {
+    if (!checkInFlight) await runCheck(false);
+    return;
+  }
+  if (state.phase.kind === 'downloading' || installing) {
+    // The version being downloaded is the answer; a press brings its card back.
+    patchSession({ noticeHidden: false });
+    return;
+  }
+  // One press at a time: a second press while one waits or runs queues nothing.
+  if (manualCheckPending) return;
+  manualCheckPending = true;
+  patchSession({ phase: { kind: 'checking' } });
+  try {
+    while (checkInFlight) await checkInFlight;
+    await runCheck(true);
+  } finally {
+    manualCheckPending = false;
+  }
+}
+
+async function install(): Promise<void> {
+  // Install once only. Pressing twice, or again after a remount, would download twice.
+  if (installing) return;
+  installing = true;
+  patchSession({ noticeHidden: false });
+  try {
+    const update = await fetchUpdate();
+    if (!update) {
+      patchSession({ phase: { kind: 'idle' }, pendingVersion: readSession().readyVersion });
       return;
     }
-    if (current.kind === 'available') writeStored(DISMISSED_VERSION_KEY, current.version);
-    setPhase({ kind: 'idle' });
-  }, [setPhase]);
+    patchSession({ pendingVersion: update.version });
+    if (update.version === readSession().readyVersion) {
+      patchSession({ phase: { kind: 'ready', version: update.version } });
+      return;
+    }
 
-  /** Hides the download card without dismissing the version; the ready card comes back. */
-  const hide = useCallback(() => setNoticeHidden(true), []);
+    let received = 0;
+    let total: number | null = null;
+    patchSession({ phase: { kind: 'downloading', version: update.version, received, total } });
+
+    await update.downloadAndInstall((event) => {
+      if (event.event === 'Started') {
+        total = event.data.contentLength ?? null;
+      } else if (event.event === 'Progress') {
+        received += event.data.chunkLength;
+        patchSession({ phase: { kind: 'downloading', version: update.version, received, total } });
+      }
+    });
+
+    patchSession({ readyVersion: update.version, noticeHidden: false, phase: { kind: 'ready', version: update.version } });
+  } catch (error) {
+    patchSession({
+      noticeHidden: false,
+      phase: { kind: 'failed', operation: 'install', message: error instanceof Error ? error.message : String(error) },
+    });
+  } finally {
+    installing = false;
+  }
+}
+
+async function restart(): Promise<void> {
+  const { relaunch } = await import('@tauri-apps/plugin-process');
+  await relaunch();
+}
+
+/** "Not now" or "Close": a dismissal is remembered for an offered version only. */
+function dismiss(): void {
+  const { phase } = readSession();
+  if (phase.kind === 'downloading') {
+    patchSession({ noticeHidden: true });
+    return;
+  }
+  if (phase.kind === 'available') {
+    writeStored(DISMISSED_VERSION_KEY, phase.version);
+    patchSession({ dismissedVersion: phase.version, phase: { kind: 'idle' } });
+    return;
+  }
+  patchSession({ phase: { kind: 'idle' } });
+}
+
+/** Hides the download card without dismissing the version; the ready card comes back. */
+function hide(): void {
+  patchSession({ noticeHidden: true });
+}
+
+function showNotice(): void {
+  patchSession({ noticeHidden: false });
+}
+
+const readServerState = () => SERVER_STATE;
+
+/**
+ * The updater's runtime wiring; every judgement is in `update-state.ts`. The plugin is
+ * dynamically imported so a desktop-only module stays out of the web bundle. Mount it once:
+ * its timers are the automatic checks.
+ */
+export function useAppUpdate() {
+  const state = useSyncExternalStore(subscribe, readSession, readServerState);
 
   useEffect(() => {
     if (!isDesktopShell()) return;
-    const evaluate = () => void check(false);
+    const evaluate = () => void checkForUpdates(false);
     const evaluateWhenShown = () => {
       if (document.visibilityState === 'visible') evaluate();
     };
@@ -213,7 +284,19 @@ export function useAppUpdate() {
       document.removeEventListener('visibilitychange', evaluateWhenShown);
       window.removeEventListener('focus', evaluate);
     };
-  }, [check]);
+  }, []);
 
-  return { phase, noticeHidden, pendingVersion, readyVersion, check, install, restart, dismiss, hide };
+  return { ...state, check: checkForUpdates, install, restart, dismiss, hide, showNotice };
+}
+
+const readPendingVersion = () => readSession().pendingVersion;
+const readReadyVersion = () => readSession().readyVersion;
+const readNothing = () => null;
+
+/** Only the pending and ready versions, so a download's progress does not re-render the reader. */
+export function usePendingUpdate(): { pendingVersion: string | null; readyVersion: string | null } {
+  return {
+    pendingVersion: useSyncExternalStore(subscribe, readPendingVersion, readNothing),
+    readyVersion: useSyncExternalStore(subscribe, readReadyVersion, readNothing),
+  };
 }

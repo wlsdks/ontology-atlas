@@ -6,6 +6,20 @@ import ko from '../../../../messages/ko.json';
 import { DISMISSED_VERSION_KEY, type UpdatePhase } from '../model/update-state';
 import { UpdateToast } from './UpdateToast';
 
+const check = vi.fn();
+
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
+  isDesktopShell: () => true,
+}));
+
+vi.mock('@tauri-apps/plugin-updater', () => ({
+  check: (...args: unknown[]) => check(...args),
+}));
+
+vi.mock('@tauri-apps/plugin-process', () => ({
+  relaunch: vi.fn(),
+}));
+
 const handlers = {
   onInstall: vi.fn(),
   onRestart: vi.fn(),
@@ -27,10 +41,12 @@ beforeEach(() => {
   vi.useFakeTimers();
   window.localStorage.clear();
   for (const handler of Object.values(handlers)) handler.mockReset();
+  check.mockReset();
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('UpdateToast', () => {
@@ -39,9 +55,10 @@ describe('UpdateToast', () => {
     ['checking', { kind: 'checking' }],
     ['current', { kind: 'current' }],
     ['a failed check that already lives in Settings', { kind: 'failed', operation: 'check', message: 'remote 404' }],
-  ])('draws nothing for %s', (_, phase) => {
+  ])('draws nothing for %s but keeps the live region mounted', (_, phase) => {
     renderPhase(phase);
     expect(screen.queryByTestId('app-update-toast')).not.toBeInTheDocument();
+    expect(screen.getByTestId('app-update-live')).toHaveAttribute('aria-live', 'polite');
   });
 
   it('offers a new version with the greeting, then rests on the waiting loop', () => {
@@ -129,14 +146,40 @@ describe('UpdateToast', () => {
     expect(within(toast).getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
   });
 
-  it('hides a download without dismissing its version', () => {
+  it('keeps the download figures out of the polite live region', () => {
     renderPhase({ kind: 'downloading', version: '2.1.0', received: 1, total: 2 });
-    fireEvent.click(screen.getByRole('button', { name: ko.appUpdate.hide }));
-    expect(handlers.onHide).toHaveBeenCalledTimes(1);
-    expect(handlers.onDismiss).not.toHaveBeenCalled();
-    expect(window.localStorage.getItem(DISMISSED_VERSION_KEY)).toBeNull();
+    expect(screen.getByTestId('app-update-detail')).toHaveAttribute('aria-live', 'off');
   });
 
+  it('fades a hidden card out and leaves the live region in place', () => {
+    const view = renderPhase({ kind: 'downloading', version: '2.1.0', received: 1, total: 2 });
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <UpdateToast phase={{ kind: 'downloading', version: '2.1.0', received: 1, total: 2 }} hidden {...handlers} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('app-update-toast')).toHaveAttribute('data-state', 'closed');
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(screen.queryByTestId('app-update-toast')).not.toBeInTheDocument();
+    expect(screen.getByTestId('app-update-live')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['Hide', { kind: 'downloading', version: '2.1.0', received: 1, total: 2 }, ko.appUpdate.hide],
+    ['Later', { kind: 'available', version: '2.1.0', notes: null }, ko.appUpdate.dismiss],
+    ['Close', { kind: 'failed', operation: 'install', message: 'x' }, ko.appUpdate.close],
+  ] as const)('hands focus on after %s is pressed from inside the card', (_, phase, label) => {
+    const onReturnFocus = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <UpdateToast phase={phase} {...handlers} onReturnFocus={onReturnFocus} />
+      </NextIntlClientProvider>,
+    );
+    const button = screen.getByRole('button', { name: label });
+    button.focus();
+    fireEvent.click(button);
+    expect(onReturnFocus).toHaveBeenCalledTimes(1);
+  });
   it('asks for a restart with a finishing gesture', () => {
     renderPhase({ kind: 'ready', version: '2.1.0' });
     const toast = screen.getByTestId('app-update-toast');
@@ -157,5 +200,73 @@ describe('UpdateToast', () => {
     expect(handlers.onInstall).toHaveBeenCalledTimes(1);
     fireEvent.click(within(toast).getByRole('button', { name: ko.appUpdate.close }));
     expect(handlers.onDismiss).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** The card driven by the real updater session, wired as the app shell wires it. */
+describe('UpdateToast through the updater session', () => {
+  let context: typeof import('../model/app-update-context');
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel');
+    context = await import('../model/app-update-context');
+  });
+
+  function Surface() {
+    const update = context.useAppUpdateContext();
+    if (!update) return null;
+    return (
+      <UpdateToast
+        phase={update.phase}
+        hidden={update.noticeHidden}
+        onInstall={update.install}
+        onRestart={update.restart}
+        onDismiss={update.dismiss}
+        onHide={update.hide}
+      />
+    );
+  }
+
+  async function mountWithOffer(version: string, downloadAndInstall = vi.fn()) {
+    check.mockResolvedValue({ version, body: null, downloadAndInstall });
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <context.AppUpdateProvider>
+          <Surface />
+        </context.AppUpdateProvider>
+      </NextIntlClientProvider>,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+    return screen.getByTestId('app-update-toast');
+  }
+
+  it('takes a hidden download off screen without remembering its version as declined', async () => {
+    const downloadAndInstall = vi.fn((onEvent: (event: unknown) => void) => {
+      onEvent({ event: 'Started', data: { contentLength: 10 } });
+      onEvent({ event: 'Progress', data: { chunkLength: 4 } });
+      return new Promise<never>(() => {});
+    });
+    const card = await mountWithOffer('2.1.0', downloadAndInstall);
+    await act(async () => {
+      fireEvent.click(within(card).getByRole('button', { name: ko.appUpdate.install }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByTestId('app-update-toast')).toHaveAttribute('data-phase', 'downloading');
+
+    fireEvent.click(screen.getByRole('button', { name: ko.appUpdate.hide }));
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(screen.queryByTestId('app-update-toast')).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(DISMISSED_VERSION_KEY)).toBeNull();
+  });
+
+  it('remembers a version put off with Later', async () => {
+    const card = await mountWithOffer('2.1.0');
+    fireEvent.click(within(card).getByRole('button', { name: ko.appUpdate.dismiss }));
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(screen.queryByTestId('app-update-toast')).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(DISMISSED_VERSION_KEY)).toBe('2.1.0');
   });
 });

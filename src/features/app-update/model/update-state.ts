@@ -1,3 +1,4 @@
+import { gitHostPlatformFrom } from '@/shared/lib/git/git-install-guide';
 import { definePreference } from '@/shared/lib/preferences/define-preference';
 
 /**
@@ -24,8 +25,20 @@ export type UpdatePhase =
 /** An app left open for days still hears about a release within a working session. */
 export const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 
-/** How often an open app asks itself whether a check is due; the interval above decides. */
+/** How often an open app asks itself whether a check is due; at most one automatic request per tick. */
 export const AUTO_CHECK_TICK_MS = 30 * 60 * 1000;
+
+/**
+ * A tick may land a little under a full tick after the last request (the entry check runs a few
+ * seconds after mount, timers drift); ticks are a full tick apart, so this still allows one per tick.
+ */
+const TICK_SLACK_MS = 60_000;
+
+/** A feed that never answers must not hold the only check slot; the updater and the race both use it. */
+export const CHECK_TIMEOUT_MS = 30_000;
+
+/** After this many automatic failures in a row, a failing feed is asked only once per interval. */
+export const FAILURES_BEFORE_BACKOFF = 2;
 
 /** A dismissal is remembered for that version only — the next version must ask again. */
 export const DISMISSED_VERSION_KEY = 'app-update:dismissed-version';
@@ -51,30 +64,61 @@ export function useUpdateAutoCheck(): UpdateAutoCheck {
   return updateAutoCheckPreference.use();
 }
 
-export interface CheckPolicyInput {
+export interface AutomaticDueInput {
+  readonly now: number;
+  readonly lastSuccessAt: number | null;
+  /** The last automatic or manual request, whatever its outcome. */
+  readonly lastAttemptAt: number | null;
+  readonly consecutiveFailures: number;
+}
+
+/**
+ * At most one automatic request per tick whatever the outcome; a failing feed is retried one tick
+ * later, then only once per interval after {@link FAILURES_BEFORE_BACKOFF} failures until one
+ * succeeds. A clock that went backwards is due, or the next check never comes.
+ */
+export function isAutomaticCheckDue({ now, lastSuccessAt, lastAttemptAt, consecutiveFailures }: AutomaticDueInput): boolean {
+  const attemptGapMs =
+    (consecutiveFailures >= FAILURES_BEFORE_BACKOFF ? CHECK_INTERVAL_MS : AUTO_CHECK_TICK_MS) - TICK_SLACK_MS;
+  if (lastAttemptAt !== null) {
+    const sinceAttempt = now - lastAttemptAt;
+    if (sinceAttempt >= 0 && sinceAttempt < attemptGapMs) return false;
+  }
+  if (consecutiveFailures > 0 || lastSuccessAt === null) return true;
+  const sinceSuccess = now - lastSuccessAt;
+  return sinceSuccess < 0 || sinceSuccess >= CHECK_INTERVAL_MS;
+}
+
+/** The update feed serves macOS builds only; elsewhere every automatic request would be refused. */
+export function feedServesPlatform(platformOrUserAgent: string): boolean {
+  return gitHostPlatformFrom(platformOrUserAgent) === 'macos';
+}
+
+export interface CheckPolicyInput extends Partial<Omit<AutomaticDueInput, 'now' | 'lastSuccessAt'>> {
   readonly isDesktop: boolean;
   readonly now: number;
   readonly lastCheckedAt: number | null;
   readonly automatic: boolean;
   /** Did the user press it in settings themselves? Then the interval is ignored. */
   readonly manual?: boolean;
+  readonly feedServesPlatform?: boolean;
 }
 
-/** Never on the web, where a tab cannot replace itself. */
+/** Never on the web, where a tab cannot replace itself. A press checks on any platform. */
 export function shouldCheckForUpdate({
   isDesktop,
   now,
   lastCheckedAt,
   automatic,
   manual = false,
+  lastAttemptAt = null,
+  consecutiveFailures = 0,
+  feedServesPlatform: servesPlatform = true,
 }: CheckPolicyInput): boolean {
   if (!isDesktop) return false;
   if (manual) return true;
-  if (!automatic) return false;
-  if (lastCheckedAt === null) return true;
-  // A clock that went backwards is also due, or the next check never comes.
-  const elapsed = now - lastCheckedAt;
-  return elapsed < 0 || elapsed >= CHECK_INTERVAL_MS;
+  if (!automatic || !servesPlatform) return false;
+  return isAutomaticCheckDue({ now, lastSuccessAt: lastCheckedAt, lastAttemptAt, consecutiveFailures });
 }
 
 /** A dismissal means "not now" and expires when the version goes up. */
@@ -117,11 +161,29 @@ export function phaseAfterCheck({
   readyVersion,
   dismissedVersion,
 }: CheckResultInput): UpdatePhase | null {
-  if (!manual && !canAutomaticResultReplace(phase)) return null;
+  // A running download is the answer; not even a press replaces it.
+  if (phase.kind === 'downloading') return null;
+  const newerOnScreen = phase.kind === 'available' && found !== null && found.version !== phase.version;
+  if (!manual && !canAutomaticResultReplace(phase) && !newerOnScreen) return null;
   if (!found) return manual ? { kind: 'current' } : null;
   if (found.version === readyVersion) return manual ? { kind: 'ready', version: found.version } : null;
   if (!manual && !shouldSurfaceVersion(found.version, dismissedVersion)) return null;
   return { kind: 'available', version: found.version, notes: found.notes };
+}
+
+/** A failed check never hides a restart that is waiting; an automatic failure changes nothing. */
+export function phaseAfterFailedCheck({
+  manual,
+  readyVersion,
+  message,
+}: {
+  manual: boolean;
+  readyVersion: string | null;
+  message: string;
+}): UpdatePhase | null {
+  if (!manual) return null;
+  if (readyVersion) return { kind: 'ready', version: readyVersion };
+  return { kind: 'failed', operation: 'check', message };
 }
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;

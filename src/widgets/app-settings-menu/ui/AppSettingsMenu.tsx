@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { Settings } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { useAppUpdateContext } from '@/features/app-update';
 import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { OPEN_SETTINGS_EVENT, useSurfaceRequest } from '@/shared/lib/keyboard/surface-requests';
@@ -41,6 +40,7 @@ import {
   useSettingsSearchCursor,
 } from './SettingsSearch';
 import { SettingsPaneHead } from './settings-primitives';
+import { useSettingsTriggerLabel } from './use-settings-trigger-label';
 
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
@@ -130,12 +130,8 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
-  const tUpdate = useTranslations('appUpdate');
   // A dismissed notice leaves this quiet sign until a check says the app is current.
-  const pendingVersion = useAppUpdateContext()?.pendingVersion ?? null;
-  const triggerLabel = pendingVersion
-    ? tUpdate('settingsTriggerPending', { label: t('triggerAria'), version: pendingVersion })
-    : t('triggerAria');
+  const { label: triggerLabel, pendingVersion } = useSettingsTriggerLabel();
   const locale = useLocale();
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);

@@ -13,7 +13,7 @@ const checkNow = vi.fn();
 let contextValue: AppUpdateValue | null = null;
 let desktop = true;
 
-let memory: { lastCheckedAt: number | null; dismissedVersion: string | null } = {
+let memory: Pick<AppUpdateValue, 'lastCheckedAt' | 'dismissedVersion'> = {
   lastCheckedAt: null,
   dismissedVersion: null,
 };
@@ -25,7 +25,6 @@ const writeUpdateAutoCheck = vi.fn((value: 'on' | 'off') => {
 
 vi.mock('@/features/app-update', () => ({
   useAppUpdateContext: () => contextValue,
-  readUpdateMemory: () => memory,
   useUpdateAutoCheck: () => autoCheck,
   writeUpdateAutoCheck: (value: 'on' | 'off') => writeUpdateAutoCheck(value),
 }));
@@ -45,11 +44,13 @@ function makeValue(phase: UpdatePhase, pending: Partial<AppUpdateValue> = {}): A
     noticeHidden: false,
     pendingVersion: null,
     readyVersion: null,
+    ...memory,
     checkNow,
     install: vi.fn(),
     restart: vi.fn(),
     dismiss: vi.fn(),
     hide: vi.fn(),
+    showNotice: vi.fn(),
     ...pending,
   };
 }
@@ -192,10 +193,26 @@ describe('AppUpdateSettings', () => {
   });
 
   it.each([
-    ['an offered version', null, '2.1.0이 나왔어요'],
-    ['a version waiting for restart', '2.1.0', '2.1.0 설치까지 끝났어요'],
-  ])('names %s after its notice was put away', (_, readyVersion, expected) => {
+    ['an offered version', null, '2.1.0 버전이 나와 있어요.', 'install', '업데이트 설치'],
+    ['a version waiting for restart', '2.1.0', '2.1.0 설치가 끝났어요.', 'restart', '지금 다시 시작'],
+  ] as const)('names %s after its notice was put away and carries its action', (_, readyVersion, expected, action, label) => {
     renderAt({ kind: 'idle' }, { pendingVersion: '2.1.0', readyVersion });
     expect(screen.getByTestId('app-settings-update-result')).toHaveTextContent(expected);
+    const chip = screen.getByTestId('app-settings-update-away-action');
+    expect(chip).toHaveTextContent(label);
+    fireEvent.click(chip);
+    expect(contextValue?.[action]).toHaveBeenCalledTimes(1);
+  });
+
+  it('names a hidden download and brings its notice back', () => {
+    renderAt({ kind: 'downloading', version: '2.1.0', received: 1, total: 4 }, { noticeHidden: true });
+    expect(screen.getByTestId('app-settings-update-result')).toHaveTextContent('2.1.0 내려받는 중이에요.');
+    fireEvent.click(screen.getByTestId('app-settings-update-away-action'));
+    expect(contextValue?.showNotice).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no second action while the notice is on screen', () => {
+    renderAt({ kind: 'downloading', version: '2.1.0', received: 1, total: 4 }, { pendingVersion: '2.1.0' });
+    expect(screen.queryByTestId('app-settings-update-away-action')).toBeNull();
   });
 });

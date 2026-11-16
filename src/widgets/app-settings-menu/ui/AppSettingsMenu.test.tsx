@@ -25,20 +25,8 @@ vi.mock('@/features/app-update', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/app-update')>();
   return {
     ...actual,
-    useAppUpdateContext: () =>
-      mocks.updatePendingVersion === null
-        ? null
-        : {
-            phase: { kind: 'idle' as const },
-            noticeHidden: false,
-            pendingVersion: mocks.updatePendingVersion,
-            readyVersion: null,
-            checkNow: vi.fn(),
-            install: vi.fn(),
-            restart: vi.fn(),
-            dismiss: vi.fn(),
-            hide: vi.fn(),
-          },
+    useAppUpdateContext: () => null,
+    usePendingUpdate: () => ({ pendingVersion: mocks.updatePendingVersion, readyVersion: null }),
   };
 });
 

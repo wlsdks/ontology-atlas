@@ -15,5 +15,6 @@
   "retry": "다시 시도",
   "close": "닫기",
   "dismiss": "나중에",
-  "settingsTriggerPending": "{label}, 새 버전 {version} 있음"
+  "settingsTriggerPending": "{label}, 새 버전 {version} 있음",
+  "settingsTriggerReady": "{label}, 새 버전 {version} 설치됨, 다시 시작 필요"
 }

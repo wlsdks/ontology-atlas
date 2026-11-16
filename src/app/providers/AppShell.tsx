@@ -73,9 +73,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
       {/*
-        One update state machine for the toast and the settings check, or they disagree and
-        the daily auto check runs twice. The settings sheet is inside the rail, so this
-        provider sits outside it.
+        One updater wiring for the notice and the settings check: its timers are the automatic
+        checks, so a second mount would tick twice. The settings sheet is inside the rail, so
+        this provider sits outside it.
       */}
       <AppUpdateProvider>
         {/*
@@ -371,16 +371,24 @@ function AppNavRailSlot() {
 /** Reads the shared update state machine from `AppUpdateProvider`; see the comment there. */
 function AppUpdateSurface() {
   const update = useAppUpdateContext();
-  if (!update || update.noticeHidden) return null;
+  if (!update) return null;
   return (
     <UpdateToast
       phase={update.phase}
+      hidden={update.noticeHidden}
       onInstall={update.install}
       onRestart={update.restart}
       onDismiss={update.dismiss}
       onHide={update.hide}
+      onReturnFocus={focusSettingsTrigger}
     />
   );
+}
+
+/** A dismissed notice hands focus to the settings trigger, where the pending version stays. */
+function focusSettingsTrigger() {
+  const triggers = document.querySelectorAll<HTMLElement>('[data-testid="app-settings-trigger"]');
+  [...triggers].find((trigger) => trigger.getClientRects().length > 0)?.focus();
 }
 
 function NoVaultRailEntry() {

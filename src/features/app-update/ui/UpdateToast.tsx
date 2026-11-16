@@ -23,6 +23,10 @@ export interface UpdateToastProps {
   readonly onDismiss: () => void;
   /** Hides the download card; the download continues and the version is not dismissed. */
   readonly onHide: () => void;
+  /** The card is put away while its phase goes on (a hidden download). */
+  readonly hidden?: boolean;
+  /** Where focus goes when the person put the card away from inside it. */
+  readonly onReturnFocus?: () => void;
 }
 
 type DrawnPhase = Extract<UpdatePhase, { kind: 'available' | 'downloading' | 'ready' | 'failed' }>;
@@ -79,12 +83,19 @@ function usePhaseLayers(phase: UpdatePhase) {
   return layers;
 }
 
+/**
+ * The live region stays mounted and empty while nothing is drawn, so a card that arrives already
+ * filled (a hidden download finishing) is still announced.
+ */
 export function UpdateToast(props: UpdateToastProps) {
-  const open = isDrawn(props.phase);
+  const open = isDrawn(props.phase) && !props.hidden;
   const { mounted } = usePanelPresence(open, FADE_OUT_MS);
   const layers = usePhaseLayers(props.phase);
-  if (!mounted || !layers) return null;
-  return <UpdateCard {...props} open={open} layers={layers} />;
+  return (
+    <div role="status" aria-live="polite" data-testid="app-update-live">
+      {mounted && layers ? <UpdateCard {...props} open={open} layers={layers} /> : null}
+    </div>
+  );
 }
 
 function UpdateCard({
@@ -94,20 +105,25 @@ function UpdateCard({
   onRestart,
   onDismiss,
   onHide,
+  onReturnFocus,
 }: UpdateToastProps & { open: boolean; layers: Layers }) {
   const reducedMotion = usePrefersReducedMotion();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const putAway = (handler: () => void) => () => {
+    const hadFocus = cardRef.current?.contains(document.activeElement) ?? false;
+    handler();
+    if (hadFocus) onReturnFocus?.();
+  };
   const [landed, setLanded] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setLanded(true), CARD_LANDING_MS);
     return () => window.clearTimeout(timer);
   }, []);
-  const actions = { onInstall, onRestart, onDismiss, onHide };
+  const actions = { onInstall, onRestart, onDismiss: putAway(onDismiss), onHide: putAway(onHide) };
 
   return (
     <div
-      // A live region, but not assertive — it does not break a screen-reader user's flow either.
-      role="status"
-      aria-live="polite"
+      ref={cardRef}
       data-testid="app-update-toast"
       data-phase={layers.current.kind}
       data-state={open ? 'open' : 'closed'}
@@ -217,6 +233,8 @@ function PhaseLayer({
         </p>
         <p
           data-testid={leaving ? undefined : 'app-update-detail'}
+          // The progressbar carries the value; the polite region must not re-read every chunk.
+          aria-live={phase.kind === 'downloading' ? 'off' : undefined}
           className="line-clamp-2 min-h-[calc(var(--leading-label)*2)] break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
         >
           {detail}

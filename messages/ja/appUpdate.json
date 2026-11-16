@@ -15,5 +15,6 @@
   "retry": "再試行",
   "close": "閉じる",
   "dismiss": "後で",
-  "settingsTriggerPending": "{label}、新しいバージョン{version}があります"
+  "settingsTriggerPending": "{label}、新しいバージョン{version}があります",
+  "settingsTriggerReady": "{label}、新しいバージョン{version}をインストール済み、再起動が必要"
 }
