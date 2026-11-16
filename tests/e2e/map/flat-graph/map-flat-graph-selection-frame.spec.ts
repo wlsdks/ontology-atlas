@@ -15,6 +15,8 @@ const HUB_NEEDED_BY = [4, 5];
 const CURVE_STEPS = 48;
 /** Rounding of a box edge to canvas pixels. */
 const EDGE_PX = 0.5;
+/** Share of the free map a domain's star spans once a further zoom step would no longer fit it. */
+const STAR_FILLS_SHARE = 0.95;
 
 /** Elements of the hub's first two needs that the hub also needs, so its lit picture names elements. */
 const HUB_ELEMENT_NEEDS = [1, 2];
@@ -219,8 +221,30 @@ async function expectDomainFramed(page: Page, id: string, star: ReadonlySet<stri
   return margin;
 }
 
+/**
+ * A selected domain zooms in no further than its ratio of the zoom it was made at, and leaves its two
+ * closest members two least pick radii apart on screen, or its star filling the free map.
+ */
+async function expectMembersApart(page: Page, id: string, star: ReadonlySet<string>, dial: DialProbe, clickedZoom: number): Promise<void> {
+  const [pickMin, selectZoom, margin] = await page.evaluate(() =>
+    ["--map-graph-pick-min-px", "--map-graph-select-zoom-max-ratio", "--map-graph-frame-margin-px"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
+  expect(pickMin).toBeGreaterThan(0);
+  expect(dial.zoomRatio, "a domain zooms in no further than its ratio of the zoom it was made at").toBeLessThanOrEqual(clickedZoom * selectZoom! + 1e-6);
+  const members = dial.discs.filter((d) => star.has(d.id) && d.id !== id);
+  const apart = Math.min(...members.flatMap((d, i) => members.slice(i + 1).map((e) => Math.hypot(d.x - e.x, d.y - e.y))));
+  const boxes = [
+    ...dial.discs.filter((d) => star.has(d.id)).map((d) => ({ minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r })),
+    ...dial.texts.filter((t) => t.id === id).map((t) => t.box),
+  ];
+  const r = dial.freeRect;
+  const spanX = Math.max(...boxes.map((b) => b.maxX)) - Math.min(...boxes.map((b) => b.minX));
+  const spanY = Math.max(...boxes.map((b) => b.maxY)) - Math.min(...boxes.map((b) => b.minY));
+  const fills = spanX >= (r.maxX - r.minX - margin! * 2) * STAR_FILLS_SHARE || spanY >= (r.maxY - r.minY - margin! * 2) * STAR_FILLS_SHARE;
+  expect(apart >= pickMin! * 2 - EDGE_PX || fills, `closest members ${apart.toFixed(1)} px apart, star ${Math.round(spanX)} x ${Math.round(spanY)} in ${Math.round(r.maxX - r.minX)} x ${Math.round(r.maxY - r.minY)}`).toBe(true);
+}
+
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 949 }]) {
-  test(`at ${viewport.width} wide a domain chosen in the explorer frames its star, name and reach line between the explorer and the detail panel without zooming in`, async ({ page }) => {
+  test(`at ${viewport.width} wide a domain chosen in the explorer frames its star, name and reach line between the explorer and the detail panel, its members apart`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize(viewport);
     await openVault(page);
@@ -237,28 +261,24 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 94
     expect(panels?.left ?? 0, "the explorer is open on the left").toBeGreaterThan(0);
     expect(panels?.right ?? 0, "the detail panel is open on the right").toBeGreaterThan(0);
     expect(dial.freeRect.minX, "the free map starts past the explorer").toBeGreaterThanOrEqual(panels!.left);
-    expect(dial.zoomRatio, "a domain selection never zooms in").toBeLessThanOrEqual(clickedZoom + 1e-6);
     await expectDomainFramed(page, id, star, before, dial);
+    await expectMembersApart(page, id, star, dial, clickedZoom);
   });
 }
 
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 982 }]) {
-  test(`at ${viewport.width} wide a domain the detail panel would cover frames its member star clear, its nearest partner in view and its names off its lines`, async ({ page }) => {
+  test(`at ${viewport.width} wide a domain the detail panel would cover frames its member star clear and apart, its names off its lines`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize(viewport);
     await openVault(page);
     const { id, star, before } = await domainNearPanel(page);
     const { dial, clickedZoom } = await selectOnMap(page, id);
-    expect(dial.zoomRatio, "a domain selection never zooms in").toBeLessThanOrEqual(clickedZoom + 1e-6);
     await expectDomainFramed(page, id, star, before, dial);
-    const r = dial.freeRect;
+    await expectMembersApart(page, id, star, dial, clickedZoom);
 
     const lines = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey));
     const partners = [...new Set(lines.flatMap((s) => s.flowKey.slice(s.flowKey.indexOf(":") + 1).split(">")))].filter((end) => end !== id);
     expect(partners.length, "the domain has partner domains").toBeGreaterThan(0);
-    const home = dial.discs.find((d) => d.id === id)!;
-    const nearest = partners.map((p) => dial.discs.find((d) => d.id === p)!).sort((a, b) => Math.hypot(a.x - home.x, a.y - home.y) - Math.hypot(b.x - home.x, b.y - home.y))[0]!;
-    expect(nearest.x > r.minX && nearest.x < r.maxX && nearest.y > r.minY && nearest.y < r.maxY, `the nearest partner, ${nearest.id}, is in the free map`).toBe(true);
 
     const lit = new Set([...star, ...partners]);
     const crossed = dial.texts

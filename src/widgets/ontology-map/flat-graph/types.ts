@@ -89,6 +89,11 @@ export interface FlatGraphPaintTokens {
   selectedDiscGapPx: number;
   /** The most a selection's framing zooms in, as a multiple of the zoom the reader clicked at. */
   selectZoomMaxRatio: number;
+  /**
+   * The least radius the pointer picks a mark within, whatever its drawn size; a domain selection
+   * zooms in until its members' centres stand two of these apart.
+   */
+  pickMinPx: number;
   /** A backed name's backing: corner radius, padding around the glyphs, the ground's alpha in it, and the blur its edge fades over. */
   backingRadiusPx: number;
   backingPadXPx: number;

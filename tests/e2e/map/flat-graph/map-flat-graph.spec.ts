@@ -119,6 +119,75 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   expect(selectedInk.get(target.domainId), "the selected capability's domain stays lit").toBe(ink);
 });
 
+/** The screen distance between a domain's two closest member capabilities. */
+function membersApartPx(dial: DialProbe, domainId: string): number {
+  const ids = new Set(dial.clusters.find((c) => c.domainId === domainId)!.capabilityIds);
+  const members = dial.discs.filter((d) => ids.has(d.id));
+  return Math.min(...members.flatMap((d, i) => members.slice(i + 1).map((e) => Math.hypot(d.x - e.x, d.y - e.y))));
+}
+
+const pickMinPx = (page: Page) => page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-pick-min-px")));
+
+test("a domain selected from a zoomed-out view zooms until its closest members stand two least pick radii apart, and one deselect returns the view", async ({ page }) => {
+  test.setTimeout(180_000);
+  await useDogfoodSample(page);
+  await openGraph(page);
+  const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  for (let notch = 0; notch < 2; notch += 1) {
+    await page.mouse.move(box.x + box.width * 0.45, box.y + box.height / 2);
+    await page.mouse.wheel(0, 120);
+    await waitForMapStill(page, { what: "camera" });
+  }
+  const apart = (await pickMinPx(page)) * 2;
+  const before = await readDial(page);
+  const domainId = [...before.clusters].sort((a, b) => membersApartPx(before, a.domainId) - membersApartPx(before, b.domainId))[0]!.domainId;
+  expect(membersApartPx(before, domainId), "zoomed out, a domain's members stand closer than two pick radii").toBeLessThan(apart);
+
+  const home = before.discs.find((d) => d.id === domainId)!;
+  await page.mouse.click(box.x + home.x, box.y + home.y);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domainId);
+  await page.mouse.move(box.x + 2, box.y + box.height - 2);
+  await waitForMapStill(page, { what: "camera" });
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.dialMotionSettled?.() === true)).toBe(true);
+  const selected = await readDial(page);
+  expect(selected.zoomRatio, "the selection zoomed in").toBeGreaterThan(before.zoomRatio);
+  expect(membersApartPx(selected, domainId), "the closest members once the selection lands").toBeGreaterThanOrEqual(apart - 0.5);
+
+  await page.keyboard.press("Escape");
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBeNull();
+  await waitForMapStill(page, { what: "camera" });
+  const back = await readDial(page);
+  expect(back.zoomRatio, "the deselect returns the zoom the reader left").toBeCloseTo(before.zoomRatio, 4);
+  const returned = back.discs.find((d) => d.id === domainId)!;
+  expect(Math.hypot(returned.x - home.x, returned.y - home.y), "the deselect returns the domain to where it stood").toBeLessThan(1);
+});
+
+test("a capability drawn smaller than the least pick radius answers a pointer that far from its centre, past the slack every map shares", async ({ page }) => {
+  test.setTimeout(180_000);
+  await useDogfoodSample(page);
+  const dial = await openGraph(page);
+  const pickMin = await pickMinPx(page);
+  const reach = pickMin - 0.5;
+  const centres = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => !n.hidden).map((n) => ({ id: n.id, x: n.x, y: n.y })));
+  const capabilities = new Set(dial.clusters.flatMap((c) => c.capabilityIds));
+  const nearestId = (p: { x: number; y: number }) => centres.reduce((a, b) => (Math.hypot(b.x - p.x, b.y - p.y) < Math.hypot(a.x - p.x, a.y - p.y) ? b : a)).id;
+  const onMark = (p: { x: number; y: number }) =>
+    dial.discs.some((d) => Math.hypot(d.x - p.x, d.y - p.y) <= d.r) ||
+    dial.texts.some((t) => p.x >= t.box.minX - 1 && p.x <= t.box.maxX + 1 && p.y >= t.box.minY - 1 && p.y <= t.box.maxY + 1);
+  // Under half the reach drawn, so the point lies well past the few pixels of slack Neural and edges share.
+  const points = dial.discs
+    .filter((d) => capabilities.has(d.id) && d.r < pickMin / 2)
+    .flatMap((d) => Array.from({ length: 8 }, (_, k) => ({ id: d.id, x: d.x + reach * Math.cos((k * Math.PI) / 4), y: d.y + reach * Math.sin((k * Math.PI) / 4) })))
+    .filter((p) => nearestId(p) === p.id && !onMark(p));
+  expect(points.length, "small capabilities with a clear point at the edge of their reach").toBeGreaterThan(0);
+  for (const p of points.slice(0, 6)) {
+    const at = await canvasPoint(page, p);
+    await page.mouse.move(at.x, at.y);
+    expect(await hovered(page), `${p.id} at ${reach} px from its centre`).toBe(p.id);
+    await expect(page.getByTestId("ontology-map-canvas"), "the cursor offers the press").toHaveCSS("cursor", "pointer");
+  }
+});
+
 test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {
   test.setTimeout(180_000);
   const dial = await openGraph(page, "mode=path&pathFrom=domain%3Afulfillment&pathTo=capability%3Acarrier-integration&");

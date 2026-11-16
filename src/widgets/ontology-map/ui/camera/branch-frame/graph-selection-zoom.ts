@@ -150,6 +150,36 @@ export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoo
   return { maxScale: input.maxScale, readsAt, scoreAt, marksAt: reading.marksAt };
 }
 
+/** The least distance between two of `points`, Infinity for fewer than two. O(n²), n a domain's members. */
+function nearestPairDistance(points: readonly { x: number; y: number }[]): number {
+  let least = Infinity;
+  for (let i = 0; i < points.length; i += 1) {
+    for (let j = i + 1; j < points.length; j += 1) least = Math.min(least, Math.hypot(points[i]!.x - points[j]!.x, points[i]!.y - points[j]!.y));
+  }
+  return least;
+}
+
+export interface DomainSelectionZoomInput {
+  /** The domain's member capabilities, in world units. */
+  members: readonly { x: number; y: number }[];
+  /** Screen distance between two members' centres at which each can be pressed apart from the other. */
+  apartPx: number;
+  /** The domain's star as the frame holds it at every zoom, the domain's own block first. */
+  star: readonly FramedMark[];
+  maxScale: number;
+}
+
+/**
+ * A domain's selection reads once its two closest member capabilities stand `apartPx` apart on
+ * screen. The score grows with that separation up to `apartPx` and no further, so the frame zooms
+ * in to the least scale that reaches it, or as far as the star still fits.
+ */
+export function domainSelectionZoom(input: DomainSelectionZoomInput): SelectionZoomIn {
+  const nearest = nearestPairDistance(input.members);
+  const readsAt = (scale: number) => nearest * scale >= input.apartPx;
+  return { maxScale: input.maxScale, readsAt, scoreAt: (scale) => [Math.min(nearest * scale, input.apartPx)], marksAt: () => input.star };
+}
+
 /**
  * An element's selection reads once its own name is apart from the names and discs in `near`, and
  * nothing else earns zoom: an element's picture is its lines, so the frame zooms in no further
