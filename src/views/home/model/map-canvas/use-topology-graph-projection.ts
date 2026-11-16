@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { buildOntologyMapGraph } from "../../lib/map-canvas/map-adapter";
 import { resolveCanvasSelectedSlug } from "../../lib/selection/resolve-canvas-selection";
 import { clampSynthSize, type SynthShape, synthesizeEvidenceStates, synthesizeVaultGraph } from "../../lib/synth-vault/synth-vault";
-import type { MapEvidence } from "./use-map-evidence-states";
+import type { MapEvidence } from "@/features/vault-ontology";
 import { resolveRealmNodeId } from "../route-state/url-state";
 
 export function useTopologyGraphProjection({
@@ -128,6 +128,7 @@ export function useTopologyGraphProjection({
       availability: "measured",
       states: synthesizeEvidenceStates(graph.nodes.map((node) => node.id), synthStaleShare),
       movedPaths: new Map(),
+      stalePaths: new Map(),
     };
   }, [graph.nodes, synthSize, synthStaleShare]);
   const selectedProjectNodeId = useMemo(() => {

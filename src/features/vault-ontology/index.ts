@@ -7,5 +7,11 @@ export {
   useVaultConceptFacts,
 } from './model/use-vault-concept-facts';
 export { useAdaptiveRecentChanges } from './model/use-recent-changes';
+export {
+  useMapEvidenceStates,
+  type MapEvidence,
+  type MapEvidenceAvailability,
+  type StaleEvidencePath,
+} from './model/use-map-evidence-states';
 export { OntologyLiveBaselineInit } from './ui/OntologyLiveBaselineInit';
 export { RecentChangesNeedsVaultDialog } from './ui/RecentChangesNeedsVaultDialog';

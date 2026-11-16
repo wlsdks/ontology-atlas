@@ -15,8 +15,9 @@ vi.mock("@/widgets/ontology-map", () => ({
     return null;
   },
 }));
-vi.mock("../model/map-canvas/use-map-evidence-states", () => ({
-  useMapEvidenceStates: () => ({ availability: "no-paths", states: new Map(), movedPaths: new Map() }),
+vi.mock("@/features/vault-ontology", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/vault-ontology")>()),
+  useMapEvidenceStates: () => ({ availability: "no-paths", states: new Map(), movedPaths: new Map(), stalePaths: new Map() }),
 }));
 
 const insightNode = (id: string, kind: string) =>

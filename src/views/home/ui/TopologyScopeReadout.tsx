@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { FLAT_LINE_BITS } from "@/widgets/ontology-map";
-import type { MapEvidence } from "../model/map-canvas/use-map-evidence-states";
+import type { MapEvidence } from "@/features/vault-ontology";
 
 export function TopologyScopeReadout({ total, members, synthetic }: {
   total: number | null;
