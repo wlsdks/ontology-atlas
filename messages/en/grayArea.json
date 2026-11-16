@@ -77,8 +77,6 @@
   "draftLead": "{subject}\n{question} Explain the current evidence and unknowns without changing files.",
   "draftContext": "Check · {subject}",
   "continuation": {
-    "notInspected": "Not checked against current code yet. Open this check when you want to look closer.",
-    "knownSuggestions": "{count} things to look at from the last check. They have not been confirmed against the current code.",
     "analyze": "Run analysis",
     "transfer": "Sends this question and the selected code to {runtime}. Your agent may read more code and use its own provider, which may charge for it. Changes still need your permission.",
     "requestDetails": "View the exact request",
@@ -91,19 +89,12 @@
     "prepareImprovement": "Prepare improvement request",
     "agentUnavailable": "You need a ready coding agent that asks before writing. Choose one in the Agent panel, or prepare an editable prompt.",
     "replanned": "The agent changed its reported task total to {total}. Earlier task counts do not measure this revised plan or ontology completeness.",
-    "entry": "Analysis status",
-    "chooseScope": "Choose a concept, set or project to check. Nothing is selected, so the analysis status is unknown.",
-    "emptyVault": "No concepts are recorded yet. Press Build first map when you are ready.",
     "packetLimits": "These limits describe the code already read. They do not limit the coding agent's later reads or cost. You can stop the analysis.",
     "matchUnknown": "This saved result cannot be matched to this question and evidence version. You can read it in history; it does not count as this scope’s analysis result.",
     "chooseScopeAction": "Choose scope",
-    "emptyVaultAction": "Build first map",
-    "localFolderAction": "Open a folder",
     "refused": "This check did not start. Check the selected code and the agent's permission mode, then try again.",
     "improvementLead": "Prepare a reviewable improvement for this question. Keep the answer’s unknowns and current evidence visible.",
     "historyLimited": "Some history was not read or could not be verified. Missing matches do not mean no earlier analysis exists.",
-    "questionCount": "{count} questions",
-    "previousResultAction": "Previous analysis",
     "narrowScope": "This selection is unavailable or too large to check. Choose a smaller concept or set.",
     "modelUnknown": "The active model is not confirmed here. Check it in the Agent panel."
   }

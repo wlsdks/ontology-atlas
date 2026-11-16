@@ -207,7 +207,9 @@ export function useTopologyInspectorState({
       detailKeyboardTargetRef.current = null;
     }
   }, [detailCloseButtonRef, detailKeyboardTargetRef, panelDatasheetModel?.nodeId, panelOpen]);
-  const selectedNodeOwnsRightRail = selectedNodeFocusActive && !meaningWorkbenchOpen && !acpDockFrameOpen;
+  // A dismissed panel leaves the selection but frees the rail, so the tiles come back.
+  const selectedNodeOwnsRightRail =
+    selectedNodeFocusActive && !nodePopoverDismissed && !meaningWorkbenchOpen && !acpDockFrameOpen;
   // The connection card stands where the node inspector does, so the right-rail tiles and activity
   // chip step aside.
   const selectedEdgeOwnsRightRail = edgePanelOpen && !meaningWorkbenchOpen && !acpDockFrameOpen;

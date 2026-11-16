@@ -482,8 +482,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     locale: activeLocale, routeState, setRouteState,
     onOpen: () => { closeVaultAgent(); setFullDetailSlug(null); },
     onChooseScope: () => setOntologySearchOpen(true),
-    onEmptyVault: topologyIndexPresentation.handleIndexTabExpand,
-    onConnectVault: requestVaultOpen,
     runtime: acpRuntimeController.acpRuntime,
     busy: Boolean(topologyAgentActivity.acpLiveWork),
     onAnalyze: (text,snapshot,projectUid,investigation,sourceRoot,label) => {
@@ -566,7 +564,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           <>
             <TopologyCommandChrome
               grayAreaAction={grayArea.action}
-              grayAreaContinuation={grayArea.continuationAction}
               routeState={routeState}
               setRouteState={setRouteState}
               setVaultAgentPrefill={setVaultAgentPrefill}
