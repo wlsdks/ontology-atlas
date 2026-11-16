@@ -29,19 +29,12 @@
   "wholeProject": "온톨로지 전체",
   "grounded": "근거 보관됨 · AI 가설",
   "unverified": "근거 확인이 부족한 검토",
-  "showIssues": "지도에 짚은 질문 표시",
-  "overlayUnavailable": "당시 근거가 보관되고 현재 범위·내용과 일치해야 지도에 표시해요. 원래 답변은 계속 볼 수 있어요.",
-  "issueLegend": "? 표시는 AI가 짚은 질문이며 확정된 결함이 아니에요.",
   "noFindings": "이 검토에서 짚은 질문이 없어요. 문제가 없다는 뜻은 아니에요.",
-  "showOnMap": "대상 위치 보기",
-  "reviewAction": "이 질문 판단하기",
   "evidence": "검토 당시 근거",
-  "openCurrent": "현재 문서 열기",
   "evidenceMissing": "이 인용에 해당하는 전체 본문이 보관되지 않았어요.",
-  "reviewReason": "판단한 이유",
-  "retain": "나중에 볼 질문으로 남기기",
-  "dismiss": "이 질문 기각하기",
-  "reviewBoundary": "판단을 별도 기록으로 남겨요. 온톨로지 수정은 변경 검토를 거쳐요.",
+  "reviewReason": "이유 (선택)",
+  "retain": "나중에 보기",
+  "dismiss": "기각",
   "answer": "원래 AI 답변",
   "basisDetails": "요청과 근거 상세",
   "followUp": "이 결과에 이어서 검토 요청",
@@ -73,7 +66,6 @@
   "measurementScope": "기록 당시 검사와 선언된 규칙의 결과예요. 유지보수성을 판단하기 전에 분석하지 못한 범위도 확인하세요.",
   "observationDetails": "측정과 의존 관계 근거",
   "loadingHistory": "검토 결과를 읽고 있어요…",
-  "targetSelected": "지도에서 해당 항목을 선택했어요.",
   "targetSelectedSheet": "지도에서 해당 항목을 선택했어요. 이 창을 닫으면 볼 수 있어요.",
   "viewSaved": "저장된 결과 보기",
   "profileSnapshot": "검토 당시 아키텍처 정의",
@@ -83,10 +75,7 @@
     "failed": "실패"
   },
   "readCoverage": "이번 검토에 전체 본문 근거 {count}개를 보관했어요. 아직 살펴보지 않은 범위가 남을 수 있어요.",
-  "earlierQuestions": "이전 결과의 질문 {count}개",
-  "earlierQuestionsNote": "불러온 결과에서 기각되지 않은 질문이에요. 나중 검토가 비어 있거나 취소되어도 해결된 것으로 보지 않아요.",
   "targetUnavailable": "현재 지도에서 이 대상을 찾지 못했어요. 기록 당시 근거를 확인하거나 새로 검토를 요청하세요.",
-  "findingsEyebrow": "{count, plural, =0 {짚은 질문} other {짚은 질문 #개}}",
   "fillNotes": "빠진 연결 이유 {count}개 채우기",
   "relationNotesPrompt": "이 범위에서 이유가 비어 있는 연결마다, 그 연결이 성립하는 까닭을 한 문장으로 `relation_notes`에 적어 주세요. Atlas 도구만 써요. 연결마다 두 문서를 get_concepts(body: \"full\")로 읽고, 대상을 나열한 쪽(출발 문서)에 patch_concept(expected_mtime 포함, 다른 키는 그대로)로 제안해요. 이 폴더가 쓰는 언어로 적고, 'A가 B를 포함한다'처럼 연결을 되풀이하는 문장은 이유가 아니에요. 문서에 까닭이 없으면 적지 말고 미해결 질문으로 남기세요. `domain:` 되가리킴은 부모의 포함과 같은 연결이므로 부모 문서에만 적고 자식 쪽에는 적지 마세요. 이번 턴에는 최대 {limit}개까지, 끝에 몇 개가 남았는지 말해 주세요.",
   "meaningTransitions": {
@@ -176,5 +165,15 @@
       "unknown": "미확인"
     }
   },
-  "reviewPurpose": "개념이 맡은 역할과 범위, 연결된 이유가 실제 제품과 맞는지 확인해요."
+  "toCheck": "확인할 것 {count}개",
+  "dismissedCount": "기각 {count}개",
+  "trustLine": "AI의 추측이에요. 맞는지는 직접 판단해요.",
+  "basisStaleLine": "이 검토 뒤에 문서가 바뀌었어요. 새로 검토하면 지금 내용으로 다시 봐요.",
+  "basisUnknownLine": "지금 내용과 같은지 확인하지 못했어요.",
+  "backToList": "확인할 것",
+  "haveFixed": "고치게 하기",
+  "sourceDocuments": "근거 문서 {count}개",
+  "recordDetails": "기록 상세",
+  "fixPrompt": "Atlas 검토에서 짚은 질문을 고쳐 주세요.\n질문: {title}\n내용: {detail}\n근거 문서: {evidence}\n이 문서들을 Atlas 도구(get_concepts, body: \"full\")로 읽으세요. 무엇이 틀렸고 어떻게 고칠지 먼저 문장으로 제안한 다음, patch_concept 같은 Atlas 쓰기 도구로 반영하세요. 쓰기마다 이 대화에서 사람의 허락을 기다려요. 문서에 고칠 근거가 없는 곳은 쓰지 말고 열린 질문으로 남기세요.",
+  "closeRecord": "기록 상세 닫기"
 }
