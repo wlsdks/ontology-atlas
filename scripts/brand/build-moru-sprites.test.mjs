@@ -41,7 +41,7 @@ for (const name of ['moru-companion', 'moru-reactions']) test(`the shipped ${nam
 
 test('large pending marks retain the native scene rather than enlarged low-resolution pixels', async () => {
   const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
-  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave', curious: 'tilt' })) {
+  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave', curious: 'tilt', think: 'thinking', read: 'source-read', search: 'search', write: 'save', code: 'laptop-code', success: 'dance' })) {
     assert.deepEqual(await readFile(`public/brand/mascot-${state}-row-128.png`), await readFile(`assets/brand/moru/${source.clips[id].sprite}`));
   }
 });

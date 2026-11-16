@@ -203,6 +203,8 @@ a clipped frame.
 | Real generic pending operation | `blink` / waiting row | Quiet loop while the operation is active and visible |
 | Tool preparation/connection | `connect` / connect row | Same pending guards; status and Stop remain authoritative |
 | Local Compile running | `source-read` / compile row | Same pending guards; no inferred completion |
+| In-app agent turn at work (chat dock) | `thinking`, `source-read`, `search`, `save`, `laptop-code` / native 128px work rows | One clip per kind of work the turn reports (no open call: thinking; an open read, search, write or command; answer text arriving: typing). The 24 poses loop end to end without the waiting hold while the turn runs; hidden while a permission card waits, after Stop and when the turn has gone silent |
+| In-app agent turn finished | `dance` / native 128px success row | One finite dance for a turn this panel watched end with an answer, then the stage folds away; never over a reopened conversation |
 | Verified entrance (`walk`) | `wave` | Existing finite entrance |
 | Verified read (`read`) | `source-read` | Existing finite cycle, then still |
 | Verified completion (`success`) | `dance` | One finite celebration, then existing hide timer |

@@ -3,10 +3,10 @@ import { Presentation } from 'lucide-react';
 
 import type { ChatSuggestion } from '@/features/acp-session';
 import { RowButton, Surface } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { SuggestionRows } from './SuggestionRows';
+import { TurnWorkStage, type TurnWork } from './TurnWorkStage';
 import type { ChatT } from './types';
 import type { usePresentation } from './use-presentation';
 
@@ -14,7 +14,7 @@ type PresentationState = ReturnType<typeof usePresentation>;
 
 interface TranscriptOffersProps {
   t: ChatT;
-  showAnswerWait: boolean;
+  turnWork: TurnWork | null;
   stoppedWithoutAnswer: boolean;
   presentation: Pick<
     PresentationState,
@@ -28,7 +28,7 @@ interface TranscriptOffersProps {
 
 export function TranscriptOffers({
   t,
-  showAnswerWait,
+  turnWork,
   stoppedWithoutAnswer,
   presentation,
   presentationOfferRef,
@@ -39,11 +39,7 @@ export function TranscriptOffers({
   const { presentationTrace, presentationBlocked, presentationVisible, heldPresentationTrace, openPresentation } = presentation;
   return (
     <>
-      {showAnswerWait ? (
-        <div data-testid="acp-answer-wait" className="flex justify-center py-2">
-          <BrandWaitingMark active />
-        </div>
-      ) : null}
+      <TurnWorkStage t={t} work={turnWork} />
       {stoppedWithoutAnswer ? (
         <p
           data-testid="acp-turn-stopped"

@@ -237,6 +237,14 @@
     "unfinished": "never finished",
     "declined": "you denied"
   },
+  "work": {
+    "thinking": "Thinking",
+    "answering": "Writing the answer",
+    "steps": "{count, plural, one {# step} other {# steps}}",
+    "plan": "{done} of {total} tasks",
+    "done": "Done",
+    "progressLabel": "Agent work progress"
+  },
   "workGroup": "Work details · {count, plural, one {# step} other {# steps}}",
   "workGroupActive": "Working · {count, plural, one {# step} other {# steps}}",
   "resize": "Resize the chat panel",

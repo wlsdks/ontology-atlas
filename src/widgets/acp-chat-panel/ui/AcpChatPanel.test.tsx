@@ -98,6 +98,7 @@ import {
   type AcpOntologyRelationPreview,
 } from './AcpChatPanel';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import { TURN_DONE_HOLD_MS } from './chat-panel/TurnWorkStage';
 
 /** The agent sends one line. */
 function emit(payload: unknown) {
@@ -1977,7 +1978,7 @@ describe('chat panel: honest about what it cannot do', () => {
       fireEvent.click(screen.getByTestId('acp-chat-send'));
       // The agent never answers, and never says anything either.
       expect(screen.queryByTestId('acp-chat-turn-silent')).toBeNull();
-      expect(screen.getByTestId('acp-answer-wait')).toBeInTheDocument();
+      expect(screen.getByTestId('acp-turn-work')).toBeInTheDocument();
 
       await vi.advanceTimersByTimeAsync(TURN_SILENCE_LIMIT_MS + 6_000);
       await waitFor(() =>
@@ -1985,7 +1986,7 @@ describe('chat panel: honest about what it cannot do', () => {
       );
       // The way out has to be on screen next to the words that name the problem.
       expect(screen.getByTestId('acp-chat-stop')).toBeInTheDocument();
-      expect(screen.queryByTestId('acp-answer-wait')).toBeNull();
+      expect(screen.queryByTestId('acp-turn-work')).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -2633,38 +2634,77 @@ describe('first download: a starting indicator alone is not enough (2026-08-19)'
     expect(screen.queryByTestId('acp-chat-empty')).toBeNull();
   });
 
-  it('shows one current-turn waiting character until answer text arrives, yielding to permission and cancellation', async () => {
+  it('shows the turn at work from the send on, names the open call and the reported plan, and keeps one finished row', async () => {
+    const update = (body: Record<string, unknown>) =>
+      act(() => emit({ jsonrpc: '2.0', method: 'session/update', params: { update: body } }));
     await bootSession();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'First question' } });
     fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await screen.findByTestId('acp-answer-wait');
+    const stage = await screen.findByTestId('acp-turn-work');
+    expect(stage).toHaveAttribute('data-work-kind', 'thinking');
     expect(screen.getAllByTestId('brand-waiting-mark')).toHaveLength(1);
+    expect(within(stage).getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
 
-    act(() => emit({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: ' ' } } } }));
-    expect(screen.getByTestId('acp-answer-wait')).toBeInTheDocument();
-    act(() => emit({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: 'Here is the answer.' } } } }));
-    await waitFor(() => expect(screen.queryByTestId('acp-answer-wait')).toBeNull());
+    update({ sessionUpdate: 'tool_call', toolCallId: 't1', title: 'mcp__atlas-vault__read_source', kind: 'read', status: 'in_progress', rawInput: { path: 'src/app/page.tsx' } });
+    await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-kind', 'reading'));
+    expect(screen.getByTestId('acp-turn-work-now')).toHaveTextContent('tool.readSource');
+    expect(screen.getByTestId('acp-turn-work-detail')).toHaveTextContent('page.tsx');
+    update({
+      sessionUpdate: 'plan',
+      entries: [
+        { content: 'Read the code', priority: 'high', status: 'completed' },
+        { content: 'Record the paths', priority: 'high', status: 'pending' },
+      ],
+    });
+    await waitFor(() =>
+      expect(within(screen.getByTestId('acp-turn-work')).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50'),
+    );
+
+    // Answer text does not end the work: the turn is still running.
+    update({ sessionUpdate: 'tool_call_update', toolCallId: 't1', status: 'completed' });
+    update({ sessionUpdate: 'agent_message_chunk', content: { text: 'Here is the answer.' } });
+    await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-kind', 'answering'));
     act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
-    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-phase', 'done'));
+    expect(screen.getByTestId('brand-waiting-mark')).toHaveAttribute('data-moru-motion', 'success');
 
-    // A previous answer does not hide the next turn's wait.
+    // The next turn takes the row back to work; a permission request and Stop both clear it.
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Second question' } });
     fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await screen.findByTestId('acp-answer-wait');
+    await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-phase', 'working'));
     act(() => emit(permissionRequest('/somewhere/else.md')));
     await screen.findByTestId('acp-permission-card');
-    expect(screen.queryByTestId('acp-answer-wait')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('acp-turn-work')).toBeNull());
     fireEvent.click(screen.getByTestId('acp-permission-reject'));
-    await screen.findByTestId('acp-answer-wait');
+    await screen.findByTestId('acp-turn-work');
     fireEvent.click(screen.getByTestId('acp-chat-stop'));
-    await waitFor(() => expect(screen.queryByTestId('acp-answer-wait')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId('acp-turn-work')).toBeNull());
     // The adapter has not acknowledged Stop; the UI does not fabricate a terminal state.
     expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking');
     act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
     await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    expect(screen.queryByTestId('acp-turn-work')).toBeNull();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Third question' } });
     fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await screen.findByTestId('acp-answer-wait');
+    await screen.findByTestId('acp-turn-work');
+  });
+
+  it('folds the finished stage away after its dance', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await bootSession();
+      expect(screen.queryByTestId('acp-turn-work')).toBeNull();
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Question' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await screen.findByTestId('acp-turn-work');
+      act(() => emit({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: 'Answer.' } } } }));
+      act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+      await waitFor(() => expect(screen.getByTestId('acp-turn-work')).toHaveAttribute('data-work-phase', 'done'));
+      await vi.advanceTimersByTimeAsync(TURN_DONE_HOLD_MS + 1_000);
+      await waitFor(() => expect(screen.queryByTestId('acp-turn-work')).toBeNull());
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('the waiting indicator disappears when ready', async () => {

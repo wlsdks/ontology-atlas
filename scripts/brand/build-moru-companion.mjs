@@ -12,7 +12,8 @@ export async function buildMoruCompanion() {
   await exportSheet('moru-companion', ['wave', 'blink', 'tilt', 'hop', 'folder-open', 'folder-peek', 'soft-bow', 'pup-peek'], catalogue, root);
   await exportSheet('moru-reactions', ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'nose-balance', 'pup-peek', 'heart-gift', 'magic-fish', 'star-sneeze', 'bubble-chase', 'sing'], catalogue, root);
   // Large pending fallbacks need native 128px source pixels, not an enlarged 64px export.
-  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave', curious: 'tilt' })) {
+  // The chat's work stage acts one clip per observed kind of work and dances once when the turn ends.
+  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave', curious: 'tilt', think: 'thinking', read: 'source-read', search: 'search', write: 'save', code: 'laptop-code', success: 'dance' })) {
     await writeFile(`public/brand/mascot-${state}-row-128.png`, await readFile(`${root}/${catalogue.clips[id].sprite}`));
   }
 }
