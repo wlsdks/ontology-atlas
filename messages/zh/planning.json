@@ -49,5 +49,8 @@
   "startTitle": "集中查看规划与设计",
   "startBody": "打开规划文件夹，在同一处阅读 Markdown 文档和设计图片。",
   "designImages": "设计图片",
-  "close": "关闭"
+  "close": "关闭",
+  "scene": {
+    "documentHeading": "需求"
+  }
 }

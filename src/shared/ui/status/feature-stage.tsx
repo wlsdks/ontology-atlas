@@ -30,10 +30,13 @@ export function FeatureStage({
   alert,
   action,
   note,
+  artWidth = 'compact',
   className,
   ...rest
 }: {
   art: (state: FeatureStageMotion) => ReactNode;
+  /** `wide` for a scene whose figures stand side by side; the compact slot suits one figure. */
+  artWidth?: 'compact' | 'wide';
   title: ReactNode;
   /** `h1` where the page has no header bar naming it. */
   titleAs?: 'h1' | 'h2';
@@ -65,7 +68,7 @@ export function FeatureStage({
       transition={reduced ? MOTION.fast : MOTION.expressive}
       className={cn('mx-auto my-auto flex w-full max-w-[var(--measure-stage-column)] flex-col items-center py-6 text-center', className)}
     >
-      <div data-feature-stage-art aria-hidden className="relative w-full max-w-72">
+      <div data-feature-stage-art aria-hidden className={cn('relative w-full', artWidth === 'wide' ? 'max-w-md' : 'max-w-72')}>
         {/* The plate the artwork stands on: a dot grid and one indigo light, both fading out before the column's edge. */}
         <div className="pointer-events-none absolute -inset-x-24 -inset-y-12 bg-[radial-gradient(var(--color-overlay-3)_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(closest-side,black,transparent)]" />
         <motion.div

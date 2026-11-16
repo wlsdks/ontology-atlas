@@ -252,6 +252,50 @@
     }
   }
 
+  /* Planning's empty stage: the two sheets beside Moru breathe a few pixels, out of phase,
+     while the scene is on screen in a visible document. */
+  @keyframes planningSheetDrift {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -3px; }
+  }
+
+  .planning-sheet-drift {
+    animation: planningSheetDrift calc(var(--motion-base) * 40) ease-in-out infinite;
+    animation-play-state: paused;
+  }
+
+  .planning-sheet-drift-late {
+    animation-delay: calc(var(--motion-base) * -20);
+  }
+
+  [data-scene-motion='running'] .planning-sheet-drift {
+    animation-play-state: running;
+  }
+
+  /* The automations stage's cadence dial: one hand sweeping the ring; each turn is one scheduled
+     run. A turn is one read, one whole waiting loop and a sixth of the next, so the hand comes
+     round while Moru rests; it starts late in a turn so the first run follows the arrival. */
+  @keyframes automationDialSweep {
+    from { rotate: 0turn; }
+    to { rotate: 1turn; }
+  }
+
+  .automation-dial-hand {
+    animation: automationDialSweep calc(var(--motion-base) * 44) linear calc(var(--motion-base) * -36) infinite;
+    animation-play-state: paused;
+  }
+
+  [data-scene-motion='running'] .automation-dial-hand {
+    animation-play-state: running;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .planning-sheet-drift,
+    .automation-dial-hand {
+      animation: none;
+    }
+  }
+
   /*
    * **The harness read's indeterminate bar.**
    *

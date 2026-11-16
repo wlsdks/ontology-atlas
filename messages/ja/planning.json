@@ -49,5 +49,8 @@
   "startTitle": "企画とデザインをひとつに",
   "startBody": "企画フォルダを開いて、Markdown文書とデザイン画像をまとめて確認できます。",
   "designImages": "デザイン画像",
-  "close": "閉じる"
+  "close": "閉じる",
+  "scene": {
+    "documentHeading": "要件"
+  }
 }
