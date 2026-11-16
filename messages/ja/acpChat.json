@@ -245,8 +245,7 @@
     "done": "完了しました",
     "progressLabel": "エージェントの作業の進み具合"
   },
-  "workGroup": "作業の詳細 · {count}ステップ",
-  "workGroupActive": "作業中 · {count}ステップ",
+  "workGroup": "思考の過程",
   "resize": "会話パネルの幅を調整",
   "resizeHint": "ドラッグで幅を変えられます。矢印キーでも操作できます。",
   "closeHistory": "過去の会話の一覧を閉じる",

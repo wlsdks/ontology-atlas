@@ -245,8 +245,7 @@
     "done": "Done",
     "progressLabel": "Agent work progress"
   },
-  "workGroup": "Work details · {count, plural, one {# step} other {# steps}}",
-  "workGroupActive": "Working · {count, plural, one {# step} other {# steps}}",
+  "workGroup": "Thought process",
   "resize": "Resize the chat panel",
   "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
   "closeHistory": "Close the past chats list",

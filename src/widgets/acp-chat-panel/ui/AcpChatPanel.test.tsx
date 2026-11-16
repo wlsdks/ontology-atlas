@@ -315,7 +315,7 @@ describe('chat panel: draws only what happened', () => {
      * sweep, not here — jsdom has no layout.
      */
     const runtimeName = screen.getByTestId('acp-chat-runtime-label');
-    expect(runtimeName.className).toContain('shrink-[99]');
+    expect(runtimeName.className).toContain('shrink-[9999]');
     expect(runtimeName.className).toContain('@min-[286px]/composer:inline');
     expect(screen.queryByTestId('acp-chat-runtime')).toBeNull();
     expect(screen.getByTestId('acp-chat-runtime-label')).toHaveTextContent('Claude Code · GPT-5.6-Sol (low)');
@@ -589,7 +589,7 @@ describe('chat panel: draws only what happened', () => {
       expect(document.querySelector('[data-acp-entry="work-group"]')).toHaveAttribute('data-work-active', 'true'),
     );
     const title = () => screen.getByTestId('acp-chat-work-group').querySelector('.acp-working-shimmer');
-    expect(title()).toHaveTextContent('workGroupActive');
+    expect(title()).toHaveTextContent('workGroup');
 
     act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
     await waitFor(() =>
@@ -758,6 +758,29 @@ describe('chat panel: draws only what happened', () => {
     expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toContain(
       'toolOutcome.found',
     );
+  });
+
+  it('prints a command call as its act followed by the command, once', async () => {
+    await bootSession();
+    await startUserTurn('go');
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-command',
+          title: 'rg --files src',
+          kind: 'execute',
+          status: 'completed',
+          rawInput: { command: '/bin/zsh -lc "rg --files src"' },
+        },
+      },
+    });
+    await waitFor(() => expect(document.querySelector('[data-acp-entry="tool"]')).toBeInTheDocument());
+    const row = document.querySelector('[data-acp-entry="tool"]');
+    expect(row?.querySelector('[data-tool-label-text]')?.textContent).toBe('toolKind.execute');
+    expect(screen.getByTestId('acp-chat-tool-target').textContent).toBe(' · rg --files src');
   });
 
   it('names and counts a vault call that arrives in the dotted spelling', async () => {

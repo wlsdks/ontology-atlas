@@ -245,8 +245,7 @@
     "done": "已完成",
     "progressLabel": "代理工作进度"
   },
-  "workGroup": "工作详情 · {count} 步",
-  "workGroupActive": "进行中 · {count} 步",
+  "workGroup": "思考过程",
   "resize": "调整对话面板大小",
   "resizeHint": "拖动可调宽或调窄，也可使用方向键。",
   "closeHistory": "关闭历史对话列表",

@@ -25,7 +25,7 @@ export { forgetRememberedChoices, rememberTool, rememberedTool } from "./model/s
 export { standingChoiceKept } from "./model/permissions/standing-choice";
 export { withoutErrorEcho } from "./model/trouble/error-echo";
 export { linkSlugs } from "./model/map-presentation/link-slugs";
-export { readToolFallbackTarget, readToolPathArgument, readToolTargets } from "./model/tool-calls/tool-targets";
+export { readToolCommandArgument, readToolFallbackTarget, readToolPathArgument, readToolTargets } from "./model/tool-calls/tool-targets";
 export { readToolOutcome } from "./model/tool-calls/tool-outcome";
 export { parseAtlasToolCall } from './model/tool-calls/atlas-tool-call';
 export { deriveAcpMapIntent } from "./model/map-presentation/map-intent";

@@ -132,6 +132,12 @@ export function readToolPathArgument(rawInput: unknown): string | null {
   return firstString(rawInput as Record<string, unknown>, PATH_ARG_KEYS);
 }
 
+/** The exact `command` argument this call carried, for a caller asking whether the title repeats it. */
+export function readToolCommandArgument(rawInput: unknown): string | null {
+  if (!rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return null;
+  return firstString(toolArguments(rawInput as Record<string, unknown>), ['command']);
+}
+
 export function readToolFallbackTarget(rawInput: unknown): ToolFallbackTarget | null {
   if (!rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return null;
   const input = toolArguments(rawInput as Record<string, unknown>);

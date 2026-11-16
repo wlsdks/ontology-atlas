@@ -245,8 +245,7 @@
     "done": "끝났어요",
     "progressLabel": "에이전트 작업 진행"
   },
-  "workGroup": "작업 과정 · {count}단계",
-  "workGroupActive": "작업 중 · {count}단계",
+  "workGroup": "생각 과정",
   "resize": "대화 칸 너비 조절",
   "resizeHint": "끌어서 넓히거나 좁혀요. 화살표 키로도 돼요.",
   "closeHistory": "지난 대화 목록 닫기",
