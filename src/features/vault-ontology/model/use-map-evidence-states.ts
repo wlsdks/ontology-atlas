@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
@@ -31,7 +31,7 @@ export interface MapEvidence {
   stalePaths: ReadonlyMap<string, StaleEvidencePath>;
 }
 
-type WalkChanges = ReadonlyMap<string, GitPathLastChange> | null;
+type WalkChanges = ReadonlyMap<string, GitPathLastChange>;
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
 const NO_STATES: ReadonlyMap<string, MapEvidenceState> = new Map();
@@ -39,34 +39,41 @@ const NO_PATHS: ReadonlyMap<string, string> = new Map();
 const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
 
 /**
- * One walk per folder load and path set, shared by every screen that reads evidence: the map and
- * the project page ask the same question, so they must not walk Git twice or disagree.
+ * Stale-while-revalidate, shared by every screen that reads evidence: a screen that mounts reads the
+ * folder's last answer at once and walks Git again in the background, joining a walk already in
+ * flight for the same paths. Only a successful walk replaces the answer; a failed one is retried by
+ * the next mount.
  */
-let sharedWalk: { key: string; promise: Promise<WalkChanges>; settled: { changes: WalkChanges } | null } | null = null;
+const answers = new Map<string, { key: string; changes: WalkChanges }>();
+const inFlight = new Map<string, Promise<WalkChanges | null>>();
+const answerListeners = new Set<() => void>();
 
-function walkOnce(key: string, rootPath: string, repoPaths: string[], vaultPaths: string[]): Promise<WalkChanges> {
-  if (sharedWalk?.key === key) return sharedWalk.promise;
-  const entry: NonNullable<typeof sharedWalk> = {
-    key,
-    settled: null,
-    promise: gitPathsLastChange(rootPath, repoPaths, vaultPaths)
-      .then((rows) => (rows ? new Map(rows.map((row) => [row.path, row])) : null))
-      .catch(() => null),
-  };
-  void entry.promise.then((changes) => {
-    entry.settled = { changes };
-  });
-  sharedWalk = entry;
-  return entry.promise;
+function subscribeToAnswers(listener: () => void): () => void {
+  answerListeners.add(listener);
+  return () => answerListeners.delete(listener);
 }
 
-function settledWalk(key: string): { changes: WalkChanges } | null {
-  return sharedWalk?.key === key ? sharedWalk.settled : null;
+function revalidate(key: string, rootPath: string, repoPaths: string[], vaultPaths: string[]): Promise<WalkChanges | null> {
+  const running = inFlight.get(key);
+  if (running) return running;
+  const walk = gitPathsLastChange(rootPath, repoPaths, vaultPaths)
+    .then((rows): WalkChanges | null => {
+      if (!rows) return null;
+      const changes: WalkChanges = new Map(rows.map((row) => [row.path, row]));
+      answers.set(rootPath, { key, changes });
+      for (const listener of answerListeners) listener();
+      return changes;
+    })
+    .catch(() => null)
+    .finally(() => inFlight.delete(key));
+  inFlight.set(key, walk);
+  return walk;
 }
 
-/** Test seam: forget the shared walk between cases. */
+/** Test seam: forget every answer and walk between cases. */
 export function resetSharedEvidenceWalk(): void {
-  sharedWalk = null;
+  answers.clear();
+  inFlight.clear();
 }
 
 /**
@@ -105,24 +112,34 @@ export function useMapEvidenceStates({
     [concepts],
   );
 
-  const key = nativeRootPath ? [nativeRootPath, vault.lastLoadedAt ?? '', repoPaths.join('\n'), vaultPaths.join('\n')].join('\0') : '';
-  const [walk, setWalk] = useState<{ key: string; changes: WalkChanges } | null>(null);
+  const key = useMemo(
+    () => (nativeRootPath ? [nativeRootPath, repoPaths.join('\n'), vaultPaths.join('\n')].join('\0') : ''),
+    [nativeRootPath, repoPaths, vaultPaths],
+  );
+  // While a walk runs, the last answer stands; with none yet, the screen reads.
+  const changes = useSyncExternalStore(
+    subscribeToAnswers,
+    () => {
+      const answer = nativeRootPath ? answers.get(nativeRootPath) : undefined;
+      return answer?.key === key ? answer.changes : null;
+    },
+    () => null,
+  );
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const loadedAt = vault.lastLoadedAt;
   useEffect(() => {
     if (!enabled || !nativeRootPath || !bridge || noPaths) return;
     let cancelled = false;
-    const walkKey = key;
-    void walkOnce(walkKey, nativeRootPath, repoPaths, vaultPaths).then((changes) => {
-      if (!cancelled) setWalk({ key: walkKey, changes });
+    void revalidate(key, nativeRootPath, repoPaths, vaultPaths).then((changes) => {
+      if (!cancelled) setFailedKey(changes ? null : key);
     });
     return () => {
       cancelled = true;
     };
-  }, [enabled, nativeRootPath, bridge, noPaths, key, repoPaths, vaultPaths]);
+    // A new read of the folder walks again: a document or a commit may have changed the answer.
+  }, [enabled, nativeRootPath, bridge, noPaths, key, repoPaths, vaultPaths, loadedAt]);
 
-  // Another screen's finished walk for the same folder load answers at once, with no reading frame.
-  const settled = walk?.key === key ? walk : key ? settledWalk(key) : null;
-  const reading = settled === null;
-  const changes = settled?.changes ?? null;
+  const reading = changes === null && failedKey !== key;
   return useMemo<MapEvidence>(() => {
     if (!bridge || !nativeRootPath) return unmeasured('app-only');
     if (noPaths) return unmeasured('no-paths');

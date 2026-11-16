@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { resetSharedEvidenceWalk, useMapEvidenceStates } from "./use-map-evidence-states";
@@ -6,6 +6,7 @@ import { resetSharedEvidenceWalk, useMapEvidenceStates } from "./use-map-evidenc
 const git = vi.hoisted(() => ({
   bridge: true,
   walk: vi.fn(),
+  root: "/vault",
 }));
 
 const DOCS = [
@@ -23,7 +24,7 @@ vi.mock("@/shared/lib/vault-folder/select-open-vault-handle", () => ({
   selectOpenVaultHandle: (_status: string, handle: unknown) => handle,
 }));
 vi.mock("@/shared/lib/vault-folder/tauri-vault-fs", () => ({
-  getTauriVaultRootPath: () => "/vault",
+  getTauriVaultRootPath: () => git.root,
 }));
 vi.mock("@/shared/lib/git/tauri-git", () => ({
   isGitBridgeAvailable: () => git.bridge,
@@ -54,6 +55,7 @@ const WALK = [
 beforeEach(() => {
   resetSharedEvidenceWalk();
   git.bridge = true;
+  git.root = "/vault";
   git.walk.mockReset();
   git.walk.mockResolvedValue(WALK);
 });
@@ -68,12 +70,41 @@ describe("useMapEvidenceStates", () => {
     expect([...page.result.current.states]).toEqual([...map.result.current.states]);
   });
 
-  it("answers a screen that mounts after the walk ended without a reading state", async () => {
+  it("answers a later screen with the last answer at once, then with a walk that sees a newer commit", async () => {
+    const committed = WALK.map((row) => (row.path === "src/list.ts" ? { ...row, lastChangedAt: "2026-11-20T00:00:00Z" } : row));
+    git.walk.mockResolvedValueOnce(WALK).mockResolvedValueOnce(committed);
     const map = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
     await waitFor(() => expect(map.result.current.availability).toBe("measured"));
+    map.unmount();
     const page = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
     expect(page.result.current.availability).toBe("measured");
-    expect(git.walk).toHaveBeenCalledTimes(1);
+    expect(page.result.current.states.get("capability:list")).toBe("current");
+    await waitFor(() => expect(page.result.current.states.get("capability:list")).toBe("stale"));
+    expect(git.walk).toHaveBeenCalledTimes(2);
+  });
+
+  it("never keeps a failed walk: the next screen walks again and measures", async () => {
+    git.walk.mockRejectedValueOnce(new Error("transient")).mockResolvedValueOnce(WALK);
+    const map = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    await waitFor(() => expect(map.result.current.availability).toBe("unreadable"));
+    map.unmount();
+    const page = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    expect(page.result.current.availability).toBe("reading");
+    await waitFor(() => expect(page.result.current.availability).toBe("measured"));
+    expect(git.walk).toHaveBeenCalledTimes(2);
+  });
+
+  it("never shows one folder's answer for another, even when the first walk ends after the switch", async () => {
+    let finishFirst: (rows: typeof WALK) => void = () => {};
+    const otherFolder = WALK.map((row) => (row.path === "src/list.ts" ? { ...row, lastChangedAt: "2026-11-20T00:00:00Z" } : row));
+    git.walk.mockImplementationOnce(() => new Promise((resolve) => (finishFirst = resolve))).mockResolvedValueOnce(otherFolder);
+    const screen = renderHook(() => useMapEvidenceStates({ nodes: NODES, enabled: true }));
+    git.root = "/other";
+    screen.rerender();
+    await waitFor(() => expect(screen.result.current.states.get("capability:list")).toBe("stale"));
+    await act(async () => finishFirst(WALK));
+    expect(screen.result.current.states.get("capability:list")).toBe("stale");
+    expect(git.walk.mock.calls.map((call) => call[0])).toEqual(["/vault", "/other"]);
   });
 
   it("names the file a stale capability stands on: gone, or moved with its date", async () => {
