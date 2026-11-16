@@ -67,9 +67,33 @@ pub fn git_paths_last_change(
         return Ok(Vec::new());
     }
 
+    let last = last_changes(&repo_root, &wanted)?;
+
+    Ok(wanted
+        .iter()
+        .enumerate()
+        .map(|(index, (key, resolved))| {
+            let on_disk = repo_root.join(resolved);
+            PathLastChange {
+                path: key.clone(),
+                exists: on_disk.exists(),
+                is_dir: on_disk.is_dir(),
+                last_changed_at: last.get(&index).cloned(),
+            }
+        })
+        .collect())
+}
+
+/// The newest commit time of each wanted path, by its index. O(log lines x wanted).
+fn last_changes(
+    repo_root: &std::path::Path,
+    wanted: &[(String, String)],
+) -> Result<std::collections::HashMap<usize, String>, String> {
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%cI");
     let mut args: Vec<&str> = vec![
+        // A vault names these paths: read as plain names, never as pathspec magic or globs.
+        "--literal-pathspecs",
         // Otherwise git C-quotes non-ASCII paths and Korean names never match.
         "-c",
         "core.quotepath=false",
@@ -80,10 +104,10 @@ pub fn git_paths_last_change(
         "--no-renames",
         "--",
     ];
-    for (_, resolved) in &wanted {
+    for (_, resolved) in wanted {
         args.push(resolved.as_str());
     }
-    let out = run_git(&repo_root, &args)?;
+    let out = run_git(repo_root, &args)?;
 
     let mut last: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
     if out.success {
@@ -114,19 +138,7 @@ pub fn git_paths_last_change(
         }
     }
 
-    Ok(wanted
-        .iter()
-        .enumerate()
-        .map(|(index, (key, resolved))| {
-            let on_disk = repo_root.join(resolved);
-            PathLastChange {
-                path: key.clone(),
-                exists: on_disk.exists(),
-                is_dir: on_disk.is_dir(),
-                last_changed_at: last.get(&index).cloned(),
-            }
-        })
-        .collect())
+    Ok(last)
 }
 
 fn safe_relative_path(raw: &str) -> Option<String> {
