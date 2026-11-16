@@ -891,6 +891,8 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
     if (fit) sides.set(cand.id, all.indexOf(fit));
+    // A forced name standing on an open star's dots draws on its plate, which covers them.
+    if (fit && (input.openStarId ?? null) !== null && fit.some((n) => stepScales.some((s) => starDots.hits(worldBox(at, n.box, s))))) for (const n of fit) n.backed = true;
     if (fit) for (const n of fit) {
       place(n);
       conceptNames.add(at, n.box);

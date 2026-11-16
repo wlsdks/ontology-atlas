@@ -830,9 +830,11 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
     target = scratch[0]! * share;
   }
   glideName(row);
-  // The selection's name stays with it at every zoom; every other name arrives only where it is clear.
-  if (target > DRAWN_INK && n.id !== F.attention.focusId) {
-    room = grownMarks.size > 0 ? smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy)) : 1;
+  // A name arrives only where it is clear and leaves at full pace where it is not; the selection's
+  // name stays with it over marks at every zoom, and waits only for its own rows to glide apart.
+  if (target > DRAWN_INK && grownMarks.size > 0) {
+    const held = n.id === F.attention.focusId && !CAPTION_ROWS.has(n.role);
+    room = nameRoom(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, !held) > ROOM_GONE_PX ? 1 : 0;
     target *= room;
   }
   if (target <= DRAWN_INK) target = 0;
@@ -897,37 +899,46 @@ function collectGrownMarks(): void {
 }
 
 /**
- * The air, in px, between a name's glyphs where this frame draws them, from `x`, `y`, and the nearest
- * disc not its own, grown dot (none for a backed name, whose plate covers them) or name drawn before
- * it, less the pad two names keep. Only while marks grow: O(discs + grown dots + names) per name.
+ * The air, in px, between a name's glyphs where this frame draws them, from `x`, `y`, and the names
+ * drawn before it, less the pad two names keep; with `others`, also the nearest disc not its own and
+ * grown dot (none for a backed name, whose plate covers them). Rows of one concept count only while
+ * one of them glides off its place, as a domain's census and reach rows share one slot. Only while
+ * marks grow: O(discs + grown dots + names) per name.
  */
-function nameRoom(n: PlacedName, x: number, y: number): number {
+function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolean): number {
   const pad = F.P.namePadPx;
   const minX = x + n.box.minX + pad;
   const maxX = x + n.box.maxX - pad;
   const minY = y + n.box.minY + pad;
   const maxY = y + n.box.maxY - pad;
   let room = Infinity;
-  for (let i = 0; i < L.discs.size; i += 1) {
-    const m = L.discs.items[i]!;
-    if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
-  }
-  if (n.backed !== true) {
-    for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
-      const m = grownMarks.items[i]!;
+  if (others) {
+    for (let i = 0; i < L.discs.size; i += 1) {
+      const m = L.discs.items[i]!;
       if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
     }
+    if (n.backed !== true) {
+      for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
+        const m = grownMarks.items[i]!;
+        if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+      }
+    }
   }
+  const gliding = Math.abs(x - at.x) > NAME_REST_PX || Math.abs(y - at.y) > NAME_REST_PX;
   for (let i = 0; i < L.names.size; i += 1) {
     const o = L.names.items[i]!;
-    if (o.name.id === n.id) continue;
     const ox = o.x - o.name.dx;
     const oy = o.y - o.name.dy;
+    if (o.name.id === n.id && (CAPTION_ROWS.has(n.role) && CAPTION_ROWS.has(o.name.role) || (!gliding && Math.abs(ox - at.x) <= NAME_REST_PX && Math.abs(oy - at.y) <= NAME_REST_PX))) continue;
+    if (!others && o.name.id !== n.id) continue;
     const apart = Math.max(ox + o.name.box.minX + pad - maxX, minX - (ox + o.name.box.maxX - pad), oy + o.name.box.minY + pad - maxY, minY - (oy + o.name.box.maxY - pad));
     room = Math.min(room, apart - pad);
   }
   return room;
 }
+
+/** A domain's census and reach rows: one slot under its name, cross-fading. */
+const CAPTION_ROWS: ReadonlySet<PlacedName["role"]> = new Set(["units", "reach"]);
 
 /** Whether a concept's block of names may draw: its concept is not placed this frame, it is the selection, or every line clears the chrome. */
 function blockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[], selectedId: string | null): boolean {
