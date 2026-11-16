@@ -451,7 +451,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState, view3d, structure, acpDockFrameOpen]);
+  }, [renderedIndexState, view3d, structure, acpDockFrameOpen, selectedSlugRef]);
   const topologyInspectorState = useTopologyInspectorState({
     setExpandAllActive, setRouteState, nodeFocus, v2DatasheetModel, mapGraph: ontologyMapGraph, analysisMode, selectedSlug,
     topologyCanvasFocus, topologyVaultReadModel, topologyAuthoring, homeWorkbenchController,
