@@ -49,11 +49,11 @@ export async function openDogfoodFlat(page: Page, viewport: { width: number; hei
   await waitForMapStill(page);
 }
 
-/** Each capability's elements, from the map's containment edges. */
-export async function elementsByCapability(page: Page): Promise<Map<string, string[]>> {
-  const pairs = await page.evaluate(() => window.__atlasMap!.edges().filter((e) => e.kind === "contains" && e.sourceId.startsWith("capability:") && e.targetId.startsWith("element:")).map((e) => [e.sourceId, e.targetId] as const));
+/** Each capability's or domain's own elements, from the map's containment edges. */
+export async function elementsByContainer(page: Page): Promise<Map<string, string[]>> {
+  const pairs = await page.evaluate(() => window.__atlasMap!.edges().filter((e) => e.kind === "contains" && /^(capability|domain):/.test(e.sourceId) && e.targetId.startsWith("element:")).map((e) => [e.sourceId, e.targetId] as const));
   const out = new Map<string, string[]>();
-  for (const [cap, el] of pairs) out.set(cap, [...(out.get(cap) ?? []), el]);
+  for (const [of, el] of pairs) if (!out.get(of)?.includes(el)) out.set(of, [...(out.get(of) ?? []), el]);
   return out;
 }
 
@@ -89,7 +89,7 @@ export async function deselect(page: Page): Promise<void> {
 
 export function readStar(dial: DialProbe, domainId: string, elementsOf: ReadonlyMap<string, readonly string[]>): StarReading {
   const capabilityIds = new Set(dial.clusters.find((c) => c.domainId === domainId)!.capabilityIds);
-  const elementIds = new Set([...capabilityIds].flatMap((id) => elementsOf.get(id) ?? []));
+  const elementIds = new Set([domainId, ...capabilityIds].flatMap((id) => elementsOf.get(id) ?? []));
   const marks: StarMark[] = [
     ...dial.discs.filter((d) => d.id === domainId || capabilityIds.has(d.id)).map((d) => ({ id: d.id, kind: d.id === domainId ? "domain" as const : "capability" as const, x: d.x, y: d.y, r: d.r })),
     ...dial.glyphs.filter((g) => elementIds.has(g.id)).map((g) => ({ id: g.id, kind: "element" as const, x: g.x, y: g.y, r: g.r })),
@@ -109,6 +109,42 @@ export function readStar(dial: DialProbe, domainId: string, elementsOf: Readonly
     minCapabilityPx: Math.min(...members.map((m) => m.r)),
     minElementPx: Math.min(...marks.filter((m) => m.kind === "element").map((m) => m.r)),
   };
+}
+
+export interface OpenTokens { openFill: number; capOpenMaxPx: number; elementOpenMaxPx: number; capDiscMinPx: number; capDiscGainPx: number; capDiscMaxPx: number; elementDotPx: number; growthMax: number }
+
+export async function readOpenTokens(page: Page): Promise<OpenTokens> {
+  const read = (name: string) => tokenOf(page, `--map-graph-${name}`);
+  return {
+    openFill: await read("open-fill"), capOpenMaxPx: await read("cap-open-max-px"), elementOpenMaxPx: await read("element-open-max-px"),
+    capDiscMinPx: await read("cap-disc-min-px"), capDiscGainPx: await read("cap-disc-gain-px"), capDiscMaxPx: await read("cap-disc-max-px"),
+    elementDotPx: await read("element-dot-px"), growthMax: await read("growth-max"),
+  };
+}
+
+/**
+ * Each member's and element's least radius the opened star guarantees from where the marks are
+ * drawn: `openFill` of its room, a pair split in proportion to the two open maxima, short of the
+ * domain disc and of its nearest mark's largest own radius, and never past its open maximum.
+ */
+export function openRadiusFloors(star: StarReading, elementsOf: ReadonlyMap<string, readonly string[]>, t: OpenTokens): Map<string, number> {
+  const domain = star.marks.find((m) => m.kind === "domain")!;
+  const grown = star.marks.filter((m) => m.kind !== "domain");
+  const openMax = (m: StarMark) => (m.kind === "capability" ? t.capOpenMaxPx : t.elementOpenMaxPx);
+  const ownMax = (m: StarMark) => (m.kind === "capability"
+    ? Math.min(t.capDiscMaxPx, t.capDiscMinPx + t.capDiscGainPx * Math.sqrt(elementsOf.get(m.id)?.length ?? 0)) * t.growthMax
+    : t.elementDotPx * t.growthMax);
+  return new Map(grown.map((a) => {
+    let room = Math.hypot(a.x - domain.x, a.y - domain.y) - domain.r;
+    for (const b of grown) {
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (b === a || d === 0) continue;
+      room = Math.min(room, (d * openMax(a)) / (openMax(a) + openMax(b)));
+    }
+    const nearest = grown.filter((b) => b !== a).sort((p, q) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(a.x - q.x, a.y - q.y))[0];
+    if (nearest) room = Math.min(room, Math.hypot(a.x - nearest.x, a.y - nearest.y) - ownMax(nearest) / t.openFill);
+    return [a.id, Math.min(openMax(a), t.openFill * Math.max(0, room)) - 0.5];
+  }));
 }
 
 /** Pairs of the star's marks whose drawn discs overlap by more than a rounding half pixel. */

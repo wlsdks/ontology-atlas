@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
-import { elementsByCapability } from "./domain-star";
+import { elementsByContainer } from "./domain-star";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
 import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
@@ -230,7 +230,7 @@ async function expectMembersApart(page: Page, id: string, star: ReadonlySet<stri
   const [apartMax, margin] = await page.evaluate(() =>
     ["--map-graph-domain-apart-max-px", "--map-graph-frame-margin-px"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
   expect(apartMax).toBeGreaterThan(0);
-  const elementsOf = await elementsByCapability(page);
+  const elementsOf = await elementsByContainer(page);
   const elements = new Set([...star].flatMap((of) => elementsOf.get(of) ?? []));
   const members = dial.discs.filter((d) => star.has(d.id) && d.id !== id);
   const apart = Math.min(...members.flatMap((d, i) => members.slice(i + 1).map((e) => Math.hypot(d.x - e.x, d.y - e.y))));
