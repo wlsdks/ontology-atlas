@@ -6,11 +6,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
-import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, requestsAnalysisFindings, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
+import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, CloseButton, Disclosure, EmptyState, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { isReviewResult } from '../model/review-result';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
 
 /** Hairline between groups, only where no label already separates them. */
@@ -132,13 +133,14 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const loadGeneration = useRef(0);
   const writable = analysisArchiveWritable(context.handle, context.writable);
   const records = loaded?.handle === context.handle ? loaded.records : EMPTY_RECORDS;
-  /* Folders written before only analysis requests were recorded hold a run for every chat turn. */
+  /* Folders written before only review requests were recorded hold a run for every chat turn. */
   const runs = useMemo(() => records.filter((record): record is AnalysisRun => record.recordType === 'run'
     && record.mode === context.mode && record.scope.projectSlug === context.scope.projectSlug
     && record.scope.profileSlug === context.scope.profileSlug
-    && requestsAnalysisFindings(record.request.text)), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
+    && isReviewResult(record)), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
-  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !readPending && !error;
+  const olderPage = loaded?.handle === context.handle ? loaded.cursor : null;
+  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !olderPage && !readPending && !error;
   const saved = saveState?.handle === context.handle ? saveState : null;
   const fitsContent = open && tab === 'history' && emptyArchive;
   useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
@@ -187,6 +189,10 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     window.addEventListener('atlas-analysis-records-changed', update);
     return () => { loadGeneration.current += 1; window.removeEventListener('atlas-analysis-records-changed', update); };
   }, [context.handle, open, refresh]);
+  /* A page can hold only unlisted chat turns, so an empty list is known only at the last page. */
+  useEffect(() => {
+    if (open && !runs.length && olderPage && !readPending && !error) void refresh(olderPage);
+  }, [open, runs.length, olderPage, readPending, error, refresh]);
   useEffect(() => {
     if (!open || !selected) return;
     let cancelled = false;

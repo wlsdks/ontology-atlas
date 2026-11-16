@@ -12,9 +12,12 @@ enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, cli/src/comman
 
 Atlas keeps each in-app ACP analysis as a separate Markdown file under
 `.ontology-atlas/analyses/` in the folder captured when the request starts.
-An analysis is a turn whose request asks for the findings block; an ordinary
-chat turn stays in the conversation and writes no record. Runs that earlier
-versions recorded for ordinary turns stay on disk and are left out of the list.
+Two requests are recorded: a review that asks for the findings block, and the
+map's code-check investigation packet. An ordinary chat turn stays in the
+conversation and writes no record. Runs that earlier versions recorded for
+ordinary turns stay on disk and remain readable through MCP and the CLI; the
+app's Review results list and the Architecture page leave them out unless they
+carry a finding.
 Map, Analysis, and Architecture use the same format. An analysis can be
 reopened after a session closes, exported, inspected through MCP or CLI, or
 used as the parent of another analysis.

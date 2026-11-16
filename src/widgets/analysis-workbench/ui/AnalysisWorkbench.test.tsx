@@ -158,6 +158,21 @@ describe('analysis context workbench', () => {
     await screen.findByTestId('analysis-history-empty');
     expect(screen.queryByText('A plain chat answer.')).not.toBeInTheDocument();
   });
+  it('still lists a recorded chat turn that carries a question a person may have judged', async () => {
+    const chatTurn = { ...runs[0], request: { ...runs[0].request, text: 'Is the refund window right?' } };
+    archive.read.mockResolvedValue({ records: [chatTurn], problems: [], nextCursor: null, totalFiles: 1, scanned: 1 });
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    await screen.findByText('Current answer.');
+  });
+  it('reads older pages before saying nothing was reviewed when the newest page holds only chat turns', async () => {
+    const chatTurn = { ...runs[0], id: '0d3b6a52-6f0e-4c0a-9a55-1f2d3c4b5a69', request: { ...runs[0].request, text: 'What does the refund capability own?' }, findings: [], answer: 'A plain chat answer.' };
+    archive.read.mockImplementation(async (_handle: unknown, options?: { cursor?: string | null }) => options?.cursor
+      ? { records: [runs[1]], problems: [], nextCursor: null, totalFiles: 2, scanned: 1 }
+      : { records: [chatTurn], problems: [], nextCursor: 'older', totalFiles: 2, scanned: 1 });
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    await screen.findByText('Original older answer.');
+    expect(screen.queryByTestId('analysis-history-empty')).not.toBeInTheDocument();
+  });
   it('keeps earlier questions reachable when the latest analysis was cancelled without findings', async () => {
     runs[0] = { ...runs[0], origin: { ...runs[0].origin, outcome: 'cancelled', stopReason: 'cancelled' }, findings: [], qualification: { status: 'unverified', reasons: ['turn_incomplete'] } };
     archive.read.mockResolvedValue({ records: runs, problems: [], nextCursor: null, totalFiles: 2, scanned: 2 });
