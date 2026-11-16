@@ -18,7 +18,7 @@
   "keywords": {
     "version": "version, build, release, about",
     "updateCheck": "update, upgrade, new version, download",
-    "updateAuto": "update, automatic, daily, internet, network",
+    "updateAuto": "update, automatic, periodic, internet, network",
     "whatsNew": "changelog, release notes, changes, news",
     "keyboardShortcuts": "keys, hotkeys, keybindings, shortcuts",
     "source": "github, repository, open source, code",
@@ -74,7 +74,7 @@
     "versionReading": "Reading the version…",
     "versionUnknown": "Could not read the version. Checking for updates reads it again.",
     "versionUnknownRetried": "Could not read the version.",
-    "autoOn": "Checks once a day when the app opens.",
+    "autoOn": "Checks when the app opens and every 4 hours while it stays open.",
     "autoOff": "Atlas does not check by itself. Check for updates still asks when you press it.",
     "autoLast": "Last checked {when}.",
     "autoNever": "It has not checked on this computer yet.",

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Settings } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
+import { useAppUpdateContext } from '@/features/app-update';
 import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { OPEN_SETTINGS_EVENT, useSurfaceRequest } from '@/shared/lib/keyboard/surface-requests';
@@ -129,6 +130,12 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
+  const tUpdate = useTranslations('appUpdate');
+  // A dismissed notice leaves this quiet sign until a check says the app is current.
+  const pendingVersion = useAppUpdateContext()?.pendingVersion ?? null;
+  const triggerLabel = pendingVersion
+    ? tUpdate('settingsTriggerPending', { label: t('triggerAria'), version: pendingVersion })
+    : t('triggerAria');
   const locale = useLocale();
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -277,7 +284,7 @@ export function AppSettingsMenu({
     >
       <summary
         ref={triggerRef}
-        aria-label={t('triggerAria')}
+        aria-label={triggerLabel}
         aria-expanded={open}
         title={t('triggerTitle')}
         data-testid="app-settings-trigger"
@@ -287,7 +294,7 @@ export function AppSettingsMenu({
           setOpen(!open);
         }}
         className={cn(
-          ' list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
+          'relative list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
           triggerVariant === 'rail-tile'
             ? 'flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)]'
             : triggerVariant === 'chrome-tile'
@@ -306,6 +313,13 @@ export function AppSettingsMenu({
                 : undefined
           }
         />
+        {pendingVersion ? (
+          <span
+            aria-hidden
+            data-testid="app-settings-update-badge"
+            className="rail-status-dot-in pointer-events-none absolute top-1.5 right-1.5 size-1.5 rounded-full bg-[color:var(--color-indigo-accent)]"
+          />
+        ) : null}
         {triggerVariant === 'header-pill' ? (
           <span className="hidden font-mono text-label uppercase tracking-[var(--tracking-caps-08)] sm:inline">
             {t('settingsLabel')}

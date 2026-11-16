@@ -18,7 +18,7 @@
   "keywords": {
     "version": "バージョン ビルド リリース このアプリ　version build release about",
     "updateCheck": "アップデート 更新 新しいバージョン ダウンロード　update upgrade new version download",
-    "updateAuto": "アップデート 更新 自動 毎日 インターネット ネットワーク　update automatic daily internet network",
+    "updateAuto": "アップデート 更新 自動 定期 インターネット ネットワーク　update automatic periodic internet network",
     "whatsNew": "変更履歴 リリースノート 変更点 お知らせ　changelog release notes changes news",
     "keyboardShortcuts": "キー ホットキー キー割り当て ショートカット　keys hotkeys keybindings shortcuts",
     "source": "github　リポジトリ オープンソース コード　github repository open source code",
@@ -74,7 +74,7 @@
     "versionReading": "バージョンを読み込み中…",
     "versionUnknown": "バージョンを読み込めませんでした。アップデートを確認すると、もう一度読み込みます。",
     "versionUnknownRetried": "バージョンを読み込めませんでした。",
-    "autoOn": "アプリを開いたときに、1日1回確認します。",
+    "autoOn": "アプリを開いたときと、開いている間は4時間ごとに確認します。",
     "autoOff": "Atlasは自分では確認しません。「アップデートを確認」を押したときは確認します。",
     "autoLast": "最終確認：{when}",
     "autoNever": "このコンピュータでは、まだ確認していません。",

@@ -39,12 +39,23 @@ vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
 
-function makeValue(phase: UpdatePhase): AppUpdateValue {
-  return { phase, checkNow, install: vi.fn(), restart: vi.fn(), dismiss: vi.fn() };
+function makeValue(phase: UpdatePhase, pending: Partial<AppUpdateValue> = {}): AppUpdateValue {
+  return {
+    phase,
+    noticeHidden: false,
+    pendingVersion: null,
+    readyVersion: null,
+    checkNow,
+    install: vi.fn(),
+    restart: vi.fn(),
+    dismiss: vi.fn(),
+    hide: vi.fn(),
+    ...pending,
+  };
 }
 
-function renderAt(phase: UpdatePhase) {
-  contextValue = makeValue(phase);
+function renderAt(phase: UpdatePhase, pending: Partial<AppUpdateValue> = {}) {
+  contextValue = makeValue(phase, pending);
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
       <AppUpdateSettings />
@@ -178,5 +189,13 @@ describe('AppUpdateSettings', () => {
       screen.getByTestId('app-settings-update-auto-switch').querySelectorAll('[role="radio"]'),
     ).map((node) => node.textContent);
     expect(labels).toEqual([ko.settingsAbout.on, ko.settingsAbout.off]);
+  });
+
+  it.each([
+    ['an offered version', null, '2.1.0이 나왔어요'],
+    ['a version waiting for restart', '2.1.0', '2.1.0 설치까지 끝났어요'],
+  ])('names %s after its notice was put away', (_, readyVersion, expected) => {
+    renderAt({ kind: 'idle' }, { pendingVersion: '2.1.0', readyVersion });
+    expect(screen.getByTestId('app-settings-update-result')).toHaveTextContent(expected);
   });
 });

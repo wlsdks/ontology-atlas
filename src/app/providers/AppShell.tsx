@@ -371,13 +371,14 @@ function AppNavRailSlot() {
 /** Reads the shared update state machine from `AppUpdateProvider`; see the comment there. */
 function AppUpdateSurface() {
   const update = useAppUpdateContext();
-  if (!update) return null;
+  if (!update || update.noticeHidden) return null;
   return (
     <UpdateToast
       phase={update.phase}
       onInstall={update.install}
       onRestart={update.restart}
       onDismiss={update.dismiss}
+      onHide={update.hide}
     />
   );
 }

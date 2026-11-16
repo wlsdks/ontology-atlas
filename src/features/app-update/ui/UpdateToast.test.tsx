@@ -1,39 +1,112 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
-import type { UpdatePhase } from '../model/update-state';
+import { DISMISSED_VERSION_KEY, type UpdatePhase } from '../model/update-state';
 import { UpdateToast } from './UpdateToast';
+
+const handlers = {
+  onInstall: vi.fn(),
+  onRestart: vi.fn(),
+  onDismiss: vi.fn(),
+  onHide: vi.fn(),
+};
 
 function renderPhase(phase: UpdatePhase) {
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
-      <UpdateToast
-        phase={phase}
-        onInstall={vi.fn()}
-        onRestart={vi.fn()}
-        onDismiss={vi.fn()}
-      />
+      <UpdateToast phase={phase} {...handlers} />
     </NextIntlClientProvider>,
   );
 }
 
-describe('UpdateToast failure scope', () => {
-  it('does not duplicate a manual check failure that already lives in Settings', () => {
-    renderPhase({ kind: 'failed', operation: 'check', message: 'remote 404' } as UpdatePhase);
+const moru = () => screen.getByTestId('brand-waiting-mark');
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  window.localStorage.clear();
+  for (const handler of Object.values(handlers)) handler.mockReset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('UpdateToast', () => {
+  it.each<[string, UpdatePhase]>([
+    ['idle', { kind: 'idle' }],
+    ['checking', { kind: 'checking' }],
+    ['current', { kind: 'current' }],
+    ['a failed check that already lives in Settings', { kind: 'failed', operation: 'check', message: 'remote 404' }],
+  ])('draws nothing for %s', (_, phase) => {
+    renderPhase(phase);
     expect(screen.queryByTestId('app-update-toast')).not.toBeInTheDocument();
   });
 
-  it('labels an install failure correctly and does not expose a raw library error', () => {
-    renderPhase({
-      kind: 'failed',
-      operation: 'install',
-      message: 'Could not fetch a valid release JSON from the remote',
-    } as UpdatePhase);
+  it('offers a new version with the greeting, then rests on the waiting loop', () => {
+    renderPhase({ kind: 'available', version: '2.1.0', notes: null });
+    const toast = screen.getByTestId('app-update-toast');
+    expect(toast).toHaveTextContent('2.1.0 버전이 나왔어요');
+    expect(toast).toHaveTextContent(ko.appUpdate.availableBody);
+    expect(moru()).toHaveAttribute('data-moru-motion', 'greeting');
+    expect(moru(), 'Moru moved before the card landed').toHaveAttribute('data-waiting-motion', 'still');
+
+    fireEvent.click(within(toast).getByRole('button', { name: ko.appUpdate.install }));
+    expect(handlers.onInstall).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(toast).getByRole('button', { name: ko.appUpdate.dismiss }));
+    expect(handlers.onDismiss).toHaveBeenCalledTimes(1);
+
+    act(() => vi.advanceTimersByTime(1_000));
+    fireEvent.animationEnd(moru());
+    expect(moru()).toHaveAttribute('data-moru-motion', 'waiting');
+  });
+
+  it('shows a download with a real progress bar and Moru dancing', () => {
+    renderPhase({ kind: 'downloading', version: '2.1.0', received: 6 * 1024 * 1024, total: 24 * 1024 * 1024 });
+    const toast = screen.getByTestId('app-update-toast');
+    expect(toast).toHaveTextContent('2.1.0 내려받는 중');
+    expect(toast).toHaveTextContent('25% · 6.0 / 24.0 MB');
+    expect(within(toast).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '25');
+    expect(moru()).toHaveAttribute('data-moru-motion', 'flipper-groove');
+    expect(within(toast).queryByTestId('app-update-action')).not.toBeInTheDocument();
+  });
+
+  it('invents no percentage when the download size is unknown', () => {
+    renderPhase({ kind: 'downloading', version: '2.1.0', received: 1_000, total: null });
+    const toast = screen.getByTestId('app-update-toast');
+    expect(toast).toHaveTextContent(ko.appUpdate.downloadingUnknown);
+    expect(toast.textContent).not.toMatch(/\d+%/);
+    expect(within(toast).getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
+  });
+
+  it('hides a download without dismissing its version', () => {
+    renderPhase({ kind: 'downloading', version: '2.1.0', received: 1, total: 2 });
+    fireEvent.click(screen.getByRole('button', { name: ko.appUpdate.hide }));
+    expect(handlers.onHide).toHaveBeenCalledTimes(1);
+    expect(handlers.onDismiss).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(DISMISSED_VERSION_KEY)).toBeNull();
+  });
+
+  it('asks for a restart with a finishing gesture', () => {
+    renderPhase({ kind: 'ready', version: '2.1.0' });
+    const toast = screen.getByTestId('app-update-toast');
+    expect(toast).toHaveTextContent('2.1.0 준비됐어요');
+    expect(moru()).toHaveAttribute('data-moru-motion', 'success');
+    fireEvent.click(within(toast).getByRole('button', { name: ko.appUpdate.restart }));
+    expect(handlers.onRestart).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers a retry after an install failure and never shows the raw library error', () => {
+    renderPhase({ kind: 'failed', operation: 'install', message: 'Could not fetch a valid release JSON from the remote' });
     const toast = screen.getByTestId('app-update-toast');
     expect(toast).toHaveTextContent('업데이트를 설치하지 못했어요');
     expect(toast).toHaveTextContent(ko.appUpdate.failedBody);
     expect(toast).not.toHaveTextContent('Could not fetch a valid release JSON');
+    expect(moru()).toHaveAttribute('data-moru-motion', 'pondering');
+    fireEvent.click(within(toast).getByRole('button', { name: ko.appUpdate.retry }));
+    expect(handlers.onInstall).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(toast).getByRole('button', { name: ko.appUpdate.close }));
+    expect(handlers.onDismiss).toHaveBeenCalledTimes(1);
   });
 });

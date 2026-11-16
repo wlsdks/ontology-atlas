@@ -18,7 +18,7 @@
   "keywords": {
     "version": "版本 构建 发布 关于 version build release about",
     "updateCheck": "更新 升级 新版本 下载 update upgrade download",
-    "updateAuto": "更新 自动 每天 互联网 网络 update automatic daily internet network",
+    "updateAuto": "更新 自动 定期 互联网 网络 update automatic periodic internet network",
     "whatsNew": "更新日志 发布说明 变化 新闻 changelog release notes",
     "keyboardShortcuts": "按键 快捷键 键位 keys hotkeys keybindings shortcuts",
     "source": "github 仓库 开源 代码 repository open source",
@@ -74,7 +74,7 @@
     "versionReading": "正在读取版本…",
     "versionUnknown": "无法读取版本。检查更新时会再次读取。",
     "versionUnknownRetried": "无法读取版本。",
-    "autoOn": "应用打开时每天检查一次。",
+    "autoOn": "应用打开时检查一次，保持打开期间每 4 小时检查一次。",
     "autoOff": "Atlas 不会自行检查。按下“检查更新”时仍会去询问。",
     "autoLast": "上次检查：{when}。",
     "autoNever": "这台电脑上还没检查过。",

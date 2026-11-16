@@ -53,7 +53,11 @@ export function AppUpdateSettings() {
           ? t('appUpdate.resultFailed')
           : t('appUpdate.resultInstallFailed');
       default:
-        return undefined;
+        // The notice was put away; the version it offered is still the answer here.
+        if (!update.pendingVersion) return undefined;
+        return update.pendingVersion === update.readyVersion
+          ? t('appUpdate.resultReady', { version: update.pendingVersion })
+          : t('appUpdate.resultAvailable', { version: update.pendingVersion });
     }
   })();
 

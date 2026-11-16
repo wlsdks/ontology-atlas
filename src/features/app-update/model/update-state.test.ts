@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CHECK_INTERVAL_MS,
+  canAutomaticResultReplace,
+  formatMegabytes,
+  phaseAfterCheck,
   shouldCheckForUpdate,
+  type UpdatePhase,
   shouldSurfaceVersion,
   readUpdateAutoCheck,
   summarizeNotes,
@@ -20,13 +23,14 @@ describe('shouldCheckForUpdate', () => {
     expect(shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null, automatic: true })).toBe(true);
   });
 
-  it('stays quiet inside the interval and speaks once past it', () => {
+  it('is due four hours after the last successful check and not a moment before', () => {
+    const hour = 60 * 60 * 1000;
     const lastCheckedAt = 1_000_000;
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 60_000, lastCheckedAt, automatic: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 4 * hour - 1, lastCheckedAt, automatic: true }),
     ).toBe(false);
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + CHECK_INTERVAL_MS, lastCheckedAt, automatic: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 4 * hour, lastCheckedAt, automatic: true }),
     ).toBe(true);
   });
 
@@ -98,5 +102,72 @@ describe('summarizeNotes', () => {
     expect(summarizeNotes(null)).toBeNull();
     expect(summarizeNotes(undefined)).toBeNull();
     expect(summarizeNotes('   ')).toBeNull();
+  });
+});
+
+describe('canAutomaticResultReplace', () => {
+  it.each<[UpdatePhase, boolean]>([
+    [{ kind: 'idle' }, true],
+    [{ kind: 'current' }, true],
+    [{ kind: 'failed', operation: 'check', message: 'x' }, true],
+    [{ kind: 'checking' }, false],
+    [{ kind: 'available', version: '2.1.0', notes: null }, false],
+    [{ kind: 'downloading', version: '2.1.0', received: 1, total: 2 }, false],
+    [{ kind: 'ready', version: '2.1.0' }, false],
+    [{ kind: 'failed', operation: 'install', message: 'x' }, false],
+  ])('lets an automatic result replace %o only when no work or answer is on screen', (phase, expected) => {
+    expect(canAutomaticResultReplace(phase)).toBe(expected);
+  });
+});
+
+describe('phaseAfterCheck', () => {
+  const found = { version: '2.1.0', notes: null };
+  const base = { readyVersion: null, dismissedVersion: null } as const;
+
+  it('leaves a running download alone when an automatic check finds a version', () => {
+    const phase: UpdatePhase = { kind: 'downloading', version: '2.1.0', received: 5, total: 10 };
+    expect(phaseAfterCheck({ ...base, found, manual: false, phase })).toBeNull();
+  });
+
+  it('offers a found version from an idle screen', () => {
+    expect(phaseAfterCheck({ ...base, found, manual: false, phase: { kind: 'idle' } })).toEqual({
+      kind: 'available',
+      version: '2.1.0',
+      notes: null,
+    });
+  });
+
+  it('stays silent for a dismissed version unless the person asked', () => {
+    const input = { ...base, dismissedVersion: '2.1.0', found, phase: { kind: 'idle' } as UpdatePhase };
+    expect(phaseAfterCheck({ ...input, manual: false })).toBeNull();
+    expect(phaseAfterCheck({ ...input, manual: true })).toMatchObject({ kind: 'available' });
+  });
+
+  it('never offers a version already installed in this session for download again', () => {
+    const input = { ...base, readyVersion: '2.1.0', found, phase: { kind: 'idle' } as UpdatePhase };
+    expect(phaseAfterCheck({ ...input, manual: false })).toBeNull();
+    expect(phaseAfterCheck({ ...input, manual: true })).toEqual({ kind: 'ready', version: '2.1.0' });
+  });
+
+  it('offers a newer version than the one waiting for restart', () => {
+    expect(
+      phaseAfterCheck({ ...base, readyVersion: '2.1.0', found: { version: '2.2.0', notes: null }, manual: true, phase: { kind: 'idle' } }),
+    ).toMatchObject({ kind: 'available', version: '2.2.0' });
+  });
+
+  it('reports current only to a press', () => {
+    expect(phaseAfterCheck({ ...base, found: null, manual: true, phase: { kind: 'checking' } })).toEqual({ kind: 'current' });
+    expect(phaseAfterCheck({ ...base, found: null, manual: false, phase: { kind: 'idle' } })).toBeNull();
+  });
+});
+
+describe('formatMegabytes', () => {
+  it.each([
+    [0, '0.0'],
+    [1024 * 1024, '1.0'],
+    [12_345_678, '11.8'],
+    [-5, '0.0'],
+  ])('formats %d bytes as %s MB', (bytes, expected) => {
+    expect(formatMegabytes(bytes)).toBe(expected);
   });
 });
