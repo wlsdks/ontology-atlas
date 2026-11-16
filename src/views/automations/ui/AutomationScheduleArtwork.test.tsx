@@ -54,7 +54,8 @@ describe('automations stage scene', () => {
   });
 
   it('never holds more than three proposals and clears the full tray for the next round', () => {
-    const events: AutomationSceneEvent[] = Array.from({ length: 40 }, (_, index) => [run, loopEnd, { type: 'run', resting: false }, loopEnd][index % 4]!);
+    const cycle: readonly AutomationSceneEvent[] = [run, loopEnd, { type: 'run', resting: false }, loopEnd];
+    const events = Array.from({ length: 40 }, (_, index) => cycle[index % cycle.length]!);
     const scenes = play(events);
     expect(Math.max(...scenes.map((scene) => scene.tray.slips))).toBe(REVIEW_TRAY_LIMIT);
     const full = scenes.find((scene) => scene.tray.slips === REVIEW_TRAY_LIMIT)!;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type AnimationEvent, type ReactNode, type RefObject } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type TargetAndTransition } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -80,7 +80,7 @@ const LINE_GAP = MOTION.choreography.duration / 18;
 type Side = 'document' | 'mock';
 const RESTING = { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 } as const;
 /** Each sheet starts folded behind Moru and leans toward him while the button is engaged. */
-const SHEET_POSE: Record<Side, { from: object; lean: object }> = {
+const SHEET_POSE: Record<Side, { from: TargetAndTransition; lean: TargetAndTransition }> = {
   document: { from: { opacity: 0, x: '55%', y: 56, scale: 0.6, rotate: 0 }, lean: { opacity: 1, x: 6, y: -6, scale: 1, rotate: 2 } },
   mock: { from: { opacity: 0, x: '-55%', y: 56, scale: 0.6, rotate: 0 }, lean: { opacity: 1, x: -6, y: -6, scale: 1, rotate: -2 } },
 };
