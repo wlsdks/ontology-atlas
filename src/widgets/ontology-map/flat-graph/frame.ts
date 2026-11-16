@@ -675,7 +675,8 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   loadNameInk(n);
   let ink = scratch[0]! * share;
   if (ink <= DRAWN_INK) return;
-  if (!holdsPlace(n)) ink *= smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at));
+  const rank = nameRank(n);
+  if (rank > 0) ink *= smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at, !holdsPlace(n)));
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
@@ -699,9 +700,13 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
 
 const TITLE_ROLES: ReadonlySet<PlacedName["role"]> = new Set(["project", "domain", "orphans"]);
 
-/** Titles and the selection's own name hold their place whatever they cover; a census or reach row is a caption and gives way like any name. */
+/**
+ * Titles and the names a lit picture asks for (the selection and its lines' far ends) hold their place
+ * over marks, as admission placed them; a far end's name still gives way to a higher-ranked name, and a
+ * census or reach row is a caption that gives way like any name.
+ */
 function holdsPlace(n: PlacedName): boolean {
-  return TITLE_ROLES.has(n.role) || ((n.role === "capability" || n.role === "element") && F.attention.selected && n.id === F.attention.focusId);
+  return TITLE_ROLES.has(n.role) || ((n.role === "capability" || n.role === "element") && F.attention.named.has(n.id));
 }
 
 const NAME_RANKS = 5;
@@ -709,31 +714,27 @@ const blockShowing: boolean[] = [];
 
 /** Which names win where two would cross: places held, then names the lit picture asks for, capabilities, elements, and captions last. */
 function nameRank(n: PlacedName): number {
-  if (holdsPlace(n)) return 0;
+  if (holdsPlace(n)) return n.id === F.attention.focusId || TITLE_ROLES.has(n.role) ? 0 : 1;
   if (n.role !== "capability" && n.role !== "element") return 4;
-  if (F.attention.named.has(n.id)) return 1;
   return n.role === "capability" ? 2 : 3;
 }
 const ROOM_MARKS = [L.project, L.domains, L.discs, L.dots];
 
 /**
- * The air, in px, between a name's glyphs anchored at `at` and the nearest mark not its own or name
- * drawn before it, less the pad two names keep between them. A name the lit picture asks for may
- * cross a mark it has sunk, as admission lets it. O(marks + names).
+ * The air, in px, between a name's glyphs anchored at `at` and the nearest name drawn before it, less
+ * the pad two names keep between them, and with `offMarks` the nearest mark not its own. O(marks + names).
  */
-function nameRoom(n: PlacedName, at: Point): number {
+function nameRoom(n: PlacedName, at: Point, offMarks: boolean): number {
   const pad = F.P.namePadPx;
   const minX = at.x + n.box.minX + pad;
   const maxX = at.x + n.box.maxX - pad;
   const minY = at.y + n.box.minY + pad;
   const maxY = at.y + n.box.maxY - pad;
-  const lit = F.attention.lit;
-  const crossesSunk = lit !== null && F.attention.named.has(n.id);
   let room = Infinity;
-  for (const list of ROOM_MARKS) {
+  if (offMarks) for (const list of ROOM_MARKS) {
     for (let i = 0; i < list.size; i += 1) {
       const m = list.items[i]!;
-      if (m.id === n.id || (crossesSunk && !lit.has(m.id))) continue;
+      if (m.id === n.id) continue;
       room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);    }
   }
   for (let i = 0; i < L.names.size; i += 1) {
