@@ -11,6 +11,12 @@ import { spawnSync } from 'node:child_process';
 // fsmonitor hook that fires on `status` with no click.
 const BASE_HARDENING = ['-c', 'safe.bareRepository=explicit', '-c', 'core.fsmonitor=false'];
 
+// Every path handed to git is a name a vault, repository or page chose, never
+// pathspec magic or a glob. Git refuses this beside an inherited glob, noglob or
+// icase setting, so spawn with gitEnv().
+const LITERAL_PATHSPECS = ['--literal-pathspecs'];
+const CONFLICTING_PATHSPEC_ENV = ['GIT_GLOB_PATHSPECS', 'GIT_NOGLOB_PATHSPECS', 'GIT_ICASE_PATHSPECS'];
+
 // Repository hooks run a repo-controlled command (post-index-change on status,
 // post-checkout on restore, post-merge on pull), so they are disabled for every
 // verb except the snapshot commit, which must run the user's pre-commit hook.
@@ -46,8 +52,8 @@ const filterCache = new Map();
 function collectFilterKeys(cwd, scopeArgs, filters) {
   const result = spawnSync(
     'git',
-    [...BASE_HARDENING, '-C', cwd, 'config', ...scopeArgs, '--includes', '--name-only', '--get-regexp', '^filter\\.'],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    [...BASE_HARDENING, ...LITERAL_PATHSPECS, '-C', cwd, 'config', ...scopeArgs, '--includes', '--name-only', '--get-regexp', '^filter\\.'],
+    { encoding: 'utf8', env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] },
   );
   if (result.status !== 0 || typeof result.stdout !== 'string') return;
   for (const line of result.stdout.split('\n')) {
@@ -68,8 +74,8 @@ function collectFilterKeys(cwd, scopeArgs, filters) {
 function worktreeConfigEnabled(cwd) {
   const result = spawnSync(
     'git',
-    [...BASE_HARDENING, '-C', cwd, 'config', '--local', '--includes', '--get', 'extensions.worktreeConfig'],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    [...BASE_HARDENING, ...LITERAL_PATHSPECS, '-C', cwd, 'config', '--local', '--includes', '--get', 'extensions.worktreeConfig'],
+    { encoding: 'utf8', env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] },
   );
   return result.status === 0 && typeof result.stdout === 'string' && result.stdout.trim() === 'true';
 }
@@ -138,6 +144,7 @@ export function hardenedGitArgv(cwd, args, { network = false } = {}) {
   const isNetwork = network || NETWORK_SUBCOMMANDS.has(subcommand);
   return [
     ...BASE_HARDENING,
+    ...LITERAL_PATHSPECS,
     // Every verb but the snapshot commit runs with hooks off.
     ...(subcommand === 'commit' ? [] : HOOKS_HARDENING),
     ...(isNetwork ? NETWORK_HARDENING : []),
@@ -146,6 +153,13 @@ export function hardenedGitArgv(cwd, args, { network = false } = {}) {
     cwd,
     ...withDiffFamilyGuard(args),
   ];
+}
+
+/** The environment to spawn git with: `env` without settings that conflict with literal paths. */
+export function gitEnv(env = process.env) {
+  const out = { ...env };
+  for (const name of CONFLICTING_PATHSPEC_ENV) delete out[name];
+  return out;
 }
 
 // Test hook: repository config is discovered once per directory; clearing lets a

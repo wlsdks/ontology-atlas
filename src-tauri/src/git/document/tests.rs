@@ -146,3 +146,57 @@ fn a_document_that_cannot_be_read_stops_the_restore() {
     assert_eq!(fs::read_to_string(&file).unwrap(), committed);
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[cfg(unix)]
+#[test]
+fn restoring_a_document_named_like_a_pattern_leaves_other_documents_alone() {
+    let dir = std::env::temp_dir().join(format!("atlas-restore-name-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.join("docs/sub")).unwrap();
+    let dir = fs::canonicalize(&dir).unwrap();
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&dir));
+    let git = |args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .args(args)
+            .current_dir(&dir)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    };
+    git(&["init", "-q"]);
+    git(&["config", "user.email", "test@example.invalid"]);
+    git(&["config", "user.name", "atlas test"]);
+    git(&["config", "commit.gpgsign", "false"]);
+    git(&["config", "core.autocrlf", "false"]);
+    let documents = ["*.md", "docs/mine.md", "docs/sub/deep.md"];
+    let committed = |name: &str| format!("---\nuid: 11111111\nslug: {name}\n---\nsaved\n");
+    let edited = |name: &str| format!("---\nuid: 11111111\nslug: {name}\n---\nunsaved\n");
+    for name in documents {
+        fs::write(dir.join(name), committed(name)).unwrap();
+    }
+    git(&["add", "--", "."]);
+    git(&["commit", "-qm", "seed"]);
+    for name in documents {
+        fs::write(dir.join(name), edited(name)).unwrap();
+    }
+
+    let vault = dir.to_string_lossy().into_owned();
+    let done = git_restore_file(vault, documents[0].into(), "HEAD".into()).unwrap();
+    assert!(done.restored);
+    assert_eq!(
+        fs::read_to_string(dir.join(documents[0])).unwrap(),
+        committed(documents[0])
+    );
+    for name in &documents[1..] {
+        assert_eq!(
+            fs::read_to_string(dir.join(name)).unwrap(),
+            edited(name),
+            "{name} keeps its uncommitted edit"
+        );
+    }
+    let _ = fs::remove_dir_all(&dir);
+}
