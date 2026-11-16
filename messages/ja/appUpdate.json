@@ -1,14 +1,20 @@
 {
   "availableTitle": "バージョン{version}を利用できます",
-  "availableBody": "今すぐインストールするか、作業を続けて後でアップデートできます。",
+  "availableBody": "今すぐ入手しても、作業を終えてからでも大丈夫です。",
   "install": "アップデートをインストール",
   "downloadingTitle": "{version}をダウンロード中",
-  "downloadingPercent": "{percent}ダウンロード済み。",
-  "downloadingUnknown": "ダウンロード中：サイズは不明です。",
+  "downloadingProgress": "{percent} · {received} / {total} MB",
+  "downloadingUnknown": "ダウンロードしています。",
+  "progressLabel": "ダウンロードの進行状況",
+  "hide": "隠す",
   "readyTitle": "{version}の準備ができました",
   "readyBody": "再起動すると完了します。開いているフォルダはそのままです。",
   "restart": "今すぐ再起動",
-  "failedTitle": "アップデートをインストールできませんでした",
-  "failedBody": "代わりにリリースページから最新版をダウンロードできます。",
-  "dismiss": "後で"
+  "failedTitle": "アップデートに失敗しました",
+  "failedBody": "しばらくしてからもう一度お試しください。",
+  "retry": "再試行",
+  "close": "閉じる",
+  "dismiss": "後で",
+  "settingsTriggerPending": "{label}、新しいバージョン{version}があります",
+  "settingsTriggerReady": "{label}、新しいバージョン{version}をインストール済み、再起動が必要"
 }

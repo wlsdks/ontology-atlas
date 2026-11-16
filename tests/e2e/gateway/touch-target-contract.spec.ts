@@ -135,7 +135,9 @@ test.describe("minimum target contract (pointer: fine, WCAG 2.5.8 AA)", () => {
     await page.evaluate(() => {
       // Violation probe: two 16px targets 8px apart — their 24 circles overlap.
       // Passing probe: also 16px, but 12px or more clear on every side, so the spacing
-      // exception legitimately applies.
+      // exception legitimately applies. The page itself is hidden first, so the probes measure only
+      // each other and a real control that happens to sit under them cannot count as a neighbour.
+      for (const child of Array.from(document.body.children)) (child as HTMLElement).style.visibility = "hidden";
       document.body.insertAdjacentHTML(
         "beforeend",
         `<div style="position:fixed;left:0;top:0;z-index:9999;background:#000;width:400px;height:200px">

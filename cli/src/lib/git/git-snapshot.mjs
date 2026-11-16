@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { parseFrontmatter } from '../mcp-bridge/parse-frontmatter.mjs';
-import { hardenedGitArgs } from './hardened-git.mjs';
+import { gitEnv, hardenedGitArgs } from './hardened-git.mjs';
 
 // Pipe every stdio stream explicitly, so git's own stderr on an expected failure
 // path (`rev-parse` outside a repository, `@{u}` on a branch with no upstream)
@@ -16,6 +16,7 @@ function defaultRun(args, cwd) {
   return execFileSync('git', hardenedGitArgs(cwd, args), {
     cwd,
     encoding: 'utf-8',
+    env: gitEnv(),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }

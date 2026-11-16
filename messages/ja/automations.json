@@ -169,5 +169,8 @@
       "cadence": "頻度",
       "last": "前回の結果"
     }
+  },
+  "scene": {
+    "reviewTray": "レビュー待ち"
   }
 }

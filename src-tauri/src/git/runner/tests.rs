@@ -26,6 +26,34 @@ fn validate_vault_dir_rejects_missing_path() {
     assert!(!err.is_empty());
 }
 
+#[test]
+fn every_runner_reads_paths_as_names_whatever_the_environment() {
+    use std::ffi::OsStr;
+    let cwd = std::env::temp_dir();
+    for command in [
+        hardened_base_command(),
+        read_policy_command(&cwd, &["status"], false),
+        read_policy_command(&cwd, &["log"], true),
+    ] {
+        let envs: HashMap<&OsStr, Option<&OsStr>> = command.get_envs().collect();
+        assert_eq!(
+            envs.get(OsStr::new("GIT_LITERAL_PATHSPECS")),
+            Some(&Some(OsStr::new("1")))
+        );
+        for inherited in [
+            "GIT_GLOB_PATHSPECS",
+            "GIT_NOGLOB_PATHSPECS",
+            "GIT_ICASE_PATHSPECS",
+        ] {
+            assert_eq!(
+                envs.get(OsStr::new(inherited)),
+                Some(&None),
+                "{inherited} is removed"
+            );
+        }
+    }
+}
+
 // Security regression: a hostile repository (vault or source) must not run code its git
 // config asks for. Each test proves the fixture is live unhardened, then that the
 // helper leaves no marker, so reintroducing the defect fails.

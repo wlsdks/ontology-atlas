@@ -10,6 +10,7 @@ import {
   ambientSleepFactor,
   isAmbientAsleep,
 } from '@/widgets/ontology-map';
+import { isMotionPaused } from '@/shared/motion/motion-pause';
 
 interface GatewayFrameTick {
   t: number;
@@ -46,7 +47,7 @@ function frame(t: number): void {
   const dtMs = Math.min(Math.max(t - lastT, 0), 64);
   lastT = t;
   const factor = ambientSleepFactor(performance.now(), lastInputMs);
-  if (isAmbientAsleep(factor)) return;
+  if (isAmbientAsleep(factor) || isMotionPaused()) return;
   const tick: GatewayFrameTick = { t, dtMs, factor };
   for (const client of clients) {
     try {

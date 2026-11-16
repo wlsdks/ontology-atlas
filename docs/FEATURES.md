@@ -118,7 +118,10 @@ copied handoffs keep that target without disclosing the private source root.
 
 Ontology review on the map opens the saved review results; in the installed app
 **Ask AI to review** and the offer to fill missing connection reasons stand above
-them. A concept's definition, connections and recorded reasons are read in its
+them. The results are a short list of findings to check; a finding opens in
+place with **Have it fixed**, **Keep for later** and **Dismiss**, and the
+original answer and evidence sit behind **Record details**.
+A concept's definition, connections and recorded reasons are read in its
 panel and full detail, not in the dock. Selecting a relation while the dock is
 open shows its card beside the dock.
 Agent reads of that same relation retain the review target. Opening a current
@@ -234,7 +237,7 @@ work here, and where it can.
 | Sent-log count and five recent records | FSA complete read | macOS bounded native pulls; other native platforms keep existing reads | changed, failed or expired reads offer Retry without publishing zero or stale rows; original history is preserved |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
-| In-app updates | ❌ | ✅ | the daily check can be turned off in Settings → About; Check for updates still works |
+| In-app updates | ❌ | ✅ | checks after launch and every 4 hours while the app stays open (macOS); a notice with Moru offers the install, shows the download and asks for the restart; the automatic check can be turned off in Settings → About, where Check for updates still works |
 
 **Windows**: an unsigned x64 beta carries the same local folder and MCP
 surface as the desktop app. `/download` states the SmartScreen unknown-publisher

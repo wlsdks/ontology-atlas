@@ -677,7 +677,6 @@ fn read_patch_identity(
         String::new()
     };
     let from = base.unwrap_or(&empty);
-    let literal_path = format!(":(literal){path}");
     let out = match read_bounded_git(
         &before.root,
         &[
@@ -689,7 +688,7 @@ fn read_patch_identity(
             from,
             tip,
             "--",
-            &literal_path,
+            path,
         ],
         PATCH_BYTES,
     ) {

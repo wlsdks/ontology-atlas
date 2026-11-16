@@ -29,19 +29,12 @@
   "wholeProject": "オントロジー全体",
   "grounded": "根拠を取得済み · AIの仮説",
   "unverified": "未検証のレビュー",
-  "showIssues": "挙げられた問いをマップに表示",
-  "overlayUnavailable": "マップの印を出すには、取得済みの根拠、同じ範囲、現在の基準が必要です。元の回答は引き続き確認できます。",
-  "issueLegend": "？はAIの問いであり、確認済みの欠陥ではありません。",
   "noFindings": "このレビューで挙げられた問いはありません。問題がないという意味ではありません。",
-  "showOnMap": "対象の位置を表示",
-  "reviewAction": "この問いを判断",
   "evidence": "レビュー時点の根拠",
-  "openCurrent": "現在の文書を開く",
   "evidenceMissing": "この引用について、本文全体の根拠は取得されていません。",
-  "reviewReason": "判断の理由",
-  "retain": "フォローアップのため保持",
-  "dismiss": "この問いを却下",
-  "reviewBoundary": "あなたの判断は履歴に追記されます。オントロジーの編集は、これまでどおり変更レビューを経ます。",
+  "reviewReason": "理由（任意）",
+  "retain": "後で見る",
+  "dismiss": "却下",
   "answer": "元のAIの回答",
   "basisDetails": "リクエストと根拠の詳細",
   "followUp": "この結果からレビューを続ける",
@@ -73,7 +66,6 @@
   "measurementScope": "この数は、記録されたスキャンとその宣言済みルールに基づきます。保守性について結論を出す前に、不明な範囲を確認してください。",
   "observationDetails": "計測と依存の根拠",
   "loadingHistory": "レビュー結果を読み込み中…",
-  "targetSelected": "対象がマップで選択されました。",
   "targetSelectedSheet": "対象がマップで選択されました。確認するにはこのパネルを閉じてください。",
   "viewSaved": "保存した結果を開く",
   "profileSnapshot": "レビュー時点のアーキテクチャプロファイル",
@@ -83,10 +75,7 @@
     "failed": "失敗"
   },
   "readCoverage": "このレビューでは、概念の本文全体を{count}件保持しました。それ以外の範囲は未確認の可能性があります。",
-  "earlierQuestions": "以前の結果の問い：{count}件",
-  "earlierQuestionsNote": "これらの問いは、読み込んだ結果に却下の記録がありません。あとから空の結果やキャンセルがあっても、解決したことにはなりません。",
   "targetUnavailable": "この対象は、現在のマップにありません。記録された根拠を確認するか、新しくレビューを依頼してください。",
-  "findingsEyebrow": "{count, plural, =0 {挙げられた問い} other {挙げられた問い{count}件}}",
   "fillNotes": "不足しているつながりの理由を{count}件書く",
   "relationNotesPrompt": "この範囲の各つながりの背景にある、不足している理由を、Atlasのツールだけを使って`relation_notes`に1文で書いてください。理由が空のつながりごとに、両方の文書をget_concepts(body: \"full\")で読み、ソース側の文書（frontmatterが対象を挙げている方）にpatch_conceptでノートを提案します。その際はexpected_mtimeを渡し、ほかのキーはすべて保持してください。フォルダ自身の言語で書きます。ノートには、このコードベースでその主張が成り立つ理由を書き、AがBを含む、または依存するとは書かないでください。文書に理由が示されていない場合は何も書かず、そのペアを未解決の問いに挙げてください。`domain:`の逆向きポインターは、親の包含と理由を共有します。親の文書にだけ書き、子には書かないでください。このターンでは最大{limit}件とし、最後に残り件数を伝えてください。",
   "meaningTransitions": {
@@ -176,5 +165,15 @@
       "unknown": "不明"
     }
   },
-  "reviewPurpose": "記録された役割、範囲、つながりが製品の目的に合っているか確認します。"
+  "toCheck": "確認すること{count}件",
+  "dismissedCount": "却下{count}件",
+  "trustLine": "AIの推測です。正しいかどうかはご自身で判断してください。",
+  "basisStaleLine": "このレビューの後に文書が変わりました。新しくレビューすると、現在の内容で見直します。",
+  "basisUnknownLine": "現在の内容と一致するか確認できませんでした。",
+  "backToList": "確認すること",
+  "haveFixed": "修正を依頼",
+  "sourceDocuments": "根拠の文書{count}件",
+  "recordDetails": "記録の詳細",
+  "fixPrompt": "{recordId}として記録されたAtlasのレビューの{position}番目の問いを修正してください。\nquery_ontology(operation: \"analysis_record\", recordId: \"{recordId}\")で記録を読み、findingsの{position}番目の項目を確認してください。その問いの根拠の文書をAtlasのツール（get_concepts、body: \"full\"）で読んでください。何が誤っていて、どう直すかをまず文章で提案し、そのあとpatch_conceptなどのAtlasの書き込みツールで反映してください。文書に修正の根拠がない箇所は書かず、未解決の問いとして残してください。",
+  "closeRecord": "記録の詳細を閉じる"
 }

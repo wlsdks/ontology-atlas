@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
+import { isMotionPaused } from '@/shared/motion/motion-pause';
 
 /**
  * The gateway's light field, grain and cursor ring. Only inside `.gateway-fx-stage`, alpha capped
@@ -227,7 +228,7 @@ export function GatewayFx() {
         tx = e.clientX;
         ty = e.clientY;
         // Without the loop it attaches instantly: a lagging cursor under reduced motion is a defect.
-        if (!fxLoopLive || reduced) {
+        if (!fxLoopLive || reduced || isMotionPaused()) {
           cx = tx;
           cy = ty;
           put();

@@ -85,6 +85,7 @@ const alignedDownload = `<!doctype html>
   <h2>${koDownloadCopy.loop.title}</h2>
   <h2>${koDownloadCopy.screens.title}</h2>
   <h2>${koDownloadCopy.start.title}</h2>
+  <h3>${koDownloadCopy.source.local.title}</h3>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {

@@ -14,12 +14,15 @@ type PlanningDoor =
 export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
   const nav = useTranslations('navRail');
   const t = useTranslations('planning');
+  const motion = useTranslations('download.motion');
   const choose = door.kind === 'choose';
 
   return <FeatureStage
     data-testid="planning-stage"
     data-planning-state={choose ? 'no-folder' : 'unsupported'}
-    art={({ engaged, reduced }) => <PlanningSourceArtwork active={engaged} reduced={reduced} imageLabel={t('designImages')} />}
+    artWidth="wide"
+    artLoops={{ pause: motion('pause'), play: motion('play') }}
+    art={(state) => <PlanningSourceArtwork {...state} />}
     title={t('startTitle')}
     body={t(choose ? 'startBody' : 'browserUnavailable')}
     alert={choose && door.unavailable ? <p role="alert" className="mt-4 text-body text-[color:var(--color-text-primary)]">{t('folderUnavailable')}</p> : undefined}

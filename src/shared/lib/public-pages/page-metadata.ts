@@ -28,7 +28,7 @@ export interface PageMetadataInput {
   path: string;
   title: string;
   description: string;
-  /** Only when the page has its own OG image; otherwise the site OG image is used. */
+  /** Only when the page has its own OG image; otherwise the locale's site card is used. */
   ogImage?: string;
   /**
    * Set when the page directory has an `opengraph-image.tsx`. A leaf `images` value, even via
@@ -40,9 +40,13 @@ export interface PageMetadataInput {
 
 /**
  * Every page must carry the social card explicitly: Next replaces the whole top-level
- * `openGraph`/`twitter` key when merging, so root layout images are dropped.
+ * `openGraph`/`twitter` key when merging, so root layout images are dropped. A routed locale
+ * gets its own card (`pnpm og:build`); anything else falls back to the English site card.
  */
-const SITE_OG_IMAGE = { url: '/og-image.png', width: 1200, height: 630, alt: 'Ontology Atlas' };
+function siteOgImage(locale: string, locales: readonly string[]) {
+  const url = locales.includes(locale) ? `/og/${locale}.png` : '/og-image.png';
+  return { url, width: 1200, height: 630, alt: 'Ontology Atlas' };
+}
 
 export interface PageMetadataLocales {
   locales: readonly string[];
@@ -76,6 +80,7 @@ export function buildPageMetadata(
     'x-default': absolute(registry.defaultLocale, path),
   };
   for (const l of registry.locales) languages[registry.meta[l]?.hreflang ?? l] = absolute(l, path);
+  const siteImage = siteOgImage(locale, registry.locales);
 
   return {
     title: absoluteTitle ? { absolute: title } : title,
@@ -88,13 +93,13 @@ export function buildPageMetadata(
       title,
       description,
       locale: registry.meta[locale]?.ogLocale ?? locale,
-      ...(hasFileConventionImage ? {} : { images: [ogImage ? { url: ogImage } : SITE_OG_IMAGE] }),
+      ...(hasFileConventionImage ? {} : { images: [ogImage ? { url: ogImage } : siteImage] }),
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      ...(hasFileConventionImage ? {} : { images: [ogImage ?? SITE_OG_IMAGE.url] }),
+      ...(hasFileConventionImage ? {} : { images: [ogImage ?? siteImage.url] }),
     },
   };
 }

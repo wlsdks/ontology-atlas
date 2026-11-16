@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { useStageGraph } from '../lib/use-stage-graph';
 import { LOOP_CHANGED, LOOP_PROPOSAL, LOOP_READ } from '../model/loop-cast';
+import { setMotionPaused } from '@/shared/motion/motion-pause';
 import { LoopSection, StartSection } from './LoopSection';
 
 const ROOT = path.resolve(__dirname, '../../../..');
@@ -79,43 +80,94 @@ describe('the loop section shows this repository’s own ontology', () => {
   });
 });
 
-describe('a drawing’s entrance', () => {
-  type Deliver = (entries: Partial<IntersectionObserverEntry>[]) => void;
-  let deliver: Deliver[] = [];
+type Deliver = (entries: Partial<IntersectionObserverEntry>[]) => void;
 
-  function watch() {
-    deliver = [];
-    vi.stubGlobal(
-      'IntersectionObserver',
-      class {
-        constructor(callback: IntersectionObserverCallback) {
-          deliver.push((entries) => callback(entries as IntersectionObserverEntry[], this as never));
-        }
-        observe() {}
-        disconnect() {}
-      },
-    );
-    render(<LoopSection graph={graph} />, { wrapper: IntlWrapper });
-    return screen.getByTestId('gateway-loop-cards');
-  }
+function stubObserver(): Deliver[] {
+  const deliver: Deliver[] = [];
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      constructor(callback: IntersectionObserverCallback) {
+        deliver.push((entries) => callback(entries as IntersectionObserverEntry[], this as never));
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  return deliver;
+}
 
+describe('the steps’ entrance', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  function watch() {
+    const deliver = stubObserver();
+    render(<StartSection />, { wrapper: IntlWrapper });
+    return { deliver, steps: screen.getByTestId('gateway-start-steps') };
+  }
+
   it('is the whole picture until a script has seen the block below the fold', () => {
-    expect(watch()).toHaveAttribute('data-gateway-entrance', 'still');
+    expect(watch().steps).toHaveAttribute('data-gateway-entrance', 'still');
   });
 
   it('waits below the fold, then enters once when the block is seen', () => {
-    const cards = watch();
+    const { deliver, steps } = watch();
     act(() => deliver[0]([{ isIntersecting: false }]));
-    expect(cards).toHaveAttribute('data-gateway-entrance', 'waiting');
+    expect(steps).toHaveAttribute('data-gateway-entrance', 'waiting');
     act(() => deliver[0]([{ isIntersecting: false }, { isIntersecting: true }]));
-    expect(cards).toHaveAttribute('data-gateway-entrance', 'entering');
+    expect(steps).toHaveAttribute('data-gateway-entrance', 'entering');
   });
 
   it('never hides a block that is already in view when the page loads', () => {
-    const cards = watch();
+    const { deliver, steps } = watch();
     act(() => deliver[0]([{ isIntersecting: true }]));
-    expect(cards).toHaveAttribute('data-gateway-entrance', 'still');
+    expect(steps).toHaveAttribute('data-gateway-entrance', 'still');
+  });
+});
+
+describe('the loop cards’ scene', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function watch() {
+    const deliver = stubObserver();
+    render(<LoopSection graph={graph} />, { wrapper: IntlWrapper });
+    return { deliver, cards: screen.getByTestId('gateway-loop-cards') };
+  }
+
+  it('leaves every line standing until a script has seen the row', () => {
+    expect(watch().cards).not.toHaveAttribute('data-gateway-scene-motion');
+  });
+
+  it('plays only while the row is in view, and holds its place when it leaves', () => {
+    const { deliver, cards } = watch();
+    act(() => deliver[0]([{ isIntersecting: true }]));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'running');
+    act(() => deliver[0]([{ isIntersecting: false }]));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'paused');
+  });
+
+  it('pauses while the tab is hidden', () => {
+    const { deliver, cards } = watch();
+    act(() => deliver[0]([{ isIntersecting: true }]));
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    act(() => document.dispatchEvent(new Event('visibilitychange')));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'paused');
+    hidden.mockRestore();
+  });
+
+  it('holds still while the page’s motion is paused, in view or not', () => {
+    const { deliver, cards } = watch();
+    act(() => deliver[0]([{ isIntersecting: true }]));
+    act(() => setMotionPaused(true));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'paused');
+    act(() => setMotionPaused(false));
+    expect(cards).toHaveAttribute('data-gateway-scene-motion', 'running');
+  });
+
+  it('never starts under reduced motion', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+    const { deliver, cards } = watch();
+    expect(deliver).toHaveLength(0);
+    expect(cards).not.toHaveAttribute('data-gateway-scene-motion');
   });
 });

@@ -17,6 +17,10 @@ const CSS = readGlobalCss();
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "atlas-moru-greeting": "The finite welcome becomes the neutral seal pose; the folder title, picker and keyboard actions remain unchanged.",
+  "planning-sheet-drift":
+    "Ambient breathing of the planning stage's two sheets. Under reduced motion the artwork never applies the class and draws the sheets settled in place; the title, sentence and button beside it say the same thing. PlanningSourceArtwork.test.tsx checks the class is absent.",
+  "automation-dial-hand":
+    "The automations stage's cadence hand sweeping its dial. Under reduced motion the artwork never applies the class: the hand rests on the run mark beside one proposal waiting in the tray, and the stage's text carries the schedule. AutomationScheduleArtwork.test.tsx checks the class is absent.",
   "map-wait-orbit": "The loading scene's decorative orbit travel stops under reduced motion. The stationary planes, core, live status, and return action remain; map-navigation-wait.spec.ts checks every orbit's animation and transform.",
   "atlas-waiting-mark":
     "The native character remains visible beside the parent's unchanged status and Stop action; reduced motion removes the decorative frame steps and hops.",
@@ -36,6 +40,34 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // Driven by scroll position via `animation-timeline: view()`, with no duration to shorten. They live
   // only inside `no-preference`, so reduced-motion users see everything from the start. The exemption
   // holds only inside that media query, which the test below measures.
+  "gateway-scene-read":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-mark":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-dot":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-ring":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-allow":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-pointer":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-press":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-scene-focus":
+    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "gateway-constellation-node":
+    "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
+  "gateway-constellation-pulse":
+    "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
+  "gateway-step-spark":
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+  "gateway-step-lit":
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+  "gateway-step-press":
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+  "gateway-step-rule":
+    "One-shot draw of the rule after a step number on the download page, declared only inside no-preference; under reduced motion the rule is simply there and the numbers carry the order.",
   "gateway-entrance-line":
     "One-shot arrival of a small drawing's lines on the download page. The declaration lives only inside no-preference, so under reduced motion the lines are there from the first paint; the card's text beside the drawing says the same thing, and download-still.spec.ts requires that page to hold no animation at all.",
   "gateway-scroll-stage":

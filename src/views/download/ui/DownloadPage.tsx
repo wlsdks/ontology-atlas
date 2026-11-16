@@ -17,7 +17,7 @@ import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BrandCompanion } from '@/shared/ui/marks/brand-companion';
 import { GithubMark } from '@/shared/ui/marks/github-mark';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
   MACOS_RELEASE,
@@ -32,8 +32,16 @@ import { useStageGraph } from '../lib/use-stage-graph';
 import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
+import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
+import { ProofNumbers } from './ProofNumbers';
+import { FilmSection } from './FilmSection';
+import { HarnessFilm } from './HarnessFilm';
+import { MotionToggle } from '@/shared/ui/controls/motion-toggle';
+import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { SectionIntro } from './SectionIntro';
+import { ClosingConstellation } from './ClosingConstellation';
+import { useInViewMotion } from '../lib/use-in-view-motion';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 
 /**
@@ -51,6 +59,9 @@ const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
 
+const HERO_CHIP =
+  'gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
+
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
  * (`animation-timeline: view()`) do not exist under reduced motion
@@ -59,6 +70,8 @@ const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap'
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
+  const tMotion = useTranslations('download.motion');
+  const motionLabels = { pause: tMotion('pause'), play: tMotion('play') };
   const published = isMacosReleasePublished();
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
   /** The tab bar's own function: `/` shows the bar and `/download` hides it, and two lists drift. */
@@ -85,10 +98,14 @@ export function DownloadPage() {
           windowsPrimary={windowsPrimary}
           winner={winner}
         />
+        <ProofNumbers graph={graph} />
+        <FilmSection graph={graph} />
+        <HarnessFilm />
         <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection />
         <OpenSourceSection />
+        <FaqSection />
         <ClosingSection
           published={published}
           primaryAsset={primaryAsset}
@@ -128,7 +145,20 @@ export function DownloadPage() {
                 </a>
                 <span aria-hidden>·</span>
                 <span className="font-mono">{tFooter('stack')}</span>
+                <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="gap-1.5 sm:ml-auto" />
               </div>
+              <p className="mt-3 text-[color:var(--color-text-tertiary)]">
+                {tFooter('contact.lead')}{' '}
+                <a
+                  href={MAKER_LINKEDIN_URL}
+                  target="_blank"
+                  rel="noreferrer noopener me"
+                  data-testid="download-footer-contact"
+                  className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'underline underline-offset-2' })}
+                >
+                  {tFooter('contact.link')}
+                </a>
+              </p>
               {/* Nominative use; marks follow the stricter rule in docs/features/agents.md. */}
               <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
                 {tFooter('trademarks')}
@@ -167,6 +197,7 @@ function HeroSection({
     return () => cancelAnimationFrame(id);
   }, []);
   const moru = useTranslations('moru');
+  const motionPaused = useMotionPaused();
 
   /**
    * Every branch keeps all four destinations reachable. Windows' unsigned status is stated before
@@ -194,6 +225,7 @@ function HeroSection({
         <div className={cn(rise('gateway-t240'), 'gateway-hero-moru flex justify-center')}>
           <BrandCompanion
             context="welcome"
+            stilled={motionPaused}
             labels={{
               pause: moru('pause'),
               resume: moru('resume'),
@@ -205,20 +237,30 @@ function HeroSection({
 
         {/* The container sizes the headline against this column, one line per sentence. */}
         <div className="gateway-hero-text @container relative z-[1] flex min-w-0 flex-col items-center text-center min-[80rem]:items-start min-[80rem]:text-left">
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-            data-testid="gateway-hero-source"
-            className={cn(
-              rise('gateway-t240'),
-              controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }),
-              'gateway-hero-chip gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label',
-            )}
-          >
-            <GithubMark />
-            <span>{t('eyebrow')}</span>
-          </a>
+          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap justify-center gap-2 min-[80rem]:justify-start')}>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              data-testid="gateway-hero-source"
+              className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), HERO_CHIP)}
+            >
+              <GithubMark />
+              <span>{t('eyebrow')}</span>
+            </a>
+            {published ? (
+              <Link
+                href="/changelog"
+                data-testid="gateway-hero-news"
+                className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), HERO_CHIP)}
+              >
+                {/* Static: the release is a fact, not a state that changes while the page is open. */}
+                <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]" />
+                <span>{t('news', { tag: MACOS_RELEASE.tag })}</span>
+              </Link>
+            ) : null}
+            <MotionToggle labels={{ pause: t('motion.pause'), play: t('motion.play') }} testId="gateway-motion-toggle" className={HERO_CHIP} />
+          </div>
 
           <h1
             // The visible characters are aria-hidden.
@@ -378,7 +420,7 @@ function DownloadActions({
           href="/topology"
           data-testid="gateway-hero-web-cta"
           className={cn(
-            buttonVariants({ variant: 'ghost', size: 'lg' }),
+            buttonVariants({ variant: 'outline', size: 'lg' }),
             'px-4 sm:px-6',
             HERO_CTA_WRAP,
           )}
@@ -424,6 +466,7 @@ function ClosingSection({
   fileWins: boolean;
 }) {
   const t = useTranslations('download');
+  const [stage, closingMotion] = useInViewMotion();
   return (
     <section
       data-testid="gateway-closing"
@@ -431,11 +474,16 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <div className="gateway-closing-stage @container flex min-w-0 flex-col items-center px-6 py-16 text-center sm:py-20">
+        <div
+          ref={stage}
+          data-gateway-closing-motion={closingMotion}
+          className="gateway-closing-stage @container flex min-w-0 flex-col items-center px-6 py-20 text-center sm:py-28"
+        >
           <div aria-hidden className="gateway-closing-light" />
+          <ClosingConstellation />
           <h2
             id="gateway-closing-title"
-            className="max-w-full [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+            className="relative max-w-full [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
           >
             {t('closingTitle')}
           </h2>

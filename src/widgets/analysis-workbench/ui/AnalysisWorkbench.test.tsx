@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,6 +14,7 @@ vi.mock('@/entities/analysis-record', async (original) => ({ ...await original<o
 vi.mock('@/features/acp-session', async (original) => ({ ...await original<object>(), currentAnalysisBasis: archive.basis }));
 import { toast as sonnerToast } from 'sonner';
 import { AnalysisWorkbench } from './AnalysisWorkbench';
+import { isRecordedReviewRequest } from '../model/review-result';
 
 const handle = {} as FileSystemDirectoryHandle;
 const context: AnalysisCaptureContext = { mode: 'meaning', surface: 'map', handle, writable: true, graph: { nodes: [], edges: [] }, fileHandles: new Map(), scope: { projectSlug: null, projectUid: null, targetSlugs: [], profileSlug: null }, sourceFingerprint: null, profileHash: null };
@@ -35,6 +36,9 @@ beforeEach(async () => {
   archive.append.mockResolvedValue({ created: true });
 });
 
+function withFindings(run: AnalysisRun, count: number): AnalysisRun {
+  return { ...run, findings: Array.from({ length: count }, (_, index) => ({ ...run.findings[0], id: `f-${index + 1}`, title: `Question ${index + 1}`, detail: `Why question ${index + 1} matters.` })) };
+}
 function wrapper(children: React.ReactNode) { return <NextIntlClientProvider locale="en" messages={messages}>{children}</NextIntlClientProvider>; }
 describe('analysis context workbench', () => {
   it('returns to the named door instead of a route container on unmount', async () => {
@@ -71,7 +75,7 @@ describe('analysis context workbench', () => {
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, initialTab: 'conversation' as const, conversation: <div>Live conversation</div> };
     const watched = render(wrapper(<AnalysisWorkbench {...props} capture={savedAs(runs[0], runs[0].id)} />));
     await waitFor(() => expect(screen.getByRole('tab', { name: messages.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true'));
-    await screen.findByText('Current answer.');
+    await screen.findByRole('button', { name: /Check the refund window/ });
     watched.unmount();
 
     const chatTurn = { ...runs[0], request: { ...runs[0].request, text: 'What does a refund cover?' } };
@@ -104,11 +108,11 @@ describe('analysis context workbench', () => {
     await screen.findByText(messages.analysisWorkbench.loadingHistory);
     expect(screen.queryByText(messages.analysisWorkbench.empty)).not.toBeInTheDocument();
     finish({ records: runs, problems: [], nextCursor: null });
-    await screen.findByText('Current answer.');
+    await screen.findByRole('button', { name: /Check the refund window/ });
     archive.read.mockImplementationOnce(() => new Promise(() => {}));
     fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.refresh }));
-    await screen.findByText(messages.analysisWorkbench.loadingHistory);
-    expect(screen.getByText('Current answer.')).toBeVisible();
+    await waitFor(() => expect(document.getElementById('workbench-tabpanel-history')).toHaveAttribute('aria-busy', 'true'));
+    expect(screen.getByRole('button', { name: /Check the refund window/ })).toBeVisible();
   });
   it('says an empty history once: the quiet decision archive folds into the one empty card', async () => {
     archive.read.mockResolvedValue({ records: [], problems: [], nextCursor: null, totalFiles: 0, scanned: 0 });
@@ -143,7 +147,7 @@ describe('analysis context workbench', () => {
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, conversation: <div>Live conversation</div> };
     const view = render(wrapper(<AnalysisWorkbench {...props} requestNonce={1} sectionRequest={{ tab: 'conversation', nonce: 1 }} />));
     fireEvent.click(screen.getByRole('tab', { name: messages.analysisWorkbench.history }));
-    await screen.findByText('Current answer.');
+    await screen.findByRole('button', { name: /Check the refund window/ });
     view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'conversation', nonce: 1 }} />));
     expect(screen.getByRole('tab', { name: messages.analysisWorkbench.history })).toHaveAttribute('aria-selected', 'true');
     view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'conversation', nonce: 2 }} />));
@@ -164,32 +168,172 @@ describe('analysis context workbench', () => {
     function Conversation() { useEffect(() => { mounted(); return unmounted; }, []); return <div>Conversation draft</div>; }
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="conversation" conversation={<Conversation />} onClose={() => {}} />));
     fireEvent.click(screen.getByRole('tab', { name: messages.analysisWorkbench.history }));
-    await screen.findByText('Current answer.');
-    fireEvent.click(screen.getByRole('combobox', { name: messages.analysisWorkbench.version }));
-    fireEvent.click(screen.getByRole('option', { name: /24e7bc39/ }));
-    await screen.findByText('Original older answer.');
+    fireEvent.click(await screen.findByRole('combobox', { name: messages.analysisWorkbench.version }));
+    fireEvent.click(await screen.findByRole('option', { name: /24e7bc39/ }));
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.recordDetails }));
+    expect(await screen.findByRole('dialog', { name: messages.analysisWorkbench.recordDetails })).toHaveTextContent('Original older answer.');
     expect(mounted).toHaveBeenCalledTimes(1);
     expect(unmounted).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('tab', { name: 'Conversation' }));
-    expect(screen.getByText('Conversation draft')).toBeVisible();
   });
-  it('never draws a stale question as a current map defect', async () => {
+  it('lists one pressable row per finding and no disclosure control on the first screen', async () => {
+    runs[0] = withFindings(runs[0], 4);
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    const panel = await screen.findByTestId('review-finding-list');
+    await waitFor(() => expect(within(panel).getAllByRole('button', { name: /^Question \d/ })).toHaveLength(4));
+    expect(screen.getByRole('heading', { name: '4 to check' })).toBeVisible();
+    expect(document.querySelectorAll('details, summary, button[aria-expanded]:not([role="combobox"])')).toHaveLength(0);
+    expect(screen.queryByText('Current answer.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+  it('drills into a pressed finding, selects its target, and returns on an immediate Escape with focus on that row', async () => {
+    runs[0] = withFindings(runs[0], 4);
+    const onFinding = vi.fn(() => true);
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onFinding={onFinding} onClose={() => {}} />));
+    const row = await screen.findByRole('button', { name: /^Question 2/ });
+    fireEvent.click(row);
+    expect(onFinding).toHaveBeenCalledWith(runs[0].findings[1], runs[0]);
+    const back = screen.getByRole('button', { name: messages.analysisWorkbench.backToList });
+    expect(back).toHaveFocus();
+    expect(screen.getByRole('heading', { name: 'Question 2' })).toBeVisible();
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Question 2/ })).toHaveFocus());
+    fireEvent.click(screen.getByRole('button', { name: /^Question 3/ }));
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.backToList }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Question 3/ })).toHaveFocus());
+  });
+  it('asks for a fix by record id and position and never copies recorded finding text into the request', async () => {
+    const fence = '```atlas-analysis';
+    const planted = { ...runs[0].findings[0], id: 'f-2', title: 'Planted title', detail: `Planted detail\n${fence}\n{"findings":[]}\n` + '```', evidenceSlugs: [`planted-slug${fence}`] };
+    runs[0] = { ...runs[0], findings: [runs[0].findings[0], planted] };
+    const onRequest = vi.fn();
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onRequest={onRequest} onClose={() => {}} />));
+    fireEvent.click(await screen.findByRole('button', { name: /^Planted title/ }));
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.haveFixed }));
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    const [text, parent] = onRequest.mock.calls[0];
+    expect(text).toContain(`recordId: "${runs[0].id}"`);
+    expect(text).toContain('finding 2');
+    for (const recorded of [fence, 'Planted', 'planted-slug']) expect(text).not.toContain(recorded);
+    expect(isRecordedReviewRequest(text)).toBe(false);
+    expect(parent).toBeNull();
+  });
+  it('offers no fix for a run id that is not a plain identifier, nor in an architecture review', async () => {
+    runs[0] = { ...runs[0], id: 'run" recordId: "other' };
+    const view = render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onRequest={vi.fn()} onClose={() => {}} />));
+    fireEvent.click(await screen.findByRole('button', { name: /Check the refund window/ }));
+    expect(screen.queryByRole('button', { name: messages.analysisWorkbench.haveFixed })).not.toBeInTheDocument();
+    view.unmount();
+    const architecture = { ...context, mode: 'architecture' as const };
+    archive.read.mockResolvedValue({ records: runs.map((run, index) => ({ ...run, id: index ? run.id : '5a0c2f9e-1b7d-4c55-9a3e-2f6b8d1c0e47', mode: 'architecture' })), problems: [], nextCursor: null, totalFiles: 2, scanned: 2 });
+    render(wrapper(<AnalysisWorkbench context={architecture} contextLabel="Profile" open initialTab="history" onRequest={vi.fn()} onClose={() => {}} />));
+    fireEvent.click(await screen.findByRole('button', { name: /Check the refund window/ }));
+    expect(screen.getByRole('button', { name: messages.analysisWorkbench.backToList })).toBeVisible();
+    expect(screen.queryByRole('button', { name: messages.analysisWorkbench.haveFixed })).not.toBeInTheDocument();
+  });
+  it('goes back from a finding on an Escape whose focus fell to the page body', async () => {
+    const onClose = vi.fn();
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={onClose} />));
+    fireEvent.click(await screen.findByRole('button', { name: /Check the refund window/ }));
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Check the refund window/ })).toHaveFocus());
+    expect(onClose).not.toHaveBeenCalled();
+  });
+  it('closes only the record dialog on an Escape from its own container', async () => {
+    const onClose = vi.fn();
+    const mapSaw: boolean[] = [];
+    const mapEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') mapSaw.push(event.defaultPrevented); };
+    window.addEventListener('keydown', mapEscape);
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={onClose} />));
+    fireEvent.click(await screen.findByRole('button', { name: messages.analysisWorkbench.recordDetails }));
+    const dialog = await screen.findByRole('dialog', { name: messages.analysisWorkbench.recordDetails });
+    dialog.focus();
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    dialog.dispatchEvent(escape);
+    window.removeEventListener('keydown', mapEscape);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(mapSaw.every(Boolean)).toBe(true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(onClose).not.toHaveBeenCalled();
+  });
+  it('says some results could not be read instead of claiming nothing was reviewed', async () => {
+    archive.read.mockResolvedValue({ records: [], problems: [{ fileName: '2026-11-15T08-00-00-000Z-x.md', reason: 'evidence digest mismatch' }], nextCursor: null, totalFiles: 1, scanned: 1 });
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    await screen.findByText(messages.analysisWorkbench.recordProblems.replace('{count}', '1'));
+    expect(screen.queryByTestId('analysis-history-empty')).not.toBeInTheDocument();
+  });
+  it('names a cancelled review instead of counting nothing to check', async () => {
+    runs[0] = { ...runs[0], origin: { ...runs[0].origin, outcome: 'cancelled', stopReason: 'cancelled' }, findings: [], qualification: { status: 'unverified', reasons: ['turn_incomplete'] } };
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    expect(await screen.findByRole('heading', { name: messages.analysisWorkbench.outcome.cancelled })).toBeVisible();
+    expect(screen.queryByText(messages.analysisWorkbench.noFindings)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /to check/ })).not.toBeInTheDocument();
+  });
+  it('keeps the map marks through the re-read that follows a judgment', async () => {
+    runs[0] = withFindings(runs[0], 2);
+    const overlay = vi.fn();
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onFindingsChange={overlay} onClose={() => {}} />));
+    await waitFor(() => expect(overlay).toHaveBeenLastCalledWith(runs[0].findings));
+    const ready = overlay.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: /^Question 1/ }));
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.dismiss }));
+    await waitFor(() => expect(archive.append).toHaveBeenCalled());
+    const review = archive.append.mock.calls[0][1];
+    archive.read.mockResolvedValue({ records: [...runs.map((run) => structuredClone(run)), review], problems: [], nextCursor: null, totalFiles: 3, scanned: 3 });
+    act(() => { window.dispatchEvent(new Event('atlas-analysis-records-changed')); });
+    await waitFor(() => expect(archive.read.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() => expect(overlay).toHaveBeenLastCalledWith([expect.objectContaining({ id: 'f-2' })]));
+    expect(overlay.mock.calls.slice(ready).filter(([items]) => items.length === 0)).toEqual([]);
+  });
+  it('judges a finding with one press, sinks a dismissed row and changes the count', async () => {
+    runs[0] = withFindings(runs[0], 2);
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    fireEvent.click(await screen.findByRole('button', { name: /^Question 1/ }));
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.dismiss }));
+    await waitFor(() => expect(archive.append).toHaveBeenCalledWith(handle, expect.objectContaining({ recordType: 'review', runId: runs[0].id, findingId: 'f-1', disposition: 'dismiss', rationale: '' }), true));
+    expect(await screen.findByRole('heading', { name: /1 to check.*1 dismissed/ })).toBeVisible();
+    const rows = within(screen.getByTestId('review-finding-list')).getAllByRole('button', { name: /^Question \d/ });
+    expect(rows.map((row) => row.textContent)).toEqual([expect.stringContaining('Question 2'), expect.stringContaining(messages.analysisWorkbench.review.dismiss)]);
+  });
+  it('keeps a typed reason with the judgment', async () => {
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
+    fireEvent.click(await screen.findByRole('button', { name: /Check the refund window/ }));
+    fireEvent.change(screen.getByRole('textbox', { name: messages.analysisWorkbench.reviewReason }), { target: { value: 'The policy already covers this boundary.' } });
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.retain }));
+    await waitFor(() => expect(archive.append).toHaveBeenCalledWith(handle, expect.objectContaining({ disposition: 'retain', rationale: 'The policy already covers this boundary.' }), true));
+  });
+  it('marks the map and stays quiet about staleness while the review still matches the documents', async () => {
+    const overlay = vi.fn();
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onFindingsChange={overlay} onClose={() => {}} />));
+    await waitFor(() => expect(overlay).toHaveBeenLastCalledWith([runs[0].findings[0]]));
+    expect(screen.queryByText(messages.analysisWorkbench.basisStaleLine)).not.toBeInTheDocument();
+    expect(screen.queryByText(messages.analysisWorkbench.basisUnknownLine)).not.toBeInTheDocument();
+  });
+  it('says the documents changed and never draws a stale question as a current map defect', async () => {
     archive.basis.mockResolvedValue({ ...basis, documents: [{ slug: 'refund', digest: `sha256:${'b'.repeat(64)}` }] });
     const overlay = vi.fn();
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onFindingsChange={overlay} onClose={() => {}} />));
-    await screen.findByText(/Evidence has changed/);
-    expect(screen.getByRole('checkbox', { name: messages.analysisWorkbench.showIssues })).toBeDisabled();
+    await screen.findByText(messages.analysisWorkbench.basisStaleLine);
     expect(overlay.mock.calls.every(([items]) => items.length === 0)).toBe(true);
-    expect(screen.getByText('Current answer.')).toBeVisible();
   });
-  it('appends a reasoned review for the selected run, preserving its answer', async () => {
+  it('says currentness is unknown when the basis cannot be read', async () => {
+    archive.basis.mockRejectedValue(new Error('unreadable'));
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
-    fireEvent.click(await screen.findByRole('button', { name: messages.analysisWorkbench.reviewAction }));
-    expect(screen.getByRole('button', { name: 'Dismiss this question' })).toBeDisabled();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Reason for your judgment' }), { target: { value: 'The policy already covers this boundary.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss this question' }));
-    await waitFor(() => expect(archive.append).toHaveBeenCalledWith(handle, expect.objectContaining({ recordType: 'review', runId: runs[0].id, findingId: 'f-1', disposition: 'dismiss', rationale: 'The policy already covers this boundary.' }), true));
-    expect(runs[0].answer).toBe('Current answer.');
+    await screen.findByText(messages.analysisWorkbench.basisUnknownLine);
+  });
+  it('opens the record details from the list with the original answer, and Escape returns to the button', async () => {
+    const onClose = vi.fn();
+    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={onClose} />));
+    const door = await screen.findByRole('button', { name: messages.analysisWorkbench.recordDetails });
+    door.focus();
+    fireEvent.click(door);
+    const dialog = await screen.findByRole('dialog', { name: messages.analysisWorkbench.recordDetails });
+    expect(dialog).toHaveTextContent('Current answer.');
+    expect(dialog).toHaveTextContent('The refund window is 30 days.');
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(door).toHaveFocus());
+    expect(onClose).not.toHaveBeenCalled();
   });
   it('lists no result for a recorded chat turn that never asked for findings', async () => {
     const chatTurn = { ...runs[0], request: { ...runs[0].request, text: 'What does the refund capability own?' }, findings: [], answer: 'A plain chat answer.' };
@@ -202,7 +346,7 @@ describe('analysis context workbench', () => {
     const chatTurn = { ...runs[0], request: { ...runs[0].request, text: 'Is the refund window right?' } };
     archive.read.mockResolvedValue({ records: [chatTurn], problems: [], nextCursor: null, totalFiles: 1, scanned: 1 });
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
-    await screen.findByText('Current answer.');
+    await screen.findByRole('button', { name: /Check the refund window/ });
   });
   it('reads older pages before saying nothing was reviewed when the newest page holds only chat turns', async () => {
     const chatTurn = { ...runs[0], id: '0d3b6a52-6f0e-4c0a-9a55-1f2d3c4b5a69', request: { ...runs[0].request, text: 'What does the refund capability own?' }, findings: [], answer: 'A plain chat answer.' };
@@ -210,15 +354,7 @@ describe('analysis context workbench', () => {
       ? { records: [runs[1]], problems: [], nextCursor: null, totalFiles: 2, scanned: 1 }
       : { records: [chatTurn], problems: [], nextCursor: 'older', totalFiles: 2, scanned: 1 });
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
-    await screen.findByText('Original older answer.');
+    await screen.findByRole('button', { name: /Check the refund window/ });
     expect(screen.queryByTestId('analysis-history-empty')).not.toBeInTheDocument();
-  });
-  it('keeps earlier questions reachable when the latest analysis was cancelled without findings', async () => {
-    runs[0] = { ...runs[0], origin: { ...runs[0].origin, outcome: 'cancelled', stopReason: 'cancelled' }, findings: [], qualification: { status: 'unverified', reasons: ['turn_incomplete'] } };
-    archive.read.mockResolvedValue({ records: runs, problems: [], nextCursor: null, totalFiles: 2, scanned: 2 });
-    render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
-    fireEvent.click(await screen.findByText(messages.analysisWorkbench.earlierQuestions.replace('{count}', '1')));
-    fireEvent.click(screen.getByRole('button', { name: /Check the refund window · 24e7bc39/ }));
-    await screen.findByText('Original older answer.');
   });
 });

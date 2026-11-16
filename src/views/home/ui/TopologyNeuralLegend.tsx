@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import type { NeuralLabels } from "@/widgets/ontology-map";
-import type { MapEvidence, MapEvidenceAvailability } from "../model/map-canvas/use-map-evidence-states";
+import type { MapEvidence, MapEvidenceAvailability } from "@/features/vault-ontology";
 import { ArcSwatch, KindDot } from "./map-legend-swatches";
 
 /**

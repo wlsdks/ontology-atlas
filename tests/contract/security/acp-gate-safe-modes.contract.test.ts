@@ -33,7 +33,7 @@ describe('current adapter mode transcription', () => {
   });
 
   it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
-    // v0.107.0 session-mode.ts: all options enabled, without AIR kinds.
+    // v0.107.2 session-mode.ts: all options enabled, without AIR kinds.
     const modes = [
       choice('default', 'Manual'),
       choice('acceptEdits', 'Accept edits'),
@@ -161,10 +161,10 @@ describe('work mode list: nothing that removes the gate is offered', () => {
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.107.0: `buildAvailableModes` builds the same five ids; `_meta.kind` goes only to the AIR
+   * 0.107.2: `buildAvailableModes` builds the same five ids; `_meta.kind` goes only to the AIR
    * client, so `mode-safety.ts` judges by id. Ultracode is a config option Atlas never reads.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.107.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.107.2',
   /**
    * 2.6.0 src/AgentMode.ts keeps readOnly and workspace-write; Atlas excludes the latter
    * because its workspaceWrite sandbox permits edits before an approval request.

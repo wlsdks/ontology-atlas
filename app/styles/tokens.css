@@ -352,6 +352,11 @@
   --gateway-star: color-mix(in srgb, var(--color-text-primary) 62%, transparent);
   --gateway-star-dim: color-mix(in srgb, var(--color-text-primary) 26%, transparent);
   --gateway-star-indigo: color-mix(in srgb, var(--map-indigo-bright) 80%, transparent);
+  /* The closing scene: a glow held behind the headline, a dot grid and a ring of the map's marks. */
+  --gateway-closing-glow: color-mix(in srgb, var(--map-indigo) 34%, transparent);
+  --gateway-grid-dot: color-mix(in srgb, var(--color-text-primary) 9%, transparent);
+  --gateway-constellation-line: color-mix(in srgb, var(--color-text-primary) 11%, transparent);
+  --gateway-constellation-node: color-mix(in srgb, var(--color-text-primary) 40%, transparent);
 
   /*
    * Origin = max(gutter, (viewport - `--page-max`) / 2): the single x every gateway element and the

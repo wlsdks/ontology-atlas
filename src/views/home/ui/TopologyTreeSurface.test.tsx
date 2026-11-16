@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
 import type { OntologyMapNode } from "@/widgets/ontology-map";
 import en from "../../../../messages/en.json";
-import type { MapEvidence } from "../model/map-canvas/use-map-evidence-states";
+import type { MapEvidence } from "@/features/vault-ontology";
 import { TopologyTreeSurface } from "./TopologyTreeSurface";
 
 const evidence = vi.hoisted(() => ({ current: null as MapEvidence | null }));
@@ -13,7 +13,8 @@ const evidence = vi.hoisted(() => ({ current: null as MapEvidence | null }));
 vi.mock("@/widgets/ontology-map", () => ({
   OntologyTreeMap: ({ legend }: { legend: (state: { focused: boolean }) => ReactNode }) => <>{legend({ focused: false })}</>,
 }));
-vi.mock("../model/map-canvas/use-map-evidence-states", () => ({
+vi.mock("@/features/vault-ontology", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/vault-ontology")>()),
   useMapEvidenceStates: () => evidence.current,
 }));
 
@@ -43,7 +44,7 @@ function renderSurface() {
 
 describe("the tree's legend", () => {
   it("has no stale item when evidence was not measured, and the quiet line names why", () => {
-    evidence.current = { availability: "app-only", states: new Map([["capability:a", "stale"]]), movedPaths: new Map() };
+    evidence.current = { availability: "app-only", states: new Map([["capability:a", "stale"]]), movedPaths: new Map(), stalePaths: new Map() };
     renderSurface();
     expect(screen.queryByTestId("tree-map-legend-stale")).toBeNull();
     expect(screen.getByTestId("tree-map-evidence-note").textContent).toBe(en.mapTree.evidenceAppOnly);
@@ -54,6 +55,7 @@ describe("the tree's legend", () => {
       availability: "measured",
       states: new Map([["capability:a", "stale"], ["element:b", "stale"], ["element:c", "current"]]),
       movedPaths: new Map(),
+      stalePaths: new Map(),
     };
     renderSurface();
     expect(screen.getByTestId("tree-map-legend-stale").textContent).toBe("2 stale");

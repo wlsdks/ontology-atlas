@@ -1,311 +1,39 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ReactNode } from "react";
+import {
+  BASE_EDGES,
+  BASE_NODES,
+  SLUG,
+  baseProject,
+  constructionEnvelope,
+  containsEdge,
+  mocks,
+  ontologyNode,
+  openMoreMenu,
+  projectDoc,
+  renderPage,
+  resetProjectDetailMocks,
+} from "../../../../tests/helpers/project-detail-page-harness";
 import { NextIntlClientProvider } from "next-intl";
-
 import { LocalVaultProvider } from "@/entities/vault-session";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
-
-// Mocking both router and search params breaks the replace → re-render loop, so it is reconnected here.
-const nav = vi.hoisted(() => ({ search: "", version: 0 }));
-
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(nav.search),
-}));
-
-vi.mock("@/i18n/navigation", () => ({
-  Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
-    <a href={href} {...props}>
-      {children}
-    </a>
-  ),
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: (href: string) => {
-      nav.search = href.startsWith("?") ? href.slice(1) : "";
-      nav.version += 1;
-    },
-  }),
-}));
-
-vi.mock("@/features/taxonomy", () => ({
-  useTaxonomy: () => ({
-    categoryLabel: (id?: string) => id ?? "—",
-    statusLabel: (id?: string) => id ?? "—",
-    categories: [],
-    statuses: [],
-  }),
-}));
-
-vi.mock("@/widgets/search-palette", () => ({
-  SearchPalette: () => null,
-}));
-vi.mock("@/features/construction-review-local", () => ({
-  useConstructionReviewSession: () => mocks.constructionReview,
-}));
-// The real hook reaches the desktop bridge.
-vi.mock("../lib/use-project-agent", () => ({
-  useProjectAgent: () => mocks.agent,
-}));
-vi.mock("./parts/ProjectAgentDock", () => ({
-  ProjectAgentDock: ({ open, openingRequest }: { open: boolean; openingRequest: { text: string } | null }) => (
-    <div data-testid="project-agent-dock-frame" data-dock-state={open ? "open" : "empty"}>
-      {openingRequest?.text}
-    </div>
-  ),
-}));
-// Only an installed-app handle carries the native `rootPath` the dock needs.
-vi.mock("@/entities/vault-session", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/entities/vault-session")>();
-  return {
-    ...actual,
-    useLocalVault: () => {
-      const vault = actual.useLocalVault();
-      return mocks.handle ? { ...vault, handle: mocks.handle as unknown as FileSystemDirectoryHandle } : vault;
-    },
-  };
-});
-function ontologyNode(
-  id: string,
-  kind: string,
-  projectIds: string[] = [],
-  title?: string,
-) {
-  return {
-    id,
-    title: title ?? id,
-    kind,
-    projectIds,
-    evidenceIds: [],
-    lastApprovedAt: new Date(0),
-    lastApprovedBy: "test",
-  };
-}
-
-function containsEdge(from: string, to: string) {
-  return {
-    id: `${from}--contains-->${to}`,
-    from,
-    to,
-    type: "contains",
-    projectIds: [],
-    evidenceIds: [],
-    lastApprovedAt: new Date(0),
-    lastApprovedBy: "test",
-  };
-}
-
-const SLUG = "ontology-atlas";
-const PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
-const SOURCE_DIGEST = `sha256:${"b".repeat(64)}`;
-
-function constructionEnvelope(overrides: {
-  projectSlug?: string;
-  sourceDigest?: string;
-  writePlan?: unknown;
-} = {}) {
-  const plan = {
-    concepts: [{ slug: SLUG }],
-    relations: [{ from: SLUG, type: "domains", to: "shared-meaning" }],
-    competencyAnswers: { scope: "answered" },
-  };
-  const projectSlug = overrides.projectSlug ?? SLUG;
-  const sourceDigest = overrides.sourceDigest ?? SOURCE_DIGEST;
-  return {
-    qualification: {
-      contract: "constructionQualification:v1",
-      subject: { projectSlug, graphDigest: PLAN_DIGEST, sourceDigest: SOURCE_DIGEST },
-      purposeAuthority: { outcome: "People and agents judge the same local meaning." },
-      competencyQuestions: [], witnesses: [], cqResults: [], claims: [], citationChecks: [],
-      axisResults: [], diagnostics: [],
-      acceptance: { decision: "accepted", decidedBy: "jinan", authority: "human", planDigest: PLAN_DIGEST },
-    },
-    analysis: {
-      project: { slug: projectSlug },
-      proposalValidation: {
-        reviewPlan: plan,
-        writePlan: overrides.writePlan === undefined ? structuredClone(plan) : overrides.writePlan,
-        findings: [],
-        constructionLifecycle: {
-          contract: "ontologyConstructionLifecycle:v1",
-          qualificationStatus: "qualified",
-          writeEligibility: "executable",
-          planDigest: PLAN_DIGEST,
-          sourceDigest,
-          firstBlockingPhase: null,
-          diagnostics: [],
-          nextAction: "Write the exact approved rows.",
-        },
-      },
-    },
-  };
-}
-
-const BASE_NODES = [
-  ontologyNode(`project:${SLUG}`, "project", [], "ontology-atlas"),
-  ontologyNode("domain:views", "domain", [SLUG], "Views"),
-  ontologyNode("capability:mcp-server", "capability", [SLUG], "MCP Server"),
-  ontologyNode("element:cli", "element", [SLUG], "CLI"),
-  ontologyNode("element:cli-2", "element", [SLUG], "CLI 2"),
-  ontologyNode("document:readme", "document", [SLUG], "README"),
-];
-
-const BASE_EDGES = [
-  containsEdge("domain:views", "capability:mcp-server"),
-  containsEdge("domain:views", "element:cli"),
-  containsEdge("capability:mcp-server", "element:cli-2"),
-];
-
-const mocks = vi.hoisted(() => ({
-  insightNodes: [] as unknown[],
-  insightEdges: [] as unknown[],
-  canEdit: false,
-  vaultBody: null as string | null,
-  projects: [] as ReturnType<typeof baseProject>[],
-  projectsMode: "static" as "static" | "local",
-  vaultDocs: [] as unknown[],
-  vaultManifest: null as { docs: unknown[]; sources: unknown[] } | null,
-  handle: null as { rootPath: string } | null,
-  agent: {
-    route: "unavailable",
-    runtime: null,
-    runtimes: [],
-    runtimeId: null,
-    setRuntimeId: vi.fn(),
-    mcpServers: [],
-    open: false,
-    setOpen: vi.fn(),
-    openingRequest: null,
-    start: vi.fn(),
-  } as Record<string, unknown>,
-  constructionReview: {
-    status: "idle",
-    review: null,
-    errorState: null,
-    openPicker: vi.fn(),
-    readFile: vi.fn(),
-    inputProps: {},
-  } as Record<string, unknown>,
-}));
-
-vi.mock("@/features/vault-ontology", () => ({
-  useOntologyInsight: () => ({
-    insight: { nodes: mocks.insightNodes, edges: mocks.insightEdges },
-    error: null,
-  }),
-}));
-
-vi.mock("@/features/project-data-source", () => ({
-  useProjects: () => ({
-    projects: mocks.projects,
-    loaded: true,
-    error: null,
-    mode: mocks.projectsMode,
-  }),
-  useProjectMutations: () => ({
-    canCreate: false,
-    canEdit: mocks.canEdit,
-    canDelete: false,
-    mode: "static",
-    updateProject: vi.fn(),
-    patchProject: vi.fn(),
-  }),
-  useProjectBody: () => ({ body: mocks.vaultBody }),
-  useVaultDocs: () => mocks.vaultDocs,
-  useVaultManifest: () => mocks.vaultManifest,
-}));
-
-function projectDoc(slug: string, projectSlug: string) {
-  return {
-    slug,
-    path: `docs/ontology/${slug}.md`,
-    title: projectSlug,
-    tags: [],
-    frontmatter: { kind: "project", slug: projectSlug },
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
-    updatedAt: "2026-01-02T00:00:00.000Z",
-    linksOut: [],
-  };
-}
-
-function baseProject() {
-  return {
-    slug: SLUG,
-    name: "ontology-atlas",
-    description: "A local-first ontology workbench",
-    tags: [],
-    stack: [],
-    links: [],
-    dependencies: [] as string[],
-    screenshots: [],
-    createdAt: new Date("2026-01-01T00:00:00.000Z"),
-    updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-  };
-}
-
-/** The one render harness: hand-written copies missed a new provider. */
-function renderPage(
-  overrides: {
-    related?: ReturnType<typeof baseProject>[];
-    project?: Partial<React.ComponentProps<typeof ProjectDetailPage>["initialProject"]>;
-  } = {},
-) {
-  const project = { ...baseProject(), ...overrides.project };
-  // The static source lists the project too, or the page settles to not-found after a press.
-  if (mocks.projectsMode === "static" && mocks.projects.length === 0) {
-    mocks.projects = [project as ReturnType<typeof baseProject>, ...(overrides.related ?? [])];
-  }
-  return render(
-    // The read-only line's folder door reads vault context.
-    <NextIntlClientProvider locale="en" messages={enMessages}>
-      <LocalVaultProvider>
-      <ProjectDetailPage
-        slug={SLUG}
-        initialProject={project}
-        initialRelated={overrides.related ?? []}
-      />
-      </LocalVaultProvider>
-    </NextIntlClientProvider>,
-  );
-}
-
-function openMoreMenu() {
-  fireEvent.click(screen.getByTestId("project-detail-more"));
-  return screen.getByTestId("project-detail-more-menu");
-}
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("ProjectDetailPage", () => {
-  beforeEach(() => {
-    nav.search = "";
-    mocks.vaultBody = null;
+  beforeEach(resetProjectDetailMocks);
+
+  it("reads no evidence for a slug that names no project", () => {
+    mocks.projectsMode = "local";
     mocks.projects = [];
-    mocks.projectsMode = "static";
-    mocks.vaultDocs = [];
-    mocks.vaultManifest = null;
-    mocks.handle = null;
-    mocks.agent = {
-      route: "unavailable",
-      runtime: null,
-      runtimes: [],
-      runtimeId: null,
-      setRuntimeId: vi.fn(),
-      mcpServers: [],
-      open: false,
-      setOpen: vi.fn(),
-      openingRequest: null,
-      start: vi.fn(),
-    };
-    mocks.constructionReview = {
-      status: "idle",
-      review: null,
-      errorState: null,
-      openPicker: vi.fn(),
-      readFile: vi.fn(),
-      inputProps: {},
-    };
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <LocalVaultProvider>
+          <ProjectDetailPage slug="missing" />
+        </LocalVaultProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("project-detail-identity")).not.toBeInTheDocument();
+    expect(mocks.evidenceReads).toBe(0);
   });
 
   it("clears the same slug's static initial fact once the local source settles", async () => {

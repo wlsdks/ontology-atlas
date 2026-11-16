@@ -6,15 +6,15 @@
   "webCta": "Try it in the browser, no install",
   "windowsDownloadCta": "Download Windows x64 beta",
   "factMinOsSuffix": " or later",
-  "trustLine": "Signed and notarized by Apple · no Atlas backend",
-  "trustLineWindows": "Unsigned beta · SmartScreen may warn · no Atlas backend",
+  "trustLine": "Free · No sign-up · Checked by Apple for malware",
+  "trustLineWindows": "Free · No sign-up · Unsigned beta: SmartScreen may warn",
   "heroWindowsCta": "Windows x64 beta",
-  "heroPlaygroundCta": "Playground",
+  "heroPlaygroundCta": "Try it in the browser",
   "windowsUnsignedShort": "unsigned",
   "demoHeading": "The app, recorded on this repository's folder",
   "demoPlay": "Play",
-  "heroTitleLine1": "Agents write the code.",
-  "heroTitleLine2": "You read the map.",
+  "heroTitleLine1": "AI changes the code.",
+  "heroTitleLine2": "See it on one map.",
   "heroLead": "Ontology Atlas is an open-source app that keeps what your code builds, and why, as Markdown in your repository. Claude Code and Codex read the same folder over MCP, and after a commit the map marks the concepts to recheck.",
   "factUnpublished": "not published yet",
   "factVersionLabel": "Version",
@@ -119,5 +119,101 @@
     "issues": "Issues",
     "releases": "Releases"
   },
-  "closingTitle": "Ready to open your own folder?"
+  "closingTitle": "Ready to open your own folder?",
+  "news": "{tag} is out · What changed",
+  "numbers": {
+    "label": "By the numbers",
+    "tools": {
+      "label": "MCP tools",
+      "body": "An agent calls them to read the map and propose a change."
+    },
+    "concepts": {
+      "label": "concepts",
+      "body": "Atlas maps its own code too, in this repository's docs/ontology/."
+    },
+    "relations": {
+      "label": "relations",
+      "body": "Between those concepts, written as names in the info block at the top of each file."
+    }
+  },
+  "film": {
+    "label": "How Markdown becomes the map",
+    "acts": {
+      "1": {
+        "title": "Your ontology is plain Markdown",
+        "body": "Each concept is one .md file in the repository, read by people and agents alike."
+      },
+      "2": {
+        "title": "The first lines are the graph",
+        "body": "domain says where a concept belongs, kind what it is, dependencies what it relies on. Those lines become the map's points and lines."
+      },
+      "3": {
+        "title": "Each file finds its place",
+        "body": "Every concept settles beside the concept that holds it."
+      },
+      "4": {
+        "title": "Relations draw themselves",
+        "body": "The {relations} relations written in those files become the lines between them."
+      },
+      "5": {
+        "title": "One map, read by you and your agents",
+        "body": "This is this repository's real map: {concepts} concepts and {relations} relations."
+      }
+    }
+  },
+  "harnessFilm": {
+    "label": "The harness at a glance",
+    "acts": {
+      "1": {
+        "title": "What your agent reads first",
+        "body": "AGENTS.md, CLAUDE.md and rule files: everything an agent reads before a task, on one screen."
+      },
+      "2": {
+        "title": "What stops it before it acts",
+        "body": "Hooks block irreversible commands before they run. See which hook stops what."
+      },
+      "3": {
+        "title": "What checks its work",
+        "body": "Type checks, lint and tests: what verifies the work once the agent is done."
+      },
+      "4": {
+        "title": "This repository's real harness",
+        "body": "{instructions} instruction files, {hooks} hooks, {checks} checks."
+      }
+    }
+  },
+  "motion": {
+    "pause": "Pause motion",
+    "play": "Play motion"
+  },
+  "faq": {
+    "eyebrow": "Questions",
+    "title": "What people ask before installing",
+    "items": {
+      "what": {
+        "q": "What is Ontology Atlas?",
+        "a": "An open-source app that keeps a map of what your code does and why, as Markdown files in your repository. You and your coding agents read the same map."
+      },
+      "agents": {
+        "q": "Which coding agents work with it?",
+        "a": "Claude Code, Codex, Cursor and Antigravity read the map over MCP. In the desktop app, Claude Code and Codex connect with one button each."
+      },
+      "privacy": {
+        "q": "Does my code leave my computer?",
+        "a": "Atlas has no account and no backend of its own. The map is read and written in a folder on your computer. A coding agent you connect talks to its own provider, as it already does."
+      },
+      "price": {
+        "q": "Is it free?",
+        "a": "Yes. It is MIT licensed: use it at work, fork it, or build it from source."
+      },
+      "difference": {
+        "q": "How is it different from a code graph or a code search index?",
+        "a": "Those are computed from the code. Atlas records what the code is for and why, which the code alone cannot say, and you review every change to that record as a Markdown diff. A line on the map is a declared relationship, not proof of runtime impact."
+      },
+      "platforms": {
+        "q": "What does it run on?",
+        "a": "macOS on Apple Silicon, notarized (Apple scanned it for malware), and a Windows x64 beta. The map also opens in the browser without installing anything."
+      }
+    }
+  }
 }

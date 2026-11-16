@@ -17,7 +17,8 @@ import styles from './moru-emote.module.css';
 /** Decorative company on entry/download screens, never evidence of work or progress. */
 export type CompanionLabels = { pause: string; resume: string; still: string; interact: string };
 
-export function BrandCompanion({ labels, context = 'folder' }: { labels: CompanionLabels; context?: CompanionContext }) {
+/** `stilled` holds Moru still from outside, as the download page's pause does for all its motion. */
+export function BrandCompanion({ labels, context = 'folder', stilled = false }: { labels: CompanionLabels; context?: CompanionContext; stilled?: boolean }) {
   const ref = useRef<HTMLImageElement>(null);
   const reactionRef = useRef<HTMLImageElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -37,13 +38,13 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
-  const intent = useRef({ paused, held: false });
+  const intent = useRef({ paused: paused || stilled, held: false });
   const playback = useRef<ReturnType<typeof companionPlayer> | null>(null);
 
   useEffect(() => {
-    intent.current = { paused, held: hovered || focused || menuOpen };
+    intent.current = { paused: paused || stilled, held: hovered || focused || menuOpen };
     playback.current?.update();
-  }, [paused, hovered, focused, menuOpen]);
+  }, [paused, stilled, hovered, focused, menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -87,7 +88,7 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
         }
       }}
       data-moru-companion=""
-      data-moru-paused={reducedMotion || paused}
+      data-moru-paused={reducedMotion || paused || stilled}
     >
       <span ref={facing} className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Preserve native 128px cells, including jump headroom, instead of enlarging

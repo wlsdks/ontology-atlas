@@ -6,15 +6,15 @@
   "webCta": "설치 없이 브라우저에서 써보기",
   "windowsDownloadCta": "Windows x64 베타 받기",
   "factMinOsSuffix": " 이상",
-  "trustLine": "Apple 서명·공증 완료 · Atlas 백엔드 없음",
-  "trustLineWindows": "미서명 베타 · SmartScreen 경고 가능 · Atlas 백엔드 없음",
+  "trustLine": "무료 · 가입 없이 바로 · Apple 악성코드 검사 완료",
+  "trustLineWindows": "무료 · 가입 없이 바로 · 미서명 베타라 SmartScreen 경고가 뜰 수 있어요",
   "heroWindowsCta": "Windows x64 베타",
-  "heroPlaygroundCta": "플레이그라운드",
+  "heroPlaygroundCta": "브라우저에서 써보기",
   "windowsUnsignedShort": "미서명",
   "demoHeading": "이 저장소의 폴더를 연 앱을 녹화한 영상",
   "demoPlay": "재생",
-  "heroTitleLine1": "코드는 에이전트가 쓰고,",
-  "heroTitleLine2": "나는 지도로 읽어요.",
+  "heroTitleLine1": "AI가 바꾼 코드,",
+  "heroTitleLine2": "지도로 한눈에.",
   "heroLead": "Ontology Atlas는 코드가 무엇을 만들고 왜 그렇게 짜였는지를 저장소 안의 마크다운으로 남기는 오픈소스 앱이에요. Claude Code와 Codex가 MCP로 같은 폴더를 읽고, 커밋 뒤에는 다시 확인할 개념이 지도에 표시돼요.",
   "factUnpublished": "아직 게시 전",
   "factVersionLabel": "버전",
@@ -119,5 +119,101 @@
     "issues": "이슈",
     "releases": "릴리스"
   },
-  "closingTitle": "내 폴더로 시작해 볼까요?"
+  "closingTitle": "내 폴더로 시작해 볼까요?",
+  "news": "{tag} 출시 · 바뀐 것 보기",
+  "numbers": {
+    "label": "숫자로 보면",
+    "tools": {
+      "label": "MCP 도구",
+      "body": "에이전트가 지도를 읽고 변경을 제안할 때 불러요."
+    },
+    "concepts": {
+      "label": "개념",
+      "body": "Atlas는 자기 코드도 이 저장소의 docs/ontology/에 지도로 남겨요."
+    },
+    "relations": {
+      "label": "관계",
+      "body": "그 개념 사이의 관계예요. 각 파일 맨 위 정보칸에 이름으로 적혀 있어요."
+    }
+  },
+  "film": {
+    "label": "마크다운이 지도가 되는 과정",
+    "acts": {
+      "1": {
+        "title": "온톨로지는 그냥 마크다운 파일이에요",
+        "body": "개념 하나가 저장소 안의 .md 파일 하나예요. 사람도 에이전트도 같은 파일을 읽어요."
+      },
+      "2": {
+        "title": "맨 위 몇 줄이 곧 그래프예요",
+        "body": "파일 맨 위 몇 줄에 개념이 속한 영역과 종류, 이 개념이 쓰는 다른 개념이 적혀 있어요. 이 몇 줄이 그대로 지도의 점과 선이 돼요."
+      },
+      "3": {
+        "title": "파일마다 제자리를 찾아요",
+        "body": "개념마다 자신을 품은 개념 곁에 자리를 잡아요."
+      },
+      "4": {
+        "title": "관계가 스스로 선을 그어요",
+        "body": "파일에 적힌 관계 {relations}개가 그대로 개념 사이의 선이 돼요."
+      },
+      "5": {
+        "title": "나와 에이전트가 같은 지도를 읽어요",
+        "body": "이 저장소의 실제 지도예요. 개념 {concepts}개, 관계 {relations}개."
+      }
+    }
+  },
+  "harnessFilm": {
+    "label": "하네스를 한눈에",
+    "acts": {
+      "1": {
+        "title": "에이전트가 먼저 읽는 지침",
+        "body": "AGENTS.md, CLAUDE.md, 규칙 파일. 에이전트가 작업 전에 읽는 파일을 한 화면에 모아요."
+      },
+      "2": {
+        "title": "실행 전에 막는 훅",
+        "body": "되돌릴 수 없는 명령은 실행 전에 훅이 막아요. 어떤 훅이 무엇을 막는지 보여 줘요."
+      },
+      "3": {
+        "title": "작업 뒤에 도는 검사",
+        "body": "타입 검사, 린트, 테스트. 에이전트가 끝낸 일을 무엇이 확인하는지 보여 줘요."
+      },
+      "4": {
+        "title": "이 저장소의 실제 하네스예요",
+        "body": "지침 파일 {instructions}개, 훅 {hooks}개, 검사 {checks}개."
+      }
+    }
+  },
+  "motion": {
+    "pause": "움직임 멈추기",
+    "play": "움직임 다시 켜기"
+  },
+  "faq": {
+    "eyebrow": "자주 묻는 질문",
+    "title": "설치하기 전에 많이 묻는 것",
+    "items": {
+      "what": {
+        "q": "Ontology Atlas는 무엇인가요?",
+        "a": "코드가 무엇을 하고 왜 그렇게 짜였는지를 저장소 안의 마크다운 파일로 남기는 오픈소스 앱이에요. 나와 코딩 에이전트가 같은 지도를 읽어요."
+      },
+      "agents": {
+        "q": "어떤 코딩 에이전트와 함께 쓸 수 있나요?",
+        "a": "Claude Code, Codex, Cursor, Antigravity가 MCP로 지도를 읽어요. 데스크톱 앱에서는 Claude Code와 Codex를 버튼 하나로 연결해요."
+      },
+      "privacy": {
+        "q": "내 코드가 밖으로 나가나요?",
+        "a": "Atlas에는 계정도, Atlas가 운영하는 백엔드도 없어요. 지도는 내 컴퓨터의 폴더에서 읽고 써요. 연결한 코딩 에이전트는 원래 하던 대로 자기 제공자와 통신해요."
+      },
+      "price": {
+        "q": "무료인가요?",
+        "a": "네. MIT 라이선스라 회사에서 써도, 포크해서 고쳐도, 소스에서 직접 빌드해도 돼요."
+      },
+      "difference": {
+        "q": "코드 그래프나 코드 검색 도구와 무엇이 다른가요?",
+        "a": "그런 도구는 코드에서 계산해 낸 것을 보여 줘요. Atlas는 코드만으로는 알 수 없는 목적과 이유를 적어 두고, 그 기록이 바뀔 때마다 마크다운 변경으로 하나씩 검토해요. 지도의 선은 적어 둔 관계이지, 실행 중에 영향을 준다는 증거는 아니에요."
+      },
+      "platforms": {
+        "q": "어디에서 실행되나요?",
+        "a": "Apple Silicon Mac의 macOS에서 실행되고 Apple의 악성코드 검사를 거쳤어요. Windows x64는 베타예요. 지도는 아무것도 설치하지 않고 브라우저에서도 열려요."
+      }
+    }
+  }
 }

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { hardenedGitArgv } from './hardened-git.mjs';
+import { gitEnv, hardenedGitArgv } from './hardened-git.mjs';
 
 import { detachText } from '../parser.mjs';
 import { CONTAINMENT_KEYS, revisionClocks } from './stale-parent.mjs';
@@ -245,6 +245,7 @@ function snapshotBlockedReasons(status) {
 function git(cwd, args, { allowFailure = false } = {}) {
   const result = spawnSync('git', hardenedGitArgv(cwd, args), {
     encoding: 'utf8',
+    env: gitEnv(),
     maxBuffer: MAX_GIT_OUTPUT,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -275,6 +276,7 @@ function gitBatchBlobChunk(cwd, objectSpecs) {
   if (objectSpecs.some((spec) => /[\r\n]/.test(spec))) return null;
   const result = spawnSync('git', hardenedGitArgv(cwd, ['cat-file', '--batch']), {
     encoding: null,
+    env: gitEnv(),
     input: Buffer.from(`${objectSpecs.join('\n')}\n`, 'utf8'),
     maxBuffer: MAX_GIT_BATCH_OUTPUT,
     stdio: ['pipe', 'pipe', 'pipe'],
