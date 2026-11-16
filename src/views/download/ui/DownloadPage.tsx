@@ -35,6 +35,8 @@ import { LoopSection, StartSection } from './LoopSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
 import { SectionIntro } from './SectionIntro';
+import { ClosingConstellation } from './ClosingConstellation';
+import { useInViewMotion } from '../lib/use-in-view-motion';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 
 /**
@@ -438,6 +440,7 @@ function ClosingSection({
   fileWins: boolean;
 }) {
   const t = useTranslations('download');
+  const [stage, closingMotion] = useInViewMotion();
   return (
     <section
       data-testid="gateway-closing"
@@ -445,11 +448,16 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <div className="gateway-closing-stage @container flex min-w-0 flex-col items-center px-6 py-16 text-center sm:py-20">
+        <div
+          ref={stage}
+          data-gateway-closing-motion={closingMotion}
+          className="gateway-closing-stage @container flex min-w-0 flex-col items-center px-6 py-20 text-center sm:py-28"
+        >
           <div aria-hidden className="gateway-closing-light" />
+          <ClosingConstellation />
           <h2
             id="gateway-closing-title"
-            className="max-w-full [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+            className="relative max-w-full [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
           >
             {t('closingTitle')}
           </h2>
