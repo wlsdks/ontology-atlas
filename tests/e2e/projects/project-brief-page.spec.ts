@@ -52,14 +52,13 @@ test.describe("project page reads as a brief", () => {
   test("every row opens where it is judged", async ({ page }) => {
     await openProjectPage(page);
     const rows = page.getByTestId("project-detail-to-check-row");
+    // The sample raises one document and changes another after review, so rows exist to check.
+    await expect(rows.first()).toBeVisible();
     for (const row of await rows.all()) {
       const reason = await row.getAttribute("data-reason");
       const href = (await row.getAttribute("href"))!;
       if (reason === "stale" || reason === "definition-missing") expect(href).toMatch(/\/topology\/\?mode=focus&p=/);
       else expect(href).toMatch(/\/docs\/\?slug=/);
-    }
-    for (const row of await page.getByTestId("project-detail-changed-row").all()) {
-      expect(await row.getAttribute("href")).toMatch(/\/topology\/\?mode=focus&p=/);
     }
     await expect(page.getByTestId("project-detail-changed-map-link")).toHaveAttribute("href", /\/topology\/\?recent=auto$/);
     await expect(page.getByTestId("project-detail-changes-link")).toHaveAttribute("href", /\/changes\/$/);

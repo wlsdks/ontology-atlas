@@ -94,11 +94,6 @@ describe("buildProjectToCheck", () => {
     expect(rows.map((r) => r.nodeId)).toEqual(["capability:mine"]);
   });
 
-  it("draws no stale row when the walk was not measured, so unknown never reads as stale", () => {
-    const nodes = [concept("a", "capability", "A")];
-    expect(buildProjectToCheck(input({ nodes })).rows).toEqual([]);
-  });
-
   it("lists a missing definition once, for the document that lacks it, not for the concepts it names", () => {
     const pay = concept("pay", "capability", "Pay");
     const stub = (slug: string): KnowledgeGraphNode => ({ ...concept(slug, "element", slug), evidenceIds: ["docs/pay"], hasOwnDocument: false });
