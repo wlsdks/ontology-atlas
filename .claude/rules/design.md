@@ -191,8 +191,9 @@ names the ones a change reaches.
   rest; ambient and infinite motion pauses when hidden or offscreen, except
   loops that show running work, which the `infinite-motion` contract lists and
   which stop with the work. Ambient, decorative and character motion (Moru,
-  `docs/design/brand.md`) has no time limit: it loops while visible, and
-  reduced motion stops it; the map's canvas ambience sleeps 30 s after the
+  `docs/design/brand.md`) has no time limit: it loops while visible; a page
+  of such loops offers one visible pause for all of them (WCAG 2.2.2), and
+  reduced motion stops them; the map's canvas ambience sleeps 30 s after the
   last input. The download page is a showcase: its effects and motion
   graphics need no fact behind them.
 - A primitive owns an `app/styles/motion-*.css` part or a `src/shared/motion`

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
 import { controlClass } from '@/shared/ui/control-class';
+import { useMotionPaused } from '../lib/motion-pause';
 
 /**
  * Playback contract: one per-locale clip, muted, no captions. Reduced motion keeps the poster and
@@ -41,6 +42,7 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [started, setStarted] = useState(false);
   const reduced = usePrefersReducedMotion();
+  const stopped = useMotionPaused();
 
   const play = useCallback(() => {
     // jsdom and older browsers return no Promise from `play()`.
@@ -56,7 +58,11 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
    */
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || reduced || typeof IntersectionObserver === 'undefined') return;
+    if (!video || typeof IntersectionObserver === 'undefined') return;
+    if (reduced || stopped) {
+      video.pause?.();
+      return;
+    }
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -69,7 +75,7 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
     );
     io.observe(video);
     return () => io.disconnect();
-  }, [reduced, locale]);
+  }, [reduced, stopped, locale]);
 
   return (
     <div
