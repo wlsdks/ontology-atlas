@@ -18,7 +18,7 @@ import { DAMPED, dampedStep, FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelay
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
-import { domainStarRooms, openRadiusPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
+import { domainStarRooms, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -366,6 +366,8 @@ interface FrameState {
   stars: OpenStarSlot[];
   starCount: number;
   starNow: boolean;
+  /** The rooms of the star the reader left while its marks still shrink, else null. */
+  closingRooms: ReadonlyMap<string, StarRoom> | null;
   lineKinds: number;
 }
 /**
@@ -384,7 +386,7 @@ const MARK_STEP_MAX_MS = 34;
 const MARK_REST_PX = 0.02;
 const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
 const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domain: false, fixedPx: 0 });
-const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false } as FrameState;
+const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null } as FrameState;
 
 /**
  * A domain's hue. The map rests achromatic, so every mark takes the neutral ink until attention
@@ -502,7 +504,7 @@ function radiusNow(id: string): number {
  * was off screen, or the map slept) and reduced motion take the target at once. Settled once per
  * mark and frame.
  */
-function drawnRadius(id: string, target: number): number {
+function drawnRadius(id: string, target: number, limit = Infinity): number {
   let last = F.drawn.get(id);
   if (!last) {
     F.drawn.set(id, (last = { r: target, perMs: 0, at: F.now, frame: F.frame }));
@@ -518,6 +520,11 @@ function drawnRadius(id: string, target: number): number {
     perMs = DAMPED.perMs;
     F.lagging = true;
   }
+  // However its speed carried it, a mark never passes the room it has at this frame's zoom.
+  if (r > limit) {
+    r = limit;
+    perMs = Math.min(perMs, 0);
+  }
   if (last.r !== r) last.r = r;
   last.perMs = perMs;
   last.at = F.now;
@@ -528,7 +535,21 @@ function drawnRadius(id: string, target: number): number {
 /** The drawn radius: the selected concept's toward the selected radius, an opened star's marks toward the room they have at this frame's zoom. */
 function discRadius(id: string): number {
   const own = radiusNow(id);
-  return noteGrown(id, own, drawnRadius(id, id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : openedRadius(id, own)));
+  if (id === F.selectedId || id === F.leavingId) return noteGrown(id, own, drawnRadius(id, id === F.selectedId ? F.selectedR : F.leavingR));
+  return noteGrown(id, own, drawnRadius(id, openedRadius(id, own), roomLimit(id, own)));
+}
+
+/** The largest radius `id` may draw at this frame's zoom in every star that holds it, open or closing. O(stars). */
+function roomLimit(id: string, own: number): number {
+  let limit = Infinity;
+  for (let i = 0; i < F.starCount; i += 1) {
+    const star = F.stars[i]!;
+    const room = star.rooms.get(id);
+    if (room !== undefined) limit = Math.min(limit, roomLimitPx(own, room, star.world ? F.scale : 1, star.fixedPx, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+  }
+  const closing = F.closingRooms?.get(id);
+  if (closing !== undefined) limit = Math.min(limit, roomLimitPx(own, closing, F.scale, graphDiscRadiusPx("domain", 0, F.P, F.growth), closing.nearestId === null ? 0 : radiusNow(closing.nearestId)));
+  return limit;
 }
 
 /** Marks drawn past their resting radius this frame: the only marks a name gives way to. */
@@ -555,7 +576,7 @@ function openedRadius(id: string, own: number): number {
 function dotRadius(id: string): number {
   if (id === F.selectedId || id === F.leavingId) return discRadius(id);
   const rest = radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
-  return noteGrown(id, rest, drawnRadius(id, openedRadius(id, rest)));
+  return noteGrown(id, rest, drawnRadius(id, openedRadius(id, rest), roomLimit(id, rest)));
 }
 
 function setStar(rooms: ReadonlyMap<string, StarRoom>, world: boolean, domain: boolean, fixedPx: number): void {
@@ -623,6 +644,8 @@ function setCapabilityStar(capabilityId: string): void {
 }
 
 let openDomainId: string | null = null;
+/** A domain whose star the reader left while its marks still shrink: they keep within its rooms. */
+let closingDomainId: string | null = null;
 
 /** The domain whose star the last Flat frame drew open, or still drew closing; null when it drew none. */
 export function lastOpenedDomainStar(): string | null {
@@ -637,10 +660,14 @@ function planOpenStars(focused: string | null): void {
   const { model, P, layout } = F;
   F.starCount = 0;
   F.starNow = false;
-  if (focused !== null && model.domainById.has(focused)) {
-    setStar(domainStarRooms(model, layout, focused, P), true, true, graphDiscRadiusPx("domain", 0, P, F.growth));
+  const focusedDomain = focused !== null && model.domainById.has(focused) ? focused : null;
+  if (openDomainId !== null && openDomainId !== focusedDomain) closingDomainId = openDomainId;
+  if (closingDomainId === focusedDomain) closingDomainId = null;
+  F.closingRooms = closingDomainId === null ? null : domainStarRooms(model, layout, closingDomainId, P);
+  if (focusedDomain !== null) {
+    setStar(domainStarRooms(model, layout, focusedDomain, P), true, true, graphDiscRadiusPx("domain", 0, P, F.growth));
     F.starNow = true;
-    openDomainId = focused;
+    openDomainId = focusedDomain;
   } else if (F.selectedId !== null && model.capabilityById.has(F.selectedId)) {
     setCapabilityStar(F.selectedId);
     F.starNow = true;
@@ -1910,6 +1937,7 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const built = buildPlan(input, tokens, motion);
   // A closing domain star stays the open one until its marks have shrunk, so a member pressed meanwhile keeps its zoom.
   if (!F.lagging && !(input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId))) openDomainId = null;
+  if (!F.lagging) closingDomainId = null;
   const ground = input.mapTokens.canvasBgNear;
   const warning = tokens.inks.warning;
   if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };

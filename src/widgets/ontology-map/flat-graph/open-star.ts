@@ -60,6 +60,14 @@ export function openRadiusPx(ownPx: number, room: StarRoom, scale: number, fixed
   return Math.max(ownPx, Math.min(openMaxPx(room.kind, tokens), tokens.openFill * roomPx));
 }
 
+/**
+ * The largest radius a mark of a star may draw at `scale` without reaching its pair's share, the
+ * fixed disc, or its nearest mark at that mark's own radius; never under its own radius.
+ */
+export function roomLimitPx(ownPx: number, room: StarRoom, scale: number, fixedPx: number, nearestOwnPx: number): number {
+  return Math.max(ownPx, Math.min(room.paired * scale, room.pastFixed * scale - fixedPx, room.nearest * scale - nearestOwnPx));
+}
+
 /** The concepts a selected domain's star opens: its member capabilities, then every element of the domain. */
 export function domainStarIds(model: DialModel, domainId: string): { capabilities: readonly string[]; elements: readonly string[] } {
   const domain = model.domainById.get(domainId);

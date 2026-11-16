@@ -220,6 +220,18 @@ function radiiAt(camera: ReturnType<typeof cameraOn>, zoom: number, over: Partia
   return new Map(describeLastDialFrame(W, H)!.discs.filter((d) => d.id !== null).map((d) => [d.id!, d.r]));
 }
 
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "keeps the opened %s star's marks apart while the reader pinches out from 3.6 to 0.9 in 300 ms",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {});
+    const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 3.6, 3.6, FRAME_MS);
+    const pinched = framesUntilSettled(camera, { focusedNodeId: domainId }, star, opened.end + FRAME_MS, 3.6, 0.9, 300);
+    expect(smoothness(pinched.frames).overlaps.slice(0, 4)).toEqual([]);
+  },
+);
+
 describe("a mark's drawn radius across frames", () => {
   it("takes its radius at once when it comes back on screen, however long it was away", () => {
     const worldKey = {};
