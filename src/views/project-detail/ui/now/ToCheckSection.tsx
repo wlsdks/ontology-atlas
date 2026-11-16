@@ -102,7 +102,7 @@ export function ToCheckSection({
           ))}
         </AnimatePresence>
         {toCheck.visible.length === 0 && availability !== "reading" ? (
-          <li data-testid="project-detail-to-check-empty" className="px-2 py-1.5 break-keep text-pretty text-body leading-body text-[color:var(--color-text-secondary)]">
+          <li data-testid="project-detail-to-check-empty" className="px-2 py-1.5 text-pretty text-body leading-body text-[color:var(--color-text-secondary)]">
             {t("toCheckEmpty")}
           </li>
         ) : null}

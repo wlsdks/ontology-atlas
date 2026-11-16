@@ -84,7 +84,7 @@ export function ChangedSection({
           ))}
         </AnimatePresence>
         {!reading && changed.visible.length === 0 ? (
-          <li data-testid="project-detail-changed-empty" className="px-2 py-2 break-keep text-body text-[color:var(--color-text-secondary)]">
+          <li data-testid="project-detail-changed-empty" className="px-2 py-2 text-body text-[color:var(--color-text-secondary)]">
             {tIndex("recentEmptyHint", { days: windowDays })}
           </li>
         ) : null}
