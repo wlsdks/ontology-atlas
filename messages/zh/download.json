@@ -119,5 +119,21 @@
     "issues": "Issue",
     "releases": "发布版本"
   },
-  "closingTitle": "用你自己的文件夹开始吧"
+  "closingTitle": "用你自己的文件夹开始吧",
+  "news": "{tag} 已发布 · 更新内容",
+  "numbers": {
+    "label": "数字一览",
+    "tools": {
+      "label": "MCP 工具",
+      "body": "智能体读取地图、提出修改时调用。"
+    },
+    "concepts": {
+      "label": "概念",
+      "body": "Atlas 也把自己的代码记录成地图，放在本仓库的 docs/ontology/ 中。"
+    },
+    "relations": {
+      "label": "关系",
+      "body": "这些概念之间的关系，以名称写在每个文件顶部的信息栏中。"
+    }
+  }
 }

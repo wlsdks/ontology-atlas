@@ -119,5 +119,21 @@
     "issues": "Issue",
     "releases": "リリース"
   },
-  "closingTitle": "自分のフォルダで始めてみませんか"
+  "closingTitle": "自分のフォルダで始めてみませんか",
+  "news": "{tag}をリリース · 変更点",
+  "numbers": {
+    "label": "数字で見る",
+    "tools": {
+      "label": "MCPツール",
+      "body": "エージェントがマップを読み、変更を提案するときに呼び出します。"
+    },
+    "concepts": {
+      "label": "概念",
+      "body": "Atlasは自分のコードも、このリポジトリのdocs/ontology/にマップとして残しています。"
+    },
+    "relations": {
+      "label": "関係",
+      "body": "それらの概念の間の関係。各ファイル冒頭の情報欄に名前で書かれています。"
+    }
+  }
 }

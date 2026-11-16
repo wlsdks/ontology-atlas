@@ -33,6 +33,7 @@ import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
 import { OpenSourceSection } from './OpenSourceSection';
+import { ProofNumbers } from './ProofNumbers';
 import { SectionIntro } from './SectionIntro';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 
@@ -50,6 +51,9 @@ const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
  * the icon from the text.
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
+
+const HERO_CHIP =
+  'gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
 
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
@@ -85,6 +89,7 @@ export function DownloadPage() {
           windowsPrimary={windowsPrimary}
           winner={winner}
         />
+        <ProofNumbers graph={graph} />
         <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection />
@@ -205,20 +210,29 @@ function HeroSection({
 
         {/* The container sizes the headline against this column, one line per sentence. */}
         <div className="gateway-hero-text @container relative z-[1] flex min-w-0 flex-col items-center text-center min-[80rem]:items-start min-[80rem]:text-left">
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-            data-testid="gateway-hero-source"
-            className={cn(
-              rise('gateway-t240'),
-              controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }),
-              'gateway-hero-chip gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label',
-            )}
-          >
-            <GithubMark />
-            <span>{t('eyebrow')}</span>
-          </a>
+          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap justify-center gap-2 min-[80rem]:justify-start')}>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              data-testid="gateway-hero-source"
+              className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), HERO_CHIP)}
+            >
+              <GithubMark />
+              <span>{t('eyebrow')}</span>
+            </a>
+            {published ? (
+              <Link
+                href="/changelog"
+                data-testid="gateway-hero-news"
+                className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), HERO_CHIP)}
+              >
+                {/* Static: the release is a fact, not a state that changes while the page is open. */}
+                <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]" />
+                <span>{t('news', { tag: MACOS_RELEASE.tag })}</span>
+              </Link>
+            ) : null}
+          </div>
 
           <h1
             // The visible characters are aria-hidden.
