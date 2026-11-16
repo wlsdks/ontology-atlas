@@ -161,6 +161,27 @@
       }
     }
   },
+  "harnessFilm": {
+    "label": "The harness at a glance",
+    "acts": {
+      "1": {
+        "title": "What your agent reads first",
+        "body": "AGENTS.md, CLAUDE.md and rule files: everything an agent reads before a task, on one screen."
+      },
+      "2": {
+        "title": "What stops it before it acts",
+        "body": "Hooks block irreversible commands before they run. See which hook stops what."
+      },
+      "3": {
+        "title": "What checks its work",
+        "body": "Type checks, lint and tests: what verifies the work once the agent is done."
+      },
+      "4": {
+        "title": "This repository's real harness",
+        "body": "{instructions} instruction files, {hooks} hooks, {checks} checks."
+      }
+    }
+  },
   "motion": {
     "pause": "Pause motion",
     "play": "Play motion"
