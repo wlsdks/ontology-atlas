@@ -14,7 +14,7 @@ import { directItemId } from "./layout";
 import {
   arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
-import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
+import { DAMPED, dampedStep, FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
@@ -371,8 +371,12 @@ interface FrameState {
  */
 /** One opened star: rooms in world units (`world`) or screen px; a domain star's fixed disc is the domain's, grown with the zoom. */
 interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; domain: boolean; fixedPx: number }
-interface DrawnRadius { r: number; at: number; stamp: number }
+interface DrawnRadius { r: number; perMs: number; at: number; stamp: number }
 const drawnRadii = new WeakMap<object, Map<string, DrawnRadius>>();
+/** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
+const MARK_STEP_MAX_MS = 34;
+/** Nearer its target than this a radius takes it: a fiftieth of a pixel is not seen. */
+const MARK_REST_PX = 0.02;
 const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
 const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domain: false, fixedPx: 0 });
 const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false } as FrameState;
@@ -487,21 +491,28 @@ function radiusNow(id: string): number {
 }
 
 /**
- * The radius `id` draws this frame: `target`, approached from what the last frame drew at no more
- * than `markPxPerMs`, so a mark grows, shrinks and retargets without a jump; reduced motion takes
- * the target at once. Settled once per mark and frame.
+ * The radius `id` draws this frame: `target`, approached from the radius and speed the last frame
+ * drew, so a mark grows, shrinks and retargets with no jump in size or in speed. A frame later than
+ * `MARK_STEP_MAX_MS` moves it as that long a frame would; reduced motion takes the target at once.
+ * Settled once per mark and frame.
  */
 function drawnRadius(id: string, target: number): number {
   let last = F.drawn.get(id);
   if (!last) {
-    F.drawn.set(id, (last = { r: target, at: F.now, stamp: F.stamp }));
+    F.drawn.set(id, (last = { r: target, perMs: 0, at: F.now, stamp: F.stamp }));
     return target;
   }
   if (last.stamp === F.stamp) return last.r;
-  const reach = F.P.markPxPerMs * Math.max(0, F.now - last.at);
-  const r = F.reducedMotion ? target : Math.min(last.r + reach, Math.max(last.r - reach, target));
-  if (r !== target) F.lagging = true;
+  const stepMs = Math.min(Math.max(0, F.now - last.at), MARK_STEP_MAX_MS);
+  let r = target;
+  let perMs = 0;
+  if (!F.reducedMotion && Math.abs(target - last.r) > MARK_REST_PX) {
+    r = dampedStep(last.r, last.perMs, target, stepMs, FLAT_MOTION.riseMs, F.P.markPxPerMs);
+    perMs = DAMPED.perMs;
+    F.lagging = true;
+  }
   if (last.r !== r) last.r = r;
+  last.perMs = perMs;
   last.at = F.now;
   last.stamp = F.stamp;
   return r;
