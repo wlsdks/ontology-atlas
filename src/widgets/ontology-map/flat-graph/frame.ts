@@ -380,13 +380,18 @@ interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; d
 interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
 /** Per world: its frame count, and what each mark drew and in which of those frames. */
 interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius>; names: Map<string, DrawnName[]>; namesBefore: DrawnName[]; namesNow: DrawnName[] }
-/** One name's drawn ink on one side of its mark, the frame it last drew, the frame it was last admitted in and the last it was admitted off screen. */
-interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number; offScreen: number; stepped: number }
+/**
+ * One name's drawn ink and offset from its mark on one side of the mark, the frame it last drew, the
+ * frame it was last admitted in and the last it was admitted off screen.
+ */
+interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; dx: number; dy: number; at: number; frame: number; admitted: number; offScreen: number; stepped: number; glided: number; glidedAt: number }
 const drawnRadii = new WeakMap<object, DrawnMarks>();
 /** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
 const MARK_STEP_MAX_MS = 34;
 /** Nearer its target than this a radius takes it: a fiftieth of a pixel is not seen. */
 const MARK_REST_PX = 0.02;
+/** Nearer its place than this a gliding name takes it. */
+const NAME_REST_PX = 0.05;
 const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
 const openStarSlot = (): OpenStarSlot => ({ rooms: NO_ROOMS, world: false, domain: false, fixedPx: 0 });
 const F = { stamp: 0, opened: [] as FrameState["opened"], stars: [openStarSlot(), openStarSlot()], starCount: 0, starNow: false, closingRooms: null } as FrameState;
@@ -729,8 +734,9 @@ function loadNameInk(n: PlacedName): void {
 
 /** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
 /**
- * The record of `n`'s drawn ink in this world, one per side of its mark, so a name that changes
- * side fades out where it stood and in where it goes. O(rows of its concept).
+ * The record of `n`'s drawn ink in this world, one per side of its mark: a name that changes side
+ * fades out where it stood and in where it goes, and one that moves along its side glides. O(rows
+ * of its concept).
  */
 function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
   let rows = F.names.names.get(n.id);
@@ -739,15 +745,36 @@ function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
     const row = rows[i]!;
     if (row.name.role === n.role && row.wasFocus === wasFocus && sideOf(row.name) === sideOf(n)) return row;
   }
-  const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1, offScreen: -1, stepped: -1 };
+  const row: DrawnName = { name: n, wasFocus, alpha: 0, dx: n.dx, dy: n.dy, at: F.now, frame: -1, admitted: -1, offScreen: -1, stepped: -1, glided: -1, glidedAt: F.now };
   rows.push(row);
   return row;
 }
 
-/** Which side of its mark a name stands on: its alignment, and above, on or below the mark's row, a leader's row further off. */
+/** Which side of its mark a name stands on: right, left, above or below; two names on different sides never overlap. */
 function sideOf(n: PlacedName): number {
-  const row = n.leader === true ? 2 * Math.sign(n.dy) : Math.sign(n.dy);
-  return (n.align === "left" ? 0 : n.align === "right" ? 5 : 10) + row + 2;
+  return n.align === "left" ? 0 : n.align === "right" ? 1 : n.dy < 0 ? 2 : 3;
+}
+
+/**
+ * Moves a name's drawn offset from its mark toward the offset its admission placed it at, at most a
+ * `FLAT_MOTION.riseMs` share of the way per ms, so a name moving along its side glides. Once a frame.
+ */
+function glideName(row: DrawnName): void {
+  if (row.glided === F.frame) return;
+  const continuing = row.glided === F.frame - 1;
+  const stepMs = Math.min(Math.max(0, F.now - row.glidedAt), MARK_STEP_MAX_MS);
+  row.glided = F.frame;
+  row.glidedAt = F.now;
+  const n = row.name;
+  if (!continuing || F.reducedMotion) {
+    row.dx = n.dx;
+    row.dy = n.dy;
+    return;
+  }
+  const share = Math.min(1, stepMs / FLAT_MOTION.riseMs);
+  row.dx = Math.abs(n.dx - row.dx) < NAME_REST_PX ? n.dx : row.dx + (n.dx - row.dx) * share;
+  row.dy = Math.abs(n.dy - row.dy) < NAME_REST_PX ? n.dy : row.dy + (n.dy - row.dy) * share;
+  if (row.dx !== n.dx || row.dy !== n.dy) F.lagging = true;
 }
 
 /**
@@ -807,6 +834,7 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
     }
     if (target <= DRAWN_INK) target = 0;
   }
+  glideName(row);
   const ink = drawnNameInk(row, target);
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
@@ -816,8 +844,8 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
   const color = strong ? inks.nameStrong : inks.name;
   const mark = names.take();
   mark.name = n;
-  const x = at.x + n.dx;
-  const y = at.y + n.dy;
+  const x = at.x + row.dx;
+  const y = at.y + row.dy;
   const halo = n.role === "domain" ? P.domainNameHaloPx : P.nameHaloPx;
   if (mark.x !== x) mark.x = x;
   if (mark.y !== y) mark.y = y;
