@@ -13,7 +13,6 @@ import {
   Copy,
   FileText,
   GitBranch,
-  MessageCircle,
   Orbit,
   Plus,
   ScanSearch,
@@ -130,9 +129,16 @@ export function OntologyMapDetailPanel({
     boxRef: gapBoxRef,
     contentRef: gapContentRef,
   } = useRowDisclosure(showSourceGap);
-  const showInlineHandoff = showHandoff && !(
-    showProjectSource && projectSource.nextAction.id === "use_current_evidence"
+  /** Beside an agent panel the handoff copy is a detour, so it waits in the More menu. */
+  const handoffStandsBesideStatus = Boolean(
+    showProjectSource && projectSource.nextAction.id === "use_current_evidence" && !onAskAgent,
   );
+  const sourceActionStandsBesideStatus = Boolean(
+    labels.sourceAction
+    && !showSourceRemedy
+    && (projectSource?.nextAction.id !== "use_current_evidence" || handoffStandsBesideStatus),
+  );
+  const showInlineHandoff = showHandoff && !handoffStandsBesideStatus;
   const [actionMenu, setActionMenu] = useState<"edit" | "more" | null>(null);
 
   const openDocument: JudgmentAction | undefined = documentHref
@@ -207,9 +213,6 @@ export function OntologyMapDetailPanel({
   const moreActions: DetailActionItem[] = [
     ...(meaningReview
       ? [{ label: meaningReview.label, icon: <ScanSearch size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-meaning", onSelect: meaningReview.onOpen }]
-      : []),
-    ...(onAskAgent && labels.actionAskAgent
-      ? [{ label: labels.actionAskAgent, icon: <MessageCircle size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-ask-agent", onSelect: onAskAgent }]
       : []),
     ...(showInlineHandoff
       ? [{ label: labels.actionCopyHandoff, icon: <Copy size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-handoff", onSelect: () => onCopyHandoff(handoffText) }]
@@ -344,7 +347,7 @@ export function OntologyMapDetailPanel({
                         <ProjectSourceStatusIcon status={projectSource.status} />
                         <span className="min-w-0 flex-1 truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
                         {/* With no gap the next action stays quiet beside the status: nothing needs a person. */}
-                        {labels.sourceAction && !showSourceRemedy ? (
+                        {sourceActionStandsBesideStatus ? (
                           onProjectSourceAction ? (
                             <button
                               type="button"
@@ -448,6 +451,7 @@ export function OntologyMapDetailPanel({
         <PanelFooter
           slug={slug}
           labels={labels}
+          onAskAgent={onAskAgent}
           documentAction={isDocument && documentHref ? { href: documentHref, filled: !lead && emphasis === "open-document" } : null}
           onOpenFullDetail={onOpenFullDetail}
           menus={

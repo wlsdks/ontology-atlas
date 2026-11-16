@@ -276,7 +276,6 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       kind: "project",
       projectSource,
       onProjectSourceAction: vi.fn(),
-      onAskAgent: vi.fn(),
       onEnterRealm: vi.fn(),
     });
 
@@ -286,6 +285,32 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
     expect(screen.getByTestId("map-detail-panel-more-menu-trigger")).toBeInTheDocument();
     expect(screen.getByTestId("map-project-source-receipt")).toContainElement(screen.getByTestId("map-project-source-action"));
     expect(screen.getByTestId("map-detail-panel-footer")).not.toContainElement(screen.getByTestId("map-project-source-action"));
+  });
+
+  it("beside an agent a current project shows its status alone and keeps the handoff copy in the more menu", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "current",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction: vi.fn(),
+      onAskAgent: vi.fn(),
+      onEnterRealm: vi.fn(),
+    });
+
+    expect(screen.queryByTestId("map-project-source-action")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
+    expect(screen.getByTestId("map-detail-panel-action-handoff")).toBeInTheDocument();
   });
 
   it("puts the next action inside the remedy block next to the gap, not in the footer", () => {
@@ -1001,18 +1026,31 @@ describe("OntologyMapDetailPanel: judgment and the one emphasised thing", () => 
 });
 
 describe("OntologyMapDetailPanel — footer menus", () => {
-  it("puts meaning review first in the more menu, then the agent handoff", () => {
+  it("puts meaning review first in the more menu, then the handoff copy", () => {
     const onOpen = vi.fn();
     renderPanel(undefined, { meaningReview: { label: "Meaning review", onOpen }, onAskAgent: vi.fn() });
     fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
     const items = [...screen.getByTestId("map-detail-panel-more-menu").querySelectorAll('[role="menuitem"]')].map((item) => item.getAttribute("data-testid"));
-    expect(items.slice(0, 3)).toEqual([
+    expect(items.slice(0, 2)).toEqual([
       "map-detail-panel-action-meaning",
-      "map-detail-panel-action-ask-agent",
       "map-detail-panel-action-handoff",
     ]);
     fireEvent.click(screen.getByTestId("map-detail-panel-action-meaning"));
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks the agent from the footer in one press, and only where an agent exists", () => {
+    const onAskAgent = vi.fn();
+    const { unmount } = renderPanel(undefined, { onAskAgent });
+    const ask = screen.getByTestId("map-detail-panel-action-ask-agent");
+    expect(screen.getByTestId("map-detail-panel-footer")).toContainElement(ask);
+    expect(ask).toHaveAccessibleName("Ask agent");
+    fireEvent.click(ask);
+    expect(onAskAgent).toHaveBeenCalledTimes(1);
+    unmount();
+
+    renderPanel();
+    expect(screen.queryByTestId("map-detail-panel-action-ask-agent")).not.toBeInTheDocument();
   });
 
   it("reveals edit actions in one anchored menu", () => {

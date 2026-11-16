@@ -61,6 +61,7 @@
     "contextMenuAriaLabel": "Actions for {name}",
     "actionCopyHandoff": "Copy prompt",
     "actionAskAgent": "Ask agent",
+    "actionAskAgentShort": "Ask",
     "actionPath": "Path",
     "actionMentionDocumentTip": "This concept has no document of its own yet. Opens another document that writes about it",
     "actionAskAgentTip": "Ask the agent beside the map about this concept",

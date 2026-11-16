@@ -33,13 +33,17 @@ routes: [/topology]
   box. The rest open under a plain "+N more". A concept with no review mark
   shows no row and no review word. A project's source receipt sits below it,
   and its remedy is the project's filled action.
-- The footer holds the slug, the edit actions, **More** and a quiet
-  **Details**. A menu holding one action is that action, named by it: a
-  capability, element or project shows **Edit relations** itself, while a
-  domain, which can also create a linked concept, keeps the **Edit** menu.
-  **More** starts with **Ontology review**, then **Ask agent** in the installed
-  app and **Copy prompt**, then explore overlooked areas, the document and the
-  realm. A menu opens directly above its trigger with their right edges
+- The footer holds the slug, **Ask** in the installed app, the edit actions,
+  **More** and a quiet **Details**. The panel covers the map's agent tile, so
+  **Ask** is the one press from a concept to the agent: it opens the dock on
+  Conversation with a first question seated, and sending stays manual. A menu
+  holding one action is that action, named by it: a capability, element or
+  project shows **Edit relations** itself, while a domain, which can also
+  create a linked concept, keeps the **Edit** menu. **More** starts with
+  **Ontology review**, then **Copy prompt**, then explore overlooked areas, the
+  document and the realm. A project whose code check is current shows
+  **Copy prompt** beside that status only on the web; beside an agent the
+  status stands alone and the copy stays in **More**. A menu opens directly above its trigger with their right edges
   aligned, on the app's raised menu surface with the popover shadow and a
   bright edge, never past the panel's left padding. A document selection's
   footer is the slug, **More** and **Open document**, its one filled control.

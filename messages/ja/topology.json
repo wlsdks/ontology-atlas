@@ -61,6 +61,7 @@
     "contextMenuAriaLabel": "{name}の操作",
     "actionCopyHandoff": "プロンプトをコピー",
     "actionAskAgent": "エージェントに質問",
+    "actionAskAgentShort": "質問",
     "actionPath": "パス",
     "actionMentionDocumentTip": "この概念には専用の文書がまだありません。この概念について書かれたほかの文書を開きます",
     "actionAskAgentTip": "マップの横にいるエージェントにこの概念について質問します",
