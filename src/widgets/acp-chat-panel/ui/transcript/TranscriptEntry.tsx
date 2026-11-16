@@ -273,7 +273,9 @@ export const TranscriptEntry = memo(function TranscriptEntry({
           ? t('notice.autoAllowed', { detail: event.detail ?? '' })
           : event.text === 'auto-refused'
             ? t('notice.autoRefused', { detail: event.detail ?? '' })
-            : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
+            : event.text === 'auto-approved'
+              ? t('notice.autoApproved', { target: event.detail ?? '' })
+              : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
       {event.text === 'auto-allowed' && noticeActions && event.detail ? (
         <span className="ml-2 inline-flex flex-wrap items-center gap-x-2 align-baseline">
           <button

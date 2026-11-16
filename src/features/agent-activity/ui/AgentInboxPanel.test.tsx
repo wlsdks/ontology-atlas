@@ -23,6 +23,7 @@ const task: BellResult = {
   node: { slug: 'domains/orders', name: '주문', kind: 'domain' },
   allowed: 2,
   rejected: 0,
+  autoApproved: 0,
 };
 
 const inbox: BellInbox = { todos: [], results: [task], history: [], unreadResults: 1 };
@@ -141,6 +142,7 @@ describe('ink and numbers of the panel: only what draws attention is indigo', ()
             durationMs: 2 * MINUTE,
             running: false,
             decision: null,
+            autoApproved: false,
             result: null,
           },
         ],
@@ -214,6 +216,7 @@ describe('time taken: nothing under 1 second is said, and long times follow one 
     durationMs,
     running: false,
     decision: null,
+    autoApproved: false,
     result: null,
   });
 

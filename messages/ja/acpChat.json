@@ -181,6 +181,15 @@
   "model": "モデル",
   "mode": "モード",
   "modeUnverified": "{name} · 未確認",
+  "approval": "承認",
+  "approvalOption": {
+    "ask": "毎回確認",
+    "auto": "自動承認"
+  },
+  "approvalHint": {
+    "ask": "書き込む前に必ず確認します。",
+    "auto": "このフォルダ内のファイル編集と、概念・関係の追加・変更は確認せずに進めます。シェルコマンド、フォルダ外、削除、コミットは引き続き確認します。"
+  },
   "modeUnverifiedHint": "まだ確認していません。",
   "runtimePicker": "会話するエージェント",
   "tool": {
@@ -314,6 +323,7 @@
     "modeMovedServerGate": "エージェントがこの会話を{mode}に切り替えました。このモードでは、確認なしでファイルの編集が受け入れられます。Atlasのツールで行う変更は、引き続きサーバで止まり、あなたの承認を待ちます。",
     "autoAllowed": "{detail}を確認なしで書き込みました。Wikiページの形式に合っているためです。",
     "autoRefused": "確認なしで拒否しました · {detail}。この会話で行える範囲を超えています。",
+    "autoApproved": "自動承認：{target}",
     "openPage": "開く",
     "askNext": "次回は確認する"
   },

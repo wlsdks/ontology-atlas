@@ -53,6 +53,13 @@ describe('ACP work receipts', () => {
       writerCorrelation: { ...correlated, terminal: 'not-observed' } })))).toHaveLength(1);
   });
 
+  it('keeps the auto-approve mark on an allowed write and refuses it when malformed or on a rejection', () => {
+    expect(parseAcpWorkReceipts(JSON.stringify(receipt({ approvedBy: 'auto-approve' })))[0]?.approvedBy).toBe('auto-approve');
+    expect(parseAcpWorkReceipts(JSON.stringify({ ...receipt(), approvedBy: 'person' }))).toEqual([]);
+    expect(parseAcpWorkReceipts(JSON.stringify({ ...receipt(), approvedBy: null }))).toEqual([]);
+    expect(parseAcpWorkReceipts(JSON.stringify(receipt({ decision: 'rejected', result: 'not-run', approvedBy: 'auto-approve' })))).toEqual([]);
+  });
+
   it.each([0, 42, '', 'request-1'])('preserves typed numeric and string request ids, including zero and empty string (%j)', (requestId) => {
     const origin = { vaultId: '/vault', sessionGeneration: 2, sessionId: 's-1', userEventId: 'u-1', requestId, toolCallId: 't-1' };
     const parsed = parseAcpWorkReceipts(JSON.stringify(receipt({ origin })))[0]!;

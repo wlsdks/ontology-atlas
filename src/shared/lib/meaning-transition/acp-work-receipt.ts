@@ -53,7 +53,13 @@ export interface AcpWorkReceipt {
   /** Absent on legacy rows. Presence means every field must validate; malformed data is not legacy. */
   origin?: AcpWorkReceiptOrigin;
   writerCorrelation?: AcpWriterCorrelation;
+  /** Present only when the conversation's auto-approve choice answered; absent means a person pressed. */
+  approvedBy?: AcpStandingApprover;
 }
+
+/** The only approver besides a person's press: the conversation's auto-approve choice. */
+export const ACP_STANDING_APPROVER = 'auto-approve';
+type AcpStandingApprover = typeof ACP_STANDING_APPROVER;
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -138,6 +144,7 @@ function readReceipt(value: unknown): AcpWorkReceipt | null {
   const origin = row.origin === undefined ? undefined : readOrigin(row.origin);
   const writerCorrelation = row.writerCorrelation === undefined ? undefined : readWriterCorrelation(row.writerCorrelation);
   if (origin === null || writerCorrelation === null) return null;
+  if (row.approvedBy !== undefined && (row.approvedBy !== ACP_STANDING_APPROVER || row.decision !== 'allowed')) return null;
   if (row.decision === 'rejected' ? row.result !== 'not-run' : row.result === 'not-run') return null;
   if (writerCorrelation) {
     if (!origin) return null;
@@ -157,6 +164,7 @@ function readReceipt(value: unknown): AcpWorkReceipt | null {
     items: items as AcpWorkReceiptItem[],
     ...(origin ? { origin } : {}),
     ...(writerCorrelation ? { writerCorrelation } : {}),
+    ...(row.approvedBy === ACP_STANDING_APPROVER ? { approvedBy: ACP_STANDING_APPROVER } : {}),
   };
 }
 

@@ -187,6 +187,8 @@ export interface AcpPermissionRequest {
   rawInput: Record<string, unknown>;
   /** An ordinary file permission, or an ontology write needing the person's decision about meaning. */
   reviewKind: 'permission' | 'ontology-write';
+  /** Rust's inside-the-folder verdict on `filePath`, computed once before asking; absent means unjudged. */
+  pathVerdict?: 'allow-inside-vault' | 'ask';
   /** Present only for the structured MCP tool-call + structured approval cache chain. */
   writerCorrelation?: { status: 'verified'; server: string; tool: string; toolCall: 'structured-mcp'; approval: 'structured-mcp' };
   /** The available options — handled only by `kind`. */
@@ -478,9 +480,11 @@ export function createAcpClient(
     // An Atlas write, any non-read tool, access outside the vault, or an unknown path: ask the person.
     let chosen: string | null = null;
     try {
-      chosen = await handlers.askUser(
-        ontologyWrite ? { ...request, reviewKind: 'ontology-write' } : request,
-      );
+      chosen = await handlers.askUser({
+        ...request,
+        pathVerdict: verdict,
+        ...(ontologyWrite ? { reviewKind: 'ontology-write' as const } : {}),
+      });
     } catch {
       chosen = null; // a failure while asking is a rejection
     }

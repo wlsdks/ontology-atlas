@@ -13,26 +13,29 @@ import { composerStatusLive, workingShimmer } from '../working-ink';
 import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from './constants';
 import type { ChatT, FooterStatus, SessionState } from './types';
 
-export function ChoicesRow({ t, choices, busy, toolIsPicker, onChooseMode }: {
+const APPROVAL_ASK = 'ask';
+const APPROVAL_AUTO = 'auto';
+
+/** Warning tone at rest, so a conversation running on auto-approve never looks like one that asks. */
+const AUTO_APPROVE_ON_CLASS =
+  '[&>button]:border-[color:var(--color-amber-source-a25)] [&>button]:bg-[color:var(--color-amber-source-a08)] [&>button>span]:text-[color:var(--color-status-warning)]';
+
+export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChooseMode, onChooseAutoApprove }: {
   t: ChatT;
   choices: SessionState['choices'];
   busy: boolean;
   toolIsPicker: boolean;
+  autoApprove: boolean;
   onChooseMode: (modeId: string) => void;
+  onChooseAutoApprove: (on: boolean) => void;
 }) {
-  if (choices.models.length === 0 && choices.modes.length === 0) return null;
+  const yieldsWhileBusy = busy
+    ? toolIsPicker
+      ? 'hidden @min-[464px]/composer:block'
+      : 'hidden @min-[308px]/composer:block'
+    : undefined;
   return (
-    <div
-      data-testid="acp-chat-choices"
-      className={cn(
-        'min-w-0 items-center gap-0.5',
-        busy
-          ? toolIsPicker
-            ? 'hidden @min-[464px]/composer:flex'
-            : 'hidden @min-[308px]/composer:flex'
-          : 'flex',
-      )}
-    >
+    <div data-testid="acp-chat-choices" className="flex min-w-0 items-center gap-0.5">
       {choices.modes.length > 0 ? (
         <Select
           ariaLabel={t('mode')}
@@ -56,9 +59,28 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, onChooseMode }: {
           })}
           data-testid="acp-chat-mode"
           quiet
-          className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink-0')}
+          className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink-0', yieldsWhileBusy)}
         />
       ) : null}
+      <Select
+        ariaLabel={t('approval')}
+        size="sm"
+        value={autoApprove ? APPROVAL_AUTO : APPROVAL_ASK}
+        placeholder={t('approval')}
+        onChange={(value) => onChooseAutoApprove(value === APPROVAL_AUTO)}
+        options={[
+          { value: APPROVAL_ASK, label: t('approvalOption.ask'), description: t('approvalHint.ask') },
+          { value: APPROVAL_AUTO, label: t('approvalOption.auto'), description: t('approvalHint.auto') },
+        ]}
+        data-testid="acp-chat-approval"
+        quiet
+        className={cn(
+          PICKER_MIN_WIDTH_CLASS,
+          PICKER_MAX_WIDTH_CLASS,
+          'shrink-0',
+          autoApprove ? AUTO_APPROVE_ON_CLASS : yieldsWhileBusy,
+        )}
+      />
     </div>
   );
 }

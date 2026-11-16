@@ -8,6 +8,7 @@ import {
   toPermissionRequest,
   type AcpTransport,
 } from '@/features/acp-session/model/acp-client';
+import { standingApproval } from '@/features/acp-session/model/permissions/standing-approval';
 
 /**
  * **The app answers with the one option that ends when the tool call ends.**
@@ -409,6 +410,29 @@ describe('permission options — the app picks the one that ends with this call'
     expect(autoOnly.map((option) => option.optionId)).toContain(OPTION_ID.exitPlanAuto);
     expect(autoOnly.filter((option) => option.kind === 'allow_always')).toHaveLength(2);
   });
+});
+
+describe('auto-approve — the same one option, and never one the array lacks', () => {
+  const context = { enabled: true, vaultRoot: '/vault', vaultMcpServerName: 'atlas-vault' };
+  const vaultEdit = (options: Option[], toolKind = 'edit') =>
+    ({ ...toPermissionRequest({ toolCall: { toolCallId: 'call-3', kind: toolKind, title: 'Edit',
+      rawInput: { file_path: '/vault/capabilities/refund.md' } }, options }), pathVerdict: 'allow-inside-vault' as const });
+
+  it.each(CASES)('$tool — answers a vault edit with the allow_once id', ({ options, expected }) => {
+    expect(standingApproval(vaultEdit(options), context)?.optionId).toBe(expected);
+  });
+
+  it.each(CASES)('$tool — shows the card when the array holds no allow_once', ({ options }) => {
+    const withoutOnce = options.filter((option) => option.kind !== 'allow_once');
+    expect(standingApproval(vaultEdit(withoutOnce), context)).toBeNull();
+  });
+
+  it.each(CASES.filter((entry) => entry.tool.startsWith('ExitPlanMode')))(
+    '$tool — never answers the plan exit, whose kind is switch_mode',
+    ({ options }) => {
+      expect(standingApproval(vaultEdit(options, 'switch_mode'), context)).toBeNull();
+    },
+  );
 });
 
 /**
