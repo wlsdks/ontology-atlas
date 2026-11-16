@@ -214,6 +214,42 @@ function restingFrames(camera: ReturnType<typeof cameraOn>, zooms: readonly numb
 /** Well inside the viewport, where a name has room on every side. */
 const INSET_PX = 160;
 
+/** Each drawn disc's radius in the frame `camera` paints at `zoom` and `now`. */
+function radiiAt(camera: ReturnType<typeof cameraOn>, zoom: number, over: Partial<DialFrameInput>): Map<string, number> {
+  paintFlatGraphFrame(camera(zoom, over), TOKENS);
+  return new Map(describeLastDialFrame(W, H)!.discs.filter((d) => d.id !== null).map((d) => [d.id!, d.r]));
+}
+
+describe("a mark's drawn radius across frames", () => {
+  it("takes its radius at once when it comes back on screen, however long it was away", () => {
+    const worldKey = {};
+    const away = cameraOn("domain:agent-access", worldKey);
+    const home = cameraOn("domain:code-evidence", worldKey);
+    framesUntilSettled(cameraOn(null, worldKey), {}, new Set(), 0, 1, 1, FRAME_MS);
+    let now = 10_000;
+    for (let i = 0; i < 300; i += 1, now += FRAME_MS) {
+      expect(radiiAt(away, 4, { now }).has("domain:code-evidence"), "the domain is off screen while the reader is away").toBe(false);
+    }
+    const back = radiiAt(home, 4, { now }).get("domain:code-evidence")!;
+    framesUntilSettled(home, {}, new Set(), now + FRAME_MS, 4, 4, FRAME_MS);
+    const settled = radiiAt(home, 4, { now: now + 60_000 }).get("domain:code-evidence")!;
+    expect(back).toBeCloseTo(settled, 3);
+  });
+
+  it("moves no further across a stalled frame than across a frame of two 60 Hz frames", () => {
+    const radiiAfterGap = (gapMs: number) => {
+      const camera = cameraOn("domain:code-evidence", {});
+      framesUntilSettled(camera, {}, new Set(), 0, 3.6, 3.6, FRAME_MS);
+      radiiAt(camera, 3.6, { now: 20_000, focusedNodeId: "domain:code-evidence" });
+      return radiiAt(camera, 3.6, { now: 20_000 + gapMs, focusedNodeId: "domain:code-evidence" });
+    };
+    const stalled = radiiAfterGap(200);
+    const twoFrames = radiiAfterGap(34);
+    expect([...stalled].filter(([id, r]) => Math.abs(r - twoFrames.get(id)!) > 1e-6).map(([id]) => id)).toEqual([]);
+    expect([...stalled].some(([id, r]) => r !== radiiAt(cameraOn("domain:code-evidence", {}), 3.6, { now: 0 }).get(id)), "the stalled frame still moved the star").toBe(true);
+  });
+});
+
 it("draws a selected element's dot and name at every zoom the reader leaves it at", () => {
   const missing: string[] = [];
   for (const id of model.capabilityOf.keys()) {

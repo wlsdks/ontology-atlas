@@ -354,6 +354,8 @@ interface FrameState {
   leavingR: number;
   /** What each mark drew last, so this frame's radius moves from it at no more than `markPxPerMs`. */
   drawn: Map<string, DrawnRadius>;
+  /** This world's frame count, so a mark knows whether it drew in the frame before. */
+  frame: number;
   now: number;
   reducedMotion: boolean;
   /** Whether a drawn radius still trails the radius its frame asks for, so the loop paints on. */
@@ -372,8 +374,10 @@ interface FrameState {
  */
 /** One opened star: rooms in world units (`world`) or screen px; a domain star's fixed disc is the domain's, grown with the zoom. */
 interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; domain: boolean; fixedPx: number }
-interface DrawnRadius { r: number; perMs: number; at: number; stamp: number }
-const drawnRadii = new WeakMap<object, Map<string, DrawnRadius>>();
+interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
+/** Per world: its frame count, and what each mark drew and in which of those frames. */
+interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius> }
+const drawnRadii = new WeakMap<object, DrawnMarks>();
 /** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
 const MARK_STEP_MAX_MS = 34;
 /** Nearer its target than this a radius takes it: a fiftieth of a pixel is not seen. */
@@ -492,22 +496,24 @@ function radiusNow(id: string): number {
 }
 
 /**
- * The radius `id` draws this frame: `target`, approached from the radius and speed the last frame
+ * The radius `id` draws this frame: `target`, approached from the radius and speed the frame before
  * drew, so a mark grows, shrinks and retargets with no jump in size or in speed. A frame later than
- * `MARK_STEP_MAX_MS` moves it as that long a frame would; reduced motion takes the target at once.
- * Settled once per mark and frame.
+ * `MARK_STEP_MAX_MS` moves it as that long a frame would. A mark the frame before did not draw (it
+ * was off screen, or the map slept) and reduced motion take the target at once. Settled once per
+ * mark and frame.
  */
 function drawnRadius(id: string, target: number): number {
   let last = F.drawn.get(id);
   if (!last) {
-    F.drawn.set(id, (last = { r: target, perMs: 0, at: F.now, stamp: F.stamp }));
+    F.drawn.set(id, (last = { r: target, perMs: 0, at: F.now, frame: F.frame }));
     return target;
   }
-  if (last.stamp === F.stamp) return last.r;
+  if (last.frame === F.frame) return last.r;
+  const continuing = last.frame === F.frame - 1;
   const stepMs = Math.min(Math.max(0, F.now - last.at), MARK_STEP_MAX_MS);
   let r = target;
   let perMs = 0;
-  if (!F.reducedMotion && Math.abs(target - last.r) > MARK_REST_PX) {
+  if (continuing && !F.reducedMotion && Math.abs(target - last.r) > MARK_REST_PX) {
     r = dampedStep(last.r, last.perMs, target, stepMs, FLAT_MOTION.riseMs, F.P.markPxPerMs);
     perMs = DAMPED.perMs;
     F.lagging = true;
@@ -515,7 +521,7 @@ function drawnRadius(id: string, target: number): number {
   if (last.r !== r) last.r = r;
   last.perMs = perMs;
   last.at = F.now;
-  last.stamp = F.stamp;
+  last.frame = F.frame;
   return r;
 }
 
@@ -927,9 +933,11 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     const uncovered = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(el), F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
     if (uncovered <= DRAWN_INK) continue;
     const elAt = screenOf(el);
-    const r = dotRadius(el);
+    const visible = onScreen(elAt);
+    // A dot off screen keeps no radius, so it neither steps nor keeps the loop awake.
+    const r = visible ? dotRadius(el) : 0;
     // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
-    const coverR = it.direct || el === F.selectedId || el === F.leavingId ? 0 : discRadius(it.id);
+    const coverR = !visible || it.direct || el === F.selectedId || el === F.leavingId ? 0 : discRadius(it.id);
     const clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
     const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
@@ -952,7 +960,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
       if (s.alpha !== alpha) s.alpha = alpha;
       L.segments.add(s);
     }
-    if (onScreen(elAt)) {
+    if (visible) {
       const d = dots.take();
       const alpha = DOT_ALPHA * shown;
       d.id = el;
@@ -985,8 +993,9 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
   F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth, input.scale); F.orphans = orphansOf(layout);
   let drawn = drawnRadii.get(input.worldKey);
-  if (!drawn) drawnRadii.set(input.worldKey, (drawn = new Map()));
-  F.drawn = drawn; F.now = input.now; F.reducedMotion = input.reducedMotion; F.lagging = false;
+  if (!drawn) drawnRadii.set(input.worldKey, (drawn = { frame: 0, marks: new Map() }));
+  drawn.frame += 1;
+  F.drawn = drawn.marks; F.frame = drawn.frame; F.now = input.now; F.reducedMotion = input.reducedMotion; F.lagging = false;
   grownIds.clear();
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
