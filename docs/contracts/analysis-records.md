@@ -29,7 +29,10 @@ relation criteria remain in [the Atlas specification](../ONTOLOGY-ATLAS-SPEC.md#
 ## Reading and acting
 
 The map's **Ontology review** action opens the existing right context dock.
-Role & connections, Review results, and Conversation occupy that same space.
+Conversation (installed app only, and first there), Role & connections, and
+Review results occupy that same space. A requested review that is saved while
+the person is on Conversation selects its run under Review results; no model
+request is replayed by that move.
 The conversation stays mounted when the section changes. The first view shows
 the selected concept's definition, its kind criterion, directional relation
 sentences, stored rationale, and links to the declaring document. A missing

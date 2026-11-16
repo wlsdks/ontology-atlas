@@ -301,6 +301,7 @@ export function TopologyInspectorSurfaces({
                 actionAskAgent: llmBridgeAvailable
                   ? t("nodeDatasheet.actionAskAgent")
                   : undefined,
+                actionAskAgentShort: t("nodeDatasheet.actionAskAgentShort"),
                 actionRealm: t("realm.enterAction"),
                 // Tooltips say what pressing does rather than repeating the label.
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),

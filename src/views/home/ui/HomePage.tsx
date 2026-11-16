@@ -587,7 +587,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               sampleModeSettled={sampleModeSettled}
               sampleModeKnown={sampleModeKnown}
               requestVaultOpen={requestVaultOpen}
-              v2DatasheetModel={v2DatasheetModel}
               topologyPreferences={topologyPreferences}
               topologyInspectorState={topologyInspectorState}
               topologyAuthoring={topologyAuthoring}

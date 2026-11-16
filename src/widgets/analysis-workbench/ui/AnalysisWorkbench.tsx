@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
-import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
+import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, requestsAnalysisFindings, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, CloseButton, Disclosure, EmptyState, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
@@ -146,15 +146,18 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
   useEffect(() => () => onFitContentChange?.(false), [onFitContentChange]);
   /*
-   * A saved analysis arrives as a toast; the foot keeps only saving in progress or an error with
-   * retry.
+   * A requested review that finishes in front of the person opens as its result; any other saved
+   * record arrives as a toast. The foot keeps only saving in progress or an error with retry.
    */
   const toast = useToast();
   useEffect(() => {
     if (saved?.status !== 'saved' || announcedSaveIds.has(saved.id)) return;
     announcedSaveIds.add(saved.id);
-    toast.show(t('save.saved'), 'success', { label: t('viewSaved'), onClick: () => { setSelectedId(saved.id); setTab('history'); } });
-  }, [saved, t, toast, setSelectedId, setTab]);
+    const showResult = () => { setSelectedId(saved.id); setTab('history'); };
+    const watchedReview = open && tab === 'conversation' && !!saved.record && requestsAnalysisFindings(saved.record.request.text);
+    if (watchedReview) { showResult(); toast.show(t('save.saved'), 'success'); return; }
+    toast.show(t('save.saved'), 'success', { label: t('viewSaved'), onClick: showResult });
+  }, [saved, open, tab, t, toast, setSelectedId, setTab]);
   const sameScope = selected ? analysisScopeKey(selected.mode, selected.scope) === analysisScopeKey(context.mode, context.scope) : false;
   const compatibility = checked?.run === selected && checked.context === context ? checked.state : null;
   const overlayReady = !!selected && selected.qualification.status === 'grounded' && sameScope && compatibility?.status === 'current';
@@ -245,6 +248,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  const subjectKind = contextKind && !(tab === 'conversation' && conversationLabel) ? contextKind : null;
+  /** The lit tab already says "conversation", so beside a kind the eyebrow keeps only the kind. */
+  const conversationNamedByTab = tab === 'conversation' && subjectKind !== null;
   return <section ref={panelRef} data-testid="analysis-workbench" onKeyDown={(event) => {
     if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); onClose(); }
   }} className="flex min-h-0 flex-1 flex-col gap-3 break-keep text-body text-[color:var(--color-text-primary)] [&_summary]:content-center [@media(pointer:coarse)]:[&_summary]:min-h-[var(--touch-target-min)]">
@@ -253,14 +259,14 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
      * subject.
      */}
     <header className="relative flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 pr-8">
-      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(tab === 'conversation' ? 'conversationTitle' : context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind && !(tab === 'conversation' && conversationLabel) ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{tab === 'conversation' ? conversationLabel ?? contextLabel : contextLabel}</h2></div>
+      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]">{conversationNamedByTab ? null : <><span>{t(tab === 'conversation' ? 'conversationTitle' : context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{subjectKind ? <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span> : null}</>}{subjectKind ? <><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={subjectKind} size={11} />{kindLabel(KNOWN_KINDS.includes(subjectKind) ? subjectKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{tab === 'conversation' ? conversationLabel ?? contextLabel : contextLabel}</h2></div>
       {/*
        * TabBar, not SegmentedControl: these are views, not a value; panels carry the matching
        * workbench-tabpanel-* id.
        */}
       <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
         <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
-          { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') }, ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
+          ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []), { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') },
         ]} />
       </div>
       <CloseButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-1" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose} />
