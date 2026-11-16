@@ -278,6 +278,46 @@ it("draws a selected element's dot and name at every zoom the reader leaves it a
   expect(missing.slice(0, 6)).toEqual([]);
 });
 
+/** Each admitted name's drawn ink per 16 ms frame from `from` until the motion settles, at a fixed zoom. */
+function nameInks(camera: ReturnType<typeof cameraOn>, over: Partial<DialFrameInput>, from: number, zoom: number): { frames: Map<string, number>[]; end: number } {
+  const frames: Map<string, number>[] = [];
+  for (let i = 0, now = from; i < 400; i += 1, now += FRAME_MS) {
+    const result = paintFlatGraphFrame(camera(zoom, { ...over, now }), TOKENS);
+    frames.push(new Map(describeLastDialFrame(W, H)!.texts.map((t) => [`${t.role} ${t.id}`, t.alpha])));
+    if (!result.branchMembersAnimating) return { frames, end: now };
+  }
+  throw new Error("the names never settled");
+}
+
+describe("a name's drawn ink across frames", () => {
+  it.each(["domain:human-workbench", "domain:code-evidence", "domain:agent-access"])(
+    "changes by less than 0.2 a frame while the %s star opens and a member is pressed",
+    (domainId) => {
+      const member = domainStarIds(model, domainId).capabilities[0]!;
+      const camera = cameraOn(domainId, {});
+      const rest = nameInks(camera, {}, 0, 3.6);
+      const opened = nameInks(camera, { focusedNodeId: domainId }, rest.end + FRAME_MS, 3.6);
+      const pressed = nameInks(camera, { focusedNodeId: member }, opened.end + FRAME_MS, 3.6);
+      const frames = [rest.frames.at(-1)!, ...opened.frames, ...pressed.frames];
+      const jumps: string[] = [];
+      for (let i = 1; i < frames.length; i += 1) {
+        for (const [name, alpha] of frames[i]!) {
+          const was = frames[i - 1]!.get(name) ?? 0;
+          if (Math.abs(alpha - was) >= 0.2) jumps.push(`frame ${i}: ${name} ${was.toFixed(2)} -> ${alpha.toFixed(2)}`);
+        }
+      }
+      expect(jumps.slice(0, 6)).toEqual([]);
+    },
+  );
+
+  it("takes its ink at once under reduced motion", () => {
+    const camera = cameraOn("domain:code-evidence", {});
+    nameInks(camera, { reducedMotion: true }, 0, 3.6);
+    const opened = nameInks(camera, { reducedMotion: true, focusedNodeId: "domain:code-evidence" }, 10_000, 3.6);
+    expect([...opened.frames[0]!]).toEqual([...opened.frames.at(-1)!]);
+  });
+});
+
 describe("the resting overview", () => {
   const sweep = [0.5, 0.7, 1, 1.4, 2, 2.8, 4, 5.6, 8];
 

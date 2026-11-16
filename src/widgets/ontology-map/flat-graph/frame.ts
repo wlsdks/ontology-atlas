@@ -36,6 +36,8 @@ const DOT_ALPHA = 0.7;
  */
 const ROOM_GONE_PX = -0.5;
 const ROOM_WHOLE_PX = 1.5;
+/** The step a name that starts to arrive takes in its first frame: one 60 Hz frame. */
+const NAME_FIRST_STEP_MS = 1000 / 60;
 const LIT_DOT_SHARE = 1.5;
 /** World units a fanned element may sit from its laid-out place before it counts as dragged. */
 const DRAG_SLACK = 1e-6;
@@ -67,7 +69,8 @@ const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
 interface Light { x: number; y: number; r: number; ink: string; alpha: number }
 /** `markR` is the drawn radius of the name's mark, read only by a leader. */
-interface Name { name: PlacedName; x: number; y: number; ink: number; room: number; color: string; halo: number; markR: number }
+/** `fading`: no longer admitted, drawn only while its ink runs out; the probe and picking skip it. */
+interface Name { name: PlacedName; x: number; y: number; ink: number; room: number; color: string; halo: number; markR: number; fading: boolean }
 interface Ring { x: number; y: number; r: number; alpha: number; ink: string }
 type LabelBox = DialFrameResult["labelBoxes"][number];
 
@@ -118,7 +121,7 @@ const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
 const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
-const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, room: 1, color: "", halo: 0, markR: 0 }));
+const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, room: 1, color: "", halo: 0, markR: 0, fading: false }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -217,6 +220,7 @@ function nameMark(name: PlacedName, x: number, y: number, ink: number, color: st
   if (n.y !== y) n.y = y;
   if (n.ink !== ink) n.ink = ink;
   if (n.room !== 1) n.room = 1;
+  n.fading = false;
   n.color = color;
   if (n.halo !== halo) n.halo = halo;
   return n;
@@ -356,6 +360,8 @@ interface FrameState {
   drawn: Map<string, DrawnRadius>;
   /** This world's frame count, so a mark knows whether it drew in the frame before. */
   frame: number;
+  /** This world's drawn names: each one's ink, and those the frame before drew. */
+  names: DrawnMarks;
   now: number;
   reducedMotion: boolean;
   /** Whether a drawn radius still trails the radius its frame asks for, so the loop paints on. */
@@ -378,7 +384,9 @@ interface FrameState {
 interface OpenStarSlot { rooms: ReadonlyMap<string, StarRoom>; world: boolean; domain: boolean; fixedPx: number }
 interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
 /** Per world: its frame count, and what each mark drew and in which of those frames. */
-interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius> }
+interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius>; names: Map<string, DrawnName[]>; namesBefore: DrawnName[]; namesNow: DrawnName[] }
+/** One name's drawn ink, the frame it last drew and the frame it was last admitted in. */
+interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number }
 const drawnRadii = new WeakMap<object, DrawnMarks>();
 /** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
 const MARK_STEP_MAX_MS = 34;
@@ -723,15 +731,72 @@ function loadNameInk(n: PlacedName): void {
 }
 
 /** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
+/** The record of `n`'s drawn ink in this world, made on its first admission. O(rows of its concept). */
+function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
+  let rows = F.names.names.get(n.id);
+  if (!rows) F.names.names.set(n.id, (rows = []));
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (row.name.role === n.role && row.wasFocus === wasFocus) return row;
+  }
+  const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1 };
+  rows.push(row);
+  return row;
+}
+
+/**
+ * The ink a name draws this frame: its target approached from what the frame before drew, at most
+ * full ink per `FLAT_MOTION.riseMs` arriving and per `exitMs` leaving. A name the frame before did
+ * not draw starts from nothing, unless it was admitted then (a pan brought it on screen); reduced
+ * motion and the map's first frame take the target at once.
+ */
+function drawnNameInk(row: DrawnName, target: number, wasAdmitted: boolean): number {
+  let alpha = target;
+  if (!F.reducedMotion && F.frame > 1) {
+    const continuing = row.frame === F.frame - 1;
+    if (continuing || !wasAdmitted) {
+      const from = continuing ? row.alpha : 0;
+      const stepMs = continuing ? Math.min(Math.max(0, F.now - row.at), MARK_STEP_MAX_MS) : NAME_FIRST_STEP_MS;
+      alpha = target > from ? Math.min(target, from + stepMs / FLAT_MOTION.riseMs) : Math.max(target, from - stepMs / FLAT_MOTION.exitMs);
+    }
+  }
+  if (alpha !== target) F.lagging = true;
+  row.alpha = alpha;
+  row.at = F.now;
+  if (alpha > 0) {
+    row.frame = F.frame;
+    F.names.namesNow.push(row);
+  }
+  return alpha;
+}
+
 function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: number, wasFocus: boolean): void {
+  const row = drawnNameOf(n, wasFocus);
+  const wasAdmitted = row.admitted === F.frame - 1;
+  row.admitted = F.frame;
+  row.name = n;
+  placeName(row, alphas, share, wasAdmitted, false);
+}
+
+/** Plans a name's mark at the ink it draws this frame; `fading` names one no longer admitted, its ink running out. */
+function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: number, wasAdmitted: boolean, fading: boolean): void {
+  const n = row.name;
+  const wasFocus = row.wasFocus;
   const at = screenAt(n.id);
   if (!at || alphas.get(n.id) === 0) return;
   if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) return;
-  loadNameInk(n);
-  let ink = scratch[0]! * share;
-  if (ink <= DRAWN_INK) return;
-  const room = grownMarks.size > 0 && nameRank(n) > 0 ? smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at, !holdsPlace(n))) : 1;
-  ink *= room;
+  let target = 0;
+  let room = 1;
+  if (!fading) {
+    loadNameInk(n);
+    target = scratch[0]! * share;
+    if (target > DRAWN_INK) {
+      room = grownMarks.size > 0 && nameRank(n) > 0 ? smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, nameRoom(n, at, !holdsPlace(n))) : 1;
+      target *= room;
+    }
+    if (target <= DRAWN_INK) target = 0;
+  }
+  const ink = drawnNameInk(row, target, wasAdmitted);
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
@@ -747,6 +812,7 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   if (mark.y !== y) mark.y = y;
   if (mark.ink !== ink) mark.ink = ink;
   if (mark.room !== room) mark.room = room;
+  mark.fading = fading;
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
   const markR = n.leader ? (n.role === "element" ? dotRadius(n.id) : discRadius(n.id)) : 0;
@@ -1019,8 +1085,13 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
   F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth, input.scale); F.orphans = orphansOf(layout);
   let drawn = drawnRadii.get(input.worldKey);
-  if (!drawn) drawnRadii.set(input.worldKey, (drawn = { frame: 0, marks: new Map() }));
+  if (!drawn) drawnRadii.set(input.worldKey, (drawn = { frame: 0, marks: new Map(), names: new Map(), namesBefore: [], namesNow: [] }));
   drawn.frame += 1;
+  const before = drawn.namesBefore;
+  drawn.namesBefore = drawn.namesNow;
+  drawn.namesNow = before;
+  drawn.namesNow.length = 0;
+  F.names = drawn;
   F.drawn = drawn.marks; F.frame = drawn.frame; F.now = input.now; F.reducedMotion = input.reducedMotion; F.lagging = false;
   grownIds.clear();
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
@@ -1222,6 +1293,12 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       nIndex = end;
     }
   }
+  // A name the frame before drew that is no longer admitted keeps its place while its ink runs out.
+  const drewBefore = F.names.namesBefore;
+  for (let i = 0; i < drewBefore.length; i += 1) {
+    const row = drewBefore[i]!;
+    if (row.frame !== F.frame && row.admitted !== F.frame) placeName(row, alphas, 1, false, true);
+  }
   const hub = plan.project[0];
   if (hub) {
     const placement = dialPlacementOf(input.dial);
@@ -1270,6 +1347,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const pad = P.namePadPx;
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
     const n = plan.names[nIndex]!;
+    if (n.fading) continue;
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const label = labelBoxPool.take();
@@ -1885,6 +1963,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   const pad = tokens.paint.namePadPx;
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
     const n = plan.names[nIndex]!;
+    if (n.fading) continue;
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const text = probeTexts.take();

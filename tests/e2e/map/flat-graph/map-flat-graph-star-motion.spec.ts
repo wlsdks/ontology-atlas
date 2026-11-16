@@ -6,6 +6,10 @@ import { canvasBox, elementsByContainer, openDogfoodFlat, readDial, settleSelect
 const RADIUS_PX_PER_MS = 0.12;
 /** The largest zoom step per 60 Hz frame, as a share of the zoom. */
 const ZOOM_STEP_PER_FRAME = 0.08;
+/** The largest radius step any mark takes in one drawn frame, however long the frame took, in px. */
+const RADIUS_STEP_PX = 3.4;
+/** The largest change of a name's drawn ink per 60 Hz frame. */
+const NAME_INK_STEP_PER_FRAME = 0.2;
 const FRAME_MS = 1000 / 60;
 /** The press shows on the map within this, in ms. */
 const FIRST_FRAME_MS = 50;
@@ -13,11 +17,14 @@ const OVERLAP_PX = 0.5;
 /** A retarget lands this far into an opening. */
 const RETARGET_AFTER_MS = 150;
 
-type Sample = { t: number; zoom: number; marks: [string, number, number, number][]; names: [string, string, number, number, number, number][] };
+type Sample = { t: number; zoom: number; w: number; h: number; marks: [string, number, number, number][]; names: [string, string, number, number, number, number, number][] };
 
 interface Motion {
   radiusPxPerMs: number;
   worst: string;
+  radiusStepPx: number;
+  inkStep: number;
+  worstInk: string;
   zoomStep: number;
   overlapFrames: number;
   overlapPairs: string[];
@@ -41,11 +48,12 @@ async function startSampling(page: Page, ids: readonly string[]): Promise<void> 
     addEventListener("keydown", () => { w.__starPressAt ??= performance.now(); }, { capture: true, once: true });
     const tick = (t: number) => {
       type Box = { minX: number; maxX: number; minY: number; maxY: number };
-      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number }[]; texts: { id: string; role: string; box: Box }[] };
+      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number }[]; texts: { id: string; role: string; box: Box; alpha: number }[] };
+      const canvas = document.querySelector<HTMLCanvasElement>("[data-testid='ontology-map-canvas']")!;
       w.__starSamples.push({
-        t, zoom: d.zoomRatio,
+        t, zoom: d.zoomRatio, w: canvas.clientWidth, h: canvas.clientHeight,
         marks: [...d.discs, ...d.glyphs].filter((m) => m.id !== null && keep.has(m.id)).map((m) => [m.id!, m.x, m.y, m.r]),
-        names: d.texts.filter((n) => keep.has(n.id)).map((n) => [n.id, n.role, n.box.minX, n.box.maxX, n.box.minY, n.box.maxY]),
+        names: d.texts.filter((n) => keep.has(n.id)).map((n) => [n.id, n.role, n.box.minX, n.box.maxX, n.box.minY, n.box.maxY, n.alpha]),
       });
       if (w.__starSampling) requestAnimationFrame(tick);
     };
@@ -72,6 +80,9 @@ async function stopSampling(page: Page): Promise<{ samples: Sample[]; pressAt: n
 function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[], litPicture = false): Motion {
   let radiusPxPerMs = 0;
   let worst = "";
+  let radiusStepPx = 0;
+  let inkStep = 0;
+  let worstInk = "";
   let zoomStep = 0;
   let overlapFrames = 0;
   const overlapPairs = new Set<string>();
@@ -144,10 +155,21 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
         radiusPxPerMs = speed;
         worst = `${id} ${prior.toFixed(2)} -> ${r.toFixed(2)} px in ${dt.toFixed(1)} ms at ${Math.round(now.t - pressAt)} ms`;
       }
+      radiusStepPx = Math.max(radiusStepPx, Math.abs(r - prior));
       const sign = Math.sign(r - prior);
       const seen = radiusSign.get(id) ?? 0;
       if (seen !== 0 && sign !== seen && Math.abs(r - prior) > 0.05) radiusReversals.add(id);
       radiusSign.set(id, sign);
+    }
+    // A name that was not drawn the frame before arrives from no ink, unless it comes in over the canvas edge.
+    const inkWas = new Map(before.names.map(([id, role, , , , , alpha]) => [`${role} ${id}`, alpha]));
+    for (const [id, role, minX, maxX, minY, maxY, alpha] of now.names) {
+      const prior = inkWas.get(`${role} ${id}`) ?? (minX > 0 && minY > 0 && maxX < now.w && maxY < now.h ? 0 : alpha);
+      const step = Math.abs(alpha - prior) * (FRAME_MS / Math.max(dt, FRAME_MS));
+      if (step > inkStep) {
+        inkStep = step;
+        worstInk = `${role} ${id} ${prior.toFixed(2)} -> ${alpha.toFixed(2)} in ${dt.toFixed(1)} ms at ${Math.round(now.t - pressAt)} ms`;
+      }
     }
     if (changed) {
       if (Number.isNaN(firstChange)) firstChange = now.t;
@@ -155,13 +177,13 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
     }
   }
   return {
-    radiusPxPerMs, worst, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6),
+    radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6),
     firstFrameMs: firstChange - pressAt, totalMs: lastChange - pressAt, zoomReversals, radiusReversals: [...radiusReversals].slice(0, 6),
   };
 }
 
 function report(name: string, m: Motion): string {
-  return `[star-motion] ${name}: radius ${m.radiusPxPerMs.toFixed(3)} px/ms (${m.worst}), zoom step ${(m.zoomStep * 100).toFixed(1)} % per frame, `
+  return `[star-motion] ${name}: radius ${m.radiusPxPerMs.toFixed(3)} px/ms (${m.worst}), radius step ${m.radiusStepPx.toFixed(2)} px, name ink step ${m.inkStep.toFixed(3)} (${m.worstInk}), zoom step ${(m.zoomStep * 100).toFixed(1)} % per frame, `
     + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on marks ${m.namePairs.join(", ")}, first frame ${m.firstFrameMs.toFixed(0)} ms, total ${m.totalMs.toFixed(0)} ms, `
     + `zoom reversals ${m.zoomReversals}, radius reversals ${m.radiusReversals.join(", ") || "none"}`;
 }
@@ -170,6 +192,8 @@ function expectSmooth(name: string, m: Motion, opening: boolean): void {
   const said = report(name, m);
   console.log(said);
   expect.soft(m.radiusPxPerMs, `${name}: no radius changes faster than the limit: ${said}`).toBeLessThanOrEqual(RADIUS_PX_PER_MS);
+  expect.soft(m.radiusStepPx, `${name}: no radius steps further in one frame than the limit: ${said}`).toBeLessThanOrEqual(RADIUS_STEP_PX);
+  expect.soft(m.inkStep, `${name}: no name's ink changes faster than the limit: ${said}`).toBeLessThan(NAME_INK_STEP_PER_FRAME);
   expect.soft(m.zoomStep, `${name}: no zoom step past the limit: ${said}`).toBeLessThanOrEqual(ZOOM_STEP_PER_FRAME);
   expect.soft(m.overlapFrames, `${name}: no frame draws two marks of the star over each other: ${said}`).toBe(0);
   expect.soft(m.nameFrames, `${name}: no frame draws a name over another name or over a mark not its own: ${said}`).toBe(0);
