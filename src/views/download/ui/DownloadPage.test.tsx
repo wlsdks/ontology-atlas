@@ -242,7 +242,7 @@ describe('DownloadPage', () => {
 
       const web = screen.getByTestId('gateway-hero-web-cta');
       expect(web).toHaveAttribute('href', '/topology');
-      expect(web).toHaveTextContent(/playground/i);
+      expect(web).toHaveTextContent(/try it in the browser/i);
       expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
 
       const row = primary.parentElement!;
@@ -269,7 +269,7 @@ describe('DownloadPage', () => {
           expect.stringMatching(/_windows_x64-setup\.exe$/),
         );
         expect(primary).toHaveTextContent(/21\.5 MB/);
-        expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(2);
+        expect(screen.getAllByText(/Unsigned beta: SmartScreen/i)).toHaveLength(2);
         expect(screen.getByTestId('gateway-closing-trust')).toHaveTextContent(
           enMessages.download.trustLineWindows,
         );
@@ -314,8 +314,8 @@ describe('DownloadPage', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(within(screen.getByTestId('gateway-hero')).getAllByText(/Signed and notarized by Apple/i)).toHaveLength(1);
-    expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(2);
+    expect(within(screen.getByTestId('gateway-hero')).getAllByText(/Checked by Apple/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Checked by Apple/i)).toHaveLength(2);
 
     expect(screen.queryByText(/Not signed yet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Open Anyway/i)).not.toBeInTheDocument();
@@ -358,12 +358,13 @@ describe('DownloadPage', () => {
   });
 
   // Scoped to Atlas: the updater and a connected agent do use the network.
-  it('states the local-first promise where the download decision is made', () => {
+  it('keeps no sign-up in the hero and the no-backend fact in the open-source section', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(within(screen.getByTestId('gateway-hero')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
-    expect(within(screen.getByTestId('gateway-closing')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
+    // The hero keeps the plain promise; the open-source section names what it means.
+    expect(within(screen.getByTestId('gateway-hero')).getAllByText(/No sign-up/i)).toHaveLength(1);
+    expect(within(screen.getByTestId('gateway-source-section')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Chromium on the web does open a folder.
     expect(
