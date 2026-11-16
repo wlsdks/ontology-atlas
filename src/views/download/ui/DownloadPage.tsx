@@ -431,24 +431,26 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <h2
-          id="gateway-closing-title"
-          className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
-        >
-          {t('closingTitle')}
-        </h2>
-        <DownloadActions
-          scope="closing"
-          className="mt-6"
-          fileWins={fileWins}
-          primaryAsset={primaryAsset}
-          windowsInstaller={windowsInstaller}
-          windowsPrimary={windowsPrimary}
-        />
-        <TrustLine testId="gateway-closing-trust" className="mt-5" windowsPrimary={windowsPrimary} />
+        <div className="gateway-closing-stage @container flex min-w-0 flex-col items-center px-6 py-16 text-center sm:py-20">
+          <h2
+            id="gateway-closing-title"
+            className="max-w-full [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+          >
+            {t('closingTitle')}
+          </h2>
+          <DownloadActions
+            scope="closing"
+            className="mt-9 justify-center"
+            fileWins={fileWins}
+            primaryAsset={primaryAsset}
+            windowsInstaller={windowsInstaller}
+            windowsPrimary={windowsPrimary}
+          />
+          <TrustLine testId="gateway-closing-trust" className="mt-5" windowsPrimary={windowsPrimary} />
+        </div>
         <FactsStrip
           scope="gateway-closing"
-          className="mt-7"
+          className="mt-8"
           published={published}
           primaryAsset={primaryAsset}
           windowsAsset={windowsInstaller}
