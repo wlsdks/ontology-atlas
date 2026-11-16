@@ -22,8 +22,10 @@ reads "Run history · <name>", shows only that schedule's runs, and a **Show all
 selection. The row's own buttons never select it. With nothing selected the history shows every
 run of the lane. An empty lane presents one first schedule action. While a lane has no schedule, or the screen cannot hold one yet, the page is
 one stage centred in the window: an artwork of an example schedule (its name marked "e.g. …", with
-the default cadence) over a time line whose runs each leave a result, a title, one sentence for the
-state and the one action. Saving the first schedule fades the stage into the list while the new row
+the default cadence) drawn as a real row, over a dial whose hand passes the run mark, Moru reading on
+each pass, and a "Waiting for review" tray that takes one proposal per pass up to three and then
+clears; then a title, one sentence for the state and the one action. The scene loops while visible
+and a *Pause motion* control under it holds it; under reduced motion it rests with one proposal waiting. Saving the first schedule fades the stage into the list while the new row
 rises. The new-schedule button keeps its place in the header bar. The header bar starts at the page
 gutter like every destination's; the body wears the 960px column centred at every width, as Agents does.
 Without a folder, the installed app opens a folder in place.
