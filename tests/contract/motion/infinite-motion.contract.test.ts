@@ -10,6 +10,8 @@ const COMPOSITOR = new Set(["transform", "translate", "scale", "rotate", "opacit
 const PAINT_LICENSED: Record<string, string> = {
   acpWorkingShimmer: "the shimmer band is a text-clipped gradient, and only background-position moves it across the glyphs",
   atlasWaitingStep: "the waiting mark is a pixel sprite sheet stepped by background-position-x",
+  atlasWorkStep: "Moru's 24-cell work and play rows beside a running agent turn, stepped by background-position-x",
+  atlasWorkStep32: "Moru's 32-cell play rows beside a running agent turn, stepped by background-position-x",
 };
 
 const RUNS_ONLY_DURING_WORK: Record<string, string> = {

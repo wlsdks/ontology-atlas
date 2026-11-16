@@ -25,7 +25,7 @@ import { PresentationSurface } from './chat-panel/PresentationSurface';
 import { TranscriptOffers } from './chat-panel/TranscriptOffers';
 import { TranscriptPane } from './chat-panel/TranscriptPane';
 import { TranscriptRows } from './chat-panel/TranscriptRows';
-import type { TurnWork } from './chat-panel/TurnWorkStage';
+import { TurnWorkStage, type TurnWork } from './chat-panel/TurnWorkStage';
 import { ConnectStoppedState, EmptyState, StartingState } from './chat-panel/TranscriptStates';
 import type { AcpChatPanelProps } from './chat-panel/types';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/use-composer-menus';
@@ -478,7 +478,6 @@ export function AcpChatPanelBody({
         />
         <TranscriptOffers
           t={t}
-          turnWork={turnWork}
           stoppedWithoutAnswer={stoppedWithoutAnswer}
           presentation={presentation}
           presentationOfferRef={presentationOfferRef}
@@ -487,6 +486,8 @@ export function AcpChatPanelBody({
           onChooseSuggestion={(suggestion) => chooseSuggestion(suggestion, false)}
         />
       </TranscriptPane>
+
+      <TurnWorkStage t={t} work={turnWork} />
 
       {error ? (
         <ErrorCard
