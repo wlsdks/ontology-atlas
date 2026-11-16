@@ -381,7 +381,7 @@ interface DrawnRadius { r: number; perMs: number; at: number; frame: number }
 /** Per world: its frame count, and what each mark drew and in which of those frames. */
 interface DrawnMarks { frame: number; marks: Map<string, DrawnRadius>; names: Map<string, DrawnName[]>; namesBefore: DrawnName[]; namesNow: DrawnName[] }
 /** One name's drawn ink, the frame it last drew, the frame it was last admitted in and the last it was admitted off screen. */
-interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number; offScreen: number }
+interface DrawnName { name: PlacedName; wasFocus: boolean; alpha: number; at: number; frame: number; admitted: number; offScreen: number; stepped: number }
 const drawnRadii = new WeakMap<object, DrawnMarks>();
 /** Two frames at 60 Hz: a stalled frame, or the first frame after an idle loop, steps a radius no further. */
 const MARK_STEP_MAX_MS = 34;
@@ -507,7 +507,9 @@ function radiusNow(id: string): number {
  * was off screen, or the map slept) and reduced motion take the target at once. Settled once per
  * mark and frame.
  */
-function drawnRadius(id: string, target: number, limit = Infinity): number {
+function drawnRadius(id: string, wanted: number, limit = Infinity): number {
+  // A mark heads for the room it has when that is smaller than its radius, so it settles there.
+  const target = Math.min(wanted, limit);
   let last = F.drawn.get(id);
   if (!last) {
     F.drawn.set(id, (last = { r: target, perMs: 0, at: F.now, frame: F.frame }));
@@ -734,7 +736,7 @@ function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
     const row = rows[i]!;
     if (row.name.role === n.role && row.wasFocus === wasFocus) return row;
   }
-  const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1, offScreen: -1 };
+  const row: DrawnName = { name: n, wasFocus, alpha: 0, at: F.now, frame: -1, admitted: -1, offScreen: -1, stepped: -1 };
   rows.push(row);
   return row;
 }
@@ -746,6 +748,9 @@ function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
  * screen); reduced motion and the map's first frame take the target at once.
  */
 function drawnNameInk(row: DrawnName, target: number): number {
+  // A name planned twice in one frame draws the ink its first plan stepped to.
+  if (row.stepped === F.frame) return row.alpha;
+  row.stepped = F.frame;
   let alpha = target;
   if (!F.reducedMotion && F.frame > 1) {
     const continuing = row.frame === F.frame - 1;

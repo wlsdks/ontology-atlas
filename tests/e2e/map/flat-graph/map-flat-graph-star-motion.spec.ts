@@ -82,8 +82,8 @@ async function stopSampling(page: Page): Promise<{ samples: Sample[]; pressAt: n
 
 /**
  * Every frame-to-frame figure the limits read, normalised by the measured frame time. A backed name
- * (one held in place with no side clear of the marks) draws on the canvas ground, so it is checked
- * against other names, not against marks.
+ * (one held in place with no side clear of the marks) draws on the canvas ground, and a name whose
+ * ink is falling is on its way out, so both are checked against other names, not against marks.
  */
 function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[]): Motion {
   let radiusPxPerMs = 0;
@@ -119,12 +119,14 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
       }
       if (pairs > 0) overlapFrames += 1;
       const names = now.names.filter(([id]) => group.has(id));
+      const inkBefore = new Map((samples[i - 1]?.names ?? []).map(([id, role, , , , , alpha]) => [`${role} ${id}`, alpha]));
       let crossings = 0;
       const at = `${Math.round(now.t - pressAt)} ms, zoom ${now.zoom.toFixed(2)}`;
       for (let a = 0; a < names.length; a += 1) {
-        const [ia, ra, minX, maxX, minY, maxY, , backed] = names[a]!;
+        const [ia, ra, minX, maxX, minY, maxY, alpha, backed] = names[a]!;
+        const leaving = alpha < (inkBefore.get(`${ra} ${ia}`) ?? 0);
         for (const [im, x, y, r] of marks) {
-          if (im === ia || backed) continue;
+          if (im === ia || backed || leaving) continue;
           const gap = Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minY - y, 0, y - maxY));
           if (gap < r - OVERLAP_PX) {
             crossings += 1;

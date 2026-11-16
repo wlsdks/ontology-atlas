@@ -272,6 +272,12 @@ describe("a mark's drawn radius across frames", () => {
     expect(back).toBeCloseTo(settled, 3);
   });
 
+  it("settles a mark whose room at this zoom is smaller than its opened radius", () => {
+    const camera = cameraOn("domain:agent-access", {});
+    const opened = framesUntilSettled(camera, { focusedNodeId: "domain:agent-access" }, new Set(), 0, 1, 1, FRAME_MS);
+    expect(() => framesUntilSettled(camera, { focusedNodeId: "capability:in-app-coding-agent" }, new Set(), opened.end + FRAME_MS, 1, 1, FRAME_MS)).not.toThrow();
+  });
+
   it("moves no further across a stalled frame than across a frame of two 60 Hz frames", () => {
     const radiiAfterGap = (gapMs: number) => {
       const camera = cameraOn("domain:code-evidence", {});
