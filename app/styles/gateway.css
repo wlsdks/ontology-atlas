@@ -650,6 +650,14 @@
   60% { opacity: 0.55; }
 }
 
+/* The film's edges sink into the page, so the pinned stage has no frame. */
+.gateway-film-vignette {
+  background:
+    linear-gradient(180deg, var(--color-canvas) 0%, transparent 14%, transparent 62%, var(--color-canvas) 100%),
+    linear-gradient(90deg, var(--color-canvas) 0%, transparent 12%, transparent 88%, var(--color-canvas) 100%);
+  opacity: 0.85;
+}
+
 /* The hero window's light at card size: it falls from the top of each drawing. */
 .gateway-loop-drawing {
   background:

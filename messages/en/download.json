@@ -135,5 +135,30 @@
       "label": "relations",
       "body": "Between those concepts, written as names in the info block at the top of each file."
     }
+  },
+  "film": {
+    "label": "How a folder becomes the map",
+    "acts": {
+      "1": {
+        "title": "It starts as Markdown files",
+        "body": "Each concept is one .md file in the repository, read by people and agents alike."
+      },
+      "2": {
+        "title": "Each file becomes a place on the map",
+        "body": "Atlas reads the info block at the top of each file and sets the concept where its parent holds it."
+      },
+      "3": {
+        "title": "Relations draw themselves",
+        "body": "The {relations} relations written in those files become the lines between them."
+      },
+      "4": {
+        "title": "One map, read by you and your agents",
+        "body": "This is this repository's real map: {concepts} concepts and {relations} relations."
+      }
+    }
+  },
+  "motion": {
+    "pause": "Pause motion",
+    "play": "Play motion"
   }
 }
