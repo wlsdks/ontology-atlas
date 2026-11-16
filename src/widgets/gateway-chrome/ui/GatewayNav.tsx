@@ -6,8 +6,8 @@ import { LocaleSwitch } from '@/features/locale-switch';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
-import { GITHUB_REPO_URL, xProfileUrl } from '@/shared/config/social-links';
-import { GithubMark, XMark } from '@/shared/ui';
+import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL, xProfileUrl } from '@/shared/config/social-links';
+import { GithubMark, LinkedInMark, XMark } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { AtlasSymbol } from '@/shared/ui/marks/brand-mark';
 
@@ -159,6 +159,18 @@ export function GatewayNav() {
               <span className="sr-only">{tNav('xPending')}</span>
             </span>
           )}
+
+          <a
+            href={MAKER_LINKEDIN_URL}
+            target="_blank"
+            rel="noreferrer noopener me"
+            data-testid="gateway-linkedin-link"
+            aria-label={tNav('linkedinLabel')}
+            title={tNav('linkedinLabel')}
+            className={GATEWAY_ICON_LINK}
+          >
+            <LinkedInMark size={14} aria-hidden />
+          </a>
           </span>
 
           {/*
