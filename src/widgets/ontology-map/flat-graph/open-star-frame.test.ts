@@ -325,6 +325,37 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
   },
 );
 
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "lets no name hold or gain ink over a domain's disc while a member of the opened %s star is pressed",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const free = { minX: 0, minY: 0, maxX: W / 2 + 120, maxY: H };
+    const breaches: string[] = [];
+    for (const zoom of [2.5, 3, 3.3]) {
+      for (const member of capabilities) {
+        const camera = cameraOn(domainId, {});
+        const rest = framesUntilSettled(camera, { freeRect: free }, star, 0, 1, 1, FRAME_MS);
+        const opened = framesUntilSettled(camera, { focusedNodeId: domainId, freeRect: free }, star, rest.end + FRAME_MS, 1, zoom, 600);
+        let before = paintedInks();
+        for (let i = 1, now = opened.end + FRAME_MS; i <= 40; i += 1, now += FRAME_MS) {
+          paintFlatGraphFrame(camera(zoom, { focusedNodeId: member, freeRect: free, now }), TOKENS);
+          const probe = describeLastDialFrame(W, H)!;
+          const domains = probe.discs.filter((d) => d.id !== null && model.domainById.has(d.id));
+          for (const n of [...probe.texts, ...probe.fadingTexts]) {
+            if (n.id === null || n.alpha < (before.get(`${n.role} ${n.id} ${n.side}`) ?? 0)) continue;
+            for (const d of domains) {
+              if (d.id !== n.id && Math.hypot(Math.max(n.box.minX - d.x, 0, d.x - n.box.maxX), Math.max(n.box.minY - d.y, 0, d.y - n.box.maxY)) < d.r - 0.5) breaches.push(`${member} at ${zoom}, frame ${i}: ${n.role} ${n.text} on ${d.id}`);
+            }
+          }
+          before = paintedInks();
+        }
+      }
+    }
+    expect(breaches.slice(0, 6)).toEqual([]);
+  },
+);
+
 /** How far a member's disc stands left of the panel for its name to be asked for: room for a name's gap. */
 const PANEL_GAP_PX = 20;
 

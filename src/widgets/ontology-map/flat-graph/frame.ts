@@ -908,7 +908,7 @@ function collectGrownMarks(): void {
  * drawn before it, less the pad two names keep; with `others`, also the nearest disc not its own and
  * grown dot (none for a backed name, whose plate covers them). Rows of one concept count only while
  * one of them glides off its place, as a domain's census and reach rows share one slot. Only while
- * marks grow: O(discs + grown dots + names) per name.
+ * marks grow: O(discs + domains + grown dots + names) per name.
  */
 function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolean): number {
   const pad = F.P.namePadPx;
@@ -918,9 +918,12 @@ function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolea
   const maxY = y + n.box.maxY - pad;
   let room = Infinity;
   if (others) {
-    for (let i = 0; i < L.discs.size; i += 1) {
-      const m = L.discs.items[i]!;
-      if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+    // Domains and the project draw from their own lists; a name gives way to them like any disc.
+    for (const list of discLists) {
+      for (let i = 0; i < list.size; i += 1) {
+        const m = list.items[i]!;
+        if (m.id !== n.id) room = Math.min(room, Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r);
+      }
     }
     if (n.backed !== true) {
       for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
@@ -955,6 +958,9 @@ function onGrownDot(n: PlacedName, x: number, y: number): boolean {
   }
   return false;
 }
+
+/** Every list a disc is drawn from. */
+const discLists: readonly FrameList<Disc>[] = [L.discs, L.domains, L.project];
 
 /** A domain's census and reach rows: one slot under its name, cross-fading. */
 const CAPTION_ROWS: ReadonlySet<PlacedName["role"]> = new Set(["units", "reach"]);
