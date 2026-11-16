@@ -181,13 +181,10 @@
   "model": "모델",
   "mode": "작업 방식",
   "modeUnverified": "{name} · 확인 안 됨",
-  "approval": "승인",
   "approvalOption": {
-    "ask": "매번 묻기",
     "auto": "자동 승인"
   },
   "approvalHint": {
-    "ask": "쓰기 전에 항상 물어요.",
     "auto": "이 폴더 안 파일 수정과 개념·관계 추가·수정은 묻지 않고 진행해요. 셸 명령, 폴더 밖, 삭제, 커밋은 계속 물어요."
   },
   "modeUnverifiedHint": "이 방식은 아직 확인 안 했어요.",

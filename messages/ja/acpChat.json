@@ -181,13 +181,10 @@
   "model": "モデル",
   "mode": "モード",
   "modeUnverified": "{name} · 未確認",
-  "approval": "承認",
   "approvalOption": {
-    "ask": "毎回確認",
     "auto": "自動承認"
   },
   "approvalHint": {
-    "ask": "書き込む前に必ず確認します。",
     "auto": "このフォルダ内のファイル編集と、概念・関係の追加・変更は確認せずに進めます。シェルコマンド、フォルダ外、削除、コミットは引き続き確認します。"
   },
   "modeUnverifiedHint": "まだ確認していません。",

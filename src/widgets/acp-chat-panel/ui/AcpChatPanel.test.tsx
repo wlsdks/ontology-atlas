@@ -324,11 +324,10 @@ describe('chat panel: draws only what happened', () => {
     expect(screen.getByTestId('acp-chat-choices')).toBeInTheDocument();
   });
 
-  it('offers Approval with no modes, marks Auto-approve at rest, and then passes an in-folder edit with a transcript line', async () => {
+  it('offers auto-approve with no modes, marks it at rest, and then passes an in-folder edit with a transcript line', async () => {
     await bootSession();
-    expect(screen.queryByTestId('acp-chat-mode')).toBeNull();
-    const approval = screen.getByTestId('acp-chat-approval');
-    expect(approval).toHaveTextContent('approvalOption.ask');
+    const approval = screen.getByTestId('acp-chat-mode');
+    expect(approval).toHaveTextContent('modeName.default');
     const restingClass = approval.closest('.relative')!.className;
 
     fireEvent.click(approval);
@@ -352,6 +351,29 @@ describe('chat panel: draws only what happened', () => {
     await waitFor(() => expect(bridge.sent.find((m) => m.id === 77)).toMatchObject({ result: { outcome: { optionId: 'allow' } } }));
     expect(screen.getByText('notice.autoApproved:{"target":"refund.md"}')).toBeInTheDocument();
     expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+  });
+
+  it('keeps auto-approve in the mode picker: it leaves plan mode when chosen and a chosen mode turns it off', async () => {
+    await bootSession({}, {
+      currentModeId: 'plan',
+      availableModes: [{ id: 'default', name: 'Default' }, { id: 'plan', name: 'Plan' }],
+    });
+    const picker = screen.getByTestId('acp-chat-mode');
+    expect(picker).toHaveTextContent('modeName.plan');
+    expect(screen.queryByTestId('acp-chat-approval')).toBeNull();
+
+    fireEvent.click(picker);
+    fireEvent.click(screen.getByRole('option', { name: /approvalOption\.auto/ }));
+    await waitFor(() =>
+      expect(bridge.sent.find((m) => m.method === 'session/set_mode')).toMatchObject({ params: { modeId: 'default' } }),
+    );
+    expect(picker).toHaveTextContent('approvalOption.auto');
+    expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'on');
+
+    fireEvent.click(picker);
+    fireEvent.click(screen.getByRole('option', { name: /modeName\.plan/ }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-choices')).toHaveAttribute('data-auto-approve', 'off'));
+    expect(picker).not.toHaveTextContent('approvalOption.auto');
   });
 
   /** The whole request stays one disclosure away; the transcript opens on the readable sentence only. */

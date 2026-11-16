@@ -13,12 +13,24 @@ import { composerStatusLive, workingShimmer } from '../working-ink';
 import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from './constants';
 import type { ChatT, FooterStatus, SessionState } from './types';
 
-const APPROVAL_ASK = 'ask';
-const APPROVAL_AUTO = 'auto';
+/** Values of the one picker: an adapter mode, or the app's own answer to its requests. */
+const AUTO_APPROVE = 'approval:auto';
+const ASK_EVERY_TIME = 'approval:ask';
+const MODE_PREFIX = 'mode:';
 
 /** Warning tone at rest, so a conversation running on auto-approve never looks like one that asks. */
 const AUTO_APPROVE_ON_CLASS =
   '[&>button]:border-[color:var(--color-amber-source-a25)] [&>button]:bg-[color:var(--color-amber-source-a08)] [&>button>span]:text-[color:var(--color-status-warning)]';
+
+/** Plan mode runs nothing, so auto-approve moves to an offered mode that sends writes to the app. */
+function modeToLeavePlan(choices: SessionState['choices']): string | null {
+  if (modeCopyKey(choices.currentModeId) !== 'plan') return null;
+  const asking = choices.modes.find((mode) => {
+    const key = modeCopyKey(mode.id);
+    return key === 'default' || key === 'read-only';
+  });
+  return asking?.id ?? null;
+}
 
 export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChooseMode, onChooseAutoApprove }: {
   t: ChatT;
@@ -34,50 +46,61 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, autoApprove, onChoo
       ? 'hidden @min-[464px]/composer:block'
       : 'hidden @min-[308px]/composer:block'
     : undefined;
-  return (
-    <div data-testid="acp-chat-choices" className="flex min-w-0 items-center gap-0.5">
-      {choices.modes.length > 0 ? (
-        <Select
-          ariaLabel={t('mode')}
-          size="sm"
-          value={choices.currentModeId ?? ''}
-          placeholder={t('mode')}
-          onChange={onChooseMode}
-          options={choices.modes.map((mode) => {
-            const unverified = choices.unverifiedModeIds.includes(mode.id);
+  const modeOptions = choices.modes.map((mode) => {
+    const unverified = choices.unverifiedModeIds.includes(mode.id);
 
-            const copyKey = modeCopyKey(mode.id);
-            const name = copyKey ? t(`modeName.${copyKey}`) : mode.name;
-            const hint = copyKey ? t(`modeHint.${copyKey}`) : undefined;
-            return {
-              value: mode.id,
-              label: unverified ? t('modeUnverified', { name }) : name,
-              description: unverified
-                ? [hint, t('modeUnverifiedHint')].filter(Boolean).join(' ')
-                : hint,
-            };
-          })}
-          data-testid="acp-chat-mode"
-          quiet
-          className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink-0', yieldsWhileBusy)}
-        />
-      ) : null}
+    const copyKey = modeCopyKey(mode.id);
+    const name = copyKey ? t(`modeName.${copyKey}`) : mode.name;
+    const hint = copyKey ? t(`modeHint.${copyKey}`) : undefined;
+    return {
+      value: `${MODE_PREFIX}${mode.id}`,
+      label: unverified ? t('modeUnverified', { name }) : name,
+      description: unverified
+        ? [hint, t('modeUnverifiedHint')].filter(Boolean).join(' ')
+        : hint,
+    };
+  });
+  // A tool that offers no modes still asks before each write, and that stays a choice beside auto-approve.
+  const askingOptions =
+    modeOptions.length > 0
+      ? modeOptions
+      : [{ value: ASK_EVERY_TIME, label: t('modeName.default'), description: t('modeHint.default') }];
+  const currentMode = choices.currentModeId ? `${MODE_PREFIX}${choices.currentModeId}` : '';
+  const resting = autoApprove ? AUTO_APPROVE : modeOptions.length > 0 ? currentMode : ASK_EVERY_TIME;
+  const choose = (value: string) => {
+    if (value === AUTO_APPROVE) {
+      const asking = modeToLeavePlan(choices);
+      if (asking) onChooseMode(asking);
+      onChooseAutoApprove(true);
+      return;
+    }
+    if (autoApprove) onChooseAutoApprove(false);
+    if (!value.startsWith(MODE_PREFIX)) return;
+    const modeId = value.slice(MODE_PREFIX.length);
+    if (modeId !== choices.currentModeId) onChooseMode(modeId);
+  };
+  return (
+    <div
+      data-testid="acp-chat-choices"
+      data-auto-approve={autoApprove ? 'on' : 'off'}
+      className="flex min-w-0 items-center gap-0.5"
+    >
       <Select
-        ariaLabel={t('approval')}
+        ariaLabel={t('mode')}
         size="sm"
-        value={autoApprove ? APPROVAL_AUTO : APPROVAL_ASK}
-        placeholder={t('approval')}
-        onChange={(value) => onChooseAutoApprove(value === APPROVAL_AUTO)}
+        value={resting}
+        placeholder={t('mode')}
+        onChange={choose}
         options={[
-          { value: APPROVAL_ASK, label: t('approvalOption.ask'), description: t('approvalHint.ask') },
-          { value: APPROVAL_AUTO, label: t('approvalOption.auto'), description: t('approvalHint.auto') },
+          ...askingOptions,
+          { value: AUTO_APPROVE, label: t('approvalOption.auto'), description: t('approvalHint.auto') },
         ]}
-        data-testid="acp-chat-approval"
+        data-testid="acp-chat-mode"
         quiet
         className={cn(
           PICKER_MIN_WIDTH_CLASS,
           PICKER_MAX_WIDTH_CLASS,
-          'shrink-0',
+          'shrink',
           autoApprove ? AUTO_APPROVE_ON_CLASS : yieldsWhileBusy,
         )}
       />
