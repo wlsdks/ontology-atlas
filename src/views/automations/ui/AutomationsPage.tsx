@@ -56,6 +56,7 @@ export function AutomationsPage({
 }) {
   const t = useTranslations("automations");
   const tRounds = useTranslations("library.rounds");
+  const tMotion = useTranslations("download.motion");
   const locale = useLocale();
   const desktop = useSyncExternalStore(subscribeToRuntime, isTauriVaultRuntime, serverRuntimeSnapshot);
   const params = useSearchParams();
@@ -182,7 +183,7 @@ export function AutomationsPage({
                 aria-labelledby={staged ? `automations-tab-${lane}` : undefined}
                 inert={stage.exiting} aria-hidden={stage.exiting || undefined}
                 className={cn("flex min-w-0 flex-1 flex-col", stage.exiting && "motion-swap-out pointer-events-none absolute inset-0")}>
-                <FeatureStage data-testid="automations-empty-workbench" artWidth="wide" artLoops
+                <FeatureStage data-testid="automations-empty-workbench" artWidth="wide" artLoops={{ pause: tMotion("pause"), play: tMotion("play") }}
                   art={(motionState) => <AutomationScheduleArtwork {...motionState}
                     name={t("ghostExample", { name: lane === "ontology" ? t("ontology.defaultName") : tRounds("name.consistency") })}
                     cadence={lane === "ontology" ? t("cadence.6h") : t("cadence.hour")} />}

@@ -8,7 +8,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 
-import { MotionToggle } from '../controls/motion-toggle';
+import { MotionToggle, type MotionPauseLabels } from '../controls/motion-toggle';
 
 const ARRIVAL_MS = MOTION.choreography.duration * 1000;
 /** The pulse's length as a fraction of its line. */
@@ -38,15 +38,15 @@ export function FeatureStage({
   action,
   note,
   artWidth = 'compact',
-  artLoops = false,
+  artLoops,
   className,
   ...rest
 }: {
   art: (state: FeatureStageMotion) => ReactNode;
   /** `wide` for a scene whose figures stand side by side; the compact slot suits one figure. */
   artWidth?: 'compact' | 'wide';
-  /** The artwork keeps moving by itself after it arrives, so the stage offers the shared pause (WCAG 2.2.2). */
-  artLoops?: boolean;
+  /** The artwork keeps moving by itself after it arrives, so the stage offers the shared pause (WCAG 2.2.2) with these words. */
+  artLoops?: MotionPauseLabels;
   title: ReactNode;
   /** `h1` where the page has no header bar naming it. */
   titleAs?: 'h1' | 'h2';
@@ -59,7 +59,7 @@ export function FeatureStage({
 }) {
   const reduced = usePrefersReducedMotion();
   const motionPaused = useMotionPaused();
-  const offersPause = artLoops && !reduced;
+  const offersPause = artLoops !== undefined && !reduced;
   const paused = offersPause && motionPaused;
   const artSlot = artWidth === 'wide' ? 'max-w-md' : 'max-w-72';
   const [arriving, setArriving] = useState(true);
@@ -111,7 +111,7 @@ export function FeatureStage({
       {/* Drawn just under the artwork on the plate's edge, but last in the tab order: `order` draws it there. */}
       {offersPause ? (
         <div className={cn('relative -order-1 h-0 w-full', artSlot)}>
-          <MotionToggle testId="feature-stage-motion-toggle" className="absolute right-0 top-2" />
+          <MotionToggle labels={artLoops} testId="feature-stage-motion-toggle" className="absolute right-0 top-2" />
         </div>
       ) : null}
     </motion.section>

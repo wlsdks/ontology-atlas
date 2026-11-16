@@ -23,11 +23,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderStage(artLoops: boolean) {
+function renderStage(loops: boolean) {
   const seen: FeatureStageMotion[] = [];
   render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <FeatureStage artLoops={artLoops} title="Title" body="Sentence"
+      <FeatureStage artLoops={loops ? en.download.motion : undefined} title="Title" body="Sentence"
         art={(state) => { seen.push(state); return <span data-testid="art" />; }}
         action={<button type="button">Act</button>} />
     </NextIntlClientProvider>,
