@@ -69,7 +69,7 @@ interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
 interface Light { x: number; y: number; r: number; ink: string; alpha: number }
 /** `markR` is the drawn radius of the name's mark, read only by a leader. */
 /** `fading`: no longer admitted, drawn only while its ink runs out; the probe and picking skip it. */
-interface Name { name: PlacedName; x: number; y: number; ink: number; room: number; color: string; halo: number; markR: number; fading: boolean }
+interface Name { name: PlacedName; x: number; y: number; ink: number; room: number; color: string; halo: number; markR: number; fading: boolean; backed: boolean }
 interface Ring { x: number; y: number; r: number; alpha: number; ink: string }
 type LabelBox = DialFrameResult["labelBoxes"][number];
 
@@ -120,7 +120,7 @@ const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
 const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
-const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, room: 1, color: "", halo: 0, markR: 0, fading: false }));
+const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, room: 1, color: "", halo: 0, markR: 0, fading: false, backed: false }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -220,6 +220,7 @@ function nameMark(name: PlacedName, x: number, y: number, ink: number, color: st
   if (n.ink !== ink) n.ink = ink;
   if (n.room !== 1) n.room = 1;
   n.fading = false;
+  n.backed = name.backed === true;
   n.color = color;
   if (n.halo !== halo) n.halo = halo;
   return n;
@@ -825,6 +826,7 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
   }
   let target = 0;
   let room = 1;
+  let backed = n.backed === true;
   if (!fading) {
     loadNameInk(n);
     target = scratch[0]! * share;
@@ -835,6 +837,8 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
   if (target > DRAWN_INK && grownMarks.size > 0) {
     const held = n.id === F.attention.focusId && !CAPTION_ROWS.has(n.role);
     room = nameRoom(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, !held) > ROOM_GONE_PX ? 1 : 0;
+    // The selection's name stays put while its star's dots move out past it, so it draws on its plate while one crosses it.
+    if (held && !backed) backed = onGrownDot(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy);
     target *= room;
   }
   if (target <= DRAWN_INK) target = 0;
@@ -855,6 +859,7 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
   if (mark.ink !== ink) mark.ink = ink;
   if (mark.room !== room) mark.room = room;
   mark.fading = fading;
+  mark.backed = backed;
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
   const markR = n.leader ? (n.role === "element" ? dotRadius(n.id) : discRadius(n.id)) : 0;
@@ -935,6 +940,20 @@ function nameRoom(n: PlacedName, at: Point, x: number, y: number, others: boolea
     room = Math.min(room, apart - pad);
   }
   return room;
+}
+
+/** Whether a name's glyphs drawn from `x`, `y` cross a grown dot not its own this frame. O(grown dots). */
+function onGrownDot(n: PlacedName, x: number, y: number): boolean {
+  const pad = F.P.namePadPx;
+  const minX = x + n.box.minX + pad;
+  const maxX = x + n.box.maxX - pad;
+  const minY = y + n.box.minY + pad;
+  const maxY = y + n.box.maxY - pad;
+  for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
+    const m = grownMarks.items[i]!;
+    if (m.id !== n.id && Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r <= ROOM_GONE_PX) return true;
+  }
+  return false;
 }
 
 /** A domain's census and reach rows: one slot under its name, cross-fading. */
@@ -1852,7 +1871,7 @@ function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], gr
   let feathered = false;
   for (let nIndex = 0; nIndex < marks.length; nIndex += 1) {
     const n = marks[nIndex]!;
-    if (n.name.backed !== true) continue;
+    if (!n.backed) continue;
     if (!feathered) {
       feathered = true;
       ctx.save();
@@ -2067,7 +2086,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (text.x !== n.x) text.x = n.x;
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
-    text.backed = n.name.backed === true;
+    text.backed = n.backed;
     text.fading = n.fading;
     text.side = sideOf(n.name);
     if (text.alpha !== n.ink) text.alpha = n.ink;

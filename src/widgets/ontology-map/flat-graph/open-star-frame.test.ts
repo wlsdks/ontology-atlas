@@ -299,6 +299,32 @@ describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning
   });
 });
 
+it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
+  "draws the name of each member pressed in the opened %s star clear of grown dots or on its plate, from the press to rest",
+  (domainId) => {
+    const { capabilities, elements } = domainStarIds(model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const breaches: string[] = [];
+    for (const zoom of [2.5, 3.3]) {
+      for (const member of capabilities) {
+        const camera = cameraOn(domainId, {});
+        const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+        const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, zoom, 600);
+        for (let i = 1, now = opened.end + FRAME_MS; i <= 60; i += 1, now += FRAME_MS) {
+          paintFlatGraphFrame(camera(zoom, { focusedNodeId: member, now }), TOKENS);
+          const probe = describeLastDialFrame(W, H)!;
+          for (const t of probe.texts.filter((x) => x.id === member && x.role === "capability" && !x.backed)) {
+            for (const g of probe.glyphs) {
+              if (g.grown && Math.hypot(Math.max(t.box.minX - g.x, 0, g.x - t.box.maxX), Math.max(t.box.minY - g.y, 0, g.y - t.box.maxY)) < g.r - 0.5) breaches.push(`${member} at ${zoom}, frame ${i}: on ${g.id}`);
+            }
+          }
+        }
+      }
+    }
+    expect(breaches.slice(0, 6)).toEqual([]);
+  },
+);
+
 /** How far a member's disc stands left of the panel for its name to be asked for: room for a name's gap. */
 const PANEL_GAP_PX = 20;
 
