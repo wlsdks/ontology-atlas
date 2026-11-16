@@ -169,5 +169,8 @@
       "cadence": "주기",
       "last": "마지막 결과"
     }
+  },
+  "scene": {
+    "reviewTray": "검토 대기"
   }
 }

@@ -37,8 +37,8 @@ import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
 import { FilmSection } from './FilmSection';
 import { HarnessFilm } from './HarnessFilm';
-import { MotionToggle } from './MotionToggle';
-import { useMotionPaused } from '../lib/motion-pause';
+import { MotionToggle } from '@/shared/ui/controls/motion-toggle';
+import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { SectionIntro } from './SectionIntro';
 import { ClosingConstellation } from './ClosingConstellation';
 import { useInViewMotion } from '../lib/use-in-view-motion';
@@ -70,6 +70,8 @@ const HERO_CHIP =
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
+  const tMotion = useTranslations('download.motion');
+  const motionLabels = { pause: tMotion('pause'), play: tMotion('play') };
   const published = isMacosReleasePublished();
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
   /** The tab bar's own function: `/` shows the bar and `/download` hides it, and two lists drift. */
@@ -143,7 +145,7 @@ export function DownloadPage() {
                 </a>
                 <span aria-hidden>·</span>
                 <span className="font-mono">{tFooter('stack')}</span>
-                <MotionToggle testId="gateway-footer-motion-toggle" className="gap-1.5 sm:ml-auto" />
+                <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="gap-1.5 sm:ml-auto" />
               </div>
               <p className="mt-3 text-[color:var(--color-text-tertiary)]">
                 {tFooter('contact.lead')}{' '}
@@ -257,7 +259,7 @@ function HeroSection({
                 <span>{t('news', { tag: MACOS_RELEASE.tag })}</span>
               </Link>
             ) : null}
-            <MotionToggle testId="gateway-motion-toggle" className={HERO_CHIP} />
+            <MotionToggle labels={{ pause: t('motion.pause'), play: t('motion.play') }} testId="gateway-motion-toggle" className={HERO_CHIP} />
           </div>
 
           <h1

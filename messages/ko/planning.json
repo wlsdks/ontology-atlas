@@ -48,6 +48,8 @@
   "imageUnnamed": "이미지 {line}:{column}",
   "startTitle": "기획과 디자인을 한곳에서",
   "startBody": "기획 폴더를 열어 마크다운 문서와 디자인 시안을 함께 살펴보세요.",
-  "designImages": "디자인 이미지",
-  "close": "닫기"
+  "close": "닫기",
+  "scene": {
+    "documentHeading": "요구사항"
+  }
 }

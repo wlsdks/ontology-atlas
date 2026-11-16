@@ -9,7 +9,7 @@ import { FONT_WEIGHT } from '@/shared/ui/tokens/font-weight';
 
 import { buildFilmScene, pickCloseUp, type FilmCloseUp, type FilmScene } from '../lib/film-scene';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { isMotionPaused } from '../lib/motion-pause';
+import { isMotionPaused } from '@/shared/motion/motion-pause';
 import type { StageGraph } from '../lib/stage-graph';
 
 const ACTS = [1, 2, 3, 4, 5] as const;

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { isMotionPaused } from '../lib/motion-pause';
+import { isMotionPaused } from '@/shared/motion/motion-pause';
 
 /**
  * The gateway's light field, grain and cursor ring. Only inside `.gateway-fx-stage`, alpha capped

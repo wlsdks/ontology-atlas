@@ -17,6 +17,10 @@ const CSS = readGlobalCss();
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "atlas-moru-greeting": "The finite welcome becomes the neutral seal pose; the folder title, picker and keyboard actions remain unchanged.",
+  "planning-sheet-drift":
+    "Ambient breathing of the planning stage's two sheets. Under reduced motion the artwork never applies the class and draws the sheets settled in place; the title, sentence and button beside it say the same thing. PlanningSourceArtwork.test.tsx checks the class is absent.",
+  "automation-dial-hand":
+    "The automations stage's cadence hand sweeping its dial. Under reduced motion the artwork never applies the class: the hand rests on the run mark beside one proposal waiting in the tray, and the stage's text carries the schedule. AutomationScheduleArtwork.test.tsx checks the class is absent.",
   "map-wait-orbit": "The loading scene's decorative orbit travel stops under reduced motion. The stationary planes, core, live status, and return action remain; map-navigation-wait.spec.ts checks every orbit's animation and transform.",
   "atlas-waiting-mark":
     "The native character remains visible beside the parent's unchanged status and Stop action; reduced motion removes the decorative frame steps and hops.",

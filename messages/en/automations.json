@@ -169,5 +169,8 @@
       "cadence": "Cadence",
       "last": "Last result"
     }
+  },
+  "scene": {
+    "reviewTray": "Awaiting review"
   }
 }

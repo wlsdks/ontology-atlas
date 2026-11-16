@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { useStageGraph } from '../lib/use-stage-graph';
 import { LOOP_CHANGED, LOOP_PROPOSAL, LOOP_READ } from '../model/loop-cast';
-import { setMotionPaused } from '../lib/motion-pause';
+import { setMotionPaused } from '@/shared/motion/motion-pause';
 import { LoopSection, StartSection } from './LoopSection';
 
 const ROOT = path.resolve(__dirname, '../../../..');
