@@ -118,7 +118,10 @@ copied handoffs keep that target without disclosing the private source root.
 
 Ontology review on the map opens the saved review results; in the installed app
 **Ask AI to review** and the offer to fill missing connection reasons stand above
-them. A concept's definition, connections and recorded reasons are read in its
+them. The results are a short list of findings to check; a finding opens in
+place with **Have it fixed**, **Keep for later** and **Dismiss**, and the
+original answer and evidence sit behind **Record details**.
+A concept's definition, connections and recorded reasons are read in its
 panel and full detail, not in the dock. Selecting a relation while the dock is
 open shows its card beside the dock.
 Agent reads of that same relation retain the review target. Opening a current

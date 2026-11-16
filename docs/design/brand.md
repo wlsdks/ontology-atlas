@@ -203,8 +203,8 @@ a clipped frame.
 | Real generic pending operation | `blink` / waiting row | Quiet loop while the operation is active and visible |
 | Tool preparation/connection | `connect` / connect row | Same pending guards; status and Stop remain authoritative |
 | Local Compile running | `source-read` / compile row | Same pending guards; no inferred completion |
-| In-app agent turn at work (chat dock) | `thinking`, `source-read`, `search`, `save`, `laptop-code` / native 128px work rows | One clip per kind of work the turn reports (no open call: thinking; an open read, search, write or command; answer text arriving within the last few seconds: typing). The 24 poses loop end to end without the waiting hold while the turn runs; hidden while a permission card waits, after Stop and when the turn has gone silent |
-| In-app agent turn finished | `dance` / native 128px success row | One finite dance for a turn this panel watched end with an answer, then the stage folds away; never over a reopened conversation |
+| In-app agent turn at work (chat dock) | Work: `thinking`, `pondering`, `source-read`, `follow-link`, `search`, `compare`, `save`, `folder-open`, `laptop-code`; play: `flipper-groove`, `magic-fish`, `sing`, `hearts` / native 128px rows | The stage is a band above the composer, outside the scrolling transcript, so arriving answer text never moves it. Each kind of work the turn reports (no open call: thinking; an open read, search, write or command; answer text arriving within the last few seconds: typing) walks its own short list of work clips, and every third loop of one kind is play chosen from the turn id; a clip changes only when a loop ends, a new kind shows at once, and answer text plays the laptop scene alone. Loops run end to end without the waiting hold while the turn runs; hidden while a permission card waits, after Stop and when the turn has gone silent |
+| In-app agent turn finished | `dance`, `clap` or `hop` / native 128px rows, chosen from the turn id | One finite celebration for a turn this panel watched end with an answer, then the stage folds away; never over a reopened conversation |
 | Verified entrance (`walk`) | `wave` | Existing finite entrance |
 | Verified read (`read`) | `source-read` | Existing finite cycle, then still |
 | Verified completion (`success`) | `dance` | One finite celebration, then existing hide timer |
@@ -231,10 +231,9 @@ and silence keep their existing behavior. Intersection and document visibility
 pause motion; reduced motion uses a still pose and unchanged status/actions.
 The curious row runs under the same visibility and reduced-motion guards but
 accompanies no operation: its 7200ms cycle holds neutral, tilts once and returns.
-Moru is exempt from the five-second bound on ambient motion
-([Design system](../DESIGN-SYSTEM.md), "Motion"): a character's gesture may
-repeat for as long as it is visible. Reduced motion is its stop control, and no
-screen adds a pause button for it.
+A character's gesture may repeat for as long as it is visible
+([Design system](../DESIGN-SYSTEM.md), "Motion"). Reduced motion is its stop
+control, and no screen adds a pause button for it.
 The decorative companion keeps native 128px cells and authored jump headroom; the download hero shows them at exactly twice that size, so each drawn pixel stays a square.
 Its ambient and reaction sheets use 32 columns with explicit row/column addressing
 (maximum width 4096px), so adding motions does not create oversized textures.

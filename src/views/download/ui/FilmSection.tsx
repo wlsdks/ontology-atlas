@@ -8,6 +8,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-fram
 
 import { buildFilmScene, type FilmScene } from '../lib/film-scene';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
+import { isMotionPaused } from '../lib/motion-pause';
 import type { StageGraph } from '../lib/stage-graph';
 
 const ACTS = [1, 2, 3, 4] as const;
@@ -342,9 +343,23 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       shown += (progress() - shown) * Math.min(1, dtMs / 110);
       paint();
     });
+    // The page's pause stops the frame loop, so a paused film follows the visitor's own scroll
+    // here instead: the acts still advance, the shimmer holds on the clock it stopped at.
+    let pending = 0;
+    const onScroll = () => {
+      if (!isMotionPaused() || pending) return;
+      pending = requestAnimationFrame(() => {
+        pending = 0;
+        shown = progress();
+        paint();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       observer.disconnect();
       unregister();
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(pending);
     };
   }, [film, scene, labelled, namedCapabilities]);
 

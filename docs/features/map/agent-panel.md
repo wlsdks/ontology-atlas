@@ -25,11 +25,23 @@ from the start of the map.
   without a tab strip. A selected concept exposes Ontology review in both, and it
   opens on Review results; in the installed app **Ask AI to review** and the offer to
   fill missing connection reasons stand above the saved results, and the web shows
-  the saved results only. A requested review that finishes
+  the saved results only. Review results is a short list (2026-11-16): a count of
+  what to check, one line saying these are the AI's guesses, and one row per
+  finding with its title and two lines of detail; a line about changed documents
+  appears only when the review's basis is stale or cannot be confirmed. Pressing
+  a row selects the finding's target on the map and replaces the list with that
+  finding: its full text, **Have it fixed** (on the map's ontology review only: one
+  request that names the record and the finding's position, never its text, and
+  whose writes follow the folder's approval setting), **Keep for later** and
+  **Dismiss** with an optional reason, and its source documents as plain rows.
+  The map marks the findings while the tab shows a run whose basis is current.
+  The original answer, the evidence as it was read, the request details, export
+  and the meaning-judgement archive sit behind **Record details**, a centre
+  dialog. A requested review that finishes
   while its conversation is in view opens as its result; a save that finishes
   anywhere else arrives as a toast with a link. The map dock has no criteria tab
   (2026-11-16): the concept panel and its full detail already show a concept's
-  definition and connections. Relation captions are drawn while the dock is open.
+  definition and connections. Relation captions are drawn while the dock is open, except on containment: the line from a domain to its member already says it.
   The recorded meaning judgments appear below the results only when there are some.
   Explicit AI review actions capture immutable Markdown records in the active
   folder; an ordinary chat turn writes none, and ordinary drafts still require Send. Historical answers, source/profile

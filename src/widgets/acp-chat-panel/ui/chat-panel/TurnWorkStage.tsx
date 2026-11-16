@@ -1,28 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
 import { WorkProgress } from '@/shared/motion/work-progress';
-import { BrandWaitingMark, type WorkMotion } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
 
-import type { TurnActivity, TurnActivityKind } from '../turn-activity';
+import type { TurnActivity } from '../turn-activity';
 import { workingShimmer } from '../working-ink';
+import { celebrationClip, stageClip } from './moru-playlist';
 import type { ChatT, SessionState } from './types';
 
-/** The clip Moru acts beside each observed kind of work; the answer is typed, like a command. */
-const CLIP: Readonly<Record<TurnActivityKind, WorkMotion>> = {
-  thinking: 'think',
-  reading: 'read',
-  searching: 'search',
-  writing: 'write',
-  running: 'code',
-  answering: 'code',
-};
+const STAGE_ROWS = [...Object.keys(WORK_ROW_FRAMES), ...Object.keys(PLAY_ROW_FRAMES), ...CELEBRATION_MOTIONS];
 
-/** The finishing dance (`.atlas-moru-greeting`, six expressive beats) and one beat of rest. */
+/** A finishing gesture (`.atlas-moru-greeting`, 24 cells over six expressive beats) and one beat of rest. */
 export const TURN_DONE_HOLD_MS = Math.round(MOTION.expressive.duration * 1_000) * 7;
 
 export interface TurnWork {
@@ -45,10 +39,11 @@ const sameWork = (a: TurnWork, b: TurnWork) =>
   && a.plan?.total === b.plan?.total;
 
 /**
- * The current turn's work, on screen from the send on: Moru acts the kind of work the turn
+ * The current turn's work, on screen from the send on in a band above the composer, outside the
+ * scrolling transcript, so arriving text never moves it. Moru acts the kind of work the turn
  * reports, the line under it names the open call, and the bar is the plan the agent reported or,
- * without one, a sweep that claims no fraction. A finished turn gets one dance, then the stage
- * folds away so the answer stays the last thing in the conversation.
+ * without one, a sweep that claims no fraction. A finished turn gets one celebration, then the
+ * stage folds away so the answer stays the last thing in the conversation.
  */
 export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) {
   // The last work stays drawn while the stage folds away after a stop or a finish.
@@ -63,12 +58,23 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
     return () => window.clearTimeout(timer);
   }, [doneTurnId]);
 
+  const turnStarted = shown !== null;
   useEffect(() => {
-    // A clip's row first loads when its kind of work first appears; warm them so a swap is not blank.
-    for (const clip of [...new Set(Object.values(CLIP)), 'success']) {
-      new Image().src = withBasePath(`/brand/mascot-${clip}-row-128.png`);
-    }
-  }, []);
+    // A row first loads when its clip first plays; warm every row a turn can show so a swap is never blank.
+    if (!turnStarted) return;
+    for (const row of STAGE_ROWS) new Image().src = withBasePath(`/brand/mascot-${row}-row-128.png`);
+  }, [turnStarted]);
+
+  // Loops finished in the current kind of work; a new turn or kind starts its playlist over.
+  const [loops, setLoops] = useState({ turnId: shown?.turnId, kind: shown?.activity.kind, count: 0 });
+  if (shown && (loops.turnId !== shown.turnId || loops.kind !== shown.activity.kind)) {
+    setLoops({ turnId: shown.turnId, kind: shown.activity.kind, count: 0 });
+  }
+  const loopTurnId = shown?.turnId;
+  const loopKind = shown?.activity.kind;
+  const countLoop = useCallback(() => {
+    setLoops((current) => (current.turnId === loopTurnId && current.kind === loopKind ? { ...current, count: current.count + 1 } : current));
+  }, [loopTurnId, loopKind]);
 
   const open = work !== null && !(doneTurnId !== null && dancedTurnId === doneTurnId);
   const { mounted, boxRef, contentRef } = useRowDisclosure(open);
@@ -76,7 +82,7 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
 
   const { phase, activity, plan } = shown;
   const done = phase === 'done';
-  const clip = done ? 'success' : CLIP[activity.kind];
+  const clip = done ? celebrationClip(shown.turnId) : stageClip(activity.kind, shown.turnId, loops.count);
   const label = activity.label;
   const headline = done
     ? t('work.done')
@@ -101,12 +107,12 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
       data-state={open ? 'open' : 'closed'}
       data-work-phase={phase}
       data-work-kind={activity.kind}
-      className="ai-row-disclosure shrink-0"
+      className="ai-row-disclosure -mt-3 shrink-0"
       inert={!open}
     >
       <div ref={contentRef} className="ai-row-disclosure-body">
-        <div className="mx-auto grid w-full max-w-[18rem] justify-items-center gap-1 pb-3 text-center">
-          <BrandWaitingMark key={clip} active scale={2} motion={clip} />
+        <div className="mx-auto grid w-full max-w-[18rem] justify-items-center gap-1 pt-3 text-center">
+          <BrandWaitingMark key={clip} active scale={2} motion={clip} onLoopEnd={done ? undefined : countLoop} />
           <span
             data-testid="acp-turn-work-now"
             className={`mt-1 max-w-full truncate text-body text-[color:var(--color-text-primary)] ${done ? '' : workingShimmer(true)}`}

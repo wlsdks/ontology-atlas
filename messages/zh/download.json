@@ -156,5 +156,9 @@
         "body": "这是本仓库的真实地图：{concepts} 个概念，{relations} 条关系。"
       }
     }
+  },
+  "motion": {
+    "pause": "暂停动效",
+    "play": "恢复动效"
   }
 }

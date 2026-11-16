@@ -156,5 +156,9 @@
         "body": "This is this repository's real map: {concepts} concepts and {relations} relations."
       }
     }
+  },
+  "motion": {
+    "pause": "Pause motion",
+    "play": "Play motion"
   }
 }

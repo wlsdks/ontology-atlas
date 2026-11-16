@@ -202,6 +202,29 @@
     animation-name: atlasWorkStep;
     animation-duration: calc(var(--motion-base) * 16);
     animation-timing-function: steps(24, end);
+    animation-iteration-count: infinite;
+  }
+
+  /* Play between work loops keeps the catalogue's slower beat: six expressive beats per 24 cells. */
+  .atlas-waiting-mark[data-moru-pace='play'] {
+    animation-name: atlasWorkStep;
+    animation-duration: calc(var(--motion-expressive) * 6);
+    animation-timing-function: steps(24, end);
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes atlasWorkStep32 {
+    from { background-position-x: 0; }
+    to { background-position-x: -2048px; }
+  }
+
+  /* A 32-cell row keeps each cell's time: the loop lengthens by a third. */
+  .atlas-waiting-mark[data-moru-frames='32'] {
+    background-size: 2048px 64px;
+    animation-name: atlasWorkStep32;
+    animation-duration: calc(var(--motion-expressive) * 8);
+    animation-timing-function: steps(32, end);
+    animation-iteration-count: infinite;
   }
 
   /* A dead end is not pending work: the tilt is slower than the waiting blink, and it begins

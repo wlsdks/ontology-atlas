@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { useMotionPaused } from './motion-pause';
+
 export type InViewMotion = 'paused' | 'running' | undefined;
 
 /**
@@ -12,6 +14,7 @@ export type InViewMotion = 'paused' | 'running' | undefined;
 export function useInViewMotion(): [(node: HTMLElement | null) => void, InViewMotion] {
   const [node, setNode] = useState<HTMLElement | null>(null);
   const [motion, setMotion] = useState<InViewMotion>(undefined);
+  const stopped = useMotionPaused();
 
   useEffect(() => {
     if (!node || typeof IntersectionObserver === 'undefined') return;
@@ -33,5 +36,5 @@ export function useInViewMotion(): [(node: HTMLElement | null) => void, InViewMo
     };
   }, [node]);
 
-  return [setNode, motion];
+  return [setNode, motion && stopped ? 'paused' : motion];
 }
