@@ -268,28 +268,36 @@ export function StartSection() {
       <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} />
 
+        {/* A path, not a row of cards: each number runs a line toward the next step. */}
         <ol
           ref={steps}
           data-testid="gateway-start-steps"
           data-gateway-entrance={entrance}
-          className="mt-9 grid min-w-0 gap-4 @min-[52rem]:grid-cols-3"
+          className="mt-12 grid min-w-0 gap-x-8 gap-y-10 @min-[52rem]:grid-cols-3"
         >
           {rows.map((row, index) => (
-            <li key={row.title} className={cn(CARD, 'p-6')}>
-              <Line index={index * 2} className="flex min-w-0 items-center justify-between gap-3">
-                <span aria-hidden className={cn(MONO, QUIET)}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                {/* The button the step presses, drawn small in the app's own word. */}
+            <li key={row.title} className="min-w-0">
+              <Line index={index * 2} className="flex min-w-0 items-center gap-4">
                 <span
                   aria-hidden
-                  className="inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
+                  data-token="engraved-numeral"
+                  className="text-hero-lg font-[var(--font-weight-signature)] tabular-nums tracking-[var(--tracking-display)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span aria-hidden className="gateway-step-rule h-px min-w-0 flex-1" />
+              </Line>
+              {/* The button the step presses, drawn small in the app's own word. */}
+              <Line index={index * 2 + 1} className="mt-5">
+                <span
+                  aria-hidden
+                  className="inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
                 >
                   {row.press}
                 </span>
               </Line>
-              <h3 className={cn(CARD_TITLE, 'mt-5')}>{row.title}</h3>
-              <p className={CARD_BODY}>{row.body}</p>
+              <h3 className={cn(CARD_TITLE, 'mt-4')}>{row.title}</h3>
+              <p className={cn(CARD_BODY, 'max-w-[22rem]')}>{row.body}</p>
             </li>
           ))}
         </ol>
