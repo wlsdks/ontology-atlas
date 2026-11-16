@@ -56,12 +56,14 @@ async function startSampling(page: Page, ids: readonly string[]): Promise<void> 
     addEventListener("keydown", () => { w.__starPressAt ??= performance.now(); }, { capture: true, once: true });
     const tick = (t: number) => {
       type Box = { minX: number; maxX: number; minY: number; maxY: number };
-      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number }[]; texts: { id: string; role: string; box: Box; alpha: number; backed: boolean }[] };
+      type Text = { id: string; role: string; box: Box; alpha: number; backed: boolean };
+      const d = window.__atlasMap!.dial!() as { zoomRatio: number; discs: { id: string | null; x: number; y: number; r: number }[]; glyphs: { id: string | null; x: number; y: number; r: number }[]; texts: Text[]; fadingTexts: Text[] };
       const canvas = document.querySelector<HTMLCanvasElement>("[data-testid='ontology-map-canvas']")!;
       w.__starSamples.push({
         t, zoom: d.zoomRatio, w: canvas.clientWidth, h: canvas.clientHeight,
         marks: [...d.discs, ...d.glyphs].filter((m) => m.id !== null && keep.has(m.id)).map((m) => [m.id!, m.x, m.y, m.r]),
-        names: d.texts.filter((n) => keep.has(n.id)).map((n) => [n.id, n.role, n.box.minX, n.box.maxX, n.box.minY, n.box.maxY, n.alpha, n.backed]),
+        // A name no longer admitted is still painted while its ink runs out, so it is read like any other.
+        names: [...d.texts, ...d.fadingTexts].filter((n) => keep.has(n.id)).map((n) => [n.id, n.role, n.box.minX, n.box.maxX, n.box.minY, n.box.maxY, n.alpha, n.backed]),
       });
       if (w.__starSampling) requestAnimationFrame(tick);
     };

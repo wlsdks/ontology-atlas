@@ -1868,7 +1868,7 @@ const pool = emptyDialFrameMarks();
 type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
-const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false, alpha: 1, room: 1 }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false, alpha: 1, room: 1, fading: false }));
 const probeGlyphs = markPool<GlyphMark>(() => ({ id: "", kind: "element", x: 0, y: 0, r: 0, egoState: "normal", fill: null, stroke: null, hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
@@ -1966,7 +1966,6 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   const pad = tokens.paint.namePadPx;
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
     const n = plan.names[nIndex]!;
-    if (n.fading) continue;
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const text = probeTexts.take();
@@ -1975,6 +1974,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
     text.backed = n.name.backed === true;
+    text.fading = n.fading;
     if (text.alpha !== n.ink) text.alpha = n.ink;
     if (text.room !== n.room) text.room = n.room;
     setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);

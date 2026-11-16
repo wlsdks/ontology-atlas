@@ -313,10 +313,46 @@ function nameInks(camera: ReturnType<typeof cameraOn>, over: Partial<DialFrameIn
   const frames: Map<string, number>[] = [];
   for (let i = 0, now = from; i < 400; i += 1, now += FRAME_MS) {
     const result = paintFlatGraphFrame(camera(zoom, { ...over, now }), TOKENS);
-    frames.push(new Map(describeLastDialFrame(W, H)!.texts.map((t) => [`${t.role} ${t.id}`, t.alpha])));
+    frames.push(paintedInks());
     if (!result.branchMembersAnimating) return { frames, end: now };
   }
   throw new Error("the names never settled");
+}
+
+/** Every name the last frame painted, a name no longer admitted included while its ink runs out. */
+function paintedInks(): Map<string, number> {
+  const probe = describeLastDialFrame(W, H)!;
+  return new Map([...probe.texts, ...probe.fadingTexts].map((t) => [`${t.role} ${t.id}`, t.alpha]));
+}
+
+/** Name ink steps of 0.2 or more while the camera travels from the overview's middle to `domainId` at `zoomTo`, a press's path. */
+function inkJumpsOnTheWay(domainId: string, zoomTo: number): string[] {
+  const e = layout.extent;
+  const fit = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY));
+  const from = { x: (e.minX + e.maxX) / 2, y: (e.minY + e.maxY) / 2 };
+  const to = layout.positions.get(domainId)!;
+  const worldKey = {};
+  const ctx = silentContext();
+  const frame = (zoomRatio: number, centre: Point, over: Partial<DialFrameInput>) => {
+    const scale = fit * zoomRatio;
+    const toScreen = (x: number, y: number): Point => ({ x: W / 2 + (x - centre.x) * scale, y: H / 2 + (y - centre.y) * scale });
+    return cameraOn(null, worldKey)(zoomRatio, { ctx, toScreen, scale, nodeScreen: (id) => { const p = layout.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, ...over });
+  };
+  let now = 0;
+  for (let i = 0; i < 30; i += 1, now += FRAME_MS) paintFlatGraphFrame(frame(1, from, { now }), TOKENS);
+  const jumps: string[] = [];
+  let before = paintedInks();
+  for (let i = 1; i <= 60; i += 1) {
+    const s = (1 - Math.cos(Math.PI * Math.min(1, i / 42))) / 2;
+    paintFlatGraphFrame(frame(Math.pow(zoomTo, s), { x: from.x + (to.x - from.x) * s, y: from.y + (to.y - from.y) * s }, { now: now + (i - 1) * FRAME_MS, focusedNodeId: domainId }), TOKENS);
+    const after = paintedInks();
+    for (const [name, alpha] of after) {
+      const was = before.get(name) ?? 0;
+      if (Math.abs(alpha - was) >= 0.2) jumps.push(`frame ${i}: ${name} ${was.toFixed(2)} -> ${alpha.toFixed(2)}`);
+    }
+    before = after;
+  }
+  return jumps;
 }
 
 describe("a name's drawn ink across frames", () => {
@@ -337,6 +373,13 @@ describe("a name's drawn ink across frames", () => {
         }
       }
       expect(jumps.slice(0, 6)).toEqual([]);
+    },
+  );
+
+  it.each(["domain:code-evidence", "domain:agent-access"])(
+    "changes by less than 0.2 a frame while the camera travels to the pressed %s, a name that leaves the admitted set included",
+    (domainId) => {
+      expect(inkJumpsOnTheWay(domainId, 4.5).slice(0, 6)).toEqual([]);
     },
   );
 

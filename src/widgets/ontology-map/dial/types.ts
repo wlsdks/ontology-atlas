@@ -154,6 +154,8 @@ export interface TextMark { id: string | null; role: TextRole; text: string; lin
   alpha?: number;
   /** The share of its ink a name keeps beside the marks and names that crowd it: 1 when none does. */
   room?: number;
+  /** No longer admitted: painted only while its ink runs out. */
+  fading?: boolean;
 }
 interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;
 }
@@ -231,6 +233,8 @@ export interface DialProbe {
     /** The share of full ink drawn, and the share crowding left it (1 when nothing crowds it). */
     alpha: number; room: number;
     }[];
+  /** Names no longer admitted that the frame still paints while their ink runs out, shaped as `texts`. */
+  fadingTexts: DialProbe["texts"];
   glyphs: DialPick[];
   blocks: { id: string; box: Box; alpha: number }[];
     numerals: {
