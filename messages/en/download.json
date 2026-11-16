@@ -119,5 +119,21 @@
     "issues": "Issues",
     "releases": "Releases"
   },
-  "closingTitle": "Ready to open your own folder?"
+  "closingTitle": "Ready to open your own folder?",
+  "news": "{tag} is out · What changed",
+  "numbers": {
+    "label": "By the numbers",
+    "tools": {
+      "label": "MCP tools",
+      "body": "An agent calls them to read the map and propose a change."
+    },
+    "concepts": {
+      "label": "concepts",
+      "body": "Atlas maps its own code too, in this repository's docs/ontology/."
+    },
+    "relations": {
+      "label": "relations",
+      "body": "Between those concepts, written as names in the info block at the top of each file."
+    }
+  }
 }
