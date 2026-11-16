@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
+import { canonicalToolTitle, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback, type ToolLabel } from './tool-label';
 import en from '../../../../messages/en.json';
 import ko from '../../../../messages/ko.json';
 
@@ -63,6 +63,30 @@ describe('tool line: translates only what it knows', () => {
   it('when the server name changes, our tools become third-party tools, because the name is not hard-coded', () => {
     // The contract that the test is **the injected name**, not a literal.
     expect(toolLabel('mcp__atlas-vault__add_concept', 'other-name').kind).toBe('raw');
+  });
+});
+
+describe('canonicalToolTitle: one spelling for both adapters', () => {
+  const envelope = { server: 'atlas-vault', tool: 'list_concepts', arguments: { kind: 'domain' } };
+
+  it('rewrites a dotted call whose envelope names the same server and tool', () => {
+    const title = canonicalToolTitle('mcp.atlas-vault.list_concepts', envelope);
+    expect(title).toBe('mcp__atlas-vault__list_concepts');
+    expect(toolLabel(title, OURS)).toEqual({ kind: 'known', text: 'read' });
+    expect(isVaultTool(title, OURS)).toBe(true);
+  });
+
+  it('leaves a dotted title alone when the envelope is absent or names another call', () => {
+    const title = 'mcp.atlas-vault.list_concepts';
+    expect(canonicalToolTitle(title, undefined)).toBe(title);
+    expect(canonicalToolTitle(title, { command: 'echo mcp.atlas-vault.list_concepts' })).toBe(title);
+    expect(canonicalToolTitle(title, { ...envelope, tool: 'delete_concept' })).toBe(title);
+    expect(canonicalToolTitle(title, { ...envelope, server: 'other' })).toBe(title);
+  });
+
+  it('leaves every other title as it arrived', () => {
+    expect(canonicalToolTitle('mcp__atlas-vault__list_concepts', {})).toBe('mcp__atlas-vault__list_concepts');
+    expect(canonicalToolTitle('Terminal', envelope)).toBe('Terminal');
   });
 });
 
