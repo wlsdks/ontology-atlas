@@ -7,6 +7,13 @@ pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> 
         return PermissionVerdict::Ask;
     };
     let raw = Path::new(raw);
+    // `..` below a missing directory survives resolution and would compare as written.
+    if raw
+        .components()
+        .any(|part| matches!(part, std::path::Component::ParentDir))
+    {
+        return PermissionVerdict::Ask;
+    }
     // The root must be the absolute directory `acp_start` verified; empty or `/` would
     // open the whole gate.
     if !vault_root.is_absolute() || !raw.is_absolute() {

@@ -110,3 +110,23 @@ fn a_symlink_inside_the_vault_pointing_out_is_not_inside() {
     );
     let _ = std::fs::remove_dir_all(&base);
 }
+
+#[test]
+fn a_parent_step_below_a_missing_directory_is_not_inside() {
+    let base = std::env::temp_dir().join(format!("atlas-acp-parent-{}", std::process::id()));
+    let vault = base.join("vault");
+    std::fs::create_dir_all(&vault).unwrap();
+    std::fs::create_dir_all(base.join("outside")).unwrap();
+    let session_root = std::fs::canonicalize(&vault).unwrap();
+    let climbing = format!(
+        "{}/missing-dir/../../outside/secret.md",
+        session_root.display()
+    );
+
+    assert_eq!(
+        permission_verdict(&session_root, Some(&climbing)),
+        PermissionVerdict::Ask,
+        "a path whose `..` climbs out from under a missing directory is outside"
+    );
+    let _ = std::fs::remove_dir_all(&base);
+}
