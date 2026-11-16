@@ -37,6 +37,7 @@ import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-d
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import { MapEntryLoadingVisual } from "@/shared/ui/fallbacks/map-entry-loading-visual";
@@ -431,6 +432,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         { state: indexSlotSwap.leaving, exiting: true },
         { state: renderedIndexState, exiting: false },
       ];
+  const selectedSlugRef = useLatestRef(selectedSlug);
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.topologyIndex = renderedIndexState;
@@ -438,8 +440,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     // costly style recalc.
     refreshIndexDependentTokens(root);
     let cancelled = false;
-    // zoom.
-    if (!view3d && !structure && !acpDockFrameOpen) {
+    // A selection keeps its camera: this overview fit, measured before the dock or INDEX has
+    // resized the free map, would pull the camera off the selection.
+    if (!view3d && !structure && !acpDockFrameOpen && selectedSlugRef.current === null) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
       });
