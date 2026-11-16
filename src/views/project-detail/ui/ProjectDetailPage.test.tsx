@@ -11,7 +11,7 @@ import {
   projectDoc,
   renderPage,
   resetProjectDetailMocks,
-} from "./ProjectDetailPage.harness";
+} from "../../../../tests/helpers/project-detail-page-harness";
 import { NextIntlClientProvider } from "next-intl";
 import { LocalVaultProvider } from "@/entities/vault-session";
 import enMessages from "../../../../messages/en.json";

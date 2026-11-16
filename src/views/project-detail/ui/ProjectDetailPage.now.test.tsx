@@ -6,7 +6,7 @@ import {
   ontologyNode,
   renderPage,
   resetProjectDetailMocks,
-} from "./ProjectDetailPage.harness";
+} from "../../../../tests/helpers/project-detail-page-harness";
 import enMessages from "../../../../messages/en.json";
 import { fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";

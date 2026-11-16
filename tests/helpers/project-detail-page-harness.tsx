@@ -8,8 +8,8 @@ import { NextIntlClientProvider } from "next-intl";
 
 import { LocalVaultProvider } from "@/entities/vault-session";
 import { vi } from "vitest";
-import enMessages from "../../../../messages/en.json";
-import { ProjectDetailPage } from "./ProjectDetailPage";
+import enMessages from "../../messages/en.json";
+import { ProjectDetailPage } from "@/views/project-detail/ui/ProjectDetailPage";
 
 // Mocking both router and search params breaks the replace → re-render loop, so it is reconnected here.
 const nav = vi.hoisted(() => ({ search: "", version: 0 }));
@@ -49,10 +49,10 @@ vi.mock("@/features/construction-review-local", () => ({
   useConstructionReviewSession: () => hoistedMocks.constructionReview,
 }));
 // The real hook reaches the desktop bridge.
-vi.mock("../lib/use-project-agent", () => ({
+vi.mock("@/views/project-detail/lib/use-project-agent", () => ({
   useProjectAgent: () => hoistedMocks.agent,
 }));
-vi.mock("./parts/ProjectAgentDock", () => ({
+vi.mock("@/views/project-detail/ui/parts/ProjectAgentDock", () => ({
   ProjectAgentDock: ({ open, openingRequest }: { open: boolean; openingRequest: { text: string } | null }) => (
     <div data-testid="project-agent-dock-frame" data-dock-state={open ? "open" : "empty"}>
       {openingRequest?.text}
@@ -216,8 +216,8 @@ vi.mock("@/features/vault-ontology", () => ({
   useVaultConceptFacts: () => hoistedMocks.conceptFacts,
 }));
 
-vi.mock("../model/project-to-check", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../model/project-to-check")>();
+vi.mock("@/views/project-detail/model/project-to-check", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/views/project-detail/model/project-to-check")>();
   return {
     ...actual,
     groupRowsByReason: (...args: Parameters<typeof actual.groupRowsByReason>) => {
