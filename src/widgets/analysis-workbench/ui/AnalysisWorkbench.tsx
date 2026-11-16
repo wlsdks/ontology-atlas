@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,23 +8,26 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, requestsAnalysisFindings, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { Checkbox, Chip, CloseButton, Disclosure, EmptyState, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
+import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
+import { Chip, CloseButton, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { isReviewResult } from '../model/review-result';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
+import { FindingDetail, FindingRow, type EvidenceConcept, type FindingDisposition } from './ReviewFindings';
+import { ReviewRecordDialog } from './ReviewRecordDialog';
 
 /** Hairline between groups, only where no label already separates them. */
 const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';
-/**
- * Sans, not mono caps: mono metrics push Hangul syllables apart (`docs/DESIGN-SYSTEM.md`, "Caps
- * tracking is a Latin device").
- */
-const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
+const LIST_VIEW = 'list';
 
 type Tab = 'meaning' | 'history' | 'conversation';
 const KNOWN_KINDS = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme'];
 const EMPTY_RECORDS: AnalysisRecord[] = [];
+const EMPTY_PROBLEMS: string[] = [];
+/* The fix request names its record by id inside a quoted argument; anything else is not offered. */
+const PLAIN_RECORD_ID = /^[A-Za-z0-9_-]{1,200}$/;
 
 /** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
 /**
@@ -126,9 +129,12 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const saveState = capture?.state ?? null;
   const setSaveState = capture?.setState;
   const [checked, setChecked] = useState<{ run: AnalysisRun; context: AnalysisCaptureContext; state: AnalysisCompatibility } | null>(null);
-  const [showIssues, setShowIssues] = useState(false);
   const [reviewText, setReviewText] = useState('');
-  const [reviewing, setReviewing] = useState<string | null>(null);
+  /* `LIST_VIEW` or the open finding as `runId:findingId`; the tab navigates between them. */
+  const [view, setView] = useState(LIST_VIEW);
+  const [recordOpen, setRecordOpen] = useState(false);
+  const historyPanelRef = useRef<HTMLDivElement>(null);
+  const returnRowRef = useRef<string | null>(null);
   const loadGeneration = useRef(0);
   const writable = analysisArchiveWritable(context.handle, context.writable);
   const records = loaded?.handle === context.handle ? loaded.records : EMPTY_RECORDS;
@@ -139,7 +145,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     && isReviewResult(record)), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
   const olderPage = loaded?.handle === context.handle ? loaded.cursor : null;
-  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !olderPage && !readPending && !error;
+  const problems = loaded?.handle === context.handle ? loaded.problems : EMPTY_PROBLEMS;
+  /* An unreadable record is not an empty archive: it may be the only review there is. */
+  const emptyArchive = !runs.length && Boolean(context.handle) && loaded?.handle === context.handle && !olderPage && !readPending && !error && !problems.length;
   const saved = saveState?.handle === context.handle ? saveState : null;
   const fitsContent = open && tab === 'history' && emptyArchive;
   useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
@@ -158,12 +166,22 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     toast.show(t('save.saved'), 'success', { label: t('viewSaved'), onClick: showResult });
   }, [saved, open, tab, t, toast, setSelectedId, setTab]);
   const sameScope = selected ? analysisScopeKey(selected.mode, selected.scope) === analysisScopeKey(context.mode, context.scope) : false;
-  const compatibility = checked?.run === selected && checked.context === context ? checked.state : null;
+  /* Records are create-only, so a re-read run with the same id keeps its checked basis. */
+  const compatibility = checked && checked.run.id === selected?.id && checked.context === context ? checked.state : null;
   const overlayReady = !!selected && selected.qualification.status === 'grounded' && sameScope && compatibility?.status === 'current';
-  const reviews = records.filter((record) => record.recordType === 'review');
-  const earlierQuestions = runs.slice(1).flatMap((run) => run.findings
-    .filter((finding) => latestFindingReview(records, run.id, finding.id)?.disposition !== 'dismiss')
-    .map((finding) => ({ run, finding })));
+  const historyShown = open && tab === 'history';
+  const dispositionOf = (run: AnalysisRun, finding: AnalysisFinding): FindingDisposition | null => latestFindingReview(records, run.id, finding.id)?.disposition ?? null;
+  const dismissedFindings = selected ? selected.findings.filter((finding) => dispositionOf(selected, finding) === 'dismiss') : [];
+  const openFindings = selected ? selected.findings.filter((finding) => !dismissedFindings.includes(finding)) : [];
+  const findingOf = (key: string) => {
+    const runId = key.slice(0, key.indexOf(':'));
+    const findingId = key.slice(runId.length + 1);
+    const run = selected?.id === runId ? selected : null;
+    const finding = run?.findings.find((item) => item.id === findingId);
+    return run && finding ? { run, finding } : null;
+  };
+  const shownView = view !== LIST_VIEW && findingOf(view) ? view : LIST_VIEW;
+  const { leaving: leavingView } = useSurfaceSwap(shownView);
 
   const refresh = useCallback((cursor: string | null = null) => {
     const handle = context.handle;
@@ -184,13 +202,14 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     }).finally(() => { if (generation === loadGeneration.current) setReadPending(false); });
   }, [context.handle, open, t]);
 
+  /* Re-read whenever the results tab comes into view; no signal reaches here when another program writes the folder. */
   useEffect(() => {
-    if (!open || !context.handle) return;
+    if (!historyShown || !context.handle) return;
     void refresh();
     const update = () => { void refresh(); };
     window.addEventListener('atlas-analysis-records-changed', update);
     return () => { loadGeneration.current += 1; window.removeEventListener('atlas-analysis-records-changed', update); };
-  }, [context.handle, open, refresh]);
+  }, [context.handle, historyShown, refresh]);
   /* A page can hold only unlisted chat turns, so an empty list is known only at the last page. */
   useEffect(() => {
     if (open && !runs.length && olderPage && !readPending && !error) void refresh(olderPage);
@@ -207,11 +226,40 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     return () => { cancelled = true; };
   }, [context, open, selected]);
   useEffect(() => {
-    const visible = open && showIssues && overlayReady && selected
+    const visible = historyShown && overlayReady && selected
       ? selected.findings.filter((finding) => latestFindingReview(records, selected.id, finding.id)?.disposition !== 'dismiss') : [];
     onFindingsChange?.(visible);
-    return () => onFindingsChange?.([]);
-  }, [onFindingsChange, open, overlayReady, records, selected, showIssues]);
+  }, [onFindingsChange, historyShown, overlayReady, records, selected]);
+  useEffect(() => () => onFindingsChange?.([]), [onFindingsChange]);
+  /*
+   * Capture phase: the map closes its review on any Escape nobody prevented, and a text click
+   * leaves focus outside every element handler of this panel.
+   */
+  const detailShown = historyShown && shownView !== LIST_VIEW && !recordOpen;
+  useEffect(() => {
+    if (!detailShown) return;
+    const findingId = shownView.slice(shownView.indexOf(':') + 1);
+    const goBack = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || isImeComposing(event)) return;
+      const target = event.target;
+      const panel = panelRef.current;
+      /* A text click leaves focus on the body or the route container, an ancestor of this panel. */
+      if (!panel || !(target instanceof Node) || !(panel.contains(target) || target.contains(panel))) return;
+      event.preventDefault(); event.stopPropagation();
+      returnRowRef.current = findingId; setNotice(null); setView(LIST_VIEW);
+    };
+    window.addEventListener('keydown', goBack, true);
+    return () => window.removeEventListener('keydown', goBack, true);
+  }, [detailShown, shownView]);
+  /* Back from a finding lands on its row; the row's frame stops being inert in this same commit. */
+  useLayoutEffect(() => {
+    const panel = historyPanelRef.current;
+    if (!panel) return;
+    if (shownView !== LIST_VIEW) { panel.scrollTop = 0; return; }
+    const findingId = returnRowRef.current;
+    returnRowRef.current = null;
+    if (findingId) [...panel.querySelectorAll<HTMLElement>(`[data-review-view="${LIST_VIEW}"]:not([inert]) [data-finding-row]`)].find((row) => row.dataset.findingRow === findingId)?.focus();
+  }, [shownView]);
 
   /*
    * Asks the agent to write missing relation reasons through patch_concept; each write still stops
@@ -231,15 +279,45 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     onRequest?.(`${instruction}\nScope: ${scope}.${previous}\n${ANALYSIS_FINDINGS_INSTRUCTION}\n${responseLanguage}`, parent?.id ?? null);
     setTab('conversation');
   }
-  async function review(findingId: string, disposition: 'retain' | 'dismiss') {
+  function openFinding(run: AnalysisRun, finding: AnalysisFinding) {
+    if (onFinding && !onFinding(finding, run)) { setNotice(null); setError({ sentence: t('targetUnavailable'), detail: null }); }
+    else {
+      setError(null);
+      setNotice(onFinding && !window.matchMedia('(min-width: 1024px)').matches ? t('targetSelectedSheet') : null);
+    }
+    setReviewText('');
+    setView(`${run.id}:${finding.id}`);
+  }
+  function backToList(findingId: string) {
+    returnRowRef.current = findingId;
+    setNotice(null);
+    setView(LIST_VIEW);
+  }
+  /* Names the record and position only: recorded text may hold the findings fence, and must never make this a review. */
+  function requestFix(run: AnalysisRun, finding: AnalysisFinding) {
+    onRequest?.(t('fixPrompt', { recordId: run.id, position: run.findings.indexOf(finding) + 1 }), null);
+    setTab('conversation');
+  }
+  /* The record schema accepts an empty rationale, so one press judges and a reason is optional. */
+  async function review(finding: AnalysisFinding, disposition: FindingDisposition) {
     const handle = context.handle;
-    if (!selected || !handle || !writable || !reviewText.trim()) return;
+    if (!selected || !handle || !writable) return;
     setBusy(true); setError(null);
     try {
-      await appendAnalysisRecord(handle, { schema: 'atlas-analysis/v1', recordType: 'review', id: crypto.randomUUID(), createdAt: new Date().toISOString(), runId: selected.id, findingId, disposition, actor: 'user-action', rationale: reviewText.trim() }, context.writable);
-      setReviewing(null); setReviewText('');
+      const record: AnalysisRecord = { schema: 'atlas-analysis/v1', recordType: 'review', id: crypto.randomUUID(), createdAt: new Date().toISOString(), runId: selected.id, findingId: finding.id, disposition, actor: 'user-action', rationale: reviewText.trim() };
+      await appendAnalysisRecord(handle, record, context.writable);
+      setLoaded((previous) => previous?.handle === handle ? { ...previous, records: [...previous.records, record] } : previous);
+      setReviewText('');
+      backToList(finding.id);
     } catch (failure) { failWith(t('reviewFailed'), failure); }
     finally { setBusy(false); }
+  }
+  function evidenceConcepts(run: AnalysisRun, finding: AnalysisFinding): EvidenceConcept[] {
+    return finding.evidenceSlugs.map((slug) => {
+      const node = context.graph.nodes.find((item) => item.id === slug);
+      const captured = run.evidence.find((item) => item.slug === slug);
+      return { slug, title: node?.title ?? captured?.title ?? null, kind: node?.kind ?? captured?.kind ?? null };
+    });
   }
   function exportMarkdown(markdown: string, id: string) {
     const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
@@ -250,14 +328,56 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   /** Offered beside each review request, wherever that request stands. */
   const fillNotesChip = onRequest && relationNoteGaps > 0 && context.mode === 'meaning'
     ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null;
+  const refreshButton = context.handle ? <IconButton size="lg" hoverSurface="lift" hoverInk="strong" label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null;
+  function findingList(run: AnalysisRun, leaving: boolean) {
+    const status = compatibility?.status;
+    /* A cancelled or failed review is not a clean one, so it never reads as nothing to check. */
+    const finished = run.origin.outcome === 'completed';
+    return <div data-testid={leaving ? undefined : 'review-finding-list'} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h3 className="text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+          {finished ? t('toCheck', { count: openFindings.length }) : t(`outcome.${run.origin.outcome}`)}
+          {!finished && run.findings.length ? ` · ${t('toCheck', { count: openFindings.length })}` : null}
+          {dismissedFindings.length ? <span className="text-[color:var(--color-text-tertiary)]"> · {t('dismissedCount', { count: dismissedFindings.length })}</span> : null}
+        </h3>
+        {/* The trigger carries the review's date; the id moves to the option description. */}
+        {runs.length > 1
+          ? <Select size="sm" quiet ariaLabel={t('version')} value={run.id} onChange={(id) => { setSelectedId(id); setView(LIST_VIEW); }} className="min-w-0" options={runs.map((item, index) => ({ value: item.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(item.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${item.id.slice(0, 8)} · ${item.request.text.slice(0, 80)}` }))} />
+          : <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">{new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}</span>}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
+          {fillNotesChip}
+          {refreshButton}
+        </div>
+      </div>
+      <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('trustLine')}</p>
+      {status === 'stale' || status === 'unknown' ? <p className="text-label leading-label text-[color:var(--color-status-warning)]">{t(status === 'stale' ? 'basisStaleLine' : 'basisUnknownLine')}</p> : null}
+      {run.observations.map((observation, index) => <ArchitectureObservation key={`${observation.toolCallId}:${index}`} result={observation.result} />)}
+      {run.findings.length === 0 ? finished ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t('noFindings')}</p> : null
+        : <ul className="grid auto-rows-fr gap-2">{[...openFindings, ...dismissedFindings].map((finding) => <li key={finding.id} className="min-w-0">
+          <FindingRow finding={finding} disposition={dispositionOf(run, finding)} onOpen={() => openFinding(run, finding)} />
+        </li>)}</ul>}
+      <Chip size="lg" hoverBorder="strong" className="self-start" onClick={() => setRecordOpen(true)}>{t('recordDetails')}</Chip>
+    </div>;
+  }
+  function findingDetail(key: string) {
+    const target = findingOf(key);
+    if (!target) return null;
+    const { run, finding } = target;
+    return <FindingDetail finding={finding} disposition={dispositionOf(run, finding)} evidence={evidenceConcepts(run, finding)}
+      reason={reviewText} busy={busy} onReasonChange={setReviewText} onBack={() => backToList(finding.id)}
+      onFix={onRequest && context.mode === 'meaning' && PLAIN_RECORD_ID.test(run.id) ? () => requestFix(run, finding) : null} onJudge={writable ? (disposition) => void review(finding, disposition) : null}
+      onEvidence={onEvidence ?? null} />;
+  }
   const subjectKind = contextKind && !(tab === 'conversation' && conversationLabel) ? contextKind : null;
   /** The lit tab already says "conversation", so beside a kind the eyebrow keeps only the kind. */
   const conversationNamedByTab = tab === 'conversation' && subjectKind !== null;
   const hasTabStrip = Boolean(conversation || facts);
   /** A lone section is no tab panel: no tab in the document would label it. */
   const loneSectionRole = hasTabStrip ? null : { role: undefined, 'aria-labelledby': undefined };
-  return <section ref={panelRef} data-testid="analysis-workbench" onKeyDown={(event) => {
-    if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); onClose(); }
+  /* The dialog sits outside the section: Escape inside it must not bubble to the section's close. */
+  return <><section ref={panelRef} data-testid="analysis-workbench" onKeyDown={(event) => {
+    if (event.key === 'Escape' && !event.defaultPrevented && !isImeComposing(event)) { event.stopPropagation(); onClose(); }
   }} className="flex min-h-0 flex-1 flex-col gap-3 break-keep text-body text-[color:var(--color-text-primary)] [&_summary]:content-center [@media(pointer:coarse)]:[&_summary]:min-h-[var(--touch-target-min)]">
     {/*
      * flex-wrap: below about 330px the tab strip drops to its own line instead of truncating the
@@ -296,20 +416,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       </div>
       <div className={DIVIDED}>{facts}</div>
     </div> : null}
-    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" {...loneSectionRole} className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
-      {facts ? null : <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t('reviewPurpose')}</p>}
-      {/*
-       * The trigger shows only latest plus a short date and time; the id moves to the option
-       * description so the value never truncates.
-       */}
-      {runs.length ? <div className="agent-panel-stage-swap flex flex-wrap items-center gap-2">
-        <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} />
-        {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
-        {fillNotesChip}
-        {context.handle ? <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip> : null}
-      </div> : null}
+    {tab === 'history' ? <div ref={historyPanelRef} role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" {...loneSectionRole} className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
       {!context.handle ? <p>{t('openFolder')}</p> : null}
-      {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
+      {context.handle && readPending && !runs.length ? <p role="status">{t('loadingHistory')}</p> : null}
       {emptyArchive ? <div data-testid="analysis-history-empty" className="agent-panel-stage-swap"><EmptyState
         size="compact"
         align="center"
@@ -324,60 +433,29 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
         action={<>
           {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip> : null}
           {fillNotesChip}
-          <Chip size="lg" onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden />{t('refresh')}</Chip>
+          {refreshButton}
           {onRequest ? <p className="basis-full text-balance pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
         </>}
       /></div> : null}
       {/* A failed read hides the empty state, and the request must not go with it. */}
-      {onRequest && error && !runs.length ? <div data-testid="analysis-history-request" className="flex flex-wrap items-center gap-2">
+      {!selected && problems.length ? <div data-testid="analysis-history-problems" className="flex flex-wrap items-center gap-2">
+        <p role="status" className="min-w-0 flex-1 text-label leading-label text-[color:var(--color-status-warning)]">{t('recordProblems', { count: problems.length })}</p>
+        {refreshButton}
+        <pre className="basis-full whitespace-pre-wrap break-words text-caption leading-caption text-[color:var(--color-text-secondary)]">{problems.join('\n')}</pre>
+      </div> : null}
+      {onRequest && (error || problems.length > 0) && !runs.length ? <div data-testid="analysis-history-request" className="flex flex-wrap items-center gap-2">
         <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
         {fillNotesChip}
       </div> : null}
-      {runs.length ? <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
-      {selected ? <>
-        {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>
-          <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('earlierQuestionsNote')}</p>
-          <div className="mt-2 flex flex-col items-start gap-2">{earlierQuestions.map(({ run, finding }) => <Chip key={`${run.id}:${finding.id}`} size="lg" onClick={() => setSelectedId(run.id)}>{finding.title} · {run.id.slice(0, 8)}</Chip>)}</div>
-        </Disclosure> : null}
-        <div className={cn('space-y-1', DIVIDED)}>
-          <h3 className="break-words text-body-lg font-[var(--font-weight-strong)]">{selected.scope.targetSlugs.join(', ') || t('wholeProject')}</h3>
-          <p className="text-caption text-[color:var(--color-text-secondary)]">{t(`outcome.${selected.origin.outcome}`)} · {t(`basis.${compatibility?.status ?? 'checking'}`)} · {t(selected.qualification.status === 'grounded' ? 'grounded' : 'unverified')}</p>
-          <p className="text-caption text-[color:var(--color-text-secondary)]">{t('readCoverage', { count: selected.evidence.length })}</p>
-        </div>
-        <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <p className={SECTION_LABEL}>{t('findingsEyebrow', { count: selected.findings.length })}</p>
-            {onFindingsChange && selected.findings.length ? <Checkbox label={t('showIssues')} checked={showIssues && overlayReady} onChange={(event) => setShowIssues(event.target.checked)} disabled={!overlayReady} /> : null}
-          </div>
-          {onFindingsChange && selected.findings.length ? <p className="text-caption text-[color:var(--color-text-secondary)]">{overlayReady ? t('issueLegend') : t('overlayUnavailable')}</p> : null}
-        {selected.findings.length === 0 ? <p>{t('noFindings')}</p> : selected.findings.map((finding) => {
-          const latestReview = latestFindingReview(reviews, selected.id, finding.id);
-          return <article key={finding.id} className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
-            <h4 className="text-body font-[var(--font-weight-strong)]">? {finding.title}</h4><p className="whitespace-pre-wrap">{finding.detail}</p>
-            {latestReview ? <p className="text-caption">{t(`review.${latestReview.disposition}`)} · {latestReview.rationale}</p> : null}
-            <div className="flex flex-wrap gap-2">{onFinding ? <Chip size="lg" onClick={() => {
-              if (!onFinding(finding, selected)) { setNotice(null); setError({ sentence: t('targetUnavailable'), detail: null }); }
-              else { setError(null); setNotice(t(window.matchMedia('(min-width: 1024px)').matches ? 'targetSelected' : 'targetSelectedSheet')); }
-            }}>{t('showOnMap')}</Chip> : null}{writable ? <Chip size="lg" onClick={() => { setReviewing(finding.id); setReviewText(''); }}>{t('reviewAction')}</Chip> : null}</div>
-            {finding.evidenceSlugs.map((slug) => <Disclosure key={slug} summary={<span className="break-all">{t('evidence')} · {slug}</span>}><div className="mt-2 space-y-2">{onEvidence ? <Chip size="lg" onClick={() => onEvidence(slug)}>{t('openCurrent')}</Chip> : null}<pre className="atlas-scroll-quiet whitespace-pre-wrap break-words text-caption">{selected.evidence.find((item) => item.slug === slug)?.body ?? t('evidenceMissing')}</pre></div></Disclosure>)}
-            {reviewing === finding.id ? <div className="space-y-2"><Textarea label={t('reviewReason')} value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={3} /><div className="flex flex-wrap gap-2"><Chip size="lg" disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'retain')}>{t('retain')}</Chip><Chip size="lg" disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'dismiss')}>{t('dismiss')}</Chip></div><p className="text-caption text-[color:var(--color-text-secondary)]">{t('reviewBoundary')}</p></div> : null}
-          </article>;
+      {selected ? <div className="grid">
+        {[shownView, ...(leavingView !== null && leavingView !== shownView ? [leavingView] : [])].map((key) => {
+          const leaving = key !== shownView;
+          return <div key={key} data-review-view={key === LIST_VIEW ? LIST_VIEW : 'finding'} inert={leaving || undefined} aria-hidden={leaving || undefined} className={cn('col-start-1 row-start-1 min-w-0', leaving ? 'motion-swap-out pointer-events-none' : leavingView === null ? null : key === LIST_VIEW ? 'settings-view-pop-in' : 'settings-view-push-in')}>
+            {key === LIST_VIEW ? findingList(selected, leaving) : findingDetail(key)}
+          </div>;
         })}
-        </section>
-        {selected.observations.map((observation, index) => <ArchitectureObservation key={`${observation.toolCallId}:${index}`} result={observation.result} />)}
-        <section className="space-y-3">
-          <p className={SECTION_LABEL}>{t('answer')}</p>
-          <div className="space-y-3 break-words text-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown></div>
-        </section>
-        <div className={cn('space-y-2', DIVIDED)}>
-  {selected.profileSnapshot ? <Disclosure summary={t('profileSnapshot')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{selected.profileSnapshot.markdown}</pre></Disclosure> : null}
-  <Disclosure summary={t('basisDetails')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{JSON.stringify({ request: selected.request, origin: selected.origin, basis: selected.basis, sourceAccess: selected.sourceAccess, qualification: selected.qualification, current: compatibility }, null, 2)}</pre></Disclosure>
-        </div>
-        <div className="flex flex-wrap gap-2">{onRequest ? <Chip size="lg" onClick={() => request(true)}>{t('followUp')}</Chip> : null}<Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip></div>
-      </> : null}
-      {loaded?.handle === context.handle && loaded?.cursor ? <Chip size="lg" onClick={() => void refresh(loaded.cursor)}>{t('loadOlder')}</Chip> : null}
-      {loaded?.handle === context.handle && loaded?.problems.length ? <Disclosure summary={t('recordProblems', { count: loaded.problems.length })}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{loaded.problems.join('\n')}</pre></Disclosure> : null}
-      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} onStateChange={setDecisionArchive} />
+      </div> : null}
+      {runs.length ? null : <MeaningTransitionHistory handle={context.handle} open={historyShown} onStateChange={setDecisionArchive} />}
     </div> : null}
     {conversation ? <div role="tabpanel" id="workbench-tabpanel-conversation" aria-labelledby="workbench-tab-conversation" className={cn('min-h-0 flex-1 flex-col', tab === 'conversation' ? 'flex' : 'hidden')} inert={tab !== 'conversation'}>{conversation}</div> : null}
     {saved && saved.status !== 'saved' ? <div role="status" data-testid="analysis-workbench-save" className="flex shrink-0 flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-secondary)]">
@@ -387,7 +465,17 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
         {saved.record ? <>{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip size="lg" onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: unknown) => failWith(t('save.error'), failure)); }}>{t('retrySave')}</Chip> : null}<Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></> : saved.rawAnswer ? <Chip size="lg" onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}
       </> : null}
     </div> : null}
-  </section>;
+  </section>
+  {selected ? <ReviewRecordDialog open={recordOpen} onClose={() => setRecordOpen(false)} run={selected} compatibility={compatibility}
+    answer={<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown>}
+      problems={problems}
+      actions={<>
+        <Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip>
+        {onRequest ? <Chip size="lg" onClick={() => { setRecordOpen(false); request(true); }}>{t('followUp')}</Chip> : null}
+        {olderPage ? <Chip size="lg" onClick={() => void refresh(olderPage)}>{t('loadOlder')}</Chip> : null}
+      </>}
+      decisions={<MeaningTransitionHistory handle={context.handle} open={recordOpen} />} /> : null}
+  </>;
 }
 
 /** The exception text behind a failure sentence, folded; see the `error` state above. */
@@ -411,6 +499,5 @@ function ArchitectureObservation({ result }: { result: Record<string, unknown> }
     <p className="text-caption text-[color:var(--color-text-secondary)]">{String(profile.title ?? profile.slug ?? '')} · {String(measured.at ?? '')}</p>
     <p>{t('measurementCounts', { violations: count(conformance.violationCount), unmapped: count(unknown.unmappedEdges), files: count(source.filesScanned) })}</p>
     <p className="text-caption text-[color:var(--color-text-secondary)]">{t('measurementScope')}</p>
-    <Disclosure summary={t('observationDetails')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{JSON.stringify(result, null, 2)}</pre></Disclosure>
   </section>;
 }
