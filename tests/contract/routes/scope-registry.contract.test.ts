@@ -143,7 +143,15 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     scope: "global",
     file: "src/shared/lib/connectors/machine-approvals-format.ts",
     provenBy: "src/shared/lib/connectors/machine-approvals.test.ts",
-    note: "Connector and round allowances on this Mac, keyed inside by absolute folder path; never in the vault, because the folder travels and consent must not",
+    note: "Connector, round and chat auto-approve allowances on this Mac, keyed inside by absolute folder path; never in the vault, because the folder travels and consent must not",
+  },
+  {
+    key: "ontology-atlas:agent-choices",
+    kind: "storage",
+    scope: "global",
+    file: "src/features/acp-session/model/session-choices/remembered-choices.ts",
+    provenBy: "src/features/acp-session/model/session-choices/remembered-choices.test.ts",
+    note: "The chat tool and model last chosen, keyed inside by absolute folder path; a convenience of this Mac that an unknown tool or model simply ignores",
   },
   {
     key: "ontology-atlas:machine-approvals-change",

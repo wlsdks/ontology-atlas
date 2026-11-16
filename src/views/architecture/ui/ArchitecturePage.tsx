@@ -33,6 +33,7 @@ import {
 import { useVaultConnectors } from '@/features/mcp-connectors';
 import { bridgePort } from '@/features/harness-report';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
+import { useRememberedTool } from '@/widgets/acp-chat-panel';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
@@ -184,6 +185,12 @@ export function ArchitecturePage({
     };
   }, [acpBridgeAvailable]);
 
+  const chooseAcpRuntime = useRememberedTool({
+    vaultRoot: gitVaultPath,
+    runtimes: acpRuntimes,
+    runtimeId: acpRuntimeId,
+    setRuntimeId: setAcpRuntimeId,
+  });
   const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
   const vaultConnectors = useVaultConnectors(localVault.handle);
   const acpMcpServers = useMemo(() => {
@@ -395,7 +402,7 @@ export function ArchitecturePage({
             open={agentOpen}
             runtime={acpRuntime}
             runtimes={acpRuntimes}
-            onRuntimeChange={setAcpRuntimeId}
+            onRuntimeChange={chooseAcpRuntime}
             vaultRoot={gitVaultPath}
             mcpServers={acpMcpServers}
             openingRequest={agentOpeningRequest}

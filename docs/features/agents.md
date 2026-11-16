@@ -185,7 +185,8 @@ vault server.
   reference. Switching it on here allows it; anything else the folder switched on is
   listed as on in this folder, not on this Mac, with what it would pass and one press to
   allow it, and it asks again whenever the folder changes it. The allowances live in this
-  app's own storage, keyed by the folder's path, never in the folder.
+  app's own storage, keyed by the folder's path, never in the folder. The chat's
+  Auto-approve choice is kept the same way (`docs/features/map/agent-panel.md`).
 - **A reference is the connector's own.** A variable pointing at another connector's
   keychain entry keeps the connector off and says why, and removing it never deletes the
   other connector's token.

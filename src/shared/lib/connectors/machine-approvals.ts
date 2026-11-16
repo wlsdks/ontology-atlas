@@ -11,8 +11,8 @@ import {
 } from './machine-approvals-format';
 
 /**
- * The connector and round definitions this Mac allowed, per absolute folder path. The folder's
- * `enabled` can arrive from a clone or a pull, so consent lives here and never travels with it.
+ * What this Mac allowed, per absolute folder path: connector and round definitions, and the chat's
+ * auto-approve scope. A folder can arrive from a clone or a pull, so consent never travels with it.
  * An entry is the whole canonical definition, not a hash, so nothing crafted can collide with it.
  * It only restricts: missing or corrupt means not allowed, and the web, with no path, allows none.
  */

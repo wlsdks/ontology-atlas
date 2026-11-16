@@ -48,9 +48,10 @@
   "updateChangeAria": "アプリ情報で自動のアップデート確認を変更",
   "allowances": {
     "title": "許可リスト",
-    "keywords": "同意 承認 許可 取り消し サーバ 定期チェック　consent approval allow revoke mcp server scheduled check",
-    "empty": "まだ何も許可されていません。フォルダのMCPサーバと定期チェックは、許可するまで待機します。",
+    "keywords": "同意 承認 許可 取り消し サーバ 定期チェック チャット 自動承認　consent approval allow revoke mcp server scheduled check chat auto-approve",
+    "empty": "まだ何も許可されていません。フォルダのMCPサーバと定期チェックは許可するまで待機し、チャットは書き込む前に確認します。",
     "counts": "{connectors, plural, =0 {} other {MCPサーバ#件}}{both, select, yes {・} other {}}{rounds, plural, =0 {} other {定期チェック#件}}",
+    "autoApprove": "チャットの自動承認",
     "forget": "許可を取り消す",
     "forgetArmed": "もう一度押して許可を取り消す",
     "forgetAll": "すべての許可を取り消す",

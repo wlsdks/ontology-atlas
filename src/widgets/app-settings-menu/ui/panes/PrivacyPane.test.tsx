@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../../messages/en.json';
 import koMessages from '../../../../../messages/ko.json';
 import { recordApproval, listMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
+import { keepStandingChoice, standingChoiceKept } from '@/features/acp-session/model/permissions/standing-choice';
 import { writeUpdateAutoCheck } from '@/features/app-update';
 import { OUTBOUND_DESTINATION_PLACEHOLDERS, OUTBOUND_PATHS } from '../../model/outbound-paths';
 import { PRIVACY_CATALOG } from '../../model/catalog/privacy';
@@ -106,6 +107,25 @@ describe('Privacy · data says what can leave and what this computer remembers',
     });
     expect(listMachineApprovals()).toEqual([{ subject: 'round', folder: '/Users/probe/beta', id: 'r1' }]);
     expect(screen.getAllByTestId('app-settings-allowances-folder')).toHaveLength(1);
+  });
+
+  it('lists a folder whose chat is on auto-approve, and forgetting it makes the chat ask again', () => {
+    keepStandingChoice('/Users/probe/gamma', true);
+    recordApproval('round', '/Users/probe/gamma', 'r1', 'v1');
+    keepStandingChoice('/Users/probe/delta', true);
+    recordApproval('auto-approve', '/Users/probe/earlier-scope', 'chat', 'a scope this build no longer answers');
+    mount();
+    expect(screen.getAllByTestId('app-settings-allowances-folder').map((row) => row.textContent)).toEqual([
+      expect.stringContaining('/Users/probe/gamma · 1 scheduled check · Chat auto-approve'),
+      expect.stringContaining('/Users/probe/delta · Chat auto-approve'),
+    ]);
+    const forget = screen.getAllByTestId('app-settings-allowances-forget')[1]!;
+    fireEvent.click(forget);
+    act(() => {
+      fireEvent.click(forget);
+    });
+    expect(standingChoiceKept('/Users/probe/delta')).toBe(false);
+    expect(standingChoiceKept('/Users/probe/gamma')).toBe(true);
   });
 
   it('forgets every allowance with Forget all', () => {

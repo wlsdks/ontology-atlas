@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { FileText } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
+import { forgetRememberedChoices, standingChoiceKept } from '@/features/acp-session';
 import { useUpdateAutoCheck } from '@/features/app-update';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
@@ -31,14 +32,18 @@ interface FolderAllowances {
   folder: string;
   connectors: number;
   rounds: number;
+  autoApprove: boolean;
 }
 
 function byFolder(items: readonly MachineApprovalItem[]): FolderAllowances[] {
   const folders = new Map<string, FolderAllowances>();
   for (const item of items) {
-    const entry = folders.get(item.folder) ?? { folder: item.folder, connectors: 0, rounds: 0 };
+    // A choice kept for an earlier scope reads as off in chat, so it is not listed as on here.
+    if (item.subject === 'auto-approve' && !standingChoiceKept(item.folder)) continue;
+    const entry = folders.get(item.folder) ?? { folder: item.folder, connectors: 0, rounds: 0, autoApprove: false };
     if (item.subject === 'connector') entry.connectors += 1;
-    else entry.rounds += 1;
+    else if (item.subject === 'round') entry.rounds += 1;
+    else entry.autoApprove = true;
     folders.set(item.folder, entry);
   }
   return [...folders.values()];
@@ -193,11 +198,17 @@ export function PrivacyPane({
                   settingId="allowances"
                   testId="app-settings-allowances-folder"
                   label={folderName(entry.folder)}
-                  caption={`${entry.folder} · ${t('allowances.counts', {
-                    connectors: entry.connectors,
-                    rounds: entry.rounds,
-                    both: entry.connectors > 0 && entry.rounds > 0 ? 'yes' : 'no',
-                  })}`}
+                  caption={[
+                    entry.folder,
+                    entry.connectors + entry.rounds > 0
+                      ? t('allowances.counts', {
+                          connectors: entry.connectors,
+                          rounds: entry.rounds,
+                          both: entry.connectors > 0 && entry.rounds > 0 ? 'yes' : 'no',
+                        })
+                      : null,
+                    entry.autoApprove ? t('allowances.autoApprove') : null,
+                  ].filter(Boolean).join(' · ')}
                   control={
                     <ArmedChip
                       label={t('allowances.forget')}
@@ -249,6 +260,7 @@ export function PrivacyPane({
                 onConfirm={async () => {
                   try {
                     await forgetRecent(recentVaults);
+                    forgetRememberedChoices();
                     setForgetFailed(false);
                   } catch {
                     setForgetFailed(true);

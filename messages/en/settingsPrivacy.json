@@ -48,9 +48,10 @@
   "updateChangeAria": "Change the automatic update check in About",
   "allowances": {
     "title": "Allow list",
-    "keywords": "consent approval allow revoke mcp server scheduled check",
-    "empty": "Nothing is allowed yet. A folder's MCP servers and scheduled checks wait until you allow them.",
+    "keywords": "consent approval allow revoke mcp server scheduled check chat auto-approve",
+    "empty": "Nothing is allowed yet. A folder's MCP servers and scheduled checks wait until you allow them, and chat asks before it writes.",
     "counts": "{connectors, plural, =0 {} one {# MCP server} other {# MCP servers}}{both, select, yes { · } other {}}{rounds, plural, =0 {} one {# scheduled check} other {# scheduled checks}}",
+    "autoApprove": "Chat auto-approve",
     "forget": "Revoke",
     "forgetArmed": "Press again to revoke",
     "forgetAll": "Revoke all",

@@ -48,9 +48,10 @@
   "updateChangeAria": "在“关于”中更改自动检查更新",
   "allowances": {
     "title": "允许列表",
-    "keywords": "同意 批准 允许 撤销 mcp 服务器 定时检查",
-    "empty": "还没有允许任何内容。文件夹中的 MCP 服务器和定时检查会等你允许后才运行。",
+    "keywords": "同意 批准 允许 撤销 mcp 服务器 定时检查 对话 自动批准",
+    "empty": "还没有允许任何内容。文件夹中的 MCP 服务器和定时检查会等你允许后才运行，对话在写入前会先询问。",
     "counts": "{connectors, plural, =0 {} other {# 个 MCP 服务器}}{both, select, yes { · } other { }}{rounds, plural, =0 {} other {# 个定时检查}}",
+    "autoApprove": "对话自动批准",
     "forget": "撤销",
     "forgetArmed": "再按一次以撤销",
     "forgetAll": "全部撤销",
