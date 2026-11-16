@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
 import type { VaultManifest } from "@/entities/docs-vault";
@@ -16,6 +16,7 @@ import {
   type TreeInputEdge, type TreeInputNode,
 } from "../model/containment-tree";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
+import { cachedGraphAttention } from "./attention";
 import { paintFlatGraphFrame } from "./frame";
 import { segmentCrossesBox } from "./names";
 import { domainStarIds } from "./open-star";
@@ -56,10 +57,10 @@ const LABELS: DialLabels = {
   ring: () => "", reading: () => "", settling: () => "", linksShown: () => "",
 };
 
-function silentContext(): CanvasRenderingContext2D {
+function silentContext(measure = (text: string, _font: string) => text.length * 6): CanvasRenderingContext2D {
   const state: Record<string, unknown> = { globalCompositeOperation: "source-over", globalAlpha: 1, font: "10px sans-serif", lineWidth: 1 };
   const methods: Record<string, (...args: unknown[]) => unknown> = {
-    measureText: (text) => ({ width: String(text).length * 6 }),
+    measureText: (text) => ({ width: measure(String(text), String(state.font)) }),
     createLinearGradient: () => ({ addColorStop: () => undefined }),
     createRadialGradient: () => ({ addColorStop: () => undefined }),
     getLineDash: () => [],
@@ -476,6 +477,87 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
     expect(breaches).toEqual([]);
   },
 );
+
+/** Glyph width per em of a font a sixth wider than the 0.6 em the map measures without a canvas, as a wider system font sets it. */
+const WIDE_EM = 0.7;
+
+/**
+ * Six domains of six capabilities with three elements each, every domain's hub needing three of its
+ * siblings, one capability of the next domain and two siblings' elements, and needed by two siblings:
+ * a hub lights five far ends in its own domain, whose names carry long titles.
+ */
+const HUB_DOMAINS = ["orders", "catalog", "payments", "shipping", "returns", "inventory"];
+
+function hubModel(): DialModel {
+  const names = HUB_DOMAINS;
+  const nodes: TreeInputNode[] = [{ id: "project:p", label: "Atlas", kind: "project" }];
+  const edges: TreeInputEdge[] = [];
+  const cap = (d: number, c: number) => `capability:${names[d % names.length]}-${c}`;
+  names.forEach((name, d) => {
+    nodes.push({ id: `domain:${name}`, label: name, kind: "domain" });
+    edges.push({ source: "project:p", target: `domain:${name}`, kind: "contains", relationType: "contains" });
+    for (let c = 0; c < 6; c += 1) {
+      nodes.push({ id: cap(d, c), label: c === 0 ? `${name} hub` : `${name} step ${c} named at length`, kind: "capability" });
+      edges.push({ source: `domain:${name}`, target: cap(d, c), kind: "contains", relationType: "contains" });
+      for (let e = 0; e < 3; e += 1) {
+        nodes.push({ id: `element:${name}-${c}-${e}`, label: `${name}-${c}-${e}`, kind: "element" });
+        edges.push({ source: cap(d, c), target: `element:${name}-${c}-${e}`, kind: "contains", relationType: "contains" });
+      }
+    }
+    const needs = [cap(d, 1), cap(d, 2), cap(d, 3), cap(d + 1, 1), ...[1, 2].flatMap((c) => [0, 1, 2].map((e) => `element:${name}-${c}-${e}`))];
+    for (const to of needs) edges.push({ source: cap(d, 0), target: to, kind: "depends", relationType: "depends_on" });
+    for (const c of [4, 5]) edges.push({ source: cap(d, c), target: cap(d, 0), kind: "depends", relationType: "depends_on" });
+  });
+  const tree = readContainmentTree(nodes, edges);
+  const dependencies = rollDomainDependencies(tree, edges);
+  return buildDialModel({
+    tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)),
+    elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id), relates: rollRelatesCapabilityPairs(tree, edges), direct: directRelations(edges),
+  });
+}
+
+it("names each far end of a selected capability inside its domain whenever a side of it is clear of names and of discs not its own, its text set wider", () => {
+  const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+    () => silentContext((text, font) => text.length * Number.parseFloat(font.split(" ")[1] ?? "10") * WIDE_EM) as never,
+  );
+  try {
+    const wide = hubModel();
+    const names = HUB_DOMAINS;
+    const world = { model: wide, scene: buildFlatGraphScene(wide, TOKENS.layout, null) };
+    const P = TOKENS.paint;
+    const unnamed: string[] = [];
+    for (const [id, cap] of [...wide.capabilityById].filter(([x]) => x.endsWith("-0"))) {
+      const farEnds = [...cachedGraphAttention(wide, id, true).named].filter((x) => x !== id && wide.capabilityById.get(x)?.domainId === cap.domainId);
+      if (farEnds.length === 0) continue;
+      const partner = id.replace(/([^:]+)-0$/, (_, name: string) => `${names[(names.indexOf(name) + 1) % names.length]}-1`);
+      for (const [zoom, free] of [1.7, 1.8, 1.85, 1.9, 1.95, 2, 2.1, 2.2].flatMap((z) => [{ minX: 0, minY: 0, maxX: W, maxY: H }, { minX: 0, minY: 0, maxX: W - 380, maxY: H }].map((f) => [z, f] as const))) {
+        const camera = cameraOn(id, {}, world);
+        const before = framesUntilSettled(camera, { focusedNodeId: partner, freeRect: free }, new Set(), 0, zoom, zoom, FRAME_MS);
+        framesUntilSettled(camera, { focusedNodeId: id, freeRect: free }, new Set(), before.end + FRAME_MS, zoom, zoom, FRAME_MS);
+        const { texts, discs } = describeLastDialFrame(W, H)!;
+        for (const end of farEnds.filter((x) => !texts.some((t) => t.id === x && t.role === "capability"))) {
+          const disc = discs.find((d) => d.id === end);
+          if (!disc) continue;
+          const w = wide.capabilityById.get(end)!.label.length * P.capNamePx * WIDE_EM;
+          const h = P.capNamePx;
+          const x = disc.r + P.nameGapPx;
+          const rise = P.capNamePx + P.namePadPx * 2;
+          const pad = P.namePadPx * 2;
+          const box = (left: number, top: number) => ({ minX: disc.x + left - pad, maxX: disc.x + left + w + pad, minY: disc.y + top - pad, maxY: disc.y + top + h + pad });
+          const sides = [box(x, -h / 2), box(-x - w, -h / 2), box(-w / 2, x), box(-w / 2, -x - h), ...[-rise, rise].flatMap((dy) => [box(x, dy - h / 2), box(-x - w, dy - h / 2)])];
+          const clear = sides.some((b) => b.minX >= free.minX + P.frameMarginPx && b.maxX <= free.maxX - P.frameMarginPx && b.minY >= free.minY + P.frameMarginPx && b.maxY <= free.maxY - P.frameMarginPx
+            && !texts.some((o) => Math.min(b.maxX, o.box.maxX) > Math.max(b.minX, o.box.minX) && Math.min(b.maxY, o.box.maxY) > Math.max(b.minY, o.box.minY))
+            && !discs.some((d) => d.id !== end && Math.hypot(Math.max(b.minX - d.x, 0, d.x - b.maxX), Math.max(b.minY - d.y, 0, d.y - b.maxY)) < d.r));
+          if (clear) unnamed.push(`${end} with ${id} selected after ${partner} at zoom ${zoom}, the free map ${free.maxX} wide`);
+        }
+        clearDialFrame();
+      }
+    }
+    expect(unnamed).toEqual([]);
+  } finally {
+    getContext.mockRestore();
+  }
+});
 
 describe("a mark's drawn radius across frames", () => {
   it("takes its radius at once when it comes back on screen, however long it was away", () => {

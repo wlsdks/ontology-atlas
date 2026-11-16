@@ -771,21 +771,25 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     ids.add(n.id);
   };
   /**
-   * Whether a domain's caption row crosses a disc not its own anywhere in the step: a caption ranks
-   * lowest and gives way to every disc, at rest and in the overview. O(discs).
+   * The least air, in px, between the glyphs of a group's names at `at` and a disc not its own at any
+   * of `scales`, measured to the circle as the frame does; below zero over a disc. O(discs × scales).
    */
-  const captionOnDisc = (n: PlacedName) => {
-    const at = layout.positions.get(n.id)!;
-    for (const [id, r] of discs) {
-      if (id === n.id) continue;
-      const p = layout.positions.get(id)!;
-      for (const s of stepScales) {
-        const b = worldBox(at, grown(n.box, -tokens.namePadPx), s);
-        if (Math.hypot(Math.max(b.minX - p.x, 0, p.x - b.maxX), Math.max(b.minY - p.y, 0, p.y - b.maxY)) < r / s) return true;
+  const discAirPx = (at: Point, group: readonly PlacedName[], scales: readonly number[]) => {
+    let air = Infinity;
+    for (const n of group) {
+      for (const [id, r] of discs) {
+        if (id === n.id) continue;
+        const p = layout.positions.get(id)!;
+        for (const s of scales) {
+          const b = worldBox(at, grown(n.box, -tokens.namePadPx), s);
+          air = Math.min(air, Math.hypot(Math.max(b.minX - p.x, 0, p.x - b.maxX), Math.max(b.minY - p.y, 0, p.y - b.maxY)) * s - r);
+        }
       }
     }
-    return false;
+    return air;
   };
+  // A caption ranks lowest and gives way to every disc anywhere in the step, at rest and in the overview.
+  const captionOnDisc = (n: PlacedName) => discAirPx(layout.positions.get(n.id)!, [n], stepScales) < 0;
   const project = projectName(input);
   if (project) place(project);
   const projectBox = project ? worldBox(layout.positions.get(project.id)!, project.box, scale) : null;
@@ -879,16 +883,21 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     const leaderClear = (group: readonly PlacedName[]) => leaderClearAt(at, group);
     // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
+    // The frame hides a name over a disc not its own at whatever zoom of the step it rests, so a forced capability keeps off them all.
+    const offDiscs = (group: readonly PlacedName[]) => cand.element || !force || discAirPx(at, group, stepScales) >= 0;
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group) && offDiscs(group);
     const offStarDots = (group: readonly PlacedName[]) => free(group) && !group.some((n) => starDots.hits(worldBox(at, n.box, scale)));
-    // Only a forced name may stand on an element dot of an open star.
-    let fit = (chooseSide(tries, offStarDots, (group) => lit && crossed(at, group)) ?? (force ? chooseSide(tries, free, (group) => lit && crossed(at, group)) : null))?.side;
+    const litCrossed = (group: readonly PlacedName[]) => lit && crossed(at, group);
+    // Only a forced name may stand on an element dot of an open star; a forced name across a lit line draws on its backing.
+    let chosen = chooseSide(tries, offStarDots, litCrossed) ?? (force ? chooseSide(tries, free, litCrossed) : null);
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
-    if (!fit && force) {
+    if (!chosen && force) {
       const clearNow = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
-        && (!keepsOffTitles || !group.some((n) => titles.hitsAtCentre(at, grown(n.box, tokens.selectedTitleGapPx)))) && offRing(group) && leaderClear(group);
-      fit = chooseSide(tries, clearNow, (group) => lit && crossed(at, group))?.side;
+        && (!keepsOffTitles || !group.some((n) => titles.hitsAtCentre(at, grown(n.box, tokens.selectedTitleGapPx)))) && offRing(group) && leaderClear(group) && offDiscs(group);
+      chosen = chooseSide(tries, clearNow, litCrossed);
     }
+    let fit = chosen?.side;
+    let backed = force && chosen?.backed === true;
     // A name carried up from the step below may stand beside a disc that drifted onto its side, never on another name.
     const apartFromNames = (group: readonly PlacedName[]) => inside(at, group) && !hits(words, at, group) && leaderClear(group);
     if (!fit && force && !mayOverprint) fit = (chooseSide(tries, (group) => apartFromNames(group) && offAllMarks(at, group), () => false) ?? chooseSide(tries, apartFromNames, () => false))?.side;
@@ -898,9 +907,18 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
       const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
-      const pool = offMarks.length > 0 ? offMarks : cand.element && yields ? [] : apart.length > 0 ? apart : legible;
-      fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
+      // A capability with no side off every mark takes, on its backing, the side apart from names that
+      // stands furthest off the discs across the step, if clear of them at the step's own scale.
+      const offDiscsNow = cand.element ? [] : apart.filter((group) => discAirPx(at, group, [scale]) >= 0);
+      if (offMarks.length === 0 && offDiscsNow.length > 0) {
+        fit = offDiscsNow.reduce((best, group) => (discAirPx(at, group, stepScales) > discAirPx(at, best, stepScales) ? group : best));
+        backed = !offAllMarks(at, fit) || crossed(at, fit);
+      } else {
+        const pool = offMarks.length > 0 ? offMarks : cand.element && yields ? [] : apart.length > 0 ? apart : legible;
+        fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
+      }
     }
+    if (fit && backed) for (const n of fit) n.backed = true;
     if (fit) sides.set(cand.id, all.indexOf(fit));
     // A forced name standing on an open star's dots draws on its plate, which covers them.
     if (fit && (input.openStarId ?? null) !== null && fit.some((n) => stepScales.some((s) => starDots.hits(worldBox(at, n.box, s))))) for (const n of fit) n.backed = true;
