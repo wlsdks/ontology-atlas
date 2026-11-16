@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { GitCommitHorizontal, SquareTerminal } from 'lucide-react';
+import { GitCommitHorizontal, MousePointer2, SquareTerminal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -49,6 +49,39 @@ function useEntrance(): [(node: HTMLElement | null) => void, Entrance] {
   return [setNode, entrance];
 }
 
+/**
+ * The loop cards' scene runs only while the row is at least 20% visible in a visible tab, and never
+ * under reduced motion. Without a script the attribute never appears, so every line is simply there.
+ */
+type SceneMotion = 'paused' | 'running' | undefined;
+
+function useSceneMotion(): [(node: HTMLElement | null) => void, SceneMotion] {
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  const [motion, setMotion] = useState<SceneMotion>(undefined);
+
+  useEffect(() => {
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let seen = false;
+    const update = () => setMotion(seen && !document.hidden ? 'running' : 'paused');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        seen = entries[entries.length - 1].isIntersecting;
+        update();
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(node);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [node]);
+
+  return [setNode, motion];
+}
+
 const SECTION = cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24');
 const MONO = 'font-mono text-label leading-label';
 /** Small text starts at tertiary: quaternary falls under 7:1 at label size. */
@@ -67,7 +100,7 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download.loop');
   const tPermission = useTranslations('acpChat.permission');
   const tHeadline = useTranslations('ontologyChangeReview.headline');
-  const [cards, entrance] = useEntrance();
+  const [cards, sceneMotion] = useSceneMotion();
 
   const labelOf = useMemo(() => {
     const byId = new Map(graph.nodes.map((node) => [node.id, node.label]));
@@ -83,16 +116,16 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
         <ul
           ref={cards}
           data-testid="gateway-loop-cards"
-          data-gateway-entrance={entrance}
+          data-gateway-scene-motion={sceneMotion}
           className="mt-9 grid min-w-0 gap-4 @min-[52rem]:grid-cols-3"
         >
-          <LoopCard title={t('read.title')} body={t('read.body')}>
+          <LoopCard scene={0} title={t('read.title')} body={t('read.body')}>
             <ReadDrawing labelOf={labelOf} />
           </LoopCard>
-          <LoopCard title={t('mark.title')} body={t('mark.body')}>
+          <LoopCard scene={1} title={t('mark.title')} body={t('mark.body')}>
             <MarkDrawing labelOf={labelOf} commit={t('mark.commit', { count: LOOP_CHANGED.length })} />
           </LoopCard>
-          <LoopCard title={t('allow.title')} body={t('allow.body')}>
+          <LoopCard scene={2} title={t('allow.title')} body={t('allow.body')}>
             <AllowDrawing
               agent={t('allow.agent')}
               review={tPermission('ontologyWriteTitle')}
@@ -109,9 +142,15 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
   );
 }
 
-function LoopCard({ title, body, children }: { title: string; body: string; children: ReactNode }) {
+/** One scene per card, in reading order; the lit outline says whose turn it is. */
+function LoopCard({ scene, title, body, children }: { scene: number; title: string; body: string; children: ReactNode }) {
   return (
-    <li className={CARD}>
+    <li className={cn(CARD, 'relative')}>
+      <span
+        aria-hidden
+        className="gateway-scene-focus pointer-events-none absolute inset-0 rounded-panel"
+        style={{ '--gateway-scene-card': scene } as CSSProperties}
+      />
       {/* One height for all three, so the row's text starts on one line. */}
       <div
         aria-hidden
@@ -127,10 +166,27 @@ function LoopCard({ title, body, children }: { title: string; body: string; chil
   );
 }
 
-function Line({ index, className, children }: { index: number; className?: string; children: ReactNode }) {
+type Scene = 'read' | 'mark' | 'allow';
+const SCENE_CLASS: Record<Scene, string> = {
+  read: 'gateway-scene-read',
+  mark: 'gateway-scene-mark',
+  allow: 'gateway-scene-allow',
+};
+
+function Line({
+  index,
+  scene,
+  className,
+  children,
+}: {
+  index: number;
+  scene?: Scene;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
     <div
-      className={cn('gateway-entrance-line min-w-0', className)}
+      className={cn('gateway-entrance-line min-w-0', scene && SCENE_CLASS[scene], className)}
       style={{ '--motion-stagger-index': index } as CSSProperties}
     >
       {children}
@@ -155,14 +211,14 @@ function ReadDrawing({ labelOf }: { labelOf: (id: string) => string }) {
   ];
   return (
     <div className="min-w-0">
-      <Line index={0} className={cn(MONO, 'flex items-center gap-2 text-[color:var(--color-text-primary)]')}>
+      <Line scene="read" index={0} className={cn(MONO, 'flex items-center gap-2 text-[color:var(--color-text-primary)]')}>
         <SquareTerminal size={ICON_SIZE.sm} className={cn('shrink-0', QUIET)} />
         <span className="min-w-0 break-all">{LOOP_READ.tool}</span>
       </Line>
-      <Line index={1} className={cn(MONO, 'break-all pl-5', QUIET)}>
+      <Line scene="read" index={1} className={cn(MONO, 'break-all pl-5', QUIET)}>
         {LOOP_READ.slug}
       </Line>
-      <Line
+      <Line scene="read"
         index={3}
         className="mt-4 flex min-w-0 items-baseline gap-2 text-body leading-body text-[color:var(--color-text-primary)]"
       >
@@ -170,14 +226,14 @@ function ReadDrawing({ labelOf }: { labelOf: (id: string) => string }) {
         <span className={cn('shrink-0 text-label leading-label', QUIET)}>{labelOf(LOOP_READ.domain)}</span>
       </Line>
       {rows.map(([key, ids], row) => (
-        <Line key={key} index={4 + row} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
+        <Line scene="read" key={key} index={4 + row} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
           <span className={cn('w-20 shrink-0 font-mono', QUIET)}>{key}</span>
           <span className="min-w-0 text-[color:var(--color-text-secondary)]">
             {ids.map((id) => labelOf(id)).join(' · ')}
           </span>
         </Line>
       ))}
-      <Line index={6} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
+      <Line scene="read" index={6} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
         <span className={cn('w-20 shrink-0 font-mono', QUIET)}>path</span>
         <span className="min-w-0 break-all font-mono text-[color:var(--color-text-secondary)]">{LOOP_READ.path}</span>
       </Line>
@@ -189,16 +245,19 @@ function ReadDrawing({ labelOf }: { labelOf: (id: string) => string }) {
 function MarkDrawing({ labelOf, commit }: { labelOf: (id: string) => string; commit: string }) {
   return (
     <div className="min-w-0">
-      <Line index={0} className={cn('flex items-center gap-2 text-label leading-label', QUIET)}>
+      <Line scene="mark" index={0} className={cn('flex items-center gap-2 text-label leading-label', QUIET)}>
         <GitCommitHorizontal size={ICON_SIZE.sm} className="shrink-0" />
         <span className="min-w-0">{commit}</span>
       </Line>
       {LOOP_CHANGED.map((row, index) => (
-        <Line key={row.file} index={2 + index * 2} className="mt-2.5">
+        <Line scene="mark" key={row.file} index={2 + index * 2} className="mt-2.5">
           <p className={cn(MONO, 'break-all text-[color:var(--color-text-secondary)]')}>{fileName(row.file)}</p>
           <p className="mt-1 flex min-w-0 items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-1 text-label leading-label text-[color:var(--color-text-primary)]">
             <Concept id={row.concept} label={labelOf(row.concept)} />
-            <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-status-warning)]" />
+            <span className="relative ml-auto h-2 w-2 shrink-0">
+              <span className="gateway-scene-ring absolute inset-0 rounded-full border border-[color:var(--color-status-warning)]" />
+              <span className="gateway-scene-dot absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
+            </span>
           </p>
         </Line>
       ))}
@@ -222,18 +281,23 @@ function AllowDrawing({
 }) {
   return (
     <div className="min-w-0">
-      <Line index={0} className={cn('text-label leading-label', QUIET)}>
+      <Line scene="allow" index={0} className={cn('text-label leading-label', QUIET)}>
         {agent}
       </Line>
-      <Line
+      <Line scene="allow"
         index={2}
         className="mt-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-3.5"
       >
         <p className={cn('text-label leading-label', QUIET)}>{review}</p>
         <p className="mt-1 text-body leading-body text-[color:var(--color-text-primary)]">{change}</p>
         <p className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-label leading-label">
-          <span className="inline-flex min-h-7 items-center rounded-chip bg-[color:var(--color-indigo-accent)] px-3 text-[color:var(--color-text-on-accent)]">
+          <span className="gateway-scene-press relative inline-flex min-h-7 items-center rounded-chip bg-[color:var(--color-indigo-accent)] px-3 text-[color:var(--color-text-on-accent)]">
             {allowOnce}
+            {/* The person's hand: the press is theirs, never the agent's. */}
+            <MousePointer2
+              size={ICON_SIZE.md}
+              className="gateway-scene-pointer absolute left-[70%] top-[60%] fill-[color:var(--color-text-primary)] text-[color:var(--color-canvas)]"
+            />
           </span>
           <span className="inline-flex min-h-7 items-center rounded-chip border border-[color:var(--color-border-strong)] px-3 text-[color:var(--color-text-primary)]">
             {reject}
