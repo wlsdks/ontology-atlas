@@ -92,8 +92,6 @@ fn last_changes(
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%cI");
     let mut args: Vec<&str> = vec![
-        // A vault names these paths: read as plain names, never as pathspec magic or globs.
-        "--literal-pathspecs",
         // Otherwise git C-quotes non-ASCII paths and Korean names never match.
         "-c",
         "core.quotepath=false",

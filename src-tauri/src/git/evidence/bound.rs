@@ -193,12 +193,12 @@ fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String>
     if paths.is_empty() {
         return Ok(HashSet::new());
     }
-    let literals: Vec<String> = paths
+    let files: Vec<&str> = paths
         .iter()
         .filter(|path| !path.is_dir)
-        .map(|p| format!(":(literal){}", p.resolved))
+        .map(|p| p.resolved.as_str())
         .collect();
-    if literals.is_empty() {
+    if files.is_empty() {
         return Ok(HashSet::new());
     }
     let mut args = vec![
@@ -208,7 +208,7 @@ fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String>
         "--untracked-files=all",
         "--",
     ];
-    args.extend(literals.iter().map(String::as_str));
+    args.extend(&files);
     let output = run_git(root, &args).map_err(|_| "unreadable")?;
     if !output.success {
         return Err("unreadable".into());
@@ -242,10 +242,10 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
         return Ok(vec![]);
     }
     let before = dirty_paths(root, paths)?;
-    let literals: Vec<String> = paths
+    let files: Vec<&str> = paths
         .iter()
         .filter(|path| !path.is_dir)
-        .map(|p| format!(":(literal){}", p.resolved))
+        .map(|p| p.resolved.as_str())
         .collect();
     let mut args = vec![
         "-c",
@@ -257,8 +257,8 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
         "--no-renames",
         "--",
     ];
-    args.extend(literals.iter().map(String::as_str));
-    let history = if literals.is_empty() {
+    args.extend(&files);
+    let history = if files.is_empty() {
         String::new()
     } else {
         let output = run_git(root, &args).map_err(|_| "unreadable")?;

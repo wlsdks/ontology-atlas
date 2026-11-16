@@ -234,7 +234,7 @@ fn literal_paths_and_korean_names_cannot_select_other_files() {
         f.vault.to_str().unwrap(),
         "fixture",
         &[],
-        &["한글 space.ts", "literal[1].ts", ":(glob)*"].map(String::from),
+        &["한글 space.ts", "literal[1].ts", ":(glob)*", ":@x"].map(String::from),
         None,
         || {},
     );
@@ -248,6 +248,7 @@ fn literal_paths_and_korean_names_cannot_select_other_files() {
         .unwrap()
         .starts_with("2026-01-01"));
     assert!(!result.source_changes[2].exists);
+    assert!(!result.source_changes[3].exists);
 }
 
 #[cfg(unix)]

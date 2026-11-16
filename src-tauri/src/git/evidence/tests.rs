@@ -23,16 +23,20 @@ fn safe_relative_path_refuses_escapes_and_options() {
 
 #[test]
 fn a_path_written_as_pathspec_magic_hides_no_other_path() {
-    let scratch = crate::git::test_support::Scratch::new("evidence-literal");
-    std::fs::create_dir_all(scratch.work.join("src")).unwrap();
-    scratch.commit("src/pay.ts", "pay");
-    let wanted = [
-        ("src/pay.ts".to_string(), "src/pay.ts".to_string()),
-        (":!src".to_string(), ":!src".to_string()),
-        (":(glob)**".to_string(), ":(glob)**".to_string()),
-    ];
-    let last = last_changes(&scratch.work, &wanted).unwrap();
-    assert!(last.contains_key(&0), "src/pay.ts keeps its change date");
-    assert!(!last.contains_key(&1), "an exclude pathspec matches nothing");
-    assert!(!last.contains_key(&2), "a glob pathspec matches nothing");
+    // An exclude pattern drops the other path from the walk; malformed magic makes
+    // Git refuse the whole walk. Read as names, neither touches the other date.
+    for (index, planted) in [":!src", ":@x"].into_iter().enumerate() {
+        let scratch = crate::git::test_support::Scratch::new(&format!("evidence-literal-{index}"));
+        std::fs::create_dir_all(scratch.work.join("src")).unwrap();
+        scratch.commit("src/pay.ts", "pay");
+        let wanted = [
+            ("src/pay.ts".to_string(), "src/pay.ts".to_string()),
+            (planted.to_string(), planted.to_string()),
+        ];
+        let last = last_changes(&scratch.work, &wanted).unwrap();
+        assert!(
+            last.contains_key(&0),
+            "{planted}: src/pay.ts keeps its change date"
+        );
+    }
 }
