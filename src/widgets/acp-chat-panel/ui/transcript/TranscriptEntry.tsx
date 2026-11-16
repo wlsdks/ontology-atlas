@@ -3,6 +3,7 @@ import type { Components } from 'react-markdown';
 import { useTranslations } from 'next-intl';
 
 import {
+  readToolCommandArgument,
   readToolFallbackTarget,
   readToolOutcome,
   readToolPathArgument,
@@ -16,7 +17,7 @@ import { Chip, Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 
 import { splitAppRequest } from '../request-parts';
-import { canonicalToolTitle, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from '../tool-label';
+import { canonicalToolTitle, commandRowWords, isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } from '../tool-label';
 import { toolRowPhase, workingShimmer } from '../working-ink';
 import { ChatMarkdown } from '../chat-markdown/ChatMarkdown';
 import { CHAT_MARKDOWN, WORK_MARKDOWN } from './markdown-classes';
@@ -151,9 +152,14 @@ export const TranscriptEntry = memo(function TranscriptEntry({
 
     const fallbackTarget = toolTargets.length === 0 ? readToolFallbackTarget(event.rawInput) : null;
 
-    const label = fallbackTarget?.kind === 'path'
-      ? labelWithoutRepeatedPath(rawLabel, readToolPathArgument(event.rawInput))
-      : rawLabel;
+    const command = fallbackTarget?.kind === 'query'
+      ? commandRowWords(rawLabel, readToolCommandArgument(event.rawInput))
+      : null;
+    const label = command
+      ? command.label
+      : fallbackTarget?.kind === 'path'
+        ? labelWithoutRepeatedPath(rawLabel, readToolPathArgument(event.rawInput))
+        : rawLabel;
     return (
       <p
         data-acp-entry="tool"
@@ -223,7 +229,9 @@ export const TranscriptEntry = memo(function TranscriptEntry({
             data-tool-target={fallbackTarget.kind}
             className="min-w-0 flex-1 truncate"
           >
-            {` · ${fallbackTarget.frame ? `${fallbackTarget.frame}: ` : ''}${fallbackTarget.value}`}
+            {command
+              ? ` · ${command.target}`
+              : ` · ${fallbackTarget.frame ? `${fallbackTarget.frame}: ` : ''}${fallbackTarget.value}`}
           </span>
         ) : null}
 

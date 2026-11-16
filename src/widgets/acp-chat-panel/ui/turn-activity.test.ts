@@ -32,6 +32,12 @@ describe('turnActivity', () => {
     expect(activity.steps).toBe(2);
   });
 
+  it('names a command call by its act and shows the command once', () => {
+    const rawInput = { command: '/bin/zsh -lc "rg --files src"' };
+    const activity = turnActivity([user, tool('t1', 'rg --files src', 'execute', 'in_progress', rawInput)], 0, 'atlas-vault', true);
+    expect(activity).toMatchObject({ kind: 'running', label: { kind: 'kind', text: 'execute' }, target: 'rg --files src' });
+  });
+
   it('reads a dotted vault call reported as a command as the read it is', () => {
     const rawInput = { server: 'atlas-vault', tool: 'get_concept', arguments: { slug: 'domains/map' } };
     const activity = turnActivity([user, tool('t1', 'mcp.atlas-vault.get_concept', 'execute', 'in_progress', rawInput)], 0, 'atlas-vault', true);

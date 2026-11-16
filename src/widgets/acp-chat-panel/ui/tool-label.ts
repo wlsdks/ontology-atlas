@@ -163,3 +163,14 @@ export function labelWithoutRepeatedPath(label: ToolLabel, path: string | null):
   const head = text.slice(0, text.length - target.length).replace(/[\s:·\-–—]+$/u, '').trim();
   return head ? { kind: 'raw', text: head } : label;
 }
+
+/**
+ * A command call is titled with the command itself, which its `command` argument repeats, often
+ * inside a shell wrapper. The row then names the act and keeps the title as the one command shown.
+ */
+export function commandRowWords(label: ToolLabel, command: string | null): { label: ToolLabel; target: string } | null {
+  if (label.kind !== 'raw' || !command) return null;
+  const title = label.text.replace(/\s+/g, ' ').trim();
+  if (!title || !command.replace(/\s+/g, ' ').includes(title)) return null;
+  return { label: { kind: 'kind', text: 'execute' }, target: title };
+}

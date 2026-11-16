@@ -80,7 +80,7 @@ export const WorkGroup = memo(function WorkGroup({
         />
 
         <span className={workingShimmer(active)}>
-          {t(active ? 'workGroupActive' : 'workGroup', { count: events.length })}
+          {t('workGroup')}
         </span>
       </button>
       <div
