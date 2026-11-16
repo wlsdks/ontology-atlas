@@ -191,7 +191,7 @@
       },
       "platforms": {
         "q": "What does it run on?",
-        "a": "macOS on Apple Silicon, checked by Apple for malware, and a Windows x64 beta. The map also opens in the browser without installing anything."
+        "a": "macOS on Apple Silicon, notarized (Apple scanned it for malware), and a Windows x64 beta. The map also opens in the browser without installing anything."
       }
     }
   }
