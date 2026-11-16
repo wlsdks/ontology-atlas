@@ -15,6 +15,7 @@ export const POST_MERGE_SPECS = [
   "map/camera/camera-transition.spec.ts",
   "map/neural/map-neural-grip.spec.ts",
   "map/flat-graph/map-flat-graph-scale.spec.ts",
+  "map/flat-graph/map-flat-graph-star-motion.spec.ts",
   "map/frame-loop/map-frame-allocation.spec.ts",
   "map/hex-board/map-hex-frame-work.spec.ts",
   "map/frame-loop/map-hover-release.spec.ts",

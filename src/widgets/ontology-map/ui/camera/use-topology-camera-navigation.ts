@@ -25,6 +25,7 @@ import { landTierAssembly } from "../../morph/tier-assembly";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, type FocusLeashPx } from "./topology-camera-math";
 import {
+  foldedPanelTokens,
   overviewBoundsFor,
   overviewFitTokens
 } from "./topology-overview-fit";
@@ -42,6 +43,7 @@ interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
   hasInitializedRef: RefObject<boolean>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   realmDataRef: RefObject<RealmRuntimeData | null>;
   realmTransitionRef: RefObject<RealmTransitionState>;
   expandedParentsRef: RefObject<ReadonlySet<string>>;
@@ -95,6 +97,7 @@ export function useTopologyCameraNavigation({
   worldRef,
   viewportRef,
   hasInitializedRef,
+  canvasRef,
   realmDataRef,
   realmTransitionRef,
   expandedParentsRef,
@@ -289,11 +292,14 @@ export function useTopologyCameraNavigation({
     const fitTokens = overviewFitTokens(tokens);
         const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     const dialFit = dialOverviewFit(world);
+    // The overview a deselect lands on: a concept's panel, open or folding behind a deselect in flight, does not count.
+    const panelFolds = focusedSlugRef.current !== null || cameraTweenRef.current?.ease === "spring";
+    const overviewTokens = panelFolds ? foldedPanelTokens(rawTokens, fitTokens, canvasRef.current) : fitTokens;
     overviewScaleRef.current = computeOverviewFitScale(
       overviewBounds,
       width,
       height,
-      fitTokens,
+      overviewTokens,
       world.nodes.length,
       dialFit);
 
@@ -311,6 +317,8 @@ export function useTopologyCameraNavigation({
     });
 
     if (mode === "preserve") return false;
+    // A selection that just cleared hands the camera to its deselect, which decides on its next frame.
+    if (mode === "overview" && selectionCameraRef.current !== null) return false;
 
     // 3D must be handled with live projection coordinates held by rAF. Do not reset
     // orientation; only feed the new viewport into the existing select/deselect reframe path.
@@ -400,7 +408,7 @@ export function useTopologyCameraNavigation({
         overviewBounds,
         width,
         height,
-        fitTokens,
+        overviewTokens,
         world.nodes.length,
         dialFit);
     }
@@ -415,7 +423,10 @@ export function useTopologyCameraNavigation({
         ? tokens.cameraSpringAngFreqInteractive
         : tokens.cameraSpringAngFreqTransition;
     lastActiveMsRef.current = performance.now();
-    if (motion === "finalize-tracking") {
+    const running = cameraTweenRef.current;
+    // A selection's frame or its undo already in flight keeps its motion; only its destination follows the map.
+    if (running?.ease === "spring") cameraTweenRef.current = { ...running, target: { x: target.tx, y: target.ty, scale: target.tscale } };
+    else if (motion === "finalize-tracking") {
       cameraTweenRef.current = null;
       cameraRef.current = {
         x: { value: target.tx, velocity: 0 },

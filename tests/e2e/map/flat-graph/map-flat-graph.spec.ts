@@ -129,15 +129,15 @@ function membersApartPx(dial: DialProbe, domainId: string): number {
 
 const tokenPx = (page: Page, name: string) => page.evaluate((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v)), name);
 
-test("a domain selected at the overview zooms until its closest members stand the domain separation apart, and one deselect returns the view", async ({ page }) => {
+test("a domain selected at the overview zooms in far enough that two opened capability discs fit between its closest members, and one deselect returns the view", async ({ page }) => {
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   await openGraph(page);
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
-  const apart = await tokenPx(page, "--map-graph-domain-apart-px");
+  const apart = 2 * (await tokenPx(page, "--map-graph-cap-open-max-px"));
   const before = await readDial(page);
   const domainId = [...before.clusters].sort((a, b) => membersApartPx(before, a.domainId) - membersApartPx(before, b.domainId))[0]!.domainId;
-  expect(membersApartPx(before, domainId), "at the overview a domain's members stand closer than the domain separation").toBeLessThan(apart);
+  expect(membersApartPx(before, domainId), "at the overview a domain's members stand closer than two opened capability discs").toBeLessThan(apart);
 
   const home = before.discs.find((d) => d.id === domainId)!;
   await page.mouse.click(box.x + home.x, box.y + home.y);
