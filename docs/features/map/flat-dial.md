@@ -257,7 +257,16 @@ marks open with the room they get: each mark and its nearest neighbour share
 largest open radii (`--map-graph-cap-open-max-px`, `--map-graph-element-open-max-px`),
 so few members draw large and many draw smaller, none overlap, and a press
 reaches as far as the drawn radius. A selected capability's fanned elements open
-the same way. Member names are not held in the frame; they are admitted
+the same way. A radius moves toward that room from the radius and the
+speed it last drew: a critically damped step that gathers and sheds speed over
+`--motion-fast` and never exceeds `--map-graph-mark-px-per-ms`, and a frame later
+than two 60 Hz frames moves it only as far as such a frame would. Opening,
+pressing a member, deselecting and pressing another domain mid-move therefore
+show no jump in size, and an element dot fades as its own capability's disc grows
+over it. Names draw by rank (titles and the selection's name, the far ends of its
+lines, capabilities, elements, caption rows); a name fades as it nears a mark
+that is not its own or a name drawn before it, except the first two ranks, which
+stay named beside a dimmed or fanned dot. Member names are not held in the frame; they are admitted
 again at whatever zoom it lands on. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
@@ -267,8 +276,10 @@ taken for its members and may leave its partners outside), and framing the
 landed view again moves nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
-move is the least pan that frames, with any zoom, as one slide on
-the canvas spring: a second selection mid-slide retargets it from where the camera is,
+move is the least pan that frames. A move that zooms eases the zoom in log space
+on a sine curve and the pan on the same curve, for `--motion-slow` per octave of
+zoom and at most twice that; a pure pan is one slide on the canvas spring. A
+second selection mid-move retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
 zoomed since; a selection a deep link arrived on returns to the overview. An
