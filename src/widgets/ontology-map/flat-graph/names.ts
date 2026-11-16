@@ -433,15 +433,19 @@ function sideNames(input: NameShape, id: string, role: "capability" | "element",
   const centred = (dy: number): PlacedName[] => [{ id, role, text, font: f, dx: 0, dy, align: "center", box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: dy - half, maxY: dy + half } }];
   if (!input.named.has(id) && !isStarMember(input, id)) return sides;
   const rise = px + t.namePadPx * 2;
-  const diagonal = (side: 1 | -1, dy: number): PlacedName[] => [{
+  const diagonal = (side: 1 | -1, dy: number, leader = true): PlacedName[] => [{
     id, role, text, font: f, dx: side * x, dy, align: side === 1 ? "left" : "right",
     box: { minX: side === 1 ? x - t.namePadPx : -x - w - t.namePadPx, maxX: side === 1 ? x + w + t.namePadPx : -x + t.namePadPx, minY: dy - half, maxY: dy + half },
-    leader: true,
+    ...(leader ? { leader: true } : {}),
   }];
   const onRow = [...sides, centred(below), centred(-below)];
   // Only a selection's far end leaves its row: a pointed-at name must stay under the pointer.
   if (!input.selected || id === input.focusId) return onRow;
-  return [...onRow, diagonal(1, -rise), diagonal(-1, -rise), diagonal(1, rise), diagonal(-1, rise)];
+  const offRow = [diagonal(1, -rise), diagonal(-1, -rise), diagonal(1, rise), diagonal(-1, rise)];
+  if (!isStarMember(input, id)) return [...onRow, ...offRow];
+  // Half a row up or down a name still sits beside its disc, so it needs no leader.
+  const slid = [diagonal(1, -rise / 2, false), diagonal(-1, -rise / 2, false), diagonal(1, rise / 2, false), diagonal(-1, rise / 2, false)];
+  return [...onRow, ...slid, ...offRow];
 }
 
 /** Text runs with each digit centred in a cell as wide as the widest digit, so figures align as `tnum` would. */

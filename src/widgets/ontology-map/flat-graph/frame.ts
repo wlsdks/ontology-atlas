@@ -744,9 +744,10 @@ function drawnNameOf(n: PlacedName, wasFocus: boolean): DrawnName {
   return row;
 }
 
-/** Which side of its mark a name stands on: its alignment and whether it sits above, on or below the mark's row. */
+/** Which side of its mark a name stands on: its alignment, and above, on or below the mark's row, a leader's row further off. */
 function sideOf(n: PlacedName): number {
-  return (n.align === "left" ? 0 : n.align === "right" ? 3 : 6) + Math.sign(n.dy) + 1;
+  const row = n.leader === true ? 2 * Math.sign(n.dy) : Math.sign(n.dy);
+  return (n.align === "left" ? 0 : n.align === "right" ? 5 : 10) + row + 2;
 }
 
 /**
