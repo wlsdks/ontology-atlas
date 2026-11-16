@@ -344,15 +344,15 @@
       "prompt": "Start building the ontology from the connected source code. First orient with connection_info and list_kinds. Propose domains, capabilities, implementation elements, and evidence paths from the source; look for similar existing concepts first and write nothing before I review it. Write only the candidates I approve as a batch, then report validate_vault and compile_ontology results."
     },
     "island": {
-      "label": "{count} items including “{firstLabel}” are not connected to anything else. Find where they should connect",
-      "prompt": "{count} concepts including “{firstLabel}” ({first}) are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why."
+      "label": "{count, plural, one {“{firstLabel}” is not connected to anything else. Find where it should connect} other {# items including “{firstLabel}” are not connected to anything else. Find where they should connect}}",
+      "prompt": "{count, plural, one {The concept “{firstLabel}” ({first}) is not connected to the rest of the map. Using the code as evidence, work out where it belongs and propose the links along with why.} other {# concepts including “{firstLabel}” ({first}) are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why.}}"
     },
     "containment": {
       "label": "The “{slugLabel}” document says it belongs to “{domainLabel}”, but the “{domainLabel}” document’s list does not include “{slugLabel}”. Check which side is right and make the two documents agree",
       "prompt": "“{slugLabel}” ({slug}) says it belongs to “{domainLabel}” ({domain}), but the domain-side link is missing. Check whether that home is right, and align both sides if so."
     },
     "evidence": {
-      "label": "{count} capabilities do not say which code implements them yet. Start with “{firstLabel}” and find that code",
+      "label": "{count, plural, one {The capability “{firstLabel}” does not say which code implements it yet. Find that code} other {# capabilities do not say which code implements them yet. Start with “{firstLabel}” and find that code}}",
       "prompt": "Run query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}'), then inspect “{firstLabel}” ({first}) first. These {count} capabilities have no implementation file path and no linked element written down yet. Find the implementation evidence and propose the smallest path or element update. Do not write before I review it, and say when no evidence can be found."
     },
     "explain": {
