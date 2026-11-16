@@ -739,7 +739,7 @@ function holdsPlace(n: PlacedName): boolean {
 }
 
 const NAME_RANKS = 5;
-const blockShowing: boolean[] = [];
+const nameRanks: number[] = [];
 
 /** Which names win where two would cross: places held, then names the lit picture asks for, capabilities, elements, and captions last. */
 function nameRank(n: PlacedName): number {
@@ -753,9 +753,8 @@ const grownMarks = new FrameList<Disc | Dot>();
 function collectGrownMarks(): void {
   grownMarks.restart();
   if (grownIds.size === 0) return;
-  for (const list of [L.discs, L.dots]) {
-    for (let i = 0; i < list.size; i += 1) if (grownIds.has(list.items[i]!.id)) grownMarks.add(list.items[i]!);
-  }
+  for (let i = 0; i < L.discs.size; i += 1) if (grownIds.has(L.discs.items[i]!.id)) grownMarks.add(L.discs.items[i]!);
+  for (let i = 0; i < L.dots.size; i += 1) if (grownIds.has(L.dots.items[i]!.id)) grownMarks.add(L.dots.items[i]!);
 }
 
 /**
@@ -1162,19 +1161,27 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
   const chrome = input.nameObstacles ?? NO_BOXES;
-  const shows = blockShowing;
-  shows.length = admission.names.length;
+  // A name gives way to the names drawn before it, so while names give way they are drawn in the
+  // order they rank; with nothing grown no name gives way, and admission's order stands. O(names).
+  const ranked = grownMarks.size > 0;
+  const ranks = nameRanks;
+  ranks.length = admission.names.length;
   for (let nIndex = 0; nIndex < admission.names.length;) {
     const end = nameBlockEnd(admission.names, nIndex);
     const show = blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId);
-    for (let i = nIndex; i < end; i += 1) shows[i] = show;
+    for (let i = nIndex; i < end; i += 1) {
+      const n = admission.names[i]!;
+      if (!ranked && show) planName(n, alphas, n.id === leaving ? mix : 1, false);
+      ranks[i] = ranked && show ? nameRank(n) : -1;
+    }
     nIndex = end;
   }
-  // A name gives way to the names drawn before it, so they are drawn in the order they rank.
-  for (let rank = 0; rank < NAME_RANKS; rank += 1) {
-    for (let i = 0; i < admission.names.length; i += 1) {
-      const n = admission.names[i]!;
-      if (shows[i] && nameRank(n) === rank) planName(n, alphas, n.id === leaving ? mix : 1, false);
+  if (ranked) {
+    for (let rank = 0; rank < NAME_RANKS; rank += 1) {
+      for (let i = 0; i < admission.names.length; i += 1) {
+        const n = admission.names[i]!;
+        if (ranks[i] === rank) planName(n, alphas, n.id === leaving ? mix : 1, false);
+      }
     }
   }
   // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
