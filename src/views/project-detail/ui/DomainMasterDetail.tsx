@@ -132,7 +132,7 @@ export function DomainMasterDetail({
               animate={{ opacity: marks.staleLegend === "shown" ? 1 : 0 }}
               transition={MOTION.fast}
             >
-              <span aria-hidden className="text-[color:var(--color-status-warning)]">◐</span>
+              <span aria-hidden data-testid="project-detail-stale-legend-mark" className={STALE_DOT_CLASS} />
               {labels.staleMark}
             </motion.span>
           )}
@@ -269,13 +269,14 @@ function DomainList({
                   <motion.span
                     key={staleCount}
                     data-testid="project-detail-domain-stale"
-                    className="text-label tabular-nums text-[color:var(--color-status-warning)]"
+                    className="inline-flex items-center gap-1 text-label tabular-nums text-[color:var(--color-status-warning)]"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: EXIT_TRANSITION }}
                     transition={MOTION.fast}
                   >
-                    ◐ {staleCount}
+                    <span className={STALE_DOT_CLASS} />
+                    {staleCount}
                   </motion.span>
                 ) : null}
               </AnimatePresence>

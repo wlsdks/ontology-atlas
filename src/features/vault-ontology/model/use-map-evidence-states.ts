@@ -27,7 +27,7 @@ export interface MapEvidence {
   states: ReadonlyMap<string, MapEvidenceState>;
   /** Stale node id to the cited path that moved or is gone. */
   movedPaths: ReadonlyMap<string, string>;
-  /** Stale node id to that path's detail; a gone path wins over a moved one. */
+  /** Stale node id to that path's detail; a moved path is named before a gone one, as in `movedPaths`. */
   stalePaths: ReadonlyMap<string, StaleEvidencePath>;
 }
 
@@ -177,8 +177,8 @@ export function useMapEvidenceStates({
       if (path) movedPaths.set(row.id, path);
       const gone = row.gone[0];
       const moved = row.moved[0];
-      if (gone) stalePaths.set(row.id, { path: gone, gone: true, changedAt: null });
-      else if (moved) stalePaths.set(row.id, { path: moved.path, gone: false, changedAt: moved.changedAt });
+      if (moved) stalePaths.set(row.id, { path: moved.path, gone: false, changedAt: moved.changedAt });
+      else if (gone) stalePaths.set(row.id, { path: gone, gone: true, changedAt: null });
     }
     return { availability: 'measured', states, movedPaths, stalePaths };
   }, [bridge, nativeRootPath, noPaths, reading, changes, concepts]);

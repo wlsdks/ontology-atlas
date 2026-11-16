@@ -7,7 +7,7 @@ const git = vi.hoisted(() => ({
   bridge: true,
   walk: vi.fn(),
   root: "/vault",
-  docs: [] as { slug: string; frontmatter: Record<string, string> }[],
+  docs: [] as { slug: string; frontmatter: Record<string, unknown> }[],
   vault: null as unknown,
 }));
 
@@ -137,6 +137,22 @@ describe("useMapEvidenceStates", () => {
     expect(result.current.states.size).toBe(600);
     expect([...result.current.states.values()].every((state) => state === "stale")).toBe(true);
     for (const [, repoPaths, vaultPaths] of git.walk.mock.calls) expect(repoPaths.length + vaultPaths.length).toBeLessThanOrEqual(limit);
+  });
+
+  it("names the moved file when a capability has both a moved and a gone one, as the map does", async () => {
+    git.docs = [
+      { slug: "capabilities/pay", frontmatter: { kind: "capability", path: "src/pay.ts", elements: ["elements/old-ledger"] } },
+      { slug: "elements/old-ledger", frontmatter: { kind: "element", path: "src/gone.ts" } },
+    ];
+    git.walk.mockResolvedValue([
+      { path: "capabilities/pay.md", exists: true, isDir: false, lastChangedAt: DOC_TIME },
+      { path: "src/gone.ts", exists: false, isDir: false, lastChangedAt: null },
+      { path: "src/pay.ts", exists: true, isDir: false, lastChangedAt: CODE_TIME },
+    ]);
+    const { result } = renderHook(() => useMapEvidenceStates({ nodes: [node("pay")], enabled: true }));
+    await waitFor(() => expect(result.current.availability).toBe("measured"));
+    expect(result.current.stalePaths.get("capability:pay")).toEqual({ path: "src/pay.ts", gone: false, changedAt: CODE_TIME });
+    expect(result.current.movedPaths.get("capability:pay")).toBe("src/pay.ts");
   });
 
   it("reads as app-only and never walks without the desktop Git bridge", () => {

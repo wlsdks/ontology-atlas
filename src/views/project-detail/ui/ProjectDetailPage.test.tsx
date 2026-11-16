@@ -841,8 +841,12 @@ describe("ProjectDetailPage", () => {
       expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent("1 of 1 capability that name a source file");
       const staleWords = enMessages.projectPages.detail.compositionStaleLegend;
       expect(screen.getByRole("img", { name: staleWords })).toHaveAttribute("title", staleWords);
-      expect(screen.getByTestId("project-detail-stale-legend")).toHaveTextContent(`◐${staleWords}`);
-      expect(screen.getByTestId("project-detail-domain-stale")).toHaveTextContent("◐ 1");
+      expect(screen.getByTestId("project-detail-stale-legend")).toHaveTextContent(staleWords);
+      // One mark for one meaning: the legend, the capability row and the domain count draw the same dot.
+      const dotClass = screen.getByTestId("project-detail-capability-stale").className;
+      expect(screen.getByTestId("project-detail-stale-legend-mark").className).toBe(dotClass);
+      expect(screen.getByTestId("project-detail-domain-stale").querySelector("span")?.className).toBe(dotClass);
+      expect(screen.getByTestId("project-detail-domain-stale")).toHaveTextContent(/^1$/);
       expect(row).toHaveAccessibleName(expect.stringMatching(/^MCP Server .*mcp\/src\/server\.mjs changed after this document was written\.$/));
       expect(row).toHaveAccessibleDescription("Opens it on the map.");
       const option = screen.getAllByTestId("project-detail-domain-option").find((el) => el.getAttribute("aria-label")?.includes("with a source changed"));
