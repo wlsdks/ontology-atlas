@@ -48,8 +48,8 @@ const OVERVIEW_CAPABILITY_NAMES: Record<string, { fewest: number; most: number }
 
 /** A domain's census and reach rows share one slot under its name, so their cross-fade is no crossing. */
 const CAPTION_ROLES = new Set(["units", "status"]);
-/** A caption row a growing disc crosses may still show while its ink falls, at most this much. */
-const CAPTION_LEAVING_INK = 0.3;
+/** A name whose ink falls is on its way out and may be crossed, if it is gone within this many frames of starting to fall. */
+const LEAVING_FRAMES = 10;
 
 interface Motion {
   radiusPxPerMs: number;
@@ -69,6 +69,10 @@ interface Motion {
   /** Frames with a name off its backing over an element dot grown past its resting radius. */
   dotFrames: number;
   dotPairs: string[];
+  /** Names that fell while crossed and were not gone within `LEAVING_FRAMES`, or rose again before they were. */
+  lingering: string[];
+  /** Crossings already drawn in the last frame before the press, the resting overview's own, skipped until they part. */
+  standing: string[];
   firstFrameMs: number;
   /** The animation frame after the press that first changed the map. */
   firstFrame: number;
@@ -126,6 +130,42 @@ async function stopSampling(page: Page): Promise<{ samples: Sample[]; pressAt: n
  * (one held in place with no side clear of the marks) draws on the canvas ground, so it is checked
  * against other names, not against marks.
  */
+/** One crossing in a frame: its pair, whether it is an unbacked name on a grown dot, and which of its names are falling. */
+type Crossing = { pair: string; dot: boolean; falling: string[] };
+
+/**
+ * Every name of `group` drawn over another name, over a disc not its own, or off its backing over a
+ * grown element dot, in `now`. A domain's census and reach rows share one slot, so their cross-fade
+ * is no crossing. A name whose ink is lower than in `prev` is falling.
+ */
+function crossingsOf(now: Sample, prev: Sample | null, group: ReadonlySet<string>): Crossing[] {
+  const marks = now.marks.filter(([id]) => group.has(id));
+  const names = now.names.filter(([id]) => group.has(id));
+  const fallingKey = ([id, role, , , , , alpha, , side]: SampledName): string | null => {
+    const inkWas = prev?.names.find(([pid, prole, , , , , , , pside]) => pid === id && prole === role && pside === side)?.[6];
+    return inkWas !== undefined && alpha < inkWas ? `${role} ${id} ${side}` : null;
+  };
+  const out: Crossing[] = [];
+  for (let a = 0; a < names.length; a += 1) {
+    const [ia, ra, minX, maxX, minY, maxY, , backed] = names[a]!;
+    const fallingA = fallingKey(names[a]!);
+    for (const [im, x, y, r, grown, disc] of marks) {
+      if (im === ia || (!disc && (!grown || backed))) continue;
+      const gap = Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minY - y, 0, y - maxY));
+      if (gap < r - OVERLAP_PX) out.push({ pair: `${ra} ${ia} on ${im}`, dot: !disc, falling: fallingA ? [fallingA] : [] });
+    }
+    for (let b = a + 1; b < names.length; b += 1) {
+      const [ib, rb, bMinX, bMaxX, bMinY, bMaxY] = names[b]!;
+      if (ib === ia && CAPTION_ROLES.has(ra) && CAPTION_ROLES.has(rb)) continue;
+      if (Math.min(maxX, bMaxX) > Math.max(minX, bMinX) && Math.min(maxY, bMaxY) > Math.max(minY, bMinY)) {
+        const fallingB = fallingKey(names[b]!);
+        out.push({ pair: [`${ra} ${ia}`, `${rb} ${ib}`].sort().join(" on "), dot: false, falling: [fallingA, fallingB].filter((k): k is string => k !== null) });
+      }
+    }
+  }
+  return out;
+}
+
 function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, groups: readonly ReadonlySet<string>[]): Motion {
   let radiusPxPerMs = 0;
   let worst = "";
@@ -145,8 +185,18 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
   let zoomReversals = 0;
   const radiusSign = new Map<string, number>();
   const radiusReversals = new Set<string>();
+  const lingering = new Set<string>();
+  /** Per name on its way out: the frame its ink started to fall, and whether a crossing was let pass for it. */
+  const leaving = new Map<string, { since: number; crossed: boolean }>();
+  const prePress = samples.filter((s) => s.t < pressAt);
+  const standing = new Set(prePress.length > 0 ? groups.flatMap((group) => crossingsOf(prePress.at(-1)!, null, group).map((c) => c.pair)) : []);
+  const standingSeen = [...standing];
   for (let i = 0; i < samples.length; i += 1) {
     const now = samples[i]!;
+    const prev = i > 0 ? samples[i - 1]! : null;
+    const at = `${Math.round(now.t - pressAt)} ms, zoom ${now.zoom.toFixed(2)}`;
+    const stillStanding = new Set<string>();
+    const present = new Set<string>();
     for (const group of groups) {
       const marks = now.marks.filter(([id]) => group.has(id));
       let pairs = 0;
@@ -161,41 +211,52 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
         }
       }
       if (pairs > 0) overlapFrames += 1;
-      const names = now.names.filter(([id]) => group.has(id));
-      const prev = i > 0 ? samples[i - 1]! : null;
+      // Names are judged from the last frame before the press on: what stood before it is the overview's.
+      if (i < prePress.length - 1) continue;
+      for (const [id, role, , , , , alpha, , side] of now.names) {
+        if (!group.has(id)) continue;
+        const key = `${role} ${id} ${side}`;
+        present.add(key);
+        const inkWas = prev?.names.find(([pid, prole, , , , , , , pside]) => pid === id && prole === role && pside === side)?.[6];
+        const out = leaving.get(key);
+        if (inkWas !== undefined && alpha < inkWas) {
+          if (!out) leaving.set(key, { since: i, crossed: false });
+          else if (out.crossed && i - out.since >= LEAVING_FRAMES) {
+            lingering.add(`${key} still at ink ${alpha.toFixed(2)} ${i - out.since} frames after it started to leave, at ${at}`);
+            leaving.delete(key);
+          }
+        } else if (out) {
+          if (out.crossed && alpha > 0) lingering.add(`${key} rose again before it was gone, at ${at}`);
+          leaving.delete(key);
+        }
+      }
       let crossings = 0;
       let onDots = 0;
-      const at = `${Math.round(now.t - pressAt)} ms, zoom ${now.zoom.toFixed(2)}`;
-      for (let a = 0; a < names.length; a += 1) {
-        const [ia, ra, minX, maxX, minY, maxY, alpha, backed, side] = names[a]!;
-        const inkWas = prev?.names.find(([id, role, , , , , , , s]) => id === ia && role === ra && s === side)?.[6];
-        const leaving = CAPTION_ROLES.has(ra) && inkWas !== undefined && alpha < inkWas && alpha <= CAPTION_LEAVING_INK;
-        for (const [im, x, y, r, grown, disc] of marks) {
-          if (im === ia) continue;
-          const gap = Math.hypot(Math.max(minX - x, 0, x - maxX), Math.max(minY - y, 0, y - maxY));
-          if (gap >= r - OVERLAP_PX) continue;
-          if (disc) {
-            const rWas = prev?.marks.find(([id]) => id === im)?.[3];
-            if (leaving && rWas !== undefined && r > rWas) continue;
-            crossings += 1;
-            namePairs.add(`${ra} ${ia} on ${im} at ${at}`);
-          } else if (grown && !backed) {
-            onDots += 1;
-            dotPairs.add(`${ra} ${ia} on ${im} at ${at}`);
-          }
+      for (const c of crossingsOf(now, prev, group)) {
+        if (standing.has(c.pair)) {
+          stillStanding.add(c.pair);
+          continue;
         }
-        for (let b = a + 1; b < names.length; b += 1) {
-          const [ib, rb, bMinX, bMaxX, bMinY, bMaxY] = names[b]!;
-          if (ib === ia && CAPTION_ROLES.has(ra) && CAPTION_ROLES.has(rb)) continue;
-          if (Math.min(maxX, bMaxX) > Math.max(minX, bMinX) && Math.min(maxY, bMaxY) > Math.max(minY, bMinY)) {
-            crossings += 1;
-            namePairs.add(`${ra} ${ia} on ${rb} ${ib} at ${at}`);
+        if (c.falling.length > 0) {
+          for (const key of c.falling) {
+            const out = leaving.get(key);
+            if (out) out.crossed = true;
           }
+          continue;
+        }
+        if (c.dot) {
+          onDots += 1;
+          dotPairs.add(`${c.pair} at ${at}`);
+        } else {
+          crossings += 1;
+          namePairs.add(`${c.pair} at ${at}`);
         }
       }
       if (onDots > 0) dotFrames += 1;
       if (crossings > 0) nameFrames += 1;
     }
+    if (i >= prePress.length - 1) for (const pair of standing) if (!stillStanding.has(pair)) standing.delete(pair);
+    for (const key of leaving.keys()) if (!present.has(key)) leaving.delete(key);
     if (i === 0) continue;
     const before = samples[i - 1]!;
     const dt = now.t - before.t;
@@ -247,14 +308,14 @@ function motionOf({ samples, pressAt }: { samples: Sample[]; pressAt: number }, 
   return {
     pressFrameMs: Math.max(0, ...afterPress), medianFrameMs: sorted[Math.floor(sorted.length / 2)] ?? 0,
     restNames: rest.length, backedNames: rest.filter(([, , , , , , , backed]) => backed).length,
-    radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6), dotFrames, dotPairs: [...dotPairs].slice(0, 6),
+    radiusPxPerMs, worst, radiusStepPx, inkStep, worstInk, zoomStep, overlapFrames, overlapPairs: [...overlapPairs].slice(0, 6), nameFrames, namePairs: [...namePairs].slice(0, 6), dotFrames, dotPairs: [...dotPairs].slice(0, 6), lingering: [...lingering].slice(0, 6), standing: standingSeen,
     firstFrameMs: firstChange - pressAt, firstFrame: samples.filter((s) => s.t > pressAt && s.t <= firstChange).length, totalMs: lastChange - pressAt, zoomReversals, radiusReversals: [...radiusReversals].slice(0, 6),
   };
 }
 
 function report(name: string, m: Motion): string {
   return `[star-motion] ${name}: radius ${m.radiusPxPerMs.toFixed(3)} px/ms (${m.worst}), radius step ${m.radiusStepPx.toFixed(2)} px, name ink step ${m.inkStep.toFixed(3)} (${m.worstInk}), zoom step ${(m.zoomStep * 100).toFixed(1)} % per frame, `
-    + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on names or discs ${m.namePairs.join(", ")}, ${m.dotFrames} frames with unbacked names on grown dots ${m.dotPairs.join(", ")}, first frame ${m.firstFrameMs.toFixed(0)} ms (frame ${m.firstFrame}; press frames up to ${m.pressFrameMs.toFixed(1)} ms against a median ${m.medianFrameMs.toFixed(1)} ms), total ${m.totalMs.toFixed(0)} ms, `
+    + `${m.overlapFrames} frames with overlaps ${m.overlapPairs.join(", ")}, ${m.nameFrames} frames with names on names or discs ${m.namePairs.join(", ")}, ${m.dotFrames} frames with unbacked names on grown dots ${m.dotPairs.join(", ")}, names that lingered while crossed ${m.lingering.join(", ") || "none"}, crossings standing before the press ${m.standing.join(", ") || "none"}, first frame ${m.firstFrameMs.toFixed(0)} ms (frame ${m.firstFrame}; press frames up to ${m.pressFrameMs.toFixed(1)} ms against a median ${m.medianFrameMs.toFixed(1)} ms), total ${m.totalMs.toFixed(0)} ms, `
     + `zoom reversals ${m.zoomReversals}, radius reversals ${m.radiusReversals.join(", ") || "none"}, names at rest ${m.restNames} (${m.backedNames} backed)`;
 }
 
@@ -266,8 +327,9 @@ function expectSmooth(name: string, m: Motion, opening: boolean): void {
   expect.soft(m.inkStep, `${name}: no name's ink changes faster than the limit: ${said}`).toBeLessThan(NAME_INK_STEP_PER_FRAME);
   expect.soft(m.zoomStep, `${name}: no zoom step past the limit: ${said}`).toBeLessThanOrEqual(ZOOM_STEP_PER_FRAME);
   expect.soft(m.overlapFrames, `${name}: no frame draws two marks of the star over each other: ${said}`).toBe(0);
-  expect.soft(m.nameFrames, `${name}: no frame draws a name over another name or over a disc not its own, but a caption a growing disc crosses while its ink runs out: ${said}`).toBe(0);
-  expect.soft(m.dotFrames, `${name}: no frame draws a name off its backing over an element dot grown past its resting radius: ${said}`).toBe(0);
+  expect.soft(m.nameFrames, `${name}: no frame draws a name whose ink rises or holds over another name or over a disc not its own: ${said}`).toBe(0);
+  expect.soft(m.dotFrames, `${name}: no frame draws a name whose ink rises or holds off its backing over an element dot grown past its resting radius: ${said}`).toBe(0);
+  expect.soft(m.lingering, `${name}: a name crossed while its ink falls is gone within ${LEAVING_FRAMES} frames of starting to fall: ${said}`).toEqual([]);
   expect.soft(m.firstFrame, `${name}: the press shows at once: ${said}`).toBeLessThanOrEqual(FIRST_FRAME);
   if (opening) {
     expect.soft(m.restNames, `${name}: the opened star keeps names at rest: ${said}`).toBeGreaterThan(0);
