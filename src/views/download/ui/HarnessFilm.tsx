@@ -16,9 +16,19 @@ import {
   type Mark,
   type ReadingSpot,
 } from '../lib/harness-scene';
-import { isMotionPaused } from '@/shared/motion/motion-pause';
+import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
+import { createFilmClock } from '../lib/film-clock';
+import { FilmActBar } from './FilmActBar';
 
 const ACTS = [1, 2, 3, 4] as const;
+const ACT_SPANS = [
+  [0, 0.25],
+  [0.25, 0.5],
+  [0.5, 0.75],
+  [0.75, 1],
+] as const;
+/** How long each act plays. */
+const ACT_MS = [6500, 7000, 7500, 6500];
 const FILM_MIN_WIDTH = 768;
 const FACTS: HarnessFacts = facts;
 
@@ -264,10 +274,10 @@ function drawReading(f: Frame, agent: { x: number; y: number }) {
 function drawGate(f: Frame, agent: { x: number; y: number }) {
   const { ctx, scene, palette, w, h, p } = f;
   const enter = smooth((p - 0.2) / 0.1);
-  const leave = smooth((p - 0.48) / 0.08);
+  const leave = smooth((p - 0.47) / 0.06);
   const shown = enter * (1 - leave);
   if (shown <= 0) return;
-  const a = clamp((p - 0.27) / 0.21);
+  const a = clamp((p - 0.27) / 0.2);
   const cy = h * 0.4;
   const unit = Math.min(w * 0.42, h * 0.42);
   const shift = (1 - enter) * w * 0.3 - leave * w * 0.4;
@@ -406,112 +416,179 @@ function drawGate(f: Frame, agent: { x: number; y: number }) {
   }
 }
 
-/** Act three: the edit rides a rail of checks; each lights as it passes, the rails behind too. */
+/** Where each check lives, drawn dim before its name, so the gate names a real file or command. */
+const GATE_PREFIX: Record<HarnessScene['stations'][number]['group'], string> = {
+  hook: '.claude/hooks/',
+  script: 'pnpm ',
+  'git-hook': '.githooks/',
+  workflow: '.github/workflows/',
+};
+
+/**
+ * Act three: the agent and its edit fly down a tunnel of gates, one per check, nearest first. A
+ * gate turns green as the edit passes through it; the other checks stream by along the walls.
+ */
 function drawRails(f: Frame, agent: { x: number; y: number }) {
-  const { ctx, scene, palette, w, h, p } = f;
-  const enter = smooth((p - 0.46) / 0.09);
-  const leave = smooth((p - 0.73) / 0.08);
+  const { ctx, scene, palette, w, h, p, time } = f;
+  const enter = smooth((p - 0.525) / 0.05);
+  const leave = smooth((p - 0.745) / 0.06);
   const shown = enter * (1 - leave);
   if (shown <= 0) return;
-  const a = clamp((p - 0.52) / 0.2);
-  const cy = h * 0.4;
-  const unit = Math.min(w * 0.42, h * 0.42);
-  const shift = (1 - enter) * w * 0.25 - leave * w * 0.2;
-  const x0 = agent.x + 34;
-  const x1 = w * 0.92 + shift;
-  const pulse = mix(x0, x1, inOut(a * 1.06 - 0.02));
-  const PX = 12;
+  const a = clamp((p - 0.55) / 0.16);
+  const n = scene.stations.length;
+  const { x: cx, y: cy } = agent;
+  const unit = Math.min(w * 0.36, h * 0.5);
+  /* Depth travelled, in gate spacings: a gentle start, then a steady glide. */
+  const travel = (0.55 * a + 0.45 * inOut(a)) * (n + 0.35);
+  const fadeBelow = (y: number) => 1 - smooth((y - h * 0.6) / (h * 0.08));
 
-  /* Rails behind, at depth: every other check, drifting past slower the farther they are. */
-  const backY = [-0.62, -0.34, 0.34, 0.62];
-  scene.backRails.forEach((names, k) => {
-    const depth = k === 0 || k === 3 ? 0.55 : 0.8;
-    const y = cy + backY[k]! * unit;
-    const px = Math.round(9 + 2.5 * depth);
-    let x = w * 0.04 + ((k * 137) % 180) + shift * depth - a * w * 0.32 * depth;
-    ctx.globalAlpha = shown * 0.08 * depth;
-    ctx.fillStyle = palette.ink;
-    ctx.fillRect(0, y, w, 1);
+  /* The tunnel's walls: four rails to the vanishing point and streaks of light passing along them. */
+  const wall = (d: number, u: number) => {
+    /* A point on the wall's rectangle at depth `d`, `u` going round it once from the top-left. */
+    const hw = (unit * 0.8) / d;
+    const hh = hw * 0.6;
+    const q = (u % 1) * 4;
+    const side = Math.floor(q);
+    const t = q - side;
+    if (side === 0) return { x: cx - hw + 2 * hw * t, y: cy - hh };
+    if (side === 1) return { x: cx + hw, y: cy - hh + 2 * hh * t };
+    if (side === 2) return { x: cx + hw - 2 * hw * t, y: cy + hh };
+    return { x: cx - hw, y: cy + hh - 2 * hh * t };
+  };
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = palette.ink;
+  for (const u of [0, 0.25, 0.5, 0.75]) {
+    const near = wall(0.4, u);
+    const far = wall(6, u);
+    const rail = ctx.createLinearGradient(near.x, near.y, far.x, far.y);
+    rail.addColorStop(0, 'transparent');
+    rail.addColorStop(0.5, palette.ink);
+    rail.addColorStop(1, 'transparent');
+    ctx.globalAlpha = shown * 0.08;
+    ctx.strokeStyle = rail;
+    ctx.beginPath();
+    ctx.moveTo(near.x, near.y);
+    ctx.lineTo(far.x, far.y);
+    ctx.stroke();
+  }
+  const STREAKS = 44;
+  const SPAN = 5;
+  for (let i = 0; i < STREAKS; i += 1) {
+    const u = (i * 0.6180339) % 1;
+    const seed = ((i * 0.7548777) % 1) * SPAN;
+    const d = 0.5 + ((((seed - travel * 1.4 - time / 7000) % SPAN) + SPAN) % SPAN);
+    const head = wall(d, u);
+    const tail = wall(d + 0.25 + 0.5 * a * (1 - a) * 4 * 0.3, u);
+    const alpha = shown * smooth((SPAN + 0.5 - d) / 2) * smooth((d - 0.5) / 0.6) * fadeBelow(head.y) * 0.45;
+    if (alpha <= 0.01) continue;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = d < 1.1 ? palette.pass : palette.soft;
+    ctx.beginPath();
+    ctx.moveTo(head.x, head.y);
+    ctx.lineTo(tail.x, tail.y);
+    ctx.stroke();
+  }
+
+  /* The gates, far first. */
+  for (let k = n - 1; k >= 0; k -= 1) {
+    const station = scene.stations[k]!;
+    const d = k + 1 - travel;
+    if (d <= 0.2 || d > 5) continue;
+    const s = 1 / d;
+    const hw = unit * 0.62 * s;
+    const hh = hw * 0.6;
+    const alpha = shown * smooth((5 - d) / 1.6) * smooth((d - 0.42) / 0.38);
+    if (alpha <= 0.01) continue;
+    const lit = clamp((1.08 - d) / 0.2);
+    const flash = lit > 0 ? Math.max(0, 1 - (1.08 - d) / 0.7) : 0;
+    const tone = lit > 0 ? palette.pass : palette.edge;
+    if (flash > 0) {
+      ctx.globalAlpha = alpha * flash * 0.07;
+      ctx.fillStyle = palette.pass;
+      ctx.beginPath();
+      ctx.roundRect(cx - hw, cy - hh, hw * 2, hh * 2, 10 * s);
+      ctx.fill();
+    }
+    ctx.globalAlpha = alpha * (0.35 + 0.35 * lit);
+    ctx.strokeStyle = tone;
+    ctx.lineWidth = Math.min(2, 0.8 + 0.5 * s);
+    ctx.beginPath();
+    ctx.roundRect(cx - hw, cy - hh, hw * 2, hh * 2, 10 * s);
+    ctx.stroke();
+    /* Corner brackets, brighter than the frame. */
+    const arm = Math.min(hw * 0.3, 18 * s);
+    ctx.globalAlpha = alpha * (0.6 + 0.4 * lit);
+    ctx.strokeStyle = lit > 0 ? palette.pass : palette.soft;
+    ctx.lineWidth = Math.min(2.5, 1 + 0.6 * s);
+    ctx.beginPath();
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ] as const) {
+      ctx.moveTo(cx + sx * hw, cy + sy * (hh - arm));
+      ctx.lineTo(cx + sx * hw, cy + sy * hh);
+      ctx.lineTo(cx + sx * (hw - arm), cy + sy * hh);
+    }
+    ctx.stroke();
+
+    /* The check's name over the gate's top-left corner: where it lives, dim, then its name. Only
+       the nearer gates carry one, so far names never pile up at the vanishing point. */
+    const named = alpha * smooth((2.6 - d) / 0.9);
+    if (named <= 0.01) continue;
+    const px = Math.round(Math.min(16, 9 + 3 * s));
+    const lx = cx - hw + (lit > 0 ? px + 6 : 0);
+    const ly = cy - hh - px * 0.9;
+    const prefix = GATE_PREFIX[station.group];
     ctx.font = `${px}px ${palette.mono}`;
     ctx.textBaseline = 'middle';
-    for (const name of names) {
-      const width = f.measure(name, px);
-      if (x > w) break;
-      if (x + width > -20) {
-        const lit = clamp((pulse - x) / 80);
-        ctx.globalAlpha = shown * depth * (0.32 + 0.45 * lit);
-        ctx.fillStyle = lit > 0 ? palette.pass : palette.dim;
-        ctx.beginPath();
-        ctx.arc(x - 8, y, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = lit > 0.5 ? palette.soft : palette.dim;
-        ctx.fillText(name, x, y);
-      }
-      x += width + 46;
-    }
-  });
-
-  /* The front rail and its stations. */
-  ctx.globalAlpha = shown * 0.22;
-  ctx.fillStyle = palette.ink;
-  ctx.fillRect(x0, cy - 0.5, x1 - x0, 1);
-  const trail = ctx.createLinearGradient(Math.max(x0, pulse - w * 0.35), 0, pulse, 0);
-  trail.addColorStop(0, 'transparent');
-  trail.addColorStop(1, palette.pass);
-  ctx.globalAlpha = shown * 0.8;
-  ctx.fillStyle = trail;
-  ctx.fillRect(x0, cy - 1, Math.max(0, pulse - x0), 2);
-
-  const n = scene.stations.length;
-  scene.stations.forEach((station, k) => {
-    const x = mix(x0 + 70, x1 - 40, n === 1 ? 0.5 : k / (n - 1));
-    const lit = clamp((pulse - x) / 40);
-    const flash = lit > 0 ? Math.max(0, 1 - (pulse - x) / 260) : 0;
-    stamp(f, f.glow.pass, x, cy, 44, shown * (0.25 * lit + 0.6 * flash));
-    ctx.globalAlpha = shown;
-    ctx.fillStyle = palette.ground;
-    ctx.beginPath();
-    ctx.arc(x, cy, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = lit > 0 ? palette.pass : palette.edge;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    ctx.globalAlpha = named * 0.8;
+    ctx.fillStyle = palette.dim;
+    ctx.fillText(prefix, lx, ly);
+    ctx.globalAlpha = named;
+    ctx.fillStyle = lit > 0.5 ? palette.pass : palette.ink;
+    ctx.fillText(station.label, lx + f.measure(prefix, px), ly);
     if (lit > 0) {
-      ctx.globalAlpha = shown * lit;
+      const mx = cx - hw + px * 0.45;
+      ctx.globalAlpha = named * lit;
       ctx.strokeStyle = palette.pass;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
-      ctx.moveTo(x - 3, cy);
-      ctx.lineTo(x - 0.8, cy + 2.4);
-      ctx.lineTo(x + 3.2, cy - 2.6);
+      ctx.moveTo(mx - px * 0.3, ly);
+      ctx.lineTo(mx - px * 0.08, ly + px * 0.24);
+      ctx.lineTo(mx + px * 0.34, ly - px * 0.26);
       ctx.stroke();
     }
-    const above = k % 2 === 0;
-    ctx.globalAlpha = shown * (0.55 + 0.45 * lit);
-    ctx.font = `${PX}px ${palette.mono}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = above ? 'bottom' : 'top';
-    ctx.fillStyle = lit > 0.5 ? palette.ink : palette.dim;
-    ctx.fillText(station.label, x, above ? cy - 16 : cy + 16);
-    ctx.textAlign = 'start';
-  });
+  }
 
-  /* The edit: a small diff card with a light behind it. */
-  if (a > 0 && a < 1) {
-    stamp(f, f.glow.indigo, pulse, cy, 70, shown * 0.8);
-    ctx.globalAlpha = shown;
+  /* The edit the agent carries: a small diff card that turns green once every check has passed. */
+  const done = clamp((p - 0.71) / 0.035);
+  const passing = Math.max(done, ...scene.stations.map((_, k) => clamp(1 - Math.abs(k + 1 - travel - 0.95) / 0.12)));
+  const cardX = cx + 44;
+  stamp(f, f.glow.pass, cardX, cy, 90, shown * 0.55 * passing);
+  ctx.globalAlpha = shown;
+  ctx.beginPath();
+  ctx.roundRect(cardX - 19, cy - 13, 38, 26, 5);
+  ctx.fillStyle = palette.card;
+  ctx.fill();
+  ctx.strokeStyle = done > 0.5 ? palette.pass : palette.indigo;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = palette.pass;
+  ctx.fillRect(cardX - 11, cy - 6, 20, 2);
+  ctx.fillStyle = palette.stop;
+  ctx.fillRect(cardX - 11, cy - 1, 13, 2);
+  ctx.fillStyle = palette.dim;
+  ctx.fillRect(cardX - 11, cy + 4, 16, 2);
+  /* Every gate passed: one green ring opens from the agent. */
+  if (done > 0 && done < 1) {
+    ctx.globalAlpha = shown * (1 - done) * 0.7;
+    ctx.strokeStyle = palette.pass;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(pulse - 17, cy - 12, 34, 24, 5);
-    ctx.fillStyle = palette.card;
-    ctx.fill();
-    ctx.strokeStyle = palette.indigo;
-    ctx.lineWidth = 1;
+    ctx.arc(cx, cy, 24 + done * unit * 0.9, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = palette.pass;
-    ctx.fillRect(pulse - 10, cy - 6, 18, 2);
-    ctx.fillStyle = palette.stop;
-    ctx.fillRect(pulse - 10, cy - 1, 12, 2);
-    ctx.fillStyle = palette.dim;
-    ctx.fillRect(pulse - 10, cy + 4, 15, 2);
   }
 }
 
@@ -594,7 +671,7 @@ function drawHarness(f: Frame) {
   const cy = h * 0.4;
   const side = Math.max(56, w * 0.13);
   const agent = {
-    x: mix(mix(w / 2, side, inOut((p - 0.22) / 0.1)), w / 2, inOut((p - 0.74) / 0.1)),
+    x: mix(mix(w / 2, side, inOut((p - 0.22) / 0.1)), w / 2, inOut((p - 0.47) / 0.09)),
     y: cy,
   };
   drawReading(f, agent);
@@ -608,24 +685,26 @@ function drawHarness(f: Frame) {
 /** Each caption holds its quarter, fading across the seams; the last one stays. */
 function captionLight(act: number, p: number): number {
   const start = (act - 1) * 0.25;
-  const fadeIn = act === 1 ? 1 : smooth((p - start + 0.02) / 0.06);
-  const fadeOut = act === 4 ? 1 : 1 - smooth((p - start - 0.21) / 0.06);
+  /* The outgoing caption is gone before the next one rises, so two never overlap. */
+  const fadeIn = act === 1 ? 1 : smooth((p - start - 0.008) / 0.03);
+  const fadeOut = act === 4 ? 1 : 1 - smooth((p - start - 0.212) / 0.03);
   return Math.min(fadeIn, fadeOut);
 }
 
 /**
  * The page's second film, beside the map's: this repository's real harness. While the visitor
- * scrolls a tall block its stage stays pinned: the files an agent reads, the hooks that stop it,
+ * watches, it plays by itself: the files an agent reads, the hooks that stop it,
  * the checks that verify it, then the whole at once. Without a script, under reduced motion or on a
  * narrow screen the four acts are one visible list and nothing is drawn, so the page never reflows.
  */
 export function HarnessFilm() {
   const t = useTranslations('download.harnessFilm');
   const scene = useMemo(() => buildHarnessScene(FACTS), []);
-  const block = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const captions = useRef<(HTMLLIElement | null)[]>([]);
+  const fills = useRef<(HTMLSpanElement | null)[]>([]);
+  const seek = useRef<(act: number) => void>(() => {});
   const [film, setFilm] = useState(false);
 
   useEffect(() => {
@@ -674,21 +753,24 @@ export function HarnessFilm() {
       time: 0,
     };
 
-    const progress = () => {
-      const outer = block.current;
-      if (!outer) return 1;
-      const rect = outer.getBoundingClientRect();
-      const travel = outer.offsetHeight - host.offsetHeight;
-      return travel > 0 ? clamp(-rect.top / travel) : 1;
-    };
+    const time = createFilmClock(ACT_SPANS, ACT_MS);
+    let veil = 1;
     const paint = () => {
       drawHarness(frame);
+      const light = isMotionPaused() ? 1 : time.fade() * veil;
+      el.style.opacity = String(light);
       captions.current.forEach((caption, i) => {
         if (!caption) return;
-        const light = captionLight(i + 1, frame.p);
-        caption.style.opacity = String(light);
-        caption.style.transform = `translateY(${(1 - light) * 12}px)`;
-        caption.style.visibility = light > 0.01 ? 'visible' : 'hidden';
+        const lit = captionLight(i + 1, frame.p) * light;
+        caption.style.opacity = String(lit);
+        caption.style.transform = `translateY(${(1 - lit) * 12}px)`;
+        caption.style.visibility = lit > 0.01 ? 'visible' : 'hidden';
+      });
+      const act = time.act();
+      fills.current.forEach((fill, i) => {
+        if (!fill) return;
+        const [start, end] = ACT_SPANS[i]!;
+        fill.style.transform = `scaleX(${i < act ? 1 : i > act ? 0 : clamp((frame.p - start) / (end - start))})`;
       });
     };
     const resize = () => {
@@ -700,35 +782,50 @@ export function HarnessFilm() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       frame.spots = layoutReading(scene.files, measure, frame.w, frame.h);
       frame.farFirst = scene.files.map((_, i) => i).sort((a, b) => frame.spots[a]!.depth - frame.spots[b]!.depth);
-      frame.p = progress();
       paint();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     resize();
 
-    const unregister = registerGatedFrameClient(host, ({ t: now, dtMs }) => {
-      frame.time = now;
-      frame.p += (progress() - frame.p) * Math.min(1, dtMs / 110);
+    const unregister = registerGatedFrameClient(
+      host,
+      ({ t: now, dtMs, factor }) => {
+        frame.time = now;
+        /* A visitor who stopped moving sees the film to its end, where it rests on the whole harness. */
+        if (factor < 1 && time.resting()) return;
+        frame.p = time.advance(dtMs);
+        veil = Math.min(1, veil + dtMs / 450);
+        paint();
+      },
+      undefined,
+      { keepAwake: true },
+    );
+    /* Paused, a still frame lands well inside its act, where its picture and caption are whole. */
+    const settle = (act: number) => time.advance(ACT_MS[act]! * 0.45);
+    seek.current = (act) => {
+      time.seek(act);
+      const paused = isMotionPaused();
+      frame.p = paused ? settle(act) : time.progress();
+      /* A jump fades in from dark instead of cutting; paused, it shows the act at once. */
+      veil = paused ? 1 : 0;
+      paint();
+    };
+    const offPause = subscribeMotionPause(() => {
+      if (!isMotionPaused()) return;
+      /* A film paused before it began would hold a dark first frame: show its first act instead. */
+      if (time.progress() === 0) frame.p = settle(0);
       paint();
     });
-    // The page's pause stops the frame loop, so a paused film follows the visitor's own scroll
-    // here instead: the acts still advance, the ambient light holds where it stopped.
-    let pending = 0;
-    const onScroll = () => {
-      if (!isMotionPaused() || pending) return;
-      pending = requestAnimationFrame(() => {
-        pending = 0;
-        frame.p = progress();
-        paint();
-      });
-    };
-    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    if (isMotionPaused()) {
+      frame.p = settle(0);
+      paint();
+    }
     return () => {
       observer.disconnect();
       unregister();
-      window.removeEventListener('scroll', onScroll, { capture: true });
-      cancelAnimationFrame(pending);
+      offPause();
+      seek.current = () => {};
     };
   }, [film, scene]);
 
@@ -736,21 +833,20 @@ export function HarnessFilm() {
 
   return (
     <div
-      ref={block}
       role="region"
       aria-labelledby="gateway-harness-title"
       data-testid="gateway-harness"
       data-gateway-harness={film ? 'playing' : 'still'}
-      className={cn('relative mt-[var(--gateway-section-gap)] w-full', film && 'h-[300svh]')}
+      className="relative mt-[var(--gateway-section-gap)] w-full"
     >
       <h2 id="gateway-harness-title" className="sr-only">
         {t('label')}
       </h2>
       {film ? (
-        <div ref={stage} className="sticky top-0 h-[100svh] w-full overflow-hidden">
+        <div ref={stage} className="relative h-[100svh] max-h-[60rem] min-h-[36rem] w-full overflow-hidden">
           <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" />
           <div aria-hidden className="gateway-film-vignette pointer-events-none absolute inset-0" />
-          <ol className="absolute inset-x-0 bottom-[9svh] grid place-items-center px-6">
+          <ol className="absolute inset-x-0 bottom-[calc(9svh+2rem)] grid place-items-center px-6">
             {ACTS.map((act, i) => (
               <li
                 key={act}
@@ -771,6 +867,13 @@ export function HarnessFilm() {
               </li>
             ))}
           </ol>
+          <FilmActBar
+            titles={ACTS.map((act) => t(`acts.${act}.title`))}
+            label={t('actsLabel')}
+            fills={fills}
+            onSeek={(act) => seek.current(act)}
+            className="absolute inset-x-0 bottom-[5svh]"
+          />
         </div>
       ) : (
         <div className={PAGE_GUTTER}>
