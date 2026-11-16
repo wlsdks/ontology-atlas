@@ -142,7 +142,8 @@ function useReasonSentence() {
   return (row: ToCheckRow): string => {
     switch (row.reason) {
       case "raised":
-        return row.note ?? t("toCheckRaisedNoNote");
+        // The agent's words, quoted under a label, so they never read as Atlas's own sentence.
+        return row.note ? t("toCheckRaisedNote", { note: row.note }) : t("toCheckRaisedNoNote");
       case "changed-since-review":
         return row.reviewedBy ? tReview("changedBy", { name: row.reviewedBy }) : tReview("changedPlain");
       case "stale":

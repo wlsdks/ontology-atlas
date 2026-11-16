@@ -173,7 +173,8 @@
     "toCheckEvidenceReading": "Reading Git history to compare source files with their documents.",
     "toCheckEvidenceAppOnly": "The desktop app reads Git history to find capabilities whose source file changed after their document.",
     "toCheckEvidenceUnreadable": "Git history could not be read, so it is unknown whether source files changed after their documents.",
-    "toCheckEvidenceNoPaths": "No capability names a source file, so there is nothing to compare with Git history."
+    "toCheckEvidenceNoPaths": "No capability names a source file, so there is nothing to compare with Git history.",
+    "toCheckRaisedNote": "Needs a decision: “{note}”"
   },
   "editor": {
     "documentTitleEdit": "Edit project · Ontology Atlas",

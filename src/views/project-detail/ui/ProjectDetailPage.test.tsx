@@ -903,7 +903,7 @@ describe("ProjectDetailPage", () => {
 
       const row = await screen.findByTestId("project-detail-to-check-row");
       expect(row).toHaveAttribute("data-reason", "raised");
-      expect(row).toHaveTextContent("One capability or two?");
+      expect(row).toHaveTextContent("Needs a decision: “One capability or two?”");
       expect(row.getAttribute("href")).toContain("slug=capabilities%2Fcheckout");
     });
 
