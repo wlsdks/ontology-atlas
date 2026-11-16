@@ -6,6 +6,7 @@
 
 import { modeKeepsGate, partitionModes } from './session-choices/mode-safety';
 import { atlasToolMode } from './permissions/atlas-tool-policy';
+import type { AcpPermissionVerdict } from '@/shared/lib/agent-chat/tauri-acp';
 
 /** The channel that carries lines. A process or a fake, as long as it satisfies this. */
 export interface AcpTransport {
@@ -188,7 +189,7 @@ export interface AcpPermissionRequest {
   /** An ordinary file permission, or an ontology write needing the person's decision about meaning. */
   reviewKind: 'permission' | 'ontology-write';
   /** Rust's inside-the-folder verdict on `filePath`, computed once before asking; absent means unjudged. */
-  pathVerdict?: 'allow-inside-vault' | 'ask';
+  pathVerdict?: AcpPermissionVerdict;
   /** Present only for the structured MCP tool-call + structured approval cache chain. */
   writerCorrelation?: { status: 'verified'; server: string; tool: string; toolCall: 'structured-mcp'; approval: 'structured-mcp' };
   /** The available options — handled only by `kind`. */
@@ -211,7 +212,7 @@ export interface AcpClientHandlers {
    * classification off — we do not pretend something exists.
    */
   vaultMcpServerName?: string;
-  verdict: (filePath: string | null) => Promise<'allow-inside-vault' | 'ask'>;
+  verdict: (filePath: string | null) => Promise<AcpPermissionVerdict>;
   /**
    * Asks the user. Returns the chosen `optionId`, or null for a rejection.
    *
@@ -440,12 +441,14 @@ export function createAcpClient(
      * Answer even when the check fails: a rejected IPC would leave the request unanswered.
      * Undecidable falls through to asking.
      */
-    let verdict: 'allow-inside-vault' | 'ask' = 'ask';
+    let verdict: AcpPermissionVerdict = 'ask';
     try {
       verdict = await handlers.verdict(request.filePath);
     } catch (error) {
       handlers.onProtocolNotice?.(`verdict-failed: ${String(error)}`);
     }
+    // Reads keep their auto-allow inside dot folders; only auto-approved writes need the stricter verdict.
+    const insideVault = verdict === 'allow-inside-vault' || verdict === 'allow-inside-vault-hidden';
     /*
      * A read is auto-allowed only with no path or inside the vault. Our server names files
      * vault-relative and Rust judges absolute paths only; a relative path without `..` on an
@@ -459,7 +462,7 @@ export function createAcpClient(
     if (
       atlasMode === 'read' &&
       allowOnce &&
-      (request.filePath === null || vaultRelativeAtlasPath || verdict === 'allow-inside-vault')
+      (request.filePath === null || vaultRelativeAtlasPath || insideVault)
     ) {
       handlers.onAutoAllowed?.(request);
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
@@ -471,7 +474,7 @@ export function createAcpClient(
      * Atlas write. An unknown or missing kind fails closed to asking.
      */
     const readOnlyKind = request.toolKind === 'read' || request.toolKind === 'search';
-    if (atlasMode === null && readOnlyKind && verdict === 'allow-inside-vault' && allowOnce) {
+    if (atlasMode === null && readOnlyKind && insideVault && allowOnce) {
       handlers.onAutoAllowed?.(request);
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
@@ -773,9 +776,10 @@ function readToolName(params: Record<string, unknown>): string | null {
  * `filePath`, claude built-ins use `file_path`. Folder-sweeping tools take a directory
  * (`rootPath`), which is checked too.
  */
+export const PATH_ARGUMENT_KEYS = ['file_path', 'filePath', 'rootPath', 'root_path', 'path', 'targetPath'] as const;
+
 function readPathArg(rawInput: Record<string, unknown>): string | null {
-  const KEYS = ['file_path', 'filePath', 'rootPath', 'root_path', 'path', 'targetPath'];
-  for (const key of KEYS) {
+  for (const key of PATH_ARGUMENT_KEYS) {
     const value = rawInput[key];
     if (typeof value === 'string' && value.trim()) return value;
   }

@@ -337,6 +337,9 @@ describe('chat panel: draws only what happened', () => {
     expect(approval.closest('.relative')!.className).not.toBe(restingClass);
     expect(approval.closest('.relative')!.className).toContain('--color-status-warning');
 
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Tidy the refund notes.' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
     bridge.verdict = 'allow-inside-vault';
     act(() => emit({
       jsonrpc: '2.0', id: 77, method: 'session/request_permission',

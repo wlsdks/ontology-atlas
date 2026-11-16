@@ -45,6 +45,11 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     ...['add_concept', 'add_concepts', 'add_relation', 'add_relations', 'patch_concept', 'replace_relation', 'rename_concept', 'reclassify_concept']
       .map((tool) => ({ name: `Atlas ${tool}`, request: atlasWrite(tool), target: tool, context: ON })),
     { name: 'a Codex Atlas write reported as execute', request: atlasWrite('add_concept', { toolKind: 'execute' }), target: 'add_concept', context: ON },
+    { name: 'a rename that leaves overwrite unset', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b' } }), target: 'rename_concept', context: ON },
+    { name: 'a rename with overwrite false', request: atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite: false } }), target: 'rename_concept', context: ON },
+    { name: 'a patch that sets fields and a body', request: atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: [] }, body: 'Defines A.' } }), target: 'patch_concept', context: ON },
+    { name: 'an edit whose path arguments all name the same file', request: edit({ rawInput: { file_path: '/Users/me/vault/capabilities/refund.md', path: '/Users/me/vault/capabilities/refund.md' } }), target: 'refund.md', context: ON },
+    { name: 'a file whose name only contains an instruction stem', request: edit({ filePath: '/Users/me/vault/agents-overview.md' }), target: 'agents-overview.md', context: ON },
   ])('approves $name', ({ request, target, context }) => {
     expect(standingApproval(request, context)).toEqual({ optionId: 'allow-once', target });
   });
@@ -80,6 +85,24 @@ describe('auto-approve answers allow_once only inside its bounded scope', () => 
     ['no Atlas server is wired', atlasWrite('add_concept'), { ...ON, vaultMcpServerName: null }],
     ['an Atlas write switches mode', atlasWrite('add_concept', { toolKind: 'switch_mode' }), ON],
     ['no option ends with this call', edit({ options: OPTIONS.filter((option) => option.kind !== 'allow_once') }), ON],
+    ['the resolved path lands in a dot folder', edit({ pathVerdict: 'allow-inside-vault-hidden' }), ON],
+    ['only the .. rule can see the climb, inside the root text', edit({ filePath: '/Users/me/x/../vault/a.md' }), { ...ON, vaultRoot: '/Users/me/x/../vault' }],
+    ['the kind is other', edit({ toolKind: 'other' }), ON],
+    ['the kind is think', edit({ toolKind: 'think' }), ON],
+    ['the kind is search', edit({ toolKind: 'search' }), ON],
+    ['the kind is an unknown string', edit({ toolKind: 'write_file' }), ON],
+    ['a same-length other server writes under the ontology review', atlasWrite('x', { toolName: 'mcp__other-vault__add_concept' }), ON],
+    ...[true, 'true', 1, null].map((overwrite) => [`a rename sets overwrite to ${JSON.stringify(overwrite)}`, atlasWrite('rename_concept', { rawInput: { from: 'a', to: 'b', overwrite } }), ON] as const),
+    ['a patch clears a frontmatter field', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: { title: 'A', dependencies: null } } }), ON],
+    ['a patch empties the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: '' } }), ON],
+    ['a patch leaves only whitespace in the body', atlasWrite('patch_concept', { rawInput: { slug: 'a', body: ' \n\t' } }), ON],
+    ['a patch sends frontmatter that is not an object', atlasWrite('patch_concept', { rawInput: { slug: 'a', frontmatter: null } }), ON],
+    ['two path arguments name different files', edit({ rawInput: { filePath: '/Users/me/vault/a.md', path: '/Users/me/vault/.git/config' } }), ON],
+    ['a path argument is not a string', edit({ rawInput: { file_path: '/Users/me/vault/a.md', path: ['/Users/me/vault/b.md'] } }), ON],
+    ...['AGENTS.md', 'docs/CLAUDE.md', 'deep/er/claude.local.md', 'GeMiNi.md', 'AGENTS.override.md', 'agents']
+      .map((name) => [`the file is the instruction file ${name}`, edit({ filePath: `/Users/me/vault/${name}` }), ON] as const),
+    ...['\u200B.git', 'notes\u202Eam.md', 'a\u0007b', 'line\u2028break']
+      .map((segment) => [`a segment hides the character in ${JSON.stringify(segment)}`, edit({ filePath: `/Users/me/vault/${segment}/config` }), ON] as const),
     ['two options claim to end with this call', edit({ options: [...OPTIONS, { optionId: 'other-once', kind: 'allow_once', name: 'Yes too' }] }), ON],
   ] as Array<readonly [string, AcpPermissionRequest, StandingApprovalContext]>)(
     'shows the card when %s',

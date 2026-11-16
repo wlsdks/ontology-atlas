@@ -23,7 +23,7 @@ const bridge = vi.hoisted(() => ({
   failSetMode: false,
   /** The `modes` block `session/new` answers with. Null means the adapter advertised none. */
   sessionModes: null as unknown,
-  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault',
+  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault' | 'allow-inside-vault-hidden',
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -1482,15 +1482,22 @@ describe('auto-approve — the person answers once for the conversation', () => 
     return hook;
   }
 
+  async function startTurn(result: { current: ReturnType<typeof useAcpSession> }) {
+    bridge.holdPrompt = true;
+    void result.current.send('Tidy the refund notes.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+  }
+
   it('answers an in-folder file edit with allow_once, leaves no card and says so once', async () => {
     bridge.permissionVerdict = 'allow-inside-vault';
     const { result } = await startSession();
     act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
 
     await act(async () => { bridge.listener?.(fileEdit(401, '/vault/capabilities/refund.md')); });
     await waitFor(() => expect(answerOf(401)).toBe('allow'));
     expect(result.current.pending).toBeNull();
-    expect(result.current.events.filter((event) => event.kind === 'notice')).toEqual([
+    expect(result.current.events.filter((event) => event.kind !== 'user')).toEqual([
       expect.objectContaining({ text: 'auto-approved', detail: 'refund.md' }),
     ]);
     await act(async () => { await result.current.stop(); });
@@ -1545,6 +1552,47 @@ describe('auto-approve — the person answers once for the conversation', () => 
     await act(async () => { await result.current.stop(); });
   });
 
+  it.each([
+    ['the Rust verdict asks', 'ask'],
+    ['the resolved path lands in a dot folder', 'allow-inside-vault-hidden'],
+  ] as const)('shows the card for an in-folder edit when %s', async (_reason, verdict) => {
+    bridge.permissionVerdict = verdict;
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
+
+    await act(async () => { bridge.listener?.(fileEdit(403, '/vault/docs/gitconfig')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(403));
+    expect(answerOf(403)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('shows the card for an in-folder edit that arrives outside any turn', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+
+    await act(async () => { bridge.listener?.(fileEdit(404, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(404));
+    expect(answerOf(404)).toBeUndefined();
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('refuses an Atlas write outside any turn as before, with no receipt and no notice', async () => {
+    const receipts: AcpWorkReceipt[] = [];
+    const { result } = await startSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    act(() => result.current.setAutoApprove(true));
+
+    await act(async () => { bridge.listener?.(atlasWrite(503, 'add_concept')); });
+    await waitFor(() => expect(answerOf(503)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+    expect(receipts).toEqual([]);
+    expect(result.current.events.some((event) => event.kind === 'notice')).toBe(false);
+    await act(async () => { await result.current.stop(); });
+  });
+
   it('still shows the card for an Atlas deletion', async () => {
     bridge.holdPrompt = true;
     const { result } = await startSession();
@@ -1563,6 +1611,7 @@ describe('auto-approve — the person answers once for the conversation', () => 
     bridge.permissionVerdict = 'allow-inside-vault';
     const { result } = await startSession({ autoDecide: () => ({ reject: 'outside-round-scope' }) });
     act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
 
     await act(async () => { bridge.listener?.(fileEdit(701, '/vault/capabilities/refund.md')); });
     await waitFor(() => expect(answerOf(701)).toBe('reject'));

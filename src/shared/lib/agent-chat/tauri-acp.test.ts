@@ -41,6 +41,16 @@ describe('tauri ACP permission decision bridge', () => {
       filePath: '/vault/notes.md',
     });
   });
+
+  it.each([
+    ['allow-inside-vault-hidden', 'allow-inside-vault-hidden'],
+    ['allow-inside-vault-maybe', 'ask'],
+    [null, 'ask'],
+  ])('passes the hidden verdict through and turns an unknown answer %j into ask', async (answer, expected) => {
+    mocks.isTauri.mockReturnValue(true);
+    mocks.invoke.mockResolvedValue(answer);
+    await expect(acpPermissionVerdict('acp-1-999', '/vault/.git/config')).resolves.toBe(expected);
+  });
 });
 
 describe('runtime login checks are shared between screens', () => {

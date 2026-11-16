@@ -795,7 +795,8 @@ export function useAcpSession({
         resolve(allow.optionId);
         return;
       }
-      const standing = decided === null
+      // Only a person's live turn can carry their standing choice; a request outside one asks.
+      const standing = decided === null && origin.turn
         ? standingApproval(request, {
             enabled: autoApproveAtArrival && autoApproveRef.current,
             vaultRoot,
@@ -963,6 +964,7 @@ export function useAcpSession({
           pendingResolverRef.current = null;
           setPending(null);
           setApprovedOntologyWriteTracked(null);
+          approvedReceiptsRef.current.clear();
           /*
            * Dispose the client of a finished session, or pending calls never finish and `clientRef` blocks
            * `start()` from restarting.

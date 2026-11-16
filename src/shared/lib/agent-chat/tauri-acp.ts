@@ -136,11 +136,18 @@ export async function stopAcpSession(sessionId: string): Promise<void> {
   await invoke<void>('acp_stop', { sessionId });
 }
 
-export type AcpPermissionVerdict = 'allow-inside-vault' | 'ask';
+/** `allow-inside-vault-hidden`: inside, but a component below the root starts with `.` once links resolve. */
+export type AcpPermissionVerdict = 'allow-inside-vault' | 'allow-inside-vault-hidden' | 'ask';
+
+const KNOWN_VERDICTS: ReadonlySet<string> = new Set<AcpPermissionVerdict>([
+  'allow-inside-vault',
+  'allow-inside-vault-hidden',
+  'ask',
+]);
 
 /**
  * Is this path inside the vault. **An unknown path is `ask`** — the less a request can be
- * judged, the less it may pass unchallenged. No bridge (web) is `ask` as well.
+ * judged, the less it may pass unchallenged. No bridge (web) and an unknown answer are `ask` too.
  */
 export async function acpPermissionVerdict(
   sessionId: string,
@@ -148,10 +155,11 @@ export async function acpPermissionVerdict(
 ): Promise<AcpPermissionVerdict> {
   const invoke = getInvoke();
   if (!invoke) return 'ask';
-  return invoke<AcpPermissionVerdict>('acp_permission_verdict', {
+  const verdict = await invoke<unknown>('acp_permission_verdict', {
     sessionId,
     filePath,
   });
+  return typeof verdict === 'string' && KNOWN_VERDICTS.has(verdict) ? verdict as AcpPermissionVerdict : 'ask';
 }
 
 type AcpStreamEvent =

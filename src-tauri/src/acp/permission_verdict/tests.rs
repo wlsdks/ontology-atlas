@@ -130,3 +130,49 @@ fn a_parent_step_below_a_missing_directory_is_not_inside() {
     );
     let _ = std::fs::remove_dir_all(&base);
 }
+
+#[cfg(unix)]
+#[test]
+fn a_link_inside_the_vault_that_lands_in_a_dot_folder_is_hidden() {
+    let base = std::env::temp_dir().join(format!("atlas-acp-hidden-link-{}", std::process::id()));
+    let vault = base.join("vault");
+    std::fs::create_dir_all(vault.join(".git/hooks")).unwrap();
+    std::fs::create_dir_all(vault.join(".claude")).unwrap();
+    std::fs::create_dir_all(vault.join("docs")).unwrap();
+    std::fs::write(vault.join(".git/config"), "x").unwrap();
+    std::os::unix::fs::symlink("../.git/config", vault.join("docs/gitconfig")).unwrap();
+    std::os::unix::fs::symlink(".git", vault.join("vcs")).unwrap();
+    std::os::unix::fs::symlink(".claude", vault.join("agent")).unwrap();
+    let root = std::fs::canonicalize(&vault).unwrap();
+
+    for edited in [
+        "docs/gitconfig",
+        "vcs/hooks/pre-commit",
+        "agent/settings.json",
+    ] {
+        assert_eq!(
+            permission_verdict(&root, Some(root.join(edited).to_str().unwrap())),
+            PermissionVerdict::AllowInsideVaultHidden,
+            "{edited} resolves into a dot folder"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&base);
+}
+
+#[test]
+fn a_plain_dot_path_is_hidden_and_an_ordinary_one_is_not() {
+    let base = std::env::temp_dir().join(format!("atlas-acp-hidden-plain-{}", std::process::id()));
+    let vault = base.join("vault");
+    std::fs::create_dir_all(&vault).unwrap();
+    let root = std::fs::canonicalize(&vault).unwrap();
+
+    assert_eq!(
+        permission_verdict(&root, Some(root.join(".env.local").to_str().unwrap())),
+        PermissionVerdict::AllowInsideVaultHidden
+    );
+    assert_eq!(
+        permission_verdict(&root, Some(root.join("notes/a.md").to_str().unwrap())),
+        PermissionVerdict::AllowInsideVault
+    );
+    let _ = std::fs::remove_dir_all(&base);
+}

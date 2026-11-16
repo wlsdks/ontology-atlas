@@ -27,10 +27,17 @@ pub(crate) fn permission_verdict(vault_root: &Path, file_path: Option<&str>) -> 
         return PermissionVerdict::Ask;
     }
     let resolved = resolve_for_comparison(raw);
-    if resolved.starts_with(&root) {
-        PermissionVerdict::AllowInsideVault
+    let Ok(below_root) = resolved.strip_prefix(&root) else {
+        return PermissionVerdict::Ask;
+    };
+    // Judged after links resolve: `docs/x -> ../.git/config` lands in a dot folder.
+    let hidden = below_root
+        .components()
+        .any(|part| part.as_os_str().to_string_lossy().starts_with('.'));
+    if hidden {
+        PermissionVerdict::AllowInsideVaultHidden
     } else {
-        PermissionVerdict::Ask
+        PermissionVerdict::AllowInsideVault
     }
 }
 
@@ -65,7 +72,10 @@ fn resolve_for_comparison(path: &Path) -> PathBuf {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum PermissionVerdict {
+    /// Inside the root, and no component below it starts with `.` once links resolve.
     AllowInsideVault,
+    /// Inside the root, but a resolved component below it starts with `.`.
+    AllowInsideVaultHidden,
     Ask,
 }
 
