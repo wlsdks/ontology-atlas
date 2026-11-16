@@ -77,8 +77,6 @@
   "draftLead": "{subject}\n{question} 请说明当前的依据和未知项，不要更改文件。",
   "draftContext": "调查 · {subject}",
   "continuation": {
-    "notInspected": "尚未与当前代码核对。需要深入了解时可打开调查。",
-    "knownSuggestions": "上次有限调查发现了 {count} 个值得研究的问题。当前含义仍未验证。",
     "analyze": "运行分析",
     "transfer": "将此问题和所选证据发送给 {runtime}。智能体可能继续读取代码并使用已配置的服务提供者。更改需要权限审核。此分析可能产生服务商费用。",
     "requestDetails": "查看将发送的分析请求",
@@ -91,19 +89,12 @@
     "prepareImprovement": "准备改进请求",
     "agentUnavailable": "需要一个写入前会请求批准、且已就绪的编码智能体。请在智能体面板中选择，或准备可编辑的提示词。",
     "replanned": "智能体报告的任务总数变为 {total} 项。此前的计数不代表修订后的计划或本体完整性。",
-    "entry": "分析状态",
-    "chooseScope": "请选择要调查的概念、概念集或项目。尚未选择范围，因此分析状态未知。",
-    "emptyVault": "尚未记录任何概念。准备好后，请点击“创建第一张地图”。",
     "packetLimits": "这些数字描述已读取的代码范围，不限制编码智能体之后的读取或费用。你可以停止分析。",
     "matchUnknown": "无法将保存结果对应到此问题和证据版本。仍可在历史中阅读，但不会算作此范围的分析结果。",
     "chooseScopeAction": "选择范围",
-    "emptyVaultAction": "创建第一张地图",
-    "localFolderAction": "打开自己的文件夹",
     "refused": "此次调查未启动。请检查所选证据和智能体的权限模式，然后重新明确启动。",
     "improvementLead": "请为此问题准备可审核的改进建议，并保留回答中的未知项和当前证据。",
     "historyLimited": "部分历史未读取或无法验证。没有匹配结果不代表此前未进行分析。",
-    "questionCount": "{count} 个问题",
-    "previousResultAction": "先前分析",
     "narrowScope": "此范围无法检查或过大。请从已记录的概念或集合中选择更小的范围。",
     "modelUnknown": "此处无法确认当前模型。请在智能体面板中查看。"
   }

@@ -33,12 +33,11 @@ interface Props {
   runtimeLabel?:string;
   canAnalyze?:boolean;
   busyConversation?:boolean;
-  onInspection?:(snapshot:GrayAreaSnapshot,count:number)=>void;
   previousResultAt?:string;
   onExited?: () => void;
 }
 
-export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onClose, onFocus, onPrepare, onNarrowScope, onPrepareImprovement, onAnalyze, runtimeLabel, canAnalyze, busyConversation, onInspection, previousResultAt, onExited }: Props) {
+export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onClose, onFocus, onPrepare, onNarrowScope, onPrepareImprovement, onAnalyze, runtimeLabel, canAnalyze, busyConversation, previousResultAt, onExited }: Props) {
   const t = useTranslations('grayArea');
   const panelRef = useInspectorClearance();
   const nativeRuntime = isTauriVaultRuntime();
@@ -144,7 +143,7 @@ export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onC
         {sourceSelectionState?.error ? <p role="status">{t(sourceSelectionState.error)}</p>:null}
         <Button ref={sourcePickerRef} className="max-w-full" disabled={sourceSelectionState?.busy} aria-busy={sourceSelectionState?.busy} onClick={()=>void selectSource()}><span className="min-w-0 whitespace-normal">{t('selectSourceFolder')}</span></Button>
       </div> : proposal?.value && scanKey!==requestKey ? <div className="space-y-4" data-testid="gray-area-scope-preview" ref={mountResults} tabIndex={-1}><p className="text-body">{t('preview')}</p><p className="break-all rounded-card border border-[color:var(--color-divider)] p-3 font-mono text-caption">{proposal.value.sourcePath}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('previewLimit',{limit:proposal.value.maxFiles})}</p><Button className="max-w-full" onClick={()=>void start()}><span className="min-w-0 whitespace-normal">{t('inspectFolder')}</span></Button></div> : !current && (!proposal || scanKey===requestKey) ? <div role="status" className="space-y-3 text-body text-[color:var(--color-text-secondary)]"><FileSearch size={ICON_SIZE.lg}/><p>{t('reading')}</p><p className="text-caption">{t('localOnly')}</p></div> : current?.snapshot && vaultPath ?
-        <Findings onReady={mountResults} enabled={open} escapeFirstRef={escapeFirstRef} key={current.snapshot.snapshotId} snapshot={current.snapshot} sourceRoot={proposal?.value?.sourcePath} vaultPath={vaultPath} vaultHandle={vaultHandle} onFocus={onFocus} onPrepare={onPrepare} onPrepareImprovement={onPrepareImprovement} onAnalyze={onAnalyze} runtimeLabel={runtimeLabel} canAnalyze={canAnalyze} busyConversation={busyConversation} projectUid={selection.projectUid} onInspection={onInspection} onRefresh={() => setAttempt(n=>n+1)}/> :
+        <Findings onReady={mountResults} enabled={open} escapeFirstRef={escapeFirstRef} key={current.snapshot.snapshotId} snapshot={current.snapshot} sourceRoot={proposal?.value?.sourcePath} vaultPath={vaultPath} vaultHandle={vaultHandle} onFocus={onFocus} onPrepare={onPrepare} onPrepareImprovement={onPrepareImprovement} onAnalyze={onAnalyze} runtimeLabel={runtimeLabel} canAnalyze={canAnalyze} busyConversation={busyConversation} projectUid={selection.projectUid} onRefresh={() => setAttempt(n=>n+1)}/> :
         <div className="space-y-3 text-body text-[color:var(--color-text-secondary)]" data-testid={current?.error||proposal?.error ? 'gray-area-unavailable' : nativeRuntime ? 'gray-area-local-folder-required' : 'gray-area-web-limit'}>
           <p>{scopeUnavailable?t('continuation.narrowScope'):current?.error||proposal?.error ? String(current?.error??proposal?.error).includes('unsupported_platform')?t('platformLimit'):t('unavailable') : nativeRuntime ? t('localFolderRequired') : t('webLimit')}</p>
           {!scopeUnavailable?<p className="text-caption">{current?.error||proposal?.error ? t('connectHint') : t('webStillWorks')}</p>:null}
@@ -154,12 +153,11 @@ export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onC
   </Surface>;
 }
 
-function Findings({ snapshot,sourceRoot,vaultPath,vaultHandle,onFocus,onPrepare,onPrepareImprovement,onAnalyze,runtimeLabel,canAnalyze,busyConversation,projectUid,onInspection,onRefresh,escapeFirstRef,enabled,onReady }: { snapshot:GrayAreaSnapshot;sourceRoot?:string; vaultPath:string;vaultHandle?:FileSystemDirectoryHandle|null; onFocus:Props['onFocus']; onPrepare:Props['onPrepare'];onPrepareImprovement?:Props['onPrepareImprovement']; onAnalyze?:Props['onAnalyze']; runtimeLabel?:string;canAnalyze?:boolean;busyConversation?:boolean;projectUid?:string;onInspection?:Props['onInspection']; onRefresh:()=>void; escapeFirstRef:MutableRefObject<(()=>boolean)|null>;enabled:boolean;onReady:(node:HTMLDivElement|null)=>void }) {
+function Findings({ snapshot,sourceRoot,vaultPath,vaultHandle,onFocus,onPrepare,onPrepareImprovement,onAnalyze,runtimeLabel,canAnalyze,busyConversation,projectUid,onRefresh,escapeFirstRef,enabled,onReady }: { snapshot:GrayAreaSnapshot;sourceRoot?:string; vaultPath:string;vaultHandle?:FileSystemDirectoryHandle|null; onFocus:Props['onFocus']; onPrepare:Props['onPrepare'];onPrepareImprovement?:Props['onPrepareImprovement']; onAnalyze?:Props['onAnalyze']; runtimeLabel?:string;canAnalyze?:boolean;busyConversation?:boolean;projectUid?:string; onRefresh:()=>void; escapeFirstRef:MutableRefObject<(()=>boolean)|null>;enabled:boolean;onReady:(node:HTMLDivElement|null)=>void }) {
   const t = useTranslations('grayArea');
   const history=useInvestigationHistory(vaultHandle);
   const [dismissed,setDismissed] = useState<Set<string>>(()=>new Set());
   const page = grayAreaCandidatePage(snapshot,dismissed);
-  useEffect(()=>{onInspection?.(snapshot,page.total);},[onInspection,snapshot,page.total]);
   const candidates = page.candidates;
   const visible = candidates;
   const [expanded,setExpanded] = useState<string|null>(candidates[0]?.id ?? null);
