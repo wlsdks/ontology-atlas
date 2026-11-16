@@ -56,6 +56,12 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
   "gateway-constellation-pulse":
     "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
+  "gateway-step-spark":
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+  "gateway-step-lit":
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+  "gateway-step-press":
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
   "gateway-step-rule":
     "One-shot draw of the rule after a step number on the download page, declared only inside no-preference; under reduced motion the rule is simply there and the numbers carry the order.",
   "gateway-entrance-line":
