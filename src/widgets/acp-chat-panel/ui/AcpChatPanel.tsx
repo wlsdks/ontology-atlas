@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { readAcpTrouble, useAcpSession, type ChatSuggestion } from '@/features/acp-session';
+import { readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { MOTION } from '@/shared/motion';
 import { KeptPanelSeat } from './KeptPanelSeat';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
@@ -14,6 +14,7 @@ import { RowButton, Surface } from '@/shared/ui';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useTranscriptFollow } from '../model/use-transcript-follow';
 import { splitAppRequest } from './request-parts';
+import { turnActivity } from './turn-activity';
 import { ComposerInput } from './chat-panel/ComposerInput';
 import { ChoicesRow, ComposerFooter } from './chat-panel/ComposerFooter';
 import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/ComposerNotices';
@@ -24,6 +25,7 @@ import { PresentationSurface } from './chat-panel/PresentationSurface';
 import { TranscriptOffers } from './chat-panel/TranscriptOffers';
 import { TranscriptPane } from './chat-panel/TranscriptPane';
 import { TranscriptRows } from './chat-panel/TranscriptRows';
+import type { TurnWork } from './chat-panel/TurnWorkStage';
 import { ConnectStoppedState, EmptyState, StartingState } from './chat-panel/TranscriptStates';
 import type { AcpChatPanelProps } from './chat-panel/types';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/use-composer-menus';
@@ -347,13 +349,24 @@ export function AcpChatPanelBody({
     && events[lastUserEventIndex]?.id === cancelledWaitTurnId
     && !hasCompletedAgentAnswer
     && !events.some((event, index) => index > lastUserEventIndex && event.kind === 'tool');
-  const showAnswerWait = busy
-    && lastUserEventIndex >= 0
-    && events[lastUserEventIndex]?.id !== cancelledWaitTurnId
-    && !hasCompletedAgentAnswer
-    && pending === null
-    && error === null
-    && !turnSilent;
+  const lastUserEventId = lastUserEventIndex >= 0 ? (events[lastUserEventIndex]?.id ?? null) : null;
+  // A finished turn dances only when this panel watched it run, never over a reopened conversation.
+  const [watchedTurnId, setWatchedTurnId] = useState<string | null>(null);
+  if (busy && lastUserEventId !== null && watchedTurnId !== lastUserEventId) setWatchedTurnId(lastUserEventId);
+  const turnStillWanted = lastUserEventId !== null && lastUserEventId !== cancelledWaitTurnId && error === null;
+  const turnWorkPhase = !turnStillWanted
+    ? null
+    : busy
+      ? pending === null && !turnSilent ? 'working' : null
+      : status === 'ready' && watchedTurnId === lastUserEventId && hasCompletedAgentAnswer ? 'done' : null;
+  const turnWork: TurnWork | null = turnWorkPhase && lastUserEventId !== null
+    ? {
+        turnId: lastUserEventId,
+        phase: turnWorkPhase,
+        activity: turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME),
+        plan: reportedPlan,
+      }
+    : null;
 
   const displayStatus = connectStopped ? 'stopped' : status === 'idle' ? 'starting' : status;
   const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
@@ -459,7 +472,7 @@ export function AcpChatPanelBody({
         />
         <TranscriptOffers
           t={t}
-          showAnswerWait={showAnswerWait}
+          turnWork={turnWork}
           stoppedWithoutAnswer={stoppedWithoutAnswer}
           presentation={presentation}
           presentationOfferRef={presentationOfferRef}

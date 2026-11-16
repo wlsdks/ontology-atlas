@@ -237,6 +237,14 @@
     "unfinished": "끝나지 않음",
     "declined": "거절함"
   },
+  "work": {
+    "thinking": "생각하는 중",
+    "answering": "답을 쓰는 중",
+    "steps": "{count}단계",
+    "plan": "할 일 {done}/{total}",
+    "done": "끝났어요",
+    "progressLabel": "에이전트 작업 진행"
+  },
   "workGroup": "작업 과정 · {count}단계",
   "workGroupActive": "작업 중 · {count}단계",
   "resize": "대화 칸 너비 조절",

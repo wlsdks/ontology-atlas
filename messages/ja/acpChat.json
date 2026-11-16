@@ -237,6 +237,14 @@
     "unfinished": "未完了",
     "declined": "拒否済み"
   },
+  "work": {
+    "thinking": "考えています",
+    "answering": "回答を書いています",
+    "steps": "{count}ステップ",
+    "plan": "タスク{done}/{total}",
+    "done": "完了しました",
+    "progressLabel": "エージェントの作業の進み具合"
+  },
   "workGroup": "作業の詳細 · {count}ステップ",
   "workGroupActive": "作業中 · {count}ステップ",
   "resize": "会話パネルの幅を調整",
