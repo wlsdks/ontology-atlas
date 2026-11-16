@@ -764,6 +764,22 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     names.push(n);
     ids.add(n.id);
   };
+  /**
+   * Whether a domain's caption row crosses a disc not its own anywhere in the step: a caption ranks
+   * lowest and gives way to every disc, at rest and in the overview. O(discs).
+   */
+  const captionOnDisc = (n: PlacedName) => {
+    const at = layout.positions.get(n.id)!;
+    for (const [id, r] of discs) {
+      if (id === n.id) continue;
+      const p = layout.positions.get(id)!;
+      for (const s of stepScales) {
+        const b = worldBox(at, grown(n.box, -tokens.namePadPx), s);
+        if (Math.hypot(Math.max(b.minX - p.x, 0, p.x - b.maxX), Math.max(b.minY - p.y, 0, p.y - b.maxY)) < r / s) return true;
+      }
+    }
+    return false;
+  };
   const project = projectName(input);
   if (project) place(project);
   const projectBox = project ? worldBox(layout.positions.get(project.id)!, project.box, scale) : null;
@@ -789,6 +805,12 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       // The census row is the one line of a title block that may go: it gives way to the project's name.
       if (n.role === "units" && projectBox !== null && box.minX < projectBox.maxX && projectBox.minX < box.maxX && box.minY < projectBox.maxY && projectBox.minY < box.maxY) continue;
       titles.add(layout.positions.get(n.id)!, n.box);
+      // A caption over a disc still holds its row, so the names around it stay as they would.
+      if ((n.role === "units" || n.role === "reach") && captionOnDisc(n)) {
+        grid.add(box);
+        words.add(layout.positions.get(n.id)!, n.box);
+        continue;
+      }
       place(n);
     }
   }

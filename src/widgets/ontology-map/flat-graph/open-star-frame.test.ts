@@ -110,6 +110,8 @@ function syntheticModel(domains: number, capsPer: number, elsPer: number): DialM
 }
 
 type Mark = { x: number; y: number; r: number };
+/** A domain's census and reach rows: one slot under its name. */
+const CAPTION_ROLES = new Set(["units", "status"]);
 
 /** A camera centred on `centreId` (the map's middle when null) of `world`'s map, at a zoom given per frame as a ratio of the fitting scale. */
 function cameraOn(centreId: string | null, worldKey: object, world = { model, scene }) {
@@ -255,8 +257,6 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
     expect(crowded.slice(0, 6)).toEqual([]);
   },
 );
-
-const CAPTION_ROLES = new Set(["units", "status"]);
 
 /**
  * Every name the last frame painted whose glyphs cross another name, a disc not its own, or an
@@ -449,6 +449,26 @@ describe("the resting overview", () => {
       named = now;
     }
   });
+
+  it.each([["closed", {}], ["open", { contextAlphas: new Map([...layout.positions.keys()].map((id) => [id, 1])) }]] as const)(
+    "with the dock %s draws no domain caption over a disc not its own at any zoom",
+    (_, dock) => {
+      const camera = cameraOn(null, {});
+      const onDiscs: string[] = [];
+      let now = 0;
+      for (const zoom of sweep) {
+        framesUntilSettled(camera, dock, new Set(), now, zoom, zoom, FRAME_MS);
+        now += 10_000;
+        const { texts, discs } = describeLastDialFrame(W, H)!;
+        for (const t of texts.filter((n) => CAPTION_ROLES.has(n.role))) {
+          for (const d of discs) {
+            if (d.id !== t.id && Math.hypot(Math.max(t.box.minX - d.x, 0, d.x - t.box.maxX), Math.max(t.box.minY - d.y, 0, d.y - t.box.maxY)) < d.r - 0.5) onDiscs.push(`zoom ${zoom}: ${t.role} ${t.id} on ${d.id}`);
+          }
+        }
+      }
+      expect(onDiscs.slice(0, 6)).toEqual([]);
+    },
+  );
 
   it("lets no mark or name crowd an admitted name on a 1,800-concept map", () => {
     const big = syntheticModel(12, 20, 6);
