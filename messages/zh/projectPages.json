@@ -169,7 +169,7 @@
     "changedToday": "今天",
     "surfaceOpenChanges": "打开变更",
     "compositionStaleLegend": "文档写成后代码文件有改动的能力",
-    "toCheckEvidenceMeasured": "{total} 个能力中有 {stale} 个在文档写成后代码文件有改动。",
+    "toCheckEvidenceMeasured": "写明代码文件的 {measured} 个能力中有 {stale} 个在文档写成后该文件有改动。",
     "toCheckEvidenceReading": "正在读取 Git 历史，以比较代码文件和文档。",
     "toCheckEvidenceAppOnly": "文档写成后代码文件有改动的能力，由桌面应用从 Git 历史中找出。",
     "toCheckEvidenceUnreadable": "无法读取 Git 历史，因此不知道代码文件是否在文档写成后有改动。",

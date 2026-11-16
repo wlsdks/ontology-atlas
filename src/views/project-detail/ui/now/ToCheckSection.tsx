@@ -32,7 +32,7 @@ export function ToCheckSection({
   toCheck,
   availability,
   staleCount,
-  capabilityTotal,
+  comparedCount,
   reducedMotion,
   arrivalOffset = 0,
 }: {
@@ -40,7 +40,8 @@ export function ToCheckSection({
   toCheck: ProjectToCheck;
   availability: MapEvidenceAvailability;
   staleCount: number;
-  capabilityTotal: number;
+  /** The project's capabilities the walk compared: the sentence's denominator. */
+  comparedCount: number;
   reducedMotion: boolean;
   arrivalOffset?: number;
 }) {
@@ -49,7 +50,7 @@ export function ToCheckSection({
   const arrival = useArrival(toCheck.visible.length > 0);
   const total = toCheck.rows.length;
   const evidenceLine =
-    availability === "measured" ? t("toCheckEvidenceMeasured", { stale: staleCount, total: capabilityTotal })
+    availability === "measured" ? t("toCheckEvidenceMeasured", { stale: staleCount, measured: comparedCount })
       : availability === "reading" ? t("toCheckEvidenceReading")
         : availability === "app-only" ? t("toCheckEvidenceAppOnly")
           : availability === "unreadable" ? t("toCheckEvidenceUnreadable")
@@ -60,7 +61,7 @@ export function ToCheckSection({
       ? [evidenceLine]
       : [
           t("toCheckEvidenceReading"),
-          t("toCheckEvidenceMeasured", { stale: capabilityTotal, total: capabilityTotal }),
+          t("toCheckEvidenceMeasured", { stale: comparedCount, measured: comparedCount }),
           t("toCheckEvidenceUnreadable"),
           t("toCheckEvidenceNoPaths"),
         ];

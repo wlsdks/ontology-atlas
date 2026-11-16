@@ -367,8 +367,12 @@ export function ProjectDetailPage({
   // Sources and wiki pages are the folder's; nothing ties a file to one project.
   const librarySources = vaultManifest?.sources?.length ?? 0;
   const libraryWikiPages = countWikiPages(vaultDocs);
-  const evidenceMeasured = evidence.availability === "measured";
   const projectCapabilities = insightNodes.filter((node) => node.kind === "capability" && isProjectConcept(node, project.slug));
+  // Only capabilities the walk could compare count; when none of this project's can be, it has no paths.
+  const comparedCapabilities = projectCapabilities.filter((node) => evidence.states.has(node.id)).length;
+  const evidenceAvailability =
+    evidence.availability === "measured" && comparedCapabilities === 0 ? "no-paths" : evidence.availability;
+  const evidenceMeasured = evidenceAvailability === "measured";
   const staleIds = evidenceMeasured
     ? new Set(projectCapabilities.filter((node) => evidence.states.get(node.id) === "stale").map((node) => node.id))
     : NO_IDS;
@@ -565,9 +569,9 @@ export function ProjectDetailPage({
           <ToCheckSection
             projectName={displayName ?? project.name}
             toCheck={toCheck}
-            availability={evidence.availability}
+            availability={evidenceAvailability}
             staleCount={staleIds.size}
-            capabilityTotal={projectCapabilities.length}
+            comparedCount={comparedCapabilities}
             reducedMotion={reducedMotion}
           />
         </div>
@@ -642,7 +646,7 @@ export function ProjectDetailPage({
             marks={{
               staleIds,
               changedIds: changed.changedIds,
-              staleLegend: evidenceMeasured ? "shown" : evidence.availability === "reading" ? "reserved" : "absent",
+              staleLegend: evidenceMeasured ? "shown" : evidenceAvailability === "reading" ? "reserved" : "absent",
             }}
             labels={{
               listLabel: t("metricDomains"),

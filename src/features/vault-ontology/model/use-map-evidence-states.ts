@@ -53,10 +53,29 @@ function subscribeToAnswers(listener: () => void): () => void {
   return () => answerListeners.delete(listener);
 }
 
+/** The native walk answers this many paths per call and drops the rest (MAX_EVIDENCE_PATHS: src-tauri/src/git/evidence.rs). */
+const GIT_WALK_PATH_LIMIT = 512;
+
+/** Every path in calls of at most `GIT_WALK_PATH_LIMIT`, so a large folder is compared in full. */
+async function walkInBatches(rootPath: string, repoPaths: readonly string[], vaultPaths: readonly string[]) {
+  const calls: Promise<GitPathLastChange[] | null>[] = [];
+  let vaultFrom = 0;
+  let repoFrom = 0;
+  while (vaultFrom < vaultPaths.length || repoFrom < repoPaths.length) {
+    const vault = vaultPaths.slice(vaultFrom, vaultFrom + GIT_WALK_PATH_LIMIT);
+    const repo = repoPaths.slice(repoFrom, repoFrom + GIT_WALK_PATH_LIMIT - vault.length);
+    vaultFrom += vault.length;
+    repoFrom += repo.length;
+    calls.push(gitPathsLastChange(rootPath, repo, vault));
+  }
+  const batches = await Promise.all(calls);
+  return batches.some((rows) => rows === null) ? null : batches.flatMap((rows) => rows ?? []);
+}
+
 function revalidate(key: string, rootPath: string, repoPaths: string[], vaultPaths: string[]): Promise<WalkChanges | null> {
   const running = inFlight.get(key);
   if (running) return running;
-  const walk = gitPathsLastChange(rootPath, repoPaths, vaultPaths)
+  const walk = walkInBatches(rootPath, repoPaths, vaultPaths)
     .then((rows): WalkChanges | null => {
       if (!rows) return null;
       const changes: WalkChanges = new Map(rows.map((row) => [row.path, row]));

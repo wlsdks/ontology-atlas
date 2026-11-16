@@ -169,7 +169,7 @@
     "changedToday": "今日",
     "surfaceOpenChanges": "変更を開く",
     "compositionStaleLegend": "文書を書いた後にコードファイルが変わったケイパビリティ",
-    "toCheckEvidenceMeasured": "ケイパビリティ{total}件中{stale}件は、文書を書いた後にコードファイルが変更されました。",
+    "toCheckEvidenceMeasured": "コードファイルを書いたケイパビリティ{measured}件中{stale}件は、文書を書いた後にそのファイルが変更されました。",
     "toCheckEvidenceReading": "コードファイルと文書を比べるため、Gitの履歴を読み取っています。",
     "toCheckEvidenceAppOnly": "文書を書いた後にコードファイルが変わったケイパビリティは、デスクトップアプリがGitの履歴から見つけます。",
     "toCheckEvidenceUnreadable": "Gitの履歴を読み取れなかったため、文書を書いた後にコードファイルが変わったかは分かりません。",

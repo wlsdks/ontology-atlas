@@ -7,6 +7,8 @@ const git = vi.hoisted(() => ({
   bridge: true,
   walk: vi.fn(),
   root: "/vault",
+  docs: [] as { slug: string; frontmatter: Record<string, string> }[],
+  vault: null as unknown,
 }));
 
 const DOCS = [
@@ -14,11 +16,10 @@ const DOCS = [
   { slug: "capabilities/ship", frontmatter: { kind: "capability", path: "src/ship.ts" } },
   { slug: "capabilities/list", frontmatter: { kind: "capability", path: "src/list.ts" } },
 ];
-const VAULT = { status: "ready", handle: { name: "vault" }, manifest: { docs: DOCS }, lastLoadedAt: 1 };
 
 vi.mock("@/entities/vault-session", () => ({
   useDataSourceMode: () => "local",
-  useLocalVault: () => VAULT,
+  useLocalVault: () => git.vault,
 }));
 vi.mock("@/shared/lib/vault-folder/select-open-vault-handle", () => ({
   selectOpenVaultHandle: (_status: string, handle: unknown) => handle,
@@ -56,6 +57,8 @@ beforeEach(() => {
   resetSharedEvidenceWalk();
   git.bridge = true;
   git.root = "/vault";
+  git.docs = DOCS;
+  git.vault = { status: "ready", handle: { name: "vault" }, manifest: { get docs() { return git.docs; } }, lastLoadedAt: 1 };
   git.walk.mockReset();
   git.walk.mockResolvedValue(WALK);
 });
@@ -114,6 +117,26 @@ describe("useMapEvidenceStates", () => {
     expect(result.current.stalePaths.get("capability:pay")).toEqual({ path: "src/pay.ts", gone: false, changedAt: CODE_TIME });
     expect(result.current.stalePaths.get("capability:ship")).toEqual({ path: "src/ship.ts", gone: true, changedAt: null });
     expect(result.current.stalePaths.has("capability:list")).toBe(false);
+  });
+
+  it("compares every document and path of a folder larger than one native walk answers", async () => {
+    const limit = 512;
+    const slugs = Array.from({ length: 600 }, (_, index) => `c${index}`);
+    git.docs = slugs.map((slug) => ({ slug: `capabilities/${slug}`, frontmatter: { kind: "capability", path: `src/${slug}.ts` } }));
+    // Like the native walk: documents first, and nothing past the limit.
+    git.walk.mockImplementation(async (_root: string, repoPaths: string[], vaultPaths: string[]) =>
+      [...vaultPaths, ...repoPaths].slice(0, limit).map((path) => ({
+        path,
+        exists: true,
+        isDir: false,
+        lastChangedAt: path.startsWith("src/") ? CODE_TIME : DOC_TIME,
+      })),
+    );
+    const { result } = renderHook(() => useMapEvidenceStates({ nodes: slugs.map(node), enabled: true }));
+    await waitFor(() => expect(result.current.availability).toBe("measured"));
+    expect(result.current.states.size).toBe(600);
+    expect([...result.current.states.values()].every((state) => state === "stale")).toBe(true);
+    for (const [, repoPaths, vaultPaths] of git.walk.mock.calls) expect(repoPaths.length + vaultPaths.length).toBeLessThanOrEqual(limit);
   });
 
   it("reads as app-only and never walks without the desktop Git bridge", () => {

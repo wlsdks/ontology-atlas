@@ -838,7 +838,7 @@ describe("ProjectDetailPage", () => {
       expect(row).toHaveAttribute("data-reason", "stale");
       expect(row).toHaveTextContent("mcp/src/server.mjs changed after this document was written.");
       expect(row).toHaveAttribute("href", "/topology/?mode=focus&p=capability%3Amcp-server");
-      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent("1 of 1 capability has a source file");
+      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent("1 of 1 capability that name a source file");
       const staleWords = enMessages.projectPages.detail.compositionStaleLegend;
       expect(screen.getByRole("img", { name: staleWords })).toHaveAttribute("title", staleWords);
       expect(screen.getByTestId("project-detail-stale-legend")).toHaveTextContent(`◐${staleWords}`);
@@ -862,6 +862,21 @@ describe("ProjectDetailPage", () => {
       expect(screen.queryByTestId("project-detail-capability-stale")).not.toBeInTheDocument();
       expect(screen.queryByTestId("project-detail-stale-legend")).not.toBeInTheDocument();
       expect(screen.queryByTestId("project-detail-domain-stale")).not.toBeInTheDocument();
+    });
+
+    it("says no capability names a file when the walk compared none of this project's, even though it measured others", () => {
+      mocks.insightNodes = BASE_NODES;
+      mocks.insightEdges = BASE_EDGES;
+      mocks.evidence = {
+        availability: "measured",
+        states: new Map([["capability:another-project", "current"]]),
+        movedPaths: new Map(),
+        stalePaths: new Map(),
+      };
+      renderPage();
+
+      expect(screen.getByTestId("project-detail-evidence-line")).toHaveTextContent(enMessages.projectPages.detail.toCheckEvidenceNoPaths);
+      expect(screen.queryByTestId("project-detail-stale-legend")).not.toBeInTheDocument();
     });
 
     it("opens every row in a dialog grouped by reason when more rows exist than fit", () => {
