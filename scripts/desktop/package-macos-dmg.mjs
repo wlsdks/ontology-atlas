@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
 import { isTransientHdiutilFailure, stalePathForVolume } from "../lib/desktop/hdiutil-retry.mjs";
+import { dmgImageSizeMiB, parseDuKiB } from "../lib/macos-artifact/macos-dmg-layout.mjs";
 
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
@@ -95,6 +96,10 @@ const stagedAppPath = path.join(stagingDir, appBundleName);
 run("ditto", [appPath, stagedAppPath]);
 fs.symlinkSync("/Applications", path.join(stagingDir, "Applications"));
 
+const stagedKiB = parseDuKiB(run("du", ["-sk", stagingDir]).stdout);
+if (stagedKiB === null) fail(`could not read the staged folder's size from du -sk ${stagingDir}`);
+const imageSizeMiB = dmgImageSizeMiB(stagedKiB);
+
 /*
  * ⚠️ **The DMG step is retried, and only for a busy resource.** rc.15 built, signed and
  * notarized on aarch64 and then died on x64 with `hdiutil: create failed - Resource busy`.
@@ -115,6 +120,8 @@ for (let attemptNumber = 1; attemptNumber <= DMG_CREATE_ATTEMPTS; attemptNumber 
     appName,
     "-srcfolder",
     stagingDir,
+    "-size",
+    `${imageSizeMiB}m`,
     "-ov",
     "-format",
     "UDZO",
