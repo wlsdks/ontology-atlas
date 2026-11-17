@@ -14,7 +14,8 @@ import { Link } from "@/i18n/navigation";
 import { Copy, Plus } from "lucide-react";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
-import { OntologyMapKindGlyph } from "@/shared/ui";
+import { Button, buttonVariants, FeatureStage, OntologyMapKindGlyph } from "@/shared/ui";
+import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { MAP_KIND_GLYPH_SIZE } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
@@ -28,6 +29,7 @@ import { resolveAuthoredDescription } from "../lib/authored-description";
 import { resolveRiseBaseline, slugsToRise, type ShownProjects } from "../lib/rise-rule";
 import { resolveRecentActivityAgo, type RecentActivityAgo } from "../lib/recent-activity";
 import { useProjects, useVaultDocs } from "@/features/project-data-source";
+import { ProjectCardArtwork } from "./ProjectCardArtwork";
 
 type SelectorTranslator = ReturnType<typeof useTranslations<"projectPages.selector">>;
 
@@ -40,6 +42,7 @@ function formatAgo(ago: RecentActivityAgo, t: SelectorTranslator) {
 let lastShown: ShownProjects | null = null;
 
 const TILE_SPRING = framerSpring(SPRING.surface);
+const NEW_PROJECT_HREF = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
 
 /** Shared by the project cards and the next-project tile. */
 const TILE_SURFACE =
@@ -61,6 +64,10 @@ export function ProjectSelectorPage() {
   const reducedMotion = usePrefersReducedMotion();
   const staged = projects.length <= 1;
   const loading = dataSourceMode === "local" && (vault.status === "opening" || vault.status === "loading");
+  const empty = projects.length === 0;
+  const stage = usePanelPresence(empty && !loading);
+  /* The list keeps the stage's frame until the stage has left, so nothing it stood in moves. */
+  const placedOnStage = staged || stage.mounted;
   const openingName = vault.handle?.name;
   const ready = loaded && dataSourceMode === "local";
   const scope = useVaultIdentityScope();
@@ -84,7 +91,7 @@ export function ProjectSelectorPage() {
           tabIndex={-1}
           className={cn(
             "flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]",
-            !(staged || loading) && "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]",
+            !(placedOnStage || loading) && "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]",
           )}
         >
           <PageHeaderBar
@@ -111,7 +118,7 @@ export function ProjectSelectorPage() {
               </>
             }
           />
-          <div className={cn(PAGE_FRAME, "relative", staged || loading ? PAGE_STAGE_FILL : "pt-8 md:pt-10 pb-6 md:pb-10")}>
+          <div className={cn(PAGE_FRAME, "relative", placedOnStage || loading ? PAGE_STAGE_FILL : "pt-8 md:pt-10 pb-6 md:pb-10")}>
             {loading ? (
               <WaitStage
                 mark="mascot"
@@ -121,18 +128,35 @@ export function ProjectSelectorPage() {
                 title={openingName ? tSwitch("openingNamed", { name: openingName }) : tSwitch("openingUnnamed")}
               />
             ) : (
+            <>
+            {stage.mounted ? (
+              <div
+                data-placement={empty ? "stage" : undefined}
+                inert={stage.exiting}
+                aria-hidden={stage.exiting || undefined}
+                className={cn(
+                  "flex min-w-0 flex-1 flex-col",
+                  /* Leaving, it keeps the box it stood in so it fades where it was. */
+                  stage.exiting && cn("motion-swap-out pointer-events-none absolute inset-x-0 top-0 min-h-full px-5 md:px-10", PAGE_STAGE_FILL),
+                )}
+              >
+                <FirstProjectStage t={t} />
+              </div>
+            ) : null}
+            {empty ? null : (
             <motion.div
-              data-placement={staged ? "stage" : "list"}
-              className={cn("min-w-0", staged && "my-auto")}
+              data-placement={placedOnStage ? "stage" : "list"}
+              className={cn("min-w-0", placedOnStage && "my-auto")}
+              initial={stage.exiting ? { opacity: 0 } : false}
+              animate={{ opacity: 1 }}
               layout={reducedMotion ? false : "position"}
-              layoutDependency={staged}
-              transition={TILE_SPRING}
+              layoutDependency={placedOnStage}
+              transition={{ default: TILE_SPRING, opacity: riseTransition }}
             >
             <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
               {t("lede")}
             </p>
 
-            {projects.length > 0 ? (
               <ul
                 data-testid="project-selector-grid"
                 className="mt-7 grid list-none grid-cols-1 gap-[var(--card-gap)] p-0 md:grid-cols-2"
@@ -162,15 +186,12 @@ export function ProjectSelectorPage() {
                   transition={TILE_SPRING}
                   className={`flex min-w-0 ${projects.length % 2 === 0 ? "md:col-span-2" : ""}`}
                 >
-                  <NextProjectTile t={t} hasProjects />
+                  <NextProjectTile t={t} />
                 </motion.li>
               </ul>
-            ) : (
-              <div className="mt-7 flex">
-                <NextProjectTile t={t} description={t("emptyStateDesc")} hasProjects={false} />
-              </div>
-            )}
             </motion.div>
+            )}
+            </>
             )}
           </div>
         </main>
@@ -247,11 +268,9 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
  * The page's one way to add a project: the form or a request to paste into an agent, side by
  * side in the card's grammar, two lines deep so a neighbouring card does not stretch.
  */
-function NextProjectTile({ t, description, hasProjects }: { t: SelectorTranslator; description?: string; hasProjects: boolean }) {
+function NextProjectTile({ t }: { t: SelectorTranslator }) {
   const copy = useCopyFeedback();
-  const copyLabel =
-    copy.state === "copied" ? t("nextSlotCopied") : copy.state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
-  const newProjectHref = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
+  const copyLabel = copyLabelFor(copy.state, t);
   // One template for body and footer, so each control stands under its sentence.
   const columns = "grid grid-cols-1 gap-x-6 gap-y-2 @md/next-slot:grid-cols-2";
   // Dashed soft border: a divider-ink one is a surface combination the ratchet refuses.
@@ -273,11 +292,6 @@ function NextProjectTile({ t, description, hasProjects }: { t: SelectorTranslato
             {t("nextSlotTitle")}
           </h2>
         </div>
-        {description ? (
-          <p className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-            {description}
-          </p>
-        ) : null}
         <div className={`mt-2.5 ${columns}`}>
           <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("nextSlotFormSub")}
@@ -291,9 +305,9 @@ function NextProjectTile({ t, description, hasProjects }: { t: SelectorTranslato
         <div className="flex min-w-0 flex-wrap items-center gap-2 @md/next-slot:grid @md/next-slot:grid-cols-2 @md/next-slot:gap-x-6">
           <div className="min-w-0">
             <Link
-              href={newProjectHref}
+              href={NEW_PROJECT_HREF}
               data-testid="project-selector-new-cta"
-              className={controlClass({ shape: "chip", size: "md", tone: hasProjects ? "secondary" : "accent" })}
+              className={controlClass({ shape: "chip", size: "md", tone: "secondary" })}
             >
               {t("ctaNewProject")}
             </Link>
@@ -312,5 +326,54 @@ function NextProjectTile({ t, description, hasProjects }: { t: SelectorTranslato
         </div>
       </div>
     </section>
+  );
+}
+
+function copyLabelFor(state: ReturnType<typeof useCopyFeedback>["state"], t: SelectorTranslator) {
+  return state === "copied" ? t("nextSlotCopied") : state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
+}
+
+/** The sentence's backticked span is what the person types, so it reads as code. */
+function withInlineCode(sentence: string) {
+  return sentence.split("`").map((part, index) => (index % 2 === 1 ? (
+    <code key={index} className="whitespace-nowrap rounded-micro bg-[color:var(--color-overlay-2)] px-1 font-mono text-[color:var(--color-text-primary)]">{part}</code>
+  ) : part));
+}
+
+/** A folder with no project yet: the card it will hold, drawn being composed, and the same two ways in as the tile. */
+function FirstProjectStage({ t }: { t: SelectorTranslator }) {
+  const copy = useCopyFeedback();
+  const copyLabel = copyLabelFor(copy.state, t);
+  return (
+    <FeatureStage
+      data-testid="project-selector-first-stage"
+      artWidth="wide"
+      art={(state) => <ProjectCardArtwork {...state} />}
+      title={t("stageTitle")}
+      body={t("stageBody")}
+      action={
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={NEW_PROJECT_HREF}
+            data-testid="project-selector-new-cta"
+            className={cn(buttonVariants({ variant: "primary", size: "lg" }), "atlas-touch-floor atlas-touch-floor-wide")}
+          >
+            <Plus size={ICON_SIZE.lg} aria-hidden />
+            {t("ctaNewProject")}
+          </Link>
+          <Button
+            size="lg"
+            variant="ghost"
+            data-testid="project-selector-next-copy"
+            onClick={() => void copy.copy(t("nextSlotPrompt"))}
+            className="max-w-full"
+          >
+            <Copy size={ICON_SIZE.lg} aria-hidden />
+            <span aria-live="polite" className="min-w-0 truncate">{copyLabel}</span>
+          </Button>
+        </div>
+      }
+      note={<p className="text-pretty">{withInlineCode(t("emptyStateDesc"))}</p>}
+    />
   );
 }

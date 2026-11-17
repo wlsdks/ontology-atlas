@@ -22,6 +22,8 @@
     "nextSlotCopyError": "复制失败：请重试",
     "nextSlotPrompt": "在这个 Ontology Atlas 文件夹中新建一个项目。先用 list_concepts 查看现有项目，再给我看一个名称，以及一句话说明这些代码是为了创造什么而存在。我批准后，用 add_concept（kind: \"project\"）创建。",
     "domainOverlapNote": "同一概念属于多个领域时，在每个领域各计一次，因此右侧数字相加可能超过上方的总数。",
+    "stageTitle": "创建第一个项目",
+    "stageBody": "项目是一篇说明这份代码为了构建什么而存在的文档。写下名称和一句话定义，文件夹中会生成文档，并在这里显示为卡片。",
     "emptyStateDesc": "在文件夹中创建一份项目文档，它就会出现在这里。在文件顶部的信息块中写入 `kind: project`。",
     "cliPlaceholderHint": "在终端中先设置一次：export ATLAS=\"你的 ontology-atlas 源码文件夹路径\"。没有 npm 包。"
   },
