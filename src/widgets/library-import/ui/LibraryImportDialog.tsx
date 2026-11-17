@@ -36,6 +36,8 @@ import {
 type LibraryImportProps = {
   open: boolean;
   onClose: () => void;
+  /** The person closed the dialog without choosing one of its actions. */
+  onDismiss?: () => void;
   setup: ConnectorSetup | null;
   onSetupSaved: () => void;
   onAddFiles: () => void;
@@ -56,6 +58,7 @@ export function LibraryImportDialog(props: LibraryImportProps) {
 function LibraryImportFlow({
   open,
   onClose,
+  onDismiss,
   setup,
   onSetupSaved,
   onAddFiles,
@@ -131,6 +134,11 @@ function LibraryImportFlow({
     reset();
     onClose();
   }, [onClose, reset]);
+
+  const dismiss = useCallback(() => {
+    close();
+    onDismiss?.();
+  }, [close, onDismiss]);
 
   const pick = useCallback(
     (next: ImportService) => {
@@ -225,7 +233,7 @@ function LibraryImportFlow({
   return (
     <Dialog
       open={open}
-      onClose={close}
+      onClose={dismiss}
       size="md"
       labelledBy={`${testIdPrefix}-title`}
       testId={`${testIdPrefix}-dialog`}
@@ -243,7 +251,7 @@ function LibraryImportFlow({
           label={t('close')}
           data-testid={`${testIdPrefix}-close`}
           className="-mr-2 -mt-1 shrink-0"
-          onClick={close}
+          onClick={dismiss}
         />
       </div>
 

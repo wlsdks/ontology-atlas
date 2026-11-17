@@ -6,9 +6,14 @@ import type { PlanningInventory } from '@/shared/lib/planning/bridge';
 import { Button, Dialog } from '@/shared/ui';
 
 const WARNING_TEXT = 'text-[color:var(--color-status-warning)]';
+const PLACEMENT_CLASS = {
+  list: 'flex-none border-t border-[color:var(--color-divider)] py-2 lg:pr-4',
+  stage: 'max-w-md text-center [&>div]:justify-center',
+} as const;
 
-/** The foot of the file list: what the last folder check covered, and the door to its limits. */
-export function PlanningReadScope({ inventory, status, checkedAt, slow, writable }: {
+/** What the last folder check covered, and the door to its limits: at the foot of the file list, or under an empty folder's stage. */
+export function PlanningReadScope({ placement, inventory, status, checkedAt, slow, writable }: {
+  placement: keyof typeof PLACEMENT_CLASS;
   inventory: PlanningInventory | null;
   status: 'idle' | 'checking' | 'ready' | 'unavailable';
   checkedAt: number | null;
@@ -28,10 +33,10 @@ export function PlanningReadScope({ inventory, status, checkedAt, slow, writable
     inventory.depth_limited && t('depthLimit'),
     inventory.unknown_remainder && t('unknownRemaining'),
   ].filter((fact): fact is string => Boolean(fact)) : [];
-  return <div data-planning-read className="flex-none space-y-1 border-t border-[color:var(--color-divider)] py-2 text-label lg:pr-4 leading-label text-[color:var(--color-text-tertiary)]">
+  return <div data-planning-read className={`space-y-1 text-label leading-label text-[color:var(--color-text-tertiary)] ${PLACEMENT_CLASS[placement]}`}>
     {inventory && <>
       <div className="flex items-center gap-2">
-        <p role="status" className="min-w-0 flex-1 text-[color:var(--color-text-secondary)]">{t('visited', { count: inventory.visited })}</p>
+        <p role="status" className={`min-w-0 text-[color:var(--color-text-secondary)] ${placement === 'list' ? 'flex-1' : ''}`}>{t('visited', { count: inventory.visited })}</p>
         <Button variant="ghost" size="sm" aria-haspopup="dialog" className="-my-1 shrink-0 px-2 max-[769px]:min-h-11" onClick={() => setOpen(true)}>{t('details')}</Button>
       </div>
       <p>{status === 'checking' ? t('checking') : checkedAt ? t('observedAt', { time: new Date(checkedAt).toLocaleString() }) : t('loading')} · {t('observationLimit')}</p>

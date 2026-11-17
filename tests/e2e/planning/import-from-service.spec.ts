@@ -43,7 +43,7 @@ test('Planning opens the service import for its own folder and the dialog names 
   await expect(dialog).not.toContainText('sources/notion');
 });
 
-test('a first Library visit through the chip shows the import dialog alone and the guide only after it closes', async ({ page }) => {
+test('closing the import opened from Planning returns there, and the Library guide waits for a later visit', async ({ page }) => {
   await openPlanningHome(page, { guideSeen: false });
 
   await page.locator('[data-planning-import]').click();
@@ -54,7 +54,12 @@ test('a first Library visit through the chip shows the import dialog alone and t
   await expect.poll(() => dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
   await dialog.getByTestId('library-import-close').click();
   await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/en\/planning\//);
+  await expect(page.locator('[data-planning-import]')).toBeVisible();
+
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'Library', exact: true }).click();
   await expect(page.getByTestId('library-guide-popover')).toBeVisible();
+  await expect(page.getByTestId('library-import-dialog')).toHaveCount(0);
 });
 
 for (const locale of ['en', 'ja'] as const) {
