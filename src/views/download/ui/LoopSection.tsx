@@ -87,13 +87,13 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
           data-gateway-scene-motion={sceneMotion}
           className="mt-9 grid min-w-0 gap-4 @min-[52rem]:grid-cols-3"
         >
-          <LoopCard scene={0} title={t('read.title')} body={t('read.body')}>
+          <LoopCard scene="read" title={t('read.title')} body={t('read.body')}>
             <ReadDrawing labelOf={labelOf} />
           </LoopCard>
-          <LoopCard scene={1} title={t('mark.title')} body={t('mark.body')}>
+          <LoopCard scene="mark" title={t('mark.title')} body={t('mark.body')}>
             <MarkDrawing labelOf={labelOf} commit={t('mark.commit', { count: LOOP_CHANGED.length })} />
           </LoopCard>
-          <LoopCard scene={2} title={t('allow.title')} body={t('allow.body')}>
+          <LoopCard scene="allow" title={t('allow.title')} body={t('allow.body')}>
             <AllowDrawing
               agent={t('allow.agent')}
               review={tPermission('ontologyWriteTitle')}
@@ -110,21 +110,23 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
   );
 }
 
-/** One scene per card, in reading order; the lit outline says whose turn it is. */
-function LoopCard({ scene, title, body, children }: { scene: number; title: string; body: string; children: ReactNode }) {
+type Scene = 'read' | 'mark' | 'allow';
+const SCENES: readonly Scene[] = ['read', 'mark', 'allow'];
+
+/**
+ * One card per turn, in reading order: the card whose turn it is lights its outline, brings its
+ * drawing from 60% to full and plays one action ending on one hit; the other two wait at 60%.
+ */
+function LoopCard({ scene, title, body, children }: { scene: Scene; title: string; body: string; children: ReactNode }) {
   return (
-    <li className={cn(CARD, 'relative')}>
-      <span
-        aria-hidden
-        className="gateway-scene-focus pointer-events-none absolute inset-0 rounded-panel"
-        style={{ '--gateway-scene-card': scene } as CSSProperties}
-      />
+    <li className={cn(CARD, 'relative')} style={{ '--gateway-scene-card': SCENES.indexOf(scene) } as CSSProperties}>
+      <span aria-hidden className="gateway-scene-focus pointer-events-none absolute inset-0 rounded-panel" />
       {/* One height for all three, so the row's text starts on one line. */}
       <div
         aria-hidden
         className="gateway-loop-drawing flex min-h-60 min-w-0 flex-col justify-center border-b border-[color:var(--color-border-soft)] px-6 py-5"
       >
-        {children}
+        <div className={cn('min-w-0', `gateway-scene-${scene}`)}>{children}</div>
       </div>
       <div className="min-w-0 p-6">
         <h3 className={CARD_TITLE}>{title}</h3>
@@ -134,27 +136,10 @@ function LoopCard({ scene, title, body, children }: { scene: number; title: stri
   );
 }
 
-type Scene = 'read' | 'mark' | 'allow';
-const SCENE_CLASS: Record<Scene, string> = {
-  read: 'gateway-scene-read',
-  mark: 'gateway-scene-mark',
-  allow: 'gateway-scene-allow',
-};
-
-function Line({
-  index,
-  scene,
-  className,
-  children,
-}: {
-  index: number;
-  scene?: Scene;
-  className?: string;
-  children: ReactNode;
-}) {
+function Line({ index, className, children }: { index: number; className?: string; children: ReactNode }) {
   return (
     <div
-      className={cn('gateway-entrance-line min-w-0', scene && SCENE_CLASS[scene], className)}
+      className={cn('gateway-entrance-line min-w-0', className)}
       style={{ '--motion-stagger-index': index } as CSSProperties}
     >
       {children}
@@ -162,10 +147,27 @@ function Line({
   );
 }
 
-function Concept({ id, label, className }: { id: string; label: string; className?: string }) {
+/** A beat: a 1px ring that grows out of the mark it sits on and fades. */
+function HitRing({ press = false }: { press?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      data-gateway-hit={press ? 'press' : undefined}
+      className={cn(
+        'gateway-scene-ring pointer-events-none absolute border border-[color:var(--color-text-primary)]',
+        press ? '-inset-3.5 rounded-chip' : '-inset-7 rounded-full',
+      )}
+    />
+  );
+}
+
+function Concept({ id, label, className, hit = false }: { id: string; label: string; className?: string; hit?: boolean }) {
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
-      <OntologyMapKindGlyph kind={kindOf(id)} size={10} />
+      <span className="relative inline-flex shrink-0">
+        <OntologyMapKindGlyph kind={kindOf(id)} size={10} />
+        {hit ? <HitRing /> : null}
+      </span>
       <span className="min-w-0">{label}</span>
     </span>
   );
@@ -178,30 +180,32 @@ function ReadDrawing({ labelOf }: { labelOf: (id: string) => string }) {
     ['depends_on', LOOP_READ.dependsOn],
   ];
   return (
-    <div className="min-w-0">
-      <Line scene="read" index={0} className={cn(MONO, 'flex items-center gap-2 text-[color:var(--color-text-primary)]')}>
+    <div className="relative min-w-0">
+      {/* The reading line passes down the answer once per turn; the concept takes the beat as it passes. */}
+      <span aria-hidden data-gateway-hit="sweep" className="gateway-scene-pointer pointer-events-none absolute inset-x-0 -top-1 bottom-0 border-t border-[color:var(--color-text-primary)]" />
+      <Line index={0} className={cn(MONO, 'flex items-center gap-2 text-[color:var(--color-text-primary)]')}>
         <SquareTerminal size={ICON_SIZE.sm} className={cn('shrink-0', QUIET)} />
         <span className="min-w-0 break-all">{LOOP_READ.tool}</span>
       </Line>
-      <Line scene="read" index={1} className={cn(MONO, 'break-all pl-5', QUIET)}>
+      <Line index={1} className={cn(MONO, 'break-all pl-5', QUIET)}>
         {LOOP_READ.slug}
       </Line>
-      <Line scene="read"
+      <Line
         index={3}
         className="mt-4 flex min-w-0 items-baseline gap-2 text-body leading-body text-[color:var(--color-text-primary)]"
       >
-        <Concept id={LOOP_READ.concept} label={labelOf(LOOP_READ.concept)} />
+        <Concept id={LOOP_READ.concept} label={labelOf(LOOP_READ.concept)} hit />
         <span className={cn('shrink-0 text-label leading-label', QUIET)}>{labelOf(LOOP_READ.domain)}</span>
       </Line>
       {rows.map(([key, ids], row) => (
-        <Line scene="read" key={key} index={4 + row} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
+        <Line key={key} index={4 + row} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
           <span className={cn('w-20 shrink-0 font-mono', QUIET)}>{key}</span>
           <span className="min-w-0 text-[color:var(--color-text-secondary)]">
             {ids.map((id) => labelOf(id)).join(' · ')}
           </span>
         </Line>
       ))}
-      <Line scene="read" index={6} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
+      <Line index={6} className="mt-1.5 flex min-w-0 items-baseline gap-3 text-label leading-label">
         <span className={cn('w-20 shrink-0 font-mono', QUIET)}>path</span>
         <span className="min-w-0 break-all font-mono text-[color:var(--color-text-secondary)]">{LOOP_READ.path}</span>
       </Line>
@@ -213,18 +217,18 @@ function ReadDrawing({ labelOf }: { labelOf: (id: string) => string }) {
 function MarkDrawing({ labelOf, commit }: { labelOf: (id: string) => string; commit: string }) {
   return (
     <div className="min-w-0">
-      <Line scene="mark" index={0} className={cn('flex items-center gap-2 text-label leading-label', QUIET)}>
+      <Line index={0} className={cn('flex items-center gap-2 text-label leading-label', QUIET)}>
         <GitCommitHorizontal size={ICON_SIZE.sm} className="shrink-0" />
         <span className="min-w-0">{commit}</span>
       </Line>
       {LOOP_CHANGED.map((row, index) => (
-        <Line scene="mark" key={row.file} index={2 + index * 2} className="mt-2.5">
+        <Line key={row.file} index={2 + index * 2} className="mt-2.5">
           <p className={cn(MONO, 'break-all text-[color:var(--color-text-secondary)]')}>{fileName(row.file)}</p>
           <p className="mt-1 flex min-w-0 items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-1 text-label leading-label text-[color:var(--color-text-primary)]">
             <Concept id={row.concept} label={labelOf(row.concept)} />
             <span className="relative ml-auto h-2 w-2 shrink-0">
-              <span className="gateway-scene-ring absolute inset-0 rounded-full border border-[color:var(--color-status-warning)]" />
               <span className="gateway-scene-dot absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
+              <HitRing />
             </span>
           </p>
         </Line>
@@ -249,10 +253,10 @@ function AllowDrawing({
 }) {
   return (
     <div className="min-w-0">
-      <Line scene="allow" index={0} className={cn('text-label leading-label', QUIET)}>
+      <Line index={0} className={cn('text-label leading-label', QUIET)}>
         {agent}
       </Line>
-      <Line scene="allow"
+      <Line
         index={2}
         className="mt-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-3.5"
       >
@@ -261,6 +265,7 @@ function AllowDrawing({
         <p className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-label leading-label">
           <span className="gateway-scene-press relative inline-flex min-h-7 items-center rounded-chip bg-[color:var(--color-indigo-accent)] px-3 text-[color:var(--color-text-on-accent)]">
             {allowOnce}
+            <HitRing press />
             {/* The person's hand: the press is theirs, never the agent's. */}
             <MousePointer2
               size={ICON_SIZE.md}
@@ -308,7 +313,10 @@ export function StartSection() {
       <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} />
 
-        {/* A path, not a row of cards: each number runs a line toward the next step. */}
+        {/*
+          One rail runs across the steps (down them on a phone): each step is a node on it, and a
+          fill travels from node to node, lighting the button that step presses.
+        */}
         <ol
           ref={steps}
           data-testid="gateway-start-steps"
@@ -317,37 +325,40 @@ export function StartSection() {
           className="mt-12 grid min-w-0 gap-x-8 gap-y-10 @min-[52rem]:grid-cols-3"
         >
           {rows.map((row, index) => (
-            <li key={row.title} className="min-w-0">
-              <Line index={index * 2} className="flex min-w-0 items-center gap-4">
+            <li
+              key={row.title}
+              data-gateway-step={index}
+              className="relative min-w-0 pl-10 @min-[52rem]:pl-0 @min-[52rem]:pt-10"
+              style={{ '--gateway-step': index } as CSSProperties}
+            >
+              <span aria-hidden className="gateway-step-track absolute">
+                <span className="gateway-step-rule absolute inset-0" />
+                <span className="gateway-step-spark absolute inset-0" />
+              </span>
+              <span aria-hidden className="gateway-step-node absolute left-0 top-0 size-3 rounded-full">
+                <span className="gateway-step-lit absolute inset-0.5 rounded-full" />
+                {/* The beat as the fill arrives: a 1px ring grows out of the node and fades. */}
                 <span
-                  aria-hidden
-                  data-token="engraved-numeral"
-                  className="text-hero-lg font-[var(--font-weight-signature)] tabular-nums tracking-[var(--tracking-display)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-                >
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                {/* A point of light runs each rule to the next step, whose button then lights. */}
-                <span aria-hidden className="gateway-step-track relative h-px min-w-0 flex-1">
-                  <span className="gateway-step-rule absolute inset-0" />
-                  <span
-                    className="gateway-step-spark absolute -top-px left-0 h-[3px] w-2/5 rounded-full"
-                    style={{ '--gateway-step': index } as CSSProperties}
-                  />
-                </span>
-              </Line>
+                  data-gateway-hit
+                  className="gateway-step-press pointer-events-none absolute -inset-7 rounded-full border border-[color:var(--color-text-primary)]"
+                />
+              </span>
               {/* The button the step presses, drawn small in the app's own word. */}
-              <Line index={index * 2 + 1} className="mt-5">
+              <Line index={index * 2}>
                 <span
                   aria-hidden
                   className="gateway-step-press relative inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
-                  style={{ '--gateway-step': index } as CSSProperties}
                 >
-                  <span className="gateway-step-lit absolute -inset-px rounded-[inherit]" />
+                  <span className="gateway-step-lit absolute -inset-px rounded-[inherit] border border-[color:var(--color-text-primary)]" />
                   <span className="relative">{row.press}</span>
                 </span>
               </Line>
-              <h3 className={cn(CARD_TITLE, 'mt-4')}>{row.title}</h3>
-              <p className={cn(CARD_BODY, 'max-w-[22rem]')}>{row.body}</p>
+              <Line index={index * 2 + 1}>
+                <h3 className={cn(CARD_TITLE, 'mt-4')}>{row.title}</h3>
+                <p className="mt-2 max-w-[24rem] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                  {row.body}
+                </p>
+              </Line>
             </li>
           ))}
         </ol>
