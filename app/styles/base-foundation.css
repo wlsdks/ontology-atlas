@@ -14,7 +14,8 @@
 }
 
 /*
- * `--gateway-origin` = max(gutter, (vw - `--page-max`) / 2); the gutter wins up to 1600 + 2xgutter.
+ * `--gateway-origin` = max(gutter, (vw - `--gateway-page-max`) / 2), the gutter growing with the
+ * window up to `--gateway-gutter` (the doc block in `tokens.css`).
  * Declared in `:root`, not `@theme`, because `@theme` tokens cannot be reassigned in media queries.
  */
 

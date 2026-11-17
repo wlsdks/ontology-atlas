@@ -101,6 +101,7 @@ export function DownloadPage() {
           windowsInstaller={windowsInstaller}
           windowsPrimary={windowsPrimary}
           winner={winner}
+          handheld={visitorPlatform === 'handheld'}
         />
         <ProofNumbers graph={graph} />
         <FilmSection graph={graph} />
@@ -117,6 +118,7 @@ export function DownloadPage() {
           windowsInstaller={windowsInstaller}
           windowsPrimary={windowsPrimary}
           fileWins={winner === 'file' && published && primaryAsset !== null}
+          handheld={visitorPlatform === 'handheld'}
         />
 
         <div
@@ -175,12 +177,14 @@ function HeroSection({
   windowsInstaller,
   windowsPrimary: heroWindowsPrimary,
   winner,
+  handheld,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
   windowsInstaller: ReturnType<typeof windowsAsset>;
   windowsPrimary: boolean;
   winner: 'file' | 'web';
+  handheld: boolean;
 }) {
   const fileWins = winner === 'file' && published && primaryAsset !== null;
   const t = useTranslations('download');
@@ -212,8 +216,9 @@ function HeroSection({
     >
       <div aria-hidden className="gateway-hero-stars" />
       {/*
-        One column on a narrow window: Moru, the claim, the app. From 80rem the claim takes the left
-        and the app the right, where Moru walks along the window's top edge (`.gateway-hero-grid`).
+        One column on a narrow window: Moru beside the chips, the claim, the app. From 80rem the
+        claim takes the left and the app the right, where Moru walks along the window's top edge
+        (`.gateway-hero-grid`).
       */}
       <div className={cn(PAGE_COLUMN, 'gateway-hero-grid relative min-w-0')}>
         <div className={cn(rise('gateway-t240'), 'gateway-hero-moru flex justify-center')}>
@@ -229,9 +234,9 @@ function HeroSection({
           />
         </div>
 
-        {/* The container sizes the headline against this column, one line per sentence. */}
-        <div className="gateway-hero-text @container relative z-[1] flex min-w-0 flex-col items-center text-center min-[80rem]:items-start min-[80rem]:text-left">
-          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap justify-center gap-2 min-[80rem]:justify-start')}>
+        {/* From 80rem a container, so the headline is sized against this column, one line per sentence. */}
+        <div className="gateway-hero-text relative z-[1] min-w-0 text-center min-[80rem]:text-left">
+          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap gap-2')}>
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
@@ -265,9 +270,10 @@ function HeroSection({
             <HeroTypewriter start={heroIn} lines={heroLines} />
           </h1>
 
+          {/* 48rem holds the three controls on one row in every language (English 755px) from 1040. */}
           <div
             data-hero-text
-            className="mt-7 flex min-w-0 max-w-[45rem] flex-col items-center min-[80rem]:items-start"
+            className="mt-7 flex min-w-0 max-w-[48rem] flex-col items-center min-[80rem]:items-start"
           >
             <p
               className={cn(
@@ -292,6 +298,7 @@ function HeroSection({
               testId="gateway-hero-trust"
               className={cn(rise('gateway-t400'), 'mt-5')}
               windowsPrimary={heroWindowsPrimary}
+              handheld={handheld}
             />
 
             {/* Secondary to the download: a tiny Moru says who it is and opens its game. */}
@@ -353,6 +360,8 @@ function DownloadActions({
 }) {
   const t = useTranslations('download');
   const id = TEST_IDS[scope];
+  /** The hero's 26rem column holds both outlined controls on one row at the compact padding. */
+  const outlinedPad = cn('px-4 sm:px-6', scope === 'hero' && 'min-[80rem]:px-4');
 
   const macLink = primaryAsset ? (
     <a
@@ -360,7 +369,7 @@ function DownloadActions({
       data-testid={windowsPrimary ? id.mac : id.cta}
       className={cn(
         buttonVariants(windowsPrimary ? { variant: 'outline', size: 'lg' } : { size: 'lg' }),
-        windowsPrimary && 'px-4 sm:px-6',
+        windowsPrimary && outlinedPad,
         HERO_CTA_WRAP,
       )}
     >
@@ -376,7 +385,7 @@ function DownloadActions({
       data-testid={windowsPrimary ? id.cta : id.windows}
       className={cn(
         buttonVariants(windowsPrimary ? { size: 'lg' } : { variant: 'outline', size: 'lg' }),
-        !windowsPrimary && 'px-4 sm:px-6',
+        !windowsPrimary && outlinedPad,
         HERO_CTA_WRAP,
       )}
     >
@@ -420,7 +429,7 @@ function DownloadActions({
           data-testid="gateway-hero-web-cta"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'lg' }),
-            'px-4 sm:px-6',
+            outlinedPad,
             HERO_CTA_WRAP,
           )}
         >
@@ -431,14 +440,17 @@ function DownloadActions({
   );
 }
 
+/** A phone is offered the browser map, so its line names that, not the installer's malware check. */
 function TrustLine({
   testId,
   className,
   windowsPrimary,
+  handheld,
 }: {
   testId: string;
   className?: string;
   windowsPrimary: boolean;
+  handheld: boolean;
 }) {
   const t = useTranslations('download');
   return (
@@ -446,7 +458,7 @@ function TrustLine({
       data-testid={testId}
       className={cn('break-keep text-body leading-body text-[color:var(--color-text-tertiary)]', className)}
     >
-      {windowsPrimary ? t('trustLineWindows') : t('trustLine')}
+      {handheld ? t('trustLineHandheld') : windowsPrimary ? t('trustLineWindows') : t('trustLine')}
     </p>
   );
 }
@@ -458,6 +470,7 @@ function ClosingSection({
   windowsInstaller,
   windowsPrimary,
   fileWins,
+  handheld,
 }: {
   graph: StageGraph;
   published: boolean;
@@ -465,6 +478,7 @@ function ClosingSection({
   windowsInstaller: ReturnType<typeof windowsAsset>;
   windowsPrimary: boolean;
   fileWins: boolean;
+  handheld: boolean;
 }) {
   const t = useTranslations('download');
   return (
@@ -498,6 +512,7 @@ function ClosingSection({
               testId="gateway-closing-trust"
               className="mt-5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               windowsPrimary={windowsPrimary}
+              handheld={handheld}
             />
             <FactsStrip
               scope="gateway-closing"
@@ -681,7 +696,7 @@ function FactsStrip({
 }
 
 const FACT_LABEL =
-  'font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)]';
+  'font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)]';
 
 const FACT_VALUE = 'mt-1 text-body leading-body';
 

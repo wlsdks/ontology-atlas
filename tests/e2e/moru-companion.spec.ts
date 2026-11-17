@@ -153,7 +153,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     const link = page.getByTestId('gateway-hero-source');
     await expect(link).toHaveAttribute('href', 'https://github.com/wlsdks/ontology-atlas');
     await expect(page.getByRole('button', { name: 'Pet Moru' })).toBeVisible();
-    // The link overlaps the empty rows of Moru's cell on a narrow window, so every point is asked.
+    // Moru's cell stands beside the link on a narrow window and its empty rows reach toward it, so every point is asked.
     const misses = await link.evaluate(element => {
       const box = element.getBoundingClientRect();
       const missed: string[] = [];

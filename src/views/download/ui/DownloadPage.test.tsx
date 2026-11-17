@@ -308,6 +308,23 @@ describe('DownloadPage', () => {
         delete (navigator as { userAgent?: string }).userAgent;
       }
     });
+
+    it('tells a phone, which is offered the browser map, that there is nothing to install', () => {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+        configurable: true,
+      });
+      try {
+        renderDownloadPage();
+
+        expect(screen.getByTestId('gateway-hero-cta')).toHaveAttribute('href', '/topology');
+        expect(screen.getByTestId('gateway-hero-trust')).toHaveTextContent(enMessages.download.trustLineHandheld);
+        expect(screen.getByTestId('gateway-closing-trust')).toHaveTextContent(enMessages.download.trustLineHandheld);
+        expect(screen.queryByText(/Checked by Apple/i)).not.toBeInTheDocument();
+      } finally {
+        delete (navigator as { userAgent?: string }).userAgent;
+      }
+    });
   });
 
 

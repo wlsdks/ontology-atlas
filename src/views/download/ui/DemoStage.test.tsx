@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import messages from '../../../../messages/en.json';
@@ -11,8 +11,8 @@ import {
 } from '../model/demo-clips';
 
 /** Playback properties only; length and framing are checked against footage by `/motion-verify`. */
-const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="en" messages={messages}>
+const wrap = (ui: React.ReactNode, locale = 'en') => (
+  <NextIntlClientProvider locale={locale} messages={messages}>
     {ui}
   </NextIntlClientProvider>
 );
@@ -82,8 +82,14 @@ describe('DemoStage', () => {
     expect(screen.queryByTestId('demo-caption-atlas-tour')).toBeNull();
   });
 
+  /** The route's locale, so the prerendered HTML of each page names its own poster. */
+  it('names the poster of the page locale on the first render', () => {
+    render(wrap(<DemoStage available={['atlas-tour']} />, 'ko'));
+    expect(screen.getByTestId('demo-video-atlas-tour').getAttribute('poster')).toContain('.ko-poster');
+  });
+
   /** Asserts the observed element is the one in the document, not the effect's dependency list. */
-  it('observes the new video when a late locale remounts it', () => {
+  it('observes the new video when a locale change remounts it', () => {
     const observed: Element[] = [];
     const disconnect = vi.fn();
     vi.stubGlobal(
@@ -98,15 +104,11 @@ describe('DemoStage', () => {
       },
     );
 
-    document.documentElement.lang = 'en';
     const { rerender } = render(wrap(<DemoStage available={['atlas-tour']} />));
     const first = screen.getByTestId('demo-video-atlas-tour');
     expect(observed.at(-1), 'the first render did not observe the video, so this test is vacuous').toBe(first);
 
-    act(() => {
-      document.documentElement.lang = 'ko';
-    });
-    rerender(wrap(<DemoStage available={['atlas-tour']} />));
+    rerender(wrap(<DemoStage available={['atlas-tour']} />, 'ko'));
 
     const second = screen.getByTestId('demo-video-atlas-tour');
     expect(second, 'the key did not change, so no remount happened and this test is vacuous').not.toBe(first);
