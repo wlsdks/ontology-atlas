@@ -273,6 +273,9 @@ export function AppSettingsMenu({
           return;
         }
         if (event.key !== 'Escape' || !open) return;
+        // A pane's own dialog portals into this tree; its Escape closes that dialog, not the sheet.
+        const modal = event.target instanceof Element ? event.target.closest('[aria-modal="true"]') : null;
+        if (modal && modal !== panelRef.current) return;
         event.preventDefault();
         event.stopPropagation();
         closePanel();
