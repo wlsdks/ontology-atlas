@@ -38,6 +38,8 @@ import { planningAddSummary } from '../model/add-summary';
 const ICON_ONLY_BELOW_XL = `${CHROME_CHIP_COMPACT_BELOW_XL} max-xl:[&_[data-chip-label]]:hidden`;
 
 const QUIET_TEXT = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
+/** The title field of an empty home folder's stage. */
+const FIRST_TITLE = '[data-planning-first-title]';
 
 type HomeProbe = { root: FileSystemDirectoryHandle; directory: FileSystemDirectoryHandle | null };
 /** `original` is null when the editor reopened kept text over a file it could not read back. */
@@ -114,6 +116,13 @@ export function PlanningPage() {
   const activeSelection = selection?.kind === 'home' && selection.root !== vaultRoot ? null : selection;
   const homeState = !vaultRoot || home?.root !== vaultRoot ? 'unknown' as const : home.directory ? 'present' as const : 'absent' as const;
   const arrival = planningArrival({ selection: activeSelection?.kind ?? null, nativeAvailable: available, vault: vaultState, home: homeState });
+  const workbench = arrival === 'workbench' && activeSelection !== null ? activeSelection : null;
+  const isHome = workbench?.kind === 'home';
+  const emptyHome = isHome && inventory !== null && inventory.files.length === 0 && status !== 'unavailable';
+  // The home folder's first answer decides between its stage and the panes, so neither is drawn before it.
+  const homePending = isHome && inventory === null && status !== 'unavailable';
+  const firstDocumentStage = emptyHome && editing === null;
+  const panes = workbench !== null && !homePending && !firstDocumentStage;
 
   useEffect(() => { editingRef.current = editing !== null; }, [editing]);
   useEffect(() => {
@@ -264,7 +273,7 @@ export function PlanningPage() {
       const target = !fileFailed && !fileChanged && memory.returnFocus
         ? document.querySelector<HTMLButtonElement>(`[data-return-focus="${memory.returnFocus}"]`)
         : fileList.current?.querySelector<HTMLButtonElement>('[aria-current="true"]');
-      (target ?? fileList.current?.querySelector<HTMLButtonElement>('button') ?? document.querySelector<HTMLButtonElement>('[data-planning-empty-new]') ?? document.querySelector<HTMLButtonElement>('[data-planning-focus-fallback]'))?.focus();
+      (target ?? fileList.current?.querySelector<HTMLButtonElement>('button') ?? document.querySelector<HTMLInputElement>(FIRST_TITLE) ?? document.querySelector<HTMLButtonElement>('[data-planning-focus-fallback]'))?.focus();
       restoreFocus.current = false;
       writePlanningMemory({ ...memory, returnFocus: null });
     }
@@ -295,7 +304,7 @@ export function PlanningPage() {
     node.addEventListener('pointerdown', cancel);
     node.addEventListener('keydown', cancel);
     return () => { node.removeEventListener('wheel', cancel); node.removeEventListener('touchstart', cancel); node.removeEventListener('pointerdown', cancel); node.removeEventListener('keydown', cancel); };
-  }, [activeSelection, readable]);
+  }, [activeSelection, readable, panes]);
   const readImage = useCallback((path: string) => activeSelection ? planningSourceFor(activeSelection).readFile(path) : Promise.reject(new Error('no-selection')), [activeSelection]);
   const unsaved = editing !== null && editing.text !== editing.original;
   useEffect(() => { unsavedRef.current = unsaved; }, [unsaved]);
@@ -352,6 +361,7 @@ export function PlanningPage() {
     void refresh(activeSelection, path);
   };
   const startDraft = (event: MouseEvent<HTMLElement>) => {
+    if (!panes) { document.querySelector<HTMLInputElement>(FIRST_TITLE)?.focus(); return; }
     const opener = event.currentTarget;
     leaveEditor(() => { draftOpener.current = opener; setDraftFailed(false); setDrafting(true); setShowsDocumentBelowLg(false); });
   };
@@ -448,14 +458,14 @@ export function PlanningPage() {
     setShowsDocumentBelowLg(false);
     requestAnimationFrame(() => fileList.current?.querySelector<HTMLButtonElement>('[aria-current="true"]')?.focus());
   };
-  const workbench = arrival === 'workbench' && activeSelection !== null ? activeSelection : null;
-  const isHome = workbench?.kind === 'home';
   const canAddFiles = workbench?.kind === 'home' && planningAddAvailable(getTauriVaultRootPath(workbench.root) ?? null);
-  const emptyHome = isHome && inventory !== null && inventory.files.length === 0 && status !== 'unavailable';
+  const readScope = (placement: 'list' | 'stage') => <PlanningReadScope placement={placement} inventory={inventory} status={status} checkedAt={checkedAt} slow={status === 'checking' && slowId === checkingId} writable={isHome} />;
+  // Pressing Create keeps its stage, button disabled, until the new folder's first scan answers.
+  const holdsCreateStage = arrival === 'create-home' || (homePending && enteredFromStage);
   const editingShown = editing !== null && editing.path === selected ? editing : null;
   const shownMarkdown = isHome && selected !== null && isPlanningMarkdown(selected) && content !== null && !fileChanged && !fileFailed && !editingShown;
   const editable = shownMarkdown && editableText !== null;
-  return <main data-planning-surface className={workbench ? 'flex h-full min-h-0 flex-col overflow-hidden' : 'flex min-h-full flex-col'}>
+  return <main data-planning-surface className={panes ? 'flex h-full min-h-0 flex-col overflow-hidden' : 'flex min-h-full flex-col'}>
     <span role="alert" data-planning-folder-alert className="sr-only">{folderNotice === 'failure' ? t('folderUnavailable') : ''}</span>
     <span role="status" data-planning-folder-recovery className="sr-only">{folderNotice === 'recovered' ? t('folderRecovered') : ''}</span>
     <PageHeaderBar
@@ -471,14 +481,20 @@ export function PlanningPage() {
         {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)} aria-label={t('chooseFolder')} title={t('chooseFolder')} className={ICON_ONLY_BELOW_XL}>{t('chooseFolder')}</ChromeChip>}
       </> : undefined}
     />
-    {!workbench ? <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}>
+    {!panes ? <div className={`relative ${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}>
       {arrival === 'unsupported' ? <PlanningFolderStage door={{ kind: 'unsupported', offersApp: !isDesktopShell() }} />
         : arrival === 'picker' ? <PlanningFolderStage door={{ kind: 'choose', onChoose: () => void choose(true), unavailable: status === 'unavailable' }} />
-        : arrival === 'create-home' && vaultRoot ? <PlanningFolderStage door={{ kind: 'create', folder: vaultRoot.name, onCreate: () => void openHome(true), onChoose: available ? () => void choose(true) : null, failed: createFailed, creating: creatingHome }} />
+        : holdsCreateStage && vaultRoot ? <PlanningFolderStage door={{ kind: 'create', folder: vaultRoot.name, onCreate: () => void openHome(true), onChoose: available ? () => void choose(true) : null, failed: createFailed, creating: creatingHome || homePending }} />
+        : firstDocumentStage && workbench?.kind === 'home' ? <PlanningFolderStage door={{
+          kind: 'first-document', folder: workbench.root.name, creating: creatingDocument, failed: draftFailed, onCreate: (title) => void createDocument(title),
+          onAddFiles: canAddFiles ? () => void addFiles() : null, adding, onImport: isAcpBridgeAvailable() ? importFromService : null,
+          readScope: inventory && inventory.visited > 0 ? readScope('stage') : null,
+        }} />
+        : homePending ? <WaitStage title={t('loading')} delayed data-planning-loading />
         : <p role="status">{t('checkingSupport')}</p>}
     </div> : <motion.div
       data-planning-workbench
-      initial={enteredFromStage ? { opacity: 0 } : false}
+      initial={enteredFromStage || isHome ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       transition={reducedMotion ? MOTION.fast : MOTION.base}
       className={`relative grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] ${PAGE_HEADER_FRAMES.page}`}
@@ -489,7 +505,7 @@ export function PlanningPage() {
           emptyMessage={inventory && files.length === 0 && !(emptyHome && !search) ? t(search ? 'noMatches' : 'empty') : null}
           draft={<AnimatePresence initial={false}>{isHome && drafting && <PlanningDraftRow key="draft" busy={creatingDocument} failed={draftFailed} onSubmit={(title) => leaveEditor(() => void createDocument(title))} onCancel={cancelDraft} />}</AnimatePresence>}
         />
-        <PlanningReadScope inventory={inventory} status={status} checkedAt={checkedAt} slow={status === 'checking' && slowId === checkingId} writable={isHome} />
+        {readScope('list')}
       </section>
       <section data-planning-document className={`flex min-h-0 min-w-0 flex-col ${showsDocumentBelowLg ? '' : 'max-lg:hidden'}`}>
         {selected && <div data-planning-document-head className="flex min-h-12 flex-none flex-wrap items-center gap-x-3 gap-y-1 border-b border-[color:var(--color-divider)] py-1.5 lg:pl-6">
@@ -506,9 +522,7 @@ export function PlanningPage() {
         <div ref={reader} data-planning-reader onScroll={(event) => { if (pendingScroll.current === null) writePlanningMemory({ ...readPlanningMemory(), scroll: event.currentTarget.scrollTop }); }} className="min-h-0 flex-1 overflow-y-auto py-6 lg:px-10 lg:py-8">
           {editingShown ? <PlanningEditor labelledBy={pathId} text={editingShown.text} notice={editingShown.notice} saving={saving} onChange={(text) => changeEditorText(editingShown, text)} onSave={() => void save()} onCancel={() => leaveEditor(focusEdit)} />
             : !inventory ? null
-            : !selected ? emptyHome
-              ? <div data-planning-empty-home className="flex h-full flex-col items-center justify-center gap-4 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><p>{t('emptyHome')}</p><div className="flex flex-col items-center gap-2"><Button data-planning-empty-new onClick={startDraft}><FilePlus size={ICON_SIZE.sm} aria-hidden />{t('newDocument')}</Button>{canAddFiles && <Button variant="ghost" data-planning-empty-add disabled={adding} onClick={() => void addFiles()}><FileUp size={ICON_SIZE.sm} aria-hidden />{t('addFiles')}</Button>}</div></div>
-              : <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><FileText size={ICON_SIZE.lg} aria-hidden /><p>{t('selectFile')}</p></div>
+            : !selected ? <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><FileText size={ICON_SIZE.lg} aria-hidden /><p>{t('selectFile')}</p></div>
             : fileChanged ? <p role="alert" className="mx-auto max-w-[var(--measure-doc-column)] text-body leading-body text-[color:var(--color-text-primary)]">{t('fileChanged')}</p>
             : fileFailed ? <p role="alert" className="mx-auto max-w-[var(--measure-doc-column)] text-body leading-body text-[color:var(--color-text-primary)]">{t('fileUnavailable')}</p>
             : isPlanningMarkdown(selected) ? content !== null && <div className="mx-auto max-w-[var(--measure-doc-column)]"><PlanningMarkdown key={selected} document={selected} text={content} readImage={readImage} observation={observation} imageUnavailable={t('imageUnavailable')} unsupported={t('unsupported')} imageLimit={t('imageLimit')} /></div>

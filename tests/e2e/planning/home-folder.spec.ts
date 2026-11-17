@@ -72,29 +72,28 @@ async function stubFilePicker(page: Page, files: { name: string; bytes: number[]
   }, files);
 }
 
-async function createDocument(page: Page, title: string) {
-  await page.locator('[data-planning-empty-new], [data-planning-new]').first().click();
-  const field = page.getByRole('textbox', { name: planning.documentTitle });
-  await expect(field).toBeFocused();
-  await field.fill(title);
-  await field.press('Enter');
-  await expect(page.locator('[data-planning-editor] textarea')).toBeFocused();
-}
+const EMPTY_HOME = '[data-planning-state="empty-home"]';
 
-test('a planning folder made inside the open folder takes a new document and keeps it across visits', async ({ page }) => {
+test('creating the planning folder turns the same stage into a title field that writes the first document', async ({ page }) => {
   await openVault(page);
   await goTo(page, 'Planning');
   const stage = page.locator('[data-planning-state="no-home"]');
   await expect(stage).toBeVisible();
   await expect(stage.getByRole('button').first()).toHaveAccessibleName(planning.createHome);
   await expect(stage.getByRole('button', { name: planning.chooseAnother }), 'the web cannot pick a folder outside the open one').toHaveCount(0);
+  await page.locator('[data-feature-stage-art]').evaluate((node) => { (window as unknown as { stageArt: Element }).stageArt = node; });
   await stage.getByRole('button', { name: planning.createHome }).click();
 
-  await expect(page.getByText(planning.emptyHome)).toBeVisible();
-  await expect(page.getByText(planning.empty)).toHaveCount(0);
-  await createDocument(page, 'Checkout redesign');
+  const title = page.locator(EMPTY_HOME).getByRole('textbox', { name: planning.documentTitle });
+  await expect(title).toBeFocused();
+  expect(await page.locator('[data-feature-stage-art]').evaluate((node) => node === (window as unknown as { stageArt: Element }).stageArt && node.isConnected), 'the artwork drawn before the press is still the one on screen').toBe(true);
+  await expect(page.locator('[data-planning-workbench]')).toHaveCount(0);
+  await page.keyboard.type('Checkout redesign');
+  await page.keyboard.press('Enter');
   const editor = page.locator('[data-planning-editor] textarea');
+  await expect(editor).toBeFocused();
   await expect(editor).toHaveValue('# Checkout redesign\n\n');
+  expect(await onDisk(page, 'planning/Checkout-redesign.md')).toBe('# Checkout redesign\n\n');
   await page.keyboard.type('Customers pay in one step.');
   await page.evaluate(() => {
     const seen: string[] = [];
@@ -122,6 +121,32 @@ test('a planning folder made inside the open folder takes a new document and kee
   await expect(page.getByRole('button', { name: 'Checkout-redesign.md' })).toHaveAttribute('aria-current', 'true');
   await expect(reader.getByText('Customers pay in one step.')).toBeVisible();
   await expect(page.locator('[data-testid="planning-stage"]')).toHaveCount(0);
+});
+
+test('an empty planning folder reached from the rail leaves focus alone until New document asks for a title', async ({ page }) => {
+  await openVault(page);
+  await goTo(page, 'Planning');
+  await page.getByRole('button', { name: planning.createHome }).click();
+  await expect(page.locator(EMPTY_HOME)).toBeVisible();
+  await goTo(page, 'Library');
+  await expect(page.getByTestId('library-page')).toBeVisible();
+  await goTo(page, 'Planning');
+
+  const title = page.locator(EMPTY_HOME).getByRole('textbox', { name: planning.documentTitle });
+  await expect(title).toBeVisible();
+  await expect(title).not.toBeFocused();
+  await page.getByRole('button', { name: planning.newDocument, exact: true }).click();
+  await expect(title).toBeFocused();
+  await expect(page.locator('[data-planning-draft]')).toHaveCount(0);
+});
+
+test('a planning folder holding only an unsupported file shows the stage and what the check read', async ({ page }) => {
+  await openVault(page, { ...VAULT, 'planning/notes.txt': 'plain text' });
+  await goTo(page, 'Planning');
+  const stage = page.locator(EMPTY_HOME);
+  await expect(stage.getByRole('textbox', { name: planning.documentTitle })).toBeVisible();
+  await stage.getByRole('button', { name: planning.details }).click();
+  await expect(page.getByTestId('planning-read-scope')).toContainText(planning.omitted.replace('{count}', '1'));
 });
 
 test('unsaved editor text survives a visit to another screen and saves afterwards', async ({ page }) => {
@@ -168,15 +193,15 @@ test('a planning folder removed from disk returns to the offer to create it, not
   await openVault(page);
   await goTo(page, 'Planning');
   await page.getByRole('button', { name: planning.createHome }).click();
-  await expect(page.getByText(planning.emptyHome)).toBeVisible();
+  await expect(page.locator(EMPTY_HOME)).toBeVisible();
   await onDisk(page, 'planning', { remove: true });
   await page.getByRole('button', { name: planning.refresh }).click();
   await expect(page.getByRole('button', { name: planning.createHome })).toBeVisible();
-  await expect(page.getByText(planning.emptyHome)).toHaveCount(0);
+  await expect(page.locator(EMPTY_HOME)).toHaveCount(0);
   await expect(page.locator('[data-planning-workbench]')).toHaveCount(0);
 
   await page.getByRole('button', { name: planning.createHome }).click();
-  await expect(page.getByText(planning.emptyHome)).toBeVisible();
+  await expect(page.locator(EMPTY_HOME)).toBeVisible();
 });
 
 test('a new document title is dropped with Escape and focus returns to New document', async ({ page }) => {
