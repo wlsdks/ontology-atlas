@@ -68,6 +68,14 @@
   "createDocumentFailed": "无法新建这个文档。请确认规划文件夹可以写入。",
   "browserUnavailable": "打开本体文件夹后，即可在其中新建规划文件夹。选择其他文件夹来阅读仅在 macOS 应用中可用。",
   "notEditable": "这个文件不是 UTF-8 编码，无法在这里编辑。",
+  "addFiles": "添加文件",
+  "addFilesAdded": "已将 {count, number} 个文件添加到规划文件夹。",
+  "addFilesLeftBoth": "已存在的 {duplicates, number} 个和格式不受支持的 {unsupported, number} 个未添加。",
+  "addFilesLeftDuplicates": "已存在的 {duplicates, number} 个未添加。",
+  "addFilesLeftUnsupported": "格式不受支持的 {unsupported, number} 个未添加。",
+  "addFilesPartFailed": "有 {failed, number} 个文件无法添加。请确认规划文件夹可以写入。",
+  "addFilesNothing": "没有添加任何文件。只能添加 Markdown 和图片（png、jpg、webp、avif）。",
+  "addFilesFailed": "无法添加这些文件。请确认规划文件夹可以写入。",
   "scene": {
     "documentHeading": "需求"
   }

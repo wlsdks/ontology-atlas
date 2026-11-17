@@ -5,7 +5,7 @@ import { planningDocumentFileName } from './document-name';
 export const PLANNING_HOME_FOLDER = 'planning';
 
 /*
- * Mirrors `src-tauri/src/planning/scan.rs` and `confined.rs`, except that a Markdown name is never
+ * Mirrors `src-tauri/src/planning/scan.rs` and `names.rs`, except that a Markdown name is never
  * refused for secret-looking words: the vault session already reads every Markdown file here.
  */
 const MAX_DEPTH = 12;
@@ -13,7 +13,9 @@ const MAX_ENTRIES = 10_000;
 const MAX_READ_BYTES = 16 * 1024 * 1024;
 const DENIED_NAME_PARTS = ['credential', 'secret', 'password', 'passwd', 'token', 'apikey', 'api-key', 'api_key', 'id_rsa', 'id_ed25519', 'id_dsa', 'id_ecdsa', '.env', '.pem', '.key', '.p12', '.pfx', '.keystore', '.jks', '.htpasswd'];
 const PRUNED_DIRECTORIES = new Set(['node_modules', 'target', 'dist', 'build', 'out', 'coverage', 'vendor', 'Pods', 'DerivedData', '__pycache__', 'venv']);
-const SUPPORTED_FILE = /\.(md|png|jpe?g|webp|avif)$/i;
+/** The image types the home folder lists beside Markdown (`.md`). */
+export const PLANNING_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.avif'] as const;
+const SUPPORTED_FILE = new RegExp(`(\\.md|${PLANNING_IMAGE_EXTENSIONS.map((extension) => `\\${extension}`).join('|')})$`, 'i');
 const MARKDOWN_FILE = /\.md$/i;
 const IDENTITY_HEX_LENGTH = 32;
 
@@ -65,6 +67,17 @@ export async function scanPlanningHome(directory: FileSystemDirectoryHandle): Pr
   inventory.unknown_remainder = inventory.partial;
   inventory.skipped = inventory.omitted.excluded + inventory.omitted.linked + inventory.omitted.symlink + inventory.omitted.unsupported;
   return inventory;
+}
+
+/**
+ * The name a picked file takes at the top of the home folder, or null when the home scan would
+ * not list it. Leading dots are dropped and separators refused, as the native import does.
+ */
+export function planningHomeFileName(pickedName: string): string | null {
+  const trimmed = pickedName.trim();
+  if (/[/\\\0]/.test(trimmed)) return null;
+  const name = trimmed.replace(/^\.+/, '');
+  return name && !skippedEverywhere(name) && SUPPORTED_FILE.test(name) && !deniedImageName(name) ? name : null;
 }
 
 function pathParts(path: string): string[] {
