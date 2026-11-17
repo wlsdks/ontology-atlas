@@ -36,7 +36,7 @@ import {
 type LibraryImportProps = {
   open: boolean;
   onClose: () => void;
-  /** The person closed the dialog without choosing one of its actions. */
+  /** The person closed the dialog without choosing one of its actions; runs once it has left the screen. */
   onDismiss?: () => void;
   setup: ConnectorSetup | null;
   onSetupSaved: () => void;
@@ -135,18 +135,25 @@ function LibraryImportFlow({
     onClose();
   }, [onClose, reset]);
 
-  const dismiss = useCallback(() => {
+  // A close that leads to another screen goes there once the dialog has left this one.
+  const afterExit = useRef<(() => void) | null>(null);
+  const closeThen = useCallback((leave: (() => void) | undefined) => {
+    afterExit.current = leave ?? null;
     close();
-    onDismiss?.();
-  }, [close, onDismiss]);
+  }, [close]);
+  const dismiss = useCallback(() => closeThen(onDismiss), [closeThen, onDismiss]);
+  const leaveAfterExit = useCallback(() => {
+    const leave = afterExit.current;
+    afterExit.current = null;
+    leave?.();
+  }, []);
 
   const pick = useCallback(
     (next: ImportService) => {
       if (next.connect === 'manual') {
         // The escape hatch is the other door. Closing first means two blocking surfaces never stand
         // at once, which `.claude/rules/design.md` forbids.
-        close();
-        onOpenAdvanced();
+        closeThen(onOpenAdvanced);
         return;
       }
       setToken('');
@@ -156,7 +163,7 @@ function LibraryImportFlow({
       setFailed(null);
 
     },
-    [close, onOpenAdvanced],
+    [closeThen, onOpenAdvanced],
   );
 
   useEffect(() => {
@@ -237,6 +244,7 @@ function LibraryImportFlow({
       size="md"
       labelledBy={`${testIdPrefix}-title`}
       testId={`${testIdPrefix}-dialog`}
+      onExited={leaveAfterExit}
       className="max-h-[min(80vh,var(--dialog-max-h))] overflow-y-auto"
     >
       {/* Close is the corner control, as on every other dialog; Escape and the scrim do the same. */}
@@ -414,7 +422,7 @@ function LibraryImportFlow({
           {checking || pending ? <p ref={saveStatus} tabIndex={-1} role="status" aria-live="polite" data-testid={`${testIdPrefix}-pending`} className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t(checking ? 'checkingSetup' : 'savePendingBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p> : null}
           {inspection?.existing && !inspection.hasSecret && !failed && !pending ? <p className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('resumeSetupBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p> : null}
           {failed === 'setupRuntimeUnavailable' && destination === 'sources' ? <Button className="atlas-touch-floor mt-2" onClick={() => { close(); onAddFiles(); }}>{t('addFiles')}</Button> : null}
-          {failed || inspection?.existing ? <Button variant="ghost" className="atlas-touch-floor mt-2" onClick={() => { close(); onOpenAdvanced(); }}>{t('inspectSetup')}</Button> : null}
+          {failed || inspection?.existing ? <Button variant="ghost" className="atlas-touch-floor mt-2" onClick={() => closeThen(onOpenAdvanced)}>{t('inspectSetup')}</Button> : null}
           </>}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             <Button variant="ghost" className="atlas-touch-floor" onClick={back}>

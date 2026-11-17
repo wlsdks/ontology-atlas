@@ -38,7 +38,7 @@ export function guideCanonicalPath(page: GuidePage): string {
 /**
  * Which chapter to draw and whether it is the one requested. Static export cannot route real 404s,
  * so an unknown segment falls back to chapter one with `matched: false`, and
- * `app/[locale]/guide/[segment]/page.tsx` shows a substitution banner instead of misdelivering.
+ * `app/(gateway)/[locale]/guide/[segment]/page.tsx` shows a substitution banner instead of misdelivering.
  */
 export interface GuidePageResolution {
   /** The chapter actually drawn. The first chapter when the request does not exist. */

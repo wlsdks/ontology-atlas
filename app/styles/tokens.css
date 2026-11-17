@@ -265,7 +265,9 @@
   --color-backdrop-medium: rgba(8, 9, 10, 0.6);
 
   /* Font family */
-  --font-sans: var(--font-pretendard), system-ui, sans-serif;
+  /* Latin, digits and symbols from Pretendard's small subsets first; the whole file behind them
+     is fetched only for a character none of them carries, such as Hangul (`fonts.ts`). */
+  --font-sans: var(--font-pretendard-latin), var(--font-pretendard), system-ui, sans-serif;
   /* JetBrains Mono carries no Hangul, so before Pretendard was listed here every
      Korean string set in `font-mono` fell through to the system monospace face —
      which renders Hangul full-width and substitutes fullwidth punctuation. On the
@@ -274,7 +276,7 @@
      digits still resolve to JetBrains first, so slugs, paths and tabular numerals
      are unchanged; only Hangul now lands on the Korean face the rest of the app
      already uses. Guard: tests/contract/typography/mono-hangul-fallback.contract.test.ts */
-  --font-mono: var(--font-jetbrains), var(--font-pretendard), ui-monospace, monospace;
+  --font-mono: var(--font-jetbrains), var(--font-pretendard-latin), var(--font-pretendard), ui-monospace, monospace;
 
   /* Linear proprietary — 510 weight (between regular and medium) */
   --font-weight-signature: 510;

@@ -1,7 +1,7 @@
 /*
  * Japanese and Chinese typography. Zero font bytes: kana, Han and CJK punctuation come from the
- * OS face, so every glyph of a word is one family, and `--font-pretendard-latin` (the same
- * Pretendard file limited to Latin, digits and symbols by `unicode-range`) draws the rest.
+ * OS face, so every glyph of a word is one family, and `--font-pretendard-latin` (Pretendard's
+ * Latin, digit and symbol subsets, each limited to that range by `unicode-range`) draws the rest.
  * Outside every layer so no utility layer wins it back.
  */
 :root:lang(ja) {
@@ -38,4 +38,14 @@
 
 :root:is(:lang(ja), :lang(zh)) :is(.break-keep, [class*="break-keep"], [class*="word-break:keep-all"]) {
   word-break: normal;
+}
+
+/*
+ * Korean pages draw from the whole Pretendard file, as before the Latin subsets: every Korean
+ * page needs that file for its Hangul anyway, so drawing its Latin from the subsets as well would
+ * only add requests.
+ */
+:root:lang(ko) {
+  --font-sans: var(--font-pretendard), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), var(--font-pretendard), ui-monospace, monospace;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
@@ -20,6 +20,7 @@ import { LibraryGraph } from "@/widgets/library-graph";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
 import { clearLibraryImportRequest, pendingLibraryImport, type ImportDestination } from "@/shared/lib/library-import/destination";
+import { isRouteCrossfadeRunning, navigateWithViewTransition, subscribeRouteCrossfade } from "@/shared/lib/navigation/route-view-transition";
 import {
   writeLibraryIndexSegment,
   writeWikiWriteMode,
@@ -232,12 +233,15 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const connectors = useVaultConnectors(handle);
   const importRouter = useRouter();
   const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
+  const openPlanning = useCallback(() => { navigateWithViewTransition(() => importRouter.push("/planning/")); }, [importRouter]);
+  // An import asked for from Planning arrives through a route crossfade; the dialog rises once the pane has settled.
+  const routeCrossfading = useSyncExternalStore(subscribeRouteCrossfade, isRouteCrossfadeRunning, () => false);
   const importHeadsToPlanningRef = useRef(false);
   const offerPlanningAfterImport = useCallback(() => {
     if (!importHeadsToPlanningRef.current) return;
     importHeadsToPlanningRef.current = false;
-    toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: () => importRouter.push("/planning/") });
-  }, [importRouter, t, toast]);
+    toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: openPlanning });
+  }, [openPlanning, t, toast]);
   useEffect(() => { clearLibraryImportRequest(); }, []);
   const handleCompile = useCallback(() => {
     try {
@@ -298,9 +302,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const importDialog = (
     <>
     <LibraryImportDialog
-      open={importOpen}
+      open={importOpen && !routeCrossfading}
       onClose={() => setImportOpen(false)}
-      onDismiss={importDestination === "planning" ? () => importRouter.push("/planning/") : undefined}
+      onDismiss={importDestination === "planning" ? openPlanning : undefined}
       setup={connectors.setup}
       onSetupSaved={() => void connectors.reload()}
       onAddFiles={handleAddFiles}
@@ -308,7 +312,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       canRunAgent={agent.route === "agent"}
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
       destination={importDestination}
-      onOpenAdvanced={() => importRouter.push(MCP_CONNECTORS_HREF)}
+      onOpenAdvanced={() => { navigateWithViewTransition(() => importRouter.push(MCP_CONNECTORS_HREF)); }}
     />
     </>
   );

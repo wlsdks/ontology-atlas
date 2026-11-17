@@ -88,11 +88,20 @@ let pendingBound: (() => void) | null = null;
 const ROUTE_CROSSFADE_CLASS = "route-crossfade";
 
 let crossfadeGeneration = 0;
+let crossfadeRunning = false;
+const crossfadeListeners = new Set<() => void>();
+
+function setCrossfadeRunning(running: boolean): void {
+  if (crossfadeRunning === running) return;
+  crossfadeRunning = running;
+  for (const listener of crossfadeListeners) listener();
+}
 
 function beginCrossfadeCapture(): number {
   if (typeof document === "undefined") return 0;
   crossfadeGeneration += 1;
   document.documentElement.classList.add(ROUTE_CROSSFADE_CLASS);
+  setCrossfadeRunning(true);
   return crossfadeGeneration;
 }
 
@@ -100,6 +109,17 @@ function endCrossfadeCapture(generation: number): void {
   if (typeof document === "undefined") return;
   if (generation !== crossfadeGeneration) return;
   document.documentElement.classList.remove(ROUTE_CROSSFADE_CLASS);
+  setCrossfadeRunning(false);
+}
+
+/** Whether a route crossfade is on screen: a surface that would cover the pane waits for it to end. */
+export function isRouteCrossfadeRunning(): boolean {
+  return crossfadeRunning;
+}
+
+export function subscribeRouteCrossfade(listener: () => void): () => void {
+  crossfadeListeners.add(listener);
+  return () => crossfadeListeners.delete(listener);
 }
 
 function viewTransitionApi(): StartViewTransition | null {
