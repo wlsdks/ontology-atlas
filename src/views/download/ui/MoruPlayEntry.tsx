@@ -8,43 +8,60 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { isMotionPaused } from '@/shared/motion/motion-pause';
 import { controlClass } from '@/shared/ui/control-class';
-import companionSheet from '@/shared/ui/marks/moru-companion.json';
-import { moruFrame } from '@/shared/ui/marks/moru-frame';
 
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { ENTRY_NEUTRAL_FRAME, ENTRY_START, requestReaction, stepEntry } from '../lib/moru-entry';
+import {
+  ENTRY_CELL,
+  ENTRY_NEUTRAL,
+  ENTRY_ROWS,
+  ENTRY_START,
+  requestReaction,
+  stepEntry,
+  type EntryRow,
+} from '../lib/moru-entry';
 import { MoruPlayground } from './MoruPlayground';
 
-const SHEET = { ...companionSheet, src: `/brand/moru-companion.png?v=${companionSheet.digest}` };
+const ROWS = Object.keys(ENTRY_ROWS) as EntryRow[];
+const ROW_CELLS = 24;
 /**
- * The native cell, unscaled, so every drawn pixel stays square. The window shows the cell's
- * drawn band (columns 12–116, rows 38–102); the hop's lift rises above it unclipped.
+ * The 64px rows unscaled, so every drawn pixel stays square. The window shows the drawn band
+ * (columns 6–62, rows 20–52); the dance's lift rises above it unclipped.
  */
-const VIEW = { left: 12, top: 38, width: 104, height: 64 };
+const VIEW = { left: 6, top: 20, width: 56, height: 32 };
+const cellShift = (cell: number) => `translateX(${-cell * ENTRY_CELL}px)`;
 
 /**
- * The hero's way into the game: a tiny Moru beside a speech bubble saying who it is. Moru idles on
- * its blink and wave clips through the page's gated frame loop, so it holds under the page's pause,
- * off screen and in a background tab; a pointer or focus asks for one hop, which starts on the next
+ * The hero's way into the game: a very small Moru beside a speech bubble saying who it is. Moru
+ * waves, then blinks, through the page's gated frame loop, so it holds under the page's pause, off
+ * screen and in a background tab; a pointer or focus asks for one dance, which starts on the next
  * neutral pose. Under reduced motion Moru stands on the neutral cell.
  */
 export function MoruPlayEntry({ className }: { className?: string }) {
   const t = useTranslations('download.playground');
   const [playing, setPlaying] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
-  const image = useRef<HTMLImageElement>(null);
+  const stage = useRef<HTMLSpanElement>(null);
   const state = useRef(ENTRY_START);
 
   useEffect(() => {
-    const node = image.current;
+    const node = stage.current;
     if (reducedMotion || !node) return;
-    let shown = ENTRY_NEUTRAL_FRAME;
+    const images = new Map(ROWS.map((row) => [row, node.querySelector<HTMLImageElement>(`[data-moru-row="${row}"]`)]));
+    let shown = ENTRY_NEUTRAL;
     return registerGatedFrameClient(node, ({ dtMs }) => {
-      const step = stepEntry(state.current, dtMs);
-      state.current = step.state;
-      if (step.frame === shown) return;
-      shown = step.frame;
-      node.style.transform = moruFrame(step.frame, SHEET);
+      const { state: next, pose } = stepEntry(state.current, dtMs);
+      state.current = next;
+      if (pose.row === shown.row && pose.cell === shown.cell) return;
+      const image = images.get(pose.row);
+      if (!image) return;
+      image.style.transform = cellShift(pose.cell);
+      if (pose.row !== shown.row) {
+        image.hidden = false;
+        const previous = images.get(shown.row);
+        if (previous) previous.hidden = true;
+      }
+      shown = pose;
+      node.dataset.moruPose = `${pose.row}:${pose.cell}`;
     });
   }, [reducedMotion]);
 
@@ -64,31 +81,37 @@ export function MoruPlayEntry({ className }: { className?: string }) {
         className={controlClass({
           shape: 'link',
           tone: 'secondary',
-          className: cn('group gap-1 rounded-card p-1.5 pr-2 text-left', className),
+          className: cn('group gap-2.5 rounded-card p-1.5 pr-2 text-left', className),
         })}
       >
         <span aria-hidden className="relative block shrink-0" style={{ width: VIEW.width, height: VIEW.height }}>
           <span
+            ref={stage}
+            data-moru-entry=""
+            data-moru-pose={`${ENTRY_NEUTRAL.row}:${ENTRY_NEUTRAL.cell}`}
             className="absolute block overflow-hidden"
-            style={{ left: -VIEW.left, top: -VIEW.top, width: SHEET.cell, height: SHEET.cell }}
+            style={{ left: -VIEW.left, top: -VIEW.top, width: ENTRY_CELL, height: ENTRY_CELL }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={image}
-              data-moru-entry=""
-              src={withBasePath(SHEET.src)}
-              alt=""
-              draggable={false}
-              width={SHEET.cell * SHEET.columns}
-              height={SHEET.cell * SHEET.rows}
-              className="absolute top-0 left-0 max-w-none"
-              style={{
-                width: SHEET.cell * SHEET.columns,
-                height: SHEET.cell * SHEET.rows,
-                imageRendering: 'pixelated',
-                transform: moruFrame(ENTRY_NEUTRAL_FRAME, SHEET),
-              }}
-            />
+            {ROWS.map((row) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={row}
+                data-moru-row={row}
+                src={withBasePath(ENTRY_ROWS[row])}
+                alt=""
+                draggable={false}
+                hidden={row !== ENTRY_NEUTRAL.row}
+                width={ENTRY_CELL * ROW_CELLS}
+                height={ENTRY_CELL}
+                className="absolute top-0 left-0 max-w-none"
+                style={{
+                  width: ENTRY_CELL * ROW_CELLS,
+                  height: ENTRY_CELL,
+                  imageRendering: 'pixelated',
+                  transform: cellShift(row === ENTRY_NEUTRAL.row ? ENTRY_NEUTRAL.cell : 0),
+                }}
+              />
+            ))}
           </span>
         </span>
         {/* A speech bubble whose tail points back at Moru. */}

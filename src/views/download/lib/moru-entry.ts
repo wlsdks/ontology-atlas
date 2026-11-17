@@ -1,29 +1,45 @@
 import companion from '@/shared/ui/marks/moru-companion.json';
+import reactions from '@/shared/ui/marks/moru-reactions.json';
 
-/** One companion clip as absolute sheet cells; every one starts and ends on the neutral pose. */
+/**
+ * The 64px rows `pnpm brand:sprites` writes to `public/brand/` (24 cells each), drawn for that size
+ * rather than reduced from the 128px cell; each starts and ends on the shared neutral pose.
+ */
+export const ENTRY_ROWS = {
+  wave: '/brand/mascot-greeting-row.png',
+  blink: '/brand/mascot-waiting-row.png',
+  dance: '/brand/mascot-success-row.png',
+} as const;
+export type EntryRow = keyof typeof ENTRY_ROWS;
+export const ENTRY_CELL = 64;
+
+/** One row and the catalogue timing of its clip, one duration per cell. */
 export interface EntryClip {
-  frames: number[];
+  row: EntryRow;
   durations: number[];
-}
-
-function clip(id: keyof typeof companion.clips): EntryClip {
-  const source = companion.clips[id];
-  return { frames: source.durationsMs.map((_, i) => source.firstFrame + i), durations: source.durationsMs };
 }
 
 /**
  * One wave to say hello, then the blink over and over: its eyes close for under a second between
  * long rests, so a reaction never waits long for the neutral pose.
  */
-export const ENTRY_IDLE: readonly EntryClip[] = [clip('wave'), clip('blink')];
+export const ENTRY_IDLE: readonly EntryClip[] = [
+  { row: 'wave', durations: companion.clips.wave.durationsMs },
+  { row: 'blink', durations: companion.clips.blink.durationsMs },
+];
 const LOOP = 1;
-const hop = clip('hop');
-/** The hop answers at once: its catalogue rests (1s before, 1.1s after) shrink as `clipTimeline` does. */
+/** The dance answers at once: its catalogue rests (0.8s before, 1.2s after) shrink as `clipTimeline` does. */
 export const ENTRY_REACTION: EntryClip = {
-  frames: hop.frames,
-  durations: hop.durations.map((ms, i, all) => (i === 0 ? 120 : i === all.length - 1 ? 240 : ms)),
+  row: 'dance',
+  durations: reactions.clips.dance.durationsMs.map((ms, i, all) => (i === 0 ? 120 : i === all.length - 1 ? 240 : ms)),
 };
-export const ENTRY_NEUTRAL_FRAME = ENTRY_IDLE[LOOP].frames[0];
+
+/** A row and the cell in it. */
+export interface EntryPose {
+  row: EntryRow;
+  cell: number;
+}
+export const ENTRY_NEUTRAL: EntryPose = { row: 'blink', cell: 0 };
 
 export interface EntryState {
   /** Index into `ENTRY_IDLE` (0, the greeting, plays once), or -1 while the reaction plays. */
@@ -55,11 +71,11 @@ export function requestReaction(state: EntryState): EntryState {
  * Advances the tiny Moru by `dtMs`. The reaction begins only on a neutral cell (a clip's first or
  * last), so the switch never jumps a pose; afterwards Moru goes back to blinking.
  */
-export function stepEntry(state: EntryState, dtMs: number): { state: EntryState; frame: number } {
+export function stepEntry(state: EntryState, dtMs: number): { state: EntryState; pose: EntryPose } {
   let next = { ...state, elapsed: state.elapsed + Math.max(0, dtMs) };
   let line = clipOf(next);
   let cell = cellAt(line, next.elapsed);
-  if (next.wants && next.idle >= 0 && (cell.index === 0 || cell.index === line.frames.length - 1)) {
+  if (next.wants && next.idle >= 0 && (cell.index === 0 || cell.index === line.durations.length - 1)) {
     next = { idle: -1, elapsed: 0, wants: false };
     line = ENTRY_REACTION;
     cell = cellAt(line, 0);
@@ -71,5 +87,5 @@ export function stepEntry(state: EntryState, dtMs: number): { state: EntryState;
     line = clipOf(next);
     cell = cellAt(line, next.elapsed);
   }
-  return { state: next, frame: line.frames[cell.index] };
+  return { state: next, pose: { row: line.row, cell: cell.index } };
 }
