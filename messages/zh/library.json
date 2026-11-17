@@ -137,6 +137,8 @@
   },
   "emptyTitle": "还没有来源和 Wiki 页面",
   "emptyBody": "把已有的文档放进来：规格说明、演示文稿、表格、导出的页面都可以。Atlas 会原样复制到 sources/，在你提出之前不会打开。",
+  "emptyFoundBody": "找到了 {count, number} 个可以放进来的文档。只读取了名称和格式，只把你选中的复制到 sources/。",
+  "emptyFoundAction": "查看找到的 {count, number} 个文档",
   "stageTitle": "把已有的文档，变成注明出处的 Wiki",
   "stageBody": "打开文件夹并添加文件。来源原样保留，每份来源对应一个 Wiki 页面，每条论断都引用其出处文件。",
   "sources": {

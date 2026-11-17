@@ -192,6 +192,13 @@ overlay): eyebrow, one title, one sentence, the two doors **Add files** and **Fi
 documents**, and one quiet line naming the folder a drop goes into. No index, no canvas, no
 caption, no status strip, no popup. Page hairlines at 1512 fell 63 → 12.
 
+**The empty stage looks first.** On arrival it runs the same metadata-only walk **Find
+documents** runs (names, formats and sizes in the open folder and each bound project root;
+no file is opened and nothing is copied). When the walk finds documents the sentence states
+the count and one filled button, **Review N found documents**, leads on its own row and
+opens the dialog already filled; **Add files** and **Bring from a service** sit beneath it.
+When it finds none the stage keeps its three equal doors.
+
 **With content, guidance is a compact stepper.** **What to do next** in the graph's header
 opens a 360px `transientSurface("anchored")` panel of three rows, each one head line
 (number, title, and the step's own word), one caption line, and one action row of reserved

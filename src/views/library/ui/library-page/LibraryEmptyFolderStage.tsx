@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { LibraryStartStage } from "../parts/first-run/LibraryStartStage";
 import { LibrarySynapseField } from "../parts/first-run/LibrarySynapseField";
@@ -16,7 +17,12 @@ export function LibraryEmptyFolderStage({
   findDocumentsDialog: ReactNode;
   sources: ReturnType<typeof useLibrarySources>;
 }) {
-  const { findOpen, sourceImportFeedback, handleAddFiles, handleFindDocuments } = sources;
+  const { findOpen, discovery, runDiscovery, sourceImportFeedback, handleAddFiles, handleFindDocuments, handleShowFoundDocuments } = sources;
+  /* Names, formats and sizes only, in the folders the dialog would walk; nothing is copied before a pick. */
+  useEffect(() => {
+    void runDiscovery();
+  }, [runDiscovery]);
+  const foundCount = discovery?.candidates.length ?? 0;
   return (
     <main
       id="main"
@@ -37,7 +43,8 @@ export function LibraryEmptyFolderStage({
         busy={busy}
         onAddFiles={handleAddFiles}
         addFilesFeedback={sourceImportFeedback}
-        onFindDocuments={handleFindDocuments}
+        foundCount={foundCount}
+        onFindDocuments={foundCount > 0 ? handleShowFoundDocuments : handleFindDocuments}
         onImportFromService={openImport}
         t={t}
       />
