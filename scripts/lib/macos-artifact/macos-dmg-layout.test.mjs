@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, it } from "node:test";
-import { parseHdiutilMountDir, verifyApplicationsSymlink } from "./macos-dmg-layout.mjs";
+import { dmgImageSizeMiB, parseDuKiB, parseHdiutilMountDir, verifyApplicationsSymlink } from "./macos-dmg-layout.mjs";
 
 const tempDirs = [];
 
@@ -71,5 +71,33 @@ describe("verifyApplicationsSymlink", () => {
       () => verifyApplicationsSymlink(linkPath),
       /points to \/tmp, expected \/Applications/,
     );
+  });
+});
+
+describe("dmgImageSizeMiB", () => {
+  it("is always larger than the staged folder, small or large", () => {
+    for (const stagedMiB of [1, 64, 300, 2048]) {
+      assert.ok(dmgImageSizeMiB(stagedMiB * 1024) >= stagedMiB + 64, `${stagedMiB} MiB staged`);
+    }
+  });
+
+  it("grows with the staged folder so a larger bundle keeps proportional room", () => {
+    assert.ok(dmgImageSizeMiB(2048 * 1024) - 2048 > dmgImageSizeMiB(300 * 1024) - 300);
+  });
+
+  it("refuses a size that is not a positive number", () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      assert.throws(() => dmgImageSizeMiB(bad));
+    }
+  });
+});
+
+describe("parseDuKiB", () => {
+  it("reads the total from du -sk output with a path that contains spaces", () => {
+    assert.equal(parseDuKiB("307712\t/tmp/bundle/dmg/.staging dir\n"), 307712);
+  });
+
+  it("returns null when du printed no number", () => {
+    assert.equal(parseDuKiB("du: /missing: No such file or directory\n"), null);
   });
 });
