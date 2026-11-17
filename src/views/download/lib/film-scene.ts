@@ -245,3 +245,31 @@ export function crossesClusters(scene: FilmScene, edge: FilmEdge): boolean {
   const b = scene.nodes[edge.to];
   return !edge.contains && a.depth > 0 && b.depth > 0 && a.cluster !== b.cluster;
 }
+
+/**
+ * When each line of the opened file types, in ms: the opening `---` is there as the panel opens,
+ * a line that becomes a mark (`role`) finishes on its landing beat after typing for up to
+ * `typeMs`, and a plain line types quickly in between. No two lines type at once.
+ */
+export function scheduleTyping(
+  rows: readonly { role: string | null }[],
+  landings: readonly number[],
+  opened: number,
+  typeMs: number,
+): { from: number; to: number }[] {
+  let landing = 0;
+  let cursor = opened - 60;
+  return rows.map((row, k) => {
+    if (k === 0) return { from: opened - 120, to: opened - 120 };
+    if (!row.role) {
+      const from = cursor;
+      cursor += 80;
+      return { from, to: cursor };
+    }
+    const to = Math.max(cursor + 120, landings[landing] ?? cursor + typeMs);
+    landing += 1;
+    const from = Math.max(cursor, to - typeMs);
+    cursor = to + 20;
+    return { from, to };
+  });
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildFilmScene, clusterRing, crossesClusters, pickCloseUp, pickNamedFiles } from './film-scene';
+import { buildFilmScene, clusterRing, crossesClusters, pickCloseUp, pickNamedFiles, scheduleTyping } from './film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>
@@ -107,5 +107,29 @@ describe('pickCloseUp', () => {
   it('opens nothing when no capability declares a dependency', () => {
     const scene = buildFilmScene({ nodes: [node('p', 'project'), node('d', 'domain')], edges: [edge('p', 'd', 'contains')] });
     expect(pickCloseUp(scene)).toBeNull();
+  });
+});
+
+describe('scheduleTyping', () => {
+  const rows = [null, 'domain', 'kind', 'title', null, 'dependency', 'dependency', 'dependency', null].map((role) => ({ role }));
+  const landings = [3000, 3400, 3800, 4300, 4650, 5000];
+  const times = scheduleTyping(rows, landings, 2640, 380);
+
+  it('finishes each line that becomes a mark on its landing beat', () => {
+    const marks = times.filter((_, k) => rows[k]!.role !== null).map((t) => t.to);
+    expect(marks).toEqual(landings);
+  });
+
+  it('types one line at a time, each after the panel has opened', () => {
+    times.slice(1).forEach((t, k) => {
+      expect(t.from).toBeGreaterThanOrEqual(times[k]!.to);
+      expect(t.to).toBeGreaterThan(t.from);
+      expect(t.from).toBeGreaterThanOrEqual(2520);
+    });
+  });
+
+  it('still types a line when its landing beat has already passed', () => {
+    const late = scheduleTyping([{ role: null }, { role: 'kind' }], [100], 2640, 380);
+    expect(late[1]!.to).toBeGreaterThan(late[1]!.from);
   });
 });
