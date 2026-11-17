@@ -164,15 +164,19 @@ test('a document that is not UTF-8 offers no Edit and says why', async ({ page }
   await expect(page.getByRole('button', { name: planning.edit, exact: true })).toHaveCount(0);
 });
 
-test('a planning folder removed from disk reads as unavailable, not as empty', async ({ page }) => {
+test('a planning folder removed from disk returns to the offer to create it, not to an empty folder', async ({ page }) => {
   await openVault(page);
   await goTo(page, 'Planning');
   await page.getByRole('button', { name: planning.createHome }).click();
   await expect(page.getByText(planning.emptyHome)).toBeVisible();
   await onDisk(page, 'planning', { remove: true });
   await page.getByRole('button', { name: planning.refresh }).click();
-  await expect(page.locator('[data-planning-read]').getByText(planning.folderUnavailable)).toBeVisible();
+  await expect(page.getByRole('button', { name: planning.createHome })).toBeVisible();
   await expect(page.getByText(planning.emptyHome)).toHaveCount(0);
+  await expect(page.locator('[data-planning-workbench]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: planning.createHome }).click();
+  await expect(page.getByText(planning.emptyHome)).toBeVisible();
 });
 
 test('a new document title is dropped with Escape and focus returns to New document', async ({ page }) => {

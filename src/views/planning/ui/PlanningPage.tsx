@@ -123,6 +123,13 @@ export function PlanningPage() {
   }, []);
   useEffect(() => { const currentSequence = sequence; clearPlanningReturn(); return () => { currentSequence.current++; }; }, []);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const dropSelection = useCallback(() => {
+    sequence.current++;
+    recheckCurrent.current = null;
+    writePlanningMemory({ selection: null, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
+    selectedRef.current = null;
+    setSelection(null); setSelected(null); setInventory(null); setContent(null); setEditableText(null); setImageBytes(null);
+  }, []);
   const refresh = useCallback(async (scope: PlanningSelection, path: string | null) => {
     if (path && path === selectedRef.current && pendingScroll.current === null && reader.current && readPlanningMemory().identity) pendingScroll.current = reader.current.scrollTop;
     const request = ++sequence.current;
@@ -175,14 +182,19 @@ export function PlanningPage() {
         pendingRecheck.current = true;
       }
     } catch {
-      if (request === sequence.current) setStatus('unavailable');
+      if (request !== sequence.current) return;
+      const homeGone = scope.kind === 'home' && !(await scope.root.getDirectoryHandle(PLANNING_HOME_FOLDER).then(() => true, () => false));
+      if (request !== sequence.current) return;
+      // A home folder removed outside the app cannot be chosen again, so its stage offers to make it.
+      if (homeGone) { setHome({ root: scope.root, directory: null }); dropSelection(); }
+      else setStatus('unavailable');
     } finally {
       if (activeRequest.current === request) {
         activeRequest.current = null;
         if (pendingRecheck.current) { pendingRecheck.current = false; recheckCurrent.current?.(); }
       }
     }
-  }, []);
+  }, [dropSelection]);
   const enterSelection = useCallback((next: PlanningSelection, fromStage: boolean) => {
     sequence.current++;
     activeRequest.current = null;
@@ -328,11 +340,7 @@ export function PlanningPage() {
   /** From a picked folder: the home folder when it exists, otherwise the stage that offers to create it. */
   const returnHome = () => {
     if (home?.root === vaultRoot && home.directory) { void openHome(false); return; }
-    sequence.current++;
-    recheckCurrent.current = null;
-    writePlanningMemory({ selection: null, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
-    selectedRef.current = null;
-    setSelection(null); setSelected(null); setInventory(null); setContent(null); setEditableText(null); setImageBytes(null);
+    dropSelection();
   };
   const openFile = (path: string) => {
     if (!activeSelection) return;
