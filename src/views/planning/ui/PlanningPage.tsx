@@ -4,10 +4,12 @@ import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, FilePlus, FileText, FileUp, FolderOpen, FolderPen, LockKeyhole, PenLine, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CloudDownload, FilePlus, FileText, FileUp, FolderOpen, FolderPen, LockKeyhole, PenLine, RefreshCw } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { choosePlanningFolder, planningAvailable, type PlanningInventory } from '@/shared/lib/planning/bridge';
 import { pickPlanningFiles, planningAddAvailable } from '@/shared/lib/planning/add-files';
+import { requestLibraryImport } from '@/shared/lib/library-import/destination';
+import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { createPlanningHomeDocument, PLANNING_HOME_FOLDER, planningIdentity, savePlanningHomeDocument } from '@/shared/lib/planning/home-source';
 import { editablePlanningText, planningTextForDisk, type PlanningEditableText } from '@/shared/lib/planning/editable-text';
 import { planningSourceFor, type HomePlanningSelection, type PlanningSelection } from '@/shared/lib/planning/source';
@@ -18,7 +20,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { MOTION } from '@/shared/motion';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
-import { Button, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';
+import { Button, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';
 import { PAGE_HEADER_FRAMES } from '@/shared/ui/layout/page-header-bar';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
@@ -31,6 +33,9 @@ import { PlanningDiscardDialog } from './PlanningDiscardDialog';
 import { firstPlanningDocument, isPlanningMarkdown } from '../model/file-groups';
 import { planningArrival } from '../model/arrival';
 import { planningAddSummary } from '../model/add-summary';
+
+/** Below `xl` the header chips keep the icon and an `aria-label`: four labels overflow the app's 1040 minimum window. */
+const ICON_ONLY_BELOW_XL = `${CHROME_CHIP_COMPACT_BELOW_XL} max-xl:[&_[data-chip-label]]:hidden`;
 
 const QUIET_TEXT = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
 
@@ -422,6 +427,8 @@ export function PlanningPage() {
     } finally { setSaving(false); }
   };
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
+  /** The Library owns the service import and its agent turn; unsaved editor text stays in memory. */
+  const importFromService = () => { requestLibraryImport('planning'); router.push('/library/'); };
   const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked'), attention: (name: string) => t('imageAttention', { image: name }), recovered: (name: string) => t('imageRecovered', { image: name }), blocked: (name: string, reason: string) => t('imageBlocked', { image: name, reason }), unnamed: (line: number, column: number) => t('imageUnnamed', { line, column }) };
   const files = inventory?.files.filter((file) => file.path.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((file) => file.path) ?? [];
   const evidenceOpenable = status === 'ready' && !fileFailed && !fileChanged && Boolean(readPlanningMemory().identity);
@@ -446,13 +453,14 @@ export function PlanningPage() {
     <PageHeaderBar
       frame="page"
       title={t('title')}
-      meta={workbench ? <span className={`hidden min-w-0 items-center gap-3 md:flex ${QUIET_TEXT}`}><span data-planning-folder-path title={workbench.path} className="max-w-[min(36vw,32rem)] truncate font-mono">{workbench.path}</span>{!isHome && <span className="flex shrink-0 items-center gap-1"><LockKeyhole size={ICON_SIZE.sm} aria-hidden />{t('readOnly')}</span>}</span> : undefined}
+      meta={workbench ? <span className={`hidden min-w-0 items-center gap-3 md:flex ${QUIET_TEXT}`}><span data-planning-folder-path title={workbench.path} className="max-w-[min(28vw,32rem)] truncate font-mono">{workbench.path}</span>{!isHome && <span className="flex shrink-0 items-center gap-1"><LockKeyhole size={ICON_SIZE.sm} aria-hidden />{t('readOnly')}</span>}</span> : undefined}
       actions={workbench ? <>
         <ChromeTile title={t('refresh')} icon={<RefreshCw aria-hidden />} data-planning-focus-fallback onClick={() => refreshFolder(workbench)} />
-        {isHome && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft}>{t('newDocument')}</ChromeChip>}
-        {canAddFiles && <ChromeChip icon={<FileUp aria-hidden />} data-planning-add disabled={adding} onClick={() => void addFiles()}>{t('addFiles')}</ChromeChip>}
-        {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome}>{t('homeFolder')}</ChromeChip>}
-        {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)}>{t('chooseFolder')}</ChromeChip>}
+        {isHome && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft} aria-label={t('newDocument')} title={t('newDocument')} className={ICON_ONLY_BELOW_XL}>{t('newDocument')}</ChromeChip>}
+        {canAddFiles && <ChromeChip icon={<FileUp aria-hidden />} data-planning-add disabled={adding} onClick={() => void addFiles()} aria-label={t('addFiles')} title={t('addFiles')} className={ICON_ONLY_BELOW_XL}>{t('addFiles')}</ChromeChip>}
+        {isHome && isAcpBridgeAvailable() && <ChromeChip icon={<CloudDownload aria-hidden />} data-planning-import title={t('importServiceHint')} onClick={importFromService} aria-label={t('importService')} className={ICON_ONLY_BELOW_XL}>{t('importService')}</ChromeChip>}
+        {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome} aria-label={t('homeFolder')} title={t('homeFolder')} className={ICON_ONLY_BELOW_XL}>{t('homeFolder')}</ChromeChip>}
+        {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)} aria-label={t('chooseFolder')} title={t('chooseFolder')} className={ICON_ONLY_BELOW_XL}>{t('chooseFolder')}</ChromeChip>}
       </> : undefined}
     />
     {!workbench ? <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}>

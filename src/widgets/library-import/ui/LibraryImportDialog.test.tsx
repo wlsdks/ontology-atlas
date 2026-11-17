@@ -151,6 +151,14 @@ describe('service setup', () => {
     for (const part of ['sources/notion/', 'at most 20', 'API 설계 문서', 'Do not write anything before I answer']) expect(brief).toContain(part);
     expect(onClose).toHaveBeenCalled();
   });
+  it('names the planning folder to the person and in the brief when Planning opened it', async () => {
+    const { onBrief } = draw({ destination: 'planning' }); await enter(); save(); await screen.findByTestId('library-import-connected');
+    expect(screen.getByRole('dialog')).toHaveTextContent('planning/notion');
+    fireEvent.click(screen.getByTestId('library-import-bring'));
+    const brief = onBrief.mock.calls[0]![0];
+    expect(brief).toContain('planning/notion/');
+    expect(brief).not.toContain('sources/');
+  });
   it('provides the runtime remedy when the setup is saved without a ready coding tool', async () => {
     draw({ canRunAgent: false }); await enter(); save(); await screen.findByTestId('library-import-connected');
     expect(screen.queryByTestId('library-import-bring')).not.toBeInTheDocument();

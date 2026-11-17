@@ -19,6 +19,7 @@ import {
 import { LibraryGraph } from "@/widgets/library-graph";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
+import { clearLibraryImportRequest, pendingLibraryImport, type ImportDestination } from "@/shared/lib/library-import/destination";
 import {
   writeLibraryIndexSegment,
   writeWikiWriteMode,
@@ -221,15 +222,17 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     ) : null;
   const closeHomeSurface = useCallback(() => setHomeSurface(null), []);
 
+  const [importOpen, setImportOpen] = useState(() => pendingLibraryImport() !== null);
+  const [importDestination, setImportDestination] = useState<ImportDestination>(() => pendingLibraryImport() ?? "sources");
   const home = useLibraryHome({
     selected, setHomeSurface, setStaleLit, staleLit, choose, model, chatWidth, dockOpen,
-    workActivity,
+    workActivity, importOpen,
   });
   const { homeVisible, staleHighlight } = home;
   const connectors = useVaultConnectors(handle);
   const importRouter = useRouter();
-  const [importOpen, setImportOpen] = useState(false);
-  const openImport = useCallback(() => setImportOpen(true), []);
+  const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
+  useEffect(() => { clearLibraryImportRequest(); }, []);
   const handleCompile = useCallback(() => {
     try {
       const localExecution = agent.route === 'local';
@@ -296,6 +299,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       onBrief={(brief) => agent.start(brief, "import")}
       canRunAgent={agent.route === "agent"}
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
+      destination={importDestination}
       onOpenAdvanced={() => importRouter.push(MCP_CONNECTORS_HREF)}
     />
     </>
