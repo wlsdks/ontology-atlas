@@ -1,9 +1,17 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
 import { MoruPlayEntry } from './MoruPlayEntry';
+
+// jsdom has no 2D canvas; the popup's round runs without one and draws nothing.
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function renderEntry() {
   render(
