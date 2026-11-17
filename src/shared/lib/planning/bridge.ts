@@ -1,8 +1,8 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 
-export type PlanningSelection = { generation: number; folder: string; path: string };
+export type PickedPlanningSelection = { kind: 'picked'; generation: number; folder: string; path: string };
 export type PlanningInventory = {
-  files: { path: string; size: number; modified_seconds: number }[];
+  files: { path: string }[];
   skipped: number;
   partial: boolean;
   visited: number;
@@ -19,7 +19,10 @@ export async function planningAvailable(): Promise<boolean> {
     return false;
   }
 }
-export async function choosePlanningFolder(errorMessage: string): Promise<PlanningSelection | null> { return invoke('planning_pick_folder', { errorMessage }); }
+export async function choosePlanningFolder(errorMessage: string): Promise<PickedPlanningSelection | null> {
+  const picked = await invoke<Omit<PickedPlanningSelection, 'kind'> | null>('planning_pick_folder', { errorMessage });
+  return picked ? { ...picked, kind: 'picked' } : null;
+}
 export async function scanPlanningFolder(generation: number): Promise<PlanningInventory> { return invoke('planning_scan', { generation }); }
 export async function readPlanningFile(generation: number, path: string): Promise<Uint8Array> { return new Uint8Array(await invoke<ArrayBuffer>('planning_read_file', { generation, path })); }
 let documentRequest = 0;
