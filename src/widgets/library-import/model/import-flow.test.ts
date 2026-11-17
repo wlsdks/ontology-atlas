@@ -11,6 +11,7 @@ import {
   nextStep,
   serviceAsk,
   serviceEntry,
+  serviceFolder,
   serviceVariant,
 } from './import-flow';
 
@@ -92,6 +93,14 @@ describe('what it writes into the folder', () => {
 
   it('has nothing to write for the escape hatch', () => {
     expect(importConnector(importService('other'), { id: 'c1', secretRef })).toBeNull();
+  });
+});
+
+describe('the folder a service lands in', () => {
+  it('keeps the service name under the chosen top folder and never leaves it', () => {
+    expect(serviceFolder(importService('notion'), 'sources')).toBe('sources/notion');
+    expect(serviceFolder(importService('notion'), 'planning')).toBe('planning/notion');
+    expect(serviceFolder(importService('other'), 'planning')).toBe('planning');
   });
 });
 

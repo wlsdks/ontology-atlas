@@ -695,7 +695,10 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   `sources/<service>/` with `source_url` and `fetched_at` in the frontmatter — **through
   the permission card that already exists**, one card per file, and forbidden from
   touching anything outside that
-  folder. **Confluence and Jira left the tiles on 2026-09-07**: both rode Atlassian's hosted
+  folder. Planning's home folder opens the same dialog with the destination `planning`, and the
+  brief then names `planning/<service>/` instead
+  (`docs/records/decisions/2026-11-17-planning-service-import-1d5ee430-8219-4743-b2fa-1858b27ae3ac.md`);
+  the destination is one of those two fixed names, never a path. **Confluence and Jira left the tiles on 2026-09-07**: both rode Atlassian's hosted
   address, which signs in with OAuth, and the in-app session cannot open that window (the
   measurement is in the decision record); a tile onto a connection the agent can never use
   is the dead end this door exists to remove, so they return with an adapter that can sign

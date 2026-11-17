@@ -17,7 +17,7 @@ import {
   runtimePath,
 } from '@/shared/lib/connectors/tauri-connector-runtimes';
 import type { ConnectorSetup, SetupFailure, SetupInspection } from '@/shared/lib/connectors/connector-setup';
-import { serviceVariant } from '../model/import-flow';
+import type { ImportDestination } from '@/shared/lib/library-import/destination';
 
 import {
   DEFAULT_IMPORT_LIMIT,
@@ -26,6 +26,8 @@ import {
   importConnector,
   serviceAsk,
   serviceEntry,
+  serviceFolder,
+  serviceVariant,
   type ImportService,
   type ImportServiceId,
   type ImportStep,
@@ -41,6 +43,7 @@ type LibraryImportProps = {
   onOpenAdvanced: () => void;
   canRunAgent: boolean;
   agentGap: 'browser' | 'runtime';
+  destination?: ImportDestination;
   testIdPrefix?: string;
 };
 
@@ -70,6 +73,7 @@ function LibraryImportFlow({
    * tool yet; the remedies differ (`/download/` versus the runtimes screen).
    */
   agentGap,
+  destination = 'sources',
   testIdPrefix = 'library-import',
 }: LibraryImportProps) {
   const t = useTranslations('libraryImport');
@@ -210,12 +214,12 @@ function LibraryImportFlow({
     const brief = buildImportBrief({
       serviceLabel: t(`service.${service.id}.title` as 'service.notion.title'),
       connectorName: connectedName ?? service.id,
-      folder: service.folder,
+      folder: serviceFolder(service, destination),
       request: { what, limit: DEFAULT_IMPORT_LIMIT },
     });
     onBrief(brief);
     close();
-  }, [close, connectedName, onBrief, service, t, what]);
+  }, [close, connectedName, destination, onBrief, service, t, what]);
 
   return (
     <Dialog
@@ -465,7 +469,7 @@ function LibraryImportFlow({
           {/* Both describe the conversation, so neither is drawn where one cannot start. */}
           {canRunAgent ? (
             <p className="mt-2 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
-              {t('whatNext', { limit: DEFAULT_IMPORT_LIMIT, folder: service.folder })}
+              {t('whatNext', { limit: DEFAULT_IMPORT_LIMIT, folder: serviceFolder(service, destination) })}
             </p>
           ) : null}
           {/*
