@@ -187,6 +187,8 @@
     "partialOnly": "一部のみ読み込み済み{count, number}件",
     "import": "サービスから取り込む",
     "importTooltip": "サービスを選んで接続し、このフォルダに取り込む文書を指定します",
+    "importedToPlanning": "取り込んだ文書を企画フォルダに入れました",
+    "openPlanning": "企画で開く",
     "pagesNeedReview": "再確認が必要な既存ページ{count, number}件"
   },
   "wiki": {

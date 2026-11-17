@@ -232,6 +232,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const connectors = useVaultConnectors(handle);
   const importRouter = useRouter();
   const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
+  const importHeadsToPlanningRef = useRef(false);
+  const offerPlanningAfterImport = useCallback(() => {
+    if (!importHeadsToPlanningRef.current) return;
+    importHeadsToPlanningRef.current = false;
+    toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: () => importRouter.push("/planning/") });
+  }, [importRouter, t, toast]);
   useEffect(() => { clearLibraryImportRequest(); }, []);
   const handleCompile = useCallback(() => {
     try {
@@ -267,6 +273,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     skipReaderFocusRef, setTurnRunning, setCompileRunning, setLintRunning, setReportUnseen, choose,
     docs, model, currentDeskListingVersion, latestDeskListingVersionRef, agent,
     captureAnswerRefresh, receiveAnswerRefresh, knownSlugs, workActivity,
+    onImportCompleted: offerPlanningAfterImport,
   });
   const {
     pendingAskRef, lastAnswer, deskReport, setDeskWorkRequest, deskWorkActivity, reportEpochRef,
@@ -297,7 +304,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       setup={connectors.setup}
       onSetupSaved={() => void connectors.reload()}
       onAddFiles={handleAddFiles}
-      onBrief={(brief) => agent.start(brief, "import")}
+      onBrief={(brief) => { importHeadsToPlanningRef.current = importDestination === "planning"; agent.start(brief, "import"); }}
       canRunAgent={agent.route === "agent"}
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
       destination={importDestination}
@@ -321,12 +328,70 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     />
   );
 
+  // Keyed so the conversation and its agent session survive the first file turning the empty stage into the workspace.
+  const agentDock = agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
+        <LibraryAgentDock
+          key="agent-dock"
+          chatWidth={chatWidth}
+          judgeWrite={judgeWrite}
+          autoDecide={autoDecide}
+          onTurnStarted={handleTurnStarted}
+          onTurnActivityChange={setAgentActivity}
+          onTurnToolActivityChange={handleAcpToolActivityChange}
+          onTerminalToolObservation={handleTerminalToolObservation}
+          onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
+            ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
+            : () => void handleFileAnswer() : null}
+          filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
+          fileAnswerNote={fileAnswerNote}
+          noticeActions={{
+            openPage: (path) => choose({ kind: "wiki", slug: path.replace(/\.md$/, "") }),
+            askNext: () => {
+              writeWikiWriteMode("ask");
+              toast.show(t("wiki.askNextDone"), "success");
+            },
+          }}
+          open={agent.open}
+          runtime={agent.runtime}
+          runtimes={agent.runtimes}
+          onRuntimeChange={agent.setRuntimeId}
+          vaultRoot={nativeVaultRootPath}
+          mcpServers={agent.mcpServers}
+          openingRequest={agent.openingRequest}
+          answerFold={
+            agent.openingRequest?.kind === "lint"
+              ? {
+                  request: agent.openingRequest.text,
+                  line: tChat("checkAnswerLine"),
+                  doorLabel: tChat("checkAnswerDoor"),
+                  onOpen: () => choose({ kind: "report" }),
+                }
+              : null
+          }
+          knownSlugs={knownSlugs}
+          indexBeside={!libraryIsEmpty && !indexCollapsed}
+          onClose={() => agent.setOpen(false)}
+        />
+      ) : null;
+
   if (libraryIsEmpty) {
     return (
-      <LibraryEmptyFolderStage
-        t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}
-        importDialog={importDialog} findDocumentsDialog={findDocumentsDialog} sources={sources}
-      />
+      <main
+        id="main"
+        tabIndex={-1}
+        data-testid="library-page"
+        data-library-state="empty-folder"
+        className="relative flex min-h-0 w-full flex-1"
+      >
+        <LibraryEmptyFolderStage
+          key="empty-stage"
+          t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}
+          conversationDoor={agent.openingRequest ? conversationDoor : null} sources={sources}
+        />
+        {agentDock}
+        {importDialog}
+        {findDocumentsDialog}
+      </main>
     );
   }
 
@@ -563,49 +628,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         handleCompile={handleCompile} sources={sources} home={home} turns={turns} graphCards={graphCards}
         homeStrip={homeStrip}
       />
-      {agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
-        <LibraryAgentDock
-          chatWidth={chatWidth}
-          judgeWrite={judgeWrite}
-          autoDecide={autoDecide}
-          onTurnStarted={handleTurnStarted}
-          onTurnActivityChange={setAgentActivity}
-          onTurnToolActivityChange={handleAcpToolActivityChange}
-          onTerminalToolObservation={handleTerminalToolObservation}
-          onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
-            ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
-            : () => void handleFileAnswer() : null}
-          filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
-          fileAnswerNote={fileAnswerNote}
-          noticeActions={{
-            openPage: (path) => choose({ kind: "wiki", slug: path.replace(/\.md$/, "") }),
-            askNext: () => {
-              writeWikiWriteMode("ask");
-              toast.show(t("wiki.askNextDone"), "success");
-            },
-          }}
-          open={agent.open}
-          runtime={agent.runtime}
-          runtimes={agent.runtimes}
-          onRuntimeChange={agent.setRuntimeId}
-          vaultRoot={nativeVaultRootPath}
-          mcpServers={agent.mcpServers}
-          openingRequest={agent.openingRequest}
-          answerFold={
-            agent.openingRequest?.kind === "lint"
-              ? {
-                  request: agent.openingRequest.text,
-                  line: tChat("checkAnswerLine"),
-                  doorLabel: tChat("checkAnswerDoor"),
-                  onOpen: () => choose({ kind: "report" }),
-                }
-              : null
-          }
-          knownSlugs={knownSlugs}
-          indexBeside={!indexCollapsed}
-          onClose={() => agent.setOpen(false)}
-        />
-      ) : null}
+      {agentDock}
 
       {importDialog}
 

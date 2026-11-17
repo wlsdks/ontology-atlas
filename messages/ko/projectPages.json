@@ -22,6 +22,8 @@
     "nextSlotCopyError": "복사 실패: 다시 시도",
     "nextSlotPrompt": "이 Ontology Atlas 폴더에 새 프로젝트를 하나 만들어 줘. 먼저 list_concepts로 이미 있는 프로젝트를 확인하고, 이 코드가 무엇을 만들기 위해 있는지 한 문장으로 적은 정의와 이름을 나에게 보여 줘. 내가 좋다고 하면 add_concept(kind: \"project\")로 만들어 줘.",
     "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져서, 오른쪽 숫자를 다 더하면 위 개수보다 클 수 있어요.",
+    "stageTitle": "첫 프로젝트를 만들어 보세요",
+    "stageBody": "프로젝트는 이 코드가 무엇을 만들기 위해 있는지 적은 문서예요. 이름과 한 문장 정의를 적으면 폴더에 문서가 생기고 여기에 카드로 나타나요.",
     "emptyStateDesc": "폴더에 프로젝트 문서를 만들면 여기 나타나요. 파일 맨 위 정보칸에 `kind: project` 를 적으면 돼요.",
     "cliPlaceholderHint": "먼저 한 번만, 터미널에서 export ATLAS=\"ontology-atlas 소스 폴더 경로\". npm 패키지는 없어요."
   },

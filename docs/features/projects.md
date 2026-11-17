@@ -18,7 +18,7 @@ documents can be scanned by name and authored purpose. There is currently no
 in-page filtering.
 
 #### Header
-- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers) and, for the bundled sample, the open-folder action; adding a project lives only in the closing tile
+- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers) and, for the bundled sample, the open-folder action; adding a project lives in the closing tile, or on the stage while no project exists
 - The bundled example state is labelled as a loaded sample rather than presented as the user's folder
 - With at most one project the lede and the cards are one stage centred in the window; from two the grid starts under the bar. While a browser folder opens, a centred wait names it
 
@@ -31,7 +31,7 @@ in-page filtering.
 - A project added on its own page rises 8px and fades in over `--motion-base` when the list reopens, and the closing tile glides on the surface spring; a reload or a folder switch shows every card still. Reduced motion fades in place over `--motion-fast` (2026-10-16)
 
 #### Empty state
-- No projects at all → guidance to create a project document; the header's "New project" action remains available
+- No projects at all → one centred stage in place of the lede and the tile: artwork of a project card being composed (name, definition line, domain rows whose bars fill once on arrival), the primary "New project" action, the secondary request to copy for an agent, and the `kind: project` note. When the first project appears the stage fades out where it stood and the card rises; reduced motion shows the composed card still
 
 ### `/project/[slug]` — Project detail (the brief beside what to check, 2026-11-17)
 
