@@ -45,6 +45,8 @@ export interface DialogProps {
    */
   initialFocus?: "container" | "first" | "none";
   testId?: string;
+  /** Runs once the closing motion has left the screen, for a close that leads somewhere else. */
+  onExited?: () => void;
   /** Layout only; do not override the token contract. */
   className?: string;
   children: ReactNode;
@@ -80,6 +82,7 @@ export function Dialog({
   "aria-label": ariaLabel,
   initialFocus = "first",
   testId,
+  onExited,
   className,
   children,
 }: DialogProps) {
@@ -104,7 +107,7 @@ export function Dialog({
   };
 
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExited}>
       {open ? (
         <DialogScrim
           ref={scrimLockoutRef}

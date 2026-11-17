@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { FIRST_RUN_SEEN_ENTRIES } from '../first-run-seed';
 import { installServiceSaveFixture } from '../library/service-save-desktop-fixture';
+import { startSampling, stopSampling, type MotionRecording } from '../motion-sampler';
 
 const GUIDE_SEEN_KEY = 'atlas.library.guide-seen';
 const LONG_FOLDER_PATH = '/Users/someone/side-project/a-rather-long-project-name/docs/ontology/atlas/planning';
@@ -60,6 +61,38 @@ test('closing the import opened from Planning returns there, and the Library gui
   await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'Library', exact: true }).click();
   await expect(page.getByTestId('library-guide-popover')).toBeVisible();
   await expect(page.getByTestId('library-import-dialog')).toHaveCount(0);
+});
+
+const HANDOFF_TRACKS = [
+  { name: 'dialog', selector: '[data-testid="library-import-dialog"]' },
+  { name: 'crossfade', selector: 'html.route-crossfade' },
+];
+
+/** Frames in which the dialog and the route crossfade were on screen together. */
+function overlappingFrames(recording: MotionRecording): number {
+  return recording.tracks.dialog.filter((value, index) => value !== null && recording.tracks.crossfade[index] !== null).length;
+}
+
+test('the import opened from Planning arrives after the route crossfade and leaves before the one back', async ({ page }) => {
+  await openPlanningHome(page);
+  const dialog = page.getByTestId('library-import-dialog');
+
+  await startSampling(page, { tracks: HANDOFF_TRACKS });
+  await page.locator('[data-planning-import]').click();
+  await expect(dialog).toHaveCSS('opacity', '1');
+  const arriving = await stopSampling(page);
+  expect(arriving.tracks.crossfade.some((value) => value !== null), 'the pane crossfades from Planning to Library').toBe(true);
+  expect(overlappingFrames(arriving), 'the dialog rises only once the pane has settled').toBe(0);
+
+  await startSampling(page, { tracks: HANDOFF_TRACKS });
+  await dialog.getByTestId('library-import-close').click();
+  await expect(page.locator('[data-planning-import]')).toBeVisible();
+  await expect(page.locator('html.route-crossfade')).toHaveCount(0);
+  const leaving = await stopSampling(page);
+  const opacities = leaving.tracks.dialog.flatMap((value) => (value ? [value.opacity] : []));
+  expect(Math.min(...opacities), 'the dialog fades out instead of vanishing at full opacity').toBeLessThan(1);
+  expect(leaving.tracks.crossfade.some((value) => value !== null), 'the pane crossfades back to Planning').toBe(true);
+  expect(overlappingFrames(leaving), 'the route changes only after the dialog has left').toBe(0);
 });
 
 for (const locale of ['en', 'ja'] as const) {
