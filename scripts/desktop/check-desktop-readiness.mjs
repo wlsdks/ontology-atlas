@@ -580,10 +580,10 @@ if (
   // 2026-08-19: the old needle pair (Windows unsigned warning, Windows download)
   // left the page when the install section was deleted. The hero trust line is
   // promoted to a required needle because it carries the Apple check (notarisation)
-  // and the Windows unsigned fact; the no-backend fact is the open-source section's
-  // needle, `source.local.title`.
+  // and the Windows unsigned fact; the no-backend fact is the FAQ privacy answer's
+  // needle, `faq.items.privacy.a`.
   hostedDownloadSurfaceScript.includes("downloadCopy.trustLine") &&
-  hostedDownloadSurfaceScript.includes("downloadCopy.source?.local?.title") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.faq?.items?.privacy?.a") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.primaryCtaPublished") &&
   hostedDownloadSurfaceScript.includes("downloadCopy.webCta") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
