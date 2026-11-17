@@ -862,19 +862,22 @@ function drawFilm(
     return start >= 0 && T >= start + STROKE_MS;
   };
   const ghostIn = AT.flights + 200;
-  if (T >= ghostIn && T < AT.expose + 400) {
+  /*
+   * Below the map's right side, well clear of its lowest marks and of the caption on the left; a
+   * stage with no room under the map, or a phone's, where the map fills the picture, has none.
+   */
+  const baseline = L.zone.b + 150;
+  if (wide && baseline <= L.h - 24 && T >= ghostIn && T < AT.expose + 400) {
     let count = 0;
     for (let k = 0; k < scene.edges.length; k += 1) if (lit(k)) count += 1;
     const a = 0.1 * easeInOut(span(T, ghostIn, 260)) * (1 - easeInOut(span(T, AT.expose, 400)));
     if (a > 0) {
-      const size = wide ? 220 : 120;
+      const size = 160;
       ctx.globalAlpha = a;
       ctx.fillStyle = palette.ink;
       ctx.font = `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`;
       ctx.textAlign = 'end';
       ctx.textBaseline = 'alphabetic';
-      /* Under the map's right side, clear of the caption on the left. */
-      const baseline = Math.min(L.h - 24, L.zone.b + (wide ? 70 : 40));
       ctx.fillText(String(count), L.zone.r, baseline);
       const numeral = ctx.measureText(String(scene.edges.length)).width;
       ctx.textAlign = 'start';

@@ -1,9 +1,13 @@
+import { easeInOut } from './film-kit';
+
 /**
  * The harness film's cast: one fixed example repository, `my-app/`, read the way the app's Harness
  * › Setup screen reads a repository, and the geometry of the window the film draws that screen in.
  * The cast is an example a visitor could own, never this repository's own harness, so the film
  * shows what the tab does rather than what Atlas happens to have. Each file carries the tools that
- * read it; counts under a tool filter are computed from those, as the tab computes them.
+ * read it; counts under a tool filter are computed from those, as the tab computes them. The
+ * film's framing (picture zone, push, focus and pane cross-fades) is here too, as pure functions of
+ * film time, so tests can hold every frame to it.
  */
 
 export type AreaId = 'context' | 'guardrails' | 'verification';
@@ -305,21 +309,160 @@ export function wireFor(k: number, area: AreaId): Wire {
   return { points: pts, at, length: at[at.length - 1]! };
 }
 
-/** Where the window sits on the stage, and its scale: picture zone width over 1040. */
+/* ---------- the film's clock, in film milliseconds ---------- */
+
+/** Scan, filter, problem, copies that differ. */
+export const ACT_MS = [2600, 2600, 2800, 2800] as const;
+export const STARTS = [0, 2600, 5200, 8000] as const;
+export const TOTAL = 10800;
+/** Act two: panes 2 and 3 slide in once the last column has left their place for pane 1. */
+export const PANES_IN = [3600, 3940] as const;
+/** Act three: the problem line's chip is pressed and the hook opens. */
+export const PRESS = 6100;
+/** Panes 2 and 3 change subject by cross-fading, so they are never empty between two. */
+export const SWITCH_MS = 240;
+/** Act three hands panes 2 and 3 to act four's subagent across the join, with the captions. */
+export const TO_SUBAGENTS = STARTS[3] - SWITCH_MS / 2;
+
+/** A value eased between keys `[time, value]`, held before the first and after the last. */
+function keyedValue(keys: ReadonlyArray<readonly [number, number]>, T: number): number {
+  if (T <= keys[0]![0]) return keys[0]![1];
+  for (let i = 0; i < keys.length - 1; i += 1) {
+    const [a, va] = keys[i]!;
+    const [b, vb] = keys[i + 1]!;
+    if (T < b) return va + (vb - va) * easeInOut((T - a) / (b - a));
+  }
+  return keys[keys.length - 1]![1];
+}
+
+/** What panes 2 and 3 show, in turn. */
+export type PaneContent = 'skills' | 'hooks' | 'subagents';
+/** [content, in from, out from]; each change is one cross-fade of `SWITCH_MS`. */
+const CONTENT_KEYS: ReadonlyArray<readonly [PaneContent, number, number]> = [
+  ['skills', PANES_IN[0], PRESS + 40],
+  ['hooks', PRESS + 40, TO_SUBAGENTS],
+  ['subagents', TO_SUBAGENTS, Infinity],
+];
+
+/** Each content's opacity at T, and how long it has been coming in. */
+export function paneContentsAt(T: number): Array<{ id: PaneContent; a: number; since: number }> {
+  return CONTENT_KEYS.flatMap(([id, from, out]) => {
+    const fadeIn = id === 'skills' ? PANES_IN[1] - PANES_IN[0] : SWITCH_MS;
+    const a = easeInOut((T - from) / fadeIn) * (1 - easeInOut((T - out) / SWITCH_MS));
+    return a > 0.004 ? [{ id, a, since: T - from }] : [];
+  });
+}
+
+/*
+ * The camera. A recorded app screen reads as a calm product shot: the window never leaves its
+ * picture, and only pushes in gently about its own centre, once, from act two to act four, then
+ * eases back to the whole screen before the film holds and loops.
+ */
+export const PUSH_MAX = 1.05;
+const PUSH_KEYS: ReadonlyArray<readonly [number, number]> = [
+  [3000, 1],
+  [9200, PUSH_MAX],
+  [10600, 1],
+];
+
+export function pushAt(T: number): number {
+  return keyedValue(PUSH_KEYS, T);
+}
+
+/*
+ * Emphasis is light and dimming, not framing: each act's subject stays at full brightness and the
+ * rest of the window falls back to `DIM`, still legible. Act one and the end frame are the whole
+ * screen. In act four pane 2 keeps only its two tagged rows bright.
+ */
+export const DIM = 0.64;
+export type FocusRegion = 'header' | 'problem' | 'pane1' | 'pane2' | 'pane3';
+export type Focus = Record<FocusRegion, number>;
+const FOCUS_KEYS: Record<FocusRegion, ReadonlyArray<readonly [number, number]>> = {
+  /* The tool filter is act two's subject; from the problem line on, the header falls back. */
+  header: [
+    [5500, 1],
+    [5900, DIM],
+    [9800, DIM],
+    [10600, 1],
+  ],
+  /* The problem line is act three's; act four is about the copies. */
+  problem: [
+    [7700, 1],
+    [8100, DIM],
+    [9800, DIM],
+    [10600, 1],
+  ],
+  /* Once the chip is pressed, the hook config in panes 2 and 3 is the subject. */
+  pane1: [
+    [PRESS, 1],
+    [PRESS + 400, DIM],
+    [9800, DIM],
+    [10600, 1],
+  ],
+  pane2: [
+    [8000, 1],
+    [8400, DIM],
+    [9800, DIM],
+    [10600, 1],
+  ],
+  pane3: [[0, 1]],
+};
+
+export function focusAt(T: number): Focus {
+  return {
+    header: keyedValue(FOCUS_KEYS.header, T),
+    problem: keyedValue(FOCUS_KEYS.problem, T),
+    pane1: keyedValue(FOCUS_KEYS.pane1, T),
+    pane2: keyedValue(FOCUS_KEYS.pane2, T),
+    pane3: keyedValue(FOCUS_KEYS.pane3, T),
+  };
+}
+
+/** Where the window sits on the stage, and its scale. */
 export interface WindowFrame {
   x: number;
   y: number;
   s: number;
 }
 
+/** The picture zone on a stage, in CSS pixels: left, top, right, bottom. */
+export interface Zone {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+export const ZONE = { topMin: 120, labelGap: 24, captionGap: 32, edge: 32, narrow: 960 } as const;
+
 /**
- * The window on a playing stage: on the page column from `origin`, or wider when that column is
- * under 960px; under the film's title (`top`) and clear of the caption above `bottom`.
+ * The picture zone of a playing stage, from the page as laid out: the page column (read from the
+ * caption block, so it follows whatever gutter the page has), or 960px wide when that column is
+ * narrower, and between the stage label and the caption block with room around both.
  */
-export function playingFrame(w: number, origin: number, top: number, bottom: number): WindowFrame {
-  const left = w - 2 * origin >= 960 ? origin : Math.max(32, (w - 960) / 2);
-  const s = Math.max(0.5, Math.min((w - 2 * left) / WINDOW.w, (bottom - top) / WINDOW.h));
-  return { x: left, y: top, s };
+export function pictureZone(w: number, column: { left: number; right: number }, labelBottom: number, captionTop: number): Zone {
+  const narrow = column.right - column.left < ZONE.narrow;
+  const l = narrow ? Math.max(ZONE.edge, (w - ZONE.narrow) / 2) : column.left;
+  const r = narrow ? w - l : column.right;
+  return { l, r, t: Math.max(ZONE.topMin, labelBottom + ZONE.labelGap), b: captionTop - ZONE.captionGap };
+}
+
+/**
+ * The window on a playing stage: as large as the zone allows with room for the push, its left edge
+ * on the column line at the push's height, and centred between the label and the caption.
+ */
+export function playingFrame(zone: Zone): WindowFrame {
+  const zw = zone.r - zone.l;
+  const zh = zone.b - zone.t;
+  const s = Math.min(zw / WINDOW.w, zh / WINDOW.h) / PUSH_MAX;
+  return { x: zone.l + (WINDOW.w * s * (PUSH_MAX - 1)) / 2, y: zone.t + (zh - WINDOW.h * s) / 2, s };
+}
+
+/** The window's drawn rect under a push of `zoom` about its centre. */
+export function windowRect(win: WindowFrame, zoom: number): { x: number; y: number; w: number; h: number } {
+  const w = WINDOW.w * win.s * zoom;
+  const h = WINDOW.h * win.s * zoom;
+  return { x: win.x + (WINDOW.w * win.s - w) / 2, y: win.y + (WINDOW.h * win.s - h) / 2, w, h };
 }
 
 /** The window on the still stage shown under reduced motion: centred in the stage, at most 1:1. */
@@ -327,4 +470,15 @@ export function stillFrame(w: number, h: number, origin: number): WindowFrame {
   const left = w - 2 * origin >= 960 ? origin : Math.max(32, (w - 960) / 2);
   const s = Math.max(0.5, Math.min(1, (w - 2 * left) / WINDOW.w, (h - 48) / WINDOW.h));
   return { x: left, y: (h - WINDOW.h * s) / 2, s };
+}
+
+/**
+ * Narrower than the film, the whole window's type would fall under the floor, so the still shows
+ * pane 3 of the last frame alone, the two copies side by side, at a size that keeps it legible.
+ */
+export const STILL_DETAIL = { x: PANES[2].x, y: PANE_TOP, w: PANES[2].w, h: WINDOW.h - PANE_TOP } as const;
+
+export function stillDetailFrame(w: number, h: number, gutter: number): WindowFrame {
+  const s = Math.min(1, (w - 2 * gutter) / STILL_DETAIL.w, (h - 32) / STILL_DETAIL.h);
+  return { x: gutter - STILL_DETAIL.x * s, y: (h - STILL_DETAIL.h * s) / 2 - STILL_DETAIL.y * s, s };
 }
