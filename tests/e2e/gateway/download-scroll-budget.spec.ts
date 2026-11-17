@@ -4,11 +4,14 @@ import path from "node:path";
 import { seedFirstRunSeen } from "../first-run-seed";
 
 /**
- * Scroll budget, headed at DPR 2: ≤ 2% dropped frames, nothing over 50 ms. Local only
- * (`DOWNLOAD_SCROLL_BUDGET=1`): a CI runner has no GPU. `DOWNLOAD_SCROLL_BUDGET_OUT` keeps the numbers.
+ * Scroll budget at DPR 2: ≤ 2% dropped frames, nothing over 50 ms. Local only
+ * (`DOWNLOAD_SCROLL_BUDGET=1`): a CI runner has no GPU. Full Chromium's headless mode
+ * (`channel: 'chromium'`) composites on the GPU like a window does, without opening one; the
+ * default headless shell composites in software and would report frames several times slower.
+ * `DOWNLOAD_SCROLL_BUDGET_OUT` keeps the numbers.
  */
-test.skip(!process.env.DOWNLOAD_SCROLL_BUDGET, "local headed GPU measurement; set DOWNLOAD_SCROLL_BUDGET=1");
-test.use({ headless: false, deviceScaleFactor: 2 });
+test.skip(!process.env.DOWNLOAD_SCROLL_BUDGET, "local GPU measurement; set DOWNLOAD_SCROLL_BUDGET=1");
+test.use({ channel: "chromium", headless: true, deviceScaleFactor: 2 });
 test.describe.configure({ timeout: 900_000 });
 
 const VIEWPORTS = [
@@ -149,6 +152,35 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   return disarm(page);
 }
 
+/**
+ * The section pull across each playing film: rest one wheel notch inside the pull's reach above
+ * the film, then measure the glide that carries the page onto the film's start while it plays.
+ */
+async function pulled(page: Page, viewport: { width: number; height: number }): Promise<Leg> {
+  await openPage(page, viewport);
+  await arm(page);
+  for (const id of ["gateway-film", "gateway-harness"]) {
+    const start = await page.evaluate((testId) => {
+      const pane = document.querySelector<HTMLElement>("[data-app-shell-pane]")!;
+      const film = document.querySelector(`[data-testid="${testId}"]`)!;
+      const top = Math.round(film.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop);
+      pane.scrollTo({ top: top - Math.floor(pane.clientHeight * 0.3) - 100, behavior: "instant" });
+      return top;
+    }, id);
+    // measurement window: part of the leg
+    await page.waitForTimeout(1000);
+    await page.mouse.wheel(0, 100);
+    await page.waitForFunction(
+      (top) => Math.abs(document.querySelector<HTMLElement>("[data-app-shell-pane]")!.scrollTop - top) <= 1,
+      start,
+    );
+    await expect(page.getByTestId(id)).toHaveAttribute(id === "gateway-film" ? "data-gateway-film" : "data-gateway-harness", /playing/);
+    // measurement window: part of the leg
+    await page.waitForTimeout(1000);
+  }
+  return disarm(page);
+}
+
 function median(values: number[]): number {
   const s = [...values].sort((a, b) => a - b);
   return s[Math.floor(s.length / 2)]!;
@@ -159,6 +191,7 @@ for (const viewport of VIEWPORTS) {
   for (const [name, leg] of [
     ["brisk", brisk],
     ["parked", parked],
+    ["pulled", pulled],
   ] as const) {
     test(`${viewport.width}×${viewport.height} ${name}: ≤ 2% dropped, nothing over 50 ms`, async ({ browser }) => {
       const runs: Leg[] = [];
