@@ -99,7 +99,6 @@ export const ACCEPTED = {
       'footer.license': 'a licence line kept in English in the Korean footer',
       'footer.stack': 'a technology list kept in English in the Korean footer',
       'library.rounds.sheet.wherePlaceholder': 'an example of chat channels and database names',
-      'projectPages.detail.topBarProjectFallback': 'a fallback label shown before the project name loads',
       'searchWidgets.projectSearch.containerBadge': 'a container badge kept in English',
       'settings.projectForm.fields.nameEnPlaceholder': 'a placeholder that asks for the English name',
       'settings.projectForm.fields.linksPlaceholder': 'an example link title and URL',

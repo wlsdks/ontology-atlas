@@ -48,20 +48,21 @@ export function ShellFrame({
               the scroll. Declared once here so no page has to remember it. */}
           {/* The test id names this slot because `.overflow-y-auto` also matches the rail's `<nav>`. */}
           {/*
-            The route crossfade captures `data-app-shell-pane` (`app/globals.css`). An
-            attribute, named only during a transition, so the box is not a stacking context or
-            containing block for pages' fixed surfaces otherwise. The rail is not captured, so it
-            keeps painting and taking presses while the pane fades.
+            The route crossfade captures the frame around the pane (`app/styles/base-motion.css`),
+            named only during a transition, so it is not a stacking context or containing block for
+            pages' fixed surfaces otherwise. The rail is outside it and keeps taking presses.
           */}
-          <div
-            data-testid="app-shell-body-slot"
-            data-app-shell-pane=""
-            inert={busy}
-            aria-busy={busy}
-            aria-hidden={busy ? true : undefined}
-            className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${slotClassName}`}
-          >
-            {children}
+          <div data-app-shell-pane-frame="" className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div
+              data-testid="app-shell-body-slot"
+              data-app-shell-pane=""
+              inert={busy}
+              aria-busy={busy}
+              aria-hidden={busy ? true : undefined}
+              className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${slotClassName}`}
+            >
+              {children}
+            </div>
           </div>
           {overlay}
         </div>

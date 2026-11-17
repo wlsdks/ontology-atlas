@@ -14,6 +14,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("@/features/project-data-source", () => ({
+  useSelectedProjectSlug: () => null,
   useProjects: () => ({
     projects: [
       {
