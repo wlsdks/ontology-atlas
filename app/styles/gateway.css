@@ -458,85 +458,232 @@
     animation-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger) * 3);
   }
 
-  /* Each step's rule draws toward the next step once the row is seen. */
+  /* The rail draws itself once, step by step, along the way the steps are read. */
   [data-gateway-entrance='entering'] .gateway-step-rule {
-    transform-origin: left center;
-    animation: gatewayRuleDraw calc(var(--motion-slow) * 3) var(--motion-ease) both;
-    animation-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger) * 3 + var(--motion-slow));
+    animation: gatewayRuleDrawY calc(var(--motion-slow) * 2) var(--motion-ease) both;
+    animation-delay: calc(var(--gateway-step, 0) * var(--motion-slow));
+  }
+
+  @container (min-width: 52rem) {
+    [data-gateway-entrance='entering'] .gateway-step-rule {
+      animation-name: gatewayRuleDraw;
+    }
+  }
+}
+
+/*
+ * The steps' rail. On a phone it runs down the left of the stacked steps, from each node to the
+ * next; from 52rem it runs across the three columns. Gaps match the list's `gap-y-10`/`gap-x-8`.
+ * Without motion it stands complete: every node reached, the fill all the way along.
+ */
+.gateway-step-track {
+  left: 5px;
+  top: 6px;
+  bottom: calc(-2.5rem - 6px);
+  width: 2px;
+}
+
+[data-gateway-step='2'] .gateway-step-track {
+  bottom: 0;
+}
+
+@container (min-width: 52rem) {
+  .gateway-step-track {
+    left: 6px;
+    top: 5px;
+    right: calc(-2rem - 6px);
+    bottom: auto;
+    width: auto;
+    height: 2px;
+  }
+
+  [data-gateway-step='2'] .gateway-step-track {
+    right: 0;
   }
 }
 
 .gateway-step-rule {
-  background: linear-gradient(90deg, var(--color-border-strong), transparent);
-}
-
-.gateway-step-track {
-  overflow-x: clip;
+  background: var(--color-border-soft);
+  transform-origin: top center;
 }
 
 .gateway-step-spark {
-  opacity: 0;
-  background: linear-gradient(90deg, transparent, var(--map-indigo-bright) 80%, var(--color-text-primary));
-  filter: drop-shadow(0 0 6px var(--map-indigo-bright));
+  background: var(--color-text-primary);
+  transform-origin: top center;
 }
 
-.gateway-step-lit {
+@container (min-width: 52rem) {
+  .gateway-step-rule,
+  .gateway-step-spark {
+    transform-origin: left center;
+  }
+}
+
+.gateway-step-node {
+  z-index: 1;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-canvas);
+}
+
+.gateway-step-node .gateway-step-lit {
+  background: var(--color-text-primary);
+}
+
+.gateway-step-press .gateway-step-lit,
+.gateway-step-press[data-gateway-hit] {
   opacity: 0;
-  border: 1px solid var(--map-indigo-bright);
-  background: var(--gateway-closing-glow);
-  box-shadow: 0 0 18px var(--gateway-hero-light-core);
+}
+
+/* A scene's control is pressed a beat after the fill reaches its node, not with the node's ring. */
+[data-step-scene] .gateway-step-press {
+  --gateway-step-press-at: var(--motion-base);
 }
 
 /*
- * One cycle walks the three steps: a step's button lights as if pressed, then light runs its rule
- * toward the next. Each step starts a third of a cycle after the one before.
+ * One cycle walks the steps: step one is lit; 600ms before each turn ends the fill travels to the
+ * next node, which fills and lights the control its scene presses; past the third it runs to the
+ * rail's end, holds, and everything fades together before step one lights again. Each step's fill
+ * and light have their own keyframes because they share one clock; the press is the same beat
+ * offset per step, plus the scene's own `--gateway-step-press-at`. The scenes above the titles
+ * (`StepScenes.tsx`) read this clock, so `STEP_CYCLE_MS` there must equal the cycle here.
  */
 @media (prefers-reduced-motion: no-preference) {
   [data-gateway-steps-motion] {
-    --gateway-steps-cycle: 7.5s;
+    --gateway-steps-cycle: 7.8s;
   }
 
   [data-gateway-steps-motion] .gateway-step-spark {
-    animation: gatewayStepSpark var(--gateway-steps-cycle) var(--motion-ease) infinite both;
+    animation: gatewayStepFillY0 var(--gateway-steps-cycle) ease-in-out infinite both;
   }
 
   [data-gateway-steps-motion] .gateway-step-lit {
-    animation: gatewayStepLit var(--gateway-steps-cycle) var(--motion-ease) infinite both;
+    animation: gatewayStepLit0 var(--gateway-steps-cycle) var(--motion-ease) infinite both;
   }
 
   [data-gateway-steps-motion] .gateway-step-press {
     animation: gatewayStepPress var(--gateway-steps-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(
+      var(--gateway-step, 0) * var(--gateway-steps-cycle) * 11 / 39 + var(--gateway-step-press-at, 0ms)
+    );
+  }
+
+  /* Forwards only: before its first beat a ring keeps its resting style, which is unseen. */
+  [data-gateway-steps-motion] .gateway-step-press[data-gateway-hit] {
+    animation-name: gatewayStepRing;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+  }
+
+  [data-gateway-steps-motion] [data-gateway-step='1'] .gateway-step-spark {
+    animation-name: gatewayStepFillY1;
+  }
+
+  [data-gateway-steps-motion] [data-gateway-step='2'] .gateway-step-spark {
+    animation-name: gatewayStepFillY2;
+  }
+
+  [data-gateway-steps-motion] [data-gateway-step='1'] .gateway-step-lit {
+    animation-name: gatewayStepLit1;
+  }
+
+  [data-gateway-steps-motion] [data-gateway-step='2'] .gateway-step-lit {
+    animation-name: gatewayStepLit2;
+  }
+
+  @container (min-width: 52rem) {
+    [data-gateway-steps-motion] .gateway-step-spark {
+      animation-name: gatewayStepFillX0;
+    }
+
+    [data-gateway-steps-motion] [data-gateway-step='1'] .gateway-step-spark {
+      animation-name: gatewayStepFillX1;
+    }
+
+    [data-gateway-steps-motion] [data-gateway-step='2'] .gateway-step-spark {
+      animation-name: gatewayStepFillX2;
+    }
   }
 
   /* After the shorthands, which would reset these. */
-  [data-gateway-steps-motion] :is(.gateway-step-spark, .gateway-step-lit, .gateway-step-press) {
-    animation-delay: calc(var(--gateway-step, 0) * var(--gateway-steps-cycle) / 3);
+  [data-gateway-steps-motion] .gateway-step-spark,
+  [data-gateway-steps-motion] .gateway-step-lit,
+  [data-gateway-steps-motion] .gateway-step-press {
     animation-play-state: paused;
   }
 
-  [data-gateway-steps-motion='running'] :is(.gateway-step-spark, .gateway-step-lit, .gateway-step-press) {
+  [data-gateway-steps-motion='running'] .gateway-step-spark,
+  [data-gateway-steps-motion='running'] .gateway-step-lit,
+  [data-gateway-steps-motion='running'] .gateway-step-press {
     animation-play-state: running;
   }
 }
 
-@keyframes gatewayStepLit {
+/* 7.8s: a 2.2s turn per step (11/39 of the cycle), each ending in a 600ms travel; 600ms hold; 600ms fade. */
+@keyframes gatewayStepFillY0 {
+  0%, 20.513% { transform: scaleY(0); opacity: 1; }
+  28.205%, 92.308% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+@keyframes gatewayStepFillY1 {
+  0%, 48.718% { transform: scaleY(0); opacity: 1; }
+  56.41%, 92.308% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+@keyframes gatewayStepFillY2 {
+  0%, 76.923% { transform: scaleY(0); opacity: 1; }
+  84.615%, 92.308% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+@keyframes gatewayStepFillX0 {
+  0%, 20.513% { transform: scaleX(0); opacity: 1; }
+  28.205%, 92.308% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+@keyframes gatewayStepFillX1 {
+  0%, 48.718% { transform: scaleX(0); opacity: 1; }
+  56.41%, 92.308% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+@keyframes gatewayStepFillX2 {
+  0%, 76.923% { transform: scaleX(0); opacity: 1; }
+  84.615%, 92.308% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+@keyframes gatewayStepLit0 {
   0% { opacity: 0; }
-  5%, 30% { opacity: 1; }
-  42%, 100% { opacity: 0; }
+  3.205%, 92.308% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
+@keyframes gatewayStepLit1 {
+  0%, 28.205% { opacity: 0; }
+  31.41%, 92.308% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes gatewayStepLit2 {
+  0%, 56.41% { opacity: 0; }
+  59.615%, 92.308% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* A press: a 100ms dip and a 200ms return. */
 @keyframes gatewayStepPress {
-  0%, 2% { transform: scale(1); }
-  4% { transform: scale(0.94); }
-  8%, 100% { transform: scale(1); }
+  0% { transform: scale(1); }
+  1.282% { transform: scale(0.94); }
+  3.846%, 100% { transform: scale(1); }
 }
 
-/* The streak is two fifths of the rule, so 250% of its own width carries it the whole way. */
-@keyframes gatewayStepSpark {
-  0%, 12% { opacity: 0; transform: translateX(-100%); }
-  16% { opacity: 1; }
-  32% { opacity: 1; transform: translateX(250%); }
-  35%, 100% { opacity: 0; transform: translateX(250%); }
+/* The node's beat: 320ms (4.103%), from the node's own size out 28px, 0.5 to nothing. */
+@keyframes gatewayStepRing {
+  0% { opacity: 0.5; transform: scale(0.18); }
+  4.103%, 100% { opacity: 0; transform: scale(1); }
 }
 
 /* The hero window's light at card size: it falls from the top of each drawing. */
@@ -547,140 +694,227 @@
 }
 
 /*
- * The loop cards play one story in reading order: the agent reads, a commit marks three concepts,
- * a person presses "Allow once". Each card lights while its part plays. It runs only while
- * `useSceneMotion` reports the row in view; with no script, and under reduced motion, every line
- * stands still and complete. Only opacity, transform and filter move.
+ * The loop cards take turns in reading order: the agent reads, a commit marks three concepts, a
+ * person presses "Allow once". In its 3.6s turn a card lights its outline, its drawing comes from
+ * 60% to full and one 900ms action ends on one hit (`gateway-scene-ring`); the others wait at 60%.
+ * It runs only while `useInViewMotion` reports the row in view; with no script, and under reduced
+ * motion, every drawing stands still and complete. Only opacity, transform and filter move.
  */
 .gateway-scene-pointer,
-.gateway-scene-focus {
+.gateway-scene-focus,
+.gateway-scene-ring {
   opacity: 0;
 }
 
 .gateway-scene-focus {
-  box-shadow:
-    inset 0 0 0 1px var(--gateway-window-edge),
-    0 0 2.5rem -0.75rem var(--gateway-hero-light-core);
+  box-shadow: inset 0 0 0 1px var(--gateway-window-edge);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   [data-gateway-scene-motion] {
-    --gateway-scene-cycle: 13.5s;
+    --gateway-scene-cycle: 10.8s;
   }
 
   [data-gateway-scene-motion] .gateway-scene-read {
-    animation: gatewaySceneRead var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--motion-stagger-index, 0) * 160ms);
-    animation-play-state: paused;
+    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
   }
 
   [data-gateway-scene-motion] .gateway-scene-mark {
-    animation: gatewaySceneMark var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--motion-stagger-index, 0) * 160ms);
-    animation-play-state: paused;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-dot {
-    animation: gatewaySceneDot var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--motion-stagger-index, 0) * 160ms);
-    animation-play-state: paused;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-ring {
-    animation: gatewaySceneRing var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--motion-stagger-index, 0) * 160ms);
-    animation-play-state: paused;
+    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
   }
 
   [data-gateway-scene-motion] .gateway-scene-allow {
-    animation: gatewaySceneAllow var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--motion-stagger-index, 0) * 160ms);
-    animation-play-state: paused;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-pointer {
-    animation: gatewayScenePointer var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-play-state: paused;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-press {
-    animation: gatewayScenePress var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-play-state: paused;
+    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
   }
 
   [data-gateway-scene-motion] .gateway-scene-focus {
     animation: gatewaySceneFocus var(--gateway-scene-cycle) var(--motion-ease) infinite both;
     animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-dot {
+    animation: gatewaySceneDot var(--gateway-scene-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-pointer {
+    animation: gatewayScenePointer var(--gateway-scene-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-pointer[data-gateway-hit='sweep'] {
+    animation-name: gatewaySceneSweep;
+    animation-timing-function: ease-in-out;
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-press {
+    animation: gatewayScenePress var(--gateway-scene-cycle) var(--motion-ease) infinite both;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
+  }
+
+  /* The hit lands at the action's end: 900ms into the turn, 720ms where the reading line meets the concept. */
+  [data-gateway-scene-motion] .gateway-scene-ring {
+    --gateway-scene-hit: 900ms;
+    /* Forwards only: before its first beat a ring keeps its resting style, which is unseen. */
+    animation: gatewaySceneRing var(--gateway-scene-cycle) ease-out infinite forwards;
+    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0) + var(--gateway-scene-hit));
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-read .gateway-scene-ring {
+    --gateway-scene-hit: 720ms;
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-ring[data-gateway-hit='press'] {
+    animation-name: gatewayScenePressRing;
+  }
+
+  [data-gateway-scene-motion] .gateway-scene-read,
+  [data-gateway-scene-motion] .gateway-scene-mark,
+  [data-gateway-scene-motion] .gateway-scene-allow,
+  [data-gateway-scene-motion] .gateway-scene-focus,
+  [data-gateway-scene-motion] .gateway-scene-dot,
+  [data-gateway-scene-motion] .gateway-scene-pointer,
+  [data-gateway-scene-motion] .gateway-scene-press,
+  [data-gateway-scene-motion] .gateway-scene-ring {
     animation-play-state: paused;
   }
 
   [data-gateway-scene-motion='running'] .gateway-scene-read,
   [data-gateway-scene-motion='running'] .gateway-scene-mark,
-  [data-gateway-scene-motion='running'] .gateway-scene-dot,
-  [data-gateway-scene-motion='running'] .gateway-scene-ring,
   [data-gateway-scene-motion='running'] .gateway-scene-allow,
+  [data-gateway-scene-motion='running'] .gateway-scene-focus,
+  [data-gateway-scene-motion='running'] .gateway-scene-dot,
   [data-gateway-scene-motion='running'] .gateway-scene-pointer,
   [data-gateway-scene-motion='running'] .gateway-scene-press,
-  [data-gateway-scene-motion='running'] .gateway-scene-focus {
+  [data-gateway-scene-motion='running'] .gateway-scene-ring {
     animation-play-state: running;
   }
 }
 
-/* A part waiting for its turn stays faint, so no card ever stands empty. */
-@keyframes gatewaySceneRead {
-  0% { opacity: 0.16; transform: translateY(0.375rem); }
-  4%, 93% { opacity: 1; transform: none; }
-  97%, 100% { opacity: 0.16; transform: translateY(0.375rem); }
-}
-
-@keyframes gatewaySceneMark {
-  0%, 33% { opacity: 0.16; transform: translateY(0.375rem); }
-  37%, 93% { opacity: 1; transform: none; }
-  97%, 100% { opacity: 0.16; transform: translateY(0.375rem); }
-}
-
-@keyframes gatewaySceneDot {
-  0%, 45% { opacity: 0; transform: scale(0); }
-  48% { opacity: 1; transform: scale(1.6); }
-  51%, 93% { opacity: 1; transform: scale(1); }
-  97%, 100% { opacity: 0; transform: scale(1); }
-}
-
-@keyframes gatewaySceneRing {
-  0%, 47% { opacity: 0; transform: scale(1); }
-  48% { opacity: 0.9; transform: scale(1); }
-  58%, 100% { opacity: 0; transform: scale(3.4); }
-}
-
-@keyframes gatewaySceneAllow {
-  0%, 66% { opacity: 0.16; transform: translateY(0.5rem); }
-  70%, 93% { opacity: 1; transform: none; }
-  97%, 100% { opacity: 0.16; transform: translateY(0.5rem); }
-}
-
-@keyframes gatewayScenePointer {
-  0%, 72% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
-  74% { opacity: 1; transform: translate(3.5rem, 2.25rem); }
-  80% { opacity: 1; transform: translate(0, 0) scale(1); }
-  81.5% { opacity: 1; transform: translate(0, 0) scale(0.8); }
-  83%, 90% { opacity: 1; transform: translate(0, 0) scale(1); }
-  93%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
-}
-
-@keyframes gatewayScenePress {
-  0%, 81% { transform: none; filter: none; }
-  81.5% { transform: scale(0.93); filter: brightness(1.35); }
-  84%, 93% { transform: none; filter: brightness(1.15); }
-  97%, 100% { transform: none; filter: none; }
+/* 10.8s, a third per card. In: 400ms (3.7%). Out: from 3.2s (29.63%) to the turn's end (33.33%). */
+@keyframes gatewaySceneTurn {
+  0% { opacity: 0.6; }
+  3.7%, 29.63% { opacity: 1; }
+  33.33%, 100% { opacity: 0.6; }
 }
 
 @keyframes gatewaySceneFocus {
   0% { opacity: 0; }
-  3%, 30% { opacity: 1; }
-  34%, 100% { opacity: 0; }
+  3.7%, 29.63% { opacity: 1; }
+  33.33%, 100% { opacity: 0; }
+}
+
+/* The reading line: down the answer from 300ms to 1.2s, then gone until the next turn. */
+@keyframes gatewaySceneSweep {
+  0%, 2.78% { opacity: 0; transform: translateY(0); }
+  3.7% { opacity: 0.5; }
+  10.19% { opacity: 0.5; }
+  11.11%, 100% { opacity: 0; transform: translateY(100%); }
+}
+
+/* The marks land at 900ms with the beat, and leave quietly half a second before the next turn. */
+@keyframes gatewaySceneDot {
+  0%, 7.41% { opacity: 0; transform: scale(0); }
+  8.33% { opacity: 1; transform: scale(1.3); }
+  9.72%, 92.59% { opacity: 1; transform: scale(1); }
+  96.3%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* 320ms (2.96%): from the mark's own size out 28px, 0.5 to nothing. */
+@keyframes gatewaySceneRing {
+  0% { opacity: 0.5; transform: scale(0.15); }
+  2.96%, 100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes gatewayScenePressRing {
+  0% { opacity: 0.5; transform: scale(0.86); }
+  2.96%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* The hand comes in from 300ms, presses at 900ms, rests on the button and leaves with the turn. */
+@keyframes gatewayScenePointer {
+  0%, 2.78% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
+  3.7% { opacity: 1; }
+  7.41% { transform: translate(0, 0) scale(1); }
+  8.33% { transform: translate(0, 0) scale(0.8); }
+  9.72%, 29.63% { opacity: 1; transform: translate(0, 0) scale(1); }
+  33.33% { opacity: 0; transform: translate(0, 0) scale(1); }
+  34.26%, 100% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
+}
+
+@keyframes gatewayScenePress {
+  0%, 8.33% { transform: none; filter: none; }
+  8.8% { transform: scale(0.93); filter: brightness(1.35); }
+  10.65%, 29.63% { transform: none; filter: brightness(1.15); }
+  33.33%, 100% { transform: none; filter: none; }
 }
 
 @keyframes gatewayRuleDraw {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+
+@keyframes gatewayRuleDrawY {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/*
+ * The screens swap in 240ms: the new capture fades in from 2% larger, the old one fades out in
+ * place; their captions only fade. Under reduced motion these rules do not exist and the base
+ * opacity-only crossfade in `base-motion.css` applies.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .gateway-scroll-stage > .gateway-screen-in {
+    animation: gatewayScreenIn var(--motion-settle) var(--motion-ease) both;
+  }
+
+  .gateway-screen-captions > .gateway-screen-in {
+    animation-duration: var(--motion-settle);
+  }
+
+  .gateway-scroll-stage > .gateway-screen-out,
+  .gateway-screen-captions > .gateway-screen-out {
+    animation-duration: var(--motion-settle);
+  }
+}
+
+@keyframes gatewayScreenIn {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * The FAQ picker's answer arrives in 240ms, rising 8px as it fades in, while the one it replaces
+ * fades out in place in 120ms. Under reduced motion the picker is not built and every answer
+ * stands in a list.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .gateway-faq-answers > .gateway-screen-in {
+    animation: gatewayFaqIn var(--motion-settle) var(--motion-ease) both;
+  }
+
+  .gateway-faq-answers > .gateway-screen-out {
+    animation-duration: var(--motion-fast);
+  }
+}
+
+@keyframes gatewayFaqIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

@@ -29,6 +29,7 @@ import {
   windowsAsset,
 } from '../lib/release-state';
 import { useStageGraph } from '../lib/use-stage-graph';
+import type { StageGraph } from '../lib/stage-graph';
 import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
 import { LoopSection, StartSection } from './LoopSection';
@@ -41,6 +42,7 @@ import { MotionToggle } from '@/shared/ui/controls/motion-toggle';
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { SectionIntro } from './SectionIntro';
 import { ClosingContact } from './ClosingContact';
+import { ClosingMap } from './ClosingMap';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 
 /**
@@ -102,10 +104,11 @@ export function DownloadPage() {
         <HarnessFilm />
         <LoopSection graph={graph} />
         <ScreensSection />
-        <StartSection />
+        <StartSection graph={graph} />
         <OpenSourceSection />
         <FaqSection />
         <ClosingSection
+          graph={graph}
           published={published}
           primaryAsset={primaryAsset}
           windowsInstaller={windowsInstaller}
@@ -441,12 +444,14 @@ function TrustLine({
 }
 
 function ClosingSection({
+  graph,
   published,
   primaryAsset,
   windowsInstaller,
   windowsPrimary,
   fileWins,
 }: {
+  graph: StageGraph;
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
   windowsInstaller: ReturnType<typeof windowsAsset>;
@@ -458,11 +463,14 @@ function ClosingSection({
     <section
       data-testid="gateway-closing"
       aria-labelledby="gateway-closing-title"
-      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
+      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full overflow-x-clip')}
     >
-      {/* The headline measures against the whole column, as the hero's does. */}
       <div className={cn(PAGE_COLUMN, '@container min-w-0 border-t border-[color:var(--color-divider)] pt-16 sm:pt-20')}>
-        <div className="grid min-w-0 gap-x-16 gap-y-10 @min-[52rem]:grid-cols-[minmax(0,1fr)_minmax(0,17rem)] @min-[52rem]:items-end">
+        {/*
+          The words on the left, the film's finished map on the right, where it runs past the column
+          to 2rem from the window's edge as the hero's app window does; stacked, the map follows.
+        */}
+        <div className="grid min-w-0 gap-x-12 gap-y-10 @min-[52rem]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           <div className="min-w-0">
             <h2
               id="gateway-closing-title"
@@ -483,17 +491,24 @@ function ClosingSection({
               className="mt-5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               windowsPrimary={windowsPrimary}
             />
+            <FactsStrip
+              scope="gateway-closing"
+              row
+              className="mt-8"
+              published={published}
+              primaryAsset={primaryAsset}
+              windowsAsset={windowsInstaller}
+              windowsPrimary={windowsPrimary}
+              sizeOnCta={fileWins}
+              heroIn
+            />
           </div>
-          <FactsStrip
-            scope="gateway-closing"
-            stacked
-            published={published}
-            primaryAsset={primaryAsset}
-            windowsAsset={windowsInstaller}
-            windowsPrimary={windowsPrimary}
-            sizeOnCta={fileWins}
-            heroIn
-          />
+          <div className="relative min-w-0 @min-[52rem]:min-h-[26rem]">
+            <ClosingMap
+              graph={graph}
+              className="aspect-[4/3] w-full @min-[52rem]:absolute @min-[52rem]:-inset-y-8 @min-[52rem]:left-0 @min-[52rem]:right-[calc(2rem-var(--gateway-origin))] @min-[52rem]:aspect-auto @min-[52rem]:w-auto"
+            />
+          </div>
         </div>
         <ClosingContact className="mt-16 border-t border-[color:var(--color-divider)] pt-8" />
       </div>
@@ -507,7 +522,7 @@ function ClosingSection({
  */
 function FactsStrip({
   scope = 'gateway',
-  stacked = false,
+  row = false,
   className,
   published,
   primaryAsset,
@@ -517,8 +532,8 @@ function FactsStrip({
   heroIn,
 }: {
   scope?: 'gateway' | 'gateway-closing';
-  /** One fact per line in sans at the reading size, for the closing's side column. */
-  stacked?: boolean;
+  /** One wrapping row in sans under the closing's trust line, with no rule of its own. */
+  row?: boolean;
   className?: string;
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
@@ -596,25 +611,25 @@ function FactsStrip({
       <div
         data-testid={`${scope}-facts`}
         className={cn(
-          !stacked && PAGE_COLUMN,
-          !stacked && '@container/gateway-facts border-t border-[color:var(--color-border-soft)] py-5',
+          !row && PAGE_COLUMN,
+          !row && '@container/gateway-facts border-t border-[color:var(--color-border-soft)] py-5',
         )}
       >
         <dl
           className={
-            stacked
-              ? 'grid min-w-0 grid-cols-1 gap-x-6 gap-y-4 @min-[30rem]:grid-cols-2 @min-[52rem]:grid-cols-1'
+            row
+              ? 'flex min-w-0 flex-wrap gap-x-8 gap-y-4'
               : 'grid min-w-0 grid-cols-1 gap-x-12 gap-y-4 @min-[21rem]/gateway-facts:grid-cols-2 @min-[54rem]/gateway-facts:grid-cols-[repeat(4,minmax(0,1fr))] @min-[66rem]/gateway-facts:flex'
           }
         >
           {facts.map((fact) => (
             <div key={fact.label} className={cn('min-w-0', fact.narrowOnly && 'sm:hidden')}>
-              <dt className={stacked ? STACKED_LABEL : FACT_LABEL}>{fact.label}</dt>
+              <dt className={row ? ROW_LABEL : FACT_LABEL}>{fact.label}</dt>
               <dd
                 data-token="engraved-numeral"
                 className={cn(
                   FACT_VALUE,
-                  stacked && STACKED_VALUE,
+                  row && ROW_VALUE,
                   'tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
                   fact.code && 'font-mono',
                 )}
@@ -626,7 +641,7 @@ function FactsStrip({
                     rel="noreferrer noopener"
                     aria-label={fact.name}
                     data-testid={`${scope}-facts-sha`}
-                    className={cn(FACT_LINK, 'font-mono', stacked && STACKED_VALUE)}
+                    className={cn(FACT_LINK, 'font-mono', row && ROW_VALUE)}
                   >
                     <span aria-hidden data-external-link-marker>
                       ↗
@@ -662,9 +677,9 @@ const FACT_LABEL =
 
 const FACT_VALUE = 'mt-1 text-body leading-body';
 
-const STACKED_LABEL = 'text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]';
+const ROW_LABEL = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
 
-const STACKED_VALUE = 'mt-0.5 text-body-lg leading-body-lg';
+const ROW_VALUE = 'mt-1 text-body leading-body';
 
 const FACT_LINK = controlClass({
   shape: 'link',
