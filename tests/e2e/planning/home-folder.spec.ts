@@ -123,7 +123,7 @@ test('creating the planning folder turns the same stage into a title field that 
   await expect(page.locator('[data-testid="planning-stage"]')).toHaveCount(0);
 });
 
-test('an empty planning folder reached from the rail leaves focus alone until New document asks for a title', async ({ page }) => {
+test('an empty planning folder reached from the rail leaves focus alone and offers its first actions only once', async ({ page }) => {
   await openVault(page);
   await goTo(page, 'Planning');
   await page.getByRole('button', { name: planning.createHome }).click();
@@ -132,11 +132,12 @@ test('an empty planning folder reached from the rail leaves focus alone until Ne
   await expect(page.getByTestId('library-page')).toBeVisible();
   await goTo(page, 'Planning');
 
-  const title = page.locator(EMPTY_HOME).getByRole('textbox', { name: planning.documentTitle });
+  const stage = page.locator(EMPTY_HOME);
+  const title = stage.getByRole('textbox', { name: planning.documentTitle });
   await expect(title).toBeVisible();
   await expect(title).not.toBeFocused();
-  await page.getByRole('button', { name: planning.newDocument, exact: true }).click();
-  await expect(title).toBeFocused();
+  await expect(stage.getByRole('button', { name: planning.createDocument, exact: true })).toBeVisible();
+  await expect(page.locator('[data-planning-new], [data-planning-add], [data-planning-import]'), 'the header does not repeat the stage').toHaveCount(0);
   await expect(page.locator('[data-planning-draft]')).toHaveCount(0);
 });
 
