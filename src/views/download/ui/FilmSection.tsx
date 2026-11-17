@@ -523,6 +523,31 @@ function layoutFilm(
   };
 }
 
+/**
+ * Draws the whole film off screen in idle time before it plays, a few moments per slice, so every
+ * name's bitmap is made before its first frame instead of in the middle of a camera move.
+ */
+function warmFilm(draw: (ctx: CanvasRenderingContext2D, T: number) => void): () => void {
+  const scratch = document.createElement('canvas');
+  scratch.width = 300;
+  scratch.height = 300;
+  const ctx = scratch.getContext('2d');
+  if (!ctx) return () => {};
+  let T = 0;
+  let handle = 0;
+  const idle = typeof requestIdleCallback === 'function';
+  const slice = (deadline?: IdleDeadline) => {
+    const until = performance.now() + 6;
+    while (T <= FILM_MS && (deadline ? deadline.timeRemaining() > 2 : performance.now() < until)) {
+      draw(ctx, T);
+      T += 200;
+    }
+    if (T <= FILM_MS) handle = idle ? requestIdleCallback(slice, { timeout: 400 }) : window.setTimeout(slice, 16);
+  };
+  handle = idle ? requestIdleCallback(slice, { timeout: 400 }) : window.setTimeout(slice, 16);
+  return () => (idle ? cancelIdleCallback(handle) : window.clearTimeout(handle));
+}
+
 /** Room around a stamp's text for its halo. */
 const STAMP_PAD = 4;
 
@@ -1262,6 +1287,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     const palette = readPalette();
     const sprites = { indigo: lightSprite(palette.indigo), amber: lightSprite(palette.amber) };
     let layout: Layout | null = null;
+    let stopWarm = () => {};
     let shown = film ? 0 : STILL_MS / FILM_MS;
     let clock = 0;
     let veil = 1;
@@ -1305,12 +1331,18 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       const col = column.current?.getBoundingClientRect();
       const lane = col && col.width > 0 ? { left: col.left - box.left, width: col.width } : { left: 24, width: w - 48 };
       layout = layoutFilm(ctx, cast, palette, w, h, dpr, lane, film);
+      stopWarm();
+      if (film) {
+        const warmed = layout;
+        stopWarm = warmFilm((scratch, T) => drawFilm(scratch, cast, warmed, palette, sprites, T, 0));
+      }
       paint();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     resize();
     if (!film) return () => observer.disconnect();
+
 
     const unregister = registerGatedFrameClient(
       host,
@@ -1347,6 +1379,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     }
     return () => {
       observer.disconnect();
+      stopWarm();
       unregister();
       offPause();
       seek.current = () => {};
