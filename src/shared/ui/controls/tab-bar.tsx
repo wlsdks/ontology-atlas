@@ -27,6 +27,7 @@ export function TabBar({
   placement = 'default',
   orientation = 'horizontal',
   variant = 'underline',
+  size = 'default',
 }: {
   items: readonly TabBarItem[];
   activeKey: string;
@@ -52,9 +53,15 @@ export function TabBar({
    * header that holds a few sibling views. Horizontal only.
    */
   variant?: 'underline' | 'segmented';
+  /**
+   * `reading` sets each label at `text-body-lg` on a 44px touch-height row, for tabs whose labels
+   * are sentences someone reads (a page's questions), not short view names. Vertical only.
+   */
+  size?: 'default' | 'reading';
 }) {
   const vertical = orientation === 'vertical';
   const segmented = variant === 'segmented' && !vertical;
+  const reading = size === 'reading' && vertical;
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusKey = useRef<string | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
@@ -274,7 +281,8 @@ export function TabBar({
                       ? "text-[color:var(--color-text-primary)]"
                       : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]")
                 : vertical
-                ? "atlas-touch-floor relative inline-flex min-h-[var(--control-h-lg)] w-full items-center gap-2 rounded-card px-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                ? "atlas-touch-floor relative inline-flex w-full items-center gap-2 rounded-card text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                  (reading ? "min-h-[var(--touch-target-min)] px-4 py-2.5 " : "min-h-[var(--control-h-lg)] px-3 ") +
                   (selfPainted
                     ? "bg-[color:var(--color-indigo-a14)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
                     : active
@@ -293,7 +301,7 @@ export function TabBar({
               * Both halves are real boxes with explicit leading, so the sans label and mono
               * count stay aligned whichever script a tab holds.
               */}
-            <span className="text-body leading-body">{item.label}</span>
+            <span className={reading ? 'text-body-lg leading-body-lg' : 'text-body leading-body'}>{item.label}</span>
             {item.count !== undefined ? (
               // The number is already in the `aria-label`; hiding it here stops a second
               // reading.

@@ -57,13 +57,13 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "gateway-scene-focus":
     "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-step-spark":
-    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the rail's nodes carry the order.",
   "gateway-step-lit":
-    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the rail's nodes carry the order.",
   "gateway-step-press":
-    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
+    "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the rail's nodes carry the order.",
   "gateway-step-rule":
-    "One-shot draw of the rule after a step number on the download page, declared only inside no-preference; under reduced motion the rule is simply there and the numbers carry the order.",
+    "One-shot draw of the step rail on the download page, declared only inside no-preference; under reduced motion the rail is simply there and its nodes carry the order.",
   "gateway-entrance-line":
     "One-shot arrival of a small drawing's lines on the download page. The declaration lives only inside no-preference, so under reduced motion the lines are there from the first paint; the card's text beside the drawing says the same thing, and download-still.spec.ts requires that page to hold no animation at all.",
   "gateway-scroll-stage":
