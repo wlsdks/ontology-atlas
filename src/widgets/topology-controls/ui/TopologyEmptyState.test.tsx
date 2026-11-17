@@ -36,6 +36,11 @@ function renderEmpty(conceptCount: number, reason?: "no-projects" | "no-relation
 }
 
 describe("TopologyEmptyState", () => {
+  it('stands under the same constellation as the start steps', () => {
+    renderEmpty(3, "no-relations");
+    expect(document.querySelector('[data-map-start-art] [data-constellation-mark="project"]')).not.toBeNull();
+  });
+
   it('shows the recovery CTA with a clear screen name when there are no projects', () => {
     renderEmpty(0);
     expect(

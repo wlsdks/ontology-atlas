@@ -17,6 +17,7 @@ import {
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Chip } from "@/shared/ui";
+import { MapStartStage } from "./MapStartStage";
 
 /**
  * The first steps after a folder opens, one at a time with an explanation. It blocks nothing (every
@@ -254,11 +255,11 @@ export function VaultStartSteps({
   })();
 
   return (
-    <div
-      data-index-reserved={indexExpanded ? "true" : "false"}
-      /* Centred in the window, not in what is left of it; INDEX may pass beneath the left edge. */
-      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4"
-    >
+    /*
+     * Centred in the window, not in what is left of it; INDEX may pass beneath the left edge. A
+     * failed starter may have drawn part of a map, so the constellation does not promise one over it.
+     */
+    <MapStartStage data-index-reserved={indexExpanded ? "true" : "false"} showArt={!scaffoldFailed}>
       <div
         data-testid="vault-start-steps"
         data-step={current}
@@ -375,6 +376,6 @@ export function VaultStartSteps({
           </span>
         </div>
       </div>
-    </div>
+    </MapStartStage>
   );
 }
