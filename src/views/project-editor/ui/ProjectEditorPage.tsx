@@ -4,6 +4,7 @@ import { useEffect, useState, type MouseEvent } from "react";
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
+import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useLocale, useTranslations } from "next-intl";
@@ -16,7 +17,6 @@ import {
 import { VaultConflictError } from "@/entities/vault-session";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
-  getProjectEditHref,
   getProjectRuntimeDetailHref,
   projectDisplayName,
   type Project,
@@ -113,12 +113,6 @@ function EditorContent({
     }
   }, [targetSlug, allProjects, mode, projectsLoaded, t]);
 
-  const buildEditHref = (nextSlug: string) =>
-    getProjectEditHref(nextSlug, {
-      returnTo: safeReturnTo,
-      savedNotice: true,
-    });
-
   const handleSubmit = async (
     input: ProjectInput,
     options: { behavior: "stay" | "return" },
@@ -127,8 +121,9 @@ function EditorContent({
       if (mode === "create") {
         await projectMutations.createProject(input);
         if (options.behavior === "stay") {
-          toast.show(t("createdAndOpenToast", { name: input.name }), "success");
-          router.replace(buildEditHref(input.slug));
+          toast.show(t("createdToast", { name: input.name }), "success");
+          const detailHref = getProjectRuntimeDetailHref(input.slug);
+          navigateWithViewTransition(() => router.replace(detailHref));
           return;
         }
       } else {

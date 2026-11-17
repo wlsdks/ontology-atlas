@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
@@ -30,16 +30,6 @@ describe("ProjectForm label-to-input association", () => {
     "associates the '%s' label with its input",
     (label) => {
       renderForm();
-      expect(screen.getByLabelText(label)).toBeInTheDocument();
-    },
-  );
-
-  // Folded fields are absent until "add more" expands them.
-  it.each([fields.nameEn, fields.tagsCsv, fields.stackCsv, fields.linksText, fields.owner])(
-    "associates the '%s' label with its input after expanding add more",
-    (label) => {
-      renderForm();
-      fireEvent.click(screen.getByTestId("project-create-extras-toggle"));
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     },
   );

@@ -235,6 +235,7 @@ describe("ProjectSelectorPage", () => {
     const ledger = { ...page.oneProject[0], slug: "ledger", name: "ledger" };
     page.projects = [...page.oneProject, ledger];
     page.selectedSlug = "ledger";
+    page.mode = "local";
     renderPage();
     const cards = screen.getAllByTestId("project-selector-card");
     expect(cards.map((card) => card.querySelector("h2")?.textContent)).toEqual(["ledger", "ontology-atlas"]);
@@ -242,6 +243,13 @@ describe("ProjectSelectorPage", () => {
     expect(within(cards[0]).getByTestId("project-selector-selected-tag")).toBeInTheDocument();
     expect(within(cards[1]).getByRole("link", { name: "ontology-atlas" })).not.toHaveAttribute("aria-current");
     expect(within(cards[1]).queryByTestId("project-selector-selected-tag")).toBeNull();
+  });
+
+  it("marks no sample project as selected, since the sample is not the person's folder", () => {
+    page.selectedSlug = page.oneProject[0].slug;
+    renderPage();
+    expect(screen.queryByTestId("project-selector-selected-tag")).toBeNull();
+    expect(document.querySelector("[aria-current]")).toBeNull();
   });
 
   it("marks no project while several exist and none was opened", () => {

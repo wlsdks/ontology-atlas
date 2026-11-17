@@ -69,30 +69,12 @@ describe("ProjectForm create layout", () => {
     }
   });
 
-  it("folds optional fields and makes all of them reachable once expanded", () => {
+  it("keeps optional fields off a new project's form", () => {
     renderCreate();
-    // Collapsed — not in the DOM.
+    expect(screen.queryByTestId("project-create-extras-toggle")).not.toBeInTheDocument();
     expect(screen.queryByLabelText(fields.tagsCsv)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(fields.detail)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(fields.owner)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("project-create-extras-toggle"));
-
-    for (const label of [
-      fields.nameEn,
-      fields.detail,
-      fields.tagsCsv,
-      fields.stackCsv,
-      fields.linksText,
-      fields.startedAt,
-      fields.launchedAt,
-      fields.owner,
-      fields.icon,
-      fields.progress,
-    ]) {
-      expect(screen.getByLabelText(label)).toBeInTheDocument();
-    }
-    expect(screen.getByText(fields.dependencies)).toBeInTheDocument();
   });
 
   it("shows the slug as a caption and opens an input when set manually", () => {
