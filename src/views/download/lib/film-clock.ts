@@ -15,6 +15,8 @@ export interface FilmClock {
   seek(act: number): void;
   /** Whether the film is holding its last frame, where an idle visitor's film rests. */
   resting(): boolean;
+  /** Milliseconds since the cycle began, running on through the hold and the fade. */
+  elapsed(): number;
 }
 
 export function createFilmClock(
@@ -52,6 +54,7 @@ export function createFilmClock(
     },
     act: () => (elapsed >= total ? durationsMs.length - 1 : actOf(elapsed)),
     resting: () => elapsed >= total && elapsed <= total + holdMs,
+    elapsed: () => elapsed,
     seek(act) {
       /* Past the fade-in, so a chosen act shows at once. */
       elapsed = act === 0 ? fadeMs : starts[Math.min(act, starts.length - 1)];

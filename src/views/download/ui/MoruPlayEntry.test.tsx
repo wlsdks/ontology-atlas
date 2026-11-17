@@ -3,20 +3,21 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
-import { ClosingContact } from './ClosingContact';
+import { MoruPlayEntry } from './MoruPlayEntry';
 
-function renderStrip() {
+function renderEntry() {
   render(
     <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
-      <ClosingContact />
+      <MoruPlayEntry />
     </NextIntlClientProvider>,
   );
-  return screen.getByRole('button', { name: 'Play with Moru' });
+  return screen.getByRole('button', { name: "I'm Moru, Atlas's little friend. Play a mini game with me" });
 }
 
-describe('the closing strip opens a popup to play with Moru', () => {
+describe("the hero's tiny Moru opens a popup to play with Moru", () => {
   it('moves focus in, keeps Tab inside, closes on Escape and returns focus to the opener', async () => {
-    const opener = renderStrip();
+    const opener = renderEntry();
+    expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
     opener.focus();
     act(() => {
       fireEvent.click(opener);
@@ -42,7 +43,7 @@ describe('the closing strip opens a popup to play with Moru', () => {
   });
 
   it('closes from its visible close button and starts a game from the keyboard', async () => {
-    const opener = renderStrip();
+    const opener = renderEntry();
     opener.focus();
     act(() => {
       fireEvent.click(opener);

@@ -1,142 +1,169 @@
 import { describe, expect, it } from 'vitest';
 
-import facts from './harness-facts.json';
-import { buildHarnessScene, fitPath, layoutHarness, layoutPoster, pictureZone, type HarnessFacts, type Rect } from './harness-scene';
+import { scanHarness, type HarnessScanPort } from '@/entities/agent-files';
+import { buildHarnessSetup } from '@/views/architecture/model/harness-setup';
 
-const FACTS: HarnessFacts = facts;
-const scene = buildHarnessScene(FACTS);
-/* JetBrains Mono's advance is 0.6em; the layout only needs a width per name. */
-const measure = (text: string, px: number) => text.length * px * 0.6;
+import {
+  AREAS,
+  EXAMPLE_FILES,
+  PANE1_ROWS,
+  PANE2,
+  PANE3,
+  SCAN,
+  SETTINGS_LINES,
+  TREE,
+  TYPE,
+  WINDOW,
+  areaTotals,
+  groupCounts,
+  itemsOf,
+  playingFrame,
+  treeRowY,
+  wireFor,
+} from './harness-scene';
 
-const inside = (r: Rect, box: { left: number; right: number; top: number; bottom: number }) =>
-  r.x >= box.left - 0.5 && r.x + r.w <= box.right + 0.5 && r.y >= box.top - 0.5 && r.y + r.h <= box.bottom + 0.5;
-const apart = (a: Rect, b: Rect) => a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+/**
+ * The example repository as files on a disk, written so the app's own scanner can read it: every
+ * file the film lists, the hook config that names one script the disk lacks, and one subagent whose
+ * Claude Code and Codex copies differ.
+ */
+const DISK: Record<string, string> = {
+  'AGENTS.md': '# my-app\n\nRun pnpm test before you finish.\n',
+  'CLAUDE.md': '# my-app\n\nRun pnpm test before you finish.\n',
+  ...Object.fromEntries(['api', 'db', 'frontend', 'security', 'style', 'testing'].map((name) => [`.claude/rules/${name}.md`, `# ${name}\n`])),
+  ...Object.fromEntries(
+    ['code-review', 'release-notes', 'db-migrate', 'write-tests'].flatMap((name) => [
+      [`.claude/skills/${name}/SKILL.md`, `---\nname: ${name}\n---\n`],
+      [`.agents/skills/${name}/SKILL.md`, `---\nname: ${name}\n---\n`],
+    ]),
+  ),
+  '.claude/agents/reviewer.md': '---\nname: reviewer\ntools: Read\n---\nReview the diff.\n',
+  '.agents/agents/reviewer.md': '---\nname: reviewer\ntools: Bash\n---\nReview the diff.\n',
+  '.claude/agents/planner.md': '---\nname: planner\n---\nPlan the change.\n',
+  '.agents/agents/planner.md': '---\nname: planner\n---\nPlan the change.\n',
+  '.mcp.json': '{ "mcpServers": {} }\n',
+  '.claude/settings.json': JSON.stringify({
+    permissions: { deny: ['Bash(git push --force:*)'] },
+    hooks: {
+      PreToolUse: [
+        {
+          matcher: 'Bash',
+          hooks: ['block-force-push', 'block-publish', 'protect-env'].map((name) => ({
+            type: 'command',
+            command: `.claude/hooks/${name}.sh`,
+          })),
+        },
+      ],
+    },
+  }),
+  '.claude/hooks/block-publish.sh': '#!/bin/sh\n',
+  '.claude/hooks/protect-env.sh': '#!/bin/sh\n',
+  'package.json': JSON.stringify({ scripts: { dev: 'next dev', lint: 'eslint .', typecheck: 'tsc', test: 'vitest' } }),
+  '.githooks/pre-commit': '#!/bin/sh\n',
+  '.githooks/pre-push': '#!/bin/sh\n',
+  ...Object.fromEntries(['ci.yml', 'e2e.yml', 'lint.yml', 'release.yml'].map((name) => [`.github/workflows/${name}`, 'on: push\n'])),
+};
 
-describe('the harness film shows only what the repository has', () => {
-  it('counts what the last act names from the facts themselves', () => {
-    expect(scene.counts).toEqual({
-      instructions: FACTS.instructions.length,
-      hooks: FACTS.hooks.length,
-      checks: FACTS.checks.scripts.length + FACTS.checks.gitHooks.length + FACTS.checks.workflows.length,
-    });
-    expect(scene.columns.reduce((sum, column) => sum + column.paths.length, 0)).toBe(scene.counts.instructions);
-    expect(scene.bands.reduce((sum, band) => sum + band.names.length, 0)).toBe(scene.counts.checks);
-  });
-
-  it('denies a command only at the plate of the hook that denied it, and lets one through', () => {
-    FACTS.commands.forEach((entry, i) => {
-      const lane = scene.commands[i]!.lane;
-      expect(lane < 0 ? null : scene.gate[lane]).toBe(entry.blockedBy);
-    });
-    expect(scene.commands.some((command) => command.lane < 0)).toBe(true);
-    expect(scene.commands.some((command) => command.lane >= 0)).toBe(true);
-  });
-
-  it('turns each gate plate into exactly one hook of the same name', () => {
-    scene.gate.forEach((name, plate) => {
-      const hooks = scene.hookPlates.flatMap((p, j) => (p === plate ? [FACTS.hooks[j]!.name] : []));
-      expect(hooks).toEqual([name]);
-    });
-  });
-});
-
-describe('fitPath', () => {
-  it('drops leading folders until the path fits, keeping whole segments', () => {
-    const width = (text: string) => text.length;
-    expect(fitPath('.claude/rules/design.md', 40, width)).toBe('.claude/rules/design.md');
-    expect(fitPath('.claude/rules/design.md', 16, width)).toBe('rules/design.md');
-    expect(fitPath('.claude/rules/design.md', 9, width)).toBe('design.md');
-    expect(fitPath('.claude/rules/design.md', 5, width)).toBe('desi…');
-  });
-});
-
-describe('the stage', () => {
-  for (const [w, h] of [
-    [768, 720],
-    [1040, 720],
-    [1440, 900],
-    [1920, 960],
-  ] as const) {
-    describe(`at ${w}×${h}`, () => {
-      const zone = pictureZone(w, h, 200);
-      const layout = layoutHarness(scene, zone, measure);
-      const cards = layout.stacks.flatMap((stack) => stack.cards.map((card) => card.rect));
-
-      it('keeps every act inside the picture zone', () => {
-        for (const card of cards) expect(inside(card, zone)).toBe(true);
-        for (const plate of layout.plates) expect(inside(plate, zone)).toBe(true);
-        for (const cell of layout.cells) expect(inside(cell.rect, zone), cell.name).toBe(true);
-        for (const mark of layout.strips.flat()) expect(inside(mark, zone)).toBe(true);
-        expect(layout.readoutY).toBeLessThanOrEqual(zone.bottom);
-      });
-
-      it('stacks one card per instruction file, the column\'s first path on top', () => {
-        expect(cards).toHaveLength(scene.counts.instructions);
-        layout.stacks.forEach((stack, c) => expect(stack.cards.at(-1)?.path).toBe(scene.columns[c]!.paths[0]));
-        layout.stacks.forEach((stack, c) => {
-          const next = layout.stacks[c + 1];
-          if (next) expect(stack.x + stack.width).toBeLessThan(next.x);
-        });
-      });
-
-      it('never overlaps two cells, two plates or two parked marks', () => {
-        const groups = [layout.cells.map((cell) => cell.rect), layout.plates, layout.strips.flat()];
-        for (const rects of groups) rects.forEach((a, i) => rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true)));
-      });
-
-      it('gives every check one piece of its underline, in the order the sweep fills them', () => {
-        expect(layout.cells.map((cell) => cell.slot).sort((a, b) => a - b)).toEqual(layout.cells.map((_, k) => k));
-        const swept = [...layout.cells].sort((a, b) => a.band - b.band || a.rect.x - b.rect.x || a.rect.y - b.rect.y);
-        expect(swept.map((cell) => cell.slot)).toEqual(swept.map((_, k) => k));
-      });
-
-      it('leaves the longest command and its caret clear of the plates, in type no smaller than 15px', () => {
-        const longest = Math.max(...scene.commands.map((command) => measure(`$ ${command.command}`, layout.command.px)));
-        expect(layout.command.x + longest + 32).toBeLessThan(layout.plates[0]!.x);
-        expect(layout.plateTextPx).toBeGreaterThanOrEqual(15);
-        expect(layout.command.px).toBeGreaterThanOrEqual(24);
-      });
+function diskPort(): HarnessScanPort {
+  const dirs = new Map<string, Map<string, 'file' | 'directory'>>();
+  for (const path of Object.keys(DISK)) {
+    const parts = path.split('/');
+    parts.forEach((name, i) => {
+      const dir = parts.slice(0, i).join('/');
+      const entries = dirs.get(dir) ?? new Map<string, 'file' | 'directory'>();
+      entries.set(name, i === parts.length - 1 ? 'file' : 'directory');
+      dirs.set(dir, entries);
     });
   }
+  return {
+    async listDir(path) {
+      const entries = dirs.get(path);
+      return entries ? [...entries].map(([name, kind]) => ({ name, kind })) : null;
+    },
+    async readText(path) {
+      const text = DISK[path];
+      return text === undefined ? null : { text, lastModified: null, bytes: text.length };
+    },
+    async pathExists(path) {
+      return path in DISK || dirs.has(path);
+    },
+  };
+}
+
+describe('the example repository', () => {
+  it('counts what the Harness tab itself counts for it, under All and under Codex', async () => {
+    const report = await scanHarness(diskPort());
+    for (const filter of [null, 'codex'] as const) {
+      const setup = buildHarnessSetup(report, filter);
+      const tab = Object.fromEntries(setup.sections.flatMap((section) => section.groups.map((group) => [group.id, group.items.length])));
+      const film = groupCounts(filter);
+      for (const area of AREAS) {
+        for (const group of area.groups) expect(tab[group] ?? 0, `${filter ?? 'all'} ${group}`).toBe(film[group]);
+        expect(setup.sections.find((section) => section.id === area.id)?.total, `${filter ?? 'all'} ${area.id}`).toBe(
+          areaTotals(filter)[area.id],
+        );
+      }
+    }
+  });
+
+  it('holds the one problem and the one differing pair the film shows', async () => {
+    const setup = buildHarnessSetup(await scanHarness(diskPort()), null);
+    expect(setup.problems.map((problem) => (problem.kind === 'hook-missing' ? problem.path : problem.kind))).toEqual([
+      '.claude/hooks/block-force-push.sh',
+    ]);
+    const subagents = setup.sections.flatMap((section) => section.groups).find((group) => group.id === 'subagents')!.items;
+    const differing = subagents.filter((item) => item.differsFrom).map((item) => item.path).sort();
+    expect(differing).toEqual(['.agents/agents/reviewer.md', '.claude/agents/reviewer.md']);
+    expect(EXAMPLE_FILES.filter((file) => file.differs).map((file) => file.label).sort()).toEqual(differing);
+    expect(SETTINGS_LINES.some((line) => line.includes('.claude/hooks/block-force-push.sh'))).toBe(true);
+  });
+
+  it('reads each tree row into one area, and the rows add up to every count', () => {
+    const counts = groupCounts(null);
+    for (const group of Object.keys(counts) as Array<keyof typeof counts>) {
+      const fromRows = TREE.flatMap((row) => row.adds).filter((add) => add.group === group).reduce((sum, add) => sum + add.n, 0);
+      expect(fromRows, group).toBe(counts[group]);
+    }
+    for (const row of TREE) {
+      const areas = new Set(row.adds.map((add) => AREAS.find((area) => area.groups.includes(add.group))!.id));
+      expect([...areas]).toEqual([row.area]);
+    }
+  });
 });
 
-describe('the last frame', () => {
-  for (const width of [186, 272]) {
-    const gap = 40;
-    const columns = [0, 1, 2].map((i) => ({ x: 200 + i * (width + gap), w: width }));
-    const base = 600;
-    const poster = layoutPoster(scene, columns, base, measure);
+/* A monospace advance of 0.6em; the layout only needs a width per name. */
+const mono = (text: string, px: number) => text.length * px * 0.6;
 
-    it(`puts one object per file, hook and check above its own count, in ${width}px columns`, () => {
-      expect(poster.cards).toHaveLength(scene.counts.instructions);
-      expect(poster.hooks).toHaveLength(scene.counts.hooks);
-      expect(poster.cells).toHaveLength(scene.counts.checks);
-      [poster.cards, poster.hooks, poster.cells].forEach((group, i) => {
-        const column = columns[i]!;
-        for (const r of group) {
-          expect(r.x).toBeGreaterThanOrEqual(column.x - 0.5);
-          expect(r.x + r.w).toBeLessThanOrEqual(column.x + column.w + 0.5);
-          expect(r.y + r.h).toBeLessThanOrEqual(base + 0.5);
-        }
-      });
-    });
+describe('the window', () => {
+  it('fits the tree, every pane-1 row and every pane-2 list inside it', () => {
+    expect(treeRowY(TREE.length - 1) + SCAN.pitch / 2).toBeLessThanOrEqual(SCAN.card.y + SCAN.card.h);
+    for (const row of PANE1_ROWS) expect(row.top + row.h).toBeLessThanOrEqual(WINDOW.h);
+    for (const area of AREAS) {
+      for (const group of area.groups) expect(PANE2.rowsTop + itemsOf(group).length * PANE2.row).toBeLessThanOrEqual(WINDOW.h);
+    }
+    expect(PANE3.box.y + PANE3.box.h).toBeLessThanOrEqual(WINDOW.h);
+  });
 
-    it(`names three real files and every gate plate, each inside its card, in ${width}px columns`, () => {
-      expect(poster.names).toHaveLength(3);
-      for (const name of poster.names) {
-        const card = poster.cards[name.card]!;
-        expect(name.x + measure(name.text, 18)).toBeLessThanOrEqual(card.x + card.w);
+  it('runs every wire under the header and over the column titles, never through a column', () => {
+    TREE.forEach((row, k) => {
+      for (const point of wireFor(k, row.area).points) {
+        expect(point.y).toBeGreaterThan(WINDOW.header);
+        const inColumn = SCAN.columns.some((x) => point.x > x && point.x < x + SCAN.colW);
+        if (inColumn) expect(point.y).toBeLessThanOrEqual(SCAN.colTitleY);
       }
-      expect(poster.plateNames).toHaveLength(scene.gate.length);
-      for (const name of poster.plateNames) {
-        const plate = poster.hooks[name.hook]!;
-        expect(name.x + measure(name.text, poster.plateTextPx)).toBeLessThanOrEqual(plate.x + plate.w);
-      }
-      expect(poster.plateTextPx).toBeGreaterThanOrEqual(15);
     });
+  });
 
-    it(`never overlaps two cells or two hooks, in ${width}px columns`, () => {
-      for (const rects of [poster.cells, poster.hooks]) rects.forEach((a, i) => rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true)));
-    });
-  }
+  it('keeps every tree row and pane-2 path on one line at its type size', () => {
+    for (const row of TREE) expect(SCAN.rowX + mono(row.path, TYPE.tree)).toBeLessThan(SCAN.card.x + SCAN.card.w);
+    for (const file of EXAMPLE_FILES) expect(mono(file.label, TYPE.row), file.label).toBeLessThanOrEqual(PANE2.w - 2 * PANE2.padX);
+    expect(mono('.claude/agents/reviewer.md', TYPE.path)).toBeLessThanOrEqual(PANE3.right - PANE3.x);
+  });
+
+  it('is 1040 wide on the page column at 1440, and stays above the caption on a short stage', () => {
+    expect(playingFrame(1440, 200, 104, 702)).toEqual({ x: 200, y: 104, s: 1 });
+    const short = playingFrame(1040, 200, 104, 531);
+    expect(short.y + WINDOW.h * short.s).toBeLessThanOrEqual(531 + 0.5);
+    expect(short.x).toBeGreaterThanOrEqual(32);
+  });
 });
