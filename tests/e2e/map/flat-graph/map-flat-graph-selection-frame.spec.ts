@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
+import { elementsByContainer } from "./domain-star";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
 import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
@@ -222,25 +223,26 @@ async function expectDomainFramed(page: Page, id: string, star: ReadonlySet<stri
 }
 
 /**
- * A selected domain zooms in no further than its ratio of the zoom it was made at, and leaves its two
- * closest members the domain separation apart on screen, or its star filling the free map.
+ * A selected domain leaves its two closest members the widest separation apart on screen, or its
+ * star, elements included, filling the free map.
  */
-async function expectMembersApart(page: Page, id: string, star: ReadonlySet<string>, dial: DialProbe, clickedZoom: number): Promise<void> {
-  const [domainApart, selectZoom, margin] = await page.evaluate(() =>
-    ["--map-graph-domain-apart-px", "--map-graph-select-zoom-max-ratio", "--map-graph-frame-margin-px"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
-  expect(domainApart).toBeGreaterThan(0);
-  expect(dial.zoomRatio, "a domain zooms in no further than its ratio of the zoom it was made at").toBeLessThanOrEqual(clickedZoom * selectZoom! + 1e-6);
+async function expectMembersApart(page: Page, id: string, star: ReadonlySet<string>, dial: DialProbe): Promise<void> {
+  const [apartMax, margin] = await page.evaluate(() =>
+    ["--map-graph-domain-apart-max-px", "--map-graph-frame-margin-px"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
+  expect(apartMax).toBeGreaterThan(0);
+  const elementsOf = await elementsByContainer(page);
+  const elements = new Set([...star].flatMap((of) => elementsOf.get(of) ?? []));
   const members = dial.discs.filter((d) => star.has(d.id) && d.id !== id);
   const apart = Math.min(...members.flatMap((d, i) => members.slice(i + 1).map((e) => Math.hypot(d.x - e.x, d.y - e.y))));
   const boxes = [
-    ...dial.discs.filter((d) => star.has(d.id)).map((d) => ({ minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r })),
+    ...[...dial.discs.filter((d) => star.has(d.id)), ...dial.glyphs.filter((g) => elements.has(g.id))].map((d) => ({ minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r })),
     ...dial.texts.filter((t) => t.id === id).map((t) => t.box),
   ];
   const r = dial.freeRect;
   const spanX = Math.max(...boxes.map((b) => b.maxX)) - Math.min(...boxes.map((b) => b.minX));
   const spanY = Math.max(...boxes.map((b) => b.maxY)) - Math.min(...boxes.map((b) => b.minY));
   const fills = spanX >= (r.maxX - r.minX - margin! * 2) * STAR_FILLS_SHARE || spanY >= (r.maxY - r.minY - margin! * 2) * STAR_FILLS_SHARE;
-  expect(apart >= domainApart! - EDGE_PX || fills, `closest members ${apart.toFixed(1)} px apart, star ${Math.round(spanX)} x ${Math.round(spanY)} in ${Math.round(r.maxX - r.minX)} x ${Math.round(r.maxY - r.minY)}`).toBe(true);
+  expect(apart >= apartMax! - EDGE_PX || fills, `closest members ${apart.toFixed(1)} px apart, star ${Math.round(spanX)} x ${Math.round(spanY)} in ${Math.round(r.maxX - r.minX)} x ${Math.round(r.maxY - r.minY)}`).toBe(true);
 }
 
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 949 }]) {
@@ -251,7 +253,6 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 94
     const { id, star, before } = await domainNearPanel(page);
     const row = page.locator(`[data-testid="topology-index-panel"] [data-index-row="${id}"]`);
     await expect(row, "the explorer lists the domain at rest").toBeVisible();
-    const clickedZoom = before.zoomRatio;
     await row.click();
     await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
     await waitForMapStill(page, { what: "camera" });
@@ -262,7 +263,7 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 94
     expect(panels?.right ?? 0, "the detail panel is open on the right").toBeGreaterThan(0);
     expect(dial.freeRect.minX, "the free map starts past the explorer").toBeGreaterThanOrEqual(panels!.left);
     await expectDomainFramed(page, id, star, before, dial);
-    await expectMembersApart(page, id, star, dial, clickedZoom);
+    await expectMembersApart(page, id, star, dial);
   });
 }
 
@@ -272,9 +273,9 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 98
     await page.setViewportSize(viewport);
     await openVault(page);
     const { id, star, before } = await domainNearPanel(page);
-    const { dial, clickedZoom } = await selectOnMap(page, id);
+    const { dial } = await selectOnMap(page, id);
     await expectDomainFramed(page, id, star, before, dial);
-    await expectMembersApart(page, id, star, dial, clickedZoom);
+    await expectMembersApart(page, id, star, dial);
 
     const lines = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey));
     const partners = [...new Set(lines.flatMap((s) => s.flowKey.slice(s.flowKey.indexOf(":") + 1).split(">")))].filter((end) => end !== id);

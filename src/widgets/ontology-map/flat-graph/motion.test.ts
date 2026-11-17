@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { GraphAttention, GraphLine } from "./attention";
-import { FLAT_MOTION, GraphMotion, waveDelays } from "./motion";
+import { DAMPED, dampedStep, FLAT_MOTION, GraphMotion, waveDelays } from "./motion";
 
 const SINK = 0.14;
 const REST = 0.66;
@@ -180,5 +180,44 @@ describe("Flat attention motion", () => {
     expect(idleAt).toBeLessThan(1_150 + FLAT_MOTION.exitMs + 16);
     expect(motion.drawnCount).toBe(0);
     for (const id of Object.keys(POSITIONS)) expect(motion.ink(id, SINK, REST), id).toBe(REST);
+  });
+});
+
+describe("a damped step", () => {
+  const MAX_PER_MS = 0.1;
+  const SETTLE_MS = 120;
+
+  function run(from: number, target: number, frameMs: number, retargetAt?: { ms: number; target: number }) {
+    const steps: number[] = [];
+    let value = from;
+    let perMs = 0;
+    let goal = target;
+    for (let ms = frameMs; ms <= 4000 && value !== goal; ms += frameMs) {
+      if (retargetAt && ms >= retargetAt.ms) goal = retargetAt.target;
+      const next = dampedStep(value, perMs, goal, frameMs, SETTLE_MS, MAX_PER_MS);
+      steps.push(next - value);
+      value = next;
+      perMs = DAMPED.perMs;
+      if (Math.abs(goal - value) < 0.02) break;
+    }
+    return { steps, value };
+  }
+
+  it.each([8.3, 16.7, 34])("starts and lands slower than it cruises, never past the speed limit or the target (%s ms frames)", (frameMs) => {
+    const { steps, value } = run(3, 24, frameMs);
+    const fastest = Math.max(...steps);
+    expect(fastest).toBeLessThanOrEqual(MAX_PER_MS * frameMs + 1e-9);
+    expect(steps[0]!).toBeLessThan(fastest * 0.6);
+    expect(steps.at(-1)!).toBeLessThan(fastest * 0.6);
+    expect(Math.min(...steps)).toBeGreaterThanOrEqual(0);
+    expect(value).toBeGreaterThan(23.97);
+    expect(value).toBeLessThanOrEqual(24);
+  });
+
+  it("turns round without a jump in speed when its target reverses mid-way", () => {
+    const { steps } = run(3, 24, 8.3, { ms: 150, target: 3 });
+    const changes = steps.slice(1).map((step, i) => Math.abs(step - steps[i]!));
+    expect(Math.max(...changes)).toBeLessThan(MAX_PER_MS * 8.3 * 0.5);
+    expect(Math.min(...steps)).toBeLessThan(0);
   });
 });

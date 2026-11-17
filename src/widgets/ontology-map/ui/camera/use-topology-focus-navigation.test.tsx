@@ -12,6 +12,7 @@ const tokens = vi.hoisted(
       overviewEntryRatio: 0.95,
       cameraScaleMin: 0.24,
       cameraScaleMax: 2.6,
+      cameraSmallGraphScaleMax: 1.3,
       cameraMinZoomRatio: 0.5,
       cameraMaxZoomRatio: 3.2,
       focusMaxZoomRatio: 1.8,
@@ -85,6 +86,13 @@ function world(): TopologyWorld {
     bounds: spine,
     spineBounds: spine,
   } as unknown as TopologyWorld;
+}
+
+/** `world()` drawn as the Flat graph, its dial scene carrying what an overview fit reads. */
+function flatGraphWorld(): TopologyWorld {
+  const base = world();
+  const dial = { scene: { graph: {}, rings: [], extent: base.bounds }, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, model: { projectId: "p" } };
+  return { ...base, dial } as unknown as TopologyWorld;
 }
 
 describe("useTopologyFocusNavigation", () => {
@@ -368,8 +376,7 @@ describe("useTopologyFocusNavigation", () => {
   it("on the Flat graph a selection from outside the canvas takes the selection frame a click takes, not the focus zoom", () => {
     const framed = { tx: 610, ty: 12, tscale: 1 };
     const slide = vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue(framed);
-    const graphWorld = { ...world(), dial: { scene: { graph: {} }, model: { projectId: "p" } } } as unknown as TopologyWorld;
-    const { deps, select } = setup({ worldRef: ref<TopologyWorld | null>(graphWorld) });
+    const { deps, select } = setup({ worldRef: ref<TopologyWorld | null>(flatGraphWorld()) });
     select("f");
     expect(slide).toHaveBeenCalledTimes(1);
     expect(deps.cameraTargetRef.current).toEqual(framed);
@@ -380,7 +387,6 @@ describe("useTopologyFocusNavigation", () => {
     const framed = { tx: 610, ty: 12, tscale: 0.5 };
     vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue(framed);
     vi.spyOn(branchFrame, "branchFocusTarget").mockReturnValue({ tx: 700, ty: 30, tscale: 1.4 });
-    const graphWorld = () => ({ ...world(), dial: { scene: { graph: {} }, model: { projectId: "p" } } }) as unknown as TopologyWorld;
     const before = { tx: 123, ty: -47, tscale: 0.8 };
     const sources: [string, (s: ReturnType<typeof setup>) => void][] = [
       ["a canvas click", ({ select }) => select("f", { click: true })],
@@ -388,13 +394,13 @@ describe("useTopologyFocusNavigation", () => {
       ["a double-click or Enter", ({ hook, select }) => { hook.result.current.flyToNode("f"); select("f"); }],
     ];
     for (const [name, choose] of sources) {
-      const s = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), cameraTargetRef: ref({ ...before }) });
+      const s = setup({ worldRef: ref<TopologyWorld | null>(flatGraphWorld()), cameraTargetRef: ref({ ...before }) });
       choose(s);
       expect(s.deps.cameraTargetRef.current, `${name} moves the camera`).not.toEqual(before);
       s.select(null);
       expect(s.deps.cameraTargetRef.current, name).toEqual(before);
     }
-    const moved = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), cameraTargetRef: ref({ ...before }) });
+    const moved = setup({ worldRef: ref<TopologyWorld | null>(flatGraphWorld()), cameraTargetRef: ref({ ...before }) });
     moved.select("f", { click: true });
     const panned = { ...moved.deps.cameraTargetRef.current, tx: moved.deps.cameraTargetRef.current.tx + 200 };
     moved.deps.cameraTargetRef.current = panned;
@@ -404,12 +410,31 @@ describe("useTopologyFocusNavigation", () => {
     expect(moved.deps.beginCameraTween, "a view the reader panned").not.toHaveBeenCalled();
     expect(moved.deps.cameraTargetRef.current).toEqual(panned);
 
-    const arrival = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), lastFocusedSlugRef: ref("f"), cameraTargetRef: ref({ ...before }), overviewFitRef: ref("full") }, "f");
+    const arrival = setup({ worldRef: ref<TopologyWorld | null>(flatGraphWorld()), lastFocusedSlugRef: ref("f"), cameraTargetRef: ref({ ...before }), overviewFitRef: ref("full") }, "f");
     frames.shift()?.(performance.now());
     const landed = { ...arrival.deps.cameraTargetRef.current };
     arrival.select(null);
     expect(arrival.deps.cameraTargetRef.current, "a deep link's arrival has no earlier view and goes to the overview").not.toEqual(landed);
     expect(arrival.deps.cameraTargetRef.current).not.toEqual(before);
+  });
+
+  it("on the Flat graph a selection made on the overview returns to the overview of the map as wide as it is at the deselect", () => {
+    vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue({ tx: 610, ty: 12, tscale: 1.3 });
+    // A deep link's deselect lands on the overview of a map `width` wide.
+    const onOverview = (width: number) => {
+      const s = setup({ worldRef: ref<TopologyWorld | null>(flatGraphWorld()), lastFocusedSlugRef: ref("f"), viewportRef: ref({ width, height: 800, dpr: 1 }) }, "f");
+      frames.shift()?.(performance.now());
+      s.select(null);
+      return s;
+    };
+    const narrowOverview = { ...onOverview(900).deps.cameraTargetRef.current };
+    const wide = onOverview(1200);
+    const wideOverview = { ...wide.deps.cameraTargetRef.current };
+    expect(wideOverview).not.toEqual(narrowOverview);
+    wide.select("f", { click: true });
+    wide.deps.viewportRef.current = { width: 900, height: 800, dpr: 1 };
+    wide.select(null);
+    expect(wide.deps.cameraTargetRef.current).toEqual(narrowOverview);
   });
 
   it("a pan after a framed selection is the reader's view, and the deselect leaves it", () => {

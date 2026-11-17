@@ -222,7 +222,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
              * "looks like a lerp" sweep across the screen was whenever a
              * move and a zoom overlapped.
              */
-            const eased = easeCameraKeyframe(tween.start, tween.target, elapsed, tween.durationMs, width, tween.ease);
+            const eased = easeCameraKeyframe(tween.start, tween.target, elapsed, tween.durationMs, width, tween.ease, tween.startSpeed);
             cameraRef.current = {
               x: { value: eased.x, velocity: 0 },
               y: { value: eased.y, velocity: 0 },

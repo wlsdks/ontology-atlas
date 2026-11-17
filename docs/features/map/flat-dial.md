@@ -246,13 +246,40 @@ the domain named. An element's picture is its lines, whether a capability or a d
 every far end, named, still fits, and only until its own name stands clear of
 the names and discs beside it; when the far ends do not fit at the current zoom
 it keeps that zoom. A domain selection frames its own star: its disc, its name
-and count line, and its member capabilities as discs, inside the free map by
+and count line, its member capabilities and their elements, inside the free map by
 the frame margin. Partner domains do not drive the frame and may leave the
-view; their lines still draw. It zooms in, under the same ratio cap, until its
-two closest member capabilities stand `--map-graph-domain-apart-px` apart on
-screen, never past the scale at which the whole star still fits; a domain whose
-members already stand that far apart keeps its zoom. Member names are not held in the frame; they are admitted
-again at whatever zoom it lands on. A zoom
+view; their lines still draw. It zooms in until that star fills the free map,
+without the ratio cap the other selections keep, and stops earlier only when its
+two closest member capabilities already stand `--map-graph-domain-apart-max-px`
+apart, so a domain of two members does not fill the map with them. The star's
+marks open with the room they get: each mark and its nearest neighbour share
+`--map-graph-open-fill` of the distance between them in proportion to their
+largest open radii (`--map-graph-cap-open-max-px`, `--map-graph-element-open-max-px`),
+so few members draw large and many draw smaller, none overlap, and a press
+reaches as far as the drawn radius. A selected capability's fanned elements open
+the same way. A radius moves toward that room from the radius and the
+speed it last drew: a critically damped step that gathers and sheds speed over
+`--motion-fast` and never exceeds `--map-graph-mark-px-per-ms`, and a frame later
+than two 60 Hz frames moves it only as far as such a frame would. Opening,
+pressing a member, deselecting and pressing another domain mid-move therefore
+show no jump in size, and an element dot fades as its own capability's disc grows
+over it. An opened domain star names its members, the one with the fewest
+free sides first: each takes a side clear of every other name, every disc not
+its own and every dot the star has grown, inside the free map by the frame
+margin. The sides are beside the disc, half a row up or down, and below or
+above it, where the name may also end at the disc's right edge or start at its
+left. A member with no clear side takes one that crosses only the star's dots
+and draws on a backing; a member with neither goes unnamed and the detail panel
+still lists it. At least four members in five are named at rest; which one goes
+unnamed can differ between loads, because a zoom step's resting names are
+seeded from the steps the camera passed. A domain's caption rows rank lowest
+and give way to any disc. While marks grow, names draw by rank (titles and the
+selection's name, the far ends of its lines, capabilities, elements, caption
+rows), and a name is drawn only where the painted frame leaves it clear of
+every disc not its own, every grown dot and every name drawn before it:
+crossed, its ink falls at once and returns when the two part. The selection's
+own name row stays and draws on its backing in any frame a grown dot crosses
+it. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
 judgments, so a click on a capability or an element stays a small move,
@@ -261,11 +288,18 @@ taken for its members and may leave its partners outside), and framing the
 landed view again moves nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
-move is the least pan that frames, with any zoom, as one slide on
-the canvas spring: a second selection mid-slide retargets it from where the camera is,
+move is the least pan that frames. A move that zooms eases the zoom in log space
+on a sine curve and the pan on the same curve, for `--motion-slow` per octave of
+zoom and at most twice that; a pure pan is one slide on the canvas spring. A
+second selection mid-move retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
-zoomed since; a selection a deep link arrived on returns to the overview. An
+zoomed since; a chain that began on the overview fit returns to the fit of the
+free map as it is by then, so a dock opened or closed under the selection does
+not leave the overview at its old size, and a selection a deep link arrived on
+returns to the overview. Opening or closing the dock or the INDEX while a
+concept is selected runs no overview fit: the selection keeps its camera, and a
+move already in flight keeps its motion and only changes its destination. An
 arrow-key walk recentres as it goes, which is the reader travelling: letting go
 after it stays where the walk arrived.
 

@@ -8,7 +8,13 @@ import {
   easeAnchoredZoom,
   easeCameraKeyframe,
   easeInOutCubic,
+  SELECTION_ZOOM_MAX_MS,
+  SELECTION_ZOOM_MS_PER_OCTAVE,
+  SELECTION_ZOOM_STEP_MAX,
+  selectionTweenDurationMs,
+  selectionTweenSpeed,
   type CameraKeyframe,
+  type CameraTween,
   type ZoomEase,
   VAN_WIJK_RHO,
   vanWijkCameraKeyframe,
@@ -272,5 +278,86 @@ describe("van Wijk path keeps optical flow constant", () => {
     }
     expect(CANVAS_SPRING_PAN_MS).toBeLessThanOrEqual(CAMERA_TRANSITION_MAX_MS);
     expect(easeCameraKeyframe(start, target, CANVAS_SPRING_PAN_MS, CANVAS_SPRING_PAN_MS, 1856, "spring")).toEqual(target);
+  });
+});
+
+describe("a selection's zoom", () => {
+  const FRAME_MS = 1000 / 60;
+
+  /** The largest zoom step the curve itself takes over a 60 Hz frame, sampled each tenth of a ms. */
+  function peakZoomStep(start: CameraKeyframe, target: CameraKeyframe, ms: number): number {
+    let peak = 0;
+    for (let t = 0; t + FRAME_MS <= ms; t += 0.1) {
+      const a = easeCameraKeyframe(start, target, t, ms, 1856, "spring").scale;
+      const b = easeCameraKeyframe(start, target, t + FRAME_MS, ms, 1856, "spring").scale;
+      peak = Math.max(peak, Math.abs(Math.log(b / a)));
+    }
+    return Math.expm1(peak);
+  }
+
+  it.each([[1.2], [2], [4], [8], [16]])("takes 360 ms an octave within the spring's pan and 720 ms, unless that would step the zoom past 8 %% a frame, zooming %fx", (ratio) => {
+    const start = { x: 0, y: 0, scale: 1 };
+    const target = { x: 40, y: -20, scale: ratio };
+    const ms = selectionTweenDurationMs(start, target);
+    expect(ms).toBeGreaterThanOrEqual(Math.max(CANVAS_SPRING_PAN_MS, Math.min(SELECTION_ZOOM_MAX_MS, Math.log2(ratio) * SELECTION_ZOOM_MS_PER_OCTAVE)) - 1e-9);
+    expect(peakZoomStep(start, target, ms)).toBeLessThanOrEqual(SELECTION_ZOOM_STEP_MAX + 1e-6);
+    if (ms > SELECTION_ZOOM_MAX_MS) expect(peakZoomStep(start, target, SELECTION_ZOOM_MAX_MS), "a shorter zoom would step past the limit").toBeGreaterThan(SELECTION_ZOOM_STEP_MAX);
+    expect(selectionTweenDurationMs(target, start), "out takes as long as in").toBe(ms);
+  });
+
+  it("takes longer than 720 ms for a 16x selection rather than step past 8 % a frame", () => {
+    expect(selectionTweenDurationMs({ x: 0, y: 0, scale: 1 }, { x: 0, y: 0, scale: 16 })).toBeGreaterThan(SELECTION_ZOOM_MAX_MS);
+  });
+
+  it("carries the zoom and the pan on from the frame before when a second selection lands mid-flight", () => {
+    const first: CameraTween = { start: { x: 0, y: 0, scale: 1 }, target: { x: 200, y: 80, scale: 8 }, startMs: 0, durationMs: 0, ease: "spring" };
+    first.durationMs = selectionTweenDurationMs(first.start, first.target);
+    const at = first.durationMs * 0.3;
+    const frameAt = (tween: CameraTween, ms: number) => easeCameraKeyframe(tween.start, tween.target, ms - tween.startMs, tween.durationMs, 1856, "spring", tween.startSpeed);
+    const shown = frameAt(first, at);
+    const before = frameAt(first, at - FRAME_MS);
+    const target = { x: 260, y: 40, scale: 12 };
+    const second: CameraTween = { start: shown, target, startMs: at, durationMs: selectionTweenDurationMs(shown, target), ease: "spring", startSpeed: selectionTweenSpeed(first, at) };
+    const after = frameAt(second, at + FRAME_MS);
+    const zoomBefore = Math.log(shown.scale / before.scale);
+    const zoomAfter = Math.log(after.scale / shown.scale);
+    expect(Math.abs(zoomAfter / zoomBefore - 1), `zoom ${zoomBefore.toFixed(4)} then ${zoomAfter.toFixed(4)}`).toBeLessThanOrEqual(0.3);
+    const panBefore = Math.hypot(shown.x - before.x, shown.y - before.y);
+    const panAfter = Math.hypot(after.x - shown.x, after.y - shown.y);
+    expect(Math.abs(panAfter / panBefore - 1), `pan ${panBefore.toFixed(3)} then ${panAfter.toFixed(3)}`).toBeLessThanOrEqual(0.3);
+  });
+
+  it("never turns the zoom back or passes the target, however fast the replaced selection was moving", () => {
+    const start = { x: 0, y: 0, scale: 2 };
+    const target = { x: 10, y: 0, scale: 2.2 };
+    const ms = selectionTweenDurationMs(start, target);
+    const startSpeed = { x: 5, y: -3, logScale: 0.01 };
+    let was = start;
+    for (let t = FRAME_MS; t <= ms; t += FRAME_MS) {
+      const now = easeCameraKeyframe(start, target, t, ms, 1856, "spring", startSpeed);
+      expect(now.scale, `zoom at ${t.toFixed(0)} ms`).toBeGreaterThanOrEqual(was.scale);
+      expect(now.scale).toBeLessThanOrEqual(target.scale + 1e-9);
+      expect(now.x).toBeLessThanOrEqual(target.x + 1e-9);
+      expect(now.y, "a speed against the travel is not carried").toBe(0);
+      was = now;
+    }
+  });
+
+  it("keeps a pan on the spring's duration", () => {
+    expect(selectionTweenDurationMs({ x: 0, y: 0, scale: 2 }, { x: 300, y: 0, scale: 2 })).toBe(CANVAS_SPRING_PAN_MS);
+  });
+
+  it.each([[3.67], [5.47], [1 / 5.47]])("moves the zoom one way, never more than 8 %% in a 60 Hz frame, and lands on its target, zooming %fx", (ratio) => {
+    const start = { x: 0, y: 0, scale: 1 };
+    const target = { x: 60, y: 30, scale: ratio };
+    const ms = selectionTweenDurationMs(start, target);
+    let was = start.scale;
+    for (let t = FRAME_MS; t < ms; t += FRAME_MS) {
+      const { scale } = easeCameraKeyframe(start, target, t, ms, 1856, "spring");
+      expect(Math.sign(scale - was), `turns back at ${t.toFixed(0)} ms`).toBe(Math.sign(ratio - 1));
+      expect(Math.abs(Math.log(scale / was)), `steps past 8 % at ${t.toFixed(0)} ms`).toBeLessThanOrEqual(Math.log(1.08));
+      was = scale;
+    }
+    expect(easeCameraKeyframe(start, target, ms, ms, 1856, "spring")).toEqual(target);
   });
 });
