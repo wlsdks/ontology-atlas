@@ -25,7 +25,6 @@ import {
   DIFF_ROWS,
   EXAMPLE_REPO,
   PANE1,
-  PANE1_ROWS,
   PANE2,
   PANE3,
   PANE_TOP,
@@ -449,7 +448,7 @@ function countAt(events: ReadonlyArray<readonly [number, number]>, T: number): {
 
 /* ---------- drawing helpers, in window units ---------- */
 
-function useWindow(f: Frame) {
+function toWindow(f: Frame) {
   const { win, shot, dpr } = f;
   const z = shot.zoom;
   const scale = dpr * win.s * z;
@@ -567,7 +566,7 @@ function roll(
   ctx.restore();
 }
 
-/** Splits a localised total ("21개", "21 items") into its numeral and the words after it. */
+/** Splits a localised total ("21 items") into its numeral and the words after it. */
 function splitTotal(value: string, n: number): { numeral: string; unit: string; gap: string } {
   const digits = String(n);
   const at = value.indexOf(digits);
@@ -1185,7 +1184,7 @@ function drawHarness(f: Frame) {
   f.shot = keyed(SHOTS, f.T, mixShot);
   ctx.textBaseline = 'middle';
 
-  useWindow(f);
+  toWindow(f);
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(0, 0, WINDOW.w, WINDOW.h, WINDOW.radius);
@@ -1193,7 +1192,7 @@ function drawHarness(f: Frame) {
   const chrome = drawChrome(f);
   ctx.restore();
   drawLight(f);
-  useWindow(f);
+  toWindow(f);
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(0, 0, WINDOW.w, WINDOW.h, WINDOW.radius);
@@ -1302,7 +1301,7 @@ export function HarnessFilm() {
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
   const seek = useRef<(act: number) => void>(() => {});
   const [mode, setMode] = useState<Mode>('list');
-  const timing = useMemo(buildTiming, []);
+  const timing = useMemo(() => buildTiming(), []);
 
   useEffect(() => {
     if (typeof matchMedia !== 'function') return;
@@ -1403,12 +1402,14 @@ export function HarnessFilm() {
         frame.mask = { top: labelBottom, bottom: captionTop };
         const g = ctx.createLinearGradient(0, 0, 0, el.height);
         const stop = (y: number) => clamp(y / Math.max(1, frame.h));
-        g.addColorStop(0, 'rgba(0,0,0,0)');
-        g.addColorStop(stop(labelBottom - 4), 'rgba(0,0,0,0)');
-        g.addColorStop(stop(Math.min(top - 1, labelBottom + 12)), 'rgba(0,0,0,1)');
-        g.addColorStop(stop(captionTop - 24), 'rgba(0,0,0,1)');
-        g.addColorStop(stop(captionTop - 4), 'rgba(0,0,0,0)');
-        g.addColorStop(1, 'rgba(0,0,0,0)');
+        /* Only the alpha matters to `destination-in`: any opaque token keeps, `transparent` clears. */
+        const keep = palette.ink;
+        g.addColorStop(0, 'transparent');
+        g.addColorStop(stop(labelBottom - 4), 'transparent');
+        g.addColorStop(stop(Math.min(top - 1, labelBottom + 12)), keep);
+        g.addColorStop(stop(captionTop - 24), keep);
+        g.addColorStop(stop(captionTop - 4), 'transparent');
+        g.addColorStop(1, 'transparent');
         frame.maskFill = g;
       } else {
         frame.win = stillFrame(frame.w, frame.h, origin);
