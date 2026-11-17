@@ -68,6 +68,8 @@
   "createDocumentFailed": "문서를 만들지 못했어요. 기획 폴더 쓰기 권한을 확인해 주세요.",
   "browserUnavailable": "온톨로지 폴더를 열면 그 안에 기획 폴더를 만들 수 있어요. 다른 폴더를 골라 읽는 건 macOS 앱에서만 돼요.",
   "notEditable": "UTF-8이 아닌 파일이라 여기서 편집할 수 없어요.",
+  "importService": "외부에서 가져오기",
+  "importServiceHint": "Notion 같은 서비스의 문서를 기획 폴더로 가져와요. 자료실에서 이어져요.",
   "addFiles": "파일 넣기",
   "addFilesAdded": "파일 {count, number}개를 기획 폴더에 넣었어요.",
   "addFilesLeftBoth": "이미 있는 {duplicates, number}개와 지원하지 않는 형식 {unsupported, number}개는 넣지 않았어요.",
