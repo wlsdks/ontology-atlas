@@ -9,6 +9,7 @@ import { useLocalVault } from '@/entities/vault-session';
 import { choosePlanningFolder, planningAvailable, type PlanningInventory } from '@/shared/lib/planning/bridge';
 import { pickPlanningFiles, planningAddAvailable } from '@/shared/lib/planning/add-files';
 import { requestLibraryImport } from '@/shared/lib/library-import/destination';
+import { navigateWithViewTransition } from '@/shared/lib/navigation/route-view-transition';
 import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { createPlanningHomeDocument, PLANNING_HOME_FOLDER, planningIdentity, savePlanningHomeDocument } from '@/shared/lib/planning/home-source';
 import { editablePlanningText, planningTextForDisk, type PlanningEditableText } from '@/shared/lib/planning/editable-text';
@@ -446,7 +447,7 @@ export function PlanningPage() {
   };
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
   /** The Library owns the service import and its agent turn; unsaved editor text stays in memory. */
-  const importFromService = () => { requestLibraryImport('planning'); router.push('/library/'); };
+  const importFromService = () => { requestLibraryImport('planning'); navigateWithViewTransition(() => router.push('/library/')); };
   const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked'), attention: (name: string) => t('imageAttention', { image: name }), recovered: (name: string) => t('imageRecovered', { image: name }), blocked: (name: string, reason: string) => t('imageBlocked', { image: name, reason }), unnamed: (line: number, column: number) => t('imageUnnamed', { line, column }) };
   const files = inventory?.files.filter((file) => file.path.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((file) => file.path) ?? [];
   const evidenceOpenable = status === 'ready' && !fileFailed && !fileChanged && Boolean(readPlanningMemory().identity);
