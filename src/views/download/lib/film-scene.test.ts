@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildFilmScene, clusterRing, crossesClusters, pickCloseUp, pickNamedFiles } from './film-scene';
+import { buildFilmScene, clusterRing, crossesClusters, labelBox, pickCloseUp, pickNamedFiles, placeLabels, scheduleTyping } from './film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>
@@ -107,5 +107,68 @@ describe('pickCloseUp', () => {
   it('opens nothing when no capability declares a dependency', () => {
     const scene = buildFilmScene({ nodes: [node('p', 'project'), node('d', 'domain')], edges: [edge('p', 'd', 'contains')] });
     expect(pickCloseUp(scene)).toBeNull();
+  });
+});
+
+describe('scheduleTyping', () => {
+  const rows = [null, 'domain', 'kind', 'title', null, 'dependency', 'dependency', 'dependency', null].map((role) => ({ role }));
+  const landings = [3000, 3400, 3800, 4300, 4650, 5000];
+  const times = scheduleTyping(rows, landings, 2640, 380);
+
+  it('finishes each line that becomes a mark on its landing beat', () => {
+    const marks = times.filter((_, k) => rows[k]!.role !== null).map((t) => t.to);
+    expect(marks).toEqual(landings);
+  });
+
+  it('types one line at a time, each after the panel has opened', () => {
+    times.slice(1).forEach((t, k) => {
+      expect(t.from).toBeGreaterThanOrEqual(times[k]!.to);
+      expect(t.to).toBeGreaterThan(t.from);
+      expect(t.from).toBeGreaterThanOrEqual(2520);
+    });
+  });
+
+  it('still types a line when its landing beat has already passed', () => {
+    const late = scheduleTyping([{ role: null }, { role: 'kind' }], [100], 2640, 380);
+    expect(late[1]!.to).toBeGreaterThan(late[1]!.from);
+  });
+});
+
+describe('placeLabels', () => {
+  /* The opened concept and its dependencies sit within 20px of each other on the real map. */
+  const crowd = [
+    { x: 300, y: 300, r: 6 },
+    { x: 282, y: 312, r: 5 },
+    { x: 296, y: 320, r: 5 },
+    { x: 312, y: 318, r: 5 },
+  ].map((m) => {
+    const len = Math.hypot(m.x - 297.5, m.y - 312.5) || 1;
+    return { ...m, w: 150, h: 20, out: { x: (m.x - 297.5) / len, y: (m.y - 312.5) / len } };
+  });
+  const bounds = { l: 0, t: 0, r: 1440, b: 900 };
+
+  it('keeps every name at least the gap away from every other name and every other mark', () => {
+    const spots = placeLabels(crowd, { gap: 6, bounds });
+    const boxes = spots.map((s, k) => labelBox(crowd[k]!.x + s.dx, crowd[k]!.y + s.dy, crowd[k]!.w, crowd[k]!.h, s.align));
+    boxes.forEach((a, i) => {
+      boxes.forEach((b, j) => {
+        if (i >= j) return;
+        const apart = a.r + 6 <= b.l || b.r + 6 <= a.l || a.b + 6 <= b.t || b.b + 6 <= a.t;
+        expect(apart, `names ${i} and ${j} meet`).toBe(true);
+      });
+      crowd.forEach((m, j) => {
+        if (i === j) return;
+        const clear = a.r + 6 <= m.x - m.r || m.x + m.r + 6 <= a.l || a.b + 6 <= m.y - m.r || m.y + m.r + 6 <= a.t;
+        expect(clear, `name ${i} covers mark ${j}`).toBe(true);
+      });
+    });
+  });
+
+  it('keeps names inside the bounds', () => {
+    const edge = [{ x: 1430, y: 450, r: 5, w: 120, h: 20, out: { x: 1, y: 0 } }];
+    const [spot] = placeLabels(edge, { gap: 6, bounds });
+    const box = labelBox(1430 + spot!.dx, 450 + spot!.dy, 120, 20, spot!.align);
+    expect(box.r).toBeLessThanOrEqual(1440);
+    expect(box.l).toBeGreaterThanOrEqual(0);
   });
 });

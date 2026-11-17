@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import facts from './harness-facts.json';
-import { buildHarnessScene, fitPath, layoutHarness, pictureZone, type HarnessFacts, type Rect } from './harness-scene';
+import { buildHarnessScene, fitPath, layoutHarness, layoutPoster, pictureZone, type HarnessFacts, type Rect } from './harness-scene';
 
 const FACTS: HarnessFacts = facts;
 const scene = buildHarnessScene(FACTS);
@@ -60,33 +60,83 @@ describe('the stage', () => {
     describe(`at ${w}×${h}`, () => {
       const zone = pictureZone(w, h, 200);
       const layout = layoutHarness(scene, zone, measure);
+      const cards = layout.stacks.flatMap((stack) => stack.cards.map((card) => card.rect));
 
       it('keeps every act inside the picture zone', () => {
-        for (const file of layout.files) expect(inside(file.rect, zone), file.text ?? 'slab').toBe(true);
+        for (const card of cards) expect(inside(card, zone)).toBe(true);
         for (const plate of layout.plates) expect(inside(plate, zone)).toBe(true);
         for (const cell of layout.cells) expect(inside(cell.rect, zone), cell.name).toBe(true);
-        for (const strip of layout.strips) for (const mark of [...strip.parked, ...strip.merged, ...strip.whole]) expect(inside(mark, zone)).toBe(true);
+        for (const mark of layout.strips.flat()) expect(inside(mark, zone)).toBe(true);
         expect(layout.readoutY).toBeLessThanOrEqual(zone.bottom);
       });
 
-      it('never overlaps two files, two cells or two marks', () => {
-        const groups = [layout.files.map((file) => file.rect), layout.cells.map((cell) => cell.rect), ...layout.strips.map((strip) => strip.whole)];
+      it('stacks one card per instruction file, the column\'s first path on top', () => {
+        expect(cards).toHaveLength(scene.counts.instructions);
+        layout.stacks.forEach((stack, c) => expect(stack.cards.at(-1)?.path).toBe(scene.columns[c]!.paths[0]));
+        layout.stacks.forEach((stack, c) => {
+          const next = layout.stacks[c + 1];
+          if (next) expect(stack.x + stack.width).toBeLessThan(next.x);
+        });
+      });
+
+      it('never overlaps two cells, two plates or two parked marks', () => {
+        const groups = [layout.cells.map((cell) => cell.rect), layout.plates, layout.strips.flat()];
         for (const rects of groups) rects.forEach((a, i) => rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true)));
       });
 
-      it('gives every check one mark, in an order where no two cells cross on the way', () => {
+      it('gives every check one piece of its underline, in the order the sweep fills them', () => {
         expect(layout.cells.map((cell) => cell.slot).sort((a, b) => a - b)).toEqual(layout.cells.map((_, k) => k));
-        const first = layout.cells.filter((cell) => cell.band === 0).sort((a, b) => a.rect.x - b.rect.x || a.rect.y - b.rect.y);
-        expect(first.map((cell) => cell.slot)).toEqual(first.map((_, k) => k));
-        /* The first two strips meet above the checks' first row, so they never pass over a cell. */
-        const firstRow = Math.min(...layout.cells.map((cell) => cell.rect.y));
-        for (const mark of [...layout.strips[0]!.merged, ...layout.strips[1]!.merged]) expect(mark.y + mark.h).toBeLessThanOrEqual(firstRow);
+        const swept = [...layout.cells].sort((a, b) => a.band - b.band || a.rect.x - b.rect.x || a.rect.y - b.rect.y);
+        expect(swept.map((cell) => cell.slot)).toEqual(swept.map((_, k) => k));
       });
 
-      it('leaves the longest command clear of the plates', () => {
-        const longest = Math.max(...scene.commands.map((command) => measure(`$ ${command.command}`, 28)));
-        expect(layout.command.x + longest + 24).toBeLessThan(layout.plates[0]!.x);
+      it('leaves the longest command and its caret clear of the plates, in type no smaller than 15px', () => {
+        const longest = Math.max(...scene.commands.map((command) => measure(`$ ${command.command}`, layout.command.px)));
+        expect(layout.command.x + longest + 32).toBeLessThan(layout.plates[0]!.x);
+        expect(layout.plateTextPx).toBeGreaterThanOrEqual(15);
+        expect(layout.command.px).toBeGreaterThanOrEqual(24);
       });
+    });
+  }
+});
+
+describe('the last frame', () => {
+  for (const width of [186, 272]) {
+    const gap = 40;
+    const columns = [0, 1, 2].map((i) => ({ x: 200 + i * (width + gap), w: width }));
+    const base = 600;
+    const poster = layoutPoster(scene, columns, base, measure);
+
+    it(`puts one object per file, hook and check above its own count, in ${width}px columns`, () => {
+      expect(poster.cards).toHaveLength(scene.counts.instructions);
+      expect(poster.hooks).toHaveLength(scene.counts.hooks);
+      expect(poster.cells).toHaveLength(scene.counts.checks);
+      [poster.cards, poster.hooks, poster.cells].forEach((group, i) => {
+        const column = columns[i]!;
+        for (const r of group) {
+          expect(r.x).toBeGreaterThanOrEqual(column.x - 0.5);
+          expect(r.x + r.w).toBeLessThanOrEqual(column.x + column.w + 0.5);
+          expect(r.y + r.h).toBeLessThanOrEqual(base + 0.5);
+        }
+      });
+    });
+
+    it(`names three real files and every gate plate, each inside its card, in ${width}px columns`, () => {
+      expect(poster.names).toHaveLength(3);
+      for (const name of poster.names) {
+        const card = poster.cards[name.card]!;
+        expect(name.x + measure(name.text, 18)).toBeLessThanOrEqual(card.x + card.w);
+      }
+      expect(poster.plateNames).toHaveLength(scene.gate.length);
+      for (const name of poster.plateNames) {
+        const plate = poster.hooks[name.hook]!;
+        expect(name.x + measure(name.text, poster.plateTextPx)).toBeLessThanOrEqual(plate.x + plate.w);
+      }
+      expect(poster.plateTextPx).toBeGreaterThanOrEqual(15);
+    });
+
+    it(`never overlaps two cells or two hooks, in ${width}px columns`, () => {
+      for (const rects of [poster.cells, poster.hooks]) rects.forEach((a, i) => rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true)));
     });
   }
 });

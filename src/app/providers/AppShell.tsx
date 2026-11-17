@@ -4,6 +4,8 @@ import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
+import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
+import { PaneNavigationContext, type PaneNavigation } from "@/shared/lib/navigation/pane-link";
 import { FolderOpen } from "lucide-react";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -71,8 +73,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
+  const router = useRouter();
   const mapPending = useMapNavigationPending();
   const busy = mapPending !== null;
+  const paneNavigation = useMemo<PaneNavigation>(() => ({
+    pathname,
+    crossfadeTo: (href, { replace, scroll, locale }) => {
+      cancelMapNavigation();
+      navigateWithViewTransition(() => (replace ? router.replace(href, { scroll, locale }) : router.push(href, { scroll, locale })));
+    },
+  }), [pathname, router]);
 
   return (
     <ShellFrame
@@ -86,10 +96,12 @@ function ShellColumn({ children }: { children: ReactNode }) {
         <AppUpdateSurface />
       }
     >
-      <PlanningReturnBar />
-      <VaultRouteIdentityBoundary pathname={pathname}>
-        {children}
-      </VaultRouteIdentityBoundary>
+      <PaneNavigationContext.Provider value={paneNavigation}>
+        <PlanningReturnBar />
+        <VaultRouteIdentityBoundary pathname={pathname}>
+          {children}
+        </VaultRouteIdentityBoundary>
+      </PaneNavigationContext.Provider>
     </ShellFrame>
   );
 }
@@ -264,7 +276,8 @@ function AppNavRailSlot() {
         return;
       }
       cancelMapNavigation();
-      router.push(href);
+      if (id === "map" || resolveActiveNavDestination(pathname) === id) router.push(href);
+      else navigateWithViewTransition(() => router.push(href));
       /* The canvas needs focus before arrow keys walk it (`shared/lib/map-canvas/focus-map-canvas.ts`). */
       if (id === "map") focusMapCanvasWhenReady();
     },

@@ -20,7 +20,7 @@ export interface FilmClock {
 export function createFilmClock(
   spans: readonly (readonly [number, number])[],
   durationsMs: readonly number[],
-  { holdMs = 2000, fadeMs = 540 }: { holdMs?: number; fadeMs?: number } = {},
+  { holdMs = 1400, fadeMs = 400 }: { holdMs?: number; fadeMs?: number } = {},
 ): FilmClock {
   const starts = durationsMs.map((_, i) => durationsMs.slice(0, i).reduce((a, b) => a + b, 0));
   const total = durationsMs.reduce((a, b) => a + b, 0);

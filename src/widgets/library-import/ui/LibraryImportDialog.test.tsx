@@ -165,8 +165,21 @@ describe('service setup', () => {
     expect(screen.queryByTestId('library-import-runtime')).not.toBeInTheDocument();
     expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute('href', expect.stringContaining('/agents'));
   });
-  it('closes before opening the advanced service settings', () => {
-    const { onClose, onOpenAdvanced } = draw(); pick('other'); expect(onClose).toHaveBeenCalledBefore(onOpenAdvanced);
+  it('opens the advanced service settings once the dialog has left the screen', async () => {
+    const { onClose, onOpenAdvanced, replace } = draw(); pick('other');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOpenAdvanced, 'the dialog is still on screen').not.toHaveBeenCalled();
+    replace({ open: false });
+    await waitFor(() => expect(onOpenAdvanced).toHaveBeenCalledTimes(1));
+  });
+  it('tells the opener about a plain close only after the dialog has left the screen', async () => {
+    const onDismiss = vi.fn();
+    const { onClose, replace } = draw({ onDismiss });
+    fireEvent.click(screen.getByTestId('library-import-close'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+    replace({ open: false });
+    await waitFor(() => expect(onDismiss).toHaveBeenCalledTimes(1));
   });
 });
 
