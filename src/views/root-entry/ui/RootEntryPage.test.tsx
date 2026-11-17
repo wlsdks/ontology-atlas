@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { loadWorkbenchCatalog } from '@/i18n/workbench-catalog';
 import { RootEntryPage } from './RootEntryPage';
 
 const mocks = vi.hoisted(() => ({
@@ -35,6 +36,11 @@ vi.mock('next-intl', () => ({
     return key;
   },
 }));
+
+vi.mock('@/i18n/workbench-catalog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/i18n/workbench-catalog')>();
+  return { ...actual, loadWorkbenchCatalog: vi.fn(actual.loadWorkbenchCatalog) };
+});
 
 vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => mocks.isDesktopShell,
@@ -144,7 +150,16 @@ describe('RootEntryPage', () => {
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
 
-  it('shows the map at the root for a web user with an open vault', () => {
+  it('fetches neither the map nor the whole catalog for a first-time web visitor', () => {
+    vi.mocked(loadWorkbenchCatalog).mockClear();
+    mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true, status: 'idle' };
+
+    render(<RootEntryPage />);
+
+    expect(loadWorkbenchCatalog).not.toHaveBeenCalled();
+  });
+
+  it('shows the map at the root for a web user with an open vault', async () => {
     mocks.vaultState = {
       handle: {} as never,
       manifest: {} as never,
@@ -153,17 +168,17 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
-    expect(screen.getByTestId('topology-hub')).toBeInTheDocument();
+    expect(await screen.findByTestId('topology-hub')).toBeInTheDocument();
     expect(screen.queryByTestId('gateway-landing')).not.toBeInTheDocument();
   });
 
-  it('shows no gateway at the root of the installed app', () => {
+  it('shows no gateway at the root of the installed app', async () => {
     mocks.isDesktopShell = true;
 
     render(<RootEntryPage />);
 
+    expect(await screen.findByTestId('first-run')).toBeInTheDocument();
     expect(screen.queryByTestId('gateway-landing')).not.toBeInTheDocument();
-    expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 
   it('keeps landing copy out of the server-rendered root shell', () => {
@@ -174,13 +189,13 @@ describe('RootEntryPage', () => {
     expect(html).not.toContain('landing');
   });
 
-  it('shows the first-run surface in the desktop shell when no vault is loaded', () => {
+  it('shows the first-run surface in the desktop shell when no vault is loaded', async () => {
     mocks.isDesktopShell = true;
 
     render(<RootEntryPage />);
 
+    expect(await screen.findByTestId('first-run')).toBeInTheDocument();
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument();
-    expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 
   it('holds the neutral boot frame until the vault restore attempt settles', () => {
@@ -194,7 +209,7 @@ describe('RootEntryPage', () => {
     expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
   });
 
-  it('opens the topology hub when a vault is already loaded', () => {
+  it('opens the topology hub when a vault is already loaded', async () => {
     mocks.isDesktopShell = true;
     mocks.vaultState = {
       handle: { name: 'vault' },
@@ -204,10 +219,10 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
-    expect(screen.getByTestId('topology-hub')).toBeInTheDocument();
+    expect(await screen.findByTestId('topology-hub')).toBeInTheDocument();
   });
 
-  it('drops stale restored desktop handles into first-run instead of the workspace', () => {
+  it('drops stale restored desktop handles into first-run instead of the workspace', async () => {
     mocks.isDesktopShell = true;
     mocks.vaultState = {
       handle: { name: 'missing-vault' },
@@ -217,7 +232,7 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
+    expect(await screen.findByTestId('first-run')).toBeInTheDocument();
     expect(screen.queryByTestId('topology-hub')).not.toBeInTheDocument();
-    expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 });

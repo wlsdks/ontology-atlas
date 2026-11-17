@@ -228,6 +228,7 @@ vi.mock("@/views/project-detail/model/project-to-check", async (importOriginal) 
 });
 
 vi.mock("@/features/project-data-source", () => ({
+  useRecordSelectedProject: () => {},
   useProjects: () => ({
     projects: hoistedMocks.projects,
     loaded: true,

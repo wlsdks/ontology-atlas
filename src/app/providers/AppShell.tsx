@@ -11,7 +11,9 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, useToast } from "@/shared/ui";
 import { WaitStage } from "@/shared/ui/status/wait-stage";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import type { AppLocale } from "@/i18n/locales";
+import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
 import {
   AppNavRail,
   NavRailShellProvider,
@@ -31,7 +33,7 @@ import {
 } from "@/shared/lib/navigation/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
-import { useSoleProjectHref } from "@/features/project-data-source";
+import { useProjectsDoorHref } from "@/features/project-data-source";
 import { ShellFrame, useShellSetup } from "./ShellFrame";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
@@ -230,18 +232,21 @@ function AppNavRailSlot() {
     ? buildTopologyReturnHref(readingContext.selectedId)
     : undefined;
   /*
-   * With exactly one project, the Projects door opens it. The rail, its shortcut and the mobile
-   * tab bar all read this hook, or they disagree about where one destination leads.
+   * The Projects door opens the selected project when there is one. The rail, its shortcut and the
+   * mobile tab bar all read this hook, or they disagree about where one destination leads.
    */
-  const soleProjectHref = useSoleProjectHref();
+  const projectsDoorHref = useProjectsDoorHref();
 
   // Gateway routes hide the rail with `lg:hidden`, not an unmount, decided during render so it never
   // paints for a frame. `isGatewaySurface` is shared with `RootEntryPage`. `useHydrated()` forces a
   // re-render because hydration does not correct a `lg:hidden` baked in prerender.
   const hydrated = useHydrated();
+  /* `/` on the web holds a subset of the catalog until a folder arrives (`WorkbenchMessagesProvider`);
+     the rail stays the gateway's until the rest is here, as `RootEntryPage` does. */
+  const catalogReady = useWorkbenchCatalog(useLocale() as AppLocale) !== null;
   const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialTotal;
   const gateway = isGatewaySurface(pathname, {
-    hasVault: Boolean(vault.manifest || vault.partialTotal),
+    hasVault: Boolean(vault.manifest || vault.partialTotal) && catalogReady,
     desktop: hydrated && isDesktopShell(),
     vaultKnown: vault.restoreAttempted,
   });
@@ -305,7 +310,7 @@ function AppNavRailSlot() {
         settingsSlot={utilityTier}
         hidden={railHidden}
         contextHrefs={
-          { ...contextHrefs, map: mapReturnHref, ...(soleProjectHref ? { projects: soleProjectHref } : {}), ...(sourceOnly ? { agents: "/agents/?tab=models&returnTo=changes" } : {}) }
+          { ...contextHrefs, map: mapReturnHref, ...(projectsDoorHref ? { projects: projectsDoorHref } : {}), ...(sourceOnly ? { agents: "/agents/?tab=models&returnTo=changes" } : {}) }
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}

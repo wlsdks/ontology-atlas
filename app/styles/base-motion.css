@@ -8,7 +8,11 @@
     view-transition-name: none;
   }
 
-  html.route-crossfade [data-app-shell-pane] {
+  /*
+   * The name sits on the pane's frame, which does not scroll: WebKit stops painting the sticky
+   * header and composited children of a scroll container in the frame it is named.
+   */
+  html.route-crossfade [data-app-shell-pane-frame] {
     view-transition-name: app-pane;
   }
 

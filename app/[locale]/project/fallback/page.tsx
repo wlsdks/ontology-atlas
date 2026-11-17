@@ -20,8 +20,6 @@ export async function generateMetadata({
     locale,
     namespace: "projectPages.detail",
   });
-  // The Korean i18n `topBarProjectFallback` is deliberately the English "Project" (the breadcrumb is
-  // English by intent), so a separate `topBarProjectsLabel` is used, localized properly for each locale.
   return {
     title: t("topBarProjectsLabel"),
     robots: { index: false, follow: false },
