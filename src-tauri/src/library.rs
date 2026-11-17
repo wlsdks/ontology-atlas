@@ -33,6 +33,27 @@ fn take_source_path(vended: &str) -> Option<PathBuf> {
 
 /// Same value as TS `VAULT_SOURCES_DIR`.
 const SOURCES_DIR: &str = "sources";
+/// Same value as TS `PLANNING_HOME_FOLDER`.
+const PLANNING_DIR: &str = "planning";
+
+/// The only folders an import may land in. The page names one; it never sends a path,
+/// and any other value fails argument parsing before the command runs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ImportDestination {
+    #[default]
+    Sources,
+    Planning,
+}
+
+impl ImportDestination {
+    fn folder(self) -> &'static str {
+        match self {
+            Self::Sources => SOURCES_DIR,
+            Self::Planning => PLANNING_DIR,
+        }
+    }
+}
 
 /// Must equal TS `DISCOVERY_DOCUMENT_EXTENSIONS`. An allow-list, because a
 /// deny-list fails on the first unforeseen name; `md` is absent so vault Markdown
@@ -217,13 +238,13 @@ fn split_name(name: &str) -> (String, String) {
 }
 
 /// Indexed by content hash so the same bytes under another name are recognised.
-fn index_existing_sources(root: &Path) -> Result<Vec<(String, String)>, String> {
-    let sources = root.join(SOURCES_DIR);
-    if !sources.is_dir() {
+fn index_existing_files(root: &Path, folder: &str) -> Result<Vec<(String, String)>, String> {
+    let destination = root.join(folder);
+    if !destination.is_dir() {
         return Ok(Vec::new());
     }
     let mut out = Vec::new();
-    let mut stack = vec![(sources, String::from(SOURCES_DIR))];
+    let mut stack = vec![(destination, String::from(folder))];
     while let Some((dir, prefix)) = stack.pop() {
         let entries = match fs::read_dir(&dir) {
             Ok(entries) => entries,
@@ -284,12 +305,30 @@ fn copy_source_into(
 pub fn import_source_files(
     root_path: String,
     source_paths: Vec<String>,
+    destination: Option<ImportDestination>,
 ) -> Result<Vec<SourceImportResult>, String> {
-    let root = canonical_root(&root_path)?;
-    fs::create_dir_all(root.join(SOURCES_DIR)).map_err(|err| err.to_string())?;
-    let mut existing = index_existing_sources(&root)?;
-    let mut results = Vec::with_capacity(source_paths.len());
+    let destination = destination.unwrap_or_default();
+    let folder = destination.folder();
     let mut resolved: HashMap<String, PathBuf> = HashMap::new();
+    if destination == ImportDestination::Planning {
+        // Every offer is spent before any refusal, so a refused pick never stays importable.
+        for source_path in &source_paths {
+            if !resolved.contains_key(source_path) {
+                if let Some(canonical) = take_source_path(source_path) {
+                    resolved.insert(source_path.clone(), canonical);
+                }
+            }
+        }
+    }
+    let root = canonical_root(&root_path)?;
+    let target = root.join(folder);
+    if destination == ImportDestination::Planning {
+        refuse_linked_folder(&target)?;
+    }
+    fs::create_dir_all(&target).map_err(|err| err.to_string())?;
+    let mut existing = index_existing_files(&root, folder)?;
+    let mut taken = folded_names(destination, &target);
+    let mut results = Vec::with_capacity(source_paths.len());
     let mut landed: HashMap<PathBuf, String> = HashMap::new();
 
     for source_path in source_paths {
@@ -327,6 +366,10 @@ pub fn import_source_files(
             results.push(failure("unusable-file-name"));
             continue;
         };
+        if destination == ImportDestination::Planning && !planning_lists_name(&base_name) {
+            results.push(failure("unsupported-type"));
+            continue;
+        }
 
         let mut source = match fs::File::open(&canonical) {
             Ok(source) => source,
@@ -363,19 +406,19 @@ pub fn import_source_files(
         let (stem, extension) = split_name(&base_name);
         let mut candidate = base_name.clone();
         let mut suffix = 2;
-        while root.join(SOURCES_DIR).join(&candidate).exists() {
+        while name_taken(&target, taken.as_ref(), &candidate) {
             candidate = format!("{stem} ({suffix}){extension}");
             suffix += 1;
             if suffix > 999 {
                 break;
             }
         }
-        if root.join(SOURCES_DIR).join(&candidate).exists() {
+        if name_taken(&target, taken.as_ref(), &candidate) {
             results.push(failure("file-name-conflict-limit"));
             continue;
         }
         let renamed = candidate != base_name;
-        let relative = format!("{SOURCES_DIR}/{candidate}");
+        let relative = format!("{folder}/{candidate}");
         let copied = source
             .seek(SeekFrom::Start(0))
             .map_err(|err| err.to_string())
@@ -388,6 +431,9 @@ pub fn import_source_files(
             }
         };
         existing.push((hash.clone(), relative.clone()));
+        if let Some(taken) = taken.as_mut() {
+            taken.insert(candidate.to_lowercase());
+        }
         landed.insert(canonical, relative.clone());
         results.push(SourceImportResult {
             picked_name,
@@ -400,6 +446,51 @@ pub fn import_source_files(
     }
 
     Ok(results)
+}
+
+/// The home scan's rule: its file types, and secret-looking words refused for images only.
+fn planning_lists_name(name: &str) -> bool {
+    let name_os = std::ffi::OsStr::new(name);
+    crate::planning::supported_file(name_os)
+        && (lower_extension(name) == "md" || crate::planning::allowed_component(name_os))
+}
+
+/// The planning folder is read and indexed by path, so a link there would lead both outside.
+fn refuse_linked_folder(target: &Path) -> Result<(), String> {
+    match fs::symlink_metadata(target) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            Err("import-destination-not-a-folder".into())
+        }
+        Err(err) if err.kind() != std::io::ErrorKind::NotFound => Err(err.to_string()),
+        _ => Ok(()),
+    }
+}
+
+/// Planning names compare ignoring letter case, as new documents do; `sources` keeps
+/// asking the file system alone. Every entry counts, so a dangling link's name stays taken.
+fn folded_names(
+    destination: ImportDestination,
+    target: &Path,
+) -> Option<std::collections::HashSet<String>> {
+    if destination != ImportDestination::Planning {
+        return None;
+    }
+    let entries = fs::read_dir(target).ok()?;
+    Some(
+        entries
+            .flatten()
+            .map(|entry| entry.file_name().to_string_lossy().to_lowercase())
+            .collect(),
+    )
+}
+
+fn name_taken(
+    target: &Path,
+    folded: Option<&std::collections::HashSet<String>>,
+    candidate: &str,
+) -> bool {
+    target.join(candidate).exists()
+        || folded.is_some_and(|names| names.contains(&candidate.to_lowercase()))
 }
 
 fn import_failure(picked_name: &str, reason: &str) -> SourceImportResult {

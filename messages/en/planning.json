@@ -68,6 +68,14 @@
   "createDocumentFailed": "Could not create this document. Check that the planning folder can be written.",
   "browserUnavailable": "Open an ontology folder to make a planning folder inside it. Choosing another folder to read works only in the macOS app.",
   "notEditable": "This file is not UTF-8, so it cannot be edited here.",
+  "addFiles": "Add files",
+  "addFilesAdded": "Added {count, plural, one {# file} other {# files}} to the planning folder.",
+  "addFilesLeftBoth": "{duplicates, number} already there and {unsupported, number} of an unsupported type were not added.",
+  "addFilesLeftDuplicates": "{duplicates, plural, one {# file was} other {# files were}} already there and not added.",
+  "addFilesLeftUnsupported": "{unsupported, plural, one {# file was} other {# files were}} of an unsupported type and not added.",
+  "addFilesPartFailed": "{failed, plural, one {# file} other {# files}} could not be added. Check that the planning folder can be written.",
+  "addFilesNothing": "Nothing was added. Only Markdown and images (png, jpg, webp, avif) can be added.",
+  "addFilesFailed": "Could not add the files. Check that the planning folder can be written.",
   "scene": {
     "documentHeading": "Requirements"
   }

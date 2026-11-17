@@ -206,16 +206,21 @@ export interface TauriSourceImportResult {
   reason: string | null;
 }
 
-/** Copies chosen files into `<vault>/sources/`, refusing bytes already there. */
+/** The two fixed folders an import lands in; Rust refuses any other value. */
+export type TauriSourceImportDestination = 'sources' | 'planning';
+
+/** Copies chosen files into `<vault>/sources/` (or `planning/`), refusing bytes already there. */
 export async function importTauriSourceFiles(
   rootPath: string,
   sourcePaths: readonly string[],
+  destination?: TauriSourceImportDestination,
 ): Promise<TauriSourceImportResult[] | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke<TauriSourceImportResult[]>('import_source_files', {
     rootPath,
     sourcePaths: [...sourcePaths],
+    ...(destination ? { destination } : {}),
   });
 }
 

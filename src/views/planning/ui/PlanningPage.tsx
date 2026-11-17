@@ -4,9 +4,10 @@ import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, FilePlus, FileText, FolderOpen, FolderPen, LockKeyhole, PenLine, RefreshCw } from 'lucide-react';
+import { ArrowLeft, FilePlus, FileText, FileUp, FolderOpen, FolderPen, LockKeyhole, PenLine, RefreshCw } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { choosePlanningFolder, planningAvailable, type PlanningInventory } from '@/shared/lib/planning/bridge';
+import { pickPlanningFiles, planningAddAvailable } from '@/shared/lib/planning/add-files';
 import { createPlanningHomeDocument, PLANNING_HOME_FOLDER, planningIdentity, savePlanningHomeDocument } from '@/shared/lib/planning/home-source';
 import { editablePlanningText, planningTextForDisk, type PlanningEditableText } from '@/shared/lib/planning/editable-text';
 import { planningSourceFor, type HomePlanningSelection, type PlanningSelection } from '@/shared/lib/planning/source';
@@ -17,7 +18,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { MOTION } from '@/shared/motion';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
-import { Button, ChromeChip, ChromeTile, PageHeaderBar, WaitStage } from '@/shared/ui';
+import { Button, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';
 import { PAGE_HEADER_FRAMES } from '@/shared/ui/layout/page-header-bar';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
@@ -29,6 +30,7 @@ import { PlanningEditor } from './PlanningEditor';
 import { PlanningDiscardDialog } from './PlanningDiscardDialog';
 import { firstPlanningDocument, isPlanningMarkdown } from '../model/file-groups';
 import { planningArrival } from '../model/arrival';
+import { planningAddSummary } from '../model/add-summary';
 
 const QUIET_TEXT = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
 
@@ -52,6 +54,7 @@ function homeSelection(root: FileSystemDirectoryHandle, directory: FileSystemDir
 export function PlanningPage() {
   const t = useTranslations('planning');
   const router = useRouter();
+  const toast = useToast();
   const vault = useLocalVault();
   const reducedMotion = usePrefersReducedMotion();
   const pathId = useId();
@@ -82,6 +85,7 @@ export function PlanningPage() {
   const [saving, setSaving] = useState(false);
   const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null);
   const [enteredFromStage, setEnteredFromStage] = useState(false);
+  const [adding, setAdding] = useState(false);
   const folderFailed = useRef(false);
   const folderNoticeSelection = useRef(selection);
   const sequence = useRef(0);
@@ -90,6 +94,8 @@ export function PlanningPage() {
   const recheckCurrent = useRef<(() => void) | null>(null);
   const selectedRef = useRef(selected);
   const editingRef = useRef(false);
+  const unsavedRef = useRef(false);
+  const mounted = useRef(true);
   const reader = useRef<HTMLDivElement>(null);
   const fileList = useRef<HTMLDivElement>(null);
   const draftOpener = useRef<HTMLElement | null>(null);
@@ -111,6 +117,7 @@ export function PlanningPage() {
     return () => { active = false; };
   }, []);
   useEffect(() => { const currentSequence = sequence; clearPlanningReturn(); return () => { currentSequence.current++; }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const refresh = useCallback(async (scope: PlanningSelection, path: string | null) => {
     if (path && path === selectedRef.current && pendingScroll.current === null && reader.current && readPlanningMemory().identity) pendingScroll.current = reader.current.scrollTop;
     const request = ++sequence.current;
@@ -274,6 +281,7 @@ export function PlanningPage() {
   }, [activeSelection, readable]);
   const readImage = useCallback((path: string) => activeSelection ? planningSourceFor(activeSelection).readFile(path) : Promise.reject(new Error('no-selection')), [activeSelection]);
   const unsaved = editing !== null && editing.text !== editing.original;
+  useEffect(() => { unsavedRef.current = unsaved; }, [unsaved]);
   const { markSelfWrite, unmarkSelfWrite } = vault;
   useEffect(() => {
     if (!unsaved) return;
@@ -356,6 +364,37 @@ export function PlanningPage() {
       setDraftFailed(true);
     } finally { setCreatingDocument(false); }
   };
+  /** Copies picked files into the home folder, then opens the first one unless unsaved text is open. */
+  const addFiles = async () => {
+    if (activeSelection?.kind !== 'home' || adding) return;
+    const scope = activeSelection;
+    const marked = new Map<string, string>();
+    const markOwnWrite = (path: string) => {
+      if (!isPlanningMarkdown(path)) return;
+      marked.set(path, homeDocumentSlug(path));
+      markSelfWrite(homeDocumentSlug(path));
+    };
+    setAdding(true);
+    try {
+      const rootPath = getTauriVaultRootPath(scope.root) ?? null;
+      const outcome = await pickPlanningFiles({ directory: scope.directory, rootPath, beforeWrite: markOwnWrite });
+      if (!outcome) return;
+      if (rootPath) outcome.added.forEach(markOwnWrite);
+      for (const [path, slug] of marked) if (!outcome.added.includes(path)) unmarkSelfWrite(slug);
+      const summary = planningAddSummary(outcome);
+      if (summary) toast.show(summary.sentences.map(({ key, values }) => t(key, values)).join(' '), summary.tone);
+      // A screen left during the copy keeps its editor and kept draft; only the toast reports.
+      if (!mounted.current || readPlanningMemory().selection !== scope) return;
+      const first = outcome.added[0];
+      if (first && !unsavedRef.current) {
+        if (editingRef.current) closeEditor();
+        openFile(first);
+      } else void refresh(scope, selectedRef.current);
+    } catch {
+      for (const slug of marked.values()) unmarkSelfWrite(slug);
+      toast.show(t('addFilesFailed'), 'error');
+    } finally { setAdding(false); }
+  };
   const startEdit = () => {
     const identity = readPlanningMemory().identity;
     if (!selected || !editableText || !identity) return;
@@ -396,6 +435,7 @@ export function PlanningPage() {
   };
   const workbench = arrival === 'workbench' && activeSelection !== null ? activeSelection : null;
   const isHome = workbench?.kind === 'home';
+  const canAddFiles = workbench?.kind === 'home' && planningAddAvailable(getTauriVaultRootPath(workbench.root) ?? null);
   const emptyHome = isHome && inventory !== null && inventory.files.length === 0 && status !== 'unavailable';
   const editingShown = editing !== null && editing.path === selected ? editing : null;
   const shownMarkdown = isHome && selected !== null && isPlanningMarkdown(selected) && content !== null && !fileChanged && !fileFailed && !editingShown;
@@ -410,6 +450,7 @@ export function PlanningPage() {
       actions={workbench ? <>
         <ChromeTile title={t('refresh')} icon={<RefreshCw aria-hidden />} data-planning-focus-fallback onClick={() => refreshFolder(workbench)} />
         {isHome && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft}>{t('newDocument')}</ChromeChip>}
+        {canAddFiles && <ChromeChip icon={<FileUp aria-hidden />} data-planning-add disabled={adding} onClick={() => void addFiles()}>{t('addFiles')}</ChromeChip>}
         {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome}>{t('homeFolder')}</ChromeChip>}
         {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)}>{t('chooseFolder')}</ChromeChip>}
       </> : undefined}
@@ -450,7 +491,7 @@ export function PlanningPage() {
           {editingShown ? <PlanningEditor labelledBy={pathId} text={editingShown.text} notice={editingShown.notice} saving={saving} onChange={(text) => changeEditorText(editingShown, text)} onSave={() => void save()} onCancel={() => leaveEditor(focusEdit)} />
             : !inventory ? null
             : !selected ? emptyHome
-              ? <div data-planning-empty-home className="flex h-full flex-col items-center justify-center gap-4 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><p>{t('emptyHome')}</p><Button data-planning-empty-new onClick={startDraft}><FilePlus size={ICON_SIZE.sm} aria-hidden />{t('newDocument')}</Button></div>
+              ? <div data-planning-empty-home className="flex h-full flex-col items-center justify-center gap-4 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><p>{t('emptyHome')}</p><div className="flex flex-col items-center gap-2"><Button data-planning-empty-new onClick={startDraft}><FilePlus size={ICON_SIZE.sm} aria-hidden />{t('newDocument')}</Button>{canAddFiles && <Button variant="ghost" data-planning-empty-add disabled={adding} onClick={() => void addFiles()}><FileUp size={ICON_SIZE.sm} aria-hidden />{t('addFiles')}</Button>}</div></div>
               : <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><FileText size={ICON_SIZE.lg} aria-hidden /><p>{t('selectFile')}</p></div>
             : fileChanged ? <p role="alert" className="mx-auto max-w-[var(--measure-doc-column)] text-body leading-body text-[color:var(--color-text-primary)]">{t('fileChanged')}</p>
             : fileFailed ? <p role="alert" className="mx-auto max-w-[var(--measure-doc-column)] text-body leading-body text-[color:var(--color-text-primary)]">{t('fileUnavailable')}</p>
