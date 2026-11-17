@@ -58,6 +58,110 @@ an image API. Run `node --test scripts/brand/build-moru-sprites.test.mjs` to che
 eye/ivory regressions, the reduction rules, identical eyes, floor lines, nod body volume, frame inventories, margins and loop seams. Full platform
 fan-out is documented in [Brand](../../../docs/design/brand.md#rebuild).
 
+## In the app
+
+**Where Moru appears.** At folder entry Moru greets you, holds out a small folder and waits; once a folder starts opening, play gives way to the waiting view. The download page has its own welcome. Reading a source, waiting for your permission and celebrating a finished check appear only when the app has observed that state, so Moru never shows progress nobody confirmed.
+
+**Petting.** Press Moru for one short response. The first is gentle, the second reveals a playful one, and after that Moru works through everything it knows while avoiding the last two: 14 responses at folder entry, 18 on the download welcome. A small wordless bubble sometimes answers with a heart, a note or a sparkle, and a pup peeks out once in a long idle.
+
+**Staying out of the way.** Moru moves only while airborne, and lands before it waits under your pointer. While work is pending it stays quiet and in place. Pause and resume live in Moru's menu (right-click or Shift+F10), with no playback button beside the character, and reduced motion answers with a still expression.
+
+## The 16 poses
+
+<img src="moru-poses-showcase.png" width="400" height="400" alt="Moru's 16 poses" />
+
+## All 58 drawn motions
+
+### Waiting
+
+<p>
+<img src="animated/gif/authored/moru-blink.gif" width="128" height="128" alt="Moru blinking while it waits" />
+<img src="animated/gif/authored/moru-tail.gif" width="128" height="128" alt="Moru wiggling its tail" />
+<img src="animated/gif/authored/moru-doze.gif" width="128" height="128" alt="Moru dozing" />
+<img src="animated/gif/authored/moru-hop.gif" width="128" height="128" alt="Moru doing a little hop" />
+<img src="animated/gif/authored/moru-tilt.gif" width="128" height="128" alt="Moru tilting its head curiously" />
+<img src="animated/gif/authored/moru-stretch.gif" width="128" height="128" alt="Moru stretching" />
+<img src="animated/gif/authored/moru-rest-return.gif" width="128" height="128" alt="Moru coming back from a rest" />
+</p>
+
+### Greeting
+
+<p>
+<img src="animated/gif/authored/moru-wave.gif" width="128" height="128" alt="Moru greeting" />
+<img src="animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="Moru bowing softly" />
+<img src="animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="Moru tipping a tiny hat" />
+<img src="animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="Moru offering a flipper five" />
+<img src="animated/gif/authored/moru-shy.gif" width="128" height="128" alt="Moru smiling shyly" />
+</p>
+
+### At work
+
+<p>
+<img src="animated/gif/authored/moru-folder-open.gif" width="128" height="128" alt="Moru opening a folder" />
+<img src="animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="Moru peeking into a folder" />
+<img src="animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="Moru reading source" />
+<img src="animated/gif/authored/moru-search.gif" width="128" height="128" alt="Moru searching" />
+<img src="animated/gif/authored/moru-follow-link.gif" width="128" height="128" alt="Moru following a link" />
+<img src="animated/gif/authored/moru-compare.gif" width="128" height="128" alt="Moru comparing two things" />
+<img src="animated/gif/authored/moru-review-proposal.gif" width="128" height="128" alt="Moru reviewing a proposal" />
+<img src="animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="Moru waiting for a person" />
+<img src="animated/gif/authored/moru-uncertain.gif" width="128" height="128" alt="Moru unsure" />
+<img src="animated/gif/authored/moru-stop.gif" width="128" height="128" alt="Moru stopping" />
+<img src="animated/gif/authored/moru-retry.gif" width="128" height="128" alt="Moru trying again" />
+<img src="animated/gif/authored/moru-save.gif" width="128" height="128" alt="Moru saving" />
+<img src="animated/gif/authored/moru-refresh.gif" width="128" height="128" alt="Moru refreshing" />
+<img src="animated/gif/authored/moru-connect.gif" width="128" height="128" alt="Moru connecting" />
+<img src="animated/gif/authored/moru-reply-ready.gif" width="128" height="128" alt="Moru with a reply ready" />
+<img src="animated/gif/authored/moru-no-results.gif" width="128" height="128" alt="Moru finding nothing" />
+<img src="animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="Moru coding on a laptop" />
+<img src="animated/gif/authored/moru-clap.gif" width="128" height="128" alt="Moru celebrating observed completion" />
+</p>
+
+### Feelings
+
+<p>
+<img src="animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="Moru thinking" />
+<img src="animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="Moru pondering" />
+<img src="animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="Moru sending little hearts" />
+<img src="animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="Moru giggling" />
+<img src="animated/gif/authored/moru-frown.gif" width="128" height="128" alt="Moru frowning thoughtfully" />
+<img src="animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="Moru with a tiny temper" />
+<img src="animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="Moru blushing with a tiny temper" />
+<img src="animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="Moru offering a heart" />
+</p>
+
+### Play
+
+<p>
+<img src="animated/gif/authored/moru-sing.gif" width="128" height="128" alt="Moru singing" />
+<img src="animated/gif/authored/moru-dance.gif" width="128" height="128" alt="Moru dancing" />
+<img src="animated/gif/authored/moru-chorus.gif" width="128" height="128" alt="Moru chorus" />
+<img src="animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="Moru dancing with its flippers" />
+<img src="animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="Moru doing a somersault" />
+<img src="animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="Moru playing with a fishing-line toy" />
+<img src="animated/gif/authored/moru-fish-play.gif" width="128" height="128" alt="Moru and a fish" />
+<img src="animated/gif/authored/moru-magic-fish.gif" width="128" height="128" alt="Moru revealing a magic fish" />
+<img src="animated/gif/authored/moru-peekaboo.gif" width="128" height="128" alt="Moru playing peekaboo" />
+<img src="animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="Moru chasing a bubble" />
+<img src="animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="Moru balancing a star" />
+<img src="animated/gif/authored/moru-star-sneeze.gif" width="128" height="128" alt="Moru sneezing sparkles" />
+<img src="animated/gif/authored/moru-friend-play.gif" width="128" height="128" alt="Moru playing ball with a friend" />
+<img src="animated/gif/authored/moru-pup-cuddle.gif" width="128" height="128" alt="Moru cuddling three pups" />
+<img src="animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="Moru playing with a pup" />
+</p>
+
+### Scenes
+
+<p>
+<img src="animated/gif/authored/moru-rainy-day.gif" width="128" height="128" alt="Moru with an umbrella in the rain" />
+<img src="animated/gif/authored/moru-snow-day.gif" width="128" height="128" alt="Moru watching snowflakes" />
+<img src="animated/gif/authored/moru-breeze.gif" width="128" height="128" alt="Moru in a little breeze" />
+<img src="animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="Moru watching a floating ontology model" />
+<img src="animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="Moru dancing with a floating ontology" />
+</p>
+
+## Provenance
+
 Only the explicitly mapped subset plays in the app, beside an existing observed
 state. The catalogue's story sequences do not establish work, approval, progress
 or accepted meaning. Completion art requires the existing completion evidence.

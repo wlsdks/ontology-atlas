@@ -7,8 +7,8 @@ area: process
 
 # Development checks
 
-> How to choose the checks for a change, where CI internals live, and what
-> each lane costs. `pnpm checks:changed` is the registry of which check covers
+> How to choose the checks for a change, where CI internals live, how a pull
+> request merges, and what each lane costs. `pnpm checks:changed` is the registry of which check covers
 > which path (its rules live in `scripts/lib/check-rules/`), and the README
 > command table names the contributor commands. The reasons a gate exists
 > live in the decision records and in the gate's own header, not here.
@@ -37,7 +37,8 @@ headers of `scripts/ci/classify-change.mjs`, `scripts/ci/run-ci-lane.mjs`,
 under `.github/workflows/`.
 
 Pre-push validates the pushed commit, refuses a checkout that could mask its
-inputs, and selects affected lint, Node and unit tests. Message-part changes use
+inputs, and runs affected lint, Node and unit tests in parallel with the
+relevant cheap checks. Message-part changes use
 their composed catalogue once; cross-package imports also select their frontend
 tests. Relevant documentation-registry and workflow-security checks run locally.
 The whole hook includes preparation in its reported duration. Full contract,
@@ -54,6 +55,11 @@ the first retry, preserves that trace even when the retry passes, and uploads
 full failure evidence for failed jobs. These artifacts last seven days; ordinary
 passing tests produce no automatic trace. A retry passing is evidence of an
 intermittent failure, not evidence that its cause was fixed.
+
+## Merging
+
+`pnpm pr:land <number>` merges a reviewed pull request and keeps its original
+commits; `.claude/rules/git.md` owns the rest of the merge workflow.
 
 ## Lane budgets
 

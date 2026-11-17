@@ -6,6 +6,9 @@ import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-tr
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { applyGuideOverride } from "@/shared/lib/preferences/first-run-seen";
 import { RouteFocusManager } from "@/shared/ui/routing/route-focus-manager";
+import { installStandInFocusHandoff } from "@/shared/ui/routing/stand-in-focus-handoff";
+
+installStandInFocusHandoff();
 
 /**
  * The viewport frame both shells draw: the workbench `AppShell` and the gateway's `GatewayShell`.
