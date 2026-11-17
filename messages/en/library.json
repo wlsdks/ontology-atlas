@@ -137,6 +137,8 @@
   },
   "emptyTitle": "No sources or wiki pages yet",
   "emptyBody": "Bring in the documents this project already has: a spec, a slide deck, a spreadsheet, a page you exported. Atlas copies them into sources/ untouched and never opens them until you ask.",
+  "emptyFoundBody": "Atlas found {count, plural, one {# document} other {# documents}} that can go in. It read names and formats only, and copies just the ones you pick into sources/.",
+  "emptyFoundAction": "{count, plural, one {Review # found document} other {Review # found documents}}",
   "stageTitle": "The documents you have, as a wiki that cites them",
   "stageBody": "Open a folder and add files. Each stays untouched, and gets one wiki page whose every claim cites it.",
   "sources": {

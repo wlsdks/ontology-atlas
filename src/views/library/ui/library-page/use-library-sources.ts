@@ -81,7 +81,6 @@ export function useLibrarySources({
 
   const runDiscovery = useCallback(async () => {
     if (!handle) return;
-    setDiscovery(null);
     const outcome = await discoverSources({
       handle,
       vaultRootPath: nativeVaultRootPath,
@@ -98,9 +97,15 @@ export function useLibrarySources({
 
   const handleFindDocuments = useCallback(() => {
     toast.dismiss();
+    setDiscovery(null);
     setFindOpen(true);
     void runDiscovery();
   }, [runDiscovery, toast]);
+
+  const handleShowFoundDocuments = useCallback(() => {
+    toast.dismiss();
+    setFindOpen(true);
+  }, [toast]);
 
   const handleAddCandidates = useCallback(
     (chosen: SourceCandidate[], declined: SourceCandidate[]) => {
@@ -196,6 +201,6 @@ export function useLibrarySources({
   return {
     vaultScope, findOpen, setFindOpen, discovery, setDiscovery, declinedCount, setDeclinedCount,
     importedSourceNames, sourceImportFeedback, beginSourceImport, handleAddFiles, runDiscovery,
-    handleFindDocuments, handleAddCandidates, handleForgetDeclined, handleOpenSource,
+    handleFindDocuments, handleShowFoundDocuments, handleAddCandidates, handleForgetDeclined, handleOpenSource,
   };
 }
