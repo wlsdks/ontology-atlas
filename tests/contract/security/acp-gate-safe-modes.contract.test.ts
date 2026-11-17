@@ -21,7 +21,7 @@ function choice(id: string, name = id, metaKind: string | null = null): AcpChoic
 
 describe('current adapter mode transcription', () => {
   it.each([false, true])('keeps only approval-required Codex modes with AIR metadata %s', (air) => {
-    // v2.6.0 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
+    // v2.7.0 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
     const modes = [
       choice('read-only', 'Read-only', air ? 'standard' : null),
       choice('workspace-write', 'Workspace access', air ? 'standard' : null),
@@ -166,10 +166,10 @@ const TRANSCRIBED_FROM = {
    */
   claude: '@agentclientprotocol/claude-agent-acp@0.107.2',
   /**
-   * 2.6.0 src/AgentMode.ts keeps readOnly and workspace-write; Atlas excludes the latter
+   * 2.7.0 src/AgentMode.ts keeps readOnly and workspace-write; Atlas excludes the latter
    * because its workspaceWrite sandbox permits edits before an approval request.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@2.6.0',
+  codexLaunch: '@agentclientprotocol/codex-acp@2.7.0',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
