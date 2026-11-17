@@ -192,3 +192,38 @@ describe('the loop cards’ scene', () => {
     expect(cards).not.toHaveAttribute('data-gateway-scene-motion');
   });
 });
+
+describe('the step scenes', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(Element.prototype, 'animate');
+    act(() => setMotionPaused(false));
+  });
+
+  function watch() {
+    const deliver = stubObserver();
+    const runs: { pause: ReturnType<typeof vi.fn>; cancel: ReturnType<typeof vi.fn> }[] = [];
+    Element.prototype.animate = vi.fn(() => {
+      const run = { pause: vi.fn(), play: vi.fn(), cancel: vi.fn(), ready: new Promise(() => {}) };
+      runs.push(run);
+      return run;
+    }) as unknown as Element['animate'];
+    render(<StartSection graph={graph} />, { wrapper: IntlWrapper });
+    return { deliver, runs };
+  }
+
+  it('builds its tracks once the rail is seen and cancels them while the page’s motion is paused', () => {
+    const { deliver, runs } = watch();
+    expect(runs).toHaveLength(0);
+    act(() => deliver[1]([{ isIntersecting: true }]));
+    expect(runs.length).toBeGreaterThan(3);
+    act(() => setMotionPaused(true));
+    expect(runs.every((run) => run.cancel.mock.calls.length > 0)).toBe(true);
+  });
+
+  it('builds nothing under reduced motion, so the final frames stand', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+    const { runs } = watch();
+    expect(runs).toHaveLength(0);
+  });
+});

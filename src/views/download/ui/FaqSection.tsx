@@ -206,7 +206,7 @@ function FaqPicker({ items, label }: { items: Item[]; label: string }) {
     <div
       ref={setHost}
       data-testid="gateway-faq-picker"
-      className="mt-8 grid min-w-0 grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-x-16 border-t border-[color:var(--color-divider)] pt-8"
+      className="mt-8 grid min-w-0 grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-x-10 border-t border-[color:var(--color-divider)] pt-8"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
@@ -226,18 +226,23 @@ function FaqPicker({ items, label }: { items: Item[]; label: string }) {
           ariaLabel={label}
           idPrefix="gateway-faq"
           orientation="vertical"
+          size="reading"
         />
         {/* How long until the next answer; it waits while the picker is in hand, and goes once a question is picked. */}
         <span
           ref={progress}
           aria-hidden
           className={cn(
-            'pointer-events-none absolute left-3 right-3 top-0 h-px origin-left [transform:scaleX(0)] bg-[color:var(--color-indigo-accent)]',
+            'pointer-events-none absolute left-4 right-4 top-0 h-px origin-left [transform:scaleX(0)] bg-[color:var(--color-indigo-accent)]',
             touched && 'invisible',
           )}
         />
       </div>
-      <div className="gateway-faq-answers grid min-w-0 content-start [&>*]:[grid-area:1/1]">
+      {/*
+        One panel as tall as the question list beside it, so the answer has a place of its own
+        rather than floating over an empty band.
+      */}
+      <div className="gateway-faq-answers gateway-loop-drawing grid min-w-0 content-start rounded-panel border border-[color:var(--color-border-soft)] p-8 [&>*]:[grid-area:1/1]">
         {items.map((item, index) => {
           const state = index === active ? 'active' : index === leaving ? 'leaving' : 'hidden';
           return (
@@ -249,7 +254,7 @@ function FaqPicker({ items, label }: { items: Item[]; label: string }) {
               data-state={state}
               inert={state !== 'active'}
               className={cn(
-                'min-w-0 pt-1.5',
+                'min-w-0',
                 state === 'active' && moved && 'gateway-screen-in',
                 state === 'leaving' && 'gateway-screen-out',
                 state === 'hidden' && 'invisible',
