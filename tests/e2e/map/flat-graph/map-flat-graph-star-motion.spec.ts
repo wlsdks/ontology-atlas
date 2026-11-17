@@ -24,10 +24,10 @@ type SampledName = [string, string, number, number, number, number, number, bool
 type Sample = { t: number; zoom: number; w: number; h: number; marks: SampledMark[]; names: SampledName[] };
 
 /**
- * The resting overview with the dock closed, read on nineteen opens of the commit before the opened
- * star named every member: these title and caption rows on every open, and between the fewest and
- * the most capability names. The overview admits names per zoom step from the steps its entry
- * passed through, so two neighbours may trade places between opens; the count may not change.
+ * The resting overview a fresh load draws with the dock closed: these title and caption rows, and a
+ * capability name count within the bounds. A load lays the map out from the text it measures, so
+ * wider text moves the fit and the count from load to load; a round trip keeps a load's count.
+ * Measured 2026-11-17: 17 on every macOS load, 14 to 18 with a 2 % wider measure, 13 to 19 on Linux CI.
  */
 const OVERVIEW_TITLES: readonly string[] = [
   "domain domain:agent-access",
@@ -42,8 +42,8 @@ const OVERVIEW_TITLES: readonly string[] = [
   "units project:ontology-atlas",
 ];
 const OVERVIEW_CAPABILITY_NAMES: Record<string, { fewest: number; most: number }> = {
-  "1410x840": { fewest: 15, most: 17 },
-  "1280x800": { fewest: 17, most: 17 },
+  "1410x840": { fewest: 12, most: 20 },
+  "1280x800": { fewest: 12, most: 20 },
 };
 
 /** A domain's census and reach rows share one slot under its name, so their cross-fade is no crossing. */
@@ -388,8 +388,8 @@ for (const viewport of [{ width: 1410, height: 840 }, { width: 1280, height: 800
         const { fewest, most } = OVERVIEW_CAPABILITY_NAMES[`${viewport.width}x${viewport.height}`]!;
         const capabilities = drawn.filter((n) => n.startsWith("capability "));
         expect.soft(drawn.filter((n) => !n.startsWith("capability ")).sort(), "the resting overview draws the titles and captions it drew").toEqual([...OVERVIEW_TITLES].sort());
-        expect.soft(capabilities.length, `the resting overview names as many capabilities as it did: ${capabilities.join(", ")}`).toBeGreaterThanOrEqual(fewest);
-        expect.soft(capabilities.length, `the resting overview names as many capabilities as it did: ${capabilities.join(", ")}`).toBeLessThanOrEqual(most);
+        expect.soft(capabilities.length, `the resting overview names as many capabilities as a fresh load does: ${capabilities.join(", ")}`).toBeGreaterThanOrEqual(fewest);
+        expect.soft(capabilities.length, `the resting overview names as many capabilities as a fresh load does: ${capabilities.join(", ")}`).toBeLessThanOrEqual(most);
       }
       const starOf = (domainId: string) => {
         const capabilities = clusters.find((c) => c.domainId === domainId)!.capabilityIds;
