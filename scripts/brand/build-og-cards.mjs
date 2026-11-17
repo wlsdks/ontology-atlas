@@ -3,10 +3,16 @@
  * Bakes the 1200x630 link-preview card for each locale into `public/og/<locale>.png`, and the
  * English card into `public/og-image.png` for the root layout and `x-default`.
  *
- * The headline and the fact line are read from `messages/<locale>/download.json` on every run,
- * so a copy change regenerates the same layout. Moru is the presentation master enlarged three
- * times with nearest-neighbour sampling and placed at (106, 123): the same whole pixels
- * `build-brand-raster.test.mjs` audits in the Open Graph image.
+ * The picture is this repository's own ontology: the map `/download` films, laid out by the same
+ * `buildFilmScene` from the same bundled vault, drawn flat (indigo marks, thin lines, the amber
+ * project hub, the domain names). Moru sits at the map's left edge facing it. The headline and
+ * the fact line are read from `messages/<locale>/download.json` on every run, so a copy or vault
+ * change regenerates the same layout.
+ *
+ * Moru is the presentation master enlarged four times with nearest-neighbour sampling at
+ * `MORU`: the same whole pixels `build-brand-raster.test.mjs` audits in the Open Graph image.
+ * Moru's face and the centred headline stay inside the middle 630x630 square, which some apps
+ * crop a link card to; only Japanese's longer first line runs past it.
  *
  * Japanese and Chinese draw kana and Han from the operating system face, as the site does
  * (`app/styles/lang-cjk.css`); run it on macOS, where Hiragino Sans and PingFang SC exist.
@@ -18,6 +24,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createServer } from 'vite';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const require = createRequire(import.meta.url);
@@ -26,8 +33,23 @@ const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 const LOCALES = ['en', 'ko', 'ja', 'zh'];
 const WIDTH = 1200;
 const HEIGHT = 630;
-const MORU = { path: 'assets/brand/mascot/mascot-presentation-128.png', scale: 3, x: 106, y: 123 };
+const MORU = { path: 'assets/brand/mascot/mascot-presentation-128.png', scale: 4, x: 70, y: 232 };
 const PLATFORMS = 'macOS · Windows';
+
+/** Values of `app/styles/tokens.css` and `base-map-tokens.css` (dark), which a raster cannot read. */
+const INK = {
+  canvas: '#0b0b0a',
+  primary: '#f3f2ee',
+  secondary: '#d2d0c9',
+  tertiary: '#a4a29b',
+  indigoBright: '#8890e0',
+  amberHub: '#d4b478',
+};
+
+/** The hub's place and the map's reach; wider than tall, as the film draws it. */
+const MAP = { cx: 900, cy: 500, rx: 356, ry: 158 };
+/** Mark radius by kind, the film's wide-stage sizes. */
+const MARK = { project: 7, domain: 5.5, capability: 3.6, element: 2.6 };
 
 const LANG = { en: 'en', ko: 'ko', ja: 'ja', zh: 'zh-Hans' };
 const CJK_STACK = {
@@ -37,25 +59,7 @@ const CJK_STACK = {
   zh: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC",',
 };
 const LATIN_RANGE = 'U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF';
-
-/*
- * A faint constellation: map nodes and the lines between them, kept sparse behind the
- * headline so the copy keeps its contrast. Coordinates are card pixels.
- */
-const NODES = [
-  [70, 96, 3], [188, 62, 2.5], [318, 112, 4], [446, 70, 2.5], [252, 196, 2],
-  [56, 268, 2.5], [92, 432, 3.5], [212, 520, 2.5], [356, 566, 3], [486, 486, 2.5],
-  [520, 152, 2], [640, 584, 2.5], [812, 548, 3], [968, 590, 2.5], [1104, 512, 3.5],
-  [1150, 402, 2], [1146, 214, 3], [1068, 72, 2.5], [900, 44, 2], [742, 96, 2.5],
-  [30, 590, 2], [1180, 618, 2], [620, 40, 2],
-];
-const EDGES = [
-  [0, 1], [1, 2], [2, 3], [2, 4], [4, 0], [0, 5], [5, 6], [6, 7], [7, 8], [8, 9],
-  [3, 10], [10, 22], [22, 19], [19, 18], [18, 17], [17, 16], [16, 15], [15, 14],
-  [14, 13], [13, 12], [12, 11], [11, 9], [6, 20], [14, 21], [4, 5],
-];
-/** Nodes that carry a soft light, as the map lights the concepts a commit touched. */
-const LIT = new Set([2, 6, 12, 16]);
+const SRC_ALIASES = ['app-providers:app', 'views', 'widgets', 'features', 'entities', 'shared', 'i18n'];
 
 function messagesFor(locale) {
   const file = join(ROOT, 'messages', locale, 'download.json');
@@ -64,6 +68,50 @@ function messagesFor(locale) {
     if (typeof json[key] !== 'string' || !json[key].trim()) throw new Error(`${file} lacks ${key}`);
   }
   return { line1: json.heroTitleLine1, line2: json.heroTitleLine2, fact: `${json.eyebrow} · ${PLATFORMS}` };
+}
+
+/**
+ * The film's scene of the bundled vault (`src/entities/docs-vault/data/manifest.json`, written by
+ * `pnpm docs-vault:build`), loaded through Vite so the TypeScript the page runs is the code that
+ * lays this map out. Names per locale follow the page: `display_<locale>`, else the display title.
+ */
+async function loadMapScene() {
+  const alias = SRC_ALIASES.map((entry) => {
+    const [name, dir = name] = entry.split(':');
+    return { find: `@/${name}`, replacement: join(ROOT, 'src', dir) };
+  });
+  alias.push({ find: /^@\//, replacement: `${ROOT}/` });
+  const server = await createServer({
+    root: ROOT,
+    configFile: false,
+    logLevel: 'error',
+    server: { middlewareMode: true, hmr: false, watch: null },
+    resolve: { alias },
+  });
+  try {
+    const { deriveOntologyFromVault } = await server.ssrLoadModule('/src/entities/docs-vault/lib/derive-ontology-from-vault.ts');
+    const { buildStageGraph } = await server.ssrLoadModule('/src/views/download/lib/stage-graph.ts');
+    const { buildFilmScene, crossesClusters } = await server.ssrLoadModule('/src/views/download/lib/film-scene.ts');
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'src/entities/docs-vault/data/manifest.json'), 'utf8'));
+    const derived = deriveOntologyFromVault(manifest);
+    const evidence = (stub) => (stub.sourceSlug ? [stub.sourceSlug] : []);
+    const nodes = derived.nodes.map((stub) => ({
+      id: stub.id, title: stub.title, display: stub.display, kind: stub.kind, projectIds: [], evidenceIds: evidence(stub),
+    }));
+    const edges = derived.edges.map((stub) => ({
+      id: stub.id, from: stub.from, to: stub.to, type: stub.type, projectIds: [], evidenceIds: evidence(stub),
+    }));
+    const scene = buildFilmScene(buildStageGraph(nodes, edges));
+    if (scene.nodes.length === 0) throw new Error('the bundled vault has no map; run pnpm docs-vault:build');
+    const byId = new Map(derived.nodes.map((stub) => [stub.id, stub]));
+    const nameIn = (id, locale) => {
+      const stub = byId.get(id);
+      return stub?.displayLocales?.[locale] || stub?.display || id;
+    };
+    return { scene, bowed: scene.edges.map((edge) => crossesClusters(scene, edge)), nameIn };
+  } finally {
+    await server.close();
+  }
 }
 
 const escapeHtml = (text) =>
@@ -86,57 +134,80 @@ async function compassDataUrl() {
   return dataUrl(scaled, 'image/png');
 }
 
-function constellationSvg() {
-  const lines = EDGES.map(([a, b]) => {
-    const [x1, y1] = NODES[a];
-    const [x2, y2] = NODES[b];
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-  }).join('');
-  const halos = [...LIT].map((i) => `<circle cx="${NODES[i][0]}" cy="${NODES[i][1]}" r="22" fill="url(#halo)"/>`).join('');
-  const dots = NODES.map(([x, y, r], i) =>
-    `<circle cx="${x}" cy="${y}" r="${r}" fill="${LIT.has(i) ? '#c9cfff' : 'rgba(201,207,255,0.5)'}"/>`,
-  ).join('');
-  return `<svg class="constellation" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-    <defs><radialGradient id="halo"><stop offset="0" stop-color="#8b97ff" stop-opacity="0.55"/><stop offset="1" stop-color="#8b97ff" stop-opacity="0"/></radialGradient></defs>
-    <g stroke="rgba(139,151,255,0.22)" stroke-width="1.25">${lines}</g>${halos}${dots}</svg>`;
+const round = (value) => Math.round(value * 10) / 10;
+
+/** The film's line: straight, or a quadratic curve bowed 18% away from the hub between clusters. */
+function edgePath(a, b, bowed) {
+  if (!bowed) return `M${round(a.x)} ${round(a.y)}L${round(b.x)} ${round(b.y)}`;
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  let ox = mx - MAP.cx;
+  let oy = my - MAP.cy;
+  if (Math.hypot(ox, oy) < 1) [ox, oy] = [-(b.y - a.y), b.x - a.x];
+  const n = Math.hypot(ox, oy) || 1;
+  return `M${round(a.x)} ${round(a.y)}Q${round(mx + (ox / n) * len * 0.18)} ${round(my + (oy / n) * len * 0.18)} ${round(b.x)} ${round(b.y)}`;
 }
 
-function cardHtml({ locale, copy, fontUrl, moru, compass }) {
+/** Region names: the domains of the first ring, centred above their marks. */
+function regionLabels(scene, at, locale, nameIn) {
+  return scene.nodes
+    .map((node, i) => ({ node, i }))
+    .filter(({ node }) => node.kind === 'domain' && node.depth === 1)
+    .map(({ node, i }) => {
+      return `<text x="${round(at[i].x)}" y="${round(at[i].y - 13)}" text-anchor="middle">${escapeHtml(nameIn(node.id, locale))}</text>`;
+    })
+    .join('');
+}
+
+function mapSvg({ scene, bowed, nameIn }, locale) {
+  const at = scene.nodes.map((node) => ({ x: MAP.cx + node.x * MAP.rx, y: MAP.cy + node.y * MAP.ry }));
+  const lines = (contains) =>
+    scene.edges
+      .map((edge, k) => (edge.contains === contains ? edgePath(at[edge.from], at[edge.to], bowed[k]) : ''))
+      .join('');
+  const marks = scene.nodes
+    .map((node, i) => ({ node, i }))
+    .filter(({ node }) => node.depth !== 0)
+    .map(({ node, i }) => `<circle cx="${round(at[i].x)}" cy="${round(at[i].y)}" r="${MARK[node.kind] ?? MARK.element}"/>`)
+    .join('');
+  const hub = scene.nodes.findIndex((node) => node.depth === 0);
+  const hubMark = hub < 0 ? '' : `<circle cx="${round(at[hub].x)}" cy="${round(at[hub].y)}" r="${MARK.project + 1}" fill="${INK.amberHub}"/>`;
+  return `<svg class="map" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" aria-hidden="true">
+    <path d="${lines(false)}" fill="none" stroke="${INK.indigoBright}" stroke-opacity="0.2" stroke-width="1"/>
+    <path d="${lines(true)}" fill="none" stroke="${INK.primary}" stroke-opacity="0.26" stroke-width="1"/>
+    <g fill="${INK.indigoBright}">${marks}</g>${hubMark}
+    <g class="regions">${regionLabels(scene, at, locale, nameIn)}</g></svg>`;
+}
+
+function cardHtml({ locale, copy, fontUrl, moru, compass, map }) {
   const stack = `"OG Latin", ${locale === 'ko' ? '"OG Sans",' : ''} ${CJK_STACK[locale]} "OG Sans", sans-serif`;
   return `<!doctype html><html lang="${LANG[locale]}"><head><meta charset="utf-8"><style>
 @font-face { font-family: "OG Sans"; src: url(${fontUrl}) format("woff2"); font-weight: 100 900; }
 @font-face { font-family: "OG Latin"; src: url(${fontUrl}) format("woff2"); font-weight: 100 900; unicode-range: ${LATIN_RANGE}; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: ${WIDTH}px; height: ${HEIGHT}px; overflow: hidden; }
-body {
-  position: relative; font-family: ${stack}; color: #f3f1ea; -webkit-font-smoothing: antialiased;
-  background:
-    radial-gradient(520px 420px at 300px 330px, rgba(94,106,210,0.34), rgba(94,106,210,0) 70%),
-    radial-gradient(640px 360px at 1120px -40px, rgba(113,112,255,0.16), rgba(113,112,255,0) 70%),
-    radial-gradient(700px 300px at 760px 700px, rgba(94,106,210,0.12), rgba(94,106,210,0) 70%),
-    linear-gradient(160deg, #0d0f1a 0%, #090a12 48%, #07080b 100%);
-}
-.constellation { position: absolute; inset: 0; }
-.floor { position: absolute; left: 156px; top: 384px; width: 300px; height: 44px; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(139,151,255,0.30), rgba(139,151,255,0)); }
+body { position: relative; font-family: ${stack}; color: ${INK.primary}; -webkit-font-smoothing: antialiased; background: ${INK.canvas}; }
+.light { position: absolute; inset: 0; background: radial-gradient(520px 300px at ${MAP.cx}px ${MAP.cy}px, rgba(94,106,210,0.16), rgba(94,106,210,0) 72%); }
+.map { position: absolute; inset: 0; }
+.regions { font-size: 17px; font-weight: 600; fill: ${INK.secondary}; stroke: ${INK.canvas}; stroke-width: 6px; stroke-linejoin: round; paint-order: stroke; }
 .moru { position: absolute; left: ${MORU.x}px; top: ${MORU.y}px; width: ${moru.width}px; height: ${moru.height}px; image-rendering: pixelated; }
-.copy { position: absolute; left: 496px; right: 72px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; }
-.brand { display: flex; align-items: center; gap: 14px; font-weight: 650; font-size: 30px; letter-spacing: -0.01em; color: #e9e7e0; }
-.brand img { width: 48px; height: 48px; }
-h1 { margin-top: 40px; font-weight: 720; line-height: 1.16; letter-spacing: -0.025em; white-space: nowrap; }
-h1 span { display: block; width: max-content; }
-h1 .second { background: linear-gradient(90deg, #d4d8ff 0%, #9aa5ff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-html:lang(ko) h1, html:lang(ja) h1, html:lang(zh-Hans) h1 { letter-spacing: -0.01em; line-height: 1.24; }
+.copy { position: absolute; left: 64px; right: 64px; top: 44px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 650; font-size: 28px; letter-spacing: -0.01em; color: ${INK.secondary}; }
+.brand img { width: 44px; height: 44px; }
+h1 { margin-top: 26px; font-weight: 720; line-height: 1.12; letter-spacing: -0.025em; white-space: nowrap; }
+h1 span { display: block; width: max-content; margin: 0 auto; }
+h1 .first { color: ${INK.secondary}; }
+html:lang(ko) h1, html:lang(ja) h1, html:lang(zh-Hans) h1 { letter-spacing: -0.01em; line-height: 1.16; }
 html:lang(ja) h1, html:lang(zh-Hans) h1 { font-feature-settings: "palt"; letter-spacing: 0; }
-.fact { margin-top: 34px; display: flex; align-items: center; gap: 14px; font-size: 26px; font-weight: 560; color: rgba(233,231,224,0.72); }
-.fact::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #8b97ff; box-shadow: 0 0 12px 3px rgba(139,151,255,0.55); }
+.fact { margin-top: 18px; font-size: 28px; font-weight: 560; color: ${INK.tertiary}; }
 </style></head><body>
-${constellationSvg()}
-<div class="floor"></div>
+<div class="light"></div>
+${map}
 <img class="moru" src="${moru.url}" alt="">
 <div class="copy">
   <div class="brand"><img src="${compass}" alt="">Ontology Atlas</div>
-  <h1 id="headline"><span>${escapeHtml(copy.line1)}</span><span class="second">${escapeHtml(copy.line2)}</span></h1>
+  <h1 id="headline"><span class="first">${escapeHtml(copy.line1)}</span><span>${escapeHtml(copy.line2)}</span></h1>
   <div class="fact">${escapeHtml(copy.fact)}</div>
 </div>
 </body></html>`;
@@ -179,13 +250,14 @@ async function main() {
   );
   const moru = await moruDataUrl();
   const compass = await compassDataUrl();
+  const scene = await loadMapScene();
 
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });
     for (const locale of LOCALES) {
       const copy = messagesFor(locale);
-      await page.setContent(cardHtml({ locale, copy, fontUrl, moru, compass }), { waitUntil: 'load' });
+      await page.setContent(cardHtml({ locale, copy, fontUrl, moru, compass, map: mapSvg(scene, locale) }), { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
       const size = await fitHeadline(page);
       const shot = await page.screenshot({ type: 'png' });
