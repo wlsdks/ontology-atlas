@@ -5,6 +5,6 @@
 
 export const REPO_FACTS = {
   stars: 165,
-  forks: 23,
+  forks: 24,
   readOn: '2026-11-17',
 } as const;
