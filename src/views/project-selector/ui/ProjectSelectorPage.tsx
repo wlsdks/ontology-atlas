@@ -51,12 +51,14 @@ export function ProjectSelectorPage() {
   const t = useTranslations("projectPages.selector");
   useDocumentTitle(t("documentTitle"));
   const { projects, loaded } = useProjects();
-  const selectedSlug = useSelectedProjectSlug();
+  const dataSourceMode = useDataSourceMode();
+  // The sample is not the person's folder, so nothing in it is their selection.
+  const selection = useSelectedProjectSlug();
+  const selectedSlug = dataSourceMode === "static" ? null : selection;
   const orderedProjects = useMemo(() => selectedFirst(projects, selectedSlug), [projects, selectedSlug]);
   const docs = useVaultDocs();
   const vault = useLocalVault();
   const tSwitch = useTranslations("vaultSwitch");
-  const dataSourceMode = useDataSourceMode();
   const navRailSettingsSlot = useMemo(
     () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
     [dataSourceMode],
@@ -155,7 +157,7 @@ export function ProjectSelectorPage() {
               transition={{ default: TILE_SPRING, opacity: riseTransition }}
             >
             <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
-              {projects.length === 1 ? t("ledeSole") : t("lede")}
+              {dataSourceMode === "static" ? t("ledeSample") : projects.length === 1 ? t("ledeSole") : t("lede")}
             </p>
 
               <ul
