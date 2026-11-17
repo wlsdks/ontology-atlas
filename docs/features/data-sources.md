@@ -114,7 +114,13 @@ one; the local-first sentence lives only in the chooser's help dialog. **Just st
 known folders are listed) needs no picker: it creates `~/Ontology Atlas/<name>`
 on real disk, numbering `-2`/`-3` on a name clash, and seeds it like a new
 vault. It is the no-project path; a project's own map uses the project-local
-vault below. Bundled demo vaults are web-only; no demo or
+vault below. **Start from a code project** (`first-run-code-project`, the first
+door on a first run and a row of the create menu when known folders are listed)
+is that project path on the launch screen: it picks the project, shows
+`<project>/atlas` in the confirm dialog, creates and opens it, and asks a coding
+agent for a first draft only when one is ready at the press
+(`src/views/first-run/model/use-code-project-handoff.ts`); without one the
+folder opens and no request waits. Bundled demo vaults are web-only; no demo or
 download CTA appears inside the installed app. Creation doors hand the starter
 seed to the open itself (`open`/`openRecent` with `starter`), so it lands before
 the folder is first shown. A seed that cannot be written is said in a toast that
