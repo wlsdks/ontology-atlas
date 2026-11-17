@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui';
+import { MapStartStage } from './MapStartStage';
 
 /**
  * Topology empty-state — explains whether the current vault lacks project
@@ -72,7 +73,7 @@ export function TopologyEmptyState({
   });
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
+    <MapStartStage>
       <div
         className="pointer-events-auto flex w-[min(380px,calc(100vw-2rem))] flex-col rounded-[var(--radius-panel)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-5 shadow-[var(--shadow-elevation-1)]"
         role="status"
@@ -155,6 +156,6 @@ export function TopologyEmptyState({
           )}
         </div>
       </div>
-    </div>
+    </MapStartStage>
   );
 }
