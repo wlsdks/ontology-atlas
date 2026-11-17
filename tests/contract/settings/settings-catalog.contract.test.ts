@@ -85,7 +85,8 @@ function knownHref(href: string): boolean {
   const named: string[] = [...Object.values(DESTINATION_HREF), AGENTS_MODELS_HREF, MCP_CONNECTORS_HREF];
   if (named.includes(href)) return true;
   const segment = href.split(/[/?#]/).find(Boolean);
-  return segment !== undefined && existsSync(join('app', '[locale]', segment, 'page.tsx'));
+  return segment !== undefined && [join('app', '[locale]'), join('app', '(gateway)', '[locale]')]
+    .some((root) => existsSync(join(root, segment, 'page.tsx')));
 }
 
 describe('settings catalog', () => {

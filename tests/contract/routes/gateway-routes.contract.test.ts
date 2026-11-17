@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -14,7 +14,20 @@ const GATEWAY_ROUTES = ['download', 'guide', 'changelog'] as const;
 
 describe('gateway route registration', () => {
   it.each(GATEWAY_ROUTES)('the `/%s` route really exists', (route) => {
-    expect(existsSync(resolve(repoRoot, `app/[locale]/${route}/page.tsx`))).toBe(true);
+    expect(existsSync(resolve(repoRoot, `app/(gateway)/[locale]/${route}/page.tsx`))).toBe(true);
+  });
+
+  /**
+   * The gateway layout carries a picked subset of the messages and no workbench shell, so a
+   * gateway route under the workbench layout would ship the whole catalog, and a workbench route
+   * under the gateway layout would lose its rail and copy.
+   */
+  it('the gateway layout holds exactly the gateway routes', () => {
+    expect(readdirSync(resolve(repoRoot, 'app/(gateway)/[locale]'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()).toEqual([...GATEWAY_ROUTES].sort());
+    for (const route of GATEWAY_ROUTES) {
+      expect(existsSync(resolve(repoRoot, `app/[locale]/${route}`)), `app/[locale]/${route}`).toBe(false);
+    }
   });
 
   it.each(GATEWAY_ROUTES)('`/%s` uses the gateway chrome (no rail)', (route) => {
