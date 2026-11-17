@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { scanHarness, type HarnessScanPort } from '@/entities/agent-files';
-import { buildHarnessSetup } from '@/views/architecture/model/harness-setup';
+import { buildHarnessSetup } from '@/widgets/harness-setup';
 
 import {
   AREAS,

@@ -205,11 +205,13 @@ In the installed app the default `?view=overview` (Setup, `docs/records/decision
 repository's harness in the order of the agent's loop: Context (instruction files, rules, skills by
 directory, subagents, MCP and config files, ignore files, context hooks), Guardrails (permission
 rules, blocking hooks) and Verification (hooks after an action, check scripts, Git hooks, CI
-workflows). `buildHarnessSetup` (`src/views/architecture/model/harness-setup.ts`) regroups the
+workflows). `buildHarnessSetup` (`src/widgets/harness-setup/model/harness-setup.ts`) regroups the
 scan and is the only place problems are decided: a missing hook script, or Codex's `AGENTS.md`
 over its default limit; `hookEventStep` in `entities/agent-files` is the one hook-event table.
 `HarnessSetupView` and `HarnessSetupSection` render it with a tool filter and a detail beside the
-lists. `?view=guides`, `?view=structure`, `?view=coverage` and `?view=sensors` are rewritten to it.
+lists. They live in `src/widgets/harness-setup/` so the download page's harness film can play the
+same screen on an example repository; `reveal={false}` keeps that copy from scrolling or focusing
+its host page. `?view=guides`, `?view=structure`, `?view=coverage` and `?view=sensors` are rewritten to it.
 It reads files only, through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness
 files; the browser cannot see a dot directory at all and says so instead of drawing a shorter list.

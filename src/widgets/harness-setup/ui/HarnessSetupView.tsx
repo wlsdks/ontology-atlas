@@ -112,7 +112,22 @@ function areasOf(all: HarnessSetup, shown: HarnessSetup): SetupArea[] {
   });
 }
 
-export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport; sourceRoot: string }) {
+/**
+ * `initialCategory` names the category to open first (`<section>:<group>`, as `categoryKey` builds
+ * it). `reveal={false}` keeps the view from scrolling its host page or moving focus, for a copy of
+ * the screen that plays inside another page.
+ */
+export function HarnessSetupView({
+  report,
+  sourceRoot,
+  initialCategory,
+  reveal = true,
+}: {
+  report: HarnessReport;
+  sourceRoot: string;
+  initialCategory?: string;
+  reveal?: boolean;
+}) {
   const t = useTranslations('harness');
   const [filter, setFilter] = useState<ToolFilter>(null);
   const all = useMemo(() => buildHarnessSetup(report, null), [report]);
@@ -126,7 +141,7 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
   const problemKeys = useMemo(() => new Set(setup.problems.map((problem) => problem.itemKey)), [setup.problems]);
   const firstProblem = setup.problems[0] ?? null;
 
-  const [chosenCategory, setChosenCategory] = useState<string | null>(null);
+  const [chosenCategory, setChosenCategory] = useState<string | null>(initialCategory ?? null);
   const [chosenItem, setChosenItem] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -147,9 +162,9 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
   const selectedKey = selected?.key ?? null;
   useLayoutEffect(() => {
     if (detailRef.current) detailRef.current.scrollTop = 0;
-    if (!selectedKey || !window.matchMedia('(min-width: 64rem)').matches) return;
+    if (!reveal || !selectedKey || !window.matchMedia('(min-width: 64rem)').matches) return;
     itemsRef.current?.querySelector<HTMLElement>(`[data-option-key="${CSS.escape(selectedKey)}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [selectedKey]);
+  }, [selectedKey, reveal]);
 
   const selectCategory = (key: string) => {
     setChosenCategory(key);
@@ -164,7 +179,7 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
     const holder = categories.find((entry) => entry.items.some((item) => itemHolds(item, firstProblem.itemKey)));
     if (holder) setChosenCategory(holder.key);
     openItem(firstProblem.itemKey);
-    if (!threePanes) return;
+    if (!threePanes || !reveal) return;
     requestAnimationFrame(() => {
       itemsRef.current?.querySelector<HTMLElement>(`[data-option-key="${CSS.escape(firstProblem.itemKey)}"]`)?.focus();
     });
