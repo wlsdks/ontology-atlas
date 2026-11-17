@@ -151,7 +151,7 @@
     }
   },
   "harnessFilm": {
-    "label": "Harness 标签页 — 你仓库里的代理配置",
+    "label": "Harness 标签页：你仓库里的代理配置",
     "example": "示例仓库",
     "actsLabel": "跳到某一幕",
     "acts": {
