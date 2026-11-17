@@ -454,6 +454,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     runOverviewFit,
     worldRef,
     viewportRef,
+    canvasRef,
     hasInitializedRef,
     realmDataRef,
     realmTransitionRef,

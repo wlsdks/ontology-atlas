@@ -9,8 +9,10 @@ import {
 } from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
+import { lastOpenedDomainStar } from "../../../flat-graph/frame";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
 import { domainTitleBlocks, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
+import { domainStarIds, domainStarRooms, openRadiusPx } from "../../../flat-graph/open-star";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
@@ -30,8 +32,9 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
  * domain with every side their names may take, preferring the whole lit reach when it already
  * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
- * A domain frames its own star (disc, name block and member discs) instead, zooming in only until
- * its members stand apart to press; partner domains may leave the view.
+ * A domain frames its own star (disc, name block, member discs and their elements) instead, zooming
+ * in until that star fills the free map or its members stand `domainApartMaxPx` apart; partner
+ * domains may leave the view.
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
@@ -50,23 +53,28 @@ function graphSelectionFrame(
   const fontFamily = labelFontFamily();
   if (model.domainById.has(id)) {
     const titles = domainTitleBlocks({ model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily });
-    const members = model.domainById.get(id)!.capabilityIds;
-    /** A mark as the frame holds it: the drawn disc, and the whole block of a domain's name under it when `withName`. */
-    const blocks = (ids: Iterable<string>, withName: boolean) => [...ids].flatMap((of): FramedMark[] => {
+    const home = world.nodeById.get(id);
+    const title = titles.get(id);
+    const domainPx = radius(id);
+    const half = Math.max(domainPx, title?.halfWidthPx ?? 0);
+    const block: FramedMark[] = home ? [{ x: home.x, y: home.y, box: { minX: -half, maxX: half, minY: Math.min(-domainPx, title?.topPx ?? 0), maxY: Math.max(domainPx, title?.bottomPx ?? 0) } }] : [];
+    // Members and their elements as the opened star draws them at each scale; names are re-admitted where the frame lands.
+    const { capabilities, elements } = domainStarIds(model, id);
+    const rooms = domainStarRooms(model, dial.scene.graph!, id, paint);
+    const opened = [...capabilities, ...elements].flatMap((of) => {
       const node = world.nodeById.get(of);
-      if (!node) return [];
-      const r = radius(of);
-      const title = withName ? titles.get(of) : undefined;
-      const half = Math.max(r, title?.halfWidthPx ?? 0);
-      return [{ x: node.x, y: node.y, box: { minX: -half, maxX: half, minY: Math.min(-r, title?.topPx ?? 0), maxY: Math.max(r, title?.bottomPx ?? 0) } }];
+      const room = rooms.get(of);
+      return node && room ? [{ node, room, own: radius(of), nearestOwn: room.nearestId === null ? 0 : radius(room.nearestId) }] : [];
     });
-    // Members come along as discs: their names are re-admitted at whatever zoom the frame lands on.
-    const star = [...blocks([id], true), ...blocks(members, false)];
+    const starAt = (scale: number): FramedMark[] => [...block, ...opened.map(({ node, room, own, nearestOwn }) => {
+      const r = openRadiusPx(own, room, scale, domainPx, paint, nearestOwn);
+      return { x: node.x, y: node.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } };
+    })];
     const zoom = domainSelectionZoom({
-      members: members.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartPx, star,
-      maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
+      members: capabilities.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartMaxPx, starAt, maxScale: band.maxScale,
     });
-    return selectionFrameTarget(camera, [star], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
+    // Panned as it draws at the deepest zoom, the star's largest: one set whatever scale the frame starts from, so a landing frames to itself.
+    return selectionFrameTarget(camera, [starAt(band.maxScale)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
   }
   const attention = cachedGraphAttention(model, id, true);
   const elementLabel = (of: string) => world.nodeById.get(of)?.label ?? null;
@@ -93,13 +101,19 @@ function graphSelectionFrame(
     return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
   });
   const element = !model.capabilityById.has(id) && model.domainOf.has(id);
+  // A member of the star open on the map keeps the zoom that opened it: its own mark always fits there, so the frame only pans.
+  const inOpenStar = domainId !== null && domainId === lastOpenedDomainStar();
+  const capped = Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio);
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
     staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, hubCaption: dial.labels?.evidenceUnmeasured?.() ?? null, near, framed: element ? whole : near, domainId,
-    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
+    entryScale: band.entryScale, maxScale: inOpenStar ? Math.max(capped, camera.tscale) : capped,
   });
   const farEnds = [...whole].filter((of) => !near.has(of)).flatMap((of) => world.nodeById.get(of) ?? []);
-  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
+  const own = world.nodeById.get(id)!;
+  const disc = radius(id);
+  const sets = inOpenStar ? [marks(whole), marks(near), [{ x: own.x, y: own.y, box: { minX: -disc, maxX: disc, minY: -disc, maxY: disc } }]] : [marks(whole), marks(near)];
+  return selectionFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
 }
 
 /**

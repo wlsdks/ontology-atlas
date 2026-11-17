@@ -19,6 +19,32 @@ export const FLAT_MOTION = {
   exitMs: EXIT_TRANSITION.duration * 1000,
 } as const;
 
+/** The speed `dampedStep` left its value with, read right after the call so a frame of marks allocates nothing. */
+export const DAMPED = { perMs: 0 };
+
+/**
+ * One step of a critically damped approach: a value at `from` moving at `perMs` goes toward `target`
+ * over `stepMs`, gathers and sheds speed over about `settleMs`, never exceeds `maxPerMs` and never
+ * passes the target. Returns the new value and leaves its speed in `DAMPED.perMs`. O(1).
+ */
+export function dampedStep(from: number, perMs: number, target: number, stepMs: number, settleMs: number, maxPerMs: number): number {
+  const omega = 2 / settleMs;
+  const x = omega * stepMs;
+  const decay = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const lead = maxPerMs * settleMs;
+  const gap = Math.min(lead, Math.max(-lead, from - target));
+  const carry = (perMs + omega * gap) * stepMs;
+  const reach = maxPerMs * stepMs;
+  let next = Math.min(from + reach, Math.max(from - reach, from - gap + (gap + carry) * decay));
+  let nextPerMs = Math.min(maxPerMs, Math.max(-maxPerMs, (perMs - omega * carry) * decay));
+  if (target > from === next > target) {
+    next = target;
+    nextPerMs = 0;
+  }
+  DAMPED.perMs = nextPerMs;
+  return next;
+}
+
 const EASE_SAMPLES = 128;
 
 function sampledCurve(curve: readonly [number, number, number, number]): Float64Array {
@@ -334,3 +360,4 @@ export function graphMotionOf(worldKey: object, attention: GraphAttention): Grap
   if (!motion) motions.set(worldKey, (motion = new GraphMotion(attention)));
   return motion;
 }
+

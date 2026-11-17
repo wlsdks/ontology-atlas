@@ -24,6 +24,7 @@ import type {
   DialScene,
   DialTokens,
   Point,
+  TextMark,
 } from "../types";
 
 const FOCUS_MS = MOTION.fast.duration * 1000;
@@ -430,6 +431,8 @@ function countTextOverlaps(texts: readonly {
     }
     return pairs.size;
 }
+const describeText = (t: TextMark): DialProbe["texts"][number] => ({ id: t.id, role: t.role, text: t.text, box: t.box, font: t.font, backed: t.backed === true, alpha: t.alpha ?? 1, room: t.room ?? 1, side: t.side ?? 0 });
+
 export function describeLastDialFrame(viewportWidth: number, viewportHeight: number): DialProbe | null {
     if (!last)
         return null;
@@ -465,9 +468,10 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
         budget: flows.budget,
         stubs: flows.stubs,
         placement: last.placement,
-        texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box, font: t.font, backed: t.backed === true })),
+        texts: allTexts.filter((t) => t.fading !== true).map(describeText),
+        fadingTexts: allTexts.filter((t) => t.fading === true).map(describeText),
         numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box, font: n.font })),
-        glyphs: marks.glyphs.map(({ id, x, y, r }) => ({ id, x, y, r })),
+        glyphs: marks.glyphs.map(({ id, x, y, r, grown }) => ({ id, x, y, r, grown: grown === true })),
         blocks: (marks.blocks ?? []).map(({ id, box, alpha }) => ({ id, box: { ...box }, alpha })),
         discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "", dashed: d.dashed })),
         squares: last.elementSquares,

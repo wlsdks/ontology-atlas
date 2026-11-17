@@ -7,7 +7,7 @@ import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model
 import type { useAcpRuntimeController } from './use-acp-runtime-controller';
 
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { isContainmentRelation, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import type { AnalysisCaptureContext } from "@/features/acp-session";
 import { analysisGraphFromInsight, useAnalysisCapture } from "@/features/acp-session";
 import { investigationCaptureContext } from '../gray-area/investigation-context';
@@ -102,7 +102,7 @@ export function useTopologyAnalysisReview({
       ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
       : focus ? edge.from === focus || edge.to === focus : true).filter((edge) => edge.type !== 'belongs_to' && !edge.label?.trim()).length;
   }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge]);
-  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, ontologyInsight, relationVocabulary, relationRegister]);
+  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) ? new Map((ontologyInsight?.edges ?? []).filter((edge) => !isContainmentRelation(edge.type)).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, ontologyInsight, relationVocabulary, relationRegister]);
   const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);
   const openAnalysisEvidence = useCallback((slug: string) => {
     const nodeId = chatNodeIndex.get(slug);
