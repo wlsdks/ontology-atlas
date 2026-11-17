@@ -156,15 +156,15 @@
     "acts": {
       "1": {
         "title": "智能体最先读的指令",
-        "body": "AGENTS.md、CLAUDE.md、规则和技能：智能体动手前读的文件，集中在一个界面。"
+        "body": "动手前要读的 {instructions} 个文件，集中在一个界面。"
       },
       "2": {
         "title": "执行前拦下的钩子",
-        "body": "<code>{first}</code>、<code>{second}</code> 这类无法撤销的命令，在执行前就被钩子拦下。"
+        "body": "像 <code>{first}</code> 这样的命令，执行前就被钩子拦下。"
       },
       "3": {
         "title": "完成后运行的检查",
-        "body": "智能体完成的工作，由 pnpm 脚本、Git 钩子和 CI 工作流来检查。"
+        "body": "完成的工作，由脚本、Git 钩子和 CI 工作流来检查。"
       },
       "4": {
         "title": "这个仓库真实的 harness"
