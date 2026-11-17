@@ -69,7 +69,7 @@
   "browserUnavailable": "オントロジーフォルダを開くと、その中に企画フォルダを作成できます。別のフォルダを選んで読むのはmacOSアプリでのみ利用できます。",
   "notEditable": "UTF-8ではないファイルのため、ここでは編集できません。",
   "importService": "サービスから取り込む",
-  "importServiceHint": "Notionなどのサービスの文書をplanningフォルダに取り込みます。資料室で続きます。",
+  "importServiceHint": "Notionなどのサービスの文書を企画フォルダに取り込みます。資料室で続きます。",
   "addFiles": "ファイルを追加",
   "addFilesAdded": "ファイル{count, number}件を企画フォルダに追加しました。",
   "addFilesLeftBoth": "すでにある{duplicates, number}件と、対応していない形式の{unsupported, number}件は追加しませんでした。",

@@ -25,7 +25,7 @@ export interface LibraryAgentOpeningRequest {
   /**
    * `compile` writes pages under the permission gate; `lint` reads them and reports; `propose`
    * writes one node through the ontology-write card; `import` fetches documents from a service
-   * the person connected and writes them under `sources/`. The dock is the same either way, but
+   * the person connected and writes them under `sources/` or `planning/`. The dock is the same either way, but
    * the attribute has to say which, or a capture of an import turn reads as a compile that
    * behaved strangely.
    */

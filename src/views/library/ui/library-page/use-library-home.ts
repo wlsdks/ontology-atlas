@@ -12,7 +12,7 @@ import type { useLibraryWorkActivity } from "./use-library-work-activity";
 
 export function useLibraryHome({
   selected, setHomeSurface, setStaleLit, staleLit, choose, model, chatWidth, dockOpen,
-  workActivity,
+  workActivity, importOpen,
 }: {
   selected: LibrarySelection;
   setHomeSurface: Dispatch<SetStateAction<LibraryHomeSurface>>;
@@ -23,6 +23,8 @@ export function useLibraryHome({
   chatWidth: ReturnType<typeof useChatWidth>;
   dockOpen: boolean;
   workActivity: ReturnType<typeof useLibraryWorkActivity>;
+  /** The first-visit guide waits while the service import dialog is up, so two surfaces never stack. */
+  importOpen: boolean;
 }) {
   const { localReviewVisible } = workActivity;
   const homeVisible = selected === null && !localReviewVisible;
@@ -49,10 +51,10 @@ export function useLibraryHome({
   useEffect(() => {
     // `useLibraryGuideSeen` answers `false` on a static export's first client render, so the direct
     // read decides; `guideSeen` stays a dependency so a change in another tab still settles here.
-    if (!homeVisible || guideSeen || guideRaisedRef.current || readLibraryGuideSeen()) return;
+    if (!homeVisible || importOpen || guideSeen || guideRaisedRef.current || readLibraryGuideSeen()) return;
     guideRaisedRef.current = true;
     setHomeSurface("guide");
-  }, [guideSeen, homeVisible, setHomeSurface]);
+  }, [guideSeen, homeVisible, importOpen, setHomeSurface]);
   const closeGuide = useCallback(() => {
     writeLibraryGuideSeen(true);
     setHomeSurface(null);

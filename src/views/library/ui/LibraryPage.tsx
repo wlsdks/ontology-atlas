@@ -222,15 +222,15 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     ) : null;
   const closeHomeSurface = useCallback(() => setHomeSurface(null), []);
 
+  const [importOpen, setImportOpen] = useState(() => pendingLibraryImport() !== null);
+  const [importDestination, setImportDestination] = useState<ImportDestination>(() => pendingLibraryImport() ?? "sources");
   const home = useLibraryHome({
     selected, setHomeSurface, setStaleLit, staleLit, choose, model, chatWidth, dockOpen,
-    workActivity,
+    workActivity, importOpen,
   });
   const { homeVisible, staleHighlight } = home;
   const connectors = useVaultConnectors(handle);
   const importRouter = useRouter();
-  const [importOpen, setImportOpen] = useState(() => pendingLibraryImport() !== null);
-  const [importDestination, setImportDestination] = useState<ImportDestination>(() => pendingLibraryImport() ?? "sources");
   const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
   useEffect(() => { clearLibraryImportRequest(); }, []);
   const handleCompile = useCallback(() => {

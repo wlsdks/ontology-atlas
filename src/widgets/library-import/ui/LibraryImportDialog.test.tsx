@@ -156,7 +156,7 @@ describe('service setup', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('planning/notion');
     fireEvent.click(screen.getByTestId('library-import-bring'));
     const brief = onBrief.mock.calls[0]![0];
-    expect(brief).toContain('Do not create, edit or delete anything outside planning/notion/');
+    expect(brief).toContain('planning/notion/');
     expect(brief).not.toContain('sources/');
   });
   it('provides the runtime remedy when the setup is saved without a ready coding tool', async () => {

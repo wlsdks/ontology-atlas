@@ -20,7 +20,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { MOTION } from '@/shared/motion';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
-import { Button, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';
+import { Button, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';
 import { PAGE_HEADER_FRAMES } from '@/shared/ui/layout/page-header-bar';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
@@ -34,8 +34,8 @@ import { firstPlanningDocument, isPlanningMarkdown } from '../model/file-groups'
 import { planningArrival } from '../model/arrival';
 import { planningAddSummary } from '../model/add-summary';
 
-/** Below `sm` the header chips keep the icon and an `aria-label`; three labels do not fit a phone-width header. */
-const ICON_ONLY_BELOW_SM = 'max-sm:w-[var(--chrome-tile-size)] max-sm:px-0 max-sm:[&_[data-chip-label]]:hidden';
+/** Below `xl` the header chips keep the icon and an `aria-label`: four labels overflow the app's 1040 minimum window. */
+const ICON_ONLY_BELOW_XL = `${CHROME_CHIP_COMPACT_BELOW_XL} max-xl:[&_[data-chip-label]]:hidden`;
 
 const QUIET_TEXT = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
 
@@ -453,14 +453,14 @@ export function PlanningPage() {
     <PageHeaderBar
       frame="page"
       title={t('title')}
-      meta={workbench ? <span className={`hidden min-w-0 items-center gap-3 md:flex ${QUIET_TEXT}`}><span data-planning-folder-path title={workbench.path} className="max-w-[min(36vw,32rem)] truncate font-mono">{workbench.path}</span>{!isHome && <span className="flex shrink-0 items-center gap-1"><LockKeyhole size={ICON_SIZE.sm} aria-hidden />{t('readOnly')}</span>}</span> : undefined}
+      meta={workbench ? <span className={`hidden min-w-0 items-center gap-3 md:flex ${QUIET_TEXT}`}><span data-planning-folder-path title={workbench.path} className="max-w-[min(28vw,32rem)] truncate font-mono">{workbench.path}</span>{!isHome && <span className="flex shrink-0 items-center gap-1"><LockKeyhole size={ICON_SIZE.sm} aria-hidden />{t('readOnly')}</span>}</span> : undefined}
       actions={workbench ? <>
         <ChromeTile title={t('refresh')} icon={<RefreshCw aria-hidden />} data-planning-focus-fallback onClick={() => refreshFolder(workbench)} />
-        {isHome && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft} aria-label={t('newDocument')} title={t('newDocument')} className={ICON_ONLY_BELOW_SM}>{t('newDocument')}</ChromeChip>}
-        {canAddFiles && <ChromeChip icon={<FileUp aria-hidden />} data-planning-add disabled={adding} onClick={() => void addFiles()} aria-label={t('addFiles')} title={t('addFiles')} className={ICON_ONLY_BELOW_SM}>{t('addFiles')}</ChromeChip>}
-        {isHome && isAcpBridgeAvailable() && <ChromeChip icon={<CloudDownload aria-hidden />} data-planning-import title={t('importServiceHint')} onClick={importFromService} aria-label={t('importService')} className={ICON_ONLY_BELOW_SM}>{t('importService')}</ChromeChip>}
-        {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome} aria-label={t('homeFolder')} title={t('homeFolder')} className={ICON_ONLY_BELOW_SM}>{t('homeFolder')}</ChromeChip>}
-        {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)} aria-label={t('chooseFolder')} title={t('chooseFolder')} className={ICON_ONLY_BELOW_SM}>{t('chooseFolder')}</ChromeChip>}
+        {isHome && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft} aria-label={t('newDocument')} title={t('newDocument')} className={ICON_ONLY_BELOW_XL}>{t('newDocument')}</ChromeChip>}
+        {canAddFiles && <ChromeChip icon={<FileUp aria-hidden />} data-planning-add disabled={adding} onClick={() => void addFiles()} aria-label={t('addFiles')} title={t('addFiles')} className={ICON_ONLY_BELOW_XL}>{t('addFiles')}</ChromeChip>}
+        {isHome && isAcpBridgeAvailable() && <ChromeChip icon={<CloudDownload aria-hidden />} data-planning-import title={t('importServiceHint')} onClick={importFromService} aria-label={t('importService')} className={ICON_ONLY_BELOW_XL}>{t('importService')}</ChromeChip>}
+        {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome} aria-label={t('homeFolder')} title={t('homeFolder')} className={ICON_ONLY_BELOW_XL}>{t('homeFolder')}</ChromeChip>}
+        {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)} aria-label={t('chooseFolder')} title={t('chooseFolder')} className={ICON_ONLY_BELOW_XL}>{t('chooseFolder')}</ChromeChip>}
       </> : undefined}
     />
     {!workbench ? <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}>

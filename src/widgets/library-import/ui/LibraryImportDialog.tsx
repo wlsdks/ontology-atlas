@@ -214,6 +214,7 @@ function LibraryImportFlow({
     const brief = buildImportBrief({
       serviceLabel: t(`service.${service.id}.title` as 'service.notion.title'),
       connectorName: connectedName ?? service.id,
+      destination,
       folder: serviceFolder(service, destination),
       request: { what, limit: DEFAULT_IMPORT_LIMIT },
     });
@@ -404,7 +405,7 @@ function LibraryImportFlow({
           ) : null}
           {checking || pending ? <p ref={saveStatus} tabIndex={-1} role="status" aria-live="polite" data-testid={`${testIdPrefix}-pending`} className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t(checking ? 'checkingSetup' : 'savePendingBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p> : null}
           {inspection?.existing && !inspection.hasSecret && !failed && !pending ? <p className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('resumeSetupBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p> : null}
-          {failed === 'setupRuntimeUnavailable' ? <Button className="atlas-touch-floor mt-2" onClick={() => { close(); onAddFiles(); }}>{t('addFiles')}</Button> : null}
+          {failed === 'setupRuntimeUnavailable' && destination === 'sources' ? <Button className="atlas-touch-floor mt-2" onClick={() => { close(); onAddFiles(); }}>{t('addFiles')}</Button> : null}
           {failed || inspection?.existing ? <Button variant="ghost" className="atlas-touch-floor mt-2" onClick={() => { close(); onOpenAdvanced(); }}>{t('inspectSetup')}</Button> : null}
           </>}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
