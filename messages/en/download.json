@@ -168,20 +168,24 @@
     "acts": {
       "1": {
         "title": "What your agent reads first",
-        "body": "AGENTS.md, CLAUDE.md and rule files: everything an agent reads before a task, on one screen."
+        "body": "AGENTS.md, CLAUDE.md, rules and skills: everything an agent reads before a task, on one screen."
       },
       "2": {
         "title": "What stops it before it acts",
-        "body": "Hooks block irreversible commands before they run. See which hook stops what."
+        "body": "Hooks stop irreversible commands such as <code>{first}</code> and <code>{second}</code> before they run."
       },
       "3": {
         "title": "What checks its work",
-        "body": "Type checks, lint and tests: what verifies the work once the agent is done."
+        "body": "pnpm scripts, Git hooks and CI workflows check what the agent finished."
       },
       "4": {
-        "title": "This repository's real harness",
-        "body": "{instructions} instruction files, {hooks} hooks, {checks} checks."
+        "title": "This repository's real harness"
       }
+    },
+    "counts": {
+      "instructions": "instruction files",
+      "hooks": "hooks",
+      "checks": "checks"
     }
   },
   "motion": {
