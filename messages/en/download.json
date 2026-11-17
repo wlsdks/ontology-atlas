@@ -219,6 +219,7 @@
     "stop": "Stop",
     "score": "Score {count}",
     "best": "Best {count}",
+    "bestRecord": "Your best: {count}",
     "toys": "Ask Moru",
     "sing": "Sing",
     "hearts": "Hearts",

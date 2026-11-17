@@ -43,6 +43,12 @@ describe('catch detection', () => {
     expect(catches({ x: 300, y: HEAD_LINE - 1 }, 300, FIELD.floor)).toBe(false);
     expect(catches({ x: 300, y: FIELD.floor }, 300, FIELD.floor)).toBe(false);
   });
+
+  it('grows the arms and the head line with Moru when he is drawn at twice his cell', () => {
+    const headAt2x = FIELD.floor - (FEET - 48) * 2;
+    expect(catches({ x: 300 + REACH * 2, y: headAt2x + 4 }, 300, FIELD.floor, 2)).toBe(true);
+    expect(catches({ x: 300, y: headAt2x - 2 }, 300, FIELD.floor, 2)).toBe(false);
+  });
 });
 
 describe('milestones', () => {

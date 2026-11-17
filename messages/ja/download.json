@@ -219,6 +219,7 @@
     "stop": "やめる",
     "score": "スコア{count}",
     "best": "ベスト{count}",
+    "bestRecord": "ベスト記録：{count}",
     "toys": "モルにお願い",
     "sing": "歌う",
     "hearts": "ハート",

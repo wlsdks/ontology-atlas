@@ -219,6 +219,7 @@
     "stop": "그만하기",
     "score": "점수 {count}",
     "best": "최고 {count}",
+    "bestRecord": "최고 기록 {count}",
     "toys": "모루에게 부탁하기",
     "sing": "노래",
     "hearts": "하트",

@@ -20,10 +20,15 @@ export const REACH = 56;
 const BAND = 36;
 const MISS_FADE_MS = 520;
 const POP_MS = 720;
+const PLUS_MS = 420;
+export const BURST_MS = 360;
+const BOUNCE_MS = 360;
 
 export type Sheet = 'companion' | 'reactions';
 export type PlayClip = 'sing' | 'hearts' | 'flipper-groove' | 'magic-fish' | 'success' | 'clap' | 'hop';
 export type Emote = 'note' | 'heart' | 'spark';
+/** What falls: two of Moru's emotes and a plain pixel star drawn by the popup itself. */
+export type ItemKind = 'note' | 'heart' | 'star';
 
 /** `success` is the success row, which is the reactions sheet's `dance` cell for cell. */
 const SOURCE: Record<PlayClip, { sheet: Sheet; id: string }> = {
@@ -182,7 +187,7 @@ function clamp(value: number, min: number, max: number): number {
 
 export interface FallingItem {
   id: number;
-  kind: Emote;
+  kind: ItemKind;
   /** Horizontal centre. */
   x: number;
   /** Bottom edge. */
@@ -206,6 +211,8 @@ export interface Game {
 
 export interface Field {
   width: number;
+  /** Moru's whole-number drawing scale: 2 on a roomy field, 1 on a phone. */
+  scale?: number;
   /** The floor line Moru stands on, from the field's top. */
   floor: number;
 }
@@ -217,7 +224,7 @@ export interface Step {
   milestone: PlayClip | null;
 }
 
-const KINDS: readonly Emote[] = ['note', 'heart', 'spark'];
+const KINDS: readonly ItemKind[] = ['note', 'heart', 'star'];
 const FIRST_SPAWN_MS = 700;
 
 export function newGame(seed: number, best = 0): Game {
@@ -234,10 +241,10 @@ export function spawnGap(elapsedMs: number): number {
   return Math.max(750, 1500 - (elapsedMs / 1000) * 6);
 }
 
-/** True when the item is over Moru's arms in the band just below his head. */
-export function catches(item: Pick<FallingItem, 'x' | 'y'>, moruX: number, floor: number): boolean {
-  const head = floor - FEET + HEAD;
-  return item.y >= head && item.y <= head + BAND && Math.abs(item.x - moruX) <= REACH;
+/** True when the item is over Moru's arms in the band just below his head, at his drawing `scale`. */
+export function catches(item: Pick<FallingItem, 'x' | 'y'>, moruX: number, floor: number, scale = 1): boolean {
+  const head = floor - (FEET - HEAD) * scale;
+  return item.y >= head && item.y <= head + BAND * scale && Math.abs(item.x - moruX) <= REACH * scale;
 }
 
 /** The clip a score earns: a play clip every 15 catches, otherwise a celebration every 5. */
@@ -275,7 +282,7 @@ export function stepGame(game: Game, dtMs: number, field: Field, moru: { x: numb
       continue;
     }
     const moved = { ...item, y: item.y + (speed * dt) / 1000 };
-    if (moru.canCatch && milestone === null && catches(moved, moru.x, field.floor)) {
+    if (moru.canCatch && milestone === null && catches(moved, moru.x, field.floor, field.scale)) {
       caught += 1;
       score += 1;
       best = Math.max(best, score);
@@ -301,20 +308,44 @@ export function stepGame(game: Game, dtMs: number, field: Field, moru: { x: numb
   return { game: { seed, elapsed, score, best, nextSpawn, nextId, items, celebrations, plays }, caught, milestone };
 }
 
-/** How a caught item pops: it dips into Moru's arms as it fades, a ring opens and a +1 rises. */
-export function popAt(age: number): { scale: number; drop: number; opacity: number; ring: number; ringOpacity: number; plus: number; plusOpacity: number } {
-  const t = Math.min(1, age / POP_MS);
+/** How a caught item pops: it dips into Moru's arms as it fades, a ring opens and a +1 springs up. */
+export function popAt(age: number): { scale: number; drop: number; opacity: number; ring: number; ringOpacity: number; plus: number; plusScale: number; plusOpacity: number } {
   const gulp = smooth(Math.min(1, age / 260));
   const ring = smooth(Math.min(1, age / 420));
+  const spring = backOut(Math.min(1, age / PLUS_MS));
   return {
     scale: 1 - 0.45 * gulp,
     drop: 18 * gulp,
     opacity: 1 - gulp,
     ring: 0.6 + 0.9 * ring,
     ringOpacity: 1 - ring,
-    plus: 28 * smooth(t),
-    plusOpacity: t < 0.6 ? smooth(t / 0.15) : 1 - smooth((t - 0.6) / 0.4),
+    plus: 40 * spring,
+    plusScale: 0.6 + 0.4 * spring,
+    plusOpacity: age < PLUS_MS ? smooth(age / 90) : 1 - smooth((age - PLUS_MS) / (POP_MS - PLUS_MS)),
   };
+}
+
+/** The six-star burst a milestone throws from Moru's head: distance out (px at 1x) and opacity. */
+export function burstAt(age: number): { distance: number; opacity: number; scale: number } {
+  if (age < 0 || age >= BURST_MS) return { distance: 0, opacity: 0, scale: 0 };
+  const t = age / BURST_MS;
+  return { distance: 56 * easeOut(t), opacity: t < 0.55 ? 1 : 1 - smooth((t - 0.55) / 0.45), scale: 1 - 0.4 * t };
+}
+
+/** The score counter's one bounce when a milestone lands. */
+export function counterBounceAt(age: number): number {
+  if (age < 0 || age >= BOUNCE_MS) return 1;
+  return 1 + 0.28 * Math.sin(Math.PI * easeOut(age / BOUNCE_MS));
+}
+
+function easeOut(t: number): number {
+  return 1 - (1 - t) ** 3;
+}
+
+/** Ease-out with a small overshoot, so the +1 lands with a little spring. */
+function backOut(t: number): number {
+  const c = 1.7;
+  return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2;
 }
 
 /** A missed item rests on the floor and fades. */

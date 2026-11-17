@@ -219,6 +219,7 @@
     "stop": "停止",
     "score": "得分 {count}",
     "best": "最高 {count}",
+    "bestRecord": "最高纪录：{count}",
     "toys": "请 Moru 表演",
     "sing": "唱歌",
     "hearts": "爱心",
