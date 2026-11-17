@@ -145,6 +145,14 @@ function pivot(x: number, y: number, zoom: number): CameraShot {
   const cy = WINDOW.h / 2;
   return { cx: x - (x - cx) / zoom, cy: y - (y - cy) / zoom, zoom };
 }
+/**
+ * A close-up that keeps window x where it stands and puts the header's bottom edge 14 units above
+ * the window's top, past the mask's fade, so the header leaves the picture whole and the problem
+ * line is its top edge.
+ */
+function belowHeader(x: number, zoom: number): CameraShot {
+  return { cx: pivot(x, 0, zoom).cx, cy: WINDOW.header + (WINDOW.h / 2 + 14) / zoom, zoom };
+}
 const WHOLE = pivot(WINDOW.w / 2, WINDOW.h / 2, 1);
 const SHOTS: ReadonlyArray<readonly [number, CameraShot]> = [
   [0, pivot(162, 40, 1.12)],
@@ -155,10 +163,10 @@ const SHOTS: ReadonlyArray<readonly [number, CameraShot]> = [
   [4000, pivot(300, 120, 1.18)],
   [4400, pivot(900, 28, 1.08)],
   [5900, pivot(900, 28, 1.08)],
-  [6600, pivot(680, 200, 1.3)],
-  [8000, pivot(680, 200, 1.3)],
-  [8600, pivot(840, 220, 1.3)],
-  [9400, pivot(840, 220, 1.3)],
+  [6600, belowHeader(700, 1.2)],
+  [8000, belowHeader(700, 1.2)],
+  [8600, belowHeader(840, 1.3)],
+  [9400, belowHeader(840, 1.3)],
   [10200, WHOLE],
 ];
 
@@ -944,13 +952,16 @@ function drawItemRow(f: Frame, id: PaneContent, file: ExampleFile, chosen: numbe
   }
   /* Tool names show only under All, as in the tab. */
   const toolsShown = id === 'skills' ? 1 - codexOf(T, COLLAPSE_ON, COLLAPSE_OFF) : 1;
-  if (file.tools.length > 0) {
-    const name = TOOL_NAMES[file.tools[0]!];
-    text(f, name, cx, y2, fonts.small, p.dim, alpha * toolsShown);
-    cx += f.measure(name, fonts.small) + 10;
+  const status = id === 'hooks' ? (file.missing ? words.hookMissing : words.hookWired) : '';
+  const toolName = file.tools.length > 0 ? TOOL_NAMES[file.tools[0]!] : '';
+  /* On a narrow stage the floor-sized hook status would overrun the pane: the tool name gives way. */
+  const toolFits = !status || cx + f.measure(`${toolName}${status}`, fonts.small) + 10 <= x + PANE2.w - PANE2.padX;
+  if (file.tools.length > 0 && toolFits) {
+    text(f, toolName, cx, y2, fonts.small, p.dim, alpha * toolsShown);
+    cx += f.measure(toolName, fonts.small) + 10;
   }
   if (id === 'hooks') {
-    text(f, file.missing ? words.hookMissing : words.hookWired, cx, y2, fonts.small, file.missing ? p.warnInk : p.dim, alpha);
+    text(f, status, cx, y2, fonts.small, file.missing ? p.warnInk : p.dim, alpha);
   }
   if (id === 'subagents' && file.differs) {
     const tag = file.differs === 'codex' ? words.differsFromCodex : words.differsFromClaude;
@@ -1018,12 +1029,17 @@ function detailOf(id: PaneContent): { path: string; readBy: string } {
   return { path: '.claude/agents/reviewer.md', readBy: TOOL_NAMES['claude-code'] };
 }
 
-/** The font that fits `value` in `room`: smaller only when it must be, never under the floor. */
+/**
+ * The font that fits `value` in `room`: smaller only when it must be, never under the floor as it
+ * lands on screen, after the camera's zoom. Sizes step by a quarter unit so a moving camera reuses
+ * a handful of measured fonts.
+ */
 function fitFont(f: Frame, value: string, font: string, room: number): string {
   const width = f.measure(value, font);
   if (width <= room) return font;
   const size = sizeOf(font);
-  const fitted = Math.max(TYPE_FLOOR / f.win.s, (size * room) / width);
+  const floor = Math.ceil((4 * TYPE_FLOOR) / (f.win.s * f.shot.zoom)) / 4;
+  const fitted = Math.max(floor, Math.floor((4 * size * room) / width) / 4);
   return font.replace(/\d+(?:\.\d+)?px/, `${fitted.toFixed(2)}px`);
 }
 
