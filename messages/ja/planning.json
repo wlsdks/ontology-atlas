@@ -68,6 +68,14 @@
   "createDocumentFailed": "文書を作成できませんでした。企画フォルダに書き込めるか確認してください。",
   "browserUnavailable": "オントロジーフォルダを開くと、その中に企画フォルダを作成できます。別のフォルダを選んで読むのはmacOSアプリでのみ利用できます。",
   "notEditable": "UTF-8ではないファイルのため、ここでは編集できません。",
+  "addFiles": "ファイルを追加",
+  "addFilesAdded": "ファイル{count, number}件を企画フォルダに追加しました。",
+  "addFilesLeftBoth": "すでにある{duplicates, number}件と、対応していない形式の{unsupported, number}件は追加しませんでした。",
+  "addFilesLeftDuplicates": "すでにある{duplicates, number}件は追加しませんでした。",
+  "addFilesLeftUnsupported": "対応していない形式の{unsupported, number}件は追加しませんでした。",
+  "addFilesPartFailed": "{failed, number}件は追加できませんでした。企画フォルダに書き込めるか確認してください。",
+  "addFilesNothing": "追加したファイルはありません。追加できるのはMarkdownと画像（png、jpg、webp、avif）だけです。",
+  "addFilesFailed": "ファイルを追加できませんでした。企画フォルダに書き込めるか確認してください。",
   "scene": {
     "documentHeading": "要件"
   }

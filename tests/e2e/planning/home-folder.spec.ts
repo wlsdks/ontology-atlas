@@ -46,6 +46,32 @@ async function onDisk(page: Page, path: string, change: { write?: number[] | str
   }, { relative: path, write: change.write, remove: change.remove });
 }
 
+/** The names directly inside `relative` and each one's bytes, read from the browser's private storage. */
+async function folderOnDisk(page: Page, relative: string): Promise<Record<string, number[]>> {
+  return page.evaluate(async (path) => {
+    const storage = await navigator.storage.getDirectory();
+    for await (const [name, handle] of (storage as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+      if (!name.startsWith('stub-vault-') || handle.kind !== 'directory') continue;
+      let folder = handle as FileSystemDirectoryHandle;
+      for (const part of path.split('/')) folder = await folder.getDirectoryHandle(part);
+      const out: Record<string, number[]> = {};
+      for await (const [entry, child] of (folder as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+        if (child.kind === 'file') out[entry] = [...new Uint8Array(await (await (child as FileSystemFileHandle).getFile()).arrayBuffer())];
+      }
+      return out;
+    }
+    return {};
+  }, relative);
+}
+
+/** Makes the browser's file picker hand back these in-memory files, as a person choosing them would. */
+async function stubFilePicker(page: Page, files: { name: string; bytes: number[] }[]) {
+  await page.evaluate((chosen) => {
+    (window as unknown as { showOpenFilePicker: () => Promise<unknown[]> }).showOpenFilePicker = async () =>
+      chosen.map(({ name, bytes }) => ({ kind: 'file', name, getFile: async () => new File([new Uint8Array(bytes)], name) }));
+  }, files);
+}
+
 async function createDocument(page: Page, title: string) {
   await page.locator('[data-planning-empty-new], [data-planning-new]').first().click();
   const field = page.getByRole('textbox', { name: planning.documentTitle });
@@ -160,7 +186,7 @@ test('a new document title is dropped with Escape and focus returns to New docum
   await expect(newDocument).toBeFocused();
 });
 
-test('a picked folder offers neither New document nor Edit', async ({ page }) => {
+test('a picked folder offers neither New document, Add files nor Edit', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
     const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
@@ -178,5 +204,32 @@ test('a picked folder offers neither New document nor Edit', async ({ page }) =>
   await expect(page.locator('[data-planning-reader]').getByRole('heading', { name: 'Plan' })).toBeVisible();
   await expect(page.getByText(planning.readOnly)).toBeVisible();
   await expect(page.getByRole('button', { name: planning.newDocument })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: planning.addFiles })).toHaveCount(0);
   await expect(page.getByRole('button', { name: planning.edit, exact: true })).toHaveCount(0);
+});
+
+const NOTES = [...new TextEncoder().encode('# Checkout notes\n\nFrom the design review.\n')];
+/** A 1x1 PNG, so the copy is checked byte for byte rather than as text. */
+const WIRE = [...Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=', 'base64')];
+
+test('files added from elsewhere land in the planning folder intact and are not copied twice', async ({ page }) => {
+  await openVault(page, { ...VAULT, 'planning/brief.md': '# Brief\n\n' });
+  await goTo(page, 'Planning');
+  const reader = page.locator('[data-planning-reader]');
+  await expect(reader.getByRole('heading', { name: 'Brief' })).toBeVisible();
+
+  await stubFilePicker(page, [{ name: 'Checkout notes.md', bytes: NOTES }, { name: 'wire.png', bytes: WIRE }]);
+  await page.getByRole('button', { name: planning.addFiles }).click();
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: '2 files' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Checkout notes.md' })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('button', { name: 'wire.png' })).toBeVisible();
+  await expect(reader.getByText('From the design review.')).toBeVisible();
+  const added = await folderOnDisk(page, 'planning');
+  expect(added['Checkout notes.md'], 'the Markdown is copied byte for byte').toEqual(NOTES);
+  expect(added['wire.png'], 'the image is copied byte for byte, not as text').toEqual(WIRE);
+
+  await stubFilePicker(page, [{ name: 'Checkout notes.md', bytes: NOTES }]);
+  await page.getByRole('button', { name: planning.addFiles }).click();
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'already there' })).toBeVisible();
+  expect(Object.keys(await folderOnDisk(page, 'planning')).sort()).toEqual(['Checkout notes.md', 'brief.md', 'wire.png']);
 });
