@@ -125,5 +125,6 @@ describe('the Harness tab with no connected repository', () => {
 
     expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('/projects'));
     expect(screen.queryByTestId('harness-connect-pick')).toBeNull();
+    expect(screen.queryByText(koMessages.harness.noSourceNote), 'the two-folder note does not apply with none bound').toBeNull();
   });
 });
