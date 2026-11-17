@@ -1,6 +1,7 @@
-// The README's map pictures: the live map of this repository's ontology with one project selected
-// (`--only=map`) and the same ontology in Neural with one capability selected (`--only=neural`).
-// Shot only when asked for, English only, outside the gateway's screens.
+// The README's map pictures: the live map of this repository's ontology (`--only=map`) and the same
+// ontology in Neural (`--only=neural`), each with the MCP tool server capability selected. Shot only
+// when asked for, English only, outside the gateway's screens. The map is shot in a 1180×760 window
+// so its labels stay legible in GitHub's ~880px README column.
 const probe = (page, read) => page.evaluate(read);
 
 async function stillFor(page, frames) {
@@ -24,15 +25,16 @@ export const MAP_SCREEN = {
   out: "docs/assets/readme/topology-overview.png",
   locales: ["en"],
   explicit: true,
+  viewport: { width: 1180, height: 760 },
   async prepare(page) {
     await page.waitForFunction(() => (window.__atlasMap?.nodes?.() ?? []).length > 0, undefined, { polling: "raf", timeout: 120_000 });
     await stillFor(page, 30);
     const target = await probe(page, () => {
-      const node = window.__atlasMap.nodes().find((item) => item.kind === "project" && !item.hidden);
-      const box = document.querySelector("canvas")?.getBoundingClientRect();
+      const node = window.__atlasMap.nodes().find((item) => item.id === "capability:mcp-tool-server" && !item.hidden);
+      const box = document.querySelector('[data-testid="ontology-map-canvas"]')?.getBoundingClientRect();
       return node && box ? { x: box.left + node.x, y: box.top + node.y } : null;
     });
-    if (!target) throw new Error("no project node on the map");
+    if (!target) throw new Error("the MCP tool server capability is not on the map");
     await page.mouse.click(target.x, target.y);
     await page.waitForFunction(() => window.__atlasMap?.selection?.().nodeId, undefined, { polling: "raf", timeout: 30_000 });
     await page.waitForTimeout(300);
