@@ -293,6 +293,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     <LibraryImportDialog
       open={importOpen}
       onClose={() => setImportOpen(false)}
+      onDismiss={importDestination === "planning" ? () => importRouter.push("/planning/") : undefined}
       setup={connectors.setup}
       onSetupSaved={() => void connectors.reload()}
       onAddFiles={handleAddFiles}
