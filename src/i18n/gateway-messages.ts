@@ -12,7 +12,9 @@
  */
 export const GATEWAY_MESSAGE_PATHS = [
   'acpChat.permission',
+  'acpChat.status',
   'agentConnect',
+  'agents.models',
   'download',
   'featuresMisc.vaultDiffToaster',
   'firstRun',

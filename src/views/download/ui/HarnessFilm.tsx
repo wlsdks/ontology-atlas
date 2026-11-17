@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -9,16 +9,32 @@ import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pau
 import { FONT_WEIGHT } from '@/shared/ui/tokens/font-weight';
 
 import { createFilmClock } from '../lib/film-clock';
+import {
+  applyCamera,
+  clamp01 as clamp,
+  drawHitRing,
+  drawKeyLight,
+  drawStreak,
+  easeInOut as inOut,
+  easeOut,
+  lerp as mix,
+  lightSprite,
+  projectPoint,
+  type CameraShot,
+} from '../lib/film-kit';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 import facts from '../lib/harness-facts.json';
 import {
   buildHarnessScene,
   layoutHarness,
+  layoutPoster,
   pictureZone,
   TYPE,
   type HarnessFacts,
   type HarnessLayout,
+  type HarnessPoster,
   type HarnessScene,
+  type PosterColumn,
   type Rect,
 } from '../lib/harness-scene';
 import { FilmActBar } from './FilmActBar';
@@ -30,55 +46,96 @@ const ACT_SPANS = [
   [0.5, 0.75],
   [0.75, 1],
 ] as const;
-/** How long each act plays. The hook act types five commands, 1.3s each. */
-const ACT_MS = [5000, 6500, 5750, 5000];
-/** Where a paused film rests in each act: the columns read, a denied command, the sweep, the whole. */
-const SETTLE = [0.72, 0.35, 0.8, 0.5];
+/** How long each act plays: read, stop, check, count. */
+const ACT_MS = [3200, 3600, 3000, 3000] as const;
+const STARTS = [0, 3200, 6800, 9800] as const;
+const TOTAL = 12800;
+/** Where a paused film rests in each act: the stacks read, a denied command, every cell green, the counts. */
+const SETTLE = [0.9, 0.39, 0.985, 0.6];
 const FILM_MIN_WIDTH = 768;
 const FACTS: HarnessFacts = facts;
 const COUNT_KEYS = ['instructions', 'hooks', 'checks'] as const;
 
-/* Act one */
-const LAND_MS = 360;
-const READ_AT = 1500;
-const READ_MS = 500;
-const PARK_AT = 3900;
-const PARK_MS = 700;
-/* Act two */
-const COMMAND_MS = 1300;
-const TYPE_MS = 450;
-const TICK_MS = 350;
-const VERDICT_MS = 300;
-const SLIDE_MS = 200;
-const HISTORY_STEP = 48;
-/* Act three */
-const PLATE_PARK_MS = 600;
-const CELLS_AT = 450;
-const SWEEP_AT = 1100;
-const SWEEP_STEP = 55;
-const FILL_MS = 220;
-const READOUT_EVERY = 6;
-/* Act four: the first two strips meet the third, which the cells form, then the stack settles. */
-const MERGE_MS = 800;
-const GLIDE_AT = 1150;
-const GLIDE_MS = 900;
+/* Act one, in film time */
+const LAND_AT = 150;
+const LAND_STEP = 28;
+const LAND_MS = 220;
+const DOLLY_AT = 1450;
+const WIDE_AT = 2100;
+const SWEEP_MS = 600;
+const FOCUS_AT = 2700;
+const PARK_AT = 2900;
+/** The stacks leave in one short exit while the strip draws in at the top. */
+const EXIT_MS = 195;
+const HOME_MS = 400;
+/* Act two: five commands of 680ms, each typed, fired at the gate, ticked, judged; the next slides it up. */
+const CMD_AT = 3300;
+/** The gate's plates stand up while the stacks are still parking, so the cut never shows an empty frame. */
+const PLATES_AT = 3000;
+const CMD_MS = 680;
+const RETURN_MS = 140;
+const TYPE_AT = 80;
+const TYPE_MS = 200;
+const FIRE_AT = 280;
+const TICK_AT = 400;
+const VERDICT_AT = 550;
+const VERDICT_MS = 110;
+const SLIDE_MS = 100;
+/* Act three, from its start: the push in, the three sweeps with a beat between, the lift. */
+const PLATE_PARK_MS = 320;
+const PUSH_AT = 150;
+const PUSH_MS = 350;
+const SWEEPS = [
+  [500, 1900],
+  [2030, 2280],
+  [2400, 2750],
+] as const;
+const PULL_AT = 1300;
+const PULL_MS = 850;
+const LIFT_AT = 2750;
+const LIFT_MS = 200;
+/* Act four, from its start: the bar draws the underlines, the counts land 180ms apart. */
+const PEN_AT = 200;
+const PEN_MS = 560;
+const COUNT_AT = 400;
+const COUNT_STEP = 180;
 
-const clamp = (v: number) => Math.min(1, Math.max(0, v));
-const inOut = (v: number) => {
-  const x = clamp(v);
-  return x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
-};
-const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+/* Captions: the old one leaves in 180ms, the new headline rises 16px in 240ms, its body 60ms later. */
+const CAPTION_OUT = 180;
+const CAPTION_IN = 240;
+const CAPTION_LAG = 60;
+const CAPTION_RISE = 16;
+
+/** Parked marks, the far layers, and the ghost word's strength. */
+const PARKED = 0.35;
+const MID = 0.7;
+const FAR = 0.4;
+const GHOST = 0.14;
+
+/** Film time (ms) at choreography progress `p`. */
+function filmTime(p: number): number {
+  if (p >= 1) return TOTAL;
+  const act = Math.min(3, Math.max(0, Math.floor(p * 4)));
+  return STARTS[act] + (p - act * 0.25) * 4 * ACT_MS[act];
+}
+
+/** The inverse of `inOut`, so a mark can know when the pen passes its place. */
+function inOutInverse(y: number): number {
+  const v = clamp(y);
+  return v < 0.5 ? Math.cbrt(v / 4) : 1 - Math.cbrt(2 * (1 - v)) / 2;
+}
+
 const mixRect = (a: Rect, b: Rect, t: number): Rect => ({
   x: mix(a.x, b.x, t),
   y: mix(a.y, b.y, t),
   w: mix(a.w, b.w, t),
   h: mix(a.h, b.h, t),
 });
-/** Milliseconds into act `act` (0-based) at progress `p`; negative before it, past its length after. */
-const local = (p: number, act: number) => ((p - act * 0.25) / 0.25) * ACT_MS[act]!;
-/** An entrance: 0 → 1 over 360ms from `at`. */
-const enter = (t: number, at: number) => inOut((t - at) / LAND_MS);
+const mixShot = (a: CameraShot, b: CameraShot, t: number): CameraShot => ({
+  cx: mix(a.cx, b.cx, t),
+  cy: mix(a.cy, b.cy, t),
+  zoom: mix(a.zoom, b.zoom, t),
+});
 
 interface Palette {
   ink: string;
@@ -112,14 +169,14 @@ function readPalette(): Palette {
   };
 }
 
-/** Text widths per font size, measured once: the same names are drawn every frame. */
-function widthCache(ctx: CanvasRenderingContext2D, mono: string) {
+/** Text widths per font, measured once: the same names are drawn every frame. */
+function widthCache(ctx: CanvasRenderingContext2D) {
   const known = new Map<string, number>();
-  const measure = (text: string, px: number) => {
-    const key = `${px}|${text}`;
+  const measure = (text: string, font: string) => {
+    const key = `${font}|${text}`;
     let width = known.get(key);
     if (width === undefined) {
-      ctx.font = `${px}px ${mono}`;
+      ctx.font = font;
       width = ctx.measureText(text).width;
       known.set(key, width);
     }
@@ -129,8 +186,8 @@ function widthCache(ctx: CanvasRenderingContext2D, mono: string) {
 }
 
 /**
- * Two token colours mixed in sRGB with their alpha, so a line can turn green, or a translucent
- * hairline turn red, without two copies of it fading or its opacity jumping.
+ * Two token colours mixed in sRGB with their alpha, so a line can turn green, or a plate red,
+ * without two copies of it fading or its opacity jumping.
  */
 function colorMixer(ctx: CanvasRenderingContext2D) {
   const known = new Map<string, [number, number, number, number]>();
@@ -164,18 +221,289 @@ interface Labels {
   bands: string[];
 }
 
+/** One underline per count, in stage pixels: under its numeral, its length in proportion to the count. */
+type Underline = { x: number; y: number; len: number };
+
+/** Where the last act's caption puts its counts: their underlines, columns and the line above them. */
+interface Caption {
+  lines: Underline[];
+  columns: PosterColumn[];
+  base: number;
+}
+
+interface Timing {
+  /** Per card, in layout order: when it lands. */
+  land: number[][];
+  /** Per cell: the act-three time the sweep head reaches its middle. */
+  fill: number[];
+  /** Per band: when its last cell fills. */
+  bandDone: number[];
+  /** The eight cells whose names the readout shows, in order. */
+  readout: number[];
+}
+
 interface Frame {
   ctx: CanvasRenderingContext2D;
   scene: HarnessScene;
   layout: HarnessLayout | null;
+  timing: Timing | null;
+  underlines: Underline[] | null;
+  poster: HarnessPoster | null;
   palette: Palette;
   labels: Labels;
-  measure: (text: string, px: number) => number;
+  measure: (text: string, font: string) => number;
   tint: (a: string, b: string, t: number) => string;
+  sprites: { indigo: HTMLCanvasElement; pass: HTMLCanvasElement; stop: HTMLCanvasElement };
+  dpr: number;
   w: number;
   h: number;
-  p: number;
+  T: number;
 }
+
+/* ---------- geometry ---------- */
+
+/** The shot that keeps stage point (px, py) at screen point (sx, sy) at `zoom`. */
+function hold(f: Frame, px: number, py: number, sx: number, sy: number, zoom: number): CameraShot {
+  return { cx: px - (sx - f.w / 2) / zoom, cy: py - (sy - f.h / 2) / zoom, zoom };
+}
+
+/** A slow push about the picture's middle, which every act's resting shot shares. */
+function creep(f: Frame, L: HarnessLayout, zoom: number): CameraShot {
+  const x = (L.zone.left + L.zone.right) / 2;
+  const y = (L.zone.top + L.zone.bottom) / 2;
+  return hold(f, x, y, x, y, zoom);
+}
+
+/** The shot a far layer sees: it moves `depth` as much as the near one. */
+function deeper(f: Frame, shot: CameraShot, depth: number): CameraShot {
+  return { cx: mix(f.w / 2, shot.cx, depth), cy: mix(f.h / 2, shot.cy, depth), zoom: 1 + (shot.zoom - 1) * depth };
+}
+
+function toScreen(f: Frame, shot: CameraShot, r: Rect): Rect {
+  const at = projectPoint(f.w, f.h, shot, r.x, r.y);
+  return { x: at.x, y: at.y, w: r.w * shot.zoom, h: r.h * shot.zoom };
+}
+
+const centreOf = (r: Rect) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+
+/* ---------- time tables ---------- */
+
+function commandAt(T: number, count: number) {
+  const j = Math.min(count - 1, Math.max(0, Math.floor((T - CMD_AT) / CMD_MS)));
+  return { j, u: T - CMD_AT - j * CMD_MS };
+}
+
+/** Where the sweep head of band `b` stands, 0..1 across it, at act-three time `u`. */
+function sweepOf(b: number, u: number): number {
+  const [from, to] = SWEEPS[b]!;
+  const t = clamp((u - from) / (to - from));
+  /* The first band speeds up for most of its run, then lands; the short ones simply ease. */
+  return b === 0 ? inOut(t ** 1.6) : inOut(t);
+}
+
+function headX(L: HarnessLayout, b: number, u: number): number {
+  const band = L.bands[b]!;
+  return mix(band.left - 8, band.right + 8, sweepOf(b, u));
+}
+
+function buildTiming(scene: HarnessScene, L: HarnessLayout): Timing {
+  let g = 0;
+  const land = L.stacks.map((stack) => stack.cards.map(() => LAND_AT + LAND_STEP * g++));
+  /* Sample the head once per millisecond: its curve has no closed inverse. */
+  const fill = L.cells.map((cell) => {
+    const middle = cell.rect.x + cell.rect.w / 2;
+    const [from, to] = SWEEPS[cell.band]!;
+    for (let u = from; u <= to; u += 1) if (headX(L, cell.band, u) >= middle) return u;
+    return to;
+  });
+  const bandDone = scene.bands.map((_, b) => Math.max(...L.cells.flatMap((cell, k) => (cell.band === b ? [fill[k]!] : []))));
+  /* Four names on the long band at even times, two on each short one. */
+  const pick = (b: number, shares: number[]) => {
+    const [from, to] = SWEEPS[b]!;
+    return shares.map((share) => {
+      const want = from + (to - from) * share;
+      let best = -1;
+      L.cells.forEach((cell, k) => {
+        if (cell.band === b && (best < 0 || Math.abs(fill[k]! - want) < Math.abs(fill[best]! - want))) best = k;
+      });
+      return best;
+    });
+  };
+  const readout = [...pick(0, [0, 0.4, 0.7, 0.92]), ...pick(1, [0, 0.8]), ...pick(2, [0, 0.85])].filter((k) => k >= 0);
+  return { land, fill, bandDone, readout };
+}
+
+/* ---------- the camera ---------- */
+
+function shotAt(f: Frame, L: HarnessLayout, T: number): CameraShot {
+  const midY = (L.read.top + L.read.bottom) / 2;
+  const first = L.stacks[0]!;
+  const last = L.stacks[L.stacks.length - 1]!;
+  if (T < WIDE_AT) {
+    /* Close on the first stack, dolly right as the stacks fill, then pull back to the whole. */
+    const open = hold(f, first.x + first.width / 2, midY, f.w / 2, midY, 1.25);
+    const dolly = hold(f, last.x + last.width / 2, midY, f.w * 0.6, midY, 1.16);
+    if (T < DOLLY_AT) return mixShot(open, dolly, inOut(T / DOLLY_AT));
+    return mixShot(dolly, creep(f, L, 1), inOut((T - DOLLY_AT) / (WIDE_AT - DOLLY_AT)));
+  }
+  if (T < STARTS[1]) return creep(f, L, mix(1, 1.02, (T - WIDE_AT) / (STARTS[1] - WIDE_AT)));
+  if (T < STARTS[2]) return gateShot(f, L, T);
+  const u = T - STARTS[2];
+  if (u < LIFT_AT + 270 && u < ACT_MS[2]) {
+    const band = L.bands[0]!;
+    const y = (band.top + band.bottom) / 2;
+    /* Close on the first band, high in the frame; a short stage gets less than 1.6, so the readout
+       under the bands still clears the caption. */
+    const anchor = Math.max(L.zone.top + 70, f.h * 0.25);
+    const zoom = Math.max(1.15, Math.min(1.6, (L.zone.bottom + 24 - anchor) / Math.max(1, L.readoutY - y)));
+    const track = hold(f, headX(L, 0, u), y, f.w * 0.42, anchor, zoom);
+    if (u < PUSH_AT + PUSH_MS) return mixShot(gateShot(f, L, STARTS[2]), track, inOut((u - PUSH_AT) / PUSH_MS));
+    if (u < PULL_AT + PULL_MS) return mixShot(track, creep(f, L, 1), inOut((u - PULL_AT) / PULL_MS));
+  }
+  if (T < STARTS[3]) return creep(f, L, mix(1, 1.02, clamp((u - PULL_AT - PULL_MS) / (ACT_MS[2] - PULL_AT - PULL_MS))));
+  return creep(f, L, 1.02 + 0.01 * clamp((T - STARTS[3]) / ACT_MS[3]));
+}
+
+/** Act two: a slow push on the gate, and one more step in (1.2%) on every deny. */
+function gateShot(f: Frame, L: HarnessLayout, T: number): CameraShot {
+  let zoom = mix(1.02, 1.05, clamp((T - STARTS[1]) / ACT_MS[1]));
+  f.scene.commands.forEach((command, j) => {
+    if (command.lane >= 0) zoom *= 1 + 0.012 * inOut((T - denyTime(j)) / 300);
+  });
+  return creep(f, L, zoom);
+}
+
+const denyTime = (j: number) => CMD_AT + j * CMD_MS + VERDICT_AT;
+
+/* ---------- the white bar ---------- */
+
+interface Bar {
+  r: Rect;
+  alpha: number;
+  /** Flying between two places, where it leaves a streak; a sweep or a caret does not. */
+  fly?: boolean;
+}
+
+const barRect = (x: number, y: number, w: number, h: number): Rect => ({ x: x - w / 2, y: y - h / 2, w, h });
+
+function caretH(L: HarnessLayout) {
+  return L.command.px * 1.1;
+}
+
+function promptW(f: Frame, L: HarnessLayout) {
+  return f.measure('$ ', `${L.command.px}px ${f.palette.mono}`);
+}
+
+/** The caret's middle-left at command `j`, `typed` 0..1 of the way through it. */
+function caretAt(f: Frame, L: HarnessLayout, j: number, typed: number) {
+  const text = f.scene.commands[j]!.command;
+  const font = `${L.command.px}px ${f.palette.mono}`;
+  const shown = typed * text.length;
+  const whole = Math.floor(shown);
+  const x = L.command.x + promptW(f, L) + f.measure(text.slice(0, whole), font) + (shown - whole) * f.measure('M', font);
+  return { x: x + 8, y: L.command.y };
+}
+
+/** The bar in act two at command `j`, `u` ms into it, in stage pixels. */
+function gateBar(f: Frame, L: HarnessLayout, j: number, u: number): Bar {
+  const command = f.scene.commands[j]!;
+  const plates = L.plates;
+  const caretW = 4;
+  const tall = caretH(L);
+  const plateBar = plates[0]!.h - 20;
+  const entryX = plates[0]!.x - 14;
+  const centreY = (k: number) => plates[k]!.y + plates[k]!.h / 2;
+  const target = command.lane >= 0 ? command.lane : plates.length - 1;
+  if (u < RETURN_MS && j > 0) {
+    const home = caretAt(f, L, j, 0);
+    const before = gateBar(f, L, j - 1, CMD_MS);
+    const back = inOut(u / RETURN_MS);
+    if (before.alpha < 0.5) return { r: barRect(home.x, home.y, caretW, tall), alpha: back };
+    return { r: mixRect(before.r, barRect(home.x, home.y, caretW, tall), back), alpha: 1, fly: true };
+  }
+  if (u < FIRE_AT) {
+    const at = caretAt(f, L, j, clamp((u - TYPE_AT) / TYPE_MS));
+    return { r: barRect(at.x, at.y, caretW, tall), alpha: 1 };
+  }
+  const end = caretAt(f, L, j, 1);
+  if (u < TICK_AT) {
+    const fly = inOut((u - FIRE_AT) / (TICK_AT - FIRE_AT));
+    return { r: mixRect(barRect(end.x, end.y, caretW, tall), barRect(entryX, centreY(0), 3, plateBar), fly), alpha: 1, fly: true };
+  }
+  const down = inOut((u - TICK_AT) / (VERDICT_AT - TICK_AT));
+  const y = mix(centreY(0), centreY(target), down);
+  if (u < VERDICT_AT) return { r: barRect(entryX, y, 3, plateBar), alpha: 1 };
+  const v = clamp((u - VERDICT_AT) / VERDICT_MS);
+  if (command.lane >= 0) {
+    /* Denied: it runs into its plate and stops there. */
+    return { r: barRect(mix(entryX, plates[target]!.x + 8, easeOut(v)), y, 3, plateBar), alpha: 1 };
+  }
+  /* Let through: it crosses the last plate and leaves the picture. */
+  const x = mix(entryX, L.zone.right + 60, inOut(v));
+  return { r: barRect(x, y, 3, plateBar), alpha: 1 - clamp((x - (L.zone.right - 40)) / 80), fly: true };
+}
+
+/** The bar in act three, `u` ms in, in stage pixels. */
+function headBar(f: Frame, L: HarnessLayout, u: number): Bar {
+  const at = (b: number, x: number) => {
+    const band = L.bands[b]!;
+    return barRect(x, (band.top + band.bottom) / 2, 3, band.bottom - band.top + 16);
+  };
+  if (u < SWEEPS[0][0]) {
+    const before = gateBar(f, L, f.scene.commands.length - 1, STARTS[2] - CMD_AT - (f.scene.commands.length - 1) * CMD_MS);
+    const start = at(0, headX(L, 0, 0));
+    const fly = inOut(u / SWEEPS[0][0]);
+    return { r: mixRect(before.r, start, fly), alpha: mix(before.alpha, 1, fly), fly: true };
+  }
+  for (let b = 0; b < SWEEPS.length; b += 1) {
+    const [from, to] = SWEEPS[b]!;
+    const next = SWEEPS[b + 1];
+    if (u < to || !next) return { r: at(b, headX(L, b, Math.max(from, u))), alpha: 1 };
+    if (u < next[0]) return { r: mixRect(at(b, headX(L, b, to)), at(b + 1, headX(L, b + 1, next[0])), inOut((u - to) / (next[0] - to))), alpha: 1, fly: true };
+  }
+  return { r: at(SWEEPS.length - 1, headX(L, SWEEPS.length - 1, u)), alpha: 1 };
+}
+
+function penX(U: Underline[], u: number): number {
+  const first = U[0]!;
+  const last = U[U.length - 1]!;
+  return mix(first.x, last.x + last.len, inOut((u - PEN_AT) / PEN_MS));
+}
+
+/** The bar at film time `T`, in screen pixels, under `shot`. */
+function barAt(f: Frame, L: HarnessLayout, T: number, shot: CameraShot): Bar {
+  if (T >= STARTS[3] && f.underlines) {
+    const u = T - STARTS[3];
+    const U = f.underlines;
+    const from = barAt(f, L, STARTS[3] - 0.001, shot);
+    const pen = (x: number, h: number) => barRect(x, U[0]!.y + 1.5, 2, h);
+    if (u < PEN_AT) return { r: mixRect(from.r, pen(U[0]!.x, 18), inOut(u / PEN_AT)), alpha: 1, fly: true };
+    if (u < PEN_AT + PEN_MS) return { r: pen(penX(U, u), 18), alpha: 1 };
+    /* At the end of the last line the bar shrinks into it. */
+    const sink = inOut((u - PEN_AT - PEN_MS) / 240);
+    return { r: pen(penX(U, u), mix(18, 3, sink)), alpha: 1 - sink };
+  }
+  let stage: Bar;
+  if (T < STARTS[1] + (CMD_AT - STARTS[1])) {
+    const span = { top: L.read.top, bottom: L.read.bottom };
+    const left = L.zone.left - 16;
+    const right = L.zone.right + 16;
+    const h = span.bottom - span.top;
+    const y = (span.top + span.bottom) / 2;
+    const x = mix(left, right, inOut((T - WIDE_AT) / SWEEP_MS));
+    if (T < PARK_AT) stage = { r: barRect(x, y, 2, h), alpha: inOut((T - WIDE_AT) / 120) };
+    else {
+      const home = caretAt(f, L, 0, 0);
+      stage = { r: mixRect(barRect(right, y, 2, h), barRect(home.x, home.y, 4, caretH(L)), inOut((T - PARK_AT) / HOME_MS)), alpha: 1, fly: true };
+    }
+  } else if (T < STARTS[2]) {
+    const { j, u } = commandAt(T, f.scene.commands.length);
+    stage = gateBar(f, L, j, u);
+  } else stage = headBar(f, L, Math.min(T, STARTS[3]) - STARTS[2]);
+  return { r: toScreen(f, shot, stage.r), alpha: stage.alpha, fly: stage.fly };
+}
+
+/* ---------- drawing helpers ---------- */
 
 /** Canvas text with a ground-coloured halo, so a line passing under it never cuts a letter. */
 function text(f: Frame, value: string, x: number, y: number, font: string, color: string, alpha: number) {
@@ -201,313 +529,567 @@ function block(f: Frame, r: Rect, radius: number, color: string, alpha: number) 
   ctx.fill();
 }
 
-/** Strip marks: dim while parked under a later act, whole in the last. */
-const STRIP_PARKED = 0.4;
-
-/**
- * A strip mark in act four (`t4`): from where it waited (`from`) into the stack, then down with the
- * stack as one. `merge` is how far into the stack it is.
- */
-function intoStack(strip: HarnessLayout['strips'][number], i: number, from: Rect, merge: number, t4: number): Rect {
-  const at = mixRect(from, strip.merged[i]!, merge);
-  return { ...at, y: at.y + (strip.whole[i]!.y - strip.merged[i]!.y) * inOut((t4 - GLIDE_AT) / GLIDE_MS) };
+function outline(f: Frame, r: Rect, radius: number, color: string, alpha: number) {
+  if (alpha <= 0.004) return;
+  const { ctx } = f;
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, Math.min(radius, r.w / 2, r.h / 2));
+  ctx.stroke();
 }
 
-/**
- * Act one, and the first strip after it: four columns of the files an agent reads. Rows land top
- * down, a reading line passes down each column in turn, then every file settles into the strip.
- */
-function drawInstructions(f: Frame, L: HarnessLayout) {
-  const { palette, p } = f;
-  const t = local(p, 0);
-  const t4 = local(p, 3);
-  if (t < 0) return;
-  const total = L.files.length;
-  const sans = f.palette.sans;
-  const columnSpan = L.columns.map((_, c) => {
-    const rows = L.files.filter((file) => file.column === c);
-    const top = Math.min(...rows.map((file) => file.rect.y)) - 8;
-    const bottom = Math.max(...rows.map((file) => file.rect.y + file.rect.h)) + 8;
-    return { top, bottom };
-  });
+function screenSpace(f: Frame) {
+  f.ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
+}
 
-  const headerOut = inOut((t - PARK_AT) / LAND_MS);
-  L.columns.forEach((column, c) => {
-    const landed = L.files.filter((file) => file.column === c && t >= landAt(file.column, file.row) + LAND_MS / 2).length;
-    const show = enter(t, landAt(c, 0)) * (1 - headerOut);
-    const lift = -12 * headerOut + 12 * (1 - enter(t, landAt(c, 0)));
+/* ---------- act one: the stacks ---------- */
+
+function drawStacks(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing) {
+  const { palette, T } = f;
+  const exit = inOut((T - PARK_AT) / EXIT_MS);
+  if (exit >= 1) return;
+  const headerOut = inOut((T - FOCUS_AT) / 250);
+  /* Rack focus before the cut: the stacks fall back while the bar leaves for the command line. */
+  const focus = inOut((T - FOCUS_AT) / (PARK_AT - FOCUS_AT));
+  const sweep = mix(L.zone.left - 16, L.zone.right + 16, inOut((T - WIDE_AT) / SWEEP_MS));
+  L.stacks.forEach((stack, c) => {
+    const lands = timing.land[c]!;
+    const landed = lands.filter((at) => T >= at + LAND_MS / 2).length;
+    const show = inOut((T - lands[0]! + 120) / 240) * (1 - headerOut);
+    applyCamera(f.ctx, f.dpr, f.w, f.h, shot);
     f.ctx.textBaseline = 'alphabetic';
-    text(f, f.labels.columns[c] ?? '', column.x, column.nameY + lift, `${TYPE.label}px ${sans}`, palette.soft, show);
-    text(f, String(landed), column.x, column.countY + lift, `${FONT_WEIGHT.strong} ${TYPE.count}px ${sans}`, palette.ink, show);
+    text(f, f.labels.columns[c] ?? '', stack.x, stack.labelY + 12 * (1 - show), `${TYPE.label}px ${palette.sans}`, palette.soft, show);
+    /* The count arrives with its first card, so it never reads 0. */
+    const counted = show * inOut((T - lands[0]! - LAND_MS / 2) / 160);
+    text(f, String(landed), stack.x, stack.countY + 12 * (1 - show), `${FONT_WEIGHT.strong} ${TYPE.count}px ${palette.sans}`, palette.ink, counted);
 
-    /* The reading line: 2px, the column's width, top to bottom in half a second. */
-    const sweep = (t - READ_AT - c * READ_MS) / READ_MS;
-    if (sweep > 0 && sweep < 1) {
-      const { top, bottom } = columnSpan[c]!;
-      block(f, { x: column.x, y: mix(top, bottom, sweep) - 1, w: column.width, h: 2 }, 1, palette.indigo, Math.sin(Math.PI * sweep));
-    }
-  });
-
-  L.files.forEach((file, k) => {
-    const strip = L.strips[0]!;
-    const land = enter(t, landAt(file.column, file.row));
-    if (land <= 0) return;
-    const { top, bottom } = columnSpan[file.column]!;
-    const readAt = READ_AT + file.column * READ_MS + READ_MS * ((file.rect.y + file.rect.h / 2 - top) / (bottom - top));
-    const read = clamp((t - readAt) / 150);
-    const park = inOut((t - PARK_AT - (k / Math.max(1, total - 1)) * 400) / PARK_MS);
-    const rise = inOut((t4 - (k / Math.max(1, total - 1)) * 160) / MERGE_MS);
-    const from = { ...file.rect, y: file.rect.y - 12 * (1 - land) };
-    const at = intoStack(strip, k, mixRect(from, strip.parked[k]!, park), rise, t4);
-    const markAlpha = mix(mix(1, STRIP_PARKED, park), 1, rise);
-
-    if (file.text) {
-      /* A named path: its text goes in the first quarter of the move, a mark grows in its place. */
-      const words = land * (1 - clamp(park / 0.25));
-      f.ctx.textBaseline = 'alphabetic';
-      text(f, file.text, file.rect.x, file.rect.y + 11 - 12 * (1 - land), `${TYPE.label}px ${palette.mono}`, f.tint(palette.soft, palette.ink, read), words);
-      block(f, at, mix(2, 1.5, park), palette.indigo, clamp(park / 0.25) * markAlpha);
-      return;
-    }
-    const color = f.tint(palette.edge, palette.indigo, Math.max(read * 0.6, park));
-    block(f, at, 2, color, land * mix(mix(0.4, 0.6, read), markAlpha, park));
-  });
-}
-
-function landAt(column: number, row: number) {
-  return 100 + column * 120 + row * 40;
-}
-
-/** One command's moments, from its own start: typing, the plates ticking, the verdict, the slide. */
-function commandPhase(t: number, j: number) {
-  const u = t - j * COMMAND_MS;
-  return {
-    u,
-    typed: clamp(u / TYPE_MS),
-    verdict: inOut((u - TYPE_MS - TICK_MS) / VERDICT_MS),
-    slide: inOut((u - TYPE_MS - TICK_MS - VERDICT_MS) / SLIDE_MS),
-  };
-}
-
-/**
- * Act two: the agent's commands typed one at a time at a block caret. Each passes the three gate
- * hooks in their configured order; a pass turns the line green, a deny turns its plate red, strikes
- * the line through and prints the hook's verdict. Then the line slides up into a two-line history.
- */
-function drawHooks(f: Frame, L: HarnessLayout) {
-  const { ctx, scene, palette, p, measure } = f;
-  const t = local(p, 1);
-  const t3 = local(p, 2);
-  if (t < 0) return;
-  const out = inOut(t3 / LAND_MS);
-  const mono = `${TYPE.command}px ${palette.mono}`;
-  const prompt = '$ ';
-  const promptW = measure(prompt, TYPE.command);
-  const { x, y } = L.command;
-  ctx.textBaseline = 'middle';
-
-  scene.commands.forEach((command, j) => {
-    const { u, typed, verdict } = commandPhase(t, j);
-    if (u < 0) return;
-    /* How far up the history this line has slid, one step per later command's slide. */
-    let level = 0;
-    for (let m = j; m < scene.commands.length; m += 1) level += commandPhase(t, m).slide;
-    const fade = level <= 1 ? 1 - 0.5 * level : level <= 2 ? 0.5 - 0.25 * (level - 1) : Math.max(0, 0.25 * (3 - level));
-    const alpha = fade * (1 - out);
-    if (alpha <= 0.004) return;
-    const ly = y - HISTORY_STEP * level - 12 * out;
-    const blocked = command.lane >= 0;
-    const width = measure(command.command, TYPE.command);
-    const shown = typed * command.command.length;
-    const whole = Math.floor(shown);
-    const ink = blocked ? f.tint(palette.ink, palette.soft, verdict) : f.tint(palette.ink, palette.pass, verdict);
-    /* The prompt arrives with the caret, so a new line never pops in. */
-    text(f, prompt, x, ly, mono, palette.dim, alpha * inOut(u / 120));
-    text(f, command.command.slice(0, whole), x + promptW, ly, mono, ink, alpha);
-    if (whole < command.command.length) {
-      const next = command.command[whole]!;
-      text(f, next, x + promptW + measure(command.command.slice(0, whole), TYPE.command), ly, mono, ink, alpha * (shown - whole));
-    }
-    if (blocked && verdict > 0) {
-      block(f, { x: x + promptW - 2, y: ly - 1, w: (width + 4) * verdict, h: 2 }, 1, palette.stop, alpha);
-      const deny = verdict * (1 - Math.min(1, level));
-      text(f, '"permissionDecision": "deny"', x + promptW, ly + 40, `${TYPE.label}px ${palette.mono}`, palette.stop, deny * (1 - out));
-    }
-    /* The caret: solid while typing and while the hooks decide, gone as the line moves up. */
-    const caret = inOut(u / 80) * (1 - inOut((u - TYPE_MS - TICK_MS - VERDICT_MS) / 150)) * (1 - out);
-    if (caret > 0.004) {
-      const cx = x + promptW + measure(command.command.slice(0, whole), TYPE.command) + (shown - whole) * measure('M', TYPE.command) + 4;
-      block(f, { x: cx, y: ly - 11, w: 12, h: 22 }, 1, palette.ink, caret);
-    }
-  });
-}
-
-/**
- * The second strip: the gate's plates from act two, which shrink into it in act three, and every
- * other hook, which arrives there. In act four it rises with the others.
- */
-function drawGateHooks(f: Frame, L: HarnessLayout) {
-  const { ctx, scene, palette, p } = f;
-  const t = local(p, 1);
-  const t3 = local(p, 2);
-  const t4 = local(p, 3);
-  if (t < 0) return;
-  const strip = L.strips[1]!;
-  const count = scene.hookPlates.length;
-  const tick = scene.gate.map(() => ({ pass: 0, stop: 0 }));
-  scene.commands.forEach((command, j) => {
-    const { u } = commandPhase(t, j);
-    const gone = 1 - inOut((u - TYPE_MS - TICK_MS - VERDICT_MS) / SLIDE_MS);
-    scene.gate.forEach((_, k) => {
-      const lit = inOut((u - TYPE_MS - k * (TICK_MS / scene.gate.length)) / (TICK_MS / scene.gate.length)) * gone;
-      if (command.lane < 0 || k < command.lane) tick[k]!.pass = Math.max(tick[k]!.pass, lit);
-      else if (k === command.lane) tick[k]!.stop = Math.max(tick[k]!.stop, lit);
+    const mid = { x: stack.x + stack.width / 2, y: (L.read.top + L.read.bottom) / 2 };
+    const scale = mix(1, 0.96, focus) * mix(1, 0.98, exit);
+    const read = clamp((sweep - stack.x) / 60);
+    applyCamera(f.ctx, f.dpr, f.w, f.h, shot);
+    stack.cards.forEach((card, i) => {
+      const at = lands[i]!;
+      const land = easeOut((T - at) / LAND_MS);
+      if (land <= 0) return;
+      const cover = i + 1 < stack.cards.length ? easeOut((T - lands[i + 1]!) / LAND_MS) : 0;
+      const resting = {
+        x: mid.x + (card.rect.x - mid.x) * scale,
+        y: mid.y + (card.rect.y - 18 * (1 - land) - mid.y) * scale - 8 * exit,
+        w: card.rect.w * scale,
+        h: card.rect.h * scale,
+      };
+      const alpha = clamp(land * 2) * mix(1, 0.45, focus) * (1 - exit);
+      block(f, resting, 6, palette.card, alpha);
+      outline(f, resting, 6, f.tint(palette.edge, palette.soft, read * (1 - cover) * 0.6), alpha * mix(1, 0.4, cover));
+      const name = land * (1 - cover);
+      if (name > 0.004) {
+        f.ctx.textBaseline = 'middle';
+        const color = f.tint(palette.soft, palette.ink, read);
+        /* The name rises inside its own card and never draws past its edge. */
+        f.ctx.save();
+        f.ctx.beginPath();
+        f.ctx.roundRect(resting.x, resting.y, resting.w, resting.h, 6);
+        f.ctx.clip();
+        /* One font size, scaled by the transform: a size that changes every frame re-rasterises glyphs. */
+        f.ctx.translate(resting.x + 14 * scale, resting.y + resting.h / 2 + 10 * (1 - land));
+        f.ctx.scale(scale, scale);
+        text(f, card.text, 0, 0, `${TYPE.card}px ${palette.mono}`, color, name * alpha);
+        f.ctx.restore();
+      }
     });
   });
+}
 
-  scene.hookPlates.forEach((plate, j) => {
-    const rise = inOut((t4 - (j / Math.max(1, count - 1)) * 120) / MERGE_MS);
-    if (plate < 0) {
-      const arrive = inOut((t3 - 500 - j * 20) / LAND_MS);
-      if (arrive <= 0) return;
-      const from = { ...strip.parked[j]!, y: strip.parked[j]!.y + 12 * (1 - arrive) };
-      block(f, intoStack(strip, j, from, rise, t4), 1.5, palette.indigo, arrive * mix(STRIP_PARKED, 1, rise));
+/* ---------- the strips at the top ---------- */
+
+function drawParkedStrips(f: Frame, L: HarnessLayout, shot: CameraShot) {
+  const { palette, T } = f;
+  if (T >= STARTS[3]) return;
+  applyCamera(f.ctx, f.dpr, f.w, f.h, shot, MID);
+  /* The first strip draws in from the left as the stacks leave: one mark per file read. */
+  L.strips[0]!.forEach((mark, k) => {
+    const draw = inOut((T - PARK_AT - 40 - k * 5) / 240);
+    if (draw > 0) block(f, { ...mark, y: mark.y + 6 * (1 - draw) }, 1.5, palette.indigo, PARKED * draw);
+  });
+  /* The second: hooks outside the gate arrive as the plates come up to join them. */
+  const u = T - STARTS[2];
+  f.scene.hookPlates.forEach((plate, j) => {
+    const mark = L.strips[1]![j]!;
+    if (plate >= 0) {
+      if (u >= PLATE_PARK_MS + plate * 40) block(f, mark, 1.5, palette.indigo, PARKED);
       return;
     }
-    const show = inOut((t - plate * 60) / LAND_MS);
-    if (show <= 0) return;
-    const park = inOut((t3 - plate * 60) / PLATE_PARK_MS);
-    const r = L.plates[plate]!;
-    const from = { ...r, y: r.y + 12 * (1 - show) };
-    const at = intoStack(strip, j, mixRect(from, strip.parked[j]!, park), rise, t4);
-    const { pass, stop } = tick[plate]!;
-    const words = 1 - clamp(park / 0.25);
-    /* The plate: card ground with a hairline, red while it denies. Its name leaves first, the plate
-       shrinks, and only then does it fill as the mark it becomes. */
-    const plateLeft = 1 - clamp((park - 0.15) / 0.5);
-    const radius = mix(8, 1.5, park);
-    block(f, at, radius, palette.card, show * plateLeft);
-    block(f, at, radius, palette.indigo, show * clamp((park - 0.35) / 0.5) * mix(STRIP_PARKED, 1, rise));
-    if (plateLeft > 0.004) {
-      ctx.globalAlpha = show * plateLeft;
-      ctx.strokeStyle = f.tint(palette.edge, palette.stop, stop);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(at.x + 0.5, at.y + 0.5, at.w - 1, at.h - 1, radius);
-      ctx.stroke();
-    }
-    if (words > 0.004) {
-      ctx.textBaseline = 'middle';
-      const name = scene.gate[plate]!;
-      text(f, name, at.x + 16, at.y + at.h / 2, `${TYPE.label}px ${palette.mono}`, f.tint(f.tint(palette.soft, palette.ink, pass), palette.stop, stop), show * words);
-      /* A pass is a small check at the plate's right end. */
-      if (pass > 0.004) {
-        const cx = at.x + at.w - 24;
-        const cy = at.y + at.h / 2;
-        ctx.globalAlpha = show * words * pass;
-        ctx.strokeStyle = palette.pass;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(cx - 6, cy);
-        ctx.lineTo(cx - 2, cy + 4);
-        ctx.lineTo(cx + 6, cy - 5);
-        ctx.stroke();
-        ctx.lineCap = 'butt';
-      }
-    }
+    const arrive = inOut((u - 120 - j * 18) / 300);
+    if (arrive > 0) block(f, { ...mark, y: mark.y + 8 * (1 - arrive) }, 1.5, palette.indigo, PARKED * arrive);
   });
 }
 
-/**
- * Act three, and the third strip after it: one cell per check in three bands. A sweep fills them
- * green in turn while a readout names the check being run; in act four the cells become the strip.
- */
-function drawChecks(f: Frame, L: HarnessLayout) {
-  const { scene, palette, p } = f;
-  const t = local(p, 2);
-  const t4 = local(p, 3);
-  if (t < 0) return;
-  const out = inOut(t4 / LAND_MS);
-  const strip = L.strips[2]!;
-  const total = L.cells.length;
-  f.ctx.textBaseline = 'alphabetic';
-  L.bandLabels.forEach((at, b) => {
-    const show = enter(t, CELLS_AT + b * 100) * (1 - out);
-    const name = `${f.labels.bands[b] ?? ''}  ${scene.bands[b]!.names.length}`;
-    text(f, name, at.x, at.y + 12 * (1 - enter(t, CELLS_AT + b * 100)) - 12 * out, `${TYPE.label}px ${palette.sans}`, palette.soft, show);
+/* ---------- act two: the command line and the gate ---------- */
+
+function drawGate(f: Frame, L: HarnessLayout, shot: CameraShot) {
+  const { ctx, scene, palette, T } = f;
+  if (T < PLATES_AT || T >= STARTS[3]) return;
+  const u3 = T - STARTS[2];
+  const parked = deeper(f, shot, MID);
+  const font = `${L.plateTextPx}px ${palette.mono}`;
+  const { j: now } = commandAt(T, scene.commands.length);
+  const started = T >= CMD_AT;
+
+  /* Ghost type: the hook's verdict, huge and faint behind the plates, for 400ms after each deny. */
+  applyCamera(ctx, f.dpr, f.w, f.h, shot, FAR);
+  scene.commands.forEach((command, j) => {
+    if (command.lane < 0) return;
+    const age = T - denyTime(j);
+    const alpha = GHOST * inOut(age / 60) * (1 - inOut(age / 400));
+    if (alpha <= 0.004) return;
+    const top = L.plates[0]!;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = palette.stop;
+    ctx.font = `${FONT_WEIGHT.strong} ${TYPE.ghost}px ${palette.mono}`;
+    ctx.fillText('deny', top.x + top.w, top.y - 20);
+    ctx.textAlign = 'left';
+  });
+
+  /* Plates: what each is doing for the command at hand. */
+  const verdicts = L.plates.map(() => ({ pass: 0, stop: 0 }));
+  if (started) {
+    for (let j = Math.max(0, now - 1); j <= now; j += 1) {
+      const command = scene.commands[j]!;
+      const u = T - CMD_AT - j * CMD_MS;
+      /* The marks clear while the next command comes in. */
+      const clear = j < now ? 1 - inOut((T - CMD_AT - now * CMD_MS) / RETURN_MS) : 1;
+      const target = command.lane >= 0 ? command.lane : L.plates.length - 1;
+      L.plates.forEach((_, k) => {
+        if (k > target) return;
+        /* The bar reaches plate k's middle at this share of its way down. */
+        const share = target === 0 ? 0 : k / target;
+        const at = TICK_AT + (VERDICT_AT - TICK_AT) * inOutInverse(share);
+        if (k === command.lane) verdicts[k]!.stop = Math.max(verdicts[k]!.stop, inOut((u - VERDICT_AT - 40) / 70) * clear);
+        else verdicts[k]!.pass = Math.max(verdicts[k]!.pass, inOut((u - at) / 80) * clear);
+      });
+    }
+  }
+
+  L.plates.forEach((plate, k) => {
+    const show = inOut((T - PLATES_AT - k * 60) / 360);
+    if (show <= 0) return;
+    const park = inOut((u3 - k * 40) / PLATE_PARK_MS);
+    const { pass, stop } = verdicts[k]!;
+    const rest = { ...plate, y: plate.y + 12 * (1 - show) };
+    if (park >= 1) return;
+    if (park > 0) {
+      const j = scene.hookPlates.indexOf(k);
+      const to = toScreen(f, parked, L.strips[1]![Math.max(0, j)]!);
+      const r = mixRect(toScreen(f, shot, rest), to, park);
+      screenSpace(f);
+      const radius = mix(8, 1.5, park);
+      const leaving = 1 - clamp(park / 0.4);
+      block(f, r, radius, f.tint(palette.card, palette.indigo, park), mix(1, PARKED, park));
+      /* A plate still red from the last deny lets its red go as it leaves, never at once. */
+      block(f, r, radius, palette.stop, stop * 0.8 * leaving);
+      outline(f, r, radius, f.tint(palette.edge, palette.stop, stop), leaving);
+      const words = 1 - clamp(park / 0.25);
+      if (words > 0.004) {
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = words;
+        ctx.font = font;
+        ctx.fillStyle = f.tint(f.tint(palette.soft, palette.ink, pass), palette.ink, stop);
+        ctx.fillText(scene.gate[k]!, r.x + 18 * (r.w / plate.w), r.y + r.h / 2);
+      }
+      return;
+    }
+    applyCamera(ctx, f.dpr, f.w, f.h, shot);
+    block(f, rest, 8, palette.card, show);
+    block(f, rest, 8, palette.stop, show * stop * 0.8);
+    outline(f, rest, 8, f.tint(palette.edge, palette.stop, stop), show);
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = show;
+    ctx.font = font;
+    ctx.fillStyle = f.tint(f.tint(palette.soft, palette.ink, pass), palette.ink, stop);
+    ctx.fillText(scene.gate[k]!, rest.x + 18, rest.y + rest.h / 2);
+    if (pass > 0.004) {
+      const cx = rest.x + rest.w - 26;
+      const cy = rest.y + rest.h / 2;
+      ctx.globalAlpha = show * pass;
+      ctx.strokeStyle = palette.pass;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - 7, cy);
+      ctx.lineTo(cx - 2, cy + 5);
+      ctx.lineTo(cx + 7, cy - 6);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+  });
+
+  /* The command lines: the current one, and up to two above it, smaller and dimmer. */
+  if (!started) return;
+  applyCamera(ctx, f.dpr, f.w, f.h, shot);
+  const out = inOut(u3 / 240);
+  const mono = `${L.command.px}px ${palette.mono}`;
+  const pw = promptW(f, L);
+  ctx.textBaseline = 'middle';
+  scene.commands.forEach((command, j) => {
+    const u = T - CMD_AT - j * CMD_MS;
+    if (u < 0) return;
+    let level = 0;
+    for (let m = j + 1; m < scene.commands.length; m += 1) level += inOut((T - CMD_AT - m * CMD_MS) / SLIDE_MS);
+    const fade = level <= 1 ? mix(1, 0.45, level) : level <= 2 ? mix(0.45, 0.2, level - 1) : mix(0.2, 0, Math.min(1, level - 2));
+    const alpha = fade * (1 - out) * inOut((u - TYPE_AT + 60) / 80);
+    if (alpha <= 0.004) return;
+    const scale = mix(1, 0.72, Math.min(1, level));
+    const lift = 58 * Math.min(1, level) + 40 * Math.max(0, level - 1) + 12 * out;
+    const v = clamp((u - VERDICT_AT) / VERDICT_MS);
+    const blocked = command.lane >= 0;
+    /* A deny knocks the line back 10px once. */
+    const recoil = blocked ? -10 * Math.sin(Math.PI * v) : 0;
+    const typed = clamp((u - TYPE_AT) / TYPE_MS) * command.command.length;
+    const whole = Math.floor(typed);
+    const ink = f.tint(palette.ink, blocked ? palette.stop : palette.pass, inOut(v));
+    ctx.save();
+    ctx.translate(L.command.x + recoil, L.command.y - lift);
+    ctx.scale(scale, scale);
+    text(f, '$ ', 0, 0, mono, palette.dim, alpha);
+    text(f, command.command.slice(0, whole), pw, 0, mono, ink, alpha);
+    if (whole < command.command.length && typed > whole) {
+      text(f, command.command[whole]!, pw + f.measure(command.command.slice(0, whole), mono), 0, mono, ink, alpha * (typed - whole));
+    }
+    ctx.restore();
+  });
+}
+
+/* ---------- act three: the checks ---------- */
+
+function drawChecks(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing) {
+  const { ctx, scene, palette, T } = f;
+  const u = T - STARTS[2];
+  /* The names stay a moment into the last act, leaving as its caption comes in. */
+  const gone = inOut((T - STARTS[3]) / CAPTION_IN);
+  if (u < 0 || gone >= 1) return;
+  applyCamera(ctx, f.dpr, f.w, f.h, shot);
+  const lift = Math.sin(Math.PI * clamp((u - LIFT_AT) / LIFT_MS));
+  ctx.textBaseline = 'alphabetic';
+  L.bands.forEach((band, b) => {
+    const show = inOut((u - 120 - b * 80) / 300);
+    const done = inOut((u - timing.bandDone[b]!) / 160);
+    const label = f.labels.bands[b] ?? '';
+    const labelFont = `${TYPE.label}px ${palette.sans}`;
+    const y = band.labelY + 12 * (1 - show);
+    text(f, label, band.labelX, y, labelFont, palette.soft, show * (1 - gone));
+    const countX = band.labelX + f.measure(label, labelFont) + 10;
+    text(f, String(scene.bands[b]!.names.length), countX, y, `${FONT_WEIGHT.strong} ${TYPE.label}px ${palette.sans}`, f.tint(palette.ink, palette.pass, done), show * (1 - gone));
   });
 
   L.cells.forEach((cell, k) => {
-    const column = k % 32;
-    const show = enter(t, CELLS_AT + cell.band * 100 + column * 8);
+    if (T >= STARTS[3]) return;
+    const show = inOut((u - 120 - cell.band * 80 - cell.column * 6) / 300);
     if (show <= 0) return;
-    const fill = clamp((t - SWEEP_AT - k * SWEEP_STEP) / FILL_MS);
-    const from = { ...cell.rect, y: cell.rect.y + 12 * (1 - show) };
-    const to = strip.merged[cell.slot]!;
-    /* The first band zips straight into the strip; later bands slide along their own row past it,
-       then rise into its end, so they never pass over the first band's cells. */
-    const across = cell.band === 0 ? inOut((t4 - column * 4) / 700) : inOut((t4 - 200) / 600);
-    const up = cell.band === 0 ? across : inOut((t4 - 700) / 450);
-    const moved = { x: mix(from.x, to.x, across), y: mix(from.y, to.y, up), w: mix(from.w, to.w, across), h: mix(from.h, to.h, up) };
-    const at = intoStack(strip, cell.slot, moved, 0, t4);
-    const rise = Math.min(across, up);
-    const radius = mix(4, 1.5, rise);
-    /* An empty cell is a quiet square; a run check fills green. */
-    block(f, at, radius, palette.edge, show * 0.45 * (1 - fill));
-    block(f, at, radius, palette.pass, show * fill);
+    const fill = inOut((u - timing.fill[k]!) / 90);
+    const r = { ...cell.rect, y: cell.rect.y + 12 * (1 - show) };
+    block(f, r, 5, palette.edge, show * 0.45 * (1 - fill));
+    block(f, r, 5, f.tint(palette.pass, palette.ink, 0.28 * lift), show * fill);
   });
 
-  /* The readout: the check now running, one name per six cells, each fading in after the last. */
-  const slot = Math.floor((t - SWEEP_AT) / (READOUT_EVERY * SWEEP_STEP));
-  const slots = Math.ceil(total / READOUT_EVERY);
-  if (slot < 0) return;
-  const s = Math.min(slot, slots - 1);
-  const u = t - SWEEP_AT - s * READOUT_EVERY * SWEEP_STEP;
-  const span = READOUT_EVERY * SWEEP_STEP;
-  const fadeIn = inOut(u / 120);
-  const fadeOut = s === slots - 1 ? 0 : inOut((u - span + 110) / 110);
-  const name = L.cells[Math.min(total - 1, s * READOUT_EVERY)]!.name;
-  text(f, name, L.zone.left, L.readoutY + 6 * (1 - fadeIn) - 12 * out, `${TYPE.readout}px ${palette.mono}`, palette.ink, fadeIn * (1 - fadeOut) * (1 - out));
+  /* The readout: the check the head has reached, eight names in turn. */
+  const names = timing.readout;
+  let current = -1;
+  names.forEach((k, i) => {
+    if (u >= timing.fill[k]!) current = i;
+  });
+  if (current < 0) return;
+  const since = u - timing.fill[names[current]!]!;
+  const nextAt = current + 1 < names.length ? timing.fill[names[current + 1]!]! : Infinity;
+  const leaving = inOut((u - (nextAt - 90)) / 90);
+  const arriving = inOut(since / 140);
+  const name = L.cells[names[current]!]!.name;
+  text(f, name, L.zone.left, L.readoutY + 8 * (1 - arriving) - 8 * leaving, `${TYPE.readout}px ${palette.mono}`, palette.ink, arriving * (1 - leaving) * (1 - gone));
+}
+
+/* ---------- act four: the poster ---------- */
+
+/**
+ * Every object comes home above its count: the files from the strip into a fanned stack, the
+ * hooks into the gate's plates and a slat each, the checks into a green block. The bar draws the
+ * underlines beneath. Then nothing moves: the last frame is the whole harness at rest.
+ */
+function drawPoster(f: Frame, L: HarnessLayout, shot: CameraShot) {
+  const { ctx, palette, T } = f;
+  const U = f.underlines;
+  const P = f.poster;
+  if (T < STARTS[3] || !U || !P) return;
+  const u = T - STARTS[3];
+  const parked = deeper(f, shot, MID);
+  screenSpace(f);
+
+  /* The underlines, drawn behind the pen. */
+  const pen = penX(U, u);
+  U.forEach((line) => block(f, { x: line.x, y: line.y, w: clamp((pen - line.x) / line.len) * line.len, h: 3 }, 0, palette.ink, 1));
+
+  const fly = (start: number, ms: number) => inOut((u - start) / ms);
+  /* A mark travels as a mark and opens into its object only over the last part of its flight. */
+  const travel = (from: Rect, to: Rect, start: number, ms: number) => {
+    const at = mixRect(from, to, fly(start, ms));
+    const open = fly(start + ms * 0.55, ms * 0.45);
+    return { r: { x: at.x, y: at.y, w: mix(from.w, to.w, open), h: mix(from.h, to.h, open) }, open };
+  };
+  /* The files: strip marks grow back into cards, the back of the stack first. */
+  const files = L.strips[0]!;
+  P.cards.forEach((card, k) => {
+    const { r, open: t } = travel(toScreen(f, parked, files[k]!), card, (k / Math.max(1, files.length - 1)) * 240, 560);
+    const front = k >= P.cards.length - 3;
+    block(f, r, mix(1.5, 6, t), f.tint(palette.indigo, palette.card, t), mix(PARKED, 1, t));
+    outline(f, r, mix(1.5, 6, t), palette.edge, t * t * (front ? 1 : 0.8));
+  });
+  ctx.textBaseline = 'middle';
+  P.names.forEach((name, i) => {
+    const show = fly(720 + i * 60, 240);
+    text(f, name.text, name.x, name.y + 6 * (1 - show), `${TYPE.card}px ${palette.mono}`, name.front ? palette.ink : palette.soft, show);
+  });
+
+  /* The hooks: the gate's three marks open back into plates, every other hook becomes a slat. */
+  const hooks = L.strips[1]!;
+  P.hooks.forEach((hook, j) => {
+    const { r, open: t } = travel(toScreen(f, parked, hooks[j]!), hook, 160 + j * 22, 560);
+    if (f.scene.hookPlates[j]! < 0) {
+      block(f, r, 1.5, palette.indigo, mix(PARKED, 0.55, t));
+      return;
+    }
+    block(f, r, mix(1.5, 6, t), f.tint(palette.indigo, palette.card, t), mix(PARKED, 1, t));
+    outline(f, r, mix(1.5, 6, t), palette.edge, t * t);
+  });
+  P.plateNames.forEach((name, i) => {
+    ctx.globalAlpha = fly(840 + i * 60, 240);
+    ctx.font = `${P.plateTextPx}px ${palette.mono}`;
+    ctx.fillStyle = palette.soft;
+    ctx.fillText(name.text, name.x, name.y + 6 * (1 - ctx.globalAlpha));
+  });
+
+  /* The checks: each cell slides from the grid it filled into the block. */
+  L.cells.forEach((cell) => {
+    const t = fly(300 + (cell.slot / Math.max(1, L.cells.length - 1)) * 260, 560);
+    const r = mixRect(toScreen(f, shot, cell.rect), P.cells[cell.slot]!, t);
+    block(f, r, mix(5 * shot.zoom, 3, t), palette.pass, 1);
+  });
+}
+
+/* ---------- light and beats ---------- */
+
+/** The key light: one soft pool that follows the subject and turns red for a moment on each deny. */
+function drawLight(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing) {
+  const { T, sprites } = f;
+  const radius = 300;
+  const at = (x: number, y: number) => projectPoint(f.w, f.h, shot, x, y);
+  screenSpace(f);
+  const plates = L.plates;
+  const gate = at(plates[0]!.x + plates[0]!.w / 2, (plates[0]!.y + plates[plates.length - 1]!.y + plates[0]!.h) / 2);
+
+  /* A deny's red, 300ms from the verdict, whatever act the clock has reached by then. */
+  let red = 0;
+  let redAt = gate;
+  f.scene.commands.forEach((command, j) => {
+    if (command.lane < 0) return;
+    const age = T - denyTime(j);
+    const lit = inOut(age / 60) * (1 - inOut((age - 60) / 240));
+    if (lit > red) {
+      red = lit;
+      const plate = plates[command.lane]!;
+      redAt = at(plate.x + plate.w / 2, plate.y + plate.h / 2);
+    }
+  });
+  drawKeyLight(f.ctx, sprites.stop, redAt.x, redAt.y, radius, 0.16 * red);
+
+  if (T < STARTS[1]) {
+    const midY = (L.read.top + L.read.bottom) / 2;
+    const first = L.stacks[0]!;
+    const last = L.stacks[L.stacks.length - 1]!;
+    const lastLand = timing.land[timing.land.length - 1]!;
+    /* Across the stacks as they fill, back to where reading starts, then riding the reading line. */
+    const filled = clamp((T - LAND_AT) / (lastLand[lastLand.length - 1]! - LAND_AT));
+    const filling = mix(first.x + first.width / 2, last.x + last.width / 2, filled);
+    const back = mix(filling, L.zone.left, inOut((T - DOLLY_AT) / (WIDE_AT - DOLLY_AT)));
+    const x = T < WIDE_AT ? back : mix(L.zone.left, L.zone.right, inOut((T - WIDE_AT) / SWEEP_MS));
+    const p = at(x, midY);
+    const leave = inOut((T - FOCUS_AT) / (STARTS[1] - FOCUS_AT));
+    const strength = mix(0.1, 0.14, inOut((T - WIDE_AT) / 200)) * inOut((T - 300) / 500) * mix(1, 0.7, leave);
+    drawKeyLight(f.ctx, sprites.indigo, mix(p.x, gate.x, leave), mix(p.y, gate.y, leave), radius, strength);
+    return;
+  }
+  if (T < STARTS[2]) {
+    drawKeyLight(f.ctx, sprites.indigo, gate.x, gate.y, radius, mix(0.098, 0.1, clamp((T - STARTS[1]) / 200)) * (1 - red));
+    return;
+  }
+  const head = centreOf(barAt(f, L, Math.min(T, STARTS[3] - 0.001), shot).r);
+  if (T < STARTS[3]) {
+    const change = inOut((T - STARTS[2] - PUSH_AT) / PUSH_MS);
+    drawKeyLight(f.ctx, sprites.indigo, mix(gate.x, head.x, change), mix(gate.y, head.y, change), radius, 0.1 * (1 - change) * (1 - red));
+    drawKeyLight(f.ctx, sprites.pass, head.x, head.y, radius, 0.12 * change);
+    return;
+  }
+  /* The light comes to rest on the checks, whose count lands last. */
+  const rest = f.poster?.centres[2];
+  if (!rest) return;
+  const change = inOut((T - STARTS[3]) / 900);
+  drawKeyLight(f.ctx, sprites.pass, mix(head.x, rest.x, change), mix(head.y, rest.y, change), radius, 0.12);
+}
+
+/** The beats: a stack filled, a command denied, a band passed, a count landed. */
+function drawRings(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing) {
+  const { ctx, T, palette, scene } = f;
+  screenSpace(f);
+  const ring = (x: number, y: number, at: number, color: string) => {
+    const p = projectPoint(f.w, f.h, shot, x, y);
+    drawHitRing(ctx, p.x, p.y, T - at, color);
+  };
+  if (T < STARTS[1]) {
+    L.stacks.forEach((stack, c) => {
+      const lands = timing.land[c]!;
+      const font = `${FONT_WEIGHT.strong} ${TYPE.count}px ${palette.sans}`;
+      const wide = f.measure(String(stack.cards.length), font);
+      ring(stack.x + wide / 2, stack.countY - TYPE.count * 0.36, lands[lands.length - 1]! + LAND_MS / 2, palette.indigo);
+    });
+    return;
+  }
+  if (T < STARTS[2]) {
+    scene.commands.forEach((command, j) => {
+      if (command.lane < 0) return;
+      const plate = L.plates[command.lane]!;
+      ring(plate.x + 8, plate.y + plate.h / 2, denyTime(j), palette.stop);
+    });
+    return;
+  }
+  if (T < STARTS[3]) {
+    L.bands.forEach((band, b) => {
+      const labelFont = `${TYPE.label}px ${palette.sans}`;
+      const x = band.labelX + f.measure(f.labels.bands[b] ?? '', labelFont) + 10 + f.measure(String(scene.bands[b]!.names.length), `${FONT_WEIGHT.strong} ${labelFont}`) / 2;
+      ring(x, band.labelY - 6, STARTS[2] + timing.bandDone[b]!, palette.pass);
+    });
+    return;
+  }
+  const U = f.underlines;
+  if (!U) return;
+  U.forEach((line, i) => {
+    drawHitRing(ctx, line.x, line.y + 1.5, T - STARTS[3] - COUNT_AT - COUNT_STEP * i - 120, palette.ink);
+  });
 }
 
 function drawHarness(f: Frame) {
-  const { ctx, w, h, layout } = f;
-  ctx.clearRect(0, 0, w, h);
-  if (!layout) return;
-  drawInstructions(f, layout);
-  drawGateHooks(f, layout);
-  drawHooks(f, layout);
-  drawChecks(f, layout);
+  const { ctx, layout: L, timing } = f;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  if (!L || !timing) return;
+  const shot = shotAt(f, L, f.T);
+  drawLight(f, L, shot, timing);
+  drawParkedStrips(f, L, shot);
+  drawStacks(f, L, shot, timing);
+  drawGate(f, L, shot);
+  drawChecks(f, L, shot, timing);
+  drawPoster(f, L, shot);
+
+  /* The white bar, with a streak while it flies. */
+  screenSpace(f);
+  const bar = barAt(f, L, f.T, shot);
+  if (bar.alpha > 0.004) {
+    const was = barAt(f, L, Math.max(0, f.T - 48), shotAt(f, L, Math.max(0, f.T - 48)));
+    if (bar.fly && was.alpha > 0.5) drawStreak(ctx, centreOf(was.r), centreOf(bar.r), f.palette.ink, 0.35, 2);
+    block(f, bar.r, 1, f.palette.ink, bar.alpha);
+  }
+  drawRings(f, L, shot, timing);
   ctx.globalAlpha = 1;
 }
 
-/** Each caption holds its quarter, fading across the seams; the last one stays. */
-function captionLight(act: number, p: number): number {
-  const start = (act - 1) * 0.25;
-  /* The outgoing caption is gone before the next one rises, so two never overlap. */
-  const fadeIn = act === 1 ? 1 : clamp((p - start - 0.008) / 0.03);
-  const fadeOut = act === 4 ? 1 : 1 - clamp((p - start - 0.212) / 0.03);
-  return inOut(Math.min(fadeIn, fadeOut));
+/* ---------- captions ---------- */
+
+/** A caption's headline and body: in with a rise, the body 60ms behind, out before the next. */
+function captionAt(i: number, T: number) {
+  const start = STARTS[i]!;
+  const end = i + 1 < STARTS.length ? STARTS[i + 1]! : Infinity;
+  const out = 1 - inOut((T - (end - CAPTION_OUT)) / CAPTION_OUT);
+  return {
+    head: inOut((T - start) / CAPTION_IN) * out,
+    body: inOut((T - start - CAPTION_LAG) / CAPTION_IN) * out,
+  };
+}
+
+function setRise(el: HTMLElement | null | undefined, lit: number) {
+  if (!el) return;
+  el.style.opacity = String(lit);
+  el.style.transform = `translateY(${(1 - lit) * CAPTION_RISE}px)`;
+}
+
+/** Where `item` sits inside the stage, ignoring transforms, or null if it is not inside it. */
+function offsetIn(host: HTMLElement, item: HTMLElement) {
+  let x = 0;
+  let y = 0;
+  let el: HTMLElement | null = item;
+  while (el && el !== host) {
+    x += el.offsetLeft;
+    y += el.offsetTop;
+    el = el.offsetParent as HTMLElement | null;
+  }
+  return el === host ? { x, y } : null;
+}
+
+/** Each count's column inside the stage, its underline, and the line the poster stands on. */
+function measureCaption(host: HTMLElement, items: (HTMLElement | null)[], head: HTMLElement | null | undefined, counts: readonly number[]): Caption | null {
+  const top = head ? offsetIn(host, head) : null;
+  const boxes = items.map((item) => {
+    const at = item ? offsetIn(host, item) : null;
+    return item && at ? { x: at.x, y: at.y + item.offsetHeight, w: item.parentElement?.offsetWidth ?? item.offsetWidth } : null;
+  });
+  if (!top || boxes.some((box) => !box || box.w <= 0)) return null;
+  /* One length per item, the same scale for all three, so their lengths keep the counts' ratio. */
+  const unit = Math.min(...boxes.map((box, i) => box!.w / Math.max(1, counts[i]!)));
+  return {
+    lines: boxes.map((box, i) => ({ x: box!.x, y: box!.y + 4, len: unit * counts[i]! })),
+    columns: boxes.map((box) => ({ x: box!.x, w: box!.w })),
+    base: top.y - 36,
+  };
 }
 
 /** The last act's three counts: server-rendered with their final values, read as a list of terms. */
-function HarnessCounts({ counts, className }: { counts: HarnessScene['counts']; className?: string }) {
+function HarnessCounts({
+  counts,
+  film = false,
+  numerals,
+  className,
+}: {
+  counts: HarnessScene['counts'];
+  film?: boolean;
+  numerals?: RefObject<(HTMLElement | null)[]>;
+  className?: string;
+}) {
   const t = useTranslations('download.harnessFilm');
   const format = useFormatter();
+  /* In the film the counts stand in three equal columns, each under its own group of objects. */
   return (
-    <dl className={cn('flex flex-wrap gap-x-10 gap-y-4', className)}>
-      {COUNT_KEYS.map((key) => (
+    <dl className={cn(film ? 'grid w-full grid-cols-3 gap-x-10' : 'flex flex-wrap gap-x-10 gap-y-4', className)}>
+      {COUNT_KEYS.map((key, i) => (
         <div key={key} className="flex min-w-0 flex-col-reverse">
-          <dt className="mt-1 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+          <dt className={cn('text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]', film ? 'mt-5' : 'mt-1')}>
             {t(`counts.${key}`)}
           </dt>
-          <dd
-            data-token="engraved-numeral"
-            className="text-hero font-[var(--font-weight-signature)] tabular-nums tracking-[var(--tracking-monument)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-          >
-            {format.number(counts[key])}
-          </dd>
+          {film ? (
+            <dd
+              ref={(node) => {
+                if (numerals?.current) numerals.current[i] = node;
+              }}
+              className="w-fit text-monument font-[var(--font-weight-signature)] tabular-nums tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+            >
+              {format.number(counts[key])}
+            </dd>
+          ) : (
+            <dd
+              data-token="engraved-numeral"
+              className="text-hero font-[var(--font-weight-signature)] tabular-nums tracking-[var(--tracking-monument)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+            >
+              {format.number(counts[key])}
+            </dd>
+          )}
         </div>
       ))}
     </dl>
@@ -515,10 +1097,11 @@ function HarnessCounts({ counts, className }: { counts: HarnessScene['counts']; 
 }
 
 /**
- * The page's second film, beside the map's: this repository's real harness. While the visitor
- * watches, it plays by itself: the files an agent reads, the hooks that stop it, the checks that
- * verify it, then all three counted. Without a script, under reduced motion or on a narrow screen
- * the four acts are one visible list and nothing is drawn, so the page never reflows.
+ * The page's second film, beside the map's: this repository's real harness, followed by one white
+ * bar. It reads the files an agent reads, carries each command to the hooks that stop it, runs the
+ * checks that verify the work, then underlines all three counts. Without a script, under reduced
+ * motion or on a narrow screen the four acts are one visible list and nothing is drawn, so the page
+ * never reflows.
  */
 export function HarnessFilm() {
   const t = useTranslations('download.harnessFilm');
@@ -527,6 +1110,9 @@ export function HarnessFilm() {
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const captions = useRef<(HTMLLIElement | null)[]>([]);
+  const heads = useRef<(HTMLHeadingElement | null)[]>([]);
+  const bodies = useRef<(HTMLElement | null)[]>([]);
+  const numerals = useRef<(HTMLElement | null)[]>([]);
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
   const seek = useRef<(act: number) => void>(() => {});
   const [film, setFilm] = useState(false);
@@ -541,7 +1127,7 @@ export function HarnessFilm() {
   useEffect(() => {
     if (typeof matchMedia !== 'function') return;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    /* Below this the four columns and the gate plates cannot stand side by side, so the film rests. */
+    /* Below this the four stacks and the gate plates cannot stand side by side, so the film rests. */
     const wide = matchMedia(`(min-width: ${FILM_MIN_WIDTH}px)`);
     let id = 0;
     const decide = () => {
@@ -563,56 +1149,84 @@ export function HarnessFilm() {
     const ctx = el?.getContext('2d');
     if (!film || !el || !host || !ctx) return;
     const palette = readPalette();
-    const measure = widthCache(ctx, palette.mono);
+    const measure = widthCache(ctx);
     const frame: Frame = {
       ctx,
       scene,
       layout: null,
+      timing: null,
+      underlines: null,
+      poster: null,
       palette,
       labels,
       measure,
       tint: colorMixer(ctx),
+      sprites: { indigo: lightSprite(palette.indigo), pass: lightSprite(palette.pass), stop: lightSprite(palette.stop) },
+      dpr: 1,
       w: 0,
       h: 0,
-      p: 0,
+      T: 0,
     };
+    const counts = COUNT_KEYS.map((key) => scene.counts[key]);
 
     const time = createFilmClock(ACT_SPANS, ACT_MS);
     let veil = 1;
-    const paint = () => {
+    const paint = (p: number) => {
+      frame.T = filmTime(p);
       drawHarness(frame);
       const light = isMotionPaused() ? 1 : time.fade() * veil;
       el.style.opacity = String(light);
       captions.current.forEach((caption, i) => {
         if (!caption) return;
-        const lit = captionLight(i + 1, frame.p) * light;
-        caption.style.opacity = String(lit);
-        caption.style.transform = `translateY(${(1 - lit) * 12}px)`;
-        caption.style.visibility = lit > 0.01 ? 'visible' : 'hidden';
+        const { head, body } = captionAt(i, frame.T);
+        setRise(heads.current[i], head * light);
+        setRise(bodies.current[i], body * light);
+        caption.style.visibility = Math.max(head, body) * light > 0.01 ? 'visible' : 'hidden';
+      });
+      numerals.current.forEach((numeral, i) => {
+        setRise(numeral, inOut((frame.T - STARTS[3] - COUNT_AT - COUNT_STEP * i) / CAPTION_IN) * light);
       });
       const act = time.act();
       fills.current.forEach((fill, i) => {
         if (!fill) return;
         const [start, end] = ACT_SPANS[i]!;
-        fill.style.transform = `scaleX(${i < act ? 1 : i > act ? 0 : clamp((frame.p - start) / (end - start))})`;
+        fill.style.transform = `scaleX(${i < act ? 1 : i > act ? 0 : clamp((p - start) / (end - start))})`;
       });
     };
+    let p = 0;
+    /* One frame from each act before the film shows, so no act's first frame pays for new type sizes,
+       sprites or code paths. The real frame is painted over them at once. */
+    const warm = () => {
+      const keep = frame.T;
+      for (const T of [1200, 2800, 3100, 4600, 7400, 8800, 10400, 12000]) {
+        frame.T = T;
+        drawHarness(frame);
+      }
+      frame.T = keep;
+    };
     const resize = () => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
       frame.w = el.clientWidth;
       frame.h = el.clientHeight;
-      el.width = Math.round(frame.w * dpr);
-      el.height = Math.round(frame.h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      /* The backing store stays under six million pixels, so a large screen draws at a lower density. */
+      frame.dpr = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(6e6 / Math.max(1, frame.w * frame.h)));
+      el.width = Math.round(frame.w * frame.dpr);
+      el.height = Math.round(frame.h * frame.dpr);
       /* `--gateway-origin` is a registered length, so it reads back resolved to px. */
       const origin = parseFloat(getComputedStyle(host).getPropertyValue('--gateway-origin')) || 200;
-      frame.layout = layoutHarness(scene, pictureZone(frame.w, frame.h, origin), measure);
-      paint();
+      frame.layout = layoutHarness(scene, pictureZone(frame.w, frame.h, origin), (value, px) => measure(value, `${px}px ${palette.mono}`));
+      frame.timing = buildTiming(scene, frame.layout);
+      const caption = measureCaption(host, numerals.current, heads.current[3], counts);
+      frame.underlines = caption?.lines ?? null;
+      frame.poster = caption
+        ? layoutPoster(scene, caption.columns, Math.max(frame.layout.zone.top + 220, caption.base), (value, px) => measure(value, `${px}px ${palette.mono}`))
+        : null;
+      warm();
+      paint(p);
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     resize();
-    /* Names are measured in the page's mono face; once it has loaded, lay out again. */
+    /* Names are measured in the page's faces; once they have loaded, lay out again. */
     let live = true;
     void document.fonts?.ready.then(() => {
       if (!live) return;
@@ -625,9 +1239,9 @@ export function HarnessFilm() {
       ({ dtMs, factor }) => {
         /* A visitor who stopped moving sees the film to its end, where it rests on the whole harness. */
         if (factor < 1 && time.resting()) return;
-        frame.p = time.advance(dtMs);
+        p = time.advance(dtMs);
         veil = Math.min(1, veil + dtMs / 450);
-        paint();
+        paint(p);
       },
       undefined,
       { keepAwake: true },
@@ -637,20 +1251,20 @@ export function HarnessFilm() {
     seek.current = (act) => {
       time.seek(act);
       const paused = isMotionPaused();
-      frame.p = paused ? settle(act) : time.progress();
+      p = paused ? settle(act) : time.progress();
       /* A jump fades in from dark instead of cutting; paused, it shows the act at once. */
       veil = paused ? 1 : 0;
-      paint();
+      paint(p);
     };
     const offPause = subscribeMotionPause(() => {
       if (!isMotionPaused()) return;
       /* A film paused before it began would hold a dark first frame: show its first act instead. */
-      if (time.progress() === 0) frame.p = settle(0);
-      paint();
+      if (time.progress() === 0) p = settle(0);
+      paint(p);
     });
     if (isMotionPaused()) {
-      frame.p = settle(0);
-      paint();
+      p = settle(0);
+      paint(p);
     }
     return () => {
       live = false;
@@ -661,12 +1275,13 @@ export function HarnessFilm() {
     };
   }, [film, scene, labels]);
 
-  /* The hook act names the first two commands the hooks really denied. */
-  const [first = '', second = ''] = scene.commands.filter((command) => command.lane >= 0).map((command) => command.command);
+  /* The hook act names the first command the hooks really denied. */
+  const [first = ''] = scene.commands.filter((command) => command.lane >= 0).map((command) => command.command);
+  const format = useFormatter();
   const body = (act: number): ReactNode =>
     t.rich(`acts.${act}.body`, {
       first,
-      second,
+      instructions: format.number(scene.counts.instructions),
       code: (chunks) => <code className="whitespace-nowrap font-mono text-[color:var(--color-text-primary)]">{chunks}</code>,
     });
 
@@ -702,15 +1317,32 @@ export function HarnessFilm() {
                     ref={(node) => {
                       captions.current[i] = node;
                     }}
-                    className="invisible flex min-w-0 max-w-[40rem] flex-col items-start text-left opacity-0 [grid-area:1/1]"
+                    className="invisible flex min-w-0 max-w-[56rem] flex-col items-start text-left [grid-area:1/1]"
                   >
-                    <h3 className="[text-wrap:balance] text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] sm:text-hero-lg">
+                    <h3
+                      ref={(node) => {
+                        heads.current[i] = node;
+                      }}
+                      className="[text-wrap:balance] text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] opacity-0 sm:text-hero-lg"
+                    >
                       {t(`acts.${act}.title`)}
                     </h3>
                     {act === 4 ? (
-                      <HarnessCounts counts={scene.counts} className="mt-4" />
+                      <div
+                        ref={(node) => {
+                          bodies.current[i] = node;
+                        }}
+                        className="mt-4 w-full opacity-0"
+                      >
+                        <HarnessCounts counts={scene.counts} film numerals={numerals} />
+                      </div>
                     ) : (
-                      <p className="mt-3 max-w-[30rem] text-title leading-title text-[color:var(--color-text-secondary)]">
+                      <p
+                        ref={(node) => {
+                          bodies.current[i] = node;
+                        }}
+                        className="mt-3 max-w-[30rem] text-title leading-title text-[color:var(--color-text-secondary)] opacity-0"
+                      >
                         {body(act)}
                       </p>
                     )}
@@ -722,7 +1354,8 @@ export function HarnessFilm() {
                 label={t('actsLabel')}
                 fills={fills}
                 onSeek={(act) => seek.current(act)}
-                className="mt-6 justify-start"
+                align="start"
+                className="mt-6"
               />
             </div>
           </div>
