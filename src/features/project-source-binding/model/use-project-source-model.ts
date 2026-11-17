@@ -28,7 +28,7 @@ import {
   type ProjectSourceInspection,
 } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { resolveProjectSourceRepair } from "./project-source-repair";
-import { deriveProjectSourceWitnesses } from "../../lib/project-source/project-source-witnesses";
+import { deriveProjectSourceWitnesses } from "../lib/project-source-witnesses";
 
 export type ProjectSourceModelError =
   | "sidecar_malformed"
