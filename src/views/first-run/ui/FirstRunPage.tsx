@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
+import { CircleHelp, Code2, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { RecentVaultList, recentVaultRowKey } from "@/features/vault-switch";
+import { BuildFromCodeConfirmDialog, useBuildFromCode } from "@/features/first-run-starter";
+import { useCodeProjectHandoff } from "../model/use-code-project-handoff";
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
@@ -58,12 +60,20 @@ export function FirstRunPage() {
   } = useJustStartVault(vault, locale, { created: justStartCreated, starterFailed });
   // A browser under ?shell=desktop has no Tauri bridge. Client-only mount, so no hydration mismatch.
   const showJustStart = isTauriVaultRuntime();
+  const { prepare: prepareCodeHandoff, handoff: codeHandoff } = useCodeProjectHandoff();
+  const codeProject = useBuildFromCode({ openRecord: vault.openRecent, handoff: codeHandoff });
+  const chooseCodeProject = useCallback(() => {
+    prepareCodeHandoff();
+    void codeProject.chooseProject();
+  }, [prepareCodeHandoff, codeProject]);
+  const codeProjectBusy = codeProject.stage === "choosing" || codeProject.stage === "creating";
 
   const busy =
     vault.status === "opening" ||
     vault.status === "loading" ||
     scaffolding ||
-    justStartBusy;
+    justStartBusy ||
+    codeProjectBusy;
 
   const handleOpen = useCallback(async () => {
     setActionError(null);
@@ -94,7 +104,10 @@ export function FirstRunPage() {
    * the data-failure-detail attribute.
    */
   const failure: FailureCopy | null =
-    justStartError !== null
+    /* Before a project is chosen there is no dialog to say it in. */
+    codeProject.location === null && codeProject.errorText !== null
+      ? failureSentence(codeProject.errorText, t("codeFailed"))
+      : justStartError !== null
       ? failureSentence(justStartError, t("errorFallback"))
       : actionError !== null
         ? failureSentence(actionError, t("errorFallback"))
@@ -179,12 +192,14 @@ export function FirstRunPage() {
             </p> : null}
             {/* Centred with the other lines when the screen is centred. */}
             <div className={`flex items-center gap-3 ${choosingFolderHome ? "justify-start" : "justify-center"}`}><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
-              {choosingFolder ? tSwitch("choose.title") : t("title")}
+              {choosingFor ? t("shapeEyebrow") : choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>{choosingFolderHome ? <div className={styles.help}><IconButton label={tSwitch('choose.helpLabel')} size="lg" className="atlas-touch-floor atlas-touch-floor-wide" onClick={()=>setChooserHelpOpen(true)}><CircleHelp size={ICON_SIZE.md} aria-hidden /></IconButton></div> : null}</div>
             <p
               className={`${styles.description} break-keep text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body-lg" : "mx-auto max-w-[440px] text-body-lg"}`}
             >
-              {choosingFolder
+              {choosingFor
+                ? t("shapeTitle")
+                : choosingFolder
                 ? isTauriVaultRuntime()
                   ? tSwitch("choose.bodyDesktop")
                   : tSwitch("choose.bodyWeb")
@@ -195,12 +210,6 @@ export function FirstRunPage() {
 
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
-            <div className="grid gap-1 px-1">
-              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-                {t("shapeEyebrow")}
-              </p>
-              <p className="break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">{t("shapeTitle")}</p>
-            </div>
             {/* Equal-height cards (Don'ts, content-decided card height). */}
             <div className="grid auto-rows-fr gap-2">
             {(
@@ -255,7 +264,7 @@ export function FirstRunPage() {
                     {tSwitch("choose.listTitle")}
                   </p>
                   {choosingFolderHome ? (
-                    <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} />
+                    <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} onCodeProject={chooseCodeProject} />
                   ) : null}
                 </div>
                 <RecentVaultList
@@ -283,18 +292,39 @@ export function FirstRunPage() {
           {showJustStart ? (
             <button
               type="button"
-              onClick={() => setChoosingFor("just-start")}
+              onClick={chooseCodeProject}
               disabled={busy}
-              data-testid="first-run-just-start"
-              /* As the launch chooser, the folder list answers; just start would make a third folder. */
+              data-testid="first-run-code-project"
+              /* Leads on a first run: the product reads a codebase, so the person who has one starts here. */
               className={`${secondaryCardBase} ${
                 choosingFolder
                   ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
                   : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
               }`}
             >
-              {/* The glyph demotes with the border, or its chroma stays the brightest ink. */}
               <span className={`${secondaryIconChip} ${doorGlyph}`}>
+                <Code2 size={ICON_SIZE.md} aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  {codeProject.stage === "choosing" ? t("busy") : t("codeTitle")}
+                </span>
+                <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                  {t("codeBody")}
+                </span>
+              </span>
+            </button>
+          ) : null}
+
+          {showJustStart ? (
+            <button
+              type="button"
+              onClick={() => setChoosingFor("just-start")}
+              disabled={busy}
+              data-testid="first-run-just-start"
+              className={`${secondaryCardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
+            >
+              <span className={`${secondaryIconChip} text-[color:var(--color-text-tertiary)]`}>
                 <Zap size={ICON_SIZE.md} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -373,6 +403,7 @@ export function FirstRunPage() {
         ) : null}
 
       </section>
+      <BuildFromCodeConfirmDialog build={codeProject} />
       <Dialog open={chooserHelpOpen} onClose={()=>setChooserHelpOpen(false)} labelledBy="folder-chooser-help-title" size="sm">
         <h2 id="folder-chooser-help-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{tSwitch('choose.helpLabel')}</h2>
         <div className="mt-4 grid gap-3 text-body-lg text-[color:var(--color-text-secondary)]">
