@@ -8,11 +8,13 @@ import { Button, Dialog } from '@/shared/ui';
 const WARNING_TEXT = 'text-[color:var(--color-status-warning)]';
 
 /** The foot of the file list: what the last folder check covered, and the door to its limits. */
-export function PlanningReadScope({ inventory, status, checkedAt, slow }: {
+export function PlanningReadScope({ inventory, status, checkedAt, slow, writable }: {
   inventory: PlanningInventory | null;
   status: 'idle' | 'checking' | 'ready' | 'unavailable';
   checkedAt: number | null;
   slow: boolean;
+  /** The home folder is written here, so the promise that Atlas never edits the files does not hold. */
+  writable: boolean;
 }) {
   const t = useTranslations('planning');
   const [open, setOpen] = useState(false);
@@ -41,7 +43,7 @@ export function PlanningReadScope({ inventory, status, checkedAt, slow }: {
       <h2 id={titleId} className="text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('details')}</h2>
       {facts.length > 0 && <ul className="mt-4 space-y-1 text-body leading-body text-[color:var(--color-text-primary)]">{facts.map((fact) => <li key={fact}>{fact}</li>)}</ul>}
       <div className="mt-4 space-y-2 text-body leading-body text-[color:var(--color-text-secondary)]">
-        <p>{t('chooseBody')}</p><p>{t('limits')}</p><p>{t('noContentSearch')}</p><p>{t('historyLimit')}</p><p>{t('comparisonLimit')}</p>
+        {!writable && <p>{t('chooseBody')}</p>}<p>{t('limits')}</p><p>{t('noContentSearch')}</p><p>{t('historyLimit')}</p><p>{t('comparisonLimit')}</p>
       </div>
       <div className="mt-5 flex justify-end"><Button variant="ghost" onClick={() => setOpen(false)}>{t('close')}</Button></div>
     </Dialog>
