@@ -187,6 +187,8 @@
     "partialOnly": "{count} 个仅读取了部分内容",
     "import": "从服务导入",
     "importTooltip": "选择并连接服务，再指定要导入此文件夹的文档",
+    "importedToPlanning": "导入的文档已放入规划文件夹",
+    "openPlanning": "在规划中打开",
     "pagesNeedReview": "{count} 个现有页面需要重新检查"
   },
   "wiki": {

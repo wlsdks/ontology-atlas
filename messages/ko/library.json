@@ -187,6 +187,8 @@
     "partialOnly": "{count, number}개는 앞부분만 읽었어요",
     "import": "외부에서 가져오기",
     "importTooltip": "서비스를 고르고 연결한 뒤 이 폴더로 가져올 문서를 정해요",
+    "importedToPlanning": "가져온 문서가 기획 폴더에 들어갔어요",
+    "openPlanning": "기획에서 열기",
     "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요"
   },
   "wiki": {

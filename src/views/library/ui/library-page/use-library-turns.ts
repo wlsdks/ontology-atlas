@@ -95,7 +95,7 @@ export function useLibraryTurns({
   latestWorkVaultScopeRef, handle, nativeVaultRootPath, setSelected, latestSelectedRef,
   skipReaderFocusRef, setTurnRunning, setCompileRunning, setLintRunning, setReportUnseen, choose,
   docs, model, currentDeskListingVersion, latestDeskListingVersionRef, agent, captureAnswerRefresh,
-  receiveAnswerRefresh, knownSlugs, workActivity,
+  receiveAnswerRefresh, knownSlugs, workActivity, onImportCompleted,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   locale: string;
@@ -121,6 +121,8 @@ export function useLibraryTurns({
   currentDeskListingVersion: string;
   latestDeskListingVersionRef: RefObject<string>;
   agent: ReturnType<typeof useLibraryAgent>;
+  /** A service import turn ended with the agent's work done. */
+  onImportCompleted: () => void;
   captureAnswerRefresh: ReturnType<typeof useAnswerRefresh>["capture"];
   receiveAnswerRefresh: ReturnType<typeof useAnswerRefresh>["receive"];
   knownSlugs: Set<string>;
@@ -490,6 +492,7 @@ export function useLibraryTurns({
           }
           return;
         }
+        if (kind === "import") onImportCompleted();
         if (kind === "propose" || kind === "import") return;
         const summary =
           kind === "lint"
@@ -501,7 +504,7 @@ export function useLibraryTurns({
         }
       };
     },
-    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, latestSelectedRef, model.sources, receiveAnswerRefresh, setCompileRunning, setLibraryWorkActivity, setLintRunning, setReportUnseen, setTurnRunning, skipReaderFocusRef, workVaultScope],
+    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, latestSelectedRef, model.sources, onImportCompleted, receiveAnswerRefresh, setCompileRunning, setLibraryWorkActivity, setLintRunning, setReportUnseen, setTurnRunning, skipReaderFocusRef, workVaultScope],
   );
 
   const hasOntology = useMemo(
