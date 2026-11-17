@@ -23,7 +23,6 @@ export type Tool = 'claude-code' | 'codex';
 export type Filter = Tool | null;
 
 export const TOOL_NAMES: Record<Tool, string> = { 'claude-code': 'Claude Code', codex: 'Codex' };
-export const TOOLS: readonly Tool[] = ['claude-code', 'codex'];
 
 /** The three areas in the order of the agent's loop, each with its categories in the tab's order. */
 export const AREAS: ReadonlyArray<{ id: AreaId; groups: readonly GroupId[] }> = [
