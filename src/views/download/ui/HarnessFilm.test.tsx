@@ -42,11 +42,16 @@ describe('HarnessFilm', () => {
       "This repository's real harness",
     ]);
     const checks = facts.checks.scripts.length + facts.checks.gitHooks.length + facts.checks.workflows.length;
-    expect(
-      within(region).getByText(
-        `${facts.instructions.length} instruction files, ${facts.hooks.length} hooks, ${checks} checks.`,
-      ),
-    ).toBeVisible();
+    const terms = [...region.querySelectorAll('dl > div')].map((row) => [
+      row.querySelector('dt')?.textContent,
+      row.querySelector('dd')?.textContent,
+    ]);
+    expect(terms).toEqual([
+      ['instruction files', String(facts.instructions.length)],
+      ['hooks', String(facts.hooks.length)],
+      ['checks', String(checks)],
+    ]);
+    expect(within(region).getByText('git push --force').tagName).toBe('CODE');
   });
 
   it('under reduced motion, or narrower than the film reads, keeps the same list and draws nothing', async () => {
@@ -79,5 +84,7 @@ describe('HarnessFilm', () => {
     const region = screen.getByRole('region', { name: 'The harness at a glance' });
     expect(region).toHaveAttribute('data-gateway-harness', 'playing');
     expect(region.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
+    /* The last act's counts stay text in its caption, not only paint on the canvas. */
+    expect(region.querySelectorAll('dl dd')).toHaveLength(3);
   });
 });

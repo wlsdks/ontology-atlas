@@ -7,25 +7,28 @@ import { cn } from '@/shared/lib/cn';
 /**
  * A film's acts as a row of short bars under its caption: each fills while its act plays, and a
  * press jumps there. The fills are set by the film's own frame (`fills`), not by React state.
+ * `align="start"` lines the first bar up with a left-aligned caption above it.
  */
 export function FilmActBar({
   titles,
   label,
   fills,
   onSeek,
+  align = 'center',
   className,
 }: {
   titles: readonly string[];
   label: string;
   fills: Ref<(HTMLSpanElement | null)[]>;
   onSeek: (act: number) => void;
+  align?: 'center' | 'start';
   className?: string;
 }) {
   const setFill = (i: number) => (node: HTMLSpanElement | null) => {
     if (fills && typeof fills === 'object' && fills.current) fills.current[i] = node;
   };
   return (
-    <nav aria-label={label} className={cn('flex items-center justify-center gap-1.5', className)}>
+    <nav aria-label={label} className={cn('flex items-center gap-1.5', align === 'start' ? 'justify-start' : 'justify-center', className)}>
       {titles.map((title, i) => (
         <button
           key={title}

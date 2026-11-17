@@ -445,6 +445,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     clusteredIdsRef,
     tierRevealRef,
     growthReplayAppearRef,
+    appearRef,
     lastActiveMsRef,
     onGrowthReplayingChangeRef,
     canvasRef,

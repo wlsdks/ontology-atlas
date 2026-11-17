@@ -8,16 +8,21 @@ export interface FilmNode {
   file: string;
   kind: FilmKind;
   depth: number;
-  /** Final place on the map, in a unit disc around the root. */
+  /** How many relations touch it, so the most connected files are the ones named. */
+  degree: number;
+  /** Final place on the map: the root at the origin, the farthest concept at radius 1. */
   x: number;
   y: number;
-  /** Place among the floating files: a grid cell with a depth for parallax, all in [-1, 1]. */
+  /** The first-ring concept it sits under; the root's own index for the root. */
+  cluster: number;
+  /** Place among the floating files, a jittered cell of the stage, both in [0, 1]. */
   gx: number;
   gy: number;
-  gz: number;
+  /** Which of three drifting depth layers it floats on. */
+  layer: 0 | 1 | 2;
   /** 0..1 order of flight, outward from the centre. */
   order: number;
-  /** A stable 0..1 value per node, for the curve of its flight. */
+  /** A stable 0..1 value per node, for the side its flight bows to. */
   seed: number;
 }
 
@@ -25,7 +30,7 @@ export interface FilmEdge {
   from: number;
   to: number;
   contains: boolean;
-  /** 0..1: when the line starts drawing within the relations act. */
+  /** 0..1: when a containment line starts drawing, outward from the root. */
   reveal: number;
 }
 
@@ -34,7 +39,10 @@ export interface FilmScene {
   edges: FilmEdge[];
 }
 
-const CLUSTER_RING = 0.5;
+/** Where the first cluster sits, so the clusters never fall on a level square around the root. */
+const CLUSTER_START_ANGLE = -0.35;
+/** Columns of the floating field; rows follow from the count. */
+const FIELD_COLUMNS = 12;
 
 function hash(text: string): number {
   let h = 2166136261;
@@ -43,6 +51,11 @@ function hash(text: string): number {
     h = Math.imul(h, 16777619);
   }
   return (h >>> 0) / 4294967295;
+}
+
+/** A cluster's distance from the root: the largest sits nearest, a small one farther out. */
+export function clusterRing(leaves: number, most: number): number {
+  return 0.42 + 0.16 * (1 - Math.sqrt(leaves / Math.max(1, most)));
 }
 
 /**
@@ -89,17 +102,14 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
       visit(i, 1);
     }
   });
-  leaves[rootIndex] = (children.get(rootIndex) ?? [])
-    .filter((child) => depth[child] === 1)
-    .reduce((sum, child) => sum + leaves[child], 0) || 1;
 
   /*
-   * Like the app's map: each first-ring concept is a cluster on a circle around the root, its
-   * children ring it, and their children fan outward from them.
+   * Like the app's map: each first-ring concept is a cluster around the root, its children ring
+   * it, and their children fan outward from them, each at a slightly different reach.
    */
   const px = new Array<number>(graph.nodes.length).fill(0);
   const py = new Array<number>(graph.nodes.length).fill(0);
-  const angle = new Array<number>(graph.nodes.length).fill(0);
+  const cluster = new Array<number>(graph.nodes.length).fill(rootIndex);
   const kidsOf = (i: number) =>
     (children.get(i) ?? [])
       .filter((child) => depth[child] === depth[i] + 1)
@@ -111,9 +121,10 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
     for (const child of kids) {
       const share = (span * leaves[child]) / total;
       const a = start + share / 2;
-      angle[child] = a;
-      px[child] = px[i] + Math.cos(a) * radius;
-      py[child] = py[i] + Math.sin(a) * radius;
+      const reach = radius * (1 + (hash(graph.nodes[child].id) - 0.5) * 0.36);
+      cluster[child] = cluster[i];
+      px[child] = px[i] + Math.cos(a) * reach;
+      py[child] = py[i] + Math.sin(a) * reach;
       fan(child, a, Math.min(share, 1.9), radius * 0.48);
       start += share;
     }
@@ -121,17 +132,18 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
   const clusters = kidsOf(rootIndex);
   const most = Math.max(1, ...clusters.map((c) => leaves[c]));
   clusters.forEach((c, k) => {
-    const a = (k / clusters.length) * Math.PI * 2 - Math.PI / 2 + Math.PI / clusters.length;
-    const r = clusters.length === 1 ? 0 : CLUSTER_RING;
-    angle[c] = a;
+    const a = CLUSTER_START_ANGLE + (k / clusters.length) * Math.PI * 2;
+    const r = clusters.length === 1 ? 0 : clusterRing(leaves[c], most);
+    cluster[c] = c;
     px[c] = Math.cos(a) * r;
     py[c] = Math.sin(a) * r;
     fan(c, a, Math.PI * 2, 0.2 * Math.max(0.6, Math.sqrt(leaves[c] / most)));
   });
+  /* The farthest concept reaches radius 1, so the drawing's scale is the map's whole extent. */
+  const reach = Math.max(1e-6, ...px.map((x, i) => Math.hypot(x, py[i])));
 
   const count = graph.nodes.length;
-  const cols = Math.max(1, Math.ceil(Math.sqrt(count * 1.1)));
-  const rows = Math.max(1, Math.ceil(count / cols));
+  const rows = Math.max(1, Math.ceil(count / FIELD_COLUMNS));
   const byOrder = graph.nodes
     .map((_, i) => i)
     .sort((a, b) => depth[a] - depth[b] || Math.atan2(py[a], px[a]) - Math.atan2(py[b], px[b]));
@@ -142,19 +154,21 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
   const nodes: FilmNode[] = graph.nodes.map((node, i) => {
     const seed = hash(node.id);
     const cell = cellOf.get(i) ?? 0;
-    const col = cell % cols;
-    const row = Math.floor(cell / cols);
+    const col = cell % FIELD_COLUMNS;
+    const row = Math.floor(cell / FIELD_COLUMNS);
     return {
       id: node.id,
       label: node.label,
       file: `${node.id.split(/[/:]/).pop() ?? node.id}.md`,
       kind: node.kind as FilmKind,
       depth: depth[i],
-      x: px[i],
-      y: py[i],
-      gx: cols === 1 ? 0 : ((col + (row % 2) * 0.5) / cols) * 2 - 1 + (seed - 0.5) * 0.04,
-      gy: rows === 1 ? 0 : (row / (rows - 1)) * 2 - 1 + (hash(`${node.id}#y`) - 0.5) * (1.6 / rows),
-      gz: hash(`${node.id}#z`),
+      degree: node.fullDegree,
+      x: px[i] / reach,
+      y: py[i] / reach,
+      cluster: cluster[i],
+      gx: (col + 0.5 + (hash(`${node.id}#x`) - 0.5) * 0.7) / FIELD_COLUMNS,
+      gy: (row + 0.5 + (hash(`${node.id}#y`) - 0.5) * 0.7) / rows,
+      layer: Math.min(2, Math.floor(hash(`${node.id}#z`) * 3)) as 0 | 1 | 2,
       order: orderOf.get(i) ?? 0,
       seed,
     };
@@ -202,4 +216,32 @@ export function pickCloseUp(scene: FilmScene): FilmCloseUp | null {
     }
   });
   return best;
+}
+
+/**
+ * The files that float with their names: the opened file first, then the most connected whose
+ * name fits a card (`fits`), up to `count`.
+ */
+export function pickNamedFiles(
+  scene: FilmScene,
+  first: number | null,
+  count: number,
+  fits: (file: string) => boolean,
+): number[] {
+  const ranked = scene.nodes
+    .map((node, i) => ({ i, node }))
+    .filter(({ i, node }) => i !== first && fits(node.file))
+    .sort((a, b) => b.node.degree - a.node.degree || a.node.id.localeCompare(b.node.id))
+    .map(({ i }) => i);
+  return (first === null ? ranked : [first, ...ranked]).slice(0, count);
+}
+
+/**
+ * Whether a relation crosses between clusters, which the map draws as a curve bowed away from the
+ * root so it does not run through the hub.
+ */
+export function crossesClusters(scene: FilmScene, edge: FilmEdge): boolean {
+  const a = scene.nodes[edge.from];
+  const b = scene.nodes[edge.to];
+  return !edge.contains && a.depth > 0 && b.depth > 0 && a.cluster !== b.cluster;
 }

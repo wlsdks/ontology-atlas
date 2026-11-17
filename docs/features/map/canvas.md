@@ -266,6 +266,16 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   again. A view switch that arrives in 3D does not replay it, the first input
   settles it, and reduced motion draws the tree grown and lands every flight at
   once. At rest the tree draws no frame.
+- **Growth replay** — the play tile on the right rail shows the ontology
+  appearing in containment order: the project, then each domain followed by its
+  capabilities and their elements. It is offered on the Flat map and the 3D
+  tree, the two views that draw a concept's appear ramp; Layers, Neural and the
+  structure view do not show it. On the Flat map the replay covers every mark
+  the map is drawing, so an opened star's elements take part. The map first
+  leaves over 320 ms, then grows; a second press, Escape or a press on the
+  canvas stops it, the tile rests at once and every mark not yet shown rises
+  back together over 600 ms, so no presence cuts in or out. Reduced motion
+  ignores the tile. Model: `src/widgets/ontology-map/model/ambient/growth-replay.ts`.
 - **Neural** — the ontology as cells and dependencies. Each domain's concepts
   gather in their own cluster, sized by its member count. Clusters are packed where
   the rest pose draws them (seen from 0.85 rad above), nearest the centre first, and

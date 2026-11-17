@@ -83,28 +83,17 @@
     "eyebrow": "开源",
     "title": "全部源码都是公开的",
     "sub": "应用、MCP 服务器和 CLI 都在同一个仓库里。可以阅读、自己构建，改好了再发回来。",
-    "free": {
-      "title": "免费，也可以自己改",
-      "body": "许可证是 MIT。可以用在公司的仓库里，可以 Fork 之后修改，也可以从源码自己构建。"
-    },
-    "local": {
-      "title": "没有账号，也没有 Atlas 后端",
-      "body": "不需要登录，Atlas 也不运营任何后端。地图在你电脑上的文件夹里读写。你连接的编码智能体会另外与它自己的服务商通信。"
-    },
-    "files": {
-      "title": "记录就是普通的 Markdown",
-      "body": "一个概念就是一个 .md 文件，保存在你自己的 Git 仓库里。删掉应用，文件仍然留着。"
-    },
-    "together": {
-      "title": "一起来做",
-      "body": "问题和建议请提 Issue，修好的内容请发 Pull Request。"
+    "caption": "问题和建议请提 Issue，修好的内容请发 Pull Request。",
+    "graph": {
+      "fork": "Fork 仓库",
+      "change": "修改",
+      "merge": "发送 Pull Request"
     },
     "stars": "Star",
     "forks": "Fork",
     "license": "许可证",
     "licenseValue": "MIT",
     "readOn": "这些数字于 {date} 从 GitHub 读取。",
-    "contents": "仓库里有什么",
     "dir": {
       "app": "界面和地图渲染器",
       "desktop": "macOS 与 Windows 应用",
@@ -113,13 +102,12 @@
       "vault": "这个仓库自己的本体"
     },
     "star": "在 GitHub 上点 Star",
-    "invite": "如果觉得有用，一个 Star 能帮下一个人找到它。",
     "contribute": "贡献指南",
     "security": "安全策略",
     "issues": "Issue",
     "releases": "发布版本"
   },
-  "closingTitle": "用你自己的文件夹开始吧",
+  "closingTitle": "选一个文件夹，马上就能开始。",
   "news": "{tag} 已发布 · 更新内容",
   "numbers": {
     "label": "数字一览",
@@ -146,7 +134,7 @@
       },
       "2": {
         "title": "开头几行就是图谱",
-        "body": "domain 是它的归属，kind 是概念的类型，dependencies 是它依赖的概念。这几行就成了地图上的点和线。"
+        "body": "每个文件开头写下的几行，就成了地图上的点和线。"
       },
       "3": {
         "title": "每个文件找到自己的位置",
@@ -168,20 +156,24 @@
     "acts": {
       "1": {
         "title": "智能体最先读的指令",
-        "body": "AGENTS.md、CLAUDE.md 和规则文件：智能体动手前读的文件，集中在一个界面。"
+        "body": "AGENTS.md、CLAUDE.md、规则和技能：智能体动手前读的文件，集中在一个界面。"
       },
       "2": {
         "title": "执行前拦下的钩子",
-        "body": "无法撤销的命令在执行前就被钩子拦下。看清哪个钩子拦下什么。"
+        "body": "<code>{first}</code>、<code>{second}</code> 这类无法撤销的命令，在执行前就被钩子拦下。"
       },
       "3": {
         "title": "完成后运行的检查",
-        "body": "类型检查、Lint 和测试：智能体完成的工作由什么来验证。"
+        "body": "智能体完成的工作，由 pnpm 脚本、Git 钩子和 CI 工作流来检查。"
       },
       "4": {
-        "title": "这个仓库真实的 harness",
-        "body": "指令文件 {instructions} 个，钩子 {hooks} 个，检查 {checks} 项。"
+        "title": "这个仓库真实的 harness"
       }
+    },
+    "counts": {
+      "instructions": "指令文件",
+      "hooks": "钩子",
+      "checks": "检查"
     }
   },
   "motion": {
