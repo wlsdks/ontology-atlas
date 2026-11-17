@@ -52,7 +52,8 @@ export function HarnessConnectSource({ vaultHandle, projectSlug, docs, onConnect
       state="no-source"
       title={t('noSource')}
       body={t('noSourceBody')}
-      note={t('noSourceNote')}
+      // The note explains why nothing is read; it only applies when two or more folders are bound.
+      note={(source.view?.bindingCardinality ?? 0) > 1 ? t('noSourceNote') : undefined}
       action={<Link href="/projects/" className={cn(buttonVariants({ variant: 'primary', size: 'lg' }), TOUCH)}>{t('connectSourceAction')}</Link>}
     />;
   }
