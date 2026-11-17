@@ -1,10 +1,12 @@
 /**
- * The harness film's cast, laid out once from `harness-facts.json` (this repository's real
- * instruction files, hooks and checks). Positions are unit-free; the component scales them to its
- * stage and draws one frame per scroll position.
+ * The harness film's cast and stage geometry, laid out from `harness-facts.json` (this repository's
+ * real instruction files, hooks and checks). Every object keeps one identity across the four acts:
+ * an instruction file is a column row, then a mark in the first strip; a gate hook is a plate, then
+ * a mark in the second; a check is a cell, then a mark in the third.
  */
 
 export type InstructionKind = 'instructions' | 'rules' | 'skill' | 'agent';
+export type CheckGroup = 'scripts' | 'gitHooks' | 'workflows';
 
 export interface HarnessFacts {
   instructions: ReadonlyArray<{ path: string; kind: string }>;
@@ -15,234 +17,261 @@ export interface HarnessFacts {
   commands: ReadonlyArray<{ command: string; blockedBy: string | null }>;
 }
 
-export interface FileCard {
-  label: string;
-  kind: InstructionKind;
-  /** Root instruction files and rules: every agent reads them, so they stand nearest. */
-  near: boolean;
-  /** 0..1: when its line of light reaches the agent. */
-  order: number;
-  seed: number;
+export interface HarnessScene {
+  /** Instruction files by kind, in the order the columns stand. */
+  columns: Array<{ kind: InstructionKind; paths: string[] }>;
+  gate: string[];
+  /** `lane` is the gate plate that denies the command, or -1 when every hook lets it through. */
+  commands: Array<{ command: string; lane: number }>;
+  /** For each hook, the gate plate it was in the hook act, or -1. */
+  hookPlates: number[];
+  bands: Array<{ group: CheckGroup; names: string[] }>;
+  counts: { instructions: number; hooks: number; checks: number };
 }
 
-export interface CommandChip {
-  command: string;
-  /** The gate's hook that denies it, or null when every hook lets it through. */
-  blockedBy: string | null;
-  /** Index into `gate`: the hook plate the chip meets. */
-  lane: number;
-  /** 0..1 within the gate act: when the chip leaves the agent. */
-  launch: number;
+export const COLUMN_KINDS: readonly InstructionKind[] = ['instructions', 'rules', 'skill', 'agent'];
+const BAND_GROUPS: readonly CheckGroup[] = ['scripts', 'gitHooks', 'workflows'];
+/** Paths a column names before its files turn into blank slabs. */
+export const NAMED_PER_COLUMN = 3;
+
+function kindOf(kind: string): InstructionKind {
+  return kind === 'rules' || kind === 'skill' || kind === 'agent' ? kind : 'instructions';
 }
 
-export interface RailStation {
-  label: string;
-  group: 'hook' | 'script' | 'git-hook' | 'workflow';
+export function buildHarnessScene(facts: HarnessFacts): HarnessScene {
+  const columns = COLUMN_KINDS.map((kind) => ({
+    kind,
+    paths: facts.instructions.filter((entry) => kindOf(entry.kind) === kind).map((entry) => entry.path),
+  }));
+  const gate = [...facts.gate];
+  const commands = facts.commands.map((entry) => ({
+    command: entry.command,
+    lane: entry.blockedBy === null ? -1 : gate.indexOf(entry.blockedBy),
+  }));
+  /* Each plate becomes the first hook of its name, the one the Claude settings run. */
+  const claimed = new Set<number>();
+  const hookPlates = facts.hooks.map((hook) => {
+    const plate = gate.indexOf(hook.name);
+    if (plate < 0 || claimed.has(plate)) return -1;
+    claimed.add(plate);
+    return plate;
+  });
+  const bands = BAND_GROUPS.map((group) => ({ group, names: [...facts.checks[group]] }));
+  return {
+    columns,
+    gate,
+    commands,
+    hookPlates,
+    bands,
+    counts: {
+      instructions: facts.instructions.length,
+      hooks: facts.hooks.length,
+      checks: bands.reduce((sum, band) => sum + band.names.length, 0),
+    },
+  };
 }
 
-/** A point of the closing composition: a unit-disc offset inside its group's circle. */
-export interface Mark {
+/** How a check is called: the command a person types, or the file that runs it. */
+export function checkCall(group: CheckGroup, name: string): string {
+  if (group === 'scripts') return `pnpm ${name}`;
+  if (group === 'gitHooks') return `.githooks/${name}`;
+  return `.github/workflows/${name}`;
+}
+
+/**
+ * The path itself when it fits, otherwise its longest tail of whole segments that does; a file name
+ * that alone is too wide keeps its start and ends in an ellipsis.
+ */
+export function fitPath(path: string, room: number, width: (text: string) => number): string {
+  const parts = path.split('/');
+  for (let k = 0; k < parts.length; k += 1) {
+    const tail = parts.slice(k).join('/');
+    if (width(tail) <= room) return tail;
+  }
+  const name = parts[parts.length - 1]!;
+  for (let n = name.length - 1; n > 0; n -= 1) {
+    if (width(`${name.slice(0, n)}…`) <= room) return `${name.slice(0, n)}…`;
+  }
+  return '…';
+}
+
+export interface Box {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+export interface Rect {
   x: number;
   y: number;
-  tone: InstructionKind | 'hook' | 'guard' | 'check';
+  w: number;
+  h: number;
 }
 
-export interface HarnessScene {
-  files: FileCard[];
-  gate: string[];
-  commands: CommandChip[];
-  /** The front rail: one of each kind of check, in the order the app's Harness tab lists them. */
-  stations: RailStation[];
-  /** Every other check, split over the rails behind it. */
-  backRails: string[][];
-  counts: { instructions: number; hooks: number; checks: number };
-  finale: { instructions: Mark[]; hooks: Mark[]; checks: Mark[] };
+/** The part of the stage the film draws in: under the film's title, above the caption. */
+export function pictureZone(w: number, h: number, origin: number): Box {
+  /* The picture keeps the page column; only a column too narrow for four lists lets it run wider. */
+  const left = w - 2 * origin >= 600 ? origin : Math.max(32, (w - 960) / 2);
+  /* A shorter stage has a shorter caption gap: 300px under the picture at 900px tall, 220px at 720. */
+  const caption = Math.min(300, Math.max(220, 220 + ((h - 720) * 80) / 180));
+  return { left, right: w - left, top: 128, bottom: Math.max(128 + 240, h - caption) };
 }
 
-/** Front-rail picks, kept only when the repository really has them. */
-const STATION_SCRIPTS = ['typecheck', 'lint', 'test'];
-const STATION_GIT_HOOKS = ['pre-commit', 'commit-msg', 'pre-push'];
-const STATION_WORKFLOWS = ['checks.yml', 'e2e.yml'];
-const BACK_RAILS = 4;
-const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+export const TYPE = { label: 15, count: 34, command: 28, readout: 22 } as const;
+const PLATE_H = 44;
+const PLATE_GAP = 16;
+const SLAB_H = 10;
+const SLAB_PITCH = 16;
 
-function hash(text: string): number {
+export interface HarnessLayout {
+  zone: Box;
+  columns: Array<{ x: number; width: number; nameY: number; countY: number }>;
+  /** Every instruction file in column order, then path order. */
+  files: Array<{ column: number; row: number; rect: Rect; text: string | null }>;
+  plates: Rect[];
+  command: { x: number; y: number };
+  /** `slot` is the cell's mark in the third strip. */
+  cells: Array<{ band: number; name: string; rect: Rect; slot: number }>;
+  bandLabels: Array<{ x: number; y: number }>;
+  readoutY: number;
+  strips: Array<{ parked: Rect[]; merged: Rect[]; whole: Rect[] }>;
+}
+
+/** Where every object stands in each act, for a stage whose picture zone is `zone`. */
+export function layoutHarness(
+  scene: HarnessScene,
+  zone: Box,
+  measure: (text: string, px: number) => number,
+): HarnessLayout {
+  const zw = zone.right - zone.left;
+  const zh = zone.bottom - zone.top;
+
+  /* Act one: four columns, a header, three named paths, then one blank slab per further file. */
+  const colGap = 32;
+  const colW = (zw - colGap * (COLUMN_KINDS.length - 1)) / COLUMN_KINDS.length;
+  const columns = scene.columns.map((_, c) => ({
+    x: zone.left + c * (colW + colGap),
+    width: colW,
+    nameY: zone.top + 16,
+    countY: zone.top + 58,
+  }));
+  const pathY = (row: number) => zone.top + 92 + row * 26;
+  const slabTop = zone.top + 166;
+  const rest = Math.max(1, ...scene.columns.map((column) => column.paths.length - NAMED_PER_COLUMN));
+  const fitRows = Math.max(3, Math.floor((zone.bottom - slabTop) / SLAB_PITCH));
+  const perRow = Math.ceil(rest / fitRows);
+  const slabCell = colW / perRow;
+  const files: HarnessLayout['files'] = [];
+  scene.columns.forEach((column, c) => {
+    const x = columns[c]!.x;
+    /* A column's named paths drop the same leading folders, so they line up as one list. */
+    const named = column.paths.slice(0, NAMED_PER_COLUMN);
+    const drop = Math.max(0, ...named.map((path) => path.split('/').length - fitPath(path, colW, (t) => measure(t, TYPE.label)).split('/').length));
+    column.paths.forEach((path, row) => {
+      if (row < NAMED_PER_COLUMN) {
+        const text = fitPath(path.split('/').slice(Math.min(drop, path.split('/').length - 1)).join('/'), colW, (t) => measure(t, TYPE.label));
+        const y = pathY(row);
+        files.push({ column: c, row, text, rect: { x, y: y - 11, w: measure(text, TYPE.label), h: 15 } });
+        return;
+      }
+      const k = row - NAMED_PER_COLUMN;
+      const share = 0.45 + 0.45 * spread(path);
+      files.push({
+        column: c,
+        row,
+        text: null,
+        rect: { x: x + (k % perRow) * slabCell, y: slabTop + Math.floor(k / perRow) * SLAB_PITCH, w: (slabCell - 8) * share, h: SLAB_H },
+      });
+    });
+  });
+
+  /* Act two: the command line on the left, the gate's plates standing on the right. */
+  const command = { x: zone.left, y: zone.top + zh * 0.56 };
+  const longest = Math.max(0, ...scene.gate.map((name) => measure(name, TYPE.label)));
+  const plateW = Math.min(360, Math.max(longest + 72, zw * 0.34));
+  const plates = scene.gate.map((_, k) => ({
+    x: zone.right - plateW,
+    y: command.y - PLATE_H / 2 + (k - (scene.gate.length - 1) / 2) * (PLATE_H + PLATE_GAP),
+    w: plateW,
+    h: PLATE_H,
+  }));
+
+  /*
+   * The strips: one mark per thing, the widest strip spanning the picture. They wait in a thin line
+   * at the top of the picture (`parked`), meet in a stack just above the checks' first row
+   * (`merged`), then the stack settles in the middle (`whole`). Parked above the checks, the first
+   * two never cross a cell on their way into the stack.
+   */
+  const counts = [scene.counts.instructions, scene.counts.hooks, scene.counts.checks];
+  const markPitch = Math.min(18, zw / Math.max(...counts));
+  const markW = Math.max(3, markPitch - 4);
+
+  /* Act three: one band per kind of check, 32 cells to a row, under where the stack meets. */
+  const perLine = 32;
+  const pitch = Math.min(32.5, zw / perLine);
+  const bandRows = scene.bands.map((band) => Math.max(1, Math.ceil(band.names.length / perLine)));
+  const nominal = { size: 20, rowGap: 10, label: 28, bandGap: 22, readout: 52, strip: 40, stripGap: 24, park: 24 };
+  const need = (m: typeof nominal) =>
+    m.park + 2 * (m.strip + m.stripGap) + (m.strip - m.size) / 2 +
+    bandRows.reduce((sum, rows) => sum + m.label + rows * (m.size + m.rowGap) + m.bandGap, 0) - m.bandGap - m.rowGap + m.readout;
+  /* A short stage shrinks the spacing, never the type. */
+  const squeeze = Math.min(1, zh / need(nominal));
+  const m = {
+    size: Math.min(pitch - 8, nominal.size * squeeze),
+    rowGap: nominal.rowGap * squeeze,
+    label: Math.max(22, nominal.label * squeeze),
+    bandGap: nominal.bandGap * squeeze,
+    readout: Math.max(36, nominal.readout * squeeze),
+    strip: Math.max(16, nominal.strip * squeeze),
+    stripGap: nominal.stripGap * squeeze,
+    park: nominal.park * squeeze,
+  };
+  const mergeTop = zone.top + m.park;
+  const firstRow = mergeTop + 2 * (m.strip + m.stripGap) + (m.strip - m.size) / 2;
+  let y = firstRow - m.label;
+  const cells: HarnessLayout['cells'] = [];
+  const bandLabels: HarnessLayout['bandLabels'] = [];
+  let slot = 0;
+  scene.bands.forEach((band, b) => {
+    bandLabels.push({ x: zone.left, y: y + 15 });
+    y += m.label;
+    const rows = bandRows[b]!;
+    band.names.forEach((name, k) => {
+      const row = Math.floor(k / perLine);
+      const column = k % perLine;
+      cells.push({
+        band: b,
+        name: checkCall(band.group, name),
+        rect: { x: zone.left + column * pitch, y: y + row * (m.size + m.rowGap), w: m.size, h: m.size },
+        /* Rows zip together column by column, so no cell crosses another on its way into the strip. */
+        slot: slot + column * rows + row,
+      });
+    });
+    slot += band.names.length;
+    y += rows * (m.size + m.rowGap) - m.rowGap + m.bandGap;
+  });
+  const readoutY = y - m.bandGap + m.readout - 10;
+
+  const stackH = 3 * m.strip + 2 * m.stripGap;
+  const wholeTop = Math.max(mergeTop, zone.top + (zh - stackH) / 2);
+  const row = (count: number, top: number, h: number) =>
+    Array.from({ length: count }, (_, i) => ({ x: zone.left + i * markPitch, y: top, w: markW, h }));
+  const strips = counts.map((count, s) => ({
+    parked: row(count, zone.top + s * 9, 4),
+    merged: row(count, mergeTop + s * (m.strip + m.stripGap), m.strip),
+    whole: row(count, wholeTop + s * (m.strip + m.stripGap), m.strip),
+  }));
+
+  return { zone, columns, files, plates, command, cells, bandLabels, readoutY, strips };
+}
+
+/** A stable 0..1 per name, so a slab keeps its length from frame to frame. */
+function spread(text: string): number {
   let h = 2166136261;
   for (let i = 0; i < text.length; i += 1) {
     h ^= text.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
   return (h >>> 0) / 4294967295;
-}
-
-function kindOf(kind: string): InstructionKind {
-  return kind === 'rules' || kind === 'skill' || kind === 'agent' ? kind : 'instructions';
-}
-
-/** A sunflower disc: evenly spread, no grid lines, calm at any count. */
-function disc(count: number): Array<{ x: number; y: number }> {
-  return Array.from({ length: count }, (_, i) => {
-    const r = Math.sqrt((i + 0.5) / Math.max(1, count));
-    return { x: Math.cos(i * GOLDEN) * r, y: Math.sin(i * GOLDEN) * r };
-  });
-}
-
-/** Files in the order they reach the agent: root instruction files first, then rules, skills, agents. */
-function layoutFiles(facts: HarnessFacts): FileCard[] {
-  const rank = (kind: InstructionKind) => (kind === 'instructions' ? 0 : kind === 'rules' ? 1 : kind === 'skill' ? 2 : 3);
-  const files = facts.instructions.map((entry) => ({ label: entry.path, kind: kindOf(entry.kind), seed: hash(entry.path) }));
-  files.sort((a, b) => rank(a.kind) - rank(b.kind) || a.label.localeCompare(b.label));
-  return files.map((file, k) => ({ ...file, near: file.kind === 'instructions' || file.kind === 'rules', order: k / Math.max(1, files.length - 1) }));
-}
-
-export interface ReadingSpot {
-  x: number;
-  y: number;
-  /** Font size of the card's name. */
-  px: number;
-  /** 1 nearest; farther rows are smaller, dimmer and drift slower. */
-  depth: number;
-  /** Row index from the centre outward, for each row's own drift. */
-  row: number;
-}
-
-/**
- * The reading field: rows of named cards like a title card's credits. The files every agent reads
- * stand in the rows nearest the agent, the rest in rows beyond; no two cards of a row overlap, and
- * rows near the agent leave a gap where it stands.
- */
-export function layoutReading(
-  files: readonly FileCard[],
-  measure: (text: string, px: number) => number,
-  w: number,
-  h: number,
-): ReadingSpot[] {
-  const cx = w / 2;
-  const cy = h * 0.4;
-  const left = w * 0.05;
-  const right = w * 0.95;
-  const hole = 64;
-  const pad = 30;
-  const space = 24;
-  const small = w < 1200;
-  const layers = [
-    { indices: files.flatMap((file, i) => (file.near ? [i] : [])), px: small ? 12 : 13, depth: 1 },
-    { indices: files.flatMap((file, i) => (file.near ? [] : [i])), px: small ? 10 : 11, depth: 0.6 },
-  ].map((layer) => {
-    const widths = layer.indices.map((i) => measure(files[i]!.label, layer.px) + pad);
-    const total = widths.reduce((sum, width) => sum + width + space, 0);
-    return { ...layer, widths, count: layer.indices.length ? Math.max(1, Math.ceil((total * 1.2) / (right - left - hole * 2))) : 0 };
-  });
-  /* Rows share the band between the page's bar and the captions, no closer than a card's height. */
-  const rowsTotal = layers.reduce((sum, layer) => sum + layer.count, 0);
-  const reach = Math.min(cy - 76, h * 0.74 - cy);
-  const rowGap = Math.max(28, Math.min(46, (2 * reach) / Math.max(1, rowsTotal)));
-  const spots = new Array<ReadingSpot>(files.length);
-  let rowsUsed = 0;
-
-  for (const { indices, px, depth, widths, count } of layers) {
-    const rows = Array.from({ length: count }, (_, k) => {
-      const ring = rowsUsed + k;
-      const offset = (Math.floor(ring / 2) + 0.5) * rowGap * (ring % 2 === 0 ? -1 : 1);
-      const split = Math.abs(offset) < 30;
-      const segments = split ? [[left, cx - hole], [cx + hole, right]] : [[left, right]];
-      const room = segments.reduce((sum, [a, b]) => sum + b! - a!, 0);
-      return { ring, y: cy + offset, segments, room, items: [] as number[], used: 0 };
-    });
-    rowsUsed += count;
-    /* Each card to the row with the most room left: rows fill evenly. */
-    indices.forEach((_, k) => {
-      const row = rows.reduce((best, next) => (next.room - next.used > best.room - best.used ? next : best));
-      row.items.push(k);
-      row.used += widths[k]! + space;
-    });
-    for (const row of rows) {
-      /* Fill each segment in order while its cards fit; the last takes the rest. */
-      let cursor = 0;
-      row.segments.forEach(([a, b], s) => {
-        const mine: number[] = [];
-        let used = 0;
-        while (cursor < row.items.length) {
-          const next = widths[row.items[cursor]!]! + space;
-          if (s < row.segments.length - 1 && mine.length > 0 && used + next > b! - a!) break;
-          mine.push(row.items[cursor]!);
-          used += next;
-          cursor += 1;
-        }
-        const filled = mine.reduce((sum, k) => sum + widths[k]!, 0);
-        const step = Math.max(0, b! - a! - filled) / (mine.length + 1);
-        let x = a!;
-        mine.forEach((k, n) => {
-          const inner = n > 0 && n < mine.length - 1;
-          const jitter = inner ? (files[indices[k]!]!.seed - 0.5) * step * 0.5 : 0;
-          x += step;
-          spots[indices[k]!] = { x: x + widths[k]! / 2 + jitter, y: row.y, px, depth, row: row.ring };
-          x += widths[k]!;
-        });
-      });
-    }
-  }
-  return spots;
-}
-
-export function buildHarnessScene(facts: HarnessFacts): HarnessScene {
-  const gate = [...facts.gate];
-  const lanes = Math.max(1, gate.length);
-  /* A command the hooks allow takes the lane left alone longest, so it never meets a chip still there. */
-  const lastUse = new Array<number>(lanes).fill(-Infinity);
-  const commands = facts.commands.map((entry, i) => {
-    const blocked = entry.blockedBy === null ? -1 : gate.indexOf(entry.blockedBy);
-    let lane = blocked;
-    if (lane < 0) {
-      /* Nor the lane the next denied command is about to hit. */
-      const next = facts.commands[i + 1];
-      const nextLane = next?.blockedBy ? gate.indexOf(next.blockedBy) : -1;
-      lane = lastUse
-        .map((used, k) => ({ k, cost: used + (k === nextLane ? lanes + 1 : 0) }))
-        .reduce((best, other) => (other.cost < best.cost ? other : best)).k;
-    }
-    lastUse[lane] = i;
-    return {
-      command: entry.command,
-      blockedBy: blocked >= 0 ? entry.blockedBy : null,
-      lane,
-      launch: facts.commands.length <= 1 ? 0 : (i / (facts.commands.length - 1)) * 0.68,
-    };
-  });
-
-  const scripts = facts.checks.scripts;
-  const gitHooks = facts.checks.gitHooks;
-  const workflows = facts.checks.workflows;
-  const verificationHooks = [
-    ...new Set(facts.hooks.filter((hook) => hook.step === 'verification').map((hook) => hook.name)),
-  ];
-  const stations: RailStation[] = [
-    ...verificationHooks.map((label) => ({ label, group: 'hook' as const })),
-    ...STATION_SCRIPTS.filter((name) => scripts.includes(name)).map((label) => ({ label, group: 'script' as const })),
-    ...STATION_GIT_HOOKS.filter((name) => gitHooks.includes(name)).map((label) => ({ label, group: 'git-hook' as const })),
-    ...STATION_WORKFLOWS.filter((name) => workflows.includes(name)).map((label) => ({ label, group: 'workflow' as const })),
-  ];
-  const onFront = new Set(stations.map((station) => station.label));
-  const rest = [...scripts, ...gitHooks, ...workflows].filter((name) => !onFront.has(name));
-  const backRails = Array.from({ length: BACK_RAILS }, (_, k) => rest.filter((_, i) => i % BACK_RAILS === k));
-
-  const checkCount = scripts.length + gitHooks.length + workflows.length;
-  const files = layoutFiles(facts);
-  const byKind = [...files].sort((a, b) => a.order - b.order);
-  return {
-    files,
-    gate,
-    commands,
-    stations,
-    backRails,
-    counts: { instructions: facts.instructions.length, hooks: facts.hooks.length, checks: checkCount },
-    finale: {
-      instructions: disc(byKind.length).map((at, i) => ({ ...at, tone: byKind[i]!.kind })),
-      hooks: facts.hooks.map((hook, i) => {
-        const a = (i / Math.max(1, facts.hooks.length)) * Math.PI * 2 - Math.PI / 2;
-        return { x: Math.cos(a), y: Math.sin(a), tone: hook.step === 'guardrails' ? 'guard' : 'hook' };
-      }),
-      checks: disc(checkCount).map((at) => ({ ...at, tone: 'check' as const })),
-    },
-  };
 }

@@ -53,15 +53,11 @@ function trackedPort(): HarnessScanPort {
   };
 }
 
-/** Commands the film sends at the gate. Whether each passes is decided below by the hooks themselves. */
+/** Commands the film types at the gate. Whether each passes is decided below by the hooks themselves. */
 const COMMANDS = [
   'git status',
-  'pnpm typecheck',
-  'git commit -m "fix: tidy"',
   'git push --force',
   'pnpm test',
-  'git reset --hard',
-  'git push origin fix/tidy',
   'npm publish',
   'gh pr merge 42',
 ] as const;

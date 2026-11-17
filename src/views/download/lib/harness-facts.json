@@ -372,27 +372,11 @@
       "blockedBy": null
     },
     {
-      "command": "pnpm typecheck",
-      "blockedBy": null
-    },
-    {
-      "command": "git commit -m \"fix: tidy\"",
-      "blockedBy": null
-    },
-    {
       "command": "git push --force",
       "blockedBy": "block-unsafe-git"
     },
     {
       "command": "pnpm test",
-      "blockedBy": null
-    },
-    {
-      "command": "git reset --hard",
-      "blockedBy": "block-unsafe-git"
-    },
-    {
-      "command": "git push origin fix/tidy",
       "blockedBy": null
     },
     {

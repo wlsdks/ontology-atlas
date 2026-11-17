@@ -267,9 +267,10 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     downloadCopy.screens.title,
     downloadCopy.start?.title,
     // The honesty facts: the trust line carries the Apple malware check (notarisation), and
-    // the open-source section is the one place that says there is no Atlas backend.
+    // the FAQ's privacy answer is the one place that says there is no Atlas backend.
     downloadCopy.trustLine,
-    downloadCopy.source?.local?.title,
+    downloadCopy.source?.title,
+    downloadCopy.faq?.items?.privacy?.a,
   ]);
   // A deploy can legitimately sit on either side of the release-facts commit:
   // published offers the real file, pending offers the browser map instead.

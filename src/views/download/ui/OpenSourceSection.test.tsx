@@ -46,4 +46,13 @@ describe('the open-source section points at this repository as it is', () => {
     expect(within(section).getByTestId('gateway-source-forks')).toHaveTextContent(count.format(REPO_FACTS.forks));
     expect(section).toHaveTextContent(new RegExp(`\\b${day}, ${year}`));
   });
+
+  it('names the three steps of a contribution as text, beside a drawing that says nothing alone', () => {
+    const graph = within(renderSection()).getByTestId('gateway-source-graph');
+    const steps = enMessages.download.source.graph;
+
+    expect(graph.querySelector('svg')).toHaveAttribute('aria-hidden');
+    for (const label of [steps.fork, steps.change, steps.merge]) expect(graph).toHaveTextContent(label);
+    expect(graph).toHaveTextContent(enMessages.download.source.caption);
+  });
 });

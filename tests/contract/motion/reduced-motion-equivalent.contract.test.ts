@@ -56,10 +56,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-focus":
     "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-constellation-node":
-    "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
-  "gateway-constellation-pulse":
-    "Decoration in the download page's closing scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The marks and lines then stand still; the light points stay hidden.",
   "gateway-step-spark":
     "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the numbers carry the order.",
   "gateway-step-lit":

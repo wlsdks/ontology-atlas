@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildFilmScene, pickCloseUp } from './film-scene';
+import { buildFilmScene, clusterRing, crossesClusters, pickCloseUp, pickNamedFiles } from './film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>
@@ -37,7 +37,7 @@ describe('buildFilmScene', () => {
   it('places every concept, including a containment cycle, at a finite point', () => {
     expect(scene.nodes).toHaveLength(graph.nodes.length);
     for (const n of scene.nodes) {
-      for (const v of [n.x, n.y, n.gx, n.gy, n.gz, n.order]) expect(Number.isFinite(v)).toBe(true);
+      for (const v of [n.x, n.y, n.gx, n.gy, n.order]) expect(Number.isFinite(v)).toBe(true);
     }
   });
 
@@ -46,6 +46,26 @@ describe('buildFilmScene', () => {
     const near = Math.hypot(at('capability:a1').x - at('domain:a').x, at('capability:a1').y - at('domain:a').y);
     const far = Math.hypot(at('capability:a1').x - at('domain:b').x, at('capability:a1').y - at('domain:b').y);
     expect(near).toBeLessThan(far);
+  });
+
+  it('scales the map so its farthest concept reaches radius 1 and the field stays on the stage', () => {
+    const reach = Math.max(...scene.nodes.map((n) => Math.hypot(n.x, n.y)));
+    expect(reach).toBeCloseTo(1, 6);
+    expect(scene.nodes.every((n) => n.gx >= 0 && n.gx <= 1 && n.gy >= 0 && n.gy <= 1)).toBe(true);
+  });
+
+  it('sets the largest cluster nearest the root and a smaller one farther out', () => {
+    expect(clusterRing(10, 10)).toBeCloseTo(0.42);
+    expect(clusterRing(1, 10)).toBeGreaterThan(clusterRing(5, 10));
+    expect(clusterRing(0, 10)).toBeCloseTo(0.58);
+  });
+
+  it('bows only relations between two clusters, never a containment line', () => {
+    const index = (id: string) => scene.nodes.findIndex((n) => n.id === id);
+    const across = scene.edges.find((e) => e.from === index('capability:a1') && e.to === index('capability:b1'))!;
+    const within = scene.edges.find((e) => e.from === index('capability:a1') && e.to === index('element:x'))!;
+    expect(crossesClusters(scene, across)).toBe(true);
+    expect(crossesClusters(scene, within)).toBe(false);
   });
 
   it('names each file after the last part of its id and keeps every relation', () => {
@@ -66,6 +86,22 @@ describe('pickCloseUp', () => {
     expect(pick && scene.nodes[pick.index].id).toBe('c');
     expect(pick && scene.nodes[pick.parent].id).toBe('d');
     expect(pick?.dependencies.map((i) => scene.nodes[i].id)).toEqual(['e']);
+  });
+
+  it('names the opened file first, then the most connected files whose names fit', () => {
+    const ranked: StageGraph = {
+      nodes: [
+        { ...node('p', 'project'), fullDegree: 1 },
+        { ...node('busy', 'domain'), fullDegree: 9 },
+        { ...node('a-very-long-name', 'domain'), fullDegree: 8 },
+        { ...node('quiet', 'capability'), fullDegree: 2 },
+      ],
+      edges: [],
+    };
+    const scene = buildFilmScene(ranked);
+    const fits = (file: string) => file.length <= 10;
+    const named = pickNamedFiles(scene, 3, 3, fits).map((i) => scene.nodes[i].id);
+    expect(named).toEqual(['quiet', 'busy', 'p']);
   });
 
   it('opens nothing when no capability declares a dependency', () => {
