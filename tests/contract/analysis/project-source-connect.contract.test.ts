@@ -12,7 +12,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { underCollation } from "../../helpers/under-collation";
-import { deriveProjectSourceWitnesses } from "../../../src/views/home/lib/project-source/project-source-witnesses";
+import { deriveProjectSourceWitnesses } from "../../../src/features/project-source-binding/lib/project-source-witnesses";
 import { deriveProjectSourceWitnessesFromDocs } from "../../../mcp/src/project-source/project-source-witnesses.mjs";
 import { extractProjectMeaningEvidencePaths as extractMcpMeaningEvidence } from "../../../mcp/src/project-meaning/project-meaning-evidence.mjs";
 import { buildProjectSourceReceipt } from "../../../src/shared/lib/project-source/project-source-receipt";
