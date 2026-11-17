@@ -46,3 +46,29 @@ test('a destination shortcut crossfades the pane to another screen', async ({ pa
 
   expect(crossfaded, 'the pane crossfades from Library to Agents').toBe(true);
 });
+
+// WebKit stops painting the sticky header and composited children of a scroll container in the
+// frame it is named for capture, so the captured box must be one that does not scroll.
+test('the route crossfade captures a box that does not scroll', async ({ page }) => {
+  await page.addInitScript(() => {
+    const start = document.startViewTransition?.bind(document);
+    if (!start) return;
+    const target = window as unknown as { __capturedOverflow: string[] };
+    target.__capturedOverflow = [];
+    document.startViewTransition = ((update: () => Promise<void> | void) => {
+      for (const element of document.querySelectorAll('body *')) {
+        const style = getComputedStyle(element);
+        if (style.getPropertyValue('view-transition-name') === 'app-pane') target.__capturedOverflow.push(style.overflowY);
+      }
+      return start(update);
+    }) as typeof document.startViewTransition;
+  });
+  await page.goto('/en/agents/?guides=off');
+  const library = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link', { name: 'Library', exact: true });
+
+  await library.click();
+  await expect(page).toHaveURL(/\/en\/library\//);
+
+  const captured = await page.evaluate(() => (window as unknown as { __capturedOverflow?: string[] }).__capturedOverflow ?? []);
+  expect(captured, 'one box is named for the crossfade and it is not a scroll container').toEqual(['visible']);
+});
