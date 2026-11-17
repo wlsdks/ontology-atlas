@@ -474,7 +474,7 @@ function ClosingSection({
           <div className="min-w-0">
             <h2
               id="gateway-closing-title"
-              className="max-w-full [text-wrap:balance] text-monument leading-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+              className="max-w-full break-keep pb-[0.08em] [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
             >
               {t('closingTitle')}
             </h2>

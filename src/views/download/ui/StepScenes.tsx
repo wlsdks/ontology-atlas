@@ -307,18 +307,19 @@ function Switch({ on, flips = false }: { on: boolean; flips?: boolean }) {
       {on ? (
         <span {...(flips ? beat('show', 240) : {})} className="absolute -inset-px rounded-full bg-[color:var(--color-indigo-accent)]" />
       ) : null}
-      {/* The knob is grey off; on, its dark face fades in with the track as it slides across. */}
+      {/* The knob is grey off and dark on, so it always contrasts with its track; while it slides
+          across, the grey face fades off it. */}
       <span
         {...(flips ? beat('knob', 240) : {})}
         className={cn(
-          'absolute top-[1px] size-3.5 rounded-full bg-[color:var(--color-text-tertiary)]',
-          on ? 'right-[1px]' : 'left-[1px]',
+          'absolute top-[1px] size-3.5 rounded-full',
+          on ? 'right-[1px] bg-[color:var(--color-text-on-accent)]' : 'left-[1px] bg-[color:var(--color-text-tertiary)]',
         )}
       >
-        {on ? (
+        {on && flips ? (
           <span
-            {...(flips ? beat('show', 240) : {})}
-            className="absolute inset-0 rounded-full bg-[color:var(--color-text-on-accent)]"
+            {...beat('hide', 240)}
+            className="absolute inset-0 rounded-full bg-[color:var(--color-text-tertiary)] opacity-0"
           />
         ) : null}
       </span>
