@@ -127,53 +127,80 @@
   "film": {
     "label": "How Markdown becomes the map",
     "actsLabel": "Jump to a scene",
+    "regionCount": "{count, plural, one {# concept} other {# concepts}}",
     "acts": {
       "1": {
-        "title": "Your ontology is plain Markdown",
-        "body": "One concept is one .md file."
+        "title": "One concept is one .md file",
+        "body": "Your ontology is plain Markdown files in your repository."
       },
       "2": {
-        "title": "The first lines are the graph",
+        "title": "Its top lines become points and lines",
         "body": "The few lines at the top of each file become the map's points and lines."
       },
       "3": {
-        "title": "Each file finds its place",
-        "body": "Every concept settles beside the concept that holds it."
+        "title": "Files take their places and connect",
+        "body": "Every concept settles beside the concept that holds it, and the {relations} relations written in the files become lines."
       },
       "4": {
-        "title": "Relations draw themselves",
-        "body": "The {relations} relations written in the files become lines."
-      },
-      "5": {
         "title": "One map, read by you and your agents",
+        "caption": "{concepts} concepts · {relations} relations",
         "body": "This repository's real map: {concepts} concepts and {relations} relations."
       }
     }
   },
   "harnessFilm": {
-    "label": "The harness at a glance",
+    "label": "The Harness tab: your repository's agent setup",
+    "example": "Example repository",
     "actsLabel": "Jump to a scene",
     "acts": {
       "1": {
-        "title": "What your agent reads first",
-        "body": "The {instructions} files it reads before a task, on one screen."
+        "title": "One scan gathers your agent setup",
+        "body": "One read collects CLAUDE.md, AGENTS.md, rules, skills, subagents, hooks, scripts and CI workflows, and sorts them into what the agent reads, what stops it before it acts and what checks its work afterwards."
       },
       "2": {
-        "title": "What stops it before it acts",
-        "body": "Hooks stop commands like <code>{first}</code> before they run."
+        "title": "Filter by agent tool",
+        "body": "Pick one tool the scan found, such as Claude Code or Codex, and every list and count narrows to the files that tool reads."
       },
       "3": {
-        "title": "What checks its work",
-        "body": "Scripts, Git hooks and CI workflows check the finished work."
+        "title": "It finds a missing hook script",
+        "body": "A hook script a config names but the disk lacks, or an AGENTS.md over Codex's default 32 KiB limit, shows as one line that takes you to the place to fix."
       },
       "4": {
-        "title": "This repository's real harness"
+        "title": "Tags Claude and Codex copies that differ",
+        "caption": "The Harness tab. Read-only.",
+        "body": "A skill or subagent whose Claude Code and Codex copies differ is tagged, and both copies are shown side by side. Atlas only reads the repository."
       }
     },
-    "counts": {
-      "instructions": "instruction files",
-      "hooks": "hooks",
-      "checks": "checks"
+    "screen": {
+      "title": "Harness",
+      "views": {
+        "overview": "Setup",
+        "architecture": "Architecture"
+      },
+      "toolAll": "All",
+      "sections": {
+        "context": {
+          "title": "Context",
+          "caption": "Files the agent reads"
+        },
+        "guardrails": {
+          "title": "Guardrails",
+          "caption": "What stops an action before it runs"
+        },
+        "verification": {
+          "title": "Verification",
+          "caption": "What checks the work afterwards"
+        }
+      },
+      "sectionTotal": "{count, plural, one {# item} other {# items}}",
+      "problemCount": "{count, plural, one {# problem} other {# problems}}",
+      "problemHookMissing": "Hook script is missing: {path}",
+      "problemShow": "{count, plural, =1 {Show} other {Show the first}}",
+      "hookMissing": "Script missing",
+      "hookWired": "Wired",
+      "differsFromCodex": "Differs from Codex copy",
+      "differsFromClaude": "Differs from Claude Code copy",
+      "detailReadBy": "Read by"
     }
   },
   "motion": {
@@ -184,34 +211,30 @@
     "eyebrow": "Questions",
     "title": "Before you install",
     "items": {
-      "what": {
-        "q": "What is Ontology Atlas?",
-        "a": "An open-source app that keeps a map of what your code does and why, as Markdown files in your repository. You and your coding agents read the same map."
-      },
-      "agents": {
-        "q": "Which coding agents work with it?",
-        "a": "Claude Code, Codex, Cursor and Antigravity read the map over MCP. In the desktop app, Claude Code and Codex connect with one button each."
-      },
       "privacy": {
         "q": "Does my code leave my computer?",
         "a": "Atlas has no account and no backend of its own. The map is read and written in a folder on your computer. A coding agent you connect talks to its own provider, as it already does."
       },
-      "price": {
-        "q": "Is it free?",
-        "a": "Yes. It is MIT licensed: use it at work, fork it, or build it from source."
-      },
       "difference": {
         "q": "How is it different from a code graph or a code search index?",
         "a": "Those are computed from the code. Atlas records what the code is for and why, which the code alone cannot say, and you review every change to that record as a Markdown diff. A line on the map is a declared relationship, not proof of runtime impact."
-      },
-      "platforms": {
-        "q": "What does it run on?",
-        "a": "macOS on Apple Silicon, notarized (Apple scanned it for malware), and a Windows x64 beta. The map also opens in the browser without installing anything."
       }
+    },
+    "diagram": {
+      "computer": "Your computer",
+      "folder": "Repository folder",
+      "app": "Atlas app",
+      "agent": "Coding agent",
+      "readsWrites": "reads and writes",
+      "mcp": "MCP",
+      "traffic": "the agent's own traffic",
+      "provider": "Agent's provider",
+      "noBackend": "No Atlas backend"
     }
   },
   "playground": {
-    "open": "Play with Moru",
+    "entryIntro": "I'm Moru, Atlas's little friend.",
+    "entryAction": "Play a mini game with me",
     "title": "Play with Moru",
     "close": "Close",
     "howTo": "Move Moru with the arrow keys, your mouse or a finger to catch the falling notes, hearts and stars.",

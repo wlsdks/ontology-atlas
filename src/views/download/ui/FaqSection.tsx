@@ -1,15 +1,11 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useId, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
-import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
-import { useViewportBelow } from '@/shared/lib/use-viewport-below';
-import { isMotionPaused, useMotionPaused } from '@/shared/motion/motion-pause';
 import { MOTION, MOTION_EASE } from '@/shared/motion/tokens';
-import { TabBar } from '@/shared/ui/controls/tab-bar';
 
 import { usePlayOnce } from '../lib/use-play-once';
 import { FAQ_KEYS, splitAnswer } from '../model/faq';
@@ -18,37 +14,22 @@ import { SectionIntro } from './SectionIntro';
 const EASE = `cubic-bezier(${MOTION_EASE.join(', ')})`;
 const RISE_MS = MOTION.slow.duration * 1000;
 const RISE_PX = 8;
-/** How long one answer stays before the next takes its place, while nobody is reading by hand. */
-const ADVANCE_MS = 6000;
-/** The leaving answer's fade, shorter than the 240ms arrival (`gateway.css`). */
-const LEAVE_MS = MOTION.fast.duration * 1000;
-/** From this width the questions pick and one answer shows beside them. */
-const PICKER_FROM_PX = 1024;
 
-function prefersReducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-type Item = { key: (typeof FAQ_KEYS)[number]; question: string; answer: string };
+const ROW =
+  'grid min-w-0 gap-x-12 gap-y-6 border-t border-[color:var(--color-divider)] py-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]';
+const QUESTION =
+  'min-w-0 text-display leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]';
 
 /**
- * Short answers to what a first-time visitor asks before installing. From 1024px the questions are
- * a list to pick from on the left and the picked answer is shown large on the right; it moves on by
- * itself every six seconds while in view, not under the pointer or focus, until a person picks. Narrower, under reduced motion, without a
- * script, or before the script arrives, every question stands over its answer. Every answer is in the page in both
- * layouts, in the same words as the route's FAQPage markup.
+ * The two questions the sections above leave open, in the row grammar the page's lists use: the
+ * question on the left and its answer on the right. Whether code leaves the computer is answered
+ * in words on the left and drawn on the right, so the boundary is seen, not only read. Every answer
+ * is in the page whole, in the words of the route's FAQPage markup.
  */
 export function FaqSection() {
   const t = useTranslations('download.faq');
-  const items: Item[] = FAQ_KEYS.map((key) => ({ key, question: t(`items.${key}.q`), answer: t(`items.${key}.a`) }));
-  const narrow = useViewportBelow(PICKER_FROM_PX);
-  /* Only after hydration, so the server's full list and the first client paint agree. */
-  const [pickable, setPickable] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setPickable(!prefersReducedMotion()));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
+  const list = usePlayOnce<HTMLUListElement>(rowsEntrance);
+  const [privacy, difference] = FAQ_KEYS;
   return (
     <section
       id="faq"
@@ -57,42 +38,43 @@ export function FaqSection() {
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} quiet />
-        {pickable && !narrow ? <FaqPicker items={items} label={t('title')} /> : <FaqList items={items} />}
+        <ul ref={list} data-testid="gateway-faq-list" className="mt-8 flex min-w-0 flex-col">
+          <li data-testid="gateway-faq-row" data-faq-key={privacy} className={cn(ROW, 'lg:items-center')}>
+            <div className="min-w-0">
+              <h3 className={QUESTION}>{t(`items.${privacy}.q`)}</h3>
+              <Answer answer={t(`items.${privacy}.a`)} className="mt-3" />
+            </div>
+            <PrivacyDrawing />
+          </li>
+          <li data-testid="gateway-faq-row" data-faq-key={difference} className={ROW}>
+            <h3 className={QUESTION}>{t(`items.${difference}.q`)}</h3>
+            <Answer answer={t(`items.${difference}.a`)} />
+          </li>
+        </ul>
       </div>
     </section>
   );
 }
 
-/**
- * The answer's first sentence in full ink and the rest a step quieter. Large, beside the picked
- * question, the first sentence stands on its own line; in the list the two run on in one paragraph.
- */
-function Answer({ answer, large = false }: { answer: string; large?: boolean }) {
+/** The answer's first sentence in full ink and the rest a step quieter, as one paragraph. */
+function Answer({ answer, className }: { answer: string; className?: string }) {
   const { lead, gap, rest } = splitAnswer(answer);
-  if (!large) {
-    return (
-      <p className="min-w-0 max-w-[36rem] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-        <span className="text-[color:var(--color-text-primary)]">{lead}</span>
-        {gap}
-        {rest}
-      </p>
-    );
-  }
   return (
-    <p className="min-w-0 max-w-[36rem]">
-      <span className="block text-display leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
-        {lead}
-      </span>
+    <p
+      className={cn(
+        'min-w-0 max-w-[38rem] text-reading leading-prose text-[color:var(--color-text-secondary)]',
+        className,
+      )}
+    >
+      <span className="text-[color:var(--color-text-primary)]">{lead}</span>
       {gap}
-      {rest ? (
-        <span className="mt-4 block text-reading leading-prose text-[color:var(--color-text-secondary)]">{rest}</span>
-      ) : null}
+      {rest}
     </p>
   );
 }
 
-function listEntrance(list: HTMLUListElement): Animation[] {
-  return [...list.querySelectorAll('li')].map((row, index) =>
+function rowsEntrance(list: HTMLUListElement): Animation[] {
+  return [...list.querySelectorAll(':scope > li')].map((row, index) =>
     row.animate(
       [
         { opacity: 0, transform: `translateY(${RISE_PX}px)` },
@@ -103,168 +85,329 @@ function listEntrance(list: HTMLUListElement): Animation[] {
   );
 }
 
-/** Every question over its answer: the phone, no script, and the first paint. */
-function FaqList({ items }: { items: Item[] }) {
-  const list = usePlayOnce<HTMLUListElement>(listEntrance);
+/*
+ * The privacy drawing. Wide, on a 640×240 field: the reader's computer as a boundary from x 8 to
+ * 452 holding the repository folder, the Atlas app and the coding agent on one line at y 120;
+ * outside it, the agent's provider reached by the agent's own dashed line, and an empty dashed
+ * ring that no line reaches, where an Atlas backend would be. In a container under 30rem (a phone)
+ * the same parts stack on a 640×470 field, so every label has room on one or two lines: the
+ * boundary takes the width, and the provider and the ring sit under it, the dashed line running
+ * down to the provider.
+ */
+type Point = readonly [x: number, y: number];
+type Shape = {
+  boundary: { x: number; y: number; width: number; height: number };
+  marks: Record<'folder' | 'app' | 'agent' | 'provider' | 'ring', Point>;
+  traffic: string;
+};
+const FIELD_WIDTH = 640;
+const MARK_R = 7;
+const RADIUS = 14;
+
+function shape(boundary: Shape['boundary'], marks: Shape['marks']): Shape {
+  const [ax, ay] = marks.agent;
+  const [px, py] = marks.provider;
+  const traffic = ay === py ? `M${ax + MARK_R} ${ay} H${px - MARK_R}` : `M${ax} ${ay + MARK_R} V${py - MARK_R}`;
+  return { boundary, marks, traffic };
+}
+
+const WIDE_SHAPE = shape(
+  { x: 8, y: 8, width: 444, height: 224 },
+  { folder: [88, 120], app: [230, 120], agent: [372, 120], provider: [572, 120], ring: [572, 196] },
+);
+const NARROW_SHAPE = shape(
+  { x: 8, y: 8, width: 624, height: 244 },
+  { folder: [112, 140], app: [296, 140], agent: [520, 140], provider: [520, 372], ring: [200, 372] },
+);
+
+/** When each part arrives, in ms from the start of the drawing's one 2.4s entrance. */
+const BEAT = {
+  boundary: { at: 0, ms: 500 },
+  folderApp: { at: 300, ms: 500 },
+  appAgent: { at: 700, ms: 400 },
+  traffic: { at: 1100, ms: 600 },
+  ring: { at: 1700, ms: 400 },
+} as const;
+
+/**
+ * Which way a label hangs from its point: under it, under and ending left of it, over it, over and
+ * from it, from it, or left of it.
+ */
+type Hang = 'below' | 'belowLeft' | 'above' | 'aboveFrom' | 'from' | 'leftOf';
+type Place = { x: number; y: number; hang: Hang; width: number };
+type Label = { key: string; at: number; quiet?: boolean; wide: Place; narrow: Place };
+
+const between = (a: Point, b: Point): Point => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+const W = WIDE_SHAPE.marks;
+const N = NARROW_SHAPE.marks;
+const corner = (s: Shape, width: number): Place => ({ x: s.boundary.x + 14, y: s.boundary.y + 12, hang: 'from', width });
+
+/**
+ * Every label is page text placed on the field: under a mark, over the middle of a line, in the
+ * boundary's corner, or beside a line. `width` is the most it may take, so a label wraps before it
+ * reaches its neighbour. Field units become `cqw` of the figure, whose width is the field's.
+ */
+const LABELS: readonly Label[] = [
+  { key: 'computer', at: 200, wide: corner(WIDE_SHAPE, 220), narrow: corner(NARROW_SHAPE, 420) },
+  {
+    key: 'folder',
+    at: 300,
+    wide: { x: W.folder[0], y: W.folder[1], hang: 'below', width: 140 },
+    narrow: { x: N.folder[0], y: N.folder[1], hang: 'below', width: 196 },
+  },
+  {
+    key: 'readsWrites',
+    at: 500,
+    wide: { x: between(W.folder, W.app)[0], y: W.app[1], hang: 'above', width: 128 },
+    narrow: { x: between(N.folder, N.app)[0], y: N.app[1], hang: 'above', width: 190 },
+  },
+  {
+    key: 'app',
+    at: 700,
+    wide: { x: W.app[0], y: W.app[1], hang: 'below', width: 128 },
+    narrow: { x: N.app[0], y: N.app[1], hang: 'below', width: 200 },
+  },
+  {
+    key: 'mcp',
+    at: 850,
+    wide: { x: between(W.app, W.agent)[0], y: W.agent[1], hang: 'above', width: 128 },
+    narrow: { x: between(N.app, N.agent)[0], y: N.agent[1], hang: 'above', width: 190 },
+  },
+  {
+    key: 'agent',
+    at: 1000,
+    wide: { x: W.agent[0], y: W.agent[1], hang: 'below', width: 128 },
+    // The dashed line leaves the agent downwards on a phone, so its name stands left of the line.
+    narrow: { x: N.agent[0] - 12, y: N.agent[1], hang: 'belowLeft', width: 146 },
+  },
+  {
+    key: 'traffic',
+    at: 1250,
+    quiet: true,
+    wide: { x: WIDE_SHAPE.boundary.x + WIDE_SHAPE.boundary.width + 10, y: W.provider[1], hang: 'aboveFrom', width: 178 },
+    narrow: { x: N.agent[0] - 14, y: between(N.agent, N.provider)[1] + 40, hang: 'leftOf', width: 280 },
+  },
+  {
+    key: 'provider',
+    at: 1550,
+    quiet: true,
+    wide: { x: W.provider[0], y: W.provider[1], hang: 'below', width: 136 },
+    narrow: { x: N.provider[0], y: N.provider[1], hang: 'below', width: 210 },
+  },
+  {
+    key: 'noBackend',
+    at: 1850,
+    quiet: true,
+    wide: { x: W.ring[0], y: W.ring[1], hang: 'below', width: 136 },
+    narrow: { x: N.ring[0], y: N.ring[1], hang: 'below', width: 240 },
+  },
+];
+
+const CQW = (value: number) => `${(value / FIELD_WIDTH) * 100}cqw`;
+/** The gap between a label and its point, in rem so it holds at every size. */
+const GAP: Record<Hang, string> = {
+  below: '0.75rem',
+  belowLeft: '0.75rem',
+  above: '-0.5rem',
+  aboveFrom: '-0.5rem',
+  from: '0rem',
+  leftOf: '0rem',
+};
+const SHIFT: Record<Hang, string> = {
+  below: '-50% 0',
+  belowLeft: '-100% 0',
+  above: '-50% -100%',
+  aboveFrom: '0 -100%',
+  from: '0 0',
+  leftOf: '-100% -50%',
+};
+const ALIGN: Record<Hang, string> = {
+  below: 'center',
+  belowLeft: 'right',
+  above: 'center',
+  aboveFrom: 'left',
+  from: 'left',
+  leftOf: 'right',
+};
+
+/**
+ * A label's two places as custom properties its class list reads, wide and under 30rem;
+ * `translate` hangs it from its point and stays clear of the `transform` its entrance animates.
+ */
+function labelStyle({ wide, narrow }: Label): CSSProperties {
+  const top = (place: Place) => `calc(${CQW(place.y)} + ${GAP[place.hang]})`;
+  return {
+    '--faq-label-left': CQW(wide.x),
+    '--faq-label-top': top(wide),
+    '--faq-label-shift': SHIFT[wide.hang],
+    '--faq-label-width': CQW(wide.width),
+    '--faq-label-align': ALIGN[wide.hang],
+    '--faq-label-left-narrow': CQW(narrow.x),
+    '--faq-label-top-narrow': top(narrow),
+    '--faq-label-shift-narrow': SHIFT[narrow.hang],
+    '--faq-label-width-narrow': CQW(narrow.width),
+    '--faq-label-align-narrow': ALIGN[narrow.hang],
+  } as CSSProperties;
+}
+
+const LABEL_PLACE = cn(
+  'left-[var(--faq-label-left-narrow)] top-[var(--faq-label-top-narrow)] max-w-[var(--faq-label-width-narrow)]',
+  '[translate:var(--faq-label-shift-narrow)] [text-align:var(--faq-label-align-narrow)]',
+  '@[30rem]:left-[var(--faq-label-left)] @[30rem]:top-[var(--faq-label-top)] @[30rem]:max-w-[var(--faq-label-width)]',
+  '@[30rem]:[translate:var(--faq-label-shift)] @[30rem]:[text-align:var(--faq-label-align)]',
+);
+
+/**
+ * The drawing's one entrance: the boundary, then each link drawn from the mark it leaves to the
+ * mark it reaches, the agent's dashed line out past the boundary, and last the empty ring. Each
+ * label rises as the thing it names arrives. Both shapes play; only one is shown.
+ */
+function drawingEntrance(figure: HTMLElement): Animation[] {
+  const draw = [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }];
+  const pop = [
+    { opacity: 0, transform: 'scale(0.4)' },
+    { opacity: 1, transform: 'scale(1)' },
+  ];
+  const rise = [
+    { opacity: 0, transform: `translateY(${RISE_PX}px)` },
+    { opacity: 1, transform: 'translateY(0)' },
+  ];
+  const once = (delay: number, duration: number) => ({ delay, duration, easing: EASE, fill: 'backwards' as const });
+  const animations: Animation[] = [];
+  const play = (selector: string, keyframes: Keyframe[], delay: number, duration: number) => {
+    for (const element of figure.querySelectorAll(selector)) {
+      animations.push(element.animate(keyframes, once(delay, duration)));
+    }
+  };
+  play('[data-faq-boundary]', draw, BEAT.boundary.at, BEAT.boundary.ms);
+  play('[data-faq-mark="folder"]', pop, BEAT.folderApp.at, RISE_MS);
+  play('[data-faq-link="folderApp"]', draw, BEAT.folderApp.at, BEAT.folderApp.ms);
+  play('[data-faq-mark="app"]', pop, BEAT.appAgent.at, RISE_MS);
+  play('[data-faq-link="appAgent"]', draw, BEAT.appAgent.at, BEAT.appAgent.ms);
+  play('[data-faq-mark="agent"]', pop, BEAT.traffic.at - 100, RISE_MS);
+  play('[data-faq-traffic-reveal]', draw, BEAT.traffic.at, BEAT.traffic.ms);
+  play('[data-faq-mark="provider"]', pop, BEAT.traffic.at + BEAT.traffic.ms - 160, RISE_MS);
+  play('[data-faq-mark="ring"]', pop, BEAT.ring.at, BEAT.ring.ms);
+  figure.querySelectorAll<HTMLElement>('[data-faq-label]').forEach((label, index) => {
+    animations.push(label.animate(rise, once(LABELS[index].at, RISE_MS)));
+  });
+  return animations;
+}
+
+/** One arrangement of the drawing's parts; `className` shows it wide or only under 30rem. */
+function Shapes({ shape: s, id, className }: { shape: Shape; id: string; className: string }) {
+  const mark = { transformBox: 'fill-box', transformOrigin: 'center' } as const;
+  const drawn = { pathLength: 1, strokeDasharray: '1 1' } as const;
+  const link = (from: Point, to: Point) => `M${from[0] + MARK_R} ${from[1]} H${to[0] - MARK_R}`;
+  const { boundary, marks } = s;
   return (
-    <ul ref={list} data-testid="gateway-faq-list" className="mt-8 flex min-w-0 flex-col">
-      {items.map((item) => (
-        <li
-          key={item.key}
-          data-testid="gateway-faq-row"
-          className="grid min-w-0 gap-x-12 gap-y-1.5 border-t border-[color:var(--color-divider)] py-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
-        >
-          <h3 className="min-w-0 text-body-lg leading-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {item.question}
-          </h3>
-          <Answer answer={item.answer} />
-        </li>
+    <g className={className}>
+      <defs>
+        <mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={FIELD_WIDTH} height={480}>
+          <path data-faq-traffic-reveal d={s.traffic} {...drawn} stroke="white" strokeWidth={8} />
+        </mask>
+      </defs>
+      <rect
+        data-faq-boundary
+        {...boundary}
+        rx={RADIUS}
+        {...drawn}
+        strokeWidth={1}
+        className="stroke-[color:var(--color-border-strong)]"
+      />
+      {(
+        [
+          ['folderApp', marks.folder, marks.app],
+          ['appAgent', marks.app, marks.agent],
+        ] as const
+      ).map(([key, from, to]) => (
+        <path
+          key={key}
+          data-faq-link={key}
+          d={link(from, to)}
+          {...drawn}
+          strokeWidth={2}
+          className="stroke-[color:var(--map-indigo-bright)]"
+        />
       ))}
-    </ul>
+      <path
+        d={s.traffic}
+        mask={`url(#${id})`}
+        strokeWidth={1.5}
+        strokeDasharray="5 5"
+        className="stroke-[color:var(--color-text-tertiary)]"
+      />
+      {(['folder', 'app', 'agent'] as const).map((key) => (
+        <circle
+          key={key}
+          data-faq-mark={key}
+          cx={marks[key][0]}
+          cy={marks[key][1]}
+          r={MARK_R}
+          style={mark}
+          className="fill-[color:var(--map-indigo-bright)]"
+        />
+      ))}
+      <circle
+        data-faq-mark="provider"
+        cx={marks.provider[0]}
+        cy={marks.provider[1]}
+        r={MARK_R}
+        style={mark}
+        className="fill-[color:var(--color-text-tertiary)]"
+      />
+      <circle
+        data-faq-mark="ring"
+        cx={marks.ring[0]}
+        cy={marks.ring[1]}
+        r={MARK_R}
+        style={mark}
+        strokeWidth={1.5}
+        strokeDasharray="3 3"
+        className="stroke-[color:var(--color-text-tertiary)]"
+      />
+    </g>
   );
 }
 
-/** Whether the picker may move on by itself: in view, untouched, in a visible tab, motion allowed. */
-function useAdvanceAllowed(host: HTMLElement | null, held: boolean): boolean {
-  const [inView, setInView] = useState(false);
-  const [visible, setVisible] = useState(true);
-  const paused = useMotionPaused();
-  useEffect(() => {
-    if (!host || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      (entries) => setInView(entries[entries.length - 1].intersectionRatio >= 0.2),
-      { threshold: [0, 0.2] },
-    );
-    observer.observe(host);
-    const sync = () => setVisible(!document.hidden);
-    document.addEventListener('visibilitychange', sync);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener('visibilitychange', sync);
-    };
-  }, [host]);
-  return inView && visible && !held && !paused;
-}
-
 /**
- * The wide layout: the questions as tabs on the left, all six answers stacked in one cell on the
- * right with only the picked one shown, so the page holds every answer whichever is picked.
+ * What leaves the computer, drawn: everything Atlas reads and writes stays inside the boundary;
+ * the only line out is the coding agent's own, to its provider; where an Atlas backend would be
+ * is an empty ring. Fully drawn without a script; plays once when it comes into view.
  */
-function FaqPicker({ items, label }: { items: Item[]; label: string }) {
-  const [active, setActive] = useState(0);
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  /** Picked by hand: the picker no longer moves by itself. */
-  const [touched, setTouched] = useState(false);
-  /** Moved at all: the first answer is simply there, later ones arrive. */
-  const [moved, setMoved] = useState(false);
-  const allowed = useAdvanceAllowed(host, hovered || focused || touched);
-  const { leaving } = useSurfaceSwap(active, LEAVE_MS);
-  const progress = useRef<HTMLSpanElement>(null);
-  const run = useRef<Animation | null>(null);
-
-  /* The progress line sits under the picked question, inside its surface. */
-  useLayoutEffect(() => {
-    const line = progress.current;
-    const tab = document.getElementById(`gateway-faq-tab-${items[active].key}`);
-    if (!line || !tab) return;
-    line.style.top = `${tab.offsetTop + tab.offsetHeight - 6}px`;
-  }, [active, items]);
-
-  /* One run of the progress line per picked answer; its end moves the picker on. */
-  useEffect(() => {
-    const line = progress.current;
-    if (!line || typeof line.animate !== 'function') return;
-    const animation = line.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], {
-      duration: ADVANCE_MS,
-      easing: 'linear',
-      fill: 'both',
-    });
-    animation.pause();
-    animation.onfinish = () => {
-      if (isMotionPaused()) return;
-      setMoved(true);
-      setActive((active + 1) % items.length);
-    };
-    run.current = animation;
-    return () => {
-      animation.onfinish = null;
-      animation.cancel();
-      run.current = null;
-    };
-  }, [active, items.length]);
-
-  useEffect(() => {
-    const animation = run.current;
-    if (!animation) return;
-    if (allowed) animation.play();
-    else animation.pause();
-  }, [allowed, active]);
-
+function PrivacyDrawing() {
+  const t = useTranslations('download.faq.diagram');
+  const figure = usePlayOnce<HTMLElement>(drawingEntrance);
+  const id = useId();
   return (
-    <div
-      ref={setHost}
-      data-testid="gateway-faq-picker"
-      className="mt-8 grid min-w-0 grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-x-10 border-t border-[color:var(--color-divider)] pt-8"
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
-      }}
-    >
-      <div className="relative min-w-0">
-        <TabBar
-          items={items.map((item) => ({ key: item.key, label: item.question, testId: `gateway-faq-tab-${item.key}` }))}
-          activeKey={items[active].key}
-          onSelect={(key) => {
-            setTouched(true);
-            setMoved(true);
-            setActive(items.findIndex((item) => item.key === key));
-          }}
-          ariaLabel={label}
-          idPrefix="gateway-faq"
-          orientation="vertical"
-          size="reading"
-        />
-        {/* How long until the next answer; it waits while the picker is in hand, and goes once a question is picked. */}
-        <span
-          ref={progress}
+    <figure ref={figure} data-testid="gateway-faq-drawing" className="@container w-full min-w-0 max-w-[40rem]">
+      {/* The field: 640×470 under 30rem, 640×240 wide; the SVG draws past its 240 rows there. */}
+      <div className="relative aspect-[640/470] w-full @[30rem]:aspect-[640/240]">
+        <svg
           aria-hidden
-          className={cn(
-            'pointer-events-none absolute left-4 right-4 top-0 h-px origin-left [transform:scaleX(0)] bg-[color:var(--color-indigo-accent)]',
-            touched && 'invisible',
-          )}
-        />
+          viewBox={`0 0 ${FIELD_WIDTH} 240`}
+          className="absolute left-0 top-0 aspect-[640/240] w-full overflow-visible"
+          fill="none"
+        >
+          <Shapes shape={WIDE_SHAPE} id={`${id}-wide`} className="hidden @[30rem]:inline" />
+          <Shapes shape={NARROW_SHAPE} id={`${id}-narrow`} className="@[30rem]:hidden" />
+        </svg>
+        {LABELS.map((label) => (
+          <span
+            key={label.key}
+            data-faq-label
+            className={cn(
+              'absolute block w-max text-pretty [word-break:auto-phrase] text-body leading-body',
+              '@[30rem]:text-body-lg @[30rem]:leading-body-lg',
+              LABEL_PLACE,
+              label.quiet ? 'text-[color:var(--color-text-tertiary)]' : 'text-[color:var(--color-text-secondary)]',
+            )}
+            style={labelStyle(label)}
+          >
+            {t(label.key)}
+          </span>
+        ))}
       </div>
-      {/*
-        One panel as tall as the question list beside it, so the answer has a place of its own
-        rather than floating over an empty band.
-      */}
-      <div className="gateway-faq-answers gateway-loop-drawing grid min-w-0 content-start rounded-panel border border-[color:var(--color-border-soft)] p-8 [&>*]:[grid-area:1/1]">
-        {items.map((item, index) => {
-          const state = index === active ? 'active' : index === leaving ? 'leaving' : 'hidden';
-          return (
-            <div
-              key={item.key}
-              role="tabpanel"
-              id={`gateway-faq-tabpanel-${item.key}`}
-              aria-labelledby={`gateway-faq-tab-${item.key}`}
-              data-state={state}
-              inert={state !== 'active'}
-              className={cn(
-                'min-w-0',
-                state === 'active' && moved && 'gateway-screen-in',
-                state === 'leaving' && 'gateway-screen-out',
-                state === 'hidden' && 'invisible',
-              )}
-            >
-              <Answer answer={item.answer} large />
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    </figure>
   );
 }

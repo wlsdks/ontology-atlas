@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
@@ -10,10 +10,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { MOTION } from '@/shared/motion/tokens';
 import { controlClass } from '@/shared/ui/control-class';
-import { Button } from '@/shared/ui/controls/button';
 import { WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
-
-import { MoruPlayground } from './MoruPlayground';
 
 /** Moru's acted `write` row at its native 128px cell, the catalogue clip `pnpm brand:sprites` copies. */
 const CELL = 128;
@@ -28,13 +25,10 @@ const VISIBLE_SHARE = 0.2;
  * pose, so one pass rests where it began: Moru writes once when the line comes into view and
  * again when the link is pointed at or focused, never cutting a pass short to start another.
  * Off screen or under the page's pause a pass holds where it is; under reduced motion Moru stands
- * still on the first cell. Beside the line, one button opens a popup where a visitor can play
- * with Moru.
+ * still on the first cell. The way into Moru's game lives in the hero (`MoruPlayEntry`).
  */
 export function ClosingContact({ className }: { className?: string }) {
   const t = useTranslations('footer.contact');
-  const tPlay = useTranslations('download.playground');
-  const [playing, setPlaying] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
   const stopped = useMotionPaused();
   const row = useRef<HTMLDivElement>(null);
@@ -128,16 +122,6 @@ export function ClosingContact({ className }: { className?: string }) {
           </a>
         </p>
       </div>
-      <Button
-        variant="outline"
-        data-testid="gateway-closing-play"
-        aria-haspopup="dialog"
-        className="sm:ml-auto"
-        onClick={() => setPlaying(true)}
-      >
-        {tPlay('open')}
-      </Button>
-      <MoruPlayground open={playing} onClose={() => setPlaying(false)} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { cameraAt, projectPoint } from './film-kit';
+import { cameraAt, drawHalo, projectPoint } from './film-kit';
 
 const KEYS = [
   { at: 0, cx: 100, cy: 100, zoom: 1 },
@@ -30,5 +30,28 @@ describe('projectPoint', () => {
     const shot = { cx: 300, cy: 200, zoom: 2 };
     expect(projectPoint(800, 600, shot, 300, 200)).toEqual({ x: 400, y: 300 });
     expect(projectPoint(800, 600, shot, 310, 200)).toEqual({ x: 420, y: 300 });
+  });
+});
+
+describe('drawHalo', () => {
+  const ctx = () => ({ globalAlpha: 1, drawImage: vi.fn() }) as unknown as CanvasRenderingContext2D & { drawImage: ReturnType<typeof vi.fn> };
+  const sprite = {} as HTMLCanvasElement;
+
+  it('stamps the sprite centred on the mark at the given radius and alpha, above the key light\'s cap', () => {
+    const c = ctx();
+    let seen = 0;
+    c.drawImage.mockImplementation(() => {
+      seen = c.globalAlpha;
+    });
+    drawHalo(c, sprite, 100, 50, 40, 0.22);
+    expect(c.drawImage).toHaveBeenCalledWith(sprite, 60, 10, 80, 80);
+    expect(seen).toBeCloseTo(0.22);
+    expect(c.globalAlpha).toBe(1);
+  });
+
+  it('draws nothing before it has grown', () => {
+    const c = ctx();
+    drawHalo(c, sprite, 100, 50, 0, 0.22);
+    expect(c.drawImage).not.toHaveBeenCalled();
   });
 });
