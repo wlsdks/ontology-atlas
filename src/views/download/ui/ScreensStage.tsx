@@ -8,6 +8,7 @@ import { DESTINATION_IDS } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
 import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
 import { useViewportBelow } from '@/shared/lib/use-viewport-below';
+import { MOTION } from '@/shared/motion/tokens';
 import { controlClass } from '@/shared/ui/control-class';
 import { TabBar } from '@/shared/ui/controls/tab-bar';
 
@@ -46,10 +47,13 @@ const CAPTURE_HEIGHT = 860;
 
 const COLUMN_FROM_PX = 1440;
 
+/** The crossfade's length (`--motion-settle`): the leaving capture stays mounted that long. */
+const SWAP_MS = MOTION.settle.duration * 1000;
+
 /**
  * The app's other destinations as tabs in the rail's order. Every panel stays mounted in one grid
- * cell, invisible when inactive, so lazy images are ready and a swap moves nothing. Strip below
- * 90rem, column above.
+ * cell, invisible when inactive, so lazy images are ready; a swap crossfades in place, the new
+ * capture settling from 2% larger (`gateway.css`). Strip below 90rem, column above.
  */
 export function ScreensStage({ intro }: { intro: ReactNode }) {
   const t = useTranslations('download.screens');
@@ -58,7 +62,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
   const [active, setActive] = useState<CapturedId>(SCREEN_ORDER[0]!);
   /** No entrance on first paint: the section's scroll entrance is the arrival. */
   const [swapped, setSwapped] = useState(false);
-  const { leaving } = useSurfaceSwap(active);
+  const { leaving } = useSurfaceSwap(active, SWAP_MS);
   const narrow = useViewportBelow(COLUMN_FROM_PX);
 
   /** Shared by the panels and the captions. */
@@ -167,7 +171,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
       {/* Sans face: Hangul in the mono face reads as spaced-out printout. */}
       <div
         data-testid="gateway-screens-captions"
-        className="grid min-w-0 min-[90rem]:col-start-1 min-[90rem]:row-start-3 min-[90rem]:self-start min-[90rem]:border-t min-[90rem]:border-[color:var(--color-divider)] min-[90rem]:pt-5 [&>*]:[grid-area:1/1]"
+        className="gateway-screen-captions grid min-w-0 min-[90rem]:col-start-1 min-[90rem]:row-start-3 min-[90rem]:self-start min-[90rem]:border-t min-[90rem]:border-[color:var(--color-divider)] min-[90rem]:pt-5 [&>*]:[grid-area:1/1]"
       >
         {SCREEN_ORDER.map((id) => {
           const name = tRail(id);

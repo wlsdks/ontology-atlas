@@ -22,7 +22,6 @@ type Deliver = (entries: Partial<IntersectionObserverEntry>[]) => void;
 
 function mount() {
   const deliver: Deliver[] = [];
-  const frames: FrameRequestCallback[] = [];
   vi.stubGlobal(
     'IntersectionObserver',
     class {
@@ -33,42 +32,34 @@ function mount() {
       disconnect() {}
     },
   );
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb));
+  const animate = vi.fn(() => ({ pause() {}, play() {}, cancel() {}, playState: 'paused', finished: new Promise(() => {}) }));
+  Element.prototype.animate = animate as unknown as Element['animate'];
   render(<ProofNumbers graph={graph} />, { wrapper: IntlWrapper });
   const shown = () =>
     [...screen.getByTestId('gateway-numbers').querySelectorAll('[data-token="engraved-numeral"]')].map(
       (node) => node.textContent,
     );
-  const runFrame = (now: number) => act(() => frames.splice(0).forEach((cb) => cb(now)));
-  return { deliver, shown, runFrame };
+  return { deliver, shown, animate };
 }
 
 describe('the number strip', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('keeps the real numbers for a reader, whatever the drawn ones show', () => {
-    const { deliver } = mount();
-    act(() => deliver[0]([{ isIntersecting: false }]));
-    for (const value of [MCP_TOOL_COUNT, 96, 242]) expect(screen.getByText(String(value))).toHaveClass('sr-only');
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(Element.prototype, 'animate');
   });
 
-  it('never hides numbers already in view when the page loads', () => {
-    const { deliver, shown } = mount();
-    act(() => deliver[0]([{ isIntersecting: true }]));
+  it('shows the final counts while it waits below the fold and while it rises', () => {
+    const { deliver, shown, animate } = mount();
+    expect(shown()).toEqual([String(MCP_TOOL_COUNT), '96', '242']);
+    act(() => deliver[0]([{ isIntersecting: false, intersectionRatio: 0 }]));
+    act(() => deliver[0]([{ isIntersecting: true, intersectionRatio: 1 }]));
+    expect(animate).toHaveBeenCalledTimes(3);
     expect(shown()).toEqual([String(MCP_TOOL_COUNT), '96', '242']);
   });
 
-  it('waits at zero below the fold, then counts up to the real numbers once seen', () => {
-    vi.spyOn(performance, 'now').mockReturnValue(0);
-    const { deliver, shown, runFrame } = mount();
-    act(() => deliver[0]([{ isIntersecting: false }]));
-    expect(shown()).toEqual(['0', '0', '0']);
-    act(() => deliver[0]([{ isIntersecting: true }]));
-    runFrame(700);
-    const midway = shown().map(Number);
-    expect(midway[2]).toBeGreaterThan(0);
-    expect(midway[2]).toBeLessThan(242);
-    runFrame(5000);
-    expect(shown()).toEqual([String(MCP_TOOL_COUNT), '96', '242']);
+  it('never moves a strip already in view when the page loads', () => {
+    const { deliver, animate } = mount();
+    act(() => deliver[0]([{ isIntersecting: true, intersectionRatio: 1 }]));
+    expect(animate).not.toHaveBeenCalled();
   });
 });
