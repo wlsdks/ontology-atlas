@@ -93,6 +93,8 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           data-testid={`demo-video-${clip.id}`}
           poster={withBasePath(demoPoster(clip, locale))}
           preload="none"
+          width={clip.width}
+          height={clip.height}
           muted
           loop
           playsInline

@@ -1,20 +1,23 @@
-import { hasLocale, NextIntlClientProvider } from 'next-intl';
-import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
-import { notFound } from 'next/navigation';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages, getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { AppShell, MotionProvider } from '@/app-providers/providers';
+import {
+  enterLocaleSegment,
+  LocaleDocumentChrome,
+  localeLayoutMetadata,
+  localeStaticParams,
+} from '@/app-providers/providers/locale-segment';
 import { TaxonomyProvider } from '@/features/taxonomy';
 import { LocalVaultProvider } from '@/entities/vault-session';
 import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { AcpChatPanelKeeper } from '@/widgets/acp-chat-panel';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
-import { routing } from '@/i18n/routing';
-import { LocaleHtmlLang } from '@/shared/ui/document/locale-html-lang';
 import { RouteMemory } from '@/shared/ui/routing/route-memory';
 
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  return localeStaticParams();
 }
 
 export async function generateMetadata({
@@ -22,24 +25,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'metadata' });
-
-  return {
-    title: {
-      default: t('siteName'),
-      // absolute: true means root layout's template is NOT prepended; this
-      // locale layout owns the title template now.
-      template: `%s · ${t('siteName')}`,
-    },
-    description: t('siteTagline'),
-    /**
-     * hreflang is a per-path fact, so each page sets it through `buildPageMetadata`; a layout-level
-     * value would be wrong for every child route.
-     */
-  };
+  return localeLayoutMetadata((await params).locale);
 }
 
+/**
+ * The workbench: every route under `app/[locale]` wears the app shell and receives the whole
+ * catalog, because the shell's rail, settings and agent dock read most of it. The gateway pages
+ * live in `app/(gateway)/[locale]` with a picked subset (`src/i18n/gateway-messages.ts`).
+ */
 export default async function LocaleLayout({
   children,
   params,
@@ -47,27 +40,13 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
-
+  const locale = enterLocaleSegment((await params).locale);
   const messages = await getMessages();
-
   const tNav = await getTranslations({ locale, namespace: 'nav' });
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <LocaleHtmlLang locale={locale} />
-      {/* Skip-to-content link — locale-aware copy. Originally lived in
-          app/layout.tsx as hardcoded Korean; moved here so it's translated. */}
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-skip-link)] focus:rounded-[var(--radius-chip)] focus:border focus:border-[color:var(--color-indigo-focus-ring)] focus:bg-[color:var(--color-panel)] focus:px-3 focus:py-2 focus:text-body focus:text-[color:var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-indigo-focus-ring)]"
-      >
-        {tNav('skipToContent')}
-      </a>
+      <LocaleDocumentChrome locale={locale} />
       <MotionProvider>
         <TaxonomyProvider>
           {/* `LocalVaultProvider` is the single source of truth. Consumers share one instance through

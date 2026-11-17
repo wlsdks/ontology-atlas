@@ -64,11 +64,19 @@ function exists(root, repoPath) {
   }
 }
 
-/** Whether a route like `/project/[slug]` or `/topology?mode=focus` has a page under `app/[locale]`. */
+/**
+ * Whether a route like `/project/[slug]` or `/topology?mode=focus` has a page under a locale root:
+ * `app/[locale]` (the workbench) or `app/(gateway)/[locale]`, since a route group adds no segment.
+ */
 export function routeExists(route, root = ROOT) {
   if (typeof route !== 'string' || !route.startsWith('/')) return false;
   const segments = route.split(/[?#]/)[0].split('/').filter(Boolean);
-  let dir = path.join(root, 'app', '[locale]');
+  return [path.join(root, 'app', '[locale]'), path.join(root, 'app', '(gateway)', '[locale]')]
+    .some((localeRoot) => routeExistsUnder(localeRoot, segments));
+}
+
+function routeExistsUnder(localeRoot, segments) {
+  let dir = localeRoot;
   for (const segment of segments) {
     const exact = path.join(dir, segment);
     if (existsSync(exact)) {
@@ -139,7 +147,7 @@ export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(r
   }
   if ('routes' in frontmatter && !Array.isArray(frontmatter.routes)) report('routes', 'must be a list, `[]` when the feature has no route');
   for (const route of asList(frontmatter.routes)) {
-    if (!routeExists(route, root)) report('routes', `${route} has no page under app/[locale]`);
+    if (!routeExists(route, root)) report('routes', `${route} has no page under app/[locale] or app/(gateway)/[locale]`);
   }
   if ('decisions' in frontmatter && !Array.isArray(frontmatter.decisions)) report('decisions', 'must be a list');
   for (const id of asList(frontmatter.decisions)) {

@@ -32,8 +32,10 @@ changing what those pages show or how they are built.
 
 ## Where it lives
 
-- `app/[locale]/guide/page.tsx`, `app/[locale]/guide/[segment]/page.tsx`,
-  `app/[locale]/changelog/page.tsx` — the routes.
+- `app/(gateway)/[locale]/guide/page.tsx`,
+  `app/(gateway)/[locale]/guide/[segment]/page.tsx`,
+  `app/(gateway)/[locale]/changelog/page.tsx` — the routes, under the gateway
+  layout (`app/(gateway)/[locale]/layout.tsx`).
 - `src/views/gateway-doc/model/guide-pages.ts` — `GUIDE_PAGES`, the chapter
   list; adding a chapter there grows the routes, the table of contents and
   previous/next together. The chapters themselves are `docs/guide/*.md`.
@@ -44,7 +46,7 @@ changing what those pages show or how they are built.
 ## Limits
 
 - The changelog page shows a fixed number of recent sections
-  (`RECENT_SECTIONS` in `app/[locale]/changelog/page.tsx`); older entries are
+  (`RECENT_SECTIONS` in `app/(gateway)/[locale]/changelog/page.tsx`); older entries are
   read in the repository.
 
 ## Verified by

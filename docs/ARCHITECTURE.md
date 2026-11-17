@@ -789,6 +789,21 @@ until a local manifest, or the first part of one, exists.
 
 All routes are wrapped under `/[locale]/` by next-intl (en, ko, ja, zh). Chinese is Simplified only, served as `zh` with `<html lang="zh-Hans">`; root `/` sends `zh-Hant`, `zh-TW`, `zh-HK` and `zh-MO` browsers to `/en/`.
 
+Two layouts own that segment, and the URLs do not show which one a page has,
+because a route group adds no segment. `app/[locale]/layout.tsx` is the
+workbench: the app shell, vault and agent providers, and the whole message
+catalog, which the shell's rail, settings and agent dock read. The gateway
+pages, `/download`, `/guide` and `/changelog`, live in
+`app/(gateway)/[locale]/` under `GatewayShell`, the same viewport frame without
+the rail, and the client provider receives only the message paths in
+`src/i18n/gateway-messages.ts`. The client provider serialises its messages into
+every exported page, so this keeps the workbench's copy out of the public pages'
+HTML; `gateway-messages.test.ts` walks those pages' client import graph and fails
+when the list drifts. A move between the two layouts remounts the providers, so
+a web visitor returning from `/download` to the map restores the remembered
+folder as on a first load. `/` stays a workbench route, since it is the work
+entry point in the installed app and for a web visitor with a folder open.
+
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
 > `/reset-password`, `/settings/*`.
@@ -926,7 +941,8 @@ When docs and code disagree, code wins:
 
 - `package.json` — what's installed, what scripts exist
 - `next.config.ts` — output mode, image config
-- `app/layout.tsx` — metadata, providers, head
+- `app/layout.tsx` — metadata, head, the root error boundary's copy
+- `app/[locale]/layout.tsx`, `app/(gateway)/[locale]/layout.tsx` — the providers
 - `eslint.config.mjs` — FSD boundary rules
 
 Long-form docs:

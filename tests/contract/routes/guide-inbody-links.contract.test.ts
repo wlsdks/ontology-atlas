@@ -11,9 +11,10 @@ import { GUIDE_PAGES } from '@/views/gateway-doc/model/guide-pages';
 
 const ROOT = process.cwd();
 const GUIDE_DIR = join(ROOT, 'docs/guide');
-const APP_LOCALE_DIR = join(ROOT, 'app/[locale]');
+/** The workbench routes and the gateway routes; a route group adds no URL segment. */
+const APP_LOCALE_DIRS = [join(ROOT, 'app/[locale]'), join(ROOT, 'app/(gateway)/[locale]')];
 
-/** Extracts routes from `page.tsx` files under `app/[locale]/**`. Dynamic segments excluded. */
+/** Extracts routes from `page.tsx` files under both locale roots. Dynamic segments excluded. */
 function appRoutes(): Set<string> {
   const out = new Set<string>(['/']);
   const walk = (dir: string, prefix: string) => {
@@ -25,7 +26,7 @@ function appRoutes(): Set<string> {
       }
     }
   };
-  walk(APP_LOCALE_DIR, '');
+  for (const dir of APP_LOCALE_DIRS) walk(dir, '');
   return out;
 }
 

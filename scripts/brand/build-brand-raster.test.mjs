@@ -28,10 +28,10 @@ describe('large character artwork delivery', () => {
   it('preserves detailed Moru pixels and clear margins in the Open Graph image', async () => {
     const master = readMascotPresentationMaster();
     const source = await sharp(Buffer.from(master.base64, 'base64')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const icon = await sharp('public/og-image.png').extract({ left: 106, top: 123, width: 384, height: 384 }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    // The master's empty lower rows run past the card's bottom edge, so the box ends there.
+    const icon = await sharp('public/og-image.png').extract({ left: 70, top: 232, width: 512, height: 630 - 232 }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     const scale = icon.info.width / source.info.width;
     assert.equal(Number.isInteger(scale), true, 'large art must use whole native pixels');
-    assert.equal(icon.info.height, source.info.height * scale);
     let measured = 0;
     for (let y = 0; y < source.info.height; y++) {
       for (let x = 0; x < source.info.width; x++) {
@@ -40,6 +40,7 @@ describe('large character artwork delivery', () => {
         assert.ok(alpha === 0 || alpha === 255, 'presentation pixels must have clean alpha');
         if (!alpha) continue;
         assert.ok(x >= 8 && y >= 8 && x < source.info.width - 8 && y < source.info.height - 8, 'character must clear the platform mask');
+        assert.ok((y + 1) * scale <= icon.info.height, `Open Graph art cut off at ${x},${y}`);
         for (const [dx, dy] of [[0, 0], [scale - 1, scale - 1]]) {
           const target = ((y * scale + dy) * icon.info.width + x * scale + dx) * 4;
           assert.deepEqual(icon.data.subarray(target, target + 4), source.data.subarray(i, i + 4), `Open Graph art lost authored detail at ${x},${y}`);

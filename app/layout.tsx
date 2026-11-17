@@ -3,7 +3,7 @@ import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { SITE_URL } from '@/shared/config';
 import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
-import { jetbrainsMono, pretendard, pretendardLatin } from '@/shared/config/fonts';
+import { jetbrainsMono, pretendard, pretendardLatinStack } from '@/shared/config/fonts';
 import { LOCALE_META } from '@/i18n/locales';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
@@ -83,7 +83,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${pretendard.variable} ${pretendardLatin.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
+      className={`${pretendard.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
+      // The Latin subsets are one family per file, so their stack is composed here (`fonts.ts`).
+      style={{ '--font-pretendard-latin': pretendardLatinStack } as React.CSSProperties}
       suppressHydrationWarning
     >
       <head>

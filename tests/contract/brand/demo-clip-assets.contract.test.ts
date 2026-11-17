@@ -60,6 +60,11 @@ describe('demo clip — declaration and assets', () => {
           }
         });
 
+        it(`${locale}: the poster is the declared frame size, which the video reserves before it loads`, () => {
+          const png = readFileSync(join(DEMO_DIR, `${clip.basename}.${locale}-poster.png`));
+          expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([clip.width, clip.height]);
+        });
+
         it(`${locale}: the measured MP4 length equals the declared seconds`, () => {
           const measured = readMp4Seconds(join(DEMO_DIR, `${clip.basename}.${locale}.mp4`));
           // Only one rounding step of slack is allowed. A wider gap means the recording was

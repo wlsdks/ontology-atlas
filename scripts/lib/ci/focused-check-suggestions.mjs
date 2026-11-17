@@ -201,14 +201,14 @@ function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
   const sources = [];
   for (const path of paths) {
     if (isVitestUnitTest(path)) {
-      rows.push({ command: `pnpm exec vitest run ${path}`, reason: 'changed Vitest test file', paths: [path] });
+      rows.push({ command: `pnpm exec vitest run ${shellPath(path)}`, reason: 'changed Vitest test file', paths: [path] });
     } else if (/^(?:src|app)\/.+\.tsx?$/.test(path) || reach.testsReaching([path]).unit.length > 0) {
       sources.push(path);
     }
   }
   if (sources.length > 0) {
     rows.push({
-      command: `pnpm exec vitest related --run --passWithNoTests --exclude='tests/contract/**' ${sources.join(' ')}`,
+      command: `pnpm exec vitest related --run --passWithNoTests --exclude='tests/contract/**' ${shellPaths(sources)}`,
       reason: 'every Vitest suite that imports a changed file (module graph), not only its sibling',
       paths: sources,
       importGraph: true,
@@ -218,7 +218,7 @@ function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
   const staleUnits = stale.unit.filter((test) => !deletedPaths.includes(test));
   if (staleUnits.length > 0) {
     rows.push({
-      command: `pnpm exec vitest run ${staleUnits.join(' ')}`,
+      command: `pnpm exec vitest run ${shellPaths(staleUnits)}`,
       reason: 'these suites still import a deleted file, which Vitest no longer sees',
       paths: deletedPaths,
       importGraph: true,
@@ -234,7 +234,7 @@ function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
   }
   if (contracts.size > 0 && !allContractsRun) {
     rows.push({
-      command: `pnpm exec vitest run ${[...contracts].sort().join(' ')}`,
+      command: `pnpm exec vitest run ${shellPaths([...contracts].sort())}`,
       reason: 'every contract that imports, spawns or names a changed file',
       paths: contractInputs,
       importGraph: true,
@@ -255,7 +255,7 @@ function directLintSuggestions(paths) {
     {
       // --max-warnings 0 matches the full `pnpm lint` lane: the warning ratchet lives at zero, and a
       // bare eslint run exits 0 on a new warning.
-      command: `pnpm exec eslint --max-warnings 0 ${lintable.join(' ')}`,
+      command: `pnpm exec eslint --max-warnings 0 ${shellPaths(lintable)}`,
       reason: 'design-system ramps and FSD boundaries are lint-enforced on changed source',
       paths: lintable,
     },
@@ -274,7 +274,7 @@ function directScriptLintSuggestions(paths) {
   if (lintable.length === 0) return [];
   return [
     {
-      command: `pnpm exec eslint --max-warnings 0 --no-warn-ignored ${lintable.join(' ')}`,
+      command: `pnpm exec eslint --max-warnings 0 --no-warn-ignored ${shellPaths(lintable)}`,
       reason: 'the full lint lane covers scripts, tests and packages too; lint the changed ones now',
       paths: lintable,
     },
@@ -285,10 +285,23 @@ function directPlaywrightTestSuggestions(paths) {
   return paths
     .filter((path) => /^tests\/e2e\/.+\.spec\.ts$/.test(path))
     .map((path) => ({
-      command: `pnpm exec playwright test ${path}`,
+      command: `pnpm exec playwright test ${shellPath(path)}`,
       reason: 'direct Playwright spec for changed e2e test',
       paths: [path],
     }));
+}
+
+/**
+ * A path as one shell word. `--run` hands each command to `/bin/sh`, where a route group's
+ * parentheses are syntax; a path of ordinary characters stays bare so the printed command reads
+ * as typed. Brackets stay bare too: an unmatched `[locale]` pattern is passed through literally.
+ */
+function shellPath(path) {
+  return /^[A-Za-z0-9_@%+=:,./[\]-]+$/.test(path) ? path : `'${path.replace(/'/g, `'\\''`)}'`;
+}
+
+function shellPaths(paths) {
+  return paths.map(shellPath).join(' ');
 }
 
 function isVitestUnitTest(path) {
@@ -359,7 +372,7 @@ function groupByTestFile(paths, resolve, reason) {
   for (const path of paths) {
     const resolved = resolve(path);
     for (const testFile of Array.isArray(resolved) ? resolved : resolved ? [resolved] : []) {
-      const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${testFile}`, reason, paths: [] };
+      const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${shellPath(testFile)}`, reason, paths: [] };
       row.paths.push(path);
       byTestFile.set(testFile, row);
     }

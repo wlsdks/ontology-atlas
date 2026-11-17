@@ -29,7 +29,8 @@ a vault is chosen, and a selected vault always wins. Server-runtime bans:
 
 ## URL contract
 
-- Routes live under `app/[locale]/`, their views under `src/views/`. The route
+- Routes live under `app/[locale]/` (the gateway pages under
+  `app/(gateway)/[locale]/`), their views under `src/views/`. The route
   list lives only in `docs/ARCHITECTURE.md`.
 - `isGatewaySurface()` alone decides, for both shell chrome and content,
   whether `/` shows the gateway (vault-less web visitor) or the map/first-run
