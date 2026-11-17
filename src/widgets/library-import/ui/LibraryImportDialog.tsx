@@ -36,7 +36,7 @@ import {
 type LibraryImportProps = {
   open: boolean;
   onClose: () => void;
-  /** The person closed the dialog without choosing one of its actions. */
+  /** The person closed the dialog without choosing one of its actions; runs once it has left the screen. */
   onDismiss?: () => void;
   setup: ConnectorSetup | null;
   onSetupSaved: () => void;
@@ -135,10 +135,16 @@ function LibraryImportFlow({
     onClose();
   }, [onClose, reset]);
 
+  const dismissedRef = useRef(false);
   const dismiss = useCallback(() => {
+    dismissedRef.current = true;
     close();
+  }, [close]);
+  const leaveAfterDismiss = useCallback(() => {
+    if (!dismissedRef.current) return;
+    dismissedRef.current = false;
     onDismiss?.();
-  }, [close, onDismiss]);
+  }, [onDismiss]);
 
   const pick = useCallback(
     (next: ImportService) => {
@@ -237,6 +243,7 @@ function LibraryImportFlow({
       size="md"
       labelledBy={`${testIdPrefix}-title`}
       testId={`${testIdPrefix}-dialog`}
+      onExited={leaveAfterDismiss}
       className="max-h-[min(80vh,var(--dialog-max-h))] overflow-y-auto"
     >
       {/* Close is the corner control, as on every other dialog; Escape and the scrim do the same. */}

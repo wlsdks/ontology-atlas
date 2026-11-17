@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import {
   hasPendingRouteViewTransition,
   hasPendingRouteViewTransitionBound,
+  isRouteCrossfadeRunning,
   navigateWithViewTransition,
   readCrossfadeBudgetMs,
   ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS,
   ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS,
   settleRouteViewTransition,
+  subscribeRouteCrossfade,
 } from "./route-view-transition";
 
 describe("route view transition — the old screen is held until the new route commits", () => {
@@ -273,5 +275,35 @@ describe("the crossfade budget is the stylesheet's own number", () => {
     expect(readCrossfadeBudgetMs(() => "fast")).toBe(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS);
     expect(readCrossfadeBudgetMs(null)).toBe(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS);
     expect(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS).toBeGreaterThan(0);
+  });
+});
+
+describe("a surface that would cover the pane can wait for the crossfade", () => {
+  it("reports running from the start until the transition has finished, and tells subscribers both times", async () => {
+    let finish: () => void = () => undefined;
+    const finished = new Promise<void>((resolve) => { finish = resolve; });
+    const start = vi.fn((update: () => Promise<void> | void) => {
+      void update();
+      return { finished };
+    });
+    const seen: boolean[] = [];
+    const unsubscribe = subscribeRouteCrossfade(() => seen.push(isRouteCrossfadeRunning()));
+    const setTimeoutFn = vi.fn(() => 0) as unknown as typeof setTimeout;
+
+    expect(isRouteCrossfadeRunning()).toBe(false);
+    navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn });
+    expect(isRouteCrossfadeRunning()).toBe(true);
+    settleRouteViewTransition();
+    expect(isRouteCrossfadeRunning(), "the route committed but the crossfade is still on screen").toBe(true);
+    finish();
+    await finished;
+    await Promise.resolve();
+    expect(isRouteCrossfadeRunning()).toBe(false);
+    expect(seen).toEqual([true, false]);
+
+    unsubscribe();
+    navigateWithViewTransition(() => undefined, { startViewTransition: null });
+    expect(isRouteCrossfadeRunning(), "a direct navigation has no crossfade to wait for").toBe(false);
+    expect(seen).toHaveLength(2);
   });
 });
