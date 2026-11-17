@@ -100,6 +100,8 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
         style={{ width: timeline.cell * timeline.columns, height: timeline.cell * timeline.rows, imageRendering: 'pixelated' }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img ref={reactionRef} src={withBasePath(`/brand/moru-reactions.png?v=${reactions.digest}`)} alt="" aria-hidden="true" draggable={false} hidden
+        // Shown only after a press: fetched once the companion mounts, behind the page, never preloaded.
+        fetchPriority="low"
         width={reactions.cell * reactions.columns} height={reactions.cell * reactions.rows}
         className="pointer-events-none absolute top-0 left-0 max-w-none"
         style={{ width: reactions.cell * reactions.columns, height: reactions.cell * reactions.rows, imageRendering: 'pixelated' }} />
@@ -108,7 +110,7 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
         {(['heart', 'note', 'spark'] as const).map(glyph => (
           // These wordless pixel drawings are decoration, never controls or status.
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={glyph} data-glyph={glyph} src={withBasePath(`/brand/moru-emote-${glyph}.svg`)} width={24} height={24} alt="" draggable={false} />
+          <img key={glyph} data-glyph={glyph} src={withBasePath(`/brand/moru-emote-${glyph}.svg`)} width={24} height={24} alt="" draggable={false} fetchPriority="low" />
         ))}
       </span>
     </button>

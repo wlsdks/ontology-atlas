@@ -9,7 +9,7 @@ import {
 
 /**
  * An unknown segment must say it substituted: `matched: false` drives the `gateway-doc-notice` banner
- * (`gatewayNav.guideUnknownSegment`) wired in `app/[locale]/guide/[segment]/page.tsx`.
+ * (`gatewayNav.guideUnknownSegment`) wired in `app/(gateway)/[locale]/guide/[segment]/page.tsx`.
  */
 describe('resolveGuidePage fallback reports that it substituted', () => {
   it('returns the page for an existing segment as matched', () => {

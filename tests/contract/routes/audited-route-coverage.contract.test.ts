@@ -9,9 +9,13 @@ import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../../e2e/audited-routes";
  * route fails. Reads the filesystem on purpose: a copied route list would drift from the source.
  */
 
-const APP_LOCALE_DIR = path.resolve(__dirname, "../../../app/[locale]");
+/** The workbench routes and the gateway routes; a route group adds no URL segment. */
+const APP_LOCALE_DIRS = [
+  path.resolve(__dirname, "../../../app/[locale]"),
+  path.resolve(__dirname, "../../../app/(gateway)/[locale]"),
+];
 
-/** Walks `app/[locale]/**` for route patterns — directories containing a `page.tsx`. */
+/** Walks a locale root for route patterns — directories containing a `page.tsx`. */
 function discoverRoutes(dir: string, prefix = ""): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -38,7 +42,7 @@ function matchesAuditedUrl(routePattern: string, url: string): boolean {
 }
 
 describe("route coverage of the accessibility ratchet", () => {
-  const routes = ["/", ...discoverRoutes(APP_LOCALE_DIR)];
+  const routes = ["/", ...APP_LOCALE_DIRS.flatMap((dir) => discoverRoutes(dir))];
 
   it("actually finds the canonical inventory, so the detector does not idle on an empty set", () => {
     // Without this assertion `discoverRoutes` returning 0 would leave every check below green.
@@ -46,6 +50,7 @@ describe("route coverage of the accessibility ratchet", () => {
     expect(routes).toContain("/topology");
     expect(routes).toContain("/git");
     expect(routes).toContain("/project/[slug]");
+    expect(routes).toContain("/download");
   });
 
   it("every route is classified as measured or excluded with a reason", () => {

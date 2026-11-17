@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -1100,6 +1101,20 @@ describe('focused check suggestions', () => {
       'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
     ]);
+  });
+
+  // `checks:changed -- --run` hands each command to `/bin/sh`, where a route group's parentheses
+  // are syntax: every command naming one must quote it, or the run stops before any check.
+  it('quotes a route-group path so the shell runs every command that names it', () => {
+    const group = 'app/(gateway)/[locale]/download/page.tsx';
+    const result = suggestFocusedChecks([group, 'tests/e2e/gateway/(probe).spec.ts', 'src/i18n/(probe).test.ts']);
+    const naming = result.commands.filter((row) => row.command.includes('(gateway)') || row.command.includes('(probe)'));
+    assert.ok(naming.length >= 3, `expected the lint, related and direct-test rows, got ${naming.length}`);
+    for (const { command } of naming) {
+      const parsed = spawnSync('sh', ['-n', '-c', command], { encoding: 'utf8' });
+      assert.equal(parsed.status, 0, `${command}\n${parsed.stderr}`);
+    }
+    assert.ok(naming.some((row) => row.command.includes(`'${group}'`)));
   });
 
   // A new view file plus a new route must suggest the lint carrying the design spec, the contracts
