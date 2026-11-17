@@ -312,7 +312,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       canRunAgent={agent.route === "agent"}
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
       destination={importDestination}
-      onOpenAdvanced={() => importRouter.push(MCP_CONNECTORS_HREF)}
+      onOpenAdvanced={() => { navigateWithViewTransition(() => importRouter.push(MCP_CONNECTORS_HREF)); }}
     />
     </>
   );
