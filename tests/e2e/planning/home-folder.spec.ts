@@ -220,7 +220,7 @@ test('files added from elsewhere land in the planning folder intact and are not 
 
   await stubFilePicker(page, [{ name: 'Checkout notes.md', bytes: NOTES }, { name: 'wire.png', bytes: WIRE }]);
   await page.getByRole('button', { name: planning.addFiles }).click();
-  await expect(page.locator('[data-sonner-toast]').filter({ hasText: '2 files' })).toBeVisible();
+  await expect(page.locator('[data-sonner-toast][data-type="success"]')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Checkout notes.md' })).toHaveAttribute('aria-current', 'true');
   await expect(page.getByRole('button', { name: 'wire.png' })).toBeVisible();
   await expect(reader.getByText('From the design review.')).toBeVisible();
@@ -230,6 +230,8 @@ test('files added from elsewhere land in the planning folder intact and are not 
 
   await stubFilePicker(page, [{ name: 'Checkout notes.md', bytes: NOTES }]);
   await page.getByRole('button', { name: planning.addFiles }).click();
-  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'already there' })).toBeVisible();
+  // Only a pick that copied nothing and failed nothing answers with an info toast.
+  await expect(page.locator('[data-sonner-toast][data-type="info"]')).toHaveCount(1);
+  await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0);
   expect(Object.keys(await folderOnDisk(page, 'planning')).sort()).toEqual(['Checkout notes.md', 'brief.md', 'wire.png']);
 });

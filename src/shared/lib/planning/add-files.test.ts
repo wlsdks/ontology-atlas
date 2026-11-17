@@ -12,14 +12,17 @@ const bytes = (text: string) => [...new TextEncoder().encode(text)];
 const blob = (name: string, content: number[]) => ({ name, size: content.length, arrayBuffer: async () => new Uint8Array(content).buffer }) as unknown as File;
 
 /** An in-memory folder that stores whatever a writable receives as bytes, so a `File` arrives intact. */
-function folder(tree: Tree): FileSystemDirectoryHandle {
+function folder(tree: Tree, options: { failWrite?: boolean } = {}): FileSystemDirectoryHandle {
   const file = (name: string): FileSystemFileHandle => ({
     kind: 'file', name,
     getFile: async () => blob(name, tree[name] as number[]),
     createWritable: async () => {
       const parts: number[] = [];
       return {
-        write: async (chunk: Blob | string) => { parts.push(...(typeof chunk === 'string' ? bytes(chunk) : new Uint8Array(await chunk.arrayBuffer()))); },
+        write: async (chunk: Blob | string) => {
+          if (options.failWrite) throw new DOMException('disk full', 'QuotaExceededError');
+          parts.push(...(typeof chunk === 'string' ? bytes(chunk) : new Uint8Array(await chunk.arrayBuffer())));
+        },
         close: async () => { tree[name] = parts; },
         abort: async () => {},
       };
@@ -43,6 +46,10 @@ function folder(tree: Tree): FileSystemDirectoryHandle {
         tree[name] = [];
       }
       return file(name);
+    },
+    removeEntry: async (name: string) => {
+      if (!(name in tree)) throw new DOMException(name, 'NotFoundError');
+      delete tree[name];
     },
   } as unknown as FileSystemDirectoryHandle;
 }
@@ -85,6 +92,13 @@ describe('adding files to the home planning folder in the browser', () => {
     expect(beforeWrite).toHaveBeenCalledExactlyOnceWith('hidden.md');
   });
 
+  it('leaves no empty file behind when a copy fails to write', async () => {
+    const tree: Tree = { 'brief.md': bytes('# Theirs\n') };
+    const outcome = await addPlanningFilesInBrowser(folder(tree, { failWrite: true }), [picked('wire.png', 'PNG'), picked('brief.md', '# Mine\n')]);
+    expect(outcome).toEqual({ added: [], duplicates: 0, unsupported: 0, failed: 2 });
+    expect(tree).toEqual({ 'brief.md': bytes('# Theirs\n') });
+  });
+
   it('never writes over a folder that holds the chosen name', async () => {
     const tree: Tree = { 'plan.md': {} };
     const outcome = await addPlanningFilesInBrowser(folder(tree), [picked('plan.md', '# Plan\n')]);
@@ -96,16 +110,18 @@ describe('adding files to the home planning folder in the browser', () => {
 describe('adding files to the home planning folder in the app', () => {
   beforeEach(() => { bridge.pick.mockReset(); bridge.import.mockReset(); });
 
-  it('sends only listed types to the planning destination and reads back where each landed', async () => {
-    bridge.pick.mockResolvedValue(['/Users/me/Downloads/brief.md', '/Users/me/Downloads/deck.pdf', '/Users/me/Desktop/wire.png']);
+  it('sends every picked path unchanged to the planning destination and counts what the app refused by type', async () => {
+    const paths = ['C:\\Users\\me\\Downloads\\brief.md', '/Users/me/Downloads/deck.pdf', '/Users/me/Desktop/wire.png', '/Users/me/Desktop/notes.md'];
+    bridge.pick.mockResolvedValue(paths);
     bridge.import.mockResolvedValue([
       { pickedName: 'brief.md', status: 'renamed', relativePath: 'planning/brief (2).md', sha256: null, size: null, reason: null },
+      { pickedName: 'deck.pdf', status: 'failed', relativePath: null, sha256: null, size: null, reason: 'unsupported-type' },
       { pickedName: 'wire.png', status: 'duplicate', relativePath: 'planning/wire.png', sha256: null, size: null, reason: null },
+      { pickedName: 'notes.md', status: 'failed', relativePath: null, sha256: null, size: null, reason: 'source-missing' },
     ]);
     const outcome = await pickPlanningFiles({ directory: folder({}), rootPath: '/Users/me/vault' });
-    expect(bridge.pick).toHaveBeenCalledWith('Add planning files');
-    expect(bridge.import).toHaveBeenCalledWith('/Users/me/vault', ['/Users/me/Downloads/brief.md', '/Users/me/Desktop/wire.png'], 'planning');
-    expect(outcome).toEqual({ added: ['brief (2).md'], duplicates: 1, unsupported: 1, failed: 0 });
+    expect(bridge.import).toHaveBeenCalledWith('/Users/me/vault', paths, 'planning');
+    expect(outcome).toEqual({ added: ['brief (2).md'], duplicates: 1, unsupported: 1, failed: 1 });
   });
 
   it('reads a dismissed native picker as no choice at all', async () => {

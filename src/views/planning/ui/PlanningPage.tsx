@@ -95,6 +95,7 @@ export function PlanningPage() {
   const selectedRef = useRef(selected);
   const editingRef = useRef(false);
   const unsavedRef = useRef(false);
+  const mounted = useRef(true);
   const reader = useRef<HTMLDivElement>(null);
   const fileList = useRef<HTMLDivElement>(null);
   const draftOpener = useRef<HTMLElement | null>(null);
@@ -116,6 +117,7 @@ export function PlanningPage() {
     return () => { active = false; };
   }, []);
   useEffect(() => { const currentSequence = sequence; clearPlanningReturn(); return () => { currentSequence.current++; }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const refresh = useCallback(async (scope: PlanningSelection, path: string | null) => {
     if (path && path === selectedRef.current && pendingScroll.current === null && reader.current && readPlanningMemory().identity) pendingScroll.current = reader.current.scrollTop;
     const request = ++sequence.current;
@@ -381,7 +383,8 @@ export function PlanningPage() {
       for (const [path, slug] of marked) if (!outcome.added.includes(path)) unmarkSelfWrite(slug);
       const summary = planningAddSummary(outcome);
       if (summary) toast.show(summary.sentences.map(({ key, values }) => t(key, values)).join(' '), summary.tone);
-      if (readPlanningMemory().selection !== scope) return;
+      // A screen left during the copy keeps its editor and kept draft; only the toast reports.
+      if (!mounted.current || readPlanningMemory().selection !== scope) return;
       const first = outcome.added[0];
       if (first && !unsavedRef.current) {
         if (editingRef.current) closeEditor();
