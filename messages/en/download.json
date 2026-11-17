@@ -8,6 +8,7 @@
   "factMinOsSuffix": " or later",
   "trustLine": "Free · No sign-up · Checked by Apple for malware",
   "trustLineWindows": "Free · No sign-up · Unsigned beta: SmartScreen may warn",
+  "trustLineHandheld": "Free · No sign-up · Nothing to install",
   "heroWindowsCta": "Windows x64 beta",
   "heroPlaygroundCta": "Try it in the browser",
   "windowsUnsignedShort": "unsigned",

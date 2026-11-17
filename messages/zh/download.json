@@ -8,6 +8,7 @@
   "factMinOsSuffix": "及以上",
   "trustLine": "免费 · 无需注册 · 已通过 Apple 恶意软件检查",
   "trustLineWindows": "免费 · 无需注册 · 未签名测试版，SmartScreen 可能会警告",
+  "trustLineHandheld": "免费 · 无需注册 · 无需安装",
   "heroWindowsCta": "Windows x64 测试版",
   "heroPlaygroundCta": "在浏览器中试用",
   "windowsUnsignedShort": "未签名",

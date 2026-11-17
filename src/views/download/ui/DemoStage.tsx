@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
 import { controlClass } from '@/shared/ui/control-class';
@@ -38,7 +38,8 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
 
 function DemoPlayer({ clip }: { clip: DemoClip }) {
   const t = useTranslations('download');
-  const locale = useDocumentLocale();
+  /** The route's locale, which the static export prerenders per page, so each HTML file names its own poster. */
+  const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [started, setStarted] = useState(false);
   const reduced = usePrefersReducedMotion();
@@ -120,15 +121,6 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
         </button>
       </div>
     </div>
-  );
-}
-
-/** Read from `<html lang>`, not the router; the static export's server snapshot is always `en`. */
-function useDocumentLocale(): string {
-  return useSyncExternalStore(
-    () => () => undefined, // `lang` does not change without a remount.
-    () => document.documentElement.lang || 'en',
-    () => 'en',
   );
 }
 

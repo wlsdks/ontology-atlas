@@ -3,7 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setMotionPaused } from '@/shared/motion/motion-pause';
 
-import { PULL_REACH, pullTarget, useSectionPull } from './use-section-pull';
+import {
+  PULL_DWELL_MS,
+  PULL_REACH,
+  glideDuration,
+  glideProgress,
+  pullTarget,
+  useSectionPull,
+} from './use-section-pull';
 
 describe('pullTarget', () => {
   const starts = [900, 1800, 2700];
@@ -22,6 +29,30 @@ describe('pullTarget', () => {
   it('leaves a rest that already sits on a start where it is', () => {
     expect(pullTarget(starts, 1799, -1, 378)).toBeNull();
     expect(pullTarget(starts, 2700, 1, 378)).toBeNull();
+  });
+});
+
+describe('the glide', () => {
+  it('lasts long enough to read as a pull and never longer than 640ms', () => {
+    expect(glideDuration(100)).toBe(480);
+    expect(glideDuration(371)).toBeCloseTo(593.6);
+    expect(glideDuration(-371)).toBeCloseTo(593.6);
+    expect(glideDuration(900)).toBe(640);
+  });
+
+  it('eases in and out and never steps back', () => {
+    let previous = glideProgress(0);
+    expect(previous).toBe(0);
+    for (let i = 1; i <= 100; i += 1) {
+      const next = glideProgress(i / 100);
+      expect(next).toBeGreaterThanOrEqual(previous);
+      previous = next;
+    }
+    expect(previous).toBe(1);
+    // Peak speed of a 371px glide, in px per second: about a fifth of a smooth scroll's.
+    const duration = glideDuration(371);
+    const peak = ((glideProgress(0.505) - glideProgress(0.495)) / (0.01 * duration)) * 371 * 1000;
+    expect(peak).toBeLessThan(1000);
   });
 });
 
@@ -47,7 +78,10 @@ function mountPage(media: { reduced?: boolean; allowed?: boolean } = {}) {
     onscrollend: { value: null },
   });
   pane.getBoundingClientRect = () => ({ top: 0 }) as DOMRect;
-  const scrollTo = vi.fn();
+  /** The glide writes one offset a frame; the mock records each and moves the pane there. */
+  const scrollTo = vi.fn((options: ScrollToOptions) => {
+    pane.scrollTop = options.top ?? pane.scrollTop;
+  });
   pane.scrollTo = scrollTo as unknown as HTMLElement['scrollTo'];
   for (const [attribute, top] of [
     ['data-testid=gateway-film', FILM_TOP],
@@ -80,22 +114,55 @@ function mountPage(media: { reduced?: boolean; allowed?: boolean } = {}) {
     scrollBy(delta);
     rest();
   };
-  return { pane, scrollTo, scrollBy, rest, wheel, turn, place };
+  /** Where the last glide frame left the pane, after the dwell and the glide have both run. */
+  const landing = () => {
+    vi.advanceTimersByTime(PULL_DWELL_MS + 1000);
+    return scrollTo.mock.calls.at(-1)?.[0];
+  };
+  return { pane, scrollTo, scrollBy, rest, wheel, turn, place, landing };
 }
 
 describe('useSectionPull', () => {
-  beforeEach(() => setMotionPaused(false));
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setMotionPaused(false);
+  });
   afterEach(() => {
     document.body.replaceChildren();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
     setMotionPaused(false);
   });
 
-  it('glides on to a section start a wheel left within the reach ahead', () => {
-    const { place, scrollTo, turn } = mountPage();
+  it('glides on to a section start a wheel left within the reach ahead, after a dwell', () => {
+    const { place, scrollTo, turn, landing } = mountPage();
     place(HOW_TOP - 300);
     turn(100);
-    expect(scrollTo).toHaveBeenCalledWith({ top: HOW_TOP - 96, behavior: 'smooth' });
+    vi.advanceTimersByTime(PULL_DWELL_MS - 10);
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(landing()).toEqual({ top: HOW_TOP - 96, behavior: 'instant' });
+    const path = scrollTo.mock.calls.map(([options]) => options.top as number);
+    expect(path.length).toBeGreaterThan(20);
+    expect(path.every((top, i) => i === 0 || top >= path[i - 1]!)).toBe(true);
+  });
+
+  it.each([
+    ['a wheel turn', (pane: HTMLElement) => pane.dispatchEvent(new WheelEvent('wheel', { deltaY: 40 }))],
+    ['a key', () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
+    ['a pointer press', () => window.dispatchEvent(new Event('pointerdown'))],
+    ['a touch', () => window.dispatchEvent(new Event('touchstart'))],
+  ])('lets go of the glide at %s', (_, input) => {
+    const { pane, place, scrollTo, turn } = mountPage();
+    place(HOW_TOP - 300);
+    turn(100);
+    vi.advanceTimersByTime(PULL_DWELL_MS + 200);
+    const reached = pane.scrollTop;
+    expect(reached).toBeGreaterThan(HOW_TOP - 200);
+    expect(reached).toBeLessThan(HOW_TOP - 96);
+    const calls = scrollTo.mock.calls.length;
+    input(pane);
+    vi.advanceTimersByTime(1000);
+    expect(scrollTo).toHaveBeenCalledTimes(calls);
   });
 
   it('leaves a single notch away from a section where the reader put it, either way', () => {
@@ -108,38 +175,42 @@ describe('useSectionPull', () => {
   });
 
   it('carries on only in the direction of travel', () => {
-    const { place, scrollTo, turn } = mountPage();
+    const { place, scrollTo, turn, landing } = mountPage();
     place(HOW_TOP - 96 - 150);
     turn(-100);
     expect(scrollTo).not.toHaveBeenCalled();
     place(FILM_TOP + 250);
     turn(-100);
-    expect(scrollTo).toHaveBeenCalledWith({ top: FILM_TOP, behavior: 'smooth' });
+    expect(landing()).toEqual({ top: FILM_TOP, behavior: 'instant' });
   });
 
   it('pulls on the rest a scrolling key made, not one a link, script or Tab focus made', () => {
-    const { place, scrollTo, scrollBy, rest } = mountPage();
+    const { place, scrollTo, scrollBy, rest, landing } = mountPage();
     place(HOW_TOP - 300);
     scrollBy(100);
     rest();
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
     scrollBy(20);
     rest();
+    vi.advanceTimersByTime(1000);
     expect(scrollTo).not.toHaveBeenCalled();
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     scrollBy(40);
     rest();
-    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(landing()).toEqual({ top: HOW_TOP - 96, behavior: 'instant' });
   });
 
   it('does not pull again when its own glide comes to rest', () => {
-    const { place, scrollTo, turn, scrollBy, rest } = mountPage();
+    const { pane, place, scrollTo, turn, rest, landing } = mountPage();
     place(HOW_TOP - 300);
     turn(100);
-    scrollBy(104);
+    landing();
+    const calls = scrollTo.mock.calls.length;
+    pane.dispatchEvent(new Event('scroll'));
     rest();
-    expect(scrollTo).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1000);
+    expect(scrollTo).toHaveBeenCalledTimes(calls);
   });
 
   it.each([
@@ -149,6 +220,7 @@ describe('useSectionPull', () => {
     const { place, scrollTo, turn } = mountPage(media);
     place(HOW_TOP - 300);
     turn(100);
+    vi.advanceTimersByTime(1000);
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
@@ -157,17 +229,19 @@ describe('useSectionPull', () => {
     setMotionPaused(true);
     place(HOW_TOP - 300);
     turn(100);
+    vi.advanceTimersByTime(1000);
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
   it('reaches as far as its share of the window and no further', () => {
-    const { place, scrollTo, turn } = mountPage();
+    const { place, scrollTo, turn, landing } = mountPage();
     const reach = Math.floor(PULL_REACH * HEIGHT);
     place(HOW_TOP - 96 - reach - 102);
     turn(100);
+    vi.advanceTimersByTime(1000);
     expect(scrollTo).not.toHaveBeenCalled();
     place(HOW_TOP - 96 - reach - 100);
     turn(100);
-    expect(scrollTo).toHaveBeenCalledWith({ top: HOW_TOP - 96, behavior: 'smooth' });
+    expect(landing()).toEqual({ top: HOW_TOP - 96, behavior: 'instant' });
   });
 });

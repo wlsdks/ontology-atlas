@@ -8,6 +8,7 @@
   "factMinOsSuffix": "以降",
   "trustLine": "無料 · 登録不要 · Appleによるマルウェアチェック済み",
   "trustLineWindows": "無料 · 登録不要 · 署名なしのベータのため、SmartScreenが警告する場合があります",
+  "trustLineHandheld": "無料 · 登録不要 · インストール不要",
   "heroWindowsCta": "Windows x64ベータ",
   "heroPlaygroundCta": "ブラウザで試す",
   "windowsUnsignedShort": "署名なし",
