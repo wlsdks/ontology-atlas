@@ -6,15 +6,15 @@ import type { ReactNode } from "react";
 import type { useLibrarySources } from "./use-library-sources";
 
 export function LibraryEmptyFolderStage({
-  t, handle, nativeVaultRootPath, busy, openImport, importDialog, findDocumentsDialog, sources,
+  t, handle, nativeVaultRootPath, busy, openImport, conversationDoor, sources,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   handle: FileSystemDirectoryHandle;
   nativeVaultRootPath: string | null;
   busy: boolean;
   openImport: () => void;
-  importDialog: ReactNode;
-  findDocumentsDialog: ReactNode;
+  /** The way back into a conversation started from this stage, while its dock is put away. */
+  conversationDoor: ReactNode;
   sources: ReturnType<typeof useLibrarySources>;
 }) {
   const { findOpen, discovery, runDiscovery, sourceImportFeedback, handleAddFiles, handleFindDocuments, handleShowFoundDocuments } = sources;
@@ -24,12 +24,8 @@ export function LibraryEmptyFolderStage({
   }, [runDiscovery]);
   const foundCount = discovery?.candidates.length ?? 0;
   return (
-    <main
-      id="main"
-      tabIndex={-1}
-      data-testid="library-page"
-      data-library-state="empty-folder"
-      className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto px-5 py-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"
+    <div
+      className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto px-5 py-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"
     >
       <LibrarySynapseField paused={findOpen} />
       <div
@@ -49,8 +45,7 @@ export function LibraryEmptyFolderStage({
         t={t}
       />
       </div>
-      {importDialog}
-      {findDocumentsDialog}
-    </main>
+      {conversationDoor ? <div className="absolute right-5 top-4">{conversationDoor}</div> : null}
+    </div>
   );
 }

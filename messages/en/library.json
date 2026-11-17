@@ -187,6 +187,8 @@
     "partialOnly": "{count, plural, one {# read only in part} other {# read only in part}}",
     "import": "Bring from a service",
     "importTooltip": "Choose a service, connect it, then choose which documents to bring into this folder",
+    "importedToPlanning": "The documents are in your planning folder",
+    "openPlanning": "Open in Planning",
     "pagesNeedReview": "{count, plural, one {# existing page needs rechecking} other {# existing pages need rechecking}}"
   },
   "wiki": {
