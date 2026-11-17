@@ -111,6 +111,8 @@ test('unsaved editor text survives a visit to another screen and saves afterward
   await goTo(page, 'Planning');
   await expect(editor).toHaveValue('# Brief\n\nKept while away.');
   await page.getByRole('button', { name: planning.save, exact: true }).click();
+  // The restored editor already holds the text, so the save is over only once the editor is gone.
+  await expect(editor).toHaveCount(0);
   await expect(page.locator('[data-planning-reader]').getByText('Kept while away.')).toBeVisible();
   expect(await onDisk(page, 'planning/brief.md')).toBe('# Brief\n\nKept while away.');
 });
