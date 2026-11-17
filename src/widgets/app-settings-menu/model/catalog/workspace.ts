@@ -24,6 +24,13 @@ export const WORKSPACE_CATALOG: readonly SettingsCatalogEntry[] = [
     surface: 'both',
   },
   {
+    id: 'folder-reset',
+    section: 'workspace',
+    labelKey: 'settings.workspaceReset.label',
+    keywordsKey: 'settingsFolder.keywords.reset',
+    surface: 'both',
+  },
+  {
     id: 'folder-documents',
     section: 'workspace',
     labelKey: 'settingsFolder.documentsTitle',

@@ -309,6 +309,17 @@ pub fn import_source_files(
 ) -> Result<Vec<SourceImportResult>, String> {
     let destination = destination.unwrap_or_default();
     let folder = destination.folder();
+    let mut resolved: HashMap<String, PathBuf> = HashMap::new();
+    if destination == ImportDestination::Planning {
+        // Every offer is spent before any refusal, so a refused pick never stays importable.
+        for source_path in &source_paths {
+            if !resolved.contains_key(source_path) {
+                if let Some(canonical) = take_source_path(source_path) {
+                    resolved.insert(source_path.clone(), canonical);
+                }
+            }
+        }
+    }
     let root = canonical_root(&root_path)?;
     let target = root.join(folder);
     if destination == ImportDestination::Planning {
@@ -318,7 +329,6 @@ pub fn import_source_files(
     let mut existing = index_existing_files(&root, folder)?;
     let mut taken = folded_names(destination, &target);
     let mut results = Vec::with_capacity(source_paths.len());
-    let mut resolved: HashMap<String, PathBuf> = HashMap::new();
     let mut landed: HashMap<PathBuf, String> = HashMap::new();
 
     for source_path in source_paths {
@@ -356,6 +366,10 @@ pub fn import_source_files(
             results.push(failure("unusable-file-name"));
             continue;
         };
+        if destination == ImportDestination::Planning && !planning_lists_name(&base_name) {
+            results.push(failure("unsupported-type"));
+            continue;
+        }
 
         let mut source = match fs::File::open(&canonical) {
             Ok(source) => source,
@@ -432,6 +446,13 @@ pub fn import_source_files(
     }
 
     Ok(results)
+}
+
+/// The home scan's rule: its file types, and secret-looking words refused for images only.
+fn planning_lists_name(name: &str) -> bool {
+    let name_os = std::ffi::OsStr::new(name);
+    crate::planning::supported_file(name_os)
+        && (lower_extension(name) == "md" || crate::planning::allowed_component(name_os))
 }
 
 /// The planning folder is read and indexed by path, so a link there would lead both outside.

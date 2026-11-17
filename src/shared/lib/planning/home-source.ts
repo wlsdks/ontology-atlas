@@ -5,7 +5,7 @@ import { planningDocumentFileName } from './document-name';
 export const PLANNING_HOME_FOLDER = 'planning';
 
 /*
- * Mirrors `src-tauri/src/planning/scan.rs` and `confined.rs`, except that a Markdown name is never
+ * Mirrors `src-tauri/src/planning/scan.rs` and `names.rs`, except that a Markdown name is never
  * refused for secret-looking words: the vault session already reads every Markdown file here.
  */
 const MAX_DEPTH = 12;

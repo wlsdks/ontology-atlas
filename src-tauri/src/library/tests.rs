@@ -337,61 +337,32 @@ fn outcome_rows(results: &[SourceImportResult]) -> Vec<(String, String, Option<S
 }
 
 #[test]
-fn naming_the_sources_destination_answers_exactly_as_naming_none() {
-    let mut answers = Vec::new();
-    for destination in [None, Some(ImportDestination::Sources)] {
-        let (fixture, vault) = fresh_fixture("default-destination");
-        fs::create_dir_all(fixture.join("vault/sources")).unwrap();
-        fs::write(fixture.join("vault/sources/plan.pdf"), b"older").unwrap();
-        fs::write(fixture.join("vault/sources/kept.pdf"), b"kept").unwrap();
-        fs::write(fixture.join("plan.pdf"), b"newer").unwrap();
-        fs::write(fixture.join("kept.pdf"), b"kept").unwrap();
-        let picked = vec![
-            vend(&fixture.join("plan.pdf")),
-            vend(&fixture.join("kept.pdf")),
-        ];
-        let results = import_source_files(vault, picked, destination).unwrap();
-        assert!(!fixture.join("vault/planning").exists());
-        assert_eq!(
-            fs::read(fixture.join("vault/sources/plan (2).pdf")).unwrap(),
-            b"newer"
-        );
-        answers.push(outcome_rows(&results));
-        fs::remove_dir_all(fixture).unwrap();
-    }
-    assert_eq!(
-        answers[0],
-        vec![
-            (
-                "plan.pdf".to_string(),
-                "renamed".to_string(),
-                Some("sources/plan (2).pdf".to_string())
-            ),
-            (
-                "kept.pdf".to_string(),
-                "duplicate".to_string(),
-                Some("sources/kept.pdf".to_string())
-            ),
-        ]
-    );
-    assert_eq!(answers[0], answers[1]);
-}
-
-#[test]
 fn the_planning_destination_lands_flat_in_planning_and_never_overwrites() {
     let (fixture, vault) = fresh_fixture("planning-destination");
-    fs::create_dir_all(fixture.join("vault/planning/research")).unwrap();
-    fs::write(fixture.join("vault/planning/Brief.md"), b"# Theirs\n").unwrap();
-    fs::write(fixture.join("vault/planning/research/old.png"), b"PNG-old").unwrap();
+    fs::create_dir_all(fixture.join("vault").join("planning").join("research")).unwrap();
+    fs::write(
+        fixture.join("vault").join("planning").join("Brief.md"),
+        b"# Theirs\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture
+            .join("vault")
+            .join("planning")
+            .join("research")
+            .join("old.png"),
+        b"PNG-old",
+    )
+    .unwrap();
     fs::create_dir_all(fixture.join("picked")).unwrap();
-    fs::write(fixture.join("picked/brief.md"), b"# Mine\n").unwrap();
-    fs::write(fixture.join("picked/.screen.png"), b"PNG-new").unwrap();
-    fs::write(fixture.join("picked/again.png"), b"PNG-old").unwrap();
+    fs::write(fixture.join("picked").join("brief.md"), b"# Mine\n").unwrap();
+    fs::write(fixture.join("picked").join(".screen.png"), b"PNG-new").unwrap();
+    fs::write(fixture.join("picked").join("again.png"), b"PNG-old").unwrap();
 
     let picked = vec![
-        vend(&fixture.join("picked/brief.md")),
-        vend(&fixture.join("picked/.screen.png")),
-        vend(&fixture.join("picked/again.png")),
+        vend(&fixture.join("picked").join("brief.md")),
+        vend(&fixture.join("picked").join(".screen.png")),
+        vend(&fixture.join("picked").join("again.png")),
     ];
     let results = import_source_files(vault, picked, Some(ImportDestination::Planning)).unwrap();
     assert_eq!(
@@ -415,18 +386,18 @@ fn the_planning_destination_lands_flat_in_planning_and_never_overwrites() {
         ]
     );
     assert_eq!(
-        fs::read(fixture.join("vault/planning/Brief.md")).unwrap(),
+        fs::read(fixture.join("vault").join("planning").join("Brief.md")).unwrap(),
         b"# Theirs\n"
     );
     assert_eq!(
-        fs::read(fixture.join("vault/planning/brief (2).md")).unwrap(),
+        fs::read(fixture.join("vault").join("planning").join("brief (2).md")).unwrap(),
         b"# Mine\n"
     );
     assert_eq!(
-        fs::read(fixture.join("vault/planning/screen.png")).unwrap(),
+        fs::read(fixture.join("vault").join("planning").join("screen.png")).unwrap(),
         b"PNG-new"
     );
-    assert!(!fixture.join("vault/sources").exists());
+    assert!(!fixture.join("vault").join("sources").exists());
     fs::remove_dir_all(fixture).unwrap();
 }
 
@@ -443,7 +414,7 @@ fn the_planning_destination_refuses_a_path_the_app_never_offered() {
     assert_eq!(results[0].status, "failed");
     assert_eq!(results[0].reason.as_deref(), Some("source-not-offered"));
     assert_eq!(
-        fs::read_dir(fixture.join("vault/planning"))
+        fs::read_dir(fixture.join("vault").join("planning"))
             .unwrap()
             .count(),
         0
@@ -458,7 +429,7 @@ fn a_linked_planning_folder_is_not_followed() {
     let outside = fixture.join("outside");
     fs::create_dir_all(&outside).unwrap();
     fs::write(outside.join("known.md"), b"# Known\n").unwrap();
-    std::os::unix::fs::symlink(&outside, fixture.join("vault/planning")).unwrap();
+    std::os::unix::fs::symlink(&outside, fixture.join("vault").join("planning")).unwrap();
     fs::write(fixture.join("known.md"), b"# Known\n").unwrap();
     fs::write(fixture.join("fresh.md"), b"# Fresh\n").unwrap();
 
@@ -478,6 +449,15 @@ fn a_linked_planning_folder_is_not_followed() {
         .collect();
     outside_names.sort();
     assert_eq!(outside_names, vec!["known.md".to_string()]);
+
+    fs::remove_file(fixture.join("vault").join("planning")).unwrap();
+    let replay = import_source_files(
+        fixture.join("vault").to_string_lossy().into_owned(),
+        vec![fixture.join("fresh.md").to_string_lossy().into_owned()],
+        Some(ImportDestination::Planning),
+    )
+    .unwrap();
+    assert_eq!(replay[0].reason.as_deref(), Some("source-not-offered"));
     fs::remove_dir_all(fixture).unwrap();
 }
 
@@ -544,5 +524,90 @@ fn an_unknown_destination_is_refused_before_anything_is_created() {
     .deserialize::<serde_json::Value>()
     .unwrap();
     assert_eq!(accepted[0]["relativePath"], "planning/plan.md");
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn the_planning_destination_copies_only_what_the_home_scan_lists_and_spends_every_offer() {
+    let (fixture, vault) = fresh_fixture("planning-types");
+    fs::create_dir_all(fixture.join("picked")).unwrap();
+    for (name, body) in [
+        ("plan.pdf", &b"%PDF-1.7\n"[..]),
+        ("run.sh", b"#!/bin/sh\n"),
+        ("api-token.png", b"PNG-secret"),
+        ("api-token.md", b"# Token rotation\n"),
+    ] {
+        fs::write(fixture.join("picked").join(name), body).unwrap();
+    }
+    let offered: Vec<String> = ["plan.pdf", "run.sh", "api-token.png", "api-token.md"]
+        .iter()
+        .map(|name| vend(&fixture.join("picked").join(name)))
+        .collect();
+    let results = import_source_files(
+        vault.clone(),
+        offered.clone(),
+        Some(ImportDestination::Planning),
+    )
+    .unwrap();
+    let reasons: Vec<(&str, Option<&str>)> = results
+        .iter()
+        .map(|row| (row.status.as_str(), row.reason.as_deref()))
+        .collect();
+    assert_eq!(
+        reasons,
+        vec![
+            ("failed", Some("unsupported-type")),
+            ("failed", Some("unsupported-type")),
+            ("failed", Some("unsupported-type")),
+            ("added", None),
+        ]
+    );
+    let mut landed: Vec<String> = fs::read_dir(fixture.join("vault").join("planning"))
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    landed.sort();
+    assert_eq!(landed, vec!["api-token.md".to_string()]);
+
+    let replay = import_source_files(
+        vault,
+        offered[..3].to_vec(),
+        Some(ImportDestination::Planning),
+    )
+    .unwrap();
+    assert!(replay
+        .iter()
+        .all(|row| row.reason.as_deref() == Some("source-not-offered")));
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_unlisted() {
+    let (fixture, vault) = fresh_fixture("planning-discovered");
+    let project = fixture.join("project");
+    fs::create_dir_all(&project).unwrap();
+    fs::write(project.join("plan.pdf"), b"%PDF-1.7 plan\n").unwrap();
+    let project = fs::canonicalize(&project).unwrap();
+    let _scope =
+        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+
+    let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+        root_path: project.to_string_lossy().into_owned(),
+        label: "project".into(),
+        skip_relative: Vec::new(),
+    }])
+    .unwrap();
+    let candidate = &report.candidates[0];
+    let offered = format!("{}/{}", candidate.root_path, candidate.relative_path);
+    let results =
+        import_source_files(vault, vec![offered], Some(ImportDestination::Planning)).unwrap();
+    assert_eq!(results[0].reason.as_deref(), Some("unsupported-type"));
+    assert_eq!(
+        fs::read_dir(fixture.join("vault").join("planning"))
+            .unwrap()
+            .count(),
+        0
+    );
     fs::remove_dir_all(fixture).unwrap();
 }

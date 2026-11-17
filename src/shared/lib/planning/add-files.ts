@@ -85,13 +85,18 @@ export async function addPlanningFilesInBrowser(
     }
     if (candidate === null) { outcome.failed += 1; continue; }
     let writable: FileSystemWritableFileStream | null = null;
+    let created = false;
     try {
       beforeWrite?.(candidate);
-      writable = await (await directory.getFileHandle(candidate, { create: true })).createWritable();
+      const target = await directory.getFileHandle(candidate, { create: true });
+      created = true;
+      writable = await target.createWritable();
       await writable.write(file);
       await writable.close();
     } catch {
       try { await writable?.abort(); } catch { /* The failed copy is already counted. */ }
+      // The name was free a moment ago, so the empty entry left behind is this copy's own.
+      if (created) try { await directory.removeEntry(candidate); } catch { /* Nothing more can be undone. */ }
       outcome.failed += 1;
       continue;
     }
@@ -102,16 +107,17 @@ export async function addPlanningFilesInBrowser(
   return outcome;
 }
 
-/** Copies paths the native picker offered into the home folder through the app's import command. */
+/**
+ * Copies every path the native picker offered through the app's import command, which applies the
+ * home scan's type rule to the file it would copy and answers `unsupported-type` for the rest.
+ */
 async function addPlanningFilesInApp(rootPath: string, pickedPaths: readonly string[]): Promise<PlanningAddOutcome> {
   const outcome: PlanningAddOutcome = { added: [], duplicates: 0, unsupported: 0, failed: 0 };
-  const addable = pickedPaths.filter((path) => planningHomeFileName(path.slice(path.lastIndexOf('/') + 1)) !== null);
-  outcome.unsupported = pickedPaths.length - addable.length;
-  if (addable.length === 0) return outcome;
   const prefix = `${PLANNING_HOME_FOLDER}/`;
-  for (const result of (await importTauriSourceFiles(rootPath, addable, 'planning')) ?? []) {
+  for (const result of (await importTauriSourceFiles(rootPath, pickedPaths, 'planning')) ?? []) {
     if ((result.status === 'added' || result.status === 'renamed') && result.relativePath?.startsWith(prefix)) outcome.added.push(result.relativePath.slice(prefix.length));
     else if (result.status === 'duplicate') outcome.duplicates += 1;
+    else if (result.reason === 'unsupported-type') outcome.unsupported += 1;
     else outcome.failed += 1;
   }
   return outcome;
