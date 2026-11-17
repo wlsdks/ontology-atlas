@@ -204,7 +204,8 @@
     }
   },
   "playground": {
-    "open": "Play with Moru",
+    "entryIntro": "I'm Moru, Atlas's little friend.",
+    "entryAction": "Play a mini game with me",
     "title": "Play with Moru",
     "close": "Close",
     "howTo": "Move Moru with the arrow keys, your mouse or a finger to catch the falling notes, hearts and stars.",

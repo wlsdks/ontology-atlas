@@ -42,6 +42,7 @@ import { MotionToggle } from '@/shared/ui/controls/motion-toggle';
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { SectionIntro } from './SectionIntro';
 import { ClosingContact } from './ClosingContact';
+import { MoruPlayEntry } from './MoruPlayEntry';
 import { ClosingMap } from './ClosingMap';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import { useSectionPull } from '../lib/use-section-pull';
@@ -292,6 +293,11 @@ function HeroSection({
               className={cn(rise('gateway-t400'), 'mt-5')}
               windowsPrimary={heroWindowsPrimary}
             />
+
+            {/* Secondary to the download: a tiny Moru says who it is and opens its game. */}
+            <div className={cn(rise('gateway-t400'), 'mt-6')}>
+              <MoruPlayEntry />
+            </div>
           </div>
         </div>
 

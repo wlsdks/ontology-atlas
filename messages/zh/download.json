@@ -204,7 +204,8 @@
     }
   },
   "playground": {
-    "open": "和 Moru 一起玩",
+    "entryIntro": "我是 Atlas 的小伙伴 Moru。",
+    "entryAction": "和我玩个小游戏吧",
     "title": "和 Moru 一起玩",
     "close": "关闭",
     "howTo": "用方向键、鼠标或手指移动 Moru，接住落下的音符、爱心和星星。",
