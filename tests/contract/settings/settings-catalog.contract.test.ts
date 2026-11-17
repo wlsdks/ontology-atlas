@@ -25,6 +25,7 @@ const EXPECTED_IDS = {
     'folder',
     'folder-path',
     'folder-shape',
+    'folder-reset',
     'folder-documents',
     'folder-import',
     'folder-connectors',

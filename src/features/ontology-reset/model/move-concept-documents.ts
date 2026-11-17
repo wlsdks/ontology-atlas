@@ -30,6 +30,7 @@ export interface RestoreOutcome {
 
 function splitPath(path: string): { folders: string[]; name: string } {
   const segments = path.split('/').filter(Boolean);
+  if (segments.some((segment) => segment === '.' || segment === '..')) throw new Error(`Path leaves the folder: "${path}"`);
   const name = segments.pop();
   if (!name) throw new Error(`Empty path: "${path}"`);
   return { folders: segments, name };
@@ -45,17 +46,18 @@ async function walkTo(
   return cursor;
 }
 
-async function readText(root: FileSystemDirectoryHandle, path: string): Promise<string> {
+/** Bytes, not text: a copy must be the file as it is on disk, whatever its encoding. */
+async function readBytes(root: FileSystemDirectoryHandle, path: string): Promise<ArrayBuffer> {
   const { folders, name } = splitPath(path);
   const parent = await walkTo(root, folders, false);
-  return (await (await parent.getFileHandle(name)).getFile()).text();
+  return (await (await parent.getFileHandle(name)).getFile()).arrayBuffer();
 }
 
-async function writeText(root: FileSystemDirectoryHandle, path: string, text: string): Promise<void> {
+async function writeBytes(root: FileSystemDirectoryHandle, path: string, bytes: ArrayBuffer): Promise<void> {
   const { folders, name } = splitPath(path);
   const parent = await walkTo(root, folders, true);
   const writable = await (await parent.getFileHandle(name, { create: true })).createWritable();
-  await writable.write(text);
+  await writable.write(bytes);
   await writable.close();
 }
 
@@ -93,7 +95,7 @@ export async function moveConceptDocuments(
   try {
     await ensureRemovedFolder(root);
     for (const path of paths) {
-      await writeText(root, `${keptIn}/${path}`, await readText(root, path));
+      await writeBytes(root, `${keptIn}/${path}`, await readBytes(root, path));
       await removeFile(root, path);
       moved.push(path);
     }
@@ -119,7 +121,7 @@ export async function restoreConceptDocuments(
         continue;
       }
       const copy = `${keptIn}/${path}`;
-      await writeText(root, path, await readText(root, copy));
+      await writeBytes(root, path, await readBytes(root, copy));
       await removeFile(root, copy);
       restored.push(path);
     }

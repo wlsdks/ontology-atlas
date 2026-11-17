@@ -55,6 +55,9 @@ test('Clear all concepts moves the concept documents aside, and Undo puts them b
   const dialog = page.getByTestId('app-settings-reset-dialog');
   await expect(dialog).toContainText('3');
   await expect(dialog.getByTestId('app-settings-reset-cancel')).toBeFocused();
+  // The dialog sits over the settings sheet, which traps Tab too; only the dialog may answer.
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByTestId('app-settings-reset-confirm')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(page.getByTestId('app-settings-popover')).toBeVisible();

@@ -40,14 +40,14 @@ function memoryVault(
       getFile: async () => {
         const text = files.get(path);
         if (text === undefined) throw notFound(path);
-        return { text: async () => text } as File;
+        return { arrayBuffer: async () => Uint8Array.from(Buffer.from(text, 'utf8')).buffer } as unknown as File;
       },
       createWritable: async () => {
         let buffer = '';
         return {
-          write: async (chunk: string) => {
+          write: async (chunk: ArrayBuffer | string) => {
             if (options.failWrite === path) throw new Error(`write failed: ${path}`);
-            buffer += chunk;
+            buffer += typeof chunk === 'string' ? chunk : Buffer.from(new Uint8Array(chunk)).toString('utf8');
           },
           close: async () => {
             calls.push(`write ${path}`);
