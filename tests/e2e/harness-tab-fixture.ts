@@ -549,3 +549,66 @@ export async function installProfilelessHarnessRuntime(page: Page): Promise<void
     };
   });
 }
+
+/**
+ * The same vault before any repository is connected: the binding sidecar is absent until the page
+ * writes it, and inspecting the opened folder answers with the Git repository that holds it.
+ */
+export async function installUnboundHarnessRuntime(page: Page): Promise<void> {
+  await installHarnessRuntime(page);
+  await page.addInitScript(
+    ({ sourceRoot, sourceFiles }) => {
+      const SIDECAR = ".ontology-atlas/project-sources.json";
+      const internals = (window as unknown as {
+        __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
+      }).__TAURI_INTERNALS__;
+      const inner = internals.invoke.bind(internals);
+      const written = new Map<string, string>();
+      internals.invoke = (command, args = {}) => {
+        const path = String((args as { relativePath?: unknown }).relativePath ?? "").replace(/^\/+/, "");
+        switch (command) {
+          case "inspect_project_source":
+            return Promise.resolve({
+              rootPath: sourceRoot,
+              sourceId: "git:storefront",
+              kind: "git",
+              revision: "a".repeat(40),
+              fingerprint: "b".repeat(64),
+              dirty: false,
+              truncated: false,
+              files: sourceFiles,
+            });
+          case "write_vault_text_file":
+            written.set(path, String((args as { content?: unknown }).content ?? ""));
+            return Promise.resolve(null);
+          case "read_vault_text_file":
+            if (written.has(path)) return Promise.resolve({ text: written.get(path), lastModified: Date.now() });
+            break;
+          case "read_vault_binary_file":
+            if (written.has(path)) {
+              const body = new TextEncoder().encode(written.get(path));
+              const stamped = new Uint8Array(8 + body.length);
+              new DataView(stamped.buffer).setBigUint64(0, BigInt(Date.now()), true);
+              stamped.set(body, 8);
+              return Promise.resolve(stamped.buffer);
+            }
+            break;
+          case "vault_path_exists":
+            if (written.has(path)) return Promise.resolve(true);
+            if (path === SIDECAR) return Promise.resolve(false);
+            break;
+          case "list_vault_directory":
+            if (path === ".ontology-atlas" && !written.has(SIDECAR)) {
+              return inner(command, args).then((entries) =>
+                (entries as { name: string }[]).filter((entry) => entry.name !== "project-sources.json"),
+              );
+            }
+            break;
+        }
+        if (path === SIDECAR) return Promise.reject(new Error(`No such file or directory (os error 2): ${path}`));
+        return inner(command, args);
+      };
+    },
+    { sourceRoot: HARNESS_SOURCE_ROOT, sourceFiles: Object.keys(SOURCE_FILES) },
+  );
+}

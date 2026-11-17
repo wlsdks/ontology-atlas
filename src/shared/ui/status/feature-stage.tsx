@@ -58,9 +58,9 @@ export function FeatureStage({
 
   return (
     <motion.section
-      {...rest}
       // Hydration renders once before the preference is known; remounting then draws the settled picture instead of finishing the arrival.
       key={reduced ? 'reduced' : 'moving'}
+      {...rest}
       data-feature-stage
       data-reduced-motion={reduced}
       initial={reduced ? false : OVERLAY_RISE}

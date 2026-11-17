@@ -13,10 +13,9 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { RefreshCw } from 'lucide-react';
 
-import { Button, buttonVariants, FeatureStage, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
+import { Button, FeatureStage, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
 import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 
 import {
@@ -30,6 +29,7 @@ import {
 } from '../lib/harness-view-state';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
+import { HarnessConnectSource } from './HarnessConnectSource';
 import { HarnessUnreadStage } from './HarnessUnreadStage';
 import { HarnessSetupView } from './HarnessSetupView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
@@ -135,13 +135,10 @@ function HarnessPageInner() {
     const name = reportState.sourceRoot.split(/[\\/]+/).filter(Boolean).pop();
     return name ? { name, folders: reportState.report.topLevelFolders } : null;
   }, [reportState]);
-  /*
-   * A bridge is not a harness: a Tauri-shaped stub has one with no connected source. `unsupported`
-   * and `no-source` send the arrival to the blueprint; a named `?view=` still wins.
-   */
   const harnessUnavailable =
     reportState.status === 'unsupported' || reportState.status === 'no-source';
-  const canReadHarness = surfaceHasBridge && !harnessUnavailable;
+  /* `no-source` still arrives on Setup, where the repository is connected; a named `?view=` wins. */
+  const canReadHarness = surfaceHasBridge && reportState.status !== 'unsupported';
   const addressView = resolveAddressView(searchParams, canReadHarness);
   /* A press wins over the address until the next history move; see `setView`. */
   const view: HarnessView = viewOverride ?? addressView;
@@ -264,13 +261,12 @@ function HarnessPageInner() {
               >
                 <HarnessScanProgressPanel progress={reportState.progress} />
               </Surface>
-            ) : reportState.status === 'no-source' ? (
-              <HarnessUnreadStage
-                state="no-source"
-                title={t('noSource')}
-                body={t('noSourceBody')}
-                note={t('noSourceNote')}
-                action={<Link href="/projects/" className={cn(buttonVariants({ variant: 'primary', size: 'lg' }), 'atlas-touch-floor atlas-touch-floor-wide')}>{t('connectSourceAction')}</Link>}
+            ) : reportState.status === 'no-source' && localVault.handle ? (
+              <HarnessConnectSource
+                vaultHandle={localVault.handle}
+                projectSlug={projectSlugs[0] ?? null}
+                docs={localVault.manifest?.docs}
+                onConnected={rereadHarness}
               />
             ) : reportState.status === 'failed' ? (
               /* A dead end with no way out was the one irreversible state on a read-only screen. */

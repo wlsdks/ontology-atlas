@@ -2,7 +2,7 @@
  * Source-role witnesses from vault documents: each is one claim that a node is
  * implemented at a repo-relative path, and the count that lands is a source
  * binding's only honest confidence signal. The app derives the same set in
- * its home view (src/views/home/lib/project-source/project-source-witnesses.ts), and the
+ * the binding feature (src/features/project-source-binding/lib/project-source-witnesses.ts), and the
  * contract test tests/contract/analysis/project-source-connect.contract.test.ts pins the
  * two together so a receipt means the same on both surfaces.
  */

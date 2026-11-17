@@ -30,7 +30,13 @@ the bundled profile. An address that names a view always wins; `?role=` or `?sta
 
 Without a reading, Setup is one centred stage (`HarnessUnreadStage`): a repository card forking to
 the three sections (Context, Guardrails, Verification), then the reason in one sentence and the one
-way forward (get the app in a browser, connect a source folder in the app). The shell-wide
+way forward. In a browser that is getting the app. In the app, a folder with no connected
+repository still arrives on Setup, and the stage connects it in place (`HarnessConnectSource`): it
+names the Git repository that holds the opened folder and connects it in one press, with "Choose
+another folder" beside it; with no such repository the one button opens the folder picker. The
+binding is written to `.ontology-atlas/project-sources.json` and Setup fills in without leaving the
+tab. A failed measurement or write says so on the stage and keeps both buttons. Only a folder that
+records no project, or a binding this stage cannot make, links to Projects. The shell-wide
 `?focus=main` skip anchor every left-rail link carries is deliberately not a deep link.
 
 **Setup** (`harness.views.overview`) opens with one sentence, `harness.explainer`, and beside it a

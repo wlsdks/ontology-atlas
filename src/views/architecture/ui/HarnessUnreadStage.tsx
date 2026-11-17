@@ -50,7 +50,7 @@ export function HarnessUnreadStage({ state, title, body, action, note }: {
   title: string;
   body: string;
   action: ReactNode;
-  note?: string;
+  note?: ReactNode;
 }) {
   const t = useTranslations('harness');
   const labels = [t('sections.context.title'), t('sections.guardrails.title'), t('sections.verification.title')];

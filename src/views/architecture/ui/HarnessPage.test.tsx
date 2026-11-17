@@ -41,6 +41,9 @@ vi.mock('@/features/harness-report', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/harness-report')>()),
   useHarnessReport: () => state.report ?? { status: 'unsupported' },
 }));
+vi.mock('@/features/vault-ontology', () => ({
+  useOntologyInsight: () => ({ insight: null, error: null }),
+}));
 /* The blueprint is a whole workbench with its own bridge reads; this file is about the shell. */
 vi.mock('./ArchitecturePage', () => ({
   ArchitecturePage: ({
@@ -143,21 +146,11 @@ describe('the destination identity', () => {
     expect(screen.queryByTestId('harness-setup')).toBeNull();
   });
 
-  it('arrives on the blueprint when a bridge exists but no harness can be read', () => {
-    /* A Tauri-shaped stub has a bridge but no project source: the question is whether a reading exists, not a bridge. */
+  it('arrives on Setup in the app before a repository is connected, where it is connected', () => {
     state.bridge = true;
     state.report = { status: 'no-source' };
     mount();
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('harness-setup')).toBeNull();
-  });
-
-  it('still opens the overview when an address names it, source or not', () => {
-    /* A shared link opens what it says; the fallback moves the arrival, never the address. */
-    state.bridge = true;
-    state.report = { status: 'no-source' };
-    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
-    mount();
+    expect(screen.getByTestId('harness-unread-stage')).toHaveAttribute('data-harness-unread', 'no-source');
     expect(screen.queryByTestId('architecture-page')).toBeNull();
   });
 

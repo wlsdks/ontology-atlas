@@ -2,7 +2,7 @@ import type { useTopologyPreferences } from "../use-topology-preferences";
 import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model";
 
 import { useMemo } from "react";
-import { projectSlugForSource, useProjectSourceModel } from "./use-project-source-model";
+import { projectSlugForSource, useProjectSourceModel } from "@/features/project-source-binding";
 import { buildProjectSourceReadinessRefreshToken, useProjectSourceReadiness } from "./use-unbound-project-source";
 
 interface Options {
