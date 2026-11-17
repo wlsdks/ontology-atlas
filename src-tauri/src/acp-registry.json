@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-16T17:31:50.756Z",
+  "npmDependencyCutoff": "2026-11-17T01:55:56.104Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@2.6.0",
+        "package": "@agentclientprotocol/codex-acp@2.7.0",
         "args": []
       }
     },
@@ -276,7 +276,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.28",
+        "package": "dimcode@0.5.29",
         "args": [
           "acp"
         ]
@@ -436,7 +436,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.87",
+        "package": "@xai-official/grok@1.0.88",
         "args": [
           "agent",
           "stdio"
