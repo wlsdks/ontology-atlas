@@ -9,6 +9,9 @@ describe('planningDocumentFileName', () => {
     ['..hidden plan', 'hidden-plan.md'],
     ['결제 개편', '결제-개편.md'],
     ['???', 'untitled.md'],
+    ['CON', 'CON-document.md'],
+    ['lpt1', 'lpt1-document.md'],
+    ['Console', 'Console.md'],
     ['\u0007', 'untitled.md'],
     ['​', 'untitled.md'],
   ])('turns title row %# into a safe visible file name', (title, expected) => {
