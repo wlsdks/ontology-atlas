@@ -192,6 +192,65 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
   return { nodes, edges };
 }
 
+/** Each kind's smallest and largest mark, and the radius a concept with no relation starts from. */
+const MARK_RANGE: Record<FilmKind, { lo: number; hi: number; base: number }> = {
+  project: { lo: 11, hi: 11, base: 11 },
+  domain: { lo: 8, hi: 10, base: 6.5 },
+  capability: { lo: 4.5, hi: 6.5, base: 3.2 },
+  element: { lo: 3, hi: 4, base: 2.2 },
+};
+
+/** A mark's radius: heavier with every relation it carries, inside its kind's range; smaller on a phone. */
+export function markRadius(kind: string, degree: number, wide: boolean): number {
+  const range = MARK_RANGE[kind as FilmKind] ?? MARK_RANGE.element;
+  const r = Math.min(range.hi, Math.max(range.lo, range.base + 0.9 * Math.sqrt(Math.max(0, degree))));
+  return wide ? r : r * 0.85;
+}
+
+/** Marks that carry a halo: the project, the cluster hubs, then the busiest of degree 8 or more. */
+export function haloMarks(scene: FilmScene, max = 12): number[] {
+  const out: number[] = [];
+  const add = (i: number) => {
+    if (out.length < max && !out.includes(i)) out.push(i);
+  };
+  const byDegree = (a: number, b: number) =>
+    scene.nodes[b]!.degree - scene.nodes[a]!.degree || scene.nodes[a]!.id.localeCompare(scene.nodes[b]!.id);
+  const all = scene.nodes.map((_, i) => i);
+  all.filter((i) => scene.nodes[i]!.depth === 0).forEach(add);
+  const held = new Set(scene.nodes.filter((n) => n.depth > 1).map((n) => n.cluster));
+  all.filter((i) => scene.nodes[i]!.depth === 1 && held.has(i)).sort(byDegree).forEach(add);
+  all.filter((i) => scene.nodes[i]!.degree >= 8).sort(byDegree).forEach(add);
+  return out;
+}
+
+/**
+ * When each relation starts to draw, in ms: `delay` after the later of its two ends lands, and
+ * never before `earliest`. Inside a moment a containment line goes first (the others wait
+ * `containLead`). The last few are spread so the very last starts at `lastStart`, while the first
+ * ones follow their landings closely. `skip` relations (already drawn) get -1.
+ */
+export function scheduleRelations(
+  edges: readonly FilmEdge[],
+  land: readonly number[],
+  skip: ReadonlySet<number>,
+  { delay, containLead, earliest, lastStart }: { delay: number; containLead: number; earliest: number; lastStart: number },
+): number[] {
+  const starts = edges.map(() => -1);
+  const keyed = edges
+    .map((edge, k) => ({
+      k,
+      key: Math.max(earliest, Math.max(land[edge.from] ?? 0, land[edge.to] ?? 0) + delay) + (edge.contains ? 0 : containLead),
+    }))
+    .filter(({ k }) => !skip.has(k))
+    .sort((a, b) => a.key - b.key || a.k - b.k);
+  const first = keyed[0]?.key ?? earliest;
+  keyed.forEach(({ k, key }, rank) => {
+    const r = keyed.length <= 1 ? 1 : rank / (keyed.length - 1);
+    starts[k] = Math.max(key, first + (lastStart - first) * r ** 3);
+  });
+  return starts;
+}
+
 /** The file the film opens: a capability inside a domain that declares the most dependencies. */
 export interface FilmCloseUp {
   index: number;

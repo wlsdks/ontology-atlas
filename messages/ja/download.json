@@ -127,53 +127,80 @@
   "film": {
     "label": "Markdownがマップになるまで",
     "actsLabel": "シーンへ移動",
+    "regionCount": "概念{count}個",
     "acts": {
       "1": {
-        "title": "オントロジーはただのMarkdownファイル",
-        "body": "概念ひとつがMarkdownファイルひとつです。"
+        "title": "概念ひとつが「.md」ファイルひとつ",
+        "body": "オントロジーは、リポジトリの中のただのMarkdownファイルです。"
       },
       "2": {
-        "title": "冒頭の数行がそのままグラフ",
+        "title": "冒頭の数行が点と線になる",
         "body": "各ファイルの冒頭に書いた数行が、そのままマップの点と線になります。"
       },
       "3": {
-        "title": "ファイルがそれぞれの場所へ",
-        "body": "概念はそれぞれ、自分を含む概念のそばに収まります。"
+        "title": "ファイルが場所を見つけ、関係がつながる",
+        "body": "概念はそれぞれ自分を含む概念のそばに収まり、ファイルに書かれた{relations}本の関係が線になります。"
       },
       "4": {
-        "title": "関係がひとりでに線を引く",
-        "body": "ファイルに書かれた{relations}本の関係が線になります。"
-      },
-      "5": {
         "title": "あなたとエージェントが同じマップを読む",
+        "caption": "概念{concepts}個 · 関係{relations}本",
         "body": "概念{concepts}個と関係{relations}本でできた、このリポジトリの実際のマップです。"
       }
     }
   },
   "harnessFilm": {
-    "label": "ハーネスをひと目で",
+    "label": "ハーネスタブ：リポジトリのエージェント設定",
+    "example": "例のリポジトリ",
     "actsLabel": "シーンへ移動",
     "acts": {
       "1": {
-        "title": "エージェントが最初に読む指示",
-        "body": "作業前に読む{instructions}個のファイルを、1つの画面にまとめます。"
+        "title": "リポジトリのエージェント設定を一度に集めます",
+        "body": "CLAUDE.md、AGENTS.md、ルール、スキル、サブエージェント、hook、スクリプト、CIワークフローを一度に読み、エージェントが読むもの、実行前に止めるもの、実行後に確認するものに分けます。"
       },
       "2": {
-        "title": "実行前に止めるフック",
-        "body": "<code>{first}</code>のようなコマンドは、実行前にフックが止めます。"
+        "title": "エージェントツールごとに絞り込みます",
+        "body": "Claude CodeやCodexなど、見つかったツールを1つ選ぶと、そのツールが読むファイルだけが残り、件数もそれに合わせて変わります。"
       },
       "3": {
-        "title": "作業後に走るチェック",
-        "body": "終えた作業は、スクリプト、Gitフック、CIワークフローが確かめます。"
+        "title": "見つからないhookスクリプトを知らせます",
+        "body": "設定が呼んでいるのにディスクにないhookスクリプトや、Codexの既定上限32 KiBを超えたAGENTS.mdを1行で知らせ、押すと直す場所へ移動します。"
       },
       "4": {
-        "title": "このリポジトリの実際のハーネス"
+        "title": "ClaudeとCodexの設定のずれを知らせます",
+        "caption": "Atlasアプリのハーネスタブです。リポジトリは読むだけです。",
+        "body": "スキルやサブエージェントのClaude CodeのコピーとCodexのコピーが異なると、ファイルに印を付け、2つのコピーを並べて表示します。リポジトリは読むだけです。"
       }
     },
-    "counts": {
-      "instructions": "指示ファイル",
-      "hooks": "フック",
-      "checks": "チェック"
+    "screen": {
+      "title": "ハーネス",
+      "views": {
+        "overview": "構成",
+        "architecture": "アーキテクチャ"
+      },
+      "toolAll": "すべて",
+      "sections": {
+        "context": {
+          "title": "コンテキスト",
+          "caption": "エージェントが読むファイル"
+        },
+        "guardrails": {
+          "title": "ガードレール",
+          "caption": "実行前に止めるもの"
+        },
+        "verification": {
+          "title": "検証",
+          "caption": "実行後に確認するもの"
+        }
+      },
+      "sectionTotal": "{count}件",
+      "problemCount": "問題{count}件",
+      "problemHookMissing": "hookスクリプトがありません：{path}",
+      "problemShow": "{count, plural, =1 {表示} other {最初の問題を表示}}",
+      "hookMissing": "スクリプトなし",
+      "hookWired": "接続済み",
+      "differsFromCodex": "Codexのコピーと異なる",
+      "differsFromClaude": "Claude Codeのコピーと異なる",
+      "detailReadBy": "読むツール"
     }
   },
   "motion": {
@@ -181,37 +208,33 @@
     "play": "動きを再開"
   },
   "faq": {
-    "eyebrow": "よくある質問",
+    "eyebrow": "質問",
     "title": "インストールの前に",
     "items": {
-      "what": {
-        "q": "Ontology Atlasとは何ですか？",
-        "a": "コードが何をして、なぜその構造なのかを、リポジトリ内のMarkdownファイルとして残すオープンソースのアプリです。あなたとコーディングエージェントが同じマップを読みます。"
-      },
-      "agents": {
-        "q": "どのコーディングエージェントで使えますか？",
-        "a": "Claude Code、Codex、Cursor、AntigravityがMCPでマップを読みます。デスクトップアプリでは、Claude CodeとCodexをボタンひとつで接続できます。"
-      },
       "privacy": {
         "q": "コードが外部に送られますか？",
         "a": "Atlasにはアカウントも、Atlasが運営するバックエンドもありません。マップはあなたのコンピュータ上のフォルダで読み書きします。接続したコーディングエージェントは、これまでどおり自分のプロバイダと通信します。"
       },
-      "price": {
-        "q": "無料ですか？",
-        "a": "はい。MITライセンスなので、仕事で使うことも、フォークして改変することも、ソースからビルドすることもできます。"
-      },
       "difference": {
         "q": "コードグラフやコード検索ツールとの違いは？",
         "a": "それらはコードから計算した結果を見せます。Atlasはコードだけでは分からない目的と理由を書き残し、その記録の変更をMarkdownの差分としてひとつずつ確認します。マップの線は書き残した関係であり、実行時の影響の証拠ではありません。"
-      },
-      "platforms": {
-        "q": "どこで動きますか？",
-        "a": "Apple Silicon搭載のmacOSで動き、Appleによるマルウェアチェック済みです。Windows x64はベータ版です。マップは何もインストールせずにブラウザでも開けます。"
       }
+    },
+    "diagram": {
+      "computer": "あなたのコンピュータ",
+      "folder": "リポジトリのフォルダ",
+      "app": "Atlasアプリ",
+      "agent": "コーディングエージェント",
+      "readsWrites": "読み書き",
+      "mcp": "MCP",
+      "traffic": "エージェント本来の通信",
+      "provider": "エージェントのプロバイダ",
+      "noBackend": "Atlasのバックエンドなし"
     }
   },
   "playground": {
-    "open": "モルと遊ぶ",
+    "entryIntro": "Atlasの小さな友だち、モルです。",
+    "entryAction": "ぼくとミニゲームで遊ぼう",
     "title": "モルと遊ぶ",
     "close": "閉じる",
     "howTo": "矢印キーやマウス、指でモルを動かして、落ちてくる音符やハート、星を受け止めてね。",

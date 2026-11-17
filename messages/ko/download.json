@@ -127,53 +127,80 @@
   "film": {
     "label": "마크다운이 지도가 되는 과정",
     "actsLabel": "장면으로 건너뛰기",
+    "regionCount": "개념 {count}개",
     "acts": {
       "1": {
-        "title": "온톨로지는 그냥 마크다운 파일이에요",
-        "body": "개념 하나가 .md 파일 하나예요."
+        "title": "개념 하나가 .md 파일 하나예요",
+        "body": "온톨로지는 저장소 안의 그냥 마크다운 파일이에요."
       },
       "2": {
-        "title": "맨 위 몇 줄이 곧 그래프예요",
+        "title": "맨 위 몇 줄이 점과 선이 돼요",
         "body": "파일 맨 위에 적은 몇 줄이 그대로 지도의 점과 선이 돼요."
       },
       "3": {
-        "title": "파일마다 제자리를 찾아요",
-        "body": "개념마다 자신을 품은 개념 곁에 자리를 잡아요."
+        "title": "파일이 자리를 찾고 관계가 이어져요",
+        "body": "개념마다 자신을 품은 개념 곁에 자리를 잡고, 파일에 적힌 관계 {relations}개가 선이 돼요."
       },
       "4": {
-        "title": "관계가 스스로 선을 그어요",
-        "body": "파일에 적힌 관계 {relations}개가 선이 돼요."
-      },
-      "5": {
         "title": "나와 에이전트가 같은 지도를 읽어요",
+        "caption": "개념 {concepts}개 · 관계 {relations}개",
         "body": "개념 {concepts}개와 관계 {relations}개로 된 이 저장소의 실제 지도예요."
       }
     }
   },
   "harnessFilm": {
-    "label": "하네스를 한눈에",
+    "label": "하네스 탭: 내 저장소의 에이전트 설정",
+    "example": "예시 저장소",
     "actsLabel": "장면으로 건너뛰기",
     "acts": {
       "1": {
-        "title": "에이전트가 먼저 읽는 지침",
-        "body": "작업 전에 읽는 파일 {instructions}개를 한 화면에 모아요."
+        "title": "내 저장소의 에이전트 설정을 한 번에 모아요",
+        "body": "CLAUDE.md, AGENTS.md, 규칙, 스킬, 서브에이전트, 훅, 스크립트, CI 워크플로를 한 번 읽어서 에이전트가 읽는 것, 실행 전에 막는 것, 실행 뒤에 검사하는 것으로 나눠요."
       },
       "2": {
-        "title": "실행 전에 막는 훅",
-        "body": "<code>{first}</code> 같은 명령은 실행 전에 훅이 막아요."
+        "title": "에이전트 도구별로 걸러 봐요",
+        "body": "Claude Code나 Codex처럼 찾은 도구 하나를 고르면 그 도구가 읽는 파일만 남고 숫자도 따라 바뀌어요."
       },
       "3": {
-        "title": "작업 뒤에 도는 검사",
-        "body": "끝낸 일은 스크립트, Git 훅, CI 워크플로가 확인해요."
+        "title": "빠진 훅 스크립트를 찾아 줘요",
+        "body": "설정이 부르는데 디스크에 없는 훅 스크립트, Codex 기본 한도 32 KiB를 넘은 AGENTS.md를 한 줄로 알려 주고, 누르면 고칠 자리로 가요."
       },
       "4": {
-        "title": "이 저장소의 실제 하네스예요"
+        "title": "Claude와 Codex 설정이 어긋나면 알려 줘요",
+        "caption": "Atlas 앱의 하네스 탭이에요. 저장소는 읽기만 해요.",
+        "body": "스킬이나 서브에이전트의 Claude Code 사본과 Codex 사본이 다르면 파일에 표시하고 두 사본을 나란히 보여 줘요. 저장소는 읽기만 해요."
       }
     },
-    "counts": {
-      "instructions": "지침 파일",
-      "hooks": "훅",
-      "checks": "검사"
+    "screen": {
+      "title": "하네스",
+      "views": {
+        "overview": "구성",
+        "architecture": "아키텍처"
+      },
+      "toolAll": "전체",
+      "sections": {
+        "context": {
+          "title": "컨텍스트",
+          "caption": "에이전트가 읽는 파일"
+        },
+        "guardrails": {
+          "title": "가드레일",
+          "caption": "실행 전에 막는 것"
+        },
+        "verification": {
+          "title": "검증",
+          "caption": "실행 뒤에 검사하는 것"
+        }
+      },
+      "sectionTotal": "{count}개",
+      "problemCount": "문제 {count}개",
+      "problemHookMissing": "훅 스크립트가 없어요: {path}",
+      "problemShow": "{count, plural, =1 {보기} other {첫 문제 보기}}",
+      "hookMissing": "스크립트 없음",
+      "hookWired": "연결됨",
+      "differsFromCodex": "Codex 사본과 다름",
+      "differsFromClaude": "Claude Code 사본과 다름",
+      "detailReadBy": "읽는 도구"
     }
   },
   "motion": {
@@ -181,37 +208,33 @@
     "play": "움직임 다시 켜기"
   },
   "faq": {
-    "eyebrow": "자주 묻는 질문",
+    "eyebrow": "질문",
     "title": "설치하기 전에",
     "items": {
-      "what": {
-        "q": "Ontology Atlas는 무엇인가요?",
-        "a": "코드가 무엇을 하고 왜 그렇게 짜였는지를 저장소 안의 마크다운 파일로 남기는 오픈소스 앱이에요. 나와 코딩 에이전트가 같은 지도를 읽어요."
-      },
-      "agents": {
-        "q": "어떤 코딩 에이전트와 함께 쓸 수 있나요?",
-        "a": "Claude Code, Codex, Cursor, Antigravity가 MCP로 지도를 읽어요. 데스크톱 앱에서는 Claude Code와 Codex를 버튼 하나로 연결해요."
-      },
       "privacy": {
         "q": "내 코드가 밖으로 나가나요?",
         "a": "Atlas에는 계정도, Atlas가 운영하는 백엔드도 없어요. 지도는 내 컴퓨터의 폴더에서 읽고 써요. 연결한 코딩 에이전트는 원래 하던 대로 자기 제공자와 통신해요."
       },
-      "price": {
-        "q": "무료인가요?",
-        "a": "네. MIT 라이선스라 회사에서 써도, 포크해서 고쳐도, 소스에서 직접 빌드해도 돼요."
-      },
       "difference": {
         "q": "코드 그래프나 코드 검색 도구와 무엇이 다른가요?",
         "a": "그런 도구는 코드에서 계산해 낸 것을 보여 줘요. Atlas는 코드만으로는 알 수 없는 목적과 이유를 적어 두고, 그 기록이 바뀔 때마다 마크다운 변경으로 하나씩 검토해요. 지도의 선은 적어 둔 관계이지, 실행 중에 영향을 준다는 증거는 아니에요."
-      },
-      "platforms": {
-        "q": "어디에서 실행되나요?",
-        "a": "Apple Silicon Mac의 macOS에서 실행되고 Apple의 악성코드 검사를 거쳤어요. Windows x64는 베타예요. 지도는 아무것도 설치하지 않고 브라우저에서도 열려요."
       }
+    },
+    "diagram": {
+      "computer": "내 컴퓨터",
+      "folder": "저장소 폴더",
+      "app": "Atlas 앱",
+      "agent": "코딩 에이전트",
+      "readsWrites": "읽고 써요",
+      "mcp": "MCP",
+      "traffic": "에이전트가 원래 하던 통신",
+      "provider": "에이전트 제공자",
+      "noBackend": "Atlas 백엔드 없음"
     }
   },
   "playground": {
-    "open": "모루랑 놀기",
+    "entryIntro": "Atlas의 작은 친구 모루예요.",
+    "entryAction": "저랑 미니 게임 해요",
     "title": "모루랑 놀기",
     "close": "닫기",
     "howTo": "화살표 키나 마우스, 손가락으로 모루를 움직여 떨어지는 음표와 하트, 별을 받아 보세요.",

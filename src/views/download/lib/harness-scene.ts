@@ -1,369 +1,330 @@
 /**
- * The harness film's cast and stage geometry, laid out from `harness-facts.json` (this repository's
- * real instruction files, hooks and checks). Every object keeps one identity across the four acts:
- * an instruction file is a card in a stack, then a mark in the first strip; a gate hook is a plate,
- * then a mark in the second; a check is a cell, then a piece of the third underline.
+ * The harness film's cast: one fixed example repository, `my-app/`, read the way the app's Harness
+ * › Setup screen reads a repository, and the geometry of the window the film draws that screen in.
+ * The cast is an example a visitor could own, never this repository's own harness, so the film
+ * shows what the tab does rather than what Atlas happens to have. Each file carries the tools that
+ * read it; counts under a tool filter are computed from those, as the tab computes them.
  */
 
-export type InstructionKind = 'instructions' | 'rules' | 'skill' | 'agent';
-export type CheckGroup = 'scripts' | 'gitHooks' | 'workflows';
+export type AreaId = 'context' | 'guardrails' | 'verification';
+export type GroupId =
+  | 'instructions'
+  | 'rules'
+  | 'skills'
+  | 'subagents'
+  | 'mcp'
+  | 'permissions'
+  | 'blockingHooks'
+  | 'scripts'
+  | 'gitHooks'
+  | 'workflows';
+export type Tool = 'claude-code' | 'codex';
+/** `null` is All. */
+export type Filter = Tool | null;
 
-export interface HarnessFacts {
-  instructions: ReadonlyArray<{ path: string; kind: string }>;
-  hooks: ReadonlyArray<{ name: string; config: string; events: string; step: string }>;
-  checks: { scripts: readonly string[]; gitHooks: readonly string[]; workflows: readonly string[] };
-  /** The Bash PreToolUse hooks every command below was run through, in their configured order. */
-  gate: readonly string[];
-  commands: ReadonlyArray<{ command: string; blockedBy: string | null }>;
+export const TOOL_NAMES: Record<Tool, string> = { 'claude-code': 'Claude Code', codex: 'Codex' };
+
+/** The three areas in the order of the agent's loop, each with its categories in the tab's order. */
+export const AREAS: ReadonlyArray<{ id: AreaId; groups: readonly GroupId[] }> = [
+  { id: 'context', groups: ['instructions', 'rules', 'skills', 'subagents', 'mcp'] },
+  { id: 'guardrails', groups: ['permissions', 'blockingHooks'] },
+  { id: 'verification', groups: ['scripts', 'gitHooks', 'workflows'] },
+];
+
+export interface ExampleFile {
+  /** What pane 2 lists. */
+  label: string;
+  group: GroupId;
+  /** The tree row the scan reads it from. */
+  row: string;
+  /** Empty for what runs whichever agent worked: scripts, Git hooks, CI workflows. */
+  tools: readonly Tool[];
+  event?: string;
+  /** A hook script the config names and the disk lacks. */
+  missing?: boolean;
+  /** A copy whose twin in the other tool's folder differs. */
+  differs?: Tool;
 }
 
-export interface HarnessScene {
-  /** Instruction files by kind, in the order the stacks stand. */
-  columns: Array<{ kind: InstructionKind; paths: string[] }>;
-  gate: string[];
-  /** `lane` is the gate plate that denies the command, or -1 when every hook lets it through. */
-  commands: Array<{ command: string; lane: number }>;
-  /** For each hook, the gate plate it was in the hook act, or -1. */
-  hookPlates: number[];
-  bands: Array<{ group: CheckGroup; names: string[] }>;
-  counts: { instructions: number; hooks: number; checks: number };
+export const EXAMPLE_REPO = 'my-app/';
+
+const claude: readonly Tool[] = ['claude-code'];
+const codex: readonly Tool[] = ['codex'];
+const everyone: readonly Tool[] = [];
+
+/** Twins sit side by side, so a filter that hides one copy closes every other row. */
+export const EXAMPLE_FILES: readonly ExampleFile[] = [
+  { label: 'AGENTS.md', group: 'instructions', row: 'AGENTS.md', tools: codex },
+  { label: 'CLAUDE.md', group: 'instructions', row: 'CLAUDE.md', tools: claude },
+  ...['api', 'db', 'frontend', 'security', 'style', 'testing'].map((name) => ({
+    label: `.claude/rules/${name}.md`,
+    group: 'rules' as const,
+    row: '.claude/rules/',
+    tools: claude,
+  })),
+  ...['code-review', 'release-notes', 'db-migrate', 'write-tests'].flatMap((name) => [
+    { label: `.claude/skills/${name}`, group: 'skills' as const, row: '.claude/skills/', tools: claude },
+    { label: `.agents/skills/${name}`, group: 'skills' as const, row: '.agents/', tools: codex },
+  ]),
+  { label: '.claude/agents/reviewer.md', group: 'subagents', row: '.claude/agents/', tools: claude, differs: 'codex' },
+  { label: '.agents/agents/reviewer.md', group: 'subagents', row: '.agents/', tools: codex, differs: 'claude-code' },
+  { label: '.claude/agents/planner.md', group: 'subagents', row: '.claude/agents/', tools: claude },
+  { label: '.agents/agents/planner.md', group: 'subagents', row: '.agents/', tools: codex },
+  { label: '.mcp.json', group: 'mcp', row: '.mcp.json', tools: claude },
+  { label: '.claude/settings.json', group: 'permissions', row: '.claude/settings.json', tools: claude },
+  { label: 'block-force-push.sh', group: 'blockingHooks', row: '.claude/hooks/', tools: claude, event: 'PreToolUse', missing: true },
+  { label: 'block-publish.sh', group: 'blockingHooks', row: '.claude/hooks/', tools: claude, event: 'PreToolUse' },
+  { label: 'protect-env.sh', group: 'blockingHooks', row: '.claude/hooks/', tools: claude, event: 'PreToolUse' },
+  ...['lint', 'typecheck', 'test'].map((name) => ({ label: name, group: 'scripts' as const, row: 'package.json', tools: everyone })),
+  ...['pre-commit', 'pre-push'].map((name) => ({ label: name, group: 'gitHooks' as const, row: '.githooks/', tools: everyone })),
+  ...['ci.yml', 'e2e.yml', 'lint.yml', 'release.yml'].map((name) => ({
+    label: name,
+    group: 'workflows' as const,
+    row: '.github/workflows/',
+    tools: everyone,
+  })),
+];
+
+/** The tab keeps a file under a filter when that tool reads it, or when it runs for every agent. */
+export function visibleTo(file: ExampleFile, filter: Filter): boolean {
+  return filter === null || file.tools.length === 0 || file.tools.includes(filter);
 }
 
-export const COLUMN_KINDS: readonly InstructionKind[] = ['instructions', 'rules', 'skill', 'agent'];
-const BAND_GROUPS: readonly CheckGroup[] = ['scripts', 'gitHooks', 'workflows'];
-
-function kindOf(kind: string): InstructionKind {
-  return kind === 'rules' || kind === 'skill' || kind === 'agent' ? kind : 'instructions';
+export function areaOf(group: GroupId): AreaId {
+  return AREAS.find((area) => area.groups.includes(group))!.id;
 }
 
-export function buildHarnessScene(facts: HarnessFacts): HarnessScene {
-  const columns = COLUMN_KINDS.map((kind) => ({
-    kind,
-    paths: facts.instructions.filter((entry) => kindOf(entry.kind) === kind).map((entry) => entry.path),
-  }));
-  const gate = [...facts.gate];
-  const commands = facts.commands.map((entry) => ({
-    command: entry.command,
-    lane: entry.blockedBy === null ? -1 : gate.indexOf(entry.blockedBy),
-  }));
-  /* Each plate becomes the first hook of its name, the one the Claude settings run. */
-  const claimed = new Set<number>();
-  const hookPlates = facts.hooks.map((hook) => {
-    const plate = gate.indexOf(hook.name);
-    if (plate < 0 || claimed.has(plate)) return -1;
-    claimed.add(plate);
-    return plate;
+export function groupCounts(filter: Filter): Record<GroupId, number> {
+  const counts = Object.fromEntries(AREAS.flatMap((area) => area.groups.map((group) => [group, 0]))) as Record<GroupId, number>;
+  for (const file of EXAMPLE_FILES) if (visibleTo(file, filter)) counts[file.group] += 1;
+  return counts;
+}
+
+export function areaTotals(filter: Filter): Record<AreaId, number> {
+  const counts = groupCounts(filter);
+  return Object.fromEntries(AREAS.map((area) => [area.id, area.groups.reduce((sum, group) => sum + counts[group], 0)])) as Record<
+    AreaId,
+    number
+  >;
+}
+
+export function itemsOf(group: GroupId): ExampleFile[] {
+  return EXAMPLE_FILES.filter((file) => file.group === group);
+}
+
+/** The scan's tree: one row per folder or file it reads, in the order `ls -a` lists them. */
+export interface TreeRow {
+  path: string;
+  area: AreaId;
+  /** What this row adds to each category it fills. */
+  adds: Array<{ group: GroupId; n: number }>;
+}
+
+export const TREE: readonly TreeRow[] = [...new Set(EXAMPLE_FILES.map((file) => file.row))]
+  .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  .map((path) => {
+    const files = EXAMPLE_FILES.filter((file) => file.row === path);
+    const groups = [...new Set(files.map((file) => file.group))];
+    return {
+      path,
+      area: areaOf(files[0]!.group),
+      adds: groups.map((group) => ({ group, n: files.filter((file) => file.group === group).length })),
+    };
   });
-  const bands = BAND_GROUPS.map((group) => ({ group, names: [...facts.checks[group]] }));
-  return {
-    columns,
-    gate,
-    commands,
-    hookPlates,
-    bands,
-    counts: {
-      instructions: facts.instructions.length,
-      hooks: facts.hooks.length,
-      checks: bands.reduce((sum, band) => sum + band.names.length, 0),
-    },
-  };
+
+/** The hook config pane 3 opens on, the last line naming the script that is not on disk. */
+export const SETTINGS_PATH = '.claude/settings.json';
+export const SETTINGS_LINES = ['"PreToolUse": [{', '  "matcher": "Bash",', '  "command":', '  ".claude/hooks/block-force-push.sh"'] as const;
+export const SETTINGS_MISSING_LINE = 3;
+
+/** The two copies of one subagent, side by side on shared rows: only the tools line differs. */
+export const DIFF_ROWS: ReadonlyArray<readonly [string, string] | null> = [
+  null,
+  null,
+  ['tools: Read', 'tools: Bash'],
+  null,
+  null,
+];
+/** Blank line widths, as a share of a column, for the rows the film does not spell out. */
+export const SLAB_SHARES = [0.62, 0.84, 0.48, 0.76, 0.55, 0.7, 0.4] as const;
+
+/* ---------- the window, in its own units ---------- */
+
+export const WINDOW = { w: 1040, h: 492, radius: 14, header: 56 } as const;
+/** The problem line's band sits under the header; the three panes start below it. */
+export const PANE_TOP = 92;
+export const PANES = [
+  { x: 0, w: 300 },
+  { x: 300, w: 340 },
+  { x: 640, w: 400 },
+] as const;
+/** Type sizes in window units. The film keeps every canvas letter at 15px or more on screen. */
+export const TYPE = {
+  title: 22,
+  tab: 15,
+  treeTitle: 18,
+  tree: 17,
+  sectionTitle: 22,
+  caption: 15,
+  total: 56,
+  row: 17,
+  areaTitle: 20,
+  tag: 15,
+  path: 18,
+  code: 17,
+} as const;
+export const TYPE_FLOOR = 15;
+
+/** Act one: the tree card on the left, three columns on the right, and the wires between. */
+export const SCAN = {
+  card: { x: 24, y: 68, w: 276, h: 416 },
+  titleY: 94,
+  guideX: 44,
+  rowX: 56,
+  firstRowY: 131,
+  pitch: 30,
+  /** The scan line's run, top to bottom of the rows. */
+  sweep: { top: 116, bottom: 476 },
+  columns: [348, 578, 808],
+  colW: 208,
+  colTitleY: 90,
+  captionY: 120,
+  captionLH: 20,
+  totalY: 206,
+  rowsY: 242,
+  rowPitch: 32,
+  trunkX: 318,
+  trackY: 66,
+  corner: 6,
+} as const;
+
+export function treeRowY(k: number): number {
+  return SCAN.firstRowY + k * SCAN.pitch;
 }
 
-/** How a check is called: the command a person types, or the file that runs it. */
-export function checkCall(group: CheckGroup, name: string): string {
-  if (group === 'scripts') return `pnpm ${name}`;
-  if (group === 'gitHooks') return `.githooks/${name}`;
-  return `.github/workflows/${name}`;
-}
+/** Pane 1 rows: an area's heading, then its categories. */
+export const PANE1 = { top: PANE_TOP + 6, area: 40, row: 27, padX: 16, right: 284 } as const;
 
-/**
- * The path itself when it fits, otherwise its longest tail of whole segments that does; a file name
- * that alone is too wide keeps its start and ends in an ellipsis.
- */
-export function fitPath(path: string, room: number, width: (text: string) => number): string {
-  const parts = path.split('/');
-  for (let k = 0; k < parts.length; k += 1) {
-    const tail = parts.slice(k).join('/');
-    if (width(tail) <= room) return tail;
-  }
-  const name = parts[parts.length - 1]!;
-  for (let n = name.length - 1; n > 0; n -= 1) {
-    if (width(`${name.slice(0, n)}…`) <= room) return `${name.slice(0, n)}…`;
-  }
-  return '…';
-}
-
-export interface Box {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
-
-export interface Rect {
-  x: number;
+export interface Pane1Row {
+  kind: 'area' | 'group';
+  area: AreaId;
+  group?: GroupId;
+  /** Middle of the row. */
   y: number;
-  w: number;
+  top: number;
   h: number;
 }
 
-/** The part of the stage the film draws in: under the film's title, above the caption. */
-export function pictureZone(w: number, h: number, origin: number): Box {
-  /* The picture keeps the page column; a column too narrow for four stacks of file names lets it run
-     wider, up to 960px. */
-  const left = w - 2 * origin >= 800 ? origin : Math.max(32, Math.min(origin, (w - 960) / 2));
-  /* A shorter stage has a shorter caption gap: 300px under the picture at 900px tall, 220px at 720. */
-  const caption = Math.min(300, Math.max(220, 220 + ((h - 720) * 80) / 180));
-  return { left, right: w - left, top: 128, bottom: Math.max(128 + 240, h - caption) };
+export const PANE1_ROWS: readonly Pane1Row[] = (() => {
+  const rows: Pane1Row[] = [];
+  let y = PANE1.top;
+  for (const area of AREAS) {
+    rows.push({ kind: 'area', area: area.id, top: y, h: PANE1.area, y: y + PANE1.area / 2 });
+    y += PANE1.area;
+    for (const group of area.groups) {
+      rows.push({ kind: 'group', area: area.id, group, top: y, h: PANE1.row, y: y + PANE1.row / 2 });
+      y += PANE1.row;
+    }
+  }
+  return rows;
+})();
+
+export function pane1Row(group: GroupId): Pane1Row {
+  return PANE1_ROWS.find((row) => row.group === group)!;
 }
 
-/** Canvas type sizes; nothing the film writes is under 15px. */
-export const TYPE = { label: 18, count: 56, card: 18, command: 44, plate: 18, readout: 30, ghost: 120 } as const;
-const TYPE_FLOOR = 15;
-const CARD_H = 52;
-/** How far each card in a stack sits below the one under it. */
-const CARD_STEP = 6;
-const PLATE_H = 56;
-const PLATE_GAP = 12;
-/** The parked strips' band at the top of the picture: three thin rows of marks. */
-const STRIP_ROW = 8;
-const STRIP_RESERVE = 2 * STRIP_ROW + 16;
-
-export interface HarnessLayout {
-  zone: Box;
-  /** Act one: a stack per kind, its cards bottom first, so the column's first path ends on top. */
-  stacks: Array<{
-    x: number;
-    width: number;
-    labelY: number;
-    countY: number;
-    cards: Array<{ rect: Rect; text: string; path: string }>;
-  }>;
-  /** The reading line's vertical span in act one. */
-  read: { top: number; bottom: number };
-  /** Act two: the command line's left edge and middle, at `px`. */
-  command: { x: number; y: number; px: number };
-  plates: Rect[];
-  plateTextPx: number;
-  /** Act three: `slot` is the cell's piece in the third underline. */
-  cells: Array<{ band: number; column: number; row: number; name: string; rect: Rect; slot: number }>;
-  bands: Array<{ labelX: number; labelY: number; top: number; bottom: number; left: number; right: number }>;
-  readoutY: number;
-  /** Where each strip's marks wait at the top of the picture from the act after theirs. */
-  strips: Rect[][];
+export function pane1Area(area: AreaId): Pane1Row {
+  return PANE1_ROWS.find((row) => row.kind === 'area' && row.area === area)!;
 }
 
-/** Where every object stands in each act, for a stage whose picture zone is `zone`. */
-export function layoutHarness(
-  scene: HarnessScene,
-  zone: Box,
-  measure: (text: string, px: number) => number,
-): HarnessLayout {
-  const zw = zone.right - zone.left;
-  const top = zone.top + STRIP_RESERVE;
-  const zh = zone.bottom - top;
-
-  /* Act one: four stacks under a name and a count, centred in the picture's height. */
-  const colGap = 32;
-  const colW = (zw - colGap * (COLUMN_KINDS.length - 1)) / COLUMN_KINDS.length;
-  const tallest = Math.max(1, ...scene.columns.map((column) => column.paths.length));
-  const headH = 96;
-  const stackBlock = headH + (tallest - 1) * CARD_STEP + CARD_H;
-  const stackTop = top + Math.max(0, (zh - stackBlock) / 2);
-  const room = colW - 28;
-  const stacks: HarnessLayout['stacks'] = scene.columns.map((column, c) => {
-    const x = zone.left + c * (colW + colGap);
-    /* The column's first path lands last, on top, where its name stays readable. */
-    const order = [...column.paths].reverse();
-    return {
-      x,
-      width: colW,
-      labelY: stackTop + 16,
-      countY: stackTop + 76,
-      cards: order.map((path, i) => ({
-        path,
-        text: fitPath(path, room, (t) => measure(t, TYPE.card)),
-        rect: { x, y: stackTop + headH + i * CARD_STEP, w: colW, h: CARD_H },
-      })),
-    };
-  });
-  const read = { top: stackTop - 8, bottom: stackTop + stackBlock + 8 };
-
-  /* Act two: the gate's plates stacked at the right, the command line level with the middle one. */
-  const longest = Math.max(0, ...scene.gate.map((name) => measure(name, TYPE.plate)));
-  const plateW = Math.min(380, Math.max(longest + 72, zw * 0.34));
-  const plateBlock = scene.gate.length * PLATE_H + (scene.gate.length - 1) * PLATE_GAP;
-  const plateTop = top + (zh - plateBlock) / 2 + 24;
-  const plates = scene.gate.map((_, k) => ({
-    x: zone.right - plateW,
-    y: plateTop + k * (PLATE_H + PLATE_GAP),
-    w: plateW,
-    h: PLATE_H,
-  }));
-  const plateTextPx = Math.max(TYPE_FLOOR, Math.min(TYPE.plate, (TYPE.plate * (plateW - 72)) / Math.max(1, longest)));
-  /* The longest command and its caret stay clear of the plates; a narrow stage sets it smaller. */
-  const widest = Math.max(1, ...scene.commands.map((command) => measure(`$ ${command.command}`, TYPE.command)));
-  const commandRoom = zw - plateW - 72;
-  const commandPx = Math.max(24, Math.min(TYPE.command, (TYPE.command * commandRoom) / widest));
-  const middle = plates[Math.floor((plates.length - 1) / 2)]!;
-  const command = { x: zone.left, y: middle.y + middle.h / 2, px: commandPx };
-
-  /* Act three: one band per kind of check, 32 cells to a row, then a readout under them. */
-  const perLine = 32;
-  const pitch = Math.min(32.5, zw / perLine);
-  const bandRows = scene.bands.map((band) => Math.max(1, Math.ceil(band.names.length / perLine)));
-  const nominal = { size: Math.min(28, pitch - 4.5), rowGap: 6, label: 32, bandGap: 22, readout: 56 };
-  const need = (m: typeof nominal) =>
-    bandRows.reduce((sum, rows) => sum + m.label + rows * (m.size + m.rowGap) - m.rowGap + m.bandGap, 0) - m.bandGap + m.readout;
-  /* A short stage shrinks the spacing first, then the cells, never the type. */
-  const squeeze = Math.min(1, zh / need(nominal));
-  const m = {
-    size: nominal.size * Math.max(0.75, squeeze),
-    rowGap: nominal.rowGap * squeeze,
-    label: Math.max(28, nominal.label * squeeze),
-    bandGap: nominal.bandGap * squeeze,
-    readout: Math.max(44, nominal.readout * squeeze),
-  };
-  let y = top + Math.max(0, (zh - need(m)) / 2);
-  const cells: HarnessLayout['cells'] = [];
-  const bands: HarnessLayout['bands'] = [];
-  let slot = 0;
-  scene.bands.forEach((band, b) => {
-    const rows = bandRows[b]!;
-    const labelY = y + 18;
-    y += m.label;
-    const cellsTop = y;
-    band.names.forEach((name, k) => {
-      const row = Math.floor(k / perLine);
-      const column = k % perLine;
-      cells.push({
-        band: b,
-        column,
-        row,
-        name: checkCall(band.group, name),
-        rect: { x: zone.left + column * pitch, y: y + row * (m.size + m.rowGap), w: m.size, h: m.size },
-        /* Pieces follow the sweep, column by column, so the underline grows in the order cells filled. */
-        slot: slot + column * rows + row,
-      });
-    });
-    const columns = Math.min(perLine, band.names.length);
-    bands.push({
-      labelX: zone.left,
-      labelY,
-      top: cellsTop,
-      bottom: cellsTop + rows * (m.size + m.rowGap) - m.rowGap,
-      left: zone.left,
-      right: zone.left + (columns - 1) * pitch + m.size,
-    });
-    slot += band.names.length;
-    y += rows * (m.size + m.rowGap) - m.rowGap + m.bandGap;
-  });
-  const readoutY = y - m.bandGap + m.readout - 12;
-
-  /* The strips: one thin mark per file and per hook, waiting at the top of the picture. The cells
-     need none: they stay where they are until the last act. */
-  const counts = [scene.counts.instructions, scene.counts.hooks];
-  const markPitch = Math.min(14, zw / Math.max(...counts));
-  const strips = counts.map((count, s) =>
-    Array.from({ length: count }, (_, i) => ({ x: zone.left + i * markPitch, y: zone.top + s * STRIP_ROW, w: Math.max(2, markPitch - 4), h: 3 })),
-  );
-
-  return { zone, stacks, read, command, plates, plateTextPx, cells, bands, readoutY, strips };
+/** Act one's column rows: where each category stands before the columns stack into pane 1. */
+export function scanGroupY(group: GroupId): number {
+  const area = AREAS.find((entry) => entry.groups.includes(group))!;
+  return SCAN.rowsY + area.groups.indexOf(group) * SCAN.rowPitch;
 }
 
-/** A count's column in the last act's caption, in stage pixels. */
-export interface PosterColumn {
-  x: number;
-  w: number;
+export function scanColumnX(area: AreaId): number {
+  return SCAN.columns[AREAS.findIndex((entry) => entry.id === area)]!;
 }
 
-export interface HarnessPoster {
-  /** One card per instruction file, in strip order, drawn back to front. */
-  cards: Rect[];
-  /** The real names on the three front cards. */
-  names: Array<{ card: number; text: string; x: number; y: number; front: boolean }>;
-  /** One rect per hook, in strip order: a gate plate, or a thin slat for every other hook. */
-  hooks: Rect[];
-  plateNames: Array<{ hook: number; text: string; x: number; y: number }>;
-  plateTextPx: number;
-  /** One cell per check, by its slot. */
-  cells: Rect[];
-  /** Each group's middle, for the key light. */
-  centres: Array<{ x: number; y: number }>;
-}
-
-const POSTER_CARD_H = 48;
-const POSTER_FAN = 28;
-const POSTER_LIP = 3;
-const POSTER_PLATE_H = 42;
-const POSTER_PLATE_GAP = 8;
-const POSTER_SLAT_PITCH = 8;
-/** Cells across the block: the first of these that leaves no cell alone on a short last row. */
-const POSTER_CELLS_ACROSS = [13, 12, 11, 14, 10];
+/** Pane 2: its heading, then item rows of two lines. */
+export const PANE2 = { headY: PANE_TOP + 22, rowsTop: PANE_TOP + 40, row: 44, x: 308, w: 324, padX: 12 } as const;
+/** Pane 3: the item's path, the tools that read it, then its content. */
+export const PANE3 = {
+  x: 664,
+  right: 1020,
+  pathY: PANE_TOP + 24,
+  readByY: PANE_TOP + 58,
+  readByValueX: 776,
+  box: { x: 656, y: PANE_TOP + 82, w: 368, h: 304 },
+  lineTop: PANE_TOP + 112,
+  lineH: 28,
+} as const;
 
 /**
- * The last act's still: above each count, its own objects at rest. The files as a fanned stack
- * with three real names, the hooks as the gate's plates under a slat for each other hook, the
- * checks as a green block. Every group stands on `base` in its count's column.
+ * One wire per tree row: from the row's end, up a shared trunk beside the card, along a track
+ * under the header and down into its area's column, with rounded corners. Sampled every few units
+ * so a wire can be drawn part of the way at any moment.
  */
-export function layoutPoster(
-  scene: HarnessScene,
-  columns: readonly PosterColumn[],
-  base: number,
-  measure: (text: string, px: number) => number,
-): HarnessPoster {
-  const [files, hooksColumn, checks] = columns as [PosterColumn, PosterColumn, PosterColumn];
+export interface Wire {
+  points: Array<{ x: number; y: number }>;
+  /** Cumulative length at each point. */
+  at: number[];
+  length: number;
+}
 
-  const n = scene.counts.instructions;
-  const cardW = Math.min(300, files.w - 32);
-  const cards = Array.from({ length: n }, (_, k) => {
-    const step = n - 1 - k;
-    const fan = Math.min(step, 2);
-    const lips = Math.max(0, step - 2);
-    /* The front three fan out far enough to show their names; the rest show only an edge each. */
-    return { x: files.x + fan * 10, y: base - POSTER_CARD_H - fan * POSTER_FAN - lips * POSTER_LIP, w: cardW, h: POSTER_CARD_H };
-  });
-  const named = scene.columns.slice(0, 3).flatMap((column) => column.paths.slice(0, 1));
-  const names = named.map((path, i) => {
-    const card = n - 1 - i;
-    const r = cards[card]!;
-    return { card, text: fitPath(path, cardW - 28, (t) => measure(t, TYPE.card)), x: r.x + 14, y: r.y + 15, front: i === 0 };
-  });
-
-  const plateW = Math.min(300, hooksColumn.w - 8);
-  const longest = Math.max(1, ...scene.gate.map((name) => measure(name, TYPE.plate)));
-  const plateTextPx = Math.max(TYPE_FLOOR, Math.min(TYPE.plate, (TYPE.plate * (plateW - 32)) / longest));
-  const gateCount = scene.gate.length;
-  const platesTop = base - gateCount * (POSTER_PLATE_H + POSTER_PLATE_GAP) + POSTER_PLATE_GAP;
-  let slat = 0;
-  const hooks = scene.hookPlates.map((plate) => {
-    if (plate >= 0) return { x: hooksColumn.x, y: platesTop + plate * (POSTER_PLATE_H + POSTER_PLATE_GAP), w: plateW, h: POSTER_PLATE_H };
-    slat += 1;
-    return { x: hooksColumn.x, y: platesTop - 10 - slat * POSTER_SLAT_PITCH, w: plateW, h: 3 };
-  });
-  const plateNames = scene.hookPlates.flatMap((plate, hook) => {
-    if (plate < 0) return [];
-    const r = hooks[hook]!;
-    const text = fitPath(scene.gate[plate]!, plateW - 32, (t) => measure(t, plateTextPx));
-    return [{ hook, text, x: r.x + 14, y: r.y + r.h / 2 }];
-  });
-
-  const total = scene.counts.checks;
-  const across = POSTER_CELLS_ACROSS.find((n) => total % n === 0) ?? POSTER_CELLS_ACROSS[0]!;
-  const rows = Math.ceil(total / across);
-  const pitch = Math.min(24, checks.w / across);
-  const size = pitch - 4;
-  const cells = Array.from({ length: total }, (_, slot) => {
-    const row = Math.floor(slot / across);
-    const column = slot % across;
-    return { x: checks.x + column * pitch, y: base - (rows - row) * pitch + 4, w: size, h: size };
-  });
-
-  const middle = (rects: Rect[]) => {
-    const left = Math.min(...rects.map((r) => r.x));
-    const right = Math.max(...rects.map((r) => r.x + r.w));
-    const top = Math.min(...rects.map((r) => r.y));
-    return { x: (left + right) / 2, y: (top + base) / 2 };
+export function wireFor(k: number, area: AreaId): Wire {
+  const r = SCAN.corner;
+  const y = treeRowY(k);
+  const colX = scanColumnX(area);
+  const dropX = colX - 11;
+  const endY = SCAN.colTitleY;
+  const pts: Array<{ x: number; y: number }> = [];
+  const line = (x0: number, y0: number, x1: number, y1: number) => {
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4));
+    for (let i = pts.length === 0 ? 0 : 1; i <= n; i += 1) pts.push({ x: x0 + ((x1 - x0) * i) / n, y: y0 + ((y1 - y0) * i) / n });
   };
-  return { cards, names, hooks, plateNames, plateTextPx, cells, centres: [middle(cards), middle(hooks), middle(cells)] };
+  const arc = (cx: number, cy: number, from: number, to: number) => {
+    for (let i = 1; i <= 6; i += 1) {
+      const a = from + ((to - from) * i) / 6;
+      pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    }
+  };
+  const right = SCAN.card.x + SCAN.card.w;
+  line(right, y, SCAN.trunkX - r, y);
+  arc(SCAN.trunkX - r, y - r, Math.PI / 2, 0);
+  line(SCAN.trunkX, y - r, SCAN.trunkX, SCAN.trackY + r);
+  arc(SCAN.trunkX + r, SCAN.trackY + r, Math.PI, (3 * Math.PI) / 2);
+  line(SCAN.trunkX + r, SCAN.trackY, dropX - r, SCAN.trackY);
+  arc(dropX - r, SCAN.trackY + r, -Math.PI / 2, 0);
+  line(dropX, SCAN.trackY + r, dropX, endY - r);
+  arc(dropX + r, endY - r, Math.PI, Math.PI / 2);
+  line(dropX + r, endY, colX - 4, endY);
+  const at = [0];
+  for (let i = 1; i < pts.length; i += 1) at.push(at[i - 1]! + Math.hypot(pts[i]!.x - pts[i - 1]!.x, pts[i]!.y - pts[i - 1]!.y));
+  return { points: pts, at, length: at[at.length - 1]! };
+}
+
+/** Where the window sits on the stage, and its scale: picture zone width over 1040. */
+export interface WindowFrame {
+  x: number;
+  y: number;
+  s: number;
+}
+
+/**
+ * The window on a playing stage: on the page column from `origin`, or wider when that column is
+ * under 960px; under the film's title (`top`) and clear of the caption above `bottom`.
+ */
+export function playingFrame(w: number, origin: number, top: number, bottom: number): WindowFrame {
+  const left = w - 2 * origin >= 960 ? origin : Math.max(32, (w - 960) / 2);
+  const s = Math.max(0.5, Math.min((w - 2 * left) / WINDOW.w, (bottom - top) / WINDOW.h));
+  return { x: left, y: top, s };
+}
+
+/** The window on the still stage shown under reduced motion: centred in the stage, at most 1:1. */
+export function stillFrame(w: number, h: number, origin: number): WindowFrame {
+  const left = w - 2 * origin >= 960 ? origin : Math.max(32, (w - 960) / 2);
+  const s = Math.max(0.5, Math.min(1, (w - 2 * left) / WINDOW.w, (h - 48) / WINDOW.h));
+  return { x: left, y: (h - WINDOW.h * s) / 2, s };
 }
