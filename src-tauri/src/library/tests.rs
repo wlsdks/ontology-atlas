@@ -462,6 +462,25 @@ fn a_linked_planning_folder_is_not_followed() {
 }
 
 #[test]
+fn only_the_two_folder_names_parse_as_a_destination() {
+    let parse = |value: &str| serde_json::from_value::<ImportDestination>(serde_json::json!(value));
+    assert_eq!(parse("sources").unwrap(), ImportDestination::Sources);
+    assert_eq!(parse("planning").unwrap(), ImportDestination::Planning);
+    for refused in [
+        "../outside",
+        "/tmp",
+        "C:\\Users",
+        "Planning",
+        "planning/inner",
+        "",
+    ] {
+        assert!(parse(refused).is_err(), "{refused:?} must be refused");
+    }
+}
+
+// The mock runtime links window classes a Windows test binary cannot load.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[test]
 fn an_unknown_destination_is_refused_before_anything_is_created() {
     use tauri::{
         ipc::{CallbackFn, InvokeBody},
