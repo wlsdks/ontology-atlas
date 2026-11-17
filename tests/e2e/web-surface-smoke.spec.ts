@@ -265,7 +265,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     name: "planning: folder reads are proven only in the macOS app",
     url: "/ko/planning/",
     card: "planning-stage",
-    reason: /macOS 앱에서만 사용할 수 있어요/,
+    reason: /온톨로지 폴더를 열면[\s\S]*macOS 앱에서만 돼요/,
     destination: "planning-get-app",
   },
   {

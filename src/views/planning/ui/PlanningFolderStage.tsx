@@ -1,29 +1,42 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { CircleHelp, FolderOpen, LockKeyhole } from 'lucide-react';
+import { CircleHelp, FolderOpen, FolderPlus, LockKeyhole } from 'lucide-react';
 import { Button, FeatureStage, GetAppLink, IconButton } from '@/shared/ui';
 import { Tooltip } from '@/shared/ui/hints/tooltip';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PlanningSourceArtwork } from './PlanningSourceArtwork';
 
 type PlanningDoor =
+  | { kind: 'create'; folder: string; onCreate: () => void; onChoose: (() => void) | null; failed: boolean; creating: boolean }
   | { kind: 'choose'; onChoose: () => void; unavailable: boolean }
   | { kind: 'unsupported'; offersApp: boolean };
+
+const ALERT_CLASS = 'mt-4 text-body text-[color:var(--color-text-primary)]';
 
 export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
   const nav = useTranslations('navRail');
   const t = useTranslations('planning');
-  const choose = door.kind === 'choose';
+  const stage = { 'data-testid': 'planning-stage', artWidth: 'wide' as const, art: (state: Parameters<typeof PlanningSourceArtwork>[0]) => <PlanningSourceArtwork {...state} />, title: t('startTitle') };
 
+  if (door.kind === 'create') return <FeatureStage
+    {...stage}
+    data-planning-state="no-home"
+    body={t('homeStartBody')}
+    alert={door.failed ? <p role="alert" className={ALERT_CLASS}>{t('createFailed')}</p> : undefined}
+    action={<div className="flex flex-wrap items-center justify-center gap-3">
+      <Button size="lg" data-planning-create disabled={door.creating} onClick={door.onCreate}><FolderPlus size={ICON_SIZE.lg} aria-hidden />{t('createHome')}</Button>
+      {door.onChoose && <Button size="lg" variant="ghost" data-planning-choose onClick={door.onChoose}><FolderOpen size={ICON_SIZE.lg} aria-hidden />{t('chooseAnother')}</Button>}
+    </div>}
+    note={<span data-planning-home-note>{t('homeNote', { folder: door.folder })}</span>}
+  />;
+
+  const choose = door.kind === 'choose';
   return <FeatureStage
-    data-testid="planning-stage"
+    {...stage}
     data-planning-state={choose ? 'no-folder' : 'unsupported'}
-    artWidth="wide"
-    art={(state) => <PlanningSourceArtwork {...state} />}
-    title={t('startTitle')}
     body={t(choose ? 'startBody' : 'browserUnavailable')}
-    alert={choose && door.unavailable ? <p role="alert" className="mt-4 text-body text-[color:var(--color-text-primary)]">{t('folderUnavailable')}</p> : undefined}
+    alert={choose && door.unavailable ? <p role="alert" className={ALERT_CLASS}>{t('folderUnavailable')}</p> : undefined}
     action={choose
       ? <Button size="lg" data-planning-choose onClick={door.onChoose}><FolderOpen size={ICON_SIZE.lg} aria-hidden />{t('chooseFolder')}</Button>
       : door.offersApp ? <GetAppLink data-testid="planning-get-app">{nav('getApp')}</GetAppLink> : undefined}
