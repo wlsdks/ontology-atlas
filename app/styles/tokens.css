@@ -362,10 +362,12 @@
    */
   /*
    * Origin and column (`PAGE_COLUMN`) must read the same cap; changing one alone makes left and right
-   * asymmetric.
+   * asymmetric. The gutter grows with the window up to `--gateway-gutter`: 32px at 768, 72px at
+   * 1040 (an 896px column, wide enough for three cards in a row), 149px at 1280 and the full 200px
+   * from 1440. A fixed 200px left a 640px column at 1040, which stacked every section.
    */
   --gateway-origin: max(
-    calc(var(--gateway-gutter) * 1px),
+    clamp(32px, calc(72px + (100vw - 1040px) * 0.32), calc(var(--gateway-gutter) * 1px)),
     calc((100vw - var(--gateway-page-max)) / 2)
   );
   --section-gap: 28px;

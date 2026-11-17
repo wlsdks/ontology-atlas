@@ -16,8 +16,7 @@ for (const { path, tag } of CASES) {
 
     const video = page.locator('video').first();
     await expect(video).toBeVisible();
-    // Once hydration settles the locale the element remounts (`key={locale}` above).
-    // Grabbing it earlier detaches the handle, so wait until it has settled.
+    // The prerendered HTML already names the page's own poster, so it holds from the first paint.
     await expect(video).toHaveAttribute('poster', new RegExp(`atlas-tour\\.${tag}-poster`));
     await video.scrollIntoViewIfNeeded();
 

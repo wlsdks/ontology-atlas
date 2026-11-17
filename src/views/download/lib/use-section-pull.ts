@@ -12,6 +12,11 @@ const ARMED_MS = 1200;
 const REST_MS = 140;
 /** A rest this close to a start already sits on it. */
 const ON_TARGET_PX = 2;
+/** The pause after a rest before the glide sets off, so the pull reads as the page's tension. */
+export const PULL_DWELL_MS = 120;
+const GLIDE_MS_PER_PX = 1.6;
+const GLIDE_MIN_MS = 480;
+const GLIDE_MAX_MS = 640;
 
 /**
  * The films sit at the pane's top edge, under the overlaid header as they do today; the other
@@ -40,6 +45,17 @@ export function pullTarget(starts: readonly number[], top: number, direction: 1 
     if (ahead && (next === null || Math.abs(start - top) < Math.abs(next - top))) next = start;
   }
   return next !== null && Math.abs(next - top) <= reach ? next : null;
+}
+
+/** Long enough to read as a pull, never a jump: 594ms for a 371px glide, which peaks near 980px/s. */
+export function glideDuration(distance: number): number {
+  return Math.min(GLIDE_MAX_MS, Math.max(GLIDE_MIN_MS, Math.abs(distance) * GLIDE_MS_PER_PX));
+}
+
+/** Sine ease-in-out: no jolt at either end, and it never steps back. */
+export function glideProgress(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return (1 - Math.cos(Math.PI * clamped)) / 2;
 }
 
 function sectionStarts(pane: HTMLElement): number[] {
@@ -73,6 +89,10 @@ function scrollsPage(event: KeyboardEvent): boolean {
  * find-in-page and scripted scrolls never pull; neither does anything under reduced motion, while
  * the page's motion is paused, or below 64rem by 40rem or on a coarse pointer. The page scroller is
  * the app shell's pane, not the document.
+ *
+ * The glide is its own frame loop, not `behavior: 'smooth'`, whose length and curve each browser
+ * picks (Chromium ends 371px in 300ms at 4,900px/s): it waits `PULL_DWELL_MS`, then eases over
+ * `glideDuration`. Any wheel, key, pointer or touch input lets go of it at once.
  */
 export function useSectionPull(): void {
   useEffect(() => {
@@ -84,39 +104,71 @@ export function useSectionPull(): void {
     const allowed = () => allowedQuery.matches && !reducedQuery.matches && !isMotionPaused();
 
     let armedAt = -Infinity;
-    let gliding = false;
     let last = pane.scrollTop;
     let direction: 1 | -1 | 0 = 0;
     let restTimer: ReturnType<typeof setTimeout> | undefined;
+    let dwellTimer: ReturnType<typeof setTimeout> | undefined;
+    let frame = 0;
+    /** True from the moment a pull is decided until it lands or is let go. */
+    let pulling = false;
     const hasScrollEnd = 'onscrollend' in pane;
 
+    const letGo = () => {
+      if (!pulling) return;
+      pulling = false;
+      clearTimeout(dwellTimer);
+      cancelAnimationFrame(frame);
+    };
     const arm = () => {
+      letGo();
       armedAt = performance.now();
-      gliding = false;
     };
     const disarm = () => {
       armedAt = -Infinity;
     };
+    const release = () => {
+      letGo();
+      disarm();
+    };
     const onWheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.deltaY === 0) disarm();
+      if (event.ctrlKey || event.deltaY === 0) release();
       else arm();
     };
     const onKey = (event: KeyboardEvent) => {
       if (scrollsPage(event)) arm();
-      else disarm();
+      else release();
+    };
+    const glide = (target: number) => {
+      const from = pane.scrollTop;
+      const distance = target - from;
+      const duration = glideDuration(distance);
+      let startedAt: number | null = null;
+      const step = (now: number) => {
+        if (!pulling) return;
+        startedAt ??= now;
+        const t = (now - startedAt) / duration;
+        pane.scrollTo({ top: from + distance * glideProgress(t), behavior: 'instant' });
+        if (t < 1) frame = requestAnimationFrame(step);
+        else pulling = false;
+      };
+      frame = requestAnimationFrame(step);
     };
     const onRest = () => {
-      if (gliding) {
-        gliding = false;
-        return;
-      }
+      if (pulling) return;
       if (!direction || performance.now() - armedAt > ARMED_MS || !allowed()) return;
       const top = pane.scrollTop;
       const target = pullTarget(sectionStarts(pane), top, direction, PULL_REACH * pane.clientHeight);
       disarm();
       if (target === null) return;
-      gliding = true;
-      pane.scrollTo({ top: target, behavior: 'smooth' });
+      pulling = true;
+      dwellTimer = setTimeout(() => {
+        if (!pulling) return;
+        if (!allowed()) {
+          pulling = false;
+          return;
+        }
+        glide(target);
+      }, PULL_DWELL_MS);
     };
     const onScroll = () => {
       const top = pane.scrollTop;
@@ -132,16 +184,19 @@ export function useSectionPull(): void {
     pane.addEventListener('scroll', onScroll, passive);
     if (hasScrollEnd) pane.addEventListener('scrollend', onRest, passive);
     window.addEventListener('keydown', onKey, passive);
-    window.addEventListener('pointerdown', disarm, passive);
-    window.addEventListener('hashchange', disarm, passive);
+    window.addEventListener('pointerdown', release, passive);
+    window.addEventListener('touchstart', release, passive);
+    window.addEventListener('hashchange', release, passive);
     return () => {
       clearTimeout(restTimer);
+      letGo();
       pane.removeEventListener('wheel', onWheel);
       pane.removeEventListener('scroll', onScroll);
       pane.removeEventListener('scrollend', onRest);
       window.removeEventListener('keydown', onKey);
-      window.removeEventListener('pointerdown', disarm);
-      window.removeEventListener('hashchange', disarm);
+      window.removeEventListener('pointerdown', release);
+      window.removeEventListener('touchstart', release);
+      window.removeEventListener('hashchange', release);
     };
   }, []);
 }

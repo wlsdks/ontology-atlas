@@ -271,28 +271,6 @@
   background: linear-gradient(90deg, transparent, var(--gateway-window-edge), transparent);
 }
 
-/*
- * Twice the native cell on whole pixels, so each drawn pixel stays a square. Only the playground
- * is zoomed: the menu beside it keeps its own size, and the region is as wide as the zoomed stage.
- */
-.gateway-hero-moru [data-moru-companion-region] {
-  width: 20rem;
-}
-
-.gateway-hero-moru [data-moru-playground] {
-  zoom: 2;
-}
-
-.gateway-hero-grid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.gateway-hero-text {
-  width: 100%;
-}
-
 .gateway-hero-title {
   --gateway-title-measure: 6.05;
 }
@@ -309,54 +287,128 @@
   --gateway-title-measure: 9.2;
 }
 
-/* The cell's empty rows under Moru overlap the link, which stays on top and takes its own press. */
+.gateway-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .gateway-hero-chip {
   position: relative;
   z-index: 1;
-  margin-top: -2rem;
+  justify-content: flex-start;
 }
 
 /*
- * Stacked, the app window takes the screen's width, not the page column's: between `md` and 80rem
- * the origin leaves the column too narrow for a recording. The centred flex item overhangs both sides.
+ * Stacked (below 80rem), Moru stands at its own size beside the chips, the pair centred as one
+ * group, and the claim and the app follow; a 256px Moru above the chips kept the app below the
+ * fold. The text is a subgrid, so the chips take the column beside Moru while the headline and
+ * lead span the row. Moru's 128px cell holds its drawing at x 15–111 and y 42–99 (ground at 100):
+ * the margins trim the box to that drawing, its feet level with the chips' first row, and the
+ * jump's headroom rises into the hero's top padding.
  */
-.gateway-hero-window {
-  flex: none;
-  width: min(76rem, calc(100vw - 3rem));
-  margin-top: 3.5rem;
+@media (width < 80rem) {
+  .gateway-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, max-content) minmax(0, 1fr);
+    padding-top: 4.5rem;
+    container-type: inline-size;
+  }
+
+  .gateway-hero-moru {
+    grid-area: 1 / 2;
+    position: relative;
+    z-index: 2;
+    align-self: start;
+    margin: -64px -17px -28px -15px;
+  }
+
+  .gateway-hero-moru [data-moru-companion-region] {
+    width: 8rem;
+  }
+
+  .gateway-hero-text {
+    grid-area: 1 / 1 / auto / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    justify-items: center;
+  }
+
+  .gateway-hero-text > * {
+    grid-column: 1 / -1;
+  }
+
+  /* Wider than the 17px Moru's cell keeps right of its drawing, so the cell never covers a chip. */
+  .gateway-hero-text > .gateway-hero-chip {
+    grid-column: 3;
+    justify-self: start;
+    margin-left: 1.25rem;
+  }
+
+  /*
+   * The monument's 40px floor, unless the longest sentence would not fit the column on one line:
+   * on a phone it steps down to fit (Japanese 28px, Chinese 37px, English 36px at 390), never under
+   * 28px. The grid is the container: a subgrid cannot be one.
+   */
+  .gateway-hero-title {
+    font-size: min(2.5rem, max(1.75rem, calc(100cqw / var(--gateway-title-measure))));
+  }
+
+  /*
+   * The app window takes the screen's width, not the page column's, so the recording is not
+   * squeezed by the gutter; the centred item overhangs both sides of the column.
+   */
+  .gateway-hero-window {
+    grid-area: 2 / 1 / auto / -1;
+    justify-self: center;
+    width: min(76rem, calc(100vw - 3rem));
+    margin-top: 3.5rem;
+  }
+}
+
+/*
+ * Japanese has no spaces, so a heading otherwise breaks inside a word, splitting a two-character
+ * word over two lines. `auto-phrase` breaks between phrases where the browser can segment them;
+ * balance evens the lines.
+ */
+:root:lang(ja) .gateway-fx-stage :is(h2, h3) {
+  word-break: auto-phrase;
+  text-wrap: balance;
 }
 
 /*
  * From 80rem the claim and the app share the first screen. The app's column runs past the page
  * column to 2rem from the window's edge, since a recording of a 1512px window needs the width
- * more than the margin does. Moru's playground stands near the app window's left corner and ends
- * 56px into it: the cell's ground line (row 100 of 128, doubled) then rests on the window's top edge.
+ * more than the margin does; the claim keeps 26rem, where the outlined buttons still share a row,
+ * and the app takes two thirds of the rest (760px at 1440). Moru's playground, twice the native
+ * cell on whole pixels so each drawn pixel stays square, stands near the app window's left corner
+ * and ends 56px into it: the cell's ground line (row 100 of 128, doubled) then rests on the
+ * window's top edge. Only the playground is zoomed: the menu beside it keeps its own size.
  */
-@media (min-width: 80rem) {
+@media (width >= 80rem) {
   .gateway-hero-grid {
     display: grid;
-    grid-template-columns: minmax(24rem, 5fr) minmax(0, 8fr);
+    grid-template-columns: minmax(26rem, 1fr) minmax(0, 2fr);
     grid-template-areas:
       'text moru'
       'text window';
-    column-gap: 3.5rem;
+    column-gap: 2rem;
     align-items: start;
     width: calc(100% + var(--gateway-origin) - 2rem);
     max-width: 112rem;
   }
 
+  /* The headline is sized against this column; the top padding keeps the chips off the header. */
   .gateway-hero-text {
     grid-area: text;
     align-self: center;
+    container-type: inline-size;
+    padding-top: 2rem;
   }
 
   /* Sized so the longest sentence fills the column; the measure is that line in em plus 4% slack. */
   .gateway-hero-title {
     font-size: clamp(1.75rem, calc(100cqw / var(--gateway-title-measure)), 4.75rem);
-  }
-
-  .gateway-hero-chip {
-    margin-top: 0;
   }
 
   .gateway-hero-moru {
@@ -368,10 +420,16 @@
     padding-left: 2.5rem;
   }
 
+  .gateway-hero-moru [data-moru-companion-region] {
+    width: 20rem;
+  }
+
+  .gateway-hero-moru [data-moru-playground] {
+    zoom: 2;
+  }
+
   .gateway-hero-window {
     grid-area: window;
-    width: auto;
-    margin-top: 0;
   }
 }
 

@@ -45,7 +45,11 @@ const SCREEN_ORDER: readonly CapturedId[] = DESTINATION_IDS.filter(
 const CAPTURE_WIDTH = 1336;
 const CAPTURE_HEIGHT = 860;
 
-const COLUMN_FROM_PX = 1440;
+/**
+ * Side tabs only where the capture still gets most of the column: below 112rem the tabs sit in a
+ * row above it and the capture takes the full column (about 1040px at 1440, not 748).
+ */
+const COLUMN_FROM_PX = 1792;
 
 /** The crossfade's length (`--motion-settle`): the leaving capture stays mounted that long. */
 const SWAP_MS = MOTION.settle.duration * 1000;
@@ -53,7 +57,7 @@ const SWAP_MS = MOTION.settle.duration * 1000;
 /**
  * The app's other destinations as tabs in the rail's order. Every panel stays mounted in one grid
  * cell, invisible when inactive, so lazy images are ready; a swap crossfades in place, the new
- * capture settling from 2% larger (`gateway.css`). Strip below 90rem, column above.
+ * capture settling from 2% larger (`gateway.css`). Strip below 112rem, column above.
  */
 export function ScreensStage({ intro }: { intro: ReactNode }) {
   const t = useTranslations('download.screens');
@@ -81,15 +85,15 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
   return (
     <div
       data-testid="gateway-screens-stage"
-      className="grid min-w-0 gap-y-3 min-[90rem]:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] min-[90rem]:grid-rows-[auto_auto_minmax(0,1fr)] min-[90rem]:gap-x-10 min-[90rem]:gap-y-6"
+      className="grid min-w-0 gap-y-3 min-[112rem]:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] min-[112rem]:grid-rows-[auto_auto_minmax(0,1fr)] min-[112rem]:gap-x-10 min-[112rem]:gap-y-6"
     >
       <div
         data-testid="gateway-screens-head"
-        className="mb-6 min-w-0 min-[90rem]:col-span-2 min-[90rem]:row-start-1 min-[90rem]:mb-3 min-[112rem]:col-span-1 min-[112rem]:col-start-1"
+        className="mb-6 min-w-0 min-[112rem]:col-start-1 min-[112rem]:row-start-1 min-[112rem]:mb-3"
       >
         {intro}
       </div>
-      <div className="flex min-w-0 items-end max-[90rem]:mb-3 min-[90rem]:col-start-1 min-[90rem]:row-start-2 min-[90rem]:flex-col min-[90rem]:items-stretch min-[90rem]:gap-0.5">
+      <div className="flex min-w-0 items-end max-[112rem]:mb-3 min-[112rem]:col-start-1 min-[112rem]:row-start-2 min-[112rem]:flex-col min-[112rem]:items-stretch min-[112rem]:gap-0.5">
         {/* The map row opens the live map in this browser. */}
         <Link
           href="/topology"
@@ -102,8 +106,8 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
             hoverSurface: 'lift',
             className: cn(
               // The same box as a tab row beside it.
-              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] min-[90rem]:w-full',
-              'rounded-none border-b border-[color:var(--color-divider)] min-[90rem]:rounded-card min-[90rem]:border-b-0',
+              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] min-[112rem]:w-full',
+              'rounded-none border-b border-[color:var(--color-divider)] min-[112rem]:rounded-card min-[112rem]:border-b-0',
             ),
           })}
         >
@@ -116,7 +120,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
             {t('mapHint')}
           </span>
         </Link>
-        <div className="min-w-0 flex-1 min-[90rem]:flex-none">
+        <div className="min-w-0 flex-1 min-[112rem]:flex-none">
           <TabBar
             ariaLabel={t('listLabel')}
             idPrefix="gateway-screens"
@@ -139,7 +143,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
       </div>
 
       {/* Capped at the capture's CSS size, or wide screens stretch it blurry. */}
-      <div className="gateway-scroll-stage grid w-full min-w-0 max-w-[83.5rem] min-[90rem]:col-start-2 min-[90rem]:row-span-2 min-[90rem]:row-start-2 min-[112rem]:row-span-3 min-[112rem]:row-start-1 [&>*]:[grid-area:1/1]">
+      <div className="gateway-scroll-stage grid w-full min-w-0 max-w-[83.5rem] min-[112rem]:col-start-2 min-[112rem]:row-span-3 min-[112rem]:row-start-1 [&>*]:[grid-area:1/1]">
         {SCREEN_ORDER.map((id) => {
           const isActive = id === active;
           const name = tRail(id);
@@ -171,7 +175,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
       {/* Sans face: Hangul in the mono face reads as spaced-out printout. */}
       <div
         data-testid="gateway-screens-captions"
-        className="gateway-screen-captions grid min-w-0 min-[90rem]:col-start-1 min-[90rem]:row-start-3 min-[90rem]:self-start min-[90rem]:border-t min-[90rem]:border-[color:var(--color-divider)] min-[90rem]:pt-5 [&>*]:[grid-area:1/1]"
+        className="gateway-screen-captions grid min-w-0 min-[112rem]:col-start-1 min-[112rem]:row-start-3 min-[112rem]:self-start min-[112rem]:border-t min-[112rem]:border-[color:var(--color-divider)] min-[112rem]:pt-5 [&>*]:[grid-area:1/1]"
       >
         {SCREEN_ORDER.map((id) => {
           const name = tRail(id);
@@ -181,7 +185,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
               data-state={stateOf(id)}
               inert={id !== active}
               className={cn(
-                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 min-[90rem]:flex-col min-[90rem]:flex-nowrap min-[90rem]:items-start min-[90rem]:justify-start',
+                'flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-3 min-[112rem]:flex-col min-[112rem]:flex-nowrap min-[112rem]:items-start min-[112rem]:justify-start',
                 swapClass(id),
               )}
             >
