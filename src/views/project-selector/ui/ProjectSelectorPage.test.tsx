@@ -1,14 +1,32 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-const page = vi.hoisted(() => ({
-  mode: "static" as "static" | "local",
-  vault: { agentActivityStatus: undefined } as Record<string, unknown>,
-}));
+const page = vi.hoisted(() => {
+  const oneProject = [
+    {
+      slug: "ontology-atlas",
+      name: "ontology-atlas",
+      description: "Local-first ontology workbench",
+      tags: [],
+      stack: [],
+      links: [],
+      dependencies: [],
+      screenshots: [],
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-07-17T00:00:00.000Z"),
+    },
+  ];
+  return {
+    mode: "static" as "static" | "local",
+    vault: { agentActivityStatus: undefined } as Record<string, unknown>,
+    oneProject,
+    projects: oneProject as unknown[],
+  };
+});
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({
@@ -29,20 +47,7 @@ vi.mock("@/i18n/navigation", () => ({
 
 vi.mock("@/features/project-data-source", () => ({
   useProjects: () => ({
-    projects: [
-      {
-        slug: "ontology-atlas",
-        name: "ontology-atlas",
-        description: "Local-first ontology workbench",
-        tags: [],
-        stack: [],
-        links: [],
-        dependencies: [],
-        screenshots: [],
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
-        updatedAt: new Date("2026-07-17T00:00:00.000Z"),
-      },
-    ],
+    projects: page.projects,
     loaded: true,
     error: null,
     mode: "static",
@@ -121,17 +126,26 @@ function edge(id: string, from: string, to: string, type = "contains") {
   return { id, from, to, type, projectIds: [], evidenceIds: [] };
 }
 
+const pageTree = () => (
+  <NextIntlClientProvider locale="en" messages={enMessages}>
+    <ProjectSelectorPage />
+  </NextIntlClientProvider>
+);
+
 function renderPage() {
-  render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
-      <ProjectSelectorPage />
-    </NextIntlClientProvider>,
-  );
+  return render(pageTree());
+}
+
+function stubClipboard() {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  return writeText;
 }
 
 afterEach(() => {
   page.mode = "static";
   page.vault = { agentActivityStatus: undefined };
+  page.projects = page.oneProject;
 });
 
 describe("ProjectSelectorPage", () => {
@@ -200,9 +214,9 @@ describe("ProjectSelectorPage", () => {
   });
 
   it("offers both ways to add a project in one tile, and only there", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const writeText = stubClipboard();
     renderPage();
+    expect(screen.queryByTestId("project-selector-first-stage")).toBeNull();
     const tile = screen.getByTestId("project-selector-next-slot");
     expect(screen.getAllByTestId("project-selector-new-cta")).toHaveLength(1);
     expect(within(tile).getByTestId("project-selector-new-cta")).toBeInTheDocument();
@@ -220,5 +234,48 @@ describe("ProjectSelectorPage", () => {
     expect(header).not.toContain("domain");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");
+  });
+
+  describe("with no project in the folder", () => {
+    it("shows one stage with both ways in instead of the lede and the tile", async () => {
+      page.projects = [];
+      const writeText = stubClipboard();
+      renderPage();
+      const stage = screen.getByTestId("project-selector-first-stage");
+      expect(within(stage).getByRole("heading", { name: enMessages.projectPages.selector.stageTitle })).toBeInTheDocument();
+      expect(within(stage).getByTestId("project-selector-new-cta")).toHaveAttribute(
+        "href",
+        `/project/new/?returnTo=${encodeURIComponent("/projects/")}`,
+      );
+      expect(screen.queryByTestId("project-selector-next-slot")).toBeNull();
+      expect(screen.queryByText(enMessages.projectPages.selector.lede)).toBeNull();
+      expect(stage.querySelector("code")).toHaveTextContent(/^kind: project$/);
+
+      within(stage).getByTestId("project-selector-next-copy").click();
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(enMessages.projectPages.selector.nextSlotPrompt));
+      expect(await within(stage).findByText(enMessages.projectPages.selector.nextSlotCopied)).toBeInTheDocument();
+    });
+
+    it("lets the stage leave inert while the first project's card arrives, then removes it", async () => {
+      page.mode = "local";
+      page.vault = { agentActivityStatus: undefined, status: "loaded" };
+      page.projects = [];
+      const { rerender } = renderPage();
+      expect(screen.getByTestId("project-selector-first-stage")).toBeInTheDocument();
+
+      page.projects = page.oneProject;
+      act(() => rerender(pageTree()));
+      const leaving = screen.getByTestId("project-selector-first-stage").parentElement!;
+      expect(leaving).toHaveAttribute("inert");
+      expect(leaving).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByTestId("project-selector-card")).toBeInTheDocument();
+      expect(screen.getAllByTestId("project-selector-new-cta"), "the leaving stage's link is hidden from the accessibility tree").toHaveLength(2);
+      expect(screen.getByRole("link", { name: enMessages.projectPages.selector.ctaNewProject })).toBe(
+        within(screen.getByTestId("project-selector-next-slot")).getByTestId("project-selector-new-cta"),
+      );
+
+      await vi.waitFor(() => expect(screen.queryByTestId("project-selector-first-stage")).toBeNull());
+      expect(screen.getByTestId("project-selector-next-slot")).toBeInTheDocument();
+    });
   });
 });

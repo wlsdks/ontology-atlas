@@ -22,6 +22,8 @@
     "nextSlotCopyError": "Copy failed: try again",
     "nextSlotPrompt": "Create one new project in this Ontology Atlas folder. First check the existing projects with list_concepts, then show me a name and a one-sentence definition of what this code exists to create. When I approve, create it with add_concept (kind: \"project\").",
     "domainOverlapNote": "A concept in multiple domains is counted once per domain, so adding up the numbers on the right can exceed the count above.",
+    "stageTitle": "Create the first project",
+    "stageBody": "A project is the document that says what this code exists to build. Write a name and a one-sentence definition; the document is created in the folder and appears here as a card.",
     "emptyStateDesc": "Create a project document in your folder and it appears here. Put `kind: project` in the info block at the top of the file.",
     "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\". There is no npm package."
   },
