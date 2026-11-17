@@ -93,6 +93,7 @@ beforeEach(() => {
   env.gitStatus.mockReset().mockResolvedValue({ initialized: true, branch: 'main', hasOrigin: true });
   vault.status = 'loaded';
   vault.handle = { name: 'atlas-vault' };
+  vault.manifest = { docs: [] };
   vault.recentVaults = [];
   vault.forgetRecent.mockReset().mockResolvedValue(undefined);
 });
@@ -176,6 +177,7 @@ describe('the Ontology folder pane', () => {
   });
 
   it('anchors every desktop catalog entry it draws, and draws in Korean', async () => {
+    vault.manifest = { docs: [{ slug: 'project', path: 'project.md', frontmatter: { kind: 'project' } }] };
     mount('ko');
     await waitFor(() => expect(screen.getByTestId('app-settings-folder-door-git').textContent).toContain('브랜치 main'));
     for (const entry of WORKSPACE_CATALOG) {
