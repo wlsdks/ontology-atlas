@@ -12,8 +12,11 @@ import {
   buildFilmScene,
   crossesClusters,
   pickCloseUp,
+  labelBox,
   pickNamedFiles,
+  placeLabels,
   scheduleTyping,
+  type LabelSpot,
   type FilmCloseUp,
   type FilmScene,
 } from '../lib/film-scene';
@@ -160,10 +163,14 @@ interface FieldItem extends Box {
   /** Its column across the stage, for the left-to-right drop-in. */
   col: number;
 }
+/** A name on the finished map: its anchor in stage space, so it rides the camera with its mark. */
 interface NameSpot {
-  dx: number;
-  dy: number;
-  align: CanvasTextAlign;
+  ax: number;
+  ay: number;
+  w: number;
+  h: number;
+  align: LabelSpot['align'];
+  leader: boolean;
 }
 
 /** Everything about the stage that depends on its size, worked out once per resize. */
@@ -195,6 +202,8 @@ interface Layout {
   /** Where each flying file enters from, a screen point outside the frame. */
   flightFrom: Point[];
   names: Map<number, NameSpot>;
+  /** The closing push-in's names besides the regions: the opened concept alone on a phone. */
+  focusNames: number[];
 }
 
 function markRadius(kind: string, wide: boolean): number {
@@ -435,19 +444,59 @@ function layoutFilm(
   });
 
   /*
-   * Names on the finished map: placed once where the closing push-in ends, where marks sit
-   * closest to their names, so no name ever changes side or meets another as the camera moves.
+   * Names on the finished map, placed once with a collision pass where they first show, at the
+   * film's widest framing after that. Anchored in stage space, they only spread apart as the
+   * camera pushes in, so no two meet at any later frame. The closing names stand off the opened
+   * concept's crowd along leader lines when there is no room beside their marks.
    */
   const names = new Map<number, NameSpot>();
-  const taken: Box[] = [];
-  const closing = cameraAt(keys, AT.focused / FILM_MS, CREEP);
-  const place = (i: number, size: number) => {
-    ctx.font = `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`;
-    const at = projectPoint(w, h, closing, map[i]!.x, map[i]!.y);
-    names.set(i, placeName(ctx, taken, at, mark[i]! * closing.zoom, size, scene.nodes[i]!.label, w));
+  const ref = cameraAt(keys, AT.expose / FILM_MS, CREEP);
+  const last = cameraAt(keys, 1, CREEP);
+  const unproject = (shot: CameraShot, x: number, y: number) => ({ x: shot.cx + (x - w / 2) / shot.zoom, y: shot.cy + (y - h / 2) / shot.zoom });
+  const toRef = (shot: CameraShot, x: number, y: number) => {
+    const s = unproject(shot, x, y);
+    return projectPoint(w, h, ref, s.x, s.y);
   };
-  cast.regions.forEach((i) => place(i, wide ? 22 : 15));
-  cast.focusNames.forEach((i) => place(i, wide ? 16 : 13));
+  /* The stage, minus the title above and the caption below, as it stands at both ends of the push-in. */
+  const bottom = zone.b + (wide ? 60 : 30);
+  const lastTop = toRef(last, 8, zone.t);
+  const lastBottom = toRef(last, w - 8, bottom);
+  const bounds = { l: Math.max(8, lastTop.x), t: Math.max(zone.t, lastTop.y), r: Math.min(w - 8, lastBottom.x), b: Math.min(bottom, lastBottom.y) };
+  /* A phone has no room for four more names in the crowd around the opened concept. */
+  const focusNames = wide ? cast.focusNames : cast.focusNames.slice(0, 1);
+  const crowd = cast.focusNames.length > 0 ? cast.focusNames : cast.regions;
+  const crowdAt = {
+    x: crowd.reduce((sum, i) => sum + map[i]!.x, 0) / Math.max(1, crowd.length),
+    y: crowd.reduce((sum, i) => sum + map[i]!.y, 0) / Math.max(1, crowd.length),
+  };
+  const asked = [
+    ...cast.regions.map((i) => ({ i, size: wide ? 22 : 15, from: centre })),
+    ...focusNames.map((i) => ({ i, size: wide ? 16 : 13, from: crowdAt })),
+  ];
+  const requests = asked.map(({ i, size, from }) => {
+    ctx.font = `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`;
+    const p = projectPoint(w, h, ref, map[i]!.x, map[i]!.y);
+    let ox = map[i]!.x - from.x;
+    let oy = map[i]!.y - from.y;
+    if (Math.hypot(ox, oy) < 1) {
+      ox = map[i]!.x - centre.x;
+      oy = map[i]!.y - centre.y;
+    }
+    const len = Math.hypot(ox, oy);
+    return {
+      x: p.x,
+      y: p.y,
+      r: mark[i]! * ref.zoom + 2,
+      w: ctx.measureText(scene.nodes[i]!.label).width,
+      h: size * 1.25,
+      out: len < 1 ? { x: 0, y: 1 } : { x: ox / len, y: oy / len },
+    };
+  });
+  placeLabels(requests, { gap: 6, bounds }).forEach((spot, k) => {
+    const req = requests[k]!;
+    const anchor = unproject(ref, req.x + spot.dx, req.y + spot.dy);
+    names.set(asked[k]!.i, { ax: anchor.x, ay: anchor.y, w: req.w, h: req.h, align: spot.align, leader: spot.leader });
+  });
 
   return {
     w,
@@ -470,63 +519,8 @@ function layoutFilm(
     flightStart,
     flightFrom,
     names,
+    focusNames,
   };
-}
-
-/**
- * Where a name goes beside its mark: under it if that space is free, else above, to the right or
- * to the left. The first spot that covers no placed name and stays on the stage wins.
- */
-function placeName(
-  ctx: CanvasRenderingContext2D,
-  taken: Box[],
-  at: Point,
-  r: number,
-  size: number,
-  name: string,
-  stageW: number,
-): NameSpot {
-  const w = ctx.measureText(name).width;
-  const h = size + 4;
-  const down = r + 6 + size / 2;
-  const side = r + 8;
-  const options: NameSpot[] = [
-    { dx: 0, dy: down, align: 'center' },
-    { dx: 0, dy: -down, align: 'center' },
-    { dx: side, dy: 0, align: 'start' },
-    { dx: -side, dy: 0, align: 'end' },
-    { dx: side, dy: down, align: 'start' },
-    { dx: -side, dy: down, align: 'end' },
-    { dx: side, dy: -down, align: 'start' },
-    { dx: -side, dy: -down, align: 'end' },
-    { dx: 0, dy: down + h, align: 'center' },
-    { dx: 0, dy: -down - h, align: 'center' },
-  ];
-  const boxOf = (o: NameSpot): Box => ({
-    x: at.x + o.dx + (o.align === 'center' ? 0 : o.align === 'start' ? w / 2 : -w / 2),
-    y: at.y + o.dy,
-    w,
-    h,
-  });
-  /* A name cut by the stage's edge costs as much as one covering another. */
-  const overlap = (b: Box) =>
-    taken.reduce((sum, o) => {
-      const ox = (o.w + b.w + 8) / 2 - Math.abs(o.x - b.x);
-      const oy = (o.h + b.h + 4) / 2 - Math.abs(o.y - b.y);
-      return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
-    }, 0) + Math.max(0, 8 - (b.x - b.w / 2), b.x + b.w / 2 - (stageW - 8)) * b.h;
-  let best = options[0]!;
-  let least = Infinity;
-  for (const o of options) {
-    const cost = overlap(boxOf(o));
-    if (cost < least) {
-      best = o;
-      least = cost;
-    }
-    if (cost === 0) break;
-  }
-  taken.push(boxOf(best));
-  return best;
 }
 
 /** Room around a stamp's text for its halo. */
@@ -867,13 +861,31 @@ function drawFilm(
   if (T >= AT.expose) {
     const regionSize = wide ? 22 : 15;
     const focusSize = wide ? 16 : 13;
-    /* A name keeps its side of the mark and its distance from it. */
+    /* A name rides the camera at its anchor; one that stands off its mark is joined to it by a leader. */
     const nameAt = (i: number, size: number, light: number, rise: number) => {
       const spot = L.names.get(i);
       if (!spot || light <= 0) return;
-      const p = toScreen(L.map[i]!);
+      const a = toScreen({ x: spot.ax, y: spot.ay });
+      if (spot.leader) {
+        const node = toScreen(L.map[i]!);
+        const box = labelBox(a.x, a.y, spot.w, spot.h, spot.align);
+        const q = { x: Math.min(box.r, Math.max(box.l, node.x)), y: Math.min(box.b, Math.max(box.t, node.y)) };
+        const len = Math.hypot(q.x - node.x, q.y - node.y) || 1;
+        const ux = (q.x - node.x) / len;
+        const uy = (q.y - node.y) / len;
+        const from = L.mark[i]! * shot.zoom + 3;
+        if (len > from + 6) {
+          ctx.globalAlpha = light * 0.5;
+          ctx.strokeStyle = palette.ink;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(node.x + ux * from, node.y + uy * from);
+          ctx.lineTo(q.x - ux * 3, q.y - uy * 3);
+          ctx.stroke();
+        }
+      }
       ctx.globalAlpha = light;
-      L.stamps.draw(ctx, scene.nodes[i]!.label, p.x + spot.dx, p.y + spot.dy + rise, {
+      L.stamps.draw(ctx, scene.nodes[i]!.label, a.x, a.y + rise, {
         font: `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`,
         size,
         fill: palette.ink,
@@ -885,7 +897,9 @@ function drawFilm(
       const enter = easeOut(span(T, AT.expose + 100 + k * 120, LABEL_MS));
       nameAt(i, regionSize, enter * (cast.neighbours.has(i) ? 1 : rest), (1 - enter) * LABEL_RISE);
     });
-    if (focus > 0) cast.focusNames.forEach((i) => nameAt(i, focusSize, focus, (1 - focus) * LABEL_RISE));
+    /* The closing names come in quickly and in place, so none lingers half-lit beside another. */
+    const named = easeOut(span(T, AT.focus, 400));
+    if (named > 0) L.focusNames.forEach((i) => nameAt(i, focusSize, named, 0));
   }
   ctx.textAlign = 'start';
   ctx.globalAlpha = 1;

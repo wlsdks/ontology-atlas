@@ -273,3 +273,90 @@ export function scheduleTyping(
     return { from, to };
   });
 }
+
+/** A name to place beside its mark: the mark's centre and radius, the name's size, and which way is outward. */
+export interface LabelRequest {
+  x: number;
+  y: number;
+  r: number;
+  w: number;
+  h: number;
+  /** Unit direction away from the crowd it sits in, for a name that must stand off its mark. */
+  out: { x: number; y: number };
+}
+
+/** Where a name's text starts, relative to its mark, and whether a leader line joins them. */
+export interface LabelSpot {
+  dx: number;
+  dy: number;
+  align: 'start' | 'center' | 'end';
+  leader: boolean;
+}
+
+interface Rect {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+/** The box a name covers when its text is anchored at (x, y) with `align`, vertically centred. */
+export function labelBox(x: number, y: number, w: number, h: number, align: LabelSpot['align']): Rect {
+  const l = align === 'center' ? x - w / 2 : align === 'end' ? x - w : x;
+  return { l, t: y - h / 2, r: l + w, b: y + h / 2 };
+}
+
+const overlapArea = (a: Rect, b: Rect, gap: number) => {
+  const ox = Math.min(a.r + gap, b.r) - Math.max(a.l - gap, b.l);
+  const oy = Math.min(a.b + gap, b.b) - Math.max(a.t - gap, b.t);
+  return ox > 0 && oy > 0 ? ox * oy : 0;
+};
+
+/**
+ * Places names in order so no two boxes come within `gap` of each other or of another name's
+ * mark, and each stays inside `bounds`. A name first tries the eight spots around its mark; in a
+ * crowd it stands off along its outward direction, joined to its mark by a leader line. When no
+ * spot is free the least-covered one is taken.
+ */
+export function placeLabels(requests: readonly LabelRequest[], { gap, bounds }: { gap: number; bounds: Rect }): LabelSpot[] {
+  const taken: Rect[] = [];
+  const marks: Rect[] = requests.map(({ x, y, r }) => ({ l: x - r, t: y - r, r: x + r, b: y + r }));
+  return requests.map((req, k) => {
+    const near = req.r + 6;
+    const side = req.r + 8;
+    const options: LabelSpot[] = [
+      { dx: 0, dy: near + req.h / 2, align: 'center', leader: false },
+      { dx: 0, dy: -near - req.h / 2, align: 'center', leader: false },
+      { dx: side, dy: 0, align: 'start', leader: false },
+      { dx: -side, dy: 0, align: 'end', leader: false },
+      { dx: side, dy: near, align: 'start', leader: false },
+      { dx: -side, dy: near, align: 'end', leader: false },
+      { dx: side, dy: -near, align: 'start', leader: false },
+      { dx: -side, dy: -near, align: 'end', leader: false },
+    ];
+    const align: LabelSpot['align'] = req.out.x > 0.35 ? 'start' : req.out.x < -0.35 ? 'end' : 'center';
+    for (let step = 1; step <= 16; step += 1) {
+      const reach = req.r + 16 + step * 10;
+      options.push({ dx: req.out.x * reach, dy: req.out.y * reach, align, leader: true });
+    }
+    let best = options[0]!;
+    let least = Infinity;
+    for (const o of options) {
+      const box = labelBox(req.x + o.dx, req.y + o.dy, req.w, req.h, o.align);
+      const outside =
+        Math.max(0, bounds.l - box.l) + Math.max(0, box.r - bounds.r) + Math.max(0, bounds.t - box.t) + Math.max(0, box.b - bounds.b);
+      let cost = outside * req.h * 4;
+      for (const t of taken) cost += overlapArea(box, t, gap);
+      marks.forEach((m, j) => {
+        if (j !== k) cost += overlapArea(box, m, gap);
+      });
+      if (cost < least) {
+        best = o;
+        least = cost;
+      }
+      if (cost === 0) break;
+    }
+    taken.push(labelBox(req.x + best.dx, req.y + best.dy, req.w, req.h, best.align));
+    return best;
+  });
+}
