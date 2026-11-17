@@ -270,3 +270,100 @@ export function layoutHarness(
 
   return { zone, stacks, read, command, plates, plateTextPx, cells, bands, readoutY, strips };
 }
+
+/** A count's column in the last act's caption, in stage pixels. */
+export interface PosterColumn {
+  x: number;
+  w: number;
+}
+
+export interface HarnessPoster {
+  /** One card per instruction file, in strip order, drawn back to front. */
+  cards: Rect[];
+  /** The real names on the three front cards. */
+  names: Array<{ card: number; text: string; x: number; y: number; front: boolean }>;
+  /** One rect per hook, in strip order: a gate plate, or a thin slat for every other hook. */
+  hooks: Rect[];
+  plateNames: Array<{ hook: number; text: string; x: number; y: number }>;
+  plateTextPx: number;
+  /** One cell per check, by its slot. */
+  cells: Rect[];
+  /** Each group's middle, for the key light. */
+  centres: Array<{ x: number; y: number }>;
+}
+
+const POSTER_CARD_H = 48;
+const POSTER_FAN = 28;
+const POSTER_LIP = 3;
+const POSTER_PLATE_H = 42;
+const POSTER_PLATE_GAP = 8;
+const POSTER_SLAT_PITCH = 8;
+/** Cells across the block: the first of these that leaves no cell alone on a short last row. */
+const POSTER_CELLS_ACROSS = [13, 12, 11, 14, 10];
+
+/**
+ * The last act's still: above each count, its own objects at rest. The files as a fanned stack
+ * with three real names, the hooks as the gate's plates under a slat for each other hook, the
+ * checks as a green block. Every group stands on `base` in its count's column.
+ */
+export function layoutPoster(
+  scene: HarnessScene,
+  columns: readonly PosterColumn[],
+  base: number,
+  measure: (text: string, px: number) => number,
+): HarnessPoster {
+  const [files, hooksColumn, checks] = columns as [PosterColumn, PosterColumn, PosterColumn];
+
+  const n = scene.counts.instructions;
+  const cardW = Math.min(300, files.w - 32);
+  const cards = Array.from({ length: n }, (_, k) => {
+    const step = n - 1 - k;
+    const fan = Math.min(step, 2);
+    const lips = Math.max(0, step - 2);
+    /* The front three fan out far enough to show their names; the rest show only an edge each. */
+    return { x: files.x + fan * 10, y: base - POSTER_CARD_H - fan * POSTER_FAN - lips * POSTER_LIP, w: cardW, h: POSTER_CARD_H };
+  });
+  const named = scene.columns.slice(0, 3).flatMap((column) => column.paths.slice(0, 1));
+  const names = named.map((path, i) => {
+    const card = n - 1 - i;
+    const r = cards[card]!;
+    return { card, text: fitPath(path, cardW - 28, (t) => measure(t, TYPE.card)), x: r.x + 14, y: r.y + 15, front: i === 0 };
+  });
+
+  const plateW = Math.min(300, hooksColumn.w - 8);
+  const longest = Math.max(1, ...scene.gate.map((name) => measure(name, TYPE.plate)));
+  const plateTextPx = Math.max(TYPE_FLOOR, Math.min(TYPE.plate, (TYPE.plate * (plateW - 32)) / longest));
+  const gateCount = scene.gate.length;
+  const platesTop = base - gateCount * (POSTER_PLATE_H + POSTER_PLATE_GAP) + POSTER_PLATE_GAP;
+  let slat = 0;
+  const hooks = scene.hookPlates.map((plate) => {
+    if (plate >= 0) return { x: hooksColumn.x, y: platesTop + plate * (POSTER_PLATE_H + POSTER_PLATE_GAP), w: plateW, h: POSTER_PLATE_H };
+    slat += 1;
+    return { x: hooksColumn.x, y: platesTop - 10 - slat * POSTER_SLAT_PITCH, w: plateW, h: 3 };
+  });
+  const plateNames = scene.hookPlates.flatMap((plate, hook) => {
+    if (plate < 0) return [];
+    const r = hooks[hook]!;
+    const text = fitPath(scene.gate[plate]!, plateW - 32, (t) => measure(t, plateTextPx));
+    return [{ hook, text, x: r.x + 14, y: r.y + r.h / 2 }];
+  });
+
+  const total = scene.counts.checks;
+  const across = POSTER_CELLS_ACROSS.find((n) => total % n === 0) ?? POSTER_CELLS_ACROSS[0]!;
+  const rows = Math.ceil(total / across);
+  const pitch = Math.min(24, checks.w / across);
+  const size = pitch - 4;
+  const cells = Array.from({ length: total }, (_, slot) => {
+    const row = Math.floor(slot / across);
+    const column = slot % across;
+    return { x: checks.x + column * pitch, y: base - (rows - row) * pitch + 4, w: size, h: size };
+  });
+
+  const middle = (rects: Rect[]) => {
+    const left = Math.min(...rects.map((r) => r.x));
+    const right = Math.max(...rects.map((r) => r.x + r.w));
+    const top = Math.min(...rects.map((r) => r.y));
+    return { x: (left + right) / 2, y: (top + base) / 2 };
+  };
+  return { cards, names, hooks, plateNames, plateTextPx, cells, centres: [middle(cards), middle(hooks), middle(cells)] };
+}

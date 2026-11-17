@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -27,11 +27,14 @@ import facts from '../lib/harness-facts.json';
 import {
   buildHarnessScene,
   layoutHarness,
+  layoutPoster,
   pictureZone,
   TYPE,
   type HarnessFacts,
   type HarnessLayout,
+  type HarnessPoster,
   type HarnessScene,
+  type PosterColumn,
   type Rect,
 } from '../lib/harness-scene';
 import { FilmActBar } from './FilmActBar';
@@ -62,7 +65,8 @@ const WIDE_AT = 2100;
 const SWEEP_MS = 600;
 const FOCUS_AT = 2700;
 const PARK_AT = 2900;
-const PARK_MS = 220;
+/** The stacks leave in one short exit while the strip draws in at the top. */
+const EXIT_MS = 195;
 const HOME_MS = 400;
 /* Act two: five commands of 680ms, each typed, fired at the gate, ticked, judged; the next slides it up. */
 const CMD_AT = 3300;
@@ -220,6 +224,13 @@ interface Labels {
 /** One underline per count, in stage pixels: under its numeral, its length in proportion to the count. */
 type Underline = { x: number; y: number; len: number };
 
+/** Where the last act's caption puts its counts: their underlines, columns and the line above them. */
+interface Caption {
+  lines: Underline[];
+  columns: PosterColumn[];
+  base: number;
+}
+
 interface Timing {
   /** Per card, in layout order: when it lands. */
   land: number[][];
@@ -237,6 +248,7 @@ interface Frame {
   layout: HarnessLayout | null;
   timing: Timing | null;
   underlines: Underline[] | null;
+  poster: HarnessPoster | null;
   palette: Palette;
   labels: Labels;
   measure: (text: string, font: string) => number;
@@ -536,14 +548,12 @@ function screenSpace(f: Frame) {
 
 function drawStacks(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing) {
   const { palette, T } = f;
-  if (T >= STARTS[1] + PARK_MS + 200) return;
+  const exit = inOut((T - PARK_AT) / EXIT_MS);
+  if (exit >= 1) return;
   const headerOut = inOut((T - FOCUS_AT) / 250);
   /* Rack focus before the cut: the stacks fall back while the bar leaves for the command line. */
   const focus = inOut((T - FOCUS_AT) / (PARK_AT - FOCUS_AT));
   const sweep = mix(L.zone.left - 16, L.zone.right + 16, inOut((T - WIDE_AT) / SWEEP_MS));
-  const parked = deeper(f, shot, MID);
-  const total = L.stacks.reduce((sum, stack) => sum + stack.cards.length, 0);
-  let g = 0;
   L.stacks.forEach((stack, c) => {
     const lands = timing.land[c]!;
     const landed = lands.filter((at) => T >= at + LAND_MS / 2).length;
@@ -556,41 +566,37 @@ function drawStacks(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing
     text(f, String(landed), stack.x, stack.countY + 12 * (1 - show), `${FONT_WEIGHT.strong} ${TYPE.count}px ${palette.sans}`, palette.ink, counted);
 
     const mid = { x: stack.x + stack.width / 2, y: (L.read.top + L.read.bottom) / 2 };
-    const scale = mix(1, 0.96, focus);
+    const scale = mix(1, 0.96, focus) * mix(1, 0.98, exit);
     const read = clamp((sweep - stack.x) / 60);
+    applyCamera(f.ctx, f.dpr, f.w, f.h, shot);
     stack.cards.forEach((card, i) => {
-      const k = g++;
       const at = lands[i]!;
       const land = easeOut((T - at) / LAND_MS);
       if (land <= 0) return;
       const cover = i + 1 < stack.cards.length ? easeOut((T - lands[i + 1]!) / LAND_MS) : 0;
       const resting = {
         x: mid.x + (card.rect.x - mid.x) * scale,
-        y: mid.y + (card.rect.y - 18 * (1 - land) - mid.y) * scale,
+        y: mid.y + (card.rect.y - 18 * (1 - land) - mid.y) * scale - 8 * exit,
         w: card.rect.w * scale,
         h: card.rect.h * scale,
       };
-      const park = inOut((T - PARK_AT - (k / Math.max(1, total - 1)) * 120) / PARK_MS);
-      const alpha = clamp(land * 2) * mix(1, 0.45, focus);
-      /* Landed in the strip, it is drawn there from now on. */
-      if (park >= 1) return;
-      if (park > 0) {
-        /* Into the strip: from this card in the near layer to its mark in the middle one. */
-        const from = toScreen(f, shot, resting);
-        const to = toScreen(f, parked, L.strips[0]![k]!);
-        screenSpace(f);
-        const r = mixRect(from, to, park);
-        block(f, r, mix(6, 1.5, park), f.tint(palette.card, palette.indigo, park), mix(alpha, PARKED, park));
-        outline(f, r, mix(6, 1.5, park), palette.edge, alpha * (1 - clamp(park / 0.4)));
-        return;
-      }
+      const alpha = clamp(land * 2) * mix(1, 0.45, focus) * (1 - exit);
       block(f, resting, 6, palette.card, alpha);
       outline(f, resting, 6, f.tint(palette.edge, palette.soft, read * (1 - cover) * 0.6), alpha * mix(1, 0.4, cover));
       const name = land * (1 - cover);
       if (name > 0.004) {
         f.ctx.textBaseline = 'middle';
         const color = f.tint(palette.soft, palette.ink, read);
-        text(f, card.text, resting.x + 14 * scale, resting.y + resting.h / 2 + 12 * (1 - land), `${TYPE.card * scale}px ${palette.mono}`, color, name * alpha);
+        /* The name rises inside its own card and never draws past its edge. */
+        f.ctx.save();
+        f.ctx.beginPath();
+        f.ctx.roundRect(resting.x, resting.y, resting.w, resting.h, 6);
+        f.ctx.clip();
+        /* One font size, scaled by the transform: a size that changes every frame re-rasterises glyphs. */
+        f.ctx.translate(resting.x + 14 * scale, resting.y + resting.h / 2 + 10 * (1 - land));
+        f.ctx.scale(scale, scale);
+        text(f, card.text, 0, 0, `${TYPE.card}px ${palette.mono}`, color, name * alpha);
+        f.ctx.restore();
       }
     });
   });
@@ -602,11 +608,10 @@ function drawParkedStrips(f: Frame, L: HarnessLayout, shot: CameraShot) {
   const { palette, T } = f;
   if (T >= STARTS[3]) return;
   applyCamera(f.ctx, f.dpr, f.w, f.h, shot, MID);
-  const total = L.strips[0]!.length;
-  /* The first strip: marks whose cards have finished their flight. */
+  /* The first strip draws in from the left as the stacks leave: one mark per file read. */
   L.strips[0]!.forEach((mark, k) => {
-    if (T < PARK_AT + (k / Math.max(1, total - 1)) * 120 + PARK_MS) return;
-    block(f, mark, 1.5, palette.indigo, PARKED);
+    const draw = inOut((T - PARK_AT - 40 - k * 5) / 240);
+    if (draw > 0) block(f, { ...mark, y: mark.y + 6 * (1 - draw) }, 1.5, palette.indigo, PARKED * draw);
   });
   /* The second: hooks outside the gate arrive as the plates come up to join them. */
   const u = T - STARTS[2];
@@ -805,39 +810,71 @@ function drawChecks(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing
   text(f, name, L.zone.left, L.readoutY + 8 * (1 - arriving) - 8 * leaving, `${TYPE.readout}px ${palette.mono}`, palette.ink, arriving * (1 - leaving) * (1 - gone));
 }
 
-/* ---------- act four: the underlines ---------- */
+/* ---------- act four: the poster ---------- */
 
-function drawUnderlines(f: Frame, L: HarnessLayout, shot: CameraShot) {
-  const { palette, T } = f;
+/**
+ * Every object comes home above its count: the files from the strip into a fanned stack, the
+ * hooks into the gate's plates and a slat each, the checks into a green block. The bar draws the
+ * underlines beneath. Then nothing moves: the last frame is the whole harness at rest.
+ */
+function drawPoster(f: Frame, L: HarnessLayout, shot: CameraShot) {
+  const { ctx, palette, T } = f;
   const U = f.underlines;
-  if (T < STARTS[3] || !U) return;
+  const P = f.poster;
+  if (T < STARTS[3] || !U || !P) return;
   const u = T - STARTS[3];
   const parked = deeper(f, shot, MID);
-  const first = U[0]!;
-  const last = U[U.length - 1]!;
-  const span = last.x + last.len - first.x;
-  /* A piece lands just behind the pen as it passes. */
-  const arrival = (x: number) => PEN_AT + PEN_MS * inOutInverse((x - first.x) / span) + 40;
-  const piece = (line: number, k: number, n: number, from: Rect, color: string, alpha: number, radius: number) => {
-    const under = U[line]!;
-    const step = under.len / n;
-    const to = { x: under.x + k * step, y: under.y, w: step + 0.6, h: 3 };
-    const land = arrival(to.x + step / 2);
-    const start = Math.max(0, land - 380);
-    const t = (u - start) / (land - start);
-    const now = inOut(t);
-    /* It thins out early in its flight, so a piece passing under the headline is a sliver, not a block. */
-    const thin = easeOut(t / 0.45);
-    const at = mixRect(from, to, now);
-    const r = { x: at.x, y: at.y, w: mix(from.w, to.w, Math.max(now, thin)), h: mix(from.h, to.h, Math.max(now, thin)) };
-    block(f, r, mix(radius, 0, now), f.tint(color, palette.ink, now), mix(alpha, 1, now));
-  };
   screenSpace(f);
-  const strip0 = L.strips[0]!;
-  strip0.forEach((mark, k) => piece(0, k, strip0.length, toScreen(f, parked, mark), palette.indigo, PARKED, 1.5));
-  const strip1 = L.strips[1]!;
-  strip1.forEach((mark, k) => piece(1, k, strip1.length, toScreen(f, parked, mark), palette.indigo, PARKED, 1.5));
-  L.cells.forEach((cell) => piece(2, cell.slot, L.cells.length, toScreen(f, shot, cell.rect), palette.pass, 1, 5 * shot.zoom));
+
+  /* The underlines, drawn behind the pen. */
+  const pen = penX(U, u);
+  U.forEach((line) => block(f, { x: line.x, y: line.y, w: clamp((pen - line.x) / line.len) * line.len, h: 3 }, 0, palette.ink, 1));
+
+  const fly = (start: number, ms: number) => inOut((u - start) / ms);
+  /* A mark travels as a mark and opens into its object only over the last part of its flight. */
+  const travel = (from: Rect, to: Rect, start: number, ms: number) => {
+    const at = mixRect(from, to, fly(start, ms));
+    const open = fly(start + ms * 0.55, ms * 0.45);
+    return { r: { x: at.x, y: at.y, w: mix(from.w, to.w, open), h: mix(from.h, to.h, open) }, open };
+  };
+  /* The files: strip marks grow back into cards, the back of the stack first. */
+  const files = L.strips[0]!;
+  P.cards.forEach((card, k) => {
+    const { r, open: t } = travel(toScreen(f, parked, files[k]!), card, (k / Math.max(1, files.length - 1)) * 240, 560);
+    const front = k >= P.cards.length - 3;
+    block(f, r, mix(1.5, 6, t), f.tint(palette.indigo, palette.card, t), mix(PARKED, 1, t));
+    outline(f, r, mix(1.5, 6, t), palette.edge, t * t * (front ? 1 : 0.8));
+  });
+  ctx.textBaseline = 'middle';
+  P.names.forEach((name, i) => {
+    const show = fly(720 + i * 60, 240);
+    text(f, name.text, name.x, name.y + 6 * (1 - show), `${TYPE.card}px ${palette.mono}`, name.front ? palette.ink : palette.soft, show);
+  });
+
+  /* The hooks: the gate's three marks open back into plates, every other hook becomes a slat. */
+  const hooks = L.strips[1]!;
+  P.hooks.forEach((hook, j) => {
+    const { r, open: t } = travel(toScreen(f, parked, hooks[j]!), hook, 160 + j * 22, 560);
+    if (f.scene.hookPlates[j]! < 0) {
+      block(f, r, 1.5, palette.indigo, mix(PARKED, 0.55, t));
+      return;
+    }
+    block(f, r, mix(1.5, 6, t), f.tint(palette.indigo, palette.card, t), mix(PARKED, 1, t));
+    outline(f, r, mix(1.5, 6, t), palette.edge, t * t);
+  });
+  P.plateNames.forEach((name, i) => {
+    ctx.globalAlpha = fly(840 + i * 60, 240);
+    ctx.font = `${P.plateTextPx}px ${palette.mono}`;
+    ctx.fillStyle = palette.soft;
+    ctx.fillText(name.text, name.x, name.y + 6 * (1 - ctx.globalAlpha));
+  });
+
+  /* The checks: each cell slides from the grid it filled into the block. */
+  L.cells.forEach((cell) => {
+    const t = fly(300 + (cell.slot / Math.max(1, L.cells.length - 1)) * 260, 560);
+    const r = mixRect(toScreen(f, shot, cell.rect), P.cells[cell.slot]!, t);
+    block(f, r, mix(5 * shot.zoom, 3, t), palette.pass, 1);
+  });
 }
 
 /* ---------- light and beats ---------- */
@@ -893,15 +930,11 @@ function drawLight(f: Frame, L: HarnessLayout, shot: CameraShot, timing: Timing)
     drawKeyLight(f.ctx, sprites.pass, head.x, head.y, radius, 0.12 * change);
     return;
   }
-  const U = f.underlines;
-  if (!U) return;
-  const end = U[U.length - 1]!;
-  const mid = { x: (U[0]!.x + end.x + end.len) / 2, y: U[0]!.y - 40 };
-  const change = inOut((T - STARTS[3]) / 600);
-  const x = mix(head.x, mid.x, change);
-  const y = mix(head.y, mid.y, change);
-  drawKeyLight(f.ctx, sprites.pass, x, y, radius, 0.12 * (1 - change));
-  drawKeyLight(f.ctx, sprites.indigo, x, y, radius * mix(1, 1.4, change), 0.1 * change);
+  /* The light comes to rest on the checks, whose count lands last. */
+  const rest = f.poster?.centres[2];
+  if (!rest) return;
+  const change = inOut((T - STARTS[3]) / 900);
+  drawKeyLight(f.ctx, sprites.pass, mix(head.x, rest.x, change), mix(head.y, rest.y, change), radius, 0.12);
 }
 
 /** The beats: a stack filled, a command denied, a band passed, a count landed. */
@@ -955,7 +988,7 @@ function drawHarness(f: Frame) {
   drawStacks(f, L, shot, timing);
   drawGate(f, L, shot);
   drawChecks(f, L, shot, timing);
-  drawUnderlines(f, L, shot);
+  drawPoster(f, L, shot);
 
   /* The white bar, with a streak while it flies. */
   screenSpace(f);
@@ -988,24 +1021,34 @@ function setRise(el: HTMLElement | null | undefined, lit: number) {
   el.style.transform = `translateY(${(1 - lit) * CAPTION_RISE}px)`;
 }
 
-/** Each count's place inside the stage, for the underline drawn under its numeral. */
-function measureUnderlines(host: HTMLElement, items: (HTMLElement | null)[], counts: readonly number[]): Underline[] | null {
+/** Where `item` sits inside the stage, ignoring transforms, or null if it is not inside it. */
+function offsetIn(host: HTMLElement, item: HTMLElement) {
+  let x = 0;
+  let y = 0;
+  let el: HTMLElement | null = item;
+  while (el && el !== host) {
+    x += el.offsetLeft;
+    y += el.offsetTop;
+    el = el.offsetParent as HTMLElement | null;
+  }
+  return el === host ? { x, y } : null;
+}
+
+/** Each count's column inside the stage, its underline, and the line the poster stands on. */
+function measureCaption(host: HTMLElement, items: (HTMLElement | null)[], head: HTMLElement | null | undefined, counts: readonly number[]): Caption | null {
+  const top = head ? offsetIn(host, head) : null;
   const boxes = items.map((item) => {
-    if (!item) return null;
-    let x = 0;
-    let y = 0;
-    let el: HTMLElement | null = item;
-    while (el && el !== host) {
-      x += el.offsetLeft;
-      y += el.offsetTop;
-      el = el.offsetParent as HTMLElement | null;
-    }
-    return el === host ? { x, y: y + item.offsetHeight, w: item.parentElement?.offsetWidth ?? item.offsetWidth } : null;
+    const at = item ? offsetIn(host, item) : null;
+    return item && at ? { x: at.x, y: at.y + item.offsetHeight, w: item.parentElement?.offsetWidth ?? item.offsetWidth } : null;
   });
-  if (boxes.some((box) => !box || box.w <= 0)) return null;
+  if (!top || boxes.some((box) => !box || box.w <= 0)) return null;
   /* One length per item, the same scale for all three, so their lengths keep the counts' ratio. */
   const unit = Math.min(...boxes.map((box, i) => box!.w / Math.max(1, counts[i]!)));
-  return boxes.map((box, i) => ({ x: box!.x, y: box!.y + 4, len: unit * counts[i]! }));
+  return {
+    lines: boxes.map((box, i) => ({ x: box!.x, y: box!.y + 4, len: unit * counts[i]! })),
+    columns: boxes.map((box) => ({ x: box!.x, w: box!.w })),
+    base: top.y - 36,
+  };
 }
 
 /** The last act's three counts: server-rendered with their final values, read as a list of terms. */
@@ -1022,15 +1065,9 @@ function HarnessCounts({
 }) {
   const t = useTranslations('download.harnessFilm');
   const format = useFormatter();
-  /* In the film each count takes room in proportion to itself, so its underline can run that long. */
-  const style: CSSProperties | undefined = film
-    ? { gridTemplateColumns: COUNT_KEYS.map((key) => `minmax(max-content, ${counts[key]}fr)`).join(' ') }
-    : undefined;
+  /* In the film the counts stand in three equal columns, each under its own group of objects. */
   return (
-    <dl
-      style={style}
-      className={cn(film ? 'grid w-[min(100%,56rem)] gap-x-10' : 'flex flex-wrap gap-x-10 gap-y-4', className)}
-    >
+    <dl className={cn(film ? 'grid w-full grid-cols-3 gap-x-10' : 'flex flex-wrap gap-x-10 gap-y-4', className)}>
       {COUNT_KEYS.map((key, i) => (
         <div key={key} className="flex min-w-0 flex-col-reverse">
           <dt className={cn('text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]', film ? 'mt-5' : 'mt-1')}>
@@ -1119,6 +1156,7 @@ export function HarnessFilm() {
       layout: null,
       timing: null,
       underlines: null,
+      poster: null,
       palette,
       labels,
       measure,
@@ -1156,6 +1194,16 @@ export function HarnessFilm() {
       });
     };
     let p = 0;
+    /* One frame from each act before the film shows, so no act's first frame pays for new type sizes,
+       sprites or code paths. The real frame is painted over them at once. */
+    const warm = () => {
+      const keep = frame.T;
+      for (const T of [1200, 2800, 3100, 4600, 7400, 8800, 10400, 12000]) {
+        frame.T = T;
+        drawHarness(frame);
+      }
+      frame.T = keep;
+    };
     const resize = () => {
       frame.w = el.clientWidth;
       frame.h = el.clientHeight;
@@ -1167,7 +1215,12 @@ export function HarnessFilm() {
       const origin = parseFloat(getComputedStyle(host).getPropertyValue('--gateway-origin')) || 200;
       frame.layout = layoutHarness(scene, pictureZone(frame.w, frame.h, origin), (value, px) => measure(value, `${px}px ${palette.mono}`));
       frame.timing = buildTiming(scene, frame.layout);
-      frame.underlines = measureUnderlines(host, numerals.current, counts);
+      const caption = measureCaption(host, numerals.current, heads.current[3], counts);
+      frame.underlines = caption?.lines ?? null;
+      frame.poster = caption
+        ? layoutPoster(scene, caption.columns, Math.max(frame.layout.zone.top + 220, caption.base), (value, px) => measure(value, `${px}px ${palette.mono}`))
+        : null;
+      warm();
       paint(p);
     };
     const observer = new ResizeObserver(resize);

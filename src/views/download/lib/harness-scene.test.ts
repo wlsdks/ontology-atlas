@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import facts from './harness-facts.json';
-import { buildHarnessScene, fitPath, layoutHarness, pictureZone, type HarnessFacts, type Rect } from './harness-scene';
+import { buildHarnessScene, fitPath, layoutHarness, layoutPoster, pictureZone, type HarnessFacts, type Rect } from './harness-scene';
 
 const FACTS: HarnessFacts = facts;
 const scene = buildHarnessScene(FACTS);
@@ -96,6 +96,47 @@ describe('the stage', () => {
         expect(layout.plateTextPx).toBeGreaterThanOrEqual(15);
         expect(layout.command.px).toBeGreaterThanOrEqual(24);
       });
+    });
+  }
+});
+
+describe('the last frame', () => {
+  for (const width of [186, 272]) {
+    const gap = 40;
+    const columns = [0, 1, 2].map((i) => ({ x: 200 + i * (width + gap), w: width }));
+    const base = 600;
+    const poster = layoutPoster(scene, columns, base, measure);
+
+    it(`puts one object per file, hook and check above its own count, in ${width}px columns`, () => {
+      expect(poster.cards).toHaveLength(scene.counts.instructions);
+      expect(poster.hooks).toHaveLength(scene.counts.hooks);
+      expect(poster.cells).toHaveLength(scene.counts.checks);
+      [poster.cards, poster.hooks, poster.cells].forEach((group, i) => {
+        const column = columns[i]!;
+        for (const r of group) {
+          expect(r.x).toBeGreaterThanOrEqual(column.x - 0.5);
+          expect(r.x + r.w).toBeLessThanOrEqual(column.x + column.w + 0.5);
+          expect(r.y + r.h).toBeLessThanOrEqual(base + 0.5);
+        }
+      });
+    });
+
+    it(`names three real files and every gate plate, each inside its card, in ${width}px columns`, () => {
+      expect(poster.names).toHaveLength(3);
+      for (const name of poster.names) {
+        const card = poster.cards[name.card]!;
+        expect(name.x + measure(name.text, 18)).toBeLessThanOrEqual(card.x + card.w);
+      }
+      expect(poster.plateNames).toHaveLength(scene.gate.length);
+      for (const name of poster.plateNames) {
+        const plate = poster.hooks[name.hook]!;
+        expect(name.x + measure(name.text, poster.plateTextPx)).toBeLessThanOrEqual(plate.x + plate.w);
+      }
+      expect(poster.plateTextPx).toBeGreaterThanOrEqual(15);
+    });
+
+    it(`never overlaps two cells or two hooks, in ${width}px columns`, () => {
+      for (const rects of [poster.cells, poster.hooks]) rects.forEach((a, i) => rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true)));
     });
   }
 });
