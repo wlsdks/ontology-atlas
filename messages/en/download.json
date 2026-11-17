@@ -209,5 +209,22 @@
         "a": "macOS on Apple Silicon, notarized (Apple scanned it for malware), and a Windows x64 beta. The map also opens in the browser without installing anything."
       }
     }
+  },
+  "playground": {
+    "open": "Play with Moru",
+    "title": "Play with Moru",
+    "close": "Close",
+    "howTo": "Move Moru with the arrow keys, your mouse or a finger to catch the falling notes, hearts and stars.",
+    "start": "Start",
+    "stop": "Stop",
+    "score": "Score {count}",
+    "best": "Best {count}",
+    "toys": "Ask Moru",
+    "sing": "Sing",
+    "hearts": "Hearts",
+    "fish": "Fish",
+    "clap": "Clap",
+    "reduced": "Your device asks for less motion, so the game is off. Press a button below and Moru shows one moment of it.",
+    "paused": "Motion on this page is paused, so the game is off. Press a button below and Moru shows one moment of it."
   }
 }

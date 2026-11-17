@@ -209,5 +209,22 @@
         "a": "可在 Apple Silicon 的 macOS 上运行，并已通过 Apple 恶意软件检查；Windows x64 为测试版。地图也可以不安装任何东西直接在浏览器中打开。"
       }
     }
+  },
+  "playground": {
+    "open": "和 Moru 一起玩",
+    "title": "和 Moru 一起玩",
+    "close": "关闭",
+    "howTo": "用方向键、鼠标或手指移动 Moru，接住落下的音符、爱心和星星。",
+    "start": "开始",
+    "stop": "停止",
+    "score": "得分 {count}",
+    "best": "最高 {count}",
+    "toys": "请 Moru 表演",
+    "sing": "唱歌",
+    "hearts": "爱心",
+    "fish": "小鱼",
+    "clap": "拍手",
+    "reduced": "你的设备开启了减少动态效果，所以游戏暂停。按下方的按钮，Moru 会展示这个动作的一个画面。",
+    "paused": "此页面的动态效果已暂停，所以游戏暂停。按下方的按钮，Moru 会展示这个动作的一个画面。"
   }
 }
