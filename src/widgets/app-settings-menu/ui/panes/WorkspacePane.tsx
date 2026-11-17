@@ -33,6 +33,7 @@ import {
   SettingsGroup,
   SettingsRow,
 } from '../settings-primitives';
+import { OntologyResetSettings } from '../OntologyResetSettings';
 import { VaultShapeSettings } from '../VaultShapeSettings';
 
 interface Kept {
@@ -200,6 +201,7 @@ export function WorkspacePane({
     <div className="grid min-w-0 gap-4" data-testid="app-settings-workspace-pane">
       <SettingsGroup>
         <VaultShapeSettings />
+        <OntologyResetSettings />
         {showVaultManagement ? (
           <SettingsRow
             testId="app-settings-workspace-folder"
