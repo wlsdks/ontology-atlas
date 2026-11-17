@@ -11,12 +11,21 @@ routes: [/]
 ### First run — what the folder holds (2026-09-06)
 
 "Just start" and "Create" open one question before writing anything: a documents wiki, an
-ontology map of a codebase, or both. The answer is written as files — the wiki's
+ontology map of a codebase, or both. While it is asked, the question is the screen's heading. The answer is written as files — the wiki's
 `wiki/_template.md`, the map's starter nodes and skills — and every folder of the fixed
 `atlas/` tree is made either way. Nothing is stored as a preference: `describeVaultShape`
 reads the folder, so a teammate who pulls it sees the same thing. A wiki without a map lands
 on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
 chip writes the missing part's starter files; the tabs follow the files.
+
+Under it, "Clear all concepts" takes the map back to empty after a confirm dialog. It moves
+every Markdown file whose `kind:` is `project`, `domain`, `capability`, `element` or
+`document` into `.ontology-atlas/removed/<UTC stamp>/` at its original relative path; each
+copy is written before its original is removed, and a failure stops the run with the rest in
+place. The vault README, `wiki/`, `sources/`, `planning/`, dot-folders, agent files and every
+file without a `kind:` are never touched. The success toast's Undo moves that reset's files
+back, skipping any path that holds a file again; the copies stay in the sidecar folder, so
+they can also be put back by hand. The empty map then shows the existing first-run starter.
 
 The sample starter keeps its folder-opening action and sample switch, and nothing
 on it unfolds in place. Under the folder action one row of quiet text buttons

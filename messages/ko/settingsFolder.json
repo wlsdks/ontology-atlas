@@ -28,6 +28,7 @@
     "folder": "폴더 열기 바꾸기 전환 위치",
     "path": "경로 위치 파인더 복사",
     "shape": "지도 위키 모양 시작",
+    "reset": "초기화 지우기 비우기 삭제 처음부터 다시 개념 reset clear",
     "documents": "문서 파일 개념",
     "import": "가져오기 블록 개념",
     "connectors": "mcp 서버 연결 서비스",

@@ -5,6 +5,9 @@ import { useEffect, useRef, type RefObject } from "react";
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Open Tab-trapping surfaces, oldest first. Only the last one answers Tab, or two traps fight over one press. */
+const openTabTraps: symbol[] = [];
+
 interface UseDialogFocusTrapOptions {
   open: boolean;
   onEscape?: () => void;
@@ -70,6 +73,9 @@ export function useDialogFocusTrap<T extends HTMLElement>({
       focusables()[0]?.focus({ preventScroll: true });
     }
 
+    const trapId = Symbol('tab-trap');
+    if (trapTab) openTabTraps.push(trapId);
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && onEscapeRef.current) {
         event.preventDefault();
@@ -78,6 +84,7 @@ export function useDialogFocusTrap<T extends HTMLElement>({
         return;
       }
       if (event.key !== "Tab" || !trapTab) return;
+      if (openTabTraps[openTabTraps.length - 1] !== trapId) return;
 
       const items = focusables();
       const first = items[0];
@@ -104,6 +111,8 @@ export function useDialogFocusTrap<T extends HTMLElement>({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      const trapAt = openTabTraps.indexOf(trapId);
+      if (trapAt >= 0) openTabTraps.splice(trapAt, 1);
       if (!restoreFocus) return;
       const previous = previousFocusRef.current;
       previousFocusRef.current = null;

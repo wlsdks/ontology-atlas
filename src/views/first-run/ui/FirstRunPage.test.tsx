@@ -34,9 +34,30 @@ const tauriFsMocks = vi.hoisted(() => ({
     kind: 'directory' as const,
     name: rootPath.split('/').pop() ?? rootPath,
   })),
+  pickTauriVaultDirectory: vi.fn(async () => null as { name: string } | null),
+  getTauriVaultRootPath: vi.fn(() => null as string | null),
 }));
 
 vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauriFsMocks);
+
+const agentMocks = vi.hoisted(() => ({
+  isAcpBridgeAvailable: vi.fn(() => true),
+  detectAcpRuntimes: vi.fn(async () => [] as unknown[]),
+  requestAgentChat: vi.fn(() => false),
+  queueAgentChatIntent: vi.fn(),
+}));
+
+vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
+  isAcpBridgeAvailable: agentMocks.isAcpBridgeAvailable,
+  detectAcpRuntimes: agentMocks.detectAcpRuntimes,
+}));
+
+vi.mock('@/shared/lib/agent-chat/agent-chat-intent', () => ({
+  requestAgentChat: agentMocks.requestAgentChat,
+  queueAgentChatIntent: agentMocks.queueAgentChatIntent,
+}));
+
+vi.mock('@/features/acp-session', () => ({ isGuardedRuntime: () => true }));
 
 const toastMocks = vi.hoisted(() => ({
   show: vi.fn(),
@@ -132,6 +153,79 @@ describe('FirstRunPage', () => {
       name: rootPath.split('/').pop() ?? rootPath,
     }));
     toastMocks.show.mockClear();
+    tauriFsMocks.pickTauriVaultDirectory.mockResolvedValue(null);
+    tauriFsMocks.getTauriVaultRootPath.mockReturnValue(null);
+    agentMocks.detectAcpRuntimes.mockResolvedValue([]);
+    agentMocks.requestAgentChat.mockClear();
+    agentMocks.queueAgentChatIntent.mockClear();
+  });
+
+  describe('starting from a code project', () => {
+    const pickProject = (root: string) => {
+      tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
+      tauriFsMocks.pickTauriVaultDirectory.mockResolvedValue({ name: root.split('/').pop() ?? root });
+      tauriFsMocks.getTauriVaultRootPath.mockReturnValue(root);
+    };
+
+    it('writes nothing until the shown path is confirmed, then creates atlas inside the project and opens it', async () => {
+      pickProject('/Users/me/dev/shop');
+      mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 0, starterError: null }));
+      render(<FirstRunPage />);
+
+      fireEvent.click(screen.getByTestId('first-run-code-project'));
+
+      expect(await screen.findByTestId('build-from-code-path')).toHaveTextContent('/Users/me/dev/shop/atlas');
+      expect(tauriFsMocks.ensureTauriChildDirectory).not.toHaveBeenCalled();
+      expect(mocks.vault.openRecent).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByTestId('build-from-code-go'));
+
+      await waitFor(() => {
+        expect(mocks.vault.openRecent).toHaveBeenCalledWith(
+          expect.objectContaining({ desktopRootPath: '/Users/me/dev/shop/atlas' }),
+        );
+      });
+      expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith('/Users/me/dev/shop', 'atlas');
+    });
+
+    it('asks a ready coding agent for a first draft of the project', async () => {
+      pickProject('/Users/me/dev/shop');
+      agentMocks.detectAcpRuntimes.mockResolvedValue([
+        { id: 'claude', state: 'ready', verified: true, isolated: true },
+      ]);
+      mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 0, starterError: null }));
+      render(<FirstRunPage />);
+
+      fireEvent.click(screen.getByTestId('first-run-code-project'));
+      fireEvent.click(await screen.findByTestId('build-from-code-go'));
+
+      await waitFor(() => {
+        expect(agentMocks.queueAgentChatIntent).toHaveBeenCalledWith(
+          null,
+          expect.stringContaining('/Users/me/dev/shop'),
+        );
+      });
+    });
+
+    it('opens the folder and leaves no request waiting when no coding agent is ready', async () => {
+      pickProject('/Users/me/dev/shop');
+      mocks.vault.openRecent = vi.fn(async () => ({ opened: true, starterWritten: 0, starterError: null }));
+      render(<FirstRunPage />);
+
+      fireEvent.click(screen.getByTestId('first-run-code-project'));
+      fireEvent.click(await screen.findByTestId('build-from-code-go'));
+
+      await waitFor(() => expect(mocks.vault.openRecent).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull());
+      expect(agentMocks.requestAgentChat).not.toHaveBeenCalled();
+      expect(agentMocks.queueAgentChatIntent).not.toHaveBeenCalled();
+    });
+
+    it('is absent in a browser, where no project folder can be created', () => {
+      render(<FirstRunPage />);
+
+      expect(screen.queryByTestId('first-run-code-project')).toBeNull();
+    });
   });
 
   it('renders only local-vault actions, with no trust footer, demo or download CTA', () => {
