@@ -17,10 +17,10 @@ import {
   easeInOut as inOut,
   lerp as mix,
   lightSprite,
-  type CameraShot,
 } from '../lib/film-kit';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 import {
+  ACT_MS,
   AREAS,
   DIFF_ROWS,
   EXAMPLE_REPO,
@@ -29,30 +29,43 @@ import {
   PANE3,
   PANE_TOP,
   PANES,
+  PANES_IN,
+  PRESS,
   SCAN,
   SETTINGS_LINES,
   SETTINGS_MISSING_LINE,
   SETTINGS_PATH,
   SLAB_SHARES,
+  STARTS,
+  STILL_DETAIL,
   TOOL_NAMES,
+  TOTAL,
+  TO_SUBAGENTS,
   TREE,
   TYPE,
   TYPE_FLOOR,
   WINDOW,
   areaTotals,
+  focusAt,
   groupCounts,
   itemsOf,
   pane1Area,
   pane1Row,
+  paneContentsAt,
+  pictureZone,
   playingFrame,
+  pushAt,
   scanColumnX,
   scanGroupY,
+  stillDetailFrame,
   stillFrame,
   treeRowY,
   wireFor,
   type AreaId,
   type ExampleFile,
+  type Focus,
   type GroupId,
+  type PaneContent,
   type WindowFrame,
   type Wire,
 } from '../lib/harness-scene';
@@ -65,15 +78,13 @@ const ACT_SPANS = [
   [0.5, 0.75],
   [0.75, 1],
 ] as const;
-/** Scan, filter, problem, copies that differ. */
-const ACT_MS = [2600, 2600, 2800, 2800] as const;
-const STARTS = [0, 2600, 5200, 8000] as const;
-const TOTAL = 10800;
 const CLOCK = { holdMs: 1800, fadeMs: 260 } as const;
 /** Where a paused film rests in each act: the scan read, the Codex filter on, the problem opened, the whole screen. */
 const SETTLE = [0.85, 0.8, 0.7, 0.9] as const;
 const FILM_MIN_WIDTH = 768;
 const SEEK_FADE = 300;
+/** After a jump the push and the dimming ease from what was drawn to the new act's values. */
+const SEEK_BLEND = 600;
 
 /* Captions: out in 120ms, in over 160ms with a 12px rise, the last act's line 40ms after its headline. */
 const CAPTION_OUT = 120;
@@ -89,14 +100,21 @@ const SWEEP = [300, 1900] as const;
 /** Each count rolls over this long; two landings on one area are kept at least this far apart. */
 const ROLL = 160;
 const LANDING_GAP = 200;
-/** Act two, from 2600: the columns stack into pane 1 while panes 2 and 3 slide in. */
-const STACK = [2600, 3160] as const;
-const STACK_STAGGER = 20;
-const PANES_IN = [2880, 3240] as const;
-const FILTER_ON = [3900, 4140] as const;
-const COLLAPSE_ON = [4000, 4240] as const;
-const ROLL_ON = 4000;
-const TOTAL_ON = 4080;
+/**
+ * Act two, from 2600: the wires, the big totals, the captions and the tree leave first; each
+ * column's rows close up under its heading; then the column moves as one block, down to its pane-1
+ * height and left into pane 1, before panes 2 and 3 slide in. The white bar draws in to a point and
+ * rises up pane 1's edge to the selected row.
+ */
+const CLEAR = [2600, 2760] as const;
+const CLOSE = [2760, 2960] as const;
+const STACK = [2900, 3600] as const;
+const STACK_STAGGER = 40;
+const RISE = [3300, 3700] as const;
+const FILTER_ON = [4200, 4440] as const;
+const COLLAPSE_ON = [4300, 4540] as const;
+const ROLL_ON = 4300;
+const TOTAL_ON = 4380;
 /** Act three, from 5200. */
 const FILTER_OFF = [5200, 5440] as const;
 const COLLAPSE_OFF = [5240, 5480] as const;
@@ -104,7 +122,6 @@ const ROLL_OFF = 5240;
 const TOTAL_OFF = 5320;
 const PROBLEM_IN = [5600, 5900] as const;
 const MARKS_IN = [5720, 5960] as const;
-const PRESS = 6100;
 const UNDERLINE = [6700, 7000] as const;
 const AMBER = [5600, 5900, 7400, 8000] as const;
 /** Act four, from 8000. */
@@ -114,61 +131,19 @@ const INK_BARS = [8900, 9100] as const;
 
 /** The marker's stops in pane 1: [from, to, group]. */
 const GLIDES: ReadonlyArray<readonly [number, number, GroupId]> = [
-  [3300, 3520, 'skills'],
-  [6100, 6400, 'blockingHooks'],
-  [8000, 8300, 'subagents'],
+  [PRESS, PRESS + 300, 'blockingHooks'],
+  [TO_SUBAGENTS, TO_SUBAGENTS + 300, 'subagents'],
 ];
-const FIRST_SELECTED: GroupId = 'instructions';
+/** The marker stands up on Skills, the category act two's filter is about. */
+const FIRST_SELECTED: GroupId = 'skills';
 
-/** What panes 2 and 3 show, in turn: [id, in from, in to, out from, out to]. */
-type PaneContent = 'instructions' | 'skills' | 'hooks' | 'subagents';
-const CONTENTS: ReadonlyArray<readonly [PaneContent, number, number, number, number]> = [
-  ['instructions', PANES_IN[0], PANES_IN[1], 3300, 3420],
-  ['skills', 3440, 3700, PRESS, PRESS + 120],
-  ['hooks', PRESS + 140, PRESS + 380, 8000, 8120],
-  ['subagents', 8140, 8380, TOTAL + 1e6, TOTAL + 2e6],
-];
 const CONTENT_GROUP: Record<PaneContent, GroupId> = {
-  instructions: 'instructions',
   skills: 'skills',
   hooks: 'blockingHooks',
   subagents: 'subagents',
 };
 /** Under Codex the selected skill hides, so the selection moves to its Codex twin. */
-const RESELECT = [4000, 4240] as const;
-
-/* ---------- the camera ---------- */
-
-/** A shot that keeps window point (x, y) where it stands at zoom 1, magnified `zoom` times about it. */
-function pivot(x: number, y: number, zoom: number): CameraShot {
-  const cx = WINDOW.w / 2;
-  const cy = WINDOW.h / 2;
-  return { cx: x - (x - cx) / zoom, cy: y - (y - cy) / zoom, zoom };
-}
-/**
- * A close-up that keeps window x where it stands and puts the header's bottom edge 14 units above
- * the window's top, past the mask's fade, so the header leaves the picture whole and the problem
- * line is its top edge.
- */
-function belowHeader(x: number, zoom: number): CameraShot {
-  return { cx: pivot(x, 0, zoom).cx, cy: WINDOW.header + (WINDOW.h / 2 + 14) / zoom, zoom };
-}
-const WHOLE = pivot(WINDOW.w / 2, WINDOW.h / 2, 1);
-const SHOTS: ReadonlyArray<readonly [number, CameraShot]> = [
-  [0, pivot(162, 40, 1.12)],
-  [300, pivot(162, 40, 1.12)],
-  [2000, WHOLE],
-  [3200, WHOLE],
-  [3800, pivot(300, 120, 1.18)],
-  [4000, pivot(300, 120, 1.18)],
-  [4400, pivot(900, 28, 1.08)],
-  [5900, pivot(900, 28, 1.08)],
-  [6600, belowHeader(700, 1.2)],
-  [8000, belowHeader(700, 1.2)],
-  [8600, belowHeader(840, 1.3)],
-  [9400, belowHeader(840, 1.3)],
-  [10200, WHOLE],
-];
+const RESELECT = [4300, 4540] as const;
 
 function keyed<V>(keys: ReadonlyArray<readonly [number, V]>, T: number, blend: (a: V, b: V, t: number) => V): V {
   if (T <= keys[0]![0]) return keys[0]![1];
@@ -180,16 +155,20 @@ function keyed<V>(keys: ReadonlyArray<readonly [number, V]>, T: number, blend: (
   return keys[keys.length - 1]![1];
 }
 
-const mixShot = (a: CameraShot, b: CameraShot, t: number): CameraShot => ({
-  cx: mix(a.cx, b.cx, t),
-  cy: mix(a.cy, b.cy, t),
-  zoom: mix(a.zoom, b.zoom, t),
+const mixFocus = (a: Focus, b: Focus, t: number): Focus => ({
+  header: mix(a.header, b.header, t),
+  problem: mix(a.problem, b.problem, t),
+  pane1: mix(a.pane1, b.pane1, t),
+  pane2: mix(a.pane2, b.pane2, t),
+  pane3: mix(a.pane3, b.pane3, t),
 });
 type Point = { x: number; y: number };
 const mixPoint = (a: Point, b: Point, t: number): Point => ({ x: mix(a.x, b.x, t), y: mix(a.y, b.y, t) });
 
 /** 0..1 of the way from `a` to `b`, eased. */
 const io = (T: number, a: number, b: number) => inOut((T - a) / (b - a));
+/** A gentler ease for long travel: its peak speed is half the cubic's, so a slide never jumps between frames. */
+const glide = (v: number) => (1 - Math.cos(Math.PI * clamp(v))) / 2;
 
 /** Film time (ms) at choreography progress `p`. */
 function filmTime(p: number): number {
@@ -357,14 +336,19 @@ interface Frame {
   sprites: { indigo: HTMLCanvasElement; amber: HTMLCanvasElement };
   timing: Timing;
   win: WindowFrame;
-  /** Where the canvas fades out under the film's title and above its caption, in CSS pixels. */
-  mask: { top: number; bottom: number } | null;
+  /** Fades the light out under the film's title and above its caption. */
   maskFill: CanvasGradient | null;
   dpr: number;
   w: number;
   h: number;
   T: number;
-  shot: CameraShot;
+  /** The push about the window's centre and each region's brightness, as last drawn. */
+  zoom: number;
+  focus: Focus;
+  /** After a jump: what was drawn, and the film time the ease from it starts. */
+  blend: { zoom: number; focus: Focus; at: number } | null;
+  /** The part of the window a narrow still shows; the whole window otherwise. */
+  crop: Rect | null;
 }
 
 function fontsFor(s: number, p: Palette): Fonts {
@@ -456,26 +440,20 @@ function countAt(events: ReadonlyArray<readonly [number, number]>, T: number): {
 
 /* ---------- drawing helpers, in window units ---------- */
 
+/** Window units on the canvas, pushed `zoom` times about the window's own centre. */
 function toWindow(f: Frame) {
-  const { win, shot, dpr } = f;
-  const z = shot.zoom;
-  const scale = dpr * win.s * z;
-  f.ctx.setTransform(
-    scale,
-    0,
-    0,
-    scale,
-    dpr * (win.x + (WINDOW.w / 2) * win.s - shot.cx * win.s * z),
-    dpr * (win.y + (WINDOW.h / 2) * win.s - shot.cy * win.s * z),
-  );
+  const { win, zoom, dpr } = f;
+  const scale = dpr * win.s * zoom;
+  const origin = onScreen(f, 0, 0);
+  f.ctx.setTransform(scale, 0, 0, scale, dpr * origin.x, dpr * origin.y);
 }
 
 /** A window point on the screen, in CSS pixels. */
 function onScreen(f: Frame, x: number, y: number): Point {
-  const { win, shot } = f;
+  const { win, zoom } = f;
   return {
-    x: win.x + win.s * (WINDOW.w / 2 + (x - shot.cx) * shot.zoom),
-    y: win.y + win.s * (WINDOW.h / 2 + (y - shot.cy) * shot.zoom),
+    x: win.x + win.s * (WINDOW.w / 2 + (x - WINDOW.w / 2) * zoom),
+    y: win.y + win.s * (WINDOW.h / 2 + (y - WINDOW.h / 2) * zoom),
   };
 }
 
@@ -524,7 +502,7 @@ function block(f: Frame, r: Rect, radius: number, color: string, alpha: number) 
 function outline(f: Frame, r: Rect, radius: number, color: string, alpha: number) {
   if (alpha <= 0.004) return;
   const { ctx } = f;
-  const px = 1 / (f.win.s * f.shot.zoom);
+  const px = 1 / (f.win.s * f.zoom);
   ctx.globalAlpha = alpha;
   ctx.strokeStyle = color;
   ctx.lineWidth = px;
@@ -538,7 +516,7 @@ function hairline(f: Frame, x0: number, y0: number, x1: number, y1: number, alph
   const { ctx } = f;
   ctx.globalAlpha = alpha;
   ctx.strokeStyle = f.palette.hairline;
-  ctx.lineWidth = 1 / (f.win.s * f.shot.zoom);
+  ctx.lineWidth = 1 / (f.win.s * f.zoom);
   ctx.beginPath();
   ctx.moveTo(x0, y0);
   ctx.lineTo(x1, y1);
@@ -607,18 +585,18 @@ function scanY(T: number): number {
 function barAt(T: number): { r: Rect; alpha: number; fly: boolean } {
   const scan = (y: number): Rect => ({ x: SCAN.card.x, y: y - 1, w: SCAN.card.w, h: 2 });
   if (T < STARTS[1]) return { r: scan(scanY(T)), alpha: io(T, BAR_IN, BAR_IN + 120), fly: false };
-  const morph = io(T, STACK[0], PANES_IN[1]);
   const marker = markerRect(selectedY(T));
-  if (morph < 1) {
-    /* The line narrows to a point first, travels, then stands up as the marker: never a white slab. */
+  const stand = io(T, RISE[1] - 60, RISE[1] + 160);
+  if (stand < 1) {
+    /* The line draws in to a point at the left of where it ended, rises up pane 1's edge, then stands up as the marker. */
     const a = scan(SCAN.sweep.bottom);
-    const narrow = io(T, STACK[0], STACK[0] + 260);
-    const stand = io(T, PANES_IN[1] - 220, PANES_IN[1]);
-    const w = mix(a.w, marker.w, narrow);
+    const draw = io(T, CLEAR[0], CLEAR[0] + 260);
+    const rise = io(T, RISE[0], RISE[1]);
+    const x = mix(a.x, marker.x, draw);
+    const w = mix(a.w, marker.w, draw);
     const h = mix(a.h, marker.h, stand);
-    const cx = mix(a.x + a.w / 2, marker.x + marker.w / 2, morph);
-    const cy = mix(a.y + a.h / 2, marker.y + marker.h / 2, morph);
-    return { r: { x: cx - w / 2, y: cy - h / 2, w, h }, alpha: 1, fly: morph > 0 };
+    const cy = mix(SCAN.sweep.bottom, marker.y + marker.h / 2, rise);
+    return { r: { x, y: cy - h / 2, w, h }, alpha: 1, fly: rise > 0 && rise < 1 };
   }
   const gliding = GLIDES.some(([from, to]) => T > from && T < to);
   return { r: marker, alpha: 1, fly: gliding };
@@ -665,7 +643,8 @@ function drawChrome(f: Frame) {
 
 function drawScan(f: Frame) {
   const { palette: p, fonts, timing, T } = f;
-  const gone = io(T, STACK[0], STACK[0] + 280);
+  /* The tree and every wire leave together before the columns move, so no stroke is left behind. */
+  const gone = io(T, CLEAR[0], CLEAR[1]);
   if (gone >= 1) return;
   const card = { ...SCAN.card, x: SCAN.card.x - 12 * gone };
   block(f, card, 10, p.well, 1 - gone);
@@ -708,7 +687,7 @@ function drawScan(f: Frame) {
       heads.push({ a: pts[j]!, b: end });
     }
   });
-  ctx.globalAlpha = 0.3 * (1 - io(T, STACK[0], STACK[0] + 240));
+  ctx.globalAlpha = 0.3 * (1 - gone);
   ctx.strokeStyle = p.ink;
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
@@ -719,7 +698,7 @@ function drawScan(f: Frame) {
       ctx.moveTo(head.a.x, head.a.y);
       ctx.lineTo(head.b.x, head.b.y);
     }
-    ctx.globalAlpha = 0.9;
+    ctx.globalAlpha = 0.9 * (1 - gone);
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -728,13 +707,13 @@ function drawScan(f: Frame) {
 /* ---------- pane 1, which is act one's three columns stacked ---------- */
 
 /**
- * How far area `a` has moved from its act-one column into pane 1: `m` overall, `y` and `x` for its
- * two legs. Each area drops to its pane-1 height in its own column, then slides left, so no two
- * areas ever cross.
+ * How far area `a` has moved from its act-one column into pane 1: `close` for its rows closing up
+ * under its heading, then `y` and `x` for the block's two legs. Each block drops to its pane-1
+ * height in its own column, then slides left, so no two blocks ever cross. `m` is 1 once landed.
  */
-function stackOf(T: number, a: number): { m: number; x: number; y: number } {
+function stackOf(T: number, a: number): { close: number; m: number; x: number; y: number } {
   const t = clamp((T - STACK[0] - STACK_STAGGER * a) / (STACK[1] - STACK[0]));
-  return { m: inOut(t), y: inOut(t / 0.55), x: inOut((t - 0.45) / 0.55) };
+  return { close: io(T, CLOSE[0], CLOSE[1]), m: t, y: glide(t / 0.5), x: glide((t - 0.4) / 0.6) };
 }
 
 /** How far the Codex filter has taken effect, 0..1. */
@@ -748,46 +727,54 @@ function drawAreas(f: Frame) {
   const dimK = codexOf(T, COLLAPSE_ON, COLLAPSE_OFF);
   const marks = io(T, MARKS_IN[0], MARKS_IN[1]);
   const selectY = selectedY(T);
-  const selecting = io(T, STACK[1] - 80, PANES_IN[1] + 40);
+  const selecting = io(T, RISE[1] - 60, RISE[1] + 200);
+  const clear = io(T, CLEAR[0], CLEAR[1]);
 
   /* The selected row: the tab's own selection fill, under the bar. */
   block(f, { x: 6, y: selectY - 12.5, w: 288, h: 25 }, 6, p.raised, selecting);
 
   AREAS.forEach((area, a) => {
-    const { m, x: mx, y: my } = stackOf(T, a);
+    const { close, m, x: mx, y: my } = stackOf(T, a);
     const colX = scanColumnX(area.id);
     const head = pane1Area(area.id);
     const show = io(T, 80 + 60 * a, 440 + 60 * a);
     const rise = 12 * (1 - show);
+    /* The block's one move: every part of it travels by the same amount. */
+    const drop = (head.y - SCAN.colTitleY) * my;
     /* The section title: 22px at the column's head, 20px on its pane-1 row. */
     const titleX = mix(colX, PANE1.padX, mx);
-    const titleY = mix(SCAN.colTitleY, head.y, my) + rise;
-    scaledText(f, words.sections[area.id].title, titleX, titleY, fonts.sectionTitle, p.ink, show, mix(1, TYPE.areaTitle / TYPE.sectionTitle, m));
-    /* The caption leaves as the column stacks. */
-    const captionAlpha = show * (1 - clamp(m / 0.4));
+    const titleY = SCAN.colTitleY + drop + rise;
+    scaledText(f, words.sections[area.id].title, titleX, titleY, fonts.sectionTitle, p.ink, show, mix(1, TYPE.areaTitle / TYPE.sectionTitle, close));
+    /* The caption leaves in place before the column moves. */
+    const captionAlpha = show * (1 - clear);
     if (captionAlpha > 0.004) {
       wrap(f, words.sections[area.id].caption, fonts.caption, SCAN.colW).forEach((line, i) => {
-        text(f, line, titleX, SCAN.captionY + i * SCAN.captionLH + rise - 30 * m, fonts.caption, p.soft, captionAlpha);
+        text(f, line, titleX, SCAN.captionY + i * SCAN.captionLH + rise, fonts.caption, p.soft, captionAlpha);
       });
     }
-    /* The total: a 56px numeral that ticks during the scan, then the tab's small "21 items". */
+    /*
+     * The total: a 56px numeral that ticks during the scan and fades where it stands; the tab's
+     * small "21 items" rides in at the block's right edge as it slides into pane 1.
+     */
     const total = countAt(timing.areaEvents[area.id], T);
     const lit = io(T, timing.firstLanding[area.id], timing.firstLanding[area.id] + 200);
-    if (m <= 0) {
-      drawBigTotal(f, total, colX, SCAN.totalY + rise, f.tint(p.soft, p.ink, lit), show * mix(0.55, 1, lit));
-    } else if (m >= 1) {
+    if (clear < 1) {
+      drawBigTotal(f, total, colX, SCAN.totalY + rise, f.tint(p.soft, p.ink, lit), show * mix(0.55, 1, lit) * (1 - clear));
+    }
+    if (m >= 1) {
       const color = p.soft;
       const markW = marks > 0 && area.id === 'guardrails' ? problemMarkWidth(f) : 0;
       if (markW > 0) drawProblemMark(f, PANE1.right - f.measure(words.totals[total.to] ?? '', fonts.small) - 10 - markW, head.y, marks);
       roll(f, words.totals[total.from] ?? '', words.totals[total.to] ?? '', total.k, PANE1.right, head.y, fonts.small, color, 1, 'right');
-    } else {
-      morphTotal(f, total.to, colX, SCAN.totalY, head.y, { m, x: mx, y: my }, show);
+    } else if (mx > 0) {
+      const right = mix(colX + SCAN.colW, PANE1.right, mx);
+      text(f, words.totals[total.to] ?? '', right, titleY, fonts.small, p.soft, inOut((mx - 0.5) / 0.5), 'right');
     }
 
     area.groups.forEach((group) => {
       const row = pane1Row(group);
       const x = mix(colX, PANE1.padX, mx);
-      const y = mix(scanGroupY(group), row.y, my) + rise;
+      const y = mix(scanGroupY(group), SCAN.colTitleY + row.y - head.y, close) + drop + rise;
       const right = mix(colX + SCAN.colW, PANE1.right, mx);
       const count = countAt(timing.groupEvents[group], T);
       const empty = codex[group] === 0 ? dimK : 0;
@@ -836,27 +823,6 @@ function drawBigTotal(f: Frame, total: { from: number; to: number; k: number }, 
   }
 }
 
-/** The 56px numeral and its unit, shrinking into the tab's right-aligned total as the column stacks. */
-function morphTotal(f: Frame, n: number, colX: number, fromY: number, toY: number, { m, x: mx, y: my }: { m: number; x: number; y: number }, alpha: number) {
-  const { fonts, words, palette: p } = f;
-  const value = words.totals[n] ?? '';
-  const { numeral, unit, gap } = splitTotal(value, n);
-  const big = sizeOf(fonts.total);
-  const small = sizeOf(fonts.small);
-  const unitBig = sizeOf(fonts.unit);
-  const unitW = f.measure(unit, fonts.small);
-  const gapW = gap ? f.measure(value, fonts.small) - f.measure(numeral, fonts.small) - unitW : 0;
-  const numEndX = PANE1.right - unitW - gapW - f.measure(numeral, fonts.small);
-  const numScale = mix(1, small / big, m);
-  const numX = mix(colX, numEndX, mx);
-  const y = mix(fromY, toY, my);
-  scaledText(f, numeral, numX, y, fonts.total, f.tint(p.ink, p.soft, m), alpha, numScale);
-  const unitStartX = colX + f.measure(numeral, fonts.total) + 8;
-  const unitEndX = PANE1.right - unitW;
-  const unitY = mix(fromY + big * 0.2, toY, my);
-  scaledText(f, unit, mix(unitStartX, unitEndX, mx), unitY, fonts.unit, p.soft, alpha, mix(1, small / unitBig, m));
-}
-
 function problemMarkWidth(f: Frame): number {
   return 8 + f.measure('1', f.fonts.small);
 }
@@ -875,40 +841,69 @@ function drawProblemMark(f: Frame, x: number, y: number, alpha: number) {
 
 /* ---------- panes 2 and 3 ---------- */
 
-/** Each content's opacity and how far it still has to rise. */
-function contentsAt(T: number): Array<{ id: PaneContent; a: number; since: number }> {
-  return CONTENTS.flatMap(([id, in0, in1, out0, out1]) => {
-    const a = io(T, in0, in1) * (1 - io(T, out0, out1));
-    return a > 0.004 ? [{ id, a, since: T - in0 }] : [];
-  });
-}
-
 function drawPanes(f: Frame) {
-  const { palette: p, T } = f;
+  const { palette: p, fonts, words, T } = f;
   const pin = io(T, PANES_IN[0], PANES_IN[1]);
   if (pin <= 0) return;
   const dx = 24 * (1 - pin);
   hairline(f, 0, PANE_TOP, WINDOW.w, PANE_TOP, pin);
   hairline(f, PANES[1].x, PANE_TOP, PANES[1].x, WINDOW.h, pin);
   hairline(f, PANES[2].x + dx, PANE_TOP, PANES[2].x + dx, WINDOW.h, pin);
-  void p;
-  for (const content of contentsAt(T)) {
+  const contents = paneContentsAt(T);
+  /*
+   * What the panes keep while their subject changes is drawn once, so a cross-fade never thins it:
+   * pane 3's box and its "Read by" label, and pane 2's selected row, whose fills add up where two
+   * contents select the same row.
+   */
+  const box = { ...PANE3.box, x: PANE3.box.x + dx };
+  block(f, box, 8, p.well, pin);
+  outline(f, box, 8, p.hairline, pin);
+  text(f, words.readBy, PANE3.x + dx, PANE3.readByY, fonts.small, p.dim, pin);
+  const fills: Array<{ y: number; a: number }> = [];
+  for (const content of contents) {
+    for (const fill of selectionOf(content.id, T)) {
+      const a = fill.a * content.a;
+      const same = fills.find((other) => Math.abs(other.y - fill.y) < 0.5);
+      if (same) same.a = Math.min(1, same.a + a);
+      else fills.push({ y: fill.y, a });
+    }
+  }
+  for (const fill of fills) block(f, { x: PANE2.x + dx, y: fill.y + 1, w: PANE2.w, h: PANE2.row - 2 }, 6, p.raised, fill.a * pin);
+  for (const content of contents) {
     drawItems(f, content.id, content.a * pin, dx, content.since);
     drawDetail(f, content.id, content.a * pin, dx, content.since);
   }
 }
 
-/** Rows of pane 2 for a content: label, the line under it, whether it collapses under Codex. */
-function itemsFor(id: PaneContent): ExampleFile[] {
-  return itemsOf(CONTENT_GROUP[id]);
+/** Pane 2's rows for a content, and where each starts: under Codex, the rows Codex does not read close. */
+function paneRows(id: PaneContent, T: number): { items: ExampleFile[]; shown: number[]; tops: number[] } {
+  const items = itemsOf(CONTENT_GROUP[id]);
+  const k = id === 'skills' ? codexOf(T, COLLAPSE_ON, COLLAPSE_OFF) : 0;
+  const shown = items.map((file) => (file.tools.length === 0 || file.tools.includes('codex') ? 1 : 1 - k));
+  const tops: number[] = [];
+  let top = PANE2.rowsTop;
+  shown.forEach((share) => {
+    tops.push(top);
+    top += PANE2.row * share;
+  });
+  return { items, shown, tops };
+}
+
+/** The selection fills a content puts under pane 2: the first item; under Codex, the skill's twin. */
+function selectionOf(id: PaneContent, T: number): Array<{ y: number; a: number }> {
+  if (id !== 'skills') return [{ y: PANE2.rowsTop, a: 1 }];
+  const { tops } = paneRows(id, T);
+  const moved = io(T, RESELECT[0], RESELECT[1]);
+  return [
+    { y: tops[0]!, a: 1 - moved },
+    { y: tops[1]!, a: moved },
+  ].filter((fill) => fill.a > 0.004);
 }
 
 function drawItems(f: Frame, id: PaneContent, alpha: number, dx: number, since: number) {
   const { palette: p, fonts, words, T } = f;
-  const items = itemsFor(id);
+  const { items, shown, tops } = paneRows(id, T);
   const x = PANE2.x + dx;
-  const k = id === 'skills' ? codexOf(T, COLLAPSE_ON, COLLAPSE_OFF) : 0;
-  const shown = (file: ExampleFile) => (file.tools.length === 0 || file.tools.includes('codex') ? 1 : 1 - k);
   /* The heading: the category and its total, which rolls with the filter. */
   const all = items.length;
   const codex = items.filter((file) => file.tools.length === 0 || file.tools.includes('codex')).length;
@@ -916,22 +911,11 @@ function drawItems(f: Frame, id: PaneContent, alpha: number, dx: number, since: 
   const rise = 8 * (1 - clamp(since / 240));
   text(f, words.groups[CONTENT_GROUP[id]], x + PANE2.padX, PANE2.headY + rise, fonts.paneHead, p.ink, alpha);
   roll(f, words.totals[total.from] ?? '', words.totals[total.to] ?? '', total.k, x + PANE2.w - PANE2.padX, PANE2.headY + rise, fonts.small, p.soft, alpha, 'right');
-
-  const tops: number[] = [];
-  let top = PANE2.rowsTop;
-  for (const file of items) {
-    tops.push(top);
-    top += PANE2.row * shown(file);
-  }
-  /* The selection fill, under the rows: the first item; under Codex, the skill's twin. */
   const moved = id === 'skills' ? io(T, RESELECT[0], RESELECT[1]) : 0;
-  const select = (row: number, a: number) => block(f, { x, y: tops[row]! + 1 + rise, w: PANE2.w, h: PANE2.row - 2 }, 6, p.raised, a);
-  select(0, alpha * (1 - moved));
-  if (moved > 0) select(1, alpha * moved);
   items.forEach((file, i) => {
-    const h = PANE2.row * shown(file);
+    const h = PANE2.row * shown[i]!;
     const enter = inOut(clamp((since - 30 * i) / 240));
-    const a = alpha * enter * clamp(shown(file) * 1.6 - 0.6);
+    const a = alpha * enter * clamp(shown[i]! * 1.6 - 0.6);
     const chosen = i === 0 ? 1 - moved : i === 1 ? moved : 0;
     if (h > 0.5 && a > 0.004) drawItemRow(f, id, file, chosen, x, tops[i]! + 8 * (1 - enter), h, a);
   });
@@ -977,25 +961,21 @@ function drawItemRow(f: Frame, id: PaneContent, file: ExampleFile, chosen: numbe
 
 /** Pane 3: the selected item's path, who reads it, then its content. */
 function drawDetail(f: Frame, id: PaneContent, alpha: number, dx: number, since: number) {
-  const { palette: p, fonts, words, T } = f;
+  const { palette: p, fonts, T } = f;
   const rise = 8 * (1 - clamp(since / 240));
   const x = PANE3.x + dx;
   const reselect = id === 'skills' ? io(T, RESELECT[0], RESELECT[1]) : 0;
   const reselectBack = 1 - reselect;
   const detail = detailOf(id);
   const box = { ...PANE3.box, x: PANE3.box.x + dx, y: PANE3.box.y + rise };
-  block(f, box, 8, p.well, alpha);
-  outline(f, box, 8, p.hairline, alpha);
   if (id === 'skills') {
     /* The selected skill and its Codex twin trade places when the filter hides the first. */
     text(f, '.claude/skills/code-review/', x, PANE3.pathY + rise - 6 * reselect, fonts.path, p.ink, alpha * reselectBack);
     text(f, '.agents/skills/code-review/', x, PANE3.pathY + rise + 6 * reselectBack, fonts.path, p.ink, alpha * reselect);
-    text(f, words.readBy, x, PANE3.readByY + rise, fonts.small, p.dim, alpha);
     text(f, TOOL_NAMES['claude-code'], PANE3.readByValueX + dx, PANE3.readByY + rise, fonts.row, p.ink, alpha * reselectBack);
     text(f, TOOL_NAMES.codex, PANE3.readByValueX + dx, PANE3.readByY + rise, fonts.row, p.ink, alpha * reselect);
   } else {
     text(f, detail.path, x, PANE3.pathY + rise, fonts.path, p.ink, alpha);
-    text(f, words.readBy, x, PANE3.readByY + rise, fonts.small, p.dim, alpha);
     text(f, detail.readBy, PANE3.readByValueX + dx, PANE3.readByY + rise, fonts.row, p.ink, alpha);
   }
   const inner = box.x + 20;
@@ -1024,7 +1004,6 @@ function drawDetail(f: Frame, id: PaneContent, alpha: number, dx: number, since:
 }
 
 function detailOf(id: PaneContent): { path: string; readBy: string } {
-  if (id === 'instructions') return { path: 'AGENTS.md', readBy: TOOL_NAMES.codex };
   if (id === 'hooks') return { path: SETTINGS_PATH, readBy: TOOL_NAMES['claude-code'] };
   return { path: '.claude/agents/reviewer.md', readBy: TOOL_NAMES['claude-code'] };
 }
@@ -1038,7 +1017,7 @@ function fitFont(f: Frame, value: string, font: string, room: number): string {
   const width = f.measure(value, font);
   if (width <= room) return font;
   const size = sizeOf(font);
-  const floor = Math.ceil((4 * TYPE_FLOOR) / (f.win.s * f.shot.zoom)) / 4;
+  const floor = Math.ceil((4 * TYPE_FLOOR) / (f.win.s * f.zoom)) / 4;
   const fitted = Math.max(floor, Math.floor((4 * size * room) / width) / 4);
   return font.replace(/\d+(?:\.\d+)?px/, `${fitted.toFixed(2)}px`);
 }
@@ -1087,32 +1066,28 @@ function drawDiff(f: Frame, inner: number, room: number, rise: number, alpha: nu
 /** What the key light rests on, in window units, after act one (where it rides the scan line). */
 const LIGHT: ReadonlyArray<readonly [number, Point]> = [
   [STARTS[1], { x: 162, y: SCAN.sweep.bottom }],
-  [3200, { x: 150, y: pane1Row('instructions').y }],
-  [3300, { x: 150, y: pane1Row('instructions').y }],
-  [3520, { x: 150, y: pane1Row('skills').y }],
-  [3760, { x: 470, y: 230 }],
-  [3900, { x: 470, y: 230 }],
-  [4140, { x: 900, y: 40 }],
-  [4400, { x: 150, y: 260 }],
-  [5300, { x: 150, y: 260 }],
-  [5700, { x: 380, y: 74 }],
-  [6100, { x: 700, y: 74 }],
-  [6500, { x: 470, y: 180 }],
-  [6900, { x: 840, y: 260 }],
+  [RISE[1], { x: 150, y: pane1Row('skills').y }],
+  [3950, { x: 150, y: pane1Row('skills').y }],
+  [FILTER_ON[0] + 100, { x: 900, y: 40 }],
+  [FILTER_ON[1] + 60, { x: 900, y: 40 }],
+  [4900, { x: 470, y: 200 }],
+  [5400, { x: 470, y: 200 }],
+  [5800, { x: 380, y: 74 }],
+  [PRESS, { x: 700, y: 74 }],
+  [PRESS + 500, { x: 840, y: 260 }],
   [7700, { x: 840, y: 260 }],
-  [8200, { x: 470, y: 170 }],
-  [8700, { x: 840, y: 270 }],
-  [9400, { x: 840, y: 270 }],
-  [10200, { x: WINDOW.w / 2, y: WINDOW.h / 2 }],
+  [8400, { x: 740, y: 250 }],
+  [9600, { x: 740, y: 250 }],
+  [10400, { x: WINDOW.w / 2, y: WINDOW.h / 2 }],
 ];
 
 function drawLight(f: Frame) {
-  const { T, sprites, win, shot } = f;
+  const { T, sprites, win, zoom } = f;
   const at = T < STARTS[1] ? { x: 162, y: scanY(T) } : keyed(LIGHT, T, mixPoint);
   const p = onScreen(f, at.x, at.y);
   const amber = io(T, AMBER[0], AMBER[1]) * (1 - io(T, AMBER[2], AMBER[3]));
   const strength = 0.12 * io(T, 0, 400);
-  const radius = 300 * win.s * Math.sqrt(shot.zoom);
+  const radius = 300 * win.s * Math.sqrt(zoom);
   f.ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
   drawKeyLight(f.ctx, sprites.indigo, p.x, p.y, radius, strength * (1 - amber));
   drawKeyLight(f.ctx, sprites.amber, p.x, p.y, radius, strength * amber);
@@ -1192,27 +1167,65 @@ function drawProblem(f: Frame) {
 
 /* ---------- the whole frame ---------- */
 
+/**
+ * Dims what the act is not about by laying the window's own panel colour over it, so the subject is
+ * the brightest thing on screen and the rest stays legible. In act four pane 2 keeps its two tagged
+ * rows bright.
+ */
+function drawFocus(f: Frame) {
+  const { focus, palette: p } = f;
+  const veil = (r: Rect, k: number) => {
+    if (k < 0.996) block(f, r, 0, p.panel, 1 - k);
+  };
+  const below = WINDOW.h - PANE_TOP;
+  veil({ x: 0, y: 0, w: WINDOW.w, h: WINDOW.header }, focus.header);
+  veil({ x: 0, y: WINDOW.header, w: WINDOW.w, h: PANE_TOP - WINDOW.header }, focus.problem);
+  veil({ x: PANES[0].x, y: PANE_TOP, w: PANES[0].w, h: below }, focus.pane1);
+  const tagged = { top: PANE2.rowsTop, bottom: PANE2.rowsTop + 2 * PANE2.row };
+  veil({ x: PANES[1].x, y: PANE_TOP, w: PANES[1].w, h: tagged.top - PANE_TOP }, focus.pane2);
+  veil({ x: PANES[1].x, y: tagged.bottom, w: PANES[1].w, h: WINDOW.h - tagged.bottom }, focus.pane2);
+  veil({ x: PANES[2].x, y: PANE_TOP, w: PANES[2].w, h: below }, focus.pane3);
+}
+
+/** The push and the dimming at the frame's time, eased from what was drawn for a moment after a jump. */
+function settleFraming(f: Frame) {
+  let zoom = pushAt(f.T);
+  let focus = focusAt(f.T);
+  const from = f.blend;
+  if (from) {
+    const k = io(f.T, from.at, from.at + SEEK_BLEND);
+    if (f.T < from.at || k >= 1) f.blend = null;
+    else {
+      zoom = mix(from.zoom, zoom, k);
+      focus = mixFocus(from.focus, focus, k);
+    }
+  }
+  f.zoom = zoom;
+  f.focus = focus;
+}
+
 function drawHarness(f: Frame) {
   const { ctx } = f;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  f.shot = keyed(SHOTS, f.T, mixShot);
+  settleFraming(f);
   ctx.textBaseline = 'middle';
+  const shown = f.crop ?? { x: 0, y: 0, w: WINDOW.w, h: WINDOW.h };
+  const clip = () => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(shown.x, shown.y, shown.w, shown.h, WINDOW.radius);
+    ctx.clip();
+  };
 
   toWindow(f);
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(0, 0, WINDOW.w, WINDOW.h, WINDOW.radius);
-  ctx.clip();
+  clip();
   const chrome = drawChrome(f);
   ctx.restore();
   drawLight(f);
   toWindow(f);
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(0, 0, WINDOW.w, WINDOW.h, WINDOW.radius);
-  ctx.clip();
+  clip();
   drawScan(f);
   drawAreas(f);
   drawPanes(f);
@@ -1229,11 +1242,12 @@ function drawHarness(f: Frame) {
     }
     block(f, bar.r, 1, f.palette.ink, bar.alpha);
   }
+  drawFocus(f);
   ctx.restore();
-  outline(f, { x: 0, y: 0, w: WINDOW.w, h: WINDOW.h }, WINDOW.radius, f.palette.edge, 1);
+  outline(f, shown, WINDOW.radius, f.palette.edge, 1);
   drawRings(f, chrome);
 
-  /* Fade the picture out under the film's title and above its caption, where a push-in carries it. */
+  /* Keep the light off the film's title and its caption. */
   if (f.maskFill) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
@@ -1294,15 +1308,17 @@ function useWords(): Words {
   }, [t, groups]);
 }
 
-type Mode = 'list' | 'still' | 'playing';
+/** `detail` is the still a stage narrower than the film shows: pane 3 of the last frame. */
+type Mode = 'list' | 'still' | 'detail' | 'playing';
 
 /**
  * The page's second film: the app's Harness › Setup screen reading an example repository. One scan
  * sorts its agent files into Context, Guardrails and Verification; a tool filter narrows every
  * list and count; a missing hook script surfaces as one line; a subagent whose Claude Code and
  * Codex copies differ is tagged and shown side by side. One white bar carries it: the scan line,
- * then the selection marker. Under reduced motion the last frame is drawn still above the acts as
- * a list; without a script, or narrower than 768px, the acts are the list alone.
+ * then the selection marker. The window stays whole in its picture and pushes in only gently;
+ * emphasis is light and dimming. Under reduced motion the last frame is drawn still above the acts
+ * as a list, and narrower than 768px its pane 3 alone; without a script the acts are the list alone.
  */
 export function HarnessFilm() {
   const t = useTranslations('download.harnessFilm');
@@ -1322,12 +1338,12 @@ export function HarnessFilm() {
   useEffect(() => {
     if (typeof matchMedia !== 'function') return;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    /* Below this the three panes cannot stand side by side, so the film rests as a list. */
+    /* Below this the three panes cannot stand side by side legibly, so the film rests on its last pane. */
     const wide = matchMedia(`(min-width: ${FILM_MIN_WIDTH}px)`);
     let id = 0;
     const decide = () => {
       cancelAnimationFrame(id);
-      const next: Mode = !wide.matches ? 'list' : reduced.matches || typeof IntersectionObserver === 'undefined' ? 'still' : 'playing';
+      const next: Mode = !wide.matches ? 'detail' : reduced.matches || typeof IntersectionObserver === 'undefined' ? 'still' : 'playing';
       id = requestAnimationFrame(() => setMode(next));
     };
     decide();
@@ -1358,13 +1374,15 @@ export function HarnessFilm() {
       sprites: { indigo: lightSprite(palette.indigo), amber: lightSprite(palette.warn) },
       timing,
       win: { x: 0, y: 0, s: 1 },
-      mask: null,
       maskFill: null,
       dpr: 1,
       w: 0,
       h: 0,
       T: playing ? 0 : TOTAL,
-      shot: WHOLE,
+      zoom: 1,
+      focus: focusAt(TOTAL),
+      blend: null,
+      crop: mode === 'detail' ? STILL_DETAIL : null,
     };
 
     const time = createFilmClock(ACT_SPANS, ACT_MS, CLOCK);
@@ -1392,12 +1410,14 @@ export function HarnessFilm() {
     let p = 0;
     /* One frame from each act before the film shows, so no act's first frame pays for new type sizes or code paths. */
     const warm = () => {
-      const keep = frame.T;
-      for (const T of [1200, 2900, 3600, 4200, 5800, 6800, 8500, 9000, TOTAL]) {
+      const keep = { T: frame.T, blend: frame.blend };
+      frame.blend = null;
+      for (const T of [1200, 2700, 3100, 3600, 4200, 5800, 6300, 6800, 7950, 8500, 9000, TOTAL]) {
         frame.T = T;
         drawHarness(frame);
       }
-      frame.T = keep;
+      frame.T = keep.T;
+      frame.blend = keep.blend;
     };
     const resize = () => {
       frame.w = el.clientWidth;
@@ -1406,30 +1426,35 @@ export function HarnessFilm() {
       frame.dpr = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(6e6 / Math.max(1, frame.w * frame.h)));
       el.width = Math.round(frame.w * frame.dpr);
       el.height = Math.round(frame.h * frame.dpr);
-      /* `--gateway-origin` is a registered length, so it reads back resolved to px. */
-      const origin = parseFloat(getComputedStyle(host).getPropertyValue('--gateway-origin')) || 200;
+      /* The page as laid out, read from the boxes themselves so the zone follows the page's gutter. */
+      const box = el.getBoundingClientRect();
+      const titleBox = label.current?.getBoundingClientRect();
+      const column = titleBox ? titleBox.left - box.left : 24;
       if (playing) {
         /* Read without transforms: the captions rise by transform, their box does not move. */
-        const origin0 = el.getBoundingClientRect().top;
-        const labelBottom = label.current ? label.current.getBoundingClientRect().bottom - origin0 : 100;
-        const captionTop = captionBlock.current ? captionBlock.current.getBoundingClientRect().top - origin0 : frame.h - 200;
-        const top = Math.max(104, labelBottom + 8);
-        frame.win = playingFrame(frame.w, origin, top, captionTop - 28);
-        frame.mask = { top: labelBottom, bottom: captionTop };
+        const labelBottom = titleBox ? titleBox.bottom - box.top : 100;
+        const block = captionBlock.current?.getBoundingClientRect();
+        const captionTop = block ? block.top - box.top : frame.h - 200;
+        const zone = pictureZone(
+          frame.w,
+          block ? { left: block.left - box.left, right: block.right - box.left } : { left: column, right: frame.w - column },
+          labelBottom,
+          captionTop,
+        );
+        frame.win = playingFrame(zone);
         const g = ctx.createLinearGradient(0, 0, 0, el.height);
         const stop = (y: number) => clamp(y / Math.max(1, frame.h));
         /* Only the alpha matters to `destination-in`: any opaque token keeps, `transparent` clears. */
         const keep = palette.ink;
         g.addColorStop(0, 'transparent');
-        g.addColorStop(stop(labelBottom - 4), 'transparent');
-        g.addColorStop(stop(Math.min(top - 1, labelBottom + 12)), keep);
-        g.addColorStop(stop(captionTop - 24), keep);
+        g.addColorStop(stop(labelBottom + 4), 'transparent');
+        g.addColorStop(stop(zone.t - 4), keep);
+        g.addColorStop(stop(zone.b + 4), keep);
         g.addColorStop(stop(captionTop - 4), 'transparent');
         g.addColorStop(1, 'transparent');
         frame.maskFill = g;
       } else {
-        frame.win = stillFrame(frame.w, frame.h, origin);
-        frame.mask = null;
+        frame.win = mode === 'detail' ? stillDetailFrame(frame.w, frame.h, column) : stillFrame(frame.w, frame.h, column);
         frame.maskFill = null;
       }
       frame.fonts = fontsFor(frame.win.s, palette);
@@ -1438,6 +1463,9 @@ export function HarnessFilm() {
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
+    /* The label and the caption block bound the picture: a change in either re-frames it. */
+    if (playing && label.current) observer.observe(label.current);
+    if (playing && captionBlock.current) observer.observe(captionBlock.current);
     resize();
     /* Words are measured in the page's faces; once they have loaded, measure again. */
     let live = true;
@@ -1468,10 +1496,12 @@ export function HarnessFilm() {
     /* Paused, a still frame lands inside its act, where its picture and caption are whole. */
     const settle = (act: number) => time.advance(ACT_MS[act]! * SETTLE[act]!);
     seek.current = (act) => {
+      const drawn = { zoom: frame.zoom, focus: frame.focus };
       time.seek(act);
       const paused = isMotionPaused();
       p = paused ? settle(act) : time.progress();
-      /* A jump fades in from dark instead of cutting; paused, it shows the act at once. */
+      /* A jump fades in from dark instead of cutting, its push and dimming easing from the last frame; paused, it shows the act at once. */
+      frame.blend = paused ? null : { ...drawn, at: filmTime(p) };
       veil = paused ? 1 : 0;
       paint(p);
     };
@@ -1580,8 +1610,8 @@ export function HarnessFilm() {
           <div className={PAGE_GUTTER}>
             <div className={PAGE_COLUMN}>{title}</div>
           </div>
-          {mode === 'still' ? (
-            <div ref={stage} className="relative mt-6 h-[34rem] w-full overflow-hidden">
+          {mode === 'still' || mode === 'detail' ? (
+            <div ref={stage} className={cn('relative mt-6 w-full overflow-hidden', mode === 'detail' ? 'h-[25rem]' : 'h-[34rem]')}>
               <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" />
             </div>
           ) : null}
