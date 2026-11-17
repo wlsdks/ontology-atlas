@@ -438,10 +438,11 @@ describe('auto-approve — the same one option, and never one the array lacks', 
 /**
  * The registry version must match the re-read `src/permissions/options/*.ts` builders;
  * otherwise these arrays could pass while describing an adapter nobody runs.
- * v0.95.0 (ebfbfbdaa9c2) added allowContextReset to ExitPlanMode; 0.107.2 is byte-identical.
+ * v0.95.0 (ebfbfbdaa9c2) added allowContextReset to ExitPlanMode; 0.108.0 also gates the clear
+ * entries on showClearContextOnPlanAccept, which only removes rows the arrays above already omit.
  */
 // options.ts retains allow_once ordering and the defaultToNo decline-first variant.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.107.2';
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.108.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {
