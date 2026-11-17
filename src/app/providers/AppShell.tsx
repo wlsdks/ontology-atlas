@@ -4,7 +4,8 @@ import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, ty
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
-import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
+import { navigateWithViewTransition, settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
+import { PaneNavigationContext, type PaneNavigation } from "@/shared/lib/navigation/pane-link";
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { FolderOpen } from "lucide-react";
 import { controlClass } from "@/shared/ui/control-class";
@@ -108,7 +109,15 @@ function useGuideOverride(): void {
 
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
+  const router = useRouter();
   const mapPending = useMapNavigationPending();
+  const paneNavigation = useMemo<PaneNavigation>(() => ({
+    pathname,
+    crossfadeTo: (href, { replace, scroll, locale }) => {
+      cancelMapNavigation();
+      navigateWithViewTransition(() => (replace ? router.replace(href, { scroll, locale }) : router.push(href, { scroll, locale })));
+    },
+  }), [pathname, router]);
 
   return (
     // The shell owns the viewport (see `AppShell`). `relative` makes it the containing block
@@ -136,10 +145,12 @@ function ShellColumn({ children }: { children: ReactNode }) {
           aria-hidden={mapPending !== null ? true : undefined}
           className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}`}
         >
-          <PlanningReturnBar />
-          <VaultRouteIdentityBoundary pathname={pathname}>
-            {children}
-          </VaultRouteIdentityBoundary>
+          <PaneNavigationContext.Provider value={paneNavigation}>
+            <PlanningReturnBar />
+            <VaultRouteIdentityBoundary pathname={pathname}>
+              {children}
+            </VaultRouteIdentityBoundary>
+          </PaneNavigationContext.Provider>
         </div>
         <MapNavigationOverlay />
       </div>
@@ -319,7 +330,8 @@ function AppNavRailSlot() {
         return;
       }
       cancelMapNavigation();
-      router.push(href);
+      if (id === "map" || resolveActiveNavDestination(pathname) === id) router.push(href);
+      else navigateWithViewTransition(() => router.push(href));
       /* The canvas needs focus before arrow keys walk it (`shared/lib/map-canvas/focus-map-canvas.ts`). */
       if (id === "map") focusMapCanvasWhenReady();
     },
