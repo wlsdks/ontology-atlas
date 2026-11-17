@@ -130,7 +130,7 @@
     "acts": {
       "1": {
         "title": "Your ontology is plain Markdown",
-        "body": "Each concept is one .md file in the repository, read by people and agents alike."
+        "body": "One concept is one .md file."
       },
       "2": {
         "title": "The first lines are the graph",
@@ -142,11 +142,11 @@
       },
       "4": {
         "title": "Relations draw themselves",
-        "body": "The {relations} relations written in those files become the lines between them."
+        "body": "The {relations} relations written in the files become lines."
       },
       "5": {
         "title": "One map, read by you and your agents",
-        "body": "This is this repository's real map: {concepts} concepts and {relations} relations."
+        "body": "This repository's real map: {concepts} concepts and {relations} relations."
       }
     }
   },
