@@ -1,4 +1,6 @@
 pub(crate) mod commands;
+mod names;
+pub(crate) use names::{allowed_component, supported_file};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod confined;
 #[cfg(target_os = "macos")]
