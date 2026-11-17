@@ -13,6 +13,7 @@ import type { StageGraph } from '../lib/stage-graph';
 import { fileName, kindOf, LOOP_CHANGED, LOOP_PROPOSAL, LOOP_READ } from '../model/loop-cast';
 import { useInViewMotion } from '../lib/use-in-view-motion';
 import { SectionIntro } from './SectionIntro';
+import { ConnectScene, DraftScene, OpenFolderScene, useStepScenes } from './StepScenes';
 
 /**
  * `waiting` hides a drawing's lines and exists only once a script has seen the block below the
@@ -281,30 +282,53 @@ function AllowDrawing({
   );
 }
 
-/** The first three things a person does in the installed app, in the app's own words. */
-export function StartSection() {
+/**
+ * The first three things a person does in the installed app, each over a small scene of the
+ * surface it happens on, in the app's own words: the folder picked and its path, the agent's first
+ * proposals waiting for approval, the agent connected and reaching the map.
+ */
+export function StartSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download.start');
   const tFirst = useTranslations('firstRun');
   const tAnalyze = useTranslations('topology.startSteps.analyze');
   const tRail = useTranslations('navRail');
   const tConnect = useTranslations('agentConnect');
+  const tStatus = useTranslations('acpChat.status');
+  const tModels = useTranslations('agents.models');
   const [stepsEntrance, entrance] = useEntrance();
   const [stepsMotion, pathMotion] = useInViewMotion();
+  const [stepsNode, setStepsNode] = useState<HTMLElement | null>(null);
+  useStepScenes(stepsNode, pathMotion);
   const steps = useCallback(
     (node: HTMLElement | null) => {
       stepsEntrance(node);
       stepsMotion(node);
+      setStepsNode(node);
     },
     [stepsEntrance, stepsMotion],
   );
+  const labelOf = useMemo(() => {
+    const byId = new Map(graph.nodes.map((node) => [node.id, node.label]));
+    return (id: string) => byId.get(id) ?? id.slice(id.indexOf(':') + 1);
+  }, [graph.nodes]);
 
   const rows = [
-    { title: t('step1.title'), body: t('step1.body'), press: tFirst('openTitle') },
-    { title: t('step2.title'), body: t('step2.body'), press: tAnalyze('ctaAgent') },
+    { title: t('step1.title'), body: t('step1.body'), scene: <OpenFolderScene open={tFirst('openTitle')} /> },
+    {
+      title: t('step2.title'),
+      body: t('step2.body'),
+      scene: <DraftScene ask={tAnalyze('ctaAgent')} waiting={tStatus('awaiting')} labelOf={labelOf} />,
+    },
     {
       title: t('step3.title'),
       body: t('step3.body', { agents: tRail('agents'), mcp: tRail('mcp'), connect: tConnect('short.connect') }),
-      press: tConnect('short.connect'),
+      scene: (
+        <ConnectScene
+          place={`${tRail('agents')} › ${tRail('mcp')}`}
+          connected={tModels('statusConnected')}
+          connect={tConnect('short.connect')}
+        />
+      ),
     },
   ];
 
@@ -315,7 +339,7 @@ export function StartSection() {
 
         {/*
           One rail runs across the steps (down them on a phone): each step is a node on it, and a
-          fill travels from node to node, lighting the button that step presses.
+          fill travels from node to node; as it arrives, that step's scene plays once.
         */}
         <ol
           ref={steps}
@@ -343,19 +367,10 @@ export function StartSection() {
                   className="gateway-step-press pointer-events-none absolute -inset-7 rounded-full border border-[color:var(--color-text-primary)]"
                 />
               </span>
-              {/* The button the step presses, drawn small in the app's own word. */}
-              <Line index={index * 2}>
-                <span
-                  aria-hidden
-                  className="gateway-step-press relative inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
-                >
-                  <span className="gateway-step-lit absolute -inset-px rounded-[inherit] border border-[color:var(--color-text-primary)]" />
-                  <span className="relative">{row.press}</span>
-                </span>
-              </Line>
+              <Line index={index * 2}>{row.scene}</Line>
               <Line index={index * 2 + 1}>
-                <h3 className={cn(CARD_TITLE, 'mt-4')}>{row.title}</h3>
-                <p className="mt-2 max-w-[24rem] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                <h3 className={cn(CARD_TITLE, 'mt-6')}>{row.title}</h3>
+                <p className="mt-2 max-w-[26rem] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
                   {row.body}
                 </p>
               </Line>

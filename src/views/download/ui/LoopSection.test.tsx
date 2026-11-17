@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { useStageGraph } from '../lib/use-stage-graph';
 import { LOOP_CHANGED, LOOP_PROPOSAL, LOOP_READ } from '../model/loop-cast';
+import { START_DRAFT, START_FOLDER, START_PATH } from '../model/start-cast';
 import { setMotionPaused } from '@/shared/motion/motion-pause';
 import { LoopSection, StartSection } from './LoopSection';
 
@@ -30,6 +31,26 @@ function frontmatterPath(id: string): string | null {
   const file = path.join(ROOT, 'docs/ontology', KIND_FOLDER[kind], `${id.slice(id.indexOf(':') + 1)}.md`);
   return /^path:\s*(\S+)\s*$/m.exec(readFileSync(file, 'utf8'))?.[1] ?? null;
 }
+
+describe('the start steps show this repository’s own folder and concepts', () => {
+  it('lists folders that exist and picks the folder that holds the map', () => {
+    const paths = ['docs/', 'docs/ontology/', 'src/', 'AGENTS.md'];
+    START_FOLDER.forEach((row, index) => expect(paths[index].endsWith(row.name), row.name).toBe(true));
+    for (const entry of paths) expect(existsSync(path.join(ROOT, entry)), entry).toBe(true);
+    expect(existsSync(path.join(ROOT, START_PATH, 'README.md'))).toBe(true);
+  });
+
+  it('drafts concepts the vault holds, under the names the map gives them, each waiting for approval', () => {
+    render(<StartSection graph={graph} />, { wrapper: IntlWrapper });
+    const scene = screen.getByTestId('gateway-step-scene-1');
+    const names = new Map(graph.nodes.map((node) => [node.id, node.label]));
+    for (const id of START_DRAFT) {
+      expect(names.has(id), id).toBe(true);
+      expect(scene.textContent, id).toContain(names.get(id));
+    }
+    expect(scene.textContent?.split(enMessages.acpChat.status.awaiting)).toHaveLength(START_DRAFT.length + 1);
+  });
+});
 
 describe('the loop section shows this repository’s own ontology', () => {
   const edges = new Set(graph.edges.map((edge) => `${edge.source}>${edge.target}:${edge.kind}`));
@@ -66,9 +87,9 @@ describe('the loop section shows this repository’s own ontology', () => {
   });
 
   it('names the app’s own buttons in the steps after install', () => {
-    render(<StartSection />, { wrapper: IntlWrapper });
+    render(<StartSection graph={graph} />, { wrapper: IntlWrapper });
     const steps = screen.getByTestId('gateway-start-steps');
-    expect(steps.querySelectorAll('li')).toHaveLength(3);
+    expect(steps.querySelectorAll(':scope > li')).toHaveLength(3);
     for (const word of [
       enMessages.firstRun.openTitle,
       enMessages.topology.startSteps.analyze.ctaAgent,
@@ -102,7 +123,7 @@ describe('the steps’ entrance', () => {
 
   function watch() {
     const deliver = stubObserver();
-    render(<StartSection />, { wrapper: IntlWrapper });
+    render(<StartSection graph={graph} />, { wrapper: IntlWrapper });
     return { deliver, steps: screen.getByTestId('gateway-start-steps') };
   }
 

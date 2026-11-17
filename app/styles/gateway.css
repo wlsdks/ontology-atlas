@@ -534,15 +534,22 @@
   opacity: 0;
 }
 
+/* A scene's control is pressed a beat after the fill reaches its node, not with the node's ring. */
+[data-step-scene] .gateway-step-press {
+  --gateway-step-press-at: var(--motion-base);
+}
+
 /*
  * One cycle walks the steps: step one is lit; 600ms before each turn ends the fill travels to the
- * next node, which fills and presses its button; past the third it runs to the rail's end, holds,
- * and everything fades together before step one lights again. Each step's fill and light have
- * their own keyframes because they share one clock; the press is the same beat offset per step.
+ * next node, which fills and lights the control its scene presses; past the third it runs to the
+ * rail's end, holds, and everything fades together before step one lights again. Each step's fill
+ * and light have their own keyframes because they share one clock; the press is the same beat
+ * offset per step, plus the scene's own `--gateway-step-press-at`. The scenes above the titles
+ * (`StepScenes.tsx`) read this clock, so `STEP_CYCLE_MS` there must equal the cycle here.
  */
 @media (prefers-reduced-motion: no-preference) {
   [data-gateway-steps-motion] {
-    --gateway-steps-cycle: 8.4s;
+    --gateway-steps-cycle: 7.8s;
   }
 
   [data-gateway-steps-motion] .gateway-step-spark {
@@ -555,7 +562,9 @@
 
   [data-gateway-steps-motion] .gateway-step-press {
     animation: gatewayStepPress var(--gateway-steps-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-step, 0) * var(--gateway-steps-cycle) * 2 / 7);
+    animation-delay: calc(
+      var(--gateway-step, 0) * var(--gateway-steps-cycle) * 11 / 39 + var(--gateway-step-press-at, 0ms)
+    );
   }
 
   /* Forwards only: before its first beat a ring keeps its resting style, which is unseen. */
@@ -609,72 +618,72 @@
   }
 }
 
-/* 8.4s: a 2.4s turn per step (2/7 of the cycle), each ending in a 600ms travel; 600ms hold; 600ms fade. */
+/* 7.8s: a 2.2s turn per step (11/39 of the cycle), each ending in a 600ms travel; 600ms hold; 600ms fade. */
 @keyframes gatewayStepFillY0 {
-  0%, 21.43% { transform: scaleY(0); opacity: 1; }
-  28.57%, 92.86% { transform: scaleY(1); opacity: 1; }
+  0%, 20.513% { transform: scaleY(0); opacity: 1; }
+  28.205%, 92.308% { transform: scaleY(1); opacity: 1; }
   100% { transform: scaleY(1); opacity: 0; }
 }
 
 @keyframes gatewayStepFillY1 {
-  0%, 50% { transform: scaleY(0); opacity: 1; }
-  57.14%, 92.86% { transform: scaleY(1); opacity: 1; }
+  0%, 48.718% { transform: scaleY(0); opacity: 1; }
+  56.41%, 92.308% { transform: scaleY(1); opacity: 1; }
   100% { transform: scaleY(1); opacity: 0; }
 }
 
 @keyframes gatewayStepFillY2 {
-  0%, 78.57% { transform: scaleY(0); opacity: 1; }
-  85.71%, 92.86% { transform: scaleY(1); opacity: 1; }
+  0%, 76.923% { transform: scaleY(0); opacity: 1; }
+  84.615%, 92.308% { transform: scaleY(1); opacity: 1; }
   100% { transform: scaleY(1); opacity: 0; }
 }
 
 @keyframes gatewayStepFillX0 {
-  0%, 21.43% { transform: scaleX(0); opacity: 1; }
-  28.57%, 92.86% { transform: scaleX(1); opacity: 1; }
+  0%, 20.513% { transform: scaleX(0); opacity: 1; }
+  28.205%, 92.308% { transform: scaleX(1); opacity: 1; }
   100% { transform: scaleX(1); opacity: 0; }
 }
 
 @keyframes gatewayStepFillX1 {
-  0%, 50% { transform: scaleX(0); opacity: 1; }
-  57.14%, 92.86% { transform: scaleX(1); opacity: 1; }
+  0%, 48.718% { transform: scaleX(0); opacity: 1; }
+  56.41%, 92.308% { transform: scaleX(1); opacity: 1; }
   100% { transform: scaleX(1); opacity: 0; }
 }
 
 @keyframes gatewayStepFillX2 {
-  0%, 78.57% { transform: scaleX(0); opacity: 1; }
-  85.71%, 92.86% { transform: scaleX(1); opacity: 1; }
+  0%, 76.923% { transform: scaleX(0); opacity: 1; }
+  84.615%, 92.308% { transform: scaleX(1); opacity: 1; }
   100% { transform: scaleX(1); opacity: 0; }
 }
 
 @keyframes gatewayStepLit0 {
   0% { opacity: 0; }
-  2.98%, 92.86% { opacity: 1; }
+  3.205%, 92.308% { opacity: 1; }
   100% { opacity: 0; }
 }
 
 @keyframes gatewayStepLit1 {
-  0%, 28.57% { opacity: 0; }
-  31.55%, 92.86% { opacity: 1; }
+  0%, 28.205% { opacity: 0; }
+  31.41%, 92.308% { opacity: 1; }
   100% { opacity: 0; }
 }
 
 @keyframes gatewayStepLit2 {
-  0%, 57.14% { opacity: 0; }
-  60.12%, 92.86% { opacity: 1; }
+  0%, 56.41% { opacity: 0; }
+  59.615%, 92.308% { opacity: 1; }
   100% { opacity: 0; }
 }
 
-/* The arriving fill presses the step's button: a 100ms dip and a 200ms return. */
+/* A press: a 100ms dip and a 200ms return. */
 @keyframes gatewayStepPress {
   0% { transform: scale(1); }
-  1.19% { transform: scale(0.94); }
-  3.57%, 100% { transform: scale(1); }
+  1.282% { transform: scale(0.94); }
+  3.846%, 100% { transform: scale(1); }
 }
 
-/* The node's beat: 320ms (3.81%), from the node's own size out 28px, 0.5 to nothing. */
+/* The node's beat: 320ms (4.103%), from the node's own size out 28px, 0.5 to nothing. */
 @keyframes gatewayStepRing {
   0% { opacity: 0.5; transform: scale(0.18); }
-  3.81%, 100% { opacity: 0; transform: scale(1); }
+  4.103%, 100% { opacity: 0; transform: scale(1); }
 }
 
 /* The hero window's light at card size: it falls from the top of each drawing. */
@@ -877,6 +886,32 @@
   from {
     opacity: 0;
     transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * The FAQ picker's answer arrives in 240ms, rising 8px as it fades in, while the one it replaces
+ * fades out in place in 120ms. Under reduced motion the picker is not built and every answer
+ * stands in a list.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .gateway-faq-answers > .gateway-screen-in {
+    animation: gatewayFaqIn var(--motion-settle) var(--motion-ease) both;
+  }
+
+  .gateway-faq-answers > .gateway-screen-out {
+    animation-duration: var(--motion-fast);
+  }
+}
+
+@keyframes gatewayFaqIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;

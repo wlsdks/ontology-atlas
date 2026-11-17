@@ -104,7 +104,7 @@ export function DownloadPage() {
         <HarnessFilm />
         <LoopSection graph={graph} />
         <ScreensSection />
-        <StartSection />
+        <StartSection graph={graph} />
         <OpenSourceSection />
         <FaqSection />
         <ClosingSection
