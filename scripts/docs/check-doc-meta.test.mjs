@@ -83,10 +83,12 @@ test('frozen history is outside the scan, and the living set is not empty', () =
   assert.ok(listLivingDocs(SOURCE_ROOT).length > 40);
 });
 
-test('routes resolve against app/[locale], including dynamic segments', () => {
+test('routes resolve against both locale roots, including dynamic segments', () => {
   assert.equal(routeExists('/topology', SOURCE_ROOT), true);
   assert.equal(routeExists('/', SOURCE_ROOT), true);
   assert.equal(routeExists('/project/[slug]', SOURCE_ROOT), true);
+  assert.equal(routeExists('/download', SOURCE_ROOT), true);
+  assert.equal(routeExists('/guide/[segment]', SOURCE_ROOT), true);
   assert.equal(routeExists('/admin', SOURCE_ROOT), false);
 });
 

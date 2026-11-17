@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
-import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
-import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { FolderOpen } from "lucide-react";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -22,7 +20,6 @@ import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
-import { applyGuideOverride } from "@/shared/lib/preferences/first-run-seen";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import {
@@ -33,7 +30,7 @@ import {
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
-import { RouteFocusManager } from "@/shared/ui/routing/route-focus-manager";
+import { ShellFrame, useShellSetup } from "./ShellFrame";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
@@ -44,32 +41,12 @@ import { LibraryRoundsProvider } from "@/views/library";
 import { clearPlanningReturn, getPlanningReturn, getPlanningReturnServer, subscribePlanningReturn } from "@/shared/lib/planning/navigation";
 
 /**
- * Releases a route crossfade after commit and before paint, when the View Transitions API
- * wants the new state to exist (`shared/lib/navigation/route-view-transition.ts`).
- */
-function RouteViewTransitionSettle() {
-  const pathname = usePathname();
-  useLayoutEffect(() => {
-    settleRouteViewTransition();
-  }, [pathname]);
-  return null;
-}
-
-/**
  * The persistent SPA shell, mounted once in `app/[locale]/layout.tsx` so the rail keeps its
- * React identity and only the content area swaps between routes.
- *
- * The shell owns viewport height: an `h-dvh overflow-hidden` column where only the body slot
- * scrolls. A page root fills the slot with `h-full` / `min-h-full`; a page using the
- * classes `h-screen` or `min-h-screen` pushes whatever the shell puts below the body off screen.
+ * React identity and only the content area swaps between routes. `ShellFrame` owns the viewport
+ * column; the gateway pages draw the same frame through `GatewayShell`.
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  useGuideOverride();
-  /*
-   * A Tauri WebView does not open `target="_blank"`, so outbound links are intercepted once
-   * here rather than per link, which covers links added later. It does not attach on the web.
-   */
-  useEffect(() => installExternalLinkOpener(), []);
+  useShellSetup();
   return (
     <NavRailShellProvider>
       {/*
@@ -83,8 +60,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           tick twice and could open two adapters for one pass.
         */}
         <LibraryRoundsProvider>
-          <RouteFocusManager />
-          <RouteViewTransitionSettle />
           <ShellColumn>{children}</ShellColumn>
         </LibraryRoundsProvider>
       </AppUpdateProvider>
@@ -92,63 +67,28 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Applies `?guides=off|reset` before children render, for audit sessions.
- *
- * A state initializer, not an effect: guide surfaces read localStorage in their own
- * initializers, and a parent effect runs after them, so the guide would flash for one frame.
- * The write is idempotent, so a StrictMode double render is harmless.
- */
-function useGuideOverride(): void {
-  useState(() => {
-    if (typeof window === "undefined") return null;
-    return applyGuideOverride(window.location.search);
-  });
-}
-
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const mapPending = useMapNavigationPending();
+  const busy = mapPending !== null;
 
   return (
-    // The shell owns the viewport (see `AppShell`). `relative` makes it the containing block
-    // for `absolute` descendants such as `sr-only`; otherwise they position against the
-    // viewport and extend the document scroll range (gate: document-scroll-lock.spec.ts).
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1">
-        <AppNavRailSlot />
-        {/* The body slot is a scroll container and must not shrink its child: a page
-            root's `min-h-full` overrides the flex item's automatic minimum, so without `shrink-0`
-            the page box shrinks to the viewport and its bottom padding leaves no gap at the
-            end of the scroll. Declared once here so no page has to remember it. */}
-        {/* The test id names this slot because `.overflow-y-auto` also matches the rail's `<nav>`. */}
-        {/*
-          The route crossfade captures `data-app-shell-pane` (`app/globals.css`). An
-          attribute, named only during a transition, so the box is not a stacking context or
-          containing block for pages' fixed surfaces otherwise. The rail is not captured, so it
-          keeps painting and taking presses while the pane fades.
-        */}
-        <div
-          data-testid="app-shell-body-slot"
-          data-app-shell-pane=""
-          inert={mapPending !== null}
-          aria-busy={mapPending !== null}
-          aria-hidden={mapPending !== null ? true : undefined}
-          className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}`}
-        >
-          <PlanningReturnBar />
-          <VaultRouteIdentityBoundary pathname={pathname}>
-            {children}
-          </VaultRouteIdentityBoundary>
-        </div>
-        <MapNavigationOverlay />
-      </div>
-
-      {/* Owned by the shell so every screen surfaces an update. Outside a desktop shell the
-          hook does nothing, so there is no branch here to drift from it. */}
-      <AppUpdateSurface />
-
-    </div>
+    <ShellFrame
+      rail={<AppNavRailSlot />}
+      overlay={<MapNavigationOverlay />}
+      busy={busy}
+      slotClassName={stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}
+      footer={
+        /* Owned by the shell so every screen surfaces an update. Outside a desktop shell the
+           hook does nothing, so there is no branch here to drift from it. */
+        <AppUpdateSurface />
+      }
+    >
+      <PlanningReturnBar />
+      <VaultRouteIdentityBoundary pathname={pathname}>
+        {children}
+      </VaultRouteIdentityBoundary>
+    </ShellFrame>
   );
 }
 

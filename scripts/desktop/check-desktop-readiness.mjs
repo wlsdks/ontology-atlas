@@ -97,7 +97,7 @@ const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
  */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
-const downloadRoute = readText("app/[locale]/download/page.tsx");
+const downloadRoute = readText("app/(gateway)/[locale]/download/page.tsx");
 const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");

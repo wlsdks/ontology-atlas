@@ -28,7 +28,7 @@ explicit sample to local in the same fail-closed way. Mutations (create / edit /
 mode-aware: local → show an exact change review, then write to vault `.md`; static web → ask for a
 writable folder instead of presenting a dead editor.
 
-**Single source of truth**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
+**Single source of truth**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`, and once more in `app/(gateway)/[locale]/layout.tsx` for the public pages' mobile tab bar; a move between the two remounts it, which restores the remembered folder as a first load does. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
 
 A project's missing-code-location remedy opens the exact affected concept from
 its current graph. The inspector names the concept and missing relative path;

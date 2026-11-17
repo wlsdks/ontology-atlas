@@ -825,7 +825,7 @@ test("desktop readiness verdicts survive deleting comments and comments that nam
     strip(".github/workflows/release-macos.yml", "# uses: pnpm/action-setup@v4\n# GITHUB_REF_NAME\n"),
     ["scripts/download/check-macos-download-release.mjs", (source) => `${source}// aarch64|x64|universal\n`],
     ["src/views/download/ui/DownloadPage.tsx", (source) => `${source}// /docs/?intent=local\n`],
-    ["app/[locale]/download/page.tsx", (source) => `${source}// NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING\n`],
+    ["app/(gateway)/[locale]/download/page.tsx", (source) => `${source}// NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING\n`],
     ["src/shared/lib/vault-folder/tauri-vault-fs.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
   ]));
 

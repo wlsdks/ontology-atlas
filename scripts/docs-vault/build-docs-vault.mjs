@@ -59,7 +59,7 @@ const GATEWAY_CHANGELOG_OUT = path.join(
   'gateway-changelog.json',
 );
 // How many CHANGELOG sections go into the bundle. It **must exceed** the screen's
-// display limit (RECENT_SECTIONS = 12 in `app/[locale]/changelog/page.tsx`) — the
+// display limit (RECENT_SECTIONS = 12 in `app/(gateway)/[locale]/changelog/page.tsx`) — the
 // screen trims what it receives once more against its own limit and adds the two
 // fold counts to report the exact total. Raising the screen's limit above this
 // value makes the excess invisible.
