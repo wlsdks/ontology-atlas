@@ -50,17 +50,17 @@ describe('HarnessFilm', () => {
     for (const [, body] of acts) expect(body?.length).toBeGreaterThan(60);
   });
 
-  it('under reduced motion draws one still frame above the same list; narrower than the film, the list alone', async () => {
-    for (const [queries, canvas] of [
-      [{ 'prefers-reduced-motion': true, 'min-width': true }, true],
-      [{ 'prefers-reduced-motion': false, 'min-width': false }, false],
-    ] as const) {
+  it('under reduced motion, or narrower than the film, draws one still picture above the same list', async () => {
+    for (const queries of [
+      { 'prefers-reduced-motion': true, 'min-width': true },
+      { 'prefers-reduced-motion': false, 'min-width': false },
+    ]) {
       vi.stubGlobal('matchMedia', mediaMatching(queries));
       const { unmount } = renderFilm();
       await frame();
       const region = screen.getByRole('region', { name: LABEL });
       expect(region).toHaveAttribute('data-gateway-harness', 'still');
-      expect(Boolean(region.querySelector('canvas'))).toBe(canvas);
+      expect(region.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
       expect(within(region).getAllByRole('heading', { level: 3 })).toHaveLength(4);
       unmount();
     }
