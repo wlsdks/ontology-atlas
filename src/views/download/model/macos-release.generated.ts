@@ -55,16 +55,16 @@ export interface WindowsRelease {
 export const MACOS_RELEASE: MacosRelease = {
   published: true,
   prerelease: false,
-  tag: "v2.1.0",
-  publishedAt: "2026-11-17T02:32:46Z",
-  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v2.1.0",
+  tag: "v2.2.1",
+  publishedAt: "2026-11-17T10:20:30Z",
+  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v2.2.1",
   assets: [
     {
       arch: "aarch64",
-      fileName: "ontology-atlas_2.1.0_aarch64.dmg",
-      sizeBytes: 110124985,
-      sha256: "90e62e4244560bda6147fd19abf0ed177ed478f81c25c3dca9cba0364ee040db",
-      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v2.1.0/ontology-atlas_2.1.0_aarch64.dmg",
+      fileName: "ontology-atlas_2.2.1_aarch64.dmg",
+      sizeBytes: 110749939,
+      sha256: "e0303343341788cc3e6eba4ae0f73ecdcb0c0a3b7700efbb56fa3b852c20cdaa",
+      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v2.2.1/ontology-atlas_2.2.1_aarch64.dmg",
     },
   ],
 };
@@ -72,16 +72,16 @@ export const MACOS_RELEASE: MacosRelease = {
 export const WINDOWS_RELEASE: WindowsRelease = {
   published: true,
   prerelease: false,
-  tag: "v2.1.0",
-  publishedAt: "2026-11-17T02:32:46Z",
-  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v2.1.0",
+  tag: "v2.2.1",
+  publishedAt: "2026-11-17T10:20:30Z",
+  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v2.2.1",
   assets: [
     {
       arch: "x64",
-      fileName: "ontology-atlas_2.1.0_windows_x64-setup.exe",
-      sizeBytes: 95861030,
-      sha256: "ca1de326c7f6010ca7ee72f7b020a073210d1e77e3bc86d398a80e1558d87aa2",
-      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v2.1.0/ontology-atlas_2.1.0_windows_x64-setup.exe",
+      fileName: "ontology-atlas_2.2.1_windows_x64-setup.exe",
+      sizeBytes: 96193859,
+      sha256: "28596c5ada1d17be7ca334db35bde8b1f53145dee22864433ad5927d75a59bbd",
+      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v2.2.1/ontology-atlas_2.2.1_windows_x64-setup.exe",
       signed: false,
     },
   ],
