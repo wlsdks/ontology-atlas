@@ -149,29 +149,58 @@
     }
   },
   "harnessFilm": {
-    "label": "하네스를 한눈에",
+    "label": "하네스 탭: 내 저장소의 에이전트 설정",
+    "example": "예시 저장소",
     "actsLabel": "장면으로 건너뛰기",
     "acts": {
       "1": {
-        "title": "에이전트가 먼저 읽는 지침",
-        "body": "작업 전에 읽는 파일 {instructions}개를 한 화면에 모아요."
+        "title": "내 저장소의 에이전트 설정을 한 번에 모아요",
+        "body": "CLAUDE.md, AGENTS.md, 규칙, 스킬, 서브에이전트, 훅, 스크립트, CI 워크플로를 한 번 읽어서 에이전트가 읽는 것, 실행 전에 막는 것, 실행 뒤에 검사하는 것으로 나눠요."
       },
       "2": {
-        "title": "실행 전에 막는 훅",
-        "body": "<code>{first}</code> 같은 명령은 실행 전에 훅이 막아요."
+        "title": "에이전트 도구별로 걸러 봐요",
+        "body": "Claude Code나 Codex처럼 찾은 도구 하나를 고르면 그 도구가 읽는 파일만 남고 숫자도 따라 바뀌어요."
       },
       "3": {
-        "title": "작업 뒤에 도는 검사",
-        "body": "끝낸 일은 스크립트, Git 훅, CI 워크플로가 확인해요."
+        "title": "빠진 훅 스크립트를 찾아 줘요",
+        "body": "설정이 부르는데 디스크에 없는 훅 스크립트, Codex 기본 한도 32 KiB를 넘은 AGENTS.md를 한 줄로 알려 주고, 누르면 고칠 자리로 가요."
       },
       "4": {
-        "title": "이 저장소의 실제 하네스예요"
+        "title": "Claude와 Codex 설정이 어긋나면 알려 줘요",
+        "caption": "Atlas 앱의 하네스 탭이에요. 저장소는 읽기만 해요.",
+        "body": "스킬이나 서브에이전트의 Claude Code 사본과 Codex 사본이 다르면 파일에 표시하고 두 사본을 나란히 보여 줘요. 저장소는 읽기만 해요."
       }
     },
-    "counts": {
-      "instructions": "지침 파일",
-      "hooks": "훅",
-      "checks": "검사"
+    "screen": {
+      "title": "하네스",
+      "views": {
+        "overview": "구성",
+        "architecture": "아키텍처"
+      },
+      "toolAll": "전체",
+      "sections": {
+        "context": {
+          "title": "컨텍스트",
+          "caption": "에이전트가 읽는 파일"
+        },
+        "guardrails": {
+          "title": "가드레일",
+          "caption": "실행 전에 막는 것"
+        },
+        "verification": {
+          "title": "검증",
+          "caption": "실행 뒤에 검사하는 것"
+        }
+      },
+      "sectionTotal": "{count}개",
+      "problemCount": "문제 {count}개",
+      "problemHookMissing": "훅 스크립트가 없어요: {path}",
+      "problemShow": "{count, plural, =1 {보기} other {첫 문제 보기}}",
+      "hookMissing": "스크립트 없음",
+      "hookWired": "연결됨",
+      "differsFromCodex": "Codex 사본과 다름",
+      "differsFromClaude": "Claude Code 사본과 다름",
+      "detailReadBy": "읽는 도구"
     }
   },
   "motion": {
