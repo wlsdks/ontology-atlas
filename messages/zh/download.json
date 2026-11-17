@@ -151,29 +151,58 @@
     }
   },
   "harnessFilm": {
-    "label": "一眼看清 harness",
+    "label": "Harness 标签页 — 你仓库里的代理配置",
+    "example": "示例仓库",
     "actsLabel": "跳到某一幕",
     "acts": {
       "1": {
-        "title": "智能体最先读的指令",
-        "body": "动手前要读的 {instructions} 个文件，集中在一个界面。"
+        "title": "一次扫描，收齐你的代理配置",
+        "body": "一次读取 CLAUDE.md、AGENTS.md、规则、技能、子代理、hook、脚本和 CI 工作流，并把它们分成代理读取的内容、执行前拦下的内容和执行后检查的内容。"
       },
       "2": {
-        "title": "执行前拦下的钩子",
-        "body": "像 <code>{first}</code> 这样的命令，执行前就被钩子拦下。"
+        "title": "按代理工具筛选",
+        "body": "选一个扫描找到的工具，比如 Claude Code 或 Codex，所有列表和数字都会收窄到这个工具读取的文件。"
       },
       "3": {
-        "title": "完成后运行的检查",
-        "body": "完成的工作，由脚本、Git 钩子和 CI 工作流来检查。"
+        "title": "找出缺失的 hook 脚本",
+        "body": "配置引用了但磁盘上没有的 hook 脚本，或超过 Codex 默认上限 32 KiB 的 AGENTS.md，会显示成一行，点一下就跳到要修改的地方。"
       },
       "4": {
-        "title": "这个仓库真实的 harness"
+        "title": "标出 Claude 与 Codex 不一致的副本",
+        "caption": "Atlas 应用的 Harness 标签页。只读取仓库。",
+        "body": "技能或子代理的 Claude Code 副本与 Codex 副本不同时，会在文件上标出，并把两份副本并排显示。Atlas 只读取仓库。"
       }
     },
-    "counts": {
-      "instructions": "指令文件",
-      "hooks": "钩子",
-      "checks": "检查"
+    "screen": {
+      "title": "Harness",
+      "views": {
+        "overview": "配置",
+        "architecture": "架构"
+      },
+      "toolAll": "全部",
+      "sections": {
+        "context": {
+          "title": "上下文",
+          "caption": "代理读取的文件"
+        },
+        "guardrails": {
+          "title": "护栏",
+          "caption": "执行前拦下的内容"
+        },
+        "verification": {
+          "title": "验证",
+          "caption": "执行后检查的内容"
+        }
+      },
+      "sectionTotal": "{count} 项",
+      "problemCount": "{count} 个问题",
+      "problemHookMissing": "hook 脚本不存在：{path}",
+      "problemShow": "{count, plural, =1 {查看} other {查看第一个}}",
+      "hookMissing": "脚本缺失",
+      "hookWired": "已接入",
+      "differsFromCodex": "与 Codex 副本不同",
+      "differsFromClaude": "与 Claude Code 副本不同",
+      "detailReadBy": "读取工具"
     }
   },
   "motion": {

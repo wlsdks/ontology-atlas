@@ -151,29 +151,58 @@
     }
   },
   "harnessFilm": {
-    "label": "The harness at a glance",
+    "label": "The Harness tab: your repository's agent setup",
+    "example": "Example repository",
     "actsLabel": "Jump to a scene",
     "acts": {
       "1": {
-        "title": "What your agent reads first",
-        "body": "The {instructions} files it reads before a task, on one screen."
+        "title": "One scan gathers your agent setup",
+        "body": "One read collects CLAUDE.md, AGENTS.md, rules, skills, subagents, hooks, scripts and CI workflows, and sorts them into what the agent reads, what stops it before it acts and what checks its work afterwards."
       },
       "2": {
-        "title": "What stops it before it acts",
-        "body": "Hooks stop commands like <code>{first}</code> before they run."
+        "title": "Filter by agent tool",
+        "body": "Pick one tool the scan found, such as Claude Code or Codex, and every list and count narrows to the files that tool reads."
       },
       "3": {
-        "title": "What checks its work",
-        "body": "Scripts, Git hooks and CI workflows check the finished work."
+        "title": "It finds a missing hook script",
+        "body": "A hook script a config names but the disk lacks, or an AGENTS.md over Codex's default 32 KiB limit, shows as one line that takes you to the place to fix."
       },
       "4": {
-        "title": "This repository's real harness"
+        "title": "Tags Claude and Codex copies that differ",
+        "caption": "The Harness tab. Read-only.",
+        "body": "A skill or subagent whose Claude Code and Codex copies differ is tagged, and both copies are shown side by side. Atlas only reads the repository."
       }
     },
-    "counts": {
-      "instructions": "instruction files",
-      "hooks": "hooks",
-      "checks": "checks"
+    "screen": {
+      "title": "Harness",
+      "views": {
+        "overview": "Setup",
+        "architecture": "Architecture"
+      },
+      "toolAll": "All",
+      "sections": {
+        "context": {
+          "title": "Context",
+          "caption": "Files the agent reads"
+        },
+        "guardrails": {
+          "title": "Guardrails",
+          "caption": "What stops an action before it runs"
+        },
+        "verification": {
+          "title": "Verification",
+          "caption": "What checks the work afterwards"
+        }
+      },
+      "sectionTotal": "{count, plural, one {# item} other {# items}}",
+      "problemCount": "{count, plural, one {# problem} other {# problems}}",
+      "problemHookMissing": "Hook script is missing: {path}",
+      "problemShow": "{count, plural, =1 {Show} other {Show the first}}",
+      "hookMissing": "Script missing",
+      "hookWired": "Wired",
+      "differsFromCodex": "Differs from Codex copy",
+      "differsFromClaude": "Differs from Claude Code copy",
+      "detailReadBy": "Read by"
     }
   },
   "motion": {
