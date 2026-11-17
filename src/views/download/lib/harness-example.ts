@@ -7,6 +7,9 @@ import { scanHarness, type HarnessReport, type HarnessScanPort, type HarnessScan
  * `tools:`, so the diff the film lifts fits one card.
  */
 
+/** Where the screen says it read the example from; no machine's real path. */
+export const EXAMPLE_SOURCE_ROOT = '~/code/my-app';
+
 const SKILL_NAMES = ['code-review', 'db-migrate', 'release-notes', 'write-tests'] as const;
 const RULE_NAMES = ['api', 'db', 'frontend', 'security', 'style', 'testing'] as const;
 const WORKFLOW_NAMES = ['ci', 'e2e', 'lint', 'release'] as const;
@@ -20,7 +23,7 @@ const workflow = (name: string) =>
   `name: ${name}\non: [push]\njobs:\n  ${name}:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pnpm ${name}\n`;
 
 const reviewer = (tools: string) =>
-  `---\nname: reviewer\ndescription: Reviews a diff it did not write.\ntools: ${tools}\n---\nReview the diff. Never edit files.\n`;
+  `---\nname: reviewer\ndescription: Reviews a diff.\ntools: ${tools}\n---\nReview the diff. Never edit files.\n`;
 
 const planner = '---\nname: planner\ndescription: Splits a request into slices.\ntools: Read, Grep, Glob\n---\n\nPlan the work. Do not edit files.\n';
 

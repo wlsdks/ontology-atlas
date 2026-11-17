@@ -114,19 +114,22 @@ function areasOf(all: HarnessSetup, shown: HarnessSetup): SetupArea[] {
 
 /**
  * `initialCategory` names the category to open first (`<section>:<group>`, as `categoryKey` builds
- * it). `reveal={false}` keeps the view from scrolling its host page or moving focus, for a copy of
- * the screen that plays inside another page.
+ * it). `reveal={false}` keeps the view from scrolling its host page or moving focus, and
+ * `showVendorMarks={false}` leaves the agent tools' logos out (their names stay), for a copy of the
+ * screen that plays inside another page.
  */
 export function HarnessSetupView({
   report,
   sourceRoot,
   initialCategory,
   reveal = true,
+  showVendorMarks = true,
 }: {
   report: HarnessReport;
   sourceRoot: string;
   initialCategory?: string;
   reveal?: boolean;
+  showVendorMarks?: boolean;
 }) {
   const t = useTranslations('harness');
   const [filter, setFilter] = useState<ToolFilter>(null);
@@ -290,7 +293,15 @@ export function HarnessSetupView({
   const detail = (action?: ReactNode) =>
     selected ? (
       <div className="@container/guide-detail" key={selected.key}>
-        <SetupItemDetail item={selected} report={report} current headingId={DETAIL_TITLE_ID} action={action} t={t} />
+        <SetupItemDetail
+          item={selected}
+          report={report}
+          current
+          headingId={DETAIL_TITLE_ID}
+          action={action}
+          showVendorMarks={showVendorMarks}
+          t={t}
+        />
       </div>
     ) : null;
 

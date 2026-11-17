@@ -171,37 +171,6 @@
         "caption": "Atlas 应用的 Harness 标签页。只读取仓库。",
         "body": "技能或子代理的 Claude Code 副本与 Codex 副本不同时，会在文件上标出，并把两份副本并排显示。Atlas 只读取仓库。"
       }
-    },
-    "screen": {
-      "title": "Harness",
-      "views": {
-        "overview": "配置",
-        "architecture": "架构"
-      },
-      "toolAll": "全部",
-      "sections": {
-        "context": {
-          "title": "上下文",
-          "caption": "代理读取的文件"
-        },
-        "guardrails": {
-          "title": "护栏",
-          "caption": "执行前拦下的内容"
-        },
-        "verification": {
-          "title": "验证",
-          "caption": "执行后检查的内容"
-        }
-      },
-      "sectionTotal": "{count} 项",
-      "problemCount": "{count} 个问题",
-      "problemHookMissing": "hook 脚本不存在：{path}",
-      "problemShow": "{count, plural, =1 {查看} other {查看第一个}}",
-      "hookMissing": "脚本缺失",
-      "hookWired": "已接入",
-      "differsFromCodex": "与 Codex 副本不同",
-      "differsFromClaude": "与 Claude Code 副本不同",
-      "detailReadBy": "读取工具"
     }
   },
   "motion": {

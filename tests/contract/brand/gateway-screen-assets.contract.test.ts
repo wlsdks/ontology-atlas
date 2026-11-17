@@ -9,6 +9,7 @@ import {
   GATEWAY_SCREEN_PIXELS,
   gatewayScreenSrc,
 } from '@/views/download/model/gateway-screens';
+import { STILL_LOCALES, STILL_NAMES, stillSrc } from '@/views/download/lib/harness-scene';
 
 /**
  * A Korean capture that is a copy of the English one must fail: captures of one screen in two
@@ -53,6 +54,10 @@ describe('gateway screen captures — one set per locale', () => {
     const expected = new Set(
       GATEWAY_SCREEN_FILES.flatMap((file) =>
         GATEWAY_SCREEN_LOCALES.map((locale) => `${file}.${locale}.png`),
+      ).concat(
+        STILL_NAMES.flatMap((name) =>
+          STILL_LOCALES.map((locale) => stillSrc(name, locale).replace('/gateway/', '')),
+        ),
       ),
     );
     const strays = readdirSync(DIR).filter((name) => !expected.has(name));

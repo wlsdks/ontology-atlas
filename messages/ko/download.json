@@ -171,37 +171,6 @@
         "caption": "Atlas 앱의 하네스 탭이에요. 저장소는 읽기만 해요.",
         "body": "스킬이나 서브에이전트의 Claude Code 사본과 Codex 사본이 다르면 파일에 표시하고 두 사본을 나란히 보여 줘요. 저장소는 읽기만 해요."
       }
-    },
-    "screen": {
-      "title": "하네스",
-      "views": {
-        "overview": "구성",
-        "architecture": "아키텍처"
-      },
-      "toolAll": "전체",
-      "sections": {
-        "context": {
-          "title": "컨텍스트",
-          "caption": "에이전트가 읽는 파일"
-        },
-        "guardrails": {
-          "title": "가드레일",
-          "caption": "실행 전에 막는 것"
-        },
-        "verification": {
-          "title": "검증",
-          "caption": "실행 뒤에 검사하는 것"
-        }
-      },
-      "sectionTotal": "{count}개",
-      "problemCount": "문제 {count}개",
-      "problemHookMissing": "훅 스크립트가 없어요: {path}",
-      "problemShow": "{count, plural, =1 {보기} other {첫 문제 보기}}",
-      "hookMissing": "스크립트 없음",
-      "hookWired": "연결됨",
-      "differsFromCodex": "Codex 사본과 다름",
-      "differsFromClaude": "Claude Code 사본과 다름",
-      "detailReadBy": "읽는 도구"
     }
   },
   "motion": {

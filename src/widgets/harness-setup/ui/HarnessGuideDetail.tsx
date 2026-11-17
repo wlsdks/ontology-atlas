@@ -182,12 +182,15 @@ export function SetupItemDetail({
   current,
   headingId,
   action,
+  showVendorMarks = true,
   t,
 }: {
   item: SetupItem;
   report: HarnessReport;
   current: boolean;
   headingId?: string;
+  /** False leaves the tools' logos out of the drift diff; their names stay. */
+  showVendorMarks?: boolean;
   /** A control that sits beside the heading, such as a dialog's close button. */
   action?: ReactNode;
   t: TranslateFn;
@@ -247,6 +250,7 @@ export function SetupItemDetail({
             paths={sides}
             texts={sides.map((path) => report.contents.get(path) ?? '')}
             current={current}
+            showVendorMarks={showVendorMarks}
             t={t}
           />
         </div>
