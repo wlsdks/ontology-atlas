@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
@@ -10,7 +10,10 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { MOTION } from '@/shared/motion/tokens';
 import { controlClass } from '@/shared/ui/control-class';
+import { Button } from '@/shared/ui/controls/button';
 import { WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
+
+import { MoruPlayground } from './MoruPlayground';
 
 /** Moru's acted `write` row at its native 128px cell, the catalogue clip `pnpm brand:sprites` copies. */
 const CELL = 128;
@@ -25,10 +28,13 @@ const VISIBLE_SHARE = 0.2;
  * pose, so one pass rests where it began: Moru writes once when the line comes into view and
  * again when the link is pointed at or focused, never cutting a pass short to start another.
  * Off screen or under the page's pause a pass holds where it is; under reduced motion Moru stands
- * still on the first cell.
+ * still on the first cell. Beside the line, one button opens a popup where a visitor can play
+ * with Moru.
  */
 export function ClosingContact({ className }: { className?: string }) {
   const t = useTranslations('footer.contact');
+  const tPlay = useTranslations('download.playground');
+  const [playing, setPlaying] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
   const stopped = useMotionPaused();
   const row = useRef<HTMLDivElement>(null);
@@ -83,43 +89,55 @@ export function ClosingContact({ className }: { className?: string }) {
   }, [reducedMotion, write, hold]);
 
   return (
-    <div ref={row} data-testid="gateway-closing-contact" className={cn('flex min-w-0 items-center gap-6', className)}>
-      <span aria-hidden className="relative block size-32 shrink-0 overflow-hidden">
-        <span
-          ref={sprite}
-          data-moru-motion="write"
-          className="absolute top-0 left-0 block h-32"
-          style={{
-            width: CELL * FRAMES,
-            backgroundImage: `url(${withBasePath(ROW_SRC)})`,
-            backgroundSize: `${CELL * FRAMES}px ${CELL}px`,
-            backgroundRepeat: 'no-repeat',
-            imageRendering: 'pixelated',
-          }}
-        />
-      </span>
-      <p className="min-w-0 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-        {t('lead')}{' '}
-        <a
-          href={MAKER_LINKEDIN_URL}
-          target="_blank"
-          rel="noreferrer noopener me"
-          data-testid="gateway-closing-contact-link"
-          onPointerEnter={write}
-          onFocus={write}
-          className={controlClass({
-            shape: 'link',
-            tone: 'accent',
-            hoverInk: 'strong',
-            className: 'touch-hit-expand gap-1.5 whitespace-nowrap text-body-lg leading-body-lg',
-          })}
-        >
-          <span aria-hidden data-external-link-marker>
-            ↗
-          </span>
-          {t('link')}
-        </a>
-      </p>
+    <div ref={row} data-testid="gateway-closing-contact" className={cn('flex min-w-0 flex-wrap items-center gap-x-6 gap-y-4', className)}>
+      <div className="flex min-w-0 flex-1 basis-80 items-center gap-6">
+        <span aria-hidden className="relative block size-32 shrink-0 overflow-hidden">
+          <span
+            ref={sprite}
+            data-moru-motion="write"
+            className="absolute top-0 left-0 block h-32"
+            style={{
+              width: CELL * FRAMES,
+              backgroundImage: `url(${withBasePath(ROW_SRC)})`,
+              backgroundSize: `${CELL * FRAMES}px ${CELL}px`,
+              backgroundRepeat: 'no-repeat',
+              imageRendering: 'pixelated',
+            }}
+          />
+        </span>
+        <p className="min-w-0 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+          {t('lead')}{' '}
+          <a
+            href={MAKER_LINKEDIN_URL}
+            target="_blank"
+            rel="noreferrer noopener me"
+            data-testid="gateway-closing-contact-link"
+            onPointerEnter={write}
+            onFocus={write}
+            className={controlClass({
+              shape: 'link',
+              tone: 'accent',
+              hoverInk: 'strong',
+              className: 'touch-hit-expand gap-1.5 whitespace-nowrap text-body-lg leading-body-lg',
+            })}
+          >
+            <span aria-hidden data-external-link-marker>
+              ↗
+            </span>
+            {t('link')}
+          </a>
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        data-testid="gateway-closing-play"
+        aria-haspopup="dialog"
+        className="sm:ml-auto"
+        onClick={() => setPlaying(true)}
+      >
+        {tPlay('open')}
+      </Button>
+      <MoruPlayground open={playing} onClose={() => setPlaying(false)} />
     </div>
   );
 }
