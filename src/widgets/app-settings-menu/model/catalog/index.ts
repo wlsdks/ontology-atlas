@@ -21,6 +21,14 @@ export const SETTINGS_CATALOG: readonly SettingsCatalogEntry[] = [
   ...ABOUT_CATALOG,
 ];
 
+/**
+ * Every message the settings search index reads. The rail builds that index while it is hidden on
+ * the gateway, so `/` carries these before the rest of the catalog arrives.
+ */
+export const SETTINGS_SEARCH_MESSAGE_PATHS: readonly string[] = SETTINGS_CATALOG.flatMap((entry) =>
+  entry.keywordsKey ? [entry.labelKey, entry.keywordsKey] : [entry.labelKey],
+);
+
 export function settingsCatalogFor(desktop: boolean): readonly SettingsCatalogEntry[] {
   return desktop ? SETTINGS_CATALOG : SETTINGS_CATALOG.filter((entry) => entry.surface === 'both');
 }
