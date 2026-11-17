@@ -137,6 +137,8 @@
   },
   "emptyTitle": "원문과 위키가 아직 없어요",
   "emptyBody": "이미 갖고 있는 문서를 넣으세요. 기획서, 발표 자료, 표, 내려받아 둔 페이지 무엇이든 돼요. sources/에 그대로 복사하고, 요청하기 전에는 열지 않아요.",
+  "emptyFoundBody": "넣을 수 있는 문서 {count, number}개를 찾았어요. 이름과 형식만 읽었고, 고른 것만 sources/에 복사해요.",
+  "emptyFoundAction": "찾은 문서 {count, number}개 보기",
   "stageTitle": "갖고 있는 문서를, 출처가 달린 위키로",
   "stageBody": "폴더를 열고 파일을 넣으세요. 원문은 그대로 두고, 원문마다 문장이 출처를 인용하는 위키 문서가 한 편씩 생겨요.",
   "sources": {

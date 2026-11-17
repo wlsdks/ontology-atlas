@@ -542,6 +542,26 @@ test.describe("the Library pane", () => {
     expect(await stage.locator("h1, h2, h3").count()).toBe(1);
   });
 
+  test("an empty Library leads with the documents the folder already holds", async ({ page }) => {
+    await openLibrary(page, {
+      ...NO_SOURCE_VAULT,
+      "inbox/Requirements.pdf": "%PDF-1.7 requirements\n",
+      "inbox/Schedule.pdf": "%PDF-1.7 schedule\n",
+    });
+    const stage = page.getByTestId("library-start-stage");
+    const found = stage.getByTestId("library-start-find-documents");
+    await expect(found).toHaveAttribute("data-found-count", "2");
+    await expect(found).toHaveText("Review 2 found documents");
+    const doors = await stage.locator("button[data-testid^='library-start-']").evaluateAll((buttons) =>
+      buttons.map((button) => button.getAttribute("data-testid")),
+    );
+    expect(doors[0], "the found documents are not the first door").toBe("library-start-find-documents");
+
+    await found.click();
+    await expect(page.getByTestId("find-documents-candidate-inbox/Requirements.pdf")).toBeVisible();
+    await expect(page.getByTestId("find-documents-candidate-inbox/Schedule.pdf")).toBeVisible();
+  });
+
   /**
    * The home is the folder's graph: the canvas fills the pane, the three steps are one press away, and
    * the strip's clauses are the only place step facts are stated.
