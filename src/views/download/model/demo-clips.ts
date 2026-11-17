@@ -10,11 +10,17 @@ export interface DemoClip {
   seconds: number;
   /** Filename stem in `public/demo/`; `.ko` / `.en` is appended. */
   basename: string;
+  /**
+   * Frame size of every take and poster, in px, measured with ffprobe. The video reserves this
+   * shape before its poster arrives, or the section grows under the reader when it does.
+   */
+  width: number;
+  height: number;
 }
 
 /** Declared before filming, so the post-shoot gate has something to compare against. */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  { id: 'atlas-tour', seconds: 37, basename: 'atlas-tour' },
+  { id: 'atlas-tour', seconds: 37, basename: 'atlas-tour', width: 1512, height: 868 },
 ];
 
 /**
