@@ -474,6 +474,9 @@ export function ProjectForm({
         {descriptionField}
       </div>
 
+      {/* A new project needs only the four fields above; the rest is filled on its edit screen. A
+          duplicate carries the source's values, so it shows them before they are saved again. */}
+      {initialProject ? (
       <CreateExtras
         open={createExtrasOpen}
         onToggle={() => setCreateExtrasOpen((open) => !open)}
@@ -491,6 +494,7 @@ export function ProjectForm({
         <ExtrasGroup label={t("sections.networkLabel")}>{dependenciesField}</ExtrasGroup>
         <ExtrasGroup label={t("sections.operationsLabel")}>{operationsFields}</ExtrasGroup>
       </CreateExtras>
+      ) : null}
 
       {actionRow}
     </form>
