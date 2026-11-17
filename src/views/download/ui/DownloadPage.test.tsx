@@ -528,8 +528,9 @@ describe('DownloadPage', () => {
         '/brand/atlas-symbol.png',
       );
       const companion = within(screen.getByTestId('gateway-hero')).getByRole('button', { name: 'Pet Moru' });
-      // The closing strip's only button opens the play popup; Moru there is a picture, not a pet.
-      expect(within(screen.getByTestId('gateway-closing')).getAllByRole('button').map((button) => button.textContent)).toEqual(['Play with Moru']);
+      // The way into Moru's game sits in the hero; the closing's Moru is a picture with no button.
+      expect(within(screen.getByTestId('gateway-hero')).getByTestId('gateway-hero-play')).toHaveAttribute('aria-haspopup', 'dialog');
+      expect(within(screen.getByTestId('gateway-closing')).queryAllByRole('button')).toEqual([]);
       fireEvent.contextMenu(companion);
       fireEvent.click(screen.getByRole('menuitem', { name: 'Pause Moru animation' }));
       expect(companion).toHaveAttribute('data-moru-paused', 'true');

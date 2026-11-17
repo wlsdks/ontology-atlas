@@ -11,19 +11,23 @@ import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pau
 import {
   buildFilmScene,
   crossesClusters,
-  pickCloseUp,
+  haloMarks,
   labelBox,
+  markRadius,
+  pickCloseUp,
   pickNamedFiles,
   placeLabels,
+  scheduleRelations,
   scheduleTyping,
-  type LabelSpot,
   type FilmCloseUp,
   type FilmScene,
+  type LabelSpot,
 } from '../lib/film-scene';
 import {
   applyCamera,
   cameraAt,
   clamp01,
+  drawHalo,
   drawHitRing,
   drawKeyLight,
   drawStreak,
@@ -40,61 +44,78 @@ import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
 import { FilmActBar } from './FilmActBar';
 
-const ACTS = [1, 2, 3, 4, 5] as const;
-/** How long each act plays: the files, one file opened, the flight, the lines, the map. */
-const ACT_MS = [2600, 4200, 2600, 2800, 3400];
+const ACTS = [1, 2, 3, 4] as const;
+/** How long each act plays: the files, one file opened, the map assembles, the map. */
+const ACT_MS = [2000, 3000, 2600, 2800];
 const FILM_MS = ACT_MS.reduce((a, b) => a + b, 0);
 const ACT_START = ACT_MS.map((_, i) => ACT_MS.slice(0, i).reduce((a, b) => a + b, 0));
 /** Each act's span of the choreography, in proportion to its time, so progress maps to one film clock. */
 const ACT_SPANS = ACT_MS.map((ms, i) => [ACT_START[i]! / FILM_MS, (ACT_START[i]! + ms) / FILM_MS] as const);
+/** The last frame holds this long, then the picture fades out and back in on the first act. */
+const HOLD_MS = 1800;
+const FADE_MS = 260;
+/** Where a paused film rests inside each act, as a share of the act, so its picture is whole. */
+const SETTLE = [0.6, 0.75, 0.6, 0.7];
 
 /** Beats of the film, in milliseconds from its start. */
 const AT = {
   /** Far, mid and near layers of files drop in on three beats. */
-  layers: [0, 150, 300],
+  layers: [0, 100, 200],
   /** The far and mid layers fall back and the key light lands on the opened file. */
-  rack: 1400,
+  rack: 900,
   /** The opened file's card becomes the file panel. */
-  open: 2200,
+  open: 1500,
   /** When each frontmatter line that becomes a mark is typed to its end. */
-  landings: [3000, 3400, 3800, 4300, 4650, 5000],
+  landings: [2270, 2530, 2800, 3130, 3370, 3600],
   /** The fragment owns the frame at its closest. */
-  close: 6000,
-  /** The panel folds back into its mark and the camera pulls back. */
-  fold: 6400,
-  /** The other files fly in from outside the frame. */
-  flights: 6800,
+  close: 4270,
+  /** The panel folds back into its mark. */
+  fold: 4530,
+  /** The other files fly in from outside the frame while the camera pulls back and rolls level. */
+  flights: 5000,
   /** The four cluster hubs land. */
-  beats: [7400, 7800, 8200, 8600],
-  /** The camera reaches the whole map. */
-  whole: 8600,
-  /** Relations radiate out from the opened concept. */
-  radiate: 9400,
-  radiateMs: 1900,
-  /** The project hub takes the key light. */
-  amber: 11300,
-  /** The map comes up to full exposure and its regions are named. */
-  expose: 12200,
-  /** The camera pushes in on the opened concept and its neighbours. */
-  focus: 13400,
-  focused: 14600,
+  beats: [5400, 5670, 5930, 6200],
+  /** The camera at its widest. */
+  whole: 6200,
+  /** The last relation starts drawing. */
+  lastLine: 7120,
+  /** Every relation is lit, the count lands and the project hub takes the key light. */
+  amber: 7300,
+  /** The map at full exposure, the camera settled, its regions named. */
+  expose: 7600,
+  /** The camera pushes in on the opened concept. */
+  focus: 8400,
+  focused: 9200,
 } as const;
 /** Where a still frame of the finished map is taken: regions named, nothing dimmed. */
-const STILL_MS = 13300;
+const STILL_MS = 8300;
 
-const ENTER_MS = 360;
+const ENTER_MS = 240;
 const DROP_PX = 24;
-const STAGGER_MS = 30;
-const OPEN_MS = 440;
-const TYPE_MS = 380;
-const HAIRLINE_MS = 220;
-const LABEL_MS = 240;
+const STAGGER_MS = 20;
+const OPEN_MS = 300;
+const TYPE_MS = 250;
+const HAIRLINE_MS = 150;
+const LABEL_MS = 160;
 const LABEL_RISE = 12;
-const FLIGHT_MS = 700;
-const STROKE_MS = 260;
+const FLIGHT_MS = 470;
+const STROKE_MS = 180;
 const STREAK_MS = 48;
-/** The camera's slow push: 2% per act, so no frame is ever quite still. */
+/** The camera's slow push, so no frame is ever quite still. */
 const CREEP = 0.1;
+/** A relation starts this long after the later of its two ends lands. */
+const ANSWER_MS = 60;
+/** The bright head that draws a relation, and how long the line behind it takes to cool. */
+const HEAD_PX = 14;
+const COOL_MS = 300;
+/** At the end, a pulse leaves the opened concept along each of its relations in turn. */
+const PULSE_MS = 360;
+const PULSE_EVERY_MS = 600;
+/** The camera's roll while it pulls back, in radians: level, tilted, then level again. */
+const ROLL = (-3 * Math.PI) / 180;
+const HALO_SCALE = 5;
+const HALO_ALPHA = 0.22;
+const HALO_MS = 240;
 
 /** Three depth layers of the floating files: parallax, size, tone, drift. */
 const DEPTH = [0.4, 0.7, 1];
@@ -102,8 +123,6 @@ const LAYER_SCALE = [0.6, 0.8, 1];
 const LAYER_TONE = [0.5, 0.75, 1];
 const DRIFT_PX = [6, 10, 16];
 const DRIFT_MS = [7000, 8000, 9000];
-/** Grid cells of the twelve named files, so the opened file sits in the second row. */
-const CARD_CELLS = [5, 0, 10, 3, 6, 9, 1, 11, 4, 8, 2, 7];
 
 const span = (t: number, from: number, ms: number) => clamp01((t - from) / ms);
 
@@ -127,6 +146,7 @@ interface Palette {
   card: string;
   edge: string;
   indigo: string;
+  pale: string;
   amber: string;
   sans: string;
   mono: string;
@@ -143,6 +163,7 @@ function readPalette(): Palette {
     card: v('--color-panel'),
     edge: v('--color-border-strong'),
     indigo: v('--map-indigo-bright'),
+    pale: v('--color-indigo-pale-a90'),
     amber: v('--map-amber-hub'),
     sans: getComputedStyle(document.body).fontFamily,
     mono: v('--font-mono') || 'ui-monospace, monospace',
@@ -193,10 +214,12 @@ interface Layout {
   staged: Map<number, Point>;
   stagedMark: Map<number, number>;
   keys: CameraKey[];
-  /** When each relation starts to draw in act 4; -1 for those the fragment already drew. */
+  /** When each concept lands on the map: its frontmatter beat, or the end of its flight. */
+  land: number[];
+  /** When each relation starts to draw; -1 for those the fragment already drew. */
   edgeStart: number[];
-  /** Whether a relation draws from its `from` end (the end nearer the opened concept). */
-  edgeFromNear: boolean[];
+  /** Whether a relation draws from its `from` end (the end that landed first). */
+  edgeFromFirst: boolean[];
   /** When each file's flight starts in act 3; -1 for the fragment. */
   flightStart: number[];
   /** Where each flying file enters from, a screen point outside the frame. */
@@ -204,11 +227,9 @@ interface Layout {
   names: Map<number, NameSpot>;
   /** The closing push-in's names besides the regions: the opened concept alone on a phone. */
   focusNames: number[];
-}
-
-function markRadius(kind: string, wide: boolean): number {
-  const r = kind === 'project' ? 7 : kind === 'domain' ? 5.5 : kind === 'capability' ? 3.6 : 2.6;
-  return wide ? r : r * 0.85;
+  regionSize: number;
+  countSize: number;
+  focusSize: number;
 }
 
 /** A shot that puts stage point `c` at screen point `a` with `zoom`, as a key the kit can ease. */
@@ -224,6 +245,11 @@ function depthShot(shot: CameraShot, depth: number, w: number, h: number): Camer
   return { cx: lerp(w / 2, shot.cx, depth), cy: lerp(h / 2, shot.cy, depth), zoom: 1 + (shot.zoom - 1) * depth };
 }
 
+/** The camera's roll at film time `T`: it tilts as act 3 begins and comes level by the time the map settles. */
+function rollAt(T: number): number {
+  return ROLL * (easeInOut(span(T, AT.flights, 600)) - easeInOut(span(T, AT.flights + 600, AT.expose - AT.flights - 600)));
+}
+
 interface FilmCast {
   scene: FilmScene;
   pick: FilmCloseUp | null;
@@ -232,15 +258,95 @@ interface FilmCast {
   slug: string;
   /** The project and the cluster hubs, named on the finished map. */
   regions: number[];
+  /** Each region's second line: how many concepts it holds. */
+  regionCounts: Map<number, string>;
   /** Hubs that land on the act-3 beats, in beat order. */
   beatHubs: number[];
-  /** The opened concept's own relations, which stay lit at the end. */
+  /** The opened concept and the concepts its relations reach. */
   neighbours: ReadonlySet<number>;
+  /** The opened concept's own relations, in the order the closing pulses travel them. */
+  litEdges: number[];
   /** Names shown in the closing push-in besides the regions. */
   focusNames: number[];
   /** Relations the opened file drew in its close-up, which never leave the stage. */
   fragmentEdges: ReadonlySet<number>;
   fragment: ReadonlySet<number>;
+  /** Marks that carry a halo once they land. */
+  halos: number[];
+}
+
+/**
+ * Lays the files of act 1 in up to three rows of six across `span` (one column of six on a
+ * phone). Each row packs its cards by their real widths, so a long file name never runs over its
+ * neighbour; a file no row has room for stays a blank slip (`null`).
+ */
+function layoutCards(
+  scene: FilmScene,
+  named: number[],
+  widthOf: (i: number) => number,
+  span: { l: number; r: number },
+  fieldT: number,
+  cellH: number,
+  cardH: number,
+  wide: boolean,
+  opened: number | null,
+): (Box | null)[] {
+  const spanW = span.r - span.l;
+  if (!wide) {
+    /* One column on a phone, each file stepping left and right of the one above. */
+    return named.map((i, k) => {
+      const cardW = widthOf(i);
+      const room = Math.max(0, spanW - cardW);
+      const seed = scene.nodes[i]!.seed;
+      const across = k % 2 === 0 ? 0.08 + 0.22 * seed : 0.7 + 0.22 * seed;
+      return { x: span.l + cardW / 2 + room * across, y: fieldT + (k + 0.5) * cellH, w: cardW, h: cardH };
+    });
+  }
+  const ROWS = 3;
+  const PER_ROW = 6;
+  const MIN_GAP = 28;
+  const rows: number[][] = Array.from({ length: ROWS }, () => []);
+  const totals = new Array<number>(ROWS).fill(0);
+  const room = (r: number, k: number) =>
+    rows[r]!.length < PER_ROW && totals[r]! + widthOf(named[k]!) + MIN_GAP * (rows[r]!.length + 1) <= spanW;
+  const place = (k: number, row: number) => {
+    rows[row]!.push(k);
+    totals[row]! += widthOf(named[k]!);
+  };
+  /* The opened file sits in the middle row; the rest fill the shortest row with room. */
+  if (opened !== null && named.includes(opened)) place(named.indexOf(opened), 1);
+  named
+    .map((_, k) => k)
+    .filter((k) => named[k] !== opened)
+    .sort((a, b) => widthOf(named[b]!) - widthOf(named[a]!) || a - b)
+    .forEach((k) => {
+      let best = -1;
+      for (let r = 0; r < ROWS; r += 1) {
+        if (!room(r, k)) continue;
+        if (best < 0 || totals[r]! < totals[best]!) best = r;
+      }
+      if (best >= 0) place(k, best);
+    });
+  const boxes: (Box | null)[] = named.map(() => null);
+  rows.forEach((row, r) => {
+    const seedOf = (k: number) => scene.nodes[named[k]!]!.seed;
+    row.sort((a, b) => seedOf(a) - seedOf(b));
+    /* The opened file near the middle of its row, so the camera's push goes into the picture. */
+    const at = row.findIndex((k) => named[k] === opened);
+    if (at >= 0) row.splice(Math.floor((row.length - 1) / 2), 0, ...row.splice(at, 1));
+    const gap = (spanW - totals[r]!) / Math.max(1, row.length);
+    const shift = (r === 1 ? 0.2 : -0.2) * gap;
+    let x = span.l + gap / 2 + shift;
+    row.forEach((k) => {
+      const node = scene.nodes[named[k]!]!;
+      const cardW = widthOf(named[k]!);
+      const jx = (node.seed * 2 - 1) * Math.min(12, gap * 0.2);
+      const jy = (node.gy * 2 - 1) * ((cellH - cardH) / 2) * 0.6;
+      boxes[k] = { x: x + cardW / 2 + jx, y: fieldT + (r + 0.5) * cellH + jy, w: cardW, h: cardH };
+      x += cardW + gap;
+    });
+  });
+  return boxes;
 }
 
 function layoutFilm(
@@ -267,48 +373,39 @@ function layoutFilm(
   const zoneH = zone.b - zone.t;
   const centre = { x: zone.l + zoneW / 2, y: zone.t + zoneH / 2 };
 
-  /* Twelve files keep their names (six on a phone); the rest are blank slips on three depths. */
+  /*
+   * Up to eighteen files keep their names (six on a phone); the rest are blank slips on three
+   * depths. On a wide stage the files spread past the picture to the stage's sides, where the
+   * camera's wide first shot still sees them, so real file names fit six to a row.
+   */
   ctx.font = `${text}px ${palette.mono}`;
-  const cols = wide ? 4 : 1;
   const rows = wide ? 3 : 6;
-  const cellW = zoneW / cols;
+  const reachX = wide ? Math.min(w / 2 - 32, Math.max(zoneW / 2, 720)) : zoneW / 2;
+  const span = { l: centre.x - reachX, r: centre.x + reachX };
+  const spanW = span.r - span.l;
   /* The camera pushes in on the files, so they start a little inside the picture's top and bottom. */
   const fieldT = zone.t + zoneH * 0.06;
   const cellH = (zoneH * 0.9) / rows;
-  const cardMax = wide ? cellW - 16 : Math.min(260, zoneW - 48);
+  const pad = wide ? 44 : 40;
+  const cardMax = wide ? Math.min(250, spanW / 6 - 16) : Math.min(260, zoneW - 48);
   const cardH = wide ? 52 : 40;
-  const fits = (file: string) => ctx.measureText(file).width + 60 <= cardMax;
-  const named = pickNamedFiles(scene, pick?.index ?? null, cols * rows, fits);
+  const widthOf = (i: number) => ctx.measureText(scene.nodes[i]!.file).width + pad;
+  const fits = (file: string) => ctx.measureText(file).width + pad <= cardMax;
+  const picked = pickNamedFiles(scene, pick?.index ?? null, wide ? 18 : 6, fits);
+  const placed = layoutCards(scene, picked, widthOf, span, fieldT, cellH, cardH, wide, pick?.index ?? null);
+  const named = picked.filter((_, k) => placed[k] !== null);
+  const cards = placed.filter((box): box is Box => box !== null);
   const namedAt = new Map(named.map((i, k) => [i, k]));
-  const cards: Box[] = named.map((i, k) => {
-    const node = scene.nodes[i]!;
-    const cardW = Math.min(cardMax, ctx.measureText(node.file).width + 60);
-    const jx = node.seed * 2 - 1;
-    const jy = node.gy * 2 - 1;
-    if (wide) {
-      const cell = CARD_CELLS[k] ?? k;
-      return {
-        x: zone.l + ((cell % cols) + 0.5) * cellW + jx * ((cellW - cardW) / 2) * 0.9,
-        y: fieldT + (Math.floor(cell / cols) + 0.5) * cellH + jy * ((cellH - cardH) / 2) * 0.7,
-        w: cardW,
-        h: cardH,
-      };
-    }
-    /* One column on a phone, each file stepping left and right of the one above. */
-    const room = zoneW - cardW;
-    const across = k % 2 === 0 ? 0.08 + 0.22 * node.seed : 0.7 + 0.22 * node.seed;
-    return { x: zone.l + cardW / 2 + room * across, y: fieldT + (k + 0.5) * cellH, w: cardW, h: cardH };
-  });
 
   const slab = wide ? { w: 28, h: 8 } : { w: 22, h: 6 };
   const field: FieldItem[] = scene.nodes.map((node, i) => {
     const k = namedAt.get(i);
     if (k !== undefined) {
       const card = cards[k]!;
-      return { ...card, layer: 2, named: true, col: Math.floor(((card.x - zone.l) / zoneW) * 12) };
+      return { ...card, layer: 2, named: true, col: Math.floor(((card.x - span.l) / spanW) * 12) };
     }
     const layer = node.layer;
-    let x = zone.l + node.gx * zoneW;
+    let x = span.l + node.gx * spanW;
     let y = zone.t + node.gy * zoneH;
     /* A near slip never sits under a named file, so no edge peeks out from behind one. */
     for (const card of layer === 2 ? cards : []) {
@@ -316,7 +413,7 @@ function layoutFilm(
       const clearY = card.h / 2 + slab.h / 2 + 10;
       if (Math.abs(x - card.x) < clearX && Math.abs(y - card.y) < clearY) {
         y = card.y + Math.sign(y - card.y || 1) * clearY;
-        x = Math.min(zone.r - slab.w / 2, Math.max(zone.l + slab.w / 2, x));
+        x = Math.min(span.r - slab.w / 2, Math.max(span.l + slab.w / 2, x));
       }
     }
     const s = LAYER_SCALE[layer]!;
@@ -327,7 +424,7 @@ function layoutFilm(
   const sx = Math.min(w * (wide ? 0.36 : 0.42), zoneW / 2 - 8);
   const sy = Math.min(h * (wide ? 0.27 : 0.24), zoneH / 2 - 14);
   const map = scene.nodes.map((node) => ({ x: centre.x + node.x * sx, y: centre.y + node.y * sy }));
-  const mark = scene.nodes.map((node) => markRadius(node.kind, wide));
+  const mark = scene.nodes.map((node) => markRadius(node.kind, node.degree, wide));
 
   /* The opened file: a panel on the left with its fragment beside it, or on top on a phone. */
   const font = wide ? 20 : 14;
@@ -351,11 +448,11 @@ function layoutFilm(
 
   const staged = new Map<number, Point>();
   const stagedMark = new Map<number, number>();
-  const keys: CameraKey[] = [shotKey(w, h, 0, centre, centre, 0.92)];
+  const keys: CameraKey[] = [shotKey(w, h, 0, centre, centre, 0.9)];
   let subject = centre;
   if (pick) {
     const card = field[pick.index]!;
-    keys.push(shotKey(w, h, ACT_START[1]!, { x: lerp(centre.x, card.x, 0.55), y: lerp(centre.y, card.y, 0.55) }, centre, 1.08));
+    keys.push(shotKey(w, h, ACT_START[1]!, { x: lerp(centre.x, card.x, 0.55), y: lerp(centre.y, card.y, 0.55) }, centre, 1.12));
     /* Where the fragment sits on screen at its closest: a column beside the panel, read top down. */
     const closeZoom = wide ? 1.6 : 1.2;
     const self = wide
@@ -389,8 +486,10 @@ function layoutFilm(
     keys.push(shotKey(w, h, AT.close, subject, self, closeZoom));
     keys.push(shotKey(w, h, AT.fold, subject, self, closeZoom, AT.close));
   }
-  keys.push(shotKey(w, h, AT.whole, centre, centre, 1));
-  keys.push(shotKey(w, h, AT.focus, centre, centre, 1, AT.whole));
+  /* Act 3: the camera pulls back past the whole map while it assembles, then settles on it. */
+  keys.push(shotKey(w, h, AT.whole, centre, centre, 0.82));
+  keys.push(shotKey(w, h, AT.expose, centre, centre, 1));
+  keys.push(shotKey(w, h, AT.focus, centre, centre, 1, AT.expose));
   /* The closing push-in: on the opened concept and its real neighbours. */
   const lit = [...cast.neighbours];
   const focusAt =
@@ -399,25 +498,11 @@ function layoutFilm(
       : centre;
   /*
    * Sideways only, and a little low: the map then grows past the picture into the room above the
-   * caption, never under the title.
+   * caption, never under the title. A phone's map already spans its width, so it pushes in less.
    */
-  /* A phone's map already spans its width, so it pushes in less there and barely turns. */
   keys.push(
-    shotKey(w, h, AT.focused, { x: lerp(centre.x, focusAt.x, wide ? 0.5 : 0.25), y: centre.y }, { x: centre.x, y: centre.y + (wide ? 40 : 24) }, wide ? 1.22 : 1.1),
+    shotKey(w, h, AT.focused, { x: lerp(centre.x, focusAt.x, wide ? 0.35 : 0.25), y: centre.y }, { x: centre.x, y: centre.y + (wide ? 40 : 24) }, wide ? 1.18 : 1.08),
   );
-
-  /* Act 4: relations radiate from the opened concept, nearest first, slowly and then in a rush. */
-  const dist = (i: number) => Math.hypot(map[i]!.x - subject.x, map[i]!.y - subject.y);
-  const edgeFromNear = scene.edges.map((edge) => dist(edge.from) <= dist(edge.to));
-  const order = scene.edges
-    .map((edge, k) => ({ k, d: Math.min(dist(edge.from), dist(edge.to)) }))
-    .filter(({ k }) => !cast.fragmentEdges.has(k))
-    .sort((a, b) => a.d - b.d || a.k - b.k);
-  const edgeStart = scene.edges.map(() => -1);
-  order.forEach(({ k }, rank) => {
-    const r = order.length <= 1 ? 0 : rank / (order.length - 1);
-    edgeStart[k] = AT.radiate + (AT.radiateMs - STROKE_MS) * r ** 0.55;
-  });
 
   /* Act 3: each cluster's files land around their hub's beat; the rest spread over the act. */
   const beatOf = new Map<number, number>();
@@ -427,8 +512,8 @@ function layoutFilm(
     const hubBeat = cast.beatHubs.indexOf(i);
     if (hubBeat >= 0) return AT.beats[hubBeat]! - FLIGHT_MS;
     const beat = beatOf.get(node.cluster);
-    if (beat !== undefined) return Math.max(AT.flights, beat - FLIGHT_MS - 220 + node.seed * 440);
-    return AT.flights + node.order * (AT.beats[0]! - AT.flights) + node.seed * 200;
+    if (beat !== undefined) return Math.max(AT.flights, beat - FLIGHT_MS - 150 + node.seed * 300);
+    return AT.flights + node.order * (AT.beats[0]! - AT.flights) + node.seed * 140;
   });
   const reach = Math.hypot(w, h) / 2 + 40;
   const flightFrom = scene.nodes.map((node, i) => {
@@ -443,12 +528,35 @@ function layoutFilm(
     return from;
   });
 
+  /* When each concept lands: the fragment on its frontmatter beat, the rest at the end of their flight. */
+  const landedLine = (role: FrontmatterLine['role'], dep?: number) => {
+    const line = cast.lines.find((l) => l.role === role && (dep === undefined || l.dep === dep));
+    return line ? line.to + HAIRLINE_MS : AT.flights;
+  };
+  const land = scene.nodes.map((_, i) => (flightStart[i]! >= 0 ? flightStart[i]! + FLIGHT_MS : AT.flights));
+  if (pick) {
+    land[pick.parent] = landedLine('domain');
+    land[pick.index] = landedLine('kind');
+    pick.dependencies.forEach((dep, k) => (land[dep] = landedLine('dependency', k)));
+  }
+  /* Lines answer landings: each relation starts just after its later end lands, containment first. */
+  const edgeStart = scheduleRelations(scene.edges, land, cast.fragmentEdges, {
+    delay: ANSWER_MS,
+    containLead: 90,
+    earliest: AT.flights + ANSWER_MS,
+    lastStart: AT.lastLine,
+  });
+  const edgeFromFirst = scene.edges.map((edge) => land[edge.from]! <= land[edge.to]!);
+
   /*
    * Names on the finished map, placed once with a collision pass where they first show, at the
    * film's widest framing after that. Anchored in stage space, they only spread apart as the
    * camera pushes in, so no two meet at any later frame. The closing names stand off the opened
    * concept's crowd along leader lines when there is no room beside their marks.
    */
+  const regionSize = wide ? 22 : 15;
+  const countSize = wide ? 15 : 13;
+  const focusSize = wide ? 18 : 13;
   const names = new Map<number, NameSpot>();
   const ref = cameraAt(keys, AT.expose / FILM_MS, CREEP);
   const last = cameraAt(keys, 1, CREEP);
@@ -470,11 +578,16 @@ function layoutFilm(
     y: crowd.reduce((sum, i) => sum + map[i]!.y, 0) / Math.max(1, crowd.length),
   };
   const asked = [
-    ...cast.regions.map((i) => ({ i, size: wide ? 22 : 15, from: centre })),
-    ...focusNames.map((i) => ({ i, size: wide ? 16 : 13, from: crowdAt })),
+    ...cast.regions.map((i) => ({ i, size: regionSize, from: centre, count: cast.regionCounts.get(i) ?? '' })),
+    ...focusNames.map((i) => ({ i, size: focusSize, from: crowdAt, count: '' })),
   ];
-  const requests = asked.map(({ i, size, from }) => {
+  const requests = asked.map(({ i, size, from, count }) => {
     ctx.font = `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`;
+    let tw = ctx.measureText(scene.nodes[i]!.label).width;
+    if (count) {
+      ctx.font = `${countSize}px ${palette.mono}`;
+      tw = Math.max(tw, ctx.measureText(count).width);
+    }
     const p = projectPoint(w, h, ref, map[i]!.x, map[i]!.y);
     let ox = map[i]!.x - from.x;
     let oy = map[i]!.y - from.y;
@@ -487,12 +600,12 @@ function layoutFilm(
       x: p.x,
       y: p.y,
       r: mark[i]! * ref.zoom + 2,
-      w: ctx.measureText(scene.nodes[i]!.label).width,
-      h: size * 1.25,
+      w: tw,
+      h: size * 1.25 + (count ? countSize * 1.35 : 0),
       out: len < 1 ? { x: 0, y: 1 } : { x: ox / len, y: oy / len },
     };
   });
-  placeLabels(requests, { gap: 6, bounds }).forEach((spot, k) => {
+  placeLabels(requests, { gap: 12, bounds }).forEach((spot, k) => {
     const req = requests[k]!;
     const anchor = unproject(ref, req.x + spot.dx, req.y + spot.dy);
     names.set(asked[k]!.i, { ax: anchor.x, ay: anchor.y, w: req.w, h: req.h, align: spot.align, leader: spot.leader });
@@ -514,12 +627,16 @@ function layoutFilm(
     staged,
     stagedMark,
     keys,
+    land,
     edgeStart,
-    edgeFromNear,
+    edgeFromFirst,
     flightStart,
     flightFrom,
     names,
     focusNames,
+    regionSize,
+    countSize,
+    focusSize,
   };
 }
 
@@ -598,6 +715,12 @@ class TextStamps {
   }
 }
 
+/** The point at `t` along a quadratic curve from `a` through control `c` to `b`. */
+function along(a: Point, c: Point, b: Point, t: number): Point {
+  const u = 1 - t;
+  return { x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y };
+}
+
 /** Adds to `path` a curve from `a` to `b` through control `c`, drawn to fraction `t`. */
 function curve(path: Path2D, a: Point, c: Point, b: Point, t: number) {
   if (t <= 0) return;
@@ -606,6 +729,19 @@ function curve(path: Path2D, a: Point, c: Point, b: Point, t: number) {
   const c1 = { x: lerp(a.x, c.x, t), y: lerp(a.y, c.y, t) };
   const end = { x: lerp(c1.x, lerp(c.x, b.x, t), t), y: lerp(c1.y, lerp(c.y, b.y, t), t) };
   path.quadraticCurveTo(c1.x, c1.y, end.x, end.y);
+}
+
+/** Adds to `path` the last `HEAD_PX` of a curve drawn to `t`: the bright head that draws a line. */
+function head(path: Path2D, a: Point, c: Point, b: Point, t: number) {
+  if (t <= 0) return;
+  const len = (Math.hypot(b.x - a.x, b.y - a.y) + Math.hypot(c.x - a.x, c.y - a.y) + Math.hypot(b.x - c.x, b.y - c.y)) / 2;
+  const from = Math.max(0, t - HEAD_PX / Math.max(1, len));
+  const p0 = along(a, c, b, from);
+  path.moveTo(p0.x, p0.y);
+  for (let s = 1; s <= 3; s += 1) {
+    const p = along(a, c, b, lerp(from, t, s / 3));
+    path.lineTo(p.x, p.y);
+  }
 }
 
 /** The control point that bows a line by `bow` of its length away from `hub`; none for a straight line. */
@@ -628,7 +764,7 @@ function bowed(a: Point, b: Point, bow: number, hub: Point): Point {
 class LineBatch {
   private buckets = new Map<string, { color: string; alpha: number; width: number; path: Path2D }>();
   add(color: string, alpha: number, width: number): Path2D {
-    const a = Math.round(alpha * 50) / 50;
+    const a = Math.round(alpha * 100) / 100;
     const key = `${color}|${a}|${width}`;
     let bucket = this.buckets.get(key);
     if (!bucket) {
@@ -640,7 +776,7 @@ class LineBatch {
   stroke(ctx: CanvasRenderingContext2D) {
     for (const { color, alpha, width, path } of this.buckets.values()) {
       if (alpha <= 0) continue;
-      ctx.globalAlpha = alpha;
+      ctx.globalAlpha = Math.min(1, alpha);
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
       ctx.stroke(path);
@@ -655,8 +791,9 @@ interface Sprites {
 }
 
 /**
- * One frame of the film at film time `T` (ms) and wall clock `time` (ms). Every place is a function
- * of `T`; only the floating files' slow drift reads the clock.
+ * One frame of the film at film time `clock` (ms, running on through the hold) and wall clock
+ * `time` (ms). Every place is a function of film time; only the floating files' slow drift reads
+ * the wall clock.
  */
 function drawFilm(
   ctx: CanvasRenderingContext2D,
@@ -664,10 +801,12 @@ function drawFilm(
   L: Layout,
   palette: Palette,
   sprites: Sprites,
-  T: number,
+  clock: number,
   time: number,
 ) {
   const { w, h, wide } = L;
+  const T = Math.min(clock, FILM_MS);
+  ctx.setTransform(L.dpr, 0, 0, L.dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
   const { scene, pick } = cast;
   const shot = cameraAt(L.keys, T / FILM_MS, CREEP);
@@ -675,7 +814,7 @@ function drawFilm(
   const toScreen = (p: Point, s: CameraShot = shot) => projectPoint(w, h, s, p.x, p.y);
 
   /* Act 2's fragment glides from its close-up places to the map in act 3. */
-  const glide = easeInOut(span(T, AT.flights, 1000));
+  const glide = easeInOut(span(T, AT.flights, 700));
   const worldOf = (i: number): Point => {
     const staged = L.staged.get(i);
     const m = L.map[i]!;
@@ -685,25 +824,17 @@ function drawFilm(
     const staged = L.stagedMark.get(i);
     return staged === undefined ? L.mark[i]! : lerp(staged, L.mark[i]!, glide);
   };
-
-  /* When each frontmatter line that becomes a mark is done; its mark lands a hairline later. */
-  const landed = (role: FrontmatterLine['role'], dep?: number) => {
-    const line = cast.lines.find((l) => l.role === role && (dep === undefined || l.dep === dep));
+  const titleLanded = (() => {
+    const line = cast.lines.find((l) => l.role === 'title');
     return line ? line.to + HAIRLINE_MS : Infinity;
-  };
-  const landOf = new Map<number, number>();
-  if (pick) {
-    landOf.set(pick.parent, landed('domain'));
-    landOf.set(pick.index, landed('kind'));
-    pick.dependencies.forEach((dep, k) => landOf.set(dep, landed('dependency', k)));
-  }
+  })();
 
-  /* Exposure: the map sits a little low in acts 3 and 4 and comes fully up in act 5. */
-  const expose = easeInOut(span(T, AT.expose, 400));
+  /* Exposure: the map sits a little low while it assembles and comes fully up as it settles. */
+  const expose = easeInOut(span(T, AT.expose, 270));
   const focus = easeInOut(span(T, AT.focus, AT.focused - AT.focus));
-  const rest = lerp(1, 0.6, focus);
-  const nodeLight = lerp(0.78, 1, expose);
-  const lineLift = lerp(1, 0.38 / 0.3, expose);
+  /* Nothing is dimmed at the end: the opened concept stands out by its ink lines and halo alone. */
+  const nodeLight = lerp(0.8, 1, expose);
+  const lineLift = lerp(0.8, 1, expose);
 
   /* The key light: on the opened file, then its mark, then the project hub, then back to the subject. */
   const subjectScreen = (() => {
@@ -711,84 +842,160 @@ function drawFilm(
     const card = L.field[pick.index]!;
     const onCard = toScreen(card);
     const onMark = toScreen(worldOf(pick.index));
-    return {
-      x: lerp(onCard.x, onMark.x, easeInOut(span(T, ACT_START[1]!, 620))),
-      y: lerp(onCard.y, onMark.y, easeInOut(span(T, ACT_START[1]!, 620))),
-    };
+    const move = easeInOut(span(T, ACT_START[1]!, 420));
+    return { x: lerp(onCard.x, onMark.x, move), y: lerp(onCard.y, onMark.y, move) };
   })();
   const root = scene.nodes.findIndex((n) => n.depth === 0);
   const hubScreen = toScreen(root >= 0 ? L.map[root]! : L.centre);
-  const toHub = easeInOut(span(T, AT.amber, 400)) * (1 - easeInOut(span(T, AT.focus, 600)));
+  const toHub = easeInOut(span(T, AT.amber, 270)) * (1 - easeInOut(span(T, AT.focus, 400)));
   const lightAt = { x: lerp(subjectScreen.x, hubScreen.x, toHub), y: lerp(subjectScreen.y, hubScreen.y, toHub) };
-  const lightUp = easeInOut(span(T, AT.rack, 500));
+  const lightUp = easeInOut(span(T, AT.rack, 330));
   const lightR = wide ? 230 : 150;
   drawKeyLight(ctx, sprites.indigo, lightAt.x, lightAt.y, lightR, 0.14 * lightUp * (1 - toHub));
   drawKeyLight(ctx, sprites.amber, lightAt.x, lightAt.y, lightR, 0.1 * lightUp * toHub);
 
-  /* Act 4's ghost numeral counts the lines drawn, behind the picture. */
-  const fragmentCount = cast.fragmentEdges.size;
-  if (T >= AT.radiate - 300 && T < AT.expose + 600) {
-    let count = fragmentCount;
-    for (const start of L.edgeStart) if (start >= 0 && T >= start) count += 1;
-    const hit = span(T, AT.amber, 320);
-    const bump = T >= AT.amber ? 0.08 * (1 - easeOut(hit)) : 0;
-    const a = (0.06 + bump) * easeInOut(span(T, AT.radiate - 300, 300)) * (1 - easeInOut(span(T, AT.expose, 600)));
+  /* The ghost numeral counts the relations lit, behind the picture, and lands on the total. */
+  const lit = (k: number) => {
+    const edge = scene.edges[k]!;
+    if (cast.fragmentEdges.has(k)) return T >= Math.max(L.land[edge.from]!, L.land[edge.to]!) + HAIRLINE_MS;
+    const start = L.edgeStart[k]!;
+    return start >= 0 && T >= start + STROKE_MS;
+  };
+  const ghostIn = AT.flights + 200;
+  if (T >= ghostIn && T < AT.expose + 400) {
+    let count = 0;
+    for (let k = 0; k < scene.edges.length; k += 1) if (lit(k)) count += 1;
+    const a = 0.1 * easeInOut(span(T, ghostIn, 260)) * (1 - easeInOut(span(T, AT.expose, 400)));
     if (a > 0) {
+      const size = wide ? 220 : 120;
       ctx.globalAlpha = a;
       ctx.fillStyle = palette.ink;
-      ctx.font = `${FONT_WEIGHT.strong} ${wide ? 220 : 120}px ${palette.sans}`;
+      ctx.font = `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`;
       ctx.textAlign = 'end';
       ctx.textBaseline = 'alphabetic';
       /* Under the map's right side, clear of the caption on the left. */
-      ctx.fillText(String(count), L.zone.r, Math.min(L.h - 24, L.zone.b + (wide ? 70 : 40)));
+      const baseline = Math.min(L.h - 24, L.zone.b + (wide ? 70 : 40));
+      ctx.fillText(String(count), L.zone.r, baseline);
+      const numeral = ctx.measureText(String(scene.edges.length)).width;
       ctx.textAlign = 'start';
       ctx.globalAlpha = 1;
+      drawHitRing(ctx, L.zone.r - numeral / 2, baseline - size * 0.36, T - AT.amber, palette.ink, {
+        from: size * 0.42,
+        reach: 40,
+        life: 360,
+      });
     }
   }
 
   drawField(ctx, cast, L, palette, shot, T, time);
 
-  /* Relations: the fragment's own persist from act 2; the rest radiate in act 4. */
-  const lines = new LineBatch();
+  /* The map rolls a few degrees about the stage's centre while the camera pulls back. */
+  const roll = rollAt(T);
+  ctx.save();
+  if (roll !== 0) {
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(roll);
+    ctx.translate(-w / 2, -h / 2);
+  }
+
+  /* Halos under the marks that carry weight, growing as each lands. */
+  ctx.globalCompositeOperation = 'lighter';
+  const haloOf = (i: number, from: number) => {
+    const grow = easeOut(span(T, from, HALO_MS));
+    if (grow <= 0) return;
+    const p = toScreen(worldOf(i));
+    const r = markOf(i) * shot.zoom * HALO_SCALE * grow;
+    const sprite = scene.nodes[i]!.kind === 'project' ? sprites.amber : sprites.indigo;
+    drawHalo(ctx, sprite, p.x, p.y, r, HALO_ALPHA * nodeLight);
+  };
+  for (const i of cast.halos) haloOf(i, L.land[i]!);
+  if (pick && !cast.halos.includes(pick.index)) haloOf(pick.index, AT.focus);
+
+  /*
+   * Relations carry light: one wide faint pass and a thin core, added together, so bundles brighten
+   * where they meet a hub. Each draws behind a bright head and cools to its own alpha.
+   */
+  const glow = new LineBatch();
+  const core = new LineBatch();
+  const heads = new Path2D();
+  let headsDrawn = false;
   const hubAt = toScreen(L.centre);
   const isLit = (k: number) => {
     const edge = scene.edges[k]!;
     return pick !== null && (edge.from === pick.index || edge.to === pick.index);
   };
-  scene.edges.forEach((edge, k) => {
-    const fragmentEdge = cast.fragmentEdges.has(k);
-    let grow: number;
-    if (fragmentEdge) {
-      const land = Math.max(landOf.get(edge.from) ?? Infinity, landOf.get(edge.to) ?? Infinity);
-      grow = easeOut(span(T, land, HAIRLINE_MS));
-    } else {
-      const start = L.edgeStart[k]!;
-      grow = start < 0 ? 0 : easeInOut(span(T, start, STROKE_MS));
-    }
-    if (grow <= 0) return;
-    const near = L.edgeFromNear[k] ? edge.from : edge.to;
+  const geometry = (k: number, fromFirst: boolean) => {
+    const edge = scene.edges[k]!;
+    const near = fromFirst ? edge.from : edge.to;
     const far = near === edge.from ? edge.to : edge.from;
     const a = toScreen(worldOf(near));
     const b = toScreen(worldOf(far));
     const bow = crossesClusters(scene, edge) ? 0.18 : 0;
-    let control = bowed(a, b, bow, hubAt);
+    return { a, b, near, control: bowed(a, b, bow, hubAt) };
+  };
+  scene.edges.forEach((edge, k) => {
+    const fragmentEdge = cast.fragmentEdges.has(k);
+    const start = fragmentEdge ? Math.max(L.land[edge.from]!, L.land[edge.to]!) : L.edgeStart[k]!;
+    if (start < 0 || T < start) return;
+    const strokeMs = fragmentEdge ? HAIRLINE_MS : STROKE_MS;
+    const grow = fragmentEdge ? easeOut(span(T, start, strokeMs)) : easeInOut(span(T, start, strokeMs));
+    if (grow <= 0) return;
+    const { a, b, near, control: bow } = geometry(k, L.edgeFromFirst[k]!);
+    let control = bow;
+    const color = edge.contains ? palette.ink : palette.indigo;
+    const heat = 1 - easeOut(span(T, start + strokeMs * 0.5, COOL_MS));
+    const ownLit = isLit(k);
+    let alpha: number;
     if (fragmentEdge) {
       /* In the close-up a dependency hangs off its concept like a branch of a file tree. */
       const elbow = edge.contains ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : { x: near === pick!.index ? a.x : b.x, y: near === pick!.index ? b.y : a.y };
-      control = { x: lerp(elbow.x, control.x, glide), y: lerp(elbow.y, control.y, glide) };
-      const alpha = lerp(lerp(0.85, 0.55, glide), 0.85, focus);
-      curve(lines.add(edge.contains || focus > 0.5 ? palette.ink : palette.indigo, alpha, 1.5), a, control, b, grow);
-      return;
+      control = { x: lerp(elbow.x, bow.x, glide), y: lerp(elbow.y, bow.y, glide) };
+      alpha = lerp(0.85, edge.contains ? 0.26 : 0.34, glide);
+    } else {
+      alpha = (edge.contains ? 0.26 : 0.34) * lineLift;
     }
-    const lit = isLit(k);
-    if (lit && focus > 0) {
-      curve(lines.add(palette.ink, 0.85 * focus, 1.5), a, control, b, grow);
-      if (focus >= 1) return;
+    alpha = lerp(alpha, 0.85, heat);
+    curve(glow.add(color, 0.05 * lineLift, 4), a, control, b, grow);
+    const keep = ownLit ? 1 - focus : 1;
+    if (keep > 0) curve(core.add(color, alpha * keep, 1.25), a, control, b, grow);
+    /* At the end the opened concept's relations turn to 2px ink. */
+    if (ownLit && focus > 0) curve(core.add(palette.ink, 0.9 * focus, 2), a, control, b, grow);
+    /* The head burns along the line and fades where it arrives. */
+    const headLight = 1 - easeInOut(span(T, start + strokeMs, 90));
+    if (headLight > 0) {
+      head(heads, a, control, b, grow);
+      headsDrawn = true;
     }
-    const base = (edge.contains ? 0.2 : 0.3) * lineLift * (lit ? 1 - focus : rest);
-    curve(lines.add(edge.contains ? palette.ink : palette.indigo, base, 1), a, control, b, grow);
   });
-  lines.stroke(ctx);
+  ctx.lineCap = 'round';
+  glow.stroke(ctx);
+  core.stroke(ctx);
+  if (headsDrawn) {
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = palette.pale;
+    ctx.lineWidth = 2;
+    ctx.stroke(heads);
+  }
+  /* From the push-in through the hold, a pulse leaves the opened concept along each relation in turn. */
+  if (pick && cast.litEdges.length > 0 && clock >= AT.focused) {
+    const n = Math.floor((clock - AT.focused) / PULSE_EVERY_MS);
+    const local = clock - AT.focused - n * PULSE_EVERY_MS;
+    if (local < PULSE_MS) {
+      const k = cast.litEdges[n % cast.litEdges.length]!;
+      const fromPick = scene.edges[k]!.from === pick.index;
+      const { a, b, control } = geometry(k, fromPick);
+      const f = local / PULSE_MS;
+      const pulse = new Path2D();
+      head(pulse, a, control, b, easeInOut(f));
+      ctx.globalAlpha = 0.95 * easeInOut(Math.min(f, 1 - f) / 0.15);
+      ctx.strokeStyle = palette.pale;
+      ctx.lineWidth = 2;
+      ctx.stroke(pulse);
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'butt';
+  ctx.globalCompositeOperation = 'source-over';
 
   /* Files flying in from outside the frame, then resting as marks on the map. */
   const flyingAt = (i: number, s: CameraShot, t: number): Point | null => {
@@ -821,7 +1028,7 @@ function drawFilm(
     const tone = node.kind === 'project' ? palette.amber : palette.indigo;
     const r = L.mark[i]! * shot.zoom;
     const f = clamp01((T - L.flightStart[i]!) / FLIGHT_MS);
-    const alpha = nodeLight * easeOut(f / 0.2) * (cast.neighbours.has(i) ? 1 : rest);
+    const alpha = nodeLight * easeOut(f / 0.2);
     if (f < 1) {
       const prev = flyingAt(i, before, T - STREAK_MS) ?? L.flightFrom[i]!;
       drawStreak(ctx, prev, p, tone, 0.35 * easeOut(f / 0.2));
@@ -834,15 +1041,15 @@ function drawFilm(
   /* The fragment: the opened concept, its domain and its dependencies, landing one by one. */
   if (pick) {
     for (const i of cast.fragment) {
-      const land = landOf.get(i) ?? Infinity;
-      const enter = easeOut(span(T, land - 80, 200));
+      const land = L.land[i]!;
+      const enter = easeOut(span(T, land - 60, 150));
       if (enter <= 0) continue;
       const p = toScreen(worldOf(i));
       const node = scene.nodes[i]!;
       const r = markOf(i) * shot.zoom * lerp(0.6, 1, enter);
       dot(node.kind === 'project' ? palette.amber : palette.indigo, enter * lerp(1, nodeLight, glide), p, r);
       rings.push({ p, age: T - land, color: palette.indigo, r });
-      if (i === pick.index) rings.push({ p, age: T - landed('title'), color: palette.indigo, r });
+      if (i === pick.index) rings.push({ p, age: T - titleLanded, color: palette.indigo, r });
     }
   }
   for (const [key, path] of dots) {
@@ -854,14 +1061,12 @@ function drawFilm(
   ctx.globalAlpha = 1;
   for (const ring of rings) drawHitRing(ctx, ring.p.x, ring.p.y, ring.age, ring.color, { from: ring.r });
 
-  if (pick) drawPanel(ctx, cast, L, palette, shot, T, time, toScreen(worldOf(pick.index)), markOf(pick.index) * shot.zoom);
-
-  /* Names: the fragment's beside the close-up, the regions' and the focus's on the finished map. */
+  /* The fragment's names beside the close-up ride the roll with their marks. */
   ctx.textBaseline = 'middle';
-  if (pick && T >= AT.landings[0]! && T < AT.flights + 400) {
+  if (pick && T >= AT.landings[0]! && T < AT.flights + 300) {
     const size = wide ? 18 : 13;
     const look = { font: `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`, size, fill: palette.ink, halo: palette.ground };
-    const leave = 1 - easeInOut(span(T, AT.fold, 300));
+    const leave = 1 - easeInOut(span(T, AT.fold, 200));
     const nameAt = (i: number, text: string, light: number) => {
       if (light <= 0) return;
       const p = toScreen(worldOf(i));
@@ -876,18 +1081,22 @@ function drawFilm(
         L.stamps.draw(ctx, text, p.x, p.y + side * (r + 6 + size / 2) + rise, { ...look, align: 'center' });
       }
     };
-    const nameIn = (i: number) => easeOut(span(T, landOf.get(i) ?? Infinity, LABEL_MS)) * leave;
+    const nameIn = (i: number) => easeOut(span(T, L.land[i]!, LABEL_MS)) * leave;
     nameAt(pick.parent, scene.nodes[pick.parent]!.label, nameIn(pick.parent));
     if (wide) pick.dependencies.forEach((dep) => nameAt(dep, scene.nodes[dep]!.label, nameIn(dep)));
-    const titled = easeInOut(span(T, landed('title'), LABEL_MS));
+    const titled = easeInOut(span(T, titleLanded, LABEL_MS));
     nameAt(pick.index, cast.slug, nameIn(pick.index) * (1 - titled));
     nameAt(pick.index, scene.nodes[pick.index]!.label, nameIn(pick.index) * titled);
   }
+  ctx.restore();
+
+  if (pick) drawPanel(ctx, cast, L, palette, shot, T, time, toScreen(worldOf(pick.index)), markOf(pick.index) * shot.zoom);
+
+  /* Names on the finished map: the regions with how much each holds, then the opened concept's crowd. */
+  ctx.textBaseline = 'middle';
   if (T >= AT.expose) {
-    const regionSize = wide ? 22 : 15;
-    const focusSize = wide ? 16 : 13;
     /* A name rides the camera at its anchor; one that stands off its mark is joined to it by a leader. */
-    const nameAt = (i: number, size: number, light: number, rise: number) => {
+    const nameAt = (i: number, size: number, light: number, rise: number, count = '') => {
       const spot = L.names.get(i);
       if (!spot || light <= 0) return;
       const a = toScreen({ x: spot.ax, y: spot.ay });
@@ -909,22 +1118,33 @@ function drawFilm(
           ctx.stroke();
         }
       }
+      const top = a.y - spot.h / 2 + rise;
+      const nameY = count ? top + (size * 1.25) / 2 : a.y + rise;
       ctx.globalAlpha = light;
-      L.stamps.draw(ctx, scene.nodes[i]!.label, a.x, a.y + rise, {
+      L.stamps.draw(ctx, scene.nodes[i]!.label, a.x, nameY, {
         font: `${FONT_WEIGHT.strong} ${size}px ${palette.sans}`,
         size,
         fill: palette.ink,
         halo: palette.ground,
         align: spot.align,
       });
+      if (count) {
+        L.stamps.draw(ctx, count, a.x, top + size * 1.25 + (L.countSize * 1.35) / 2, {
+          font: `${L.countSize}px ${palette.mono}`,
+          size: L.countSize,
+          fill: palette.secondary,
+          halo: palette.ground,
+          align: spot.align,
+        });
+      }
     };
     cast.regions.forEach((i, k) => {
-      const enter = easeOut(span(T, AT.expose + 100 + k * 120, LABEL_MS));
-      nameAt(i, regionSize, enter * (cast.neighbours.has(i) ? 1 : rest), (1 - enter) * LABEL_RISE);
+      const enter = easeOut(span(T, AT.expose + 70 + k * 80, LABEL_MS));
+      nameAt(i, L.regionSize, enter, (1 - enter) * LABEL_RISE, cast.regionCounts.get(i));
     });
     /* The closing names come in quickly and in place, so none lingers half-lit beside another. */
-    const named = easeOut(span(T, AT.focus, 400));
-    if (named > 0) L.focusNames.forEach((i) => nameAt(i, focusSize, named, 0));
+    const named = easeOut(span(T, AT.focus, 270));
+    if (named > 0) L.focusNames.forEach((i) => nameAt(i, L.focusSize, named, 0));
   }
   ctx.textAlign = 'start';
   ctx.globalAlpha = 1;
@@ -940,9 +1160,9 @@ function drawField(
   T: number,
   time: number,
 ) {
-  const recede = lerp(1, 0.07, easeInOut(span(T, AT.open, 500))) * (1 - easeInOut(span(T, AT.landings[0]! + 200, 600)));
+  const recede = lerp(1, 0.07, easeInOut(span(T, AT.open, 330))) * (1 - easeInOut(span(T, AT.landings[0]! + 130, 400)));
   if (recede <= 0) return;
-  const rack = easeInOut(span(T, AT.rack, 400));
+  const rack = easeInOut(span(T, AT.rack, 270));
   const { w, h } = L;
   ctx.textBaseline = 'middle';
   for (const layer of [0, 1, 2] as const) {
@@ -965,7 +1185,7 @@ function drawField(
       if (item.layer !== layer || item.named) return;
       const { enter, drift } = drop(item, i);
       if (enter <= 0) return;
-      ctx.globalAlpha = tone * enter * 0.4;
+      ctx.globalAlpha = tone * enter * 0.55;
       ctx.beginPath();
       ctx.roundRect(item.x - item.w / 2, item.y + drift + ((1 - enter) * DROP_PX) / s.zoom - item.h / 2, item.w, item.h, 2);
       ctx.fill();
@@ -983,8 +1203,12 @@ function drawField(
       const bh = item.h * s.zoom;
       ctx.beginPath();
       ctx.roundRect(p.x - bw / 2, y - bh / 2, bw, bh, 8);
+      /* A file the camera carries past the stage's edge fades as it goes, so no name is cut mid-word. */
+      const inside = Math.min(p.x - bw / 2, w - p.x - bw / 2);
+      const edge = clamp01((inside + bw * 0.3) / (bw * 0.6));
+      if (edge <= 0) return;
       /* A file is opaque, so nothing behind it shows through. */
-      ctx.globalAlpha = tone * enter;
+      ctx.globalAlpha = tone * enter * edge;
       ctx.fillStyle = palette.ground;
       ctx.fill();
       ctx.fillStyle = palette.card;
@@ -994,18 +1218,18 @@ function drawField(
       ctx.stroke();
       ctx.fillStyle = node.kind === 'project' ? palette.amber : palette.indigo;
       ctx.beginPath();
-      ctx.arc(p.x - bw / 2 + 18, y, 3, 0, Math.PI * 2);
+      ctx.arc(p.x - bw / 2 + 15, y, 3, 0, Math.PI * 2);
       ctx.fill();
-      L.stamps.draw(ctx, node.file, p.x - bw / 2 + 32, y + 1, { font: `${L.text}px ${palette.mono}`, size: L.text, fill: palette.ink });
+      L.stamps.draw(ctx, node.file, p.x - bw / 2 + 27, y + 1, { font: `${L.text}px ${palette.mono}`, size: L.text, fill: palette.ink });
     });
   }
   ctx.globalAlpha = 1;
 }
 
 /**
- * The opened file: one of the near cards in act 1; from 2.2s it grows into the panel and its
- * frontmatter types itself, each finished line shooting a hairline to the mark it became; from
- * 6.4s it folds back into that mark.
+ * The opened file: one of the near cards in act 1; as act 1 ends it grows into the panel and its
+ * frontmatter types itself, each finished line shooting a hairline to the mark it became; as act
+ * 2 ends it folds back into that mark.
  */
 function drawPanel(
   ctx: CanvasRenderingContext2D,
@@ -1021,8 +1245,8 @@ function drawPanel(
   const { scene, pick, lines } = cast;
   if (!pick) return;
   /* The fold: the panel closes up to its title bar, then the bar draws into the mark. */
-  const shut = easeInOut(span(T, AT.fold, 200));
-  const fold = easeInOut(span(T, AT.fold + 180, 240));
+  const shut = easeInOut(span(T, AT.fold, 140));
+  const fold = easeInOut(span(T, AT.fold + 120, 160));
   if (fold >= 1) return;
   const node = scene.nodes[pick.index]!;
   const card = L.field[pick.index]!;
@@ -1057,7 +1281,7 @@ function drawPanel(
   ctx.fillStyle = palette.card;
   ctx.fill();
   /* Lit by the key light, the opened file's edge takes the mark's colour before it opens. */
-  const lit = easeInOut(span(T, AT.rack, 500)) * (1 - open);
+  const lit = easeInOut(span(T, AT.rack, 330)) * (1 - open);
   ctx.strokeStyle = palette.edge;
   ctx.lineWidth = 1;
   ctx.stroke();
@@ -1081,11 +1305,11 @@ function drawPanel(
   ctx.globalAlpha = chrome;
   ctx.fillStyle = palette.indigo;
   ctx.beginPath();
-  ctx.arc(x + lerp(18, P.padX, open), rowY, 3, 0, Math.PI * 2);
+  ctx.arc(x + lerp(15, P.padX, open), rowY, 3, 0, Math.PI * 2);
   ctx.fill();
   ctx.font = `${L.text}px ${palette.mono}`;
   ctx.textBaseline = 'middle';
-  const nameX = x + lerp(32, P.padX + 14, open);
+  const nameX = x + lerp(27, P.padX + 14, open);
   const nameFont = `${L.text}px ${palette.mono}`;
   ctx.globalAlpha = chrome * (1 - open);
   L.stamps.draw(ctx, node.file, nameX, rowY + 1, { font: nameFont, size: L.text, fill: palette.ink });
@@ -1138,16 +1362,16 @@ function drawPanel(
     if (T >= line.from) caret = { x: lx, y: ly };
 
     /* The hairline from the finished line to its mark; none on a phone, where it would cross the file. */
-    const trace = textLight * (1 - clamp01(shut / 0.3)) * 0.6 * (1 - easeInOut(span(T, line.to + 1300, 400)));
+    const trace = textLight * (1 - clamp01(shut / 0.3)) * 0.6 * (1 - easeInOut(span(T, line.to + 870, 270)));
     if (!L.wide || lit <= 0 || trace <= 0) return;
     const target = hairlineTarget(cast, line, L, shot);
     if (!target) return;
     traces.push({ start: { x: lx + 12, y: ly }, end: { x: target.x - 14 - (target.r ?? 0), y: target.y }, lit, trace });
   });
   const last = lines[lines.length - 1];
-  if (caret && last && T < last.to + 200) {
+  if (caret && last && T < last.to + 140) {
     const at = caret as Point;
-    ctx.globalAlpha = textLight * (0.55 + 0.45 * Math.sin(T / 170));
+    ctx.globalAlpha = textLight * (0.55 + 0.45 * Math.sin(T / 120));
     ctx.fillStyle = palette.indigo;
     ctx.fillRect(at.x + 2, at.y - P.font * 0.6, 2, P.font * 1.2);
   }
@@ -1187,9 +1411,9 @@ function hairlineTarget(cast: FilmCast, line: FrontmatterLine, L: Layout, shot: 
 function captionLight(act: number, T: number): { head: number; body: number; out: number } {
   const start = ACT_START[act - 1]!;
   const end = start + ACT_MS[act - 1]!;
-  const out = act === ACT_MS.length ? 0 : easeInOut(span(T, end - 180, 180));
-  const head = T < start ? 0 : easeOut(span(T, start, 240));
-  const body = T < start ? 0 : easeOut(span(T, start + 60, 240));
+  const out = act === ACT_MS.length ? 0 : easeInOut(span(T, end - 120, 120));
+  const head = T < start ? 0 : easeOut(span(T, start, 160));
+  const body = T < start ? 0 : easeOut(span(T, start + 40, 160));
   return { head, body, out };
 }
 
@@ -1212,8 +1436,8 @@ function frontmatter(scene: FilmScene, pick: FilmCloseUp, locale: string, slugOf
 /**
  * The page's film: once its stage is in view it plays by itself, act after act, as the
  * repository's real concepts go from Markdown files to the map, then rests and plays again.
- * Without a script or under reduced motion the finished map is one still frame and the five
- * captions are a list.
+ * Without a script or under reduced motion the finished map is one still frame and the four
+ * acts are a list.
  */
 export function FilmSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download.film');
@@ -1225,6 +1449,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     const neighbours = new Set<number>();
     const fragmentEdges = new Set<number>();
     const fragment = new Set<number>();
+    const litEdges: number[] = [];
     if (closeUp) {
       fragment.add(closeUp.index);
       fragment.add(closeUp.parent);
@@ -1233,10 +1458,19 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       scene.edges.forEach((edge, k) => {
         if (edge.from === closeUp.index) neighbours.add(edge.to);
         if (edge.to === closeUp.index) neighbours.add(edge.from);
+        if ((edge.from === closeUp.index || edge.to === closeUp.index) && edge.from !== edge.to) litEdges.push(k);
         const holds = edge.contains && edge.from === closeUp.parent && edge.to === closeUp.index;
         const relies = !edge.contains && edge.from === closeUp.index && closeUp.dependencies.includes(edge.to);
         if (holds || relies) fragmentEdges.add(k);
       });
+      /* The closing pulses go round the opened concept clockwise, starting from the top. */
+      const angleOf = (k: number) => {
+        const edge = scene.edges[k]!;
+        const other = scene.nodes[edge.from === closeUp.index ? edge.to : edge.from]!;
+        const self = scene.nodes[closeUp.index]!;
+        return (Math.atan2(other.y - self.y, other.x - self.x) + Math.PI * 2.5) % (Math.PI * 2);
+      };
+      litEdges.sort((a, b) => angleOf(a) - angleOf(b) || a - b);
     }
     const root = scene.nodes.findIndex((node) => node.depth === 0);
     /* The project and its largest clusters: five names on the finished map. */
@@ -1246,6 +1480,11 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       .sort((a, b) => b.node.degree - a.node.degree || a.node.id.localeCompare(b.node.id))
       .map(({ i }) => i);
     const regions = (root < 0 ? ring : [root, ...ring]).slice(0, 5);
+    const regionCounts = new Map<number, string>();
+    regions.forEach((i) => {
+      const count = i === root ? scene.nodes.length : scene.nodes.filter((node) => node.cluster === i).length;
+      regionCounts.set(i, t('regionCount', { count }));
+    });
     const beatHubs = regions.filter((i) => !fragment.has(i)).slice(0, AT.beats.length);
     /* Names in the closing push-in: the opened file's concept and the dependencies it typed. */
     const focusNames = closeUp ? [closeUp.index, ...closeUp.dependencies].filter((i) => !regions.includes(i)) : [];
@@ -1255,13 +1494,16 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       lines: closeUp ? frontmatter(scene, closeUp, locale, slugOf) : [],
       slug: closeUp ? slugOf(closeUp.index) : '',
       regions,
+      regionCounts,
       beatHubs,
       neighbours,
+      litEdges,
       focusNames,
       fragmentEdges,
       fragment,
+      halos: haloMarks(scene),
     };
-  }, [scene, closeUp, locale]);
+  }, [scene, closeUp, locale, t]);
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const column = useRef<HTMLHeadingElement>(null);
@@ -1288,35 +1530,37 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     const sprites = { indigo: lightSprite(palette.indigo), amber: lightSprite(palette.amber) };
     let layout: Layout | null = null;
     let stopWarm = () => {};
-    let shown = film ? 0 : STILL_MS / FILM_MS;
+    /* Film time in ms; it runs on past the last act through the hold. */
+    let shown = film ? 0 : STILL_MS;
     let clock = 0;
     let veil = 1;
-    const time = createFilmClock(ACT_SPANS, ACT_MS);
+    const time = createFilmClock(ACT_SPANS, ACT_MS, { holdMs: HOLD_MS, fadeMs: FADE_MS });
 
     const paint = () => {
       if (!layout) return;
-      const T = shown * FILM_MS;
-      drawFilm(ctx, cast, layout, palette, sprites, T, clock);
+      const T = Math.min(shown, FILM_MS);
+      drawFilm(ctx, cast, layout, palette, sprites, shown, clock);
       if (!film) return;
       const light = isMotionPaused() ? 1 : time.fade() * veil;
       el.style.opacity = String(light);
       captions.current.forEach((caption, i) => {
         const head = heads.current[i];
         const body = bodies.current[i];
-        if (!caption || !head || !body) return;
+        if (!caption || !head) return;
         const lit = captionLight(i + 1, T);
         const fade = (1 - lit.out) * light;
         head.style.opacity = String(lit.head * fade);
-        head.style.transform = `translateY(${(1 - lit.head) * 16}px)`;
-        body.style.opacity = String(lit.body * fade);
-        body.style.transform = `translateY(${(1 - lit.body) * 16}px)`;
+        head.style.transform = `translateY(${(1 - lit.head) * 12}px)`;
+        if (body) {
+          body.style.opacity = String(lit.body * fade);
+          body.style.transform = `translateY(${(1 - lit.body) * 12}px)`;
+        }
         caption.style.visibility = Math.max(lit.head, lit.body) * fade > 0.01 ? 'visible' : 'hidden';
       });
       const act = time.act();
       fills.current.forEach((fill, i) => {
         if (!fill) return;
-        const [start, end] = ACT_SPANS[i]!;
-        fill.style.transform = `scaleX(${i < act ? 1 : i > act ? 0 : clamp01((shown - start) / (end - start))})`;
+        fill.style.transform = `scaleX(${i < act ? 1 : i > act ? 0 : clamp01((T - ACT_START[i]!) / ACT_MS[i]!)})`;
       });
     };
     const resize = () => {
@@ -1343,26 +1587,29 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     resize();
     if (!film) return () => observer.disconnect();
 
-
     const unregister = registerGatedFrameClient(
       host,
       ({ t: now, dtMs, factor }) => {
         clock = now;
         /* A visitor who stopped moving sees the film to its end, where it rests on the finished map. */
         if (factor < 1 && time.resting()) return;
-        shown = time.advance(dtMs);
-        veil = Math.min(1, veil + dtMs / 450);
+        time.advance(dtMs);
+        shown = time.elapsed();
+        veil = Math.min(1, veil + dtMs / 300);
         paint();
       },
       undefined,
       { keepAwake: true },
     );
     /* Paused, a still frame lands well inside its act, where its picture and caption are whole. */
-    const settle = (act: number) => time.advance(ACT_MS[act]! * 0.45);
+    const settle = (act: number) => {
+      time.advance(ACT_MS[act]! * SETTLE[act]!);
+      return time.elapsed();
+    };
     seek.current = (act) => {
       time.seek(act);
       const paused = isMotionPaused();
-      shown = paused ? settle(act) : time.progress();
+      shown = paused ? settle(act) : time.elapsed();
       /* A jump fades in from dark instead of cutting; paused, it shows the act at once. */
       veil = paused ? 1 : 0;
       paint();
@@ -1370,7 +1617,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     const offPause = subscribeMotionPause(() => {
       if (!isMotionPaused()) return;
       /* A film paused before it began would hold a dark first frame: show its first act instead. */
-      if (time.progress() === 0) shown = settle(0);
+      if (time.elapsed() === 0) shown = settle(0);
       paint();
     });
     if (isMotionPaused()) {
@@ -1387,6 +1634,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
   }, [film, scene, cast]);
 
   const counts = { concepts: graph.nodes.length, relations: graph.edges.length };
+  const lastAct = ACTS[ACTS.length - 1];
 
   return (
     <div
@@ -1429,6 +1677,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
         {film ? (
           <div className={cn(PAGE_GUTTER, 'pointer-events-none absolute inset-x-0 bottom-[5svh]')}>
             <div className={cn(PAGE_COLUMN, 'flex flex-col items-start')}>
+              {/* While it plays each act shows its headline; the last also shows the map's two counts. */}
               <ol className="grid w-full">
                 {ACTS.map((act, i) => (
                   <li
@@ -1446,14 +1695,16 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
                     >
                       {t(`acts.${act}.title`)}
                     </h3>
-                    <p
-                      ref={(node) => {
-                        bodies.current[i] = node;
-                      }}
-                      className="mt-3 max-w-[30rem] text-title leading-title text-[color:var(--color-text-secondary)] opacity-0"
-                    >
-                      {t(`acts.${act}.body`, counts)}
-                    </p>
+                    {act === lastAct ? (
+                      <p
+                        ref={(node) => {
+                          bodies.current[i] = node;
+                        }}
+                        className="mt-3 max-w-[30rem] text-title leading-title text-[color:var(--color-text-secondary)] opacity-0"
+                      >
+                        {t(`acts.${lastAct}.caption`, counts)}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ol>
@@ -1471,7 +1722,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       </div>
       {film ? null : (
         <div className={PAGE_GUTTER}>
-          <ol className={cn(PAGE_COLUMN, 'mt-8 grid gap-6 @container sm:grid-cols-2 lg:grid-cols-5')}>
+          <ol className={cn(PAGE_COLUMN, 'mt-8 grid gap-6 @container sm:grid-cols-2 lg:grid-cols-4')}>
             {ACTS.map((act) => (
               <li key={act} className="min-w-0">
                 <h3 className="text-title leading-title text-[color:var(--color-text-primary)]">

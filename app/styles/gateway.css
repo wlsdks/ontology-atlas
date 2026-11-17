@@ -892,29 +892,3 @@
     transform: none;
   }
 }
-
-/*
- * The FAQ picker's answer arrives in 240ms, rising 8px as it fades in, while the one it replaces
- * fades out in place in 120ms. Under reduced motion the picker is not built and every answer
- * stands in a list.
- */
-@media (prefers-reduced-motion: no-preference) {
-  .gateway-faq-answers > .gateway-screen-in {
-    animation: gatewayFaqIn var(--motion-settle) var(--motion-ease) both;
-  }
-
-  .gateway-faq-answers > .gateway-screen-out {
-    animation-duration: var(--motion-fast);
-  }
-}
-
-@keyframes gatewayFaqIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}

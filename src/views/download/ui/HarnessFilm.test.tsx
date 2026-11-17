@@ -3,8 +3,12 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
-import facts from '../lib/harness-facts.json';
+import jaMessages from '../../../../messages/ja.json';
+import koMessages from '../../../../messages/ko.json';
+import zhMessages from '../../../../messages/zh.json';
 import { HarnessFilm } from './HarnessFilm';
+
+const LABEL = "The Harness tab: your repository's agent setup";
 
 function renderFilm() {
   return render(
@@ -23,54 +27,46 @@ function mediaMatching(queries: Record<string, boolean>) {
   });
 }
 
+const frame = () => act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))));
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('HarnessFilm', () => {
-  it('without a script is one visible list of the four acts, with the real counts', () => {
+  it('without a script is one visible list of the four acts, each with its whole sentence', () => {
     vi.stubGlobal('matchMedia', undefined);
     renderFilm();
-    const region = screen.getByRole('region', { name: 'The harness at a glance' });
+    const region = screen.getByRole('region', { name: LABEL });
     expect(region).toHaveAttribute('data-gateway-harness', 'still');
     expect(region.querySelector('canvas')).toBeNull();
-    const titles = within(region).getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
-    expect(titles).toEqual([
-      'What your agent reads first',
-      'What stops it before it acts',
-      'What checks its work',
-      "This repository's real harness",
+    const acts = [...region.querySelectorAll('li')].map((act) => [act.querySelector('h3')?.textContent, act.querySelector('p')?.textContent]);
+    expect(acts.map(([title]) => title)).toEqual([
+      'One scan gathers your agent setup',
+      'Filter by agent tool',
+      'It finds a missing hook script',
+      'Tags Claude and Codex copies that differ',
     ]);
-    const checks = facts.checks.scripts.length + facts.checks.gitHooks.length + facts.checks.workflows.length;
-    const terms = [...region.querySelectorAll('dl > div')].map((row) => [
-      row.querySelector('dt')?.textContent,
-      row.querySelector('dd')?.textContent,
-    ]);
-    expect(terms).toEqual([
-      ['instruction files', String(facts.instructions.length)],
-      ['hooks', String(facts.hooks.length)],
-      ['checks', String(checks)],
-    ]);
-    expect(within(region).getByText('git push --force').tagName).toBe('CODE');
+    for (const [, body] of acts) expect(body?.length).toBeGreaterThan(60);
   });
 
-  it('under reduced motion, or narrower than the film reads, keeps the same list and draws nothing', async () => {
-    for (const queries of [
-      { 'prefers-reduced-motion': true, 'min-width': true },
-      { 'prefers-reduced-motion': false, 'min-width': false },
-    ]) {
+  it('under reduced motion draws one still frame above the same list; narrower than the film, the list alone', async () => {
+    for (const [queries, canvas] of [
+      [{ 'prefers-reduced-motion': true, 'min-width': true }, true],
+      [{ 'prefers-reduced-motion': false, 'min-width': false }, false],
+    ] as const) {
       vi.stubGlobal('matchMedia', mediaMatching(queries));
       const { unmount } = renderFilm();
-      await act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))));
-      const region = screen.getByRole('region', { name: 'The harness at a glance' });
+      await frame();
+      const region = screen.getByRole('region', { name: LABEL });
       expect(region).toHaveAttribute('data-gateway-harness', 'still');
-      expect(region.querySelector('canvas')).toBeNull();
+      expect(Boolean(region.querySelector('canvas'))).toBe(canvas);
       expect(within(region).getAllByRole('heading', { level: 3 })).toHaveLength(4);
       unmount();
     }
   });
 
-  it('plays on a wide screen with motion: a pinned stage, its canvas hidden from readers', async () => {
+  it('plays on a wide screen with motion, naming its example repository beside the title', async () => {
     vi.stubGlobal('matchMedia', mediaMatching({ 'prefers-reduced-motion': false, 'min-width': true }));
     vi.stubGlobal(
       'IntersectionObserver',
@@ -80,11 +76,22 @@ describe('HarnessFilm', () => {
       },
     );
     renderFilm();
-    await act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))));
-    const region = screen.getByRole('region', { name: 'The harness at a glance' });
+    await frame();
+    const region = screen.getByRole('region', { name: LABEL });
     expect(region).toHaveAttribute('data-gateway-harness', 'playing');
     expect(region.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
-    /* The last act's counts stay text in its caption, not only paint on the canvas. */
-    expect(region.querySelectorAll('dl dd')).toHaveLength(3);
+    expect(within(region).getByText('my-app/').closest('p')).toHaveTextContent('Example repository my-app/');
+    /* While playing only the last act carries a line under its headline. */
+    expect(within(region).getByText('The Harness tab. Read-only.')).toBeInTheDocument();
+  });
+});
+
+describe('the screen the film draws', () => {
+  it('uses the Harness tab’s own words in every locale', () => {
+    for (const messages of [enMessages, koMessages, jaMessages, zhMessages]) {
+      const screenWords = messages.download.harnessFilm.screen as Record<string, unknown>;
+      const tab = messages.harness as Record<string, unknown>;
+      for (const [key, value] of Object.entries(screenWords)) expect(value, key).toEqual(tab[key]);
+    }
   });
 });

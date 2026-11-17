@@ -35,4 +35,13 @@ describe('createFilmClock', () => {
     expect(clock.act()).toBe(1);
     expect(clock.fade()).toBe(1);
   });
+
+  it('keeps counting film time through the hold, then starts again', () => {
+    const clock = createFilmClock(SPANS, [1000, 3000], { holdMs: 500, fadeMs: 200 });
+    clock.advance(4300);
+    expect(clock.progress()).toBe(1);
+    expect(clock.elapsed()).toBe(4300);
+    clock.advance(500);
+    expect(clock.elapsed()).toBe(100);
+  });
 });

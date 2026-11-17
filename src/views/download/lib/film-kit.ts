@@ -102,6 +102,24 @@ export function drawKeyLight(
 }
 
 /**
+ * A halo under a mark that carries weight: the light sprite stamped at `radius`. Unlike the key
+ * light its alpha is not capped, since it sits on one mark rather than washing a whole subject.
+ */
+export function drawHalo(
+  ctx: CanvasRenderingContext2D,
+  sprite: HTMLCanvasElement,
+  x: number,
+  y: number,
+  radius: number,
+  alpha: number,
+): void {
+  if (alpha <= 0.004 || radius <= 0.5) return;
+  ctx.globalAlpha = Math.min(1, alpha);
+  ctx.drawImage(sprite, x - radius, y - radius, radius * 2, radius * 2);
+  ctx.globalAlpha = 1;
+}
+
+/**
  * A beat: a 1px ring that grows from the mark and fades. `age` is milliseconds since the beat;
  * outside 0..`life` nothing is drawn, so a caller can keep a fixed list of beats and pass the clock.
  */
