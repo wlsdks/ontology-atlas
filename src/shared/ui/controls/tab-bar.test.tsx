@@ -117,6 +117,20 @@ describe('TabBar', () => {
     expect(freshness.className).not.toMatch(/border-b-|border-l-/);
   });
 
+  it('a reading-size vertical list sets its labels a step larger on touch-height rows', () => {
+    render(
+      <TabBar items={ITEMS} activeKey="overview" onSelect={() => {}} ariaLabel="탭" orientation="vertical" size="reading" />,
+    );
+    const tab = screen.getByRole('tab', { name: /개요/ });
+    expect(tab.className).toContain('min-h-[var(--touch-target-min)]');
+    expect(screen.getByText('개요').className).toContain('text-body-lg');
+  });
+
+  it('keeps the default size on a horizontal strip even when reading size is asked for', () => {
+    render(<TabBar items={ITEMS} activeKey="overview" onSelect={() => {}} ariaLabel="탭" size="reading" />);
+    expect(screen.getByText('개요').className).toContain('text-body ');
+  });
+
   it('a segmented strip keeps the tab roles and slides one raised thumb, with no underline', () => {
     render(
       <TabBar items={ITEMS} activeKey="relations" onSelect={() => {}} ariaLabel="탭" variant="segmented" />,

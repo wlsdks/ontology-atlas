@@ -130,7 +130,7 @@
     "acts": {
       "1": {
         "title": "Your ontology is plain Markdown",
-        "body": "Each concept is one .md file in the repository, read by people and agents alike."
+        "body": "One concept is one .md file."
       },
       "2": {
         "title": "The first lines are the graph",
@@ -142,11 +142,11 @@
       },
       "4": {
         "title": "Relations draw themselves",
-        "body": "The {relations} relations written in those files become the lines between them."
+        "body": "The {relations} relations written in the files become lines."
       },
       "5": {
         "title": "One map, read by you and your agents",
-        "body": "This is this repository's real map: {concepts} concepts and {relations} relations."
+        "body": "This repository's real map: {concepts} concepts and {relations} relations."
       }
     }
   },
@@ -156,15 +156,15 @@
     "acts": {
       "1": {
         "title": "What your agent reads first",
-        "body": "AGENTS.md, CLAUDE.md, rules and skills: everything an agent reads before a task, on one screen."
+        "body": "The {instructions} files it reads before a task, on one screen."
       },
       "2": {
         "title": "What stops it before it acts",
-        "body": "Hooks stop irreversible commands such as <code>{first}</code> and <code>{second}</code> before they run."
+        "body": "Hooks stop commands like <code>{first}</code> before they run."
       },
       "3": {
         "title": "What checks its work",
-        "body": "pnpm scripts, Git hooks and CI workflows check what the agent finished."
+        "body": "Scripts, Git hooks and CI workflows check the finished work."
       },
       "4": {
         "title": "This repository's real harness"
@@ -182,7 +182,7 @@
   },
   "faq": {
     "eyebrow": "Questions",
-    "title": "What people ask before installing",
+    "title": "Before you install",
     "items": {
       "what": {
         "q": "What is Ontology Atlas?",
@@ -209,5 +209,23 @@
         "a": "macOS on Apple Silicon, notarized (Apple scanned it for malware), and a Windows x64 beta. The map also opens in the browser without installing anything."
       }
     }
+  },
+  "playground": {
+    "open": "Play with Moru",
+    "title": "Play with Moru",
+    "close": "Close",
+    "howTo": "Move Moru with the arrow keys, your mouse or a finger to catch the falling notes, hearts and stars.",
+    "start": "Start",
+    "stop": "Stop",
+    "score": "Score {count}",
+    "best": "Best {count}",
+    "bestRecord": "Your best: {count}",
+    "toys": "Ask Moru",
+    "sing": "Sing",
+    "hearts": "Hearts",
+    "fish": "Fish",
+    "clap": "Clap",
+    "reduced": "Your device asks for less motion, so the game is off. Press a button below and Moru shows one moment of it.",
+    "paused": "Motion on this page is paused, so the game is off. Press a button below and Moru shows one moment of it."
   }
 }
