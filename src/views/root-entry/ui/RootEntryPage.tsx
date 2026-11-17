@@ -1,35 +1,62 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Bot, FolderSearch, HardDrive, Network, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
+import type { AppLocale } from "@/i18n/locales";
 import { Button, IconButton } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { GatewayLandingPage } from "@/views/download";
-import { HomePage } from "@/views/home";
-import { FirstRunPage } from "@/views/first-run";
+import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
+import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workbench";
 
 /**
  * A chosen or restored vault goes straight to the map; the installed app without one gets
  * `FirstRunPage`; the web gets the gateway by the same rule as the shell's `isGatewaySurface`.
+ *
+ * The map, first-run and the whole catalog are fetched only once a folder is on its way or this is
+ * the app (`root-workbench.ts`). Until they arrive the screen already showing stays: the gateway on
+ * the web, the neutral frame in the app, and the shell keeps its rail hidden on the same signal.
  */
 export function RootEntryPage() {
   const vault = useLocalVault();
+  const locale = useLocale() as AppLocale;
+  const views = useRootWorkbenchViews(locale);
+  const catalogReady = useWorkbenchCatalog(locale) !== null;
   const [noticeDismissed, setNoticeDismissed] = useState(false);
   const clientReady = useSyncExternalStore(
     () => () => undefined,
     () => true,
     () => false,
   );
+  const desktop = clientReady && isDesktopShell();
+  const vaultOpen = Boolean(vault.manifest || vault.partialTotal);
+  /* A remembered folder being restored, one being opened, or the chooser: the map is likely next. */
+  const workbenchLikely =
+    desktop ||
+    vaultOpen ||
+    vault.awaitingVaultChoice ||
+    vault.handle !== null ||
+    vault.status === "opening" ||
+    vault.status === "loading";
+  useEffect(() => {
+    if (workbenchLikely) requestRootWorkbench(locale);
+  }, [workbenchLikely, locale]);
 
   if (!clientReady) return <DesktopVaultRedirect />;
-  if (vault.manifest || vault.partialTotal) return <HomePage />;
+  if (vaultOpen) {
+    if (views) return <views.HomePage />;
+    if (desktop) return <DesktopVaultRedirect />;
+    // With the catalog here the shell already shows the rail, so the gateway would flash beside it.
+    if (catalogReady) return <RouteLoadingFallback />;
+  }
   /* A person choosing between their folders gets the chooser, not the web gateway. */
-  if (isDesktopShell() || vault.awaitingVaultChoice) {
+  else if (desktop || vault.awaitingVaultChoice) {
     // A neutral frame until the restore is attempted, or FirstRun flashes.
-    return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;
+    return vault.restoreAttempted && views ? <views.FirstRunPage /> : <DesktopVaultRedirect />;
   }
   /* The stored handle is kept: a failed restore does not prove the folder is gone. */
   const failedRestore =

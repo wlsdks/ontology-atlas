@@ -1,13 +1,15 @@
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getTranslations } from 'next-intl/server';
+import { getMessages, getTimeZone, getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { AppShell, MotionProvider } from '@/app-providers/providers';
+import { WorkbenchMessagesProvider } from '@/app-providers/providers/WorkbenchMessagesProvider';
 import {
   enterLocaleSegment,
   LocaleDocumentChrome,
   localeLayoutMetadata,
   localeStaticParams,
 } from '@/app-providers/providers/locale-segment';
+import { pickMessagePaths } from '@/i18n/gateway-messages';
+import { ROOT_ENTRY_MESSAGE_PATHS } from '@/app-providers/providers/root-entry-messages';
 import { TaxonomyProvider } from '@/features/taxonomy';
 import { LocalVaultProvider } from '@/entities/vault-session';
 import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
@@ -29,9 +31,11 @@ export async function generateMetadata({
 }
 
 /**
- * The workbench: every route under `app/[locale]` wears the app shell and receives the whole
- * catalog, because the shell's rail, settings and agent dock read most of it. The gateway pages
- * live in `app/(gateway)/[locale]` with a picked subset (`src/i18n/gateway-messages.ts`).
+ * The workbench: every route under `app/[locale]` wears the app shell and reads the whole catalog,
+ * because the shell's rail, settings and agent dock read most of it. This segment is shared by all
+ * of them, `/` included, so it serialises only `/`'s subset; the catalog arrives as a per-locale
+ * chunk (`WorkbenchMessagesProvider`). The gateway pages live in `app/(gateway)/[locale]` with a
+ * picked subset (`src/i18n/gateway-messages.ts`).
  */
 export default async function LocaleLayout({
   children,
@@ -41,11 +45,12 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const locale = enterLocaleSegment((await params).locale);
-  const messages = await getMessages();
+  const rootMessages = pickMessagePaths(await getMessages(), ROOT_ENTRY_MESSAGE_PATHS);
+  const timeZone = await getTimeZone();
   const tNav = await getTranslations({ locale, namespace: 'nav' });
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <WorkbenchMessagesProvider locale={locale} timeZone={timeZone} rootMessages={rootMessages}>
       <LocaleDocumentChrome locale={locale} />
       <MotionProvider>
         <TaxonomyProvider>
@@ -69,6 +74,6 @@ export default async function LocaleLayout({
           </LocalVaultProvider>
         </TaxonomyProvider>
       </MotionProvider>
-    </NextIntlClientProvider>
+    </WorkbenchMessagesProvider>
   );
 }
