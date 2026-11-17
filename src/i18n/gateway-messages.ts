@@ -20,7 +20,7 @@ export const GATEWAY_MESSAGE_PATHS = [
   'firstRun',
   'footer',
   'gatewayNav',
-  'harness.groups',
+  'harness',
   'kinds',
   'locale',
   'moru',

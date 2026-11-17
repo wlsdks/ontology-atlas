@@ -28,11 +28,10 @@ import {
   type HarnessView,
 } from '../lib/harness-view-state';
 import { useHarnessReport } from '@/features/harness-report';
+import { HarnessScanProgressPanel, HarnessSetupView } from '@/widgets/harness-setup';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessConnectSource } from './HarnessConnectSource';
 import { HarnessUnreadStage } from './HarnessUnreadStage';
-import { HarnessSetupView } from './HarnessSetupView';
-import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
 /** The Harness destination. One chrome row holds the `h1` and the single tab set, so the ladder keeps its height. */

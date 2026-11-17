@@ -171,37 +171,6 @@
         "caption": "Atlasアプリのハーネスタブです。リポジトリは読むだけです。",
         "body": "スキルやサブエージェントのClaude CodeのコピーとCodexのコピーが異なると、ファイルに印を付け、2つのコピーを並べて表示します。リポジトリは読むだけです。"
       }
-    },
-    "screen": {
-      "title": "ハーネス",
-      "views": {
-        "overview": "構成",
-        "architecture": "アーキテクチャ"
-      },
-      "toolAll": "すべて",
-      "sections": {
-        "context": {
-          "title": "コンテキスト",
-          "caption": "エージェントが読むファイル"
-        },
-        "guardrails": {
-          "title": "ガードレール",
-          "caption": "実行前に止めるもの"
-        },
-        "verification": {
-          "title": "検証",
-          "caption": "実行後に確認するもの"
-        }
-      },
-      "sectionTotal": "{count}件",
-      "problemCount": "問題{count}件",
-      "problemHookMissing": "hookスクリプトがありません：{path}",
-      "problemShow": "{count, plural, =1 {表示} other {最初の問題を表示}}",
-      "hookMissing": "スクリプトなし",
-      "hookWired": "接続済み",
-      "differsFromCodex": "Codexのコピーと異なる",
-      "differsFromClaude": "Claude Codeのコピーと異なる",
-      "detailReadBy": "読むツール"
     }
   },
   "motion": {
