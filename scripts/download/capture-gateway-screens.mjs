@@ -801,11 +801,13 @@ async function main() {
     for (const screen of [...SCREENS, MAP_SCREEN, NEURAL_SCREEN]) {
       if (ONLY ? !ONLY.has(screen.name) : screen.explicit) continue;
       if (screen.locales && !screen.locales.includes(locale)) continue;
+      const viewport = screen.viewport ?? VIEWPORT;
+      await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}/${locale}${screen.route}`);
       await page.waitForLoadState("networkidle");
       await screen.prepare(page);
       // The pointer rests off the picture so no hover state is captured.
-      await page.mouse.move(VIEWPORT.width - 2, VIEWPORT.height - 2);
+      await page.mouse.move(viewport.width - 2, viewport.height - 2);
       const file = screen.out ? path.join(REPO, screen.out) : path.join(OUT_DIR, `${screen.name}.${locale}.png`);
       await page.screenshot({ path: file });
       console.log(`captured ${path.relative(REPO, file)}`);
