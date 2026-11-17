@@ -31,7 +31,7 @@ import {
 } from "@/shared/lib/navigation/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
-import { useSoleProjectHref } from "@/features/project-data-source";
+import { useProjectsDoorHref } from "@/features/project-data-source";
 import { ShellFrame, useShellSetup } from "./ShellFrame";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
@@ -230,10 +230,10 @@ function AppNavRailSlot() {
     ? buildTopologyReturnHref(readingContext.selectedId)
     : undefined;
   /*
-   * With exactly one project, the Projects door opens it. The rail, its shortcut and the mobile
-   * tab bar all read this hook, or they disagree about where one destination leads.
+   * The Projects door opens the selected project when there is one. The rail, its shortcut and the
+   * mobile tab bar all read this hook, or they disagree about where one destination leads.
    */
-  const soleProjectHref = useSoleProjectHref();
+  const projectsDoorHref = useProjectsDoorHref();
 
   // Gateway routes hide the rail with `lg:hidden`, not an unmount, decided during render so it never
   // paints for a frame. `isGatewaySurface` is shared with `RootEntryPage`. `useHydrated()` forces a
@@ -305,7 +305,7 @@ function AppNavRailSlot() {
         settingsSlot={utilityTier}
         hidden={railHidden}
         contextHrefs={
-          { ...contextHrefs, map: mapReturnHref, ...(soleProjectHref ? { projects: soleProjectHref } : {}), ...(sourceOnly ? { agents: "/agents/?tab=models&returnTo=changes" } : {}) }
+          { ...contextHrefs, map: mapReturnHref, ...(projectsDoorHref ? { projects: projectsDoorHref } : {}), ...(sourceOnly ? { agents: "/agents/?tab=models&returnTo=changes" } : {}) }
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}
