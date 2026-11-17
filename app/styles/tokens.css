@@ -352,8 +352,6 @@
   --gateway-star: color-mix(in srgb, var(--color-text-primary) 62%, transparent);
   --gateway-star-dim: color-mix(in srgb, var(--color-text-primary) 26%, transparent);
   --gateway-star-indigo: color-mix(in srgb, var(--map-indigo-bright) 80%, transparent);
-  /* The lit step's fill on the download page. */
-  --gateway-closing-glow: color-mix(in srgb, var(--map-indigo) 34%, transparent);
 
   /*
    * Origin = max(gutter, (viewport - `--page-max`) / 2): the single x every gateway element and the
