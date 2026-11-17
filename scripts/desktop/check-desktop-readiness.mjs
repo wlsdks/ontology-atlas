@@ -883,9 +883,12 @@ if (
  * remains protected by generated-surface and referential-integrity checks.
  */
 if (
-  rootEntryPage.includes("if (vault.manifest || vault.partialTotal) return <HomePage />") &&
+  // Since 2026-11-17 the map and first-run views arrive as one fetched chunk (`views`), so a
+  // first-time web visitor on `/` downloads only the gateway; the routing facts are unchanged.
+  rootEntryPage.includes("const vaultOpen = Boolean(vault.manifest || vault.partialTotal)") &&
+  rootEntryPage.includes("if (views) return <views.HomePage />") &&
   rootEntryPage.includes("isDesktopShell()") &&
-  rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
+  rootEntryPage.includes("return vault.restoreAttempted && views ? <views.FirstRunPage /> : <DesktopVaultRedirect />") &&
   // Since 2026-09-13 the first-run branch is also reached when the launch deliberately
   // stopped for the person to choose between known folders, on the web as well as the
   // desktop — `FirstRunPage` is the launch chooser, and without this arm a returning web
@@ -1720,7 +1723,7 @@ if (
   rootEntryPage.includes("restoreAttempted") &&
   rootEntryPage.includes("vault.manifest") &&
   rootEntryPage.includes("DesktopVaultRedirect") &&
-  rootEntryPage.includes("<FirstRunPage />")
+  rootEntryPage.includes("<views.FirstRunPage />")
 ) {
   pass("desktop root entry renders the first-run surface for first launch and stale restored vaults without rendering marketing");
 } else {
