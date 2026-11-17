@@ -127,25 +127,23 @@
   "film": {
     "label": "How Markdown becomes the map",
     "actsLabel": "Jump to a scene",
+    "regionCount": "{count, plural, one {# concept} other {# concepts}}",
     "acts": {
       "1": {
-        "title": "Your ontology is plain Markdown",
-        "body": "One concept is one .md file."
+        "title": "One concept is one .md file",
+        "body": "Your ontology is plain Markdown files in your repository."
       },
       "2": {
-        "title": "The first lines are the graph",
+        "title": "Its top lines become points and lines",
         "body": "The few lines at the top of each file become the map's points and lines."
       },
       "3": {
-        "title": "Each file finds its place",
-        "body": "Every concept settles beside the concept that holds it."
+        "title": "Files take their places and connect",
+        "body": "Every concept settles beside the concept that holds it, and the {relations} relations written in the files become lines."
       },
       "4": {
-        "title": "Relations draw themselves",
-        "body": "The {relations} relations written in the files become lines."
-      },
-      "5": {
         "title": "One map, read by you and your agents",
+        "caption": "{concepts} concepts · {relations} relations",
         "body": "This repository's real map: {concepts} concepts and {relations} relations."
       }
     }

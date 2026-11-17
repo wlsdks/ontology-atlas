@@ -127,25 +127,23 @@
   "film": {
     "label": "Markdown 如何变成地图",
     "actsLabel": "跳到某一幕",
+    "regionCount": "{count} 个概念",
     "acts": {
       "1": {
-        "title": "本体就是普通的 Markdown 文件",
-        "body": "一个概念就是一个 .md 文件。"
+        "title": "一个概念就是一个 .md 文件",
+        "body": "本体就是仓库里普通的 Markdown 文件。"
       },
       "2": {
-        "title": "开头几行就是图谱",
+        "title": "开头几行变成点和线",
         "body": "每个文件开头写下的几行，就成了地图上的点和线。"
       },
       "3": {
-        "title": "每个文件找到自己的位置",
-        "body": "每个概念都落在包含它的概念旁边。"
+        "title": "文件各就各位，关系连成线",
+        "body": "每个概念都落在包含它的概念旁边，文件里写下的 {relations} 条关系变成连线。"
       },
       "4": {
-        "title": "关系自己连成线",
-        "body": "文件里写下的 {relations} 条关系变成连线。"
-      },
-      "5": {
         "title": "你和智能体读同一张地图",
+        "caption": "{concepts} 个概念 · {relations} 条关系",
         "body": "这是本仓库的真实地图：{concepts} 个概念，{relations} 条关系。"
       }
     }
