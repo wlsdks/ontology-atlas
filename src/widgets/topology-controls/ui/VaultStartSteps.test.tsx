@@ -236,7 +236,7 @@ describe('code comes first when there is more code than docs', () => {
  * INDEX.
  */
 describe('the start card keeps the window centre', () => {
-  const wrapper = () => card().parentElement as HTMLElement;
+  const wrapper = () => card().closest("[data-index-reserved]") as HTMLElement;
 
   it('does not shift sideways when INDEX is expanded', () => {
     renderSteps({ indexExpanded: true });
@@ -256,5 +256,25 @@ describe('the start card keeps the window centre', () => {
   it('reserves nothing by default so callers without the prop are unchanged', () => {
     renderSteps();
     expect(wrapper().dataset.indexReserved).toBe("false");
+  });
+});
+
+describe('the map it will become stands above the steps', () => {
+  const marks = (kind: string) => document.querySelectorAll(`[data-constellation-mark="${kind}"]`).length;
+
+  it('draws one project, its domains and their capabilities with the map kind marks', () => {
+    renderSteps({ onScaffoldStarter: vi.fn() });
+    const art = document.querySelector("[data-map-start-art]");
+    expect(art?.getAttribute("aria-hidden")).toBe("true");
+    expect(marks("project")).toBe(1);
+    expect(marks("domain")).toBeGreaterThan(1);
+    expect(marks("capability")).toBeGreaterThan(marks("domain"));
+    expect(art?.querySelector('[data-kind-glyph="project"]')).not.toBeNull();
+  });
+
+  it('does not promise a map over the recovery card, where part of one may already be drawn', () => {
+    renderSteps({ scaffoldFailed: true, onScaffoldStarter: vi.fn() });
+    expect(document.querySelector("[data-map-start-art]")).toBeNull();
+    expect(card()).toBeTruthy();
   });
 });
