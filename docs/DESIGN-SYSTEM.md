@@ -110,7 +110,7 @@ Deviation is a defect.
 
 - Chrome fields, tiles and chips are `--chrome-tile-size` tall; chrome labels use `text-body`, the step every other 36px control wears; the rail icon is one step, `--app-nav-rail-icon-size`.
 - No UI zoom below 2400px; `.topology-ui-scale` is 1.1 only from 2400px.
-- Faces: self-hosted Pretendard Variable (`--font-sans`) and JetBrains Mono (`--font-mono`); weights 400, 510, 560, 650 only. No CJK font file ships (`app/styles/lang-cjk.css` names installed OS faces).
+- Faces: self-hosted Pretendard Variable (`--font-sans`) and JetBrains Mono (`--font-mono`); weights 400, 510, 560, 650 only. No CJK font file ships (`app/styles/lang-cjk.css` names installed OS faces). English, Japanese and Chinese pages draw Latin, digits and symbols from Pretendard's upstream subsets (`src/shared/config/pretendard-latin-subsets.ts`), so they fetch the whole 2 MB file only for a character no subset carries; Korean pages use the whole file, which their Hangul needs.
 - A size step carries its own leading (the companion, for example `--text-body--line-height`); changing only the size breaks the pair. Text that inherits the 16px root has escaped the ramp.
 - Every type, leading and radius step is registered in `cn()` (`TYPE_RAMP_STEPS`, `LEADING_RAMP_STEPS`, `RADIUS_RAMP_STEPS` in `src/shared/lib/cn.ts`); an unregistered step is read as a colour or size class and silently dropped or left unmerged.
 
