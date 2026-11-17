@@ -5,20 +5,36 @@ import { buildHarnessSetup } from '@/views/architecture/model/harness-setup';
 
 import {
   AREAS,
+  DIFF_ROWS,
+  DIM,
   EXAMPLE_FILES,
   PANE1_ROWS,
   PANE2,
   PANE3,
+  PANES_IN,
+  PUSH_MAX,
   SCAN,
   SETTINGS_LINES,
+  STARTS,
+  STILL_DETAIL,
+  SWITCH_MS,
+  TOTAL,
   TREE,
   TYPE,
+  TYPE_FLOOR,
   WINDOW,
+  ZONE,
   areaTotals,
+  focusAt,
   groupCounts,
   itemsOf,
+  paneContentsAt,
+  pictureZone,
   playingFrame,
+  pushAt,
+  stillDetailFrame,
   treeRowY,
+  windowRect,
   wireFor,
 } from './harness-scene';
 
@@ -160,10 +176,107 @@ describe('the window', () => {
     expect(mono('.claude/agents/reviewer.md', TYPE.path)).toBeLessThanOrEqual(PANE3.right - PANE3.x);
   });
 
-  it('is 1040 wide on the page column at 1440, and stays above the caption on a short stage', () => {
-    expect(playingFrame(1440, 200, 104, 702)).toEqual({ x: 200, y: 104, s: 1 });
-    const short = playingFrame(1040, 200, 104, 531);
-    expect(short.y + WINDOW.h * short.s).toBeLessThanOrEqual(531 + 0.5);
-    expect(short.x).toBeGreaterThanOrEqual(32);
+});
+
+/** Every frame of one loop at 60 frames a second. */
+const FRAMES = Array.from({ length: Math.ceil((TOTAL * 60) / 1000) + 1 }, (_, i) => Math.min(TOTAL, (i * 1000) / 60));
+
+/**
+ * Stages as the page lays them out: the column is the page's (from 1520px wide it stops growing),
+ * the label's bottom about 100px down, and the caption block about 200px tall above a 5svh margin.
+ */
+const STAGES = [
+  [1040, 720, 48],
+  [1280, 800, 64],
+  [1440, 900, 200],
+  [1914, 1000, 197],
+  [1920, 1080, 200],
+  [2560, 1440, 520],
+].map(([w, vh, gutter]) => {
+  const h = Math.min(960, Math.max(576, vh!));
+  return { w: w!, column: { left: gutter!, right: w! - gutter! }, labelBottom: 100, captionTop: h - 0.05 * vh! - 200 };
+});
+
+describe('the picture', () => {
+  it('keeps the window whole inside its zone at every frame, from 1040 to 2560 wide', () => {
+    for (const stage of STAGES) {
+      const zone = pictureZone(stage.w, stage.column, stage.labelBottom, stage.captionTop);
+      expect(zone.t, `${stage.w}`).toBeGreaterThanOrEqual(stage.labelBottom + ZONE.labelGap);
+      expect(zone.b, `${stage.w}`).toBeLessThanOrEqual(stage.captionTop - ZONE.captionGap);
+      const win = playingFrame(zone);
+      for (const T of FRAMES) {
+        const r = windowRect(win, pushAt(T));
+        const at = `${stage.w} at ${Math.round(T)}ms`;
+        expect(r.x, at).toBeGreaterThanOrEqual(zone.l - 1e-6);
+        expect(r.x + r.w, at).toBeLessThanOrEqual(zone.r + 1e-6);
+        expect(r.y, at).toBeGreaterThanOrEqual(zone.t - 1e-6);
+        expect(r.y + r.h, at).toBeLessThanOrEqual(zone.b + 1e-6);
+      }
+    }
+  });
+
+  it('pushes in at most 6% about the window’s own centre, a little at a time', () => {
+    const win = playingFrame(pictureZone(1920, { left: 200, right: 1720 }, 100, 706));
+    const centre = (zoom: number) => {
+      const r = windowRect(win, zoom);
+      return [r.x + r.w / 2, r.y + r.h / 2];
+    };
+    expect(PUSH_MAX).toBeLessThanOrEqual(1.06);
+    let last = pushAt(0);
+    for (const T of FRAMES) {
+      const zoom = pushAt(T);
+      expect(zoom).toBeGreaterThanOrEqual(1);
+      expect(zoom).toBeLessThanOrEqual(PUSH_MAX);
+      expect(centre(zoom)[0]).toBeCloseTo(centre(1)[0]!, 6);
+      expect(centre(zoom)[1]).toBeCloseTo(centre(1)[1]!, 6);
+      expect(Math.abs(zoom - last), `${Math.round(T)}ms`).toBeLessThan(0.002);
+      last = zoom;
+    }
+    /* The loop's seam and the end the film rests on are the whole screen. */
+    expect(pushAt(0)).toBe(1);
+    expect(pushAt(TOTAL)).toBe(1);
+  });
+
+  it('keeps each act’s subject brightest and everything else legible', () => {
+    for (const T of FRAMES) {
+      for (const k of Object.values(focusAt(T))) expect(k).toBeGreaterThanOrEqual(0.6);
+    }
+    expect(DIM).toBeGreaterThanOrEqual(0.6);
+    /* Act one, and the frame the loop rests on, are the whole screen. */
+    for (const T of [0, 1300, STARTS[1] - 1, TOTAL]) expect(Object.values(focusAt(T)).every((k) => k === 1), `${T}`).toBe(true);
+    /* Act four is about the two copies in pane 3; the rest falls back. */
+    for (const T of [8600, 9000, 9400]) {
+      const focus = focusAt(T);
+      expect(focus.pane3).toBe(1);
+      for (const region of ['header', 'problem', 'pane1', 'pane2'] as const) expect(focus[region], `${region} ${T}`).toBeLessThan(0.7);
+    }
+  });
+
+  it('never leaves panes 2 and 3 empty between two subjects', () => {
+    for (const T of FRAMES.filter((T) => T >= PANES_IN[1])) {
+      const shown = paneContentsAt(T).reduce((sum, content) => sum + content.a, 0);
+      expect(shown, `${Math.round(T)}ms`).toBeGreaterThan(0.99);
+    }
+    /* By the time act four's caption is up, its subagent fills both panes. */
+    for (const T of FRAMES.filter((T) => T >= STARTS[3] + SWITCH_MS / 2)) {
+      expect(paneContentsAt(T).find((content) => content.id === 'subagents')?.a).toBeGreaterThan(0.999);
+    }
+  });
+
+  it('on a phone, still shows pane 3 whole, its type at the floor or above and inside the pane', () => {
+    for (const w of [360, 390, 600, 767]) {
+      const win = stillDetailFrame(w, 400, 24);
+      const left = win.x + STILL_DETAIL.x * win.s;
+      const right = left + STILL_DETAIL.w * win.s;
+      expect(left).toBeCloseTo(24, 6);
+      expect(right).toBeLessThanOrEqual(w - 24 + 1e-6);
+      expect(win.y + STILL_DETAIL.y * win.s).toBeGreaterThanOrEqual(0);
+      expect(win.y + (STILL_DETAIL.y + STILL_DETAIL.h) * win.s).toBeLessThanOrEqual(400);
+      /* The floor enlarges pane 3's type on a small still; the path and both copies still fit. */
+      const unit = (size: number) => Math.max(size, TYPE_FLOOR / win.s);
+      expect(mono('.claude/agents/reviewer.md', unit(TYPE.path))).toBeLessThanOrEqual(PANE3.right - PANE3.x);
+      const column = (PANE3.box.w - 40 - 16) / 2;
+      for (const row of DIFF_ROWS) for (const value of row ?? []) expect(mono(value, unit(TYPE.code)) + 10, value).toBeLessThanOrEqual(column);
+    }
   });
 });

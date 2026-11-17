@@ -11,8 +11,29 @@ import { isMotionPaused } from '@/shared/motion/motion-pause';
  * still frame under reduced motion (`tests/contract/motion/gateway-fx-reduced-motion.contract.test.ts`),
  * drawing only while the hero is in view.
  * The ring never hides the native cursor; it grows over
- * pressable targets.
+ * pressable targets. While a modal dialog is open over the page the field holds its frame and the
+ * ring fades out, so nothing of the page draws over the dialog; both resume when it closes.
  */
+
+/** The shared `Dialog` portals onto `body` and marks its panel `aria-modal`, so that is the signal. */
+const MODAL = '[aria-modal="true"]';
+
+/** Calls `onChange` whenever a modal dialog opens or closes; returns the stop function. */
+function watchModal(onChange: (open: boolean) => void): () => void {
+  let open = Boolean(document.querySelector(MODAL));
+  onChange(open);
+  if (typeof MutationObserver === 'undefined') return () => {};
+  // Only body's own children: a portal arriving or leaving is all that can change the answer.
+  const observer = new MutationObserver(() => {
+    const next = Boolean(document.querySelector(MODAL));
+    if (next === open) return;
+    open = next;
+    onChange(open);
+  });
+  observer.observe(document.body, { childList: true });
+  return () => observer.disconnect();
+}
+
 export function GatewayFx() {
   const fieldRef = useRef<HTMLCanvasElement | null>(null);
   const cursorRef = useRef<HTMLDivElement | null>(null);
@@ -169,6 +190,8 @@ export function GatewayFx() {
     let cursorTick: (() => void) | null = null;
     let fxLoopLive = false;
     let unregisterFrame: (() => void) | null = null;
+    let modalOpen = false;
+    let onModal: ((open: boolean) => void) | null = null;
 
     const onResize = (): void => {
       size();
@@ -188,7 +211,8 @@ export function GatewayFx() {
         unregisterFrame = registerGatedFrameClient(
           owner,
           ({ t, dtMs, factor }) => {
-            if (disposed) return;
+            // Under a modal the field holds its frame and its clock, so it resumes without a jump.
+            if (disposed || modalOpen) return;
             ambient = Math.min(ambient + dtMs / 1500, 1);
             // The sleep factor scales speed, so idle decelerates to a stop without a phase jump.
             ampTime += dtMs * ambient * factor;
@@ -227,6 +251,7 @@ export function GatewayFx() {
       const onPointerMove = (e: PointerEvent): void => {
         tx = e.clientX;
         ty = e.clientY;
+        if (modalOpen) return;
         // Without the loop it attaches instantly: a lagging cursor under reduced motion is a defect.
         if (!fxLoopLive || reduced || isMotionPaused()) {
           cx = tx;
@@ -242,6 +267,12 @@ export function GatewayFx() {
         cy += (ty - cy) * 0.3;
         put();
       };
+      // Dropping `is-on` fades the ring through its own opacity transition (--motion-fast).
+      onModal = (open) => {
+        if (!open) return;
+        ringHost.classList.remove('is-on');
+        ring?.classList.remove('is-hot');
+      };
       const onBlur = (): void => ringHost.classList.remove('is-on');
       const onLeave = (): void => ringHost.classList.remove('is-on');
       addEventListener('pointermove', onPointerMove, { passive: true });
@@ -254,8 +285,14 @@ export function GatewayFx() {
       };
     }
 
+    const stopWatching = watchModal((open) => {
+      modalOpen = open;
+      onModal?.(open);
+    });
+
     return () => {
       disposed = true;
+      stopWatching();
       window.clearTimeout(startTimer);
       unregisterFrame?.();
       removeEventListener('resize', onResize);

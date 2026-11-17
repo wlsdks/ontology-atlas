@@ -260,7 +260,7 @@
     "stepGraphProof": "Read the folder summaries (workspace-brief · agent-brief) before the first edit.",
     "proofAriaLabel": "Current status",
     "proofVault": "folder",
-    "proofVaultLoaded": "{count} docs read from this folder",
+    "proofVaultLoaded": "{count, plural, one {# doc} other {# docs}} read from this folder",
     "proofHealth": "condition",
     "proofHealthClean": "No errors and no warnings",
     "proofHealthWarnings": "{count} warnings: worth reading",
