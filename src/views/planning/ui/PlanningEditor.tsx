@@ -29,6 +29,7 @@ export function PlanningEditor({ labelledBy, text, notice, saving, onChange, onS
       ref={field}
       labelledBy={labelledBy}
       value={text}
+      readOnly={saving}
       spellCheck={false}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={(event) => {

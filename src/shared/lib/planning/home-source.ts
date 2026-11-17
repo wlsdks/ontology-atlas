@@ -4,18 +4,26 @@ import { planningDocumentFileName } from './document-name';
 /** The home folder's name inside the opened ontology folder. */
 export const PLANNING_HOME_FOLDER = 'planning';
 
-/* The rules below mirror `src-tauri/src/planning/scan.rs` and `confined.rs`, so both sources list the same files. */
+/*
+ * Mirrors `src-tauri/src/planning/scan.rs` and `confined.rs`, except that a Markdown name is never
+ * refused for secret-looking words: the vault session already reads every Markdown file here.
+ */
 const MAX_DEPTH = 12;
 const MAX_ENTRIES = 10_000;
 const MAX_READ_BYTES = 16 * 1024 * 1024;
 const DENIED_NAME_PARTS = ['credential', 'secret', 'password', 'passwd', 'token', 'apikey', 'api-key', 'api_key', 'id_rsa', 'id_ed25519', 'id_dsa', 'id_ecdsa', '.env', '.pem', '.key', '.p12', '.pfx', '.keystore', '.jks', '.htpasswd'];
 const PRUNED_DIRECTORIES = new Set(['node_modules', 'target', 'dist', 'build', 'out', 'coverage', 'vendor', 'Pods', 'DerivedData', '__pycache__', 'venv']);
 const SUPPORTED_FILE = /\.(md|png|jpe?g|webp|avif)$/i;
+const MARKDOWN_FILE = /\.md$/i;
 const IDENTITY_HEX_LENGTH = 32;
 
-function allowedName(name: string): boolean {
+function skippedEverywhere(name: string): boolean {
+  return name.startsWith('.') || PRUNED_DIRECTORIES.has(name);
+}
+
+function deniedImageName(name: string): boolean {
   const lower = name.toLowerCase();
-  return !name.startsWith('.') && !DENIED_NAME_PARTS.some((part) => lower.includes(part)) && !PRUNED_DIRECTORIES.has(name);
+  return !MARKDOWN_FILE.test(name) && DENIED_NAME_PARTS.some((part) => lower.includes(part));
 }
 
 /** The first 32 hex characters of the SHA-256 of `bytes`, the same identity the native reader reports. */
@@ -35,18 +43,21 @@ export async function scanPlanningHome(directory: FileSystemDirectoryHandle): Pr
     const entries: [string, FileSystemHandle][] = [];
     try {
       for await (const entry of folder.entries()) entries.push(entry);
-    } catch {
+    } catch (error) {
+      // A home folder that cannot be listed at all is gone, not empty.
+      if (depth === 0) throw error;
       inventory.partial = true; inventory.omitted.unreadable += 1; return;
     }
     entries.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
     for (const [name, handle] of entries) {
       if (inventory.visited >= MAX_ENTRIES) { inventory.partial = true; inventory.limit_reached = true; return; }
       inventory.visited += 1;
-      if (!allowedName(name)) { inventory.omitted.excluded += 1; continue; }
+      if (skippedEverywhere(name)) { inventory.omitted.excluded += 1; continue; }
       const path = prefix ? `${prefix}/${name}` : name;
       if (handle.kind === 'directory') await walk(handle as FileSystemDirectoryHandle, path, depth + 1);
-      else if (SUPPORTED_FILE.test(name)) inventory.files.push({ path });
-      else inventory.omitted.unsupported += 1;
+      else if (!SUPPORTED_FILE.test(name)) inventory.omitted.unsupported += 1;
+      else if (deniedImageName(name)) inventory.omitted.excluded += 1;
+      else inventory.files.push({ path });
     }
   };
   await walk(directory, '', 0);
@@ -58,7 +69,8 @@ export async function scanPlanningHome(directory: FileSystemDirectoryHandle): Pr
 
 function pathParts(path: string): string[] {
   const parts = path.split('/');
-  if (parts.some((part) => !part || !allowedName(part)) || !SUPPORTED_FILE.test(parts[parts.length - 1])) throw new Error('unsafe-path');
+  const name = parts[parts.length - 1];
+  if (parts.some((part) => !part || skippedEverywhere(part)) || !SUPPORTED_FILE.test(name) || deniedImageName(name)) throw new Error('unsafe-path');
   return parts;
 }
 
@@ -70,6 +82,7 @@ async function fileAt(directory: FileSystemDirectoryHandle, path: string): Promi
 }
 
 async function readBytes(directory: FileSystemDirectoryHandle, path: string): Promise<Uint8Array> {
+  // On the web `getFile()` reads metadata only; the app's handle has already read the bytes here.
   const file = await (await fileAt(directory, path)).getFile();
   if (file.size > MAX_READ_BYTES) throw new Error('file-too-large');
   return new Uint8Array(await file.arrayBuffer());
@@ -95,13 +108,25 @@ export async function savePlanningHomeDocument(directory: FileSystemDirectoryHan
   return planningIdentity(new TextEncoder().encode(text));
 }
 
+async function exists(directory: FileSystemDirectoryHandle, name: string): Promise<boolean> {
+  try {
+    await directory.getFileHandle(name);
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'NotFoundError') return false;
+    throw error;
+  }
+}
+
 /** Writes `planning/<name>.md` with the title as its heading, never over an existing file. */
-export async function createPlanningHomeDocument(directory: FileSystemDirectoryHandle, title: string): Promise<{ path: string; text: string }> {
-  const taken = new Set<string>();
+export async function createPlanningHomeDocument(directory: FileSystemDirectoryHandle, title: string, beforeWrite?: (path: string) => void): Promise<{ path: string; text: string }> {
+  const taken: string[] = [];
   // The app's folder handle implements `entries()` but not `keys()`.
-  for await (const [name] of directory.entries()) taken.add(name.toLowerCase());
+  for await (const [name] of directory.entries()) taken.push(name);
   const path = planningDocumentFileName(title, taken);
+  if (await exists(directory, path)) throw new Error('name-taken');
   const text = `# ${title.trim()}\n\n`;
+  beforeWrite?.(path);
   await writeText(await directory.getFileHandle(path, { create: true }), text);
   return { path, text };
 }

@@ -3,7 +3,6 @@
   "chooseBody": "Read Markdown and design images where they already live. Atlas does not move or edit these files.",
   "chooseFolder": "Choose folder",
   "limits": "Atlas notices files that change after you open the folder. It does not check earlier changes, files shared with other paths, or secrets inside documents.",
-  "browserUnavailable": "Planning folders are available only in the macOS app.",
   "loading": "Reading the selected folder…",
   "empty": "No supported documents or images were found.",
   "observedAt": "Folder list read: {time}",
@@ -67,6 +66,8 @@
   "discard": "Discard",
   "keepWriting": "Keep writing",
   "createDocumentFailed": "Could not create this document. Check that the planning folder can be written.",
+  "browserUnavailable": "Open an ontology folder to make a planning folder inside it. Choosing another folder to read works only in the macOS app.",
+  "notEditable": "This file is not UTF-8, so it cannot be edited here.",
   "scene": {
     "documentHeading": "Requirements"
   }

@@ -3,7 +3,6 @@
   "chooseBody": "Markdownとデザイン画像を元の場所で読みます。ファイルの移動や編集はしません。",
   "chooseFolder": "フォルダを選択",
   "limits": "フォルダを開いた後にファイルが変わると知らせます。開く前の変更、別のパスと共有されたファイル、文書内の秘密は確認しません。",
-  "browserUnavailable": "企画フォルダはmacOSアプリでのみ利用できます。",
   "loading": "選択したフォルダを読み込み中…",
   "empty": "対応する文書や画像がありません。",
   "observedAt": "フォルダー一覧の取得：{time}",
@@ -67,6 +66,8 @@
   "discard": "破棄",
   "keepWriting": "書き続ける",
   "createDocumentFailed": "文書を作成できませんでした。企画フォルダに書き込めるか確認してください。",
+  "browserUnavailable": "オントロジーフォルダを開くと、その中に企画フォルダを作成できます。別のフォルダを選んで読むのはmacOSアプリでのみ利用できます。",
+  "notEditable": "UTF-8ではないファイルのため、ここでは編集できません。",
   "scene": {
     "documentHeading": "要件"
   }

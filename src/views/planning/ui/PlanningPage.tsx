@@ -8,6 +8,7 @@ import { ArrowLeft, FilePlus, FileText, FolderOpen, FolderPen, LockKeyhole, PenL
 import { useLocalVault } from '@/entities/vault-session';
 import { choosePlanningFolder, planningAvailable, type PlanningInventory } from '@/shared/lib/planning/bridge';
 import { createPlanningHomeDocument, PLANNING_HOME_FOLDER, planningIdentity, savePlanningHomeDocument } from '@/shared/lib/planning/home-source';
+import { editablePlanningText, planningTextForDisk, type PlanningEditableText } from '@/shared/lib/planning/editable-text';
 import { planningSourceFor, type HomePlanningSelection, type PlanningSelection } from '@/shared/lib/planning/source';
 import { beginPlanningReturn, clearPlanningReturn } from '@/shared/lib/planning/navigation';
 import { readPlanningMemory, writePlanningMemory } from '@/shared/lib/planning/memory';
@@ -32,7 +33,13 @@ import { planningArrival } from '../model/arrival';
 const QUIET_TEXT = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
 
 type HomeProbe = { root: FileSystemDirectoryHandle; directory: FileSystemDirectoryHandle | null };
-type Editing = { path: string; text: string; original: string; identity: string; notice: 'refused' | 'failed' | null };
+/** `original` is null when the editor reopened kept text over a file it could not read back. */
+type Editing = { path: string; text: string; original: string | null; identity: string; lineEnding: PlanningEditableText['lineEnding']; notice: 'refused' | 'failed' | null };
+
+/** The vault session names a Markdown file by its folder-relative path without `.md`. */
+function homeDocumentSlug(path: string): string {
+  return `${PLANNING_HOME_FOLDER}/${path.replace(/\.md$/, '')}`;
+}
 
 function sameBytes(left: Uint8Array | null, right: Uint8Array): boolean {
   return left !== null && left.length === right.length && left.every((byte, index) => byte === right[index]);
@@ -52,6 +59,7 @@ export function PlanningPage() {
   const [selected, setSelected] = useState<string | null>(() => readPlanningMemory().selected);
   const [inventory, setInventory] = useState<PlanningInventory | null>(null);
   const [content, setContent] = useState<string | null>(null);
+  const [editableText, setEditableText] = useState<PlanningEditableText | null>(null);
   const [imageBytes, setImageBytes] = useState<Uint8Array | null>(null);
   const [fileChanged, setFileChanged] = useState(() => readPlanningMemory().changed);
   const [status, setStatus] = useState<'idle' | 'checking' | 'ready' | 'unavailable'>('idle');
@@ -129,7 +137,15 @@ export function PlanningPage() {
         writePlanningMemory({ ...readPlanningMemory(), identity: result.value.identity });
       }
       setFileChanged(changed || memory.changed);
-      setContent(result.value && path && isPlanningMarkdown(path) ? new TextDecoder().decode(result.value.bytes) : null);
+      const markdown = result.value && path && isPlanningMarkdown(path) ? result.value.bytes : null;
+      const editable = markdown ? editablePlanningText(markdown) : null;
+      setContent(markdown ? new TextDecoder().decode(markdown) : null);
+      setEditableText(editable);
+      const kept = readPlanningMemory().draft;
+      if (kept && scope.kind === 'home' && kept.homeFolderName === scope.path && kept.path === path && (editable || changed) && !editingRef.current) {
+        editingRef.current = true;
+        setEditing({ path, text: kept.text, original: editable?.text ?? null, identity: kept.identity, lineEnding: kept.lineEnding, notice: null });
+      }
       const nextImage = result.value && path && !isPlanningMarkdown(path) ? result.value.bytes : null;
       setImageBytes((previous) => nextImage && sameBytes(previous, nextImage) ? previous : nextImage);
       const failed = Boolean(path && !changed && !memory.changed && (!next.files.some((file) => file.path === path) || !result.value));
@@ -162,11 +178,13 @@ export function PlanningPage() {
     recheckCurrent.current = null;
     folderFailed.current = false;
     folderNoticeSelection.current = next;
-    writePlanningMemory({ selection: next, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
-    selectedRef.current = null;
+    const kept = readPlanningMemory().draft;
+    const resumed = next.kind === 'home' && kept?.homeFolderName === next.path ? kept.path : null;
+    writePlanningMemory({ selection: next, selected: resumed, scroll: 0, identity: null, changed: false, returnFocus: null });
+    selectedRef.current = resumed;
     restoreFocus.current = fromStage;
     setFolderNotice(null); setEnteredFromStage(fromStage); setEditing(null); setDrafting(false); setDraftFailed(false);
-    setSelection(next); setSelected(null); setShowsDocumentBelowLg(false); setSearch(''); setInventory(null); setContent(null); setImageBytes(null); setCheckedAt(null); setFileFailed(false); setFileChanged(false);
+    setSelection(next); setSelected(resumed); setShowsDocumentBelowLg(Boolean(resumed)); setSearch(''); setInventory(null); setContent(null); setEditableText(null); setImageBytes(null); setCheckedAt(null); setFileFailed(false); setFileChanged(false);
   }, []);
   useEffect(() => {
     if (!vaultRoot) return;
@@ -256,11 +274,24 @@ export function PlanningPage() {
   }, [activeSelection, readable]);
   const readImage = useCallback((path: string) => activeSelection ? planningSourceFor(activeSelection).readFile(path) : Promise.reject(new Error('no-selection')), [activeSelection]);
   const unsaved = editing !== null && editing.text !== editing.original;
+  const { markSelfWrite, unmarkSelfWrite } = vault;
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsaved]);
+  const closeEditor = () => { setEditing(null); writePlanningMemory({ draft: null }); };
   /** Runs `action` at once, or after the person agrees to drop unsaved editor text. */
   const leaveEditor = (action: () => void) => {
     if (unsaved) { setPendingLeave(() => action); return; }
-    setEditing(null);
+    closeEditor();
     action();
+  };
+  const changeEditorText = (current: Editing, text: string) => {
+    setEditing({ ...current, text });
+    const keeps = activeSelection?.kind === 'home' && text !== current.original;
+    writePlanningMemory({ draft: keeps ? { homeFolderName: activeSelection.path, path: current.path, text, identity: current.identity, lineEnding: current.lineEnding } : null });
   };
   const choose = async (fromStage: boolean) => {
     try {
@@ -281,13 +312,22 @@ export function PlanningPage() {
       enterSelection(homeSelection(vaultRoot, directory), fromStage);
     } catch { setCreateFailed(true); } finally { setCreatingHome(false); }
   };
+  /** From a picked folder: the home folder when it exists, otherwise the stage that offers to create it. */
+  const returnHome = () => {
+    if (home?.root === vaultRoot && home.directory) { void openHome(false); return; }
+    sequence.current++;
+    recheckCurrent.current = null;
+    writePlanningMemory({ selection: null, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
+    selectedRef.current = null;
+    setSelection(null); setSelected(null); setInventory(null); setContent(null); setEditableText(null); setImageBytes(null);
+  };
   const openFile = (path: string) => {
     if (!activeSelection) return;
     setShowsDocumentBelowLg(true);
     if (path === selectedRef.current && !fileFailed && !fileChanged) return;
     writePlanningMemory({ selection: activeSelection, selected: path, scroll: 0, identity: null, changed: false, returnFocus: null });
     pendingScroll.current = null;
-    selectedRef.current = path; setSelected(path); setContent(null); setImageBytes(null); setFileFailed(false); setFileChanged(false);
+    selectedRef.current = path; setSelected(path); setContent(null); setEditableText(null); setImageBytes(null); setFileFailed(false); setFileChanged(false);
     void refresh(activeSelection, path);
   };
   const startDraft = (event: MouseEvent<HTMLElement>) => {
@@ -301,34 +341,45 @@ export function PlanningPage() {
   const createDocument = async (title: string) => {
     if (activeSelection?.kind !== 'home' || creatingDocument) return;
     setCreatingDocument(true); setDraftFailed(false);
+    let marked: string | null = null;
     try {
-      const created = await createPlanningHomeDocument(activeSelection.directory, title);
+      const created = await createPlanningHomeDocument(activeSelection.directory, title, (path) => { marked = homeDocumentSlug(path); markSelfWrite(marked); });
       const identity = await planningIdentity(new TextEncoder().encode(created.text));
       writePlanningMemory({ selection: activeSelection, selected: created.path, scroll: 0, identity, changed: false, returnFocus: null });
       pendingScroll.current = null;
       selectedRef.current = created.path;
-      setDrafting(false); setSelected(created.path); setContent(created.text); setImageBytes(null); setFileFailed(false); setFileChanged(false); setShowsDocumentBelowLg(true);
-      setEditing({ path: created.path, text: created.text, original: created.text, identity, notice: null });
+      setDrafting(false); setSelected(created.path); setContent(created.text); setEditableText({ text: created.text, lineEnding: '\n' }); setImageBytes(null); setFileFailed(false); setFileChanged(false); setShowsDocumentBelowLg(true);
+      setEditing({ path: created.path, text: created.text, original: created.text, identity, lineEnding: '\n', notice: null });
       void refresh(activeSelection, created.path);
-    } catch { setDraftFailed(true); } finally { setCreatingDocument(false); }
+    } catch {
+      if (marked) unmarkSelfWrite(marked);
+      setDraftFailed(true);
+    } finally { setCreatingDocument(false); }
   };
   const startEdit = () => {
     const identity = readPlanningMemory().identity;
-    if (!selected || content === null || !identity) return;
-    setEditing({ path: selected, text: content, original: content, identity, notice: null });
+    if (!selected || !editableText || !identity) return;
+    setEditing({ path: selected, text: editableText.text, original: editableText.text, identity, lineEnding: editableText.lineEnding, notice: null });
   };
   const focusEdit = () => requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-planning-edit]')?.focus({ preventScroll: true }));
   const save = async () => {
     if (!editing || activeSelection?.kind !== 'home' || saving) return;
+    const saved = editing;
+    const slug = homeDocumentSlug(saved.path);
+    const onDisk = planningTextForDisk(saved.text, saved.lineEnding);
     setSaving(true);
+    markSelfWrite(slug);
     try {
-      const identity = await savePlanningHomeDocument(activeSelection.directory, editing.path, editing.text, editing.identity);
-      writePlanningMemory({ ...readPlanningMemory(), identity, changed: false });
-      setContent(editing.text); setFileChanged(false); setEditing(null);
+      const identity = await savePlanningHomeDocument(activeSelection.directory, saved.path, onDisk, saved.identity);
+      writePlanningMemory({ identity, changed: false, draft: null });
+      setContent(onDisk); setEditableText({ text: saved.text, lineEnding: saved.lineEnding }); setFileChanged(false);
+      setEditing((current) => (current === saved ? null : current));
       focusEdit();
-      void refresh(activeSelection, editing.path);
+      void refresh(activeSelection, saved.path);
     } catch (error) {
-      setEditing({ ...editing, notice: String(error).includes('file-changed') ? 'refused' : 'failed' });
+      unmarkSelfWrite(slug);
+      const notice = String(error).includes('file-changed') ? 'refused' as const : 'failed' as const;
+      setEditing((current) => (current?.path === saved.path ? { ...current, notice } : current));
     } finally { setSaving(false); }
   };
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
@@ -345,9 +396,10 @@ export function PlanningPage() {
   };
   const workbench = arrival === 'workbench' && activeSelection !== null ? activeSelection : null;
   const isHome = workbench?.kind === 'home';
-  const emptyHome = isHome && inventory !== null && inventory.files.length === 0;
+  const emptyHome = isHome && inventory !== null && inventory.files.length === 0 && status !== 'unavailable';
   const editingShown = editing !== null && editing.path === selected ? editing : null;
-  const editable = isHome && selected !== null && isPlanningMarkdown(selected) && content !== null && !fileChanged && !fileFailed && !editingShown;
+  const shownMarkdown = isHome && selected !== null && isPlanningMarkdown(selected) && content !== null && !fileChanged && !fileFailed && !editingShown;
+  const editable = shownMarkdown && editableText !== null;
   return <main data-planning-surface className={workbench ? 'flex h-full min-h-0 flex-col overflow-hidden' : 'flex min-h-full flex-col'}>
     <span role="alert" data-planning-folder-alert className="sr-only">{folderNotice === 'failure' ? t('folderUnavailable') : ''}</span>
     <span role="status" data-planning-folder-recovery className="sr-only">{folderNotice === 'recovered' ? t('folderRecovered') : ''}</span>
@@ -358,8 +410,8 @@ export function PlanningPage() {
       actions={workbench ? <>
         <ChromeTile title={t('refresh')} icon={<RefreshCw aria-hidden />} data-planning-focus-fallback onClick={() => refreshFolder(workbench)} />
         {isHome && <ChromeChip icon={<FilePlus aria-hidden />} data-planning-new onClick={startDraft}>{t('newDocument')}</ChromeChip>}
-        {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={() => void openHome(false)}>{t('homeFolder')}</ChromeChip>}
-        {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => leaveEditor(() => void choose(false))}>{t('chooseFolder')}</ChromeChip>}
+        {!isHome && vaultRoot && <ChromeChip icon={<FolderPen aria-hidden />} data-planning-home disabled={creatingHome} onClick={returnHome}>{t('homeFolder')}</ChromeChip>}
+        {available === true && <ChromeChip icon={<FolderOpen aria-hidden />} data-planning-choose onClick={() => void choose(false)}>{t('chooseFolder')}</ChromeChip>}
       </> : undefined}
     />
     {!workbench ? <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}>
@@ -378,23 +430,24 @@ export function PlanningPage() {
         <PlanningFileList
           listRef={fileList} paths={files} selected={selected} search={search} onSearch={setSearch} onOpen={(path) => leaveEditor(() => openFile(path))}
           emptyMessage={inventory && files.length === 0 && !(emptyHome && !search) ? t(search ? 'noMatches' : 'empty') : null}
-          draft={<AnimatePresence initial={false}>{isHome && drafting && <PlanningDraftRow key="draft" busy={creatingDocument} failed={draftFailed} onSubmit={(title) => void createDocument(title)} onCancel={cancelDraft} />}</AnimatePresence>}
+          draft={<AnimatePresence initial={false}>{isHome && drafting && <PlanningDraftRow key="draft" busy={creatingDocument} failed={draftFailed} onSubmit={(title) => leaveEditor(() => void createDocument(title))} onCancel={cancelDraft} />}</AnimatePresence>}
         />
         <PlanningReadScope inventory={inventory} status={status} checkedAt={checkedAt} slow={status === 'checking' && slowId === checkingId} writable={isHome} />
       </section>
       <section data-planning-document className={`flex min-h-0 min-w-0 flex-col ${showsDocumentBelowLg ? '' : 'max-lg:hidden'}`}>
         {selected && <div data-planning-document-head className="flex min-h-12 flex-none flex-wrap items-center gap-x-3 gap-y-1 border-b border-[color:var(--color-divider)] py-1.5 lg:pl-6">
-          <Button variant="ghost" size="sm" className="-ml-2 lg:hidden max-[769px]:min-h-11" onClick={() => leaveEditor(backToList)}><ArrowLeft size={ICON_SIZE.sm} aria-hidden />{t('backPlanning')}</Button>
+          <Button variant="ghost" size="sm" className="-ml-2 lg:hidden max-[769px]:min-h-11" onClick={backToList}><ArrowLeft size={ICON_SIZE.sm} aria-hidden />{t('backPlanning')}</Button>
           <p id={pathId} data-planning-path title={selected} className={`min-w-0 flex-1 truncate font-mono ${QUIET_TEXT}`}>{selected}</p>
           <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+            {shownMarkdown && !editable && <span data-planning-not-editable className={`mr-2 ${QUIET_TEXT}`}>{t('notEditable')}</span>}
             {editable && <Button variant="ghost" size="sm" className="mr-2 max-[769px]:min-h-11" data-planning-edit onClick={startEdit}><PenLine size={ICON_SIZE.sm} aria-hidden />{t('edit')}</Button>}
             <span className={`mr-2 ${QUIET_TEXT}`}>{t('historyBrief')}</span>
-            <Button variant="ghost" size="sm" className="max-[769px]:min-h-11" disabled={!evidenceOpenable} data-return-focus="history" onClick={() => leaveEditor(() => go('/changes/', 'history'))}>{t('openHistory')}</Button>
-            <Button variant="ghost" size="sm" className="max-[769px]:min-h-11" disabled={!evidenceOpenable} data-return-focus="map" onClick={() => leaveEditor(() => go('/topology/', 'map'))}>{t('openMap')}</Button>
+            <Button variant="ghost" size="sm" className="max-[769px]:min-h-11" disabled={!evidenceOpenable} data-return-focus="history" onClick={() => go('/changes/', 'history')}>{t('openHistory')}</Button>
+            <Button variant="ghost" size="sm" className="max-[769px]:min-h-11" disabled={!evidenceOpenable} data-return-focus="map" onClick={() => go('/topology/', 'map')}>{t('openMap')}</Button>
           </div>
         </div>}
         <div ref={reader} data-planning-reader onScroll={(event) => { if (pendingScroll.current === null) writePlanningMemory({ ...readPlanningMemory(), scroll: event.currentTarget.scrollTop }); }} className="min-h-0 flex-1 overflow-y-auto py-6 lg:px-10 lg:py-8">
-          {editingShown ? <PlanningEditor labelledBy={pathId} text={editingShown.text} notice={editingShown.notice} saving={saving} onChange={(text) => setEditing({ ...editingShown, text })} onSave={() => void save()} onCancel={() => leaveEditor(focusEdit)} />
+          {editingShown ? <PlanningEditor labelledBy={pathId} text={editingShown.text} notice={editingShown.notice} saving={saving} onChange={(text) => changeEditorText(editingShown, text)} onSave={() => void save()} onCancel={() => leaveEditor(focusEdit)} />
             : !inventory ? null
             : !selected ? emptyHome
               ? <div data-planning-empty-home className="flex h-full flex-col items-center justify-center gap-4 text-center text-body leading-body text-[color:var(--color-text-secondary)]"><p>{t('emptyHome')}</p><Button data-planning-empty-new onClick={startDraft}><FilePlus size={ICON_SIZE.sm} aria-hidden />{t('newDocument')}</Button></div>
@@ -407,6 +460,6 @@ export function PlanningPage() {
       </section>
       {!inventory && status !== 'unavailable' && <WaitStage title={t('loading')} delayed data-planning-loading />}
     </motion.div>}
-    <PlanningDiscardDialog open={pendingLeave !== null} onKeep={() => setPendingLeave(null)} onDiscard={() => { const action = pendingLeave; setPendingLeave(null); setEditing(null); action?.(); }} />
+    <PlanningDiscardDialog open={pendingLeave !== null} onKeep={() => setPendingLeave(null)} onDiscard={() => { const action = pendingLeave; setPendingLeave(null); closeEditor(); action?.(); }} />
   </main>;
 }

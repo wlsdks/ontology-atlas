@@ -3,7 +3,6 @@
   "chooseBody": "在原位置读取 Markdown 和设计图片。Atlas 不会移动或编辑这些文件。",
   "chooseFolder": "选择文件夹",
   "limits": "打开文件夹后，文件有变化时会提示。不会检查打开前的变化、与其他路径共享的文件或文档中的秘密。",
-  "browserUnavailable": "规划文件夹仅在 macOS 应用中可用。",
   "loading": "正在读取所选文件夹…",
   "empty": "没有找到支持的文档或图片。",
   "observedAt": "文件夹列表读取时间：{time}",
@@ -67,6 +66,8 @@
   "discard": "丢弃",
   "keepWriting": "继续写",
   "createDocumentFailed": "无法新建这个文档。请确认规划文件夹可以写入。",
+  "browserUnavailable": "打开本体文件夹后，即可在其中新建规划文件夹。选择其他文件夹来阅读仅在 macOS 应用中可用。",
+  "notEditable": "这个文件不是 UTF-8 编码，无法在这里编辑。",
   "scene": {
     "documentHeading": "需求"
   }

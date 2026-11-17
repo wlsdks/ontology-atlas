@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createPlanningHomeDocument, openPlanningHomeDocument, planningIdentity, savePlanningHomeDocument, scanPlanningHome } from './home-source';
 
 type Tree = { [name: string]: string | Tree };
@@ -34,12 +34,12 @@ function folder(tree: Tree): FileSystemDirectoryHandle {
 }
 
 describe('the home planning source', () => {
-  it('lists supported files in path order and skips hidden, secret, pruned and unsupported entries', async () => {
+  it('lists supported files in path order and skips hidden, pruned, secret-named image and unsupported entries', async () => {
     const inventory = await scanPlanningHome(folder({
-      'b.md': '', 'a.png': '', '.draft.md': '', 'api-token.md': '', 'notes.txt': '',
-      node_modules: { 'x.md': '' }, research: { 'z.md': '', '.git': { 'y.md': '' } },
+      'b.md': '', 'a.png': '', '.draft.md': '', 'api-token.md': '', 'password-flow.png': '', 'notes.txt': '',
+      node_modules: { 'x.md': '' }, research: { 'z.md': '', '.git': { 'y.md': '' } }, secrets: { 'plan.md': '' },
     }));
-    expect(inventory.files.map((entry) => entry.path)).toEqual(['a.png', 'b.md', 'research/z.md']);
+    expect(inventory.files.map((entry) => entry.path)).toEqual(['a.png', 'api-token.md', 'b.md', 'research/z.md', 'secrets/plan.md']);
     expect(inventory.omitted).toMatchObject({ excluded: 4, unsupported: 1 });
     expect(inventory.skipped).toBe(5);
     expect(inventory.partial).toBe(false);
@@ -51,6 +51,11 @@ describe('the home planning source', () => {
     const inventory = await scanPlanningHome(folder(tree));
     expect(inventory.files).toEqual([]);
     expect(inventory).toMatchObject({ partial: true, depth_limited: true, unknown_remainder: true });
+  });
+
+  it('fails instead of reporting an empty folder when the home folder itself cannot be listed', async () => {
+    const gone = { kind: 'directory', entries: async function* () { yield* []; throw new DOMException('gone', 'NotFoundError'); } } as unknown as FileSystemDirectoryHandle;
+    await expect(scanPlanningHome(gone)).rejects.toThrow();
   });
 
   it('identifies a document by the first 32 hex characters of its SHA-256', async () => {
@@ -65,6 +70,13 @@ describe('the home planning source', () => {
 
   it('refuses a path that climbs out of the home folder', async () => {
     await expect(openPlanningHomeDocument(folder({ 'plan.md': '' }), '../plan.md', null)).rejects.toThrow('unsafe-path');
+  });
+
+  it('refuses a file over 16 MiB from its size, before reading its bytes', async () => {
+    const arrayBuffer = vi.fn();
+    const huge = { kind: 'directory', getFileHandle: async () => ({ getFile: async () => ({ size: 16 * 1024 * 1024 + 1, arrayBuffer }) }) } as unknown as FileSystemDirectoryHandle;
+    await expect(openPlanningHomeDocument(huge, 'plan.md', null)).rejects.toThrow('file-too-large');
+    expect(arrayBuffer).not.toHaveBeenCalled();
   });
 
   it('saves only while the file on disk still matches the identity the editor opened', async () => {
@@ -84,5 +96,31 @@ describe('the home planning source', () => {
     expect(created.path).toBe('Checkout-redesign-2.md');
     expect(tree['Checkout-redesign.md']).toBe('kept');
     expect(tree['Checkout-redesign-2.md']).toBe('# Checkout redesign\n\n');
+  });
+
+  it.each(['Design tokens', 'API key rotation', 'Password reset flow'])('lists, opens and saves a document titled %s', async (title) => {
+    const tree: Tree = {};
+    const home = folder(tree);
+    const created = await createPlanningHomeDocument(home, title);
+    expect((await scanPlanningHome(home)).files.map((entry) => entry.path)).toEqual([created.path]);
+    const opened = await openPlanningHomeDocument(home, created.path, null);
+    await savePlanningHomeDocument(home, created.path, `${created.text}body`, opened.identity);
+    expect(tree[created.path]).toBe(`${created.text}body`);
+  });
+
+  it('gives a new title a free name when its twin is stored decomposed, leaving the twin untouched', async () => {
+    const decomposed = `${'결제'.normalize('NFD')}.md`;
+    const tree: Tree = { [decomposed]: 'original body' };
+    const created = await createPlanningHomeDocument(folder(tree), '결제');
+    expect(created.path).toBe(`${'결제'.normalize('NFC')}-2.md`);
+    expect(tree[decomposed]).toBe('original body');
+  });
+
+  it('refuses to write a heading over a file that already holds the chosen name', async () => {
+    const tree: Tree = { 'Plan.md': 'kept' };
+    const home = folder(tree);
+    const listing = { ...home, entries: async function* () { yield* []; } } as unknown as FileSystemDirectoryHandle;
+    await expect(createPlanningHomeDocument(listing, 'Plan')).rejects.toThrow('name-taken');
+    expect(tree['Plan.md']).toBe('kept');
   });
 });
