@@ -134,7 +134,7 @@
       },
       "2": {
         "title": "The first lines are the graph",
-        "body": "domain says where a concept belongs, kind what it is, dependencies what it relies on. Those lines become the map's points and lines."
+        "body": "The few lines at the top of each file become the map's points and lines."
       },
       "3": {
         "title": "Each file finds its place",
