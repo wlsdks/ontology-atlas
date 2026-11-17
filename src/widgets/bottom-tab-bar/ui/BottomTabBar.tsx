@@ -8,7 +8,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { useMapReadingContext } from '@/shared/lib/navigation/map-reading-context';
 import { buildTopologyReturnHref } from '@/entities/knowledge-graph';
-import { useSoleProjectHref } from '@/features/project-data-source';
+import { useProjectsDoorHref } from '@/features/project-data-source';
 import { describeVaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/navigation/nav-destination';
 import {
@@ -62,8 +62,8 @@ const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
-  /* The same single-project target as the desktop rail. */
-  const soleProjectHref = useSoleProjectHref();
+  /* The same selected-project target as the desktop rail. */
+  const projectsDoorHref = useProjectsDoorHref();
   const t = useTranslations('nav');
   const tRail = useTranslations('navRail');
   const vault = useLocalVault();
@@ -93,7 +93,7 @@ export function BottomTabBar() {
   const mapTabs = TABS.filter((tab) => visible.has(tab.id));
   const shapeTabs = mapTabs.length > 0 ? mapTabs : WIKI_ONLY_TABS;
   const tabs = (desktopWithoutVault ? shapeTabs.filter((tab) => tab.id === 'planning') : shapeTabs).map((tab) => {
-    if (tab.id === 'projects' && soleProjectHref) return { ...tab, href: soleProjectHref };
+    if (tab.id === 'projects' && projectsDoorHref) return { ...tab, href: projectsDoorHref };
     if (tab.id === 'map' && activeId !== 'map' && readingContext.selectedId) {
       return { ...tab, href: buildTopologyReturnHref(readingContext.selectedId) };
     }

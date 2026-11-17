@@ -15,8 +15,8 @@ import { Copy, Plus } from "lucide-react";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Button, buttonVariants, FeatureStage, OntologyMapKindGlyph } from "@/shared/ui";
+import { badgeClass } from "@/shared/ui/badge-class";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
-import { MAP_KIND_GLYPH_SIZE } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
 import { PAGE_FRAME, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
@@ -28,7 +28,7 @@ import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { resolveAuthoredDescription } from "../lib/authored-description";
 import { resolveRiseBaseline, slugsToRise, type ShownProjects } from "../lib/rise-rule";
 import { resolveRecentActivityAgo, type RecentActivityAgo } from "../lib/recent-activity";
-import { useProjects, useVaultDocs } from "@/features/project-data-source";
+import { useProjects, useSelectedProjectSlug, useVaultDocs } from "@/features/project-data-source";
 import { ProjectCardArtwork } from "./ProjectCardArtwork";
 
 type SelectorTranslator = ReturnType<typeof useTranslations<"projectPages.selector">>;
@@ -44,7 +44,6 @@ let lastShown: ShownProjects | null = null;
 const TILE_SPRING = framerSpring(SPRING.surface);
 const NEW_PROJECT_HREF = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
 
-/** Shared by the project cards and the next-project tile. */
 const TILE_SURFACE =
   "rounded-card border bg-[color:var(--color-panel)] shadow-[inset_0_1px_0_var(--color-overlay-1)]";
 
@@ -52,6 +51,8 @@ export function ProjectSelectorPage() {
   const t = useTranslations("projectPages.selector");
   useDocumentTitle(t("documentTitle"));
   const { projects, loaded } = useProjects();
+  const selectedSlug = useSelectedProjectSlug();
+  const orderedProjects = useMemo(() => selectedFirst(projects, selectedSlug), [projects, selectedSlug]);
   const docs = useVaultDocs();
   const vault = useLocalVault();
   const tSwitch = useTranslations("vaultSwitch");
@@ -154,14 +155,14 @@ export function ProjectSelectorPage() {
               transition={{ default: TILE_SPRING, opacity: riseTransition }}
             >
             <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
-              {t("lede")}
+              {projects.length === 1 ? t("ledeSole") : t("lede")}
             </p>
 
               <ul
                 data-testid="project-selector-grid"
                 className="mt-7 grid list-none grid-cols-1 gap-[var(--card-gap)] p-0 md:grid-cols-2"
               >
-                {projects.map((project) => {
+                {orderedProjects.map((project) => {
                   const doc = findProjectDocInList(docs, project.slug);
                   return (
                     <motion.li
@@ -174,21 +175,17 @@ export function ProjectSelectorPage() {
                       <ProjectCard
                         project={project}
                         description={resolveAuthoredDescription(doc, project)}
+                        selected={project.slug === selectedSlug}
                         t={t}
                       />
                     </motion.li>
                   );
                 })}
-                {/* Alone on its row, the tile spans it. */}
-                <motion.li
-                  layout={reducedMotion ? false : "position"}
-                  layoutDependency={setKey}
-                  transition={TILE_SPRING}
-                  className={`flex min-w-0 ${projects.length % 2 === 0 ? "md:col-span-2" : ""}`}
-                >
-                  <NextProjectTile t={t} />
-                </motion.li>
               </ul>
+              {/* A card arriving above lengthens the grid; the section glides down instead of jumping. */}
+              <motion.div layout={reducedMotion ? false : "position"} layoutDependency={setKey} transition={TILE_SPRING}>
+                <NextProjectSection t={t} />
+              </motion.div>
             </motion.div>
             )}
             </>
@@ -200,7 +197,23 @@ export function ProjectSelectorPage() {
   );
 }
 
-function ProjectCard({ project, description, t }: { project: Project; description: string | null; t: SelectorTranslator }) {
+/** The selected project leads; the rest keep the order they were derived in. */
+function selectedFirst(projects: Project[], selectedSlug: string | null): Project[] {
+  const selected = projects.find((project) => project.slug === selectedSlug);
+  return selected ? [selected, ...projects.filter((project) => project !== selected)] : projects;
+}
+
+function ProjectCard({
+  project,
+  description,
+  selected,
+  t,
+}: {
+  project: Project;
+  description: string | null;
+  selected: boolean;
+  t: SelectorTranslator;
+}) {
   const locale = useLocale();
   const name = projectDisplayName(project, locale);
   const detailHref = getProjectRuntimeDetailHref(project.slug);
@@ -210,15 +223,21 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
     /* The name's link stretches over the card; the footer doors stand above it on `z-[1]`. */
     <article
       data-testid="project-selector-card"
-      className={`${TILE_SURFACE} group relative flex w-full min-w-0 flex-col border-[color:var(--color-border-soft)] transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] focus-within:border-[color:var(--color-border-strong)]`}
+      data-selected={selected || undefined}
+      className={cn(
+        TILE_SURFACE,
+        "group relative flex w-full min-w-0 flex-col transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] focus-within:border-[color:var(--color-border-strong)]",
+        selected ? "border-[color:var(--color-border-strong)]" : "border-[color:var(--color-border-soft)]",
+      )}
     >
       <div className="flex min-w-0 flex-1 flex-col p-[var(--card-pad)]">
         <div className="flex min-w-0 items-center gap-2.5">
           <OntologyMapKindGlyph kind="project" className="shrink-0" />
-          <h2 className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)]">
+          <h2 className="min-w-0 truncate text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)]">
             <Link
               href={detailHref}
               prefetch={false}
+              aria-current={selected ? "true" : undefined}
               className={controlClass({
                 shape: "link",
                 tone: "secondary",
@@ -231,6 +250,17 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
               <span className="min-w-0 truncate">{name}</span>
             </Link>
           </h2>
+          {selected ? (
+            <span
+              data-testid="project-selector-selected-tag"
+              className={badgeClass({
+                shape: "tag",
+                className: "shrink-0 border border-[color:var(--color-border-soft)] py-0.5 text-[color:var(--color-text-secondary)]",
+              })}
+            >
+              {t("selectedTag")}
+            </span>
+          ) : null}
         </div>
         {/* No reserved lines: the row stretches cards and pins footers. The clamp is a last resort. */}
         <p className="mt-2.5 line-clamp-4 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
@@ -265,64 +295,46 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
 
 
 /**
- * The page's one way to add a project: the form or a request to paste into an agent, side by
- * side in the card's grammar, two lines deep so a neighbouring card does not stretch.
+ * The page's one way to add a project, set apart from the cards it would add to: the form or a
+ * request to paste into an agent, each control under the sentence that explains it.
  */
-function NextProjectTile({ t }: { t: SelectorTranslator }) {
+function NextProjectSection({ t }: { t: SelectorTranslator }) {
   const copy = useCopyFeedback();
   const copyLabel = copyLabelFor(copy.state, t);
-  // One template for body and footer, so each control stands under its sentence.
-  const columns = "grid grid-cols-1 gap-x-6 gap-y-2 @md/next-slot:grid-cols-2";
-  // Dashed soft border: a divider-ink one is a surface combination the ratchet refuses.
+  const sentence =
+    "min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]";
   return (
     <section
       data-testid="project-selector-next-slot"
       aria-labelledby="project-selector-next-slot-title"
-      className="@container/next-slot flex w-full min-w-0 flex-col rounded-card border border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+      className="mt-8 border-t border-[color:var(--color-divider)] pt-5"
     >
-      <div className="flex min-w-0 flex-1 flex-col p-[var(--card-pad)]">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span aria-hidden className="flex shrink-0 text-[color:var(--color-text-tertiary)]">
-            <Plus size={MAP_KIND_GLYPH_SIZE} />
-          </span>
-          <h2
-            id="project-selector-next-slot-title"
-            className="min-w-0 flex-1 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
+      <h2 id="project-selector-next-slot-title" className="text-body leading-body text-[color:var(--color-text-secondary)]">
+        {t("nextSlotTitle")}
+      </h2>
+      <div className="mt-3 grid min-w-0 grid-cols-1 gap-x-[var(--card-gap)] gap-y-5 md:grid-cols-2">
+        <div className="flex min-w-0 flex-col items-start gap-3">
+          <p className={sentence}>{t("nextSlotFormSub")}</p>
+          <Link
+            href={NEW_PROJECT_HREF}
+            data-testid="project-selector-new-cta"
+            className={controlClass({ shape: "chip", size: "md", tone: "secondary" })}
           >
-            {t("nextSlotTitle")}
-          </h2>
+            <Plus size={ICON_SIZE.sm} aria-hidden />
+            {t("ctaNewProject")}
+          </Link>
         </div>
-        <div className={`mt-2.5 ${columns}`}>
-          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
-            {t("nextSlotFormSub")}
-          </p>
-          <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body leading-body text-[color:var(--color-text-tertiary)]">
-            {t("nextSlotSub")}
-          </p>
-        </div>
-      </div>
-      <div className="border-t border-dashed border-[color:var(--color-divider)] px-[var(--card-pad)] py-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 @md/next-slot:grid @md/next-slot:grid-cols-2 @md/next-slot:gap-x-6">
-          <div className="min-w-0">
-            <Link
-              href={NEW_PROJECT_HREF}
-              data-testid="project-selector-new-cta"
-              className={controlClass({ shape: "chip", size: "md", tone: "secondary" })}
-            >
-              {t("ctaNewProject")}
-            </Link>
-          </div>
-          <div className="min-w-0">
-            <button
-              type="button"
-              data-testid="project-selector-next-copy"
-              onClick={() => void copy.copy(t("nextSlotPrompt"))}
-              className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "max-w-full" })}
-            >
-              <Copy size={ICON_SIZE.sm} aria-hidden />
-              <span aria-live="polite" className="min-w-0 truncate">{copyLabel}</span>
-            </button>
-          </div>
+        <div className="flex min-w-0 flex-col items-start gap-3">
+          <p className={sentence}>{t("nextSlotSub")}</p>
+          <button
+            type="button"
+            data-testid="project-selector-next-copy"
+            onClick={() => void copy.copy(t("nextSlotPrompt"))}
+            className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "max-w-full" })}
+          >
+            <Copy size={ICON_SIZE.sm} aria-hidden />
+            <span aria-live="polite" className="min-w-0 truncate">{copyLabel}</span>
+          </button>
         </div>
       </div>
     </section>

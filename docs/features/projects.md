@@ -10,7 +10,7 @@ routes: [/projects, /project/[slug], /project/[slug]/edit, /project/new, /projec
 
 ### `/projects` — Project list (rebuilt 2026-07-18)
 
-**The door depends on the folder** (2026-09-19, decision "With one project, the Projects door opens that project"): with exactly one project the rail, its keyboard shortcut and the mobile tab bar open that project's page instead of a list of one row; with none or several they open this list. The list stays one press away as the breadcrumb at the top of every project page, and it is still where a project is created. One hook answers for all three doors (`useSoleProjectHref`), so the rail and the tab bar cannot disagree.
+**The door opens the selected project** (2026-09-19, decision "With one project, the Projects door opens that project", widened 2026-11-17): the rail, its keyboard shortcut and the mobile tab bar open the selected project's page. The selected project is the one whose page was opened last in this app session for the open folder, while it still exists; otherwise the folder's only project; with several projects and none opened yet the door opens this list. The selection is kept in memory only, per open folder, so a folder switch or a reload does not carry it. The list stays one press away from every project page through the control at its top left, and it is still where a project is created. One hook answers for all three doors (`useProjectsDoorHref`), so the rail and the tab bar cannot disagree.
 
 
 The project index uses the shared page frame and compact rows so several project
@@ -18,20 +18,23 @@ documents can be scanned by name and authored purpose. There is currently no
 in-page filtering.
 
 #### Header
-- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers) and, for the bundled sample, the open-folder action; adding a project lives in the closing tile, or on the stage while no project exists
+- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers) and, for the bundled sample, the open-folder action; adding a project lives in the section under the cards, or on the stage while no project exists
 - The bundled example state is labelled as a loaded sample rather than presented as the user's folder
-- With at most one project the lede and the cards are one stage centred in the window; from two the grid starts under the bar. While a browser folder opens, a centred wait names it
+- The lede says what choosing does: with several projects that the Projects tab opens the one picked, with one that the folder has one project and the tab opens it
+- With at most one project the lede, the cards and the add section are one stage centred in the window; from two the grid starts under the bar. While a browser folder opens, a centred wait names it
 
-#### Rows (one `<article>` per project, sorted by `updatedAt` desc)
+#### Rows (one `<article>` per project, sorted by `updatedAt` desc, the selected project first)
+- The selected project's card carries a "Selected" tag beside its name and the strong border at rest, and its name link is `aria-current`. With one project that project is the selected one; with several, a card is marked only after its page was opened in this session
 - Project name linked to its detail page. The name is the locale's `display_<locale>` when the document carries one, the canonical `title`/`name` otherwise (`projectDisplayName`, 2026-09-19, decision "A project is drawn by its locale display name on every screen"): the map, the INDEX and the Library already drew the project by that word, and the list and the page said the canonical title beside them
 - One-line explicitly authored frontmatter description, with neutral fallback when missing
 - Relative last-updated time
 - Clearly labelled "View details" and "View on map" actions, both secondary: the page has at most one indigo action, "New project", and only while no project exists (2026-10-15 — N cards gave N indigo chips beside the tile's own). "View on map" opens the project's own node (`?p=project:<slug>`), whose datasheet carries the code evidence and the control that connects the code folder (2026-09-25 — it sent the bare slug, which opens the project drawer, where neither exists)
 
-- A project added on its own page rises 8px and fades in over `--motion-base` when the list reopens, and the closing tile glides on the surface spring; a reload or a folder switch shows every card still. Reduced motion fades in place over `--motion-fast` (2026-10-16)
+- Adding a project: a section under the grid, separated by a hairline and not drawn as a card, with the heading "Add a project" and two columns from `md` (stacked below): the "New project" form and the request to copy for an agent, each under the sentence that explains it. The grid holds project cards only; an odd last card leaves its partner cell empty
+- A project added on its own page rises 8px and fades in over `--motion-base` when the list reopens, and the add section glides on the surface spring; a reload or a folder switch shows every card still. Reduced motion fades in place over `--motion-fast` (2026-10-16)
 
 #### Empty state
-- No projects at all → one centred stage in place of the lede and the tile: artwork of a project card being composed (name, definition line, domain rows whose bars fill once on arrival), the primary "New project" action, the secondary request to copy for an agent, and the `kind: project` note. When the first project appears the stage fades out where it stood and the card rises; reduced motion shows the composed card still
+- No projects at all → one centred stage in place of the lede and the add section: artwork of a project card being composed (name, definition line, domain rows whose bars fill once on arrival), the primary "New project" action, the secondary request to copy for an agent, and the `kind: project` note. When the first project appears the stage fades out where it stood and the card rises; reduced motion shows the composed card still
 
 ### `/project/[slug]` — Project detail (the brief beside what to check, 2026-11-17)
 
@@ -54,7 +57,7 @@ box, and nothing on the page unfolds in place: no `<details>`, no chevron row.
 - Evidence states come from the Git walk the map uses (`useMapEvidenceStates` in `src/features/vault-ontology/`): a screen that mounts shows the folder's last answer and walks again in the background, joining a walk already running for the same paths; a failed walk is never kept, and one folder never shows another's answer. Paths go to Git in batches of 512. The facts are built only under a found project in the installed app; the page computes no new fact, writes nothing and sends nothing
 
 #### Identity
-- Breadcrumb `Projects › {Name}`; the map door left it, since the rail already holds the map
+- One chip at the top left leads to the list, named for what the list offers from here: "Other projects" when the folder has several, "Add a project" when it has one, "Project list" on the not-found and loading states. There is no breadcrumb: the name is the heading below it
 - Project kind glyph and inline-editable name (`InlineEditable`, when the project can be managed; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name). The name stays the page's level-1 heading for the people who can edit it, and its accessible name is the project name
 - One meta line: Hub label, or "Individual project" when the folder holds several, the status when set, and the updated date
 - The authored description (inline-editable) at `text-title`, then the project document's lead paragraph at reading size and the prose measure: the paragraph above the first `##`, else the first section's, starting after the sentence the description already says, with wikilinks read as their labels. The numbered list of the document's own headings is gone. "Keep reading in the Ontology document" opens this project's own Markdown file (`/docs/?slug=<doc>`), or the vault root when the file is unknown

@@ -25,6 +25,7 @@ const page = vi.hoisted(() => {
     vault: { agentActivityStatus: undefined } as Record<string, unknown>,
     oneProject,
     projects: oneProject as unknown[],
+    selectedSlug: "ontology-atlas" as string | null,
   };
 });
 
@@ -46,6 +47,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("@/features/project-data-source", () => ({
+  useSelectedProjectSlug: () => page.selectedSlug,
   useProjects: () => ({
     projects: page.projects,
     loaded: true,
@@ -146,6 +148,7 @@ afterEach(() => {
   page.mode = "static";
   page.vault = { agentActivityStatus: undefined };
   page.projects = page.oneProject;
+  page.selectedSlug = "ontology-atlas";
 });
 
 describe("ProjectSelectorPage", () => {
@@ -213,11 +216,12 @@ describe("ProjectSelectorPage", () => {
     );
   });
 
-  it("offers both ways to add a project in one tile, and only there", async () => {
+  it("offers both ways to add a project in one section outside the project grid, and only there", async () => {
     const writeText = stubClipboard();
     renderPage();
     expect(screen.queryByTestId("project-selector-first-stage")).toBeNull();
     const tile = screen.getByTestId("project-selector-next-slot");
+    expect(screen.getByTestId("project-selector-grid")).not.toContainElement(tile);
     expect(screen.getAllByTestId("project-selector-new-cta")).toHaveLength(1);
     expect(within(tile).getByTestId("project-selector-new-cta")).toBeInTheDocument();
     expect(document.querySelector("header [data-testid='project-selector-new-cta']")).toBeNull();
@@ -225,6 +229,27 @@ describe("ProjectSelectorPage", () => {
     await vi.waitFor(() =>
       expect(writeText).toHaveBeenCalledWith(enMessages.projectPages.selector.nextSlotPrompt),
     );
+  });
+
+  it("marks the selected project and leads the grid with it", () => {
+    const ledger = { ...page.oneProject[0], slug: "ledger", name: "ledger" };
+    page.projects = [...page.oneProject, ledger];
+    page.selectedSlug = "ledger";
+    renderPage();
+    const cards = screen.getAllByTestId("project-selector-card");
+    expect(cards.map((card) => card.querySelector("h2")?.textContent)).toEqual(["ledger", "ontology-atlas"]);
+    expect(within(cards[0]).getByRole("link", { name: "ledger" })).toHaveAttribute("aria-current", "true");
+    expect(within(cards[0]).getByTestId("project-selector-selected-tag")).toBeInTheDocument();
+    expect(within(cards[1]).getByRole("link", { name: "ontology-atlas" })).not.toHaveAttribute("aria-current");
+    expect(within(cards[1]).queryByTestId("project-selector-selected-tag")).toBeNull();
+  });
+
+  it("marks no project while several exist and none was opened", () => {
+    page.projects = [...page.oneProject, { ...page.oneProject[0], slug: "ledger", name: "ledger" }];
+    page.selectedSlug = null;
+    renderPage();
+    expect(screen.queryByTestId("project-selector-selected-tag")).toBeNull();
+    expect(document.querySelector("[aria-current]")).toBeNull();
   });
 
   it("agrees in number with the count it labels", () => {

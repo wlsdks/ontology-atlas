@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { LayoutGrid, Plus } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -39,6 +39,7 @@ import {
   useProjects,
   useProjectMutations,
   useProjectBody,
+  useRecordSelectedProject,
   useVaultDocs,
   useVaultManifest,
 } from "@/features/project-data-source";
@@ -127,21 +128,24 @@ function ProjectDetailShell({
   );
 }
 
-function ProjectDetailTopBar({ slug, projectName }: { slug?: string; projectName?: string | null }) {
+/**
+ * The way to another project. Its label says what the list offers from here: other projects when
+ * the folder has several, adding one when it has one, and the list itself when no project is shown.
+ */
+function ProjectDetailTopBar({ projectCount }: { projectCount?: number }) {
   const t = useTranslations("projectPages.detail");
+  const label = projectCount === undefined ? t("topBarList") : projectCount > 1 ? t("topBarSwitch") : t("topBarAdd");
+  const Icon = projectCount === 1 ? Plus : LayoutGrid;
   return (
-    <nav className="flex min-w-0 items-center gap-2.5">
+    <nav aria-label={t("topBarNavLabel")} className="flex min-w-0 items-center">
       <Link
         href="/projects/"
-        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]" })}
+        data-testid="project-detail-switch"
+        className={controlClass({ shape: "chip", size: "md", tone: "secondary" })}
       >
-        {t("topBarProjectsLabel")}
+        <Icon size={ICON_SIZE.sm} aria-hidden />
+        {label}
       </Link>
-      <ChevronRight aria-hidden size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
-      {/* The display name in sans, since mono doubles Korean word gaps; truncates in the room left. */}
-      <span aria-current="page" className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
-        {projectName ?? slug ?? t("topBarProjectFallback")}
-      </span>
     </nav>
   );
 }
@@ -150,17 +154,15 @@ function ProjectDetailState({
   title,
   description,
   testId,
-  slug,
 }: {
   title: string;
   description: string;
   testId: string;
-  slug?: string;
 }) {
   const t = useTranslations("projectPages.detail");
   return (
     <ProjectDetailShell fillsHeight>
-      <ProjectDetailTopBar slug={slug} />
+      <ProjectDetailTopBar />
       <div className={PAGE_STAGE_FILL}>
         <FeatureStage
           data-testid={testId}
@@ -188,11 +190,11 @@ function ProjectDetailState({
   );
 }
 
-function ProjectDetailLoading({ slug }: { slug: string }) {
+function ProjectDetailLoading() {
   const t = useTranslations("projectPages.detail");
   return (
     <ProjectDetailShell fillsHeight>
-      <ProjectDetailTopBar slug={slug} />
+      <ProjectDetailTopBar />
       <div className={cn(PAGE_STAGE_FILL, "relative")}>
         <WaitStage mark="mascot" delayed data-testid="project-detail-loading" className={PAGE_WAIT_LIFT} title={t("stateLoadingTitle")} />
       </div>
@@ -270,6 +272,7 @@ export function ProjectDetailPage({
   );
 
   const projectsQuery = useProjects();
+  useRecordSelectedProject(project?.slug ?? null);
   const projectMutations = useProjectMutations();
   // Most documents have no `detail:` field, so the body is read from the file itself.
   const { body: vaultBody } = useProjectBody(project?.slug ?? null);
@@ -326,14 +329,13 @@ export function ProjectDetailPage({
         testId="project-detail-invalid"
         title={t("stateInvalidTitle")}
         description={t("stateInvalidDesc")}
-        slug={slug}
       />
     );
   }
 
   if (!project) {
     if (!resolved) {
-      return <ProjectDetailLoading slug={slug} />;
+      return <ProjectDetailLoading />;
     }
 
     return (
@@ -341,7 +343,6 @@ export function ProjectDetailPage({
           testId="project-detail-not-found"
           title={t("stateNotFoundTitle")}
           description={t("stateNotFoundDesc")}
-          slug={slug}
         />
       );
   }
@@ -458,7 +459,7 @@ export function ProjectDetailPage({
           ) : null
         }
       >
-        <ProjectDetailTopBar slug={slug} projectName={displayName ?? project.name} />
+        <ProjectDetailTopBar projectCount={projectsQuery.projects.length} />
 
         {/*
           Band A. From a 64rem page column the brief sits beside what to check, with what changed as one
