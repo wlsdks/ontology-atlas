@@ -63,6 +63,28 @@ async function dockClosed(page: Page, restWidth: number): Promise<void> {
 
 const pressDockClose = (page: Page) => page.getByTestId("analysis-workbench").getByRole("button", { name: en.analysisWorkbench.close }).click();
 
+/**
+ * How far the closing dock has handed its width back to the map when the Escape lands: late in the
+ * close, so the resize ends under the deselect's glide. Measured 2026-11-17: there the code before the
+ * deselect refit fails 5 of 5, at the first widened frame 1 of 3.
+ */
+const NEARLY_CLOSED_SHARE = 0.85;
+
+/**
+ * Presses Escape on the map in the first painted frame that shows the map `NEARLY_CLOSED_SHARE` of the
+ * way from `dockedWidth` to `freeWidth`: a key sent after the close press lands whenever a slow
+ * machine gets to it, often after the dock has gone.
+ */
+const escapeAsTheDockCloses = (page: Page, dockedWidth: number, freeWidth: number) => page.evaluate(({ docked, free, share }) => {
+  const canvas = document.querySelector<HTMLElement>("[data-testid=\"ontology-map-canvas\"]")!;
+  const tick = () => {
+    if (canvas.getBoundingClientRect().width < docked + (free - docked) * share) return requestAnimationFrame(tick);
+    canvas.focus();
+    canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+  };
+  requestAnimationFrame(tick);
+}, { docked: dockedWidth, free: freeWidth, share: NEARLY_CLOSED_SHARE });
+
 interface FrameSample { t: number; zoom: number; canvasWidth: number; selected: string | null }
 
 /** Records the drawn zoom, the canvas width and the selection on every frame until `stopSamples`. */
@@ -192,9 +214,10 @@ test.describe(`at ${VIEWPORT.width}x${VIEWPORT.height} on Flat, a deselect fits 
     const loaded = await readOverview(page);
     await openDock(page);
     await pressConcept(page, await firstDomain(page));
+    await escapeAsTheDockCloses(page, (await canvasBox(page)).width, loaded.canvasWidth);
     await startSamples(page);
     await pressDockClose(page);
-    await deselectWithEscape(page);
+    await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBeNull();
     await dockClosed(page, loaded.canvasWidth);
     await settleSelection(page);
     const samples = await stopSamples(page);
