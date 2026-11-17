@@ -4,7 +4,9 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
+import { MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
 import { DEMO_CLIPS } from '../model/demo-clips';
+import { FAQ_KEYS } from '../model/faq';
 import { RELEASE_VERSION } from '../lib/release-facts';
 import { DownloadPage } from './DownloadPage';
 
@@ -358,18 +360,41 @@ describe('DownloadPage', () => {
   });
 
   // Scoped to Atlas: the updater and a connected agent do use the network.
-  it('keeps no sign-up in the hero and the no-backend fact in the open-source section', () => {
+  it('keeps no sign-up in the hero and the no-backend fact in one FAQ answer', () => {
     publishRelease();
     renderDownloadPage();
 
-    // The hero keeps the plain promise; the open-source section names what it means.
+    // The hero keeps the plain promise; the FAQ names what it means, once on the page.
     expect(within(screen.getByTestId('gateway-hero')).getAllByText(/No sign-up/i)).toHaveLength(1);
-    expect(within(screen.getByTestId('gateway-source-section')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
+    expect(within(screen.getByTestId('gateway-faq-section')).getAllByText(/no backend of its own/i)).toHaveLength(1);
+    expect(screen.getAllByText(/no backend of its own/i)).toHaveLength(1);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Chromium on the web does open a folder.
     expect(
       screen.queryByText(/never opens or edits your folders/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('puts the maker contact in the closing, a profile link of the person behind the page', () => {
+    renderDownloadPage();
+
+    const link = within(screen.getByTestId('gateway-closing')).getByTestId('gateway-closing-contact-link');
+    expect(link).toHaveAttribute('href', MAKER_LINKEDIN_URL);
+    expect(link.getAttribute('rel')?.split(' ')).toEqual(expect.arrayContaining(['me', 'noreferrer']));
+    expect(link).toHaveTextContent(enMessages.footer.contact.link);
+    expect(screen.getByTestId('download-bottom-band')).not.toHaveTextContent(enMessages.footer.contact.lead);
+  });
+
+  it('shows every FAQ answer whole, in the words the FAQPage markup quotes', () => {
+    renderDownloadPage();
+
+    const rows = within(screen.getByTestId('gateway-faq-section')).getAllByRole('listitem');
+    expect(rows).toHaveLength(FAQ_KEYS.length);
+    rows.forEach((row, index) => {
+      const item = enMessages.download.faq.items[FAQ_KEYS[index]];
+      expect(within(row).getByRole('heading', { level: 3 })).toHaveTextContent(item.q);
+      expect(row.querySelector('p')!.textContent).toBe(item.a);
+    });
   });
 
   it('keeps the hosted page focused on app releases instead of browser vault work', () => {
@@ -494,7 +519,7 @@ describe('DownloadPage', () => {
   });
 
   describe('one screen served at two addresses', () => {
-    it('keeps compass identity in chrome and one Moru, in the hero', () => {
+    it('keeps compass identity in chrome and one Moru to play with, in the hero', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
 
