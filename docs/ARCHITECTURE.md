@@ -804,6 +804,18 @@ a web visitor returning from `/download` to the map restores the remembered
 folder as on a first load. `/` stays a workbench route, since it is the work
 entry point in the installed app and for a web visitor with a folder open.
 
+The workbench layout's props are one segment that every workbench route shares,
+`/` included, so it serialises only `/`'s subset
+(`src/app/providers/root-entry-messages.ts`: the gateway's paths, the root
+entry's copy, and the hidden rail's folder tile and settings search). The whole
+catalog arrives as one chunk per locale (`src/i18n/workbench-catalog.ts`)
+through `WorkbenchMessagesProvider`: every other workbench route, and `/` in the
+installed app, renders from it on the server and holds hydration until the
+browser has it. A web visitor on `/` fetches it, with the map and first-run
+views, only once a folder is on its way (`src/views/root-entry`); until then the
+gateway stays on screen and the shell keeps its rail hidden. The export of `/`
+fails on a message its subset lacks.
+
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
 > `/reset-password`, `/settings/*`.
