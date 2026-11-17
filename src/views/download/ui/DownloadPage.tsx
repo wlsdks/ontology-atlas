@@ -44,6 +44,7 @@ import { SectionIntro } from './SectionIntro';
 import { ClosingContact } from './ClosingContact';
 import { ClosingMap } from './ClosingMap';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
+import { useSectionPull } from '../lib/use-section-pull';
 
 /**
  * One grid: every section's content sits in `PAGE_GUTTER` + `PAGE_COLUMN`, starting at
@@ -78,6 +79,7 @@ export function DownloadPage() {
   /** The tab bar's own function: `/` shows the bar and `/download` hides it, and two lists drift. */
   const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
   const graph = useStageGraph();
+  useSectionPull();
   /** Decided once for the CTA, trust line and facts strip, or they disagree. */
   const visitorPlatform = useVisitorDesktopPlatform();
   const windowsInstaller = windowsAsset();

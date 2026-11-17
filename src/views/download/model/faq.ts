@@ -1,5 +1,9 @@
-/** The questions the download page answers in plain sentences, in reading order. */
-export const FAQ_KEYS = ['what', 'agents', 'privacy', 'price', 'difference', 'platforms'] as const;
+/**
+ * The two questions the page's sections do not already answer, in reading order. What Atlas is,
+ * which agents read it, its price and where it runs are said once each above: the hero, the loop,
+ * the open-source section, the facts strip and the trust line.
+ */
+export const FAQ_KEYS = ['privacy', 'difference'] as const;
 
 /**
  * An answer's first sentence, the gap after it and the rest, so the page sets the direct answer
