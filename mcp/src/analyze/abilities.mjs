@@ -35,7 +35,7 @@ function readText(rootPath, path) {
 }
 
 /** Whether a path is a benchmark, example or fixture rather than the product. */
-export function isTooling(path) {
+function isTooling(path) {
   return TOOLING.test(path);
 }
 
