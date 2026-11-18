@@ -1,9 +1,26 @@
-# Supply-chain settings. SECURITY.md explains each one and how an urgent
-# security bump bypasses the cool-down.
+# Supply-chain settings. SECURITY.md explains each one, every exclude below,
+# and how an urgent security bump bypasses the cool-down.
 #
 # Refuse a version published less than seven days (10,080 minutes) ago.
 minimumReleaseAge: 10080
-# Refuse a version whose publish provenance is weaker than an earlier one's.
+# Temporary: versions locked before the cool-down existed. Remove each group
+# once it is seven days old (UTC).
+minimumReleaseAgeExclude:
+  # Seven days old at 2026-11-19 11:17.
+  - icu-minify@4.15.2
+  - next-intl@4.15.1
+  - next-intl-swc-plugin-extractor@4.15.1
+  - use-intl@4.15.1
+  # Seven days old at 2026-11-22 14:13.
+  - "@eloqnt/config@0.1.2"
+  - "@eloqnt/format-json@0.1.1"
+  - "@eloqnt/format-po@0.1.2"
+# Refuse a version published with less trust evidence than an earlier one.
 trustPolicy: no-downgrade
+# Locked maintenance releases of an older major line, published without the
+# provenance a newer line already carried.
+trustPolicyExclude:
+  - eslint-import-resolver-typescript@3.10.1
+  - semver@6.3.1
 # A transitive dependency may come only from the registry, not Git or a URL.
 blockExoticSubdeps: true

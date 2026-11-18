@@ -176,6 +176,17 @@ console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
 const cargoPackageVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]+)"/)?.[1];
+// mcp/ and cli/ are separate install roots; without the same pin they run whatever pnpm is
+// installed globally, and an older one ignores their supply-chain settings.
+const unpinnedInstallRoots = ["mcp", "cli"].filter(
+  (dir) => JSON.parse(readText(`${dir}/package.json`)).packageManager !== pinnedPnpm,
+);
+if (unpinnedInstallRoots.length === 0) {
+  pass(`mcp/ and cli/ pin the same pnpm as the root (${pinnedPnpm})`);
+} else {
+  fail(`${unpinnedInstallRoots.join(", ")} package.json must set packageManager to ${pinnedPnpm}, as the root does`);
+}
+
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
 } else {

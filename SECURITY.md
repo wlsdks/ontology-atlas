@@ -78,8 +78,8 @@ assumption changes and this document should change with it.
 
 The root, `mcp/` and `cli/` each have their own `pnpm-workspace.yaml`, so each
 folder carries the same three install settings. They need pnpm 10.26 or later;
-`packageManager` in the root `package.json` pins the version, and every CI job
-activates that version through Corepack.
+`packageManager` in each folder's `package.json` pins the same version, and
+every CI job activates that version through Corepack.
 
 - **`minimumReleaseAge: 10080`.** pnpm will not resolve a version published
   less than seven days ago, so a compromised release has a week to be found and
@@ -93,19 +93,52 @@ activates that version through Corepack.
 - **`blockExoticSubdeps: true`.** A transitive dependency must come from the
   registry; one that points at a Git repository or a tarball URL is refused.
 
+pnpm checks a locked version again whenever it resolves, for example on
+`pnpm add`, so the root file carries exact excludes for versions that were
+already locked when these settings arrived. `mcp/` and `cli/` need none.
+
+| Exclude | Setting | Why | Remove |
+|---|---|---|---|
+| `icu-minify@4.15.2`, `next-intl@4.15.1`, `next-intl-swc-plugin-extractor@4.15.1`, `use-intl@4.15.1` | `minimumReleaseAgeExclude` | Locked before the cool-down; younger than seven days | After 2026-11-19 11:17 UTC |
+| `@eloqnt/config@0.1.2`, `@eloqnt/format-json@0.1.1`, `@eloqnt/format-po@0.1.2` | `minimumReleaseAgeExclude` | Locked before the cool-down; younger than seven days | After 2026-11-22 14:13 UTC |
+| `eslint-import-resolver-typescript@3.10.1` | `trustPolicyExclude` | A 3.x maintenance release published by the same maintainer account after 4.x had started carrying provenance | When `eslint-config-next` stops requiring 3.x |
+| `semver@6.3.1` | `trustPolicyExclude` | A 6.x maintenance release published from an npm CLI maintainer's own account, after 7.x releases came with provenance from the npm CLI team's release automation; `@babel/core`, `eslint-plugin-import` and `eslint-plugin-react` require 6.x | When nothing locked requires 6.x |
+
+A trust exclude says this exact version was checked and is accepted; it never
+names a whole package.
+
 ### An urgent security bump
 
 When the fix for a published advisory is younger than seven days, name that
-exact version in the `pnpm-workspace.yaml` of the folder whose lockfile takes it:
+exact version in `minimumReleaseAgeExclude` in the `pnpm-workspace.yaml` of the
+folder whose lockfile takes it. Install, commit the lockfile, and name the
+advisory in the same pull request. Remove the entries once the version is seven
+days old. Naming the version rather than the package keeps every later release
+of that package under the cool-down.
+
+A package published as a family needs every sibling it pins at that exact
+version, each listed exactly. `next` pins `@next/env` and eight
+`@next/swc-*` binaries that are published together, so `next` alone still
+fails on the first sibling, and a pattern such as `@next/*@16.5.0-canary.53` is
+rejected because a name pattern cannot carry a version. A working entry
+(checked with pnpm 10.34.9 while this canary was 40 hours old):
 
 ```yaml
 minimumReleaseAgeExclude:
-  - next@16.4.7
+  - next@16.5.0-canary.53
+  - "@next/env@16.5.0-canary.53"
+  - "@next/swc-darwin-arm64@16.5.0-canary.53"
+  - "@next/swc-darwin-x64@16.5.0-canary.53"
+  - "@next/swc-linux-arm64-gnu@16.5.0-canary.53"
+  - "@next/swc-linux-arm64-musl@16.5.0-canary.53"
+  - "@next/swc-linux-x64-gnu@16.5.0-canary.53"
+  - "@next/swc-linux-x64-musl@16.5.0-canary.53"
+  - "@next/swc-win32-arm64-msvc@16.5.0-canary.53"
+  - "@next/swc-win32-x64-msvc@16.5.0-canary.53"
 ```
 
-Install, commit the lockfile, and name the advisory in the same pull request.
-Remove the entry once the version is seven days old. Naming the version rather
-than the package keeps every later release of that package under the cool-down.
+`npm view <package>@<version> dependencies optionalDependencies` lists the
+siblings to name; pnpm names the next missing one if any is left out.
 
 ## Supported versions
 
