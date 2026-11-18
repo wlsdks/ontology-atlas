@@ -14,6 +14,7 @@ import {
   EXPECTED_TOOLS,
   expectedToolTitle,
 } from "../scripts/verify/tools-list/inventory.mjs";
+import { analyzeRepoStructure } from "./analyze.mjs";
 import { IMPORT_EDGE_KIND_VALUES, IMPORT_UNRESOLVED_REASON_VALUES } from "./infer-imports.mjs";
 import { VAULT_ISSUE_CODE_VALUES } from "./validate.mjs";
 import {
@@ -233,7 +234,7 @@ function getCallText(responses, id) {
 
 function getCallParsed(responses, id) {
   const structured = getCallStructured(responses, id);
-  if (structured?.contract === "agentBriefCompact:v3") return structured;
+  if (structured?.contract === "agentBriefCompact:v3" || structured?.contract === "breadthMap:v1") return structured;
   return JSON.parse(getCallText(responses, id));
 }
 
@@ -698,28 +699,8 @@ await test("tools/list — each single-item tool description cross-references it
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
-      /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*construction lifecycle[\s\S]*reviewPlan[\s\S]*constructionQualification:v1[\s\S]*writePlan[\s\S]*bootstrap the ontology/i,
-      "analyze_repo_structure description documents bootstrap safety workflow",
-    );
-    assert.match(
-      analyzeRepo?.description ?? "",
-      /unqualified-project-exclusion[\s\S]*exact human-acceptance gap[\s\S]*source-aware citation verification/i,
-      "analyze_repo_structure description separates approvable scope gaps from source-aware truth checks",
-    );
-    assert.match(
-      analyzeRepo?.description ?? "",
-      /freeze claim id, statement, and proposalRefs[\s\S]*isolated source-hidden[\s\S]*source-aware lanes run in parallel[\s\S]*before human acceptance/i,
-      "analyze_repo_structure description keeps parallel qualification sealed and pre-acceptance",
-    );
-    assert.match(
-      analyzeRepo?.description ?? "",
-      /mandatory non-gap warning blocks the first review before qualification/i,
-      "analyze_repo_structure description rejects mandatory warnings before candidate release",
-    );
-    assert.match(
-      analyzeRepo?.description ?? "",
-      /separately audit material Definition, Includes, Excludes, and Uncertainty assertions[\s\S]*several claims share one proposal ref/i,
-      "analyze_repo_structure description requires body-assertion rather than ref-only qualification",
+      /Read-only; nothing is written[\s\S]*breadth map[\s\S]*every product unit[\s\S]*entry points[\s\S]*names no node[\s\S]*Up to 16 selectors[\s\S]*never an instruction or approval[\s\S]*constructionQualification:v1/i,
+      "analyze_repo_structure description says the default survey is a breadth map and keeps the reviewed-plan route",
     );
     assert.match(
       analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",
@@ -738,8 +719,9 @@ await test("tools/list — each single-item tool description cross-references it
     ]);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
     assert.deepEqual(analyzeRepo?.outputSchema?.required, ['rootPath']);
-    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[1]?.required, ['framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped']);
-    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[0]?.required, ['delivery', 'canWrite', 'sourceEvidence']);
+    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[0]?.required, ['contract', 'size', 'units', 'entryPoints', 'docs', 'next']);
+    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[2]?.required, ['framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped']);
+    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[1]?.required, ['delivery', 'canWrite', 'sourceEvidence']);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -1711,11 +1693,6 @@ await test("tools/list — each single-item tool description cross-references it
       /agent_brief[\s\S]*detail:\"compact\"[\s\S]*12000 UTF-8 bytes together[\s\S]*taskNavigation[\s\S]*never searches the repository[\s\S]*never proves source behavior/,
       "query_ontology description documents the bounded task handoff and evidence limit",
     );
-    assert.match(
-      findTool("analyze_repo_structure")?.description ?? "",
-      /navigation:primary\|supporting\|test:<path>#<symbol>[\s\S]*limits 1\/1\/3[\s\S]*rejects missing, ambiguous, unsafe, or task-inferred coordinates/,
-      "analyze_repo_structure documents reviewed navigation evidence without widening meaning proof",
-    );
     assert.deepEqual(
       {
         detailEnum: findTool("query_ontology")?.inputSchema?.properties?.detail?.enum,
@@ -2423,7 +2400,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
   }
 });
 
-await test("analyze_repo_structure — bootstrap candidates expose structuredContent", async () => {
+await test("analyze_repo_structure — the survey is a breadth map over MCP and the candidate packet stays in the analyzer", async () => {
   const vaultRoot = makeVault();
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-")));
   try {
@@ -2440,8 +2417,13 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
     ]);
-    const result = getCallParsed(responses, 2);
-    assert.deepEqual(getCallStructured(responses, 2), result);
+    const survey = getCallStructured(responses, 2);
+    assert.equal(survey.contract, "breadthMap:v1");
+    assert.match(getCallText(responses, 2), /^Breadth map of /);
+    assert.deepEqual(survey.units.map((unit) => unit.path), ["src/features"]);
+    assert.equal(survey.domains, undefined);
+    assert.equal(survey.proposalValidation, undefined);
+    const result = analyzeRepoStructure(repoRoot);
     assert.equal(result.framework, "fsd");
     assert.deepEqual(result.project, {
       slug: "sample-app",
@@ -2480,8 +2462,10 @@ await test("analyze_repo_structure — authored Markdown alone supplies initial 
       ...INIT_REQUESTS,
       callTool(2, 'analyze_repo_structure', { rootPath: repoRoot }),
     ]);
-    const result = getCallParsed(responses, 2);
-    assert.deepEqual(getCallStructured(responses, 2), result);
+    const purpose = getCallStructured(responses, 2).docs.readme.purpose;
+    assert.match(purpose, /Operators preserve audit evidence/);
+    assert.doesNotMatch(purpose, /Hidden claim|Indented claim|Quoted claim/);
+    const result = analyzeRepoStructure(repoRoot);
     assert.equal(result.project.title, 'Authored Workflow');
     const evidence = result.semanticEvidence.find((row) => row.source === 'README.md');
     assert.equal(evidence.trust, 'candidate-evidence');
@@ -2504,12 +2488,7 @@ await test("analyze_repo_structure — truncated document evidence recovers its 
   const readme = join(repoRoot, 'README.md');
   try {
     writeFileSync(readme, original);
-    const initial = await rpcForRepo(vaultRoot, repoRoot, [
-      ...INIT_REQUESTS,
-      callTool(2, 'analyze_repo_structure', { rootPath: repoRoot }),
-    ]);
-    const analysis = getCallStructured(initial.responses, 2);
-    assert.deepEqual(getCallParsed(initial.responses, 2), analysis);
+    const analysis = analyzeRepoStructure(repoRoot);
     const evidence = analysis.semanticEvidence.find((row) => row.source === 'README.md');
     assert.equal(evidence.trust, 'claim-review-required');
     assert.ok(evidence.riskFlags.includes('excerpt-truncated'));
@@ -2550,7 +2529,7 @@ await test("analyze_repo_structure — truncated document evidence recovers its 
   }
 });
 
-await test("analyze_repo_structure — source-only preserves exact evidence and skips candidate delivery", async () => {
+await test("analyze_repo_structure — reads answer source-only and never repeat the map", async () => {
   const root = makeVault();
   writeFileSync(join(root, 'index.ts'), 'export function readSetting(value = 2) { return value; }\n');
   const reads = [{ path: 'index.ts', startLine: 1, maxLines: 10 }];
@@ -2560,13 +2539,15 @@ await test("analyze_repo_structure — source-only preserves exact evidence and 
       callTool(2, 'analyze_repo_structure', { sourceReads: reads }),
       callTool(3, 'analyze_repo_structure', { sourceOnly: true, sourceReads: reads }),
       callTool(4, 'analyze_repo_structure', { sourceOnly: false, sourceReads: reads }),
+      callTool(6, 'analyze_repo_structure', {}),
     ], 1500, { OATLAS_READ_ONLY: '1' });
-    const full = getCallParsed(responses, 2), compact = getCallParsed(responses, 3);
+    const compact = getCallParsed(responses, 3);
+    const map = getCallStructured(responses, 6);
     assert.deepEqual(Object.keys(compact).sort(), ['rootPath', 'delivery', 'canWrite', 'sourceEvidence'].sort());
     assert.equal(compact.delivery, 'source_only');
     assert.equal(compact.canWrite, false);
-    assert.deepEqual(compact.sourceEvidence, full.sourceEvidence);
-    assert.deepEqual(getCallParsed(responses, 4), full);
+    assert.deepEqual(getCallParsed(responses, 2), compact);
+    assert.deepEqual(getCallParsed(responses, 4), compact);
     const schema = responses.find((row) => row.id === 5).result.tools
       .find((tool) => tool.name === 'analyze_repo_structure').outputSchema;
     const validation = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
@@ -2576,16 +2557,12 @@ await test("analyze_repo_structure — source-only preserves exact evidence and 
       const validate = new AjvJsonSchemaValidator().getValidator(schema);
       process.stdout.write(JSON.stringify(values.map(validate)));
     `], { cwd: resolve(__dirname, '..'), encoding: 'utf8', input: JSON.stringify({ schema,
-      values: [full, compact, { ...full, delivery: 'source_only', canWrite: false },
-        { ...compact, canWrite: true }, { ...compact, writePlan: {} }],
+      values: [map, compact, { ...map, delivery: 'source_only', canWrite: false },
+        { ...compact, canWrite: true }, { ...compact, writePlan: {} }, { ...map, domains: [] }],
     }) }));
     assert.equal(validation[0].valid, true, validation[0].errorMessage);
     assert.equal(validation[1].valid, true, validation[1].errorMessage);
-    assert.deepEqual(validation.slice(2).map((result) => result.valid), [false, false, false]);
-    const fullBytes = Buffer.byteLength(JSON.stringify(full));
-    const compactBytes = Buffer.byteLength(JSON.stringify(compact));
-    console.log(`    source packet: full ${fullBytes} bytes; source-only ${compactBytes} bytes`);
-    assert.ok(compactBytes < fullBytes);
+    assert.deepEqual(validation.slice(2).map((result) => result.valid), [false, false, false, false]);
     assert.equal(loadVaultDocs(root).length, 0);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
@@ -2595,7 +2572,7 @@ await test("analyze_repo_structure — source-only rejects missing reads and eve
   const reads = [{ path: 'index.ts', startLine: 1, maxLines: 1 }];
   try {
     const invalid = [{ sourceOnly: true }, { sourceOnly: true, sourceReads: [] },
-      { sourceOnly: true, sourceReads: Array(9).fill(reads[0]) },
+      { sourceOnly: true, sourceReads: Array(17).fill(reads[0]) },
       { sourceOnly: 'true', sourceReads: reads },
       { sourceOnly: true, sourceReads: reads, proposal: null },
       { sourceOnly: true, sourceReads: reads, qualification: null },
@@ -2670,7 +2647,7 @@ await test("analyze_repo_structure — round-trips bounded sourceReads through M
     );
     assert.equal("text" in result.sourceEvidence.rows[1], false);
     assert.equal("citation" in result.sourceEvidence.rows[1], false);
-    assert.equal(result.semanticEvidence.some((row) => row.source.startsWith("source:")), false);
+    assert.equal(result.delivery, "source_only");
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -3577,11 +3554,11 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
       callTool(3, "infer_imports", { rootPath: repoRoot }),
       callTool(4, "index_project", { rootPath: repoRoot }),
     ]);
-    const analyze = getCallParsed(responses, 2);
+    assert.equal(getCallStructured(responses, 2).contract, "breadthMap:v1");
+    const analyze = analyzeRepoStructure(repoRoot);
     const imports = getCallParsed(responses, 3);
     const index = getCallParsed(responses, 4);
 
-    assert.deepEqual(getCallStructured(responses, 2), analyze);
     assert.equal(analyze.configurationEvidence.contract, "rustFeatureConfigurationEvidence:v1");
     assert.equal(analyze.configurationEvidence.writePolicy.writeAllowed, false);
     assert.equal(analyze.configurationEvidence.claimBoundary.semanticDependency, false);
@@ -3948,11 +3925,11 @@ await test("index_project — Python package and import boundaries reach the pub
       callTool(4, "infer_imports", { rootPath: repoRoot, reconcile: false }),
     ]);
     const result = getCallParsed(responses, 2);
-    const analyze = getCallParsed(responses, 3);
+    const analyze = analyzeRepoStructure(repoRoot);
     const imports = getCallParsed(responses, 4);
 
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.deepEqual(getCallStructured(responses, 3), analyze);
+    assert.equal(getCallStructured(responses, 3).contract, "breadthMap:v1");
     assert.deepEqual(getCallStructured(responses, 4), imports);
     assert.deepEqual(result.analyze.project, {
       slug: "protocol-client",

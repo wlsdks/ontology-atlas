@@ -82,7 +82,7 @@ test('rejects unsafe, ignored, sensitive, linked, binary, invalid UTF-8 and stal
     'node_modules/x.js', '.env', 'key.pem', 'credentials.py', 'link.ts', 'binary.ts', 'bad.ts',
     { path: 'safe.ts', startLine: 1, maxLines: 1, expectedSha256: '0'.repeat(64) },
   ].map((row) => typeof row === 'string' ? { path: row, startLine: 1, maxLines: 1 } : row);
-  assert.throws(() => readSourceEvidence(root, selectors), /between 1 and 8/);
+  assert.throws(() => readSourceEvidence(root, [...selectors, ...selectors.slice(0, 5)]), /between 1 and 16/);
   let credentialOpened = false;
   const packet = readSourceEvidence(root, selectors.slice(4), {
     onBeforeOpen: ({ target}) => { if (target.endsWith('credentials.py')) credentialOpened = true; },
@@ -111,7 +111,7 @@ test('allows ordinary token and password-policy implementation filenames without
 test('validates literal selectors and supported source types', () => {
   const root = fixture();
   writeFileSync(join(root, 'notes.txt'), 'no');
-  assert.throws(() => readSourceEvidence(root, []), /between 1 and 8/);
+  assert.throws(() => readSourceEvidence(root, []), /between 1 and 16/);
   assert.throws(() => readSourceEvidence(root, [{ path: 'x.ts', startLine: 1, maxLines: 1, body: 'x' }]), /Unknown field/);
   assert.throws(
     () => readSourceEvidence(root, [{ path: `broken-${String.fromCharCode(0xd800)}.ts`, startLine: 1, maxLines: 1 }]),

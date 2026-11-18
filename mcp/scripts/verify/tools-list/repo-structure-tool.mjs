@@ -5,16 +5,11 @@ export function repoStructureToolSchemaFailure(tools) {
   const analyzeTool = tools.find((tool) => tool?.name === 'analyze_repo_structure');
   if (!analyzeTool) return 'tools/list response missing analyze_repo_structure tool';
   if (
-    !/analyze a code repository and propose ontology node candidates/i.test(analyzeTool.description || '') ||
-    !/side effect 0 \(vault frontmatter NOT modified\)/i.test(analyzeTool.description || '') ||
-    !/Returns deterministic candidates/i.test(analyzeTool.description || '') ||
-    !/construction lifecycle/i.test(analyzeTool.description || '') ||
-    !/reviewPlan/i.test(analyzeTool.description || '') ||
-    !/independent evaluator/i.test(analyzeTool.description || '') ||
-    !/constructionQualification:v1/i.test(analyzeTool.description || '') ||
-    !/writePlan/i.test(analyzeTool.description || '') ||
-    !/bootstrap the ontology/i.test(analyzeTool.description || '') ||
-    !/Single source of truth preserved/i.test(analyzeTool.description || '')
+    !/Read-only; nothing is written/i.test(analyzeTool.description || '') ||
+    !/breadth map/i.test(analyzeTool.description || '') ||
+    !/names no node/i.test(analyzeTool.description || '') ||
+    !/never an instruction or approval/i.test(analyzeTool.description || '') ||
+    !/constructionQualification:v1/i.test(analyzeTool.description || '')
   ) {
     return 'analyze_repo_structure description missing bootstrap safety guidance';
   }
@@ -37,7 +32,7 @@ export function repoStructureToolSchemaFailure(tools) {
     'extractionContract', 'semanticEvidence', 'configurationEvidence',
     'proposalValidation', 'suggestedRelations', 'skipped'];
   const analysisBranches = analyzeTool.outputSchema.oneOf;
-  if (!Array.isArray(analysisBranches) || analysisBranches.length !== 2) {
+  if (!Array.isArray(analysisBranches) || analysisBranches.length !== 3) {
     return 'analyze_repo_structure outputSchema delivery branches drift';
   }
   const branchMatches = (branch, required, forbidden) =>
@@ -47,11 +42,15 @@ export function repoStructureToolSchemaFailure(tools) {
     && branch.not.anyOf.length === forbidden.length
     && branch.not.anyOf.every((rule, index) => sameArray(Object.keys(rule), ['required'])
       && sameArray(rule.required, [forbidden[index]]));
-  if (!branchMatches(analysisBranches[0], ['delivery', 'canWrite', 'sourceEvidence'],
+  if (!branchMatches(analysisBranches[0], ['contract', 'size', 'units', 'entryPoints', 'docs', 'next'],
+    ['delivery', 'canWrite', 'sourceEvidence', 'project', ...analysisFields])) {
+    return 'analyze_repo_structure outputSchema breadth map branch drift';
+  }
+  if (!branchMatches(analysisBranches[1], ['delivery', 'canWrite', 'sourceEvidence'],
     ['project', ...analysisFields])) {
     return 'analyze_repo_structure outputSchema source-only branch drift';
   }
-  if (!branchMatches(analysisBranches[1], analysisFields, ['delivery', 'canWrite'])) {
+  if (!branchMatches(analysisBranches[2], analysisFields, ['delivery', 'canWrite'])) {
     return 'analyze_repo_structure outputSchema full branch drift';
   }
   if (propertyAt(analyzeTool, ['properties', 'sourceOnly'])?.type !== 'boolean'

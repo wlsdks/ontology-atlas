@@ -14,7 +14,7 @@ import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 
 const SOURCE_READ_LIMITS = Object.freeze({
-  requests: 8,
+  requests: 16,
   pathCharacters: 1024,
   maxLines: 200,
   fileBytes: 256 * 1024,
@@ -328,7 +328,6 @@ export function readSourceEvidence(
   const packet = {
     contract: 'sourceEvidence:v1',
     trust: 'untrusted-source-data',
-    limits: { ...SOURCE_READ_LIMITS },
     coverage: 'requested-ranges-only',
     repositoryComplete: false,
     rows: [],
