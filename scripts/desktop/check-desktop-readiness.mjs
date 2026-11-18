@@ -74,6 +74,9 @@ function needsAdmission(jobSource) {
 const nextConfig = readText("next.config.ts");
 const tsConfig = JSON.parse(readText("tsconfig.json"));
 const pkg = JSON.parse(readText("package.json"));
+// Every Corepack line in the workflows must activate the pnpm that `packageManager` pins.
+const pinnedPnpm = String(pkg.packageManager ?? "pnpm@missing");
+const corepackPrepare = new RegExp(`corepack prepare ${pinnedPnpm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} --activate`, "g");
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
@@ -173,6 +176,17 @@ console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
 const cargoPackageVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]+)"/)?.[1];
+// mcp/ and cli/ are separate install roots; without the same pin they run whatever pnpm is
+// installed globally, and an older one ignores their supply-chain settings.
+const unpinnedInstallRoots = ["mcp", "cli"].filter(
+  (dir) => JSON.parse(readText(`${dir}/package.json`)).packageManager !== pinnedPnpm,
+);
+if (unpinnedInstallRoots.length === 0) {
+  pass(`mcp/ and cli/ pin the same pnpm as the root (${pinnedPnpm})`);
+} else {
+  fail(`${unpinnedInstallRoots.join(", ")} package.json must set packageManager to ${pinnedPnpm}, as the root does`);
+}
+
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
 } else {
@@ -607,7 +621,7 @@ if (
   /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\b/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
-  /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
+  (pagesDeployWorkflow.match(corepackPrepare)?.length ?? 0) >= 1 &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
@@ -620,7 +634,7 @@ if (
   pass("GitHub Pages workflow builds the custom-domain root export, deploys the sole hosted download site on push/release, and verifies the hosted download route");
 } else {
   fail(
-    ".github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build at the ontologyatlas.com root without the retired /ontology-atlas base path, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the canonical URL, verify published release assets on release, and never depend on Firebase",
+    `.github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build at the ontologyatlas.com root without the retired /ontology-atlas base path, use Node 24 with Corepack ${pinnedPnpm} without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the canonical URL, verify published release assets on release, and never depend on Firebase`,
   );
 }
 
@@ -1029,7 +1043,7 @@ if (
   (releaseWorkflow.match(/uses:\s*actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\b/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\b/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack enable/g)?.length ?? 0) >= 4 &&
-  (releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(corepackPrepare)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/pnpm --version/g)?.length ?? 0) >= 4 &&
   /uses:\s*actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\b/.test(releaseWorkflow) &&
   /uses:\s*actions\/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131\b/.test(releaseWorkflow) &&
@@ -1039,7 +1053,7 @@ if (
   pass("macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm/action-setup");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must use Node 24-compatible action majors plus Corepack pnpm@10.18.0 without pnpm/action-setup",
+    `.github/workflows/release-macos.yml must use Node 24-compatible action majors plus Corepack ${pinnedPnpm} without pnpm/action-setup`,
   );
 }
 
