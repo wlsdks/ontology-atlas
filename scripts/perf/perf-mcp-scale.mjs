@@ -4,7 +4,10 @@
 //   flow a: every page is a node. flow b: a few thousand nodes over many plain documents.
 //   --server: an entry script (run with node) or a compiled binary; default the source server.
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
-//   --check: exit 1 when a second call exceeds --max-cpu-ms (600) or memory exceeds --max-rss-mb (1024).
+//   --check: gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
+//     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or memory exceeds --max-rss-mb
+//     (1024). The source server is measured after it and printed, not gated: Node keeps freed heap
+//     pages resident, so its memory says little about what the app costs.
 // CPU is the server process's user+system time across one call, read from the OS, so it
 // includes everything the call cost and nothing the harness did.
 
@@ -15,6 +18,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { binaryFileNameForTriple, hostTargetTriple, MCP_BINARY_OUTPUT_DIR } from '../lib/packaging/mcp-binary.mjs';
 import { generateScaleVault } from './gen-scale-vault.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -22,15 +26,19 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const flag = (name, fallback) => args.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const files = Number(flag('files', '10000'));
 const flows = args.filter((arg) => arg.startsWith('--flow=')).map((arg) => arg.slice(7));
-const server = resolve(flag('server', join(ROOT, 'mcp/src/index.js')));
-const baseDir = resolve(flag('dir', join(tmpdir(), 'atlas-mcp-scale')));
+const SOURCE_SERVER = join(ROOT, 'mcp/src/index.js');
 const check = args.includes('--check');
+const explicitServer = flag('server', null);
+const server = explicitServer ? resolve(explicitServer) : check ? builtBinary() : SOURCE_SERVER;
+const isScript = (path) => /\.(?:c|m)?js$/.test(path);
+const baseDir = resolve(flag('dir', join(tmpdir(), 'atlas-mcp-scale')));
 const maxCpuMs = Number(flag('max-cpu-ms', '600'));
 const maxRssMb = Number(flag('max-rss-mb', '1024'));
 const TOTAL_CALLS = 20;
 const SHAPES = { a: 'all', b: 'key' };
 
 if (!Number.isInteger(files) || files < 100) usage('--files must be an integer of at least 100');
+if (check && isScript(server)) usage('--check gates the compiled binary the app ships; pass --server=<binary> or omit --server');
 if (flows.length === 0) flows.push('a');
 for (const flow of flows) if (!SHAPES[flow]) usage(`unknown --flow=${flow}`);
 
@@ -38,6 +46,12 @@ function usage(message) {
   console.error(`[perf-mcp-scale] ${message}`);
   console.error('usage: pnpm perf:mcp:scale -- --files=<n> --flow=a|b [--flow=b] [--server=<path>] [--dir=<path>] [--check]');
   process.exit(2);
+}
+
+function builtBinary() {
+  const path = join(ROOT, MCP_BINARY_OUTPUT_DIR, binaryFileNameForTriple(hostTargetTriple()));
+  if (!existsSync(path)) usage(`--check gates the compiled server; build it with \`pnpm mcp:build-binary\` or pass --server=<binary> (looked for ${path})`);
+  return path;
 }
 
 /** Reuses a vault generated with the same flow and size; the marker is a dotfile, which the walk skips. */
@@ -90,9 +104,9 @@ function footprintMb(pid) {
   }
 }
 
-function startServer(vault) {
-  const runsWithNode = /\.(?:c|m)?js$/.test(server);
-  const child = spawn(runsWithNode ? process.execPath : server, runsWithNode ? [server] : [], {
+function startServer(serverPath, vault) {
+  const runsWithNode = isScript(serverPath);
+  const child = spawn(runsWithNode ? process.execPath : serverPath, runsWithNode ? [serverPath] : [], {
     env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: vault },
     stdio: ['pipe', 'pipe', 'ignore'],
   });
@@ -126,13 +140,13 @@ const READS = [
   ['compile_ontology', { summary: true }],
 ];
 
-async function measureFlow(flow) {
+async function measureFlow(serverPath, flow) {
   const vault = ensureVault(flow);
   // A file written less than 2 s ago is re-read on every call by design (the racy
   // window); a vault generated just now would measure that, not the steady state.
   const age = Date.now() - statSync(join(vault, '.atlas-scale.json')).mtimeMs;
   if (age < 2500) await sleep(2500 - age);
-  const { child, rpc } = startServer(vault);
+  const { child, rpc } = startServer(serverPath, vault);
   await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'perf-mcp-scale', version: '0' } });
   child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
   let calls = 0;
@@ -170,18 +184,27 @@ async function measureFlow(flow) {
   return { flow, files, rows, afterEdit, calls, rss, footprint };
 }
 
-const results = [];
-for (const flow of flows) results.push(await measureFlow(flow));
-
-console.log(`# perf-mcp-scale — ${files} files, server ${server.replace(`${ROOT}/`, '')}`);
-console.log(`${'call'.padEnd(18)}${results.map((result) => `flow ${result.flow} 1st / 2nd ms`.padStart(24)).join('')}`);
-for (let index = 0; index < READS.length; index += 1) {
-  console.log(`${READS[index][0].padEnd(18)}${results.map((result) => `${result.rows[index].first} / ${result.rows[index].second}`.padStart(24)).join('')}`);
+function printTable(serverPath, results, note = '') {
+  console.log(`# perf-mcp-scale — ${files} files, server ${serverPath.replace(`${ROOT}/`, '')}${note}`);
+  console.log(`${'call'.padEnd(18)}${results.map((result) => `flow ${result.flow} 1st / 2nd ms`.padStart(24)).join('')}`);
+  for (let index = 0; index < READS.length; index += 1) {
+    console.log(`${READS[index][0].padEnd(18)}${results.map((result) => `${result.rows[index].first} / ${result.rows[index].second}`.padStart(24)).join('')}`);
+  }
+  console.log(`${'after 1-file edit'.padEnd(18)}${results.map((result) => `get_concept ${result.afterEdit}`.padStart(24)).join('')}`);
+  console.log(`${`rss after ${TOTAL_CALLS} calls`.padEnd(18)}${results.map((result) => `${result.rss} MB`.padStart(24)).join('')}`);
+  if (results.some((result) => result.footprint)) {
+    console.log(`${'footprint / peak'.padEnd(18)}${results.map((result) => `${result.footprint?.now ?? '?'} / ${result.footprint?.peak ?? '?'} MB`.padStart(24)).join('')}`);
+  }
 }
-console.log(`${'after 1-file edit'.padEnd(18)}${results.map((result) => `get_concept ${result.afterEdit}`.padStart(24)).join('')}`);
-console.log(`${`rss after ${TOTAL_CALLS} calls`.padEnd(18)}${results.map((result) => `${result.rss} MB`.padStart(24)).join('')}`);
-if (results.some((result) => result.footprint)) {
-  console.log(`${'footprint / peak'.padEnd(18)}${results.map((result) => `${result.footprint?.now ?? '?'} / ${result.footprint?.peak ?? '?'} MB`.padStart(24)).join('')}`);
+
+const results = [];
+for (const flow of flows) results.push(await measureFlow(server, flow));
+printTable(server, results, check ? ' (gated)' : '');
+
+if (check && !isScript(server)) {
+  const sourceResults = [];
+  for (const flow of flows) sourceResults.push(await measureFlow(SOURCE_SERVER, flow));
+  printTable(SOURCE_SERVER, sourceResults, ' (printed, not gated)');
 }
 
 if (check) {
