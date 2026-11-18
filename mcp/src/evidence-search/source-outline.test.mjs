@@ -118,6 +118,40 @@ test('lists a TypeScript method whose parameters start on the next line, and not
   );
 });
 
+test('a wrapped head ends where its parentheses close, past an object type, a default and a doc comment', () => {
+  const text = [
+    'export class Auto {',                              // 1
+    '  constructor(',                                   // 2
+    '    options: ApiOptions & {',                      // 3
+    '      /** Turn the loader off. */',                // 4
+    '      disableTsNode?: boolean;',                   // 5
+    '    } = {}',                                       // 6
+    '  ) {',                                            // 7
+    '    this.options = options;',                      // 8
+    '  }',                                              // 9
+    '  private async publishFullRelease(',              // 10
+    '    options: LatestOptions & {',                   // 11
+    '      from?: string;',                             // 12
+    '    }',                                            // 13
+    '  ): Promise<ShipitInfo | undefined> {',           // 14
+    '    entries',                                      // 15
+    '      .map(([key, result]) =>',                    // 16
+    '        processQueryResult({',                     // 17
+    '          sha: key,',                              // 18
+    '        })',                                       // 19
+    '      )',                                          // 20
+    '      .map(async (commit) => {',                   // 21
+    '        run(commit);',                             // 22
+    '      });',                                        // 23
+    '  }',                                              // 24
+    '}',                                                // 25
+  ].join('\n');
+  assert.deepEqual(
+    outlineSource(text, 'auto.ts').declarations.map((row) => [row.line, row.kind, row.name]),
+    [[1, 'class', 'Auto'], [2, 'method', 'constructor'], [10, 'method', 'publishFullRelease']],
+  );
+});
+
 test('a class of wrapped heads with many parentheses outlines in linear time', () => {
   const head = `  run(${'('.repeat(400)}`;
   const tail = `  ${')'.repeat(OUTLINE_LINE_CHARS - 10)} {`;
