@@ -220,9 +220,9 @@ function addConceptsBatch({ concepts }) {
 }
 
 /**
- * The coverage line after a batch: which units, entry points and main files nothing
- * places yet, and which entry files were never read. A measurement failure never
- * fails the write.
+ * The coverage line after a batch: which abilities nothing places yet, which entry
+ * files were never read, which rules cite no read lines, and which capabilities no
+ * ability-to-ability edge touches. A measurement failure never fails the write.
  */
 function buildCoverageLine() {
   if (!REPO_ROOT_IS_GROUNDED) return null;

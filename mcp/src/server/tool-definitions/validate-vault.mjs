@@ -43,7 +43,7 @@ export const VALIDATE_VAULT_TOOL = {
     properties: {
       coverage: {
         type: 'string',
-        description: 'One line: of the product units the survey lists, how many hold a node path, are named inside a node or are excluded with a reason; the units, must-have units, entry points and main files nothing places, by name; and the capabilities whose entry file this server never served a read for, with the exact analyze_repo_structure call that reads them. Absent when no repository root is grounded or it has no product source.',
+        description: 'One line: of the abilities the survey lists (entry points, dispatched operations, library exports, families), how many have their own node, are named inside a capability or element or are excluded with a reason, and each unplaced ability by name; the capabilities whose entry file this server never served a read for, with the exact analyze_repo_structure call that reads them; the capabilities stating a rule without citing read lines that hold its condition, with the read and patch; and the capabilities no ability-to-ability depends_on touches. Absent when no repository root is grounded or it has no product source.',
       },
       scanned: {
         type: 'integer',

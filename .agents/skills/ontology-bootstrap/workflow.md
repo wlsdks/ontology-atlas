@@ -1,8 +1,8 @@
 # Bootstrap a first map
 
-Build the whole product in outline and place every unit first, then read
-each must-have ability down to the rule that decides it, then write all of it
-in one run. Repository structure is evidence: a
+Build the whole product in outline and place every ability first, then read
+each capability by symbol and state the rule that decides it with the lines
+that hold it, then write all of it in one run. Repository structure is evidence: a
 folder, package or README heading becomes a node only with a definition. The
 kind tests and relation matrix live in the
 [Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind);
@@ -28,7 +28,10 @@ for a rebuild. A vault with 20 or more curated nodes goes to `ontology-sync`.
 
 `analyze_repo_structure` once, skipping the vault folder. It returns the
 breadth map: size, every product unit with its main files, exports, imports and
-importers, the entry points and the documents.
+importers, the entry points, the abilities to place and the documents. An
+ability is an entry point, an operation a dispatcher routes by name
+(`case "whisper":`), or a library export; five or more exports declared one per
+file in one folder are one family.
 
 ## 2. Breadth (2 to 5 calls)
 
@@ -37,9 +40,10 @@ Outline the main file of every product unit with `sourceReads` mode
 the unit's document heading is enough to name a capability and its entry
 symbol; it is not enough to say how it works.
 
-Breadth is a floor, not a count: every product unit the survey lists ends up
-as a node, inside a named node (the node that covers it names it in
-`## Includes`), or excluded with a reason in the project's `## Uncertainty`.
+Breadth is a floor, not a count: every ability the survey lists ends up as its
+own capability, named inside the capability or element that covers it (a family
+by at least half its members), or excluded with a reason in the project's
+`## Uncertainty`. A word in a domain sentence does not place an ability.
 
 ## 3. Write down the product outline
 
@@ -50,26 +54,31 @@ one capability with its members named in the body, never one node per class
 and never one node for the whole family. Keep real class or product names the
 docs use. Mark the must-have set: the abilities the product cannot do without.
 
-## 4. Depth (from each must-have entry to the rule that decides it)
+## 4. Depth (each capability by symbol, with the code that decides it)
 
-For each must-have ability, read its entry by `symbol` (`sourceReads` with
-`symbol`, up to 16 per call). The read returns the declaration and its
-`callees`, each with path and line. When the entry hands the decision to one of
-them (an interface, a `default*` factory, a helper the body names), read that
-one by symbol too, and keep following until you reach the condition, order or
-default that decides the behaviour. Choose the bound (two or three calls deep
-is usual) and say it under `## Uncertainty`. The body then states that rule in
-1 to 3 sentences, with no branch ladders and no status codes. Also list each
-interface's implementations: that gives the `depends_on` spine.
+Read each capability's entry by `symbol` (`sourceReads` with `symbol`, three
+or four per call so each gets its full context). The read returns the
+declaration with `context`: the guard around each call in up to two callers,
+the owner's constructor or header (defaults, the resolver a field holds), and
+the bodies of the direct callees, ranked by their conditions and defaults
+within 6 KiB, each with a `cite` such as `node/node.go:L331-L341`. A rule taken
+from the body alone can be backwards when its guard or default sits outside it,
+so state the rule from the whole context. When `deciding` names a caller the
+read did not return, read that caller by symbol; `contextOmitted` names parts
+past the budget. The body then states the rule in 1 to 3 sentences, with no
+branch ladders and no status codes, followed by the cite of the lines that hold
+its condition. Also list each interface's implementations: that gives the
+`depends_on` spine.
 
 ## 5. Stop reading
 
-Breadth is done when every unit is placed; depth is done when every must-have
-ability's rule is read. Breadth comes first: when cost is the limit, cut depth
-on abilities beyond the must-have set, never breadth. `add_concepts` and
-`validate_vault` list the units, entry points and main files nothing places,
-and the capabilities whose entry file this server never read, each with the
-exact next call; make those calls before finalizing.
+Breadth is done when every ability is placed; depth is done when every
+capability states its rule with a cite of read lines. Breadth comes first: when
+cost is the limit, cut depth on abilities beyond the must-have set, never
+breadth. `add_concepts` and `validate_vault` list the abilities nothing places,
+the capabilities whose entry file this server never read, the rules that cite
+no read lines, and the capabilities no ability-to-ability edge touches, each
+with the exact next call; make those calls before finalizing.
 
 ## 6. Say the outline, then write it
 
@@ -83,6 +92,10 @@ the person chose auto-approve; binding the code folder and finalizing always ask
 
 Write in four calls: project and domains, then capabilities, then elements
 (`add_concepts`), then relations (`add_relations`, each `why` the mechanism).
+For every capability ask which other capability must have run, be configured
+or be present first, and write that edge with a `why` citing the read lines.
+When the interface a caller uses has no node, the caller depends on its default
+implementation.
 Give each capability the file its ability starts in as `path:`, not a package
 `__init__` or a file six other nodes already name; `validate_vault` warns on
 both.
@@ -92,14 +105,16 @@ both.
 `validate_vault`, then `connect_project_source`, then
 `finalize_project_meaning` with the project's `## Competency answers`
 (`connection_info({guide:"competency"})` has the layout). Finalize refuses
-`domains` answered while a unit is unplaced, `abilities` answered while a
-must-have unit, entry point or main file has no node, `evidence` answered when
-more than a third of capabilities' entry files were never read in this
-session, and `impact` answered below one `depends_on` per two capabilities.
+`abilities` answered while a surveyed ability is unplaced, `evidence` answered
+when more than a third of capabilities' entry files were never read in this
+session or any capability states a rule without citing read lines that hold
+its condition, and `impact` answered below one `depends_on` per two
+capabilities or one ability-to-ability edge per three.
 Each refusal names its next call: make it and finalize again; mark the row
 `partial` with its `Gap` only when the map cannot be repaired. Answer a
 warning by the repair it names (`relation-note-on-unread` names the read and
-the `replace_relation` call), or say why not. Tell the person what the folder holds and
+the `replace_relation` call; `rule-without-read-lines` names the read and the
+patch), or say why not. Tell the person what the folder holds and
 what is still unopened.
 
 ## Stop conditions

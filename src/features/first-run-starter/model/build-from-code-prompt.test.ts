@@ -19,29 +19,31 @@ describe('build-from-code prompt', () => {
     expect([...steps].sort((a, b) => a - b)).toEqual(steps);
   });
 
-  it('places every unit before reading any ability in depth', () => {
+  it('places every ability before reading any in depth', () => {
     expect(flat).toContain('outline the main file of every unit it lists');
-    expect(flat).toContain('one ability per thing the user gets');
-    expect(flat).toContain('as a node, inside a named node, or excluded with a reason');
+    expect(flat).toContain('Every ability it lists ends up as its own capability, named inside the node that covers it, or excluded with a reason');
     expect(flat).toContain('cut depth on the abilities beyond the must-have set, never breadth');
   });
 
-  // The rule a question asks about usually sits one call below the entry function.
-  it('reads from the entry along its callees to the rule that decides it', () => {
-    expect(flat).toContain('read its entry by symbol');
-    expect(flat).toContain('follow the callees each read names until you reach the condition, order or default');
-    expect(flat).toContain('Choose how many calls deep you go and say why');
+  // Agents asked to follow callees rarely did; the symbol read now returns the deciding code itself.
+  it('reads each capability by symbol and cites the lines that hold its rule', () => {
+    expect(flat).toContain('Read every capability by symbol');
+    expect(flat).toContain('the guard around each call in its callers, the constructor\'s defaults and the callees that decide it');
+    expect(flat).toContain('When a read says the deciding condition is in a caller, read that caller too');
+    expect(flat).toContain('followed by the cite of the read lines that hold its condition');
   });
 
   // Count targets made agents pad to a number; the tools report coverage instead.
   it('sets no count target and points at the coverage the writes report', () => {
     expect(flat).not.toMatch(/fewer than ten|15 to 30|5 to 15|per 1,000/);
-    expect(flat).toContain('lists what no node places yet and which entry files were never read');
+    expect(flat).toContain('lists what no node places yet, which entry files were never read and which rules cite no read lines');
   });
 
-  it('states dependency direction from consumer to provider', () => {
+  it('states dependency direction from consumer to provider and asks for ability conditions', () => {
     expect(flat).toContain('consumer to provider');
+    expect(flat).toContain('or on its default implementation when the interface has no node of its own');
     expect(flat).toContain('an interface never depends on an implementation');
+    expect(flat).toContain('For every ability, ask which other ability must have run, be configured or be present first');
     expect(flat).toContain('Never write both directions between one pair');
   });
 

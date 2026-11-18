@@ -56,11 +56,15 @@ what A does, in the product as it is wired by default:
   option with a shipped default is a dependency on that role; the condition goes
   in `why` ("unless a custom controller is injected").
 - Direction is consumer to provider. A caller depends on the interface it
-  calls. An implementation does not depend on its interface, and an interface
-  never depends on an implementation. A composition root depends on what it
-  wires. Never write both directions between one pair; `validate_vault` warns.
-- Link ability to ability when one needs another to have run, be configured
-  or be present ("a refund needs the payment record capture writes").
+  calls, or on the interface's default implementation when the interface has
+  no node of its own; dropping the edge instead leaves impact blind to it. An
+  implementation does not depend on its interface, and an interface never
+  depends on an implementation. A composition root depends on what it wires.
+  Never write both directions between one pair; `validate_vault` warns.
+- For every ability, ask which other ability must have run, be configured or
+  be present first ("a refund needs the payment record capture writes";
+  "presence needs a subscription"), and write that edge with a `why` citing
+  the read lines that show it. A name in two bodies is not such a condition.
 - Candidates come from a call on the main flow, the composition root wiring B
   into A, A reading state that B writes, or a product-code import between units
   (not test-only, not type-only). One call site or constructor line confirms it.
