@@ -601,7 +601,7 @@ export function TopologyCommandChrome({
                       aria-label={tAtlasGit('tileLabel')}
                       title={tAtlasGit('tileLabel')}
                       data-testid="topology-git-lg-tile"
-                      className={`relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`}
+                      className={`relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`}
                     >
                       <HistoryIcon className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
                       {ontologyChangeset.touchedNodeIds.size > 0 ? (

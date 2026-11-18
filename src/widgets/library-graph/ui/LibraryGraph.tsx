@@ -442,10 +442,10 @@ export function LibraryGraph({
           aria-label={t("graph.canvasAria")}
           aria-describedby="library-graph-hint library-graph-keys"
           /* No border: the ground is the column's own `--color-canvas`, so the picture floats.
-             The focus ring is the map's 2px indigo floor, which `outline-none` would drop. */
+             The ring stands in for the 2px indigo outline floor that `outline-hidden` turns off. */
           className={cn(
             CANVAS_CLASS,
-            "mt-2 block cursor-grab touch-none outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+            "mt-2 block cursor-grab touch-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
           )}
           onPointerDown={engine.onPointerDown}
           onPointerMove={engine.onPointerMove}

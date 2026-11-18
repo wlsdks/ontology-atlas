@@ -224,7 +224,7 @@ export function AgentProposalCard({
               shape: 'chip',
               size: 'md',
               tone: 'secondary',
-              className: 'tracking-label border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              className: 'tracking-label border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
             })}
           >
             {labels.cancel}
@@ -254,7 +254,7 @@ export function AgentProposalCard({
                 size: 'md',
                 tone: 'strong',
                 className:
-                  'font-[var(--font-weight-emphasis)] tracking-label border-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  'font-[var(--font-weight-emphasis)] tracking-label border-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
               })}
             >
               {copyPending ? labels.copying : copyStatus === 'copied' ? labels.copied : labels.copy}

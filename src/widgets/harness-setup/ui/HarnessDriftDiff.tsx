@@ -195,7 +195,7 @@ function AlignedDiff({
         'mt-2 grid max-h-none overflow-auto rounded-chip border border-[color:var(--color-overlay-2)]',
         '@min-[40rem]/guide-detail:max-h-96 @min-[40rem]/guide-detail:grid-flow-col @min-[40rem]/guide-detail:grid-cols-2 @min-[40rem]/guide-detail:[grid-template-rows:var(--drift-rows)]',
         '@min-[48rem]/harness:max-h-none @min-[48rem]/harness:overflow-visible',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
       )}
     >
       {sides.map((side, index) => {

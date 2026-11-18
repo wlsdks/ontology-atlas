@@ -75,7 +75,7 @@ export function AgentScopeSheet({
             shape: 'chip',
             size: 'md',
             tone: 'secondary',
-            className: 'tracking-label border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+            className: 'tracking-label border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
           })}
         >
           {labels.cancel}

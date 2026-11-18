@@ -184,10 +184,10 @@ function Findings({ snapshot,sourceRoot,vaultPath,vaultHandle,onFocus,onPrepare,
     finally {actionBusy.current=false;if(live.current)setBusy(false);}
   };
   const label = (slug:string|null) => snapshot.nodes.find(n=>n.slug===slug)?.title ?? slug ?? '';
-  return <div ref={onReady} tabIndex={-1} role="group" aria-label={t('title')} className="space-y-4 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
+  return <div ref={onReady} tabIndex={-1} role="group" aria-label={t('title')} className="space-y-4 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
     <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
     {sourceRoot?<p className="break-all font-mono text-caption text-[color:var(--color-text-secondary)]">{sourceRoot}</p>:null}
-    {stale ? <div ref={onReady} tabIndex={-1} role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-[var(--card-pad)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
+    {stale ? <div ref={onReady} tabIndex={-1} role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-[var(--card-pad)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
     {visible.length===0 ? <div role="status" className="space-y-2 py-4"><h3 className="text-body font-[var(--font-weight-strong)]">{dismissed.size ? t('foldedAll') : t('empty')}</h3><p className="text-caption text-[color:var(--color-text-secondary)]">{t('emptyLimit')}</p></div> : null}
     {visible.map(candidate=>{
       const active=expanded===candidate.id;
@@ -254,7 +254,7 @@ function SourceExcerpt({source,measuredAt,onClose,onExited}:{source:GrayAreaWitn
   const t=useTranslations('grayArea');const shown=useHeldValue(source,source?.path??'');
   const mountSource=useCallback((node:HTMLDivElement|null)=>{if(node&&source){node.focus({preventScroll:true});node.scrollIntoView({block:'start'});}},[source]);
   return <Surface open={Boolean(source)} onExited={onExited} motion="overlay" className="space-y-2 border-t border-[color:var(--color-divider)] pt-3" data-testid="gray-area-source-witness">
-    <div tabIndex={-1} ref={mountSource} role="region" aria-label={t('source')} className="space-y-2 rounded-chip outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
+    <div tabIndex={-1} ref={mountSource} role="region" aria-label={t('source')} className="space-y-2 rounded-chip focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
       <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-body leading-body font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><CloseButton label={t('closeSource')} onClick={onClose} /></div>
       <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="whitespace-pre-wrap break-words text-body leading-body font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
     </div>

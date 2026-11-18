@@ -11,7 +11,7 @@ import type { SettingId } from '../model/catalog/types';
 
 
 export const DETAIL_TOGGLE_CHIP =
-  'justify-self-start border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+  'justify-self-start border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-text-primary)]';
 
@@ -214,7 +214,7 @@ export function Slider({
         style={{
           background: `linear-gradient(to right, var(--color-indigo-accent) ${filled}%, var(--color-overlay-3) ${filled}%)`,
         }}
-        className="h-1 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] sm:w-auto [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
+        className="h-1 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] sm:w-auto [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
       />
       <span className="w-12 shrink-0 text-right font-mono text-label text-[color:var(--color-text-tertiary)]">
         {format(value)}
@@ -378,7 +378,7 @@ export function ArmedChip({
         void onConfirm();
       }}
       className={cn(
-        'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
+        'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
         armed ? 'border-[color:var(--color-danger-a32)] hover:bg-[color:var(--color-danger-a10)]' : null,
       )}
     >
