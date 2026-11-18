@@ -31,14 +31,13 @@ Use `preview.html?clip=pup-peek` to open a particular motion.
 - [Source manifest](moru-source.json): source-sheet cells and composed sequences.
 - Source prompts: [v1](source/generation-v1.json), [v2](source/generation-v2.json),
   [v3](source/generation-v3.json), [v4](source/generation-v4.json), [v5](source/generation-v5.json), [v6](source/generation-v6.json), [v7](source/generation-v7.json), [v8](source/generation-v8.json), and [v9](source/generation-v9.json).
-- [All retained explorations](explorations/index.json): includes rejected concepts;
-  these are not additional shipping designs.
 - [Pose showcase](moru-poses-showcase.png) and [1024px app icon](icons/atlas-compass-1024.png).
 
 `sprites/{64,128}/{authored,composed}` contains transparent frame strips.
 `animated/{gif,webp}/{authored,composed}` contains timed, looping 256px exports.
-`poses/` contains individual transparent PNGs. Raw source sheets are retained
-unchanged in `source/`; export processing handles palette, binary alpha, body
+`poses/` contains individual transparent PNGs. The source sheets `moru-source.json` names
+are kept unchanged in `source/`; drafts, first passes and rejected sheets are
+not committed; export processing handles palette, binary alpha, body
 registration and shared neutral transitions. Clips are processed on a 256px
 grid and halved to each size; eyes, nose and whiskers are reduced to their own
 size so equal marks stay equal, the outline's soft gray edge joins the outline, the lighter haze beside any ink dissolves into the fill, and
