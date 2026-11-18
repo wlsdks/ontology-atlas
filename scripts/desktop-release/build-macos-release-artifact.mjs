@@ -24,8 +24,8 @@ const NOTARY_CREDENTIALS = [
 /**
  * `build` runs third-party build code with no credential, and CI imports the signing
  * certificate only after it; `sign` follows. No `--phase` walks every step locally.
- * The static export is built once: the bundle step turns Tauri's `beforeBuildCommand`
- * off, so the app carries the `out/` that `desktop:smoke` checked.
+ * The static export is built once: the bundle step narrows Tauri's `beforeBuildCommand`
+ * to staging, so the app carries the desktop copy of the `out/` that `desktop:smoke` checked.
  */
 export const RELEASE_ARTIFACT_STEPS = Object.freeze([
   { phase: "validate", label: "validate release credentials", command: "pnpm", args: ["desktop:release-secrets"], allow: CURRENT_RELEASE_SECRET_NAMES },

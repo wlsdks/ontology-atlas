@@ -200,6 +200,7 @@
     "loadingLabel": "불러오는 중…",
     "returnToProjectDetail": "프로젝트 상세로",
     "returnToProjectsList": "프로젝트 목록으로",
+    "returnToMap": "지도로",
     "deleteToast": "프로젝트 삭제",
     "savedToast": "\"{name}\" 저장 완료",
     "vaultConflict": "이 프로젝트 파일이 외부 편집기나 AI 에이전트에 의해 먼저 변경됐어요. 새로고침 후 다시 저장해주세요.",

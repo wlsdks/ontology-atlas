@@ -37,21 +37,26 @@ interface Props {
 
 const DEFAULT_RETURN_TO = "/projects/";
 
+/** The map's own address, with or without its query; the drawer's Edit link comes from there. */
+const MAP_RETURN = /^\/(?:topology\/?)?(?:[?#]|$)/;
+
 function normalizeReturnTo(returnTo?: string): string {
   if (!returnTo) return DEFAULT_RETURN_TO;
   if (
     !returnTo.startsWith("/projects") &&
-    !returnTo.startsWith("/project/")
+    !returnTo.startsWith("/project/") &&
+    !MAP_RETURN.test(returnTo)
   ) {
     return DEFAULT_RETURN_TO;
   }
   return returnTo;
 }
 
-type ReturnLabelKey = "returnToProjectDetail" | "returnToProjectsList";
+type ReturnLabelKey = "returnToProjectDetail" | "returnToProjectsList" | "returnToMap";
 
 function resolveReturnLabelKey(returnTo: string): ReturnLabelKey {
   if (returnTo.startsWith("/project/")) return "returnToProjectDetail";
+  if (MAP_RETURN.test(returnTo)) return "returnToMap";
   return "returnToProjectsList";
 }
 

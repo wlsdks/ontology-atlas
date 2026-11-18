@@ -8,6 +8,7 @@ import { CopyPlus, PencilLine } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
+import { getProjectEditHref } from "@/entities/project";
 
 interface Props {
   projectSlug?: string | null;
@@ -39,15 +40,10 @@ export function PublicQuickActions({
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [returnTo]);
 
-  const editProjectHref = useMemo(() => {
-    if (!projectSlug) return null;
-    const url = new URL(
-      `/project/${encodeURIComponent(projectSlug)}/edit/`,
-      "http://local.test",
-    );
-    url.searchParams.set("returnTo", returnTo);
-    return `${url.pathname}?${url.searchParams.toString()}`;
-  }, [projectSlug, returnTo]);
+  const editProjectHref = useMemo(
+    () => (projectSlug ? getProjectEditHref(projectSlug, { returnTo }) : null),
+    [projectSlug, returnTo],
+  );
 
   const shouldShowCreateAction = !projectSlug;
 

@@ -1456,16 +1456,16 @@ if (
   );
 }
 
-if (tauriConfig?.build?.frontendDist === "../out") {
-  pass("Tauri loads the Next.js static export from out/");
+if (tauriConfig?.build?.frontendDist === "target/desktop-frontend") {
+  pass("Tauri embeds the staged desktop copy of the static export");
 } else {
-  fail("src-tauri/tauri.conf.json must set build.frontendDist to ../out");
+  fail("src-tauri/tauri.conf.json must set build.frontendDist to target/desktop-frontend, the folder scripts/desktop/stage-desktop-frontend.mjs writes");
 }
 
-if (tauriConfig?.build?.beforeBuildCommand === "pnpm build") {
-  pass("Tauri build refreshes the static frontend through pnpm build");
+if (tauriConfig?.build?.beforeBuildCommand === "pnpm build && node scripts/desktop/stage-desktop-frontend.mjs") {
+  pass("Tauri build refreshes the static frontend through pnpm build, then stages the desktop copy");
 } else {
-  fail("src-tauri/tauri.conf.json must set build.beforeBuildCommand to pnpm build");
+  fail("src-tauri/tauri.conf.json must set build.beforeBuildCommand to pnpm build && node scripts/desktop/stage-desktop-frontend.mjs");
 }
 
 if (tauriConfig?.bundle?.targets?.includes("app")) {

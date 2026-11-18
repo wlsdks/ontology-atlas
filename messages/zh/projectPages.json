@@ -200,6 +200,7 @@
     "loadingLabel": "正在载入…",
     "returnToProjectDetail": "返回项目详情",
     "returnToProjectsList": "返回项目列表",
+    "returnToMap": "返回地图",
     "deleteToast": "项目已删除",
     "savedToast": "“{name}”已保存",
     "vaultConflict": "此项目文件已先被其他编辑器或 AI 智能体修改。请刷新后再保存。",

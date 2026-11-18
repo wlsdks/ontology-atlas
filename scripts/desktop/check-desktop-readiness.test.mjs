@@ -261,7 +261,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);
   assert.match(result.stdout, /✓ Tauri JavaScript API dependency is installed/);
   assert.match(result.stdout, /✓ Tauri scaffold exists/);
-  assert.match(result.stdout, /✓ Tauri loads the Next\.js static export from out\//);
+  assert.match(result.stdout, /✓ Tauri embeds the staged desktop copy of the static export/);
   assert.match(result.stdout, /✓ Tauri bundle target includes macOS \.app/);
   assert.match(
     result.stdout,
