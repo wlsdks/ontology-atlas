@@ -1,15 +1,8 @@
 #!/usr/bin/env node
 /**
- * `next build` with the type check done by the native TypeScript 7 compiler instead of Next's.
- *
- * `typescript` resolves to the TypeScript 6 compatibility package here, so Next checks types with
- * the JavaScript compiler: 49 s of a 66 s cold build, and no faster warm, because Next saves its
- * `.tsbuildinfo` before it computes diagnostics. `pnpm typecheck` checks the same `tsconfig.json`
- * program, route types included, with the native compiler in 3.6 s cold and 1.2 s warm. The build
- * still stops on a type error; it only stops sooner.
- *
- * `ATLAS_BUILD_SKIP_TYPECHECK=1` keeps its meaning: the Checks gate already ran `pnpm typecheck` on
- * this commit, so neither compiler runs (`next.config.ts`).
+ * `next build` with the type check run by native tsc 7 first; Next's own check (the TS 6 JS
+ * compiler, most of a cold build) is skipped. `ATLAS_BUILD_SKIP_TYPECHECK=1` skips both, for a
+ * commit the Checks gate already type-checked (`next.config.ts`).
  */
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
