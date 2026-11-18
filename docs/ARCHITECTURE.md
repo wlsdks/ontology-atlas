@@ -168,12 +168,42 @@ bundle identifier, and DMG assets use the Ontology Atlas identity, while the
 repo, CLI binary, and MCP package remain under `ontology-atlas`, so product
 naming does not imply a backend, Firebase data dependency, or package rename.
 
-Atlas answers graph-database questions by computing the answer when asked. It
-never keeps a second copy of the data. `compile_ontology` reads the frontmatter
+Atlas answers graph-database questions by computing the answer in memory when
+asked. It keeps no second source of truth. The installed app's derived index
+(below) only spares re-reading files that have not changed and makes every
+document searchable. `compile_ontology` reads the frontmatter
 (the `key: value` block at the top of each `.md` file) and builds one graph file
 in memory — the same vault always produces byte-identical output, which is what
 "deterministic" means here. `query_ontology` runs its graph operations over that
 file, and write tools save confirmed changes back into the markdown.
+
+### Derived index (installed app)
+
+`src-tauri/crates/vault-index` keeps two SQLite files per vault under
+`<OS cache dir>/dev.jinan.ontology-atlas/vault-index/<hash of the canonical
+vault path>/`. `search.sqlite` holds a full-text index of every Markdown file
+(tokens only, no document text) and is opened only by the app. `rows.sqlite`
+holds, per file and per producer, the result a program computed from that file.
+Every row carries the stamp of the file it came from (modified time, size, and
+change time on Unix) and is used only while that stamp still matches; a file
+modified within two seconds of its row is compared by SHA-256 instead. The
+crate never interprets frontmatter: parsing, the graph and validation stay in
+the TypeScript and MCP code that already own them, and graph queries stay in
+memory.
+
+The folder watcher, the slow poll and vault open each start a stamp pass on a
+background thread. A schema or producer version that differs in either
+direction discards the data and rebuilds it; a damaged file is set aside and
+rebuilt while the session continues from the vault files. Both files use WAL,
+so the app and another process can read at the same time. Settings › Privacy ·
+data shows the size, deletes the index and can turn it off. The web playground
+has no index.
+
+Only `search.sqlite` exists so far; `rows.sqlite` arrives with the reopen from
+cached rows. Searching is one rule shared by indexing and queries: words of
+alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
+become overlapping pairs, so a Korean term is found inside a word that carries
+a particle. The palette reads only the hit files to show their matching lines.
 
 Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
@@ -336,7 +366,9 @@ same file through all three parsers (web, MCP, scripts) and the schema is
 written in exactly one place, `mcp/src/schema.mjs`. Anything that has to pass
 between the two surfaces is written **inside the vault** as plain text —
 `.ontology-atlas/activity.jsonl` and `llm-audit.jsonl`. That is the rule this
-contract sets: *anything shared between surfaces lives in the vault folder.* If
+contract sets: *anything shared between surfaces lives in the vault folder.*
+The derived index is not shared state: it is a cache each program validates
+against the files for itself, and deleting it changes no answer. If
 two people (or an agent and a person) edit at once,
 `patch_concept(expected_mtime)` stops the second write from silently erasing the
 first.

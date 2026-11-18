@@ -13,6 +13,20 @@ routes: []
 - **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Only the map's mount (`onMap`) calls itself "Search this map"; elsewhere the dialog is named for what it searches ("Search concepts"; a project is one), and its empty state and footer name the loaded project, or "this folder" when there are several. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close. A project palette accepts these keys from its first visible mount, including Escape during its opening motion.
 
+**The documents palette searches inside every document in the installed app** (2026-11-19).
+The app keeps a search index of every Markdown file in the OS cache folder
+(`src-tauri/crates/vault-index`, `docs/ARCHITECTURE.md`, "Derived index"). Typing in the
+ontology documents palette asks it for the best 15 files, reads only those files to show
+the matching line, and ranks them beside title, summary and tag matches. A Korean term
+is found inside a word that carries a particle or sits in a compound (`지도` in `지도를`,
+`그래프엔진` in `지식그래프엔진의`), and a mixed term such as `MCP서버` matches as one phrase.
+While the first build runs, a line under the field counts it up ("Indexing 12,400 of
+50,000 documents") and the results so far are shown; when the index is off, deleted or
+cannot be opened, the same line says search covers titles, summaries and tags only.
+Settings › Privacy · data, "Stored on this computer", shows the index's size, deletes
+it, and turns it off; off leaves no index file. The web has no index: there the palette
+searches titles, summaries and tags, and its zero-result note says exactly that.
+
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
 substrings only, so the two things a Korean typist does first found nothing on the
 bundled Online Store sample: initials alone (the four consonants of a four-syllable
