@@ -5,7 +5,7 @@
 // Generated vaults and indexes live under the OS temp folder and are deleted unless --keep.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { cpus, loadavg, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,8 +20,7 @@ const REOPEN_RUNS = 5;
 const UPDATE_RUNS = 5;
 
 // Ranked lookups span two-syllable and longer Hangul, English, mixed and rare terms.
-const QUERIES = ['지도', '검색', '근거', '온톨로지', '프런트매터', '스냅샷', 'tokenizer', 'freshness', 'vault', 'MCP서버',
-  'MCP 서버', 'SQLite 색인', 'vault 경계', '지도 검색', '양자얽힘', '얽힘', 'zettelkasten', '그래프엔진', 'RAG 파이프라인', '파이프라인'];
+const QUERIES = JSON.parse(readFileSync(new URL('./scale-vault-words.json', import.meta.url), 'utf8')).queries;
 
 /** Limits from the 2026-11-19 derived-index decision, per file count where they differ. */
 const LIMITS = {

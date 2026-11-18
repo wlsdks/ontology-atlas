@@ -5,16 +5,17 @@
 // Bodies are one third English, one third Korean with particles attached to nouns, one third
 // mixed; one page in ten is four times longer; rare terms sit in 0.2 to 0.5 % of pages.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const EN = 'vault graph meaning evidence review relation boundary capability element domain agent session index parse render layout canvas release signing update frontmatter markdown history snapshot source import analysis freshness drift proposal approval library wiki passage outline search rank token locale message route panel inspector focus cluster layer watcher cache schema migration tokenizer latency throughput consistency recovery'.split(' ');
-const KO = '지도 문서 검색 관계 근거 경계 기능 요소 영역 세션 색인 분석 배포 서명 갱신 기록 원본 가져오기 신선도 제안 승인 자료실 위키 개요 순위 토큰 경로 패널 초점 군집 계층 온톨로지 마크다운 프런트매터 에이전트 스냅샷 캔버스 레이아웃 인스펙터 일관성 복구 지연시간 처리량 감시자 캐시 스키마 이전'.split(' ');
-const JOSA = ['', '은', '는', '이', '가', '을', '를', '의', '에', '에서', '으로', '와', '도', '만'];
-const VERB = ['읽는다', '만든다', '보여준다', '검사한다', '기록한다', '연결한다', '갱신한다', '비교한다', '확인한다', '남긴다'];
-const MIX = ['MCP서버', 'vault폴더', 'Git기록', 'frontmatter값', 'CLI명령', 'ACP세션', 'Tauri앱', 'SQLite색인', 'slug이름', 'UID값'];
+const KOREAN = JSON.parse(readFileSync(new URL('./scale-vault-words.json', import.meta.url), 'utf8'));
+const KO = KOREAN.nouns;
+const JOSA = KOREAN.particles;
+const VERB = KOREAN.verbs;
+const MIX = KOREAN.mixed;
 
 /** Writes the vault and returns what it wrote. */
 export function generateScaleVault(dir, fileCount, shape) {
@@ -81,13 +82,13 @@ export function generateScaleVault(dir, fileCount, shape) {
     bytes += Buffer.byteLength(text);
   };
   put('atlas.md', frontmatter({
-    uid: uid('p'), slug: 'atlas', kind: 'project', title: 'Bench Atlas', display_en: 'Bench Atlas', display_ko: '벤치 아틀라스',
+    uid: uid('p'), slug: 'atlas', kind: 'project', title: 'Bench Atlas', display_en: 'Bench Atlas', display_ko: KOREAN.labels.project,
     domains: Array.from({ length: domainCount }, (_, i) => `domains/dom-${i}`),
   }) + sections(0));
   for (let d = 0; d < domainCount; d++) {
     put(`domains/dom-${d}.md`, frontmatter({
       uid: uid(`d${d}`), slug: `domains/dom-${d}`, kind: 'domain', title: `Domain ${d}`, display_en: `Domain ${d}`,
-      display_ko: `영역 ${d}`, capabilities: domainCapabilities[d], elements: domainElements[d],
+      display_ko: `${KOREAN.labels.domain} ${d}`, capabilities: domainCapabilities[d], elements: domainElements[d],
     }) + sections(d % 3));
   }
   for (let i = 0; i < capabilityCount; i++) {
@@ -96,7 +97,7 @@ export function generateScaleVault(dir, fileCount, shape) {
     const notes = Object.fromEntries([...elements, ...dependsOn].map((slug) => [slug, enSentence()]));
     put(`capabilities/cap-${i}.md`, frontmatter({
       uid: uid(`c${i}`), slug: `capabilities/cap-${i}`, kind: 'capability', title: `Capability ${i} ${EN[i % EN.length]}`,
-      display_en: `Capability ${i}`, display_ko: `기능 ${i} ${KO[i % KO.length]}`, domain: `domains/dom-${capabilityDomain(i)}`,
+      display_en: `Capability ${i}`, display_ko: `${KOREAN.labels.capability} ${i} ${KO[i % KO.length]}`, domain: `domains/dom-${capabilityDomain(i)}`,
       elements, depends_on: dependsOn, path: `src/features/f${i % 400}/model/use-${EN[i % EN.length]}-${i}.ts`,
       relation_notes: notes, created_by: '"agent:bench"',
     }) + sections(i % 3));
@@ -104,7 +105,7 @@ export function generateScaleVault(dir, fileCount, shape) {
   for (let i = 0; i < elementCount; i++) {
     put(`elements/el-${i}.md`, frontmatter({
       uid: uid(`e${i}`), slug: `elements/el-${i}`, kind: 'element', title: `Element ${i} ${EN[(i * 5) % EN.length]}`,
-      display_en: `Element ${i}`, display_ko: `요소 ${i} ${KO[(i * 5) % KO.length]}`, domain: `domains/dom-${elementDomain(i)}`,
+      display_en: `Element ${i}`, display_ko: `${KOREAN.labels.element} ${i} ${KO[(i * 5) % KO.length]}`, domain: `domains/dom-${elementDomain(i)}`,
       path: `src/entities/e${i % 300}/lib/${EN[(i * 5) % EN.length]}-${i}.ts`, created_by: '"agent:bench"',
     }) + sections(i % 3));
   }
@@ -113,15 +114,15 @@ export function generateScaleVault(dir, fileCount, shape) {
     const scale = rnd() < 0.1 ? 4 : 1;
     const links = Array.from({ length: 4 }, () =>
       rnd() < 0.5 ? `[[capabilities/cap-${Math.floor(rnd() * capabilityCount)}]]` : `[[wiki/page-${Math.floor(rnd() * documentCount)}]]`);
-    const rare = (i % 211 === 0 ? ' 양자얽힘을 다시 확인한다.' : '')
+    const rare = (i % 211 === 0 ? KOREAN.rare.every211 : '')
       + (i % 307 === 0 ? ' The zettelkasten note links here.' : '')
-      + (i % 401 === 0 ? ' 지식그래프엔진의 결과를 남긴다.' : '')
-      + (i % 503 === 0 ? ' RAG파이프라인으로 근거를 모은다.' : '');
+      + (i % 401 === 0 ? KOREAN.rare.every401 : '')
+      + (i % 503 === 0 ? KOREAN.rare.every503 : '');
     const body = `# Page ${i}\n\n${para(4 * scale, lang)}${rare}\n\n## Background\n\n${para(6 * scale, lang)} See ${links[0]} and ${links[1]}.\n\n## Details\n\n${para(8 * scale, lang)}\n\n- ${sentence(lang)}\n- ${sentence(lang)}\n- ${sentence(lang)}\n\n## Related\n\n${para(3, lang)} Compare ${links[2]}; depends on ${links[3]}.\n`;
     put(`wiki/page-${i}.md`, frontmatter({
       uid: key ? undefined : uid(`w${i}`), slug: key ? undefined : `wiki/page-${i}`, kind: key ? undefined : 'document',
       title: `Page ${i} ${EN[(i * 11) % EN.length]} ${KO[(i * 13) % KO.length]}`,
-      display_en: key ? undefined : `Page ${i}`, display_ko: key ? undefined : `문서 ${i}`,
+      display_en: key ? undefined : `Page ${i}`, display_ko: key ? undefined : `${KOREAN.labels.page} ${i}`,
       tags: [`tag-${i % 40}`, `tag-${(i * 3) % 40}`],
     }) + body);
   }

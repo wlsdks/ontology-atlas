@@ -18,8 +18,8 @@ The app keeps a search index of every Markdown file in the OS cache folder
 (`src-tauri/crates/vault-index`, `docs/ARCHITECTURE.md`, "Derived index"). Typing in the
 ontology documents palette asks it for the best 15 files, reads only those files to show
 the matching line, and ranks them beside title, summary and tag matches. A Korean term
-is found inside a word that carries a particle or sits in a compound (`지도` in `지도를`,
-`그래프엔진` in `지식그래프엔진의`), and a mixed term such as `MCP서버` matches as one phrase.
+is found inside a word that carries a particle or sits in a compound, and a term that joins
+Latin letters to Hangul, such as `MCP` written against a Korean noun, matches as one phrase.
 While the first build runs, a line under the field counts it up ("Indexing 12,400 of
 50,000 documents") and the results so far are shown; when the index is off, deleted or
 cannot be opened, the same line says search covers titles, summaries and tags only.

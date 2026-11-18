@@ -204,7 +204,8 @@ fn term_matches(text: &str, term: &str) -> bool {
     whole_word(text, term)
 }
 
-/// `mcp서버`: the ASCII part must start a word and the Hangul part may run on.
+/// A Latin word joined to Hangul, as in `MCP` plus a Korean noun: the Latin part must start a
+/// word and the Hangul part may run on.
 fn mixed_term_matches(text: &str, term: &str) -> bool {
     let starts_ascii = term
         .chars()
