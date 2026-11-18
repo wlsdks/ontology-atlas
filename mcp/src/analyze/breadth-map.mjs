@@ -360,7 +360,11 @@ function docPages(rootPath, ignore) {
     return { path, title: title.slice(0, DOC_TITLE_CHARS) };
   });
   titled.sort((a, b) => a.path.split('/').length - b.path.split('/').length || a.path.localeCompare(b.path));
-  return { rows: titled.slice(0, DOC_PAGE_LIMIT), omitted: Math.max(0, titled.length - DOC_PAGE_LIMIT) };
+  return {
+    rows: titled.slice(0, DOC_PAGE_LIMIT),
+    omitted: Math.max(0, titled.length - DOC_PAGE_LIMIT),
+    all: titled.map((page) => page.path),
+  };
 }
 
 function formatCount(value) {
@@ -403,15 +407,20 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     outside[row.class] = entry;
   }
   const entryPoints = entryPointsOf(rootPath, collection);
-  const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, { ignore });
   const pages = docPages(rootPath, ignoreSet);
   const readme = readmePurpose(rootPath);
+  const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, {
+    ignore,
+    documents: { readme: readme?.path ?? null, pages: pages.all },
+  });
   const next = units.length === 0
     ? 'No product source file was found here: check rootPath and ignore, or build the map from documents.'
     : `${units.length} product units, ${formatCount(collection.productLines)} lines in ${formatCount(collection.productFiles)} files. ` +
       `Outline each unit's main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true) and ` +
-      `place each of the ${abilities.rows.length} abilities listed: a capability for it, its name inside the node that covers it ` +
-      '(a family names its members), or excluded with a reason. Then read each capability by symbol ' +
+      'list every ability the product gives a user, an operator or another system from the outlines and docs. ' +
+      `The ${abilities.rows.length} abilities listed are the floor under that list, not all of it: each gets a capability, ` +
+      'its name inside the node that covers it (a family or group names its members), or is excluded with a reason. ' +
+      'Then read each capability by symbol ' +
       '(sourceReads {path, symbol}, three or four per call): the read returns the body with the guards, defaults ' +
       'and callees that decide it, each with path and lines to cite. Nothing is written yet; add_concepts and ' +
       'validate_vault report which abilities no node places and which rules cite no read lines.';
@@ -517,11 +526,16 @@ function renderBreadthMap(map) {
     if (map.entryPointsOmitted) lines.push(`+${map.entryPointsOmitted} more`);
   }
   if (map.abilities?.length > 0) {
-    lines.push('', 'Abilities to place: kind name path symbol (a family lists its members)');
+    lines.push('', 'Abilities to place, the floor: kind name evidence symbol (a family or group lists its members; a documented one names its heading)');
     for (const row of map.abilities) {
+      const members = row.members
+        ? `: ${row.members.slice(0, 16).map((name) => t(name, 80)).join(', ')}${row.members.length > 16 ? ` +${row.members.length - 16}` : ''}`
+        : '';
+      const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
+      const doc = row.doc ? ` (${t(row.doc)})` : '';
       lines.push(row.kind === 'family'
-        ? `family ${t(row.path)}: ${row.members.map((name) => t(name, 80)).join(', ')}`
-        : `${row.kind} ${t(row.name, 120)} ${t(row.path)}${row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : ''}`);
+        ? `family ${t(row.path)} ${t(row.evidence)}${members}`
+        : `${row.kind} ${t(row.name, 120)} ${t(row.evidence)}${symbol}${doc}${members}`);
     }
     if (map.abilitiesOmitted) lines.push(`+${map.abilitiesOmitted} more`);
   }

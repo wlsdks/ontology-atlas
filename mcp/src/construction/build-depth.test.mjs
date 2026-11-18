@@ -79,7 +79,7 @@ test('every surveyed ability has a node, is named inside one, is excluded with a
   const { breadth } = depth;
   assert.deepEqual([breadth.abilities, breadth.node, breadth.named, breadth.excluded], [4, 1, 1, 1]);
   assert.deepEqual(breadth.unplaced.map((row) => row.name), ['whisper'], 'a domain sentence does not place an ability');
-  assert.match(depth.line, /Not placed: whisper \(operation, src\/cli\.ts\)/);
+  assert.match(depth.line, /Not placed: whisper \(operation, src\/cli\.ts:L12\)/);
   assert.match(depth.line, /add_concepts a capability for it/);
 });
 
@@ -418,4 +418,66 @@ test('a same-size edit with its mtime restored withdraws the read, and a linked 
     rmSync(linked, { force: true });
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+/*
+ * The survey's list is a floor: an exclusion has to say why, a line about a file
+ * shared by many abilities excludes none of them, a one-word flag is named only in
+ * code form, and finalize names every ability it holds the map to.
+ */
+const FLAGGED = {
+  'package.json': JSON.stringify({ name: 'tool', bin: { tool: 'src/cli.ts' } }),
+  'src/cli.ts': [
+    "import { Command } from 'commander';",
+    'const program = new Command();',
+    "program.option('--force');",
+    "program.option('--metrics-port <port>');",
+    "program.option('--metrics-host <host>');",
+    "program.option('--cache-dir <dir>');",
+    "program.option('--cache-size <n>');",
+    '',
+  ].join('\n'),
+  'src/sync.ts': 'export function startSync() {\n  setInterval(() => 1, 1000);\n}\n',
+};
+
+test('an exclusion names the ability and says why; listing names is not a reason', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const project = (line) => doc('project', {}, `Ships releases.\n\n## Uncertainty\n${line}\n`);
+  const place = (line) => measureBuildDepth([project(line)], repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(place('- Not modeled: startSync.').includes('startSync'));
+  assert.ok(!place('- startSync only refreshes a cache the release never reads.').includes('startSync'));
+});
+
+test('one line about a shared file excludes none of the abilities in it', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const docs = [doc('project', {}, 'Ships releases.\n\n## Uncertainty\n- The options in src/cli.ts were outlined and not modeled as abilities.\n')];
+  const unplaced = measureBuildDepth(docs, repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(unplaced.includes('--force') && unplaced.includes('--metrics-*'), unplaced.join(', '));
+});
+
+test('a one-word flag is named in code form, and a prefix group by half its flags', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const node = (body) => doc('capabilities/run-the-tool', { path: 'src/other.ts' }, `${body}\n`);
+  const unplaced = (body) => measureBuildDepth([node(body)], repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(unplaced('Runs by force of habit and reports metrics.').includes('--force'), 'an English word is not the flag');
+  assert.ok(unplaced('Runs by force of habit and reports metrics.').includes('--metrics-*'), 'a prefix is not a name');
+  const named = unplaced('Runs with `--force`; `--metrics-port` sets the port.');
+  assert.ok(!named.includes('--force') && !named.includes('--metrics-*'), named.join(', '));
+});
+
+test('finalize names every unplaced ability, none cut', () => {
+  const unplaced = Array.from({ length: 20 }, (_, index) => ({ kind: 'setting', name: `Feature${index}`, path: 'config.go', evidence: `config.go:L${index + 1}` }));
+  const [reason] = competencyDepthRefusals([{ id: 'abilities', status: 'answered' }], {
+    capabilities: 0, dependsOn: 0, reads: null, rules: null, abilityEdges: null,
+    breadth: { abilities: 20, node: 0, named: 0, excluded: 0, unplaced },
+  });
+  assert.match(reason, /Feature19 \(setting, config\.go:L20\)/);
+  assert.doesNotMatch(reason, /and \d+ more/);
+  assert.match(reason, /with a line that says why/);
 });
