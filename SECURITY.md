@@ -74,6 +74,39 @@ workflow that runs on push, and therefore can reach the secrets. This is why
 external contributions stay on forks. If maintainers are added later, that
 assumption changes and this document should change with it.
 
+## Dependency installs
+
+The root, `mcp/` and `cli/` each have their own `pnpm-workspace.yaml`, so each
+folder carries the same three install settings. They need pnpm 10.26 or later;
+`packageManager` in the root `package.json` pins the version, and every CI job
+activates that version through Corepack.
+
+- **`minimumReleaseAge: 10080`.** pnpm will not resolve a version published
+  less than seven days ago, so a compromised release has a week to be found and
+  pulled before it can enter a lockfile here. An install from the committed
+  lockfile (`pnpm install --frozen-lockfile`) resolves nothing and is not
+  affected.
+- **`trustPolicy: no-downgrade`.** pnpm refuses a version published with less
+  trust evidence (provenance or a trusted publisher) than an earlier version of
+  the same package, the usual mark of a release made from a stolen token rather
+  than the project's own pipeline.
+- **`blockExoticSubdeps: true`.** A transitive dependency must come from the
+  registry; one that points at a Git repository or a tarball URL is refused.
+
+### An urgent security bump
+
+When the fix for a published advisory is younger than seven days, name that
+exact version in the `pnpm-workspace.yaml` of the folder whose lockfile takes it:
+
+```yaml
+minimumReleaseAgeExclude:
+  - next@16.4.7
+```
+
+Install, commit the lockfile, and name the advisory in the same pull request.
+Remove the entry once the version is seven days old. Naming the version rather
+than the package keeps every later release of that package under the cool-down.
+
 ## Supported versions
 
 Only the latest release. This project is pre-1.0 in practice even where the

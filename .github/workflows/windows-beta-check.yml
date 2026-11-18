@@ -148,7 +148,7 @@ jobs:
         shell: pwsh
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Setup Rust

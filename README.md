@@ -129,6 +129,10 @@ pnpm dev
 pnpm checks:changed -- --run
 ```
 
+Installs refuse dependency versions published less than seven days ago;
+[SECURITY.md](SECURITY.md#dependency-installs) explains the install settings
+and how an urgent security fix skips the wait.
+
 [Development checks](docs/DEVELOPMENT-CHECKS.md) covers choosing checks,
 pre-push and CI, merging, and lane budgets.
 

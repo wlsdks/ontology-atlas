@@ -113,6 +113,7 @@ const PLANNER_SURFACE = CI_PLANNER_SURFACE_PATTERNS;
 const ROOT_ALL_LANE_INPUTS = [
   /^package\.json$/,
   /^pnpm-lock\.yaml$/,
+  /^pnpm-workspace\.yaml$/,
   /^patches\//,
 ];
 
@@ -123,7 +124,7 @@ const ROOT_UNIT_FULL_INPUTS = [
 ];
 
 const MCP_FULL_INPUTS = [
-  /^mcp\/(?:package(?:-lock)?\.json|pnpm-lock\.yaml)$/,
+  /^mcp\/(?:package(?:-lock)?\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$/,
 ];
 
 const PLAYWRIGHT_SPEC_PATH = /^tests\/e2e\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\.spec\.ts$/;
@@ -143,7 +144,7 @@ const KNOWN_PATHS = [
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,
   /^LICENSE$/,
-  /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|postcss\.config\.mjs|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,
+  /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|postcss\.config\.mjs|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,
   // A third-party directory reads this at the repository root and nothing here builds from it,
   // so it is known and drives no lane. `glama.json` names who may maintain the Glama listing.
   /^glama\.json$/,

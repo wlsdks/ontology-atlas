@@ -2,7 +2,7 @@
   "name": "ontology-atlas",
   "version": "2.2.3",
   "private": true,
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "pnpm@10.34.9",
   "license": "MIT",
   "engines": {
     "node": ">=24 <25"
