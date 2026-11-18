@@ -74,6 +74,7 @@
     "src/server/tool-inventory.mjs",
     "src/vault/backlink-key-shape.mjs",
     "src/parser.mjs",
+    "src/markdown-tree.mjs",
     "src/vault/document-patch.mjs",
     "src/project-source/project-source-vocabulary.mjs",
     "src/query.mjs",
@@ -228,6 +229,6 @@
   "private": true,
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
-    "mdast-util-from-markdown": "2.1.0"
+    "markdown-it": "15.0.3"
   }
 }

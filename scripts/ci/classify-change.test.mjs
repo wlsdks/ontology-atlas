@@ -453,7 +453,7 @@ test('MCP-spawning smokes raise the needsMcp flag', () => {
 
 test('a script test whose imports reach mcp/src raises the needsMcp flag', () => {
   // gate-evaluator.test.mjs loads mcp/src/agent-brief/reviewed-evidence.mjs, which needs
-  // mdast-util-from-markdown from mcp/node_modules; without the flag the lane never installs it.
+  // markdown-it from mcp/node_modules; without the flag the lane never installs it.
   const plan = buildImpactPlan({ files: ['scripts/lib/dogfood-walk/gate-evaluator.test.mjs'] });
   assert.ok(plan.lanes.gates.commands.includes('pnpm exec node --test scripts/lib/dogfood-walk/gate-evaluator.test.mjs'));
   assert.equal(plan.lanes.gates.needsMcp, true);

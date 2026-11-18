@@ -376,7 +376,7 @@ ship, are held to the license policy but not listed.
 
 `pretendard`
 
-## MCP sidecar npm packages (38)
+## MCP sidecar npm packages (10)
 
 The production dependency tree of `mcp/`, which the sidecar binary compiles in.
 
@@ -384,9 +384,17 @@ The production dependency tree of `mcp/`, which the sidecar binary compiles in.
 
 `@modelcontextprotocol/core`, `@modelcontextprotocol/server`
 
-### MIT (36)
+### BSD-2-Clause (1)
 
-`@types/debug`, `@types/mdast`, `@types/ms`, `@types/unist`, `character-entities`, `debug`, `decode-named-character-reference`, `dequal`, `devlop`, `mdast-util-from-markdown`, `mdast-util-to-string`, `micromark`, `micromark-core-commonmark`, `micromark-factory-destination`, `micromark-factory-label`, `micromark-factory-space`, `micromark-factory-title`, `micromark-factory-whitespace`, `micromark-util-character`, `micromark-util-chunked`, `micromark-util-classify-character`, `micromark-util-combine-extensions`, `micromark-util-decode-numeric-character-reference`, `micromark-util-decode-string`, `micromark-util-edit-map`, `micromark-util-encode`, `micromark-util-html-tag-name`, `micromark-util-normalize-identifier`, `micromark-util-resolve-all`, `micromark-util-sanitize-uri`, `micromark-util-subtokenize`, `micromark-util-symbol`, `micromark-util-types`, `ms`, `unist-util-stringify-position`, `zod`
+`entities`
+
+### MIT (6)
+
+`linkify-it`, `markdown-it`, `mdurl`, `punycode.js`, `uc.micro`, `zod`
+
+### PSF-2.0 (1)
+
+`argparse`
 
 ## Adapted code (0)
 
