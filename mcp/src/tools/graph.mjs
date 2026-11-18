@@ -36,6 +36,7 @@ import {
 } from '../project-meaning/project-meaning-receipt.mjs';
 import { buildProjectSourceGraphHash } from '../project-source/project-source-graph-hash.mjs';
 import {
+  pinnedCitationVerifier,
   readProjectSourceBindings,
   readProjectSourceView,
 } from '../project-source/project-source-receipt.mjs';
@@ -630,6 +631,7 @@ function projectMeaningContext(artifact, projectSlug, structureStatus, scopedPro
     artifactEdges: artifact?.edges,
     scopedDocs: docs,
     projectSource,
+    verifyCitation: pinnedCitationVerifier(VAULT_ROOT, projectSlug),
   });
   const projectDoc = docs.find((doc) => doc.slug === projectSlug && doc.frontmatter?.kind === 'project') ?? null;
   const assessmentInput = {

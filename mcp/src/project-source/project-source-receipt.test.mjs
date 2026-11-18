@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
-import { inspectProjectSource } from './project-source-inspection.mjs';
+import { filterStatus, inspectProjectSource, vaultFolderInside } from './project-source-inspection.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   readProjectSourceView,
@@ -268,4 +268,66 @@ test('readProjectSourceView re-checks the witnesses the current graph declares a
   const recorded = readProjectSourceView(root, 'music-streaming', 'graph-b');
   assert.equal(recorded.live.basis, 'receipt');
   assert.equal(recorded.live.status, 'witnesses_supported');
+});
+
+test('a vault inside the bound repository does not stale its own binding when it is written', () => {
+  const sourceRoot = gitSource();
+  const root = join(sourceRoot, 'atlas');
+  mkdirSync(root);
+  writeFileSync(join(root, 'project.md'), '---\nkind: project\n---\nfirst\n');
+  const inspection = inspectProjectSource(sourceRoot, { excludePath: root });
+  assert.equal(inspection.vaultExcluded, 'atlas');
+  assert.equal(inspection.dirty, false, 'the untracked vault is not a source change');
+  assert.ok(!inspection.files.some((path) => path.startsWith('atlas/')));
+  writeState(root, [boundInspection(sourceRoot, inspection)]);
+  writeFileSync(join(root, 'project.md'), '---\nkind: project\n---\nsecond\n');
+  mkdirSync(join(root, 'domains'));
+  writeFileSync(join(root, 'domains', 'playback.md'), '---\nkind: domain\n---\n');
+
+  const result = readProjectSourceView(root, 'music-streaming', 'graph-a');
+
+  assert.equal(result.currentness, 'current');
+  assert.equal(result.topGap, null);
+  writeFileSync(join(sourceRoot, 'src', 'player.ts'), 'export const player = false;\n');
+  assert.equal(readProjectSourceView(root, 'music-streaming', 'graph-a').currentness, 'stale');
+});
+
+test('a vault the repository ignores hashes the same with or without the exclusion', () => {
+  const sourceRoot = gitSource();
+  writeFileSync(join(sourceRoot, '.gitignore'), 'atlas/\n');
+  const root = join(sourceRoot, 'atlas');
+  mkdirSync(root);
+  writeFileSync(join(root, 'project.md'), '---\nkind: project\n---\n');
+  assert.equal(
+    inspectProjectSource(sourceRoot, { excludePath: root }).fingerprint,
+    inspectProjectSource(sourceRoot).fingerprint,
+    'a receipt minted without the vault root keeps verifying',
+  );
+});
+
+test('the vault exclusion rule matches the shared cases the app probe also runs', () => {
+  const cases = JSON.parse(readFileSync(new URL('./vault-exclusion-cases.json', import.meta.url), 'utf8'));
+  for (const { source, vault, inside } of cases.folders) {
+    assert.equal(vaultFolderInside(source, vault), inside, `${source} :: ${vault}`);
+  }
+  const encode = (entries) => Buffer.from(entries.length > 0 ? `${entries.join('\0')}\0` : '', 'utf8');
+  for (const { excluded, entries, kept } of cases.status) {
+    assert.deepEqual(filterStatus(encode(entries), excluded), encode(kept));
+  }
+});
+
+test('a vault path typed in another case is still the bound folder on a case-insensitive disk', (t) => {
+  const parent = mkdtempSync(join(tmpdir(), 'atlas-project-source-case-'));
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const sourceRoot = join(parent, 'Repo');
+  renameSync(gitSource(), sourceRoot);
+  if (!existsSync(join(parent, 'repo'))) {
+    t.skip('this disk is case-sensitive, so the typed case names another folder');
+    return;
+  }
+  mkdirSync(join(sourceRoot, 'atlas'));
+  writeFileSync(join(sourceRoot, 'atlas', 'project.md'), '---\nkind: project\n---\n');
+  const inspection = inspectProjectSource(join(parent, 'repo'), { excludePath: join(parent, 'REPO', 'atlas') });
+  assert.equal(inspection.vaultExcluded, 'atlas');
+  assert.equal(inspection.dirty, false);
 });

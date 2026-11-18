@@ -469,10 +469,15 @@ const SPECIFIER_PATTERNS = [
   /\bimport\s*\(\s*['"]([^'"\n]+)['"]/g,
   /\bimport\s+['"]([^'"\n]+)['"]/g,
   /\brequire(?:_relative)?\s*(?:\(\s*)?['"]([^'"\n]+)['"]/g,
-  /^[ \t]*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm,
   /^[ \t]*(?:pub(?:\([^)\n]*\))?\s+)?(?:use|mod)\s+(?!\s)((?:(?!\b(?:use|mod)\b)[\w:{}\s,])*?[\w:{},])\s*;/gm,
   /^[ \t]*#\s*include\s*[<"]([^>"\n]+)[>"]/gm,
 ];
+/*
+ * Python names modules with dots (`from .image import Image`, `import pkg.data.image`),
+ * so its specifiers are read apart: the path splitter keeps a dot before a short
+ * tail as a file extension, which would eat `image` from `.image`.
+ */
+const PYTHON_IMPORT = /^[ \t]*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm;
 const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
 const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
 
@@ -492,6 +497,9 @@ function moduleSpecifiers(text) {
     for (const match of String(text).matchAll(pattern)) {
       specifiers.push(...match.slice(1).filter(Boolean));
     }
+  }
+  for (const match of String(text).matchAll(PYTHON_IMPORT)) {
+    specifiers.push(...match.slice(1).filter(Boolean).map((dotted) => dotted.replaceAll('.', '/')));
   }
   for (const block of String(text).matchAll(GO_IMPORT_BLOCK)) {
     for (const quoted of block[1].matchAll(/"([^"\n]+)"/g)) specifiers.push(quoted[1]);

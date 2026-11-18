@@ -604,6 +604,30 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
     assert.deepEqual(dependencyWitnessFinding(input).map((row) => row.key), ['elements/helper', 'elements/absent']);
   });
 
+  it('a Python note naming the module that imports the target clears the finding it raised', (t) => {
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-python-witness-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, 'src', 'pkg', 'data'), { recursive: true });
+    writeFileSync(join(root, 'src', 'pkg', 'data', 'image.py'), 'class Image:\n    pass\n');
+    writeFileSync(join(root, 'src', 'pkg', 'data', 'record.py'), 'from .image import Image\n\nclass Record:\n    def load(self):\n        return Image()\n');
+    writeFileSync(join(root, 'src', 'pkg', 'data', 'loader.py'), 'import pkg.data.image\n');
+    writeFileSync(join(root, 'src', 'pkg', 'data', 'queue.py'), 'from .record import Record\n\ndef prepare(record):\n    record.load()\n');
+    const judge = (note) => dependencyWitnessFinding({
+      slug: 'capabilities/queue',
+      frontmatter: {
+        path: 'src/pkg/data/queue.py',
+        dependencies: ['capabilities/load-image'],
+        ...(note ? { relation_notes: { 'capabilities/load-image': note } } : {}),
+      },
+      repoRoot: root,
+      resolveTargetPath: (ref) => (ref === 'capabilities/load-image' ? 'src/pkg/data/image.py' : null),
+    }).map((finding) => finding.code);
+
+    assert.deepEqual(judge(null), ['dependency-unwitnessed']);
+    assert.deepEqual(judge('src/pkg/data/queue.py calls Record.load (src/pkg/data/record.py), which loads the image.'), []);
+    assert.deepEqual(judge('src/pkg/data/loader.py imports pkg.data.image'), []);
+  });
+
   it('fires on an edge this write added, naming both files and both repairs', (t) => {
     const root = repoWithSources();
     t.after(() => rmSync(root, { recursive: true, force: true }));

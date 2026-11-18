@@ -8,7 +8,7 @@ import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mj
 import {
   MEANING_COMPETENCY_CONTRACT,
   MEANING_COMPETENCY_EVALUATOR,
-  deriveMeaningAssessment,
+  unresolvedCompetencyRows,
 } from '../meaning/meaning-assessment.mjs';
 import { queryCompiledOntology } from '../ontology-engine.mjs';
 import {
@@ -43,7 +43,6 @@ import {
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { VaultConflictError } from '../vault/atomic-writes.mjs';
 import {
-  meaningSourceFromProjectSource,
   projectMeaningContext,
   projectSourceScope,
 } from './graph.mjs';
@@ -55,6 +54,19 @@ import { isAbsolute } from 'node:path';
 const PROJECT_SOURCE_CONNECT_CONTRACT = 'projectSourceConnect:v1';
 
 const PROJECT_SOURCE_DISCONNECT_CONTRACT = 'projectSourceDisconnect:v1';
+
+/**
+ * One refusal for every answered row that does not resolve, each reason naming the
+ * witness, so the next patch repairs all of them at once.
+ */
+function competencyRefusal(rows) {
+  const lines = rows.map(({ id, problems }) => `- ${id}: ${problems.join('; ')}.`);
+  return [
+    `finalize_project_meaning blocked: ${rows.length} answered competency row(s) cite witnesses that do not resolve.`,
+    ...lines,
+    'A measured source witness is a repository file that a concept\'s `path:` or this section names and that connect_project_source found; after adding a path, call connect_project_source again. An `Evidence` value may also be a pinned `source:<path>#L<start>-L<end>@sha256:<hash>` citation whose file still has that hash. Otherwise mark the row partial with a `- Gap:` line.',
+  ].join('\n');
+}
 
 function resolveProjectNodeSlug(projectSlug, allDocs) {
   const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs);
@@ -124,7 +136,7 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
 
   let probe;
   try {
-    probe = inspectProjectSource(selectedRoot);
+    probe = inspectProjectSource(selectedRoot, { excludePath: VAULT_ROOT });
   } catch (err) {
     throw new Error(
       `connect_project_source could not measure "${selectedRoot}": ${err instanceof Error ? err.message : String(err)}`,
@@ -342,27 +354,17 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(`${reason} ${COMPETENCY_SECTION_HINT_EN}`);
   }
-  const witnessAssessment = deriveMeaningAssessment({
-    projectSlug: canonicalSlug,
+  const competencyInput = {
+    contract: MEANING_COMPETENCY_CONTRACT,
+    receiptVersion: 1,
+    evaluator: MEANING_COMPETENCY_EVALUATOR,
     graphHash: context.graphHash,
-    structure: { status: brief.readiness?.status },
-    source: meaningSourceFromProjectSource(context.projectSource),
-    competency: {
-      contract: MEANING_COMPETENCY_CONTRACT,
-      receiptVersion: 1,
-      evaluator: MEANING_COMPETENCY_EVALUATOR,
-      graphHash: context.graphHash,
-      inventory: context.inventoryResult.inventory,
-      questions: competency.questions,
-    },
-  });
-  const unresolvedAnswered = witnessAssessment.dimensions.competency.questions.find(
-    (row) => row.status === 'answered' && row.witnessStatus !== 'resolved',
-  );
-  if (unresolvedAnswered) {
-    throw new Error(
-      `finalize_project_meaning blocked: competency "${unresolvedAnswered.id}" is marked answered but its current witnesses do not resolve.`,
-    );
+    inventory: context.inventoryResult.inventory,
+    questions: competency.questions,
+  };
+  const unresolvedRows = unresolvedCompetencyRows({ competency: competencyInput });
+  if (unresolvedRows.length > 0) {
+    throw new Error(competencyRefusal(unresolvedRows));
   }
 
   const receipt = finalizeProjectMeaningReceipt({

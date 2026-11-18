@@ -141,10 +141,15 @@ describe('tauri vault file-system shim', () => {
     await expect(inspectTauriProjectSource('/Users/me/repo/packages/app')).resolves.toEqual(
       inspection,
     );
+    await inspectTauriProjectSource('/Users/me/repo', '/Users/me/repo/atlas');
     expect(calls).toEqual([
       {
         command: 'inspect_project_source',
-        args: { rootPath: '/Users/me/repo/packages/app' },
+        args: { rootPath: '/Users/me/repo/packages/app', vaultRoot: null },
+      },
+      {
+        command: 'inspect_project_source',
+        args: { rootPath: '/Users/me/repo', vaultRoot: '/Users/me/repo/atlas' },
       },
     ]);
   });

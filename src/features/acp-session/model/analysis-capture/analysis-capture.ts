@@ -96,7 +96,7 @@ export async function currentAnalysisBasis(context: AnalysisCaptureContext, slug
   let sourceFingerprint = context.sourceFingerprint;
   if (context.sourceRoot && context.mode === 'architecture') {
     try {
-      const source = await inspectTauriProjectSource(context.sourceRoot);
+      const source = await inspectTauriProjectSource(context.sourceRoot, context.handle ? getTauriVaultRootPath(context.handle) : null);
       sourceFingerprint = source && !source.truncated ? source.fingerprint : null;
     } catch { sourceFingerprint = null; }
   }

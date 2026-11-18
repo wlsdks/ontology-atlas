@@ -112,7 +112,7 @@ function hashSourceFile(path, relative, state, hashContent) {
   hashRegularFile(path, state, metadata.size);
 }
 
-function walkFolder(root, prefix, depth, state) {
+function walkFolder(root, prefix, depth, state, excluded = null) {
   if (state.files.length >= SOURCE_INVENTORY_MAX_FILES) {
     state.truncated = true;
     return;
@@ -130,12 +130,13 @@ function walkFolder(root, prefix, depth, state) {
       state.truncated = true;
       break;
     }
-    const relative = prefix ? `${prefix}/${child.name}` : child.name;
+    const relativePath = prefix ? `${prefix}/${child.name}` : child.name;
+    if (isExcluded(relativePath, excluded)) continue;
     if (child.isDirectory()) {
-      if (!SOURCE_PRUNE_DIR_NAMES.has(child.name)) walkFolder(root, relative, depth + 1, state);
+      if (!SOURCE_PRUNE_DIR_NAMES.has(child.name)) walkFolder(root, relativePath, depth + 1, state, excluded);
       continue;
     }
-    hashSourceFile(join(root, relative), relative, state, true);
+    hashSourceFile(join(root, relativePath), relativePath, state, true);
   }
 }
 
@@ -165,31 +166,99 @@ function findGitRoot(root) {
   }
 }
 
-function inspectGit(root) {
+function isExcluded(relativePath, excluded) {
+  return excluded !== null && (relativePath === excluded || relativePath.startsWith(`${excluded}/`));
+}
+
+/**
+ * One absolute path as forward-slash text: the `\\?\` verbatim prefix dropped, the
+ * drive letter lower-cased, no trailing separator, so a Windows path and its
+ * canonical form compare equal.
+ */
+function comparablePath(path) {
+  let unified = path.replaceAll('\\', '/');
+  if (unified.startsWith('//?/UNC/')) unified = `//${unified.slice('//?/UNC/'.length)}`;
+  else if (unified.startsWith('//?/')) unified = unified.slice('//?/'.length);
+  if (/^[A-Za-z]:/.test(unified)) unified = unified[0].toLowerCase() + unified.slice(1);
+  while (unified.length > 1 && unified.endsWith('/') && !unified.endsWith(':/')) unified = unified.slice(0, -1);
+  return unified;
+}
+
+/**
+ * The vault's folder relative to the source root when it lies strictly inside it,
+ * else null. Its files are the ontology, not the code it describes, so writing the
+ * vault must not make its own source binding stale. The app probe applies the same
+ * rule (`src-tauri/src/project_source/mod.rs`); both sides run
+ * `vault-exclusion-cases.json`.
+ */
+export function vaultFolderInside(sourceRoot, vaultRoot) {
+  const base = comparablePath(sourceRoot);
+  const vault = comparablePath(vaultRoot);
+  if (!vault.startsWith(base)) return null;
+  let inside = vault.slice(base.length);
+  if (!base.endsWith('/')) {
+    if (!inside.startsWith('/')) return null;
+    inside = inside.slice(1);
+  }
+  if (inside === '' || inside.split('/').some((part) => part === '' || part === '.' || part === '..')) return null;
+  return inside;
+}
+
+// `realpathSync.native` returns the case stored on disk, as Rust `canonicalize` does; the
+// JS `realpathSync` keeps the typed case, so `/Repo` and `/repo/atlas` would not compare.
+function excludedVaultFolder(root, excludePath) {
+  if (typeof excludePath !== 'string' || excludePath.length === 0) return null;
+  try {
+    return vaultFolderInside(realpathSync.native(root), realpathSync.native(excludePath));
+  } catch {
+    return null;
+  }
+}
+
+/** Drops porcelain v1 `-z` entries under the excluded folder; a rename entry carries a second path. */
+export function filterStatus(status, excluded) {
+  if (excluded === null || status.length === 0) return status;
+  const tokens = status.toString('utf8').split('\0');
+  if (tokens.at(-1) === '') tokens.pop();
+  const kept = [];
+  for (let index = 0; index < tokens.length; index += 1) {
+    const entry = tokens[index];
+    const renamed = entry[0] === 'R' || entry[0] === 'C';
+    const source = renamed ? tokens[index + 1] ?? null : null;
+    if (renamed) index += 1;
+    if (isExcluded(entry.slice(3), excluded) && (source === null || isExcluded(source, excluded))) continue;
+    kept.push(entry);
+    if (source !== null) kept.push(source);
+  }
+  return Buffer.from(kept.length > 0 ? `${kept.join('\0')}\0` : '', 'utf8');
+}
+
+function inspectGit(root, excluded = null) {
+  const keep = (path) => !isExcluded(path, excluded);
   const visiblePaths = [...new Set(splitNul(runGit(root, [
     'ls-files', '--cached', '--others', '--exclude-standard', '-z',
-  ])))].sort(compareUtf8);
+  ])).filter(keep))].sort(compareUtf8);
   const dirtyPaths = new Set(splitNul(runGit(root, [
     'diff', '--name-only', '--no-renames', '-z', 'HEAD', '--',
-  ])));
-  for (const path of splitNul(runGit(root, ['ls-files', '--others', '--exclude-standard', '-z']))) {
+  ])).filter(keep));
+  for (const path of splitNul(runGit(root, ['ls-files', '--others', '--exclude-standard', '-z'])).filter(keep)) {
     dirtyPaths.add(path);
   }
 
   const state = inventory();
   state.truncated = visiblePaths.length > SOURCE_INVENTORY_MAX_FILES;
-  for (const relative of visiblePaths.slice(0, SOURCE_INVENTORY_MAX_FILES)) {
-    hashSourceFile(join(root, relative), relative, state, dirtyPaths.delete(relative));
+  for (const path of visiblePaths.slice(0, SOURCE_INVENTORY_MAX_FILES)) {
+    hashSourceFile(join(root, path), path, state, dirtyPaths.delete(path));
   }
-  for (const relative of [...dirtyPaths].sort(compareUtf8)) {
+  for (const path of [...dirtyPaths].sort(compareUtf8)) {
     state.hash.update('deleted');
     state.hash.update(ZERO);
-    state.hash.update(relative);
+    state.hash.update(path);
     state.hash.update(ZERO);
   }
   const inventoryFingerprint = `sha256:${state.hash.digest('hex')}`;
   const revision = runGit(root, ['rev-parse', 'HEAD']).toString('utf8').trim();
-  const status = runGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
+  const status = filterStatus(runGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']), excluded);
   return {
     rootPath: root,
     sourceId: sourceDigest(['git', root]),
@@ -202,9 +271,9 @@ function inspectGit(root) {
   };
 }
 
-function inspectFolder(root) {
+function inspectFolder(root, excluded = null) {
   const state = inventory();
-  walkFolder(root, '', 0, state);
+  walkFolder(root, '', 0, state, excluded);
   const fingerprint = `sha256:${state.hash.digest('hex')}`;
   return {
     rootPath: root,
@@ -218,10 +287,17 @@ function inspectFolder(root) {
   };
 }
 
-/** Reproduce the installed app's bounded local source probe in a fresh MCP process. */
-export function inspectProjectSource(rootPath) {
+/**
+ * Reproduce the installed app's bounded local source probe in a fresh MCP process.
+ * With `excludePath` naming a vault inside the source, the probe leaves that folder
+ * out and reports `vaultExcluded`; without it the probe is the app's byte for byte.
+ */
+export function inspectProjectSource(rootPath, { excludePath } = {}) {
   const root = realpathSync(rootPath);
   if (!statSync(root).isDirectory()) throw new Error('project source root must be a directory');
   const gitRoot = findGitRoot(root);
-  return gitRoot ? inspectGit(gitRoot) : inspectFolder(root);
+  const base = gitRoot ?? root;
+  const excluded = excludedVaultFolder(base, excludePath);
+  const probe = gitRoot ? inspectGit(gitRoot, excluded) : inspectFolder(root, excluded);
+  return excluded === null ? probe : { ...probe, vaultExcluded: excluded };
 }

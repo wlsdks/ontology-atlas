@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readStableFile } from '../evidence-search/source-evidence.mjs';
 import { inspectProjectSource } from './project-source-inspection.mjs';
 import { witnessInventoryPaths } from './project-source-mint.mjs';
 import {
@@ -227,7 +229,7 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options
   }
   let probe = null;
   try {
-    probe = inspectProjectSource(binding.rootPath);
+    probe = inspectProjectSource(binding.rootPath, { excludePath: vaultRoot });
   } catch {
     // A transient permission, filesystem or Git failure keeps a valid receipt,
     // with currentness unavailable.
@@ -267,12 +269,7 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options
       receipt,
     );
   }
-  if (
-    probe.kind !== receipt.sourceKind
-    || probe.sourceId !== receipt.sourceId
-    || probe.fingerprint !== receipt.sourceFingerprint
-    || probe.revision !== receipt.sourceRevision
-  ) {
+  if (!probeMatchesReceipt(probe, receipt)) {
     return {
       ...base(
         projectSlug,
@@ -295,6 +292,13 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options
     receipt.nextAction,
     receipt,
   );
+}
+
+function probeMatchesReceipt(probe, receipt) {
+  return probe.kind === receipt.sourceKind
+    && probe.sourceId === receipt.sourceId
+    && probe.fingerprint === receipt.sourceFingerprint
+    && probe.revision === receipt.sourceRevision;
 }
 
 function normalizeWitnessPath(value) {
@@ -379,6 +383,28 @@ export function readProjectSourceBindings(vaultRoot) {
     || !parsed.bindings.every(validBindingEnvelope)
   ) return { status: 'malformed', bindings: [], revision: stored.revision };
   return { status: 'ok', bindings: parsed.bindings, revision: stored.revision };
+}
+
+/**
+ * Checks a pinned `source:` citation against the one bound source of a project: the
+ * file must read as a regular file under the bound root and hash to the pinned
+ * sha256. Null when the project has no single valid binding.
+ */
+export function pinnedCitationVerifier(vaultRoot, projectSlug) {
+  const sidecar = readProjectSourceBindings(vaultRoot);
+  const bound = sidecar.status === 'ok'
+    ? sidecar.bindings.filter((binding) => binding.projectSlug === projectSlug)
+    : [];
+  if (bound.length !== 1) return null;
+  const { rootPath } = bound[0];
+  return (citation) => {
+    try {
+      const read = readStableFile(rootPath, citation.path);
+      return !read.reason && createHash('sha256').update(read.bytes).digest('hex') === citation.sha256;
+    } catch {
+      return false;
+    }
+  };
 }
 
 export function serializeProjectSourceState(bindings) {
