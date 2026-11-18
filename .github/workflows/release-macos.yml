@@ -219,10 +219,11 @@ jobs:
     needs: admit-release
     environment: release-signing
     runs-on: ${{ matrix.runner }}
-    # Measured aarch64 lane: v1.4.0 20m37s, v1.5.0 16m53s (cold build plus
-    # notarization).
-    # budget: 1300s
-    timeout-minutes: 30
+    # Measured with the test steps still inside this job: v2.2.0 1493 s, v2.2.1 1520 s,
+    # v2.2.2 1329 s. A timeout cancels the build and the rerun repeats all of it, so the
+    # ceiling keeps its 1.5x headroom; lower both once a release measures the shorter job.
+    # budget: 1600s
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
