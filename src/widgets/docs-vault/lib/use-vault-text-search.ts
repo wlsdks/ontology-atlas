@@ -6,6 +6,7 @@ import { useLocalVault } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import {
   isVaultIndexAvailable,
+  onVaultIndexUpdated,
   searchVaultIndex,
   vaultIndexPreference,
   vaultIndexStatus,
@@ -55,6 +56,8 @@ export function useVaultTextSearch({ query, docs, getDocContent }: Options): {
   const active = rootPath !== null && getDocContent !== undefined && isVaultIndexAvailable();
   const [status, setStatus] = useState<VaultIndexStatus | null>(null);
   const [answered, setAnswered] = useState<DocsBodyIndex | undefined>(undefined);
+  /** Counts finished passes that changed rows; an open query asks again on each. */
+  const [indexGeneration, setIndexGeneration] = useState(0);
   const fileTextsRef = useRef(new Map<string, string>());
   const docsByPath = useMemo(() => new Map(docs.map((doc) => [doc.path, doc])), [docs]);
   const building = status?.state === 'building' || status?.state === 'absent';
@@ -77,6 +80,22 @@ export function useVaultTextSearch({ query, docs, getDocContent }: Options): {
       clearTimeout(timer);
     };
   }, [active, rootPath, indexSwitch]);
+
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    let stop: (() => void) | undefined;
+    void onVaultIndexUpdated(() => setIndexGeneration((generation) => generation + 1))
+      .then((unlisten) => {
+        if (cancelled) unlisten();
+        else stop = unlisten;
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [active]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -110,7 +129,7 @@ export function useVaultTextSearch({ query, docs, getDocContent }: Options): {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [active, rootPath, getDocContent, query, docsByPath, buildStep, indexSwitch]);
+  }, [active, rootPath, getDocContent, query, docsByPath, buildStep, indexGeneration, indexSwitch]);
 
   // The previous answer stays while the next query settles, so rows do not flicker; its texts
   // simply fail the new terms in `searchDocs`.

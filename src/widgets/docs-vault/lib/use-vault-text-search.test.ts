@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { VaultDoc } from '@/entities/docs-vault';
 
 const bridge = vi.hoisted(() => ({
   available: true,
   search: vi.fn(),
   status: vi.fn(),
+  updated: [] as Array<() => void>,
 }));
 
 vi.mock('@/entities/vault-session', () => ({
@@ -16,6 +17,10 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
 }));
 vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
   isVaultIndexAvailable: () => bridge.available,
+  onVaultIndexUpdated: async (onUpdate: () => void) => {
+    bridge.updated.push(onUpdate);
+    return () => undefined;
+  },
   searchVaultIndex: bridge.search,
   vaultIndexStatus: bridge.status,
   vaultIndexPreference: { use: () => 'on' },
@@ -45,6 +50,7 @@ afterEach(() => {
   bridge.available = true;
   bridge.search.mockReset();
   bridge.status.mockReset();
+  bridge.updated = [];
 });
 
 describe('useVaultTextSearch', () => {
@@ -60,6 +66,21 @@ describe('useVaultTextSearch', () => {
     expect(getDocContent).toHaveBeenCalledWith('wiki/b');
     expect(result.current.bodyIndex?.get('wiki/b')?.raw).toBe('지도를 읽는다');
     expect(result.current.status).toEqual(ready);
+  });
+
+  it('asks again when a pass indexes an edit, without the document list changing', async () => {
+    bridge.status.mockResolvedValue(ready);
+    bridge.search.mockResolvedValue({ hits: [], status: ready });
+    const getDocContent = vi.fn(async () => 'fernbrake');
+    const docs = [doc('wiki/a')];
+    const { result } = renderHook(() => useVaultTextSearch({ query: 'fernbrake', docs, getDocContent }));
+    await waitFor(() => expect(result.current.bodyIndex?.size).toBe(0));
+
+    bridge.search.mockResolvedValue({ hits: [{ path: 'wiki/a.md', rank: -1 }], status: ready });
+    await waitFor(() => expect(bridge.updated.length).toBeGreaterThan(0));
+    act(() => bridge.updated.forEach((onUpdate) => onUpdate()));
+
+    await waitFor(() => expect(result.current.bodyIndex?.get('wiki/a')?.raw).toBe('fernbrake'));
   });
 
   it('answers nothing on the web', async () => {

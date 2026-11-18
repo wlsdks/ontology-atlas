@@ -1,4 +1,5 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { definePreference } from '@/shared/lib/preferences/define-preference';
 
 /**
@@ -81,4 +82,13 @@ export async function clearVaultIndex(rootPath: string | null): Promise<VaultInd
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke('vault_index_clear', { rootPath, enabled: enabled() });
+}
+
+/**
+ * Calls `onUpdate` after each pass that changed what a search can find, so an open query asks
+ * again as soon as an edit is indexed. Resolves to the unsubscribe; on the web nothing fires.
+ */
+export async function onVaultIndexUpdated(onUpdate: () => void): Promise<() => void> {
+  if (!getInvoke()) return () => undefined;
+  return listen('vault-index-updated', () => onUpdate());
 }

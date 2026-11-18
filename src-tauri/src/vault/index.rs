@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, Once, OnceLock};
 use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter};
 use vault_index::{Check, Progress, Searcher};
 
 const MAX_HITS: usize = 50;
@@ -30,6 +31,9 @@ struct VaultEntry {
     searcher: Mutex<Option<Searcher>>,
     failure: Mutex<Option<String>>,
 }
+
+/// Emitted after a pass that indexed, removed or rebuilt rows.
+const INDEX_UPDATED_EVENT: &str = "vault-index-updated";
 
 fn entries() -> &'static Mutex<HashMap<PathBuf, Arc<VaultEntry>>> {
     static ENTRIES: OnceLock<Mutex<HashMap<PathBuf, Arc<VaultEntry>>>> = OnceLock::new();
@@ -138,7 +142,7 @@ fn status_of(root: Option<&Path>, enabled: bool) -> VaultIndexStatus {
 }
 
 /// Starts a pass unless one is running, in which case exactly one more follows it.
-fn request_pass(root: PathBuf, entry: Arc<VaultEntry>) {
+fn request_pass(app: AppHandle, root: PathBuf, entry: Arc<VaultEntry>) {
     if entry.running.swap(true, Ordering::AcqRel) {
         entry.again.store(true, Ordering::Release);
         return;
@@ -147,7 +151,10 @@ fn request_pass(root: PathBuf, entry: Arc<VaultEntry>) {
         .name("vault-index".into())
         .spawn(move || loop {
             entry.again.store(false, Ordering::Release);
-            run_pass(&root, &entry);
+            if run_pass(&root, &entry) {
+                // An open query asks again now rather than when the document list next reloads.
+                let _ = app.emit(INDEX_UPDATED_EVENT, ());
+            }
             let paused = || entry.paused.load(Ordering::Acquire);
             if !paused() && entry.again.load(Ordering::Acquire) {
                 continue;
@@ -176,12 +183,13 @@ fn markdown_files(root: &Path) -> Result<Vec<String>, String> {
         .collect())
 }
 
-fn run_pass(root: &Path, entry: &VaultEntry) {
+/// Whether the pass changed what a search can find.
+fn run_pass(root: &Path, entry: &VaultEntry) -> bool {
     let files = match markdown_files(root) {
         Ok(files) => files,
         Err(error) => {
             log::warn!("vault index walk failed: {error}");
-            return;
+            return false;
         }
     };
     let check = if entry.checked.swap(true, Ordering::AcqRel) {
@@ -212,13 +220,15 @@ fn run_pass(root: &Path, entry: &VaultEntry) {
                     started.elapsed()
                 );
             }
+            report.indexed + report.removed > 0 || report.repair.created
         }
-        Err(vault_index::Error::Cancelled) => {}
+        Err(vault_index::Error::Cancelled) => false,
         Err(error) => {
             // The error names no vault content: SQLite and I/O messages carry codes and paths
             // inside the cache folder only.
             log::warn!("vault index unavailable: {error}");
             *lock(&entry.failure) = Some(error.to_string());
+            false
         }
     }
 }
@@ -242,6 +252,7 @@ pub(crate) async fn vault_index_status(
 /// which ends a pause left by Delete.
 #[tauri::command]
 pub(crate) async fn vault_index_sync(
+    app: AppHandle,
     root_path: String,
     enabled: bool,
     opened: bool,
@@ -258,7 +269,7 @@ pub(crate) async fn vault_index_sync(
             entry.paused.store(false, Ordering::Release);
         }
         if !entry.paused.load(Ordering::Acquire) {
-            request_pass(root.clone(), entry);
+            request_pass(app, root.clone(), entry);
         }
         Ok(status_of(Some(&root), true))
     })
@@ -283,6 +294,7 @@ pub(crate) struct VaultIndexAnswer {
 /// matches its row; the WebView reads the files to show the matching lines.
 #[tauri::command]
 pub(crate) async fn vault_index_search(
+    app: AppHandle,
     root_path: String,
     query: String,
     limit: usize,
@@ -301,20 +313,20 @@ pub(crate) async fn vault_index_search(
         let hits = match found {
             Ok(Some(found)) => {
                 if found.stale > 0 && !entry.paused.load(Ordering::Acquire) {
-                    request_pass(root.clone(), entry.clone());
+                    request_pass(app.clone(), root.clone(), entry.clone());
                 }
                 found.hits
             }
             Ok(None) => {
                 if !entry.paused.load(Ordering::Acquire) {
-                    request_pass(root.clone(), entry.clone());
+                    request_pass(app.clone(), root.clone(), entry.clone());
                 }
                 Vec::new()
             }
             Err(error) if error.is_damage() => {
                 *lock(&entry.searcher) = None;
                 if vault_index::set_aside_damaged(&root).is_ok() {
-                    request_pass(root.clone(), entry.clone());
+                    request_pass(app.clone(), root.clone(), entry.clone());
                 }
                 Vec::new()
             }
