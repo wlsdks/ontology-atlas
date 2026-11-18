@@ -404,3 +404,115 @@ test('120 rows are shared fairly between kinds, and what each kind leaves out is
   assert.deepEqual([count('executable'), count('worker'), count('subcommand'), count('operation')], [1, 1, 45, 73]);
   assert.match(text, /^\+27 more not listed \(operation 27\): each kind keeps an equal share of 120 rows/m, 'the dispatcher scan reads 200 lines, so 100 operations');
 });
+
+/*
+ * The survey runs inside every write and validate_vault, so its time has to grow
+ * with the bytes it reads, never with lines times lines. Each shape below once made
+ * one detector rescan the file from every line: a timer or flag under thousands of
+ * closed functions, test attributes over blank lines, unclosed test modules, type
+ * openers that never close, a timer constant behind a long blank run, dataclasses
+ * over blank lines, long argument-group lines, and hostile doc headings.
+ */
+function hostileFiles(bytes) {
+  const fill = (line, size) => line.repeat(Math.max(1, Math.floor(size / line.length)));
+  const half = Math.floor(bytes / 2);
+  const options = fill("program.option('--flag');\n", half);
+  const timers = fill('const t = Date.now();\nsetInterval(work,\n  TICK);\n', half);
+  const headings = [`# a${' '.repeat(1990)}x`, `# ${'<'.repeat(1990)}`, `# ${'!['.repeat(995)}`, `# ${'{#'.repeat(995)}`, `title: ${' '.repeat(1980)}x`, `# ${'a '.repeat(990)}#`].join('\n');
+  return {
+    'go.mod': 'module example.com/hostile\n',
+    'README.md': '# Hostile\n\nA small server that does things for people who run it.\n\n## Telemetry\n\nText.\n',
+    'telemetry/telemetry.go': 'package telemetry\n\nfunc Collect() {}\n',
+    'src/poll.js': fill('function a(){}\n', half) + fill('setInterval(work, 60000);\n', half),
+    'src/cli.js': `import { Command } from 'commander';\n${fill('function a(){}\n', half)}${options}`,
+    'src/tests.rs': `fn start() { std::thread::spawn(|| {}); }\n${fill('#[cfg(test)]\n', half)}${'\n'.repeat(half)}`,
+    'src/mods.rs': `fn start() { std::thread::spawn(|| {}); }\n${fill('#[cfg(test)]\nmod t {\n', bytes)}`,
+    'src/config.ts': fill('interface AConfig { )\n', half) + fill(`  a: b${' '.repeat(1980)}x\n`, half),
+    'src/tick.ts': `${fill(`const TICK = 5${' '.repeat(1970)}x\n`, half)}export function go() {\n${timers}}\n`,
+    'src/tool.py': fill('@dataclass\nclass A:\n    x: int\n', half) + '\n'.repeat(half),
+    'src/args.py': `import argparse\n${fill(`${'a'.repeat(1960)} add_argument_group(\n`, bytes)}`,
+    'docs/headings.md': fill(`${headings}\n`, bytes),
+  };
+}
+
+/** A file of seeded random code made of every detector's tokens, so no line is what it looks like. */
+function randomCode(bytes) {
+  const tokens = [
+    'function', 'class', 'interface', 'XConfig', '{', '}', '(', ')', '=>', 'const', 'TICK', '=', '5', ';', ',',
+    'setInterval(', 'Date.now()', '#[cfg(test)]', 'mod t {', 'def', 'self', ':', '@dataclass', '.add_argument(',
+    "'--flag'", '.option(', 'switch (command) {', 'case "op":', 'impl', 'fn', 'thread::spawn(', 'export', 'async',
+    'type', 'enable_x', 'bool', '#', '//', '"', "'", '`', '[', ']', '<', '>', ' '.repeat(40), 'a'.repeat(30),
+  ];
+  let seed = 7;
+  const next = (limit) => {
+    seed = (seed * 1103515245 + 12345) % 2147483648;
+    return seed % limit;
+  };
+  const lines = [];
+  let size = 0;
+  while (size < bytes) {
+    const words = Array.from({ length: next(24) }, () => tokens[next(tokens.length)]);
+    const line = ' '.repeat(next(4) * 2) + words.join(next(3) === 0 ? '' : ' ');
+    lines.push(line);
+    size += line.length + 1;
+  }
+  return lines.join('\n');
+}
+
+test('a survey over every hostile shape and a megabyte of random code takes under two seconds', (t) => {
+  const root = repository({ ...hostileFiles(250 * 1024), 'src/random.ts': randomCode(1024 * 1024) });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const started = performance.now();
+  const map = buildBreadthMap(root);
+  const ms = performance.now() - started;
+  assert.ok(map.text.length > 0);
+  assert.ok(ms < 2000, `the whole survey took ${ms.toFixed(0)} ms`);
+});
+
+test('doubling every file at most doubles the survey time', (t) => {
+  const timed = (bytes) => {
+    const root = repository({ ...hostileFiles(bytes), 'src/random.ts': randomCode(bytes) });
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    buildBreadthMap(root);
+    const runs = [0, 1, 2].map(() => {
+      const started = performance.now();
+      buildBreadthMap(root);
+      return performance.now() - started;
+    });
+    return runs.sort((a, b) => a - b)[1];
+  };
+  // Both sizes stay under the survey's 256 KB read limit, so the second reads twice the bytes.
+  const single = timed(100 * 1024);
+  const double = timed(200 * 1024);
+  assert.ok(double < 3 * single + 30, `${single.toFixed(0)} ms at 100 KB a file, ${double.toFixed(0)} ms at 200 KB: more than linear`);
+});
+
+test('the abilities section keeps the whole map within 30 KB: members go first, then rows, each counted', (t) => {
+  const groups = {};
+  for (let file = 0; file < 12; file += 1) {
+    const lines = ['package cli', '', 'func Flags() []cli.Flag {', '\treturn []cli.Flag{'];
+    for (let group = 0; group < 10; group += 1) {
+      for (let flag = 0; flag < 16; flag += 1) {
+        lines.push('\t\t&cli.StringFlag{', `\t\t\tName: "f${file}-g${group}-n${flag}-${'x'.repeat(60)}",`, `\t\t\tCategory: "group ${file} ${group} ${'operator feature '.repeat(6)}",`, '\t\t},');
+      }
+    }
+    groups[`cli/options${file}.go`] = `${lines.join('\n')}\n\t}\n}\n`;
+  }
+  const root = repository({ 'go.mod': 'module x\n', ...groups });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const map = buildBreadthMap(root);
+  assert.ok(Buffer.byteLength(map.text) <= 30 * 1024, `${Buffer.byteLength(map.text)} bytes`);
+  assert.equal(map.abilities.length, 120);
+  assert.ok(map.abilities.every((row) => row.members.length + row.membersOmitted === 16), 'every member is shown or counted');
+  assert.match(map.text, /^flags group 0 0 .* \+\d+$/m);
+
+  const deep = `${'a-long-folder-name/'.repeat(5)}config.go`;
+  const fields = Array.from({ length: 150 }, (_, index) => `\tEnable${'Feature'.repeat(14)}${index} bool`).join('\n');
+  const long = repository({ 'go.mod': 'module x\n', [deep]: `package config\n\ntype Config struct {\n${fields}\n}\n` });
+  t.after(() => rmSync(long, { recursive: true, force: true }));
+  const cut = buildBreadthMap(long);
+  assert.ok(Buffer.byteLength(cut.text) <= 30 * 1024, `${Buffer.byteLength(cut.text)} bytes`);
+  assert.ok(cut.abilities.length < 120);
+  assert.equal(cut.abilities.length + cut.abilitiesOmitted, 150);
+  assert.match(cut.text, new RegExp(`^\\+${cut.abilitiesOmitted} more not listed \\(setting ${cut.abilitiesOmitted}\\)`, 'm'));
+});

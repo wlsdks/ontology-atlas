@@ -267,7 +267,7 @@ function keysOf(row) {
  * @param {Map<string, number>} counts rows found per kind
  * @returns {Map<string, number>}
  */
-function fairShares(counts, limit) {
+export function fairShares(counts, limit) {
   const shares = new Map([...counts.keys()].map((kind) => [kind, 0]));
   let left = limit;
   let open = [...counts.keys()].filter((kind) => counts.get(kind) > 0);

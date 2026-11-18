@@ -57,6 +57,10 @@ const RS_FN = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)/;
 const RS_IMPL = /^impl(?:<[^>]*>)?\s+(?:[\w:]+\s+for\s+)?([A-Za-z_]\w*)/;
 const JS_KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'constructor']);
 
+const RS_TOP_ITEM = /^(?:pub\s+)?(?:fn|struct|enum|mod|trait)\b/;
+const RS_ATTRIBUTE_OR_COMMENT = /^\s*(?:#\[|\/\/)/;
+const RUST_TEST_ATTRIBUTE = /^\s*#\[(?:(?:[\w:]+::)?test\b|cfg\(test\))/;
+
 /**
  * A method head (`  async save(input) {`): a name, a parameter list, a block
  * opening at the line's end, no statement end after the parameters, and no arrow,
@@ -71,76 +75,96 @@ function jsMethodName(line) {
   return close >= 0 && tail.slice(close + 1).includes(';') ? null : head[1];
 }
 
-/**
- * Whether the block a JavaScript declaration opens at `from` is still open at
- * `to`: more braces opened than closed in between. A helper declared and closed
- * above a timer is not the timer's function; destructured parameters open and
- * close before the body does. Braces are counted as written, so one inside a
- * string can misjudge a line.
- */
-function stillOpen(lines, from, to) {
-  if (from === to) return true;
-  let depth = 0;
-  for (let cursor = from; cursor < to; cursor += 1) {
-    for (const char of lines[cursor]) depth += char === '{' ? 1 : char === '}' ? -1 : 0;
+/** `{` minus `}` on a line, as written: a brace inside a string can misjudge a line. */
+function braceDelta(line, parens = false) {
+  let delta = 0;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line.charCodeAt(index);
+    if (char === 123 || (parens && char === 40)) delta += 1;
+    else if (char === 125 || (parens && char === 41)) delta -= 1;
   }
-  return depth > 0;
+  return delta;
 }
 
-/** `{ owner, name }` of the function the line at `index` is inside, or null. */
-function enclosingDeclaration(lines, index, language) {
+function indentOf(line) {
+  let index = 0;
+  while (index < line.length && (line[index] === ' ' || line[index] === '\t')) index += 1;
+  return index;
+}
+
+/**
+ * The declaration each line sits in, `{ owner, name, line }` or null, from one
+ * forward pass that carries the open declarations: Go and Rust by the last
+ * function head (a Rust one under an `impl` names its type, and says whether a
+ * test attribute sits on it), Python by indentation, JavaScript by brace depth,
+ * so a helper declared and closed above a line is not that line's function.
+ */
+function declarationsOf(lines, language) {
+  const around = new Array(lines.length).fill(null);
   if (language === 'go') {
-    for (let cursor = index; cursor >= 0; cursor -= 1) {
-      const match = GO_FUNC.exec(lines[cursor]);
-      if (match) return { owner: match[1] ?? null, name: match[2], line: cursor + 1 };
+    let current = null;
+    for (let index = 0; index < lines.length; index += 1) {
+      const match = GO_FUNC.exec(lines[index]);
+      if (match) current = { owner: match[1] ?? null, name: match[2], line: index + 1 };
+      around[index] = current;
     }
-    return null;
-  }
-  if (language === 'py') {
-    const indent = /^\s*/.exec(lines[index])[0].length;
-    for (let cursor = index; cursor >= 0; cursor -= 1) {
-      const def = PY_DEF.exec(lines[cursor]);
-      if (!def || (cursor !== index && def[1].length >= indent)) continue;
-      for (let up = cursor - 1; up >= 0; up -= 1) {
-        const klass = PY_CLASS.exec(lines[up]);
-        if (klass && klass[1].length < def[1].length) return { owner: klass[2], name: def[2], line: cursor + 1 };
-        if (/^\S/.test(lines[up]) && !klass) break;
-      }
-      return { owner: null, name: def[2], line: cursor + 1 };
+  } else if (language === 'rs') {
+    let current = null;
+    let impl = null;
+    let testAttribute = false;
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      const head = RS_IMPL.exec(line);
+      if (head) impl = head[1];
+      else if (RS_TOP_ITEM.test(line)) impl = null;
+      const fn = RS_FN.exec(line);
+      if (fn) current = { owner: impl, name: fn[1], line: index + 1, test: testAttribute };
+      around[index] = current;
+      testAttribute = RS_ATTRIBUTE_OR_COMMENT.test(line) ? testAttribute || RUST_TEST_ATTRIBUTE.test(line) : false;
     }
-    return null;
-  }
-  if (language === 'rs') {
-    for (let cursor = index; cursor >= 0; cursor -= 1) {
-      const fn = RS_FN.exec(lines[cursor]);
-      if (!fn) continue;
-      for (let up = cursor - 1; up >= 0; up -= 1) {
-        const impl = RS_IMPL.exec(lines[up]);
-        if (impl) return { owner: impl[1], name: fn[1], line: cursor + 1 };
-        if (/^(?:pub\s+)?(?:fn|struct|enum|mod|trait)\b/.test(lines[up])) break;
-      }
-      return { owner: null, name: fn[1], line: cursor + 1 };
-    }
-    return null;
-  }
-  if (language === 'js') {
-    for (let cursor = index; cursor >= 0; cursor -= 1) {
-      const line = lines[cursor];
-      const plain = JS_FUNCTION.exec(line) ?? JS_ARROW.exec(line);
-      if (plain && !stillOpen(lines, cursor, index)) continue;
-      if (plain) return { owner: null, name: plain[1], line: cursor + 1 };
-      const method = jsMethodName(line);
-      if (method && !JS_KEYWORDS.has(method)) {
-        for (let up = cursor - 1; up >= 0; up -= 1) {
-          const klass = JS_CLASS.exec(lines[up]);
-          if (klass) return { owner: klass[1], name: method, line: cursor + 1 };
-          if (/^\S/.test(lines[up]) && !/^[}/*]/.test(lines[up])) break;
-        }
-        return { owner: null, name: method, line: cursor + 1 };
+  } else if (language === 'py') {
+    // Each open block: its indent, the function it is or sits in, and the nearest class.
+    const open = [];
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (!line.trim()) { around[index] = open.at(-1)?.def ?? null; continue; }
+      const indent = indentOf(line);
+      while (open.length > 0 && open.at(-1).indent >= indent) open.pop();
+      const top = open.at(-1);
+      const def = PY_DEF.exec(line);
+      const klass = def ? null : PY_CLASS.exec(line);
+      if (def) {
+        const declaration = { owner: top?.klass ?? null, name: def[2], line: index + 1 };
+        open.push({ indent, def: declaration, klass: top?.klass ?? null });
+        around[index] = declaration;
+      } else {
+        if (klass) open.push({ indent, def: top?.def ?? null, klass: klass[2] });
+        around[index] = top?.def ?? null;
       }
     }
+  } else if (language === 'js') {
+    // Each open block: the depth it opened at, the function it is or sits in, and the nearest class.
+    const open = [];
+    let depth = 0;
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      while (open.length > 0 && open.at(-1).depth >= depth) open.pop();
+      const top = open.at(-1);
+      const klass = JS_CLASS.exec(line);
+      const plain = klass ? null : JS_FUNCTION.exec(line) ?? JS_ARROW.exec(line);
+      const method = klass || plain ? null : jsMethodName(line);
+      let block = null;
+      if (klass) block = { depth, def: top?.def ?? null, klass: klass[1] };
+      else if (plain) block = { depth, def: { owner: null, name: plain[1], line: index + 1 }, klass: top?.klass ?? null };
+      else if (method && !JS_KEYWORDS.has(method)) {
+        block = { depth, def: { owner: top?.klass ?? null, name: method, line: index + 1 }, klass: top?.klass ?? null };
+      }
+      if (block) open.push(block);
+      around[index] = (block ?? top)?.def ?? null;
+      depth = Math.max(0, depth + braceDelta(line));
+    }
   }
-  return null;
+  return around;
 }
 
 /* ---------------------------------------------------------------------------
@@ -150,8 +174,7 @@ function enclosingDeclaration(lines, index, language) {
 const JS_CLI_LIBRARY = /(?:\bfrom[ \t]+|\brequire\([ \t]*)['"](?:commander|yargs|cac|sade|clipanion|@oclif\/core|meow|citty)['"]/;
 
 /** Subcommands a command-line parser registers: cobra, urfave/cli, argparse, click, typer, commander, yargs, clap. */
-function subcommandsIn(path, text, language) {
-  const lines = text.split(/\r?\n/);
+function subcommandsIn(path, text, lines, language) {
   const rows = [];
   const dataclassCli = language === 'py' && /^[ \t]*(?:import|from)[ \t]+tyro\b|simple_parsing/m.test(text);
   if (language === 'js' && !JS_CLI_LIBRARY.test(text)) return rows;
@@ -167,6 +190,9 @@ function subcommandsIn(path, text, language) {
     }
     return null;
   };
+  // The dataclass whose body is being read, and whether a Rust Subcommand derive waits for its enum or is inside it.
+  let dataclass = null;
+  let subcommandEnum = 'none';
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     if (language === 'go') {
@@ -174,14 +200,14 @@ function subcommandsIn(path, text, language) {
       else if (/&cli\.Command\{|\bcli\.Command\{/.test(line)) push(nameWithin(index, /\bName:\s*"([\w:-]+)"/), index);
     } else if (language === 'py') {
       // tyro and simple-parsing build a subcommand from each dataclass that has a run method.
-      const dataclass = dataclassCli && /^@dataclass\b/.test(line)
-        ? /^class\s+([A-Z]\w*)/.exec(lines[index + 1] ?? '') : null;
-      if (dataclass) {
-        let cursor = index + 2;
-        while (cursor < lines.length && !/^\S/.test(lines[cursor])) {
-          if (/^\s+def run\(/.test(lines[cursor])) { push(wordsOf(dataclass[1]).join('-'), index + 1); break; }
-          cursor += 1;
-        }
+      if (dataclass && index > dataclass.line && /^\S/.test(line)) dataclass = null;
+      if (dataclass && /^\s+def run\(/.test(line)) {
+        push(wordsOf(dataclass.name).join('-'), dataclass.line);
+        dataclass = null;
+      }
+      if (dataclassCli && /^@dataclass\b/.test(line)) {
+        const klass = /^class\s+([A-Z]\w*)/.exec(lines[index + 1] ?? '');
+        if (klass) dataclass = { name: klass[1], line: index + 1 };
       }
       const parser = /\.add_parser\(\s*["']([\w:-]+)["']/.exec(line);
       if (parser) push(parser[1], index);
@@ -194,14 +220,14 @@ function subcommandsIn(path, text, language) {
       const command = /\.command\(\s*["'`]([\w:-]+)/.exec(line);
       if (command) push(command[1], index);
     } else if (language === 'rs') {
-      if (/#\[derive\([^)]*\bSubcommand\b/.test(line)) {
-        let cursor = index + 1;
-        while (cursor < lines.length && !/\benum\s+\w+/.test(lines[cursor])) cursor += 1;
-        for (cursor += 1; cursor < lines.length && !/^\}/.test(lines[cursor]); cursor += 1) {
-          const variant = /^\s{4}([A-Z]\w*)\s*(?:[{(,]|$)/.exec(lines[cursor]);
-          if (variant) push(wordsOf(variant[1]).join('-'), cursor);
+      if (subcommandEnum === 'inside') {
+        if (/^\}/.test(line)) subcommandEnum = 'none';
+        else {
+          const variant = /^\s{4}([A-Z]\w*)\s*(?:[{(,]|$)/.exec(line);
+          if (variant) push(wordsOf(variant[1]).join('-'), index);
         }
-      }
+      } else if (/#\[derive\([^)]*\bSubcommand\b/.test(line)) subcommandEnum = 'waiting';
+      else if (subcommandEnum === 'waiting' && /\benum\s+\w+/.test(line)) subcommandEnum = 'inside';
     }
   }
   return rows;
@@ -219,9 +245,10 @@ const FLAG_GROUP_FUNCTION = /^(?:add|register|define|build|get|new|make|setup|wi
 const GENERIC_GROUPS = new Set(['', 'cli', 'cmd', 'command', 'global', 'common', 'default', 'root', 'main', 'app', 'all', 'base', 'misc', 'other', 'parser', 'new', 'config']);
 
 /** One flag a parser defines: `{ name, line, boolean, group }`, the group from its parser call when the code names one. */
-function flagsIn(text, language) {
-  const lines = text.split(/\r?\n/);
+function flagsIn(lines, language) {
   const flags = [];
+  let around = null;
+  const groupOf = new Map();
   const argumentGroups = new Map();
   const within = (index, count) => lines.slice(index, Math.min(lines.length, index + count)).join('\n');
   for (let index = 0; index < lines.length; index += 1) {
@@ -265,9 +292,13 @@ function flagsIn(text, language) {
     }
     if (!found) continue;
     if (!found.group && language) {
-      const owner = enclosingDeclaration(lines, index, language);
-      const grouped = owner ? FLAG_GROUP_FUNCTION.exec(owner.name) : null;
-      if (grouped && !GENERIC_GROUPS.has(grouped[1].toLowerCase())) found.group = grouped[1];
+      around ??= declarationsOf(lines, language);
+      const owner = around[index];
+      if (owner && !groupOf.has(owner)) {
+        const grouped = FLAG_GROUP_FUNCTION.exec(owner.name);
+        groupOf.set(owner, grouped && !GENERIC_GROUPS.has(grouped[1].toLowerCase()) ? grouped[1] : null);
+      }
+      if (owner && groupOf.get(owner)) found.group = groupOf.get(owner);
     }
     flags.push({ ...found, line: index + 1 });
   }
@@ -329,6 +360,25 @@ const TOGGLE_CAMEL = /^(?:enable|disable|allow|use|skip|no|only|force|strict|pub
 const TOGGLE_SNAKE = /^(?:enable|disable|allow|use|skip|no|only|force|strict|public)_|_(?:enabled|disabled|mode)$/;
 const BARE_TOGGLE = /^(?:enabled?|disabled?)$/i;
 
+/** A configuration type's fields are read this far below its header. */
+const TYPE_LINES = 400;
+const TYPE_HEADER = {
+  go: /^type\s+([A-Z]\w*)\s+struct\s*\{/,
+  js: /^\s*(?:export\s+)?(?:declare\s+)?(?:interface\s+([A-Za-z]\w*)\b[^{=]*\{|type\s+([A-Za-z]\w*)\s*=\s*\{)/,
+  rs: /^\s*(?:pub\s+)?struct\s+([A-Z]\w*)\s*\{/,
+};
+/**
+ * A field and its type, read from a line with its trailing blanks cut. In
+ * JavaScript the whole type is one name: `Options['x']`, a union or a callback
+ * is not a section.
+ */
+const TYPE_FIELD = {
+  go: /^\s+([A-Z]\w*)\s+(\*?[\w.]+)/,
+  js: /^\s+(?:readonly\s+)?([A-Za-z_]\w*)\??[ \t]*:[ \t]*([\w.]+)[ \t]*[;,]?$/,
+  rs: /^\s+(?:pub\s+)?([a-z]\w*)\s*:\s*([\w:<>]+)/,
+};
+const PY_FIELD = /^\s+([a-z]\w*)[ \t]*:[ \t]*([\w.[\]|][\w.[\]| ]*)?(?:=|$)/;
+
 function settingName(struct, field, path) {
   if (!BARE_TOGGLE.test(field)) return field;
   const prefix = struct.replace(SETTINGS_TYPE, '').replace(/^I(?=[A-Z])/, '');
@@ -340,44 +390,54 @@ function settingName(struct, field, path) {
  * section (`Metrics metrics.Config`), and a boolean whose name says it switches
  * something (`PublicMode`, `enable_cache`, `onlyPublishWithReleaseLabel`).
  */
-function settingsIn(path, text, language) {
-  const lines = text.split(/\r?\n/);
+function settingsIn(path, lines, language) {
   const rows = [];
-  for (let index = 0; index < lines.length; index += 1) {
-    let struct = null;
-    let indent = 0;
-    if (language === 'go') struct = /^type\s+([A-Z]\w*)\s+struct\s*\{/.exec(lines[index])?.[1];
-    else if (language === 'py') {
-      const klass = /^(\s*)class\s+([A-Za-z]\w*)\b/.exec(lines[index]);
-      if (klass) { struct = klass[2]; indent = klass[1].length; }
-    } else if (language === 'js') struct = /^\s*(?:export\s+)?(?:declare\s+)?(?:interface\s+([A-Za-z]\w*)\b[^{=]*\{|type\s+([A-Za-z]\w*)\s*=\s*\{)/.exec(lines[index])?.slice(1).find(Boolean);
-    else if (language === 'rs') struct = /^\s*(?:pub\s+)?struct\s+([A-Z]\w*)\s*\{/.exec(lines[index])?.[1];
-    if (!struct || !(language === 'js' && HOOK_FILE.test(path) ? HOOK_SETTINGS_TYPE : SETTINGS_TYPE).test(struct)) continue;
-    // A type written on one line (`type X = { a: boolean };`) has no field lines below it.
-    if (language !== 'py' && lines[index].lastIndexOf('}') > lines[index].indexOf('{')) continue;
-    // Braces opened by the fields read so far: a field of a nested object type is not the type's own.
-    let depth = 0;
-    for (let cursor = index + 1; cursor < Math.min(lines.length, index + 400); cursor += 1) {
-      const line = lines[cursor];
-      const nested = depth > 0;
-      if (language !== 'py') for (const char of line) depth += char === '{' || char === '(' ? 1 : char === '}' || char === ')' ? -1 : 0;
-      if (language === 'py') {
-        if (line.trim() && /^\s*/.exec(line)[0].length <= indent) break;
-      } else if (depth < 0) break;
-      if (nested) continue;
-      let field = null;
-      let type = null;
-      if (language === 'go') [, field, type] = /^\s+([A-Z]\w*)\s+(\*?[\w.]+)/.exec(line) ?? [];
-      else if (language === 'py') [, field, type] = /^\s+([a-z]\w*)[ \t]*:[ \t]*([\w.[\]|][\w.[\]| ]*)?(?:=|$)/.exec(line) ?? [];
-      // The whole type is one name: `Options['x']`, a union or a callback is not a section.
-      else if (language === 'js') [, field, type] = /^\s+(?:readonly\s+)?([A-Za-z_]\w*)\??[ \t]*:[ \t]*([\w.]+)[ \t]*[;,]?[ \t]*$/.exec(line) ?? [];
-      else if (language === 'rs') [, field, type] = /^\s+(?:pub\s+)?([a-z]\w*)\s*:\s*([\w:<>]+)/.exec(line) ?? [];
-      if (!field || field.startsWith('_')) continue;
-      const boolean = /^(?:bool|boolean|Optional\[bool\]|bool \| None|Option<bool>)$/.test(String(type).trim());
-      const toggle = boolean && (TOGGLE_CAMEL.test(field) || TOGGLE_SNAKE.test(field) || BARE_TOGGLE.test(field));
-      const section = !boolean && SECTION_TYPE.test(String(type).replace(/^\*/, ''));
-      if (toggle || section) rows.push({ kind: 'setting', name: settingName(struct, field, path), path, line: cursor + 1, symbol: `${struct}.${field}` });
+  const settingsType = language === 'js' && HOOK_FILE.test(path) ? HOOK_SETTINGS_TYPE : SETTINGS_TYPE;
+  const record = (struct, match, index) => {
+    const [, field, type] = match ?? [];
+    if (!field || field.startsWith('_')) return;
+    const boolean = /^(?:bool|boolean|Optional\[bool\]|bool \| None|Option<bool>)$/.test(String(type).trim());
+    const toggle = boolean && (TOGGLE_CAMEL.test(field) || TOGGLE_SNAKE.test(field) || BARE_TOGGLE.test(field));
+    const section = !boolean && SECTION_TYPE.test(String(type).replace(/^\*/, ''));
+    if (toggle || section) rows.push({ kind: 'setting', name: settingName(struct, field, path), path, line: index + 1, symbol: `${struct}.${field}` });
+  };
+  if (language === 'py') {
+    // The open classes and functions by indent; a field counts for the configuration class it sits directly in.
+    const open = [];
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index].trimEnd();
+      if (!line) continue;
+      const indent = indentOf(line);
+      while (open.length > 0 && open.at(-1).indent >= indent) open.pop();
+      const klass = PY_CLASS.exec(line);
+      if (klass) { open.push({ indent, struct: settingsType.test(klass[2]) ? klass[2] : null }); continue; }
+      if (PY_DEF.test(line)) { open.push({ indent, struct: null }); continue; }
+      const struct = open.at(-1)?.struct;
+      if (struct) record(struct, PY_FIELD.exec(line), index);
     }
+    return rows;
+  }
+  const header = TYPE_HEADER[language];
+  const field = TYPE_FIELD[language];
+  // The configuration type being read: its name, the line it opened at, and the
+  // braces its fields opened so far (a field of a nested object type is not its own).
+  let type = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trimEnd();
+    if (type) {
+      const nested = type.depth > 0;
+      type.depth += braceDelta(line, true);
+      if (type.depth < 0 || index - type.line >= TYPE_LINES) type = null;
+      else {
+        if (!nested) record(type.struct, field.exec(line), index);
+        continue;
+      }
+    }
+    const struct = header.exec(line)?.slice(1).find(Boolean);
+    if (!struct || !settingsType.test(struct)) continue;
+    // A type written on one line (`type X = { a: boolean };`) has no field lines below it.
+    if (line.lastIndexOf('}') > line.indexOf('{')) continue;
+    type = { struct, line: index, depth: 0 };
   }
   return rows;
 }
@@ -394,41 +454,45 @@ const WORKER_PATTERNS = {
 };
 /** A test function by its name in Go, Python and JavaScript; Rust tests are found by attribute and module. */
 const TEST_NAME = /^(?:test|Test|bench|Benchmark)/;
-const RUST_TEST_ATTRIBUTE = /^\s*#\[(?:(?:[\w:]+::)?test\b|cfg\(test\))/;
 /** A timer at a second or faster beside a clock read is a screen repainting a time, not work. */
 const REPAINT_MS = 1000;
 
-/** The lines of a Rust file inside a `#[cfg(test)] mod`, by brace depth from the module's opening line. */
+/** The lines of a Rust file inside a `#[cfg(test)] mod`, in one pass that carries the module's brace depth. */
 function rustTestLines(lines) {
   const inside = new Array(lines.length).fill(false);
+  // A `#[cfg(test)]` waiting for the item it marks, and the depth a test module opened at (-1 outside one).
+  let pending = false;
+  let floor = -1;
+  let depth = 0;
   for (let index = 0; index < lines.length; index += 1) {
-    if (!/^\s*#\[cfg\(test\)\]/.test(lines[index])) continue;
-    let open = index + 1;
-    while (open < lines.length && /^\s*(?:#\[|\/\/|$)/.test(lines[open])) open += 1;
-    if (!/^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+\w+\s*\{/.test(lines[open] ?? '')) continue;
-    let depth = 0;
-    for (let cursor = open; cursor < lines.length; cursor += 1) {
-      for (const char of lines[cursor]) depth += char === '{' ? 1 : char === '}' ? -1 : 0;
-      inside[cursor] = true;
-      if (depth <= 0 && cursor > open) break;
+    const line = lines[index];
+    if (floor < 0) {
+      if (/^\s*#\[cfg\(test\)\]/.test(line)) pending = true;
+      else if (pending && !/^\s*(?:#\[|\/\/|$)/.test(line)) {
+        pending = false;
+        if (/^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+\w+\s*\{/.test(line)) floor = depth;
+      }
+    }
+    depth = Math.max(0, depth + braceDelta(line));
+    if (floor >= 0) {
+      inside[index] = true;
+      if (depth <= floor) floor = -1;
     }
   }
   return inside;
 }
 
-/** Whether a Rust function carries `#[test]`, `#[tokio::test]`, `#[cfg(test)]` or another test attribute. */
-function rustTestFunction(lines, declarationLine) {
-  for (let cursor = declarationLine - 2; cursor >= 0 && /^\s*(?:#\[|\/\/)/.test(lines[cursor]); cursor -= 1) {
-    if (RUST_TEST_ATTRIBUTE.test(lines[cursor])) return true;
-  }
-  return false;
-}
+const CONSTANT_NUMBER = /\bconst[ \t]+([A-Za-z_$][\w$]*)[ \t]*=[ \t]*(\d[\d_]*)[ \t]*;?$/;
 
-/** The milliseconds a timer's last argument says: a literal, or a constant the same file declares. */
-function intervalMs(text, argument) {
-  if (/^\d[\d_]*$/.test(argument)) return Number(argument.replace(/_/g, ''));
-  const declared = new RegExp(`\\bconst[ \\t]+${argument}[ \\t]*=[ \\t]*(\\d[\\d_]*)[ \\t]*;?[ \\t]*$`, 'm').exec(text);
-  return declared ? Number(declared[1].replace(/_/g, '')) : null;
+/** Each number a file declares as a constant (`const TICK_MS = 30_000;`), the first declaration of a name winning. */
+function declaredNumbers(lines) {
+  const numbers = new Map();
+  for (const line of lines) {
+    if (!line.includes('const')) continue;
+    const declared = CONSTANT_NUMBER.exec(line.trimEnd());
+    if (declared && !numbers.has(declared[1])) numbers.set(declared[1], Number(declared[2].replace(/_/g, '')));
+  }
+  return numbers;
 }
 
 const CLOCK_READ = /\b(?:Date\.now|performance\.now)\(\)|\bnew Date\(\)/;
@@ -438,14 +502,14 @@ const CLOCK_READ = /\b(?:Date\.now|performance\.now)\(\)|\bnew Date\(\)/;
  * the clock (`setInterval(() => setNow(Date.now()), 30_000)`), or it ticks at a
  * second or faster beside a clock read. A fast timer that calls work is a poller.
  */
-function repaintTimer(text, lines, index) {
+function repaintTimer(numbers, lines, index) {
   if (!/\bsetInterval\(/.test(lines[index])) return false;
   if (CLOCK_READ.test(lines[index])) return true;
   if (!lines.slice(Math.max(0, index - 3), index + 6).some((line) => CLOCK_READ.test(line))) return false;
   for (let cursor = index; cursor < Math.min(lines.length, index + 16); cursor += 1) {
     const every = /,\s*([A-Za-z_$][\w$]*|\d[\d_]*)\)\s*;?$/.exec(lines[cursor].trimEnd());
     if (!every) continue;
-    const ms = intervalMs(text, every[1]);
+    const ms = /^\d[\d_]*$/.test(every[1]) ? Number(every[1].replace(/_/g, '')) : numbers().get(every[1]) ?? null;
     return ms !== null && ms <= REPAINT_MS;
   }
   return false;
@@ -459,26 +523,27 @@ function pipeThread(lines, index) {
 }
 
 /** A function that starts a ticker, timer loop, thread, file watcher or scheduled job, named by its owner type or itself. */
-function workersIn(path, text, language) {
+function workersIn(path, text, lines, language) {
   const pattern = WORKER_PATTERNS[language];
   if (!pattern || !pattern.test(text)) return [];
   if (language === 'rs' && (basename(path) === 'tests.rs' || /(?:^|\/)tests\//.test(path))) return [];
   // A timer in a component file runs while that screen is shown: the screen's behaviour, not a background worker.
   if (language === 'js' && /\.[jt]sx$/.test(path)) return [];
-  const lines = text.split(/\r?\n/);
   const testLines = language === 'rs' ? rustTestLines(lines) : null;
+  const around = declarationsOf(lines, language);
+  let numbers = null;
+  const constants = () => (numbers ??= declaredNumbers(lines));
   const rows = [];
   const seen = new Set();
   for (let index = 0; index < lines.length; index += 1) {
     if (!pattern.test(lines[index]) || /^\s*(?:\/\/|#)/.test(lines[index]) || testLines?.[index]) continue;
-    if ((language === 'js' && repaintTimer(text, lines, index)) || (language === 'rs' && pipeThread(lines, index))) continue;
-    let owner = enclosingDeclaration(lines, index, language);
+    if ((language === 'js' && repaintTimer(constants, lines, index)) || (language === 'rs' && pipeThread(lines, index))) continue;
+    let owner = around[index];
     if (language === 'py' && /^\s*@/.test(lines[index])) {
       const def = lines.slice(index + 1, index + 6).map((next) => /^\s*(?:async\s+)?def\s+(\w+)/.exec(next)).find(Boolean);
       owner = def ? { owner: null, name: def[1] } : owner;
     }
-    if (!owner || owner.name === 'main' || TEST_NAME.test(owner.name)) continue;
-    if (language === 'rs' && owner.line && rustTestFunction(lines, owner.line)) continue;
+    if (!owner || owner.name === 'main' || TEST_NAME.test(owner.name) || owner.test) continue;
     const name = owner.owner ?? owner.name;
     if (seen.has(name)) continue;
     seen.add(name);
@@ -492,7 +557,10 @@ function workersIn(path, text, language) {
  * ------------------------------------------------------------------------- */
 
 /**
- * Subcommand, flag, setting and worker rows over the product files, in that order.
+ * Subcommand, flag, setting and worker rows over the product files, in that
+ * order. Every detector reads a file's lines once, forward, carrying what it
+ * needs to know (the declaration a line sits in, a type being read, a test
+ * module), so a survey costs time in proportion to the bytes it reads.
  *
  * @param {{ path: string }[]} files product files
  * @param {(path: string) => string} readText
@@ -507,12 +575,13 @@ export function operatorAbilities(files, readText) {
     if (!language) continue;
     const raw = readText(file.path);
     if (!raw) continue;
-    const text = boundedLines(raw).join('\n');
-    subcommands.push(...subcommandsIn(file.path, text, language));
-    const defined = flagsIn(text, language);
+    const lines = boundedLines(raw);
+    const text = lines.join('\n');
+    subcommands.push(...subcommandsIn(file.path, text, lines, language));
+    const defined = flagsIn(lines, language);
     if (defined.length > 0) flags.push(...flagAbilities(file.path, defined));
-    settings.push(...settingsIn(file.path, text, language));
-    workers.push(...workersIn(file.path, text, language));
+    settings.push(...settingsIn(file.path, lines, language));
+    workers.push(...workersIn(file.path, text, lines, language));
   }
   return { subcommands, flags, settings, workers };
 }

@@ -11,7 +11,7 @@ import { readdirSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
 
 import { inferImports } from '../infer-imports.mjs';
-import { abilitiesOf } from './abilities.mjs';
+import { abilitiesOf, fairShares } from './abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
 import { repoText as t } from './repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
@@ -456,9 +456,13 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
 /**
  * The rendered map's ceiling without its abilities: a few hundred files fit whole; a
  * larger repository keeps its largest units. The abilities section (at most 120
- * rows) comes on top, so a longer floor never pushes units out of the map.
+ * rows) comes on top, so a longer floor never pushes units out of the map, and the
+ * whole map stays within its own ceiling.
  */
 const BREADTH_TEXT_BUDGET = 24 * 1024;
+const MAP_TEXT_LIMIT = 30 * 1024;
+/** Members a family or group shows before the rest are counted. */
+const MEMBERS_SHOWN = 16;
 
 /** The bytes a map takes against the budget: everything but its abilities section. */
 function budgetBytes(map) {
@@ -470,7 +474,7 @@ function budgetBytes(map) {
  * largest units that fit, and says how to ask for the rest: one folder at a time.
  */
 function fitBreadthMap(map) {
-  if (budgetBytes(map) <= BREADTH_TEXT_BUDGET) return { ...map, text: renderBreadthMap(map) };
+  if (budgetBytes(map) <= BREADTH_TEXT_BUDGET) return capAbilities(map);
   const largest = [...map.units]
     .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path))
     .map((unit) => ({
@@ -500,7 +504,54 @@ function fitBreadthMap(map) {
     if (budgetBytes(slim(middle)) <= BREADTH_TEXT_BUDGET) low = middle;
     else high = middle - 1;
   }
-  const fitted = slim(low);
+  return capAbilities(slim(low));
+}
+
+/**
+ * The map with its text, the abilities section cut to fit the whole map's
+ * ceiling: a group shows fewer members first (16, then 8, 4, 2, 1, none), each
+ * cut counted in `membersOmitted`; a map still too long then keeps fewer rows,
+ * shared fairly between kinds, the rows left out added to `abilitiesOmitted`.
+ * The returned rows are the ones the text shows.
+ */
+function capAbilities(map) {
+  const fits = (candidate) => Buffer.byteLength(renderBreadthMap(candidate), 'utf8') <= MAP_TEXT_LIMIT;
+  const shown = (rows, limit) => rows.map((row) => {
+    if (!row.members || row.members.length <= limit) return row;
+    return { ...row, members: row.members.slice(0, limit), membersOmitted: (row.membersOmitted ?? 0) + row.members.length - limit };
+  });
+  const rows = map.abilities ?? [];
+  let capped = map;
+  for (const limit of [MEMBERS_SHOWN, 8, 4, 2, 1, 0]) {
+    capped = { ...map, abilities: shown(rows, limit) };
+    if (fits(capped)) return { ...capped, text: renderBreadthMap(capped) };
+  }
+  const memberless = capped.abilities;
+  const keep = (count) => {
+    const counts = new Map();
+    for (const row of memberless) counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
+    const shares = fairShares(counts, count);
+    const taken = new Map();
+    const kept = memberless.filter((row) => {
+      if ((taken.get(row.kind) ?? 0) >= shares.get(row.kind)) return false;
+      taken.set(row.kind, (taken.get(row.kind) ?? 0) + 1);
+      return true;
+    });
+    const byKind = { ...(map.abilitiesOmittedByKind ?? {}) };
+    for (const [kind, total] of counts) {
+      if (total > shares.get(kind)) byKind[kind] = (byKind[kind] ?? 0) + total - shares.get(kind);
+    }
+    const omitted = (map.abilitiesOmitted ?? 0) + memberless.length - kept.length;
+    return { ...map, abilities: kept, ...(omitted > 0 ? { abilitiesOmitted: omitted, abilitiesOmittedByKind: byKind } : {}) };
+  };
+  let low = 0;
+  let high = memberless.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (fits(keep(middle))) low = middle;
+    else high = middle - 1;
+  }
+  const fitted = keep(low);
   return { ...fitted, text: renderBreadthMap(fitted) };
 }
 
@@ -540,9 +591,9 @@ function renderBreadthMap(map) {
   if (map.abilities?.length > 0) {
     lines.push('', 'Abilities to place, the floor: kind name evidence symbol (a family or group lists its members; a documented one names its heading)');
     for (const row of map.abilities) {
-      const members = row.members
-        ? `: ${row.members.slice(0, 16).map((name) => t(name, 80)).join(', ')}${row.members.length > 16 ? ` +${row.members.length - 16}` : ''}`
-        : '';
+      const hidden = (row.membersOmitted ?? 0) + Math.max(0, (row.members?.length ?? 0) - MEMBERS_SHOWN);
+      const listed = (row.members ?? []).slice(0, MEMBERS_SHOWN).map((name) => t(name, 80)).join(', ');
+      const members = row.members ? `: ${[listed, hidden > 0 ? `+${hidden}` : ''].filter(Boolean).join(' ')}` : '';
       const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
       const doc = row.doc ? ` (${t(row.doc)})` : '';
       lines.push(row.kind === 'family'
@@ -551,7 +602,7 @@ function renderBreadthMap(map) {
     }
     if (map.abilitiesOmitted) {
       const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
-      lines.push(`+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows; call analyze_repo_structure with rootPath set to one folder to list them.`);
+      lines.push(`+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows and of the map's 30 KB; call analyze_repo_structure with rootPath set to one folder to list them.`);
     }
   }
   if (map.docs.pages.length > 0) {

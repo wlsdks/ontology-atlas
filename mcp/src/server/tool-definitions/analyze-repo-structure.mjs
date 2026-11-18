@@ -196,6 +196,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
             evidence: { ...NON_BLANK_STRING_SCHEMA, description: 'Where it was found, as `path:Lline`.' },
             doc: { ...NON_BLANK_STRING_SCHEMA, description: 'For a documented ability, the heading that names it, as `path:Lline`.' },
             members: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            membersOmitted: { type: 'integer', minimum: 1, description: 'Members left out of `members` to keep the map within 30 KB.' },
           },
           required: ['kind', 'name', 'path', 'evidence'],
           additionalProperties: false,

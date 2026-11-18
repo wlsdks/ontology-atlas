@@ -461,6 +461,22 @@ test('one line about a shared file excludes none of the abilities in it', (t) =>
   assert.ok(unplaced.includes('--force') && unplaced.includes('--metrics-*'), unplaced.join(', '));
 });
 
+test('one line that points at two abilities excludes neither; each needs a line of its own', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const cite = (name) => repo.survey.abilities.find((row) => row.name === name).evidence;
+  const project = (lines) => doc('project', {}, `Ships releases.\n\n## Uncertainty\n${lines}\n`);
+  const unplaced = (lines) => measureBuildDepth([project(lines)], repo, null).breadth.unplaced.map((row) => row.name);
+  const reason = 'only serves the release script, never a person';
+  const cited = unplaced(`- ${cite('startSync')} and ${cite('--force')} ${reason}.`);
+  assert.ok(cited.includes('startSync') && cited.includes('--force'), cited.join(', '));
+  const named = unplaced(`- \`startSync\` and \`--force\` ${reason}.`);
+  assert.ok(named.includes('startSync') && named.includes('--force'), named.join(', '));
+  const apart = unplaced(`- ${cite('startSync')} ${reason}.\n- \`--force\` ${reason}.`);
+  assert.ok(!apart.includes('startSync') && !apart.includes('--force'), apart.join(', '));
+});
+
 test('a one-word flag is named in code form, and a prefix group by half its flags', (t) => {
   const root = repository(FLAGGED);
   t.after(() => rmSync(root, { recursive: true, force: true }));
