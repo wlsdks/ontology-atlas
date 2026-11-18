@@ -24,6 +24,7 @@ import { loadVaultDocs } from '../vault/documents.mjs';
 import { configureNodeEligibilityRepoRoot } from '../vault/eligibility-gate.mjs';
 import { updateDoc, writeDoc } from '../vault/doc-writes.mjs';
 import { detectDuplicateTitle } from '../vault/graph-queries.mjs';
+import { measureBuildDepth, repositoryUnits } from '../construction/build-depth.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,
@@ -208,12 +209,26 @@ function addConceptsBatch({ concepts }) {
       };
     }
   });
+  const wrote = results.some((row) => row.ok && row.changed !== false);
+  const coverage = wrote ? buildCoverageLine() : null;
   return {
     concepts: results,
-    postWriteMaintenance: results.some((row) => row.ok && row.changed !== false)
-      ? compactPostWriteMaintenance()
-      : undefined,
+    postWriteMaintenance: wrote ? compactPostWriteMaintenance() : undefined,
+    ...(coverage ? { coverage } : {}),
   };
+}
+
+/**
+ * The coverage line after a batch: how much of the product the node paths now touch
+ * and which units nothing names yet. A measurement failure never fails the write.
+ */
+function buildCoverageLine() {
+  if (!REPO_ROOT_IS_GROUNDED) return null;
+  try {
+    return measureBuildDepth(loadVaultDocs(VAULT_ROOT), repositoryUnits(REPO_ROOT, VAULT_ROOT)).line;
+  } catch {
+    return null;
+  }
 }
 
 function patchConcept({ slug, frontmatter, body, expected_mtime }) {

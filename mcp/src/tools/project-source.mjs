@@ -4,6 +4,11 @@
  * `finalize_project_meaning` receipt.
  */
 
+import {
+  competencyDepthRefusals,
+  measureBuildDepth,
+  repositoryUnits,
+} from '../construction/build-depth.mjs';
 import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
@@ -34,6 +39,8 @@ import {
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import {
   COMPILED_ONTOLOGY_CACHE,
+  REPO_ROOT,
+  REPO_ROOT_IS_GROUNDED,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
 import {
@@ -365,6 +372,17 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
   const unresolvedRows = unresolvedCompetencyRows({ competency: competencyInput });
   if (unresolvedRows.length > 0) {
     throw new Error(competencyRefusal(unresolvedRows));
+  }
+  // An `answered` the map's own numbers contradict: most abilities outlined, most of
+  // the product untouched, or almost no dependency recorded.
+  const depth = measureBuildDepth(allDocs, repositoryUnits(REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null, VAULT_ROOT));
+  const depthRefusals = competencyDepthRefusals(competency.questions, depth);
+  if (depthRefusals.length > 0) {
+    throw new Error([
+      `finalize_project_meaning blocked: ${depthRefusals.length} answered competency row(s) claim more than the map holds.`,
+      ...depthRefusals,
+      'Repair the map and call finalize_project_meaning again, or patch_concept the project body so each row is partial with its gap.',
+    ].join('\n'));
   }
 
   const receipt = finalizeProjectMeaningReceipt({

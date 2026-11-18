@@ -10,11 +10,12 @@ export const VALIDATE_VAULT_TOOL = {
   description:
     'R+ (cycle 46) — validate every doc in the vault, return per-doc + per-code aggregate. ' +
     'Replaces the K-round-trip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). ' +
-    `8 issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
+    `Issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
     'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], problemsPagination, summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
     '`problems` is one page, files with errors first and then by slug: `offset` (default 0) and `limit` (default 100, max 500) choose it, a page left at the default `limit` stops sooner when its text would pass 128 KiB, and `problemsPagination.nextOffset` resumes it, so follow pages until `hasMore` is false before calling the vault clean. `summary` always counts the whole vault; each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
     'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: the active resolved repository root from connection_info). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
     'Also returns `evidenceDrift`: one Git walk dates every cited path and every concept document, and each concept is `current` (cited code unchanged since the document), `stale` (a cited file changed after the document — read it before trusting the recorded meaning), `missing` (cited path gone) or `unknown` (nothing cited, no commit in the window, or only a folder-level path moved — listed under `folderOnly`, because a folder changes on almost any commit). `checked: false` names why nothing was dated; it never means nothing moved. ' +
+    'Also returns `coverage`, one line: how much of the product source the node paths touch, the units none touches, and how many nodes say outlined only. Build-depth warnings: `relation-note-on-unread`, `dependency-both-ways`, `path-without-code`, `path-shared`. ' +
     'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
   inputSchema: {
     type: 'object',
@@ -40,6 +41,10 @@ export const VALIDATE_VAULT_TOOL = {
   outputSchema: {
     type: 'object',
     properties: {
+      coverage: {
+        type: 'string',
+        description: 'One line: the share of product source lines whose unit a node path touches, the untouched units by name, and how many nodes say outlined only. Absent when no repository root is grounded or it has no product source.',
+      },
       scanned: {
         type: 'integer',
         minimum: 0,

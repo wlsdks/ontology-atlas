@@ -145,6 +145,30 @@ export const KNOWN_CODES = [
     description: 'a declared dependency whose citing file is too large to read, so no witness was looked for and the edge is not judged.',
   },
   {
+    code: 'relation-note-on-unread',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a relation `why` states how two nodes work together while one of them says, under Uncertainty, that it was outlined only (MCP validate_vault).',
+  },
+  {
+    code: 'dependency-both-ways',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'two nodes each declare a dependency on the other, so one arrow points from provider to consumer (MCP validate_vault).',
+  },
+  {
+    code: 'path-without-code',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a capability or element `path:` names a file with no code: empty, comments or a docstring only, or a bare re-export (MCP validate_vault).',
+  },
+  {
+    code: 'path-shared',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'more than five capabilities and elements share one `path:`, so a drift check cannot tell them apart (MCP validate_vault).',
+  },
+  {
     code: 'starter-example-node',
     severity: 'warning',
     scope: 'vault',

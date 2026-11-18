@@ -169,6 +169,10 @@ export const ADD_CONCEPTS_TOOL = {
         },
       },
       postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      coverage: {
+        type: 'string',
+        description: 'One line: the share of product source lines whose unit a node path touches, the untouched units by name, and how many nodes say outlined only. Absent when the repository root is not grounded or has no product source.',
+      },
     },
     required: ['concepts'],
     additionalProperties: false,
