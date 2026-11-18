@@ -102,6 +102,14 @@ export function loadStaticVaultSource(source: SampleSource): Promise<StaticVault
   return pending;
 }
 
+/** The one handle a screen's hook takes: read empty, peek, subscribe, and start the download. */
+export const bundledSamples = {
+  empty: emptyStaticVaultSource,
+  peek: peekStaticVaultSource,
+  subscribe: subscribeStaticVaultSource,
+  load: loadStaticVaultSource,
+};
+
 /** Test isolation: forgets every loaded sample so a test can watch the load itself. */
 export function resetStaticVaultSourcesForTests(): void {
   loaded.clear();

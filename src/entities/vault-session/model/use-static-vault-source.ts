@@ -1,13 +1,7 @@
 'use client';
 
 import { useContext, useEffect, useSyncExternalStore } from 'react';
-import {
-  emptyStaticVaultSource,
-  loadStaticVaultSource,
-  peekStaticVaultSource,
-  subscribeStaticVaultSource,
-  type StaticVaultSource,
-} from '@/entities/docs-vault';
+import { bundledSamples, type StaticVaultSource } from '@/entities/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { getDataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
 import { getSampleSourceSnapshot, type SampleSource } from '@/shared/lib/vault-folder/sample-source';
@@ -36,7 +30,7 @@ const getServerSnapshot = () => null;
 function startWebSample(): void {
   if (typeof window === 'undefined') return;
   try {
-    if (!isDesktopShell()) void loadStaticVaultSource(getSampleSourceSnapshot());
+    if (!isDesktopShell()) void bundledSamples.load(getSampleSourceSnapshot());
   } catch {
     // An import must never throw; a failed check starts nothing and the hook's effect decides later.
   }
@@ -58,18 +52,18 @@ function useStaticVaultState(override: SampleSource | undefined): StaticVaultSta
   const wanted = override !== undefined || !local;
 
   const loaded = useSyncExternalStore(
-    subscribeStaticVaultSource,
-    () => peekStaticVaultSource(sample),
+    bundledSamples.subscribe,
+    () => bundledSamples.peek(sample),
     getServerSnapshot,
   );
 
   useEffect(() => {
     if (!wanted || loaded || isDesktopShell()) return;
-    void loadStaticVaultSource(sample);
+    void bundledSamples.load(sample);
   }, [wanted, loaded, sample]);
 
   if (loaded) return { source: loaded, status: 'ready' };
-  const source = emptyStaticVaultSource(sample);
+  const source = bundledSamples.empty(sample);
   // The desktop check is read after hydration only (SSR and the first client render see the
   // browser), so a reader that needs the exact answer waits for `useHydrated()` first.
   return { source, status: wanted && !isDesktopShell() ? 'loading' : 'none' };

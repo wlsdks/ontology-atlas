@@ -14,12 +14,7 @@ export {
 } from './lib/bundled-vault/static-vault-source';
 export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
 export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
-export {
-  emptyStaticVaultSource,
-  loadStaticVaultSource,
-  peekStaticVaultSource,
-  subscribeStaticVaultSource,
-} from './lib/bundled-vault/load-static-vault-source';
+export { bundledSamples } from './lib/bundled-vault/load-static-vault-source';
 export {
   loadStaticVaultHeadings,
   type StaticVaultHeadings,
