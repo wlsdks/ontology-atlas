@@ -4,6 +4,8 @@
  * guard that keeps them inside the vault's own repository.
  */
 
+import { buildBreadthMap } from '../analyze/breadth-map.mjs';
+import { recordSourceEvidence } from '../construction/session-reads.mjs';
 import { analyzeRepoStructure } from '../analyze/repo-structure.mjs';
 import {
   buildArchitectureBrief,
@@ -47,8 +49,11 @@ import {
   sep,
 } from 'node:path';
 
-function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification } = {}) {
+function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification, view } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
+  if (view !== undefined && view !== 'breadth' && view !== 'analysis') {
+    throw new Error('view must be "breadth" or "analysis".');
+  }
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalBoolean(sourceOnly, 'sourceOnly');
@@ -56,13 +61,21 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
     throw new Error('sourceOnly cannot be combined with proposal or qualification; omit sourceOnly for full analysis and lifecycle replay.');
   }
   if (sourceOnly && sourceReads === undefined) {
-    throw new Error('sourceOnly requires sourceReads with 1–8 exact selectors.');
+    throw new Error('sourceOnly requires sourceReads with 1–16 exact selectors.');
   }
   const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   if (sourceReads !== undefined) validateSourceReadSelectors(sourceReads);
-  if (sourceOnly) {
-    return { rootPath: target, delivery: 'source_only', canWrite: false,
-      sourceEvidence: readSourceEvidence(target, sourceReads, { ignore }) };
+  const reviewing = proposal != null || qualification != null;
+  // Reads without a proposal return the reads alone: the map was already sent once,
+  // and repeating it on every outline call cost more than the outlines.
+  if (sourceOnly || (sourceReads !== undefined && !reviewing)) {
+    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore });
+    recordSourceEvidence(target, sourceEvidence);
+    return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
+  }
+  // The CLI readers ask for the structural analysis by name; an agent gets the map.
+  if (!reviewing && view !== 'analysis') {
+    return buildBreadthMap(target, { ignore, vaultRoot: VAULT_ROOT });
   }
   if (sourceReads !== undefined && (proposal != null || qualification != null)) {
     const missingHash = sourceReads.findIndex((row) => row?.expectedSha256 === undefined);
@@ -74,6 +87,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   const sourceEvidence = sourceReads === undefined
     ? undefined
     : readSourceEvidence(target, sourceReads, { ignore });
+  if (sourceEvidence) recordSourceEvidence(target, sourceEvidence);
   const sourceDigest = proposal == null
     ? undefined
     : composeSourceDigest(sourceBefore, sourceEvidence);
@@ -100,16 +114,16 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   if (sourceReads !== undefined && sourceBefore !== sourceAfter) {
     throw new Error('Repository source changed during source-sensitive proposal analysis; retry against one stable snapshot.');
   }
-  return proposal == null && qualification == null ? surveyResponse(result) : result;
+  return reviewing ? result : analysisView(result);
 }
 
 /**
- * The first survey an agent reads before proposing. Relations that only restate
+ * The structural analysis the CLI asks for by name. Relations that only restate
  * "the project contains every candidate" or connect folder-named element candidates
  * are not sent (infer_imports carries the import edges with their evidence), and a
  * scan that found no ability says so in one line.
  */
-function surveyResponse(result) {
+function analysisView(result) {
   const proposable = new Set([
     ...result.domains.map((row) => row.slug),
     ...result.capabilities.map((row) => row.slug),

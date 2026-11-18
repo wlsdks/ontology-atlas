@@ -40,60 +40,55 @@ function importKindCountOutputSummary(kindCounts) {
   return entries.length > 0 ? entries.join('/') : 'none';
 }
 
+const ENTRY_POINT_KINDS = new Set(['executable', 'command', 'route', 'library', 'plugin']);
+
+/** The default survey is the breadth map: units, entry points and docs, and no candidate node. */
 export function analyzeRepoStructureFailure(parsed) {
   if (typeof parsed?.rootPath !== 'string' || parsed.rootPath.length === 0) {
     return 'analyze_repo_structure response missing rootPath';
   }
-  if (!['fsd', 'next', 'generic'].includes(parsed.framework)) {
-    return `analyze_repo_structure response unknown framework: ${parsed?.framework}`;
+  if (parsed.contract !== 'breadthMap:v1') {
+    return `analyze_repo_structure response is not the breadth map: ${parsed?.contract}`;
   }
-  for (const propertyName of ['domains', 'capabilities', 'elements', 'suggestedRelations', 'skipped']) {
-    if (!Array.isArray(parsed[propertyName])) {
-      return `analyze_repo_structure response missing ${propertyName} array`;
-    }
-  }
-  for (const propertyName of ['domains', 'capabilities', 'elements']) {
-    for (const [index, candidate] of parsed[propertyName].entries()) {
-      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
-        return `analyze_repo_structure response malformed ${propertyName} row at index ${index}`;
-      }
-      if (typeof candidate.slug !== 'string' || candidate.slug.length === 0) {
-        return `analyze_repo_structure response missing ${propertyName} slug at index ${index}`;
-      }
-      if (typeof candidate.title !== 'string' || candidate.title.length === 0) {
-        return `analyze_repo_structure response missing ${propertyName} title: ${candidate.slug}`;
-      }
-      if (!candidate.evidence || typeof candidate.evidence.source !== 'string' || candidate.evidence.source.length === 0) {
-        return `analyze_repo_structure response missing ${propertyName} evidence source: ${candidate.slug}`;
-      }
+  for (const propertyName of ['domains', 'capabilities', 'elements', 'suggestedRelations', 'meaningGate']) {
+    if (parsed[propertyName] !== undefined) {
+      return `analyze_repo_structure survey carries ${propertyName}; the breadth map names no node`;
     }
   }
-  for (const [index, relation] of parsed.suggestedRelations.entries()) {
-    if (!relation || typeof relation !== 'object' || Array.isArray(relation)) {
-      return `analyze_repo_structure response malformed suggestedRelations row at index ${index}`;
-    }
-    for (const propertyName of ['from', 'to', 'type']) {
-      if (typeof relation[propertyName] !== 'string' || relation[propertyName].length === 0) {
-        return `analyze_repo_structure response missing suggestedRelations ${propertyName} at index ${index}`;
-      }
+  const size = parsed.size;
+  for (const propertyName of ['productFiles', 'productLines', 'units']) {
+    if (!Number.isInteger(size?.[propertyName]) || size[propertyName] < 0) {
+      return `analyze_repo_structure response missing size.${propertyName}`;
     }
   }
-  for (const [index, skipped] of parsed.skipped.entries()) {
-    if (!skipped || typeof skipped !== 'object' || Array.isArray(skipped)) {
-      return `analyze_repo_structure response malformed skipped row at index ${index}`;
+  if (!Array.isArray(parsed.units) || (!parsed.unitsOmitted && parsed.units.length !== size.units)) {
+    return 'analyze_repo_structure response units do not match size.units';
+  }
+  for (const [index, unit] of parsed.units.entries()) {
+    if (typeof unit?.path !== 'string' || unit.path.length === 0) {
+      return `analyze_repo_structure response missing unit path at index ${index}`;
     }
-    if (typeof skipped.path !== 'string' || skipped.path.length === 0) {
-      return `analyze_repo_structure response missing skipped path at index ${index}`;
+    if (!Number.isInteger(unit.files) || unit.files < 1 || !Number.isInteger(unit.lines) || unit.lines < 0) {
+      return `analyze_repo_structure response missing unit size: ${unit.path}`;
     }
-    if (typeof skipped.reason !== 'string' || skipped.reason.length === 0) {
-      return `analyze_repo_structure response missing skipped reason: ${skipped.path}`;
+    if (!Array.isArray(unit.mainFiles) || unit.mainFiles.some((file) => typeof file?.path !== 'string' || !Number.isInteger(file.lines))) {
+      return `analyze_repo_structure response malformed main files: ${unit.path}`;
+    }
+    if (!Array.isArray(unit.exports) || !Array.isArray(unit.imports) || !Number.isInteger(unit.importedBy)) {
+      return `analyze_repo_structure response malformed exports or imports: ${unit.path}`;
     }
   }
-  const configurationFailure = rustConfigurationEvidenceFailure(
-    parsed.configurationEvidence,
-  );
-  if (configurationFailure) {
-    return `analyze_repo_structure ${configurationFailure}`;
+  if (!Array.isArray(parsed.entryPoints)) return 'analyze_repo_structure response missing entryPoints array';
+  for (const [index, row] of parsed.entryPoints.entries()) {
+    if (typeof row?.path !== 'string' || typeof row.symbol !== 'string' || !ENTRY_POINT_KINDS.has(row.kind)) {
+      return `analyze_repo_structure response malformed entry point at index ${index}`;
+    }
+  }
+  if (!parsed.docs || typeof parsed.docs !== 'object' || !Array.isArray(parsed.docs.pages)) {
+    return 'analyze_repo_structure response missing docs';
+  }
+  if (typeof parsed.next !== 'string' || parsed.next.length === 0) {
+    return 'analyze_repo_structure response missing next';
   }
   return null;
 }

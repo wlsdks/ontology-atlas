@@ -67,7 +67,7 @@ test('the card states where a slug lives', () => {
  * out made builders omit it and nodes claim a completeness nobody measured.
  */
 test('the card says where an unknown goes', () => {
-  const body = CONSTRUCTION_CARD_EN.split('\n').find((line) => line.includes('Body, at most 120 words'));
+  const body = CONSTRUCTION_CARD_EN.split('\n').find((line) => line.includes('Body, at most 150 words'));
   assert.ok(body?.includes('`## Uncertainty`'), 'the body enumeration must name Uncertainty');
   assert.ok(body?.includes('Unread code is never an Excludes bullet'));
 });

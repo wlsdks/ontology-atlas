@@ -84,7 +84,8 @@
           "qualification",
           "rootPath",
           "sourceOnly",
-          "sourceReads"
+          "sourceReads",
+          "view"
         ],
         "required": []
       },

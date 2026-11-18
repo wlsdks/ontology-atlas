@@ -82,7 +82,7 @@ test('rejects unsafe, ignored, sensitive, linked, binary, invalid UTF-8 and stal
     'node_modules/x.js', '.env', 'key.pem', 'credentials.py', 'link.ts', 'binary.ts', 'bad.ts',
     { path: 'safe.ts', startLine: 1, maxLines: 1, expectedSha256: '0'.repeat(64) },
   ].map((row) => typeof row === 'string' ? { path: row, startLine: 1, maxLines: 1 } : row);
-  assert.throws(() => readSourceEvidence(root, selectors), /between 1 and 8/);
+  assert.throws(() => readSourceEvidence(root, [...selectors, ...selectors.slice(0, 5)]), /between 1 and 16/);
   let credentialOpened = false;
   const packet = readSourceEvidence(root, selectors.slice(4), {
     onBeforeOpen: ({ target}) => { if (target.endsWith('credentials.py')) credentialOpened = true; },
@@ -111,7 +111,7 @@ test('allows ordinary token and password-policy implementation filenames without
 test('validates literal selectors and supported source types', () => {
   const root = fixture();
   writeFileSync(join(root, 'notes.txt'), 'no');
-  assert.throws(() => readSourceEvidence(root, []), /between 1 and 8/);
+  assert.throws(() => readSourceEvidence(root, []), /between 1 and 16/);
   assert.throws(() => readSourceEvidence(root, [{ path: 'x.ts', startLine: 1, maxLines: 1, body: 'x' }]), /Unknown field/);
   assert.throws(
     () => readSourceEvidence(root, [{ path: `broken-${String.fromCharCode(0xd800)}.ts`, startLine: 1, maxLines: 1 }]),
@@ -304,4 +304,164 @@ test('an outline binds the source digest to the file it listed', () => {
   const second = readSourceEvidence(root, [{ path: 'a.py', mode: 'outline' }]);
   assert.notEqual(composeSourceDigest(repository, first), composeSourceDigest(repository, second));
   assert.equal(composeSourceDigest(repository, first), composeSourceDigest(repository, first));
+});
+
+/*
+ * A rule usually sits one call below the entry a builder reads. A symbol read
+ * returns the declaration and the declared functions it calls, so the next read
+ * follows the call by name instead of guessing a line range.
+ */
+test('a symbol read returns one declaration and names the callees it can follow', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  writeFileSync(join(root, 'src', 'release.py'), [
+    'class Release:',
+    '    def ship(self, labels):',
+    '        bump = decide_bump(labels)',
+    '        return self.publish(bump)',
+    '',
+    '    def publish(self, bump):',
+    '        return bump',
+    '',
+    'def unrelated():',
+    '    return 0',
+    '',
+  ].join('\n'));
+  writeFileSync(join(root, 'src', 'bump.py'), 'def decide_bump(labels):\n    return "major" if "breaking" in labels else "patch"\n');
+  const [row] = readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'Release.ship' }]).rows;
+  assert.equal(row.status, 'read');
+  assert.equal(row.symbol, 'Release.ship');
+  assert.deepEqual(row.actualRange, { startLine: 2, endLine: 4 });
+  assert.deepEqual(row.callees, [
+    { name: 'decide_bump', path: 'src/bump.py', line: 1 },
+    { name: 'publish', path: 'src/release.py', line: 6 },
+  ]);
+  assert.equal(row.next, null, 'a symbol read does not continue past its declaration');
+  const [missing] = readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'Release.cancel' }]).rows;
+  assert.equal(missing.status, 'refused');
+  assert.equal(missing.reason, 'symbol_not_found');
+  assert.throws(() => readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'ship', startLine: 1 }]), /startLine does not apply with symbol/);
+  assert.throws(() => readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'not a name' }]), /one declared name/);
+});
+
+test('a symbol read takes the implementation over typing overload stubs', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'apply.py'), [
+    'class Transform:',
+    '    @overload',
+    '    def forward(self, data: int) -> int: ...',
+    '',
+    '    def forward(self, data):',
+    '        if gated_out(data):',
+    '            return data',
+    '        return data + 1',
+    '',
+    'def gated_out(data):',
+    '    return data < 0',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'apply.py', symbol: 'Transform.forward' }]).rows;
+  assert.deepEqual(row.actualRange, { startLine: 5, endLine: 8 });
+  assert.deepEqual(row.callees, [{ name: 'gated_out', path: 'apply.py', line: 10 }]);
+});
+
+/*
+ * Depth comes from the tool: a symbol read returns, beside the body, the code
+ * that decides what the body does. Two rules were once written backwards from a
+ * body alone: a guard in the resolver the constructor builds, and a default in
+ * the options builder the body calls.
+ */
+test('a symbol read returns the constructor guard and the callee default that decide its body', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'streams'));
+  writeFileSync(join(root, 'streams', 'controller.go'), [
+    'package streams',
+    '',
+    'type Controller struct {',
+    '\tresolver func(string) (string, error)',
+    '}',
+    '',
+    'func (c *Controller) Verified(id string) (string, error) {',
+    '\tname, err := c.resolver(id)',
+    '\topts := newOptions()',
+    '\treturn name, err',
+    '}',
+    '',
+    'func NewStreamsController(allowPublic bool) *Controller {',
+    '\tresolver := func(id string) (string, error) {',
+    '\t\tif !allowPublic && !signed(id) {',
+    '\t\t\treturn "", errPublic',
+    '\t\t}',
+    '\t\treturn id, nil',
+    '\t}',
+    '\treturn &Controller{resolver: resolver}',
+    '}',
+    '',
+    'func newOptions() *Options {',
+    '\treturn &Options{DisconnectOnFailure: true}',
+    '}',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'streams/controller.go', symbol: 'Controller.Verified' }]).rows;
+  assert.equal(row.cite, 'streams/controller.go:L7-L11');
+  const byRole = Object.fromEntries(row.context.map((part) => [part.symbol, part]));
+  assert.equal(byRole.NewStreamsController.role, 'constructor');
+  assert.equal(byRole.NewStreamsController.cite, 'streams/controller.go:L13-L21');
+  assert.match(byRole.NewStreamsController.text, /if !allowPublic/);
+  assert.equal(byRole.newOptions.role, 'callee');
+  assert.match(byRole.newOptions.text, /DisconnectOnFailure: true/);
+  assert.ok(row.returnedBytes >= Buffer.byteLength(row.text) + byRole.newOptions.text.length);
+});
+
+test('a symbol read with no condition shows the guard in its caller, or names the caller to read', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'queue.py'), [
+    'def drain(buffer):',
+    '    buffer.clear()',
+    '',
+    '',
+    'def put(buffer, item, max_length=300):',
+    '    buffer.append(item)',
+    '    if len(buffer) >= max_length:',
+    '        drain(buffer)',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'queue.py', symbol: 'drain' }]).rows;
+  const caller = row.context.find((part) => part.role === 'caller');
+  assert.equal(caller.symbol, 'put');
+  assert.equal(caller.cite, 'queue.py:L5-L8');
+  assert.match(caller.text, /max_length=300/);
+  assert.equal(row.deciding, undefined);
+
+  writeFileSync(join(root, 'many.py'), ['from queue import drain', '', ...[1, 2, 3].map((n) => `def caller_${n}(b):\n    drain(b)\n`)].join('\n'));
+  const [wide] = readSourceEvidence(root, [{ path: 'queue.py', symbol: 'drain' }]).rows;
+  assert.equal(wide.context.some((part) => part.role === 'caller'), false, 'four callers are too many to show');
+  assert.match(wide.deciding, /This body holds no condition; the deciding condition is in its callers/);
+  assert.match(wide.deciding, /Read it: \{"path":"[^"]+","symbol":"[^"]+"\}/);
+});
+
+test('context comes only from files a read selector could name', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'ledger.py'), 'def settle(entry):\n    entry.close()\n');
+  // A caller in a file whose name a selector refuses (a citation delimiter) is never opened.
+  writeFileSync(join(root, 'batch#nightly.py'), 'from ledger import settle\n\n\ndef nightly(entries):\n    for entry in entries:\n        if entry.due:\n            settle(entry)\n');
+  const [row] = readSourceEvidence(root, [{ path: 'ledger.py', symbol: 'settle' }]).rows;
+  assert.equal(row.status, 'read');
+  assert.deepEqual((row.context ?? []).filter((part) => part.path.includes('#')), []);
+  assert.doesNotMatch(JSON.stringify(row), /entry\.due/);
+});
+
+test('the context a symbol read adds stays within 6 KiB, naming what it left out', () => {
+  const root = fixture();
+  const helper = (n) => [`def check_${n}(order):`, ...Array.from({ length: 50 }, (_, line) => `    if order.flag_${line} > ${line}: return ${n * 100 + line}  # rule ${line}`), '    return 0', '', ''].join('\n');
+  writeFileSync(join(root, 'rules.py'), [
+    ...Array.from({ length: 8 }, (_, n) => helper(n)),
+    'def review(order):',
+    ...Array.from({ length: 8 }, (_, n) => `    check_${n}(order)`),
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'rules.py', symbol: 'review' }]).rows;
+  const contextBytes = row.context.reduce((sum, part) => sum + Buffer.byteLength(part.text, 'utf8'), 0);
+  assert.ok(contextBytes > 0 && contextBytes <= 6144, `context held ${contextBytes} bytes`);
+  assert.ok(row.contextOmitted.length > 0, 'the callees that did not fit are named');
 });
