@@ -142,7 +142,9 @@ for (const line of readFileSync(`${prefix}.jsonl`, "utf8").split("\n")) {
       for (const read of Array.isArray(block.input?.sourceReads) ? block.input.sourceReads : []) {
         sourceReads.push(read?.mode === "outline"
           ? { path: read.path ?? null, mode: "outline" }
-          : { path: read?.path ?? null, startLine: read?.startLine ?? null, maxLines: read?.maxLines ?? null });
+          : read?.symbol
+            ? { path: read.path ?? null, symbol: read.symbol }
+            : { path: read?.path ?? null, startLine: read?.startLine ?? null, maxLines: read?.maxLines ?? null });
       }
     }
   }
