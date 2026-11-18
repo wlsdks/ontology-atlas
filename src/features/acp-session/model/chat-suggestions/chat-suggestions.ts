@@ -1,46 +1,55 @@
 /**
- * Suggestions derived from this folder's state: a recommendation appears only when its fact
- * is observed (`computeVaultHealth`: `islands`, `missingContainment`). Returns keys, not
- * sentences, so the screen translates.
+ * Next steps measured from this folder's map. A row exists only when its number is counted from the
+ * graph and is above zero; the screen translates the keys, and a press sends the request at once.
  */
 
-/** How many are shown at once. Given too many choices, people choose none (Hick). */
+/** How many measured fixes are shown at once, before the whole-map check. Given too many choices, people choose none (Hick). */
 export const SUGGESTION_LIMIT = 3;
 
+/** How many slugs a request names before it says only the count. */
+const NAMED_SLUG_LIMIT = 12;
+
 type SuggestionKind =
-  /** starter vault has a project but no source binding — connect before analysis */
+  /** Starter vault whose project has no source binding: connect before building. */
   | 'connectSource'
-  /** The vault is empty — nothing to fix, so recommend making something */
-  | 'bootstrap'
-  /** There is a cluster detached from the map */
-  | 'island'
-  /** A node points at a domain but the domain does not point back */
-  | 'containment'
-  /** A capability has neither canonical `path:` nor a resolved `elements:` implementation relation */
-  | 'evidence'
-  /** The one that is always there — have it explain this folder from the map alone */
-  | 'explain'
-  /** A concept is picked — explain that concept from its own record and relations */
+  /** Nothing beyond the starter nodes has been built. */
+  | 'build'
+  /** Capabilities that record neither `depends_on` nor an element. */
+  | 'dependencies'
+  /** Concepts in groups detached from the main map. */
+  | 'standAlone'
+  /** Titles shaped like a path, a file name or an identifier. */
+  | 'rename'
+  /** Concepts whose cited source changed after their document. */
+  | 'update'
+  /** Read-only review of the whole map, always last. */
+  | 'check'
+  /** Not a choice: the quiet line shown when every fact was measured and none is left. */
+  | 'nothingLeft'
+  /** Not a choice: nothing counted, while one fact (changed source) could not be measured. */
+  | 'nothingCounted'
+  /** A concept is picked: explain it from its own record and relations. */
   | 'explainSubject'
-  /** A concept is picked — name what a change to it would reach */
+  /** A concept is picked: name what a change to it would reach. */
   | 'subjectImpact';
 
 export interface ChatSuggestion {
   kind: SuggestionKind;
-  /** Values passed to `t(...)`: readable labels for UI plus canonical slugs for agent prompts. */
+  /** Values passed to `t(...)`: counts for labels, canonical slugs for requests. */
   params: Record<string, string | number>;
 }
 
 export interface SuggestionInput {
   nodeCount: number;
-  /** Groups that fell outside the main cluster (`VaultHealthResult.islands`) */
-  islands: readonly (readonly string[])[];
-  missingContainment: readonly { slug: string; domain: string }[];
-  /** Capability slugs matching maintenance_plan's capability_without_evidence predicate */
-  unevidenced: readonly string[];
-  /** Human-facing names keyed by canonical ontology slug; prompts still keep the slug itself. */
-  displayNames?: Readonly<Record<string, string>>;
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
+  /** Groups that fell outside the main cluster, as canonical slugs. */
+  islands: readonly (readonly string[])[];
+  /** Capabilities with neither `depends_on` nor `elements`. */
+  withoutDependency: readonly string[];
+  /** Concepts whose title reads like code. */
+  codeShaped: readonly string[];
+  /** Concepts whose cited file changed after their document; `null` when not measured. */
+  changedSource: readonly string[] | null;
 }
 
 /**
@@ -49,28 +58,53 @@ export interface SuggestionInput {
  */
 const STARTER_NODE_CEILING = 5;
 
-function displayName(input: SuggestionInput, slug: string): string {
-  const recorded = input.displayNames?.[slug]?.trim();
-  if (recorded) return recorded;
-  const tail = slug.replace(/^ontology\//, '').split('/').at(-1) ?? slug;
-  return tail.replaceAll('-', ' ');
+/**
+ * The only shape a slug may have to be named in a request sent without the person reading it: a flat
+ * kind folder or root name in lower-case words. Frontmatter is the folder's text, so anything else
+ * (a sentence, a quote, a newline) is counted but never named.
+ */
+const SAFE_SLUG = /^(?:(?:domains|capabilities|elements|documents)\/)?[a-z0-9][a-z0-9-]{0,63}$/;
+
+export function isSafeSlug(slug: unknown): slug is string {
+  return typeof slug === 'string' && SAFE_SLUG.test(slug);
 }
 
-/** Asks about one picked concept; the folder-wide list returns when nothing is picked. */
+export function isPressableSuggestion(suggestion: ChatSuggestion): boolean {
+  return suggestion.kind !== 'nothingLeft' && suggestion.kind !== 'nothingCounted';
+}
+
+/**
+ * Whether a press may send the request at once. A picked-concept row sends only its validated slug;
+ * one whose slug fails the shape fills the message box instead, so the person reads it first.
+ */
+export function isSendableSuggestion(suggestion: ChatSuggestion): boolean {
+  if (suggestion.kind === 'explainSubject' || suggestion.kind === 'subjectImpact') {
+    return isSafeSlug(suggestion.params.slug);
+  }
+  return true;
+}
+
+/** Asks about one picked concept; the label shows its name, the request names only its slug. */
 export function subjectSuggestions(subject: { slug: string; label: string }): ChatSuggestion[] {
-  const params = { slug: subject.slug, subject: subject.label };
+  const params = { slug: subject.slug.replace(/^ontology\//, ''), subject: subject.label };
   return [
     { kind: 'explainSubject', params },
     { kind: 'subjectImpact', params },
   ];
 }
 
+function slugsParams(slugs: readonly string[]): { count: number; named: number; slugs: string; rest: number } {
+  const unique = [...new Set(slugs.map((slug) => slug.replace(/^ontology\//, '')))].sort();
+  const named = unique.filter(isSafeSlug).slice(0, NAMED_SLUG_LIMIT);
+  return { count: unique.length, named: named.length, slugs: named.join(', '), rest: unique.length - named.length };
+}
+
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
-  // Recommending "fix this" to a vault with nothing built yet invents a problem that does not exist.
   if (input.nodeCount <= STARTER_NODE_CEILING) {
     if (input.sourceState === 'unbound') {
       return [{ kind: 'connectSource', params: { count: input.nodeCount } }];
     }
+    // Still reading, or no code to build from: nothing is measured yet, so nothing is offered.
     if (
       input.sourceState === 'loading'
       || input.sourceState === 'unavailable'
@@ -78,51 +112,23 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
     ) {
       return [];
     }
-    return [{ kind: 'bootstrap', params: { count: input.nodeCount } }];
+    return [{ kind: 'build', params: { count: input.nodeCount } }];
   }
 
-  const out: ChatSuggestion[] = [];
-
-  // Whatever is most tangible first — something with a name to fix leads.
-  const biggestIsland = input.islands[0];
-  if (biggestIsland && biggestIsland.length > 0) {
-    out.push({
-      kind: 'island',
-      params: {
-        first: biggestIsland[0],
-        firstLabel: displayName(input, biggestIsland[0]),
-        count: biggestIsland.length,
-      },
-    });
+  const repairs: ChatSuggestion[] = [];
+  const measured: Array<[SuggestionKind, readonly string[]]> = [
+    ['dependencies', input.withoutDependency],
+    ['standAlone', input.islands.flat()],
+    ['rename', input.codeShaped],
+    ['update', input.changedSource ?? []],
+  ];
+  for (const [kind, slugs] of measured) {
+    if (slugs.length > 0) repairs.push({ kind, params: slugsParams(slugs) });
   }
 
-  const gap = input.missingContainment[0];
-  if (gap) {
-    out.push({
-      kind: 'containment',
-      params: {
-        slug: gap.slug,
-        slugLabel: displayName(input, gap.slug),
-        domain: gap.domain,
-        domainLabel: displayName(input, gap.domain),
-      },
-    });
+  if (repairs.length === 0) {
+    return [{ kind: input.changedSource === null ? 'nothingCounted' : 'nothingLeft', params: {} }];
   }
-
-  if (input.unevidenced.length > 0) {
-    out.push({
-      kind: 'evidence',
-      params: {
-        first: input.unevidenced[0],
-        firstLabel: displayName(input, input.unevidenced[0]),
-        count: input.unevidenced.length,
-      },
-    });
-  }
-
-  // This is the fallback when fewer than three observed repairs fill the list. A vault with three
-  // concrete repairs keeps those ahead of a generic explanation; a clean vault never leaves empty hands.
-  out.push({ kind: 'explain', params: { count: input.nodeCount } });
-
-  return out.slice(0, SUGGESTION_LIMIT);
+  const check: ChatSuggestion = { kind: 'check', params: { count: input.nodeCount } };
+  return [...repairs.slice(0, SUGGESTION_LIMIT), check];
 }

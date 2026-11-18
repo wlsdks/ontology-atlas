@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
+import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { MOTION } from '@/shared/motion';
 import { KeptPanelSeat } from './KeptPanelSeat';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
@@ -269,11 +269,48 @@ export function AcpChatPanelBody({
     setSlashDismissed(true);
     inputRef.current?.focus();
   };
+  const latestUserEventId = useMemo(() => {
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      if (events[index].kind === 'user') return events[index].id;
+    }
+    return null;
+  }, [events]);
+  // Next steps follow only a turn the person started, typed or pressed; an app-composed request
+  // (an opening door, an investigation) and a reopened conversation get none.
+  const [personSendFrom, setPersonSendFrom] = useState<{ after: string | null } | null>(null);
+  const [personTurnIds, setPersonTurnIds] = useState<ReadonlySet<string>>(() => new Set());
+  if (personSendFrom && latestUserEventId !== null && latestUserEventId !== personSendFrom.after) {
+    setPersonTurnIds((previous) => new Set(previous).add(latestUserEventId));
+    setPersonSendFrom(null);
+  }
+  // Done for now holds until the person's next typed turn.
+  const [nextStepsDismissed, setNextStepsDismissed] = useState(false);
+  const [cancelledWaitTurnId, setCancelledWaitTurnId] = useState<string | null>(null);
+  const sendAsPerson = useCallback((text: string) => {
+    setPersonSendFrom({ after: latestUserEventId });
+    setPresentationOpen(false);
+    onPresentationVisibilityChange?.(false);
+    void send(text);
+  }, [latestUserEventId, onPresentationVisibilityChange, send]);
   const chooseSuggestion = (suggestion: ChatSuggestion, allowAppAction: boolean) => {
     if (allowAppAction && onSuggestionAction?.(suggestion)) return;
-    setDraft(t(`suggest.${suggestion.kind}.prompt`, suggestion.params));
-    inputRef.current?.focus();
+    const request = t(`suggest.${suggestion.kind}.prompt`, suggestion.params);
+    // A row whose slug fails the shape is read by the person before anything leaves.
+    if (!isSendableSuggestion(suggestion)) {
+      setDraft(request);
+      inputRef.current?.focus();
+      return;
+    }
+    if (status !== 'ready') return;
+    sendAsPerson(request);
   };
+  const nextSteps = nextStepsDismissed ? [] : suggestions;
+  const postTurnNextSteps =
+    latestUserEventId !== null
+    && personTurnIds.has(latestUserEventId)
+    && latestUserEventId !== cancelledWaitTurnId
+      ? nextSteps
+      : [];
 
   useEffect(() => {
     if (!sessionEnabled || connectStoppedRef.current) return;
@@ -290,7 +327,7 @@ export function AcpChatPanelBody({
       pending,
       error,
       draft,
-      suggestions,
+      suggestions: postTurnNextSteps,
       followTranscript,
       restoreTranscript,
     });
@@ -303,12 +340,11 @@ export function AcpChatPanelBody({
     const text = seatedDetail
       ? (lead === seatedDetail.lead ? seatedDetail.full : `${lead}\n\n${seatedDetail.detail}`)
       : lead;
-    setPresentationOpen(false);
-    onPresentationVisibilityChange?.(false);
     setDraft('');
     setSeatedDetail(null);
-    void send(text);
-  }, [draft, onPresentationVisibilityChange, seatedDetail, send, setPresentationOpen, setSeatedDetail, status]);
+    setNextStepsDismissed(false);
+    sendAsPerson(text);
+  }, [draft, seatedDetail, sendAsPerson, setSeatedDetail, status]);
 
   const toolPicker = (runtimes.length > 0 ? runtimes : [{ id: runtimeId, label: runtimeLabel }]).flatMap((r) =>
     r.id === runtimeId && choices.models.length > 0
@@ -341,7 +377,6 @@ export function AcpChatPanelBody({
   const canSend = status === 'ready';
 
   const { turnSilent, silentMinutes } = useTurnSilence({ busy, lastTurnUpdateAt, pending, status });
-  const [cancelledWaitTurnId, setCancelledWaitTurnId] = useState<string | null>(null);
 
   const stoppedWithoutAnswer =
     !busy
@@ -458,8 +493,12 @@ export function AcpChatPanelBody({
           <EmptyState
             t={t}
             seatedRequestWaiting={seatedRequestWaiting}
-            suggestions={suggestions}
+            suggestions={nextSteps}
+            canSend={canSend}
+            providerNote={t('suggest.providerNote', { runtime: runtimeLabel })}
             onChoose={(suggestion) => chooseSuggestion(suggestion, true)}
+            onDone={() => setNextStepsDismissed(true)}
+            onEscape={() => inputRef.current?.focus()}
           />
         ) : null}
         <TranscriptRows
@@ -483,7 +522,10 @@ export function AcpChatPanelBody({
           presentationOfferRef={presentationOfferRef}
           showPostTurnSuggestions={showPostTurnSuggestions}
           postTurnSuggestionsHeld={postTurnSuggestionsHeld}
+          canSend={canSend}
           onChooseSuggestion={(suggestion) => chooseSuggestion(suggestion, false)}
+          onDoneWithSuggestions={() => setNextStepsDismissed(true)}
+          onEscapeSuggestions={() => inputRef.current?.focus()}
         />
       </TranscriptPane>
 
