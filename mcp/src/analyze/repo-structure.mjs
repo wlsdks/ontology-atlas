@@ -9,6 +9,7 @@ import { evaluateConstructionLifecycle } from '../construction/construction-life
 import { discoverDeclaredWorkspacePackages } from '../infer-imports/workspace-packages.mjs';
 import { collectRustFeatureConfigurationEvidence } from '../rust-feature-evidence.mjs';
 import {
+  BUSINESS_CAPABILITY_CLUES,
   DEFAULT_IGNORE,
   ELEMENT_ENTRY_FILES,
   FSD_SCAN_ROOTS,
@@ -421,25 +422,33 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     ...mapGoPackageImportReceipts(importAnalysis?.packageImportEvidence),
   ];
 
+  // A README heading is a domain candidate only when something besides the heading
+  // answers to it: a source folder or package the scan matched to it, an ability the
+  // prose states and the code implements whose clue declares that domain, or a
+  // separate document stating its responsibility. An ability tied to a heading by a
+  // shared word alone is not an answer: "Pull Requests" shares one with a request
+  // client. "Credits" or "Security Contact" name a section of the README, and
+  // nothing else ever does.
+  const declaredAbilityDomain = new Map(
+    BUSINESS_CAPABILITY_CLUES.map((clue) => [clue.slug, clue.domain]),
+  );
+  const answeredDomains = new Set([
+    ...[...capabilities, ...elements].map((node) => node.domain),
+    ...deriveBusinessCapabilityCandidates({ domains, capabilities, elements, semanticEvidence })
+      .filter((candidate) => declaredAbilityDomain.get(candidate.slug) === candidate.domain)
+      .map((candidate) => candidate.domain),
+  ].filter(Boolean));
+  domains.splice(0, domains.length, ...domains.filter((domain) =>
+    answeredDomains.has(domain.slug) || findDomainResponsibilityWitness(domain, semanticEvidence)));
+
+  // Derived again from the headings that survived, so an ability is matched only
+  // against domains the survey returns.
   const semanticCapabilityCandidates = deriveBusinessCapabilityCandidates({
     domains,
     capabilities,
     elements,
     semanticEvidence,
   });
-
-  // A README heading is a domain candidate only when something besides the heading
-  // answers to it: a source folder or package the scan matched to it, an ability the
-  // prose states and the code implements, or a separate document stating its
-  // responsibility. "Credits" or "Security Contact" name a section of the README,
-  // and nothing else ever does.
-  const answeredDomains = new Set(
-    [...capabilities, ...elements, ...semanticCapabilityCandidates]
-      .map((node) => node.domain)
-      .filter(Boolean),
-  );
-  domains.splice(0, domains.length, ...domains.filter((domain) =>
-    answeredDomains.has(domain.slug) || findDomainResponsibilityWitness(domain, semanticEvidence)));
 
   // Element paths are implementation observations: even an exact token match with a
   // README domain does not prove the role, so raw elements stay project-scoped until

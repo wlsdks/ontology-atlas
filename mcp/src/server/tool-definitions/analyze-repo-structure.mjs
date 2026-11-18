@@ -21,7 +21,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
     'any exact batch-writer rows are released. Repository structure is implementation evidence, not automatic business meaning: extractionContract and proposedBusinessOntology make that uncertainty explicit. Detects:\n' +
     '  - package.json `name` → project candidate\n' +
     '  - README.md first H1 → project title fallback\n' +
-    '  - README.md H2 sections a source folder, package, or separate document also names, or a cross-checked ability candidate belongs to → domain candidates (a heading nothing else answers to, such as "Credits", is not one)\n' +
+    '  - README.md H2 sections a source folder, package, or separate document also names, or a cross-checked ability candidate declares as its domain → domain candidates (a heading nothing else answers to, such as "Credits", or one an ability only shares a word with, is not one)\n' +
     '  - src/features|entities|widgets|views/* (FSD) → capability/element candidates\n' +
     '  - src/* depth-1 folders (generic) → capability candidates + index entry → element\n' +
     '  - apps/* and packages/* members with package.json → implementation element candidates\n\n' +
