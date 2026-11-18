@@ -1,5 +1,5 @@
 import { waitForDocumentPaint, waitForFiniteAnimations } from '../visual-ready';
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type ElementHandle, type Page } from "@playwright/test";
 
 import { judgeText } from "../../../scripts/lib/design/contrast.mjs";
 import { AUDITED_ROUTES } from "../audited-routes";
@@ -37,9 +37,10 @@ const SOLID_FN = `(el) => {
 
 type Sample = { fg: string; bg: string; fontSizePx: number; fontWeight: string; label: string; tag: string };
 
-async function readState(el: Locator): Promise<Sample | null> {
+async function readState(el: ElementHandle<Element>): Promise<Sample | null> {
   return el
     .evaluate((node, S) => {
+      if (!node.isConnected) return null;
       const solid = eval(S) as (n: Element) => string;
       const c = getComputedStyle(node);
       return {
@@ -119,14 +120,20 @@ async function auditRoute(page: Page) {
   let colorChanged = 0;
   let mainCompared = 0;
   await parkPointer(page);
-  const controls = page.locator("a[href],button,[role=button],summary");
-  const n = await controls.count();
+  /*
+   * Each control is held by identity, never re-found by its index. A hover that scrolls near the
+   * home page's harness film mounts an inert screen whose controls come and go as the film plays,
+   * so an index taken first named another control by hover time — compared with a neighbour's
+   * resting state, or past the shrunken list where each read waited out the action timeout.
+   */
+  const controls = (await page.locator("a[href],button,[role=button],summary").elementHandles()) as ElementHandle<Element>[];
   const resting: (Sample | null)[] = [];
-  for (let i = 0; i < n; i++) resting.push(await readState(controls.nth(i)));
-  for (let i = 0; i < n; i++) {
-    const el = controls.nth(i);
+  for (const el of controls) resting.push(await readState(el));
+  for (const [i, el] of controls.entries()) {
     const visible = await el
       .evaluate((node, devTooling) => {
+        // A control the page removed since the resting pass cannot be hovered.
+        if (!node.isConnected) return false;
         // Tooling UI that exists only on the dev server is not ours — see the constant's comment above.
         if (node.closest(devTooling)) return false;
         // An inert subtree, such as a film playing the real screen as a picture, takes no pointer: nobody can hover it.
@@ -165,6 +172,7 @@ async function auditRoute(page: Page) {
     if (R!.passes && !H!.passes)
       offenders.push(`${rest.tag}«${rest.label}» ${R!.ratio} → ${H!.ratio} (required ${H!.required})`);
   }
+  await Promise.all(controls.map((el) => el.dispose()));
   return { offenders, compared, colorChanged, mainCompared };
 }
 
@@ -257,3 +265,26 @@ test("steady-colour hover states are measured without inventing a colour change"
   expect(empty.compared).toBe(0);
   expect(empty.mainCompared).toBe(0);
 });
+
+for (const [change, frames] of [["mounts more", 6], ["drops some", 1]] as const) {
+  test(`a control keeps its own resting state when an inert film ahead of it ${change} controls mid-sweep`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORT);
+    await page.setContent(`<main style="background:rgb(8,9,10)">
+      <style>button { width:80px; height:32px; margin:8px; color:rgb(255,255,255); background:rgb(30,30,30); font:14px sans-serif; }
+      .short:hover { background:rgb(200,200,200); }</style>
+      <button class="cue">Cue</button>
+      <div class="film" inert>${"<button>Frame</button>".repeat(4)}</div>
+      <button>Steady</button><button class="short">Short</button>
+    </main>`);
+    // Like the home page's harness film: a hover nearby swaps the film's inert controls while the sweep runs.
+    await page.evaluate((count) => {
+      const film = document.querySelector(".film")!;
+      document.querySelector(".cue")!.addEventListener("pointerenter", () => {
+        film.innerHTML = "<button>Frame</button>".repeat(count);
+      }, { once: true });
+    }, frames);
+    const report = await auditRoute(page);
+    expect(report.compared, "Cue, Steady and Short are each hovered once").toBe(3);
+    expect(report.offenders).toEqual([expect.stringContaining("«Short»")]);
+  });
+}
