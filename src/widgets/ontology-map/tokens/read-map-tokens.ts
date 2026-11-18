@@ -465,11 +465,13 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
 export const ONTOLOGY_MAP_TOKEN_COUNT = TOKEN_SPECS.length;
 
 export class OntologyMapTokenError extends Error {
-  constructor(public readonly missing: readonly string[]) {
+  readonly missing: readonly string[];
+  constructor(missing: readonly string[]) {
     super(
       `OntologyMap token drift: missing/empty CSS custom propert${
         missing.length === 1 ? "y" : "ies"
       } — ${missing.join(", ")}. Check app/globals.css.`);
+        this.missing = missing;
         this.name = "OntologyMapTokenError";
     }
 }
