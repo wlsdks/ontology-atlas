@@ -93,6 +93,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
   unit: Object.freeze(['pnpm knip', 'pnpm test:run']),
   mcp: Object.freeze([
     'pnpm integration:cli:setup',
+    'pnpm integration:cli:repo-analysis',
     'pnpm test:mcp:unit',
     'pnpm integration:mcp',
     'pnpm test:mcp:rpc',
