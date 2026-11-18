@@ -51,6 +51,28 @@ const alwaysWith = (targets: unknown[]) => [
   },
 ];
 
+describe('permission card: Moru acts the ask and the answer within reach', () => {
+  const clip = () => within(screen.getByTestId('acp-permission-moru')).getByTestId('brand-waiting-mark').getAttribute('data-moru-motion');
+
+  it('plays a different clip for an ask inside the folder, one outside it, and each answer under the pointer', () => {
+    const { unmount } = render(card('edit', '/vault/notes/a.md', [], '/vault'));
+    const inside = clip();
+    fireEvent.pointerEnter(screen.getByTestId('acp-permission-allow'));
+    const allowing = clip();
+    fireEvent.pointerLeave(screen.getByTestId('acp-permission-allow'));
+    fireEvent.pointerEnter(screen.getByTestId('acp-permission-reject'));
+    const rejecting = clip();
+    fireEvent.pointerLeave(screen.getByTestId('acp-permission-reject'));
+    expect(clip()).toBe(inside);
+    unmount();
+
+    render(card('edit', '/etc/hosts', [], '/vault'));
+    const outside = clip();
+
+    expect(new Set([inside, outside, allowing, rejecting]).size).toBe(4);
+  });
+});
+
 describe('permission card: says what is about to happen, not only where', () => {
   it('an edit and a read look different on screen', () => {
     const { unmount } = render(card('edit'));

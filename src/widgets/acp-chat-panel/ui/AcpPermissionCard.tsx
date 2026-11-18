@@ -24,6 +24,8 @@ import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { ASK_ROW_FRAMES, type AskMotion } from '@/shared/ui/marks/moru-rows';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
@@ -177,7 +179,7 @@ export function AcpPermissionCard({
   const failed = outcome === 'failed';
   const settled = outcome === 'done';
   const [receiptKey, setReceiptKey] = useState<string | null>(null);
-  const [allowInReach, setAllowInReach] = useState(false);
+  const [answerInReach, setAnswerInReach] = useState<'allow' | 'reject' | null>(null);
   const receiptReady = settled && receiptKey === reviewStateKey;
   useEffect(() => {
     if (!settled) return;
@@ -206,6 +208,15 @@ export function AcpPermissionCard({
   const askedSentence = serverConsent ? request.title : null;
   const scope = permissionScope(request.options);
   const locality = permissionLocality(vaultPath ?? null, request.filePath ?? null);
+  const askMotion: AskMotion = answerInReach === 'allow'
+    ? 'hat-tip'
+    : answerInReach === 'reject'
+      ? 'stop'
+      : ontologyWrite
+        ? 'review-proposal'
+        : locality === 'elsewhere'
+          ? 'uncertain'
+          : 'await-permission';
 
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
@@ -282,6 +293,11 @@ export function AcpPermissionCard({
           ? `linear-gradient(to bottom, transparent 0, black ${bodyFade})`
           : undefined;
   const initiallyTaskBound = useRef(taskBound);
+  useEffect(() => {
+    // A row first loads when its clip first plays; warm the answers' rows so a hover never swaps to a blank.
+    if (initiallyTaskBound.current) return;
+    for (const row of Object.keys(ASK_ROW_FRAMES)) new Image().src = withBasePath(`/brand/mascot-${row}-row-128.png`);
+  }, []);
   useEffect(() => {
     if (initiallyTaskBound.current) titleRef.current?.focus({ preventScroll: true });
     else rejectRef.current?.focus();
@@ -395,7 +411,7 @@ export function AcpPermissionCard({
         <header className={cn('grid shrink-0 gap-2', !taskBound && 'justify-items-center text-center')}>
           {taskBound ? null : (
             <span data-testid="acp-permission-moru" className="inline-flex">
-              <BrandWaitingMark key={allowInReach ? 'hop' : 'curious'} active scale={2} motion={allowInReach ? 'hop' : 'curious'} />
+              <BrandWaitingMark key={askMotion} active scale={2} motion={askMotion} />
             </span>
           )}
           <p
@@ -823,6 +839,8 @@ export function AcpPermissionCard({
                 variant="outline"
                 className="atlas-touch-floor w-full"
                 data-testid="acp-permission-reject"
+                onPointerEnter={() => setAnswerInReach('reject')}
+                onPointerLeave={() => setAnswerInReach(null)}
                 onClick={() => answerWith('reject', () => resolve(rejectOnce?.optionId ?? null))}
               >
                 {t('reject')}
@@ -833,10 +851,10 @@ export function AcpPermissionCard({
                 data-testid="acp-permission-allow"
                 aria-describedby={taskBound ? `${legendId}-allow` : undefined}
                 disabled={allowDisabled}
-                onPointerEnter={() => setAllowInReach(true)}
-                onPointerLeave={() => setAllowInReach(false)}
-                onFocus={() => setAllowInReach(true)}
-                onBlur={() => setAllowInReach(false)}
+                onPointerEnter={() => setAnswerInReach('allow')}
+                onPointerLeave={() => setAnswerInReach(null)}
+                onFocus={() => setAnswerInReach('allow')}
+                onBlur={() => setAnswerInReach(null)}
                 onClick={() => answerWith('allow', () => resolve(allowOnce?.optionId ?? null))}
               >
                 {t('allowOnce')}

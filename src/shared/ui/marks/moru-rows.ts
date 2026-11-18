@@ -28,3 +28,16 @@ export type PlayMotion = keyof typeof PLAY_ROW_FRAMES;
 /** Finishing gestures; each has the 24 cells the one-shot sprite keyframe steps through. */
 export const CELEBRATION_MOTIONS = ['success', 'clap', 'hop'] as const;
 export type CelebrationMotion = (typeof CELEBRATION_MOTIONS)[number];
+
+/**
+ * What Moru does while the agent waits on a person's answer: one row per kind of ask, and one per
+ * answer within reach. They run at the catalogue's slower beat, as play does.
+ */
+export const ASK_ROW_FRAMES = {
+  'await-permission': 24,
+  uncertain: 24,
+  'review-proposal': 24,
+  'hat-tip': 32,
+  stop: 24,
+} as const;
+export type AskMotion = keyof typeof ASK_ROW_FRAMES;
