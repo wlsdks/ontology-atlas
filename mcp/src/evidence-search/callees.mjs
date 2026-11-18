@@ -15,7 +15,7 @@
 
 import { declarationIndex } from './declaration-index.mjs';
 
-export const CALLEE_LIMITS = Object.freeze({
+const CALLEE_LIMITS = Object.freeze({
   callees: 12,
   // Implementations of one field method listed at most; more is a common name.
   implementations: 6,
@@ -91,7 +91,7 @@ function declares(declaration, name) {
 }
 
 /** The last line of a declaration: before the next declaration at its indent or shallower. */
-export function declarationEnd(lines, declarations, declaration) {
+function declarationEnd(lines, declarations, declaration) {
   const indent = indentAt(lines, declaration.line);
   const next = declarations.find((candidate) => candidate.line > declaration.line && isCode(candidate) && indentAt(lines, candidate.line) <= indent);
   let end = next ? next.line - 1 : lines.length;
