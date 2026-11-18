@@ -204,7 +204,7 @@ export const PATCH_CONCEPT_TOOL = {
         type: 'number',
         minimum: 0,
         description:
-          'Optional conflict guard. If the file mtimeMs differs at write time, the call throws so the caller can re-read and retry. Pass the `mtime` from the most recent get_concept response or from the write that last changed this node (add_concept, add_concepts, patch_concept, add_relation, add_relations `mtimes`).',
+          'Optional conflict guard. If the file mtimeMs differs at write time, the call throws so the caller can re-read and retry. Pass the `mtime` from the most recent get_concept response or from the write that last changed this node (add_concept, add_concepts, patch_concept; add_relation and add_relations `mtimes` only when that call passed `expected_mtime`).',
       },
     },
     required: ['slug'],

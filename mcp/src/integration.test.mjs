@@ -8099,7 +8099,7 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     // `contains` from a project to a capability is stored under the typed key.
     assert.equal(result.relations[0].key, "capabilities");
     assert.equal(result.relations[0].type, "capabilities");
-    assert.equal(typeof result.mtimes.p, "number");
+    assert.equal(result.mtimes, undefined, "no row passed expected_mtime, so no mtime proves a read");
     assert.equal(result.relations[0].changed, true);
     assert.equal(result.relations[1].ok, true);
     assert.equal(result.relations[1].to, "c1");
@@ -8127,7 +8127,6 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     const p = getCallParsed(responses, 3);
     assert.deepEqual(p.frontmatter.capabilities, ["c1", "c2"]);
     assert.equal(p.frontmatter.contains, undefined);
-    assert.equal(result.mtimes.p, p.mtime, "the batch mtime is the one the next guarded write needs");
     assert.equal(p.frontmatter.relation_notes.c2, "P contains the C2 capability.");
   } finally {
     rmSync(root, { recursive: true, force: true });

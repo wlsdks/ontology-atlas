@@ -21,7 +21,7 @@ Serves canonical read and write tools over JSON-RPC and reports the discovery in
 - Discovery filtering is separate from permission: omitted known tools remain callable under the existing read-only and consent guards. Invalid profile values refuse startup.
 - Runtime proof of the bound vault/repository and the advertised names, count and hash.
 - Write-result warnings naming containment entries that reclassification or merging could not move.
-- Write results that carry each touched file's `mtime`, so the next guarded write needs no extra read.
+- Write results that carry each touched file's `mtime`, so the next guarded write needs no extra read; a relation write returns it only when the call itself was guarded by `expected_mtime`.
 
 ## Excludes
 - The graph schema and file format, which the meaning layer owns.

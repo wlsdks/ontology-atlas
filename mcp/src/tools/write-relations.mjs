@@ -55,8 +55,31 @@ function typedContainmentType(fromKind, toKind) {
   return typed && typed.parents.has(fromKind) ? typed.type : null;
 }
 
+/**
+ * The type an existing `contains` edge is stored under: the typed key `add_relation`
+ * wrote it as, or a raw `contains` entry written before that mapping.
+ */
+function storedContainmentType(doc, requestedType, toKind, canonicalTo) {
+  if (requestedType !== 'contains') return requestedType;
+  const typed = typedContainmentType(doc.frontmatter.kind, toKind);
+  return typed && relationExists(doc, RELATION_KEY[typed], canonicalTo) ? typed : requestedType;
+}
+
+function containmentNotice(requestedType, type, fromKind, toKind) {
+  return requestedType === 'contains' && type !== 'contains'
+    ? `"contains" from a ${fromKind} to a ${toKind} is written as the typed key "${type}"; cite it as --${type}--> in competency Relations rows.`
+    : null;
+}
+
 function fileMtime(slug) {
   return statSync(slugToPath(VAULT_ROOT, slug)).mtimeMs;
+}
+
+// A relation write patches frontmatter on whatever the file holds now, so its mtime
+// proves a read only when the call itself was guarded by the caller's last mtime.
+// Unguarded, the mtime would let a later body write pass over an edit nobody read.
+function guardedMtime(expectedMtime, readMtime, currentMtime) {
+  return typeof expectedMtime === 'number' && expectedMtime === readMtime ? { mtime: currentMtime } : {};
 }
 
 function addRelation({ from, to, type: requestedType, why, expected_mtime }, options = {}) {
@@ -74,9 +97,7 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
   const typed = requestedType === 'contains' ? typedContainmentType(fromKind, toKind) : null;
   const type = typed ?? requestedType;
   const key = RELATION_KEY[type];
-  const notice = typed
-    ? `"contains" from a ${fromKind} to a ${toKind} is written as the typed key "${typed}"; cite it as --${typed}--> in competency Relations rows.`
-    : null;
+  const notice = containmentNotice(requestedType, type, fromKind, toKind);
   requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relation');
   // Both endpoints must exist, so a typo or hallucinated slug is an error rather than
   // a dangling reference; tail and frontmatter slug aliases are stored as the
@@ -99,7 +120,7 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
   if (key === 'domain') {
     const existingDomain = doc.frontmatter.domain;
     if (relationRefMatches(existingDomain, canonicalTo)) {
-      return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type, mtime: doc.mtime };
+      return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type, ...guardedMtime(expected_mtime, doc.mtime, doc.mtime) };
     }
     if (typeof existingDomain === 'string' && existingDomain.trim()) {
       throw new Error(`Source slug already has domain "${existingDomain}". Use patch_concept to change it explicitly.`);
@@ -115,7 +136,7 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
       to: canonicalTo,
       type,
       key,
-      mtime: fileMtime(canonicalFrom),
+      ...guardedMtime(expected_mtime, expected_mtime, fileMtime(canonicalFrom)),
       ...(options.includePostWriteMaintenance === false
         ? {}
         : { postWriteMaintenance: compactPostWriteMaintenance() }),
@@ -125,7 +146,8 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
   if (existing.some((ref) => relationRefMatches(ref, canonicalTo))
     || (typed && relationExists(doc, 'contains', canonicalTo))) {
     return {
-      ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type, mtime: doc.mtime,
+      ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type,
+      ...guardedMtime(expected_mtime, doc.mtime, doc.mtime),
       ...(notice ? { notice } : {}),
     };
   }
@@ -156,7 +178,7 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
     to: canonicalTo,
     type,
     key,
-    mtime: fileMtime(canonicalFrom),
+    ...guardedMtime(expected_mtime, expected_mtime, fileMtime(canonicalFrom)),
     ...(notice ? { notice } : {}),
     ...(options.includePostWriteMaintenance === false
       ? {}
@@ -164,14 +186,13 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
   };
 }
 
-function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
+function removeRelation({ from, to, type: requestedType, confirm = false, expected_mtime }) {
   requireNonBlankString(from, 'from');
   requireNonBlankString(to, 'to');
-  requireNonBlankString(type, 'type');
+  requireNonBlankString(requestedType, 'type');
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
-  const key = RELATION_KEY[type];
-  if (!key) throw new Error(formatAllowedValueError('type', type, RELATION_TYPES));
+  if (!RELATION_KEY[requestedType]) throw new Error(formatAllowedValueError('type', requestedType, RELATION_TYPES));
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
   requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'remove_relation');
@@ -181,6 +202,10 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
   if (typeof expected_mtime === 'number' && doc.mtime !== expected_mtime) {
     throw new VaultConflictError(canonicalFrom, expected_mtime, doc.mtime);
   }
+  const toKind = readDocIfPresent(canonicalTo)?.frontmatter?.kind;
+  const type = storedContainmentType(doc, requestedType, toKind, canonicalTo);
+  const key = RELATION_KEY[type];
+  const notice = containmentNotice(requestedType, type, doc.frontmatter.kind, toKind);
   const exists = relationExists(doc, key, canonicalTo);
   const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object'
     ? { ...doc.frontmatter.relation_notes }
@@ -204,6 +229,7 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
     to: canonicalTo,
     type,
     key,
+    ...(notice ? { notice } : {}),
     ...(removedRationale ? { removedRationale } : {}),
   };
   if (!exists || !confirm) return base;
@@ -220,14 +246,12 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
   return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
-function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = false, expected_mtime }) {
-  for (const [value, name] of [[from, 'from'], [oldTo, 'oldTo'], [oldType, 'oldType'], [newTo, 'newTo'], [newType, 'newType']]) requireNonBlankString(value, name);
+function replaceRelation({ from, oldTo, oldType: requestedOldType, newTo, newType: requestedNewType, why, confirm = false, expected_mtime }) {
+  for (const [value, name] of [[from, 'from'], [oldTo, 'oldTo'], [requestedOldType, 'oldType'], [newTo, 'newTo'], [requestedNewType, 'newType']]) requireNonBlankString(value, name);
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
-  const oldKey = RELATION_KEY[oldType];
-  const newKey = RELATION_KEY[newType];
-  if (!oldKey) throw new Error(formatAllowedValueError('oldType', oldType, RELATION_TYPES));
-  if (!newKey) throw new Error(formatAllowedValueError('newType', newType, RELATION_TYPES));
+  if (!RELATION_KEY[requestedOldType]) throw new Error(formatAllowedValueError('oldType', requestedOldType, RELATION_TYPES));
+  if (!RELATION_KEY[requestedNewType]) throw new Error(formatAllowedValueError('newType', requestedNewType, RELATION_TYPES));
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalOldTo = resolveExistingVaultSlug(oldTo);
   const canonicalNewTo = resolveExistingVaultSlug(newTo);
@@ -237,6 +261,13 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   if (!canonicalNewTo) throw new Error(missingSlugMessage('New target slug does not exist in vault', newTo));
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
   if (typeof expected_mtime === 'number' && doc.mtime !== expected_mtime) throw new VaultConflictError(canonicalFrom, expected_mtime, doc.mtime);
+  const fromKind = doc.frontmatter.kind;
+  const newToKind = readDocIfPresent(canonicalNewTo)?.frontmatter?.kind;
+  const oldType = storedContainmentType(doc, requestedOldType, readDocIfPresent(canonicalOldTo)?.frontmatter?.kind, canonicalOldTo);
+  const newType = (requestedNewType === 'contains' ? typedContainmentType(fromKind, newToKind) : null) ?? requestedNewType;
+  const oldKey = RELATION_KEY[oldType];
+  const newKey = RELATION_KEY[newType];
+  const notice = containmentNotice(requestedNewType, newType, fromKind, newToKind);
   if (!relationExists(doc, oldKey, canonicalOldTo)) throw new Error(`Relation does not exist: ${canonicalFrom} --${oldType}--> ${canonicalOldTo}.`);
   const oldRelation = { to: canonicalOldTo, type: oldType, key: oldKey };
   const newRelation = { to: canonicalNewTo, type: newType, key: newKey };
@@ -264,6 +295,7 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
     from: canonicalFrom,
     oldRelation,
     newRelation,
+    ...(notice ? { notice } : {}),
   };
   if (!confirm) return base;
   const patch = {};
@@ -336,11 +368,17 @@ function addRelationsBatch({ relations }) {
     }
   });
   // A row's own `mtime` goes stale when a later row writes the same source, so the
-  // batch also returns each touched source's mtime after the last row.
-  const mtimes = {};
+  // batch also returns each touched source's mtime after the last row, but only for a
+  // source whose first changed row was guarded by `expected_mtime` (`guardedMtime`).
+  const guarded = new Map();
   for (const row of results) {
-    if (!row.ok || row.changed !== true) continue;
-    try { mtimes[row.from] = fileMtime(row.from); } catch { /* removed meanwhile */ }
+    if (!row.ok || row.changed !== true || guarded.has(row.from)) continue;
+    guarded.set(row.from, typeof row.mtime === 'number');
+  }
+  const mtimes = {};
+  for (const [from, proven] of guarded) {
+    if (!proven) continue;
+    try { mtimes[from] = fileMtime(from); } catch { /* removed meanwhile */ }
   }
   return {
     relations: results,

@@ -91,9 +91,10 @@ test('a build on an empty vault inside its repository reaches finalize without e
     assert.ok(!(row.warnings ?? []).some((warning) => warning.includes('labels')), 'a one-locale vault has no locale to add');
   }
 
+  const createdMtime = Object.fromEntries(created.concepts.map((row) => [row.slug, row.mtime]));
   const related = await call('add_relations', { relations: [
-    { from: 'ledger', to: 'domains/payments', type: 'contains', why: 'Payments is the ledger\'s one area.' },
-    { from: 'domains/payments', to: 'capabilities/charge', type: 'contains', why: 'Charging is a payment ability.' },
+    { from: 'ledger', to: 'domains/payments', type: 'contains', why: 'Payments is the ledger\'s one area.', expected_mtime: createdMtime.ledger },
+    { from: 'domains/payments', to: 'capabilities/charge', type: 'contains', why: 'Charging is a payment ability.', expected_mtime: createdMtime['domains/payments'] },
     { from: 'domains/payments', to: 'capabilities/refund', type: 'capabilities', why: 'Refunding is a payment ability.' },
   ] });
   assert.deepEqual(related.relations.map((row) => row.type), ['domains', 'capabilities', 'capabilities']);
@@ -132,6 +133,61 @@ test('a build on an empty vault inside its repository reaches finalize without e
   const finalized = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: repaired.mtime });
   assert.equal(finalized.error, undefined, finalized.error);
   assert.equal(finalized.ok, true);
+});
+
+test('a relation write never hands out an mtime that would let a body write pass over an unread edit', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  const created = await call('add_concepts', { concepts: [
+    { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
+    { slug: 'domains/payments', kind: 'domain', title: 'Payments', labels: { en: 'Payments' }, body: BODY },
+  ] });
+  const ledger = join(root, 'atlas', 'ledger.md');
+  writeFileSync(ledger, `${readFileSync(ledger, 'utf8')}\nA note the person added.\n`);
+
+  const related = await call('add_relation', { from: 'ledger', to: 'domains/payments', type: 'domains', why: 'Payments is the ledger\'s one area.' });
+  assert.equal(related.changed, true);
+  assert.equal(related.mtime, undefined, 'an unguarded relation write did not read the body');
+  const batch = await call('add_relations', { relations: [
+    { from: 'domains/payments', to: 'ledger', type: 'relates', why: 'The fixture links back.' },
+  ] });
+  assert.equal(batch.mtimes, undefined);
+  const again = await call('add_relation', { from: 'ledger', to: 'domains/payments', type: 'domains' });
+  assert.equal(again.alreadyExists, true);
+  assert.equal(again.mtime, undefined);
+
+  // The newest mtime the agent holds is the one its own create returned.
+  const newest = related.mtime ?? created.concepts[0].mtime;
+  const overwrite = await call('patch_concept', { slug: 'ledger', expected_mtime: newest, body: BODY });
+  assert.match(overwrite.error ?? '', /conflict|modified|mtime/i, 'a body write over an unread edit must not land');
+  assert.match(readFileSync(ledger, 'utf8'), /A note the person added\./);
+});
+
+test('remove_relation and replace_relation read "contains" as the typed key add_relation wrote', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  await call('add_concepts', { concepts: [
+    { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
+    { slug: 'domains/payments', kind: 'domain', title: 'Payments', labels: { en: 'Payments' }, body: BODY },
+    { slug: 'domains/billing', kind: 'domain', title: 'Billing', labels: { en: 'Billing' }, body: BODY },
+  ] });
+  const ledger = join(root, 'atlas', 'ledger.md');
+  await call('add_relation', { from: 'ledger', to: 'domains/payments', type: 'contains', why: 'Payments is one area.' });
+
+  const replaced = await call('replace_relation', {
+    from: 'ledger', oldTo: 'domains/payments', oldType: 'contains', newTo: 'domains/billing', newType: 'contains', confirm: true,
+  });
+  assert.equal(replaced.error, undefined, replaced.error);
+  assert.deepEqual([replaced.oldRelation.type, replaced.newRelation.type], ['domains', 'domains']);
+  assert.match(readFileSync(ledger, 'utf8'), /^domains: \[domains\/billing\]$/m);
+  assert.doesNotMatch(readFileSync(ledger, 'utf8'), /^contains:/m);
+
+  const removed = await call('remove_relation', { from: 'ledger', to: 'domains/billing', type: 'contains', confirm: true });
+  assert.equal(removed.changed, true, JSON.stringify(removed));
+  assert.equal(removed.type, 'domains');
+  assert.doesNotMatch(readFileSync(ledger, 'utf8'), /domains\/billing/);
 });
 
 test('the locale warning names the locale other nodes use and is silent otherwise', async (t) => {
