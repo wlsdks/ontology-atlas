@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Walks the release workflow's `admit-release`, `test-macos`, `build-macos` and `sign-macos` steps on this machine
+ * Walks the release workflow's `admit-release`, `test-release-gates`, `test-macos`, `build-macos` and `sign-macos` steps on this machine
  * before a tag is pushed, reading them from the workflow so a new step is never missed;
  * a step that needs Apple secrets or a real tag is listed as SKIP with its reason.
  *
@@ -154,11 +154,11 @@ export function parseAdmitReleaseSteps(workflow) {
   return parseReleaseJobSteps(workflow, "admit-release");
 }
 
-/** The macOS jobs a tag runs after admission, in the order this machine walks them. */
-export const REHEARSED_MACOS_JOBS = Object.freeze(["test-macos", "build-macos", "sign-macos"]);
+/** The jobs a tag runs after admission that this machine can walk, in that order. */
+export const REHEARSED_JOBS = Object.freeze(["test-release-gates", "test-macos", "build-macos", "sign-macos"]);
 
-export function parseRehearsedMacosSteps(workflow) {
-  return REHEARSED_MACOS_JOBS.flatMap((job) =>
+export function parseRehearsedSteps(workflow) {
+  return REHEARSED_JOBS.flatMap((job) =>
     parseReleaseJobSteps(workflow, job).map((step) => ({ ...step, job })),
   );
 }
@@ -313,7 +313,7 @@ function main() {
       [
         "Usage: pnpm desktop:release-rehearsal [--fast] [--list] [--tag=vX.Y.Z]",
         "",
-        "Walks the release-macos.yml `admit-release`, `test-macos`, `build-macos` and `sign-macos` jobs on this",
+        "Walks the release-macos.yml `admit-release`, `test-release-gates`, `test-macos`, `build-macos` and `sign-macos` jobs on this",
         "machine, in file order. Without --tag, admission is explicitly SKIP; after creating an",
         "existing tag, --tag runs the workflow's release-tag and source-admit checks locally.",
         "",
@@ -346,7 +346,7 @@ function main() {
   const root = process.cwd();
   const workflow = fs.readFileSync(path.join(root, RELEASE_WORKFLOW_PATH), "utf8");
   const admissionSteps = parseAdmitReleaseSteps(workflow);
-  const macosSteps = parseRehearsedMacosSteps(workflow);
+  const macosSteps = parseRehearsedSteps(workflow);
   const fast = argv.includes("--fast");
   let admissionCommands = new Map();
   if (tag) {
@@ -434,7 +434,7 @@ function main() {
     ["rustc", ["--version"]],
   ];
 
-  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + test-macos + build-macos + sign-macos — in order, on this machine"));
+  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + test-release-gates + test-macos + build-macos + sign-macos — in order, on this machine"));
   console.log("");
   for (const [tool, args] of tools) {
     const probe = probeTool(tool, args);
