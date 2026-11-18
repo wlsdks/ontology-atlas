@@ -325,6 +325,7 @@ function HeroSection({
         windowsPrimary={heroWindowsPrimary}
         sizeOnCta={fileWins}
         heroIn={heroIn}
+        handheld={handheld}
       />
     </section>
   );
@@ -335,13 +336,18 @@ const TEST_IDS = {
     cta: 'gateway-hero-cta',
     mac: 'gateway-hero-mac',
     windows: 'gateway-hero-windows',
+    github: 'gateway-hero-github',
   },
   closing: {
     cta: 'gateway-closing-cta',
     mac: 'gateway-closing-mac',
     windows: 'gateway-closing-windows',
+    github: 'gateway-closing-github',
   },
 } as const;
+
+/** Below `sm` the actions stack at the column's width, one thumb-sized target per row. */
+const ACTIONS_STACK = 'max-sm:w-full max-sm:flex-col max-sm:items-stretch';
 
 function DownloadActions({
   scope,
@@ -407,7 +413,7 @@ function DownloadActions({
   ) : null;
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-3', className)}>
+    <div className={cn('flex flex-wrap items-center gap-3', ACTIONS_STACK, className)}>
       {fileWins ? (
         <>
           {windowsPrimary ? windowsLink : null}
@@ -415,13 +421,26 @@ function DownloadActions({
           {windowsPrimary ? null : windowsLink}
         </>
       ) : (
-        <Link
-          href="/topology"
-          data-testid={id.cta}
-          className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
-        >
-          {t('webCta')}
-        </Link>
+        <>
+          <Link
+            href="/topology"
+            data-testid={id.cta}
+            className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
+          >
+            {t('webCta')}
+          </Link>
+          {/* With no file to offer (a phone, or nothing published), the source is the other way in. */}
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            data-testid={id.github}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), outlinedPad, HERO_CTA_WRAP)}
+          >
+            <GithubMark />
+            {t('githubCta')}
+          </a>
+        </>
       )}
       {fileWins && scope === 'hero' ? (
         <Link
@@ -524,6 +543,7 @@ function ClosingSection({
               windowsPrimary={windowsPrimary}
               sizeOnCta={fileWins}
               heroIn
+              handheld={handheld}
             />
           </div>
           <div className="relative min-w-0 @min-[52rem]:min-h-[26rem]">
@@ -553,6 +573,7 @@ function FactsStrip({
   windowsPrimary,
   sizeOnCta,
   heroIn,
+  handheld,
 }: {
   scope?: 'gateway' | 'gateway-closing';
   /** One wrapping row in sans under the closing's trust line, with no rule of its own. */
@@ -564,6 +585,8 @@ function FactsStrip({
   windowsPrimary: boolean;
   sizeOnCta: boolean;
   heroIn: boolean;
+  /** A phone cannot install the file, so its size and checksum are noise there. */
+  handheld: boolean;
 }) {
   const t = useTranslations('download');
   const format = useFormatter();
@@ -602,7 +625,7 @@ function FactsStrip({
         : `${RELEASE_MIN_MACOS}${t('factMinOsSuffix')} · Apple Silicon`,
     },
   ];
-  if (published && subject) {
+  if (published && subject && !handheld) {
     facts.push({
       label: subjectIsWindows ? 'EXE' : 'DMG',
       value: formatAssetSize(subject.sizeBytes),
