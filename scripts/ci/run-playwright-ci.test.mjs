@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { inventoryFiles, balanceFiles, runPlaywrightCi } from './run-playwright-ci.mjs';
+import { inventoryFiles, balanceFiles, failingSpecFiles, runPlaywrightCi } from './run-playwright-ci.mjs';
 import { measureReport, mergeDurations } from './refresh-playwright-durations.mjs';
 
 const passed = { expectedStatus: 'passed', status: 'expected', results: [{ status: 'passed' }] };
@@ -21,7 +21,8 @@ test('help and invalid arguments cannot start discovery or write an assignment',
       ['--shard=1/2', '--shard=1/3'], ['--project=smoke', '--project=post-merge'],
       ['--exclude=web-surface-smoke.spec.ts', '--exclude=web-surface-smoke.spec.ts'],
       ['--exclude=a.spec.ts'], ['--help', '--project=smoke'], ['--shard=1/9007199254740992'],
-    ]) assert.throws(() => runPlaywrightCi(argv, { cwd, spawn }), /argument|project|shard|duplicate|separately|help/i, argv.join(' '));
+      ['--only=../a.spec.ts'], ['--only=a.spec.ts', '--only=a.spec.ts'],
+    ]) assert.throws(() => runPlaywrightCi(argv, { cwd, spawn }), /argument|project|shard|duplicate|separately|help|spec path/i, argv.join(' '));
     assert.equal(spawn.mock.callCount(), 0);
     assert.deepEqual(readdirSync(cwd), []);
   } finally { rmSync(cwd, { recursive: true, force: true }); }
@@ -203,4 +204,46 @@ test('refreshed weights count every attempt, keep unmeasured files that exist, a
   const merged = mergeDurations(history, measured, '7', (file) => file !== 'gone.spec.ts');
   assert.deepEqual(merged.files, { 'a.spec.ts': { seconds: 3, tests: 2 }, 'b.spec.ts': { seconds: 9, tests: 1 } });
   assert.deepEqual(merged.sourceRuns, [7, 1, 2]);
+});
+
+test('--only narrows the balanced files to the named ones and refuses a name discovery lacks', (t) => {
+  const cwd = mkdtempSync(join(tmpdir(), 'atlas-playwright-only-'));
+  t.mock.method(console, 'log', () => {});
+  try {
+    const executed = [];
+    const spawn = (_bin, args, options) => {
+      if (args.includes('--list')) return { status: 0, stdout: JSON.stringify(report(['a.spec.ts', 'b/c.spec.ts', 'd.spec.ts'])) };
+      const files = ['a.spec.ts', 'b/c.spec.ts', 'd.spec.ts'].filter((file) => args.some((arg) => arg.endsWith(`/${file.replaceAll('.', '\\.')}$`)));
+      executed.push(...files);
+      writeFileSync(options.env.PLAYWRIGHT_JSON_OUTPUT_NAME, JSON.stringify(report(files)));
+      return { status: 0 };
+    };
+    for (const shard of ['1/2', '2/2']) assert.equal(runPlaywrightCi([`--shard=${shard}`, '--only=a.spec.ts', '--only=b/c.spec.ts'], { cwd, spawn }), 0);
+    assert.deepEqual(executed.sort(), ['a.spec.ts', 'b/c.spec.ts']);
+    assert.throws(() => runPlaywrightCi(['--shard=1/1', '--only=gone.spec.ts'], { cwd, spawn }), /not discovered: gone\.spec\.ts/);
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
+
+test('a red shard annotates each failing spec file once, for pr:land to read back', (t) => {
+  const failedTest = { expectedStatus: 'passed', status: 'unexpected', results: [{ status: 'failed' }] };
+  const red = { suites: [{ specs: [
+    { file: 'b.spec.ts', tests: [failedTest] }, { file: 'b.spec.ts', tests: [failedTest] },
+    { file: 'a.spec.ts', tests: [passed] }, { file: 'c/d.spec.ts', tests: [failedTest] },
+  ] }] };
+  assert.deepEqual(failingSpecFiles(red), ['b.spec.ts', 'c/d.spec.ts']);
+  const cwd = mkdtempSync(join(tmpdir(), 'atlas-playwright-annotate-'));
+  const lines = [];
+  t.mock.method(console, 'log', (line) => lines.push(line));
+  try {
+    const spawn = (_bin, args, options) => {
+      if (args.includes('--list')) return { status: 0, stdout: JSON.stringify(report(['a.spec.ts', 'b.spec.ts', 'c/d.spec.ts'])) };
+      writeFileSync(options.env.PLAYWRIGHT_JSON_OUTPUT_NAME, JSON.stringify(red));
+      return { status: 1 };
+    };
+    assert.equal(runPlaywrightCi(['--shard=1/1'], { cwd, spawn, env: { GITHUB_ACTIONS: 'true' } }), 1);
+    assert.deepEqual(lines.filter((line) => line.startsWith('::error')), [
+      '::error file=tests/e2e/b.spec.ts,title=failing spec::tests/e2e/b.spec.ts',
+      '::error file=tests/e2e/c/d.spec.ts,title=failing spec::tests/e2e/c/d.spec.ts',
+    ]);
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
 });

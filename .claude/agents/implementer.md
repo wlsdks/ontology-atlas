@@ -3,7 +3,7 @@ name: implementer
 description: Builds one planned slice from a written brief. Use for development work with owned files, an acceptance command and a time budget; never for planning, review, or product or design judgment.
 model: opus
 effort: high
-maxTurns: 150
+maxTurns: 300
 tools: Read, Edit, Write, Bash, Grep, Glob, Monitor, TaskStop
 ---
 

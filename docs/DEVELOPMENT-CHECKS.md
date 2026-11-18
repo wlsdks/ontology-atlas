@@ -63,6 +63,19 @@ history stay exhaustive. Unit and performance reach excludes explicit type-only
 imports; source-reading contracts retain them. Exact default Node test files run
 once across command aliases; flags and lifecycle hooks keep their semantics.
 
+The browser suite is split by time. Before merge, a train runs the specs its
+change maps plus the merge smoke set in `scripts/ci/merge-smoke-specs.mjs`
+(first run, opening a folder, the map and node selection, the agent panel
+sending, the gateway and download pages), balanced over eight shards. Any
+non-test file under `src/` or `app/` reaches the browser, so one no mapping
+names runs the smoke set alone; only a planner, browser-executor or root
+dependency change (`package.json`, the lockfile, `patches/`) runs the whole
+suite. After merge, every push to `main` runs the whole suite, measurements
+and both surfaces included, even when the push reuses the train's reviewed
+result for every other lane. Each push has a concurrency group of its own, so
+no later merge cancels or replaces it. A defect outside the smoke set is
+therefore found on `main`, not on the train.
+
 CI rejects focused `.only` tests on every execution path. It records a trace on
 the first retry, preserves that trace even when the retry passes, and uploads
 full failure evidence for failed jobs. These artifacts last seven days; ordinary
@@ -72,7 +85,11 @@ intermittent failure, not evidence that its cause was fixed.
 ## Merging
 
 `pnpm pr:land <number>` merges a reviewed pull request and keeps its original
-commits; `.claude/rules/git.md` owns the rest of the merge workflow.
+commits; `.claude/rules/git.md` owns the rest of the merge workflow. While
+`main`'s latest full browser run is red, it prints one line naming that run
+and its failing spec files, and the train's pull request body carries the
+same line. It still merges: the line tells someone to fix `main`, it does not
+stop the queue.
 
 ## Lane budgets
 
@@ -97,7 +114,7 @@ before relying on it.
 | Checks · Unit · Contract (x3) | 310 s | 2026-11-18, 22 trains: shards 79-340 s, 4-201 s, 4-285 s; full sweep 271 / 222 / 186 s by file count | affected unit tests and reached plus core contracts; the full sweep after merge |
 | Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
 | E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
-| E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |
+| E2E · Playwright chromium (x8) | 600 s | full suite 6.0-7.9 min per shard, 9.4 min end to end (2026-11-18; five shards took 13.8) | rendered journeys; before merge only the mapped specs and the merge smoke set |
 | Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |
 | Windows beta · verify | 700 s | 582 s avg | Windows-only bundle facts |
 | Windows beta · Rust audit (also in the release) | 40 s | not yet measured alone; its steps took 10 s inside the Windows job | Rust advisories and unsoundness, from a lockfile-only checkout |
