@@ -4,6 +4,9 @@ import {
   loadStaticVaultSource,
   resetStaticVaultSourcesForTests,
 } from '@/entities/docs-vault/lib/bundled-vault/load-static-vault-source';
+import { bundledSamples } from '@/entities/docs-vault';
+import { writeSampleSourcePreference } from '@/shared/lib/vault-folder/sample-source';
+import { useSampleSource } from './use-sample-source';
 import { useStaticVaultSource, useStaticVaultStatus } from './use-static-vault-source';
 
 const desktop = vi.hoisted(() => ({ value: false }));
@@ -51,18 +54,41 @@ describe('useStaticVaultSource', () => {
     expect(screen.getByTestId('probe')).toHaveTextContent('none:storefront:0');
   });
 
-  it('starts the web sample at module load and nothing in the installed app', async () => {
-    for (const [isDesktop, expected] of [[false, 'storefront'], [true, null]] as const) {
-      desktop.value = isDesktop;
-      vi.resetModules();
-      const loader = await import('@/entities/docs-vault/lib/bundled-vault/load-static-vault-source');
-      await import('./use-static-vault-source');
-      if (expected) {
-        await vi.waitFor(() => expect(loader.peekStaticVaultSource(expected)).not.toBeNull());
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        expect(loader.peekStaticVaultSource('storefront')).toBeNull();
-      }
+  it('fetches nothing for a reader that only wants what is already there', async () => {
+    function Quiet() {
+      const source = useStaticVaultSource(undefined, { demand: false });
+      return <span data-testid="quiet">{source.manifest.docs.length}</span>;
     }
+    render(<Quiet />);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    });
+    expect(screen.getByTestId('quiet')).toHaveTextContent('0');
+    expect(bundledSamples.state('storefront')).toBe('idle');
+  });
+
+  it('keeps the sample on show while the other one downloads, then swaps in place', async () => {
+    await loadStaticVaultSource('storefront');
+    function Probe2() {
+      const [, setSample] = useSampleSource();
+      const source = useStaticVaultSource();
+      return (
+        <>
+          <button type="button" onClick={() => setSample('dogfood')}>
+            switch
+          </button>
+          <span data-testid="shown">{source.source}</span>
+        </>
+      );
+    }
+    render(<Probe2 />);
+    expect(screen.getByTestId('shown')).toHaveTextContent('storefront');
+    act(() => {
+      screen.getByRole('button', { name: 'switch' }).click();
+    });
+    // Never empty and never the old name's mismatch: the previous sample stays until the next lands.
+    expect(screen.getByTestId('shown')).toHaveTextContent('storefront');
+    await waitFor(() => expect(screen.getByTestId('shown')).toHaveTextContent('dogfood'));
+    act(() => writeSampleSourcePreference('storefront'));
   });
 });

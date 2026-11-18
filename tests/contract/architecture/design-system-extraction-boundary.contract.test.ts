@@ -22,6 +22,7 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["controls/chrome-chip.tsx", "same chrome contract (--chrome-tile-size)"],
   ["controls/get-app-link.tsx", "the browser-only door to this app's /download route through the i18n Link"],
   ["fallbacks/gateway-entry-fallback.tsx", "screen dedicated to the gateway (/download)"],
+  ["fallbacks/gateway-entry-view.tsx", "the gateway fallback's markup, shared by its server and browser renders"],
   ["fallbacks/map-entry-fallback.tsx", "screen dedicated to the map"],
   ["routing/route-focus-manager.tsx", "Next.js routing + i18n navigation"],
   ["fallbacks/route-loading-fallback.tsx", "Next.js routing loading surface"],

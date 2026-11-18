@@ -15,12 +15,13 @@ export interface UseProjectsState {
   mode: 'static' | 'local';
 }
 
-export function useProjects(): UseProjectsState {
+/** `demand: false` reads whatever sample is already there without starting its download (a closed palette). */
+export function useProjects(options?: { demand?: boolean }): UseProjectsState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
   // Stable between renders, so it is safe in dependency arrays.
-  const staticSource = useStaticVaultSource();
-  const staticStatus = useStaticVaultStatus();
+  const staticSource = useStaticVaultSource(undefined, options);
+  const staticStatus = useStaticVaultStatus(undefined, options);
 
   const localProjects = useMemo(() => {
     if (mode !== 'local' || !vault.manifest) return [];

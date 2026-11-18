@@ -57,9 +57,9 @@ export function MountedGlobalSearch({
   };
   // Ontology nodes from vault frontmatter or the build-time dogfood; useOntologyInsight picks the
   // source.
-  const { insight } = useOntologyInsight();
+  const { insight } = useOntologyInsight({ demand: open });
   const nodes = insight?.nodes ?? EMPTY_NODES;
-  const { projects } = useProjects();
+  const { projects } = useProjects({ demand: open });
 
   // Inactive on a controlled mount unless the caller asked the hotkey to travel with the dialog
   // (`bindHotkey`).

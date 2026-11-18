@@ -12,8 +12,11 @@ import type { StaticVaultSource } from './static-vault-source';
  */
 
 const loaded = new Map<SampleSource, StaticVaultSource>();
-const inflight = new Map<SampleSource, Promise<StaticVaultSource>>();
+const inflight = new Map<SampleSource, Promise<StaticVaultSource | null>>();
+const failed = new Set<SampleSource>();
 const listeners = new Set<() => void>();
+/** The sample that arrived last, so a screen keeps it on show while the next one downloads. */
+let lastReady: StaticVaultSource | null = null;
 
 // JSON imports infer unions as `string`; the build fixes the schema, so this casts once.
 async function importSource(source: SampleSource): Promise<StaticVaultSource> {
@@ -73,6 +76,22 @@ export function peekStaticVaultSource(source: SampleSource): StaticVaultSource |
   return loaded.get(source) ?? null;
 }
 
+/**
+ * Where a sample stands: `idle` (never asked), `loading`, `ready`, or `failed` (the import and its
+ * one retry both failed, so a screen says so instead of drawing an empty folder).
+ */
+export type StaticVaultSourceState = 'idle' | 'loading' | 'ready' | 'failed';
+
+export function staticVaultSourceState(source: SampleSource): StaticVaultSourceState {
+  if (loaded.has(source)) return 'ready';
+  if (failed.has(source)) return 'failed';
+  return inflight.has(source) ? 'loading' : 'idle';
+}
+
+export function lastReadyStaticVaultSource(): StaticVaultSource | null {
+  return lastReady;
+}
+
 export function subscribeStaticVaultSource(onChange: () => void): () => void {
   listeners.add(onChange);
   return () => {
@@ -80,38 +99,73 @@ export function subscribeStaticVaultSource(onChange: () => void): () => void {
   };
 }
 
-function publish(source: SampleSource, value: StaticVaultSource): StaticVaultSource {
-  loaded.set(source, value);
-  inflight.delete(source);
+function notify(): void {
   for (const listener of listeners) listener();
-  return value;
 }
 
-/** Starts the import once per sample; a failed import settles as the empty sample, never a stuck screen. */
-export function loadStaticVaultSource(source: SampleSource): Promise<StaticVaultSource> {
+const RETRY_DELAY_MS = 300;
+
+async function importWithRetry(source: SampleSource): Promise<StaticVaultSource> {
+  try {
+    return await importSource(source);
+  } catch {
+    // A chunk that failed once is often a dropped connection; one more try before saying so.
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    return importSource(source);
+  }
+}
+
+/**
+ * Starts the import once per sample. The promise never rejects: it resolves to the sample, or to
+ * null after the failure is recorded, so a suspended screen wakes either way and reads the state.
+ */
+export function loadStaticVaultSource(source: SampleSource): Promise<StaticVaultSource | null> {
   const ready = loaded.get(source);
   if (ready) return Promise.resolve(ready);
+  if (failed.has(source)) return Promise.resolve(null);
   let pending = inflight.get(source);
   if (!pending) {
-    pending = importSource(source).then(
-      (value) => publish(source, value),
-      () => publish(source, EMPTY[source]),
+    pending = importWithRetry(source).then(
+      (value) => {
+        loaded.set(source, value);
+        lastReady = value;
+        inflight.delete(source);
+        notify();
+        return value;
+      },
+      () => {
+        failed.add(source);
+        inflight.delete(source);
+        notify();
+        return null;
+      },
     );
     inflight.set(source, pending);
   }
   return pending;
 }
 
+/** Forgets a recorded failure and imports again; the screen's "Try again". */
+export function retryStaticVaultSource(source: SampleSource): Promise<StaticVaultSource | null> {
+  failed.delete(source);
+  return loadStaticVaultSource(source);
+}
+
 /** The one handle a screen's hook takes: read empty, peek, subscribe, and start the download. */
 export const bundledSamples = {
   empty: emptyStaticVaultSource,
   peek: peekStaticVaultSource,
+  lastReady: lastReadyStaticVaultSource,
+  state: staticVaultSourceState,
   subscribe: subscribeStaticVaultSource,
   load: loadStaticVaultSource,
+  retry: retryStaticVaultSource,
 };
 
 /** Test isolation: forgets every loaded sample so a test can watch the load itself. */
 export function resetStaticVaultSourcesForTests(): void {
   loaded.clear();
   inflight.clear();
+  failed.clear();
+  lastReady = null;
 }

@@ -36,6 +36,15 @@ describe("ProjectDetailPage", () => {
     expect(mocks.evidenceReads).toBe(0);
   });
 
+  it("holds the composition back while the bundled sample downloads instead of claiming no domains", () => {
+    mocks.insightPending = true;
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-composition-pending")).toBeInTheDocument();
+    expect(screen.queryByText("No domains yet")).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-composition-counts")).not.toHaveTextContent("0 domains");
+  });
+
   it("clears the same slug's static initial fact once the local source settles", async () => {
     mocks.insightNodes = [];
     mocks.insightEdges = [];

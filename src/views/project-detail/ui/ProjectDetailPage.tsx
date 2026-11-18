@@ -306,6 +306,8 @@ export function ProjectDetailPage({
   ]);
 
   const { insight } = useOntologyInsight();
+  /* A bundled sample still downloading is not an empty folder: the sections drawn from it wait. */
+  const insightPending = insight === null;
   const insightNodes = insight?.nodes ?? [];
   const insightEdges = insight?.edges ?? [];
   const localVault = useLocalVault();
@@ -569,7 +571,7 @@ export function ProjectDetailPage({
               availability={evidenceAvailability}
               staleCount={staleIds.size}
               comparedCount={comparedCapabilities}
-              reviewReading={review.reading}
+              reviewReading={review.reading || insightPending}
               reducedMotion={reducedMotion}
             />
           </div>
@@ -577,7 +579,7 @@ export function ProjectDetailPage({
             <ChangedSection
               changed={changed}
               windowDays={recentChanges.windowDays}
-              reading={recentChanges.reading}
+              reading={recentChanges.reading || insightPending}
               reducedMotion={reducedMotion}
               arrivalOffset={TO_CHECK_ROWS_BEFORE_CHANGED}
             />
@@ -628,16 +630,20 @@ export function ProjectDetailPage({
             >
               {t("compositionHeading")}
             </h2>
-            <p data-testid="project-detail-composition-counts" className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
-              {t("compositionCounts", {
-                domains: metrics.domains,
-                capabilities: metrics.capabilities,
-                elements: metrics.elements,
-                relations: metrics.relations,
-              })}
+            <p data-testid="project-detail-composition-counts" aria-busy={insightPending} className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
+              {insightPending
+                ? "\u00a0"
+                : t("compositionCounts", {
+                    domains: metrics.domains,
+                    capabilities: metrics.capabilities,
+                    elements: metrics.elements,
+                    relations: metrics.relations,
+                  })}
             </p>
           </div>
-          {domainComposition.domains.length > 0 ? (
+          {insightPending ? (
+            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-40" />
+          ) : domainComposition.domains.length > 0 ? (
             <DomainMasterDetail
               domains={domainComposition.domains}
               maxTotal={domainComposition.maxTotal}

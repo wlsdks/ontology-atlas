@@ -292,7 +292,7 @@ export function ProjectDrawer({
 
   // Top 5 related vault documents, hidden without permission. Reads the chosen sample rather than
   // the bundled manifest so it matches the rest of the screen.
-  const { manifest: staticManifest } = useStaticVaultSource();
+  const { manifest: staticManifest } = useStaticVaultSource(undefined, { demand: Boolean(project) });
   const relatedDocs = useMemo(() => {
     if (!project) return [];
     return findRelatedDocs(

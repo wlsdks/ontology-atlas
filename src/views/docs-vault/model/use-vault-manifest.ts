@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
+import { useLocalVault, useStaticVaultSource, useStaticVaultStatus } from '@/entities/vault-session';
 import {
   deriveOntologyFromVault,
   loadStaticVaultHeadings,
@@ -31,6 +31,9 @@ export function useVaultManifest({
   const localVault = useLocalVault();
   // The static fallback follows the sample the user chose, matching the map; an override pins one.
   const staticVault = useStaticVaultSource(staticSampleOverride ?? undefined);
+  // A pinned sample still downloading holds every redirect: its documents are not "missing" yet.
+  const staticPending =
+    useStaticVaultStatus(staticSampleOverride ?? undefined) === 'loading' && !isLocalSourceLoaded;
   const manifest: VaultManifest =
     isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest
@@ -129,6 +132,7 @@ export function useVaultManifest({
   }, [manifest]);
   return {
     staticVault,
+    staticPending,
     manifest,
     normalizedQuerySlug,
     legacyDocumentMode,

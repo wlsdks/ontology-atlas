@@ -163,14 +163,14 @@ function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProj
 }
 
 /** Mode-aware insight: local derives from the user's vault; static from the bundled sample, memoized. */
-export function useOntologyInsight(): {
+export function useOntologyInsight(options?: { demand?: boolean }): {
   insight: KnowledgeProjectInsight | null;
   error: Error | null;
 } {
   const mode = useDataSourceMode();
   const vault = useVaultOntology();
-  const sample = useStaticVaultSource();
-  const sampleStatus = useStaticVaultStatus();
+  const sample = useStaticVaultSource(undefined, options);
+  const sampleStatus = useStaticVaultStatus(undefined, options);
   const locale = useLocale();
 
   return useMemo(() => {

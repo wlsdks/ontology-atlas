@@ -164,6 +164,7 @@ export const BASE_EDGES = [
 const hoistedMocks = vi.hoisted(() => ({
   evidenceReads: 0,
   dialogGroupings: 0,
+  insightPending: false,
   insightNodes: [] as unknown[],
   insightEdges: [] as unknown[],
   evidence: {
@@ -205,7 +206,9 @@ const hoistedMocks = vi.hoisted(() => ({
 
 vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({
-    insight: { nodes: hoistedMocks.insightNodes, edges: hoistedMocks.insightEdges },
+    insight: hoistedMocks.insightPending
+      ? null
+      : { nodes: hoistedMocks.insightNodes, edges: hoistedMocks.insightEdges },
     error: null,
   }),
   useMapEvidenceStates: () => {
@@ -313,6 +316,7 @@ export function openMoreMenu() {
 export function resetProjectDetailMocks() {
   nav.search = "";
   hoistedMocks.evidenceReads = 0;
+  hoistedMocks.insightPending = false;
   hoistedMocks.dialogGroupings = 0;
   hoistedMocks.evidence = { availability: "app-only", states: new Map(), movedPaths: new Map(), stalePaths: new Map() };
   hoistedMocks.recent = { reading: false, windowDays: 7, rows: [], recentNodeIds: new Set() };

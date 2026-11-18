@@ -8,18 +8,31 @@ import type { AppLocale } from "@/i18n/locales";
 import { Button, IconButton } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
+import { GatewayEntryFallbackLive } from "@/shared/ui/fallbacks/gateway-entry-view";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
 import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workbench";
 
 /**
  * The gateway is its own chunk: it draws this repository's vault from a static JSON import, which
- * the installed app, whose `/` is the map or first-run, must never fetch. It is lazy without an
- * inner boundary, so while it loads the page's own Suspense fallback (`GatewayEntryFallback`, the
- * exported HTML) stays on screen and nothing flashes in between.
+ * the installed app, whose `/` is the map or first-run, must never fetch. A web browser starts the
+ * import the moment this module runs, so it overlaps the page's other scripts, and the installed
+ * app starts nothing. The component is lazy without an inner boundary, so while it finishes the
+ * page's own Suspense fallback (`GatewayEntryFallback`, the exported HTML) stays on screen and
+ * nothing flashes in between.
  */
-const GatewayLandingPage = lazy(() =>
-  import("@/views/download").then((module) => ({ default: module.GatewayLandingPage })),
+function startGatewayImport() {
+  if (typeof window === "undefined") return null;
+  try {
+    if (isDesktopShell()) return null;
+  } catch {
+    // An import must never throw; the lazy factory below imports on first render instead.
+  }
+  return import("@/views/download").then((module) => ({ default: module.GatewayLandingPage }));
+}
+const gatewayImport = startGatewayImport();
+const GatewayLandingPage = lazy(
+  () => gatewayImport ?? import("@/views/download").then((module) => ({ default: module.GatewayLandingPage })),
 );
 
 /**
@@ -55,7 +68,8 @@ export function RootEntryPage() {
     if (workbenchLikely) requestRootWorkbench(locale);
   }, [workbenchLikely, locale]);
 
-  if (!clientReady) return <DesktopVaultRedirect />;
+  // Not yet known whether this is the installed app: keep drawing the exported fallback, not another screen.
+  if (!clientReady) return <GatewayEntryFallbackLive locale={locale} />;
   if (vaultOpen) {
     if (views) return <views.HomePage />;
     if (desktop) return <DesktopVaultRedirect />;

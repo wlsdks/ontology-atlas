@@ -1,47 +1,45 @@
 'use client';
 
-import { useContext, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useContext, useEffect, useSyncExternalStore } from 'react';
 import { bundledSamples, type StaticVaultSource } from '@/entities/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { getDataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
-import { getSampleSourceSnapshot, type SampleSource } from '@/shared/lib/vault-folder/sample-source';
+import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import { LocalVaultContext } from './local-vault-context';
 import { useSampleSource } from './use-sample-source';
 
 /**
- * `loading`: a web visitor's sample is on its way. `ready`: the sample is in hand. `none`: nothing
- * will load, because the installed app never renders a bundled sample (docs/DECISIONS.md,
- * 2026-08-30) or a vault has been chosen and the sample is not wanted.
+ * `loading`: a web visitor's sample is on its way. `ready`: a sample is in hand. `failed`: it could
+ * not be downloaded, even after a retry. `none`: nothing will load, because the installed app never
+ * renders a bundled sample (docs/DECISIONS.md, 2026-08-30) or a vault has been chosen and the
+ * sample is not wanted.
  */
-export type StaticVaultStatus = 'loading' | 'ready' | 'none';
+export type StaticVaultStatus = 'loading' | 'ready' | 'failed' | 'none';
 
 interface StaticVaultState {
   source: StaticVaultSource;
   status: StaticVaultStatus;
+  sample: SampleSource;
+  /** Starts the download if needed and returns a promise that settles when the sample has arrived or failed. */
+  wait: () => Promise<unknown>;
+  retry: () => void;
 }
 
 const getServerSnapshot = () => null;
+const getServerState = () => 'idle' as const;
+const settled = () => Promise.resolve();
 
 /**
- * A web browser starts the sample the moment this module runs, so the download overlaps the rest of
- * the page's scripts instead of waiting for the first effect after hydration. The installed app
- * starts nothing, and neither does a build step.
+ * Reads the bundled sample the screen shows. With `demand` (the default) the first reader starts
+ * its download; a reader that only wants whatever is there, like a closed palette, passes false so
+ * a surface that never draws the sample never fetches it. While the next sample downloads, the
+ * previous one stays in `source`, so a change of sample swaps in place; before any has arrived
+ * `source` is the empty sample of the same name.
  */
-function startWebSample(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    if (!isDesktopShell()) void bundledSamples.load(getSampleSourceSnapshot());
-  } catch {
-    // An import must never throw; a failed check starts nothing and the hook's effect decides later.
-  }
-}
-startWebSample();
-
-/**
- * Reads the bundled sample the screen shows and starts its download once, after hydration, when
- * no local vault owns the screen. Before it arrives `source` is the empty sample of the same name.
- */
-function useStaticVaultState(override: SampleSource | undefined): StaticVaultState {
+function useStaticVaultState(
+  override: SampleSource | undefined,
+  demand: boolean,
+): StaticVaultState {
   const [preferred] = useSampleSource();
   const sample = override ?? preferred;
   // The context itself, not `useLocalVault()`, so a screen mounted outside the provider still reads.
@@ -53,20 +51,33 @@ function useStaticVaultState(override: SampleSource | undefined): StaticVaultSta
 
   const loaded = useSyncExternalStore(
     bundledSamples.subscribe,
-    () => bundledSamples.peek(sample),
+    () => bundledSamples.peek(sample) ?? (override === undefined ? bundledSamples.lastReady() : null),
     getServerSnapshot,
   );
+  const phase = useSyncExternalStore(
+    bundledSamples.subscribe,
+    () => bundledSamples.state(sample),
+    getServerState,
+  );
+  const exact = phase === 'ready';
 
   useEffect(() => {
-    if (!wanted || loaded || isDesktopShell()) return;
+    if (!demand || !wanted || exact || phase === 'failed' || isDesktopShell()) return;
     void bundledSamples.load(sample);
-  }, [wanted, loaded, sample]);
+  }, [demand, wanted, exact, phase, sample]);
 
-  if (loaded) return { source: loaded, status: 'ready' };
-  const source = bundledSamples.empty(sample);
+  const retry = useCallback(() => {
+    void bundledSamples.retry(sample);
+  }, [sample]);
+
   // The desktop check is read after hydration only (SSR and the first client render see the
   // browser), so a reader that needs the exact answer waits for `useHydrated()` first.
-  return { source, status: wanted && !isDesktopShell() ? 'loading' : 'none' };
+  const absent = !wanted || isDesktopShell();
+  if (loaded) return { source: loaded, status: 'ready', sample, wait: settled, retry };
+  const source = bundledSamples.empty(sample);
+  if (absent) return { source, status: 'none', sample, wait: settled, retry };
+  if (phase === 'failed') return { source, status: 'failed', sample, wait: settled, retry };
+  return { source, status: 'loading', sample, wait: () => bundledSamples.load(sample), retry };
 }
 
 /**
@@ -75,10 +86,26 @@ function useStaticVaultState(override: SampleSource | undefined): StaticVaultSta
  * screen's dogfood link). The value is empty until `useStaticVaultStatus()` says `ready`, and
  * stays empty in the installed app. See `entities/docs-vault/lib/bundled-vault/load-static-vault-source.ts`.
  */
-export function useStaticVaultSource(override?: SampleSource): StaticVaultSource {
-  return useStaticVaultState(override).source;
+export function useStaticVaultSource(
+  override?: SampleSource,
+  options?: { demand?: boolean },
+): StaticVaultSource {
+  return useStaticVaultState(override, options?.demand ?? true).source;
 }
 
-export function useStaticVaultStatus(override?: SampleSource): StaticVaultStatus {
-  return useStaticVaultState(override).status;
+export function useStaticVaultStatus(
+  override?: SampleSource,
+  options?: { demand?: boolean },
+): StaticVaultStatus {
+  return useStaticVaultState(override, options?.demand ?? true).status;
+}
+
+/** What the hydration boundary needs: the status, a promise to suspend on, and a retry. */
+export function useStaticVaultGate(override?: SampleSource): {
+  status: StaticVaultStatus;
+  wait: () => Promise<unknown>;
+  retry: () => void;
+} {
+  const { status, wait, retry } = useStaticVaultState(override, true);
+  return { status, wait, retry };
 }
