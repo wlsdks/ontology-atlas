@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { fieldClass } from '@/shared/ui/control-class';
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Clock,
@@ -100,6 +100,7 @@ function Highlight({
 /** Says what search covers while the index builds, or why it covers titles only. */
 function IndexStatusLine({ status }: { status: VaultIndexStatus }) {
   const t = useTranslations('vaultWidgets.palette.indexStatus');
+  const formatNumber = useFormatter().number;
   const building = status.state === 'building' || status.state === 'absent';
   const share = status.total > 0 ? Math.min(1, status.indexed / status.total) : 0;
   return (
@@ -115,7 +116,19 @@ function IndexStatusLine({ status }: { status: VaultIndexStatus }) {
       <p className="px-3 py-1.5 text-caption tabular-nums text-[color:var(--color-text-tertiary)]" aria-live="polite">
         {building
           ? status.total > 0
-            ? t('building', { indexed: status.indexed, total: status.total })
+            ? t.rich('building', {
+                indexed: status.indexed,
+                total: status.total,
+                // Sized by a hidden copy of the total, so the sentence holds still as the count grows.
+                count: (chunks) => (
+                  <span className="inline-grid justify-items-end">
+                    <span className="[grid-area:1/1]">{chunks}</span>
+                    <span aria-hidden className="invisible [grid-area:1/1]">
+                      {formatNumber(status.total)}
+                    </span>
+                  </span>
+                ),
+              })
             : t('preparing')
           : t(status.state)}
       </p>
@@ -585,10 +598,14 @@ export function DocsVaultUnifiedPalette({
             isDocSearchZero ? (
               <li className="px-3 py-6">
                 <p className="text-body text-[color:var(--color-text-secondary)]">
-                  {t('noBodySearchTitle')}
+                  {indexStatus?.state === 'ready' ? t('noBodySearchTitle') : t('noMatches')}
                 </p>
                 <p className="mt-1 text-caption text-[color:var(--color-text-tertiary)]">
-                  {indexStatus?.state === 'ready' ? t('noBodySearchHint') : t('noTitleSearchHint')}
+                  {indexStatus?.state === 'ready'
+                    ? t('noBodySearchHint')
+                    : indexStatus?.state === 'building'
+                      ? t('noIndexingSearchHint')
+                      : t('noTitleSearchHint')}
                 </p>
                 <p className="mt-4 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                   {t('canonicalDocsLabel')}

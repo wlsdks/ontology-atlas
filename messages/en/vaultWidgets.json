@@ -194,9 +194,10 @@
     "noBodySearchTitle": "Not found anywhere in your docs",
     "noBodySearchHint": "Titles, summaries, tags, and full body text were all searched. Try a different word or a shorter phrase.",
     "noTitleSearchHint": "Titles, summaries and tags were searched. Try a different word or a shorter phrase.",
+    "noIndexingSearchHint": "Titles, summaries, tags and the text of the documents indexed so far were searched. Try again when indexing finishes, or try a different word.",
     "indexStatus": {
       "preparing": "Getting ready to search inside every document. Titles, summaries and tags meanwhile.",
-      "building": "Indexing {indexed, number} of {total, number} documents. Showing what is indexed so far.",
+      "building": "Indexing <count>{indexed, number}</count> of {total, number} documents. Showing what is indexed so far.",
       "off": "Titles, summaries and tags only. The search index is off in Settings › Privacy · data.",
       "paused": "Titles, summaries and tags only. The search index was deleted; it is rebuilt when you open this folder again.",
       "unavailable": "Titles, summaries and tags only. The search index could not be opened on this computer."
