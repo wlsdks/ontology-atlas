@@ -88,8 +88,13 @@ export const rules = [
   {
     order: 1250,
     command: 'pnpm integration:cli:repo-analysis',
-    reason: 'CLI repo analysis or bootstrap command changed',
-    matches: [/^cli\/src\/commands\/repo-analysis\/(?:analyze|infer-imports|architecture|bootstrap)\.mjs$/, /^tsconfig\.json$/],
+    reason: 'CLI repo analysis command, or the MCP analysis it prints, changed',
+    matches: [
+      /^cli\/src\/commands\/repo-analysis\/[^/]+\.mjs$/,
+      /^mcp\/src\/tools\/repo-analysis\.mjs$/,
+      /^mcp\/src\/analyze\/.+\.mjs$/,
+      /^tsconfig\.json$/,
+    ],
   },
   {
     order: 1260,
