@@ -1529,16 +1529,16 @@ describe("evaluateDogfoodGate", () => {
       ["query_concepts_limited structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, framework: "unknown" } }),
-      ["analyze_repo_structure response unknown framework: unknown"],
+      evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, contract: undefined } }),
+      ["analyze_repo_structure response is not the breadth map: undefined"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, capabilities: [{ slug: "capabilities/auth", title: "Auth" }] } }),
-      ["analyze_repo_structure response missing capabilities evidence source: capabilities/auth"],
+      ["analyze_repo_structure survey carries capabilities; the breadth map names no node"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { ...okShape.analyzedRepo, framework: "generic" } }),
-      ['analyze_repo_structure structuredContent mismatch — $.framework: parsed "fsd", structuredContent "generic"'],
+      evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { ...okShape.analyzedRepo, next: "other" } }),
+      ['analyze_repo_structure structuredContent mismatch — $.next: parsed "1 product units, 3 lines in 1 files.", structuredContent "other"'],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, filesScanned: -1 } }),

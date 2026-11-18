@@ -27,6 +27,8 @@ export {
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprintWithStamps,
 } from './lib/local-manifest/build-local-manifest';
+export { applyVaultChanges } from './lib/local-manifest/apply-vault-changes';
+export type { LocalVaultSnapshot } from './lib/local-manifest/apply-vault-changes';
 export type {
   LocalVaultBuild,
   BuiltVaultEntry,

@@ -4,20 +4,25 @@ import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { parseVaultChangeBatch } from "@/shared/lib/vault-folder/vault-change-batch";
 import { useLocalVault } from "./local-vault-context";
 
 /**
- * Under Tauri, starts the Rust file watcher (`start_vault_watch`) and checks the folder on each
- * `vault-changed`, so the screen follows an agent's writes at once. A no-op on the web.
- * `syncWithDisk` goes through a ref, so a reload does not resubscribe.
+ * Under Tauri, starts the Rust file watcher (`start_vault_watch`) and hands each `vault-changed`
+ * batch of changed paths to `applyVaultChangeBatch`, so the screen follows an agent's writes at
+ * the cost of the files that changed. A no-op on the web. The callback goes through a ref, so a
+ * reload does not resubscribe. A batch naming another root than this watcher's (a late event from
+ * the folder the app just left) is dropped.
  */
 export function TauriVaultWatchBridge() {
-  const { status, handle, syncWithDisk } = useLocalVault();
+  const { status, handle, applyVaultChangeBatch } = useLocalVault();
   const rootPath = handle ? getTauriVaultRootPath(handle) ?? null : null;
-  const syncRef = useRef(syncWithDisk);
+  const applyRef = useRef(applyVaultChangeBatch);
+  const handleRef = useRef(handle);
   useEffect(() => {
-    syncRef.current = syncWithDisk;
-  }, [syncWithDisk]);
+    applyRef.current = applyVaultChangeBatch;
+    handleRef.current = handle;
+  }, [applyVaultChangeBatch, handle]);
 
   useEffect(() => {
     if (!isTauriVaultRuntime() || status !== "loaded" || !rootPath) return;
@@ -25,9 +30,11 @@ export function TauriVaultWatchBridge() {
     let unlisten: (() => void) | undefined;
     void (async () => {
       try {
-        await invoke("start_vault_watch", { rootPath });
-        const un = await listen("vault-changed", () => {
-          void syncRef.current();
+        const watched = await invoke<string>("start_vault_watch", { rootPath });
+        const un = await listen<unknown>("vault-changed", (event) => {
+          const batch = parseVaultChangeBatch(event.payload);
+          const forThisFolder = batch.root === watched || (batch.rescan && batch.root === null);
+          if (forThisFolder && handleRef.current) void applyRef.current(batch, handleRef.current);
         });
         if (cancelled) un();
         else unlisten = un;

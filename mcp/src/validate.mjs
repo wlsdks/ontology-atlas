@@ -72,6 +72,16 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
    */
   'starter-example-node',
   'kind-under-sources',
+  /*
+   * Whole-vault build depth (`construction/build-depth.mjs`): a note about code
+   * nobody read, a rule with no read lines, an arrow both ways, an entry file with
+   * no code, one file for many nodes. The file checks need a repository root.
+   */
+  'relation-note-on-unread',
+  'rule-without-read-lines',
+  'dependency-both-ways',
+  'path-without-code',
+  'path-shared',
 ]);
 
 export function rawSourceKindIssues(rootPath) {

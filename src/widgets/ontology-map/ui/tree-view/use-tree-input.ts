@@ -29,7 +29,11 @@ class PointerTrail {
   private readonly t = new Float64Array(RELEASE_SAMPLES);
   private count = 0;
 
-  constructor(private readonly flick: { windowMs: number; minSpeedPxPerMs: number }) {}
+  private readonly flick: { windowMs: number; minSpeedPxPerMs: number };
+
+  constructor(flick: { windowMs: number; minSpeedPxPerMs: number }) {
+    this.flick = flick;
+  }
 
   restart(x: number, nowMs: number): void {
     this.count = 0;

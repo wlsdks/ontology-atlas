@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<
     return null;
   }
 
-  componentDidCatch(error: Error) {
+  override componentDidCatch(error: Error) {
     this.props.onError?.(error);
     if (typeof console !== 'undefined') {
       console.error('[ErrorBoundary]', error);
@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<
     this.setState({ error: null });
   };
 
-  render() {
+  override render() {
     if (this.state.error) {
       return this.props.fallback({ error: this.state.error, reset: this.reset });
     }

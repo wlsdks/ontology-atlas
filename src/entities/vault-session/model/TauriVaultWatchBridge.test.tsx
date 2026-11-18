@@ -58,7 +58,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      syncWithDisk: vi.fn(),
+      applyVaultChangeBatch: vi.fn(),
     });
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
 
@@ -77,7 +77,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      syncWithDisk: vi.fn(),
+      applyVaultChangeBatch: vi.fn(),
     });
 
     render(<TauriVaultWatchBridge />);
@@ -90,68 +90,77 @@ describe('TauriVaultWatchBridge', () => {
     await waitFor(() => expect(tauriMocks.listen).toHaveBeenCalledWith('vault-changed', expect.any(Function)));
   });
 
-  it('checks the folder on every vault-changed event, the app\'s only live signal', async () => {
+  it('hands each batch for the watched folder to the vault with its handle, a malformed one as a rescan, and drops another folder\'s', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
-    tauriMocks.invoke.mockResolvedValue(undefined);
-    const syncWithDisk = vi.fn(async () => false);
-    let capturedHandler: (() => void) | null = null;
-    tauriMocks.listen.mockImplementation(async (_event: string, handler: () => void) => {
+    // The watcher answers with the canonical root its batches name.
+    tauriMocks.invoke.mockResolvedValue('/private/Users/me/vault');
+    const applyVaultChangeBatch = vi.fn(async () => {});
+    let capturedHandler: ((event: { payload: unknown }) => void) | null = null;
+    tauriMocks.listen.mockImplementation(async (_event: string, handler: (event: { payload: unknown }) => void) => {
       capturedHandler = handler;
       return vi.fn();
     });
+    const handle = fakeHandle();
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
-      handle: fakeHandle(),
-      syncWithDisk,
+      handle,
+      applyVaultChangeBatch,
     });
 
     render(<TauriVaultWatchBridge />);
 
     await waitFor(() => expect(capturedHandler).not.toBeNull());
+    const changes = [{ path: 'notes/a.md', kind: 'file', lastModified: 7, size: 3 }];
+    const batch = { root: '/private/Users/me/vault', rescan: false, changes };
     act(() => {
-      capturedHandler?.();
+      capturedHandler?.({ payload: { root: '/Users/me/previous', rescan: false, changes } });
+      capturedHandler?.({ payload: { root: '/Users/me/previous', rescan: true, changes: [] } });
+      capturedHandler?.({ payload: batch });
+      capturedHandler?.({ payload: null });
     });
 
-    await waitFor(() => expect(syncWithDisk).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(applyVaultChangeBatch).toHaveBeenCalledTimes(2));
+    expect(applyVaultChangeBatch).toHaveBeenNthCalledWith(1, batch, handle);
+    expect(applyVaultChangeBatch).toHaveBeenNthCalledWith(2, { root: null, rescan: true, changes: [] }, handle);
   });
 
-  it('follows the latest sync function without resubscribing while status and root stay', async () => {
+  it('follows the latest change handler without resubscribing while status and root stay', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     tauriFsMocks.getTauriVaultRootPath.mockReturnValue('/Users/me/vault');
     tauriMocks.invoke.mockResolvedValue(undefined);
-    let capturedHandler: (() => void) | null = null;
-    tauriMocks.listen.mockImplementation(async (_event: string, handler: () => void) => {
+    let capturedHandler: ((event: { payload: unknown }) => void) | null = null;
+    tauriMocks.listen.mockImplementation(async (_event: string, handler: (event: { payload: unknown }) => void) => {
       capturedHandler = handler;
       return vi.fn();
     });
-    const firstSync = vi.fn(async () => false);
-    const secondSync = vi.fn(async () => false);
+    const firstApply = vi.fn(async () => false);
+    const secondApply = vi.fn(async () => false);
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      syncWithDisk: firstSync,
+      applyVaultChangeBatch: firstApply,
     });
 
     const { rerender } = render(<TauriVaultWatchBridge />);
     await waitFor(() => expect(tauriMocks.listen).toHaveBeenCalledTimes(1));
 
-    // A re-render where only the `syncWithDisk` reference changes while status and handle stay —
+    // A re-render where only the `applyVaultChangeBatch` reference changes while status and handle stay —
     // common after every load(). It must not resubscribe (call listen again).
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      syncWithDisk: secondSync,
+      applyVaultChangeBatch: secondApply,
     });
     rerender(<TauriVaultWatchBridge />);
 
     expect(tauriMocks.listen).toHaveBeenCalledTimes(1); // no resubscribe
 
     act(() => {
-      capturedHandler?.();
+      capturedHandler?.({ payload: { rescan: true, changes: [] } });
     });
-    await waitFor(() => expect(secondSync).toHaveBeenCalledTimes(1));
-    expect(firstSync).not.toHaveBeenCalled();
+    await waitFor(() => expect(secondApply).toHaveBeenCalledTimes(1));
+    expect(firstApply).not.toHaveBeenCalled();
   });
 
   it('does not throw when invoke fails (permission denied and the like); the polling fallback must keep covering', async () => {
@@ -161,7 +170,7 @@ describe('TauriVaultWatchBridge', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       handle: fakeHandle(),
-      syncWithDisk: vi.fn(),
+      applyVaultChangeBatch: vi.fn(),
     });
 
     expect(() => render(<TauriVaultWatchBridge />)).not.toThrow();
