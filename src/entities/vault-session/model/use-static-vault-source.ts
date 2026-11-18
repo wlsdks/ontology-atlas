@@ -33,9 +33,15 @@ const getServerSnapshot = () => null;
  * the page's scripts instead of waiting for the first effect after hydration. The installed app
  * starts nothing, and neither does a build step.
  */
-if (typeof window !== 'undefined' && !isDesktopShell()) {
-  void loadStaticVaultSource(getSampleSourceSnapshot());
+function startWebSample(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!isDesktopShell()) void loadStaticVaultSource(getSampleSourceSnapshot());
+  } catch {
+    // An import must never throw; a failed check starts nothing and the hook's effect decides later.
+  }
 }
+startWebSample();
 
 /**
  * Reads the bundled sample the screen shows and starts its download once, after hydration, when
