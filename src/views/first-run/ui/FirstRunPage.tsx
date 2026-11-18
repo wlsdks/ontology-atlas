@@ -170,15 +170,16 @@ export function FirstRunPage() {
       id="main"
       tabIndex={-1}
       data-folder-chooser={choosingFolderHome ? 'fixed' : undefined}
-      className={`flex min-h-0 flex-1 justify-center bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? `${styles.chooser} overflow-hidden pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] lg:pb-6` : "overflow-auto py-10"}`}
+      className={`flex min-h-0 flex-1 justify-center bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? `${styles.chooser} overflow-hidden pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] lg:pb-6` : `${styles.start} overflow-hidden`}`}
     >
+      <div className={choosingFolderHome ? "contents" : styles.startScroll}>
       <section
         className={choosingFolderHome
           ? `${styles.frame} architecture-result-arrive flex min-h-0 w-full max-w-3xl flex-col gap-5`
-          : "my-auto grid h-fit w-full max-w-[var(--dialog-w-md)] gap-6"}
+          : styles.startFrame}
       >
         <header
-          className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
+          className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : `${styles.startIntro} justify-items-center text-center`}`}
         >
           <div className={`${styles.identity} grid w-full gap-1 ${choosingFolderHome ? '' : 'justify-items-center'}`}>
             <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
@@ -191,7 +192,7 @@ export function FirstRunPage() {
               {choosingFolder ? tSwitch("choose.eyebrow") : t("eyebrow")}
             </p> : null}
             {/* Centred with the other lines when the screen is centred. */}
-            <div className={`flex items-center gap-3 ${choosingFolderHome ? "justify-start" : "justify-center"}`}><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
+            <div className={`${styles.titleRow} flex items-center gap-3 ${choosingFolderHome ? "justify-start" : "justify-center"}`}><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
               {choosingFor ? t("shapeEyebrow") : choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>{choosingFolderHome ? <div className={styles.help}><IconButton label={tSwitch('choose.helpLabel')} size="lg" className="atlas-touch-floor atlas-touch-floor-wide" onClick={()=>setChooserHelpOpen(true)}><CircleHelp size={ICON_SIZE.md} aria-hidden /></IconButton></div> : null}</div>
             <p
@@ -208,6 +209,7 @@ export function FirstRunPage() {
           </div>
         </header>
 
+        <div className={choosingFolderHome ? "contents" : styles.startBody}>
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
             {/* Equal-height cards (Don'ts, content-decided card height). */}
@@ -255,7 +257,7 @@ export function FirstRunPage() {
           <>
             {/* Known folders lead as the launch chooser's answer; named by their visible caption. */}
             {knownFolders.length > 0 ? (
-              <section className={choosingFolderHome ? `${styles.listRegion} grid min-h-0 shrink grid-rows-[auto_minmax(0,1fr)_auto] gap-2` : "grid gap-2"} aria-labelledby="known-folders-heading">
+              <section className={choosingFolderHome ? `${styles.listRegion} grid min-h-0 shrink grid-rows-[auto_minmax(0,1fr)_auto] gap-2` : styles.startRecents} aria-labelledby="known-folders-heading">
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
                   <p
                     id="known-folders-heading"
@@ -273,6 +275,7 @@ export function FirstRunPage() {
                   busy={busy}
                   emphasis={choosingFolder}
                   scroll={choosingFolderHome ? "viewport" : "contained"}
+                  className={choosingFolderHome ? undefined : styles.startList}
                   onOpen={(record) => void vault.openRecent(record)}
                   onForget={(record) => void vault.forgetRecent(record)}
                   onForgetAll={(records) => void vault.forgetRecent(records)}
@@ -288,7 +291,7 @@ export function FirstRunPage() {
             ) : null}
 
         {/* Equal-height cards (Don'ts, content-decided card height). */}
-        {!choosingFolderHome ? <div className="grid auto-rows-fr gap-2" aria-busy={busy}>
+        {!choosingFolderHome ? <div className={`${styles.startDoors} grid auto-rows-fr gap-2`} aria-busy={busy}>
           {showJustStart ? (
             <button
               type="button"
@@ -390,8 +393,6 @@ export function FirstRunPage() {
           </>
         )}
 
-        {showJustStart && !choosingFor ? <Link href="/changes/" className={controlClass({ shape: "row", hoverSurface: "lift", hoverInk: "strong", className: "grid gap-1 border border-[color:var(--color-border-soft)] p-4" })}><span className="text-body font-[var(--font-weight-strong)]">{tBriefing("title")}</span><span className="text-body text-[color:var(--color-text-secondary)]">{tBriefing("sourcePrompt")}</span></Link> : null}
-
         {failure ? (
           <p
             role="alert"
@@ -401,8 +402,13 @@ export function FirstRunPage() {
             {failure.sentence}
           </p>
         ) : null}
+        </div>
+
+        {showJustStart && !choosingFor ? <Link href="/changes/" className={controlClass({ shape: "row", hoverSurface: "lift", hoverInk: "strong", className: `${choosingFolderHome ? "" : styles.startAside} grid gap-1 border border-[color:var(--color-border-soft)] p-4` })}><span className="text-body font-[var(--font-weight-strong)]">{tBriefing("title")}</span><span className="text-body text-[color:var(--color-text-secondary)]">{tBriefing("sourcePrompt")}</span></Link> : null}
+
 
       </section>
+      </div>
       <BuildFromCodeConfirmDialog build={codeProject} />
       <Dialog open={chooserHelpOpen} onClose={()=>setChooserHelpOpen(false)} labelledBy="folder-chooser-help-title" size="sm">
         <h2 id="folder-chooser-help-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{tSwitch('choose.helpLabel')}</h2>
