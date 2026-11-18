@@ -40,9 +40,12 @@ on:
 permissions:
   contents: read
 
+# A push to main runs the full set behind the trains' affected checks, so it must finish: pushes
+# queue rather than cancel (GitHub keeps one waiting run per group, so a burst of merges still
+# ends on the newest tree). Pull requests and trains still cancel a superseded run.
 concurrency:
   group: checks-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'change' }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
