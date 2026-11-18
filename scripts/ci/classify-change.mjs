@@ -11,7 +11,9 @@
 
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { carryForward } from './carry-forward.mjs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
+import { CARRIED_LANE_TITLE, carriedProvenanceProblem, TESTED_TREE_TITLE, testedTreeMessage } from '../lib/ci/carry-forward.mjs';
 import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
 
 import {
@@ -730,6 +732,8 @@ export function validatePlan(plan) {
     reject('global full verdict contains a narrowed lane');
   }
   if (!plan.full && plan.unknownPaths.length > 0) reject('unknown paths did not fail closed');
+  const carried = carriedProvenanceProblem(plan);
+  if (carried) reject(carried);
   return plan;
 }
 
@@ -744,7 +748,8 @@ function emit(plan, base = null) {
   const { gates, unit, perf, mcp, e2e } = plan.lanes;
   const summary =
     `gates=${gates.run} unit=${unit.mode} perf=${perf.mode} mcp=${mcp.mode} ` +
-    `playwright=${e2e.mode} static=${e2e.staticExport} web=${e2e.webSurface}`;
+    `playwright=${e2e.mode} static=${e2e.staticExport} web=${e2e.webSurface}` +
+    (plan.carriedFrom ? ` carried=${plan.carriedFrom.lanes.join(',')}` : '');
   console.log(`[ci-impact] ${summary} — ${plan.reason}`);
   if (e2e.unmappedPaths.length > 0) {
     console.log(`[ci-impact] Playwright fail-closed paths: ${e2e.unmappedPaths.join(', ')}`);
@@ -826,5 +831,19 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
     });
     console.log(`[ci-impact] read-only credential probe: ${JSON.stringify(credentialProbe)}`);
   }
-  emit(reuseReviewedMainPlan(plan, proof, { eventName, base, head }), base);
+  let planned = reuseReviewedMainPlan(plan, proof, { eventName, base, head });
+  if (eventName === 'pull_request' && base) {
+    // A fix push re-runs only the lanes whose inputs it touched (`carry-forward.mjs`).
+    const carry = await carryForward({ plan: planned, base, previousHead: process.env.PUSH_BEFORE, planFor: buildImpactPlan, git });
+    planned = carry.plan;
+    console.log(`[ci-impact] carry-forward: ${carry.verdict.reason}`);
+    for (const { lane, reason } of carry.verdict.refused) console.log(`[ci-impact] ${lane} runs again: ${reason}`);
+    for (const lane of carry.verdict.lanes) {
+      console.log(`::notice title=${CARRIED_LANE_TITLE}::${lane} passed at ${planned.carriedFrom.head} (check runs ${carry.verdict.runs[lane].join(', ')}) on the same tested base; this push changed none of its inputs`);
+    }
+    if (carry.tested) {
+      console.log(`::notice title=${TESTED_TREE_TITLE}::${testedTreeMessage({ ...carry.tested, carried: carry.verdict.lanes })}`);
+    }
+  }
+  emit(planned, base);
 }
