@@ -4,7 +4,7 @@
 // never asks GitHub itself, so the figures are as old as this file.
 
 export const REPO_FACTS = {
-  stars: 165,
+  stars: 170,
   forks: 24,
-  readOn: '2026-11-17',
+  readOn: '2026-11-18',
 } as const;
