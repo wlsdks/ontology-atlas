@@ -108,12 +108,33 @@ export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (run.conclusion === 'failure') {
     const specs = Array.isArray(run.failingSpecs) && run.failingSpecs.length > 0
       ? `: ${run.failingSpecs.length > 6 ? `${run.failingSpecs.slice(0, 6).join(', ')} and ${run.failingSpecs.length - 6} more` : run.failingSpecs.join(', ')}`
-      : '';
+      : check.afterMerge ? ', with no failing spec annotated (open the run)' : '';
     return `the ${check.name} on main failed on ${day} (${run.url})${specs}; ${check.red}`;
   }
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
   if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
+}
+
+const MAIN_FULL_RUN_CANDIDATES = 5;
+/** A reused push that ran nothing finishes in about 45 s; any run that ran the suite takes 5 minutes or more. */
+const MAIN_FULL_RUN_MIN_MS = 2 * 60_000;
+
+/**
+ * What a finished run on main proves about the browser suite, from its timing artifacts, which
+ * carry the plan's mode (`playwright-timings-<mode>-<shard>`). `full`: the whole suite ran. A
+ * `plan_from` rehearsal uploads smoke or targeted timings and is not one. A green run that
+ * uploaded none executed nothing; a red one that uploaded none failed before its specs and still
+ * counts, so a broken build on main is not hidden behind an older green run. Timings named
+ * before the mode was (`playwright-timings-<shard>`) came from full runs only on a schedule or
+ * by hand; an older push ran its own change's plan.
+ */
+export function fullBrowserRunKind(conclusion, artifactNames, event = 'push') {
+  const timings = artifactNames.filter((name) => name.startsWith('playwright-timings-'));
+  if (timings.some((name) => name.startsWith('playwright-timings-full-'))) return 'full';
+  if (event !== 'push' && timings.some((name) => /^playwright-timings-\d+$/.test(name))) return 'full';
+  if (timings.length > 0) return 'rehearsal';
+  return conclusion === 'failure' ? 'full' : 'empty';
 }
 
 /** One line per red or stalled check on main; reading them never blocks a landing. */
@@ -679,33 +700,42 @@ export function createGithub(slug, run = ghRun) {
     },
     /**
      * The newest finished full browser run on main: every push runs one, as do manual and
-     * scheduled runs. A red one carries the spec files its shards annotated as failing.
+     * scheduled runs. A run counts only by what its shards uploaded (`fullBrowserRunKind`), and
+     * a red one carries the spec files its shards annotated as failing.
      */
     readMainFullRun: (workflow) => {
       const out = run(['run', 'list', '--workflow', workflow, '--branch', 'main', '--limit', '20',
-        '--json', 'conclusion,createdAt,url,event,databaseId'], { allowFailure: true });
+        '--json', 'conclusion,createdAt,updatedAt,url,event,databaseId'], { allowFailure: true });
       if (typeof out !== 'string') return null;
-      let latest;
+      let finished;
       try {
-        latest = JSON.parse(out).find((row) => ['push', 'schedule', 'workflow_dispatch'].includes(row.event)
-          && ['success', 'failure'].includes(row.conclusion));
+        finished = JSON.parse(out).filter((row) => ['push', 'schedule', 'workflow_dispatch'].includes(row.event)
+          && ['success', 'failure'].includes(row.conclusion) && Number.isSafeInteger(row.databaseId)
+          // Read artifacts only for a run long enough to have run specs, or one that went red.
+          && (row.conclusion === 'failure' || Date.parse(row.updatedAt) - Date.parse(row.createdAt) >= MAIN_FULL_RUN_MIN_MS));
       } catch {
         return null;
       }
-      if (!latest) return null;
-      const finished = { conclusion: latest.conclusion, createdAt: latest.createdAt, url: latest.url };
-      if (latest.conclusion !== 'failure') return finished;
-      const jobs = run(['api', `repos/${slug}/actions/runs/${latest.databaseId}/jobs?per_page=100`,
-        '--jq', '.jobs[] | select(.conclusion == "failure") | .id'], { allowFailure: true });
-      const failingSpecs = new Set();
-      for (const id of (typeof jobs === 'string' ? jobs.split('\n').filter((line) => /^\d+$/.test(line)) : []).slice(0, 10)) {
-        const paths = run(['api', `repos/${slug}/check-runs/${id}/annotations`,
-          '--jq', `.[] | select(.title == "${FAILING_SPEC_TITLE}") | .path`], { allowFailure: true });
-        for (const path of typeof paths === 'string' ? paths.split('\n') : []) {
-          if (/^tests\/e2e\/[\w./-]+\.spec\.ts$/.test(path)) failingSpecs.add(path);
+      for (const candidate of finished.slice(0, MAIN_FULL_RUN_CANDIDATES)) {
+        const names = run(['api', `repos/${slug}/actions/runs/${candidate.databaseId}/artifacts?per_page=100`,
+          '--jq', '.artifacts[].name'], { allowFailure: true });
+        if (typeof names !== 'string') return null;
+        if (fullBrowserRunKind(candidate.conclusion, names.split('\n'), candidate.event) !== 'full') continue;
+        const result = { conclusion: candidate.conclusion, createdAt: candidate.createdAt, url: candidate.url };
+        if (candidate.conclusion !== 'failure') return result;
+        const jobs = run(['api', `repos/${slug}/actions/runs/${candidate.databaseId}/jobs?per_page=100`,
+          '--jq', '.jobs[] | select(.conclusion == "failure") | .id'], { allowFailure: true });
+        const failingSpecs = new Set();
+        for (const id of (typeof jobs === 'string' ? jobs.split('\n').filter((line) => /^\d+$/.test(line)) : []).slice(0, 10)) {
+          const paths = run(['api', `repos/${slug}/check-runs/${id}/annotations`,
+            '--jq', `.[] | select(.title == "${FAILING_SPEC_TITLE}") | .path`], { allowFailure: true });
+          for (const path of typeof paths === 'string' ? paths.split('\n') : []) {
+            if (/^tests\/e2e\/[\w./-]+\.spec\.ts$/.test(path)) failingSpecs.add(path);
+          }
         }
+        return { ...result, failingSpecs: [...failingSpecs].sort() };
       }
-      return { ...finished, failingSpecs: [...failingSpecs].sort() };
+      return null;
     },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),

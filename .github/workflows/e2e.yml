@@ -1,10 +1,10 @@
 # Browser CI uses the same impact plan as unit/MCP CI. Before merge a train runs
 # the specs its change maps plus the merge smoke set (scripts/ci/merge-smoke-specs.mjs),
 # balanced over every shard; an unmapped rendered dependency runs the smoke set alone.
-# Only a planner or browser-executor change runs the full suite before merge. Every
-# push to main runs it in full after merge, measurements and both surfaces included,
-# and `pnpm pr:land` names that run's failing specs while it is red (owner, 2026-11-18:
-# merges took too long). Manual runs are full unless they name a base to plan from.
+# Only a planner, browser-executor or root dependency change runs the full suite before
+# merge. Every push to main runs it in full after merge, even over a reused reviewed tree,
+# measurements and both surfaces included, and `pnpm pr:land` names that run's failing
+# specs while it is red (owner, 2026-11-18: merges took too long). Manual runs are full unless they name a base to plan from.
 #
 # A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
 # it on a landing train built from today's main, and the train's pull request
@@ -327,7 +327,8 @@ jobs:
         if: always() && env.ACTIVE == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: playwright-timings-${{ matrix.shard }}
+          # The plan's mode is in the name: `pnpm pr:land` reads main's latest full run by it.
+          name: playwright-timings-${{ needs.changes.outputs.playwright }}-${{ matrix.shard }}
           path: |
             output/playwright/assignment-*.json
             output/playwright/results-*.json

@@ -16,6 +16,7 @@ import {
   createGithub,
   describeCleanup,
   describeScheduledRun,
+  fullBrowserRunKind,
   lockTrains,
   describeLock,
   otherCheckState,
@@ -1275,18 +1276,28 @@ describe('scheduled checks on main', () => {
     assert.doesNotMatch(called(green.world, 'openPr')[0][1].body, /Not this train's gate/);
   });
 
-  it('reads the newest finished full run on main and the specs its failed jobs annotated', () => {
+  it('reads the newest run on main that really ran the full suite, and the specs its failed jobs annotated', () => {
     const calls = [];
+    const artifacts = {
+      9: 'playwright-timings-smoke-1\nplaywright-timings-smoke-2\n', // a plan_from rehearsal on main
+      8: '', // a green push whose shards executed nothing
+      6: 'playwright-timings-full-1\nplaywright-report-shard-3\nplaywright-timings-full-3\n',
+    };
     const github = createGithub('owner/repo', (args) => {
       calls.push(args);
       if (args[0] === 'run') {
         return JSON.stringify([
-          { conclusion: '', event: 'push', createdAt: '2026-10-09T10:00:00Z', url: 'running', databaseId: 9 },
-          { conclusion: 'cancelled', event: 'push', createdAt: '2026-10-09T09:00:00Z', url: 'cancelled', databaseId: 8 },
+          { conclusion: '', event: 'push', createdAt: '2026-10-09T11:00:00Z', url: 'running', databaseId: 11 },
+          { conclusion: 'cancelled', event: 'push', createdAt: '2026-10-09T10:30:00Z', url: 'cancelled', databaseId: 10 },
+          { conclusion: 'failure', event: 'workflow_dispatch', createdAt: '2026-10-09T10:00:00Z', url: 'rehearsal', databaseId: 9 },
+          { conclusion: 'success', event: 'push', createdAt: '2026-10-09T09:00:00Z', updatedAt: '2026-10-09T09:10:00Z', url: 'empty', databaseId: 8 },
+          { conclusion: 'success', event: 'push', createdAt: '2026-10-09T08:50:00Z', updatedAt: '2026-10-09T08:50:45Z', url: 'reused', databaseId: 5 },
           { conclusion: 'failure', event: 'pull_request', createdAt: '2026-10-09T08:30:00Z', url: 'train', databaseId: 7 },
           { conclusion: 'failure', event: 'push', createdAt: '2026-10-09T08:00:00Z', url: 'https://x/6', databaseId: 6 },
         ]);
       }
+      const artifact = /\/actions\/runs\/(\d+)\/artifacts/.exec(args[1]);
+      if (artifact) return artifacts[artifact[1]];
       if (args[1].endsWith('/actions/runs/6/jobs?per_page=100')) return '41\n42\n';
       if (args[1].endsWith('/check-runs/41/annotations')) return 'tests/e2e/b.spec.ts\ntests/e2e/a.spec.ts\n';
       if (args[1].endsWith('/check-runs/42/annotations')) return 'tests/e2e/a.spec.ts\n../etc/passwd\n';
@@ -1299,6 +1310,17 @@ describe('scheduled checks on main', () => {
     assert.ok(calls[0].includes('main') && calls[0].includes('e2e.yml'));
     assert.ok(calls.some((args) => args.includes('.[] | select(.title == "failing spec") | .path')));
     assert.equal(createGithub('owner/repo', () => undefined).readMainFullRun('e2e.yml'), null);
+    assert.ok(!calls.some((args) => /\/runs\/5\//.test(args[1] ?? '')), 'a 45-second reused push costs no artifact read');
+  });
+
+  it('counts a run as full only by what its shards uploaded', () => {
+    assert.equal(fullBrowserRunKind('success', ['playwright-timings-full-2', 'x']), 'full');
+    assert.equal(fullBrowserRunKind('failure', ['playwright-timings-smoke-1']), 'rehearsal');
+    assert.equal(fullBrowserRunKind('success', ['playwright-timings-targeted-1']), 'rehearsal');
+    assert.equal(fullBrowserRunKind('success', []), 'empty', 'a reused push that ran nothing proves nothing');
+    assert.equal(fullBrowserRunKind('failure', []), 'full', 'red before any spec ran is still red');
+    assert.equal(fullBrowserRunKind('failure', ['playwright-timings-3'], 'schedule'), 'full', 'a scheduled run before the mode was named');
+    assert.equal(fullBrowserRunKind('success', ['playwright-timings-3'], 'push'), 'rehearsal', 'an older push ran only its own plan');
   });
 
   it('names only workflows that run where their reader looks', () => {

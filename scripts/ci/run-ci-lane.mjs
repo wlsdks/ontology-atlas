@@ -56,7 +56,10 @@ export function commandsForLane({
   if (!plan?.lanes?.[lane] && !['static', 'web', 'e2e'].includes(lane)) {
     throw new Error(`unknown CI lane: ${lane}`);
   }
-  if (plan.reusedFrom) return [];
+  // A reused main push verifies nothing again, except the browser suite after merge: every push
+  // to main runs it in full (`fullBrowserAfterMerge`), so the browser lanes keep their commands.
+  const browserAfterMerge = ['static', 'web', 'e2e'].includes(lane) && plan.lanes?.e2e?.mode === 'full';
+  if (plan.reusedFrom && !browserAfterMerge) return [];
 
   if (lane === 'gates') {
     const commands = plan.full

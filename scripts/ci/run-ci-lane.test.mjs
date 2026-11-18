@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildImpactPlan, FULL_LANE_COMMANDS, reuseReviewedMainPlan } from './classify-change.mjs';
+import { buildImpactPlan, FULL_LANE_COMMANDS, fullBrowserAfterMerge, reuseReviewedMainPlan } from './classify-change.mjs';
 import { commandsForLane, MACOS_ONLY_GATE_COMMANDS, runCommands } from './run-ci-lane.mjs';
 import { MERGE_SMOKE_SPECS } from './merge-smoke-specs.mjs';
 
@@ -380,4 +380,21 @@ test('foreground commands finish before the next starts and asynchronous failure
   });
   assert.equal(status, 1);
   assert.deepEqual(order, ['start first', 'finish first', 'start second', 'finish second']);
+});
+
+test('a reused main push still runs every browser lane in full, and nothing else', () => {
+  const reused = reuseReviewedMainPlan(buildImpactPlan({ files: ['src/widgets/acp-chat-panel/ui/chat-panel/SuggestionRows.tsx'] }), {
+    skip: true, commit: 'a'.repeat(40), tree: 'b'.repeat(40), reviewedHead: 'c'.repeat(40), pullRequest: 7,
+  }, { eventName: 'push', base: 'd'.repeat(40), head: 'a'.repeat(40) });
+  assert.ok(reused.reusedFrom, 'the plan must really be a reuse');
+  for (const shard of ['1/8', '8/8']) assert.deepEqual(commandsForLane({ lane: 'e2e', plan: reused, shard }), []);
+  const plan = fullBrowserAfterMerge(reused, { eventName: 'push' });
+  for (const shard of ['1/8', '5/8', '8/8']) {
+    assert.deepEqual(commandsForLane({ lane: 'e2e', plan, shard, prebuilt: true }), [
+      `PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs --shard=${shard} --exclude=contextual-meaning-editor.spec.ts --exclude=web-surface-smoke.spec.ts`,
+    ]);
+  }
+  assert.equal(commandsForLane({ lane: 'static', plan, prebuilt: true }).length, 1);
+  assert.equal(commandsForLane({ lane: 'web', plan, prebuilt: true }).length, 1);
+  for (const lane of ['gates', 'unit', 'perf', 'mcp']) assert.deepEqual(commandsForLane({ lane, plan, eventName: 'push' }), [], lane);
 });
