@@ -386,6 +386,8 @@ jobs:
           SHARDS: ${{ needs.unit.result }}
           PERF: ${{ needs.perf.result }}
           PLAN: ${{ needs.plan.result }}
+          CARRIED_UNIT: ${{ needs.plan.outputs.carried_unit }}
+          CARRIED_PERF: ${{ needs.plan.outputs.carried_perf }}
         run: |
           if [ "$PLAN" != "success" ]; then
             echo "::error::CI impact planning failed; refusing to turn a missing verdict into green"
@@ -402,7 +404,9 @@ jobs:
             echo "::error::Perf · Ratios reported $PERF"
             exit 1
           fi
-          echo "all three Unit · Contract shards and Perf · Ratios passed"
+          # A carried lane did not run here: say where its result came from instead of "passed".
+          echo "Unit · Contract: ${CARRIED_UNIT:-all three shards passed}"
+          echo "Perf · Ratios: ${CARRIED_PERF:-passed}"
 
   mcp:
     name: MCP

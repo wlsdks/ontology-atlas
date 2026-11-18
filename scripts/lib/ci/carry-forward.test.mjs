@@ -41,10 +41,18 @@ function cycle(fix, { proof = passingProof(), previousFiles = BEFORE } = {}) {
 const refusal = (verdict, lane) => verdict.refused.find((row) => row.lane === lane)?.reason;
 
 test('planted: a fix that touches a passing lane input runs that lane again', () => {
-  const { verdict } = cycle(['mcp/src/analyze/repo-structure.mjs']);
-  assert.equal(refusal(verdict, 'mcp'), 'this push changed one of its inputs');
-  assert.ok(!verdict.lanes.includes('mcp'));
-  assert.ok(verdict.lanes.includes('playwright'), 'the browser suite does not read the analyzer');
+  const { verdict } = cycle(['src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx']);
+  assert.equal(refusal(verdict, 'playwright'), 'this push changed one of its inputs');
+  assert.ok(!verdict.lanes.includes('playwright'));
+  assert.ok(verdict.lanes.includes('mcp'), 'the MCP lane does not read the component');
+});
+
+test('a fix inside a tree loaded by computed path or spawned by file name carries nothing', () => {
+  for (const path of ['mcp/src/analyze/repo-structure.mjs', 'cli/src/commands/graph-traversal/explain.mjs', 'scripts/dogfood/dogfood-mcp-walk.mjs']) {
+    const { verdict } = cycle([path]);
+    assert.deepEqual(verdict.lanes, [], path);
+    assert.ok(verdict.reason.startsWith(`${path} is in `), verdict.reason);
+  }
 });
 
 test('planted: a fix that touches none of a lane input carries it, and the plan stays valid', () => {
@@ -125,7 +133,7 @@ test('exhaustive, unreadable, workflow or planner changes carry nothing', () => 
     [{ expected: { ...expected, previousTree: 'not-a-sha' } }, /^the tested commits are unknown$/],
     [{ change: { files: ['scripts/landing/pr-land.mjs'], deleted: ['scripts/landing/old.mjs'] } }, /^the push deletes or moves scripts\/landing\/old\.mjs/],
     [{ change: { files: ['tsconfig.json'], deleted: [] } }, /^tsconfig\.json is not a code module/],
-    [{ change: { files: ['mcp/src/data/catalogue.json'], deleted: [] } }, /^mcp\/src\/data\/catalogue\.json is not a code module/],
+    [{ change: { files: ['scripts/data/vitest-file-durations.json'], deleted: [] } }, /^scripts\/data\/vitest-file-durations\.json is not a code module/],
     [{ change: undefined }, /^the push is unknown$/],
   ];
   for (const [overrides, reason] of cases) {

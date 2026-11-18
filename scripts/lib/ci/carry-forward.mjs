@@ -97,8 +97,27 @@ export function parseTestedTree(message) {
  */
 const MAPPED_CODE = /^(?:scripts|mcp\/src|cli\/src|src|app|tests)\/(?:[\w@[\]().-]+\/)*[\w@[\]().-]+\.(?:[cm]?js|tsx?)$/;
 
+/**
+ * Trees whose modules are loaded by a computed path or spawned by file name, or which read files at
+ * run time, so no import edge names their readers. A change inside one carries nothing.
+ */
+export const RUNTIME_LOADED_TREES = Object.freeze([
+  ['mcp/', 'the server is spawned by path, loads its tools and guides at run time, and the app bundles its modules'],
+  ['cli/src/', 'commands load by a computed path (`cli-commands.mjs`) and the MCP bridge imports the server by path'],
+  ['scripts/dogfood/', 'the dogfood checks spawn the MCP server and the CLI by file name'],
+  ['scripts/vault/', 'the vault migrator imports each migration by a computed path'],
+  ['scripts/migrations/', 'migrations are loaded by the vault migrator, not imported'],
+  ['scripts/design/', 'the UI audit imports its setup module by a path given on the command line'],
+  ['scripts/quality/', 'the dead-code check imports the CLI command registry by path'],
+  ['scripts/lib/check-rules/', 'the check advisor imports every rule file found in the directory'],
+]);
+
 export function uncertainChange({ files = [], deleted = [] }) {
   if (deleted.length > 0) return `the push deletes or moves ${deleted[0]}, and a missing file's readers are not mapped`;
+  for (const path of files) {
+    const tree = RUNTIME_LOADED_TREES.find(([prefix]) => path.startsWith(prefix));
+    if (tree) return `${path} is in ${tree[0]}: ${tree[1]}`;
+  }
   const unmapped = files.find((path) => !MAPPED_CODE.test(path));
   return unmapped ? `${unmapped} is not a code module the planner maps by imports` : null;
 }

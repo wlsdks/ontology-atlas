@@ -95,6 +95,9 @@ function listed(root, directory, pattern) {
 export function laneReaders({ root = '.', mcpCommands = [] } = {}) {
   const close = (entries) => importClosure(entries, root);
   const browser = close([
+    // The app itself: every module it ships, and through them what they bundle from elsewhere.
+    ...listed(root, 'src', /^(?!.*\.(?:test|spec)\.[cm]?[jt]sx?$).*\.(?:[cm]?[jt]sx?)$/),
+    ...listed(root, 'app', /^(?!.*\.(?:test|spec)\.[cm]?[jt]sx?$).*\.(?:[cm]?[jt]sx?)$/),
     ...listed(root, 'tests/e2e', /\.(?:[cm]?[jt]s)$/),
     ...packageScriptFiles(['build', 'build:static', 'prepare'], root),
     'next.config.ts',

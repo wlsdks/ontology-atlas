@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { carryForward, readCarryProof } from './carry-forward.mjs';
+import { carryForward, laneReaders, readCarryProof } from './carry-forward.mjs';
 import { buildImpactPlan, validatePlan } from './classify-change.mjs';
 import { testedTreeMessage } from '../lib/ci/carry-forward.mjs';
 
@@ -224,4 +224,72 @@ test('no previous head, an unknown head or a non-merge checkout carries nothing 
   } finally {
     repo.cleanup();
   }
+});
+
+test('every job that owns a required context prints the carried mark for its lane', () => {
+  const workflow = (name) => readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
+  const jobs = (text) => text.split(/\n(?= {2}[a-z][\w-]*:\n)/).map((block) => ({ name: /\n {4}name: (.+)\n/.exec(block)?.[1], block }));
+  // Types · Lint · Docs is never carried; each other required context names the outputs it prints.
+  const owners = [
+    ['checks', 'Unit · Contract', ['carried_unit', 'carried_perf']],
+    ['checks', 'MCP', ['carried_mcp']],
+    ['e2e', 'Playwright (static export)', ['carried_static']],
+    ['e2e', 'Playwright (web surface)', ['carried_web']],
+    ['e2e', 'Playwright (chromium ${{ matrix.shard }}/3)', ['carried_playwright']],
+  ];
+  for (const [file, name, outputs] of owners) {
+    const job = jobs(workflow(file)).find((candidate) => candidate.name === name);
+    assert.ok(job, `${file}.yml has no job named ${name}`);
+    for (const output of outputs) assert.match(job.block, new RegExp(`outputs\\.${output} \\}\\}`), `${name} prints ${output}`);
+  }
+});
+
+test('each lane reader root is followed, so dropping any one leaves its file unread', () => {
+  const root = mkdtempSync(join(tmpdir(), 'carry-readers-'));
+  const write = (path, text = '') => { mkdirSync(dirname(join(root, path)), { recursive: true }); writeFileSync(join(root, path), text); };
+  try {
+    // Each root imports one file only it reaches.
+    write('package.json', JSON.stringify({ scripts: {
+      build: 'pnpm docs:build && node scripts/web/build.mjs', 'docs:build': 'node scripts/docs/build.mjs',
+      'build:static': 'node scripts/web/static.mjs', prepare: 'node scripts/prepare.mjs',
+      'test:mcp:unit': 'node --test scripts/lib/rpc.test.mjs',
+    } }));
+    const root_ = (from, to) => { write(from, `import './${to.split('/').pop()}';\n`); write(to); };
+    root_('src/views/page.tsx', 'src/views/from-src.mjs');
+    root_('app/layout.tsx', 'app/from-app.mjs');
+    root_('tests/e2e/flow.spec.ts', 'tests/e2e/from-e2e.ts');
+    root_('scripts/web/build.mjs', 'scripts/web/from-build.mjs');
+    root_('scripts/docs/build.mjs', 'scripts/docs/from-docs-build.mjs');
+    root_('scripts/web/static.mjs', 'scripts/web/from-static.mjs');
+    root_('scripts/prepare.mjs', 'scripts/from-prepare.mjs');
+    write('next.config.ts', "import './scripts/from-next.mjs';\n"); write('scripts/from-next.mjs');
+    write('playwright.config.ts', "import './scripts/from-playwright.mjs';\n"); write('scripts/from-playwright.mjs');
+    root_('mcp/src/tool.test.mjs', 'mcp/src/from-mcp-test.mjs');
+    root_('cli/src/command.test.mjs', 'cli/src/from-cli-test.mjs');
+    root_('mcp/src/index.js', 'mcp/src/from-server.mjs');
+    root_('cli/src/index.mjs', 'cli/src/from-cli.mjs');
+    root_('scripts/lib/rpc.test.mjs', 'scripts/lib/from-mcp-command.mjs');
+    write('docs/ontology/capabilities/x.md', '---\nkind: capability\npath: scripts/named-by-vault.mjs\n---\n');
+    root_('src/map/ratio.perf.test.ts', 'src/map/from-perf.ts');
+    write('src/views/page.test.tsx', "import '../../scripts/from-test-only.mjs';\n"); write('scripts/from-test-only.mjs');
+
+    const readers = laneReaders({ root, mcpCommands: ['pnpm test:mcp:unit'] });
+    const browser = ['src/views/from-src.mjs', 'app/from-app.mjs', 'tests/e2e/from-e2e.ts', 'scripts/web/from-build.mjs', 'scripts/docs/from-docs-build.mjs', 'scripts/web/from-static.mjs', 'scripts/from-prepare.mjs', 'scripts/from-next.mjs', 'scripts/from-playwright.mjs'];
+    for (const lane of ['playwright', 'static', 'web']) for (const path of browser) assert.ok(readers[lane].has(path), `${lane} reads ${path}`);
+    assert.ok(!readers.playwright.has('scripts/from-test-only.mjs'), 'a unit test is not the app');
+    for (const path of ['mcp/src/from-mcp-test.mjs', 'cli/src/from-cli-test.mjs', 'mcp/src/from-server.mjs', 'cli/src/from-cli.mjs', 'scripts/lib/from-mcp-command.mjs', 'scripts/named-by-vault.mjs']) {
+      assert.ok(readers.mcp.has(path), `mcp reads ${path}`);
+    }
+    assert.ok(readers.perf.has('src/map/from-perf.ts'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('reproduced: the app bundles MCP modules, and the CLI loads commands by a computed path', async () => {
+  const readers = laneReaders();
+  for (const path of ['mcp/src/library/wiki-report.mjs', 'mcp/src/parser.mjs']) assert.ok(readers.playwright.has(path), `the app bundles ${path}`);
+  const { uncertainChange } = await import('../lib/ci/carry-forward.mjs');
+  assert.match(uncertainChange({ files: ['mcp/src/library/wiki-report.mjs'] }), /^mcp\/src\/library\/wiki-report\.mjs is in mcp\//);
+  assert.match(uncertainChange({ files: ['cli/src/commands/graph-traversal/explain.mjs'] }), /computed path/);
 });

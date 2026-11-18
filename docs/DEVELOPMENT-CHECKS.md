@@ -62,10 +62,13 @@ passed on the previous head is carried forward instead of run again
 (`scripts/ci/carry-forward.mjs`). A carried lane's job skips its work and
 prints `carried from run <id> on <sha>`. Every condition must hold: the push
 adds or modifies code modules only, so a move, deletion, prose, data or
-configuration file carries nothing; no workflow file or planner module
+configuration file carries nothing, and none of them lies in a tree loaded by
+computed path or spawned by file name (`RUNTIME_LOADED_TREES` in
+`scripts/lib/ci/carry-forward.mjs`, among them `mcp/` and `cli/src/`); no workflow file or planner module
 differs from the base; the previous run tested a merge of the same base
 commit, and Git rebuilds the same tested tree; the push plans no work for the
-lane, and none of the lane's tests, commands or build imports a changed file;
+lane, and none of the lane's tests, commands, build or (for the browser) app
+modules imports a changed file;
 the lane's planned work is unchanged; and every job of the lane passed in the
 workflow run whose plan job printed the `CI tested tree` annotation, without
 having been carried itself. Types · Lint · Docs always runs, and with it

@@ -364,6 +364,7 @@ jobs:
         env:
           PLAN: ${{ needs.changes.result }}
           SHARDS: ${{ needs.suite.result }}
+          CARRIED: ${{ needs.changes.outputs.carried_playwright }}
         run: |
           if [ "$PLAN" != "success" ]; then
             echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
@@ -374,4 +375,5 @@ jobs:
             echo "::error::a Playwright (chromium) shard reported $SHARDS"
             exit 1
           fi
-          echo "all eight Playwright (chromium) shards passed"
+          # A carried lane did not run here: say where its result came from instead of "passed".
+          echo "Playwright (chromium): ${CARRIED:-all eight shards passed}"
