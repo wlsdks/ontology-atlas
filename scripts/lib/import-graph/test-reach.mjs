@@ -151,6 +151,31 @@ function typeOnlySpecifierAt(tokens, start) {
   return /^["']/.test(value() ?? '') ? i : null;
 }
 
+/**
+ * Every repository file the given files load through relative imports, themselves included.
+ * O(source bytes of the closure). A gates command whose closure enters `mcp/` needs mcp's own
+ * dependencies installed even though it never spawns the server.
+ */
+export function importClosure(files, root = process.cwd()) {
+  const isFile = (path) => statSync(join(root, path), { throwIfNoEntry: false })?.isFile() === true;
+  const reached = new Set(files.filter(isFile));
+  const queue = [...reached];
+  while (queue.length > 0) {
+    const from = queue.pop();
+    if (!CODE_FILE.test(from)) continue;
+    const source = readFileSync(join(root, from), 'utf8').replace(COMMENT_LINE, (comment) => ' '.repeat(comment.length));
+    for (const match of source.matchAll(IMPORT_SPECIFIER)) {
+      const base = specifierBase(from, match[2], []);
+      const target = base === null ? undefined : moduleCandidates(base, match[2]).find(isFile);
+      if (target && !reached.has(target)) {
+        reached.add(target);
+        queue.push(target);
+      }
+    }
+  }
+  return reached;
+}
+
 const reachByRoot = new Map();
 
 export function loadTestReach(root = process.cwd()) {
