@@ -40,11 +40,17 @@ function localeTag(locale: string): 'ko' | 'en' {
   return locale === 'ko' ? 'ko' : 'en';
 }
 
-/** AV1 webm first with an MP4 fallback: Safari's AV1 depends on hardware. */
+/**
+ * The webm's AV1 codec string (profile 0, level 5.1, Main tier, 8-bit; ffprobe `level=9`). Without
+ * it an iPhone with no AV1 decoder answers "maybe" to bare `video/webm`, picks it and shows black.
+ */
+export const DEMO_WEBM_TYPE = 'video/webm; codecs="av01.0.09M.08"';
+
+/** AV1 webm first with an MP4 fallback that every iPhone decodes. */
 export function demoSources(clip: DemoClip, locale: string): { src: string; type: string }[] {
   const base = `/demo/${clip.basename}.${localeTag(locale)}`;
   return [
-    { src: `${base}.webm`, type: 'video/webm' },
+    { src: `${base}.webm`, type: DEMO_WEBM_TYPE },
     { src: `${base}.mp4`, type: 'video/mp4' },
   ];
 }
