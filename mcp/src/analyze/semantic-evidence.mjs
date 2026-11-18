@@ -441,8 +441,12 @@ function semanticContentScore({ title, headings, excerpt }) {
 }
 
 
+const SEMANTIC_LINE_LIMIT = 2000;
+
 function extractSemanticDocument(text, source) {
-  const lines = /\.rst$/i.test(source) ? text.split(/\r\n|\r|\n/) : authoredMarkdownLines(text);
+  // A line is read up to its first 2,000 characters, so the per-line patterns below stay cheap on any file.
+  const lines = (/\.rst$/i.test(source) ? text.split(/\r\n|\r|\n/) : authoredMarkdownLines(text))
+    .map((line) => (line.length > SEMANTIC_LINE_LIMIT ? line.slice(0, SEMANTIC_LINE_LIMIT) : line));
   let title = null;
   let fence = null;
   let rstLiteralBlock = false;
@@ -502,7 +506,7 @@ function extractSemanticDocument(text, source) {
           ? markdownHeading[2]
           : htmlHeading[2])
         .replace(/<[^>]+>/g, '')
-        .replace(/\[(.*?)\]\([^)]*\)/g, '$1');
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
       const value = (markdownHeading
         ? headingValue.replace(/\s+#+\s*$/, '')
         : headingValue)
@@ -546,7 +550,7 @@ function extractSemanticDocument(text, source) {
     const cleaned = line
       .replace(/^>\s*/, '')
       .replace(/^[-*]\s+/, '')
-      .replace(/\[(.*?)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&(?:nbsp|middot|amp|lt|gt);/gi, ' ')
       .replace(/\s+/g, ' ')

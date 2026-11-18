@@ -77,9 +77,9 @@ test('every surveyed ability has a node, is named inside one, is excluded with a
   ];
   const depth = measureBuildDepth(docs, repo, null);
   const { breadth } = depth;
-  assert.deepEqual([breadth.abilities, breadth.node, breadth.named, breadth.excluded], [4, 1, 1, 1]);
-  assert.deepEqual(breadth.unplaced.map((row) => row.name), ['whisper'], 'a domain sentence does not place an ability');
-  assert.match(depth.line, /Not placed: whisper \(operation, src\/cli\.ts\)/);
+  assert.deepEqual([breadth.abilities, breadth.node, breadth.named, breadth.excluded], [4, 1, 0, 1]);
+  assert.deepEqual(breadth.unplaced.map((row) => row.name), ['canary', 'whisper'], 'a word in passing or a domain sentence does not place an ability');
+  assert.match(depth.line, /Not placed: canary \(operation, src\/cli\.ts:L9\), whisper \(operation, src\/cli\.ts:L12\)/);
   assert.match(depth.line, /add_concepts a capability for it/);
 });
 
@@ -92,8 +92,10 @@ test('a plugin is named by its package folder as well as its class', (t) => {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const repo = repositorySurvey(root, join(root, 'atlas'));
   assert.deepEqual(repo.survey.abilities.map((row) => row.name), ['AllContributorsPlugin']);
-  const docs = [doc('capabilities/thank-contributors', { path: 'src/other.ts' }, 'Thanks contributors.\n\n## Includes\n- The all-contributors plugin.\n')];
-  assert.equal(measureBuildDepth(docs, repo, null).breadth.named, 1);
+  const named = (title, body) => measureBuildDepth([doc('capabilities/thank-contributors', { path: 'src/other.ts', title }, `${body}\n`)], repo, null).breadth.named;
+  assert.equal(named('Thank contributors', 'Thanks contributors.\n\n## Includes\n- The all-contributors plugin.'), 0, 'prose in a body does not place it');
+  assert.equal(named('All-contributors plugin', 'Thanks contributors.'), 1, 'the title names it by its package folder');
+  assert.equal(named('Thank contributors', 'Thanks contributors through `all-contributors`.'), 1, 'code form names it by its package folder');
 });
 
 /*
@@ -418,4 +420,98 @@ test('a same-size edit with its mtime restored withdraws the read, and a linked 
     rmSync(linked, { force: true });
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+/*
+ * The survey's list is a floor: an exclusion has to say why, a line about a file
+ * shared by many abilities excludes none of them, a one-word flag is named only in
+ * code form, and finalize names every ability it holds the map to.
+ */
+const FLAGGED = {
+  'package.json': JSON.stringify({ name: 'tool', bin: { tool: 'src/cli.ts' } }),
+  'src/cli.ts': [
+    "import { Command } from 'commander';",
+    'const program = new Command();',
+    "program.option('--force');",
+    "program.option('--metrics-port <port>');",
+    "program.option('--metrics-host <host>');",
+    "program.option('--cache-dir <dir>');",
+    "program.option('--cache-size <n>');",
+    '',
+  ].join('\n'),
+  'src/sync.ts': 'export function startSync() {\n  setInterval(() => 1, 1000);\n}\n',
+};
+
+test('an exclusion names the ability and says why; listing names is not a reason', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const project = (line) => doc('project', {}, `Ships releases.\n\n## Uncertainty\n${line}\n`);
+  const place = (line) => measureBuildDepth([project(line)], repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(place('- Not modeled: startSync.').includes('startSync'));
+  assert.ok(!place('- startSync only refreshes a cache the release never reads.').includes('startSync'));
+});
+
+test('one line about a shared file excludes none of the abilities in it', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const docs = [doc('project', {}, 'Ships releases.\n\n## Uncertainty\n- The options in src/cli.ts were outlined and not modeled as abilities.\n')];
+  const unplaced = measureBuildDepth(docs, repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(unplaced.includes('--force') && unplaced.includes('--metrics-*'), unplaced.join(', '));
+});
+
+test('one line that points at two abilities excludes neither; each needs a line of its own', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const cite = (name) => repo.survey.abilities.find((row) => row.name === name).evidence;
+  const project = (lines) => doc('project', {}, `Ships releases.\n\n## Uncertainty\n${lines}\n`);
+  const unplaced = (lines) => measureBuildDepth([project(lines)], repo, null).breadth.unplaced.map((row) => row.name);
+  const reason = 'only serves the release script, never a person';
+  const cited = unplaced(`- ${cite('startSync')} and ${cite('--force')} ${reason}.`);
+  assert.ok(cited.includes('startSync') && cited.includes('--force'), cited.join(', '));
+  const named = unplaced(`- \`startSync\` and \`--force\` ${reason}.`);
+  assert.ok(named.includes('startSync') && named.includes('--force'), named.join(', '));
+  const apart = unplaced(`- ${cite('startSync')} ${reason}.\n- \`--force\` ${reason}.`);
+  assert.ok(!apart.includes('startSync') && !apart.includes('--force'), apart.join(', '));
+});
+
+test('a one-word flag is named in code form, and a prefix group by half its flags', (t) => {
+  const root = repository(FLAGGED);
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  const node = (body) => doc('capabilities/run-the-tool', { path: 'src/other.ts' }, `${body}\n`);
+  const unplaced = (body) => measureBuildDepth([node(body)], repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(unplaced('Runs by force of habit and reports metrics.').includes('--force'), 'an English word is not the flag');
+  assert.ok(unplaced('Runs by force of habit and reports metrics.').includes('--metrics-*'), 'a prefix is not a name');
+  const named = unplaced('Runs with `--force`; `--metrics-port` sets the port.');
+  assert.ok(!named.includes('--force') && !named.includes('--metrics-*'), named.join(', '));
+});
+
+test('finalize names every unplaced ability, none cut', () => {
+  const unplaced = Array.from({ length: 20 }, (_, index) => ({ kind: 'setting', name: `Feature${index}`, path: 'config.go', evidence: `config.go:L${index + 1}` }));
+  const [reason] = competencyDepthRefusals([{ id: 'abilities', status: 'answered' }], {
+    capabilities: 0, dependsOn: 0, reads: null, rules: null, abilityEdges: null,
+    breadth: { abilities: 20, node: 0, named: 0, excluded: 0, unplaced },
+  });
+  assert.match(reason, /Feature19 \(setting, config\.go:L20\)/);
+  assert.doesNotMatch(reason, /and \d+ more/);
+  assert.match(reason, /with one line for it alone that cites its path:Lline or exact name and says why/);
+});
+
+test('an exclusion that cites the survey row\'s own line excludes a row whose name is a common word', (t) => {
+  const root = repository({
+    'go.mod': 'module x\n',
+    'cmd/x/main.go': 'package main\n\nfunc main() {}\n',
+    'config/config.go': 'package config\n\ntype Config struct {\n\tApp node.Config\n\tPublicMode bool\n}\n',
+  });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  assert.equal(repo.survey.abilities.find((row) => row.name === 'App').evidence, 'config/config.go:L4');
+  const project = (line) => [doc('project', {}, `Runs a server.\n\n## Uncertainty\n${line}\n`)];
+  const unplaced = (line) => measureBuildDepth(project(line), repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(unplaced('- The app settings group is not an ability of its own.').includes('App'));
+  assert.ok(!unplaced('- The App setting (config/config.go:L4) is not an ability; it groups node settings.').includes('App'));
+  assert.ok(unplaced('- The App setting (config/config.go:L41) is not an ability; it groups node settings.').includes('App'), 'another line is another row');
 });
