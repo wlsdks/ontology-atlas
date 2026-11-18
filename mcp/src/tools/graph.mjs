@@ -87,7 +87,7 @@ function compileOntologyTool({
     || includeIndexes === true
     || [nodesLimit, nodesOffset, edgesLimit, edgesOffset].some((value) => value !== undefined);
   const summaryOnly = summary === true || !asksForArrays;
-  const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({
     includeIndexes: includeIndexes === true,
     summary: summaryOnly,
     nodesLimit: typeof nodesLimit === 'number' ? nodesLimit : undefined,
