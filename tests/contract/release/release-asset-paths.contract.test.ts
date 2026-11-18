@@ -33,7 +33,7 @@ import {
 const WORKFLOW_PATH = ".github/workflows/release-macos.yml";
 const workflow = readFileSync(WORKFLOW_PATH, "utf-8");
 
-const buildJob = section(workflow, "  sign-macos:", "  stage-macos:");
+const buildJob = section(workflow, "  build-macos:", "  stage-macos:");
 const stageJob = section(workflow, "  stage-macos:", "  publish-macos:");
 const publishJob = section(workflow, "  publish-macos:", null);
 
@@ -136,7 +136,7 @@ describe("release asset path contract", () => {
     // `macos/` level, and the downloading side had no way to know that depth.
     const upload = step(buildJob, "Upload workflow artifact");
     expect(yamlValues(upload, "path")).toEqual(["release-upload"]);
-    expect(yamlValues(upload, "name")).toEqual(["ontology-atlas-macos-aarch64"]);
+    expect(yamlValues(upload, "name")).toEqual(["ontology-atlas-macos-${{ matrix.arch }}"]);
     expect(buildJob).toContain("node scripts/download/stage-macos-release-assets.mjs");
   });
 
