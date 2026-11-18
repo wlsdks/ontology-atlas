@@ -1,0 +1,9 @@
+# Supply-chain settings. SECURITY.md explains each one and how an urgent
+# security bump bypasses the cool-down.
+#
+# Refuse a version published less than seven days (10,080 minutes) ago.
+minimumReleaseAge: 10080
+# Refuse a version whose publish provenance is weaker than an earlier one's.
+trustPolicy: no-downgrade
+# A transitive dependency may come only from the registry, not Git or a URL.
+blockExoticSubdeps: true

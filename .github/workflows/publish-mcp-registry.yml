@@ -86,7 +86,7 @@ jobs:
         if: steps.release.outputs.skip != 'true'
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
 
       - name: Install dependencies
         if: steps.release.outputs.skip != 'true'

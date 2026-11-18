@@ -55,7 +55,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       # The app and the bundled MCP server have separate lockfiles. A registry timeout
