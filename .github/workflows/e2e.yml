@@ -37,10 +37,11 @@ on:
 permissions:
   contents: read
 
-# A push to main is not cancelled by the next one: the full run must finish to be read. GitHub keeps
-# at most one waiting run per group, so a burst of merges still tests only the newest tree.
+# Every push to main gets a group of its own, so each merge's full run runs and is never cancelled:
+# GitHub keeps one waiting run per group, and a shared group let a third merge replace the second's
+# pending run. Pull requests and trains keep one group per ref and cancel the superseded run.
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('full{0}', inputs.plan_from) || 'change' }}
+  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('full{0}', inputs.plan_from) || github.event_name == 'push' && format('push-{0}', github.sha) || 'change' }}
   cancel-in-progress: ${{ github.event_name != 'push' }}
 
 env:

@@ -476,7 +476,9 @@ test('both workflows retain exhaustive triggers isolated from ordinary push canc
     assert.match(group, /github\.event_name == 'schedule'/);
     assert.match(group, /github\.event_name == 'workflow_dispatch'/);
     // A rehearsal that plans from a named base gets its own group, so it never cancels the full run.
-    assert.match(group, name === 'e2e' ? /format\('full\{0\}', inputs\.plan_from\) \|\| 'change'/ : /'full' \|\| 'change'/);
+    assert.match(group, name === 'e2e'
+      ? /format\('full\{0\}', inputs\.plan_from\) \|\| github\.event_name == 'push' && format\('push-\{0\}', github\.sha\) \|\| 'change'/
+      : /'full' \|\| 'change'/);
   }
 });
 

@@ -221,6 +221,12 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
         expect(text, "e2e.yml must cancel everything but a push to main").toContain(
           "cancel-in-progress: ${{ github.event_name != 'push' }}",
         );
+        // One pending run per group: a shared push group lets a third merge replace the second's
+        // waiting full run, so that merge is never tested. Each push needs a group of its own.
+        const group = text.split("\n").find((line) => line.startsWith("  group:")) ?? "";
+        expect(group, "each push to main must get its own concurrency group").toContain(
+          "github.event_name == 'push' && format('push-{0}', github.sha)",
+        );
         continue;
       }
       expect(text, `${file} does not cancel a superseded run`).toContain("cancel-in-progress: true");
