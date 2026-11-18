@@ -27,6 +27,9 @@
  *   node scripts/web/serve-static-export.mjs --port=3198 &
  *   pnpm gateway:capture -- --base-url=http://127.0.0.1:3198 [--only=library,git] [--locales=ko,en] [--out=public/gateway]
  *
+ * `--only=harness-film` shoots the download page's harness film stills instead
+ * (`harness-film-still.mjs`), in ko, en, ja and zh; it needs no bridge.
+ *
  * Re-shoot after any change to one of the six screens; inspect every picture before committing.
  */
 import { execFileSync } from "node:child_process";
@@ -37,6 +40,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
 
+import { captureHarnessFilm } from "./harness-film-still.mjs";
 import { MAP_SCREEN, NEURAL_SCREEN } from "./map-screen.mjs";
 import { readPlanningFile, walkPlanningFolder } from "./planning-inventory.mjs";
 
@@ -771,12 +775,23 @@ async function installRuntime(context, bridge) {
 const LOCALES = args.locales ? args.locales.split(",") : ["ko", "en"];
 const BROWSER_LOCALE = { ko: "ko-KR", en: "en-US" };
 
+/** The harness film's stills are shot from the download page itself, in every page language. */
+const FILM_LOCALES = args.locales ? args.locales.split(",") : ["ko", "en", "ja", "zh"];
+
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
   const unstubbed = new Set();
   const browser = await chromium.launch();
 
-  for (const locale of LOCALES) {
+  if (ONLY?.has("harness-film")) {
+    for (const locale of FILM_LOCALES) {
+      for (const file of await captureHarnessFilm(browser, { baseUrl: BASE_URL, locale, outDir: OUT_DIR })) {
+        console.log(`captured ${path.relative(REPO, file)}`);
+      }
+    }
+  }
+
+  for (const locale of ONLY && [...ONLY].every((name) => name === "harness-film") ? [] : LOCALES) {
     // A fresh context per locale: its own storage, its own overlay, its own opened folder.
     const context = await browser.newContext({
       viewport: VIEWPORT,

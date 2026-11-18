@@ -171,37 +171,6 @@
         "caption": "The Harness tab. Read-only.",
         "body": "A skill or subagent whose Claude Code and Codex copies differ is tagged, and both copies are shown side by side. Atlas only reads the repository."
       }
-    },
-    "screen": {
-      "title": "Harness",
-      "views": {
-        "overview": "Setup",
-        "architecture": "Architecture"
-      },
-      "toolAll": "All",
-      "sections": {
-        "context": {
-          "title": "Context",
-          "caption": "Files the agent reads"
-        },
-        "guardrails": {
-          "title": "Guardrails",
-          "caption": "What stops an action before it runs"
-        },
-        "verification": {
-          "title": "Verification",
-          "caption": "What checks the work afterwards"
-        }
-      },
-      "sectionTotal": "{count, plural, one {# item} other {# items}}",
-      "problemCount": "{count, plural, one {# problem} other {# problems}}",
-      "problemHookMissing": "Hook script is missing: {path}",
-      "problemShow": "{count, plural, =1 {Show} other {Show the first}}",
-      "hookMissing": "Script missing",
-      "hookWired": "Wired",
-      "differsFromCodex": "Differs from Codex copy",
-      "differsFromClaude": "Differs from Claude Code copy",
-      "detailReadBy": "Read by"
     }
   },
   "motion": {

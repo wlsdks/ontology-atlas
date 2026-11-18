@@ -27,6 +27,7 @@ function LegacyFile({
   other,
   tool,
   otherTool,
+  showVendorMark,
   t,
 }: {
   path: string;
@@ -34,6 +35,7 @@ function LegacyFile({
   other: ReadonlySet<string> | null;
   tool: AgentClientId | null;
   otherTool: AgentClientId | null;
+  showVendorMark: boolean;
   t: TranslateFn;
 }) {
   const lacking = other ? lines.filter((line) => !other.has(line)).length : 0;
@@ -50,6 +52,7 @@ function LegacyFile({
           }
           stacked={false}
           pinned={false}
+          showVendorMark={showVendorMark}
         />
       ) : (
         <p className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]" title={path}>
@@ -130,12 +133,14 @@ function SideHeader({
   label,
   stacked,
   pinned,
+  showVendorMark,
 }: {
   tool: AgentClientId;
   path: string;
   label: string;
   stacked: boolean;
   pinned: boolean;
+  showVendorMark: boolean;
 }) {
   const client = AGENT_CLIENTS.find((entry) => entry.id === tool);
   return (
@@ -146,7 +151,7 @@ function SideHeader({
         pinned && '@min-[40rem]/guide-detail:sticky @min-[40rem]/guide-detail:top-0 @min-[40rem]/guide-detail:z-10',
       )}
     >
-      <VendorMark src={client?.icon ?? null} ink={client?.brandInk ?? null} />
+      {showVendorMark ? <VendorMark src={client?.icon ?? null} ink={client?.brandInk ?? null} /> : null}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -166,11 +171,13 @@ function AlignedDiff({
   paths,
   rows,
   current,
+  showVendorMarks,
   t,
 }: {
   paths: readonly [string, string];
   rows: readonly AlignedRow[];
   current: boolean;
+  showVendorMarks: boolean;
   t: TranslateFn;
 }) {
   const sides = [
@@ -203,6 +210,7 @@ function AlignedDiff({
               label={count > 0 ? t('driftSideMarked', { count, other }) : t('driftSideShared', { other })}
               stacked={index === 1}
               pinned
+              showVendorMark={showVendorMarks}
             />
             {rows.map((row, at) => (
               <Cell key={at} line={side.cells[at]!} marked={marked[at]!} divided={index === 1} />
@@ -214,15 +222,21 @@ function AlignedDiff({
   );
 }
 
+/**
+ * `showVendorMarks={false}` keeps the tool names and leaves out each tool's logo, for a copy of the
+ * screen shown outside the app, where third-party logos need their owners' permission.
+ */
 export function HarnessDriftDiff({
   paths,
   texts,
   current,
+  showVendorMarks = true,
   t,
 }: {
   paths: readonly string[];
   texts: readonly string[];
   current: boolean;
+  showVendorMarks?: boolean;
   t: TranslateFn;
 }) {
   const twin = paths.length === 2;
@@ -238,7 +252,7 @@ export function HarnessDriftDiff({
     return (
       <>
         <Caption>{caption}</Caption>
-        <AlignedDiff paths={[paths[0]!, paths[1]!]} rows={aligned} current={current} t={t} />
+        <AlignedDiff paths={[paths[0]!, paths[1]!]} rows={aligned} current={current} showVendorMarks={showVendorMarks} t={t} />
       </>
     );
   }
@@ -260,6 +274,7 @@ export function HarnessDriftDiff({
             other={sets ? sets[1 - side]! : null}
             tool={twin ? tools[side]! : null}
             otherTool={twin ? tools[1 - side]! : null}
+            showVendorMark={showVendorMarks}
             t={t}
           />
         ))}
