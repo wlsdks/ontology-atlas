@@ -48,10 +48,10 @@ describe('HarnessFilm', () => {
     for (const [, body] of acts) expect(body?.length).toBeGreaterThan(60);
   });
 
-  it('under reduced motion shows the window picture, and narrower than 768px the detail picture, above the same list', async () => {
+  it('under reduced motion shows the window picture, and narrower than 768px the third close-up, above the same list', async () => {
     for (const [queries, file] of [
       [{ 'prefers-reduced-motion': true, 'min-width': true }, '/gateway/harness-film.en.png'],
-      [{ 'prefers-reduced-motion': false, 'min-width': false }, '/gateway/harness-film-detail.en.png'],
+      [{ 'prefers-reduced-motion': true, 'min-width': false }, '/gateway/harness-film-phone-3.en.png'],
     ] as const) {
       vi.stubGlobal('matchMedia', mediaMatching(queries));
       const { unmount } = renderFilm();
@@ -65,6 +65,19 @@ describe('HarnessFilm', () => {
       expect(within(region).getAllByRole('heading', { level: 3 })).toHaveLength(4);
       unmount();
     }
+  });
+
+  it('on a phone with motion plays one close-up per act, in act order, under one caption at a time', async () => {
+    vi.stubGlobal('matchMedia', mediaMatching({ 'prefers-reduced-motion': false, 'min-width': false }));
+    renderFilm();
+    await frame();
+    const region = screen.getByRole('region', { name: LABEL });
+    expect(region).toHaveAttribute('data-gateway-harness', 'phone');
+    const shots = [...region.querySelectorAll('[data-harness-film-phone] img')];
+    expect(shots.map((shot) => /harness-film-phone-(\d)\.en\.png/.exec(shot.getAttribute('src') ?? '')?.[1])).toEqual(['1', '2', '3', '4']);
+    for (const shot of shots) expect(shot).toHaveAttribute('alt', '');
+    expect(region.querySelectorAll('li')).toHaveLength(4);
+    expect(within(region).getByRole('navigation')).toBeInTheDocument();
   });
 
   it('plays on a wide screen with motion, naming its example repository beside the title', async () => {
