@@ -120,7 +120,11 @@ fn status_of(root: Option<&Path>, enabled: bool) -> VaultIndexStatus {
     let size_bytes = vault_index::stored_bytes(Some(root)).unwrap_or(0);
     let state = if !enabled {
         IndexState::Off
-    } else if entry.progress.is_building() || entry.running.load(Ordering::Relaxed) {
+    } else if (entry.progress.is_building() || entry.running.load(Ordering::Relaxed))
+        && (size_bytes == 0 || entry.progress.indexed() < entry.progress.total())
+    {
+        // A stamp pass over an index that is already complete stays quiet; only files still
+        // waiting to be indexed make the palette say it is indexing.
         IndexState::Building
     } else if entry.paused.load(Ordering::Relaxed) {
         IndexState::Paused
