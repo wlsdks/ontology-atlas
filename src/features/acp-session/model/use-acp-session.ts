@@ -326,7 +326,7 @@ const VAULT_MCP_SENTENCE =
  * the outline and the writes (decision 0f78a22b).
  */
 const VAULT_CONSTRUCTION_SENTENCE =
-  'When the person asks you to build or rebuild this repository\'s map, follow the construction card that `connection_info` returns: cover the whole product in outline before reading any part in depth, tell them the outline in short plain sentences, then write everything in the same run, then `validate_vault`, `connect_project_source`, `finalize_project_meaning`. If you ask a question, say the default you will take and continue with it; record it under `## Uncertainty` as your choice, not theirs. When a warning names a one-call repair, make it; otherwise say why you left it.';
+  'When the person asks you to build or rebuild this repository\'s map, follow the construction card that `connection_info` returns: cover the whole product in outline, then read the entry function of every must-have ability with line ranges before writing its node, tell them the outline in short plain sentences, then write everything in the same run, then `validate_vault`, `connect_project_source`, `finalize_project_meaning`. If you ask a question, say the default you will take and continue with it; record it under `## Uncertainty` as your choice, not theirs. When a warning names a one-call repair, make it; otherwise say why you left it.';
 
 function vaultHandoffPrompt(hasVaultMcp: boolean, locale: string): string {
   const rules = hasVaultMcp

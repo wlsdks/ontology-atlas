@@ -84,7 +84,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
       qualification: {
         ...CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
         description:
-          'Optional independent evaluation and declared human acceptance bound to the exact planDigest, planRevision, and sourceDigest returned for this proposal. Omit it on the first review call.',
+          'Optional independent evaluation and declared human acceptance bound to the exact planDigest, planRevision, and sourceDigest returned for this proposal. The evaluator must be distinct from the builder (maker-independence) and must run the source-hidden task. Omit it on the first review call.',
       },
     },
     additionalProperties: false,
