@@ -477,6 +477,24 @@ describe('checks main does not require', () => {
     }
   });
 
+  it('ignores a cancelled job whose workflow ran again on the same head, even under a name the rerun never reports', () => {
+    const job = (name, run, conclusion) => ({
+      name, status: 'COMPLETED', conclusion, workflowName: 'E2E smoke',
+      detailsUrl: `https://github.com/wlsdks/ontology-atlas/actions/runs/${run}/job/1`,
+    });
+    const rollup = [
+      ...REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
+      job('Playwright (chromium ${{ matrix.shard }}/3)', 44345450845, 'CANCELLED'),
+      job('Playwright (web surface)', 44345450845, 'CANCELLED'),
+      job('Playwright (web surface)', 44345543916, 'SUCCESS'),
+    ];
+    assert.equal(otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).state, 'clear');
+    const unreplaced = rollup.filter((check) => !String(check.detailsUrl).includes('44345543916'));
+    assert.equal(otherCheckState({ rollup: unreplaced, requiredContexts: REQUIRED_CONTEXTS }).state, 'failed');
+    const failedNotCancelled = [...rollup, job('Old red lane', 44345450845, 'FAILURE')];
+    assert.deepEqual(otherCheckState({ rollup: failedNotCancelled, requiredContexts: REQUIRED_CONTEXTS }).failed.map((c) => c.name), ['Old red lane']);
+  });
+
   it('treats a skipped or still-running unrequired lane as no failure', () => {
     const rollup = [
       ...REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
