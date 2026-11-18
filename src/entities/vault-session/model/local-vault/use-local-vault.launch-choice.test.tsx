@@ -46,6 +46,8 @@ vi.mock('@/entities/local-fs-handle', () => ({
   ...store,
 }));
 vi.mock('@/entities/docs-vault', () => docsVault);
+const forgetVaultIndex = vi.hoisted(() => vi.fn(async (_rootPath: string) => {}));
+vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({ forgetVaultIndex }));
 
 import { useLocalVaultInternal } from './use-local-vault';
 
@@ -301,6 +303,15 @@ describe('obsolete vault reads', () => {
 
 afterEach(() => {
   vi.clearAllMocks();
+});
+
+describe('taking a folder off the list', () => {
+  it("deletes that folder's search index with it", async () => {
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.status).not.toBe('restoring'));
+    await act(() => hook.result.current.forgetRecent([record('old-notes'), record('archive')]));
+    expect(forgetVaultIndex.mock.calls).toEqual([['/Users/dana/vaults/old-notes'], ['/Users/dana/vaults/archive']]);
+  });
 });
 
 describe('useLocalVaultInternal launch path', () => {

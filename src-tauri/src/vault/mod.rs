@@ -1,4 +1,5 @@
 pub(crate) mod create;
+pub(crate) mod index;
 pub(crate) mod library_collections;
 pub(crate) mod location;
 pub(crate) mod read;
