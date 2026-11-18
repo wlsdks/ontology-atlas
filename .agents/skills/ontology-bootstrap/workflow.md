@@ -30,8 +30,11 @@ for a rebuild. A vault with 20 or more curated nodes goes to `ontology-sync`.
 breadth map: size, every product unit with its main files, exports, imports and
 importers, the entry points, the abilities to place and the documents. An
 ability is an entry point, an operation a dispatcher routes by name
-(`case "whisper":`), or a library export; five or more exports declared one per
-file in one folder are one family.
+(`case "whisper":`), a subcommand, a flag group or behaviour flag, a setting a
+configuration type turns on, a background worker, a library export, or a
+feature a README or docs heading names that the code names too, each with its
+`path:Lline`. Five or more exports declared one per file in one folder are one
+family; three or more from one module are one api row.
 
 ## 2. Breadth (2 to 5 calls)
 
@@ -40,10 +43,13 @@ Outline the main file of every product unit with `sourceReads` mode
 the unit's document heading is enough to name a capability and its entry
 symbol; it is not enough to say how it works.
 
-Breadth is a floor, not a count: every ability the survey lists ends up as its
-own capability, named inside the capability or element that covers it (a family
-by at least half its members), or excluded with a reason in the project's
-`## Uncertainty`. A word in a domain sentence does not place an ability.
+Breadth is a floor, not a count: list every ability the product gives a user,
+an operator or another system from the outlines and docs, and every ability the
+survey lists is on that list. Each ends up as its own capability, named inside
+the capability or element that covers it (a family or group by at least half
+its members), or excluded in the project's `## Uncertainty` by a line that says
+why. A word in a domain sentence does not place an ability, and a line that only
+lists names or a shared file excludes nothing.
 
 ## 3. Write down the product outline
 

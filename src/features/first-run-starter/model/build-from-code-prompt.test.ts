@@ -21,7 +21,8 @@ describe('build-from-code prompt', () => {
 
   it('places every ability before reading any in depth', () => {
     expect(flat).toContain('outline the main file of every unit it lists');
-    expect(flat).toContain('Every ability it lists ends up as its own capability, named inside the node that covers it, or excluded with a reason');
+    expect(flat).toContain('list every ability this product gives a user, an operator or another system');
+    expect(flat).toContain('The abilities the survey lists are the floor under that list, not all of it: each ends up as its own capability, named inside the node that covers it, or excluded with a reason');
     expect(flat).toContain('cut depth on the abilities beyond the must-have set, never breadth');
   });
 

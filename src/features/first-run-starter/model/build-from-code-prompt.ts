@@ -2,7 +2,10 @@
  * The first turn the 「make a map from my code」 door sends. A sentence, not a call: the app never
  * calls MCP, and analysing the repository here would be a second `analyze_repo_structure`, which
  * `AGENTS.md` forbids.
- * - Breadth comes before depth, in one run: every ability the survey lists is placed (its own
+ * - Breadth comes before depth, in one run. The agent lists every ability from the outlines and
+ *   docs, and the survey's list is a floor under it, not the inventory: when the prompt said only
+ *   "every ability it lists", a go build kept the 14 listed and dropped every operator feature
+ *   (trial 2, stage D). Each is placed (its own
  *   capability, named in the node that covers it, or excluded with a reason); then each capability
  *   is read by symbol. Asking agents to follow callees did not work (2 of 62 reads did), so the
  *   symbol read returns the callers' guards, constructor defaults and deciding callees itself, and
@@ -28,10 +31,12 @@ export function buildFromCodePrompt(
     '',
     'I want the whole product on the map first, then how each part works. Work in this order, in one go:',
     '1. Breadth. Call `analyze_repo_structure` once and skip the vault folder. Then outline the main',
-    '   file of every unit it lists, up to sixteen files per call. Every ability it lists ends up as its',
-    '   own capability, named inside the node that covers it, or excluded with a reason in the',
-    '   project\'s Uncertainty: one capability per thing the user gets, and a family of siblings',
-    '   (plugins, adapters, transforms) as one capability with its members named.',
+    '   file of every unit it lists, up to sixteen files per call. From the outlines and the docs, list',
+    '   every ability this product gives a user, an operator or another system. The abilities the',
+    '   survey lists are the floor under that list, not all of it: each ends up as its own capability,',
+    '   named inside the node that covers it, or excluded with a reason in the project\'s Uncertainty.',
+    '   One capability per thing a user or operator gets, and a family of siblings (plugins, adapters,',
+    '   transforms) or a group of flags as one capability with its members named.',
     '2. Depth. Read every capability by symbol (`analyze_repo_structure` sourceReads with `symbol`,',
     '   three or four per call). Each read returns the body with the code that decides it: the guard',
     '   around each call in its callers, the constructor\'s defaults and the callees that decide it, each',
