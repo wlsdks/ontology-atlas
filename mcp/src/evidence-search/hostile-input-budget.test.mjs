@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { zipFile } from '../../../tests/fixtures/source-passage-cases.mjs';
+import { authoredMarkdownLines } from '../analyze/authored-markdown.mjs';
 import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
@@ -13,6 +14,9 @@ import { readSourceText } from '../library/source-text.mjs';
 const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
 const BUDGET_MS = 200;
+// Measured 2026-11-19: each Markdown case takes at most 16 ms; micromark 2.1.0
+// took 0.2 to 4.2 s on the same inputs.
+const MARKDOWN_BUDGET_MS = 100;
 const scratchRoots = [];
 
 after(() => {
@@ -33,21 +37,21 @@ function linesOf(line) {
   return Array.from({ length: Math.floor(FILE_BYTES / (line.length + 1)) }, () => line).join('\n');
 }
 
-function fastestRunMs(run) {
+function fastestRunMs(run, budgetMs) {
   let fastest = Infinity;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const started = performance.now();
     run();
     fastest = Math.min(fastest, performance.now() - started);
-    if (fastest < BUDGET_MS || fastest > BUDGET_MS * 10) break;
+    if (fastest < budgetMs || fastest > budgetMs * 10) break;
   }
   return fastest;
 }
 
-function assertWithinBudget(t, name, run) {
-  const elapsed = fastestRunMs(run);
+function assertWithinBudget(t, name, run, budgetMs = BUDGET_MS) {
+  const elapsed = fastestRunMs(run, budgetMs);
   t.diagnostic(`${name}: ${elapsed.toFixed(1)} ms`);
-  assert.ok(elapsed < BUDGET_MS, `${name} took ${elapsed.toFixed(0)} ms, over the ${BUDGET_MS} ms budget`);
+  assert.ok(elapsed < budgetMs, `${name} took ${elapsed.toFixed(0)} ms, over the ${budgetMs} ms budget`);
 }
 
 describe('hostile source text costs time linear in its size', () => {
@@ -97,6 +101,24 @@ describe('hostile source text costs time linear in its size', () => {
         repoRoot: repo,
         resolveTargetPath: () => 'src/target.rs',
       }));
+    }
+  });
+});
+
+describe('hostile Markdown costs the survey time linear in its size', () => {
+  it('reads the authored lines of each hostile Markdown shape within the budget', (t) => {
+    const cases = [
+      ['unclosed links', `${'[a]( '.repeat(399)}\n`.repeat(60)],
+      ['brackets nested 15,000 deep', `${'['.repeat(15_000)}a${']'.repeat(15_000)}`],
+      ['emphasis delimiters that never match', '*a_ '.repeat(8_000)],
+      ['block quotes nested 25,000 deep', `${'> '.repeat(25_000)}x`],
+      ['backtick runs of every length to 500', Array.from({ length: 500 }, (_, index) => `e${'`'.repeat(index + 1)}`).join('')],
+      ['10,000 link definitions then a reference', `${Array.from({ length: 10_000 }, (_, index) => `[${index}]: u\n`).join('')}[0]`],
+    ];
+    for (const [name, text] of cases) {
+      let lines = [];
+      assertWithinBudget(t, name, () => { lines = authoredMarkdownLines(text); }, MARKDOWN_BUDGET_MS);
+      assert.equal(lines.length, text.split('\n').length, `${name} must keep one entry per line`);
     }
   });
 });
