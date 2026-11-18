@@ -125,8 +125,10 @@ test("the app bundle step packages the export the smoke checked instead of build
   assert.ok(scripts.indexOf("build") < scripts.indexOf("desktop:smoke"));
   assert.ok(scripts.indexOf("desktop:smoke") < scripts.indexOf("desktop:build:app:prebuilt"));
 
-  assert.equal(conf.build.beforeBuildCommand, "pnpm build", "a bare tauri build still builds its own export");
-  const override = ` --config '${JSON.stringify({ build: { beforeBuildCommand: "" } })}'`;
+  const stage = "node scripts/desktop/stage-desktop-frontend.mjs";
+  assert.equal(conf.build.beforeBuildCommand, `pnpm build && ${stage}`, "a bare tauri build still builds its own export");
+  // The prebuilt step skips the second export but still stages the desktop copy of the smoked one.
+  const override = ` --config '${JSON.stringify({ build: { beforeBuildCommand: stage } })}'`;
   assert.equal(pkg.scripts["desktop:build:app:prebuilt"], `${pkg.scripts["desktop:build:app"]}${override}`);
 
   const rehearsed = pkg.scripts["desktop:release-artifact:unsigned"].split(" && ");

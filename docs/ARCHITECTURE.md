@@ -225,8 +225,17 @@ Decided 2026-07-27 (`docs/DECISIONS.md`); the working rule agents load is
 `.claude/rules/surfaces.md`.
 
 **One codebase, one build.** The macOS app is not a port. Tauri loads the very
-same static export into a WebView (`src-tauri/tauri.conf.json` →
-`frontendDist: "../out"`). Nothing is forked, and nothing should be.
+same static export into a WebView. Nothing is forked, and nothing should be.
+The macOS and Windows bundles leave out only what the website alone serves:
+`scripts/desktop/stage-desktop-frontend.mjs` copies `out/` to
+`src-tauri/target/desktop-frontend` (`frontendDist`) without `/download`, the
+sample `/project/<slug>` pages, the gateway's videos and screenshots, Open Graph
+images, `llms*.txt`, the sitemap and `robots.txt`. Tauri compiles that folder
+into the executable, and the updater ships the executable whole, so each of
+those megabytes was paid on every install and update. A path the copy lacks is
+answered with the root `index.html`, which sends the window to the map;
+`desktop-frontend-paths.contract.test.ts` holds every route in the list below
+to the copy unless the app has no way to it.
 The macOS shell also owns one Rust-native, state-free menu-bar item that opens
 the existing main window or quits. It creates no second window, background
 service, webview tray permission, or web equivalent.
@@ -774,6 +783,9 @@ until a local manifest, or the first part of one, exists.
                            competing for one 280px column. With no folder open it is one
                            centred stage naming the two kinds of file and offering the
                            picker
+/automations               schedules for agent work and the results of their runs
+/changes                   what was merged in the connected source repository, and which few
+                           changes deserve a person's own eyes
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor
