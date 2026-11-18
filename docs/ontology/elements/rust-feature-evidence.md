@@ -6,7 +6,7 @@ title: Rust feature configuration evidence
 display_en: Rust feature configuration evidence
 display_ko: Rust 기능 설정 근거
 domain: domains/code-evidence
-path: mcp/src/rust-feature-evidence.mjs
+path: mcp/src/rust-feature-evidence/collect.mjs
 created_by: "agent:claude-code"
 ---
 

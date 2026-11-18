@@ -21,4 +21,4 @@ States in one place whether a concept still stands on the code it cites, so the 
 - Deciding what to do about a stale verdict.
 
 ## Uncertainty
-- Read from the module header, which records the day the two implementations disagreed about a concept citing both a missing path and an unreached one. The mirrored copy at `src/shared/lib/git/evidence-verdict.mjs` was seen in the file list but not opened.
+- Read `judgeEvidence` in `mcp/src/drift/evidence-verdict.mjs` end to end on 2026-11-19: a gone path wins over a moved file, which wins over an unwalked path, an undated one and a folder-only change, in that order. The app copy at `src/shared/lib/git/evidence-verdict.mjs` is a three-line re-export of this module, so there is one implementation, and `tests/contract/analysis/evidence-drift-parity.contract.test.ts` passed that day. The verdict was not run against this vault's own Git history.

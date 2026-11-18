@@ -241,19 +241,19 @@ test.describe("the Library on its first day, with no agent", () => {
     await expect(matches).toHaveAttribute("data-phase", "ready", { timeout: 20_000 });
 
     /*
-     * Two files hold it and four units do. `fee-schedule.csv` says it in three records
-     * and sorts first; the brief expected only the policy, so the count is the fact here
-     * rather than the row.
+     * `fee-schedule.csv` says it in three records. `settlement-policy.md` says it too, but a
+     * Markdown source is searched by the installed app's vault index, which the web does not
+     * have, so here it is found by its name only.
      */
-    await expect(matches).toHaveText(/2 sources \(4 passages\) · 0 pages matched/);
+    await expect(matches).toHaveText(/1 sources \(3 passages\) · 0 pages matched/);
+    await expect(page.getByTestId("library-source-sources/settlement-policy.md")).toHaveCount(0);
 
-    const hit = page.getByTestId("library-source-hit-sources/settlement-policy.md");
-    // Line 11, which is where the file really says it — the fixture's own wiki page
-    // cites `#l14`, three lines off, and this number comes from the reader instead.
-    await expect(hit).toContainText("line 11");
-    await expect(hit).toContainText("Card payments settle on T+2 business days.");
+    const hit = page.getByTestId("library-source-hit-sources/fee-schedule.csv");
+    // Record 2, the first row that says it; the number comes from the reader.
+    await expect(hit).toContainText("record 2");
+    await expect(hit).toContainText("card_domestic,KR,2.20,0,T+2");
     // The address it opens is on the control itself, not only in its handler.
-    await expect(hit).toHaveAttribute("data-anchor", "l11");
+    await expect(hit).toHaveAttribute("data-anchor", "r2");
 
     const after = await list.boundingBox();
     expect(after?.y).toBe(before?.y);
@@ -269,9 +269,7 @@ test.describe("the Library on its first day, with no agent", () => {
     await hit.press("Enter");
     const passage = page.getByTestId("library-source-passage");
     await expect(passage).toHaveAttribute("data-state", "resolved", { timeout: 20_000 });
-    await expect(page.getByTestId("library-source-passage-cited")).toContainText(
-      "Card payments settle on T+2 business days.",
-    );
+    await expect(page.getByTestId("library-source-passage-cited")).toContainText("card_domestic,KR,2.20,0,T+2");
     await expect(passage).toBeFocused();
 
     // And the caption that opened it says so, so a returning reader knows which one it was.

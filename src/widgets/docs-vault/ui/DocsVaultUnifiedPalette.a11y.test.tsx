@@ -8,6 +8,10 @@ import type { VaultDoc } from '@/entities/docs-vault';
 
 // next-intl's navigation wrapper cannot resolve next/navigation under vitest, so Link is a plain
 // <a>.
+vi.mock('../lib/use-vault-text-search', () => ({
+  useVaultTextSearch: () => ({ bodyIndex: undefined, status: null }),
+}));
+
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,

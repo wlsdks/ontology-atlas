@@ -20,4 +20,4 @@ The instruction Atlas gives its own agent, kept in code so it changes in the sam
 - Instructing agents that connect from outside, which the server's own instructions do.
 
 ## Uncertainty
-- Read from the module header, which argues that a prompt living in the vault would drift out of step with the schema. The prompt body was not read, and whether it currently matches the schema was not checked.
+- Read end to end on 2026-11-19 (`src/features/vault-agent/model/system-prompt.ts`): the product discipline, the meta-model block, the construction rules, and `buildSystemPrompt`, which appends the owner's `.ontology-atlas/agent-instructions.md` below them. The meta-model block is a literal copy of `mcp/src/construction/construction-rules.mjs`, and `tests/contract/mcp/ontology-meta-model.contract.test.ts`, which holds the two equal, passed that day. Whether the rest of the prose matches today's schema was not checked sentence by sentence.

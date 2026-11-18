@@ -11,7 +11,8 @@
    topology, tree, and editing workflow immediately. The browser path uses the
    File System Access API.
 3. **The answer lives on the user's disk.** Vault frontmatter is the ontology.
-   Only the user's files and the browser's IndexedDB hold data.
+   Only the user's files hold it; beside them Atlas keeps only what it can
+   rebuild or ask for again (vault handle, preferences, the app's index).
 4. **Single-person first.** v0.x is a personal tool.
 
 ## Outbound data
@@ -32,9 +33,10 @@
   need a backend, redesign it as Markdown on the user's disk.
 - `src/entities/vault-session/` and `src/features/docs-vault-local/` own
   local-folder access; new work joins them.
-- Vault frontmatter is the schema. Do not create a second canonical store;
-  IndexedDB may cache the vault handle and preferences but never wins a
-  disagreement with the files on disk.
+- Frontmatter is the schema; no second canonical store. IndexedDB may cache
+  the vault handle and preferences, the app a derived index
+  (`docs/ARCHITECTURE.md`) of only what vault files recompute: no user state,
+  edits, approvals or drafts. The files on disk always win.
 - Do not pre-install authentication for a possible future cloud mode.
 
 ## Security

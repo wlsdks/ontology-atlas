@@ -9,20 +9,20 @@ it("rereads a retired file version while keeping unchanged files cached", async 
   const changed = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode(text).buffer }));
   const unchanged = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode("# match unchanged").buffer }));
   const handles = new Map([
-    ["sources/a.md", { getFile: changed } as unknown as FileSystemFileHandle],
-    ["sources/b.md", { getFile: unchanged } as unknown as FileSystemFileHandle],
+    ["sources/a.txt", { getFile: changed } as unknown as FileSystemFileHandle],
+    ["sources/b.txt", { getFile: unchanged } as unknown as FileSystemFileHandle],
   ]);
   const { result, rerender } = renderHook(({ mtime, needle }) => useSourceSearch({
-    sources: [{ path: "sources/a.md", bytes: 100, mtime }, { path: "sources/b.md", bytes: 100, mtime: 1 }],
+    sources: [{ path: "sources/a.txt", bytes: 100, mtime }, { path: "sources/b.txt", bytes: 100, mtime: 1 }],
     sourceHandles: handles, vaultScope: "versions", needle, enabled: true,
   }), { initialProps: { mtime: 1, needle: "match" } });
   await waitFor(() => expect(result.current.phase).toBe("ready"));
   text = "# match second version";
   rerender({ mtime: 2, needle: "match" });
-  await waitFor(() => expect(result.current.hits.get("sources/a.md")?.text).toBe(text));
+  await waitFor(() => expect(result.current.hits.get("sources/a.txt")?.text).toBe(text));
   text = "# match returned version with new bytes";
   rerender({ mtime: 1, needle: "match" });
-  await waitFor(() => expect(result.current.hits.get("sources/a.md")?.text).toBe(text));
+  await waitFor(() => expect(result.current.hits.get("sources/a.txt")?.text).toBe(text));
   expect(changed).toHaveBeenCalledTimes(3);
   expect(unchanged).toHaveBeenCalledTimes(1);
   rerender({ mtime: 1, needle: "returned" });
@@ -33,9 +33,9 @@ it("rereads a retired file version while keeping unchanged files cached", async 
 it("retires removed files while idle without reading until a query resumes", async () => {
   let text = "# match before removal";
   const read = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode(text).buffer }));
-  const handles = new Map([["sources/a.md", { getFile: read } as unknown as FileSystemFileHandle]]);
+  const handles = new Map([["sources/a.txt", { getFile: read } as unknown as FileSystemFileHandle]]);
   const { result, rerender } = renderHook(({ present, needle, enabled }) => useSourceSearch({
-    sources: present ? [{ path: "sources/a.md", bytes: 100, mtime: 1 }] : [],
+    sources: present ? [{ path: "sources/a.txt", bytes: 100, mtime: 1 }] : [],
     sourceHandles: handles, vaultScope: "removed", needle, enabled,
   }), { initialProps: { present: true, needle: "match", enabled: true } });
   await waitFor(() => expect(result.current.phase).toBe("ready"));
@@ -47,13 +47,13 @@ it("retires removed files while idle without reading until a query resumes", asy
   rerender({ present: true, needle: "match", enabled: false });
   expect(read).toHaveBeenCalledTimes(1);
   rerender({ present: true, needle: "match", enabled: true });
-  await waitFor(() => expect(result.current.hits.get("sources/a.md")?.text).toBe(text));
+  await waitFor(() => expect(result.current.hits.get("sources/a.txt")?.text).toBe(text));
   expect(read).toHaveBeenCalledTimes(2);
 });
 
 it("does not reread an in-flight file when the preceding result is published", async () => {
   const pending = new Map<string, Array<(bytes: ArrayBuffer) => void>>();
-  const paths = ["sources/a.md", "sources/b.md"];
+  const paths = ["sources/a.txt", "sources/b.txt"];
   const sources = paths.map(path => ({ path, bytes: 10, mtime: 1 }));
   const handles = new Map(paths.map(path => [path, {
     getFile: async () => ({ arrayBuffer: () => new Promise<ArrayBuffer>(resolve => {
@@ -77,7 +77,7 @@ it("does not reread an in-flight file when the preceding result is published", a
 
 it("discards an old folder read after the search scope changes", async () => {
   const releases: Array<(bytes: ArrayBuffer) => void> = [];
-  const sources = [{ path: "sources/a.md", bytes: 10, mtime: 1 }];
+  const sources = [{ path: "sources/a.txt", bytes: 10, mtime: 1 }];
   const handles = new Map([[sources[0].path, {
     getFile: async () => ({ arrayBuffer: () => new Promise<ArrayBuffer>(resolve => releases.push(resolve)) }),
   } as unknown as FileSystemFileHandle]]);
@@ -93,4 +93,32 @@ it("discards an old folder read after the search scope changes", async () => {
   await act(async () => releases[1](new TextEncoder().encode("# new folder").buffer));
   await waitFor(() => expect(result.current.phase).toBe("ready"));
   expect(result.current.hits.get(sources[0].path)?.text).toBe("# new folder");
+});
+
+it("never opens a Markdown source, which the vault index searches", async () => {
+  const markdown = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode("# match").buffer }));
+  const text = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode("match").buffer }));
+  const handles = new Map([
+    ["sources/notes.md", { getFile: markdown } as unknown as FileSystemFileHandle],
+    ["sources/fees.csv", { getFile: text } as unknown as FileSystemFileHandle],
+  ]);
+  const { result } = renderHook(() => useSourceSearch({
+    sources: [...handles.keys()].map((path) => ({ path, bytes: 10, mtime: 1 })),
+    sourceHandles: handles, vaultScope: "markdown", needle: "match", enabled: true,
+  }));
+  await waitFor(() => expect(result.current.phase).toBe("ready"));
+  expect(markdown).not.toHaveBeenCalled();
+  expect([...result.current.hits.keys()]).toEqual(["sources/fees.csv"]);
+  expect(result.current.plannedCount).toBe(1);
+});
+
+it("searches an upper-case .MD source, which the vault index does not admit", async () => {
+  const upper = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode("match").buffer }));
+  const handles = new Map([["sources/README.MD", { getFile: upper } as unknown as FileSystemFileHandle]]);
+  const { result } = renderHook(() => useSourceSearch({
+    sources: [{ path: "sources/README.MD", bytes: 10, mtime: 1 }],
+    sourceHandles: handles, vaultScope: "markdown", needle: "match", enabled: true,
+  }));
+  await waitFor(() => expect(result.current.phase).toBe("ready"));
+  expect([...result.current.hits.keys()]).toEqual(["sources/README.MD"]);
 });

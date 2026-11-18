@@ -182,6 +182,7 @@ export function LibraryIndexColumn({
             }
             sourceHandles={localVault.sourceHandles}
             vaultScope={workVaultScope}
+            vaultRootPath={nativeVaultRootPath}
             onSelect={(slug) => choose({ kind: "wiki", slug })}
             onOpenSource={(row, anchor) => {
               choose({ kind: "source", path: row.path });

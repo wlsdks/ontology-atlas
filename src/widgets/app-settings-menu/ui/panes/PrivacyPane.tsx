@@ -24,6 +24,7 @@ import {
   type OutboundPath,
 } from '../../model/outbound-paths';
 import { ArmedChip, DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from '../settings-primitives';
+import { StoredHereSettings } from '../StoredHereSettings';
 
 const isPlaceholder = (host: string): host is OutboundDestinationPlaceholder =>
   (OUTBOUND_DESTINATION_PLACEHOLDERS as readonly string[]).includes(host);
@@ -238,6 +239,8 @@ export function PrivacyPane({
           )}
         </SettingsGroup>
       ) : null}
+
+      {desktop ? <StoredHereSettings /> : null}
 
       <SettingsGroup label={t('recent.title')} testId="app-settings-privacy-recent">
         <SettingsRow

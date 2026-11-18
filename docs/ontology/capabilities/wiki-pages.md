@@ -24,4 +24,4 @@ A second page format in the same folder for prose that must cite its sources, wi
 - Deciding whether two pages disagree, which the repository states is a human judgement and not a code.
 
 ## Uncertainty
-- Read from the module header, which names the public specification section this file is the machine half of. That specification was not opened, and no wiki pages exist in this vault to check the contract against.
+- Read from the module header, which names `docs/ONTOLOGY-ATLAS-SPEC.md` §11 as the specification this file is the machine half of. §11 was read on 2026-11-19 (the frontmatter keys, the five body sections in order, and the rule that a page never carries `kind:`), and `tests/contract/library/wiki-page-schema.contract.test.ts`, which runs this module and the app twin on one table, passed that day. No wiki pages exist in this vault to check the contract against.
