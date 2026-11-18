@@ -28,7 +28,7 @@ const e2eSuite = (e2e) => {
 };
 
 /** Each lane names the plan job that annotates it, its jobs, and the slice of the plan it runs. */
-export const CARRY_LANES = Object.freeze({
+const CARRY_LANES = Object.freeze({
   unit: {
     owner: 'Check impact plan',
     jobs: /^Unit · Contract (\d+)\/(\d+)$/,
@@ -73,7 +73,7 @@ export const CARRY_LANES = Object.freeze({
   },
 });
 
-export const CARRY_LANE_NAMES = Object.freeze(Object.keys(CARRY_LANES));
+const CARRY_LANE_NAMES = Object.freeze(Object.keys(CARRY_LANES));
 export const CARRY_OWNERS = Object.freeze([...new Set(Object.values(CARRY_LANES).map((lane) => lane.owner))]);
 
 /** The one-line annotation every pull request plan job prints, and its strict reader. */
