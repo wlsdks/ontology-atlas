@@ -31,8 +31,6 @@ const TOOLING = /(?:^|\/)(?:[\w-]*bench[\w-]*|examples?|demos?|samples?|fixtures
 const FAMILY_SIZE = 5;
 const MODULE_API_SIZE = 3;
 const ABILITY_LIMIT = 120;
-/** Rows kept per kind, so one noisy kind cannot crowd out the rest. */
-const KIND_LIMITS = { subcommand: 30, flags: 30, flag: 12, setting: 30, worker: 16, documented: 30 };
 const SCAN_BYTES = 256 * 1024;
 const DISPATCH_SUBJECT = /(?:^|\.)(?:command|cmd|action|op|operation|event|method|verb)$/i;
 const NOT_A_HANDLER = new Set([
@@ -262,10 +260,36 @@ function keysOf(row) {
 }
 
 /**
- * Every ability the survey lists, tooling left out, at most 120 rows, each with
- * `evidence` as `path:Lline`. An operator or documented row whose name an earlier
- * row already answers to is the same ability found twice (a `metrics` flag group
- * beside a `Metrics` config section) and is dropped.
+ * How many rows each kind keeps of `limit`: every kind gets an equal share, and a
+ * share a small kind leaves unused goes to the kinds that still have rows, so 130
+ * dispatched operations cannot crowd out 45 subcommands.
+ *
+ * @param {Map<string, number>} counts rows found per kind
+ * @returns {Map<string, number>}
+ */
+function fairShares(counts, limit) {
+  const shares = new Map([...counts.keys()].map((kind) => [kind, 0]));
+  let left = limit;
+  let open = [...counts.keys()].filter((kind) => counts.get(kind) > 0);
+  while (left > 0 && open.length > 0) {
+    const share = Math.max(1, Math.floor(left / open.length));
+    for (const kind of open) {
+      const take = Math.min(share, counts.get(kind) - shares.get(kind), left);
+      shares.set(kind, shares.get(kind) + take);
+      left -= take;
+      if (left === 0) break;
+    }
+    open = open.filter((kind) => shares.get(kind) < counts.get(kind));
+  }
+  return shares;
+}
+
+/**
+ * Every ability the survey lists, tooling left out, at most 120 rows shared
+ * fairly between kinds, each with `evidence` as `path:Lline`. What a kind leaves
+ * out is counted per kind, never dropped silently. An operator or documented row
+ * whose name an earlier row already answers to is the same ability found twice
+ * (a `metrics` flag group beside a `Metrics` config section) and is dropped.
  *
  * @param {string} rootPath
  * @param {{ files: object[] }} collection
@@ -282,8 +306,6 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
     if (seen.has(key) || isTooling(row.path)) return;
     const own = nameKey(String(row.name).replace(/^--/, ''));
     if (merge && own && names.has(own)) return;
-    const limit = KIND_LIMITS[row.kind];
-    if (limit !== undefined && (counts.get(row.kind) ?? 0) >= limit) return;
     seen.add(key);
     counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
     for (const name of keysOf(row)) names.add(name);
@@ -312,5 +334,16 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
   for (const row of [...operator.subcommands, ...operator.flags, ...operator.settings, ...operator.workers]) push(row, { merge: true });
   const documented = documentedAbilities((path, limit) => readText(rootPath, path, limit), documents, product, declarations());
   for (const row of documented) push(row, { merge: true });
-  return { rows: rows.slice(0, ABILITY_LIMIT), omitted: Math.max(0, rows.length - ABILITY_LIMIT) };
+  const shares = fairShares(counts, ABILITY_LIMIT);
+  const kept = new Map();
+  const listed = rows.filter((row) => {
+    const taken = kept.get(row.kind) ?? 0;
+    if (taken >= shares.get(row.kind)) return false;
+    kept.set(row.kind, taken + 1);
+    return true;
+  });
+  const omittedByKind = Object.fromEntries([...counts]
+    .map(([kind, count]) => [kind, count - shares.get(kind)])
+    .filter(([, omitted]) => omitted > 0));
+  return { rows: listed, omitted: rows.length - listed.length, omittedByKind };
 }

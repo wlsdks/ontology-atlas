@@ -8,7 +8,7 @@
 
 import { createHash } from 'node:crypto';
 import { readdirSync } from 'node:fs';
-import { basename, dirname, extname, join, posix } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
 
 import { inferImports } from '../infer-imports.mjs';
 import { abilitiesOf } from './abilities.mjs';
@@ -353,10 +353,10 @@ function docPages(rootPath, ignore) {
   for (const folder of DOC_FOLDERS) visit(folder, 0);
   const titled = pages.map((path) => {
     const text = readText(rootPath, path, 16 * 1024);
-    const front = /^---\r?\n[\s\S]*?^title:\s*["']?(.+?)["']?\s*$/m.exec(text);
+    const front = /^---\r?\n[\s\S]*?^title:[ \t]*(\S.*)$/m.exec(text);
     const heading = /^#\s+(.+)$/m.exec(text);
     const rst = /^([^\n=\-~]+)\r?\n[=\-~]{3,}\s*$/m.exec(text);
-    const title = (front?.[1] ?? heading?.[1] ?? rst?.[1] ?? stemOf(path)).replace(/[`*_]/g, '').trim();
+    const title = (front?.[1].trim().replace(/^["']|["']$/g, '') ?? heading?.[1] ?? rst?.[1] ?? stemOf(path)).replace(/[`*_]/g, '').trim();
     return { path, title: title.slice(0, DOC_TITLE_CHARS) };
   });
   titled.sort((a, b) => a.path.split('/').length - b.path.split('/').length || a.path.localeCompare(b.path));
@@ -409,9 +409,12 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
   const entryPoints = entryPointsOf(rootPath, collection);
   const pages = docPages(rootPath, ignoreSet);
   const readme = readmePurpose(rootPath);
+  // The vault's own pages are the map being built, not documentation of the product.
+  const vault = vaultRoot ? relative(rootPath, vaultRoot).split(sep).join('/') : '';
+  const inVault = vault && !vault.startsWith('..') && !isAbsolute(vault) ? (path) => path === vault || path.startsWith(`${vault}/`) : () => false;
   const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, {
     ignore,
-    documents: { readme: readme?.path ?? null, pages: pages.all },
+    documents: { readme: readme?.path ?? null, pages: pages.all.filter((path) => !inVault(path)) },
   });
   const next = units.length === 0
     ? 'No product source file was found here: check rootPath and ignore, or build the map from documents.'
@@ -419,7 +422,8 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
       `Outline each unit's main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true) and ` +
       'list every ability the product gives a user, an operator or another system from the outlines and docs. ' +
       `The ${abilities.rows.length} abilities listed are the floor under that list, not all of it: each gets a capability, ` +
-      'its name inside the node that covers it (a family or group names its members), or is excluded with a reason. ' +
+      'its name in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), ' +
+      'or one line in the project\'s ## Uncertainty that cites its path:Lline or exact name and says why it is excluded. ' +
       'Then read each capability by symbol ' +
       '(sourceReads {path, symbol}, three or four per call): the read returns the body with the guards, defaults ' +
       'and callees that decide it, each with path and lines to cite. Nothing is written yet; add_concepts and ' +
@@ -438,7 +442,7 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     entryPoints: entryPoints.rows,
     ...(entryPoints.omitted > 0 ? { entryPointsOmitted: entryPoints.omitted } : {}),
     abilities: abilities.rows,
-    ...(abilities.omitted > 0 ? { abilitiesOmitted: abilities.omitted } : {}),
+    ...(abilities.omitted > 0 ? { abilitiesOmitted: abilities.omitted, abilitiesOmittedByKind: abilities.omittedByKind } : {}),
     docs: {
       readme,
       pages: pages.rows,
@@ -449,16 +453,24 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
   return fit ? fitBreadthMap(map) : map;
 }
 
-/** The rendered map's ceiling: a few hundred files fit whole; a larger repository keeps its largest units. */
+/**
+ * The rendered map's ceiling without its abilities: a few hundred files fit whole; a
+ * larger repository keeps its largest units. The abilities section (at most 120
+ * rows) comes on top, so a longer floor never pushes units out of the map.
+ */
 const BREADTH_TEXT_BUDGET = 24 * 1024;
+
+/** The bytes a map takes against the budget: everything but its abilities section. */
+function budgetBytes(map) {
+  return Buffer.byteLength(renderBreadthMap({ ...map, abilities: [], abilitiesOmitted: undefined }), 'utf8');
+}
 
 /**
  * A repository too large for one map keeps every unit's path and size only for the
  * largest units that fit, and says how to ask for the rest: one folder at a time.
  */
 function fitBreadthMap(map) {
-  const text = renderBreadthMap(map);
-  if (Buffer.byteLength(text, 'utf8') <= BREADTH_TEXT_BUDGET) return { ...map, text };
+  if (budgetBytes(map) <= BREADTH_TEXT_BUDGET) return { ...map, text: renderBreadthMap(map) };
   const largest = [...map.units]
     .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path))
     .map((unit) => ({
@@ -485,7 +497,7 @@ function fitBreadthMap(map) {
   let high = largest.length;
   while (low < high) {
     const middle = Math.ceil((low + high) / 2);
-    if (Buffer.byteLength(renderBreadthMap(slim(middle)), 'utf8') <= BREADTH_TEXT_BUDGET) low = middle;
+    if (budgetBytes(slim(middle)) <= BREADTH_TEXT_BUDGET) low = middle;
     else high = middle - 1;
   }
   const fitted = slim(low);
@@ -537,7 +549,10 @@ function renderBreadthMap(map) {
         ? `family ${t(row.path)} ${t(row.evidence)}${members}`
         : `${row.kind} ${t(row.name, 120)} ${t(row.evidence)}${symbol}${doc}${members}`);
     }
-    if (map.abilitiesOmitted) lines.push(`+${map.abilitiesOmitted} more`);
+    if (map.abilitiesOmitted) {
+      const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
+      lines.push(`+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows; call analyze_repo_structure with rootPath set to one folder to list them.`);
+    }
   }
   if (map.docs.pages.length > 0) {
     lines.push('', 'Docs: path - title');

@@ -202,6 +202,11 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
         },
       },
       abilitiesOmitted: { type: 'integer', minimum: 1 },
+      abilitiesOmittedByKind: {
+        type: 'object',
+        description: 'Rows each kind left out of its fair share of the 120 listed.',
+        additionalProperties: { type: 'integer', minimum: 1 },
+      },
       docs: {
         type: 'object',
         properties: {

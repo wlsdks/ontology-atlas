@@ -248,3 +248,159 @@ test('a heading from the repository is cleaned before it becomes a name', (t) =>
   assert.equal(find(rows, 'documented', 'Telemetry').doc, 'README.md:L5');
   assert.doesNotMatch(text, /‮/);
 });
+
+/*
+ * Every detector stays linear on a hostile line: a line at the limit runs the
+ * regexes themselves, a longer one is read as blank. Writes and validate_vault
+ * build this survey, so a slow line would block them too.
+ */
+test('a hostile line costs every detector under 100 ms', async () => {
+  const { operatorAbilities } = await import('./operator-abilities.mjs');
+  const { documentedAbilities } = await import('./documented-abilities.mjs');
+  const near = 1990;
+  const hostile = (n) => [
+    '# a' + ' '.repeat(n) + 'x', 'title: a' + ' '.repeat(n) + 'x', '## ' + '<'.repeat(n), '## ' + '!['.repeat(n / 2),
+    '## ' + '{#'.repeat(n / 2), '## ' + '[a]('.repeat(n / 4), 'a'.repeat(n), 'x = y.add_argument_group(' + 'a'.repeat(n),
+    ' '.repeat(n) + 'x', '  name: ' + ' '.repeat(n) + 'x', ' a(' + '{x'.repeat(n / 2), 'func (a ' + 'b'.repeat(n),
+    'interface A' + 'a'.repeat(n), '  a: ' + ' '.repeat(n) + 'x', 'from' + ' '.repeat(n), 'typer.Option('.repeat(n / 13),
+    '#[arg(' + 'x'.repeat(n), 'const X = 5' + ' '.repeat(n) + 'x', '  setInterval(a, ' + ' '.repeat(n) + 'x', '0123456789abcdef'.repeat(n / 16),
+  ];
+  const preludes = {
+    'a.go': 'package a\n\ntype Config struct {\n',
+    'a.py': 'import tyro\nimport argparse\n@dataclass\nclass Config:\n',
+    'a.ts': "import { Command } from 'commander';\nexport interface Config {\n",
+    'a.rs': '#[derive(Subcommand)]\npub struct Config {\n',
+  };
+  for (const n of [near, 200_000]) {
+    for (const [index, line] of hostile(n).entries()) {
+      for (const [path, prelude] of Object.entries(preludes)) {
+        const text = `${prelude}${line}\n${'\n'.repeat(n === near ? 2000 : 0)}`;
+        const started = performance.now();
+        operatorAbilities([{ path }], () => text);
+        const operatorMs = performance.now() - started;
+        assert.ok(operatorMs < 100, `operator detectors on hostile line ${index} (${n} chars) in ${path}: ${operatorMs.toFixed(0)} ms`);
+      }
+      const page = `${line}\n`;
+      const started = performance.now();
+      documentedAbilities(() => page, { readme: 'README.md', pages: ['docs/a.md'] }, [{ path: 'telemetry/telemetry.go' }], null);
+      const documentedMs = performance.now() - started;
+      assert.ok(documentedMs < 100, `heading detector on hostile line ${index} (${n} chars): ${documentedMs.toFixed(0)} ms`);
+    }
+  }
+});
+
+test('a long file costs every detector one pass, not one pass per line', async () => {
+  const { operatorAbilities } = await import('./operator-abilities.mjs');
+  const body = Array.from({ length: 10_000 }, (_, index) => `const value${index} = compute(${index}); // ${'x'.repeat(10)}`).join('\n');
+  for (const path of ['a.ts', 'a.py', 'a.go', 'a.rs']) {
+    const started = performance.now();
+    operatorAbilities([{ path }], () => body);
+    const ms = performance.now() - started;
+    assert.ok(ms < 100, `${path} of 10,000 lines: ${ms.toFixed(0)} ms`);
+  }
+});
+
+test('only a switch name turns a boolean into a setting', (t) => {
+  const { rows } = abilities(t, {
+    'go.mod': 'module x\n',
+    'config/config.go': 'package config\n\ntype Config struct {\n\tVerbose bool\n\tPublicMode bool\n\tEnableCache bool\n\tCacheEnabled bool\n}\n',
+  });
+  assert.deepEqual(rows.filter((row) => row.kind === 'setting').map((row) => row.name), ['PublicMode', 'EnableCache', 'CacheEnabled']);
+});
+
+test('a hook\'s options, a one-line type, an indexed type and a nested field are not settings', (t) => {
+  const { rows } = abilities(t, {
+    'package.json': '{"name":"app"}\n',
+    'src/use-shortcut.ts': 'export interface ShortcutOptions {\n  disabled?: boolean;\n}\n',
+    'src/select.ts': [
+      "type SelectConfig = { preserveImpact?: boolean };",
+      'type Context = {',
+      "  setRoute: Options['setRoute'];",
+      '};',
+      'export interface PanelConfig {',
+      "  section: Options['panelConfig'];",
+      '  live: RefObject<{',
+      '    sessionEnabled: boolean;',
+      '  }>;',
+      '  strictMode: boolean;',
+      '}',
+    ].join('\n'),
+    'src/release.ts': 'export interface ReleaseOptions {\n  onlyPublishWithReleaseLabel?: boolean;\n}\n',
+  });
+  assert.deepEqual(rows.filter((row) => row.kind === 'setting').map((row) => row.symbol).sort(), ['PanelConfig.strictMode', 'ReleaseOptions.onlyPublishWithReleaseLabel']);
+});
+
+test('a test, a pipe reader and a screen timer are not workers; a file watcher is', (t) => {
+  const { rows } = abilities(t, {
+    'go.mod': 'module x\n',
+    'node/ticker.go': 'package node\n\nfunc TestTicker(t *testing.T) {\n\ttime.NewTicker(1)\n}\n\nfunc (q *Queue) Run() {\n\ttime.NewTicker(1)\n}\n',
+    'src/watch.rs': [
+      'pub async fn start_vault_watch() {',
+      '    let watcher = builder.watcher();',
+      '}',
+      'fn read_child() {',
+      '    std::thread::spawn(move || {',
+      '        let _ = pipe.read_to_end(&mut bytes);',
+      '    });',
+      '}',
+      '#[test]',
+      'fn spawns_in_a_test() {',
+      '    std::thread::spawn(move || loop {});',
+      '}',
+      '#[cfg(test)]',
+      'mod tests {',
+      '    fn helper() {',
+      '        std::thread::spawn(move || loop {});',
+      '    }',
+      '}',
+    ].join('\n'),
+    'src/tests.rs': 'fn every_test() {\n    std::thread::spawn(move || loop {});\n}\n',
+    'web/Banner.tsx': 'export function Banner() {\n  useEffect(() => {\n    const id = setInterval(() => step(), 80);\n  });\n}\n',
+    'web/use-clock.ts': 'const TICK_MS = 30_000;\nexport function useClock() {\n  useEffect(() => {\n    const id = setInterval(() => setNow(Date.now()), TICK_MS);\n  });\n}\n',
+    'web/use-poll.ts': 'function helper() {\n  return 1;\n}\nexport function usePoll() {\n  useEffect(() => {\n    const id = setInterval(() => check(), 5_000);\n  });\n}\n',
+  });
+  assert.deepEqual(rows.filter((row) => row.kind === 'worker').map((row) => row.name).sort(), ['Queue', 'start_vault_watch', 'usePoll']);
+});
+
+test('a heading about the document, a section deep in a page, a history page and a test file match no code', (t) => {
+  const { rows } = abilities(t, {
+    'go.mod': 'module x\n',
+    'installation/installation.go': 'package installation\n\nfunc Run() {}\n',
+    'scope/scope.go': 'package scope\n\nfunc Run() {}\n',
+    'evidence/evidence_test.go': 'package evidence\n\nfunc TestIt() {}\n',
+    'billing/billing.go': 'package billing\n\nfunc Run() {}\n',
+    'ledger/ledger.go': 'package ledger\n\nfunc Run() {}\n',
+    'README.md': '# X\n\nA server that does things for people.\n\n## Installation\n\n## Out of scope\n\n## Evidence\n',
+    'docs/guide.md': '# Guide\n\n## Billing\n',
+    'docs/specs/2026-01-01-ledger.md': '# Ledger\n',
+    'docs/ledger.md': '# Ledger\n',
+  });
+  assert.deepEqual(rows.filter((row) => row.kind === 'documented').map((row) => `${row.name} ${row.doc}`), ['Ledger docs/ledger.md:L1']);
+});
+
+test('the vault\'s own pages document nothing', (t) => {
+  const root = repository({
+    'go.mod': 'module x\n',
+    'ledger/ledger.go': 'package ledger\n\nfunc Run() {}\n',
+    'docs/ontology/capabilities/ledger.md': '---\nkind: capability\ntitle: Ledger\n---\n# Ledger\n',
+  });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const map = buildBreadthMap(root, { fit: false, vaultRoot: join(root, 'docs/ontology') });
+  assert.equal(map.abilities.some((row) => row.kind === 'documented'), false);
+});
+
+test('120 rows are shared fairly between kinds, and what each kind leaves out is counted', (t) => {
+  const cases = Array.from({ length: 130 }, (_, index) => `\tcase "op${index}":\n\t\thandle${index}()`).join('\n');
+  const commands = Array.from({ length: 45 }, (_, index) => `\tc${index} := &cobra.Command{\n\t\tUse: "cmd${index}",\n\t}`).join('\n');
+  const { rows, text } = abilities(t, {
+    'go.mod': 'module x\n',
+    'cmd/x/main.go': 'package main\n\nfunc main() {}\n',
+    'dispatch/dispatch.go': `package dispatch\n\nfunc Route(command string) {\n\tswitch command {\n${cases}\n\t}\n}\n`,
+    'cli/commands.go': `package cli\n\nfunc Commands() {\n${commands}\n}\n`,
+    'node/queue.go': 'package node\n\nfunc (q *Queue) Run() {\n\ttime.NewTicker(1)\n}\n',
+  });
+  const count = (kind) => rows.filter((row) => row.kind === kind).length;
+  assert.equal(rows.length, 120);
+  assert.deepEqual([count('executable'), count('worker'), count('subcommand'), count('operation')], [1, 1, 45, 73]);
+  assert.match(text, /^\+27 more not listed \(operation 27\): each kind keeps an equal share of 120 rows/m, 'the dispatcher scan reads 200 lines, so 100 operations');
+});

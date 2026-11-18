@@ -77,9 +77,9 @@ test('every surveyed ability has a node, is named inside one, is excluded with a
   ];
   const depth = measureBuildDepth(docs, repo, null);
   const { breadth } = depth;
-  assert.deepEqual([breadth.abilities, breadth.node, breadth.named, breadth.excluded], [4, 1, 1, 1]);
-  assert.deepEqual(breadth.unplaced.map((row) => row.name), ['whisper'], 'a domain sentence does not place an ability');
-  assert.match(depth.line, /Not placed: whisper \(operation, src\/cli\.ts:L12\)/);
+  assert.deepEqual([breadth.abilities, breadth.node, breadth.named, breadth.excluded], [4, 1, 0, 1]);
+  assert.deepEqual(breadth.unplaced.map((row) => row.name), ['canary', 'whisper'], 'a word in passing or a domain sentence does not place an ability');
+  assert.match(depth.line, /Not placed: canary \(operation, src\/cli\.ts:L9\), whisper \(operation, src\/cli\.ts:L12\)/);
   assert.match(depth.line, /add_concepts a capability for it/);
 });
 
@@ -92,8 +92,10 @@ test('a plugin is named by its package folder as well as its class', (t) => {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const repo = repositorySurvey(root, join(root, 'atlas'));
   assert.deepEqual(repo.survey.abilities.map((row) => row.name), ['AllContributorsPlugin']);
-  const docs = [doc('capabilities/thank-contributors', { path: 'src/other.ts' }, 'Thanks contributors.\n\n## Includes\n- The all-contributors plugin.\n')];
-  assert.equal(measureBuildDepth(docs, repo, null).breadth.named, 1);
+  const named = (title, body) => measureBuildDepth([doc('capabilities/thank-contributors', { path: 'src/other.ts', title }, `${body}\n`)], repo, null).breadth.named;
+  assert.equal(named('Thank contributors', 'Thanks contributors.\n\n## Includes\n- The all-contributors plugin.'), 0, 'prose in a body does not place it');
+  assert.equal(named('All-contributors plugin', 'Thanks contributors.'), 1, 'the title names it by its package folder');
+  assert.equal(named('Thank contributors', 'Thanks contributors through `all-contributors`.'), 1, 'code form names it by its package folder');
 });
 
 /*
@@ -479,7 +481,7 @@ test('finalize names every unplaced ability, none cut', () => {
   });
   assert.match(reason, /Feature19 \(setting, config\.go:L20\)/);
   assert.doesNotMatch(reason, /and \d+ more/);
-  assert.match(reason, /with a line that says why/);
+  assert.match(reason, /with one line for it alone that cites its path:Lline or exact name and says why/);
 });
 
 test('an exclusion that cites the survey row\'s own line excludes a row whose name is a common word', (t) => {

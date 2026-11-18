@@ -170,57 +170,93 @@ function givesReason(line, abilities) {
   return rest.split(/[^\p{L}\p{N}']+/u).filter((word) => word.length >= 2).length >= REASON_WORDS;
 }
 
+/** The tokens of every inline code span: "`cli.List` and `--force`" holds cli, List, cli.List and --force. */
+function codeTokens(text) {
+  const tokens = new Set();
+  for (const span of String(text ?? '').matchAll(/`([^`\n]{1,200})`/g)) {
+    const code = span[1].trim();
+    tokens.add(code);
+    for (const part of code.split(/[^\w.$:/-]+/)) {
+      if (!part) continue;
+      tokens.add(part);
+      for (const piece of part.split(/[.:/]+/)) if (piece) tokens.add(piece);
+    }
+  }
+  return tokens;
+}
+
+/** Whether `text` names the row in code form: a code span holding its exact name or symbol, or its evidence cite. */
+function namedInCode(text, row, tokens = codeTokens(text)) {
+  if (row.kind === 'flag') return flagNamed(text, row.name);
+  if (row.evidence && new RegExp(`${escapeRegExp(row.evidence)}(?!\\d)`).test(text)) return true;
+  return [row.name, row.symbol, row.kind === 'family' ? lastSegment(row.path) : packageFolder(row.path)]
+    .filter(Boolean)
+    .some((name) => tokens.has(String(name)));
+}
+
 /**
- * Where every ability the survey lists sits on the map: a capability or element
- * for it (its file and its name), its name inside a capability or element (a
- * family or module API when half its members are named, a flag group by its name
- * or half its flags), or excluded in the project's `## Uncertainty` or
- * `## Excludes` by a line that names it and says why. Domains and the project do
- * not place an ability: a word in a domain sentence is not a node a reader finds.
+ * Where every ability the survey lists sits on the map:
+ * - `node`: a capability or element whose `path:` is its file and which names it
+ *   (or is the file's only ability);
+ * - `named`: a capability or element whose title names it, or whose body names it
+ *   in code form (`list`, `--force`, its `path:Lline`); a family or module API
+ *   when half its members are named that way, a flag group by its name or half its
+ *   flags. A word in passing ("users list invoices") places nothing;
+ * - `excluded`: one line in the project's `## Uncertainty` or `## Excludes` that
+ *   points at exactly this ability, by its `path:Lline` or its exact name, and
+ *   says why. A line that names several abilities excludes none of them.
+ * Domains and the project do not place an ability: a word in a domain sentence
+ * is not a node a reader finds.
  */
 function measureAbilities(docs, survey) {
   const abilities = Array.isArray(survey.abilities) ? survey.abilities : [];
   const project = docs.find((doc) => kindOf(doc) === 'project');
-  const exclusionLines = project
-    ? `${sectionOf(project.body, 'Uncertainty')}\n${sectionOf(project.body, 'Excludes')}`
-      .split('\n').filter((line) => givesReason(line, abilities))
-    : [];
-  const nodes = docs.filter((doc) => NAMING_KINDS.has(kindOf(doc)));
-  const textOf = (doc) => `${doc.frontmatter?.title ?? ''}\n${doc.body ?? ''}`;
-  // A common word ("next", "label") names an ability only in code form or as "the next command".
-  // An ability whose file is a package's entry (index, __init__, main) also answers to the
-  // package folder: "the all-contributors plugin" names AllContributorsPlugin.
-  const names = (text, row) => {
-    if (row.kind === 'flag') return flagNamed(text, row.name);
-    if (row.kind === 'flags') {
-      const members = row.members ?? [];
-      // A group the code names ("metrics") answers to its name; one the survey made from a shared prefix ("--only-*") does not.
-      return (!row.name.startsWith('--') && namesWord(text, row.name)) || members.filter((member) => flagNamed(text, member)).length * 2 >= Math.max(members.length, 2);
-    }
+  const nodes = docs.filter((doc) => NAMING_KINDS.has(kindOf(doc))).map((doc) => {
+    const body = String(doc.body ?? '');
+    return { doc, title: String(doc.frontmatter?.title ?? ''), body, tokens: codeTokens(body) };
+  });
+  // A title is a name a reader sees: it may name an ability in words, a common word
+  // ("next", "label") only in code form or as "the next command". An ability whose
+  // file is a package's entry (index, __init__, main) also answers to the package folder.
+  const titleNames = (title, row) => {
+    if (row.kind === 'flag') return flagNamed(title, row.name);
+    if (row.kind === 'flags') return !row.name.startsWith('--') && namesWord(title, row.name);
     const words = [row.name, row.symbol, packageFolder(row.path)].filter(Boolean).map(String);
     const forms = words.filter((word) => !GENERIC_SYMBOLS.has(word.toLowerCase())).flatMap(spokenForms);
-    if (forms.some((form) => namesWord(text, form))) return true;
-    if (words.some((word) => GENERIC_SYMBOLS.has(word.toLowerCase())
-      && new RegExp(`\`${escapeRegExp(word)}\`|\\b${escapeRegExp(word)}\\s+command\\b`, 'i').test(text))) return true;
-    return row.kind === 'executable' && text.includes(dirname(row.path));
+    if (forms.some((form) => namesWord(title, form))) return true;
+    return words.some((word) => GENERIC_SYMBOLS.has(word.toLowerCase())
+      && new RegExp(`\`${escapeRegExp(word)}\`|\\b${escapeRegExp(word)}\\s+command\\b`, 'i').test(title));
   };
+  const nodeNames = (node, row) => {
+    if (titleNames(node.title, row) || namedInCode(node.body, row, node.tokens)) return true;
+    if (row.kind === 'flags') {
+      const members = row.members ?? [];
+      return (!row.name.startsWith('--') && node.tokens.has(row.name))
+        || members.filter((member) => flagNamed(node.body, member)).length * 2 >= Math.max(members.length, 2);
+    }
+    return row.kind === 'executable' && node.body.includes(dirname(row.path));
+  };
+  const memberNamed = (member) => nodes.some((node) => node.tokens.has(member) || namesWord(node.title, member));
+  const excludedRows = new Set();
+  if (project) {
+    const lines = `${sectionOf(project.body, 'Uncertainty')}\n${sectionOf(project.body, 'Excludes')}`.split('\n').filter((line) => line.trim());
+    for (const line of lines) {
+      const tokens = codeTokens(line);
+      const cited = abilities.filter((row) => row.evidence && new RegExp(`${escapeRegExp(row.evidence)}(?!\\d)`).test(line));
+      const pointed = cited.length > 0 ? cited : abilities.filter((row) => namedInCode(line, row, tokens) || exactlyNamed(line, row));
+      if (pointed.length === 1 && givesReason(line, pointed)) excludedRows.add(pointed[0]);
+    }
+  }
   const place = (row) => {
     if (MEMBER_KINDS.has(row.kind)) {
-      const named = row.members.filter((member) => nodes.some((doc) => namesWord(textOf(doc), member))).length;
-      if (named * 2 >= row.members.length) return 'named';
-      if (exclusionLines.some((line) => line.includes(row.path) || namesWord(line, row.kind === 'family' ? lastSegment(row.path) : row.name)
-        || row.members.some((member) => namesWord(line, member)))) return 'excluded';
-      return 'unplaced';
+      const named = row.members.filter(memberNamed).length;
+      if (named * 2 >= row.members.length || nodes.some((node) => namedInCode(node.body, row, node.tokens))) return 'named';
+      return excludedRows.has(row) ? 'excluded' : 'unplaced';
     }
-    const onFile = nodes.filter((doc) => pathOf(doc) === row.path);
     const sameFile = abilities.filter((other) => other.path === row.path).length;
-    if (onFile.some((doc) => sameFile === 1 || names(textOf(doc), row))) return 'node';
-    if (nodes.some((doc) => names(textOf(doc), row))) return 'named';
-    // A path excludes only the ability it alone holds: one line about cli/options.go is not a reason for every flag group in it.
-    // The survey's own evidence cite (`config/config.go:L45`) names the one row it points at.
-    const cited = (line) => Boolean(row.evidence) && new RegExp(`${escapeRegExp(row.evidence)}(?!\\d)`).test(line);
-    if (exclusionLines.some((line) => (sameFile === 1 && line.includes(row.path)) || cited(line) || names(line, row))) return 'excluded';
-    return 'unplaced';
+    if (nodes.some((node) => pathOf(node.doc) === row.path && (sameFile === 1 || nodeNames(node, row)))) return 'node';
+    if (nodes.some((node) => nodeNames(node, row))) return 'named';
+    return excludedRows.has(row) ? 'excluded' : 'unplaced';
   };
   const placed = abilities.map((row) => ({ ...row, place: place(row) }));
   const count = (state) => placed.filter((row) => row.place === state).length;
@@ -231,6 +267,17 @@ function measureAbilities(docs, survey) {
     excluded: count('excluded'),
     unplaced: placed.filter((row) => row.place === 'unplaced'),
   };
+}
+
+/**
+ * Whether a line holds the row's exact name (case and all) as a whole word: list,
+ * not "List" or "listing". A common word ("App", "next") points at a row only in
+ * code form or by its cite.
+ */
+function exactlyNamed(line, row) {
+  const name = String(row.name ?? '');
+  if (name.length < 2 || GENERIC_SYMBOLS.has(name.toLowerCase())) return false;
+  return new RegExp(`(^|[^\\w/.-])${escapeRegExp(name)}(?=$|[^\\w-])`).test(line);
 }
 
 function abilityLabel(row) {
@@ -401,7 +448,7 @@ export function measureBuildDepth(docs, repo, reads) {
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
     if (breadth.unplaced.length > 0) {
-      parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with a line that says why.`);
+      parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
     }
   }
   if (depth && depth.unread.length > 0) {
@@ -612,7 +659,7 @@ export function competencyDepthRefusals(questions, depth) {
   }
   const breadth = depth.breadth;
   if (breadth && status.get('abilities') === 'answered' && breadth.unplaced.length > 0) {
-    reasons.push(`- abilities: ${breadth.unplaced.length} of ${breadth.abilities} abilities the survey lists, the floor under the map, sit on no node by name and no exclusion: ${listedAll(breadth.unplaced, abilityLabel)}. Next call: add_concepts a capability for each thing a user or operator gets there, or patch_concept the node that covers it to name it (a family or group names its members), or exclude it in the project's ## Uncertainty with a line that says why it is not an ability. ${fallback('abilities', 'abilities not yet placed')}`);
+    reasons.push(`- abilities: ${breadth.unplaced.length} of ${breadth.abilities} abilities the survey lists, the floor under the map, sit on no node by name and no exclusion: ${listedAll(breadth.unplaced, abilityLabel)}. Next call: add_concepts a capability for each thing a user or operator gets there, or patch_concept the node that covers it to name it in its title or in code form (\`name\`, a family or group names its members; a word in passing does not count), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why it is not an ability. ${fallback('abilities', 'abilities not yet placed')}`);
   }
   if (status.get('impact') === 'answered' && depth.capabilities > 0) {
     const edges = depth.abilityEdges;

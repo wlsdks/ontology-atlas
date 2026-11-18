@@ -45,11 +45,13 @@ symbol; it is not enough to say how it works.
 
 Breadth is a floor, not a count: list every ability the product gives a user,
 an operator or another system from the outlines and docs, and every ability the
-survey lists is on that list. Each ends up as its own capability, named inside
-the capability or element that covers it (a family or group by at least half
-its members), or excluded in the project's `## Uncertainty` by a line that says
-why. A word in a domain sentence does not place an ability, and a line that only
-lists names or a shared file excludes nothing.
+survey lists is on that list. Each ends up as its own capability, named in the
+title or in code form (`name`, `--flag`, its `path:Lline`) of the capability or
+element that covers it (a family or group by at least half its members), or
+excluded by one line in the project's `## Uncertainty` that cites its
+`path:Lline` or exact name and says why. A word in passing or in a domain
+sentence does not place an ability, and a line that names several abilities or
+a shared file excludes none of them.
 
 ## 3. Write down the product outline
 
