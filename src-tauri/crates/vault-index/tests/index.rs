@@ -467,9 +467,11 @@ mod windows {
         );
         sync(&spelled[0], &files, &Progress::default(), Check::Always).unwrap();
         let report = sync(&spelled[1], &files, &Progress::default(), Check::Always).unwrap();
+        // Files written a moment ago are inside the racy window, so the reuse shows as rows
+        // confirmed by hash rather than by stamp; either way nothing is indexed again.
         assert_eq!(
-            report.unchanged,
-            files.len(),
+            (report.indexed, report.unchanged + report.verified),
+            (0, files.len()),
             "the second spelling reuses the first one's index"
         );
         assert_consistent(&vault, &files);
