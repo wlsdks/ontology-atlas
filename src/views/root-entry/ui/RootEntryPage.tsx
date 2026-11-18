@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { lazy, useEffect, useState, useSyncExternalStore } from "react";
 import { Bot, FolderSearch, HardDrive, Network, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
@@ -9,9 +9,30 @@ import { Button, IconButton } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
-import { GatewayLandingPage } from "@/views/download";
 import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
 import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workbench";
+
+/**
+ * The gateway is its own chunk: it draws this repository's vault from a static JSON import, which
+ * the installed app, whose `/` is the map or first-run, must never fetch. A web browser starts the
+ * import the moment this module runs, so it overlaps the page's other scripts, and the installed
+ * app starts nothing. The component is lazy without an inner boundary, so while it finishes the
+ * page's own Suspense fallback (`GatewayEntryFallback`, the exported HTML) stays on screen and
+ * nothing flashes in between.
+ */
+function startGatewayImport() {
+  if (typeof window === "undefined") return null;
+  try {
+    if (isDesktopShell()) return null;
+  } catch {
+    // An import must never throw; the lazy factory below imports on first render instead.
+  }
+  return import("@/views/download").then((module) => ({ default: module.GatewayLandingPage }));
+}
+const gatewayImport = startGatewayImport();
+const GatewayLandingPage = lazy(
+  () => gatewayImport ?? import("@/views/download").then((module) => ({ default: module.GatewayLandingPage })),
+);
 
 /**
  * A chosen or restored vault goes straight to the map; the installed app without one gets
@@ -46,6 +67,7 @@ export function RootEntryPage() {
     if (workbenchLikely) requestRootWorkbench(locale);
   }, [workbenchLikely, locale]);
 
+  // Not yet known whether this is the installed app, which must never be offered its own download.
   if (!clientReady) return <DesktopVaultRedirect />;
   if (vaultOpen) {
     if (views) return <views.HomePage />;

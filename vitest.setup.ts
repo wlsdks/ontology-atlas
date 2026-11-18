@@ -2,7 +2,15 @@ import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
 
+import { loadStaticVaultSource } from './src/entities/docs-vault/lib/bundled-vault/load-static-vault-source';
 import { clearArrivalMemory } from './src/shared/lib/navigation/route-arrival-memory-store';
+
+/**
+ * The browser fetches a bundled sample the first time a screen shows it; a unit test renders
+ * synchronously, so both samples are in hand before any test file runs, as they were when they
+ * were static imports. A test of the loading step itself resets with `resetStaticVaultSourcesForTests`.
+ */
+await Promise.all([loadStaticVaultSource('dogfood'), loadStaticVaultSource('storefront')]);
 
 /**
  * One condition-wait ceiling for the whole suite: it only decides how long a failure takes to report.

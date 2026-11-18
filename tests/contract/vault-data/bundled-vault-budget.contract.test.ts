@@ -10,13 +10,15 @@ import {
 import { readLedgerSource } from '../../../scripts/lib/records/record-ledgers.mjs';
 
 /**
- * Always-on size gate: data JSON statically imported into the shared chunk is measurable as file
- * size. A change raising the cap must include measured `pnpm build && pnpm desktop:perf` output.
+ * Always-on size gate on the bundled data JSON. Web screens fetch it with `import()` when a sample is
+ * shown and the installed app fetches none; build-time code and `/download` still import it, so the
+ * total stays bounded. A change raising the cap must include measured `pnpm build` output from
+ * `pnpm build:first-load` (`/download` is the one route allowed a JSON literal over 50 KB).
  */
 
 const DATA_DIR = path.join(process.cwd(), 'src', 'entities', 'docs-vault', 'data');
 
-/** Files that static-vault-source.ts **imports statically**, putting them in the shared chunk. */
+/** The five files the dogfood and storefront samples are made of (`load-static-vault-source.ts`). */
 const STATICALLY_BUNDLED = [
   'manifest.json',
   'gateway-content.json',
@@ -28,7 +30,7 @@ const STATICALLY_BUNDLED = [
 const AGGREGATE_BUDGET_BYTES = 1.25 * 1024 * 1024;
 
 describe('standing budget of bundled vault data', () => {
-  it('the data JSON total carried in the common chunk is within budget', () => {
+  it('the data JSON total the samples carry is within budget', () => {
     const sizes = STATICALLY_BUNDLED.map((name) => ({
       name,
       bytes: statSync(path.join(DATA_DIR, name)).size,
@@ -37,7 +39,7 @@ describe('standing budget of bundled vault data', () => {
     expect(
       total,
       [
-        'The bundled vault data every route parses is over budget.',
+        'The bundled vault data a sample parses is over budget.',
         'Move the largest file to a lazy load (an async chunk or a public asset) or cut it down to a preview.',
         ...sizes.map((f) => `  ${f.name}: ${(f.bytes / 1024).toFixed(0)}KB`),
       ].join('\n'),

@@ -81,7 +81,7 @@ export function ToCheckSection({
             testId="project-detail-to-check-heading"
             reducedMotion={reducedMotion}
             className={SECTION_HEADING_CLASS}
-            text={t("toCheckHeading", { count: total })}
+            text={t("toCheckHeading", { count: reviewReading && total === 0 ? "…" : total })}
           />
         }
         door={

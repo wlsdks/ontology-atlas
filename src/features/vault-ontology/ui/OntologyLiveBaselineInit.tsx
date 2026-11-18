@@ -18,7 +18,7 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
  */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
-  const { insight } = useOntologyInsight();
+  const { insight } = useOntologyInsight({ demand: false });
   const vaultScope = useVaultIdentityScope();
   const handledScopeRef = useRef<string | null>(null);
 
