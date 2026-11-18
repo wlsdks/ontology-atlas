@@ -11,7 +11,7 @@ import {
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
-import { declarationIndex } from './declaration-index.mjs';
+import { declarationIndex, productFiles } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
 
@@ -372,6 +372,7 @@ function readOne(rootPath, selector, ignore, hooks) {
       bodyEnd: endLine,
       callees,
       open: hooks.open ?? contextOpener(rootPath, ignore, hooks),
+      files: hooks.files,
       budget: contextBudget(hooks, returnedBytes),
     })
     : null;
@@ -483,7 +484,7 @@ function calleesOf(text, selector, declarations, declaration, hooks) {
       continue;
     }
     if (!hooks?.rootPath) continue;
-    index ??= declarationIndex(hooks.rootPath, { ignore: hooks.ignore ?? [] });
+    index ??= declarationIndex(hooks.rootPath, { ignore: hooks.ignore ?? [], files: hooks.files?.() });
     const elsewhere = [...(index.get(name) ?? []), ...(index.get(`*.${name}`) ?? [])].filter((row) => row.path !== selector.path);
     if (elsewhere.length > 0 && elsewhere.length <= 2) for (const row of elsewhere) callees.push({ name, path: row.path, line: row.line });
   }
@@ -519,9 +520,12 @@ export function readSourceEvidence(
     serializedBytes: 0,
   };
   const open = contextOpener(rootPath, ignore, {});
+  // One walk of the repository serves every selector in this call.
+  let walked = null;
+  const files = () => (walked ??= productFiles(rootPath, extraIgnore));
   for (const [index, selector] of selectors.entries()) {
     let row = readOne(rootPath, selector, ignore, {
-      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open,
+      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open, files,
       remainingBytes: SOURCE_READ_LIMITS.aggregateTextBytes - packet.totalReturnedBytes,
       readsLeft: selectors.slice(index).filter((candidate) => !isOutline(candidate)).length,
     });

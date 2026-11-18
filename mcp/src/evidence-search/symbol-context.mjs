@@ -29,15 +29,34 @@ export const SYMBOL_CONTEXT_LIMITS = Object.freeze({
   ownerHeader: 30,
 });
 
-const CONDITION = /\b(?:if|elif|else|unless|switch|case|when|match|guard|while|raise|throw|except|catch|default)\b|\?\?|\|\||&&|\s\?\s[^:]+\s:\s/u;
+const CONDITION = /\b(?:if|elif|else|unless|switch|case|when|match|guard|while|raise|throw|except|catch|default)\b|\?\?|\|\||&&/u;
+// A decisive line longer than this is generated or minified; only its head is examined.
+const DECIDE_CHARS = 2000;
+const SPACE = /\s/u;
 const DEFAULT_VALUE = /(?:^|[\s(,{])[A-Za-z_$][\w$]*\s*(?::=|=(?!=)|:)\s*(?:true|false|True|False|None|null|nil|-?\d[\d_.]*|"[^"\n]*"|'[^'\n]*')\s*(?:[,)}]|$)/u;
 const COMMENT = /^\s*(?:\/\/|#|\*|\/\*)/u;
 const DECIDING_NAME = /default|Default|option|Option|config|Config|setting|resolve|Resolve|verif|Verif|valid|Valid|check|Check|allow|Allow|should|mark|guard|policy|filter|select|choose|decide|^new[A-Z]|^New[A-Z]|^__init__$|^constructor$|^can[A-Z]|^is[A-Z]|^_?drain|^_?ensure/u;
 
 /** Whether one source line decides: a condition, a branch, a throw or a literal default. */
 export function decidesLine(line) {
-  if (COMMENT.test(line)) return false;
-  return CONDITION.test(line) || DEFAULT_VALUE.test(line);
+  const head = line.length > DECIDE_CHARS ? line.slice(0, DECIDE_CHARS) : line;
+  if (COMMENT.test(head)) return false;
+  return CONDITION.test(head) || hasTernary(head) || DEFAULT_VALUE.test(head);
+}
+
+/**
+ * `a ? b : c` with spaces around both marks and no colon between them, in one
+ * right-to-left pass: each ` ? ` is checked against the nearest colon after it.
+ */
+function hasTernary(line) {
+  let colon = -1;
+  for (let index = line.length - 1; index > 0; index -= 1) {
+    const char = line[index];
+    if (char === ':') colon = index;
+    else if (char === '?' && SPACE.test(line[index - 1]) && SPACE.test(line[index + 1] ?? '')
+      && colon > index + 3 && SPACE.test(line[colon - 1]) && SPACE.test(line[colon + 1] ?? '')) return true;
+  }
+  return false;
 }
 
 function decidingCount(lines) {
@@ -122,7 +141,7 @@ function runs(numbers) {
  * @param {(path: string) => ({ lines: string[], declarations: object[], sha256: string } | null)} input.open
  * @param {number} input.budget bytes this read may add
  */
-export function symbolContext({ rootPath, ignore, path, lines, declarations, declaration, bodyEnd, callees, open, budget }) {
+export function symbolContext({ rootPath, ignore, path, lines, declarations, declaration, bodyEnd, callees, open, files, budget }) {
   const candidates = [];
   const bodyDecides = decidingCount(lines.slice(declaration.line - 1, bodyEnd)) > 0;
   const own = declaration.name.split('.').pop();
@@ -159,7 +178,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
   }
 
   // The callers: the guard around each call, or the whole caller when it is short.
-  const { sites, total } = callSitesOf(rootPath, own, { ignore, limit: SYMBOL_CONTEXT_LIMITS.callerSites });
+  const { sites, total } = callSitesOf(rootPath, own, { ignore, limit: SYMBOL_CONTEXT_LIMITS.callerSites, files: files?.() });
   const callerRows = [];
   for (const site of sites) {
     if (site.path === path && site.line >= declaration.line && site.line <= bodyEnd) continue;
