@@ -18,7 +18,9 @@ import {
   ACT_MS,
   EXAMPLE_REPO,
   MIN_PLAY_SCALE,
+  PHONE_STILL,
   STARTS,
+  phoneStillName,
   TOTAL,
   stillSrc,
   WINDOW,
@@ -49,9 +51,12 @@ const CAPTION_IN = 160;
 const CAPTION_LAG = 40;
 const CAPTION_RISE = 12;
 
-/** The still pictures: the whole window, and the detail head for a narrow screen (CSS pixels). */
+/** The whole window's still picture (CSS pixels). */
 const STILL = { w: WINDOW.w, h: WINDOW.h } as const;
-const STILL_DETAIL = { w: 400, h: 320 } as const;
+
+/** On a phone each act's close-up cross-fades over the next and pushes in 3.5% while its act plays. */
+const SHOT_FADE = 320;
+const SHOT_PUSH = 0.035;
 
 /** Film time (ms) at choreography progress `p`. */
 function filmTime(p: number): number {
@@ -70,6 +75,16 @@ function captionAt(i: number, T: number) {
   };
 }
 
+/** Act `i`'s close-up at film time T: in over its first beat, out while the next one comes in. */
+function shotAt(i: number, T: number) {
+  const start = STARTS[i]!;
+  const end = i + 1 < STARTS.length ? STARTS[i + 1]! : Infinity;
+  return {
+    lit: inOut((T - start) / SHOT_FADE) * (1 - inOut((T - end) / SHOT_FADE)),
+    scale: 1 + SHOT_PUSH * clamp((T - start) / (ACT_MS[i]! + SHOT_FADE)),
+  };
+}
+
 function setRise(el: HTMLElement | null | undefined, lit: number) {
   if (!el) return;
   el.style.opacity = String(lit);
@@ -78,8 +93,11 @@ function setRise(el: HTMLElement | null | undefined, lit: number) {
 
 type WindowComponent = ComponentType<{ example: ExampleRead; scale: () => number; onReady: (director: Director | null) => void }>;
 
-/** `detail` is the still a stage narrower than the film shows: the detail head alone. */
-type Mode = 'list' | 'still' | 'detail' | 'playing';
+/**
+ * Narrower than the film, `phone` plays each act's close-up of the window with its caption, and
+ * `detail` (reduced motion) shows the third act's close-up above the list.
+ */
+type Mode = 'list' | 'still' | 'detail' | 'phone' | 'playing';
 
 /**
  * The page's second film: the app's own Harness › Setup screen, playing on an example repository.
@@ -101,6 +119,8 @@ export function HarnessFilm() {
   const heads = useRef<(HTMLHeadingElement | null)[]>([]);
   const bodies = useRef<(HTMLParagraphElement | null)[]>([]);
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
+  const shots = useRef<(HTMLImageElement | null)[]>([]);
+  const shotStage = useRef<HTMLDivElement>(null);
   const seek = useRef<(act: number) => void>(() => {});
   const frame = useRef<WindowFrame>({ x: 0, y: 0, s: 1 });
   const [mode, setMode] = useState<Mode>('list');
@@ -116,7 +136,9 @@ export function HarnessFilm() {
     const decide = () => {
       cancelAnimationFrame(id);
       const next: Mode = !wide.matches
-        ? 'detail'
+        ? reduced.matches
+          ? 'detail'
+          : 'phone'
         : reduced.matches || !playable.matches || typeof IntersectionObserver === 'undefined'
           ? 'still'
           : 'playing';
@@ -204,15 +226,22 @@ export function HarnessFilm() {
   /* The clock starts once the screen has committed one hidden render and its director is ready. */
   useEffect(() => {
     const host = stage.current;
-    const shown = holder.current;
-    if (mode !== 'playing' || !director || !host || !shown) return;
+    const phone = mode === 'phone';
+    const shown = phone ? shotStage.current : holder.current;
+    if (!(phone || (mode === 'playing' && director)) || !host || !shown) return;
     const time = createFilmClock(ACT_SPANS, ACT_MS, CLOCK);
     let veil = 1;
     let p = 0;
     const paint = (jump = false) => {
       const T = filmTime(p);
-      if (jump) director.seek(T);
-      else director.at(T);
+      if (jump) director?.seek(T);
+      else director?.at(T);
+      shots.current.forEach((shot, i) => {
+        if (!shot) return;
+        const { lit, scale } = shotAt(i, T);
+        shot.style.opacity = String(lit);
+        shot.style.transform = `scale(${scale})`;
+      });
       const light = isMotionPaused() ? 1 : time.fade() * veil;
       shown.style.opacity = String(light);
       if (glow.current) glow.current.style.opacity = String(light);
@@ -300,7 +329,7 @@ export function HarnessFilm() {
       role="region"
       aria-labelledby="gateway-harness-title"
       data-testid="gateway-harness"
-      data-gateway-harness={mode === 'playing' ? 'playing' : 'still'}
+      data-gateway-harness={mode === 'playing' || mode === 'phone' ? mode : 'still'}
       className="relative mt-[var(--gateway-section-gap)] w-full"
     >
       {mode === 'playing' ? (
@@ -363,6 +392,70 @@ export function HarnessFilm() {
             </div>
           </div>
         </div>
+      ) : mode === 'phone' ? (
+        <div ref={stage} className={PAGE_GUTTER}>
+          <div className={PAGE_COLUMN}>
+            {title}
+            <div
+              ref={shotStage}
+              aria-hidden
+              data-harness-film-phone
+              className="harness-phone-shots mt-6 grid overflow-hidden opacity-0 [&>*]:[grid-area:1/1]"
+            >
+              {ACTS.map((act, i) => (
+                <Image
+                  key={act}
+                  ref={(node) => {
+                    shots.current[i] = node;
+                  }}
+                  src={withBasePath(stillSrc(phoneStillName(act), locale))}
+                  unoptimized
+                  width={PHONE_STILL.w}
+                  height={PHONE_STILL.h}
+                  loading="lazy"
+                  alt=""
+                  className="block h-auto w-full opacity-0"
+                />
+              ))}
+            </div>
+            <ol className="mt-5 grid [&>*]:[grid-area:1/1]">
+              {ACTS.map((act, i) => (
+                <li
+                  key={act}
+                  ref={(node) => {
+                    captions.current[i] = node;
+                  }}
+                  className="invisible min-w-0"
+                >
+                  <h3
+                    ref={(node) => {
+                      heads.current[i] = node;
+                    }}
+                    className="text-title leading-title text-[color:var(--color-text-primary)] opacity-0"
+                  >
+                    {t(`acts.${act}.title`)}
+                  </h3>
+                  <p
+                    ref={(node) => {
+                      bodies.current[i] = node;
+                    }}
+                    className="mt-2 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)] opacity-0"
+                  >
+                    {t(`acts.${act}.body`)}
+                  </p>
+                </li>
+              ))}
+            </ol>
+            <FilmActBar
+              titles={ACTS.map((act) => t(`acts.${act}.title`))}
+              label={t('actsLabel')}
+              fills={fills}
+              onSeek={(act) => seek.current(act)}
+              align="start"
+              className="mt-5"
+            />
+          </div>
+        </div>
       ) : (
         <>
           <div className={PAGE_GUTTER}>
@@ -374,13 +467,13 @@ export function HarnessFilm() {
                 {/* The act list below carries the meaning; the picture repeats it. */}
                 <Image
                   data-harness-film-still={mode}
-                  src={withBasePath(stillSrc(mode === 'detail' ? 'harness-film-detail' : 'harness-film', locale))}
+                  src={withBasePath(stillSrc(mode === 'detail' ? phoneStillName(3) : 'harness-film', locale))}
                   unoptimized
-                  width={mode === 'detail' ? STILL_DETAIL.w : STILL.w}
-                  height={mode === 'detail' ? STILL_DETAIL.h : STILL.h}
+                  width={mode === 'detail' ? PHONE_STILL.w : STILL.w}
+                  height={mode === 'detail' ? PHONE_STILL.h : STILL.h}
                   loading="lazy"
                   alt=""
-                  className="block h-auto max-w-full"
+                  className={cn('block h-auto', mode === 'detail' ? 'harness-phone-shots w-full' : 'max-w-full')}
                 />
               </div>
             </div>

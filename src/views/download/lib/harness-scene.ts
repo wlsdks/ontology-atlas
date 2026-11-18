@@ -160,7 +160,19 @@ export const SCRIM_MS = 240;
 export const SCRIM_ALPHA = 0.45;
 
 /** The film's still pictures under `public/gateway/`; a locale without its own set reads English. */
-export const STILL_NAMES = ['harness-film', 'harness-film-detail'] as const;
+export const STILL_NAMES = [
+  'harness-film',
+  'harness-film-phone-1',
+  'harness-film-phone-2',
+  'harness-film-phone-3',
+  'harness-film-phone-4',
+] as const;
+/** A phone close-up's CSS size: one 4:3 crop of the window per act (`harness-film-still.mjs`). */
+export const PHONE_STILL = { w: 480, h: 360 } as const;
+
+export function phoneStillName(act: 1 | 2 | 3 | 4): (typeof STILL_NAMES)[number] {
+  return `harness-film-phone-${act}`;
+}
 export const STILL_LOCALES = ['ko', 'en', 'ja', 'zh'] as const;
 
 export function stillSrc(name: (typeof STILL_NAMES)[number], locale: string): string {
