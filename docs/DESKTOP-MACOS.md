@@ -89,20 +89,14 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   static export once, route-smoke it, bundle that same export, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
-  workflow runs both phases in the one `build-macos` job: the credential gate,
-  `--phase=build`, a check that tracked files still match the admitted commit,
-  the certificate import, then `--phase=sign`. Signing in a second job was
-  tried for v2.2.3 and its wait for a second macOS runner (5 m 06 s) was longer
-  than the job (2 m 28 s). One job gives up two things. A signing or
-  notarization failure reruns the whole job. And there is no runner boundary
-  between build and signing: build code (`pnpm build`, the bun sidecar compile,
-  cargo build scripts and proc macros) runs as the same user in the same
-  workspace one step before the certificate import, as it did in v2.2.2.
-  Secrets reach a step only through that step's own `env`, which keeps their
-  values out of the build step's environment but is not isolation: the
-  tracked-file check catches a build that rewrote a repository script, and
-  nothing catches a `$GITHUB_PATH` entry, an untracked file or a changed
-  `node_modules` that a signing step then runs.
+  workflow runs `--phase=build` in `build-macos`, a job that references no
+  secret, and hands the unsigned bundle as a tar archive to `sign-macos`, which
+  checks its digest, imports the certificate and runs `--phase=sign`. The
+  bundle the build produced is still executed there (the MCP exact-case probe
+  and the install smoke). A signing or notarization failure reruns only that
+  job. The second job waits for a second macOS runner (5 m 06 s in v2.2.3,
+  against 2 m 28 s of work); that wait is the price of keeping third-party
+  build code off the runner that holds the signing identity.
 
 ## Installed-app log
 
@@ -266,8 +260,12 @@ and masks it with `::add-mask::`, and derives the identity from the imported
 certificate. An `always()` step deletes the temporary keychain and decoded
 `.p12` after the per-arch handoff, even on failure.
 `scripts/desktop-release/check-macos-release-secrets.mjs` rejects a missing, blank, or
-structurally unusable secret (including base64 that is not PKCS#12 DER) before
-the build starts. The `.p8` is written to a `0600` temporary file only for notarization.
+structurally unusable secret (including base64 that is not PKCS#12 DER) twice.
+`check-release-credentials` runs it on a Linux runner as soon as the release is
+admitted, beside the build, so a bad secret fails in about a minute and not
+after the build; that job installs nothing and runs only this script.
+`sign-macos` runs it again on its own runner before the certificate is
+imported. The `.p8` is written to a `0600` temporary file only for notarization.
 
 In the workflow, `scripts/desktop/sign-macos-app.mjs` deep-signs the `.app` with
 hardened runtime and verifies with strict deep `codesign`, and with `--dmg`
@@ -395,7 +393,7 @@ updater artifacts.
 |---|---|
 | `desktop:smoke` reports a missing route, asset, or offline doc | Rebuild with `pnpm build`; if only copy or a component marker differs, compare the product and `scripts/desktop/desktop-smoke.mjs` before rebuilding once |
 | `desktop:verify-app` exits early or finds no window | Rerun with `--kill-existing --print-window-diagnostics`; a stale `/Applications` copy shares the bundle id |
-| Workflow fails before build on secrets | `pnpm desktop:release-github -- --tag=<tag>`, then `node scripts/desktop-release/apple-signing-setup.mjs verify`; set values with the commands above |
+| `check-release-credentials` or `sign-macos` fails on secrets | `pnpm desktop:release-github -- --tag=<tag>`, then `node scripts/desktop-release/apple-signing-setup.mjs verify`; set values with the commands above |
 | Admission fails: version | Align the three version files; `pnpm desktop:release-tag -- --tag=<tag>` |
 | Admission fails: release facts | The previous release's facts PR has not landed; land it or `pnpm desktop:release-run -- --tag=<previous tag> --refresh-only` |
 | Admission fails: ACP registry | Refresh drift with `pnpm acp:registry` and land it |

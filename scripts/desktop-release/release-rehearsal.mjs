@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Walks the release workflow's `admit-release`, `test-release-gates`, `test-macos` and `build-macos` steps on this machine
+ * Walks the release workflow's `admit-release`, `test-release-gates`, `test-macos`, `build-macos` and `sign-macos` steps on this machine
  * before a tag is pushed, reading them from the workflow so a new step is never missed;
  * a step that needs Apple secrets or a real tag is listed as SKIP with its reason.
  *
@@ -33,12 +33,16 @@ export const REHEARSAL_SKIPS = {
     "ADMISSION SKIP — create the tag first, then pass --tag=vX.Y.Z to run desktop:release-source --mode=admit against the full SHA of the current HEAD.",
   "Verify release source commit":
     "The pin check in build-macos re-verifies the RELEASE_SHA that admit-release pinned and handed over. In pin mode main may move ahead afterwards. A --tag rehearsal runs the earlier admit check against the current HEAD, but the value handed between hosted jobs cannot be reproduced on this machine.",
+  "Recheck release source commit before signing":
+    "The same pin check as in build-macos, repeated on the signing runner against the value admit-release handed over; it cannot be reproduced on this machine.",
+  "Archive unsigned app bundle":
+    "It tars the unsigned bundle and its dSYM for the hand-off between two runners. On this machine the build and the signing substitute share one working tree, so there is nothing to hand over.",
+  "Restore the unsigned app bundle that build-macos archived":
+    "It checks the archive digest that build-macos reported and unpacks it on the signing runner. This machine never left the build's working tree.",
   "Verify release tag version":
     "A real tag name is required. Instead, the check below confirms that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   "Require signed release credentials":
     "All five Apple secrets must be registered on the repository for the runner to pass this gate. This machine holds no Actions secret, so checking the real values only holds in the tag workflow.",
-  "Require unmodified tracked source before signing":
-    "It compares the runner's checkout with the SHA admit-release handed over. A rehearsal runs from a working tree that may hold uncommitted work, and no hosted job output exists on this machine.",
   "Import Apple Developer ID certificate":
     "This step builds a temporary keychain from APPLE_CERTIFICATE_P12_BASE64. It cannot run without the secrets, and running it would touch this machine's keychain, so the rehearsal deliberately leaves it out.",
   "Enable Corepack pnpm":
@@ -151,7 +155,7 @@ export function parseAdmitReleaseSteps(workflow) {
 }
 
 /** The jobs a tag runs after admission that this machine can walk, in that order. */
-export const REHEARSED_JOBS = Object.freeze(["test-release-gates", "test-macos", "build-macos"]);
+export const REHEARSED_JOBS = Object.freeze(["test-release-gates", "test-macos", "build-macos", "sign-macos"]);
 
 export function parseRehearsedSteps(workflow) {
   return REHEARSED_JOBS.flatMap((job) =>
@@ -309,7 +313,7 @@ function main() {
       [
         "Usage: pnpm desktop:release-rehearsal [--fast] [--list] [--tag=vX.Y.Z]",
         "",
-        "Walks the release-macos.yml `admit-release`, `test-release-gates`, `test-macos` and `build-macos` jobs on this",
+        "Walks the release-macos.yml `admit-release`, `test-release-gates`, `test-macos`, `build-macos` and `sign-macos` jobs on this",
         "machine, in file order. Without --tag, admission is explicitly SKIP; after creating an",
         "existing tag, --tag runs the workflow's release-tag and source-admit checks locally.",
         "",
@@ -430,7 +434,7 @@ function main() {
     ["rustc", ["--version"]],
   ];
 
-  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + test-release-gates + test-macos + build-macos — in order, on this machine"));
+  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + test-release-gates + test-macos + build-macos + sign-macos — in order, on this machine"));
   console.log("");
   for (const [tool, args] of tools) {
     const probe = probeTool(tool, args);
