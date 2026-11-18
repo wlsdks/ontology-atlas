@@ -21,7 +21,7 @@ more than the run; no comparison has been made for either yet.
 | Task | Agent | Model · effort | Turn cap |
 |---|---|---|---|
 | decide, plan small changes, talk to the owner | lead session | the owner's choice · high from `.claude/settings.json` | none |
-| build one slice from `/delegate`, deciding inside its owned files | `implementer` | Opus · high | 150 |
+| build one slice from `/delegate`, deciding inside its owned files | `implementer` | Opus · high | 300 |
 | root cause of a reproduced failure or flake, then the fix | `investigator` | Opus · xhigh | 250 |
 | slices for a change that crosses modules: file ownership, cross-slice decisions, order, acceptance | `planner` | Fable · high | 200 |
 | the product spec of a one-way product change | `product-planner` | Fable · high | 250 |
@@ -46,7 +46,9 @@ transcripts.
 - `maxTurns` per agent (table above), from the same runs: above the p90 for
   implementer, reviewer and product-planner, and below the longest planner,
   investigator and design-guardian runs, which were missions outside the role.
-  At the cap the agent returns a partial result the lead can resume.
+  At the cap the agent returns a partial result the lead can resume. The
+  implementer cap rose to 300 after five slices hit 150 on 2026-11-18/19
+  (CI gates, build tuning, dependency audit, construction depth).
 - A `tools:` allowlist on every agent. Without one an agent also loads the skill
   listing and every deferred tool, about 23K tokens per turn: implementers and
   investigators started at about 50.5K tokens against a reviewer's 27.5K. A workflow

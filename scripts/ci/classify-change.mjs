@@ -4,7 +4,9 @@
  *
  * PRs and verified main push ranges pay for affected evidence. Scheduled runs,
  * shared test configuration, and changes to this planner run the exhaustive
- * lanes. The focused mapping is not duplicated here: `checks:changed` remains
+ * lanes. The browser lane is narrower before merge: the mapped specs plus the
+ * merge smoke set (`merge-smoke-specs.mjs`), and the full suite only when this
+ * planner, the browser executor or a root dependency changed. Every push to `main` runs it in full. The focused mapping is not duplicated here: `checks:changed` remains
  * the repository's path -> check authority, the import graph says which test
  * projects a change reaches, and this module assigns those checks to CI lanes.
  */
@@ -130,8 +132,11 @@ const MCP_FULL_INPUTS = [
 
 const PLAYWRIGHT_SPEC_PATH = /^tests\/e2e\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\.spec\.ts$/;
 
-const E2E_FULL_INPUTS = [
-  ...BROWSER_EXECUTION_SURFACE_PATTERNS,
+/**
+ * Browser inputs whose reach no mapping can name. Before merge they run the merge smoke set with
+ * both separately protected surfaces, not the full suite; the push to `main` runs everything.
+ */
+const E2E_BROAD_INPUTS = [
   /^playwright\.config\.ts$/,
   /^next\.config\.ts$/,
   /^postcss\.config\.mjs$/,
@@ -157,15 +162,13 @@ const ROOT_VITEST_INPUTS = [
 ];
 
 const BROWSER_INPUTS = [
-  /^app\//,
-  /^src\/.*\.(?:tsx|css)$/,
   /*
-   * Plain .ts inside a `ui/` segment is rendering code by FSD convention (pointer handlers, canvas
-   * renderers, layout math), so affected Vitest alone is not enough there. Model/lib .ts stays with
-   * affected Vitest.
+   * Every non-test source file reaches the browser: a model or lib module (the starter writer, the
+   * agent runtime) can break first run or sending as surely as a component, and affected Vitest
+   * does not render either. An unmapped one runs the merge smoke set.
    */
-  /^src\/.*\/ui\/.*\.ts$/,
-  /^src\/(?:widgets\/ontology-map|shared\/motion)\/.*(?<!\.test)\.ts$/,
+  /^app\//,
+  /^src\//,
   /^messages\//,
   /^public\//,
   /^assets\//,
@@ -432,7 +435,7 @@ function mcpPlan({ suggestions, full }) {
   return { mode: commands.length > 0 ? 'focused' : 'skip', commands };
 }
 
-function e2ePlan({ paths, suggestions, full }) {
+function e2ePlan({ paths, suggestions, full, broadPaths = [] }) {
   if (full) {
     return {
       mode: 'full',
@@ -444,15 +447,15 @@ function e2ePlan({ paths, suggestions, full }) {
   }
 
   const rows = suggestions.commands.filter((row) => commandLane(row.command) === 'e2e');
-  const mappedPaths = new Set(rows.filter((row) => !row.additive).flatMap((row) => row.paths));
-  const browserInputs = paths.filter(isBrowserInput);
-  const unmappedPaths = browserInputs.filter((path) => !mappedPaths.has(path));
+  const broad = broadPaths.length > 0;
   const staticExport =
+    broad ||
     paths.some((path) => matchesAny(path, STATIC_EXPORT_INPUTS)) ||
     rows.some((row) =>
       playwrightSpecs(row.command).includes('tests/e2e/contextual-meaning-editor.spec.ts'),
     );
   const webSurface =
+    broad ||
     paths.some((path) => matchesAny(path, WEB_SURFACE_INPUTS)) ||
     rows.some((row) =>
       playwrightSpecs(row.command).includes('tests/e2e/web-surface-smoke.spec.ts'),
@@ -464,6 +467,13 @@ function e2ePlan({ paths, suggestions, full }) {
   const specs = unique(rows.flatMap((row) => playwrightSpecs(row.command)))
     .filter((spec) => !delegated.has(spec))
     .sort();
+  // A path counts as mapped only when a row sends it to a spec the shards run; one mapped only to
+  // a separately protected surface job would otherwise leave every shard idle.
+  const mappedPaths = new Set(rows
+    .filter((row) => !row.additive && playwrightSpecs(row.command).some((spec) => !delegated.has(spec)))
+    .flatMap((row) => row.paths));
+  const browserInputs = paths.filter(isBrowserInput);
+  const unmappedPaths = unique([...browserInputs.filter((path) => !mappedPaths.has(path)), ...broadPaths]);
   const mode = unmappedPaths.length > 0 ? 'smoke' : specs.length > 0 ? 'targeted' : 'skip';
 
   return { mode, specs, unmappedPaths, staticExport, webSurface };
@@ -518,14 +528,17 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
     suggestions,
     full: full || paths.some((path) => matchesAny(path, MCP_FULL_INPUTS)),
   });
-  const e2e = e2ePlan({
-    paths,
-    suggestions,
-    full: full || paths.some((path) =>
-      (!isSourceTest(path) && matchesAny(path, E2E_FULL_INPUTS)) ||
-      (path.startsWith('tests/e2e/') && !PLAYWRIGHT_SPEC_PATH.test(path)),
-    ),
-  });
+  // The browser suite runs in full before merge only when the planner or the executor that splits
+  // it changed: otherwise the change's own specs and the merge smoke set, and `main` runs the rest.
+  // A dependency (a Next or three.js bump, a patch) can move any screen, so it runs everything too.
+  const e2eFull = forceFull || plannerChanged || rootAllChanged ||
+    paths.some((path) => !isSourceTest(path) && matchesAny(path, BROWSER_EXECUTION_SURFACE_PATTERNS));
+  const broadPaths = full
+    ? paths.filter((path) => !matchesAny(path, KNOWN_PATHS))
+    : paths.filter((path) =>
+      (!isSourceTest(path) && matchesAny(path, E2E_BROAD_INPUTS)) ||
+      (path.startsWith('tests/e2e/') && !PLAYWRIGHT_SPEC_PATH.test(path)));
+  const e2e = e2ePlan({ paths, suggestions, full: e2eFull, broadPaths });
   const gates = gatesPlan({ suggestions, full });
   const perf = perfPlan({ paths, existingPaths: existing, deletedPaths: deleted, full });
 
@@ -590,6 +603,23 @@ export function reuseReviewedMainPlan(plan, proof, { eventName, base, head } = {
     reason: `exact Git tree already passed required CI in PR #${proof.pullRequest}`,
     lanes: idle.lanes,
     reusedFrom: { pullRequest: proof.pullRequest, commit: head, tree: proof.tree, reviewedHead: proof.reviewedHead },
+  };
+}
+
+/**
+ * After merge the browser lane is exhaustive: every push to `main` runs the full suite, the
+ * post-merge measurements and both separately protected surfaces, even when the other lanes reuse
+ * the train's reviewed tree. A red result is announced by `pnpm pr:land`, not by a gate.
+ */
+export function fullBrowserAfterMerge(plan, { eventName } = {}) {
+  if (eventName !== 'push') return plan;
+  return {
+    ...plan,
+    reason: `${plan.reason}; browser suite in full after merge`,
+    lanes: {
+      ...plan.lanes,
+      e2e: { mode: 'full', specs: [], unmappedPaths: [], staticExport: true, webSurface: true },
+    },
   };
 }
 
@@ -714,8 +744,11 @@ export function validatePlan(plan) {
     reject('Playwright skip contains suite work');
   }
 
+  // A reused tree verifies nothing again, except the browser suite after merge, which is exhaustive.
+  const browserAfterMerge = e2e.mode === 'full' && e2e.staticExport && e2e.webSurface;
+  const browserIdle = e2e.mode === 'skip' && !e2e.staticExport && !e2e.webSurface;
   if (reused && (plan.full || gates.run || gates.commands.length || unit.mode !== 'skip' ||
-      perf.mode !== 'skip' || mcp.mode !== 'skip' || e2e.mode !== 'skip' || e2e.staticExport || e2e.webSurface)) {
+      perf.mode !== 'skip' || mcp.mode !== 'skip' || !(browserIdle || browserAfterMerge))) {
     reject('reviewed tree reuse contains unverified lane work');
   }
 
@@ -725,7 +758,7 @@ export function validatePlan(plan) {
       unit.mode !== 'full' ||
       perf.mode !== 'full' ||
       mcp.mode !== 'full' ||
-      e2e.mode !== 'full' ||
+      !['full', 'smoke'].includes(e2e.mode) ||
       !e2e.staticExport ||
       !e2e.webSurface)
   ) {
@@ -845,5 +878,5 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
       console.log(`::notice title=${TESTED_TREE_TITLE}::${testedTreeMessage({ ...carry.tested, carried: carry.verdict.lanes })}`);
     }
   }
-  emit(planned, base);
+  emit(process.argv.includes('--full-browser-after-merge') ? fullBrowserAfterMerge(planned, { eventName }) : planned, base);
 }

@@ -42,8 +42,8 @@ describe('E2E impact planning precedes expensive setup', () => {
     for (const id of PROTECTED_JOB_IDS) {
       expect(jobBlock(id), `${id} job is missing`).not.toBe('');
     }
-    expect(jobBlock('suite'), 'the five Playwright shards disappeared').toContain(
-      'shard: [1, 2, 3, 4, 5]',
+    expect(jobBlock('suite'), 'the eight Playwright shards disappeared').toContain(
+      'shard: [1, 2, 3, 4, 5, 6, 7, 8]',
     );
   });
 
@@ -99,10 +99,10 @@ describe('E2E impact planning precedes expensive setup', () => {
       'ACTIVE: ${{ needs.changes.outputs.static }}',
     );
     expect(jobBlock('web-smoke')).toContain('ACTIVE: ${{ needs.changes.outputs.web }}');
-    const suite = jobBlock('suite');
-    expect(suite).toContain("needs.changes.outputs.playwright == 'full'");
-    expect(suite).toContain("needs.changes.outputs.playwright == 'smoke'");
-    expect(suite).toContain("needs.changes.outputs.playwright == 'targeted' && matrix.shard == 1");
+    // Every non-skip verdict uses every shard: before merge they balance the mapped specs and the
+    // merge smoke set, and the push to main runs the full suite.
+    expect(jobBlock('suite')).toContain("ACTIVE: ${{ needs.changes.outputs.playwright != 'skip' }}");
+    expect(stepBlock(jobBlock('changes'), 'Build impact plan')).toContain('--full-browser-after-merge');
   });
 
   it('keeps classification out of the expensive setup action', () => {

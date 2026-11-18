@@ -1,7 +1,10 @@
 /**
- * The specs excluded from the pull-request gate; they run in the daily and
- * manual full runs, when CI's impact plan maps a change to them, and in an
- * unfiltered local run. `pnpm pr:land` warns while the daily run is red.
+ * The measurement specs, the `post-merge` Playwright project. CI runs them in
+ * the full suite on every push to main, and before merge only when the impact
+ * plan maps a change to them; `pnpm pr:land` names main's failing specs while
+ * that run is red. A train otherwise runs its mapped specs and the merge smoke
+ * set in `scripts/ci/merge-smoke-specs.mjs`, so the split below now chooses
+ * what `--project=smoke` runs locally rather than what a train runs.
  *
  * The pull-request gate keeps user journeys and behaviour, security and
  * privacy boundaries, the accessibility and contrast ratchets, and one smoke
