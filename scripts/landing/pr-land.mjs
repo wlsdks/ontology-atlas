@@ -332,6 +332,29 @@ function runStamp(run) {
   return 0;
 }
 
+function workflowRunId(check) {
+  const id = /\/actions\/runs\/(\d+)\//.exec(String(check?.detailsUrl ?? check?.targetUrl ?? ''))?.[1];
+  return id ? Number(id) : null;
+}
+
+/**
+ * Drops a cancelled check whose workflow ran again on the same head. A run cancelled before its
+ * matrix expanded leaves a job named `... ${{ matrix.shard }}/3` that its successor never reports,
+ * so no newer result under that name would ever replace it.
+ */
+function withoutSupersededCancels(rollup) {
+  const newestRun = new Map();
+  for (const check of rollup) {
+    const id = workflowRunId(check);
+    if (id !== null && check.workflowName) newestRun.set(check.workflowName, Math.max(newestRun.get(check.workflowName) ?? 0, id));
+  }
+  return rollup.filter((check) => {
+    if (String(check?.conclusion ?? '').toUpperCase() !== 'CANCELLED') return true;
+    const id = workflowRunId(check);
+    return id === null || !check.workflowName || id >= newestRun.get(check.workflowName);
+  });
+}
+
 /**
  * The newest real result per context name. One name reports several times (a draft's `SKIPPED`,
  * the real run, a rerun): the newest run wins and rank breaks ties without stamps. Keeping the
@@ -339,7 +362,7 @@ function runStamp(run) {
  */
 export function latestByName(rollup = []) {
   const byName = new Map();
-  for (const run of rollup) {
+  for (const run of withoutSupersededCancels(rollup)) {
     const name = run?.name ?? run?.context;
     if (!name) continue;
     const held = byName.get(name);
