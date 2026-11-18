@@ -41,6 +41,8 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.getByTestId("project-detail-composition-pending")).toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-lead-pending")).toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-body-empty")).not.toBeInTheDocument();
     expect(screen.queryByText("No domains yet")).not.toBeInTheDocument();
     expect(screen.getByTestId("project-detail-composition-counts")).not.toHaveTextContent("0 domains");
   });

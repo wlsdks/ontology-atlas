@@ -275,7 +275,7 @@ export function ProjectDetailPage({
   useRecordSelectedProject(project?.slug ?? null);
   const projectMutations = useProjectMutations();
   // Most documents have no `detail:` field, so the body is read from the file itself.
-  const { body: vaultBody } = useProjectBody(project?.slug ?? null);
+  const { body: vaultBody, settled: bodySettled } = useProjectBody(project?.slug ?? null);
   const bodyContent = project?.detail ?? vaultBody ?? null;
   useEffect(() => {
     if (!slug) return;
@@ -308,6 +308,8 @@ export function ProjectDetailPage({
   const { insight } = useOntologyInsight();
   /* A bundled sample still downloading is not an empty folder: the sections drawn from it wait. */
   const insightPending = insight === null;
+  // Until the body read settles, "no overview yet" would be a claim about a file not yet read.
+  const bodyPending = insightPending || (project?.detail == null && bodySettled === false);
   const insightNodes = insight?.nodes ?? [];
   const insightEdges = insight?.edges ?? [];
   const localVault = useLocalVault();
@@ -525,26 +527,33 @@ export function ProjectDetailPage({
               dataTestId="project-detail-description"
               className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
             />
-            {leadParagraph ? (
-              <div
-                data-testid="project-detail-lead"
-                className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
-              >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
-              </div>
-            ) : null}
-            {bodyContent ? (
-              <Link
-                href={documentHref}
-                data-testid="project-detail-body-continue"
-                className={cn(quietLinkClass, "mt-3")}
-              >
-                {t("bodyContinue")}
-              </Link>
+            {bodyPending ? (
+              /* The lead and its link arrive with the sample and the body read; their height is held so nothing below moves. */
+              <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem]" />
             ) : (
-              <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
-                {t("bodyEmptyHint")}
-              </p>
+              <>
+              {leadParagraph ? (
+                <div
+                  data-testid="project-detail-lead"
+                  className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
+                </div>
+              ) : null}
+              {bodyContent ? (
+                <Link
+                  href={documentHref}
+                  data-testid="project-detail-body-continue"
+                  className={cn(quietLinkClass, "mt-3")}
+                >
+                  {t("bodyContinue")}
+                </Link>
+              ) : (
+                <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
+                  {t("bodyEmptyHint")}
+                </p>
+              )}
+              </>
             )}
             {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
             {canManageProject ? null : (
@@ -642,7 +651,7 @@ export function ProjectDetailPage({
             </p>
           </div>
           {insightPending ? (
-            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-40" />
+            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-[22.75rem] max-md:min-h-[48rem]" />
           ) : domainComposition.domains.length > 0 ? (
             <DomainMasterDetail
               domains={domainComposition.domains}
@@ -692,7 +701,7 @@ export function ProjectDetailPage({
         {/* One quiet line: what else the folder holds, where this project connects, and the file it is drawn from. */}
         <footer
           data-testid="project-detail-closing"
-          className="mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]"
+          className={cn(insightPending && "invisible", "mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]")}
         >
           {hasLibrary ? (
             <span data-testid="project-detail-library-line" className="flex flex-wrap items-baseline gap-x-3">
