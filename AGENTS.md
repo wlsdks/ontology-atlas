@@ -48,7 +48,10 @@ A fact the source can answer comes from a script: run or extend the `pnpm`
 command (README's command table) and read its output instead of re-deriving it.
 Write no plans, retrospectives, handoffs or notes into the repository or
 `~/scratch`; reasons go in commit bodies and pull requests, working files in the
-session scratchpad. Skill design: `docs/engineering/agent-instructions.md`.
+session scratchpad. Screenshots, recordings and image drafts are working
+files: attach them to the pull request. Git keeps only media the product
+ships (`committed-media.contract.test.ts`). Skill design:
+`docs/engineering/agent-instructions.md`.
 
 ## Choose the relevant workflow
 

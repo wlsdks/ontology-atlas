@@ -89,10 +89,21 @@ blob-report/
 .cache/
 /references/
 
-# Images: only these committed assets; captures stay out of the repository.
+# Images and video: only the product's own media is committed
+# (tests/contract/ci-gates/committed-media.contract.test.ts). Screenshots,
+# recordings and drafts from building or reviewing stay in the session scratchpad.
 *.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.avif
+*.heic
+*.mp4
+*.webm
+*.mov
 !public/logo.png
-!docs/assets/readme/*.png
+!docs/assets/readme/*
 !public/og-image.png
 !public/og/*.png
 !public/brand-icon-512.png
@@ -100,8 +111,8 @@ blob-report/
 !app/icon.png
 !assets/brand/mascot/*.png
 !assets/brand/mascot/source/*.png
-!assets/brand/moru/**/*.png
+!assets/brand/moru/**
 !public/gateway/*.png
 !public/brand/*.png
 !src-tauri/icons/**
-!public/demo/*.png
+!public/demo/*
