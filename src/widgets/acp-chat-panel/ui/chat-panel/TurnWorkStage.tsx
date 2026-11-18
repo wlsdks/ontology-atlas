@@ -125,7 +125,7 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
           >
             {done ? null : activity.target}
           </span>
-          <div className="mt-1 w-full">
+          <div className="mt-1 w-40 max-w-full">
             <WorkProgress
               phase={done ? 'done' : 'running'}
               done={plan?.done ?? 0}
