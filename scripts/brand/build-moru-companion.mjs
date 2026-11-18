@@ -13,6 +13,7 @@ export const NATIVE_ROWS = {
   write: 'save', 'folder-open': 'folder-open', code: 'laptop-code',
   'flipper-groove': 'flipper-groove', 'magic-fish': 'magic-fish', sing: 'sing', hearts: 'hearts',
   success: 'dance', clap: 'clap', hop: 'hop',
+  'await-permission': 'await-permission', uncertain: 'uncertain', 'tail-wag': 'tail', stop: 'stop',
 };
 
 export async function buildMoruCompanion() {

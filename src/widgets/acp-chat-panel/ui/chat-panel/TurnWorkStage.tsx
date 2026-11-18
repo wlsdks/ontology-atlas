@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
-import { WorkProgress } from '@/shared/motion/work-progress';
+import { WorkTrail } from '@/shared/motion/work-trail';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
 
@@ -125,8 +125,8 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
           >
             {done ? null : activity.target}
           </span>
-          <div className="mt-1 w-full">
-            <WorkProgress
+          <div className="mt-1 w-40 max-w-full">
+            <WorkTrail
               phase={done ? 'done' : 'running'}
               done={plan?.done ?? 0}
               total={plan?.total ?? null}

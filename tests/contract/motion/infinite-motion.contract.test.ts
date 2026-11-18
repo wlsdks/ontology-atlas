@@ -20,6 +20,7 @@ const RUNS_ONLY_DURING_WORK: Record<string, string> = {
   "architecture-observation-scan": "architecture evidence plane and rail scan line, mounted only while observation is active",
   "motion-work-spin": "work glyph arc, mounted only while indeterminate work runs",
   "motion-work-sweep": "work progress sweep, shown only while indeterminate work runs",
+  "motion-work-hop": "work trail signal, applied only while work of unknown length runs or to the plan step in progress",
 };
 
 const KEYWORDS = new Set([

@@ -35,6 +35,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",
   "motion-work-sweep":
     "Infinite travel shown only while a WorkProgress of unknown length runs. Reduced motion parks the bar left-anchored at a third of the track, claiming no scale; the consumer's label and count carry the fact.",
+  "motion-work-hop":
+    "Infinite node-to-node signal shown only while a WorkTrail of unknown length runs, or on the one step in progress of a known plan. Reduced motion holds every such part evenly half lit, claiming no position; the consumer's label and count carry the fact.",
   "overlay-spring-surface":
     "When reduced, the consumer swaps the class to `.overlay-fade-only` (measured in GlobalSearch), so it is already covered by another path rather than a CSS carve-out.",
   // Driven by scroll position via `animation-timeline: view()`, with no duration to shorten. They live
