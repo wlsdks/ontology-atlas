@@ -98,7 +98,7 @@ pnpm desktop:release-rehearsal --tag=vX.Y.Z
 ```
 
 Run the untagged rehearsal before creating every `v*` tag. It walks the
-`admit-release`, `test-macos` and `build-macos` jobs of
+`admit-release`, `test-macos`, `build-macos` and `sign-macos` jobs of
 `.github/workflows/release-macos.yml` **in file order** on your machine, so a
 step that would stop the runner stops you first — for free.
 

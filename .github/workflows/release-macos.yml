@@ -214,16 +214,19 @@ jobs:
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
 
+  # The build runs third-party build code, so it runs outside `release-signing` and never
+  # sees a signing secret. It hands the unsigned bundle to `sign-macos`, and a signing or
+  # notarization failure reruns that short job alone.
   build-macos:
-    name: Build macOS DMG (${{ matrix.arch }})
+    name: Build unsigned macOS app (${{ matrix.arch }})
     needs: admit-release
-    environment: release-signing
     runs-on: ${{ matrix.runner }}
-    # Measured with the test steps still inside this job: v2.2.0 1493 s, v2.2.1 1520 s,
-    # v2.2.2 1329 s. A timeout cancels the build and the rerun repeats all of it, so the
-    # ceiling keeps its 1.5x headroom; lower both once a release measures the shorter job.
-    # budget: 1600s
-    timeout-minutes: 40
+    # No standalone run measured yet: the v2.2.2 steps this job keeps took about 720 s, and
+    # v2.2.1 ran 14% slower. A timeout cancels the build and the rerun repeats all of it.
+    # budget: 1200s
+    timeout-minutes: 30
+    outputs:
+      unsigned_sha256: ${{ steps.archive.outputs.sha256 }}
     strategy:
       fail-fast: false
       matrix:
@@ -300,6 +303,73 @@ jobs:
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
 
+      # `admit-release` accepts only the head of main, and the required Checks gate ran
+      # `pnpm typecheck` on that program when it merged (next.config.ts).
+      - name: Build release app bundle
+        run: pnpm desktop:release-artifact -- --phase=build
+        env:
+          ATLAS_BUILD_SKIP_TYPECHECK: "1"
+
+      # tar keeps the bundle's modes and extended attributes, which the artifact's zip would
+      # drop. Staging needs the symbols of this binary; Cargo leaves the dSYM as a symlink
+      # into `deps/`, so it is appended with `-L` to carry the directory, not the link.
+      - name: Archive unsigned app bundle
+        id: archive
+        run: |
+          tar -cf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release bundle/macos
+          tar -rLf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release ontology-atlas.dSYM
+          echo "sha256=$(shasum -a 256 "$RUNNER_TEMP/macos-unsigned.tar" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned app bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          # Not `ontology-atlas-macos-*`: publishing downloads every artifact of that pattern.
+          name: ontology-atlas-unsigned-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/macos-unsigned.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  sign-macos:
+    name: Sign and notarize macOS DMG (aarch64)
+    needs: [admit-release, build-macos]
+    environment: release-signing
+    runs-on: macos-15
+    # No standalone run measured yet: signing and notarization took 108 s in v2.2.2, staging
+    # and upload 12 s; setup and the artifact download are estimated at 90 s. Apple's
+    # notary queue is the variable part.
+    # budget: 480s
+    timeout-minutes: 12
+    env:
+      TAURI_ARCH: aarch64
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Recheck release source commit before signing
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
+
       # The decision to forgo signature was overturned on the same day as certificate issuance
       # (`docs/DECISIONS.md`, 2026-07-27). Direct download DMGs are created only when Developer ID
       # signing and notarization are both possible. Wrapping this check in a conditional would make
@@ -315,14 +385,25 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm desktop:release-secrets
 
-      # The certificate is imported only after this step, and this step's environment holds
-      # no credential. The build makes no updater archive.
-      # `admit-release` accepts only the head of main, and the required Checks gate ran
-      # `pnpm typecheck` on that program when it merged (next.config.ts).
-      - name: Build release app bundle
-        run: pnpm desktop:release-artifact -- --phase=build
+      - name: Download unsigned app bundle
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-unsigned-macos-aarch64
+          path: ${{ runner.temp }}/macos-unsigned
+
+      # The digest travels as a job output, not inside the artifact, so the bundle signed
+      # here is the one `build-macos` archived.
+      - name: Restore the unsigned app bundle that build-macos archived
         env:
-          ATLAS_BUILD_SKIP_TYPECHECK: "1"
+          UNSIGNED_SHA256: ${{ needs.build-macos.outputs.unsigned_sha256 }}
+        run: |
+          ARCHIVE="$RUNNER_TEMP/macos-unsigned/macos-unsigned.tar"
+          [[ "$UNSIGNED_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "build-macos reported no archive digest" >&2; exit 1; }
+          echo "${UNSIGNED_SHA256}  ${ARCHIVE}" | shasum -a 256 --check --strict
+          mkdir -p src-tauri/target/release
+          tar -xf "$ARCHIVE" -C src-tauri/target/release
+          rm -f "$ARCHIVE"
+          [[ -d src-tauri/target/release/ontology-atlas.dSYM/Contents ]] || { echo "the archive carried no dSYM directory" >&2; exit 1; }
 
       # Without `-A`, only codesign may use the key unprompted; exporting it needs this step's
       # random keychain password. `-x` was ignored for PKCS#12 on macOS 27 (2026-09-27).
@@ -386,7 +467,7 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ontology-atlas-macos-${{ matrix.arch }}
+          name: ontology-atlas-macos-aarch64
           # There is **one** path. If there are multiple, the root is set to the lowest common ancestor.
           path: release-upload
           if-no-files-found: error
@@ -601,9 +682,9 @@ jobs:
   # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && needs.admit-release.result == 'success' && needs.test-macos.result == 'success' && needs.test-windows.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.test-macos.result == 'success' && needs.test-windows.result == 'success' && needs.build-macos.result == 'success' && needs.sign-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [admit-release, test-macos, test-windows, build-macos, build-windows, audit-rust]
+    needs: [admit-release, test-macos, test-windows, build-macos, sign-macos, build-windows, audit-rust]
     # budget: 120s
     timeout-minutes: 3
     permissions:

@@ -89,9 +89,10 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   static export once, route-smoke it, bundle that same export, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
-  workflow runs it as `--phase=build`, imports the certificate, then runs
-  `--phase=sign`, so the build phase runs before the certificate is imported and
-  with no credential in its environment.
+  workflow runs `--phase=build` in `build-macos`, a job outside the signing
+  environment that holds no secret, and hands the unsigned bundle as a tar
+  archive to `sign-macos`, which checks its digest, imports the certificate and
+  runs `--phase=sign`. A signing or notarization failure reruns only that job.
 
 ## Installed-app log
 

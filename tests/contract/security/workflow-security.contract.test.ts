@@ -328,10 +328,10 @@ describe("workflow security contract", () => {
     expect(admission).toContain("release_tag=");
     expect(admission).not.toMatch(/\$\{\{\s*secrets\./);
 
-    for (const jobName of ["build-macos", "build-windows"]) {
+    for (const jobName of ["sign-macos", "build-windows"]) {
       const header = jobHeader(release, jobName);
       const block = jobBlock(release, jobName);
-      expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*admit-release/);
+      expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*\[?admit-release\b/);
       expect(header, `${jobName} secret environment`).toMatch(/environment:\s*release-signing/);
       expect(block, `${jobName} trusted checkout`).toContain(
         "ref: ${{ needs.admit-release.outputs.release_sha }}",
@@ -375,7 +375,15 @@ describe("workflow security contract", () => {
     // the condition names that need, so every needed job must be required by name.
     const stage = jobHeader(release, "stage-macos");
     const needed = /^    needs: \[(.+)\]$/m.exec(stage)![1].split(",").map((name) => name.trim());
-    expect(needed).toEqual(["admit-release", "test-macos", "test-windows", "build-macos", "build-windows", "audit-rust"]);
+    expect(needed).toEqual([
+      "admit-release",
+      "test-macos",
+      "test-windows",
+      "build-macos",
+      "sign-macos",
+      "build-windows",
+      "audit-rust",
+    ]);
     const condition = /^    if: (.+)$/m.exec(stage)![1];
     for (const job of needed) {
       expect(condition, `staging does not require ${job}`).toContain(`needs.${job}.result == 'success'`);
@@ -391,7 +399,7 @@ describe("workflow security contract", () => {
 
   it("a macOS direct-download release fails without signing and notarization credentials", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    const build = jobBlock(release, "build-macos");
+    const build = jobBlock(release, "sign-macos");
 
     expect(build).toMatch(
       /- name: Require signed release credentials\n(?:        env:[\s\S]*?)?        run: pnpm desktop:release-secrets/,
@@ -404,17 +412,37 @@ describe("workflow security contract", () => {
     expect(build).not.toContain("UNSIGNED build");
   });
 
-  it("builds the macOS app before any signing identity exists, and imports it without -A", () => {
-    const build = jobBlock(all.find((w) => w.name === "release-macos.yml")!.source, "build-macos");
-    const at = (marker: string) => build.indexOf(marker);
+  it("builds the macOS app in a job that holds no secret, and signs the bundle that job archived", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const build = jobBlock(release, "build-macos");
+    const buildHeader = jobHeader(release, "build-macos");
     expect(build).toContain("- name: Build release app bundle\n        run: pnpm desktop:release-artifact -- --phase=build\n");
-    expect(at("--phase=build")).toBeGreaterThan(at("run: pnpm desktop:release-secrets"));
-    expect(at("--phase=build"), "build code would run beside the imported identity").toBeLessThan(
-      at("- name: Import Apple Developer ID certificate"),
-    );
+    expect(buildHeader, "the build must stay outside the secret environment").not.toMatch(/environment:/);
+    expect(buildHeader).toMatch(/needs:\s*admit-release/);
+    expect(build).toContain("ref: ${{ needs.admit-release.outputs.release_sha }}");
+    expect(expressions(build).filter((body) => SECRETS.test(body))).toEqual([]);
+    expect(build).not.toContain("security import");
+    expect(build).toContain("unsigned_sha256: ${{ steps.archive.outputs.sha256 }}");
+
+    const sign = jobBlock(release, "sign-macos");
+    const at = (marker: string) => sign.indexOf(marker);
+    expect(jobHeader(release, "sign-macos")).toMatch(/needs: \[admit-release, build-macos\]/);
+    for (const buildCode of ["--phase=build", "pnpm build", "tauri build", "cargo ", "mcp:build-binary", "setup-bun", "rust-toolchain"]) {
+      expect(sign, `sign-macos runs build code beside the signing identity: ${buildCode}`).not.toContain(buildCode);
+    }
+    expect(sign).toContain("UNSIGNED_SHA256: ${{ needs.build-macos.outputs.unsigned_sha256 }}");
+    const digestCheck = 'echo "${UNSIGNED_SHA256}  ${ARCHIVE}" | shasum -a 256 --check --strict';
+    expect(at(digestCheck)).toBeGreaterThan(-1);
+    expect(at(digestCheck), "the archive is unpacked before its digest is checked").toBeLessThan(at('tar -xf "$ARCHIVE"'));
+    expect(at('tar -xf "$ARCHIVE"')).toBeLessThan(at("- name: Import Apple Developer ID certificate"));
     expect(at("- name: Import Apple Developer ID certificate")).toBeLessThan(at("--phase=sign"));
 
-    const importStep = build.slice(at("- name: Import Apple Developer ID certificate"), at("- name: Sign and notarize"));
+    // The unsigned hand-off must not match the pattern publishing downloads wholesale.
+    const publishPattern = /pattern: (\S+)\*/.exec(jobBlock(release, "publish-macos"))![1];
+    const unsignedName = /name: (ontology-atlas-unsigned-\S+)/.exec(sign)![1];
+    expect(unsignedName.startsWith(publishPattern)).toBe(false);
+
+    const importStep = sign.slice(at("- name: Import Apple Developer ID certificate"), at("- name: Sign and notarize"));
     const importLine = importStep.split("\n").find((line) => line.includes("security import"))!;
     expect(importLine).toContain("-T /usr/bin/codesign");
     expect(importLine).not.toMatch(/\s-A\s/);
@@ -474,6 +502,7 @@ describe("workflow security contract", () => {
     // receive the same token.
     expect(release).toMatch(/^permissions:\n  contents: read\s*$/m);
     expect(jobBlock(release, "build-macos")).not.toMatch(/^    permissions:/m);
+    expect(jobBlock(release, "sign-macos")).not.toMatch(/^    permissions:/m);
     expect(jobBlock(release, "build-windows")).not.toMatch(/^    permissions:/m);
     expect(jobBlock(release, "audit-rust")).toMatch(
       /^    permissions:\n      contents: read\n      checks: write\s*$/m,
@@ -515,7 +544,7 @@ describe("workflow security contract", () => {
 
   it("signing secrets are visible only in the release steps that need them", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    for (const jobName of ["admit-release", "build-macos", "build-windows", "stage-macos", "publish-macos"]) {
+    for (const jobName of ["admit-release", "build-macos", "sign-macos", "build-windows", "stage-macos", "publish-macos"]) {
       expect(jobHeader(release, jobName), `${jobName} job env`).not.toMatch(
         /\$\{\{\s*secrets\.(?:APPLE_|TAURI_SIGNING_)/,
       );
