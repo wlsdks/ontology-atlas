@@ -25,7 +25,7 @@ import {
 import {
   buildOntologyDeeplinkForDoc,
   buildTopologyDeeplinkForDoc,
-  resolveStaticVaultSource,
+  type StaticVaultSource,
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { DocMetaBar } from './parts/DocMetaBar';
@@ -121,7 +121,7 @@ export function DocsVaultDocumentPane({
   getProjectHref: ReturnType<typeof useDocsVaultAddress>['getProjectHref'];
   highlightQuery: string | undefined;
   resolveImage: ReturnType<typeof useDocAccess>['resolveImage'];
-  staticVault: ReturnType<typeof resolveStaticVaultSource>;
+  staticVault: StaticVaultSource;
 }) {
   const t = useTranslations('docsVault');
   const toast = useToast();

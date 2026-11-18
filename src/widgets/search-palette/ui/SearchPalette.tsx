@@ -216,7 +216,7 @@ function SearchPaletteDialog({
 
   // Search the vault on screen, not the bundled manifest; the hook runs outside useMemo and passes
   // only its value.
-  const { manifest: staticManifest } = useStaticVaultSource();
+  const { manifest: staticManifest } = useStaticVaultSource(undefined, { demand: true });
   const docResults = useMemo(() => {
     if (!query.trim()) return [];
     return matchVaultDocs(query, staticManifest.docs);

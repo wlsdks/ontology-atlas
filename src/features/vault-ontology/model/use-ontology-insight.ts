@@ -2,7 +2,12 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import { useArrivingManifest, useDataSourceMode, useSampleSource } from '@/entities/vault-session';
+import {
+  useArrivingManifest,
+  useDataSourceMode,
+  useStaticVaultSource,
+  useStaticVaultStatus,
+} from '@/entities/vault-session';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
@@ -13,7 +18,8 @@ import {
 import {
   deriveArrivedOntology,
   deriveOntologyFromVault,
-  resolveStaticVaultSource,
+  type StaticVaultSource,
+  type VaultManifest,
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
 import { useVaultOntology } from './use-vault-ontology';
@@ -21,15 +27,6 @@ import { useVaultOntology } from './use-vault-ontology';
 // Vault nodes carry no time information, so `lastApprovedAt` is the epoch-0 sentinel.
 const VAULT_SENTINEL_DATE = new Date(0);
 const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
-
-// The bundled sample, taken only through the resolver
-// (tests/contract/vault-data/static-vault-source.contract.test.ts); derived once at module load.
-const STATIC_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
-  resolveStaticVaultSource('dogfood').manifest,
-);
-const STOREFRONT_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
-  resolveStaticVaultSource('storefront').manifest,
-);
 
 export function derivationToInsight(
   d: VaultOntologyDerivation,
@@ -121,32 +118,33 @@ export function derivationToInsight(
   };
 }
 
-// Cached per source and locale; derivation runs once, only the insight mapping varies.
-const staticInsightByLocale = new Map<string, { insight: KnowledgeProjectInsight; error: null }>();
+// The bundled sample is taken only through `useStaticVaultSource`
+// (tests/contract/vault-data/static-vault-source.contract.test.ts). Derived once per loaded sample
+// and locale, then cached on the manifest object, which is stable once the sample has arrived.
+const sampleInsightCache = new WeakMap<
+  VaultManifest,
+  Map<string, { insight: KnowledgeProjectInsight; error: null }>
+>();
 function sampleInsight(
-  source: 'dogfood' | 'storefront',
+  sample: StaticVaultSource,
   locale: string,
 ): { insight: KnowledgeProjectInsight; error: null } {
-  const key = `${source}:${locale}`;
-  let cached = staticInsightByLocale.get(key);
+  let byLocale = sampleInsightCache.get(sample.manifest);
+  if (!byLocale) {
+    byLocale = new Map();
+    sampleInsightCache.set(sample.manifest, byLocale);
+  }
+  let cached = byLocale.get(locale);
   if (!cached) {
     cached = {
-      insight: derivationToInsight(
-        source === 'storefront' ? STOREFRONT_DERIVATION : STATIC_DERIVATION,
-        locale,
-        { agentSlugPrefix: resolveStaticVaultSource(source).agentSlugPrefix },
-      ),
+      insight: derivationToInsight(deriveOntologyFromVault(sample.manifest), locale, {
+        agentSlugPrefix: sample.agentSlugPrefix,
+      }),
       error: null,
     };
-    staticInsightByLocale.set(key, cached);
+    byLocale.set(locale, cached);
   }
   return cached;
-}
-
-/** This repository's own vault, pinned, because the `/download` caption claims it; same cache. */
-export function useDogfoodInsight(): KnowledgeProjectInsight {
-  const locale = useLocale();
-  return useMemo(() => sampleInsight('dogfood', locale).insight, [locale]);
 }
 
 const localInsightCache = new WeakMap<VaultOntologyDerivation, Map<string, KnowledgeProjectInsight>>();
@@ -165,24 +163,27 @@ function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProj
 }
 
 /** Mode-aware insight: local derives from the user's vault; static from the bundled sample, memoized. */
-export function useOntologyInsight(): {
+export function useOntologyInsight(options?: { demand?: boolean }): {
   insight: KnowledgeProjectInsight | null;
   error: Error | null;
 } {
   const mode = useDataSourceMode();
   const vault = useVaultOntology();
-  const [sampleSource] = useSampleSource();
+  const sample = useStaticVaultSource(undefined, options);
+  const sampleStatus = useStaticVaultStatus(undefined, options);
   const locale = useLocale();
 
   return useMemo(() => {
     if (mode === 'static') {
-      return sampleInsight(sampleSource === 'storefront' ? 'storefront' : 'dogfood', locale);
+      // A sample still on its way is no insight yet, not an empty one.
+      if (sampleStatus === 'loading') return { insight: null, error: null };
+      return sampleInsight(sample, locale);
     }
     return {
       insight: localInsight(vault, locale),
       error: null,
     };
-  }, [mode, vault, sampleSource, locale]);
+  }, [mode, vault, sample, sampleStatus, locale]);
 }
 
 export function useArrivingOntologyInsight(): KnowledgeProjectInsight | null {

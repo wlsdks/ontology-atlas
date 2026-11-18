@@ -19,7 +19,8 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       data-route-loading="true"
       data-testid="gateway-entry-fallback"
       aria-busy="true"
-      className="flex h-full min-h-full flex-1 flex-col justify-center bg-[color:var(--color-canvas)] px-6 py-10 md:px-12"
+      // The boot script marks the installed app on <html> before first paint; it is never offered its own download.
+      className="flex h-full min-h-full flex-1 flex-col justify-center bg-[color:var(--color-canvas)] px-6 py-10 md:px-12 [html[data-shell=desktop]_&]:invisible"
     >
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>

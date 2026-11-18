@@ -7,10 +7,10 @@ import { useStaticVaultSource } from "@/entities/vault-session";
 import type { VaultManifest } from "@/entities/docs-vault";
 
 /** Mode-aware manifest; the static one only through `useStaticVaultSource()`, or the sample choice is ignored. */
-export function useVaultManifest(): VaultManifest | null {
+export function useVaultManifest(options?: { demand?: boolean }): VaultManifest | null {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
-  const { manifest: staticManifest } = useStaticVaultSource();
+  const { manifest: staticManifest } = useStaticVaultSource(undefined, options);
 
   return useMemo(() => {
     if (mode === "static") return staticManifest;

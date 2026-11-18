@@ -28,3 +28,34 @@ describe("a stored copper accent opens on indigo", () => {
     expect(readGlobalCss()).not.toMatch(/data-accent/);
   });
 });
+
+describe("the installed app is marked before first paint", () => {
+  afterEach(() => {
+    delete (window as { isTauri?: boolean }).isTauri;
+    document.documentElement.removeAttribute("data-shell");
+  });
+
+  it("marks the root only when the Tauri runtime flag is present", () => {
+    runBootScript();
+    expect(document.documentElement.hasAttribute("data-shell")).toBe(false);
+    (window as { isTauri?: boolean }).isTauri = true;
+    runBootScript();
+    expect(document.documentElement.getAttribute("data-shell")).toBe("desktop");
+  });
+});
+
+describe("the stored sample choice is marked before first paint", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+    document.documentElement.removeAttribute("data-sample");
+  });
+
+  it("marks the root only for the dogfood choice", () => {
+    window.localStorage.setItem("demo:sample-source:v1", "storefront");
+    runBootScript();
+    expect(document.documentElement.hasAttribute("data-sample")).toBe(false);
+    window.localStorage.setItem("demo:sample-source:v1", "dogfood");
+    runBootScript();
+    expect(document.documentElement.getAttribute("data-sample")).toBe("dogfood");
+  });
+});
