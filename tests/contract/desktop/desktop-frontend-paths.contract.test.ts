@@ -96,7 +96,7 @@ describe("the desktop bundle carries every screen the app can open", () => {
   it("every rail destination and settings link ships, the gateway pages they reach included", () => {
     const hrefs = [
       ...Object.values(DESTINATION_HREF),
-      ...SETTINGS_CATALOG.filter((entry) => entry.surface !== "web" && entry.href).map((entry) => entry.href as string),
+      ...SETTINGS_CATALOG.filter((entry) => entry.href).map((entry) => entry.href as string),
     ];
     // About › What's new opens `/changelog`, whose header links `/guide`; both stay.
     expect(hrefs).toContain("/changelog");
