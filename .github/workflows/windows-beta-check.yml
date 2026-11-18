@@ -48,6 +48,7 @@ on:
       - "scripts/packaging/build-mcp-binary.mjs"
       - "scripts/packaging/verify-mcp-binary.mjs"
       - "scripts/download/stage-windows-release-assets.mjs"
+      - "scripts/desktop/stage-desktop-frontend.mjs"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
       - "tests/contract/release/windows-desktop-release.contract.test.ts"
@@ -63,6 +64,7 @@ on:
       - "scripts/packaging/build-mcp-binary.mjs"
       - "scripts/packaging/verify-mcp-binary.mjs"
       - "scripts/download/stage-windows-release-assets.mjs"
+      - "scripts/desktop/stage-desktop-frontend.mjs"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
       - "tests/contract/release/windows-desktop-release.contract.test.ts"
@@ -183,7 +185,7 @@ jobs:
         run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Windows release contract tests
-        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
+        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/desktop/stage-desktop-frontend.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
 
       - name: Desktop readiness
         run: pnpm desktop:check
