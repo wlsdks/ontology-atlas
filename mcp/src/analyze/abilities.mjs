@@ -23,7 +23,7 @@ import { basename, dirname, extname, posix } from 'node:path';
 
 import { declarationIndex } from '../evidence-search/declaration-index.mjs';
 import { documentedAbilities } from './documented-abilities.mjs';
-import { nameKey, operatorAbilities } from './operator-abilities.mjs';
+import { boundedLines, nameKey, operatorAbilities } from './operator-abilities.mjs';
 import { readSurveyText, surveyEntry } from './survey-paths.mjs';
 
 /** A folder of benchmarks, examples, demos, samples, mocks or fixtures (a folder name, never a file name). */
@@ -138,6 +138,72 @@ function publicName(name) {
   return Boolean(name) && !name.startsWith('_') && !/^[A-Z0-9_]+$/.test(name) && !/(?:Error|Exception|Warning)$/.test(name);
 }
 
+/** An import or export list open longer than this many lines, or holding more names, is not a list. */
+const LIST_LINES = 200;
+const LIST_NAMES = 500;
+const PY_FROM = /^from\s+(\.[\w.]*)\s+import\s+(.*)$/;
+const PY_ALL = /^__all__\s*=\s*([[(])(.*)$/;
+const JS_NAMED = /^export\s+(?:type\s+)?\{(.*)$/;
+const JS_DECLARED = /^export\s+(?:default\s+)?(?:abstract\s+)?(?:async\s+)?(?:class|function\*?)\s+([A-Za-z_$][\w$]*)/;
+const JS_STAR = /^export\s+\*\s+from\s+['"]([^'"]+)['"]/;
+const JS_FROM = /^\s*from\s*['"]([^'"]+)['"]/;
+
+/**
+ * The import and export statements of an entry file, read in one forward pass:
+ * a list that opens on one line (`from .a import (`, `export {`, `__all__ = [`)
+ * is carried to the line that closes it, and dropped past 200 lines or 500 names,
+ * or when another statement starts first.
+ *
+ * @returns {{ type: 'from'|'all'|'named'|'declared'|'star', spec: string|null, names: string[] }[]}
+ */
+function exportStatements(text, python) {
+  const statements = [];
+  let open = null;
+  const names = (list) => list.split(',').map((name) => name.trim()).filter(Boolean).slice(0, LIST_NAMES);
+  const close = (statement, list, rest) => {
+    const spec = statement.type === 'named' ? JS_FROM.exec(rest)?.[1] ?? null : statement.spec;
+    statements.push({ type: statement.type, spec, names: names(list) });
+  };
+  const start = (type, spec, rest, closer) => {
+    const end = rest.indexOf(closer);
+    if (end >= 0) close({ type, spec }, rest.slice(0, end), rest.slice(end + 1));
+    else open = { type, spec, closer, parts: [rest], lines: 1, length: rest.length };
+  };
+  for (const raw of boundedLines(text)) {
+    const line = raw.trimEnd();
+    const starts = python ? /^(?:from|import|__all__)\b/.test(line) : /^(?:export|import)\b/.test(line);
+    if (open && !starts) {
+      const end = line.indexOf(open.closer);
+      if (end >= 0) {
+        close(open, [...open.parts, line.slice(0, end)].join(','), line.slice(end + 1));
+        open = null;
+      } else {
+        open.parts.push(line);
+        open.lines += 1;
+        open.length += line.length;
+        if (open.lines > LIST_LINES || open.length > LIST_NAMES * 80) open = null;
+      }
+      continue;
+    }
+    open = null;
+    if (python) {
+      const from = PY_FROM.exec(line);
+      if (from && from[2].startsWith('(')) start('from', from[1], from[2].slice(1), ')');
+      else if (from) statements.push({ type: 'from', spec: from[1], names: names(from[2]) });
+      const all = PY_ALL.exec(line);
+      if (all) start('all', null, all[2], all[1] === '[' ? ']' : ')');
+      continue;
+    }
+    const named = JS_NAMED.exec(line);
+    if (named) { start('named', null, named[1], '}'); continue; }
+    const declared = JS_DECLARED.exec(line);
+    if (declared) { statements.push({ type: 'declared', spec: null, names: [declared[1]] }); continue; }
+    const star = JS_STAR.exec(line);
+    if (star) statements.push({ type: 'star', spec: star[1], names: [] });
+  }
+  return statements;
+}
+
 /**
  * Names a library entry file exports, each with the module the file imports it
  * from when it says: `__all__` and `from .x import A`, or `export { A } from`,
@@ -148,45 +214,43 @@ function publicName(name) {
 function exportedNames(rootPath, path, depth = 0, seen = new Set()) {
   if (seen.has(path)) return [];
   seen.add(path);
-  const text = readText(rootPath, path);
-  const rows = [];
+  const python = extname(path) === '.py';
+  const statements = exportStatements(readText(rootPath, path), python);
+  const rows = new Map();
   const push = (name, from = null) => {
     if (!publicName(name)) return;
-    const held = rows.find((row) => row.name === name);
+    const held = rows.get(name);
     if (held) held.from ??= from;
-    else rows.push({ name, from });
+    else rows.set(name, { name, from });
   };
-  if (extname(path) === '.py') {
+  const forwarded = (spec) => {
+    const from = resolveModule(rootPath, path, spec, python ? 'py' : 'js');
+    if (from && depth < 3) for (const row of exportedNames(rootPath, from, depth + 1, seen)) push(row.name, row.from ?? from);
+  };
+  if (python) {
     const sources = new Map();
-    for (const match of text.matchAll(/^from\s+(\.[\w.]*)\s+import\s+(?:\(([^)]*)\)|([^(\n][^\n]*))$/gm)) {
-      const from = resolveModule(rootPath, path, match[1], 'py');
-      const names = (match[2] ?? match[3]).split(',').map((name) => name.trim().split(/\s+as\s+/).pop()).filter(Boolean);
-      if (names.includes('*')) {
-        if (from && depth < 3) for (const row of exportedNames(rootPath, from, depth + 1, seen)) push(row.name, row.from ?? from);
-        continue;
+    for (const statement of statements.filter((row) => row.type === 'from')) {
+      const imported = statement.names.map((name) => name.split(/\s+as\s+/).pop());
+      if (imported.includes('*')) { forwarded(statement.spec); continue; }
+      const from = resolveModule(rootPath, path, statement.spec, 'py');
+      for (const name of imported) sources.set(name, from);
+    }
+    const all = statements.find((row) => row.type === 'all');
+    if (all) {
+      for (const entry of all.names) {
+        const name = /^['"]([A-Za-z_]\w*)['"]$/.exec(entry)?.[1];
+        if (name) push(name, sources.get(name) ?? null);
       }
-      for (const name of names) sources.set(name, from);
-    }
-    const all = /^__all__\s*=\s*[[(]([\s\S]*?)[\])]/m.exec(text);
-    if (all) for (const match of all[1].matchAll(/['"]([A-Za-z_]\w*)['"]/g)) push(match[1], sources.get(match[1]) ?? null);
-    else for (const [name, from] of sources) push(name, from);
-    return rows;
+    } else for (const [name, from] of sources) push(name, from);
+    return [...rows.values()];
   }
-  for (const match of text.matchAll(/^export\s+(?:type\s+)?\{([^}]+)\}(?:\s*from\s*['"]([^'"]+)['"])?/gm)) {
-    const from = match[2] ? resolveModule(rootPath, path, match[2], 'js') : null;
-    for (const name of match[1].split(',')) {
-      const clean = name.trim().replace(/^type\s+/, '');
-      if (clean) push(clean.split(/\s+as\s+/).pop(), from);
-    }
+  for (const statement of statements.filter((row) => row.type === 'named')) {
+    const from = statement.spec ? resolveModule(rootPath, path, statement.spec, 'js') : null;
+    for (const name of statement.names) push(name.replace(/^type\s+/, '').split(/\s+as\s+/).pop(), from);
   }
-  for (const match of text.matchAll(/^export\s+(?:default\s+)?(?:abstract\s+)?(?:async\s+)?(?:class|function\*?)\s+([A-Za-z_$][\w$]*)/gm)) push(match[1], path);
-  if (depth < 3) {
-    for (const match of text.matchAll(/^export\s+\*\s+from\s+['"]([^'"]+)['"]/gm)) {
-      const from = resolveModule(rootPath, path, match[1], 'js');
-      if (from) for (const row of exportedNames(rootPath, from, depth + 1, seen)) push(row.name, row.from ?? from);
-    }
-  }
-  return rows;
+  for (const statement of statements.filter((row) => row.type === 'declared')) push(statement.names[0], path);
+  for (const statement of statements) if (statement.type === 'star') forwarded(statement.spec);
+  return [...rows.values()];
 }
 
 const OPERATION_KINDS = new Set(['class', 'function', 'method']);

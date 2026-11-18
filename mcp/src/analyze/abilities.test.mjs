@@ -435,6 +435,19 @@ function hostileFiles(bytes) {
   };
 }
 
+/** Library entries whose export lists never close: twenty Python subpackages, and an entry forwarding to twenty modules. */
+function hostileLibraries(bytes) {
+  const fill = (line, size) => line.repeat(Math.max(1, Math.floor(size / line.length)));
+  const python = { 'pyproject.toml': '[project]\nname = "pkg"\n', 'src/pkg/__init__.py': 'from .a import invert\n\n__all__ = ["invert"]\n', 'src/pkg/a.py': 'def invert(subject):\n    return subject\n' };
+  const typescript = { 'package.json': JSON.stringify({ name: 'tool', main: 'src/index.ts' }), 'src/index.ts': '' };
+  for (let index = 0; index < 20; index += 1) {
+    python[`src/pkg/s${index}/__init__.py`] = fill('from .a import (\n', bytes);
+    typescript['src/index.ts'] += `export * from './m${index}';\n`;
+    typescript[`src/m${index}.ts`] = fill('export {\n', bytes);
+  }
+  return [python, typescript];
+}
+
 /** A file of seeded random code made of every detector's tokens, so no line is what it looks like. */
 function randomCode(bytes) {
   const tokens = [
@@ -459,24 +472,24 @@ function randomCode(bytes) {
   return lines.join('\n');
 }
 
-test('a survey over every hostile shape and a megabyte of random code takes under two seconds', (t) => {
-  const root = repository({ ...hostileFiles(250 * 1024), 'src/random.ts': randomCode(1024 * 1024) });
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+test('surveys over every hostile shape and a megabyte of random code take under two seconds', (t) => {
+  // Twenty library files of 100 KB each: a rescan per line costs minutes there, one pass a few hundred ms.
+  const roots = [{ ...hostileFiles(250 * 1024), 'src/random.ts': randomCode(1024 * 1024) }, ...hostileLibraries(100 * 1024)].map(repository);
+  t.after(() => { for (const root of roots) rmSync(root, { recursive: true, force: true }); });
   const started = performance.now();
-  const map = buildBreadthMap(root);
+  for (const root of roots) assert.ok(buildBreadthMap(root).text.length > 0);
   const ms = performance.now() - started;
-  assert.ok(map.text.length > 0);
-  assert.ok(ms < 2000, `the whole survey took ${ms.toFixed(0)} ms`);
+  assert.ok(ms < 2000, `the surveys took ${ms.toFixed(0)} ms`);
 });
 
 test('doubling every file at most doubles the survey time', (t) => {
   const timed = (bytes) => {
-    const root = repository({ ...hostileFiles(bytes), 'src/random.ts': randomCode(bytes) });
-    t.after(() => rmSync(root, { recursive: true, force: true }));
-    buildBreadthMap(root);
+    const roots = [{ ...hostileFiles(bytes), 'src/random.ts': randomCode(bytes) }, ...hostileLibraries(bytes)].map(repository);
+    t.after(() => { for (const root of roots) rmSync(root, { recursive: true, force: true }); });
+    for (const root of roots) buildBreadthMap(root);
     const runs = [0, 1, 2].map(() => {
       const started = performance.now();
-      buildBreadthMap(root);
+      for (const root of roots) buildBreadthMap(root);
       return performance.now() - started;
     });
     return runs.sort((a, b) => a - b)[1];

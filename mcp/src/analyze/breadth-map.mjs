@@ -15,6 +15,7 @@ import { abilitiesOf, fairShares } from './abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
 import { repoText as t } from './repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
+import { withoutSpans } from './text.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;
 const EXPORTS_PER_UNIT = 6;
@@ -92,9 +93,12 @@ function exportFamily(path) {
 }
 
 function pythonAll(text) {
-  const match = /^__all__\s*=\s*[[(]([\s\S]*?)[\])]/m.exec(text);
-  if (!match) return null;
-  return [...match[1].matchAll(/['"]([A-Za-z_]\w*)['"]/g)].map((row) => row[1]);
+  const head = /^__all__[ \t]*=[ \t]*([[(])/m.exec(text);
+  if (!head) return null;
+  const start = head.index + head[0].length;
+  const end = text.indexOf(head[1] === '[' ? ']' : ')', start);
+  if (end < 0) return null;
+  return [...text.slice(start, end).matchAll(/['"]([A-Za-z_]\w*)['"]/g)].map((row) => row[1]);
 }
 
 function exportsOf(rootPath, files) {
@@ -317,7 +321,7 @@ function readmePurpose(rootPath) {
   const name = ['README.md', 'Readme.md', 'readme.md', 'README.rst', 'README.markdown', 'README.txt', 'README']
     .find((candidate) => surveyEntry(rootPath, candidate));
   if (!name) return null;
-  const text = readText(rootPath, name, 64 * 1024).replace(/<!--[\s\S]*?-->/g, '').replace(/```[\s\S]*?```/g, '');
+  const text = withoutSpans(withoutSpans(readText(rootPath, name, 64 * 1024), /<!--/, '-->'), /```/, '```');
   // Prose only: an indented or quoted block is code or a citation, a heading is a label.
   const paragraphs = text.split(/\r?\n[ \t]*\r?\n/)
     .filter((block) => !/^(?: {4}|\t|\s*>)/.test(block.replace(/^\r?\n+/, '')))
@@ -353,7 +357,9 @@ function docPages(rootPath, ignore) {
   for (const folder of DOC_FOLDERS) visit(folder, 0);
   const titled = pages.map((path) => {
     const text = readText(rootPath, path, 16 * 1024);
-    const front = /^---\r?\n[\s\S]*?^title:[ \t]*(\S.*)$/m.exec(text);
+    // Front matter is the block a page opens with.
+    const frontEnd = text.indexOf('\n---', 3);
+    const front = /^---\r?\n/.test(text) ? /^title:[ \t]*(\S.*)$/m.exec(frontEnd > 0 ? text.slice(0, frontEnd) : text) : null;
     const heading = /^#\s+(.+)$/m.exec(text);
     const rst = /^([^\n=\-~]+)\r?\n[=\-~]{3,}\s*$/m.exec(text);
     const title = (front?.[1].trim().replace(/^["']|["']$/g, '') ?? heading?.[1] ?? rst?.[1] ?? stemOf(path)).replace(/[`*_]/g, '').trim();

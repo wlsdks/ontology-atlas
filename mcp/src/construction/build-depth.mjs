@@ -19,6 +19,7 @@ import { dirname, extname, join } from 'node:path';
 import { cachedSurvey } from '../analyze/breadth-map.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { surveyEntry } from '../analyze/survey-paths.mjs';
+import { withoutSpans } from '../analyze/text.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
 import { decidesLine } from '../evidence-search/symbol-context.mjs';
 import { readPath } from './session-reads.mjs';
@@ -539,17 +540,15 @@ function hasCode(text, path) {
   const ext = extname(path).toLowerCase();
   let rest = String(text);
   if (ext === '.py' || ext === '.rb') {
-    rest = rest
-      .replace(/("""|''')[\s\S]*?\1/g, '')
-      .replace(/^\s*from\s+[\w.]+\s+import\s*\([^)]*\)/gm, '')
-      .replace(/^__all__\s*\+?=\s*[[(][^\])]*[\])]/gm, '')
-      .replace(/#.*$/gm, '');
+    // Each span is found in one forward pass: an unclosed opener never rescans the file.
+    rest = withoutSpans(rest, /("""|''')/, (match) => match[1]);
+    rest = withoutSpans(rest, /^[ \t]*from[ \t]+[\w.]+[ \t]+import[ \t]*\(/m, ')');
+    rest = withoutSpans(rest, /^__all__[ \t]*\+?=[ \t]*([[(])/m, (match) => (match[1] === '[' ? ']' : ')'));
+    rest = rest.replace(/#.*$/gm, '');
   } else {
-    rest = rest
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/(^|[^:])\/\/.*$/gm, '$1')
-      .replace(/^\s*(?:import|export)\s+(?:type\s+)?\{[^}]*\}\s*from\s*['"][^'"]+['"];?/gm, '')
-      .replace(/^\s*import\s*\([^)]*\)/gm, '');
+    rest = withoutSpans(rest, /\/\*/, '*/').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    rest = withoutSpans(rest, /^[ \t]*(?:import|export)[ \t]+(?:type[ \t]+)?\{/m, '}', { after: /[ \t]*from[ \t]*['"][^'"\n]+['"];?/y });
+    rest = withoutSpans(rest, /^[ \t]*import[ \t]*\(/m, ')');
   }
   const lines = rest.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const declarative = /^(?:import\s|from\s+[\w.]+\s+import\s|export\s+\*|export\s+(?:type\s+)?\{[^}]*\}\s*from\s|package\s+\w+|use\s+[\w:{}, *]+;|(?:pub\s+)?mod\s+\w+;|['"]use strict['"];?|module\.exports\s*=\s*require\(|[)\]};,]+$)/;
