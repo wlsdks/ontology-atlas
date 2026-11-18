@@ -22,8 +22,12 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
     'workspace member or module folder, split when large) with its files, lines, up to three main files, ' +
     'up to six exported names, how many units import it and which units it imports, the entry points ' +
     '(executables, commands, routes, library exports, plugin classes) with path and symbol, the root ' +
-    'README purpose and the docs titles, the abilities to place (entry points, operations a dispatcher routes ' +
-    'by name, library exports, a one-per-file catalogue as one family), and one `next` line. It names no node: ' +
+    'README purpose and the docs titles, the abilities to place with each one\'s `evidence` (`path:Lline`): entry ' +
+    'points, operations a dispatcher routes by name, subcommands, flag groups and behaviour flags, configuration ' +
+    'settings that turn a feature on, background workers and schedulers, library exports (a one-per-file catalogue ' +
+    'as one family, three or more from one module as one api row), and features a README or docs heading names ' +
+    'that the code names too; and one `next` line. That list is a floor under the abilities you name from the ' +
+    'outlines and docs, not the inventory. It names no node: ' +
     'a folder is evidence, and you name what the product does. add_concepts and validate_vault then report ' +
     'which abilities no node places, which entry files this session never read, and which rules cite no read lines.\n\n' +
     "`sourceReads` reads code: `mode: 'outline'` lists a file's declarations with line numbers, `symbol` " +
@@ -180,18 +184,30 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
         items: {
           type: 'object',
           properties: {
-            kind: { type: 'string', enum: ['executable', 'command', 'route', 'library', 'plugin', 'operation', 'export', 'family'] },
+            kind: {
+              type: 'string',
+              enum: ['executable', 'command', 'route', 'library', 'plugin', 'operation', 'export', 'family', 'api',
+                'subcommand', 'flags', 'flag', 'setting', 'worker', 'documented'],
+            },
             name: NON_BLANK_STRING_SCHEMA,
             path: NON_BLANK_STRING_SCHEMA,
             symbol: NON_BLANK_STRING_SCHEMA,
             line: { type: 'integer', minimum: 1 },
+            evidence: { ...NON_BLANK_STRING_SCHEMA, description: 'Where it was found, as `path:Lline`.' },
+            doc: { ...NON_BLANK_STRING_SCHEMA, description: 'For a documented ability, the heading that names it, as `path:Lline`.' },
             members: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            membersOmitted: { type: 'integer', minimum: 1, description: 'Members left out of `members` to keep the map within 30 KB.' },
           },
-          required: ['kind', 'name', 'path'],
+          required: ['kind', 'name', 'path', 'evidence'],
           additionalProperties: false,
         },
       },
       abilitiesOmitted: { type: 'integer', minimum: 1 },
+      abilitiesOmittedByKind: {
+        type: 'object',
+        description: 'Rows each kind left out of its fair share of the 120 listed.',
+        additionalProperties: { type: 'integer', minimum: 1 },
+      },
       docs: {
         type: 'object',
         properties: {

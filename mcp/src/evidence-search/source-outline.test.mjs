@@ -90,6 +90,43 @@ test('does not read a call or a control statement as a JavaScript method', () =>
   );
 });
 
+test('lists a TypeScript method whose parameters start on the next line, and not a call that wraps', () => {
+  const text = [
+    'export class Store {',                  // 1
+    '  async save(',                         // 2
+    '    input: Input,',                     // 3
+    '    options: { force: boolean } = {},', // 4
+    '  ): Promise<void> {',                  // 5
+    '    await write(',                      // 6
+    '      input,',                          // 7
+    '    );',                                // 8
+    '    items.forEach((item) => {',         // 9
+    '      run(item);',                      // 10
+    '    });',                               // 11
+    '  }',                                   // 12
+    '  private static load<T>(',             // 13
+    '    path: string,',                     // 14
+    '  ) {',                                 // 15
+    '    return read(path);',                // 16
+    '  }',                                   // 17
+    '}',                                     // 18
+  ].join('\n');
+  const outline = outlineSource(text, 'store.ts');
+  assert.deepEqual(
+    outline.declarations.map((row) => [row.line, row.kind, row.name]),
+    [[1, 'class', 'Store'], [2, 'method', 'save'], [13, 'method', 'load']],
+  );
+});
+
+test('a class of wrapped heads with many parentheses outlines in linear time', () => {
+  const head = `  run(${'('.repeat(400)}`;
+  const tail = `  ${')'.repeat(OUTLINE_LINE_CHARS - 10)} {`;
+  const text = ['class Busy {', ...Array.from({ length: 2000 }, (_, index) => (index % 2 ? tail : head)), '}'].join('\n');
+  const started = performance.now();
+  outlineSource(text, 'busy.ts');
+  assert.ok(performance.now() - started < 500, 'the outline stays linear over wrapped heads');
+});
+
 test('separates Python module functions from methods by indent', () => {
   const text = [
     '"""Module docstring."""',       // 1

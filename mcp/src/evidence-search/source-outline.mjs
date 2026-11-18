@@ -103,10 +103,40 @@ const JS_BINDING_IS_FUNCTION = /^(?:async\s+)?(?:function\b|\(|<[A-Za-z_$]|[A-Za
 const JS_REEXPORT = /^export\s+(?:\*|\{)/u;
 const JS_FROM = /from\s+['"]([^'"]+)['"]/u;
 const JS_METHOD = /^(?:(?:public|private|protected|readonly|static|abstract|override|async|get|set)\s+)*(?:\*\s*)?([A-Za-z_$#][\w$]*)\s*(?:<[^>]*>\s*)?\(/u;
-const JS_METHOD_TAIL = /\)\s*(?::[^{]*)?\{$/u;
+/** Lines a method's parameters may run over before the `{` that opens its body. */
+const SIGNATURE_LINES = 12;
 
+/**
+ * Whether a line ends a method head: `) {`, or `): Type {` where the return type
+ * holds no `{`. Checked from each `)` by hand, so a line of many `)` costs one pass.
+ */
 function endsWithMethodTail(trimmed) {
-  return trimmed.endsWith('{') && JS_METHOD_TAIL.test(trimmed.slice(trimmed.lastIndexOf('{', trimmed.length - 2) + 1));
+  if (!trimmed.endsWith('{')) return false;
+  const head = trimmed.slice(trimmed.lastIndexOf('{', trimmed.length - 2) + 1, -1);
+  for (let close = head.indexOf(')'); close >= 0; close = head.indexOf(')', close + 1)) {
+    let next = close + 1;
+    while (next < head.length && /\s/u.test(head[next])) next += 1;
+    if (next === head.length || head[next] === ':') return true;
+  }
+  return false;
+}
+
+/**
+ * A method head whose parameters start on the next line: `save(` then the
+ * parameters, then `): Promise<void> {`. The lines are joined up to the one that
+ * opens the body; a line ending in `;` or `}` first was a call, not a head.
+ */
+function methodHeadAcrossLines(lines, index) {
+  const first = lines[index].trim();
+  if ((first.match(/\(/gu)?.length ?? 0) <= (first.match(/\)/gu)?.length ?? 0)) return false;
+  let joined = first;
+  for (let next = index + 1; next < Math.min(lines.length, index + SIGNATURE_LINES); next += 1) {
+    const part = lines[next].trim();
+    joined += ` ${part}`;
+    if (part.endsWith('{')) return endsWithMethodTail(joined);
+    if (part.endsWith(';') || part.endsWith('}')) return false;
+  }
+  return false;
 }
 
 function outlineJavaScript(lines, out) {
@@ -153,7 +183,8 @@ function outlineJavaScript(lines, out) {
       out.add(index, 'export', from ? from[1] : trimmed.slice(0, 40), line);
       continue;
     }
-    if (classIndent === null || indent <= classIndent || !endsWithMethodTail(trimmed)) continue;
+    if (classIndent === null || indent <= classIndent) continue;
+    if (!endsWithMethodTail(trimmed) && !methodHeadAcrossLines(lines, index)) continue;
     match = JS_METHOD.exec(trimmed);
     if (match && !NOT_A_DECLARATION.has(match[1])) out.add(index, 'method', match[1], line);
   }

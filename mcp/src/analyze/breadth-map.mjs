@@ -8,13 +8,14 @@
 
 import { createHash } from 'node:crypto';
 import { readdirSync } from 'node:fs';
-import { basename, dirname, extname, join, posix } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
 
 import { inferImports } from '../infer-imports.mjs';
-import { abilitiesOf } from './abilities.mjs';
+import { abilitiesOf, fairShares } from './abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
 import { repoText as t } from './repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
+import { withoutSpans } from './text.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;
 const EXPORTS_PER_UNIT = 6;
@@ -92,9 +93,12 @@ function exportFamily(path) {
 }
 
 function pythonAll(text) {
-  const match = /^__all__\s*=\s*[[(]([\s\S]*?)[\])]/m.exec(text);
-  if (!match) return null;
-  return [...match[1].matchAll(/['"]([A-Za-z_]\w*)['"]/g)].map((row) => row[1]);
+  const head = /^__all__[ \t]*=[ \t]*([[(])/m.exec(text);
+  if (!head) return null;
+  const start = head.index + head[0].length;
+  const end = text.indexOf(head[1] === '[' ? ']' : ')', start);
+  if (end < 0) return null;
+  return [...text.slice(start, end).matchAll(/['"]([A-Za-z_]\w*)['"]/g)].map((row) => row[1]);
 }
 
 function exportsOf(rootPath, files) {
@@ -317,7 +321,7 @@ function readmePurpose(rootPath) {
   const name = ['README.md', 'Readme.md', 'readme.md', 'README.rst', 'README.markdown', 'README.txt', 'README']
     .find((candidate) => surveyEntry(rootPath, candidate));
   if (!name) return null;
-  const text = readText(rootPath, name, 64 * 1024).replace(/<!--[\s\S]*?-->/g, '').replace(/```[\s\S]*?```/g, '');
+  const text = withoutSpans(withoutSpans(readText(rootPath, name, 64 * 1024), /<!--/, '-->'), /```/, '```');
   // Prose only: an indented or quoted block is code or a citation, a heading is a label.
   const paragraphs = text.split(/\r?\n[ \t]*\r?\n/)
     .filter((block) => !/^(?: {4}|\t|\s*>)/.test(block.replace(/^\r?\n+/, '')))
@@ -353,14 +357,20 @@ function docPages(rootPath, ignore) {
   for (const folder of DOC_FOLDERS) visit(folder, 0);
   const titled = pages.map((path) => {
     const text = readText(rootPath, path, 16 * 1024);
-    const front = /^---\r?\n[\s\S]*?^title:\s*["']?(.+?)["']?\s*$/m.exec(text);
+    // Front matter is the block a page opens with.
+    const frontEnd = text.indexOf('\n---', 3);
+    const front = /^---\r?\n/.test(text) ? /^title:[ \t]*(\S.*)$/m.exec(frontEnd > 0 ? text.slice(0, frontEnd) : text) : null;
     const heading = /^#\s+(.+)$/m.exec(text);
     const rst = /^([^\n=\-~]+)\r?\n[=\-~]{3,}\s*$/m.exec(text);
-    const title = (front?.[1] ?? heading?.[1] ?? rst?.[1] ?? stemOf(path)).replace(/[`*_]/g, '').trim();
+    const title = (front?.[1].trim().replace(/^["']|["']$/g, '') ?? heading?.[1] ?? rst?.[1] ?? stemOf(path)).replace(/[`*_]/g, '').trim();
     return { path, title: title.slice(0, DOC_TITLE_CHARS) };
   });
   titled.sort((a, b) => a.path.split('/').length - b.path.split('/').length || a.path.localeCompare(b.path));
-  return { rows: titled.slice(0, DOC_PAGE_LIMIT), omitted: Math.max(0, titled.length - DOC_PAGE_LIMIT) };
+  return {
+    rows: titled.slice(0, DOC_PAGE_LIMIT),
+    omitted: Math.max(0, titled.length - DOC_PAGE_LIMIT),
+    all: titled.map((page) => page.path),
+  };
 }
 
 function formatCount(value) {
@@ -403,15 +413,24 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     outside[row.class] = entry;
   }
   const entryPoints = entryPointsOf(rootPath, collection);
-  const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, { ignore });
   const pages = docPages(rootPath, ignoreSet);
   const readme = readmePurpose(rootPath);
+  // The vault's own pages are the map being built, not documentation of the product.
+  const vault = vaultRoot ? relative(rootPath, vaultRoot).split(sep).join('/') : '';
+  const inVault = vault && !vault.startsWith('..') && !isAbsolute(vault) ? (path) => path === vault || path.startsWith(`${vault}/`) : () => false;
+  const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, {
+    ignore,
+    documents: { readme: readme?.path ?? null, pages: pages.all.filter((path) => !inVault(path)) },
+  });
   const next = units.length === 0
     ? 'No product source file was found here: check rootPath and ignore, or build the map from documents.'
     : `${units.length} product units, ${formatCount(collection.productLines)} lines in ${formatCount(collection.productFiles)} files. ` +
       `Outline each unit's main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true) and ` +
-      `place each of the ${abilities.rows.length} abilities listed: a capability for it, its name inside the node that covers it ` +
-      '(a family names its members), or excluded with a reason. Then read each capability by symbol ' +
+      'list every ability the product gives a user, an operator or another system from the outlines and docs. ' +
+      `The ${abilities.rows.length} abilities listed are the floor under that list, not all of it: each gets a capability, ` +
+      'its name in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), ' +
+      'or one line in the project\'s ## Uncertainty that cites its path:Lline or exact name and says why it is excluded. ' +
+      'Then read each capability by symbol ' +
       '(sourceReads {path, symbol}, three or four per call): the read returns the body with the guards, defaults ' +
       'and callees that decide it, each with path and lines to cite. Nothing is written yet; add_concepts and ' +
       'validate_vault report which abilities no node places and which rules cite no read lines.';
@@ -429,7 +448,7 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     entryPoints: entryPoints.rows,
     ...(entryPoints.omitted > 0 ? { entryPointsOmitted: entryPoints.omitted } : {}),
     abilities: abilities.rows,
-    ...(abilities.omitted > 0 ? { abilitiesOmitted: abilities.omitted } : {}),
+    ...(abilities.omitted > 0 ? { abilitiesOmitted: abilities.omitted, abilitiesOmittedByKind: abilities.omittedByKind } : {}),
     docs: {
       readme,
       pages: pages.rows,
@@ -440,16 +459,28 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
   return fit ? fitBreadthMap(map) : map;
 }
 
-/** The rendered map's ceiling: a few hundred files fit whole; a larger repository keeps its largest units. */
+/**
+ * The rendered map's ceiling without its abilities: a few hundred files fit whole; a
+ * larger repository keeps its largest units. The abilities section (at most 120
+ * rows) comes on top, so a longer floor never pushes units out of the map, and the
+ * whole map stays within its own ceiling.
+ */
 const BREADTH_TEXT_BUDGET = 24 * 1024;
+const MAP_TEXT_LIMIT = 30 * 1024;
+/** Members a family or group shows before the rest are counted. */
+const MEMBERS_SHOWN = 16;
+
+/** The bytes a map takes against the budget: everything but its abilities section. */
+function budgetBytes(map) {
+  return Buffer.byteLength(renderBreadthMap({ ...map, abilities: [], abilitiesOmitted: undefined }), 'utf8');
+}
 
 /**
  * A repository too large for one map keeps every unit's path and size only for the
  * largest units that fit, and says how to ask for the rest: one folder at a time.
  */
 function fitBreadthMap(map) {
-  const text = renderBreadthMap(map);
-  if (Buffer.byteLength(text, 'utf8') <= BREADTH_TEXT_BUDGET) return { ...map, text };
+  if (budgetBytes(map) <= BREADTH_TEXT_BUDGET) return capAbilities(map);
   const largest = [...map.units]
     .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path))
     .map((unit) => ({
@@ -476,10 +507,57 @@ function fitBreadthMap(map) {
   let high = largest.length;
   while (low < high) {
     const middle = Math.ceil((low + high) / 2);
-    if (Buffer.byteLength(renderBreadthMap(slim(middle)), 'utf8') <= BREADTH_TEXT_BUDGET) low = middle;
+    if (budgetBytes(slim(middle)) <= BREADTH_TEXT_BUDGET) low = middle;
     else high = middle - 1;
   }
-  const fitted = slim(low);
+  return capAbilities(slim(low));
+}
+
+/**
+ * The map with its text, the abilities section cut to fit the whole map's
+ * ceiling: a group shows fewer members first (16, then 8, 4, 2, 1, none), each
+ * cut counted in `membersOmitted`; a map still too long then keeps fewer rows,
+ * shared fairly between kinds, the rows left out added to `abilitiesOmitted`.
+ * The returned rows are the ones the text shows.
+ */
+function capAbilities(map) {
+  const fits = (candidate) => Buffer.byteLength(renderBreadthMap(candidate), 'utf8') <= MAP_TEXT_LIMIT;
+  const shown = (rows, limit) => rows.map((row) => {
+    if (!row.members || row.members.length <= limit) return row;
+    return { ...row, members: row.members.slice(0, limit), membersOmitted: (row.membersOmitted ?? 0) + row.members.length - limit };
+  });
+  const rows = map.abilities ?? [];
+  let capped = map;
+  for (const limit of [MEMBERS_SHOWN, 8, 4, 2, 1, 0]) {
+    capped = { ...map, abilities: shown(rows, limit) };
+    if (fits(capped)) return { ...capped, text: renderBreadthMap(capped) };
+  }
+  const memberless = capped.abilities;
+  const keep = (count) => {
+    const counts = new Map();
+    for (const row of memberless) counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
+    const shares = fairShares(counts, count);
+    const taken = new Map();
+    const kept = memberless.filter((row) => {
+      if ((taken.get(row.kind) ?? 0) >= shares.get(row.kind)) return false;
+      taken.set(row.kind, (taken.get(row.kind) ?? 0) + 1);
+      return true;
+    });
+    const byKind = { ...(map.abilitiesOmittedByKind ?? {}) };
+    for (const [kind, total] of counts) {
+      if (total > shares.get(kind)) byKind[kind] = (byKind[kind] ?? 0) + total - shares.get(kind);
+    }
+    const omitted = (map.abilitiesOmitted ?? 0) + memberless.length - kept.length;
+    return { ...map, abilities: kept, ...(omitted > 0 ? { abilitiesOmitted: omitted, abilitiesOmittedByKind: byKind } : {}) };
+  };
+  let low = 0;
+  let high = memberless.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (fits(keep(middle))) low = middle;
+    else high = middle - 1;
+  }
+  const fitted = keep(low);
   return { ...fitted, text: renderBreadthMap(fitted) };
 }
 
@@ -517,13 +595,21 @@ function renderBreadthMap(map) {
     if (map.entryPointsOmitted) lines.push(`+${map.entryPointsOmitted} more`);
   }
   if (map.abilities?.length > 0) {
-    lines.push('', 'Abilities to place: kind name path symbol (a family lists its members)');
+    lines.push('', 'Abilities to place, the floor: kind name evidence symbol (a family or group lists its members; a documented one names its heading)');
     for (const row of map.abilities) {
+      const hidden = (row.membersOmitted ?? 0) + Math.max(0, (row.members?.length ?? 0) - MEMBERS_SHOWN);
+      const listed = (row.members ?? []).slice(0, MEMBERS_SHOWN).map((name) => t(name, 80)).join(', ');
+      const members = row.members ? `: ${[listed, hidden > 0 ? `+${hidden}` : ''].filter(Boolean).join(' ')}` : '';
+      const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
+      const doc = row.doc ? ` (${t(row.doc)})` : '';
       lines.push(row.kind === 'family'
-        ? `family ${t(row.path)}: ${row.members.map((name) => t(name, 80)).join(', ')}`
-        : `${row.kind} ${t(row.name, 120)} ${t(row.path)}${row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : ''}`);
+        ? `family ${t(row.path)} ${t(row.evidence)}${members}`
+        : `${row.kind} ${t(row.name, 120)} ${t(row.evidence)}${symbol}${doc}${members}`);
     }
-    if (map.abilitiesOmitted) lines.push(`+${map.abilitiesOmitted} more`);
+    if (map.abilitiesOmitted) {
+      const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
+      lines.push(`+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows and of the map's 30 KB; call analyze_repo_structure with rootPath set to one folder to list them.`);
+    }
   }
   if (map.docs.pages.length > 0) {
     lines.push('', 'Docs: path - title');
