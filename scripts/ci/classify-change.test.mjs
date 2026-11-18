@@ -505,7 +505,7 @@ test('both workflows retain exhaustive triggers isolated from ordinary push canc
     const group = source.split('\n').find((line) => line.startsWith('  group:'));
     assert.match(group, /github\.event_name == 'schedule'/);
     assert.match(group, /github\.event_name == 'workflow_dispatch'/);
-    assert.match(group, /'full' \|\| 'change'/);
+    assert.match(group, /'full' \|\|.*'change' \}\}$/);
   }
 });
 

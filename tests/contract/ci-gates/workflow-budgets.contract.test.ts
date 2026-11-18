@@ -221,6 +221,13 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
           "cancel-in-progress: ${{ github.event_name != 'push' }}",
         );
         expect(text, "checks.yml push must stay limited to main").toMatch(/^  push:\n    branches:\n      - main$/m);
+        // One waiting run per group is all GitHub keeps, so a shared group would drop the middle
+        // of three back-to-back merges: each push gets its own group.
+        const group = /^  group: (.*)$/m.exec(text)?.[1] ?? "";
+        expect(group, "each push to main needs a group of its own").toContain(
+          "github.event_name == 'push' && format('push-{0}', github.run_id)",
+        );
+        expect(group, "pull requests and trains keep the shared per-ref group").toMatch(/\|\| 'change' \}\}$/);
         continue;
       }
       expect(text, `${file} has no concurrency group`).toMatch(/^concurrency:/m);
