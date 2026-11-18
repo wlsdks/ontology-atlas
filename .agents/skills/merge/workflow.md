@@ -59,8 +59,8 @@ One branch, from its worktree:
     pnpm conflicts:scan -- --head=<branch>
     pnpm pr:land <number>    # in the background; exit 0 merged, 1 red, ejected or closed
 
-A change nothing on `main` or a train overlaps merges as soon as its own CI is
-green; the rest ride a train. The merge run waits and reports. Do not poll
+A branch that contains today's `main` and overlaps no train merges as soon as
+its own CI is green; the rest ride a train. The merge run waits and reports. Do not poll
 GitHub in a loop: every merging shares one API quota. `pnpm pr:queue` once
 shows the queue and the train.
 

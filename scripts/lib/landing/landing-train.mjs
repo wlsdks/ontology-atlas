@@ -263,6 +263,9 @@ export function driftVerdict({ trainFiles, mainFiles }) {
  *
  * - `ready-green`: every required context is green on its head and no unaccepted check is red.
  * - `clean-merge`: `git merge-tree --write-tree origin/main <head>` is clean.
+ * - `contains-main`: its head already contains today's `main`, so the tree its own CI tested is
+ *   the tree that lands. A head behind `main` may import a file `main` changed since; it takes
+ *   the train, which tests the merged tree.
  * - `disjoint-from-main`: the files it changes do not intersect the files `main` changed since
  *   the merge base, so the merged tree differs from the tested one only in files it never touched.
  * - `no-overlapping-train`: the lock is free, or its train records a file set that does not
@@ -270,7 +273,7 @@ export function driftVerdict({ trainFiles, mainFiles }) {
  * - `not-full-plan`: `classify-change` does not plan the full lanes for it. A change to the impact
  *   authority, CI itself or the root contracts always takes the train.
  */
-export function fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan }) {
+export function fastPathEligibility({ checks, other, mergeClean, containsMain, prFiles, mainFiles, lock, fullPlan }) {
   const rules = [];
   const add = (rule, ok, detail) => rules.push({ rule, ok, detail });
 
@@ -285,6 +288,11 @@ export function fastPathEligibility({ checks, other, mergeClean, prFiles, mainFi
 
   if (mergeClean === null || mergeClean === undefined) add('clean-merge', false, 'the trial merge could not run');
   else add('clean-merge', mergeClean, mergeClean ? 'merges onto origin/main without conflict' : 'conflicts with origin/main');
+
+  if (containsMain === null || containsMain === undefined) add('contains-main', false, 'whether its head contains origin/main could not be read');
+  else add('contains-main', containsMain, containsMain
+    ? 'its head contains origin/main, so its own CI tested the tree that lands'
+    : 'its head is behind origin/main, so its own CI did not test the tree that would land (merge origin/main into the branch to go direct)');
 
   if (!Array.isArray(prFiles) || !Array.isArray(mainFiles)) add('disjoint-from-main', false, 'the changed files could not be read');
   else {

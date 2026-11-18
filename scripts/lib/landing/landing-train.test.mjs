@@ -184,6 +184,7 @@ describe('fast-path eligibility', () => {
     checks: green,
     other: clear,
     mergeClean: true,
+    containsMain: true,
     prFiles: ['src/a.ts'],
     mainFiles: ['src/b.ts'],
     lock: { state: 'free' },
@@ -194,7 +195,7 @@ describe('fast-path eligibility', () => {
   it('qualifies when every rule holds, and says why for each', () => {
     const verdict = fastPathEligibility(base);
     assert.equal(verdict.eligible, true);
-    assert.deepEqual(verdict.rules.map((row) => row.rule), ['ready-green', 'clean-merge', 'disjoint-from-main', 'no-overlapping-train', 'not-full-plan']);
+    assert.deepEqual(verdict.rules.map((row) => row.rule), ['ready-green', 'clean-merge', 'contains-main', 'disjoint-from-main', 'no-overlapping-train', 'not-full-plan']);
     assert.ok(describeFastPath(verdict).every((line) => line.startsWith('pass ')));
   });
 
@@ -202,14 +203,15 @@ describe('fast-path eligibility', () => {
     assert.deepEqual(failing(fastPathEligibility({ ...base, checks: { state: 'waiting', pending: [], failed: [], unrun: ['MCP'] } })), ['ready-green']);
     assert.deepEqual(failing(fastPathEligibility({ ...base, other: { state: 'failed', failed: [{ name: 'Windows' }] } })), ['ready-green']);
     assert.deepEqual(failing(fastPathEligibility({ ...base, mergeClean: false })), ['clean-merge']);
+    assert.deepEqual(failing(fastPathEligibility({ ...base, containsMain: false })), ['contains-main']);
     assert.deepEqual(failing(fastPathEligibility({ ...base, mainFiles: ['src/a.ts'] })), ['disjoint-from-main']);
     assert.deepEqual(failing(fastPathEligibility({ ...base, fullPlan: { full: true, reason: 'CI impact authority changed' } })), ['not-full-plan']);
   });
 
   it('fails a rule whose input could not be read, instead of guessing a pass', () => {
-    const verdict = fastPathEligibility({ ...base, checks: null, mergeClean: null, prFiles: null, fullPlan: null, lock: { state: 'unknown' } });
+    const verdict = fastPathEligibility({ ...base, checks: null, mergeClean: null, containsMain: null, prFiles: null, fullPlan: null, lock: { state: 'unknown' } });
     assert.equal(verdict.eligible, false);
-    assert.deepEqual(failing(verdict), ['ready-green', 'clean-merge', 'disjoint-from-main', 'no-overlapping-train', 'not-full-plan']);
+    assert.deepEqual(failing(verdict), ['ready-green', 'clean-merge', 'contains-main', 'disjoint-from-main', 'no-overlapping-train', 'not-full-plan']);
   });
 
   it('reads the train in flight from the lock payload', () => {
@@ -245,6 +247,7 @@ describe('where pr:land sends a pull request', () => {
     checks: { state: 'green', pending: [], failed: [], unrun: [] },
     other: { state: 'clear', failed: [] },
     mergeClean: true,
+    containsMain: true,
     prFiles: ['src/a.ts'],
     mainFiles: ['src/b.ts'],
     lock: { state: 'free' },
@@ -270,6 +273,7 @@ describe('where pr:land sends a pull request', () => {
   it('takes the train, without a run of its own, when any other rule fails', () => {
     for (const patch of [
       { mainFiles: ['src/a.ts'] },
+      { containsMain: false },
       { mergeClean: false },
       { mergeClean: null },
       { fullPlan: { full: true, reason: 'CI impact authority changed' } },

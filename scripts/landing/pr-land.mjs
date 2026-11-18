@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * `pnpm pr:land <n>` is the only way a PR reaches `main`. A change disjoint from `main` and from
- * every train in flight takes the lock-free fast path on its own CI: a draft is marked ready, its
- * one run is awaited, and green merges it directly; red goes back to its author unqueued.
+ * `pnpm pr:land <n>` is the only way a PR reaches `main`. A head that contains today's `main` and
+ * overlaps no train in flight takes the lock-free fast path on its own CI: a draft is marked ready,
+ * its one run is awaited, and green merges it directly; red goes back to its author unqueued.
  * Anything else enqueues with the `landing-queue` label, and the lock-holding conductor merges
  * queued PRs into a train with one CI run, bisecting red trains.
  */
@@ -905,6 +905,7 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
   const other = otherCheckState({ rollup, requiredContexts, allowFailing });
   const sha = pr.headRefOid;
   let mergeClean = null;
+  let containsMain = null;
   let prFiles = null;
   let mainFiles = null;
   let fullPlan = null;
@@ -912,6 +913,8 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
   const have = fetched && (deps.git.hasCommit(sha) || (deps.git.fetch([sha]) && deps.git.hasCommit(sha)));
   if (have) {
     mergeClean = deps.git.mergeTreeClean('origin/main', sha);
+    const mainSha = deps.git.revParse('origin/main');
+    containsMain = mainSha ? deps.git.isAncestor(mainSha, sha) : null;
     const base = deps.git.mergeBase('origin/main', sha);
     if (base) {
       const changes = deps.git.diffNameStatus(base, sha);
@@ -926,7 +929,7 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
     }
   }
   const lock = readLockState(deps);
-  return { ...fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan }), checks, other };
+  return { ...fastPathEligibility({ checks, other, mergeClean, containsMain, prFiles, mainFiles, lock, fullPlan }), checks, other };
 }
 
 function takeFastLock(deps, token, number) {
@@ -1023,6 +1026,21 @@ function awaitOwnCi({ pr, deps, args, requiredContexts, deadline }) {
     else if (step.action === 'green') return { state: 'green', pr: current };
   }
   return { state: 'stopped', reason: `its CI gave no verdict within ${args.timeoutMinutes} minutes`, pr: current };
+}
+
+/** Pull requests other than `except` wait in the queue, and no live conductor holds the lock. */
+function queueNeedsConductor(deps, except) {
+  const lock = readLockState(deps);
+  if (lock.state === 'held' || lock.state === 'unknown') return false;
+  return deps.gh.listQueue().some((queued) => queued.number !== except);
+}
+
+/** Conduct the queue a direct merge would otherwise leave unconducted. `null` when there was none. */
+function conductLeftovers({ deps, args, requiredContexts, token, deadline, except }) {
+  if (!queueNeedsConductor(deps, except)) return null;
+  const lock = readLockState(deps);
+  deps.log('pull requests are queued and nobody conducts them; conducting them before leaving');
+  return conduct({ deps, args, requiredContexts, token, force: lock.state !== 'free', deadline }).state;
 }
 
 /** A red own run goes back to its author with the contexts and the ways forward. */
@@ -1556,14 +1574,26 @@ function landOne({ args, deps }) {
 
   let current = pr;
   if (args.fast) {
+    const direct = () => {
+      // A direct merge leaves no queue behind: whatever waits with nobody conducting is conducted now.
+      const leftovers = conductLeftovers({ deps, args, requiredContexts, token, deadline, except: number });
+      if (leftovers === 'aborted') deps.error('the queue this lander picked up stopped; `pnpm pr:land --conduct` resumes it');
+      return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+    };
     let attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
-    if (attempt.merged) return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+    if (attempt.merged) return direct();
     const route = attempt.verdict
       ? landingRoute({ verdict: attempt.verdict, checks: attempt.verdict.checks, other: attempt.verdict.other, tolerated })
       : { route: 'train', blockers: [] };
-    if (route.route === 'red') return reportOwnRed({ number, failed: route.failed, deps });
+    const ownRoute = route.route === 'own-ci' || route.route === 'red';
+    // A queued pull request is the conductor's; one that waits unconducted means this lander conducts.
+    const yieldTo = !ownRoute ? null
+      : hasQueueLabel(current) ? 'it is already queued for a train'
+        : args.wait && queueNeedsConductor(deps, number) ? 'other pull requests are queued and nobody conducts them' : null;
+    if (yieldTo) deps.log(`taking the train: ${yieldTo}`);
+    else if (route.route === 'red') return reportOwnRed({ number, failed: route.failed, deps });
     // `--no-wait` keeps its meaning: queue and leave. Waiting on its own run is for a lander that stays.
-    if (route.route === 'own-ci' && args.wait) {
+    else if (route.route === 'own-ci' && args.wait) {
       const own = awaitOwnCi({ pr: current, deps, args, requiredContexts, deadline });
       current = own.pr ?? current;
       if (own.state === 'red' && !own.failed.every((check) => tolerated.includes(check.name))) {
@@ -1575,7 +1605,7 @@ function landOne({ args, deps }) {
       }
       if (own.state === 'green') {
         attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
-        if (attempt.merged) return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+        if (attempt.merged) return direct();
       }
       deps.log(own.state === 'red'
         ? `PR #${number}'s own CI is red only on ${own.failed.map((check) => check.name).join(', ')}, named as tolerated; the train reruns it`
@@ -1650,7 +1680,7 @@ export function planLanding({ args, deps }) {
       }
       const route = landingRoute({ verdict, checks: verdict.checks, other: verdict.other, tolerated: [...args.flaky, ...args.allowFailing] });
       if (route.route === 'own-ci') {
-        deps.log(`PR #${number}: would ${pr.isDraft ? 'mark it ready and ' : ''}wait for its own CI, then merge directly if still disjoint`);
+        deps.log(`PR #${number}: would ${pr.isDraft ? 'mark it ready and ' : ''}wait for its own CI, then merge directly if main has not moved`);
         continue;
       }
       if (route.route === 'red') {
@@ -1773,7 +1803,7 @@ export function runPrLand(argv, io = console, makeDeps = defaultDeps) {
       return 0;
     }
     deps.gh.markReady(args.number);
-    deps.log(`PR #${args.number} is ready: one CI run is now firing, and every later push runs it again. \`pnpm pr:land ${args.number}\` waits for it and merges directly when nothing on main overlaps.`);
+    deps.log(`PR #${args.number} is ready: one CI run is now firing, and every later push runs it again. \`pnpm pr:land ${args.number}\` waits for it and merges directly when the branch contains main.`);
     return 0;
   }
 

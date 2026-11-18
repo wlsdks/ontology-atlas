@@ -36,10 +36,11 @@
 ## Merging a pull request
 
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
-- `pnpm pr:land <number>` is the only way to `main`. A change disjoint from
-  `main` and any train in flight merges on its own CI: a draft is marked
-  ready, that run is awaited, green merges and red returns unqueued. Anything
-  else rides a train. `pnpm pr:ci <number>` starts that run once the author is
+- `pnpm pr:land <number>` is the only way to `main`. A branch that contains
+  today's `main` and no train in flight overlaps merges on its own CI: a draft
+  is marked ready, that run is awaited, green merges and red returns unqueued.
+  Anything else rides a train; merge `origin/main` before the last push to go
+  direct. `pnpm pr:ci <number>` starts that run once the author is
   done, so it is ready at landing. `--plan <n...>` previews; `pnpm pr:queue`
   shows the queue.
   Preserve original commits with merge commits; never squash or rebase during

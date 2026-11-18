@@ -47,9 +47,9 @@ gh pr create --draft --head <branch> --title "<type>: <slice>" --body-file <file
 pnpm pr:land <number>          # in the background, one per branch
 ```
 
-Each run marks its draft ready, waits for that CI run and merges a disjoint
-green slice at once; their runs go side by side. A slice that overlaps `main`
-or a train goes on a train. A slice red on its own CI comes back unqueued; a red
+Each run marks its draft ready, waits for that CI run and merges a green slice
+that contains today's `main` at once; their runs go side by side. A slice
+behind `main` or overlapping a train goes on a train. A slice red on its own CI comes back unqueued; a red
 train is split and rerun, and its breaker gets a comment and loses its label.
 Fix it and `pnpm pr:land <number>` again. To put many slices on one train
 instead, queue each with `pnpm pr:land <number> --no-wait` and run one
