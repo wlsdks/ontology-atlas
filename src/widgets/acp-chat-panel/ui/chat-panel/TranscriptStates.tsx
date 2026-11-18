@@ -1,6 +1,6 @@
 import { RotateCcw } from 'lucide-react';
 
-import type { ChatSuggestion } from '@/features/acp-session';
+import { isPressableSuggestion, type ChatSuggestion } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
@@ -40,7 +40,7 @@ export function StartingState({ t, download, suggestions, seatedRequestWaiting }
         </p>
       ) : null}
 
-      {suggestions.length > 0 && !download && !seatedRequestWaiting ? (
+      {suggestions.some(isPressableSuggestion) && !download && !seatedRequestWaiting ? (
         <div className="agent-panel-stage-swap mt-5 w-full justify-self-stretch">
           <StartingSuggestionPreview
             heading={t('startingSuggestions')}
@@ -83,14 +83,19 @@ export function ConnectStoppedState({ t, onConnectAgain }: { t: ChatT; onConnect
   );
 }
 
-export function EmptyState({ t, seatedRequestWaiting, suggestions, onChoose }: {
+export function EmptyState({ t, seatedRequestWaiting, suggestions, canSend, providerNote, onChoose, onDone }: {
   t: ChatT;
   seatedRequestWaiting: boolean;
   suggestions: readonly ChatSuggestion[];
+  canSend: boolean;
+  /** Said before a first send: what the agent reads leaves this computer. */
+  providerNote: string;
   onChoose: (suggestion: ChatSuggestion) => void;
+  onDone: () => void;
 }) {
+  const showSteps = suggestions.length > 0 && !seatedRequestWaiting;
   return (
-    <div className="agent-panel-stage-swap m-auto grid max-w-[34ch] gap-3">
+    <div className={cn('agent-panel-stage-swap m-auto grid gap-3', showSteps ? 'w-full max-w-[44ch]' : 'max-w-[34ch]')}>
       <p
         data-testid="acp-chat-empty"
         data-acp-empty={seatedRequestWaiting ? 'seated' : 'open'}
@@ -99,18 +104,24 @@ export function EmptyState({ t, seatedRequestWaiting, suggestions, onChoose }: {
         {t(seatedRequestWaiting ? 'emptySeatedHint' : 'emptyHint')}
       </p>
 
-      {suggestions.length > 0 && !seatedRequestWaiting ? (
+      {showSteps ? (
         <SuggestionRows
+          t={t}
           heading={t('suggest.heading')}
           testId="acp-chat-suggestions"
           centered
           items={suggestions}
-          labelFor={(suggestion) =>
-            t(`suggest.${suggestion.kind}.label`, suggestion.params)
-          }
+          canSend={canSend}
           onSelect={onChoose}
+          onDone={onDone}
         />
       ) : null}
+      <p
+        data-testid="acp-chat-provider-note"
+        className="break-keep text-center text-caption leading-caption text-[color:var(--color-text-tertiary)]"
+      >
+        {providerNote}
+      </p>
     </div>
   );
 }

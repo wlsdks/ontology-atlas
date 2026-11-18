@@ -332,38 +332,55 @@
     "askNext": "Ask next time"
   },
   "suggest": {
-    "heading": "Spotted on the map · press to fill the message box",
-    "followUpHeading": "Useful next steps",
+    "heading": "Next steps from this map · a press sends it to the agent",
+    "followUpHeading": "Next steps from this map",
+    "groupLabel": "Next steps",
+    "done": "Done for now",
+    "nothingLeft": "Nothing left to check right now.",
+    "providerNote": "What the agent reads here goes to {runtime}’s provider.",
     "connectSource": {
       "label": "Connect the code folder first",
+      "because": "No code folder is connected to this project yet",
       "prompt": "Connect the code folder that actually implements this project first. Do not analyze vault files as source code before it is connected."
     },
-    "bootstrap": {
-      "label": "Read the code and start the map",
-      "prompt": "Start building the ontology from the connected source code. First orient with connection_info and list_kinds. Propose domains, capabilities, implementation elements, and evidence paths from the source; look for similar existing concepts first and write nothing before I review it. Write only the candidates I approve as a batch, then report validate_vault and compile_ontology results."
+    "build": {
+      "label": "Build the first map",
+      "because": "{count, plural, =0 {Nothing is on the map yet} one {Only # starter concept is on the map} other {Only the # starter concepts are on the map}}",
+      "prompt": "Build the first map of this folder from the connected code. Start with connection_info and list_kinds, then read the source and add the domains, capabilities and elements it shows, each with a definition sentence, its code location and its relations, each relation with a why. Look for an existing concept before adding a near-twin. Then run validate_vault and tell me what you added, what you connected and what you could not read."
     },
-    "island": {
-      "label": "{count, plural, one {“{firstLabel}” is not connected to anything else. Find where it should connect} other {# items including “{firstLabel}” are not connected to anything else. Find where they should connect}}",
-      "prompt": "{count, plural, one {The concept “{firstLabel}” ({first}) is not connected to the rest of the map. Using the code as evidence, work out where it belongs and propose the links along with why.} other {# concepts including “{firstLabel}” ({first}) are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why.}}"
+    "dependencies": {
+      "label": "{count, plural, one {Work out what # concept depends on} other {Work out what # concepts depend on}}",
+      "because": "{count, plural, one {# capability has no dependency and no element} other {# capabilities have no dependency and no element}}",
+      "prompt": "{count, plural, one {This capability records} other {These # capabilities record}} neither depends_on nor an element: {slugs}{rest, plural, =0 {} other {, and # more}}. Read the code behind each one and add the depends_on relations and elements the code shows, each with a why. Leave a capability unchanged when its code shows none, and say so. Then run validate_vault and tell me what you added."
     },
-    "containment": {
-      "label": "The “{slugLabel}” document says it belongs to “{domainLabel}”, but the “{domainLabel}” document’s list does not include “{slugLabel}”. Check which side is right and make the two documents agree",
-      "prompt": "“{slugLabel}” ({slug}) says it belongs to “{domainLabel}” ({domain}), but the domain-side link is missing. Check whether that home is right, and align both sides if so."
+    "standAlone": {
+      "label": "{count, plural, one {Connect # concept that stands alone} other {Connect # concepts that stand alone}}",
+      "because": "{count, plural, one {# concept has no link to the rest of the map} other {# concepts have no link to the rest of the map}}",
+      "prompt": "{count, plural, one {This concept is} other {These # concepts are}} not connected to the rest of the map: {slugs}{rest, plural, =0 {} other {, and # more}}. Using the code as evidence, add the relations that connect each one to where it belongs, each with a why. Leave a concept unconnected when nothing shows where it belongs, and say so. Then run validate_vault and tell me what you connected."
     },
-    "evidence": {
-      "label": "{count, plural, one {The capability “{firstLabel}” does not say which code implements it yet. Find that code} other {# capabilities do not say which code implements them yet. Start with “{firstLabel}” and find that code}}",
-      "prompt": "Run query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}'), then inspect “{firstLabel}” ({first}) first. These {count} capabilities have no implementation file path and no linked element written down yet. Find the implementation evidence and propose the smallest path or element update. Do not write before I review it, and say when no evidence can be found."
+    "rename": {
+      "label": "{count, plural, one {Rename # concept that reads like code} other {Rename # concepts that read like code}}",
+      "because": "{count, plural, one {# title is a path, a file name or an identifier} other {# titles are paths, file names or identifiers}}",
+      "prompt": "{count, plural, one {This concept has a title} other {These # concepts have titles}} that read like code: {slugs}{rest, plural, =0 {} other {, and # more}}. Give each one the name a teammate would say aloud, taken from the README, the interface text or the documents, and keep the identifier in the body as evidence. Change the title and each display name the folder uses with patch_concept, and keep every slug. Then tell me each old and new name."
     },
-    "explain": {
-      "label": "Explain what this folder does from the map alone",
-      "prompt": "Using only the {count} concepts on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
+    "update": {
+      "label": "{count, plural, one {Update # concept whose code changed} other {Update # concepts whose code changed}}",
+      "because": "{count, plural, one {# concept cites a file that changed after its document} other {# concepts cite files that changed after their documents}}",
+      "prompt": "{count, plural, one {This concept cites code} other {These # concepts cite code}} that changed after the document was written: {slugs}{rest, plural, =0 {} other {, and # more}}. Read each cited file as it is now and update the definition, boundaries, code location and relations where the code moved; leave a concept unchanged when it still holds. Then run validate_vault and tell me what you changed."
+    },
+    "check": {
+      "label": "Check the whole map",
+      "because": "{count, plural, one {Reads # concept and changes nothing} other {Reads all # concepts and changes nothing}}",
+      "prompt": "Review the whole map of {count} concepts without changing anything: run validate_vault and query_ontology with operation maintenance_plan, then read the concepts that look thinnest. Tell me the five things most worth fixing, in order, each with its concept and why."
     },
     "explainSubject": {
       "label": "Explain what “{subject}” does from its record and relations",
+      "because": "Reads its record and relations and changes nothing",
       "prompt": "Read “{subject}” ({slug}) with get_concept and find_neighbors, then explain what it does, what it belongs to and what it relies on. Use only what the folder records; where the record is silent, say so rather than guessing."
     },
     "subjectImpact": {
       "label": "Find what a change to “{subject}” would reach",
+      "because": "Follows its links and changes nothing",
       "prompt": "Starting from “{subject}” ({slug}), use find_backlinks and find_neighbors to list the concepts a change to it would reach, each with the relation that carries it. Write nothing; end with the one place you would check first and why."
     }
   },

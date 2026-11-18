@@ -123,8 +123,9 @@ describe("useUnboundProjectSource", () => {
     expect(chatSuggestions({
       nodeCount: 5,
       islands: [],
-      missingContainment: [],
-      unevidenced: [],
+      withoutDependency: [],
+      codeShaped: [],
+      changedSource: null,
       sourceState: result.current.state,
     }).map(({ kind }) => kind)).toEqual(["connectSource"]);
 
@@ -147,10 +148,11 @@ describe("useUnboundProjectSource", () => {
     expect(chatSuggestions({
       nodeCount: 5,
       islands: [],
-      missingContainment: [],
-      unevidenced: [],
+      withoutDependency: [],
+      codeShaped: [],
+      changedSource: null,
       sourceState: result.current.state,
-    }).map(({ kind }) => kind)).toEqual(["bootstrap"]);
+    }).map(({ kind }) => kind)).toEqual(["build"]);
   });
 
   it("changes the refresh revision only for a completed source-binding receipt", () => {

@@ -2684,17 +2684,17 @@ describe('first download: a starting indicator alone is not enough (2026-08-19)'
         runtimeLabel="Claude Code"
         vaultRoot="/vault"
         mcpServers={[{ name: 'atlas-vault' }]}
-        suggestions={[{ kind: 'explain', params: { count: 80 } }]}
+        suggestions={[{ kind: 'check', params: { count: 80 } }]}
         composerSubject="Checkout"
       />,
     );
     await screen.findByTestId('acp-starting');
-    const preview = screen.getByTestId('acp-starting-suggestion-explain');
+    const preview = screen.getByTestId('acp-starting-suggestion-check');
     // A preview, not a disabled button: nothing in it can be pressed or focused.
     expect(preview.tagName).toBe('LI');
     expect(within(screen.getByTestId('acp-starting-suggestions')).queryAllByRole('button')).toHaveLength(0);
     // The live row is a different element; the preview must not answer for it.
-    expect(screen.queryByTestId('acp-chat-suggestion-explain')).toBeNull();
+    expect(screen.queryByTestId('acp-chat-suggestion-check')).toBeNull();
     const composer = screen.getByTestId('acp-chat-composer').querySelector('textarea')!;
     expect(composer.getAttribute('placeholder')).toContain('composerPlaceholderSubject');
     expect(composer.getAttribute('placeholder')).toContain('Checkout');
@@ -2899,7 +2899,7 @@ describe('suggestions for an empty conversation: draws only what concerns this f
         vaultRoot="/vault"
         mcpServers={[{ name: 'atlas-vault' }]}
         sessionEnabled={false}
-        suggestions={[{ kind: 'explain', params: { count: 80 } }]}
+        suggestions={[{ kind: 'check', params: { count: 80 } }]}
       />,
     );
 
@@ -2907,51 +2907,90 @@ describe('suggestions for an empty conversation: draws only what concerns this f
     // A suspended session has not begun work; its status word must not start a dance.
     expect(screen.queryByTestId('brand-waiting-mark')).toBeNull();
     expect(screen.getByTestId('acp-chat-empty')).toBeTruthy();
-    expect(screen.getByTestId('acp-chat-suggestion-explain')).toBeTruthy();
+    expect(screen.getByTestId('acp-chat-suggestion-check')).toBeTruthy();
     expect(screen.getByTestId('acp-chat-composer')).toBeTruthy();
     expect(bridge.sent.some((message) => message.method === 'initialize')).toBe(false);
   });
 
-  it('suggestions are drawn when received, and pressing one puts the sentence in the input', async () => {
-    render(
-      <AcpChatPanel
-        runtimeId="claude-acp"
-        runtimeLabel="Claude Agent"
-        vaultRoot="/vault"
-        mcpServers={[{ name: 'atlas-vault' }]}
-        suggestions={[
-          { kind: 'island', params: { first: 'capabilities/invoice', count: 2 } },
-          { kind: 'explain', params: { count: 80 } },
-        ]}
-      />,
-    );
-    // The same content is visible before the session starts. Here we proceed to the actual ready state
-    // to re-establish the subsequent click/input contract.
-    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
-    replyTo('initialize', { protocolVersion: 1 });
-    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
-    replyTo('session/new', { sessionId: 's-1' });
+  it('next steps are drawn as buttons, and pressing one sends the request as the person\'s turn at once', async () => {
+    await bootSession({
+      suggestions: [
+        { kind: 'standAlone', params: { count: 2, slugs: 'capabilities/invoice, capabilities/refund', rest: 0 } },
+        { kind: 'check', params: { count: 80 } },
+      ],
+    });
 
-    const island = await screen.findByTestId('acp-chat-suggestion-island');
-    // **This folder's real name** has to be in the bubble — without it, it is an
-    // example sentence that would fit any app, which is decoration, not a suggestion.
-    expect(island.textContent).toContain('capabilities/invoice');
-
-    fireEvent.click(island);
-
-    // `acp-chat-composer` is **the box wrapping** the input — grabbing it leaves
-    // `value` undefined, so any assertion passes. Grab the element that has the real
-    // value.
-    const composer = screen
-      .getByTestId('acp-chat-composer')
-      .querySelector('textarea') as HTMLTextAreaElement;
-    expect(composer, 'the composer was not found, so this assertion measures nothing').toBeTruthy();
-    await waitFor(() =>
-      expect((composer as HTMLTextAreaElement).value).toContain('capabilities/invoice'),
-    );
-    // It only sits down and is **not sent** — the user has to be able to edit and send
-    // (the same contract as `prefillRequest`).
+    const row = await screen.findByTestId('acp-chat-suggestion-standAlone');
+    expect(row.tagName).toBe('BUTTON');
+    expect(row).toHaveTextContent('suggest.standAlone.label:{"count":2');
+    expect(row).toHaveTextContent('suggest.standAlone.because');
+    // Arrival presses and focuses nothing.
+    expect(document.activeElement).not.toBe(row);
     expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+
+    fireEvent.click(row);
+
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const sent = bridge.sent.find((m) => m.method === 'session/prompt') as
+      | { params?: { prompt?: Array<{ text?: string }> } }
+      | undefined;
+    expect(sent?.params?.prompt?.[0]?.text).toContain('suggest.standAlone.prompt');
+    expect(sent?.params?.prompt?.[0]?.text).toContain('capabilities/invoice');
+    // Sent, not seated: the box stays empty and the request is the person's turn.
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    await waitFor(() => expect(document.querySelector('[data-acp-entry="user"]')).toBeInTheDocument());
+  });
+
+  it('a measured folder with nothing left shows the quiet line and no button', async () => {
+    await bootSession({ suggestions: [{ kind: 'nothingLeft', params: {} }] });
+    expect(screen.getByTestId('acp-chat-nothing-left')).toHaveTextContent('suggest.nothingLeft');
+    expect(within(screen.getByTestId('acp-chat-suggestions')).queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('says before a first send where what the agent reads goes', async () => {
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 80 } }] });
+    expect(screen.getByTestId('acp-chat-provider-note')).toHaveTextContent('suggest.providerNote:{"runtime":"Claude Code"}');
+  });
+
+  it('the group is one tab stop and arrow keys move between choices', async () => {
+    await bootSession({
+      suggestions: [
+        { kind: 'dependencies', params: { count: 3, slugs: 'capabilities/a', rest: 0 } },
+        { kind: 'check', params: { count: 80 } },
+      ],
+    });
+    const first = screen.getByTestId('acp-chat-suggestion-dependencies');
+    const second = screen.getByTestId('acp-chat-suggestion-check');
+    const done = screen.getByTestId('acp-chat-next-steps-done');
+    expect([first, second, done].map((button) => button.tabIndex)).toEqual([0, -1, -1]);
+    act(() => first.focus());
+    fireEvent.keyDown(first, { key: 'ArrowDown' });
+    expect(second).toHaveFocus();
+    fireEvent.keyDown(second, { key: 'ArrowDown' });
+    expect(done).toHaveFocus();
+    fireEvent.keyDown(done, { key: 'ArrowDown' });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(first, { key: 'End' });
+    expect(done).toHaveFocus();
+    expect([first, second, done].map((button) => button.tabIndex)).toEqual([-1, -1, 0]);
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('Done for now hides the steps until the person sends a typed turn', async () => {
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 80 } }] });
+    fireEvent.click(screen.getByTestId('acp-chat-next-steps-done'));
+    expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'What is in this folder?' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: 'A storefront.' } } },
+    });
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
   });
 
   it('with no suggestions that slot does not exist, and no empty box is drawn', async () => {
@@ -2994,8 +3033,8 @@ describe('suggestions for a finished conversation: connect the answer to the nex
     await waitFor(() => expect(screen.getByText('첫 온톨로지가 준비됐어요.')).toBeInTheDocument());
   }
 
-  it('attaches suggestions only after the answer is done, and pressing one does not send automatically', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+  it('attaches next steps only after the answer is done, and pressing one sends it instead of filling the box', async () => {
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
     await completeTurn();
 
     expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull();
@@ -3005,49 +3044,111 @@ describe('suggestions for a finished conversation: connect the answer to the nex
     const answer = screen.getByText('첫 온톨로지가 준비됐어요.');
     expect(
       Boolean(answer.compareDocumentPosition(endcap) & Node.DOCUMENT_POSITION_FOLLOWING),
-      '다음 행동이 최신 답변보다 앞에 그려졌다',
+      'the next steps were drawn before the latest answer',
     ).toBe(true);
     expect(endcap).toHaveTextContent('suggest.followUpHeading');
+    expect(document.activeElement).not.toBe(screen.getByTestId('acp-chat-suggestion-check'));
 
-    const promptsBeforeChoice = bridge.sent.filter((message) => message.method === 'session/prompt').length;
-    fireEvent.click(screen.getByTestId('acp-chat-suggestion-explain'));
-    expect(screen.getByRole('textbox')).toHaveValue('suggest.explain.prompt:{"count":12}');
-    expect(screen.getByRole('textbox')).toHaveFocus();
-    expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(
-      promptsBeforeChoice,
+    const prompts = () => bridge.sent.filter((message) => message.method === 'session/prompt');
+    const promptsBeforeChoice = prompts().length;
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-check'));
+    await waitFor(() => expect(prompts()).toHaveLength(promptsBeforeChoice + 1));
+    const last = prompts().at(-1) as { params?: { prompt?: Array<{ text?: string }> } };
+    expect(last.params?.prompt?.[0]?.text).toBe('suggest.check.prompt:{"count":12}');
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('a pressed step that ends with an answer offers the next steps again', async () => {
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    fireEvent.click(await screen.findByTestId('acp-chat-suggestion-check'));
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull());
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: 'Five things to fix.' } } },
+    });
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+  });
+
+  it('offers no next steps after Stop', async () => {
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
+    await completeTurn();
+    fireEvent.click(screen.getByTestId('acp-chat-stop'));
+    act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
     );
+    expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull();
+  });
+
+  it('offers no next steps after a turn the app composed', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        openingRequest={{ text: 'Build a first ontology for /repo.', nonce: 7 }}
+        suggestions={[{ kind: 'check', params: { count: 12 } }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { update: { sessionUpdate: 'agent_message_chunk', content: { text: 'The first map is built.' } } },
+    });
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() => expect(screen.getByText('The first map is built.')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull();
+  });
+
+  it('Done for now after a turn hides the steps until the next typed turn', async () => {
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    fireEvent.click(await screen.findByTestId('acp-chat-next-steps-done'));
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull());
+    expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(1);
   });
 
   it('when the vault state refreshes in the same conversation it drops the finished action and switches to the latest next action', async () => {
-    const initialSuggestions = [{ kind: 'bootstrap', params: { count: 5 } }] as const;
+    const initialSuggestions = [{ kind: 'build', params: { count: 5 } }] as const;
     const { rerenderPanel } = await bootSession({ suggestions: initialSuggestions });
     await completeTurn();
     replyTo('session/prompt', { stopReason: 'end_turn' });
-    await screen.findByTestId('acp-chat-suggestion-bootstrap');
+    await screen.findByTestId('acp-chat-suggestion-build');
 
-    const promptsBeforeChoice = bridge.sent.filter(
-      (message) => message.method === 'session/prompt',
-    ).length;
+    const prompts = () => bridge.sent.filter((message) => message.method === 'session/prompt');
+    const promptsBeforeChoice = prompts().length;
     rerenderPanel({
       suggestions: [
-        { kind: 'evidence', params: { count: 1, first: 'capabilities/payments' } },
-        { kind: 'explain', params: { count: 6 } },
+        { kind: 'dependencies', params: { count: 1, slugs: 'capabilities/payments', rest: 0 } },
+        { kind: 'check', params: { count: 6 } },
       ],
     });
 
     await waitFor(() =>
-      expect(screen.queryByTestId('acp-chat-suggestion-bootstrap')).toBeNull(),
+      expect(screen.queryByTestId('acp-chat-suggestion-build')).toBeNull(),
     );
-    expect(screen.getByTestId('acp-chat-suggestion-evidence')).toBeInTheDocument();
+    expect(screen.getByTestId('acp-chat-suggestion-dependencies')).toBeInTheDocument();
     expect(screen.getByText('첫 온톨로지가 준비됐어요.')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId('acp-chat-suggestion-evidence'));
-    expect(screen.getByRole('textbox')).toHaveValue(
-      'suggest.evidence.prompt:{"count":1,"first":"capabilities/payments"}',
-    );
-    expect(screen.getByRole('textbox')).toHaveFocus();
-    expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(
-      promptsBeforeChoice,
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-dependencies'));
+    await waitFor(() => expect(prompts()).toHaveLength(promptsBeforeChoice + 1));
+    const last = prompts().at(-1) as { params?: { prompt?: Array<{ text?: string }> } };
+    expect(last.params?.prompt?.[0]?.text).toBe(
+      'suggest.dependencies.prompt:{"count":1,"slugs":"capabilities/payments","rest":0}',
     );
   });
 
@@ -3064,7 +3165,7 @@ describe('suggestions for a finished conversation: connect the answer to the nex
           disconnect() { observers.delete(this.callback); }
         },
       );
-      await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+      await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
       fireEvent.change(screen.getByRole('textbox'), { target: { value: '긴 답변을 줘' } });
       fireEvent.click(screen.getByTestId('acp-chat-send'));
       await waitFor(() => expect(screen.getByText('긴 답변을 줘')).toBeInTheDocument());
@@ -3200,7 +3301,7 @@ describe('suggestions for a finished conversation: connect the answer to the nex
   });
 
   it('suggestions step back while the user writes or reviews a permission', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
     await completeTurn();
     replyTo('session/prompt', { stopReason: 'end_turn' });
     await screen.findByTestId('acp-chat-post-turn-suggestions');
@@ -3217,7 +3318,7 @@ describe('suggestions for a finished conversation: connect the answer to the nex
   });
 
   it('does not attach a previous answer as the next action of a new unanswered turn', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
     await completeTurn();
     replyTo('session/prompt', { stopReason: 'end_turn' });
     await screen.findByTestId('acp-chat-post-turn-suggestions');
@@ -3234,7 +3335,7 @@ describe('suggestions for a finished conversation: connect the answer to the nex
   });
 
   it('when a new turn fails, the error and recovery path take priority over the previous suggestion', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
     await completeTurn();
     replyTo('session/prompt', { stopReason: 'end_turn' });
     await screen.findByTestId('acp-chat-post-turn-suggestions');
@@ -3254,7 +3355,7 @@ describe('suggestions for a finished conversation: connect the answer to the nex
   });
 
   it('does not dress up an agent sentence that arrived without a user question as a completed turn', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await bootSession({ suggestions: [{ kind: 'check', params: { count: 12 } }] });
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -3269,12 +3370,12 @@ describe('suggestions for a finished conversation: connect the answer to the nex
     expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull();
   });
 
-  it('app navigation actions are left out of post-turn, and a prompt choice goes to the composer without an app callback', async () => {
+  it('app navigation actions are left out of post-turn, and a request choice is sent without an app callback', async () => {
     const onSuggestionAction = vi.fn((suggestion: { kind: string }) => suggestion.kind === 'connectSource');
     await bootSession({
       suggestions: [
         { kind: 'connectSource', params: { count: 1 } },
-        { kind: 'explain', params: { count: 12 } },
+        { kind: 'check', params: { count: 12 } },
       ],
       onSuggestionAction,
     });
@@ -3283,10 +3384,12 @@ describe('suggestions for a finished conversation: connect the answer to the nex
 
     await screen.findByTestId('acp-chat-post-turn-suggestions');
     expect(screen.queryByTestId('acp-chat-suggestion-connectSource')).toBeNull();
-    fireEvent.click(screen.getByTestId('acp-chat-suggestion-explain'));
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-check'));
     expect(onSuggestionAction).not.toHaveBeenCalled();
-    expect(screen.getByRole('textbox')).toHaveValue('suggest.explain.prompt:{"count":12}');
-    expect(screen.getByRole('textbox')).toHaveFocus();
+    await waitFor(() =>
+      expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(2),
+    );
+    expect(screen.getByRole('textbox')).toHaveValue('');
   });
 });
 
@@ -4227,7 +4330,7 @@ describe('chat panel: a seated request stands as only a readable sentence, and t
   const seat = () => bootSession({ prefillRequest: { text: SEATED, nonce: 1 } });
 
   it('hides unrelated starting suggestions while a prepared draft waits and restores them when cleared', async () => {
-    await bootSession({ prefillRequest: { text: SEATED, nonce: 1 }, suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await bootSession({ prefillRequest: { text: SEATED, nonce: 1 }, suggestions: [{ kind: 'check', params: { count: 12 } }] });
     expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
     expect(screen.queryByTestId('acp-starting-suggestions')).toBeNull();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });

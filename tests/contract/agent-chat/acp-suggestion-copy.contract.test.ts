@@ -2,73 +2,54 @@ import { createTranslator } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../messages/en.json';
+import ja from '../../../messages/ja.json';
 import ko from '../../../messages/ko.json';
+import zh from '../../../messages/zh.json';
 
-describe('ACP suggestion prompt catalog', () => {
+const WRITE_KINDS = ['build', 'dependencies', 'standAlone', 'rename', 'update'] as const;
+const MEASURED_KINDS = [...WRITE_KINDS, 'check'] as const;
+
+describe('ACP next-step catalog', () => {
   for (const [locale, messages] of [
     ['en', en],
     ['ko', ko],
+    ['ja', ja],
+    ['zh', zh],
   ] as const) {
-    it(`${locale} renders the maintenance call instead of leaking its message key`, () => {
-      const t = createTranslator({ locale, messages, namespace: 'acpChat' });
-      const prompt = t('suggest.evidence.prompt', {
-        count: 2,
-        first: 'capabilities/example',
-        firstLabel: locale === 'ko' ? '예시 역량' : 'Example capability',
-      });
+    const t = createTranslator({ locale, messages, namespace: 'acpChat' });
+    const params = { count: 14, slugs: 'capabilities/invoice, capabilities/refund', rest: 2 };
 
-      expect(prompt).not.toContain('acpChat.suggest.evidence.prompt');
-      expect(prompt).toContain('query_ontology({operation: "maintenance_plan"');
-      expect(prompt).toContain('capability_without_evidence');
-      expect(prompt).toContain('capabilities/example');
-      expect(prompt).toContain('2');
-    });
-
-    it(`${locale} shows readable containment names while the prompt retains exact slugs`, () => {
-      const t = createTranslator({ locale, messages, namespace: 'acpChat' });
-      const params = {
-        slug: 'elements/qualification-handoff-helper',
-        slugLabel: locale === 'ko' ? '자격 검증 도우미' : 'Qualification helper',
-        domain: 'domains/project-portfolio',
-        domainLabel: locale === 'ko' ? '프로젝트 관리' : 'Project management',
-      };
-      const label = t('suggest.containment.label', params);
-      const prompt = t('suggest.containment.prompt', params);
-
-      expect(label).toContain(params.slugLabel);
-      expect(label).toContain(params.domainLabel);
-      expect(label).not.toContain(params.slug);
-      expect(label).not.toContain(params.domain);
-      expect(label).not.toContain('되받지');
-      expect(prompt).toContain(params.slug);
-      expect(prompt).toContain(params.domain);
-      expect(prompt).toContain(params.slugLabel);
-      expect(prompt).toContain(params.domainLabel);
-    });
-
-    it(`${locale} labels read as a request a person could send, not a bare noun phrase`, () => {
-      // Every chip is the sentence the person is about to send, so it names the observed fact and ends as
-      // a request or action.
-      const t = createTranslator({ locale, messages, namespace: 'acpChat' });
-      const params = {
-        count: 2,
-        first: 'capabilities/example',
-        firstLabel: 'Example',
-        slug: 'elements/example',
-        slugLabel: 'Example',
-        domain: 'domains/example',
-        domainLabel: 'Example domain',
-      };
-      for (const kind of ['island', 'containment', 'evidence', 'explain'] as const) {
+    it(`${locale} renders every measured row with its count and names the slugs in the request`, () => {
+      for (const kind of MEASURED_KINDS) {
         const label = t(`suggest.${kind}.label`, params);
-        if (locale === 'ko') {
-          expect(label, kind).toMatch(/줘$/);
-        } else {
-          expect(label.split(/\s+/).length, kind).toBeGreaterThanOrEqual(8);
-          expect(label, kind).toMatch(/[A-Z][a-z]+ [^.]*$/);
+        const because = t(`suggest.${kind}.because`, params);
+        const prompt = t(`suggest.${kind}.prompt`, params);
+        for (const text of [label, because, prompt]) {
+          expect(text, kind).not.toContain('acpChat.suggest');
+          expect(text, kind).not.toMatch(/[{}#]/);
         }
-        expect(label, kind).not.toMatch(/맞추기$|확인하기$/);
+        if (kind !== 'build' && kind !== 'check') {
+          expect(label, kind).toContain('14');
+          expect(because, kind).toContain('14');
+          expect(prompt, kind).toContain('capabilities/refund');
+          expect(prompt, kind).toContain('2');
+        }
+        expect(because, kind).toContain(kind === 'build' ? '' : '14');
       }
+    });
+
+    it(`${locale} asks for the work and a report, never for review before writing`, () => {
+      for (const kind of WRITE_KINDS) {
+        const prompt = t(`suggest.${kind}.prompt`, params);
+        expect(prompt, kind).not.toMatch(/before I review|write nothing|검토하기 전|確認するまで|审阅之前/);
+      }
+      expect(t('suggest.check.prompt', params)).not.toContain('patch_concept');
+    });
+
+    it(`${locale} says the provider and the quiet line`, () => {
+      expect(t('suggest.providerNote', { runtime: 'Claude Code' })).toContain('Claude Code');
+      expect(t('suggest.nothingLeft')).not.toContain('acpChat');
+      expect(t('suggest.done')).not.toContain('acpChat');
     });
   }
 });
