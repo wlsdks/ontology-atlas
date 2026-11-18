@@ -73,7 +73,11 @@ class BitReader {
   private bitCount = 0;
   private index = 0;
 
-  constructor(private readonly bytes: Uint8Array) {}
+  private readonly bytes: Uint8Array;
+
+  constructor(bytes: Uint8Array) {
+    this.bytes = bytes;
+  }
 
   bit(): number {
     if (this.bitCount === 0) {
@@ -193,11 +197,10 @@ const INFLATE_MAX_BYTES = 256 * 1024 * 1024;
 class OutputBuffer {
   private bytes: Uint8Array;
   private length = 0;
+  private readonly limit: number;
 
-  constructor(
-    initialCapacity: number,
-    private readonly limit: number,
-  ) {
+  constructor(initialCapacity: number, limit: number) {
+    this.limit = limit;
     this.bytes = new Uint8Array(Math.max(64, Math.min(initialCapacity, limit)));
   }
 

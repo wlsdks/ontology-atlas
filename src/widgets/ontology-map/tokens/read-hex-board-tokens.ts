@@ -91,8 +91,10 @@ const VARS = {
 } as const;
 
 class HexBoardTokenError extends Error {
-  constructor(readonly missing: readonly string[]) {
+  readonly missing: readonly string[];
+  constructor(missing: readonly string[]) {
     super(`Hex board token drift: missing/empty ${missing.join(", ")}`);
+    this.missing = missing;
     this.name = "HexBoardTokenError";
   }
 }

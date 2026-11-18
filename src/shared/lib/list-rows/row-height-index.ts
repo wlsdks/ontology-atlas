@@ -1,7 +1,10 @@
 export class RowHeightIndex {
   private readonly sums: number[];
 
-  constructor(private readonly heights: readonly number[]) {
+  private readonly heights: readonly number[];
+
+  constructor(heights: readonly number[]) {
+    this.heights = heights;
     this.sums = new Array(heights.length + 1).fill(0);
     for (let i = 1; i < this.sums.length; i += 1) {
       this.sums[i] += heights[i - 1];

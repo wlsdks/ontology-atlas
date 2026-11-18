@@ -17,19 +17,19 @@ export function verifyImportAnalysis(responses) {
     return false;
   }
   try {
+    // The breadth map is read as rows; its object travels as structuredContent.
     const text = analyzeRepoStructureRes.result.content?.[0]?.text || '';
-    const parsed = JSON.parse(text);
+    const parsed = analyzeRepoStructureRes.result.structuredContent;
     const failure = analyzeRepoStructureFailure(parsed);
     if (failure) {
       log('fail', failure);
       return false;
     }
-    const structuredFailure = structuredContentFailure(analyzeRepoStructureRes, parsed, 'analyze_repo_structure');
-    if (structuredFailure) {
-      log('fail', structuredFailure);
+    if (!text.startsWith('Breadth map of ')) {
+      log('fail', 'analyze_repo_structure text is not the rendered breadth map');
       return false;
     }
-    log('ok', `analyze_repo_structure: ${parsed.framework} (${formatCount(parsed.domains.length, 'domain candidate')}, ${formatCount(parsed.capabilities.length, 'capability candidate')}, ${formatCount(parsed.elements.length, 'element candidate')})`);
+    log('ok', `analyze_repo_structure: ${formatCount(parsed.size.units, 'product unit')}, ${formatCount(parsed.size.productLines, 'line')}, ${formatCount(parsed.entryPoints.length, 'entry point')}`);
   } catch (err) {
     log('fail', `failed to parse analyze_repo_structure response: ${err.message}`);
     return false;

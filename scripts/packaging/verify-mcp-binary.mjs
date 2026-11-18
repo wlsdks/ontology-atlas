@@ -180,7 +180,7 @@ export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
           clientInfo: { name: 'verify-mcp-exact-case', version: '1' },
         }),
       );
-      child.stdin.write(request(2, 'tools/call', { name: 'analyze_repo_structure', arguments: {} }));
+      child.stdin.write(request(2, 'tools/call', { name: 'analyze_repo_structure', arguments: { view: 'analysis' } }));
 
       deadline = setTimeout(() => {
         finish(

@@ -22,8 +22,8 @@ function repository() {
   const root = mkdtempSync(join(tmpdir(), 'atlas-construction-door-'));
   mkdirSync(join(root, 'src'));
   writeFileSync(join(root, 'README.md'), '# Ledger\n\nLedger charges customers.\n');
-  writeFileSync(join(root, 'src', 'charge.mjs'), 'export function charge() {\n  return 1;\n}\n');
-  writeFileSync(join(root, 'src', 'refund.mjs'), 'export function refund() {\n  return 0;\n}\n');
+  writeFileSync(join(root, 'src', 'charge.mjs'), 'export function charge(amount) {\n  if (amount <= 0) return 0;\n  return amount;\n}\n');
+  writeFileSync(join(root, 'src', 'refund.mjs'), 'export function refund(amount) {\n  if (!amount) return 0;\n  return -amount;\n}\n');
   execFileSync('git', ['init', '-q'], { cwd: root });
   execFileSync('git', ['add', '.'], { cwd: root });
   execFileSync('git', [
@@ -32,10 +32,11 @@ function repository() {
   return root;
 }
 
+/** Each call is a fresh server process; `calls` run in one process, so its reads count for its later calls. */
 function server(root) {
   const vault = join(root, 'atlas');
   mkdirSync(vault, { recursive: true });
-  return async (name, args) => {
+  const session = async (calls) => {
     const { responses } = await runJsonRpcProcess({
       command: process.execPath, args: [serverEntry], timeoutMs: 30_000,
       env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: root },
@@ -44,14 +45,19 @@ function server(root) {
           protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'construction-door-test', version: '1' },
         } },
         { jsonrpc: '2.0', method: 'notifications/initialized' },
-        { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } },
+        ...calls.map(([name, args], index) => ({ jsonrpc: '2.0', id: index + 2, method: 'tools/call', params: { name, arguments: args } })),
       ],
     });
-    const result = responses.find(({ id }) => id === 2)?.result;
-    assert.ok(result, `${name} returned no result`);
-    const text = result.content?.[0]?.text ?? '';
-    return result.isError ? { error: text } : (result.structuredContent ?? JSON.parse(text));
+    return calls.map(([name], index) => {
+      const result = responses.find(({ id }) => id === index + 2)?.result;
+      assert.ok(result, `${name} returned no result`);
+      const text = result.content?.[0]?.text ?? '';
+      return result.isError ? { error: text } : (result.structuredContent ?? JSON.parse(text));
+    });
   };
+  const call = async (name, args) => (await session([[name, args]]))[0];
+  call.session = session;
+  return call;
 }
 
 const BODY = 'Defines the thing this fixture names.\n\n## Includes\n- One boundary.\n\n## Excludes\n- Another boundary.\n\n## Uncertainty\nNothing else was read.\n';
@@ -82,8 +88,8 @@ test('a build on an empty vault inside its repository reaches finalize without e
   const created = await call('add_concepts', { concepts: [
     { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
     { slug: 'domains/payments', kind: 'domain', title: 'Payments', labels: { en: 'Payments' }, body: BODY },
-    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, domain: 'domains/payments', path: 'src/charge.mjs', body: BODY },
-    { slug: 'capabilities/refund', kind: 'capability', title: 'Refund', labels: { en: 'Refund' }, domain: 'domains/payments', path: 'src/refund.mjs', body: BODY },
+    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, domain: 'domains/payments', path: 'src/charge.mjs', body: `Charges an amount (src/charge.mjs:L2).\n\n${BODY}` },
+    { slug: 'capabilities/refund', kind: 'capability', title: 'Refund', labels: { en: 'Refund' }, domain: 'domains/payments', path: 'src/refund.mjs', body: `Refunds an amount (src/refund.mjs:L2).\n\n${BODY}` },
   ] });
   for (const row of created.concepts) {
     assert.equal(row.ok, true, JSON.stringify(row));
@@ -130,7 +136,13 @@ test('a build on an empty vault inside its repository reaches finalize without e
     expected_mtime: patched.mtime,
     body: competencyBody([`source:src/charge.mjs#L1-L3@sha256:${sha}`]),
   });
-  const finalized = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: repaired.mtime });
+  const unread = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: repaired.mtime });
+  assert.match(unread.error ?? '', /- evidence: 2 of 2 capabilities cite no lines this server read .*has served no reads/, 'a fresh process has read nothing');
+  const [read, finalized] = await call.session([
+    ['analyze_repo_structure', { sourceOnly: true, sourceReads: [{ path: 'src/charge.mjs', symbol: 'charge' }, { path: 'src/refund.mjs', symbol: 'refund' }] }],
+    ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: repaired.mtime }],
+  ]);
+  assert.deepEqual(read.sourceEvidence.rows.map((row) => row.status), ['read', 'read']);
   assert.equal(finalized.error, undefined, finalized.error);
   assert.equal(finalized.ok, true);
 });
@@ -200,15 +212,73 @@ test('the locale warning names the locale other nodes use and is silent otherwis
   assert.ok(second.warnings.some((warning) => /labels has no "ko"/.test(warning)), JSON.stringify(second.warnings));
 });
 
-test('the survey says it found no ability in one line and sends no relation to a folder candidate', async (t) => {
+test('the survey is a breadth map of units, entry points and docs, with no candidate node', async (t) => {
   const root = repository();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  writeFileSync(join(root, 'README.md'), '# Ledger\n\nLedger charges customers.\n\n## Contributing\n\n## Credits\n');
+  writeFileSync(join(root, 'README.md'), '# Ledger\n\nLedger charges customers and refunds them when an order is cancelled.\n\n## Credits\n');
   mkdirSync(join(root, 'lib'));
   writeFileSync(join(root, 'lib', 'store.mjs'), "import { charge } from '../src/charge.mjs';\nexport const store = charge;\n");
+  mkdirSync(join(root, 'tests'));
+  writeFileSync(join(root, 'tests', 'charge.test.mjs'), "import { charge } from '../src/charge.mjs';\ncharge();\n");
+  mkdirSync(join(root, 'docs'));
+  writeFileSync(join(root, 'docs', 'refunds.md'), '# Refund rules\n\nA refund needs a captured charge.\n');
   const survey = await server(root)('analyze_repo_structure', { ignore: ['atlas'] });
-  assert.deepEqual(survey.domains, [], 'a README heading nothing else names is not a domain');
-  assert.deepEqual(survey.capabilities, []);
-  assert.match(survey.note, /^No capability candidate/);
-  assert.deepEqual(survey.suggestedRelations, []);
+  assert.equal(survey.contract, 'breadthMap:v1');
+  for (const removed of ['domains', 'capabilities', 'elements', 'suggestedRelations', 'meaningGate', 'extractionContract', 'proposalValidation']) {
+    assert.equal(survey[removed], undefined, `${removed} is not part of the default survey`);
+  }
+  assert.deepEqual(survey.size, { productFiles: 3, productLines: 10, units: 2, outside: { test: { files: 1, lines: 2 } } });
+  assert.deepEqual(survey.units.map((unit) => unit.path), ['lib', 'src']);
+  const lib = survey.units.find((unit) => unit.path === 'lib');
+  assert.deepEqual(lib.imports, ['src'], 'a product import between units is an edge');
+  assert.equal(survey.units.find((unit) => unit.path === 'src').importedBy, 1, 'the test file\'s import is not counted');
+  assert.deepEqual(lib.exports, ['store']);
+  assert.match(survey.docs.readme.purpose, /charges customers/);
+  assert.deepEqual(survey.docs.pages, [{ path: 'docs/refunds.md', title: 'Refund rules' }]);
+  assert.match(survey.next, /^2 product units, 10 lines in 3 files\./);
+});
+
+test('outline reads take sixteen selectors and answer without the map or a limits block', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const sourceReads = Array.from({ length: 16 }, (_, index) => ({ path: index % 2 ? 'src/refund.mjs' : 'src/charge.mjs', mode: 'outline' }));
+  const reads = await server(root)('analyze_repo_structure', { sourceReads });
+  assert.equal(reads.delivery, 'source_only');
+  assert.equal(reads.units, undefined);
+  assert.equal(reads.sourceEvidence.rows.length, 16);
+  assert.equal(reads.sourceEvidence.limits, undefined);
+});
+
+/*
+ * Depth is judged by the reads this server served, so a builder's honest Uncertainty
+ * line does not count against it and a read it never made cannot be claimed.
+ */
+test('validate names the capabilities that cite no lines this server process read, with the call that reads them', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const vault = join(root, 'atlas');
+  mkdirSync(vault, { recursive: true });
+  const request = (id, name, args) => ({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } });
+  const { responses } = await runJsonRpcProcess({
+    command: process.execPath, args: [serverEntry], timeoutMs: 30_000,
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: root },
+    requests: [
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: {
+        protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'construction-door-test', version: '1' },
+      } },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      request(2, 'add_concepts', { concepts: [
+        { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, path: 'src/charge.mjs', body: `${BODY}Cited: \`src/charge.mjs\` \`charge\`; it charges only a positive amount (src/charge.mjs:L2).\n` },
+        { slug: 'capabilities/refund', kind: 'capability', title: 'Refund', labels: { en: 'Refund' }, path: 'src/refund.mjs', body: `${BODY}Cited: \`src/refund.mjs\` \`refund\`.\n` },
+      ] }),
+      request(3, 'analyze_repo_structure', { sourceOnly: true, sourceReads: [{ path: 'src/charge.mjs', symbol: 'charge' }] }),
+      request(4, 'validate_vault', {}),
+    ],
+  });
+  const result = (id) => responses.find((response) => response.id === id)?.result;
+  assert.match(result(2).structuredContent.coverage, /Depth: 0 of 2 capabilities cite lines this session read that hold a condition\. This server process has served no reads/);
+  assert.equal(result(3).structuredContent.sourceEvidence.rows[0].symbol, 'charge');
+  const coverage = result(4).structuredContent.coverage;
+  assert.match(coverage, /Depth: 1 of 2 capabilities cite lines this session read that hold a condition\. Not yet: capabilities\/refund \(src\/refund\.mjs\)/);
+  assert.match(coverage, /analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/refund\.mjs","symbol":"refund"\}\]\}\)/);
 });

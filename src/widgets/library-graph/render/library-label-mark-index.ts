@@ -10,7 +10,10 @@ export class LibraryLabelMarkIndex {
   private readonly xs: number[];
   private readonly ys: number[];
 
-  constructor(private readonly nodes: readonly LibraryGraphNode[], positions: ReadonlyMap<string, LayoutPoint>) {
+  private readonly nodes: readonly LibraryGraphNode[];
+
+  constructor(nodes: readonly LibraryGraphNode[], positions: ReadonlyMap<string, LayoutPoint>) {
+    this.nodes = nodes;
     this.xs = new Array(nodes.length).fill(Number.NaN);
     this.ys = new Array(nodes.length).fill(Number.NaN);
     for (let index = 0; index < nodes.length; index += 1) {

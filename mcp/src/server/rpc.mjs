@@ -45,6 +45,11 @@ function ok(result) {
     const { handoffPrompt, ...structure } = result;
     return { content: [{ type: 'text', text: handoffPrompt }], structuredContent: structure };
   }
+  // The breadth map is read as rows; the same object stays structured for a client.
+  if (result?.contract === 'breadthMap:v1' && typeof result.text === 'string') {
+    const { text, ...structure } = result;
+    return { content: [{ type: 'text', text }], structuredContent: structure };
+  }
   const response = {
     content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
   };

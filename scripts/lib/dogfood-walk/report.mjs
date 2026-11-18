@@ -307,13 +307,14 @@ export async function runDogfoodWalk() {
   }
 
   // 7c. analyze_repo_structure
-  header(`analyze_repo_structure(repo bootstrap candidates)`);
-  const analyzedRepo = getResult(responses, 57);
+  header(`analyze_repo_structure(breadth map)`);
+  // The map's text is a rendering of its structuredContent, so the object is the result.
   const analyzedRepoStructured = getRpcResult(responses, 57)?.structuredContent ?? null;
+  const analyzedRepo = analyzedRepoStructured?.contract === "breadthMap:v1" ? analyzedRepoStructured : getResult(responses, 57);
   if (analyzedRepo) {
     console.log(`  structuredContent: ${structuredContentStatus(analyzedRepo, analyzedRepoStructured)}`);
     console.log(
-      `  framework ${analyzedRepo.framework || "n/a"} · domains ${analyzedRepo.domains?.length ?? "n/a"} · capabilities ${analyzedRepo.capabilities?.length ?? "n/a"} · elements ${analyzedRepo.elements?.length ?? "n/a"} · relations ${analyzedRepo.suggestedRelations?.length ?? "n/a"}`,
+      `  units ${analyzedRepo.size?.units ?? "n/a"} · lines ${analyzedRepo.size?.productLines ?? "n/a"} · entry points ${analyzedRepo.entryPoints?.length ?? "n/a"}`,
     );
   }
 
@@ -1327,7 +1328,7 @@ export async function runDogfoodWalk() {
   console.log(`  get_concepts: ${(batch?.concepts || []).filter((row) => row?.ok === true).length} ok · ${(batch?.concepts || []).filter((row) => row?.ok === false).length} partial`);
   console.log(`  query_concepts: ${queryConcepts ? `${queryConcepts.matches?.length ?? 0} matches · limited ${queryConcepts.limited === true}` : "n/a"}`);
   console.log(`  query_concepts_limited: ${queryConceptsLimited ? `${queryConceptsLimited.matches?.length ?? 0} matches · total ${queryConceptsLimited.total ?? "n/a"} · limited ${queryConceptsLimited.limited === true}` : "n/a"}`);
-  console.log(`  analyze_repo_structure: ${analyzedRepo ? `${analyzedRepo.framework} · ${analyzedRepo.capabilities?.length ?? 0} capabilities · ${analyzedRepo.elements?.length ?? 0} elements` : "n/a"}`);
+  console.log(`  analyze_repo_structure: ${analyzedRepo ? `${analyzedRepo.size?.units ?? 0} units · ${analyzedRepo.entryPoints?.length ?? 0} entry points` : "n/a"}`);
   console.log(`  infer_imports: ${inferredImports ? `${inferredImports.filesScanned ?? 0} files · ${inferredImports.moduleEdges?.length ?? 0} module edges · ${importModuleEdgeKindSummary(inferredImports.moduleEdges, 2)}` : "n/a"}`);
   console.log(
     `  validate_vault: ${validation ? formatCount(validation.summary?.problemFiles ?? 0, "problem file") : "n/a"}`,
