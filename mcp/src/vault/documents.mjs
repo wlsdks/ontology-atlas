@@ -165,6 +165,8 @@ function docFromSnapshot(rootPath, filePath, snapshot) {
  * `expectedMtime` enables conflict detection. Write paths use this, so a cached
  * parse can never stand in for the file a write is about to replace.
  */
+/** @typedef {ReturnType<typeof docFromSnapshot>} VaultDoc */
+
 export function readDoc(rootPath, filePath) {
   return docFromSnapshot(rootPath, filePath, readStableFileSnapshot(filePath));
 }
@@ -270,9 +272,11 @@ export function createVaultDocCache(rootPath, io = {}) {
     return { stamp: stampOf(snapshot.stats), readAt, snapshot };
   }
 
+  /** @returns {VaultDoc[]} */
   function load() {
     pass += 1;
     const files = walk(rootPath);
+    /** @type {VaultDoc[]} */
     const docs = [];
     let visited = 0;
     for (const filePath of files) {
@@ -380,6 +384,7 @@ function copyWithVersion(docs) {
  * inside {@link withVaultReadSnapshot}, reuses that call's pass. The array is new per
  * call; the docs in it are shared and frozen. A write must still read its target
  * with {@link readDoc}.
+ * @returns {VaultDoc[]}
  */
 export function loadVaultDocs(rootPath) {
   const scope = readSnapshotScope.getStore();
