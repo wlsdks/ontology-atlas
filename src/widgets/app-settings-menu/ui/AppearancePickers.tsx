@@ -26,7 +26,7 @@ const PICKER_LABEL_INK = (active: boolean) =>
   active ? 'text-[color:var(--color-indigo-text-soft)]' : 'text-[color:var(--color-text-tertiary)]';
 
 const PICKER_TILE_FRAME =
-  'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+  'w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 
 

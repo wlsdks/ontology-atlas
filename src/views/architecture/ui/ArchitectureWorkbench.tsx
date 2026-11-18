@@ -611,7 +611,7 @@ export function ArchitectureWorkbench({
                         hoverSurface: 'lift',
                         active: task.kind === requestedAgentKind,
                         className:
-                          'h-auto min-w-0 flex-col items-start gap-0.5 px-3 py-2 focus-visible:bg-[color:var(--color-overlay-2)] focus-visible:outline-none',
+                          'h-auto min-w-0 flex-col items-start gap-0.5 px-3 py-2 focus-visible:bg-[color:var(--color-overlay-2)] focus-visible:outline-hidden',
                       })}
                     >
                       <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">

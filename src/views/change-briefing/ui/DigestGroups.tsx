@@ -33,7 +33,7 @@ const ACCENT_INK = 'bg-[color:var(--color-indigo-accent)]';
  */
 const SPLIT_WIDE = '@[51.25rem]/scope:grid @[51.25rem]/scope:grid-cols-2 @[51.25rem]/scope:items-start';
 const DETAIL_FRAME = 'mt-4 space-y-4 border-t border-[color:var(--color-border-soft)] pt-4 @[51.25rem]/scope:sticky @[51.25rem]/scope:top-6 @[51.25rem]/scope:mt-0 @[51.25rem]/scope:ml-3 @[51.25rem]/scope:border-t-0 @[51.25rem]/scope:border-l @[51.25rem]/scope:pl-6 @[51.25rem]/scope:pt-3';
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+const FOCUS_RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export interface DigestSelection {
   /** The selected group's key; null takes the first group. */

@@ -464,7 +464,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                     shape: "segment",
                     active: scope === key,
                     className: cn(
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
+                      "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
                       scope !== key &&
                         "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)]",
                     ),
@@ -488,7 +488,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                * (axe `scrollable-region-focusable`).
                */}
               <div
-                className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+                className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
                 data-testid="shortcut-sheet-scroll"
                 tabIndex={0}
                 role="group"

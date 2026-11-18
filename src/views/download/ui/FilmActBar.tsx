@@ -35,7 +35,7 @@ export function FilmActBar({
           type="button"
           aria-label={`${String(i + 1).padStart(2, '0')} ${title}`}
           onClick={() => onSeek(i)}
-          className="group grid h-6 w-10 place-items-center rounded-micro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+          className="group grid h-6 w-10 place-items-center rounded-micro focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
           <span className="relative block h-0.5 w-full overflow-hidden rounded-full bg-[color:var(--color-border-strong)] transition-colors duration-[var(--motion-fast)] group-hover:bg-[color:var(--color-text-tertiary)]">
             <span

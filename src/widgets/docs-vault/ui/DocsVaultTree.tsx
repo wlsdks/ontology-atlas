@@ -168,7 +168,7 @@ function TreeNode({
         active={active}
         onClick={() => onSelect(node.slug!)}
         aria-current={active ? 'page' : undefined}
-        className="group relative transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
+        className="group relative transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
         style={{ paddingLeft: `${TREE_ROW_INSET_PX + depth * TREE_INDENT_PX}px` }}
       >
         {active ? (

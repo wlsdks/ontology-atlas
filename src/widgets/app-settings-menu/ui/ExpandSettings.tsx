@@ -99,7 +99,7 @@ export function ExpandSettings() {
         onClick={() => writeExpand(DEFAULT_EXPAND)}
         hoverInk="strong"
         hoverSurface="lift"
-        className="justify-self-start border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+        className="justify-self-start border-transparent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
       >
         {t('reset')}
       </Chip>
