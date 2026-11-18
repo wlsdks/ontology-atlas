@@ -90,9 +90,11 @@ A new path, or any value, needs a new decision record.
 
 ### Folder watch is latency, not degradation
 
-The app refreshes on the OS watcher's `vault-changed` event (1.6–2.0 s end to
-end, measured); the web rereads the folder (1.5 s after activity, 5 s idle,
-paused in hidden tabs). Gate the event-driven invariant, never milliseconds. Do
+The app applies the changed paths the OS watcher's `vault-changed` event
+carries (0.45–0.61 s from save to map end to end, measured 2026-11-19, most of
+it the watcher's 500 ms debounce; a burst past a fifth of the vault walks it);
+the web rereads the folder (1.5 s after activity, 5 s idle, paused in hidden
+tabs). Gate the event-driven invariant, never milliseconds. Do
 not add folder watch to `DEGRADED_SURFACES`, never claim "instant" on the web,
 and prefer "updates automatically" for the app.
 

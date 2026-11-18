@@ -131,6 +131,31 @@ mod tests {
         assert!(is_atlas_temporary("note.md.oatlas-tmp-912"));
     }
 
+    /// The app's path delta recognises temporaries in TypeScript (`atlas-temporary-names.ts`);
+    /// both sides read this one list, so neither can accept a shape the other does not.
+    #[test]
+    fn the_shared_list_matches_this_recognizer() {
+        let cases: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/atlas-temporary-names.json"
+        ))
+        .unwrap();
+        for (key, expected) in [("temporary", true), ("notTemporary", false)] {
+            for name in cases[key].as_array().unwrap() {
+                let name = name.as_str().unwrap();
+                assert_eq!(is_atlas_temporary(name), expected, "{name}");
+            }
+        }
+        assert!(cases["temporary"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!(atomic_temporary_name(
+                ".mcp.json",
+                1,
+                1,
+                1
+            ))));
+    }
+
     /// A person may name a file after the marker; only the writers' exact shapes are Atlas's.
     #[test]
     fn a_person_s_file_that_mentions_the_marker_is_not_a_temporary() {

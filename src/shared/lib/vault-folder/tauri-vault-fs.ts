@@ -403,6 +403,15 @@ class TauriDirectoryHandle {
     ) as unknown as FileSystemDirectoryHandle;
   }
 
+  /** A file below this folder by path, without the per-folder existence checks `getFileHandle` makes. */
+  fileAt(relativePath: string): FileSystemFileHandle {
+    return new TauriFileHandle(
+      this.rootPath,
+      joinRelative(this.relativePath, relativePath),
+      this.invoke,
+    ) as unknown as FileSystemFileHandle;
+  }
+
   async removeEntry(name: string, options: { recursive?: boolean } = {}): Promise<void> {
     await this.invoke('remove_vault_entry', {
       rootPath: this.rootPath,
@@ -485,6 +494,17 @@ export async function tauriVaultPathExists(
   });
 }
 
+/**
+ * A handle for a path the native watcher reported, in one step instead of one existence round trip
+ * per folder; `null` for a web handle. Reads and writes through it still pass Rust's scope checks.
+ */
+export function tauriVaultFileHandleAt(
+  root: FileSystemDirectoryHandle,
+  relativePath: string,
+): FileSystemFileHandle | null {
+  return root instanceof TauriDirectoryHandle ? root.fileAt(relativePath) : null;
+}
+
 export function getTauriVaultRootPath(handle: FileSystemDirectoryHandle): string | undefined {
   return (handle as unknown as { rootPath?: string }).rootPath;
 }
@@ -535,6 +555,24 @@ export async function listTauriVaultEntries(
   const invoke = getInvoke();
   if (!invoke) return [];
   return invoke<TauriVaultEntry[]>('list_vault_directory', { rootPath, relativePath });
+}
+
+/** One child of a listed folder; a file carries its directory-entry mtime (ms) and length. */
+export interface StampedVaultEntry {
+  name: string;
+  kind: 'file' | 'directory';
+  lastModified?: number;
+  size?: number;
+}
+
+/**
+ * One folder's children with each file's stamp, in one call and without reading a byte: what a
+ * path delta needs to tell a changed file from an unchanged one. `null` outside the app.
+ */
+export async function listTauriVaultStamped(rootPath: string, relativePath: string): Promise<StampedVaultEntry[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<StampedVaultEntry[]>('list_vault_directory', { rootPath, relativePath, withStamps: true });
 }
 
 export async function listTauriVaultLinks(rootPath: string, relativePath: string): Promise<string[]> {
