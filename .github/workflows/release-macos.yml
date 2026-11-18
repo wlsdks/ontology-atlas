@@ -645,7 +645,6 @@ jobs:
     timeout-minutes: 2
     permissions:
       contents: read
-      checks: write
     steps:
       - name: Checkout the lockfile only
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -667,15 +666,11 @@ jobs:
           tar xzf cargo-audit.tgz --strip-components=1 -C "$RUNNER_TEMP/cargo-audit"
           echo "$RUNNER_TEMP/cargo-audit" >> "$GITHUB_PATH"
 
+      # cargo audit exits non-zero on any vulnerability, and --deny unsound adds
+      # unsoundness warnings. GTK3's glib advisory is Linux-only in Tauri's tree.
+      # It runs without a token: the check-run action it replaced failed trains
+      # with "Not Found" while updating its own check run, after finding nothing.
       - name: Audit Rust dependencies
-        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
-        with:
-          token: ${{ github.token }}
-          working-directory: src-tauri
-
-      # audit-check does not fail on informational advisories. GTK3's glib advisory is
-      # Linux-only in Tauri's tree; every other unsoundness warning still fails here.
-      - name: Deny unsound Rust advisories
         run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
 
   # Staging and publishing are separate jobs so a human can install the exact
