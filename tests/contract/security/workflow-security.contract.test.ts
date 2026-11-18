@@ -152,11 +152,16 @@ const UNNAMED = "<unnamed step>";
 const stepsOf = (source: string): string[] => source.split(/(?=^ {6}- )/m).filter((step) => step.startsWith("      - "));
 const stepName = (step: string): string => /^ {6}- name: (.+)/.exec(step)?.[1].trim() ?? UNNAMED;
 
+/** Text outside a step (workflow `env`, a job header) reaches every step under it, so it is reported, not dropped. */
 function stepNamesUsingSecret(source: string, secretName: string): string[] {
-  return stepsOf(source)
-    .filter((step) => step.includes(`secrets.${secretName}`))
-    .map(stepName);
+  return source
+    .split(/(?=^ {6}- )|(?=^ {2}[A-Za-z0-9_-]+:\s*$)/m)
+    .filter((chunk) => chunk.includes(`secrets.${secretName}`))
+    .map((chunk) => (chunk.startsWith("      - ") ? stepName(chunk) : "<unscoped>"));
 }
+
+const keysAt = (source: string, indent: number): string[] =>
+  [...source.matchAll(new RegExp(`^ {${indent}}(?:- )?([a-z-]+):`, "gm"))].map((match) => match[1]);
 
 function writePermissionsByJob(source: string): Record<string, string[]> {
   const jobsStart = source.indexOf("\njobs:\n");
@@ -467,12 +472,27 @@ describe("workflow security contract", () => {
     expect(header).not.toMatch(/^    permissions:/m);
     expect(expressions(header).filter((body) => SECRETS.test(body))).toEqual([]);
 
+    expect(keysAt(block, 4), "a key such as container or services changes where the job runs").toEqual([
+      "name",
+      "needs",
+      "environment",
+      "runs-on",
+      "timeout-minutes",
+      "steps",
+    ]);
+
     const steps = stepsOf(block);
     expect(steps.map(stepName)).toEqual(["Checkout", "Setup Node.js", "Check release credentials early"]);
     expect(steps[0]).toContain("ref: ${{ needs.admit-release.outputs.release_sha }}");
     expect(steps[0]).toMatch(/^\s+persist-credentials: false$/m);
     expect(steps.filter((step) => expressions(step).some((body) => SECRETS.test(body))).map(stepName)).toEqual([
       "Check release credentials early",
+    ]);
+    const stepKeys = (step: string) => [...step.matchAll(/^ {6}- ([a-z-]+):|^ {8}([a-z-]+):/gm)].map((match) => match[1] ?? match[2]);
+    expect(steps.map(stepKeys), "a key such as shell changes what a step runs").toEqual([
+      ["name", "uses", "with"],
+      ["name", "uses", "with"],
+      ["name", "env", "run"],
     ]);
     const script = "scripts/desktop-release/check-macos-release-secrets.mjs";
     expect([...block.matchAll(/^ {8}run: ?(.*)$/gm)].map((match) => match[1])).toEqual([`node ${script}`]);
@@ -485,11 +505,11 @@ describe("workflow security contract", () => {
     }
 
     // No install is safe only while the script needs nothing installed and starts nothing.
-    const imports = (file: string) => [...readFileSync(join(WORKFLOW_DIR, "../..", file), "utf8").matchAll(/^import .* from "(.+)";$/gm)].map((match) => match[1]);
+    const read = (file: string) => readFileSync(join(WORKFLOW_DIR, "../..", file), "utf8");
+    const imports = (file: string) => [...read(file).matchAll(/(?:from|import)\s*["']([^"']+)["']/g)].map((match) => match[1]);
     expect(imports(script)).toEqual(["../lib/desktop-release/notary-credentials.mjs"]);
     for (const file of [script, "scripts/lib/desktop-release/notary-credentials.mjs"]) {
-      const source = readFileSync(join(WORKFLOW_DIR, "../..", file), "utf8");
-      expect(source, `${file} loads a module outside the checkout or starts a process`).not.toMatch(/child_process|\bimport\(|\brequire\(|from "(?!\.)/);
+      expect(read(file), `${file} loads a module at run time or starts a process`).not.toMatch(/child_process|\bimport\s*\(|\brequire\s*\(/);
     }
     expect(imports("scripts/lib/desktop-release/notary-credentials.mjs")).toEqual([]);
 
