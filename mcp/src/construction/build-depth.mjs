@@ -17,6 +17,8 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 
 import { cachedSurvey } from '../analyze/breadth-map.mjs';
+import { repoText } from '../analyze/repo-text.mjs';
+import { surveyEntry } from '../analyze/survey-paths.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
 import { decidesLine } from '../evidence-search/symbol-context.mjs';
 
@@ -189,8 +191,8 @@ function measureAbilities(docs, survey) {
 }
 
 function abilityLabel(row) {
-  if (row.kind === 'family') return `the ${row.path} family (${row.members.slice(0, 4).join(', ')}${row.members.length > 4 ? ', ...' : ''})`;
-  return `${row.name} (${row.kind}, ${row.path}${row.symbol && row.symbol !== row.name ? ` ${row.symbol}` : ''})`;
+  if (row.kind === 'family') return `the ${repoText(row.path)} family (${row.members.slice(0, 4).map((name) => repoText(name, 80)).join(', ')}${row.members.length > 4 ? ', ...' : ''})`;
+  return `${repoText(row.name, 120)} (${row.kind}, ${repoText(row.path)}${row.symbol && row.symbol !== row.name ? ` ${repoText(row.symbol, 120)}` : ''})`;
 }
 
 /**
@@ -434,10 +436,13 @@ function hasCode(text, path) {
   return lines.some((line) => !declarative.test(line));
 }
 
+/** A small source file the vault names, or null: a path outside the root, through a link or under a private name is never opened. */
 function readSmallSource(repoRoot, path) {
   if (!UNIT_SOURCE_EXTENSIONS.has(extname(path).toLowerCase())) return null;
+  const inside = surveyEntry(repoRoot, path);
+  if (!inside) return null;
   try {
-    const abs = join(repoRoot, path);
+    const abs = join(repoRoot, inside);
     const stat = statSync(abs);
     if (!stat.isFile() || stat.size > 256 * 1024) return null;
     return readFileSync(abs, 'utf8');

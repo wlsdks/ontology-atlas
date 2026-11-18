@@ -7,12 +7,14 @@
  */
 
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { basename, dirname, extname, join } from 'node:path';
+import { readdirSync } from 'node:fs';
+import { basename, dirname, extname, join, posix } from 'node:path';
 
 import { inferImports } from '../infer-imports.mjs';
 import { abilitiesOf } from './abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
+import { repoText as t } from './repo-text.mjs';
+import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;
 const EXPORTS_PER_UNIT = 6;
@@ -25,12 +27,7 @@ const README_PURPOSE_CHARS = 600;
 const SCAN_BYTES = 256 * 1024;
 
 function readText(rootPath, path, limit = SCAN_BYTES) {
-  try {
-    const text = readFileSync(join(rootPath, path), 'utf8');
-    return text.length > limit ? text.slice(0, limit) : text;
-  } catch {
-    return '';
-  }
+  return readSurveyText(rootPath, path, limit);
 }
 
 const ENTRY_FILE_STEMS = new Set(['index', 'main', 'mod', 'lib', 'app', 'server', 'cli', '__main__']);
@@ -161,18 +158,20 @@ function unitImports(rootPath, collection, ignore) {
   return edges;
 }
 
-function resolveScriptPath(rootPath, raw) {
-  const path = String(raw ?? '').replace(/^\.\//, '');
+/** A manifest path inside `folder`, as a repository-relative file that exists inside the root, or null. */
+function resolveScriptPath(rootPath, folder, raw) {
+  const path = surveyRelativePath(String(raw ?? ''));
   if (!path) return null;
-  if (existsSync(join(rootPath, path))) return path;
+  const at = (inner) => (folder === '.' ? inner : posix.join(folder, inner));
   const source = path.replace(/^(?:dist|lib|build|out)\//, 'src/').replace(/\.(?:c|m)?js$/, '.ts');
-  if (existsSync(join(rootPath, source))) return source;
-  return null;
+  return surveyEntry(rootPath, at(path)) ?? surveyEntry(rootPath, at(source));
 }
 
 function readJson(rootPath, path) {
+  const text = readSurveyText(rootPath, path, SCAN_BYTES);
+  if (!text) return null;
   try {
-    return JSON.parse(readFileSync(join(rootPath, path), 'utf8'));
+    return JSON.parse(text);
   } catch {
     return null;
   }
@@ -184,10 +183,7 @@ function packageEntryPoints(rootPath, collection) {
   for (const folder of manifests) {
     const manifest = readJson(rootPath, folder === '.' ? 'package.json' : `${folder}/package.json`);
     if (!manifest) continue;
-    const at = (path) => {
-      const inside = resolveScriptPath(join(rootPath, folder), path);
-      return inside && (folder === '.' ? inside : `${folder}/${inside}`);
-    };
+    const at = (path) => resolveScriptPath(rootPath, folder, path);
     const bin = manifest.bin;
     if (typeof bin === 'string') rows.push({ path: at(bin), symbol: manifest.name ?? basename(folder), kind: 'command' });
     else if (bin && typeof bin === 'object') {
@@ -219,7 +215,7 @@ function pythonModulePath(rootPath, module) {
   for (const base of ['src', '.']) {
     for (const candidate of [`${parts.join('/')}.py`, `${parts.join('/')}/__init__.py`]) {
       const path = base === '.' ? candidate : `${base}/${candidate}`;
-      if (existsSync(join(rootPath, path))) return path;
+      if (surveyEntry(rootPath, path)) return path;
     }
   }
   return null;
@@ -319,7 +315,7 @@ function entryPointsOf(rootPath, collection) {
 
 function readmePurpose(rootPath) {
   const name = ['README.md', 'Readme.md', 'readme.md', 'README.rst', 'README.markdown', 'README.txt', 'README']
-    .find((candidate) => existsSync(join(rootPath, candidate)));
+    .find((candidate) => surveyEntry(rootPath, candidate));
   if (!name) return null;
   const text = readText(rootPath, name, 64 * 1024).replace(/<!--[\s\S]*?-->/g, '').replace(/```[\s\S]*?```/g, '');
   // Prose only: an indented or quoted block is code or a citation, a heading is a label.
@@ -343,13 +339,14 @@ function docPages(rootPath, ignore) {
   const pages = [];
   const visit = (dir, depth) => {
     if (depth > 4) return;
+    if (!surveyEntry(rootPath, dir, 'directory')) return;
     let names;
     try { names = readdirSync(join(rootPath, dir)).sort(); } catch { return; }
     for (const name of names) {
       if (name.startsWith('.') || ignore.has(name)) continue;
       const path = `${dir}/${name}`;
       if (DOC_SKIP.test(path)) continue;
-      if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) pages.push(path);
+      if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) { if (surveyEntry(rootPath, path)) pages.push(path); }
       else if (!/\.[a-z0-9]+$/i.test(name)) visit(path, depth + 1);
     }
   };
@@ -501,36 +498,36 @@ function renderBreadthMap(map) {
     .map(([kind, row]) => `${kind} ${formatCount(row.files)} files ${formatCount(row.lines)} lines`)
     .join('; ');
   const lines = [
-    `Breadth map of ${map.rootPath}: ${size.units} product units, ${formatCount(size.productLines)} lines in ${formatCount(size.productFiles)} files${outside ? ` (left out: ${outside})` : ''}${size.truncated ? '; the walk stopped at its file limit' : ''}.`,
+    `Breadth map of ${t(map.rootPath, 400)}: ${size.units} product units, ${formatCount(size.productLines)} lines in ${formatCount(size.productFiles)} files${outside ? ` (left out: ${outside})` : ''}${size.truncated ? '; the walk stopped at its file limit' : ''}.`,
   ];
   if (map.docs.readme) {
-    lines.push(`${map.docs.readme.path}: ${map.docs.readme.purpose || '(no prose paragraph)'}`);
+    lines.push(`${t(map.docs.readme.path)}: ${t(map.docs.readme.purpose, 700) || '(no prose paragraph)'}`);
   }
   lines.push('', 'Units: path | files | lines | main files (relative to the unit, lines) | exports | imported by N units | imports');
   for (const unit of map.units) {
     const main = unit.mainFiles
-      .map((file) => (file.path === unit.path ? `(${file.lines})` : `${fileWithin(unit.path, file.path)} (${file.lines})`))
+      .map((file) => (file.path === unit.path ? `(${file.lines})` : `${t(fileWithin(unit.path, file.path))} (${file.lines})`))
       .join(', ');
-    const imports = unit.imports.join(', ') + (unit.importsOmitted ? ` +${unit.importsOmitted}` : '');
-    lines.push(`${unit.path} | ${unit.files} | ${formatCount(unit.lines)} | ${main} | ${unit.exports.join(', ') || '-'} | ${unit.importedBy} | ${imports || '-'}`);
+    const imports = unit.imports.map((path) => t(path)).join(', ') + (unit.importsOmitted ? ` +${unit.importsOmitted}` : '');
+    lines.push(`${t(unit.path)} | ${unit.files} | ${formatCount(unit.lines)} | ${main} | ${unit.exports.map((name) => t(name, 80)).join(', ') || '-'} | ${unit.importedBy} | ${imports || '-'}`);
   }
   if (map.entryPoints.length > 0) {
     lines.push('', 'Entry points: kind path symbol');
-    for (const row of map.entryPoints) lines.push(`${row.kind} ${row.path} ${row.symbol}`);
+    for (const row of map.entryPoints) lines.push(`${row.kind} ${t(row.path)} ${t(row.symbol, 120)}`);
     if (map.entryPointsOmitted) lines.push(`+${map.entryPointsOmitted} more`);
   }
   if (map.abilities?.length > 0) {
     lines.push('', 'Abilities to place: kind name path symbol (a family lists its members)');
     for (const row of map.abilities) {
       lines.push(row.kind === 'family'
-        ? `family ${row.path}: ${row.members.join(', ')}`
-        : `${row.kind} ${row.name} ${row.path}${row.symbol && row.symbol !== row.name ? ` ${row.symbol}` : ''}`);
+        ? `family ${t(row.path)}: ${row.members.map((name) => t(name, 80)).join(', ')}`
+        : `${row.kind} ${t(row.name, 120)} ${t(row.path)}${row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : ''}`);
     }
     if (map.abilitiesOmitted) lines.push(`+${map.abilitiesOmitted} more`);
   }
   if (map.docs.pages.length > 0) {
     lines.push('', 'Docs: path - title');
-    for (const page of map.docs.pages) lines.push(`${page.path} - ${page.title}`);
+    for (const page of map.docs.pages) lines.push(`${t(page.path)} - ${t(page.title, 80)}`);
     if (map.docs.pagesOmitted) lines.push(`+${map.docs.pagesOmitted} more`);
   }
   lines.push('', `Next: ${map.next}`);

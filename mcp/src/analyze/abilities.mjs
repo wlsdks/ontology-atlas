@@ -10,10 +10,10 @@
  * covers is still named when no node mentions it.
  */
 
-import { readFileSync } from 'node:fs';
-import { basename, dirname, extname, join } from 'node:path';
+import { basename, dirname, extname } from 'node:path';
 
 import { declarationIndex } from '../evidence-search/declaration-index.mjs';
+import { readSurveyText } from './survey-paths.mjs';
 
 /** A folder of benchmarks, examples, demos, samples or fixtures (a folder name, never a file name). */
 const TOOLING = /(?:^|\/)(?:[\w-]*bench[\w-]*|examples?|demos?|samples?|fixtures?|testdata)\//i;
@@ -27,11 +27,7 @@ const NOT_A_HANDLER = new Set([
 ]);
 
 function readText(rootPath, path) {
-  try {
-    return readFileSync(join(rootPath, path), 'utf8').slice(0, SCAN_BYTES);
-  } catch {
-    return '';
-  }
+  return readSurveyText(rootPath, path, SCAN_BYTES);
 }
 
 /** Whether a path is a benchmark, example or fixture rather than the product. */
