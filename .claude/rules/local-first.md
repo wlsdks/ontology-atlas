@@ -33,12 +33,10 @@
   need a backend, redesign it as Markdown on the user's disk.
 - `src/entities/vault-session/` and `src/features/docs-vault-local/` own
   local-folder access; new work joins them.
-- Vault frontmatter is the schema. Do not create a second canonical store.
-  IndexedDB may cache the vault handle and preferences, and the app may keep a
-  derived index (`docs/ARCHITECTURE.md`); neither wins a disagreement with the
-  files on disk.
-- A derived index holds only what can be recomputed from vault files: no user
-  state, edits, approvals or drafts.
+- Frontmatter is the schema; no second canonical store. IndexedDB may cache
+  the vault handle and preferences, the app a derived index
+  (`docs/ARCHITECTURE.md`) of only what vault files recompute: no user state,
+  edits, approvals or drafts. The files on disk always win.
 - Do not pre-install authentication for a possible future cloud mode.
 
 ## Security
