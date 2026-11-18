@@ -74,6 +74,17 @@ pub(crate) async fn start_vault_watch(
         .watch(&canonical, RecursiveMode::Recursive)
         .map_err(|err| err.to_string())?;
     log::info!("vault watcher started at {}", canonical.display());
+    let swept_root = canonical.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let removed = super::temp_sweep::sweep_stale_temporaries(
+            &swept_root,
+            std::time::SystemTime::now(),
+            super::temp_sweep::STALE_AFTER,
+        );
+        if removed > 0 {
+            log::info!("removed {removed} stale temporary file(s) from the vault");
+        }
+    });
     let previous = watch.replace(VaultWatch {
         root: canonical,
         debouncer,

@@ -102,12 +102,13 @@ fn validate_envelope(file_name: &str, content: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) fn append_analysis_record(
+pub(crate) async fn append_analysis_record(
     root_path: String,
     file_name: String,
     content: String,
 ) -> Result<AppendResult, String> {
-    append_after_open(root_path, file_name, content, || {})
+    crate::blocking::run_blocking(move || append_after_open(root_path, file_name, content, || {}))
+        .await
 }
 
 #[tauri::command(async)]
@@ -281,17 +282,8 @@ fn publish_exclusively(
 ) -> Result<bool, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
     use std::os::unix::fs::MetadataExt;
-    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| error.to_string())?
-        .as_nanos();
-    let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let temporary_name = std::ffi::CString::new(format!(
-        ".analysis-{}-{nonce:x}-{sequence:x}.tmp",
-        std::process::id()
-    ))
-    .map_err(|error| error.to_string())?;
+    let temporary_name =
+        std::ffi::CString::new(temporary_name()).map_err(|error| error.to_string())?;
     let fd = unsafe {
         libc::openat(
             parent.as_raw_fd(),
@@ -351,14 +343,15 @@ fn publish_exclusively(
     result
 }
 
+/// The vault-open sweep removes a leftover only under a name it recognises.
+fn temporary_name() -> String {
+    crate::temporary_names::next_create_temporary_name()
+}
+
 #[cfg(not(unix))]
 fn publish_portable(target: &Path, contents: &str) -> Result<bool, String> {
     use std::fs::OpenOptions;
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| error.to_string())?
-        .as_nanos();
-    let temporary = target.with_extension(format!("{}-{nonce}.tmp", std::process::id()));
+    let temporary = target.with_file_name(temporary_name());
     let mut file = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -395,6 +388,39 @@ fn publish_portable(target: &Path, contents: &str) -> Result<bool, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A save cut short at quit leaves this file; the next vault open must remove it.
+    #[test]
+    fn a_leftover_archive_temporary_is_removed_by_the_vault_open_sweep() {
+        let root = std::env::temp_dir().join(format!(
+            "atlas-analysis-leftover-{}-{}",
+            std::process::id(),
+            temporary_name()
+        ));
+        let leftover = root.join(DIRECTORY).join(temporary_name());
+        fs::create_dir_all(leftover.parent().unwrap()).unwrap();
+        fs::write(&leftover, "partial").unwrap();
+        let root = fs::canonicalize(root).unwrap();
+        let later = std::time::SystemTime::now()
+            + crate::vault::temp_sweep::STALE_AFTER
+            + std::time::Duration::from_secs(1);
+        let removed = crate::vault::temp_sweep::sweep_stale_temporaries(
+            &root,
+            later,
+            crate::vault::temp_sweep::STALE_AFTER,
+        );
+        assert_eq!(removed, 1);
+        fs::remove_dir_all(root).ok();
+    }
+
+    /// Shadows the command so each test also drives its blocking-pool dispatch.
+    fn append_analysis_record(
+        root_path: String,
+        file_name: String,
+        content: String,
+    ) -> Result<AppendResult, String> {
+        tauri::async_runtime::block_on(super::append_analysis_record(root_path, file_name, content))
+    }
 
     fn fixture() -> (std::path::PathBuf, String, String) {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);

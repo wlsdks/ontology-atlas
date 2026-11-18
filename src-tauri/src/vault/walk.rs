@@ -85,18 +85,24 @@ pub(crate) struct VaultFingerprint {
 }
 
 /// Must equal TS `VAULT_WALK_MAX_DEPTH`; a contract test watches it.
-const VAULT_WALK_MAX_DEPTH: usize = 12;
+pub(super) const VAULT_WALK_MAX_DEPTH: usize = 12;
 /// Same value as TS `VAULT_WALK_MAX_ENTRIES`.
 const VAULT_WALK_MAX_ENTRIES: usize = 100000;
 /// Same list as TS `PRUNE_BY_NAME`.
 const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
 /// Same value as TS `CACHE_DIR_TAG`.
-const VAULT_CACHE_DIR_TAG: &str = "CACHEDIR.TAG";
+pub(super) const VAULT_CACHE_DIR_TAG: &str = "CACHEDIR.TAG";
 /// Same extension set as TS `IMAGE_EXT` (lowercase comparison).
 const VAULT_IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp"];
 /// Same value as TS `VAULT_SOURCES_DIR`. Raw sources are listed by name, size and
 /// mtime but never parsed, so any format can sit in the vault (`docs/DECISIONS.md`).
 const VAULT_SOURCES_DIR: &str = "sources";
+
+/// Folders no vault walk enters: hidden ones and `PRUNE_BY_NAME`. A folder holding
+/// `VAULT_CACHE_DIR_TAG` is pruned too, which needs its listing.
+pub(super) fn vault_walk_skips_directory(name: &str) -> bool {
+    name.starts_with('.') || VAULT_PRUNE_DIR_NAMES.contains(&name)
+}
 
 /// Anchored at the top level: `notes/sources/a.pdf` is not a raw source.
 fn vault_relative_is_source(relative: &str) -> bool {
@@ -204,7 +210,7 @@ fn walk_vault_stamps(
             format!("{prefix}/{name}")
         };
         if is_dir {
-            if VAULT_PRUNE_DIR_NAMES.contains(&name.as_str()) {
+            if vault_walk_skips_directory(&name) {
                 acc.pruned_dirs.push(relative);
                 continue;
             }

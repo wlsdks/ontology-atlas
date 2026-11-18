@@ -35,8 +35,9 @@ describe('revealAppLogFolder', () => {
 
   it('passes a native failure through', async () => {
     tauriApiMock.runtimeAvailable = true;
-    tauriApiMock.invoke.mockRejectedValue('Finder reveal is only available on macOS');
+    const failure = 'reveal-failed: No such file or directory (os error 2)';
+    tauriApiMock.invoke.mockRejectedValue(failure);
 
-    await expect(revealAppLogFolder()).rejects.toBe('Finder reveal is only available on macOS');
+    await expect(revealAppLogFolder()).rejects.toBe(failure);
   });
 });

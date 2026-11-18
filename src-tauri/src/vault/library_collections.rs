@@ -6,6 +6,7 @@ use super::scope::{ensure_inside_canonical, resolve_inside, resolve_write_target
 use super::write::write_text_atomically;
 #[cfg(unix)]
 use crate::agent_setup;
+use crate::blocking::run_blocking;
 use serde::Serialize;
 use std::path::Path;
 use std::sync::Mutex;
@@ -67,7 +68,16 @@ pub(crate) fn read_library_collections(root_path: String) -> Result<Option<Strin
 /// Serialized only within this process; external editors do not share the lock, so a
 /// conflict returns the current bytes and callers re-read.
 #[tauri::command]
-pub(crate) fn write_library_collections(
+pub(crate) async fn write_library_collections(
+    root_path: String,
+    expected_content: Option<String>,
+    content: String,
+) -> Result<LibraryCollectionsWriteResult, String> {
+    run_blocking(move || write_library_collections_blocking(root_path, expected_content, content))
+        .await
+}
+
+fn write_library_collections_blocking(
     root_path: String,
     expected_content: Option<String>,
     content: String,
@@ -124,7 +134,9 @@ pub(crate) fn write_library_collections(
 
 #[cfg(test)]
 mod library_collections_write_tests {
-    use super::{read_library_collections, write_library_collections};
+    use super::{
+        read_library_collections, write_library_collections_blocking as write_library_collections,
+    };
 
     fn vault(label: &str) -> std::path::PathBuf {
         let path = std::env::temp_dir().join(format!(

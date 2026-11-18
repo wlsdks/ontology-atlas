@@ -73,6 +73,38 @@ pub(crate) fn reveal_in_finder_command(dir: &Path) -> Command {
     command
 }
 
+/// Explorer or the desktop's file manager, with the item selected in its folder. Callers
+/// pass a path their own vault checks already resolved; nothing is opened or launched.
+/// A fresh thread keeps the shell's COM apartment (Windows) and the D-Bus client's own
+/// runtime (Linux) away from the async runtime's threads.
+///
+/// The plugin's Windows arm reports success even when Explorer refuses, so the one failure
+/// detectable beforehand, an entry that vanished after the vault check, is checked here.
+#[cfg(any(windows, target_os = "linux"))]
+pub(crate) fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
+    reveal_target_present(path)?;
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| tauri_plugin_opener::reveal_item_in_dir(path))
+            .join()
+    })
+    .map_err(|_| crate::errors::coded("reveal-failed", "the file manager call panicked"))?
+    .map_err(|error| crate::errors::coded("reveal-failed", error))
+}
+
+#[cfg(any(windows, target_os = "linux", test))]
+fn reveal_target_present(path: &Path) -> Result<(), String> {
+    match std::fs::symlink_metadata(path) {
+        Ok(_) => Ok(()),
+        Err(error) => Err(crate::errors::coded("reveal-failed", error)),
+    }
+}
+
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
+pub(crate) fn reveal_in_file_manager(_path: &Path) -> Result<(), String> {
+    Err("reveal-unsupported-on-this-platform".into())
+}
+
 /// The URL is never logged: it may be a trick link and its payload a server config.
 /// The only effect is a pre-filled form the person still confirms.
 #[cfg(desktop)]
@@ -117,6 +149,18 @@ pub(crate) fn answer_deep_link(app: &AppHandle, url: &str) {
 mod tests {
     use super::*;
 
+    /// Explorer's own failure is invisible to the plugin, so a vanished entry must fail here.
+    #[test]
+    fn a_reveal_target_that_vanished_is_a_visible_error() {
+        let missing = std::env::temp_dir().join(format!(
+            "atlas-reveal-missing-{}/note.md",
+            std::process::id()
+        ));
+        let refused = reveal_target_present(&missing).unwrap_err();
+        assert!(refused.starts_with("reveal-failed: "), "{refused}");
+        assert!(reveal_target_present(&std::env::temp_dir()).is_ok());
+    }
+
     /// The screen's address goes straight to the OS, so a bypass could open anything.
     #[test]
     fn only_http_urls_are_handed_to_the_os() {
@@ -139,6 +183,17 @@ mod tests {
         ] {
             assert!(!super::is_openable_url(bad), "{bad:?} would be opened");
         }
+    }
+
+    /// Reveal calls the opener crate from Rust only. Registering the plugin or granting an
+    /// `opener:` permission would let the WebView open any URL or program, which reveal never needs.
+    #[test]
+    fn the_webview_gets_no_opener_permission() {
+        let capability = include_str!("../../capabilities/default.json");
+        assert!(
+            !capability.contains("opener:"),
+            "the WebView was granted the opener plugin"
+        );
     }
 
     #[test]
