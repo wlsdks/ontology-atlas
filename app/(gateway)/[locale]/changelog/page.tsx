@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { GatewayDocPage } from '@/views/gateway-doc';
+import { GatewayDocPage, readGatewayDocument } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 export async function generateMetadata({
@@ -37,7 +37,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
   return (
     <GatewayDocPage
-      slug="CHANGELOG"
+      document={readGatewayDocument('CHANGELOG')}
       title={t('changelogTitle')}
       lead={t('changelogLead')}
       recentSectionLimit={RECENT_SECTIONS}

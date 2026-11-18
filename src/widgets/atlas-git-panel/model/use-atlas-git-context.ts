@@ -11,9 +11,9 @@ import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs"
  * Vault path plus session changeset, so the git destination and the rail badge read
  * the same value; it lives in the widget, the lowest layer both can import.
  */
-export function useAtlasGitContext() {
+export function useAtlasGitContext(options?: { demand?: boolean }) {
   const localVault = useLocalVault();
-  const { insight } = useOntologyInsight();
+  const { insight } = useOntologyInsight(options);
   const changeBaseline = useChangeBaseline();
 
   const changeset = useMemo(

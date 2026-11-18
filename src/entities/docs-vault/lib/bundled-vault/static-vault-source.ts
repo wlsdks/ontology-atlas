@@ -5,6 +5,7 @@ import gatewayContent from '../../data/gateway-content.json';
 import gatewayChangelog from '../../data/gateway-changelog.json';
 import vaultManifest from '../../data/manifest.json';
 import type { VaultManifest } from '../../model/types';
+import { DOGFOOD_AGENT_SLUG_PREFIX } from './dogfood-slug-prefix';
 
 /** The bundled vault in static mode; manifest and content travel as one pair so they can never mix vaults. */
 export interface StaticVaultSource {
@@ -29,7 +30,7 @@ const DOGFOOD: StaticVaultSource = {
   contentPreviews: {
     CHANGELOG: gatewayChangelog as { body: string; omittedSections: number },
   },
-  agentSlugPrefix: 'ontology/',
+  agentSlugPrefix: DOGFOOD_AGENT_SLUG_PREFIX,
 };
 
 const STOREFRONT: StaticVaultSource = {

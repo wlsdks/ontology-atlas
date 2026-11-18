@@ -275,7 +275,7 @@ export function ProjectDetailPage({
   useRecordSelectedProject(project?.slug ?? null);
   const projectMutations = useProjectMutations();
   // Most documents have no `detail:` field, so the body is read from the file itself.
-  const { body: vaultBody } = useProjectBody(project?.slug ?? null);
+  const { body: vaultBody, settled: bodySettled } = useProjectBody(project?.slug ?? null);
   const bodyContent = project?.detail ?? vaultBody ?? null;
   useEffect(() => {
     if (!slug) return;
@@ -306,6 +306,12 @@ export function ProjectDetailPage({
   ]);
 
   const { insight } = useOntologyInsight();
+  /* A bundled sample still downloading is not an empty folder: the sections drawn from it wait. */
+  const insightPending = insight === null;
+  // The stand-ins are sized to the loaded sample; the boot script marks the stored choice on <html>, so
+  // the size is right before hydration (this repository's own vault has no lead and a shorter composition).
+  // Until the body read settles, "no overview yet" would be a claim about a file not yet read.
+  const bodyPending = insightPending || (project?.detail == null && bodySettled === false);
   const insightNodes = insight?.nodes ?? [];
   const insightEdges = insight?.edges ?? [];
   const localVault = useLocalVault();
@@ -523,26 +529,33 @@ export function ProjectDetailPage({
               dataTestId="project-detail-description"
               className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
             />
-            {leadParagraph ? (
-              <div
-                data-testid="project-detail-lead"
-                className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
-              >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
-              </div>
-            ) : null}
-            {bodyContent ? (
-              <Link
-                href={documentHref}
-                data-testid="project-detail-body-continue"
-                className={cn(quietLinkClass, "mt-3")}
-              >
-                {t("bodyContinue")}
-              </Link>
+            {bodyPending ? (
+              /* The lead and its link arrive with the sample and the body read; their height is held so nothing below moves. */
+              <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem] [html[data-sample=dogfood]_&]:md:min-h-[1.75rem] [html[data-sample=dogfood]_&]:max-md:min-h-[1.5rem]" />
             ) : (
-              <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
-                {t("bodyEmptyHint")}
-              </p>
+              <>
+              {leadParagraph ? (
+                <div
+                  data-testid="project-detail-lead"
+                  className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
+                </div>
+              ) : null}
+              {bodyContent ? (
+                <Link
+                  href={documentHref}
+                  data-testid="project-detail-body-continue"
+                  className={cn(quietLinkClass, "mt-3")}
+                >
+                  {t("bodyContinue")}
+                </Link>
+              ) : (
+                <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
+                  {t("bodyEmptyHint")}
+                </p>
+              )}
+              </>
             )}
             {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
             {canManageProject ? null : (
@@ -569,7 +582,7 @@ export function ProjectDetailPage({
               availability={evidenceAvailability}
               staleCount={staleIds.size}
               comparedCount={comparedCapabilities}
-              reviewReading={review.reading}
+              reviewReading={review.reading || insightPending}
               reducedMotion={reducedMotion}
             />
           </div>
@@ -577,7 +590,7 @@ export function ProjectDetailPage({
             <ChangedSection
               changed={changed}
               windowDays={recentChanges.windowDays}
-              reading={recentChanges.reading}
+              reading={recentChanges.reading || insightPending}
               reducedMotion={reducedMotion}
               arrivalOffset={TO_CHECK_ROWS_BEFORE_CHANGED}
             />
@@ -628,16 +641,20 @@ export function ProjectDetailPage({
             >
               {t("compositionHeading")}
             </h2>
-            <p data-testid="project-detail-composition-counts" className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
-              {t("compositionCounts", {
-                domains: metrics.domains,
-                capabilities: metrics.capabilities,
-                elements: metrics.elements,
-                relations: metrics.relations,
-              })}
+            <p data-testid="project-detail-composition-counts" aria-busy={insightPending} className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
+              {insightPending
+                ? "\u00a0"
+                : t("compositionCounts", {
+                    domains: metrics.domains,
+                    capabilities: metrics.capabilities,
+                    elements: metrics.elements,
+                    relations: metrics.relations,
+                  })}
             </p>
           </div>
-          {domainComposition.domains.length > 0 ? (
+          {insightPending ? (
+            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-[22.75rem] max-md:min-h-[48rem] [html[data-sample=dogfood]_&]:md:min-h-[16rem] [html[data-sample=dogfood]_&]:max-md:min-h-[41.75rem]" />
+          ) : domainComposition.domains.length > 0 ? (
             <DomainMasterDetail
               domains={domainComposition.domains}
               maxTotal={domainComposition.maxTotal}
@@ -686,7 +703,7 @@ export function ProjectDetailPage({
         {/* One quiet line: what else the folder holds, where this project connects, and the file it is drawn from. */}
         <footer
           data-testid="project-detail-closing"
-          className="mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]"
+          className={cn(insightPending && "invisible", "mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]")}
         >
           {hasLibrary ? (
             <span data-testid="project-detail-library-line" className="flex flex-wrap items-baseline gap-x-3">
