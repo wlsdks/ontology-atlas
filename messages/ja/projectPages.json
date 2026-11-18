@@ -200,6 +200,7 @@
     "loadingLabel": "読み込み中…",
     "returnToProjectDetail": "プロジェクト詳細に戻る",
     "returnToProjectsList": "プロジェクト一覧に戻る",
+    "returnToMap": "マップに戻る",
     "deleteToast": "プロジェクトを削除しました",
     "savedToast": "「{name}」を保存しました",
     "vaultConflict": "このプロジェクトファイルは、先に別のエディタやAIエージェントによって変更されました。更新してからもう一度保存してください。",

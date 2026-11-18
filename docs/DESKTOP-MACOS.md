@@ -16,8 +16,10 @@ wins over this page.
 ## Shell
 
 The app is a Tauri shell around the same static export the website ships
-(`output: 'export'`; `src-tauri/tauri.conf.json` loads `../out` and runs
-`pnpm build` before packaging). It reads and writes the user's chosen Markdown
+(`output: 'export'`; `src-tauri/tauri.conf.json` runs `pnpm build` before
+packaging and embeds the copy of `out/` that
+`scripts/desktop/stage-desktop-frontend.mjs` writes without the website-only
+pages and media). It reads and writes the user's chosen Markdown
 vault through a native bridge in `src-tauri/src/vault/`; it is not a backend,
 sync layer, or second store. `ontology-atlas` stays the repository, CLI, MCP,
 and release-asset name. The surface contract, bridge convention, and routing
