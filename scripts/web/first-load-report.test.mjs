@@ -48,3 +48,13 @@ test('fails only the routes that load a big JSON literal and are not allowed to'
   assert.equal(main([...args, '--allow-json=en/data', out, 'en', 'en/data'], { log }), 0);
   assert.throws(() => main([...args, out, 'en/missing'], { log }), /no exported page/);
 });
+
+test('refuses a page that names no chunks or a chunk that is not in the export', () => {
+  const out = mkdtempSync(join(tmpdir(), 'first-load-'));
+  mkdirSync(join(out, 'en'), { recursive: true });
+  const log = () => {};
+  writeFileSync(join(out, 'en/index.html'), '<html><body>no scripts</body></html>');
+  assert.throws(() => main([out, 'en'], { log }), /names no script chunks/);
+  writeFileSync(join(out, 'en/index.html'), '<script src="/_next/static/chunks/gone.js" async=""></script>');
+  assert.throws(() => main([out, 'en'], { log }), /which is not under/);
+});

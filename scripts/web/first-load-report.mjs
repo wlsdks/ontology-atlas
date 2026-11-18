@@ -80,9 +80,12 @@ export function reportRoute(outDir, route, { jsonLimitBytes }) {
   const htmlPath = join(outDir, route, 'index.html');
   if (!existsSync(htmlPath)) throw new Error(`no exported page at ${htmlPath}`);
   const chunks = [];
-  for (const path of firstLoadChunkPaths(readFileSync(htmlPath, 'utf8'))) {
+  const named = firstLoadChunkPaths(readFileSync(htmlPath, 'utf8'));
+  // A report that reads nothing would pass for a page with nothing to load, so it refuses instead.
+  if (named.length === 0) throw new Error(`${htmlPath} names no script chunks`);
+  for (const path of named) {
     const file = join(outDir, path);
-    if (!existsSync(file)) continue;
+    if (!existsSync(file)) throw new Error(`${htmlPath} names ${path}, which is not under ${outDir}`);
     chunks.push({ path, ...analyzeChunk(file, jsonLimitBytes) });
   }
   return {
