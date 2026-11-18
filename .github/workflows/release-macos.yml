@@ -251,8 +251,12 @@ jobs:
         run: pnpm test:desktop:bridge
 
   # One macOS runner builds and signs. A second job for signing waited longer for its
-  # runner in v2.2.3 (5 m 06 s) than it ran (2 m 28 s). Secrets reach steps only through
-  # step-level `env`: the credential gate before the build, then import and signing after.
+  # runner in v2.2.3 (5 m 06 s) than it ran (2 m 28 s).
+  # The cost is a runner boundary. Build code (the Next export, the bun sidecar compile, cargo
+  # build scripts and proc macros) runs as the same user in the same workspace one step
+  # before the certificate import, as in v2.2.2. Step-level `env` keeps secret values out of
+  # the build step's environment; it does not isolate later steps from what the build left
+  # behind, such as a `$GITHUB_PATH` entry or an untracked file.
   build-macos:
     name: Build macOS DMG (${{ matrix.arch }})
     needs: admit-release
@@ -353,14 +357,27 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm desktop:release-secrets
 
-      # The certificate is imported only after this step, and this step's environment holds
-      # no credential. The build makes no updater archive.
+      # This step's environment holds no credential and the certificate is imported after it.
+      # The build makes no updater archive.
       # `admit-release` accepts only the head of main, and the required Checks gate ran
       # `pnpm typecheck` on that program when it merged (next.config.ts).
       - name: Build release app bundle
         run: pnpm desktop:release-artifact -- --phase=build
         env:
           ATLAS_BUILD_SKIP_TYPECHECK: "1"
+
+      # Catches a build that rewrote a tracked file the signing steps run. It does not see
+      # `$GITHUB_PATH`, untracked files, `node_modules`, or a build that edits `.git`.
+      - name: Require unmodified tracked source before signing
+        env:
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
+        run: |
+          changed="$(/usr/bin/git status --porcelain --untracked-files=no)"
+          if [ -n "$changed" ] || [ "$(/usr/bin/git rev-parse HEAD)" != "$RELEASE_SHA" ]; then
+            echo "::error::Tracked files or HEAD differ from the admitted commit after the build."
+            echo "$changed"
+            exit 1
+          fi
 
       # Without `-A`, only codesign may use the key unprompted; exporting it needs this step's
       # random keychain password. `-x` was ignored for PKCS#12 on macOS 27 (2026-09-27).

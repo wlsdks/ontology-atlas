@@ -37,6 +37,8 @@ export const REHEARSAL_SKIPS = {
     "A real tag name is required. Instead, the check below confirms that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   "Require signed release credentials":
     "All five Apple secrets must be registered on the repository for the runner to pass this gate. This machine holds no Actions secret, so checking the real values only holds in the tag workflow.",
+  "Require unmodified tracked source before signing":
+    "It compares the runner's checkout with the SHA admit-release handed over. A rehearsal runs from a working tree that may hold uncommitted work, and no hosted job output exists on this machine.",
   "Import Apple Developer ID certificate":
     "This step builds a temporary keychain from APPLE_CERTIFICATE_P12_BASE64. It cannot run without the secrets, and running it would touch this machine's keychain, so the rehearsal deliberately leaves it out.",
   "Enable Corepack pnpm":

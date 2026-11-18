@@ -90,12 +90,19 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
   workflow runs both phases in the one `build-macos` job: the credential gate,
-  `--phase=build`, the certificate import, then `--phase=sign`. Secrets reach a
-  step only through that step's own `env`, so the build step runs with no
-  secret in scope and before a signing identity exists. A signing or
-  notarization failure reruns the whole job; signing in a second job was tried
-  for v2.2.3 and its wait for a second macOS runner (5 m 06 s) was longer than
-  the job (2 m 28 s).
+  `--phase=build`, a check that tracked files still match the admitted commit,
+  the certificate import, then `--phase=sign`. Signing in a second job was
+  tried for v2.2.3 and its wait for a second macOS runner (5 m 06 s) was longer
+  than the job (2 m 28 s). One job gives up two things. A signing or
+  notarization failure reruns the whole job. And there is no runner boundary
+  between build and signing: build code (`pnpm build`, the bun sidecar compile,
+  cargo build scripts and proc macros) runs as the same user in the same
+  workspace one step before the certificate import, as it did in v2.2.2.
+  Secrets reach a step only through that step's own `env`, which keeps their
+  values out of the build step's environment but is not isolation: the
+  tracked-file check catches a build that rewrote a repository script, and
+  nothing catches a `$GITHUB_PATH` entry, an untracked file or a changed
+  `node_modules` that a signing step then runs.
 
 ## Installed-app log
 

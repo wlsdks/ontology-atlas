@@ -63,7 +63,7 @@ describe("the checker tests that moved to Linux lose no case", () => {
     expect(job("test-release-gates")).toContain("run: pnpm test:desktop:check");
   });
 
-  it("runs on macOS every checker test file that branches on the platform", () => {
+  it("runs on macOS every checker test file that skips a case", () => {
     const files = pkg.scripts["test:desktop:check"]
       .split(" ")
       .filter((arg) => arg.endsWith(".test.mjs"))
@@ -75,11 +75,11 @@ describe("the checker tests that moved to Linux lose no case", () => {
       });
     expect(files.length, "no checker test file was read").toBeGreaterThan(30);
 
-    const platformBound = files.filter((file) => /process\.platform|os\.platform\(/.test(readFileSync(join(root, file), "utf8")));
-    expect(platformBound.length, "no platform-bound checker test found; this case would idle").toBeGreaterThan(0);
+    const platformBound = files.filter((file) => /\{ skip:|\.skip\(|skipIf\(/.test(readFileSync(join(root, file), "utf8")));
+    expect(platformBound.length, "no checker test with a skip found; this case would idle").toBeGreaterThan(0);
     expect(job("test-macos")).toContain("runs-on: macos-15");
     for (const file of platformBound) {
-      expect(job("test-macos"), `${file} skips cases off macOS and no macOS job runs it`).toContain(file);
+      expect(job("test-macos"), `${file} skips a case and no macOS job runs it`).toContain(file);
     }
   });
 });

@@ -148,14 +148,15 @@ const readsSecretIndirectly = (source: string): boolean =>
 const interpolatesInputInShell = (source: string): boolean =>
   shellScripts(source).some((script) => expressions(script).some((body) => INPUTS.test(body)));
 
+const stepsOf = (source: string): string[] => source.split(/(?=^ {6}- )/m).filter((step) => step.startsWith("      - "));
+
 function stepNamesUsingSecret(source: string, secretName: string): string[] {
-  const steps = source.split(/(?=^      - (?:name|uses):)/m);
-  return steps
+  return stepsOf(source)
     .filter((step) => step.includes(`secrets.${secretName}`))
     .map((step) => {
       const named = /^      - name: (.+)$/m.exec(step)?.[1];
       const action = /^      - uses: (.+)$/m.exec(step)?.[1];
-      return named ?? action ?? "<unscoped>";
+      return named ?? action ?? "<unnamed step>";
     });
 }
 
@@ -417,15 +418,13 @@ describe("workflow security contract", () => {
     const build = jobBlock(release, "build-macos");
     expect(expressions(jobHeader(release, "build-macos")).filter((body) => SECRETS.test(body)), "a job-level secret reaches every step").toEqual([]);
 
-    const steps = build
-      .split(/(?=^      - name: )/m)
-      .slice(1)
-      .map((step) => ({
-        name: /- name: (.+)/.exec(step)![1].trim(),
-        readsSecret: expressions(step).some((body) => SECRETS.test(body)),
-        step,
-      }));
+    const steps = stepsOf(build).map((step) => ({
+      name: /^ {6}- name: (.+)/.exec(step)?.[1].trim() ?? "<unnamed step>",
+      readsSecret: expressions(step).some((body) => SECRETS.test(body)),
+      step,
+    }));
     expect(steps.length).toBeGreaterThan(15);
+    expect(steps.map((step) => step.name), "an unnamed step cannot be placed in the order").not.toContain("<unnamed step>");
     expect(steps.filter((step) => step.readsSecret).map((step) => step.name)).toEqual([
       "Require signed release credentials",
       "Import Apple Developer ID certificate",
@@ -440,6 +439,24 @@ describe("workflow security contract", () => {
     ].map((name) => names.indexOf(name));
     expect(order.every((at) => at > -1)).toBe(true);
     expect(order, "the gate comes first, and no identity exists while build code runs").toEqual([...order].sort((a, b) => a - b));
+    expect(names.slice(order[1]), "a step after the build is not one of the signing and upload steps").toEqual([
+      "Build release app bundle",
+      "Require unmodified tracked source before signing",
+      "Import Apple Developer ID certificate",
+      "Sign and notarize release artifact",
+      "Summarize macOS release assets",
+      "Stage release assets",
+      "Upload workflow artifact",
+      "Cleanup Apple signing keychain",
+    ]);
+    const onceSigningExists = steps.slice(order[2]).map((step) => step.step).join("");
+    for (const marker of ["--phase=build", "pnpm build", "tauri build", "cargo ", "mcp:build-binary", "setup-bun", "rust-toolchain"]) {
+      expect(onceSigningExists, `build code (${marker}) runs once the signing identity exists`).not.toContain(marker);
+    }
+    const check = steps[order[1] + 1].step;
+    expect(check).toContain('/usr/bin/git status --porcelain --untracked-files=no');
+    expect(check).toContain('"$(/usr/bin/git rev-parse HEAD)" != "$RELEASE_SHA"');
+    expect(check).toContain("exit 1");
 
     const buildStep = steps[order[1]].step;
     expect(buildStep).toContain("        run: pnpm desktop:release-artifact -- --phase=build\n");
