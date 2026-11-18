@@ -4,7 +4,10 @@ const mocks = vi.hoisted(() => ({
   invoke: vi.fn(),
   isTauri: vi.fn(() => false),
   Channel: class<T> {
-    constructor(readonly onmessage: (message: T) => void) {}
+    readonly onmessage: (message: T) => void;
+    constructor(onmessage: (message: T) => void) {
+      this.onmessage = onmessage;
+    }
   },
 }));
 

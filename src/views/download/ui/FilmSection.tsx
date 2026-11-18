@@ -675,7 +675,10 @@ const STAMP_PAD = 4;
  */
 class TextStamps {
   private stamps = new Map<string, { canvas: HTMLCanvasElement; w: number; h: number; tw: number }>();
-  constructor(private readonly dpr: number) {}
+  private readonly dpr: number;
+  constructor(dpr: number) {
+    this.dpr = dpr;
+  }
 
   draw(
     ctx: CanvasRenderingContext2D,

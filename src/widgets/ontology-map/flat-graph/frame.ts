@@ -89,8 +89,11 @@ function markPool<T>(make: () => T): { take(): T; reset(): void } {
  * store in V8, so the next frame's pushes would allocate it again. An unchanged length keeps it.
  */
 class FrameList<T> {
-  constructor(readonly items: T[] = []) {}
+  readonly items: T[];
   size = 0;
+  constructor(items: T[] = []) {
+    this.items = items;
+  }
   restart(): void {
     this.size = 0;
   }

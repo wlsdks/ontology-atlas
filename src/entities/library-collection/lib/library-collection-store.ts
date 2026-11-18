@@ -8,12 +8,16 @@ export interface LibraryCollectionsSnapshot {
 }
 
 export class LibraryCollectionsConflictError extends Error {
-  name = 'LibraryCollectionsConflictError';
-  constructor(readonly currentContent: string | null) { super('Library collections changed on disk. Reload before saving again.'); }
+  override name = 'LibraryCollectionsConflictError';
+  readonly currentContent: string | null;
+  constructor(currentContent: string | null) {
+    super('Library collections changed on disk. Reload before saving again.');
+    this.currentContent = currentContent;
+  }
 }
 
 export class LibraryCollectionsStaleCompletionError extends Error {
-  name = 'LibraryCollectionsStaleCompletionError';
+  override name = 'LibraryCollectionsStaleCompletionError';
   constructor() { super('The selected vault changed while collections were being saved. Discard this completion and reload the saved vault before editing it again.'); }
 }
 

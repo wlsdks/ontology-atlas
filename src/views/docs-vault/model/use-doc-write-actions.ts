@@ -320,6 +320,7 @@ export function useDocWriteActions({
       } catch (err) {
         return t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) });
       }
+      return undefined;
     },
     [manifest, commitCreateDoc, t],
   );

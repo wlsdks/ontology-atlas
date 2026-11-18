@@ -123,13 +123,20 @@ class InstancedDraw {
   private data: Float32Array | null = null;
   private buffer: InstancedInterleavedBuffer | null = null;
 
+  private readonly base: BufferGeometry;
+  private readonly names: readonly string[];
+  private readonly stride: number;
+
   constructor(
-    private readonly base: BufferGeometry,
-    private readonly names: readonly string[],
-    private readonly stride: number,
+    base: BufferGeometry,
+    names: readonly string[],
+    stride: number,
     shader: ShaderMaterial,
     order: number,
   ) {
+    this.base = base;
+    this.names = names;
+    this.stride = stride;
     this.mesh = new Mesh(this.geometryFor(new Float32Array(stride)), shader);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = order;

@@ -8,7 +8,9 @@ import { useTopologyCameraPolicy } from "./use-topology-camera-policy";
 class FakeResizeObserver {
   static last: FakeResizeObserver | null = null;
   readonly observed = new Set<Element>();
-  constructor(readonly notify: () => void) {
+  readonly notify: () => void;
+  constructor(notify: () => void) {
+    this.notify = notify;
     FakeResizeObserver.last = this;
   }
   observe(el: Element) { this.observed.add(el); }

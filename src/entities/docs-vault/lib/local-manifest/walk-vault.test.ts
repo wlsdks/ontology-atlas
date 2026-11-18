@@ -15,17 +15,22 @@ type Entry = readonly [string, FakeFile | FakeDir];
 
 class FakeFile {
   readonly kind = 'file' as const;
-  constructor(readonly name: string) {}
+  readonly name: string;
+  constructor(name: string) {
+    this.name = name;
+  }
 }
 
 class FakeDir {
   readonly kind = 'directory' as const;
   /** Whether the walk entered this directory. */
   visited = false;
-  constructor(
-    readonly name: string,
-    private readonly children: Entry[],
-  ) {}
+  readonly name: string;
+  private readonly children: Entry[];
+  constructor(name: string, children: Entry[]) {
+    this.name = name;
+    this.children = children;
+  }
   async *entries(): AsyncGenerator<Entry> {
     this.visited = true;
     for (const child of this.children) yield child;
@@ -132,7 +137,7 @@ describe('walkVault boundaries', () => {
     let listing = 0;
     let peak = 0;
     class SlowDir extends FakeDir {
-      async *entries(): AsyncGenerator<Entry> {
+      override async *entries(): AsyncGenerator<Entry> {
         listing += 1;
         peak = Math.max(peak, listing);
         for (let i = 0; i < 5; i += 1) await Promise.resolve();
