@@ -4,20 +4,22 @@ import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { parseVaultChangeBatch } from "@/shared/lib/vault-folder/vault-change-batch";
 import { useLocalVault } from "./local-vault-context";
 
 /**
- * Under Tauri, starts the Rust file watcher (`start_vault_watch`) and checks the folder on each
- * `vault-changed`, so the screen follows an agent's writes at once. A no-op on the web.
- * `syncWithDisk` goes through a ref, so a reload does not resubscribe.
+ * Under Tauri, starts the Rust file watcher (`start_vault_watch`) and hands each `vault-changed`
+ * batch of changed paths to `applyVaultChangeBatch`, so the screen follows an agent's writes at
+ * the cost of the files that changed. A no-op on the web. The callback goes through a ref, so a
+ * reload does not resubscribe.
  */
 export function TauriVaultWatchBridge() {
-  const { status, handle, syncWithDisk } = useLocalVault();
+  const { status, handle, applyVaultChangeBatch } = useLocalVault();
   const rootPath = handle ? getTauriVaultRootPath(handle) ?? null : null;
-  const syncRef = useRef(syncWithDisk);
+  const applyRef = useRef(applyVaultChangeBatch);
   useEffect(() => {
-    syncRef.current = syncWithDisk;
-  }, [syncWithDisk]);
+    applyRef.current = applyVaultChangeBatch;
+  }, [applyVaultChangeBatch]);
 
   useEffect(() => {
     if (!isTauriVaultRuntime() || status !== "loaded" || !rootPath) return;
@@ -26,8 +28,8 @@ export function TauriVaultWatchBridge() {
     void (async () => {
       try {
         await invoke("start_vault_watch", { rootPath });
-        const un = await listen("vault-changed", () => {
-          void syncRef.current();
+        const un = await listen<unknown>("vault-changed", (event) => {
+          void applyRef.current(parseVaultChangeBatch(event.payload));
         });
         if (cancelled) un();
         else unlisten = un;
