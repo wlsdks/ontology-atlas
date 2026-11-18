@@ -9,6 +9,7 @@ import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
+import { readSourceEvidence } from './source-evidence.mjs';
 
 const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
@@ -97,6 +98,30 @@ describe('hostile source text costs time linear in its size', () => {
         repoRoot: repo,
         resolveTargetPath: () => 'src/target.rs',
       }));
+    }
+  });
+});
+
+/*
+ * A symbol read resolves callees one call deeper, looks up the classes a method
+ * inherits, the qualifier before each call, docstrings around call sites and
+ * the named constants a file declares. Each scan is one pass per line.
+ */
+describe('a symbol read over hostile source stays within the budget', () => {
+  it('reads a symbol whose callee and caller files are 256 KiB of each hostile shape', (t) => {
+    const helperBody = (line) => linesOf(line);
+    const cases = [
+      ['Python docstring quotes', 'evil.py', `def target(x):\n    return helper(x)\n\ndef helper(x):\n${helperBody(`    target(x) ${'"""'.repeat(60)} ${"'''".repeat(60)}`)}\n`],
+      ['Python bases chain', 'evil.py', `class A(${'B'.repeat(250)}):\n    def target(self):\n        return self.helper()\n\n    def helper(self):\n${helperBody(`        if self.${'a.'.repeat(150)}target(): return self.x.helper()`)}\n`],
+      ['Go constant block lines', 'evil.go', `package x\n\nfunc target() {\n\thelper()\n}\n\nfunc helper() {\n\tif ok(${'a, '.repeat(100)}) { return }\n}\n\nconst (\n${linesOf(`\t${'a '.repeat(195)}= `)}\n)\n`],
+      ['TypeScript dotted calls', 'evil.ts', `export function target() {\n  return helper();\n}\n\nexport function helper() {\n${helperBody(`  if (${'this.a.'.repeat(40)}target(${'('.repeat(20)}) ?? x) throw y;`)}\n}\n`],
+    ];
+    for (const [name, path, text] of cases) {
+      const root = repoWith({ [path]: text.slice(0, FILE_BYTES), [`caller${path.slice(path.indexOf('.'))}`]: text.slice(0, FILE_BYTES) });
+      assertWithinBudget(t, name, () => {
+        const [row] = readSourceEvidence(root, [{ path, symbol: 'target' }]).rows;
+        assert.notEqual(row.status, 'refused');
+      });
     }
   });
 });

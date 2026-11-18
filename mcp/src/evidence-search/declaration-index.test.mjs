@@ -18,6 +18,8 @@ test('one very long line is judged in linear time, with the same answers as befo
   assert.equal(decidesLine('const v = a ? b:c;'), false, 'the colon needs spaces, as before');
   assert.equal(decidesLine('const label = "Ready?";'), false);
   assert.equal(decidesLine(`${'x'.repeat(5000)} if (late) run();`), false, 'only the head of a minified line is examined');
+  assert.equal(decidesLine('\tprevSessionHeader = "X-RESTORE-SID"\n'), true, 'a served line keeps its newline, and its default still counts');
+  assert.equal(decidesLine('\treturn nil, errors.New("presence not supported")\r\n'), true, 'a Go refusal decides');
 });
 
 test('call sites are found through the identifier filter, and a file that never names the symbol is skipped', () => {
@@ -28,7 +30,37 @@ test('call sites are found through the identifier filter, and a file that never 
     writeFileSync(join(root, 'src', 'cart.ts'), "import { charge } from './charge';\nexport function checkout(total: number) {\n  if (total > 0) return charge(total);\n  return 0;\n}\n");
     writeFileSync(join(root, 'src', 'other.ts'), 'export function unrelated() {\n  return chargeback();\n}\n');
     assert.deepEqual(callSitesOf(root, 'charge'), { sites: [{ path: 'src/cart.ts', line: 3 }], total: 1 });
-    assert.deepEqual(declarationIndex(root).get('checkout'), [{ path: 'src/cart.ts', line: 2, kind: 'function' }]);
+    assert.deepEqual(declarationIndex(root).get('checkout'), [{ path: 'src/cart.ts', line: 2, kind: 'function', name: 'checkout' }]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+/*
+ * A class docstring's example (`>>> agg.add_batch(x)`) was once shown as the
+ * caller of `add_batch`, and its window displaced the docstring's own rule.
+ */
+test('an example or sentence inside a Python docstring is no call site', () => {
+  const root = mkdtempSync(join(tmpdir(), 'atlas-declaration-docstring-'));
+  try {
+    writeFileSync(join(root, 'aggregator.py'), [
+      'class Aggregator:',               // 1
+      '    """Stitches patches.',         // 2
+      '',                                 // 3
+      '    Call add_batch(x) per batch.', // 4
+      '    >>> agg = Aggregator()',       // 5
+      '    >>> agg.add_batch(x)',         // 6
+      '    """',                          // 7
+      '',                                 // 8
+      '    def add_batch(self, x):',      // 9
+      '        return x',                 // 10
+      '',                                 // 11
+      'def run(agg, x):',                 // 12
+      "    '''Runs add_batch(x).'''",     // 13
+      '    agg.add_batch(x)',             // 14
+      '',
+    ].join('\n'));
+    assert.deepEqual(callSitesOf(root, 'add_batch'), { sites: [{ path: 'aggregator.py', line: 14 }], total: 1 });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
