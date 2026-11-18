@@ -133,8 +133,7 @@ pub fn sync(
 ) -> Result<SyncReport> {
     let root = &canonical_vault_root(root)?;
     let dir = index_dir(root)?;
-    create_index_dir(&dir)?;
-    let _lock = lock_writer(&dir)?;
+    let _lock = lock_index_dir(&dir)?;
     progress.cancel.store(false, Ordering::Relaxed);
     progress.building.store(true, Ordering::Relaxed);
     let outcome = match sync_locked(&dir, root, files, progress, check) {
@@ -641,6 +640,30 @@ impl Searcher {
     }
 }
 
+/// How many times a writer recreates its folder after a delete removed it while the writer waited.
+const RECREATE_ATTEMPTS: usize = 3;
+
+/// Creates the index folder and takes its writer lock; the marker is written under the lock, so a
+/// folder a sweep emptied while this waited is marked again before anything is written.
+fn lock_index_dir(dir: &Path) -> Result<lifecycle::WriterLock> {
+    let mut attempt = 0;
+    loop {
+        create_index_dir(dir)?;
+        match lock_writer(dir) {
+            Ok(lock) => {
+                create_index_dir(dir)?;
+                return Ok(lock);
+            }
+            Err(error)
+                if error.kind() == std::io::ErrorKind::NotFound && attempt < RECREATE_ATTEMPTS =>
+            {
+                attempt += 1;
+            }
+            Err(error) => return Err(error.into()),
+        }
+    }
+}
+
 /// The key folder for `root`, spelled as `sync` spells it while the folder exists.
 fn dir_for(root: &Path) -> Result<PathBuf> {
     Ok(index_dir(
@@ -656,40 +679,66 @@ pub fn set_aside_damaged(root: &Path) -> Result<()> {
 }
 
 /// Deletes one vault's index, or every vault's when `root` is `None`; a vault folder that no
-/// longer exists is found by the path it had. Only folders this crate made are touched
-/// (`lifecycle::is_index_folder`). The caller stops its own builds first; waiting for the writer
-/// lock covers another process's.
+/// longer exists is found by the path it had. Each folder is deleted under its writer lock, so a
+/// running build finishes its commit first. A folder that holds files the index never writes is
+/// left in place and reported as an error, never as deleted.
 pub fn delete(root: Option<&Path>) -> Result<()> {
     let folders = match root {
         Some(root) => vec![dir_for(root)?],
-        None => lifecycle::index_folders(&indexes_root()?),
+        None => {
+            let indexes = indexes_root()?;
+            let mut folders = lifecycle::index_folders(&indexes);
+            folders.extend(lifecycle::key_folders(&indexes));
+            folders.sort();
+            folders.dedup();
+            folders
+        }
     };
+    let mut kept = Vec::new();
     for folder in &folders {
-        if !lifecycle::is_index_folder(folder) {
+        if !folder.exists() {
             continue;
         }
-        drop(lock_writer(folder)?);
-        lifecycle::delete_folder(folder)?;
+        if !lifecycle::is_index_folder(folder) {
+            if lifecycle::holds_index(folder) {
+                kept.push(folder.display().to_string());
+            }
+            continue;
+        }
+        let lock = match lock_writer(folder) {
+            Ok(lock) => lock,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(error.into()),
+        };
+        lifecycle::delete_locked(folder, lock)?;
     }
     if root.is_none() {
         // Removed only when nothing else was left in it.
         let _ = std::fs::remove_dir(indexes_root()?);
     }
-    Ok(())
+    if kept.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::Io(std::io::Error::other(format!(
+            "left in place, because they hold files the index never writes: {}",
+            kept.join(", ")
+        ))))
+    }
 }
 
-/// Bytes on disk for one vault's index, or for every vault's when `root` is `None`.
+/// Bytes on disk for one vault's index, or for every vault's when `root` is `None`, counting every
+/// index that answers searches, deletable or not.
 pub fn stored_bytes(root: Option<&Path>) -> Result<u64> {
     Ok(match root {
         Some(root) => {
             let dir = dir_for(root)?;
-            if lifecycle::is_index_folder(&dir) {
+            if lifecycle::holds_index(&dir) {
                 lifecycle::folder_bytes(&dir)
             } else {
                 0
             }
         }
-        None => lifecycle::index_folders(&indexes_root()?)
+        None => lifecycle::key_folders(&indexes_root()?)
             .iter()
             .map(|dir| lifecycle::folder_bytes(dir))
             .sum(),
@@ -698,10 +747,7 @@ pub fn stored_bytes(root: Option<&Path>) -> Result<u64> {
 
 /// Vault folders with an index on this computer.
 pub fn stored_vaults() -> Result<usize> {
-    Ok(lifecycle::index_folders(&indexes_root()?)
-        .iter()
-        .filter(|dir| dir.join(lifecycle::SEARCH_FILE).is_file())
-        .count())
+    Ok(lifecycle::key_folders(&indexes_root()?).len())
 }
 
 /// Deletes the index of every vault whose folder is gone or that was not opened for fourteen days.

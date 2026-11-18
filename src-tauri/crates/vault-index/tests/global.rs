@@ -81,7 +81,10 @@ fn delete_and_sweep_touch_only_the_indexes_own_folders() {
     std::fs::write(extra_dir.join("notes.txt"), "not the index's").unwrap();
 
     vault_index::sweep_orphans().unwrap();
-    delete(None).unwrap();
+    assert!(
+        delete(None).is_err(),
+        "a delete that leaves an index in place says so"
+    );
 
     for folder in &planted {
         assert_eq!(

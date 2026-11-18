@@ -9,6 +9,7 @@ const bridge = vi.hoisted(() => ({
   rootPath: '/vaults/atlas' as string | null,
   clear: vi.fn(),
   status: vi.fn(),
+  sync: vi.fn(async () => null),
 }));
 
 vi.mock('@/entities/vault-session', () => ({
@@ -19,7 +20,7 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
 }));
 vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
   clearVaultIndex: bridge.clear,
-  syncVaultIndex: vi.fn(async () => null),
+  syncVaultIndex: bridge.sync,
   vaultIndexStatus: bridge.status,
   vaultIndexPreference: { use: () => 'on', write: vi.fn() },
 }));
@@ -45,6 +46,7 @@ beforeEach(() => {
   bridge.rootPath = '/vaults/atlas';
   bridge.clear.mockReset();
   bridge.status.mockReset();
+  bridge.sync.mockReset();
 });
 
 describe('StoredHereSettings', () => {
@@ -64,6 +66,17 @@ describe('StoredHereSettings', () => {
 
     await waitFor(() => expect(bridge.clear).toHaveBeenCalledWith('/vaults/atlas'));
     expect(row).toHaveTextContent("Deleted this folder's index.");
+  });
+
+  it("says so when turning search off leaves an index in place", async () => {
+    bridge.status.mockResolvedValue(status(76 * 1024 * 1024, 76 * 1024 * 1024, 1));
+    bridge.sync.mockRejectedValue(new Error('left in place'));
+    renderSettings();
+
+    const row = screen.getByTestId('app-settings-vault-index-size');
+    await waitFor(() => expect(row).toHaveTextContent('76 MB'));
+    fireEvent.click(screen.getByRole('radio', { name: 'Off' }));
+    await waitFor(() => expect(row).toHaveTextContent('Could not delete the search index. Try again.'));
   });
 
   it("names every folder when none is open, because Delete then removes them all", async () => {

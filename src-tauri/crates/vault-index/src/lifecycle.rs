@@ -16,6 +16,9 @@ const MARKER_FILE: &str = "vault-index.marker";
 const MARKER_TEXT: &str = "vault-index: rebuildable search index; safe to delete\n";
 const DAMAGED_SUFFIX: &str = ".damaged";
 const SQLITE_SIDE_SUFFIXES: [&str; 2] = ["-wal", "-shm"];
+/// Files the operating system drops into any folder a person browses; they never block a delete
+/// and are removed with the index.
+const OS_LITTER: [&str; 3] = [".DS_Store", "Thumbs.db", "desktop.ini"];
 /// Every name an index folder can hold.
 const INDEX_FILE_NAMES: [&str; 6] = [
     SEARCH_FILE,
@@ -82,19 +85,22 @@ pub(crate) fn create_index_dir(dir: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// A folder this crate made and may delete: a real directory named by a vault key, carrying the
-/// marker, and holding only index file names.
-pub(crate) fn is_index_folder(dir: &Path) -> bool {
-    let named_by_key = dir
-        .file_name()
+fn named_by_key(dir: &Path) -> bool {
+    dir.file_name()
         .and_then(|name| name.to_str())
         .is_some_and(|name| {
             name.len() == crate::location::VAULT_KEY_HEX_CHARS
                 && name
                     .bytes()
                     .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
-        });
-    if !named_by_key || !fs::symlink_metadata(dir).is_ok_and(|meta| meta.is_dir()) {
+        })
+        && fs::symlink_metadata(dir).is_ok_and(|meta| meta.is_dir())
+}
+
+/// A folder this crate made and may delete: a real directory named by a vault key, carrying the
+/// marker, and holding only index file names and OS litter.
+pub(crate) fn is_index_folder(dir: &Path) -> bool {
+    if !named_by_key(dir) {
         return false;
     }
     if !fs::symlink_metadata(dir.join(MARKER_FILE)).is_ok_and(|meta| meta.is_file()) {
@@ -103,12 +109,32 @@ pub(crate) fn is_index_folder(dir: &Path) -> bool {
     fs::read_dir(dir).is_ok_and(|entries| {
         entries.flatten().all(|entry| {
             entry.file_type().is_ok_and(|kind| kind.is_file())
-                && entry
-                    .file_name()
-                    .to_str()
-                    .is_some_and(|name| INDEX_FILE_NAMES.contains(&name))
+                && entry.file_name().to_str().is_some_and(|name| {
+                    INDEX_FILE_NAMES.contains(&name) || OS_LITTER.contains(&name)
+                })
         })
     })
+}
+
+/// A folder this crate made (key name and marker) that holds a search index, whether or not it may
+/// be deleted: what answers searches, for sizes and for saying when a delete left one in place.
+pub(crate) fn holds_index(dir: &Path) -> bool {
+    named_by_key(dir)
+        && fs::symlink_metadata(dir.join(MARKER_FILE)).is_ok_and(|meta| meta.is_file())
+        && search_path(dir).is_file()
+}
+
+/// Every folder under `root` for which `holds_index` is true.
+pub(crate) fn key_folders(root: &Path) -> Vec<PathBuf> {
+    fs::read_dir(root)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|entry| entry.path())
+                .filter(|path| holds_index(path))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// The index folders directly under `root`; anything else there is left alone.
@@ -140,10 +166,60 @@ pub(crate) struct WriterLock {
     _file: File,
 }
 
+/// A delete removes the lock file while holding the lock; a writer that was waiting then holds a
+/// lock on a file no longer at that name, so it locks again on the file that is.
+const LOCK_ATTEMPTS: usize = 8;
+
+/// Waits for the lock. `NotFound` means the folder was deleted meanwhile; the caller recreates it.
 pub(crate) fn lock_writer(dir: &Path) -> io::Result<WriterLock> {
-    let file = create_private_file(&dir.join(LOCK_FILE))?;
-    file.lock()?;
-    Ok(WriterLock { _file: file })
+    let path = dir.join(LOCK_FILE);
+    for _ in 0..LOCK_ATTEMPTS {
+        let file = create_private_file(&path)?;
+        file.lock()?;
+        if names_locked_file(&file, &path) {
+            return Ok(WriterLock { _file: file });
+        }
+    }
+    Err(io::Error::other("vault index lock file kept changing"))
+}
+
+/// The lock if no one holds it now; `None` while a build or delete runs, or before the first build
+/// has made the lock file, which this never creates.
+pub(crate) fn try_lock_writer(dir: &Path) -> io::Result<Option<WriterLock>> {
+    let path = dir.join(LOCK_FILE);
+    let file = match OpenOptions::new().read(true).write(true).open(&path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    match file.try_lock() {
+        Ok(()) if names_locked_file(&file, &path) => Ok(Some(WriterLock { _file: file })),
+        Ok(()) | Err(fs::TryLockError::WouldBlock) => Ok(None),
+        Err(fs::TryLockError::Error(error)) => Err(error),
+    }
+}
+
+#[cfg(unix)]
+fn names_locked_file(file: &File, path: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    match (file.metadata(), fs::metadata(path)) {
+        (Ok(locked), Ok(named)) => locked.dev() == named.dev() && locked.ino() == named.ino(),
+        _ => false,
+    }
+}
+
+#[cfg(windows)]
+fn names_locked_file(file: &File, path: &Path) -> bool {
+    use std::os::windows::fs::MetadataExt;
+    match (file.metadata(), fs::metadata(path)) {
+        (Ok(locked), Ok(named)) => locked.creation_time() == named.creation_time(),
+        _ => false,
+    }
+}
+
+#[cfg(not(any(unix, windows)))]
+fn names_locked_file(_file: &File, path: &Path) -> bool {
+    path.is_file()
 }
 
 fn configure(conn: &Connection) -> rusqlite::Result<()> {
@@ -335,25 +411,30 @@ pub(crate) fn folder_bytes(dir: &Path) -> u64 {
         .sum()
 }
 
-/// Deletes a vault's index folder file by file, and only if it is one (`is_index_folder`); returns
-/// whether it did. Where another process still holds the index open (Windows refuses to delete
-/// it), the tables are emptied in place instead.
-pub(crate) fn delete_folder(dir: &Path) -> io::Result<bool> {
-    if !is_index_folder(dir) {
-        return Ok(false);
-    }
+/// Deletes an index folder (`is_index_folder`) file by file while holding its writer lock, so no
+/// build is between commits. Where another process still holds the index open (Windows refuses to
+/// delete it), the tables are emptied in place and the folder stays. The lock file goes while the
+/// lock is held, so a writer waiting on it locks afresh (`lock_writer`).
+pub(crate) fn delete_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
     let search = search_path(dir);
     if let Err(error) = remove_if_present(&search) {
         empty_in_place(dir).map_err(|_| error)?;
-        return Ok(true);
+        return Ok(());
     }
-    for name in INDEX_FILE_NAMES {
-        remove_if_present(&dir.join(name))?;
+    for name in INDEX_FILE_NAMES.iter().chain(OS_LITTER.iter()) {
+        if *name != LOCK_FILE {
+            remove_if_present(&dir.join(name))?;
+        }
     }
-    match fs::remove_dir(dir) {
-        Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
-        _ => Ok(true),
-    }
+    // Unix unlinks a locked file, so the name goes first and a waiter sees it changed. Windows
+    // refuses to delete a file it has open, so the name goes once the lock is released.
+    #[cfg(unix)]
+    let _ = remove_if_present(&dir.join(LOCK_FILE));
+    drop(lock);
+    #[cfg(not(unix))]
+    let _ = remove_if_present(&dir.join(LOCK_FILE));
+    let _ = fs::remove_dir(dir);
+    Ok(())
 }
 
 fn empty_in_place(dir: &Path) -> rusqlite::Result<()> {
@@ -369,17 +450,23 @@ fn empty_in_place(dir: &Path) -> rusqlite::Result<()> {
 /// 50,000 files) when it is opened again.
 pub(crate) const UNUSED_AFTER: Duration = Duration::from_secs(14 * 24 * 60 * 60);
 
-/// Deletes the index of every vault whose folder no longer exists or that was not opened for
-/// `UNUSED_AFTER`.
+/// Deletes the index of every vault whose folder is confirmed gone or that was not opened for
+/// `UNUSED_AFTER`. A folder whose lock is held (a build or delete is running) is skipped, and an
+/// index that cannot be read is kept: neither is evidence that it is unused.
 pub(crate) fn sweep_orphans(root: &Path, now: SystemTime) -> usize {
-    index_folders(root)
-        .iter()
-        .filter(|dir| is_orphan(dir, now))
-        .filter(|dir| delete_folder(dir).unwrap_or(false))
-        .count()
+    let mut removed = 0;
+    for dir in index_folders(root) {
+        let Ok(Some(lock)) = try_lock_writer(&dir) else {
+            continue;
+        };
+        if is_stale(&dir, now) && delete_locked(&dir, lock).is_ok() && !dir.exists() {
+            removed += 1;
+        }
+    }
+    removed
 }
 
-fn is_orphan(dir: &Path, now: SystemTime) -> bool {
+fn is_stale(dir: &Path, now: SystemTime) -> bool {
     let recorded = Connection::open_with_flags(
         search_path(dir),
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
@@ -390,21 +477,14 @@ fn is_orphan(dir: &Path, now: SystemTime) -> bool {
             read_meta(&conn, META_LAST_USED_MS)?,
         ))
     });
-    let folder_age = || {
-        fs::metadata(dir)
-            .and_then(|meta| meta.modified())
-            .ok()
-            .and_then(|modified| now.duration_since(modified).ok())
+    let Ok((Some(vault), last_used)) = recorded else {
+        return false;
     };
-    let (vault_exists, unused_for) = match recorded {
-        Ok((Some(vault), last_used)) => {
-            let unused = last_used
-                .and_then(|ms| ms.parse::<u64>().ok())
-                .map(|ms| SystemTime::UNIX_EPOCH + Duration::from_millis(ms))
-                .and_then(|used| now.duration_since(used).ok());
-            (Path::new(&vault).exists(), unused.or_else(folder_age))
-        }
-        _ => (false, folder_age()),
-    };
-    !vault_exists || unused_for.is_some_and(|age| age > UNUSED_AFTER)
+    let vault_gone =
+        fs::symlink_metadata(&vault).is_err_and(|error| error.kind() == io::ErrorKind::NotFound);
+    let unused_for = last_used
+        .and_then(|ms| ms.parse::<u64>().ok())
+        .map(|ms| SystemTime::UNIX_EPOCH + Duration::from_millis(ms))
+        .and_then(|used| now.duration_since(used).ok());
+    vault_gone || unused_for.is_some_and(|age| age > UNUSED_AFTER)
 }

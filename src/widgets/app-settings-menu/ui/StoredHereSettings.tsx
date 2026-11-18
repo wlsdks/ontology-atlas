@@ -60,8 +60,13 @@ export function StoredHereSettings() {
   const setOn = async (next: boolean) => {
     vaultIndexPreference.write(next ? 'on' : 'off');
     setOutcome(null);
-    if (rootPath !== null) await syncVaultIndex(rootPath, true).catch(() => null);
-    else if (!next) await clearVaultIndex(null).catch(() => null);
+    try {
+      if (rootPath !== null) await syncVaultIndex(rootPath, true);
+      else if (!next) await clearVaultIndex(null);
+    } catch {
+      // Turning search off deletes every index; one left in place must not read as gone.
+      if (!next) setOutcome('failed');
+    }
     await refresh();
   };
   const remove = async () => {
@@ -76,12 +81,12 @@ export function StoredHereSettings() {
 
   const thisFolder = rootPath !== null;
   const shownBytes = (thisFolder ? status?.sizeBytes : status?.allBytes) ?? 0;
-  const sizeCaption = !on
-    ? t('offCaption')
-    : outcome === 'deleted'
-      ? t(thisFolder ? 'deletedThisFolder' : 'deletedAll')
-      : outcome === 'failed'
-        ? t('failed')
+  const sizeCaption = outcome === 'failed'
+    ? t('failed')
+    : !on
+      ? t('offCaption')
+      : outcome === 'deleted'
+        ? t(thisFolder ? 'deletedThisFolder' : 'deletedAll')
         : shownBytes === 0
           ? t('empty')
           : thisFolder
