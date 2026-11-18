@@ -172,3 +172,25 @@ it('returns immediately when unchanged and leaves modified clicks native', async
   expect(mocks.router.push).not.toHaveBeenCalled();
   expect(screen.queryByRole('dialog')).toBeNull();
 });
+
+it('returns to the map, query included, when the map drawer opened the editor', async () => {
+  vi.clearAllMocks();
+  mocks.loaded = true;
+  mocks.projects = [{ slug: 'project', name: 'Project', tags: [], stack: [], links: [], dependencies: [] }] as never[];
+  const fromMap = '/topology?p=project%3Aproject';
+  render(<ProjectEditorPage mode="edit" slug="project" returnTo={fromMap} />);
+  await screen.findByTestId('project-form');
+  expect(screen.getByTestId('project-editor-back-link')).toHaveTextContent('returnToMap');
+  fireEvent.click(screen.getByText('Cancel form'));
+  expect(mocks.router.push).toHaveBeenCalledExactlyOnceWith(fromMap);
+});
+
+it('refuses a return address outside the app', async () => {
+  vi.clearAllMocks();
+  mocks.loaded = true;
+  mocks.projects = [{ slug: 'project', name: 'Project', tags: [], stack: [], links: [], dependencies: [] }] as never[];
+  render(<ProjectEditorPage mode="edit" slug="project" returnTo="//example.com/topology" />);
+  await screen.findByTestId('project-form');
+  fireEvent.click(screen.getByText('Cancel form'));
+  expect(mocks.router.push).toHaveBeenCalledExactlyOnceWith('/projects/');
+});
