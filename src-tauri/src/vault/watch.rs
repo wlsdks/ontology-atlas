@@ -47,10 +47,12 @@ pub(crate) struct VaultPathChange {
 /// `changes` lists every path the walk or a sidecar reader would see differently, sorted and
 /// deduplicated. `rescan` means the paths are not the whole story — the OS dropped events, a path
 /// could not be expressed relative to the root, or the batch passed `VAULT_CHANGE_MAX_PATHS` —
-/// and `changes` is then empty: re-read the folder.
+/// and `changes` is then empty: re-read the folder. `root` is the watched folder as
+/// `start_vault_watch` returned it, so a batch from a folder the app has since left is dropped.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct VaultChangeBatch {
+    pub(crate) root: String,
     pub(crate) changes: Vec<VaultPathChange>,
     pub(crate) rescan: bool,
 }
@@ -137,8 +139,10 @@ impl VaultChangeBatch {
                 }
             }
         }
+        let watched = root.to_string_lossy().into_owned();
         if rescan || paths.len() > VAULT_CHANGE_MAX_PATHS {
             return Some(Self {
+                root: watched,
                 changes: Vec::new(),
                 rescan: true,
             });
@@ -147,6 +151,7 @@ impl VaultChangeBatch {
             return None;
         }
         Some(Self {
+            root: watched,
             changes: paths
                 .iter()
                 .map(|relative| stamp_change(root, relative))
@@ -177,13 +182,15 @@ pub(crate) struct VaultWatcherState {
 /// root, and a replaced debouncer drops on a background thread because FSEvents
 /// teardown joins its run loop.
 /// Deliberately `async` with no await: Tauri then runs it off the macOS main thread.
+/// Returns the canonical root every batch from this watcher names in `root`.
 #[tauri::command]
 pub(crate) async fn start_vault_watch(
     app: AppHandle,
     root_path: String,
     state: State<'_, VaultWatcherState>,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let canonical = canonical_root(&root_path)?;
+    let watched = canonical.to_string_lossy().into_owned();
     let mut watch = state
         .watch
         .lock()
@@ -193,7 +200,7 @@ pub(crate) async fn start_vault_watch(
         .is_some_and(|existing| existing.root == canonical)
     {
         log::debug!("vault watcher reused at {}", canonical.display());
-        return Ok(());
+        return Ok(watched);
     }
     let app_handle = app.clone();
     let watched_root = canonical.clone();
@@ -243,7 +250,7 @@ pub(crate) async fn start_vault_watch(
         // Dropping joins the watcher thread at an unbounded cost the UI thread cannot pay.
         std::thread::spawn(move || drop(previous));
     }
-    Ok(())
+    Ok(watched)
 }
 
 #[cfg(test)]
@@ -287,6 +294,11 @@ mod tests {
         )
         .unwrap();
         assert!(!reported.rescan);
+        assert_eq!(
+            reported.root,
+            root.to_string_lossy(),
+            "the batch names its watcher's folder"
+        );
         let kinds: Vec<_> = reported
             .changes
             .iter()
@@ -314,6 +326,7 @@ mod tests {
     #[test]
     fn the_payload_is_the_shape_the_app_parses() {
         let payload = VaultChangeBatch {
+            root: "/Users/dana/vault".into(),
             changes: vec![
                 VaultPathChange {
                     path: "notes/a.md".into(),
@@ -333,6 +346,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(payload).unwrap(),
             serde_json::json!({
+                "root": "/Users/dana/vault",
                 "changes": [
                     { "path": "notes/a.md", "kind": "file", "lastModified": 1_700_000_000_000u64, "size": 12 },
                     { "path": "old", "kind": "missing" }
@@ -353,6 +367,7 @@ mod tests {
         assert_eq!(
             reported,
             Some(VaultChangeBatch {
+                root: root.to_string_lossy().into_owned(),
                 changes: Vec::new(),
                 rescan: true
             })

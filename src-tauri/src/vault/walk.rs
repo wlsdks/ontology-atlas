@@ -9,6 +9,12 @@ use std::time::UNIX_EPOCH;
 pub(crate) struct TauriVaultEntry {
     name: String,
     kind: String,
+    /// Files only, with `with_stamps`: the directory entry's mtime (ms) and length, so a caller
+    /// can tell a changed file from an unchanged one without reading it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_modified: Option<u128>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<u64>,
 }
 
 pub(super) fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
@@ -36,6 +42,7 @@ pub(crate) fn list_vault_directory(
     root_path: String,
     relative_path: String,
     include_links: Option<bool>,
+    with_stamps: Option<bool>,
 ) -> Result<Vec<TauriVaultEntry>, String> {
     let dir = resolve_existing_inside(&root_path, &relative_path)?;
     let entries = fs::read_dir(dir).map_err(|err| err.to_string())?;
@@ -55,9 +62,25 @@ pub(crate) fn list_vault_directory(
         } else {
             continue;
         };
+        let (last_modified, size) = if with_stamps == Some(true) && kind == "file" {
+            // `DirEntry::metadata` does not follow a link; a file gone since the listing is skipped.
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+            let millis = metadata
+                .modified()
+                .ok()
+                .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                .map(|since| since.as_millis());
+            (millis, Some(metadata.len()))
+        } else {
+            (None, None)
+        };
         out.push(TauriVaultEntry {
             name: entry.file_name().to_string_lossy().to_string(),
             kind: kind.into(),
+            last_modified,
+            size,
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
@@ -143,7 +166,9 @@ pub(super) fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
     if !walked || name.starts_with('.') || VAULT_PRUNE_DIR_NAMES.contains(&name) {
         return false;
     }
+    // The cache tag prunes or un-prunes its folder, which only a walk can apply.
     vault_entry_is_tracked(name)
+        || name == VAULT_CACHE_DIR_TAG
         || vault_relative_is_source(&relative)
         || !fs::symlink_metadata(path).is_ok_and(|metadata| metadata.is_file())
 }
@@ -236,6 +261,36 @@ mod tests {
     #[cfg(unix)]
     use super::*;
 
+    /// A path delta compares these stamps with the last build instead of reading the file.
+    #[test]
+    fn a_stamped_listing_carries_each_file_s_mtime_and_length_and_nothing_for_folders() {
+        let root = std::env::temp_dir().join(format!("atlas-list-stamps-{}", std::process::id()));
+        std::fs::create_dir_all(root.join("sources/deck")).unwrap();
+        std::fs::write(root.join("sources/brief.pdf"), "four").unwrap();
+        let root_path = root.to_string_lossy().to_string();
+
+        let stamped =
+            super::list_vault_directory(root_path.clone(), "sources".into(), None, Some(true))
+                .unwrap();
+        let brief = stamped
+            .iter()
+            .find(|entry| entry.name == "brief.pdf")
+            .unwrap();
+        assert_eq!(brief.size, Some(4));
+        assert_eq!(
+            brief.last_modified,
+            Some(super::metadata_mtime_ms(&root.join("sources/brief.pdf")).unwrap())
+        );
+        let deck = stamped.iter().find(|entry| entry.name == "deck").unwrap();
+        assert_eq!((deck.last_modified, deck.size), (None, None));
+        let plain = super::list_vault_directory(root_path, "sources".into(), None, None).unwrap();
+        assert!(plain
+            .iter()
+            .all(|entry| entry.size.is_none() && entry.last_modified.is_none()));
+
+        std::fs::remove_dir_all(root).ok();
+    }
+
     #[test]
     fn vault_walk_keeps_the_last_entry_at_the_ceiling_and_reports_overflow() {
         let dir = std::env::temp_dir().join(format!("atlas-walk-boundary-{}", std::process::id()));
@@ -272,10 +327,12 @@ mod tests {
             ".git/objects/ab",
             "node_modules/pkg",
             "capabilities",
+            "cache",
         ] {
             std::fs::create_dir_all(root.join(dir)).unwrap();
         }
         for file in [
+            "cache/CACHEDIR.TAG",
             "notes/sources/a.pdf",
             "notes/todo.txt",
             ".git/index",
@@ -298,6 +355,7 @@ mod tests {
             ".codex/config.toml",
             "features",
             "drafts",
+            "cache/CACHEDIR.TAG",
         ] {
             assert!(visible(path), "{path} changes what the screen shows");
         }
@@ -344,11 +402,13 @@ mod tests {
                 .collect::<Vec<_>>()
         };
         assert_eq!(
-            named(list_vault_directory(root_path.clone(), "wiki".into(), None).unwrap()),
+            named(list_vault_directory(root_path.clone(), "wiki".into(), None, None).unwrap()),
             vec!["plan.md:file", "team:directory"]
         );
         assert_eq!(
-            named(list_vault_directory(root_path.clone(), "wiki".into(), Some(true)).unwrap()),
+            named(
+                list_vault_directory(root_path.clone(), "wiki".into(), Some(true), None).unwrap()
+            ),
             vec![
                 "elsewhere:symlink",
                 "escape.md:symlink",

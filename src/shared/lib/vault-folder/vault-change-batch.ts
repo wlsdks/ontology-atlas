@@ -14,24 +14,30 @@ export interface VaultPathChange {
   size?: number;
 }
 
-/** Payload of the app's `vault-changed` event. `rescan`: the paths are not the whole story. */
+/**
+ * Payload of the app's `vault-changed` event. `rescan`: the paths are not the whole story.
+ * `root`: the folder the watcher reports on, as `start_vault_watch` returned it; a batch for any
+ * other folder is not this vault's. `null` only in a rescan made from a malformed payload.
+ */
 export interface VaultChangeBatch {
+  root: string | null;
   changes: VaultPathChange[];
   rescan: boolean;
 }
 
-const RESCAN_BATCH: VaultChangeBatch = { changes: [], rescan: true };
+const RESCAN_BATCH: VaultChangeBatch = { root: null, changes: [], rescan: true };
 const PATH_KINDS = new Set(['file', 'directory', 'missing', 'other']);
 
 /** Anything but the documented shape asks for a full re-read. */
 export function parseVaultChangeBatch(payload: unknown): VaultChangeBatch {
   if (!payload || typeof payload !== 'object') return RESCAN_BATCH;
-  const { changes, rescan } = payload as { changes?: unknown; rescan?: unknown };
-  if (rescan !== false || !Array.isArray(changes)) return RESCAN_BATCH;
+  const { root, changes, rescan } = payload as { root?: unknown; changes?: unknown; rescan?: unknown };
+  if (typeof root !== 'string') return RESCAN_BATCH;
+  if (rescan !== false || !Array.isArray(changes)) return { root, changes: [], rescan: true };
   const parsed: VaultPathChange[] = [];
   for (const change of changes) {
     const { path, kind, lastModified, size } = (change ?? {}) as Record<string, unknown>;
-    if (typeof path !== 'string' || typeof kind !== 'string' || !PATH_KINDS.has(kind)) return RESCAN_BATCH;
+    if (typeof path !== 'string' || typeof kind !== 'string' || !PATH_KINDS.has(kind)) return { root, changes: [], rescan: true };
     parsed.push({
       path,
       kind: kind as VaultPathChange['kind'],
@@ -39,5 +45,5 @@ export function parseVaultChangeBatch(payload: unknown): VaultChangeBatch {
       ...(typeof size === 'number' ? { size } : {}),
     });
   }
-  return { changes: parsed, rescan: false };
+  return { root, changes: parsed, rescan: false };
 }

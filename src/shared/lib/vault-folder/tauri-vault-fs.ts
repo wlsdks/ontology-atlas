@@ -550,6 +550,24 @@ export async function listTauriVaultEntries(
   return invoke<TauriVaultEntry[]>('list_vault_directory', { rootPath, relativePath });
 }
 
+/** One child of a listed folder; a file carries its directory-entry mtime (ms) and length. */
+export interface StampedVaultEntry {
+  name: string;
+  kind: 'file' | 'directory';
+  lastModified?: number;
+  size?: number;
+}
+
+/**
+ * One folder's children with each file's stamp, in one call and without reading a byte: what a
+ * path delta needs to tell a changed file from an unchanged one. `null` outside the app.
+ */
+export async function listTauriVaultStamped(rootPath: string, relativePath: string): Promise<StampedVaultEntry[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<StampedVaultEntry[]>('list_vault_directory', { rootPath, relativePath, withStamps: true });
+}
+
 export async function listTauriVaultLinks(rootPath: string, relativePath: string): Promise<string[]> {
   const invoke = getInvoke();
   if (!invoke) throw new Error('Listing links requires the installed app.');

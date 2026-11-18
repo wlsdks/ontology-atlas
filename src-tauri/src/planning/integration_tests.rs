@@ -70,7 +70,7 @@ fn planning_selection_does_not_grant_existing_vault_or_source_commands() {
     for root in [f.path(), f.base.to_string_lossy().into_owned()] {
         assert!(read_vault_text_file(root.clone(), "plan.md".into()).is_err());
         assert!(write_vault_text_file(root.clone(), "planted.md".into(), "x".into()).is_err());
-        assert!(list_vault_directory(root.clone(), "".into(), None).is_err());
+        assert!(list_vault_directory(root.clone(), "".into(), None, None).is_err());
         assert!(inspect_project_source(root.clone(), None).is_err());
         let briefing =
             serde_json::to_value(git_source_briefing(root.clone(), 0, 1).unwrap()).unwrap();
