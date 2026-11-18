@@ -1,11 +1,11 @@
 # Merge many branches
 
-`pnpm pr:land` is a queue now: it labels the pull request `landing-queue`, and
+`pnpm pr:land` merges a slice that nothing on `main` or a train in flight
+touches on its own CI run, and queues the rest with the `landing-queue` label:
 the conductor merges up to 20 queued pull requests onto one `train/*` branch
 behind **one** CI run, bisecting a red train so one bad slice is ejected
-instead of blocking the rest. So twenty independent slices no longer need a
-hand-made bundle to share a CI run. The bundle remains for branches that only
-make sense resolved together.
+instead of blocking the rest. So independent slices need no hand-made bundle.
+The bundle remains for branches that only make sense resolved together.
 
 ## 0. Before the fan-out (when you author the Workflow or brief)
 
@@ -38,27 +38,29 @@ repository.
 
 ## 2. The train path
 
-For each pending branch: push it, open a draft, and queue it without waiting.
-Before queueing, run `pnpm conflicts:scan` on the branch; a conflict with an open pull request outside this bundle is resolved now, not by a train ejection.
+For each pending branch: push it, open a draft, and land it in the background.
+Before landing, run `pnpm conflicts:scan` on the branch; a conflict with an open pull request outside this bundle is resolved now, not by a train ejection.
 
 ```bash
 git push -u origin <branch>
 gh pr create --draft --head <branch> --title "<type>: <slice>" --body-file <file>
-pnpm pr:land <number> --no-wait
+pnpm pr:land <number>          # in the background, one per branch
 ```
 
-Then one process conducts, or keep one of the merges waiting:
+Each run marks its draft ready, waits for that CI run and merges a green slice
+that contains today's `main` at once; their runs go side by side. A slice
+behind `main` or overlapping a train goes on a train. A slice red on its own CI comes back unqueued; a red
+train is split and rerun, and its breaker gets a comment and loses its label.
+Fix it and `pnpm pr:land <number>` again. To put many slices on one train
+instead, queue each with `pnpm pr:land <number> --no-wait` and run one
+conductor:
 
 ```bash
 pnpm pr:land --plan <n...>     # dry run: fast-path verdicts, the next train, trial merges
 pnpm pr:land --conduct         # runs trains until the queue is empty
 pnpm pr:queue                  # the queue, the train in flight and its CI
 ```
-
-A slice that is already green on its own head and touches nothing `main` or the
-train in flight touches merges on the fast path without waiting. A red train is
-split and rerun; the breaker gets a comment and loses its label. Fix it and
-`pnpm pr:land <number>` again. The conductor closes merged components and
+ The conductor closes merged components and
 deletes branches `main` provably contains; `pnpm bundle:prune` cleans up the
 local worktrees afterwards. Clean up only after `pnpm pr:land` exits 0, and through
 `pnpm bundle:prune`, which keeps any branch `main` does not contain; never

@@ -163,9 +163,9 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
 | `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |
 | `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server releases memory across repeated calls; about a minute |
-| `pnpm pr:ci <n>` | Fire CI on a draft now |
+| `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request to merge (green ones merge together behind one CI run), and show the queue |
+| `pnpm pr:land <n>` · `pnpm pr:queue` | Merge a pull request: on its own CI when its branch contains main and no train overlaps, otherwise on a train; and show the queue |
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |

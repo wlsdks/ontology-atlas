@@ -36,12 +36,18 @@
 ## Merging a pull request
 
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
-- `pnpm pr:land <number>` is the only way to `main`; it runs checked fast-path
-  or train merges. `--plan <n...>` previews; `pnpm pr:queue` shows the queue.
+- `pnpm pr:land <number>` is the only way to `main`. A branch that contains
+  today's `main` and no train in flight overlaps merges on its own CI: a draft
+  is marked ready, that run is awaited, green merges and red returns unqueued.
+  Anything else rides a train; merge `origin/main` before the last push to go
+  direct. `pnpm pr:ci <number>` starts that run once the author is
+  done, so it is ready at landing. `--plan <n...>` previews; `pnpm pr:queue`
+  shows the queue.
   Preserve original commits with merge commits; never squash or rebase during
   landing. Disable main's linear-history requirement.
-- Several branches use `/merge`: a draft each for the train, or
-  one integration branch when they must be resolved together.
+- Several branches use `/merge`: a draft each, each landed by its own
+  `pnpm pr:land`, or one integration branch when they must be resolved
+  together.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
 - Title: a conventional prefix. Body: `Summary` and `Test plan`, naming the
