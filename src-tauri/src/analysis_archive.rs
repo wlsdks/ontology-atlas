@@ -102,12 +102,13 @@ fn validate_envelope(file_name: &str, content: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) fn append_analysis_record(
+pub(crate) async fn append_analysis_record(
     root_path: String,
     file_name: String,
     content: String,
 ) -> Result<AppendResult, String> {
-    append_after_open(root_path, file_name, content, || {})
+    crate::blocking::run_blocking(move || append_after_open(root_path, file_name, content, || {}))
+        .await
 }
 
 #[tauri::command(async)]
@@ -395,6 +396,15 @@ fn publish_portable(target: &Path, contents: &str) -> Result<bool, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Shadows the command so each test also drives its blocking-pool dispatch.
+    fn append_analysis_record(
+        root_path: String,
+        file_name: String,
+        content: String,
+    ) -> Result<AppendResult, String> {
+        tauri::async_runtime::block_on(super::append_analysis_record(root_path, file_name, content))
+    }
 
     fn fixture() -> (std::path::PathBuf, String, String) {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);

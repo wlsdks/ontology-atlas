@@ -4,6 +4,7 @@ use super::scope::resolve_write_target_inside;
 use super::scope::{canonical_root, normalize_relative_path, resolve_directory_target_inside};
 #[cfg(unix)]
 use crate::agent_setup;
+use crate::blocking::run_blocking;
 use std::fs;
 use std::path::Path;
 #[cfg(any(not(unix), test))]
@@ -11,12 +12,15 @@ use std::time::UNIX_EPOCH;
 
 /// Create-only: existing entries are preserved byte for byte.
 #[tauri::command]
-pub(crate) fn create_vault_text_file(
+pub(crate) async fn create_vault_text_file(
     root_path: String,
     relative_path: String,
     content: String,
 ) -> Result<bool, String> {
-    create_vault_text_file_after_validation(root_path, relative_path, content, || {})
+    run_blocking(move || {
+        create_vault_text_file_after_validation(root_path, relative_path, content, || {})
+    })
+    .await
 }
 
 fn create_vault_text_file_after_validation(

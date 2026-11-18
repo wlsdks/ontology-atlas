@@ -9,6 +9,7 @@ mod agent_setup;
 mod analysis_archive;
 mod app_shell;
 mod audit_read;
+mod blocking;
 mod command_output;
 mod connector_secrets;
 mod connectors;

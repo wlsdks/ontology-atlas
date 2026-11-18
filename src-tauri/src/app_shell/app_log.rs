@@ -1,18 +1,21 @@
 #[cfg(target_os = "macos")]
 use super::reveal_in_finder_command;
-#[cfg(target_os = "macos")]
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 #[tauri::command]
-pub(crate) fn reveal_app_log_dir(app: AppHandle) -> Result<(), String> {
+pub(crate) async fn reveal_app_log_dir(app: AppHandle) -> Result<(), String> {
     let dir = app.path().app_log_dir().map_err(|err| err.to_string())?;
+    crate::blocking::run_blocking(move || reveal_log_dir(dir)).await
+}
+
+fn reveal_log_dir(dir: PathBuf) -> Result<(), String> {
+    fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
 
     #[cfg(target_os = "macos")]
     {
-        fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
         let status = reveal_in_finder_command(&dir)
             .status()
             .map_err(|err| err.to_string())?;
@@ -23,10 +26,10 @@ pub(crate) fn reveal_app_log_dir(app: AppHandle) -> Result<(), String> {
         }
     }
 
+    // Explorer and Linux file managers open the parent with the log folder selected.
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = dir;
-        Err("Finder reveal is only available on macOS".into())
+        super::reveal_in_file_manager(&dir)
     }
 }
 

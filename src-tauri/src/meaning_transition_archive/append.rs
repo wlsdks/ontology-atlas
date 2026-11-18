@@ -37,7 +37,26 @@ pub(crate) struct MeaningTransitionAppendResult {
 }
 
 #[tauri::command]
-pub(crate) fn append_meaning_transition_bundle(
+pub(crate) async fn append_meaning_transition_bundle(
+    root_path: String,
+    expected_root_identity: MeaningTransitionRootIdentity,
+    record_file_name: String,
+    record_content: String,
+    artifacts: Vec<MeaningTransitionArtifactInput>,
+) -> Result<MeaningTransitionAppendResult, String> {
+    crate::blocking::run_blocking(move || {
+        append_meaning_transition_bundle_blocking(
+            root_path,
+            expected_root_identity,
+            record_file_name,
+            record_content,
+            artifacts,
+        )
+    })
+    .await
+}
+
+pub(crate) fn append_meaning_transition_bundle_blocking(
     root_path: String,
     expected_root_identity: MeaningTransitionRootIdentity,
     record_file_name: String,

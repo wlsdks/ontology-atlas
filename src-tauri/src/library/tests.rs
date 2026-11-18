@@ -630,3 +630,39 @@ fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_u
     );
     fs::remove_dir_all(fixture).unwrap();
 }
+
+/// Reveal reached Explorer for the first time in this change, so the vault guard must hold for
+/// Windows-shaped input before anything is handed to the shell. Only refusals are exercised:
+/// an accepted path would open a real file manager window. On Windows these are a parent hop,
+/// a drive prefix and a UNC prefix; elsewhere they are names that do not exist in the vault.
+#[test]
+fn reveal_refuses_windows_shaped_escapes_and_folders_before_the_shell() {
+    let root = std::env::temp_dir().join(format!("atlas-reveal-guard-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(root.join("vault/docs")).unwrap();
+    fs::write(root.join("outside.md"), "outside").unwrap();
+    let vault = root.join("vault").to_string_lossy().to_string();
+
+    for escape in [
+        "..\\outside.md",
+        "docs\\..\\..\\outside.md",
+        "C:\\Windows\\win.ini",
+        "\\\\server\\share\\note.md",
+        "/etc/hosts",
+    ] {
+        let refused = reveal_vault_file_blocking(vault.clone(), escape.into());
+        assert!(refused.is_err(), "{escape} reached the file manager");
+        if cfg!(windows) {
+            assert_eq!(
+                refused.unwrap_err(),
+                "relative path must stay inside the selected vault",
+                "{escape}"
+            );
+        }
+    }
+    assert_eq!(
+        reveal_vault_file_blocking(vault, "docs".into()).unwrap_err(),
+        "reveal target must be a file"
+    );
+    fs::remove_dir_all(root).ok();
+}

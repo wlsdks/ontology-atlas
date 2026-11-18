@@ -3,7 +3,7 @@ use super::envelope::digest_hex;
 use super::*;
 #[cfg(not(unix))]
 use super::{
-    append::append_meaning_transition_bundle,
+    append::append_meaning_transition_bundle_blocking as append_meaning_transition_bundle,
     history::list_meaning_transition_history,
     read::{read_meaning_transition_artifact_text, read_meaning_transition_record_text},
 };

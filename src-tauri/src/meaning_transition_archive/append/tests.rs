@@ -1,3 +1,4 @@
+use super::append_meaning_transition_bundle_blocking as append_meaning_transition_bundle;
 use super::*;
 use crate::meaning_transition_archive::history::list_meaning_transition_history;
 use crate::meaning_transition_archive::read::{

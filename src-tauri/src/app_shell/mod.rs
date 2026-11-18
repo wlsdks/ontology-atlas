@@ -73,6 +73,26 @@ pub(crate) fn reveal_in_finder_command(dir: &Path) -> Command {
     command
 }
 
+/// Explorer or the desktop's file manager, with the item selected in its folder. Callers
+/// pass a path their own vault checks already resolved; nothing is opened or launched.
+/// A fresh thread keeps the shell's COM apartment (Windows) and the D-Bus client's own
+/// runtime (Linux) away from the async runtime's threads.
+#[cfg(any(windows, target_os = "linux"))]
+pub(crate) fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| tauri_plugin_opener::reveal_item_in_dir(path))
+            .join()
+    })
+    .map_err(|_| crate::errors::coded("reveal-failed", "the file manager call panicked"))?
+    .map_err(|error| crate::errors::coded("reveal-failed", error))
+}
+
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
+pub(crate) fn reveal_in_file_manager(_path: &Path) -> Result<(), String> {
+    Err("reveal-unsupported-on-this-platform".into())
+}
+
 /// The URL is never logged: it may be a trick link and its payload a server config.
 /// The only effect is a pre-filled form the person still confirms.
 #[cfg(desktop)]

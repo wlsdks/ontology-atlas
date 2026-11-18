@@ -12,7 +12,10 @@ mod vault_scope_tests {
     use super::read::read_vault_text_file;
     use super::scope::{canonical_root, resolve_existing_inside};
     use super::walk::list_vault_directory;
-    use super::write::{remove_vault_entry, write_vault_text_file};
+    use super::write::{
+        remove_vault_entry_blocking as remove_vault_entry,
+        write_vault_text_file_blocking as write_vault_text_file,
+    };
 
     #[test]
     fn every_vault_door_refuses_an_ungranted_root_and_opens_a_granted_one() {
@@ -66,7 +69,9 @@ mod vault_scope_tests {
             "{:?}",
             verified.failure
         );
-        refused(super::location::open_vault_in_finder(home_path.clone()));
+        refused(super::location::open_vault_in_finder_blocking(
+            home_path.clone(),
+        ));
         let report =
             crate::library::discover_source_candidates(vec![crate::library::SourceDiscoveryRoot {
                 root_path: home_path.clone(),

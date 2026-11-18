@@ -5,6 +5,7 @@ use super::scope::{
 use super::scope::{ensure_inside_canonical, resolve_write_target_inside};
 #[cfg(unix)]
 use crate::agent_setup;
+use crate::blocking::run_blocking;
 use std::fs;
 #[cfg(unix)]
 use std::path::Path;
@@ -68,7 +69,15 @@ pub(super) fn write_text_atomically(path: &std::path::Path, content: &str) -> Re
 }
 
 #[tauri::command]
-pub(crate) fn write_vault_text_file(
+pub(crate) async fn write_vault_text_file(
+    root_path: String,
+    relative_path: String,
+    content: String,
+) -> Result<(), String> {
+    run_blocking(move || write_vault_text_file_blocking(root_path, relative_path, content)).await
+}
+
+pub(crate) fn write_vault_text_file_blocking(
     root_path: String,
     relative_path: String,
     content: String,
@@ -113,7 +122,15 @@ fn write_vault_text_file_after_validation(
 }
 
 #[tauri::command]
-pub(crate) fn remove_vault_entry(
+pub(crate) async fn remove_vault_entry(
+    root_path: String,
+    relative_path: String,
+    recursive: Option<bool>,
+) -> Result<(), String> {
+    run_blocking(move || remove_vault_entry_blocking(root_path, relative_path, recursive)).await
+}
+
+pub(crate) fn remove_vault_entry_blocking(
     root_path: String,
     relative_path: String,
     recursive: Option<bool>,
@@ -167,7 +184,14 @@ pub(crate) fn remove_vault_entry(
 }
 
 #[tauri::command]
-pub(crate) fn ensure_vault_directory(
+pub(crate) async fn ensure_vault_directory(
+    root_path: String,
+    relative_path: String,
+) -> Result<(), String> {
+    run_blocking(move || ensure_vault_directory_blocking(root_path, relative_path)).await
+}
+
+pub(crate) fn ensure_vault_directory_blocking(
     root_path: String,
     relative_path: String,
 ) -> Result<(), String> {
@@ -216,7 +240,15 @@ fn ensure_vault_directory_after_validation(
 }
 
 #[tauri::command]
-pub(crate) fn vault_path_exists(
+pub(crate) async fn vault_path_exists(
+    root_path: String,
+    relative_path: String,
+    kind: String,
+) -> Result<bool, String> {
+    run_blocking(move || vault_path_exists_blocking(root_path, relative_path, kind)).await
+}
+
+pub(crate) fn vault_path_exists_blocking(
     root_path: String,
     relative_path: String,
     kind: String,
@@ -249,7 +281,8 @@ mod tests {
 
     #[test]
     fn remove_vault_entry_rejects_root_removal() {
-        let error = remove_vault_entry("/tmp/vault".into(), "".into(), Some(true)).unwrap_err();
+        let error =
+            remove_vault_entry_blocking("/tmp/vault".into(), "".into(), Some(true)).unwrap_err();
         assert_eq!(error, "refusing to remove the selected vault root");
     }
 
@@ -266,10 +299,11 @@ mod tests {
         fs::write(root.join("note.md"), "hello").unwrap();
         fs::write(root.join("docs/nested/file.md"), "nested").unwrap();
 
-        remove_vault_entry(root.to_string_lossy().to_string(), "note.md".into(), None).unwrap();
+        remove_vault_entry_blocking(root.to_string_lossy().to_string(), "note.md".into(), None)
+            .unwrap();
         assert!(!root.join("note.md").exists());
 
-        let non_recursive_error = remove_vault_entry(
+        let non_recursive_error = remove_vault_entry_blocking(
             root.to_string_lossy().to_string(),
             "docs".into(),
             Some(false),
@@ -278,7 +312,7 @@ mod tests {
         assert!(!non_recursive_error.is_empty());
         assert!(root.join("docs").exists());
 
-        remove_vault_entry(
+        remove_vault_entry_blocking(
             root.to_string_lossy().to_string(),
             "docs".into(),
             Some(true),
@@ -305,7 +339,7 @@ mod tests {
         fs::write(&target, "keep me").unwrap();
         symlink(&target, &alias).unwrap();
 
-        remove_vault_entry(
+        remove_vault_entry_blocking(
             root.to_string_lossy().to_string(),
             "alias.md".into(),
             Some(false),
@@ -449,6 +483,81 @@ mod atomic_write_tests {
             std::fs::metadata(&target).unwrap().ino(),
             "the vault entry kept its link to the outside inode"
         );
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    /// Off the main thread, two writes to one file can now run at once. Each must still
+    /// land whole: the file holds exactly one of them, with no temporary file left behind.
+    #[test]
+    fn concurrent_command_writes_to_one_file_leave_one_complete_version() {
+        let dir = std::env::temp_dir().join(format!(
+            "oatlas-concurrent-write-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let root = dir.to_string_lossy().into_owned();
+        let first = "A".repeat(512 * 1024);
+        let second = "B".repeat(512 * 1024);
+        for _ in 0..8 {
+            let (a, b) = tauri::async_runtime::block_on(futures_util::future::join(
+                super::write_vault_text_file(root.clone(), "note.md".into(), first.clone()),
+                super::write_vault_text_file(root.clone(), "note.md".into(), second.clone()),
+            ));
+            a.unwrap();
+            b.unwrap();
+            let landed = std::fs::read_to_string(dir.join("note.md")).unwrap();
+            assert!(landed == first || landed == second, "a write was torn");
+        }
+        let names: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, vec!["note.md".to_string()]);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// A backslash is a separator only on Windows. Either way, a backslash-shaped escape
+    /// must not create anything outside the vault.
+    #[test]
+    fn a_windows_shaped_escape_never_writes_outside_the_vault() {
+        let base = std::env::temp_dir().join(format!(
+            "oatlas-windows-escape-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = base.join("vault");
+        std::fs::create_dir_all(&vault).unwrap();
+        let root = vault.to_string_lossy().into_owned();
+        for escape in [
+            "..\\escape.md",
+            "C:\\escape.md",
+            "\\\\server\\share\\escape.md",
+        ] {
+            let written = tauri::async_runtime::block_on(super::write_vault_text_file(
+                root.clone(),
+                escape.into(),
+                "planted".into(),
+            ));
+            if cfg!(windows) {
+                assert_eq!(
+                    written.unwrap_err(),
+                    "relative path must stay inside the selected vault",
+                    "{escape}"
+                );
+            }
+            assert!(
+                !base.join("escape.md").exists(),
+                "{escape} escaped the vault"
+            );
+        }
         std::fs::remove_dir_all(&base).ok();
     }
 
