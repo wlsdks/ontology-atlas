@@ -1,5 +1,4 @@
 use super::scope::resolve_existing_inside;
-use notify_debouncer_full::DebouncedEvent;
 use serde::Serialize;
 use std::fs;
 use std::path::Path;
@@ -125,7 +124,7 @@ const VAULT_AGENT_CONFIG_FILES: &[&str] = &[".mcp.json", ".mcp.json.example", ".
 
 /// macOS reports a folder moved in, out or renamed only on the folder's own path, so a walked
 /// path that is no longer a regular file counts too.
-fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
+pub(super) fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
     if path.extension().is_some_and(|ext| ext == "md") {
         return true;
     }
@@ -147,16 +146,6 @@ fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
     vault_entry_is_tracked(name)
         || vault_relative_is_source(&relative)
         || !fs::symlink_metadata(path).is_ok_and(|metadata| metadata.is_file())
-}
-
-pub(super) fn vault_batch_is_visible(root: &Path, events: &[DebouncedEvent]) -> bool {
-    events.iter().any(|event| {
-        event.need_rescan()
-            || event
-                .paths
-                .iter()
-                .any(|path| vault_change_is_visible(root, path))
-    })
 }
 
 fn walk_vault_stamps(
@@ -326,19 +315,6 @@ mod tests {
             assert!(!visible(path), "{path} changes nothing on screen");
         }
         let _ = std::fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn a_rescan_after_dropped_events_is_always_reported() {
-        use notify_debouncer_full::notify::{event::Flag, Event, EventKind};
-        let root = std::path::Path::new("/vault");
-        let batch = |event: Event| [super::DebouncedEvent::new(event, std::time::Instant::now())];
-        let rescan = Event::new(EventKind::Other)
-            .set_flag(Flag::Rescan)
-            .add_path(root.join(".git"));
-        assert!(super::vault_batch_is_visible(root, &batch(rescan)));
-        let unseen = Event::new(EventKind::Any).add_path(root.join(".git/index"));
-        assert!(!super::vault_batch_is_visible(root, &batch(unseen)));
     }
 
     #[cfg(unix)]
