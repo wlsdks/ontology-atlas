@@ -67,7 +67,8 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
   /** No entrance on first paint: the section's scroll entrance is the arrival. */
   const [swapped, setSwapped] = useState(false);
   const { leaving } = useSurfaceSwap(active, SWAP_MS);
-  const narrow = useViewportBelow(COLUMN_FROM_PX);
+  /* Prerendered as the strip: most windows are narrower than the column layout. */
+  const narrow = useViewportBelow(COLUMN_FROM_PX, true);
 
   /** Shared by the panels and the captions. */
   const stateOf = (id: CapturedId) =>

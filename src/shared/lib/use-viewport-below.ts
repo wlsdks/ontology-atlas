@@ -20,8 +20,12 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
  * `minWidthPx` takes the **same number** as the Tailwind breakpoint (`lg` = 1024).
  * The boundary matches CSS too — "below min-width" — by querying 1023.98px so it
  * cannot disagree with the `lg:` utilities at fractional pixel ratios.
+ *
+ * `serverBelow` is the prerender's answer. It stays "wide" unless the wide layout
+ * is the rare one: a breakpoint most windows sit below should prerender narrow, or
+ * nearly every first paint is the wrong layout and changes on hydration.
  */
-export function useViewportBelow(minWidthPx: number): boolean {
+export function useViewportBelow(minWidthPx: number, serverBelow = false): boolean {
   const query = useMemo(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return null;
     return window.matchMedia(`(max-width: ${minWidthPx - 0.02}px)`);
@@ -36,10 +40,10 @@ export function useViewportBelow(minWidthPx: number): boolean {
     [query],
   );
 
-  const getSnapshot = useCallback(() => query?.matches ?? false, [query]);
-  // The server and prerender have no width; "wide" is the safe answer, because
+  const getSnapshot = useCallback(() => query?.matches ?? serverBelow, [query, serverBelow]);
+  // The server and prerender have no width; "wide" is the safe default, because
   // degradation happens only after the real width has been observed.
-  const getServerSnapshot = useCallback(() => false, []);
+  const getServerSnapshot = useCallback(() => serverBelow, [serverBelow]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
