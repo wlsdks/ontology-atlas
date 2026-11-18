@@ -373,10 +373,21 @@ pub fn run() {
                 audit_read::cancel_owner(Some(&label));
             }
             // Adapters and their children must not outlive the window.
-            RunEvent::ExitRequested { .. } | RunEvent::Exit => {
+            RunEvent::ExitRequested { .. } => {
                 llm::requests::cancel_owner(None);
                 audit_read::cancel_owner(None);
                 terminate_all_acp_sessions(app_handle);
+            }
+            // Every exit path reaches this, including Cmd+Q, which skips `ExitRequested` and
+            // cannot be prevented. A save already running finishes its rename here.
+            RunEvent::Exit => {
+                llm::requests::cancel_owner(None);
+                audit_read::cancel_owner(None);
+                terminate_all_acp_sessions(app_handle);
+                let unfinished = blocking::drain(blocking::EXIT_DRAIN_LIMIT);
+                if unfinished > 0 {
+                    log::warn!("exit cut {unfinished} file or keychain operation(s) short");
+                }
             }
             _ => {}
         });

@@ -3,6 +3,7 @@ pub(crate) mod library_collections;
 pub(crate) mod location;
 pub(crate) mod read;
 pub(crate) mod scope;
+pub(crate) mod temp_sweep;
 pub(crate) mod walk;
 pub(crate) mod watch;
 pub(crate) mod write;

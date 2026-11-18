@@ -521,18 +521,23 @@ mod atomic_write_tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
-    /// A backslash is a separator only on Windows. Either way, a backslash-shaped escape
-    /// must not create anything outside the vault.
-    #[test]
-    fn a_windows_shaped_escape_never_writes_outside_the_vault() {
-        let base = std::env::temp_dir().join(format!(
-            "oatlas-windows-escape-{}-{}",
+    fn scratch(label: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!(
+            "oatlas-{label}-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
-        ));
+        ))
+    }
+
+    /// On Windows a backslash separates components, so these are a parent hop, a drive prefix
+    /// and a UNC prefix, and the guard must refuse each before touching the disk.
+    #[cfg(windows)]
+    #[test]
+    fn windows_path_syntax_cannot_escape_the_vault() {
+        let base = scratch("windows-escape");
         let vault = base.join("vault");
         std::fs::create_dir_all(&vault).unwrap();
         let root = vault.to_string_lossy().into_owned();
@@ -540,24 +545,45 @@ mod atomic_write_tests {
             "..\\escape.md",
             "C:\\escape.md",
             "\\\\server\\share\\escape.md",
+            "\\escape.md",
         ] {
             let written = tauri::async_runtime::block_on(super::write_vault_text_file(
                 root.clone(),
                 escape.into(),
                 "planted".into(),
             ));
-            if cfg!(windows) {
-                assert_eq!(
-                    written.unwrap_err(),
-                    "relative path must stay inside the selected vault",
-                    "{escape}"
-                );
-            }
-            assert!(
-                !base.join("escape.md").exists(),
-                "{escape} escaped the vault"
+            assert_eq!(
+                written.unwrap_err(),
+                "relative path must stay inside the selected vault",
+                "{escape}"
             );
         }
+        assert!(!base.join("escape.md").exists());
+        assert_eq!(std::fs::read_dir(&vault).unwrap().count(), 0);
+        std::fs::remove_dir_all(&base).ok();
+    }
+
+    /// On macOS and Linux a backslash is an ordinary filename character: the same text names
+    /// one file directly inside the vault, never a path that climbs out of it.
+    #[cfg(unix)]
+    #[test]
+    fn a_backslash_name_stays_one_file_inside_the_vault() {
+        let base = scratch("backslash-name");
+        let vault = base.join("vault");
+        std::fs::create_dir_all(&vault).unwrap();
+        tauri::async_runtime::block_on(super::write_vault_text_file(
+            vault.to_string_lossy().into_owned(),
+            "..\\escape.md".into(),
+            "kept inside".into(),
+        ))
+        .unwrap();
+        let names: Vec<_> = std::fs::read_dir(&vault)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, vec!["..\\escape.md".to_string()]);
+        assert!(!base.join("escape.md").exists());
+        assert_eq!(std::fs::read_dir(&base).unwrap().count(), 1);
         std::fs::remove_dir_all(&base).ok();
     }
 
