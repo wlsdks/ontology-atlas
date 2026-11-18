@@ -8,7 +8,6 @@ import type { AppLocale } from "@/i18n/locales";
 import { Button, IconButton } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
-import { GatewayEntryFallbackLive } from "@/shared/ui/fallbacks/gateway-entry-view";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { useWorkbenchCatalog } from "@/i18n/workbench-catalog";
 import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workbench";
@@ -68,8 +67,8 @@ export function RootEntryPage() {
     if (workbenchLikely) requestRootWorkbench(locale);
   }, [workbenchLikely, locale]);
 
-  // Not yet known whether this is the installed app: keep drawing the exported fallback, not another screen.
-  if (!clientReady) return <GatewayEntryFallbackLive locale={locale} />;
+  // Not yet known whether this is the installed app, which must never be offered its own download.
+  if (!clientReady) return <DesktopVaultRedirect />;
   if (vaultOpen) {
     if (views) return <views.HomePage />;
     if (desktop) return <DesktopVaultRedirect />;

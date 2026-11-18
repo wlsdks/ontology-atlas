@@ -184,10 +184,11 @@ describe('RootEntryPage', () => {
   it('keeps landing copy out of the server-rendered root shell', () => {
     const html = renderToString(<RootEntryPage />);
 
-    // Until the browser knows whether this is the installed app it draws the exported gateway
-    // fallback, not the app's boot frame, so the visitor never sees one screen swapped for another.
-    expect(html).toContain('data-testid="gateway-entry-fallback"');
-    expect(html).not.toContain('Opening local vault picker');
+    // Until the browser knows whether this is the installed app, nothing gateway-specific paints:
+    // the app must never be offered its own download, even for a frame.
+    expect(html).toContain('Opening local vault picker');
+    expect(html).not.toContain('gateway-landing');
+    expect(html).not.toContain('gateway-entry-fallback');
     expect(html).not.toContain('data-testid="landing"');
     expect(html).not.toContain('landing');
   });

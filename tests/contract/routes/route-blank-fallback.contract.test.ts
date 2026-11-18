@@ -91,10 +91,10 @@ describe("blank-screen gate on route entry", () => {
   });
 
   it("the gateway fallback also carries a product sentence rather than a loading caption", () => {
-    // The view holds the markup the server wrapper and the browser twin share.
-    const source = ["gateway-entry-fallback.tsx", "gateway-entry-view.tsx"]
-      .map((file) => readFileSync(join(process.cwd(), "src/shared/ui/fallbacks", file), "utf-8"))
-      .join("\n");
+    const source = readFileSync(
+      join(process.cwd(), "src/shared/ui/fallbacks/gateway-entry-fallback.tsx"),
+      "utf-8",
+    );
     // The fallback carries the same sentences as the real screen: the headline plus the two places to go.
     expect(source).toContain("heroTitleLine1");
     expect(source).toContain("heroTitleLine2");
