@@ -39,14 +39,6 @@ export const SOURCE_COMMENT_LANGUAGE_BASELINES = Object.freeze({
  */
 export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
   Object.freeze({
-    id: 'mcp-korean-bootstrap-request-instructions',
-    path: 'mcp/src/server/instructions.mjs',
-    why:
-      'The Korean sentence a user actually types to start a bootstrap, quoted in the '
-      + '`initialize` instructions. It is input the server must recognise, not output it writes.',
-    allow: /이 codebase 분석해줘/,
-  }),
-  Object.freeze({
     id: 'mcp-korean-bootstrap-request-registry',
     path: 'mcp/src/server/tool-definitions/analyze-repo-structure.mjs',
     why:
