@@ -31,7 +31,7 @@ export const CONNECTION_INFO_TOOL = {
         type: 'string',
         enum: [...CONSTRUCTION_GUIDE_TOPICS],
         description:
-          'Return the long-form rules for one topic in `guideText`: `meta_model` (the five authorable kinds and the is_a boundary), `construction` (the rules to read before add_concept), `lifecycle` (review before write), `write_safety` (the dry-run/confirm and expected_mtime patterns), `workflows` (the three starting workflows), or `competency` (the exact `## Competency answers` section `finalize_project_meaning` parses).',
+          'Return the long-form rules for one topic in `guideText`: `meta_model` (the five authorable kinds and the is_a boundary), `construction` (naming, body, depends_on and element rules for building a map), `write_safety` (the dry-run/confirm and expected_mtime patterns), `workflows` (the shortest handoff for a known coding task), or `competency` (the exact `## Competency answers` section `finalize_project_meaning` parses).',
       },
     },
   },

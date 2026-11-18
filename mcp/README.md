@@ -91,9 +91,9 @@ MCP design contracts this package treats as release-critical:
   `previewReady`, `canConfirm`, `wouldChange`, and `blockedReasons[]`. Agents
   should use those fields instead of interpreting the tool-specific legacy
   `ok` value.
-- Tool descriptions and initialize instructions must describe security,
-  recovery, and destructive-write boundaries plainly enough for an agent to
-  recover from strict-input errors without guessing.
+- Tool descriptions, error responses and the `write_safety` guide must describe
+  security, recovery, and destructive-write boundaries plainly enough for an
+  agent to recover from strict-input errors without guessing.
 - Recovery uses structured error codes and repair fields first, with text
   fallback for clients that cannot expose them. A suggested creation tool is
   not write authority. Code renames and refactors require inspected, approved
@@ -710,7 +710,7 @@ the evidence row fail closed.
 
 | Tool | What it does |
 |---|---|
-| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "lifecycle" | "write_safety" | "workflows" | "competency"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. `competency` returns the exact `## Competency answers` layout `finalize_project_meaning` parses, with a complete example. |
+| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "write_safety" | "workflows" | "competency"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. `competency` returns the exact `## Competency answers` layout `finalize_project_meaning` parses, with a complete example. |
 | `git_status` | Read-only, vault-scoped Git status: HEAD/branch, changed vault files, outside-vault counts, staged-outside warnings, detached-HEAD and merge/rebase/cherry-pick/revert risk. NUL-delimited porcelain parsing preserves Unicode and whitespace paths. Never initializes, stages, commits, or pushes. |
 | `git_history` | Read-only, newest-first commit history scoped to the active vault pathspec. Returns bounded hashes, subjects, authored timestamps, `limited` / `hasMore`, shallow-repository state, and `historyComplete` while excluding commits that touched only files outside the vault. `limit` defaults to 20 and is capped at 100. Never initializes, fetches, pulls, commits, or pushes. |
 | `git_snapshot` | Local vault checkpoint with a mandatory dry-run/`confirm:true` flow and exact `expectedHead` concurrency guard. Runs vault validation; blocks validation errors, detached HEAD, and in-progress Git operations; returns the shared destructive-preview decision contract; commits only the vault pathspec; preserves outside staging; and never pushes. |
@@ -1565,10 +1565,10 @@ honest partial/visible gap until current range verification is available; source
 remeasurement must not silently certify an old range. Existing ordinary evidence,
 purpose/domain, independent qualification, exact human acceptance and write
 gates remain in force. The source-checkout
-[bootstrap guide](../.agents/skills/ontology-bootstrap/guides/meaning-extraction.md#source-first-hypothesis-workflow)
-uses this capability to investigate task triggers, predicates, state/effects,
-failure paths and verification before declaring a semantic evidence gap. It
-keeps implemented-behavior hypotheses separate from historical owner intent.
+[bootstrap workflow](../.agents/skills/ontology-bootstrap/workflow.md)
+uses this capability to outline every unit's main file and read one main flow
+end to end before writing. It keeps implemented-behavior hypotheses separate
+from historical owner intent.
 Role-diverse behavior evidence may support tentative responsibility/capability
 candidates with sourced counter-boundaries, explicit uncertainty and conditions
 preserved in their bodies. Existing authority thresholds, independent
@@ -1892,7 +1892,7 @@ verifier itself and change only when the tool contract changes.
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=/path/to/docs/ontology, timeout=20000ms)
 ✓ initialize OK — server ontology-atlas-mcp@0.13.0
-✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
+✓ initialize instructions — tool inventory, construction card, write sequence and guide pointer present
 ✓ tools/list 40/40 (40/40 titled; 24/24 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 40/40 local-only) — absorb_document · add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · connect_project_source · connection_info · delete_concept · disconnect_project_source · finalize_project_meaning · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · get_constellation · git_history · git_snapshot · git_status · index_project · infer_imports · inspect_architecture · list_concepts · list_constellations · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · read_source · reclassify_concept · remove_relation · rename_concept · replace_relation · validate_vault · validate_wiki
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance + project-meaning receipt/assessment schemas
@@ -2035,31 +2035,25 @@ tool descriptions keep compact `postWriteMaintenance` bucket summaries
 `proposedAction`, and current-page next action pointer guidance, so
 installed MCP clients can infer cleanup priority and next write intent from
 `tools/list` alone.
-The `initialize.instructions` gate fails if first-contact guidance loses the
-read-only diagnosis flow, `expected_mtime`, `rename_concept` existing
-`newSlug` / `overwrite: true` safety, or `delete_concept.force` / dangling
-referrers safety. It also gates strict-input typo recovery guidance, including
-unknown argument rejection plus nearest argument/value hints such as
-`Did you mean "limit"?` and `Did you mean "overview"?`. Unknown-argument
-errors also include `Received arguments: ...` so an agent can repair the exact
-submitted key set instead of guessing from allowed fields alone. Invalid enum
-errors expose `valueName`, `receivedValue`, `suggestion`, and `allowedValues`
-in `structuredContent` for the same reason. Missing node errors expose
-`missingSlug`, `similarSlugs`, `recoveryTools`, and optional `createTool`.
-Slug conflict errors expose `conflictSlug`, `recoveryTools`, and optional
-`overwriteOption`.
-Batch repair
-guidance is gated as well: duplicate `add_concepts` input slugs must surface
-`concepts[n] duplicate slug in input batch; first seen at concepts[m]` in
-first-contact instructions, so an agent knows which later row to remove or
-rename before retrying. Maintenance work-queue
-guidance is gated too: `initialize.instructions` must mention enum-validated
-`maintenance_plan` filters, ready cursor pages with `cursor.found=true` plus
-`cursor.reason=null`, and unknown `afterActionId` cursor misses with
-`cursor.found=false` plus `cursor.reason`.
+The `initialize.instructions` gate fails if the instructions lose the tool
+inventory, the construction card, the one-line write sequence
+(`add_concepts` → `add_relations` → `validate_vault` → `connect_project_source`
+→ `finalize_project_meaning`), the pointer to the `connection_info({guide})`
+topics, the backlinks-before-rename line or the `workspace_brief` →
+`validate_vault` first-contact line, or if they name the bulk qualification
+route. Write safety (`expected_mtime`, `overwrite: true`, `force: true`,
+dangling referrers) lives in the `write_safety` guide and the tool schemas
+checked above; strict-input recovery lives in the error responses checked
+below. Unknown-argument errors include `Received arguments: ...` so an agent
+can repair the exact submitted key set instead of guessing from allowed fields
+alone. Invalid enum errors expose `valueName`, `receivedValue`, `suggestion`,
+and `allowedValues` in `structuredContent` for the same reason. Missing node
+errors expose `missingSlug`, `similarSlugs`, `recoveryTools`, and optional
+`createTool`. Slug conflict errors expose `conflictSlug`, `recoveryTools`, and
+optional `overwriteOption`.
 The dogfood walk reuses the same initialize-instruction gate, so the live
-agent simulation fails when first-contact guidance loses the read-only flow,
-strict input hints, or relation-filter enum guidance.
+agent simulation fails when the instructions lose the card, the write sequence
+or the guide pointer.
 The verify path also makes runtime negative calls with `list_concepts.lmit`,
 `list_concepts.lmit` plus `list_concepts.summry`,
 `query_ontology.operation="overveiw"`, typoed `maintenance_plan.phases`, and
@@ -2270,8 +2264,8 @@ cannot boot.
 - 25 tools. Added `absorb_document` — converts a CLAUDE.md/AGENTS.md-style markdown file into typed `document`/`role: policy` vault nodes (dry-run by default, `confirm:true` to write), reports architecture/component sections as suggestions only, and flags injection-suspect sections (Tier 1) for exclusion. CLI equivalent: `ontology-atlas absorb`.
 - 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split was 15 read + 8 write in that release.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
-- Current initialize instructions also surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.
-- Current initialize instructions also state that tool schemas are strict, unknown arguments are rejected with a nearest-argument hint, invalid enum values surface a nearest-value hint when possible, row-level repair fields include `rowName` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` / `firstSeenAt`, `add_relations` unknown type row errors include a closest-value hint such as `Did you mean "depends_on"?`, and `add_concepts` duplicate input slugs report `concepts[n] duplicate slug in input batch; first seen at concepts[m]`, so typo and batch repair are explicit at first contact.
+- The `write_safety` guide and tool descriptions surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.
+- Tool schemas are strict and error responses say so: unknown arguments are rejected with a nearest-argument hint, invalid enum values surface a nearest-value hint when possible, row-level repair fields include `rowName` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` / `firstSeenAt`, `add_relations` unknown type row errors include a closest-value hint such as `Did you mean "depends_on"?`, and `add_concepts` duplicate input slugs report `concepts[n] duplicate slug in input batch; first seen at concepts[m]`, so typo and batch repair are explicit at first contact.
 - Runtime `unknown_tool` errors include the closest tool-name hint, such as `Did you mean "list_concepts"?`, plus the allowed tool list.
 - 0.7.0 — 14 tools (8 read + 6 write). Added `rename_concept` and `merge_concepts` (graph-level write — atomic backlink redirect across all referrers).
 - 0.6.0 — 12 tools (8 read + 4 write). Added `query_concepts` (typed filter DSL).

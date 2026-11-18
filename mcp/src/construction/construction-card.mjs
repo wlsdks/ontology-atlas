@@ -17,7 +17,6 @@ export const CONSTRUCTION_CARD_MAX_CHARS = 1940;
 export const CONSTRUCTION_GUIDE_TOPICS = Object.freeze([
   'meta_model',
   'construction',
-  'lifecycle',
   'write_safety',
   'workflows',
   'competency',
@@ -25,12 +24,59 @@ export const CONSTRUCTION_GUIDE_TOPICS = Object.freeze([
 
 export const CONSTRUCTION_CARD_EN = `## Construction card
 
-1. Each \`.md\` with frontmatter \`kind:\` is a node; frontmatter is the graph. You propose, the person decides.
-2. Five authorable kinds: project = the outcome the code exists to create. domain = a stable responsibility boundary, not a folder or team. capability = an observable ability the product performs, with one entry point. element = a distinct implementation role a capability uses, named by role not file. document = narrative describing a concept. Never author \`vault-readme\`. A folder, package, README heading or path is evidence, not a concept.
-3. On every create or patch: a slug under the kind folder (\`domains/x\`, \`capabilities/x\`, \`elements/x\`; project/document at root), flat, never a code path; a definition sentence in the body; \`## Includes\` / \`## Excludes\` bullets stating product boundaries, an Excludes bullet may not be an evidence limit; an \`## Uncertainty\` line naming what you did not read or could not check ("not mentioned in this scan" goes there; a node with no stated unknown claims completeness); for capability/element one \`path:\` naming a FILE (a folder cannot be drift-checked) or an \`elements:\` role; \`why\` on every relation; \`labels\` for every locale the vault uses.
-4. Order: \`connection_info\` → \`list_kinds\` → \`find_evidence\` / \`query_ontology similar_nodes\` before any create → propose in sentences, they approve → \`add_concepts\` in batches of ≤12 with bodies → \`add_relations\` with \`why\` → \`validate_vault\` → \`connect_project_source\` → \`finalize_project_meaning\`. Prefer \`patch_concept\` on a near-twin. Warnings never block a write; each names its repair call.
-5. The bulk \`analyze_repo_structure\` writePlan needs an independent evaluator; with none here, do not fabricate one or stall; build in small reviewed batches.
-6. Long rules on demand: \`connection_info({guide:"<topic>"})\`; topics \`meta_model\`, \`construction\`, \`lifecycle\`, \`write_safety\`, \`workflows\`, \`competency\`.`;
+1. Kinds: project = the outcome the code exists for. domain = a lasting responsibility, not a folder. capability = an ability a user, operator or system observes, verb-first, with its entry file and symbol. element = an implementation role others lean on. document = a narrative. A folder or README heading is evidence, not a concept.
+2. A title is what a teammate says aloud, in words from docs, UI strings or command help; never a path, camelCase, snake_case, extension or Service suffix. First body sentence: 25 words or fewer, no identifier.
+3. First build, breadth before depth: survey with \`analyze_repo_structure\`, outline every unit's main file, list every ability, then read the main flow end to end. Expect one capability per 1,000 source lines (10-30) and 5-15 elements: composition root, each interface with its default, main-flow state, extension seam.
+4. Body under 120 words: definition; what it does and the rule a newcomer asks; \`## Includes\`; \`## Excludes\` (what a neighbour or another system owns); \`## Uncertainty\` (outlined but unread, unopened units, or your choice). Cite \`path\` and symbol, no line ranges or hashes. Unread code is never an Excludes bullet or owner decision.
+5. A depends_on B when changing B can break A as wired by default; an interface's default counts ("unless replaced" in \`why\`). \`why\` states the mechanism, never an approval.
+6. Say the outline briefly, then write it all without waiting: \`add_concepts\` (slugs \`domains/x\`, \`capabilities/x\`, \`elements/x\`, never a code path; one \`path:\` file each) -> \`add_relations\` -> \`validate_vault\` -> \`connect_project_source\` -> \`finalize_project_meaning\`. Ask only what changes which nodes exist; take the default you name and record it in \`## Uncertainty\` as yours.
+7. With existing nodes, search first; prefer \`patch_concept\`. More: \`connection_info({guide:"construction"})\`, \`competency\`, \`meta_model\`, \`write_safety\`.`;
+
+/**
+ * The `construction` guide: the full rules the card abbreviates, at most 3,000
+ * characters. A build is written in one run without waiting for a reply, so
+ * nothing here asks the agent to hold writes for approval.
+ */
+export const CONSTRUCTION_GUIDE_MAX_CHARS = 3000;
+
+export const CONSTRUCTION_GUIDE_EN = `## Construction guide
+
+**Order.** Breadth first, then the main flow, then write everything without waiting. Ask only a question whose answer changes which nodes exist; name your default, continue with it, and record it under \`## Uncertainty\` as yours. Unread code goes under \`## Uncertainty\`, never \`## Excludes\`.
+
+**Names.**
+1. A title is the phrase a teammate says aloud: a capability verb-first ("Issue an invoice"), a domain a noun phrase ("Billing"), an element a role ("Invoice numbering"), a document its own title.
+2. Take words from documents and README headings, glossary terms, interface strings and message catalogues, command help, then test descriptions. An identifier is the last source, translated into words.
+3. Never in a title: a path, an extension, camelCase or snake_case, a class suffix (Service, Manager, Controller, Handler, Util), an abbreviation the material never spells out. The identifier goes in \`## Evidence\`.
+4. The title is in the material's main language; add \`display_<locale>\` for each locale the folder uses.
+5. The first body sentence defines the thing in 25 words or fewer and names no identifier.
+
+**A body.**
+\`\`\`markdown
+Issues one invoice per completed order, for the operator who bills customers.
+
+Numbers come from invoice numbering, so none repeats; a cancelled order gets none.
+
+## Includes
+- Totals, tax lines and the invoice number.
+## Excludes
+- Charging the card: \`capabilities/capture-payment\`.
+## Evidence
+- \`src/billing/invoice.ts\` \`issueInvoice\`
+## Uncertainty
+- Credit notes outlined, body not read.
+\`\`\`
+
+**depends_on.** A depends on B when a change to B's behaviour or contract can break A as the product is wired by default; consumer to provider. One call site or constructor line confirms it. \`why\` examples:
+- Interface default: "each invoice takes its number from the numbering port, the database sequence unless another is injected; \`src/billing/invoice.ts\` \`issueInvoice\`".
+- Composition root: "start-up wires the tax table into invoicing; \`src/main.ts\` \`buildApp\`".
+- Shared state: "refunds read the payment record capture writes; \`src/payments/refund.ts\` \`refund\`".
+Write an edge every node shares (config, logging) once, from the root. \`relates\` is for neighbours with no change impact.
+
+**Elements**, in order until 5 to 15: the composition root; each interface or base class with a default or 2+ implementations (list them); main-flow state holders and engines; a file 3+ capabilities enter; the extension seam and config loader. Not: leaf utilities, constants, off-flow files with fan-in under 2.
+
+**Coverage.** \`domains\` and \`abilities\` are \`answered\` only when node paths touch units holding about 80% of product source lines; else \`partial\`, the \`Gap\` naming the untouched units. \`impact\` is \`answered\` only with one \`depends_on\` per two capabilities.
+
+**A wide parent** is fine. If 3+ children cannot be told apart in a sentence, add one bridge naming their shared behaviour and reparent them onto it; never an empty bucket.`;
 
 /**
  * The layout reminder appended to the finalize_project_meaning refusal, beside
@@ -65,9 +111,9 @@ project node's body. The parser is exact: anything else fails with
 7. An \`answered\` row must not declare a \`Gap\`; a \`partial\` or \`visible-gap\` row
    must. An \`answered\` row must also have witnesses that still resolve against
    the current graph, or finalize refuses and names each witness and why.
-8. An \`Evidence\` value is a repository-relative path, or a pinned citation
-   \`source:<path>#L<start>-L<end>@sha256:<64 hex>\` that counts while the file still
-   has that hash. \`Paths\` takes plain paths only. A path counts once
+8. Write an \`Evidence\` value as a plain repository-relative path. A pinned citation
+   \`source:<path>#L<start>-L<end>@sha256:<64 hex>\` is accepted too, and counts only
+   while the file still has that hash. \`Paths\` takes plain paths only. A path counts once
    \`connect_project_source\` has measured it: after adding one, connect again.
 9. Containment relations use the typed keys the writer stores: project
    \`--domains-->\` domain, domain \`--capabilities-->\` capability, \`--elements-->\`
