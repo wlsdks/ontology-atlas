@@ -139,7 +139,8 @@ it('bounds concurrent metadata reads while keeping every fingerprint entry', asy
     },
   } as unknown as FileSystemDirectoryHandle;
   const fingerprint = await computeLocalVaultFingerprint(root);
-  expect(fingerprint.split('\n')).toHaveLength(192);
+  // The fingerprint leads with the number of stamps it holds.
+  expect(fingerprint.split('.')[0]).toBe('192');
   expect(peak).toBeGreaterThan(1);
   expect(peak).toBeLessThanOrEqual(64);
 });

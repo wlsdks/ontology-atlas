@@ -30,8 +30,12 @@ const SOURCE_EXT =
 /** Only names that never hold documents; `build`, `dist` and `out` can, so do not extend. */
 const PRUNE_BY_NAME = new Set(['node_modules']);
 
+export function isPrunedDirName(name: string): boolean {
+  return PRUNE_BY_NAME.has(name);
+}
+
 /** A directory that declares itself a cache (bford.info/cachedir) is pruned whole. */
-const CACHE_DIR_TAG = 'CACHEDIR.TAG';
+export const CACHE_DIR_TAG = 'CACHEDIR.TAG';
 
 /** Far above any document folder; past it the walk truncates and the manifest says so. */
 export const VAULT_WALK_MAX_ENTRIES = 100000;
@@ -58,7 +62,7 @@ async function listDirectory(directory: FileSystemDirectoryHandle): Promise<Dire
   return children;
 }
 
-function walkedKind(relative: string, name: string): WalkEntry['kind'] | 'code' | null {
+export function walkedKind(relative: string, name: string): WalkEntry['kind'] | 'code' | null {
   if (isVaultSourcePath(relative)) return 'source';
   if (name.endsWith('.md')) return 'md';
   if (IMAGE_EXT.test(name)) return 'image';

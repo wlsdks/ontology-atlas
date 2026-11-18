@@ -396,6 +396,15 @@ class TauriDirectoryHandle {
     ) as unknown as FileSystemDirectoryHandle;
   }
 
+  /** A file below this folder by path, without the per-folder existence checks `getFileHandle` makes. */
+  fileAt(relativePath: string): FileSystemFileHandle {
+    return new TauriFileHandle(
+      this.rootPath,
+      joinRelative(this.relativePath, relativePath),
+      this.invoke,
+    ) as unknown as FileSystemFileHandle;
+  }
+
   async removeEntry(name: string, options: { recursive?: boolean } = {}): Promise<void> {
     await this.invoke('remove_vault_entry', {
       rootPath: this.rootPath,
@@ -476,6 +485,17 @@ export async function tauriVaultPathExists(
     relativePath: '',
     kind,
   });
+}
+
+/**
+ * A handle for a path the native watcher reported, in one step instead of one existence round trip
+ * per folder; `null` for a web handle. Reads and writes through it still pass Rust's scope checks.
+ */
+export function tauriVaultFileHandleAt(
+  root: FileSystemDirectoryHandle,
+  relativePath: string,
+): FileSystemFileHandle | null {
+  return root instanceof TauriDirectoryHandle ? root.fileAt(relativePath) : null;
 }
 
 export function getTauriVaultRootPath(handle: FileSystemDirectoryHandle): string | undefined {
