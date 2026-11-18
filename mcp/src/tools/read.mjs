@@ -7,13 +7,10 @@
 import {
   COMPETENCY_ANSWERS_GUIDE_EN,
   CONSTRUCTION_CARD_EN,
+  CONSTRUCTION_GUIDE_EN,
   CONSTRUCTION_GUIDE_TOPICS,
 } from '../construction/construction-card.mjs';
-import { CONSTRUCTION_LIFECYCLE_EN } from '../construction/construction-lifecycle.mjs';
-import {
-  CONSTRUCTION_RULES_EN,
-  META_MODEL_RULES_EN,
-} from '../construction/construction-rules.mjs';
+import { META_MODEL_RULES_EN } from '../construction/construction-rules.mjs';
 import { scoreEvidence } from '../evidence-search/evidence-rank.mjs';
 import {
   buildFindEvidenceZeroHitsGrowthHint,
@@ -472,8 +469,7 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
  */
 const CONSTRUCTION_GUIDE_TEXT = {
   meta_model: META_MODEL_RULES_EN,
-  construction: CONSTRUCTION_RULES_EN,
-  lifecycle: CONSTRUCTION_LIFECYCLE_EN,
+  construction: CONSTRUCTION_GUIDE_EN,
   write_safety: WRITE_SAFETY_SECTION_EN,
   workflows: WORKFLOWS_SECTION_EN,
   competency: COMPETENCY_ANSWERS_GUIDE_EN,

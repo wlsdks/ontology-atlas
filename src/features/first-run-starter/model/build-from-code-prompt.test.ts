@@ -3,51 +3,44 @@ import { describe, expect, it } from 'vitest';
 import { buildFromCodePrompt } from './build-from-code-prompt';
 
 /**
- * The door's prompt is the person's first turn, so its order is the build order. The write step
- * names the batch path that finishes in one app session, and asks for what could not be checked.
+ * The door's prompt is the person's first turn, so its order is the build order: breadth, the
+ * main flow, the outline, then every write in the same run.
  */
-describe('build-from-code prompt step order', () => {
+describe('build-from-code prompt', () => {
   const prompt = buildFromCodePrompt('/Users/dana/my-product', null);
   // The prompt is wrapped for the transcript, so the sentence is asserted, not where it wraps.
   const flat = prompt.replace(/\s+/g, ' ');
 
-  it('orders the three steps as inspect, propose in sentences, then write after approval', () => {
-    const survey = prompt.indexOf('1. Survey the code');
-    const propose = prompt.indexOf('2. Tell me, in plain sentences');
-    const write = prompt.indexOf('3. After I say yes');
-    expect(survey).toBeGreaterThan(-1);
-    expect(propose).toBeGreaterThan(survey);
-    expect(write).toBeGreaterThan(propose);
+  it('orders breadth, main flow, outline and writing', () => {
+    const steps = ['1. Breadth.', '2. Main flow.', '3. Tell me the outline', '4. Write all of it'].map(
+      (step) => prompt.indexOf(step),
+    );
+    expect(steps.every((index) => index > -1)).toBe(true);
+    expect([...steps].sort((a, b) => a - b)).toEqual(steps);
   });
 
-  it('asks for a definition, boundary and evidence file per candidate in the propose step', () => {
-    expect(flat).toContain('a single sentence defining it');
-    expect(flat).toContain('what it includes and what it excludes');
-    expect(flat).toContain('the file that proves it');
+  it('outlines every unit before reading a body', () => {
+    expect(flat).toContain('outline the main file of every source unit it lists');
+    expect(flat).toContain('before reading any function body');
+    expect(flat).toContain('fewer than ten means you stopped early');
   });
 
-  it('names small reviewed batches and the three follow-up calls in the write step', () => {
-    expect(flat).toContain('small reviewed batches');
-    // Each write still carries what makes it judgeable later.
-    expect(flat).toContain('each node carrying its definition, its boundary and what you could not check in the body');
-    expect(flat).toContain('each relation carrying a `why`');
+  it('writes in the same run, carrying a default instead of waiting', () => {
+    expect(flat).toContain('say what you will do by default, and carry on with that default without waiting for me');
+    expect(prompt).not.toMatch(/After I say yes|wait for my|before I review/i);
     for (const tool of ['`validate_vault`', '`connect_project_source`', '`finalize_project_meaning`']) {
       expect(flat).toContain(tool);
     }
   });
 
-  it('names only the needed inspection tools and not the bulk approval path', () => {
-    expect(flat).toContain('`analyze_repo_structure`');
-    expect(flat).toContain('`infer_imports`');
-    // The bulk qualification lifecycle cannot complete in an app session.
-    expect(prompt).not.toContain('canWrite');
-    expect(prompt).not.toContain('writePlan');
-    expect(prompt).not.toContain('qualification');
+  it('asks for names a person says, never an identifier', () => {
+    expect(flat).toContain('the way a teammate would say it aloud');
+    expect(flat).toContain('no file path, camelCase, snake_case, file extension or class suffix in a title');
+    expect(flat).toContain('a first sentence of 25 words or fewer');
   });
 
-  it('asks to choose evidence rather than count and to ask on overlap', () => {
-    expect(flat).toContain('Prefer few, well-evidenced concepts over many thin ones.');
-    expect(flat).toContain('ask me instead of making both');
+  it('does not send the agent to the bulk evaluator route', () => {
+    expect(prompt).not.toMatch(/canWrite|writePlan|qualification/);
   });
 
   it('inspects the project that contains the vault rather than the vault', () => {

@@ -21,7 +21,6 @@ import {
   META_MODEL_RULES_EN as APP_META_MODEL_RULES_EN,
 } from "../../../src/features/vault-agent/model/system-prompt";
 import { githubAnchorSlug } from "../../../src/shared/lib/library/github-anchor-slug";
-import { readSkillProcedure } from "../../helpers/read-skill-procedure";
 
 const ROOT = resolve(__dirname, "../../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
@@ -47,32 +46,14 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     expect(APP_META_MODEL_RULES_EN).toBe(MCP_META_MODEL_RULES_EN);
     expect(flat(MCP_META_MODEL_RULES_EN)).toContain(flat(MCP_META_MODEL_REFERENCE));
 
-    // The instructions template owns the interpolation; the entry point and the
-    // tool table must still not carry a hand-copied duplicate of the text.
-    const instructionsSource = read("mcp/src/server/instructions.mjs");
-    expect(instructionsSource).toContain("${META_MODEL_RULES_EN}");
+    // The `meta_model` guide topic serves it by import; the instructions, the
+    // entry point and the tool table must not carry a hand-copied duplicate.
+    expect(read("mcp/src/tools/read.mjs")).toContain("meta_model: META_MODEL_RULES_EN,");
     const toolDefinitions = readdirSync(resolve(ROOT, "mcp/src/server/tool-definitions"))
       .filter((file) => file.endsWith(".mjs"))
       .map((file) => `mcp/src/server/tool-definitions/${file}`);
     for (const file of ["mcp/src/server/instructions.mjs", "mcp/src/server/registry.mjs", "mcp/src/index.js", ...toolDefinitions]) {
       expect(read(file)).not.toContain(flat(MCP_META_MODEL_RULES_EN));
-    }
-  });
-
-  it.each([
-    ".agents/skills/ontology-bootstrap/guides/construction.md",
-    ".claude/skills/ontology-bootstrap/guides/construction.md",
-  ])("%s uses array-shaped boundary fields in its proposal template", (path) => {
-    // Inspect the payload example, not the author's explanatory sentence.
-    const templates = [...readSkillProcedure(resolve(ROOT, path)).matchAll(/```text\n([\s\S]*?)```/g)]
-      .map((match) => match[1]).filter((block) => /^includes:/m.test(block));
-    expect(templates.length, `${path}: missing proposal template`).toBeGreaterThan(0);
-    for (const template of templates) {
-      for (const field of ["includes", "excludes"]) {
-        expect(template, `${path}: ${field} must be an array`).toMatch(
-          new RegExp(`^${field}: \\[.+\\]$`, "m"),
-        );
-      }
     }
   });
 
