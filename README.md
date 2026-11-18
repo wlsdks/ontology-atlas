@@ -168,6 +168,7 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
 | `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |
 | `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server releases memory across repeated calls; about a minute |
+| `pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b` | CPU of each MCP read's first and second call, and resident memory after 20 calls, on a generated vault (`a`: every page a node; `b`: a few thousand nodes among plain pages); `--server=<binary>` measures the compiled server, `--check` fails above 600 ms or 1 GiB |
 | `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Merge a pull request: on its own CI when its branch contains main and no train overlaps, otherwise on a train; and show the queue. While `main`'s full browser run is red it names the failing specs and still merges |
