@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useDataSourceMode } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
+import { useStaticVaultSource, useStaticVaultStatus } from '@/entities/vault-session';
 import { deriveProjectsFromVault } from '@/entities/docs-vault';
 import type { Project } from '@/entities/project';
 
@@ -18,8 +18,9 @@ export interface UseProjectsState {
 export function useProjects(): UseProjectsState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
-  // A module constant, so the reference is stable in dependency arrays.
+  // Stable between renders, so it is safe in dependency arrays.
   const staticSource = useStaticVaultSource();
+  const staticStatus = useStaticVaultStatus();
 
   const localProjects = useMemo(() => {
     if (mode !== 'local' || !vault.manifest) return [];
@@ -41,7 +42,8 @@ export function useProjects(): UseProjectsState {
   }
   return {
     projects: staticProjects,
-    loaded: true,
+    // A sample still on its way is not an empty list: a screen that reads `loaded` must not call the project missing.
+    loaded: staticStatus !== 'loading',
     error: null,
     mode,
   };

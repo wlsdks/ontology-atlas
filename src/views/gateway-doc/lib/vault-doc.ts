@@ -1,38 +1,8 @@
-import { resolveStaticVaultSource } from '@/entities/docs-vault';
-import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /**
  * The gateway's reading pages render vault markdown verbatim: `docs/guide/` and
  * `docs/CHANGELOG.md` are reviewed in the repository, and a screen-only copy would drift.
  */
-
-/**
- * Vault slug to raw markdown, or `null`. `'dogfood'` is pinned: the guide and changelog are this
- * product's documents, not the chosen sample's. The resolver is still used (importing the raw JSON
- * would break its contract); only the argument is fixed.
- */
-export function readVaultDoc(slug: string): string | null {
-  const { content, contentPreviews } = resolveStaticVaultSource('dogfood');
-  const doc = content[slug];
-  if (typeof doc === 'string') return withoutFrontmatter(doc);
-  // A document not fully bundled (CHANGELOG) is read from its truncated preview; the folded count comes from `readVaultDocOmittedSections`.
-  const preview = contentPreviews?.[slug];
-  return typeof preview?.body === 'string' ? preview.body : null;
-}
-
-/** Frontmatter is metadata for the Library and `pnpm docs:meta`; the public site renders the body only. */
-function withoutFrontmatter(raw: string): string {
-  return raw.startsWith('---') ? parseFrontmatter(raw).body.replace(/^(\r?\n)+/, '') : raw;
-}
-
-/**
- * Sections already folded at bundle time in `readVaultDoc(slug)`'s body. `GatewayDocPage` adds its
- * own fold to this, or the bundle's truncation would go unstated.
- */
-export function readVaultDocOmittedSections(slug: string): number {
-  const { contentPreviews } = resolveStaticVaultSource('dogfood');
-  return contentPreviews?.[slug]?.omittedSections ?? 0;
-}
 
 export interface TrimmedDoc {
   body: string;

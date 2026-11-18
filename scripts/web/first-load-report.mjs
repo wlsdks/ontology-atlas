@@ -58,6 +58,24 @@ export function findJsonParseModules(code, minBytes) {
   return found;
 }
 
+/** A chunk is shared by many routes, so it is read, compressed and scanned once per run. */
+const chunkCache = new Map();
+
+function analyzeChunk(file, jsonLimitBytes) {
+  const key = `${file}:${jsonLimitBytes}`;
+  let found = chunkCache.get(key);
+  if (!found) {
+    const buffer = readFileSync(file);
+    found = {
+      bytes: buffer.length,
+      brotli: brotliCompressSync(buffer).length,
+      jsonModules: findJsonParseModules(buffer.toString('utf8'), jsonLimitBytes),
+    };
+    chunkCache.set(key, found);
+  }
+  return found;
+}
+
 export function reportRoute(outDir, route, { jsonLimitBytes }) {
   const htmlPath = join(outDir, route, 'index.html');
   if (!existsSync(htmlPath)) throw new Error(`no exported page at ${htmlPath}`);
@@ -65,9 +83,7 @@ export function reportRoute(outDir, route, { jsonLimitBytes }) {
   for (const path of firstLoadChunkPaths(readFileSync(htmlPath, 'utf8'))) {
     const file = join(outDir, path);
     if (!existsSync(file)) continue;
-    const buffer = readFileSync(file);
-    const jsonModules = findJsonParseModules(buffer.toString('utf8'), jsonLimitBytes);
-    chunks.push({ path, bytes: buffer.length, brotli: brotliCompressSync(buffer).length, jsonModules });
+    chunks.push({ path, ...analyzeChunk(file, jsonLimitBytes) });
   }
   return {
     route,

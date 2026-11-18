@@ -5,12 +5,21 @@ export type {
   VaultSourceFile,
   VaultTreeNode,
 } from './model/types';
-export { default as vaultManifest } from './data/manifest.json';
-// The storefront sample, built by `scripts/docs-vault/build-docs-vault.mjs` from `samples/storefront/`.
+// The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs` from `docs/ontology/`
+// and `samples/storefront/`. The browser reads them through the loader; only build-time callers
+// and `/download` take the synchronous resolver, whose static JSON imports a screen must not reach.
 export {
   resolveStaticVaultSource,
   type StaticVaultSource,
 } from './lib/bundled-vault/static-vault-source';
+export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
+export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
+export {
+  emptyStaticVaultSource,
+  loadStaticVaultSource,
+  peekStaticVaultSource,
+  subscribeStaticVaultSource,
+} from './lib/bundled-vault/load-static-vault-source';
 export {
   loadStaticVaultHeadings,
   type StaticVaultHeadings,

@@ -5,7 +5,6 @@ import { useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
 import {
   deriveOntologyFromVault,
   loadStaticVaultHeadings,
-  resolveStaticVaultSource,
   type StaticVaultHeadings,
   type VaultManifest,
 } from '@/entities/docs-vault';
@@ -30,11 +29,8 @@ export function useVaultManifest({
   documentScope: 'all' | 'ontology';
 }) {
   const localVault = useLocalVault();
-  // The static fallback follows the sample the user chose, matching the map.
-  const preferredStaticVault = useStaticVaultSource();
-  const staticVault = staticSampleOverride
-    ? resolveStaticVaultSource(staticSampleOverride)
-    : preferredStaticVault;
+  // The static fallback follows the sample the user chose, matching the map; an override pins one.
+  const staticVault = useStaticVaultSource(staticSampleOverride ?? undefined);
   const manifest: VaultManifest =
     isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest

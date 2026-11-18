@@ -3,12 +3,11 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   deriveProjectsFromVault,
-  vaultManifest as staticVaultManifestRaw,
-  type VaultManifest,
+  resolveStaticVaultSource,
 } from "@/entities/docs-vault";
 
 // Reads the same vault source `generateStaticParams` builds from, so the guard checks real output.
-const SEO_PROJECTS = deriveProjectsFromVault(staticVaultManifestRaw as VaultManifest);
+const SEO_PROJECTS = deriveProjectsFromVault(resolveStaticVaultSource('dogfood').manifest);
 
 // Each out/project/{slug}/index.html needs a title starting with the name, og:title, og:description,
 // and canonical and og:url ending in /project/{slug}/. Skipped without out/.
