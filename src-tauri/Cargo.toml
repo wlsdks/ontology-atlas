@@ -14,16 +14,19 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
-tauri = { version = "2", features = ["test"] }
+tauri = { version = "2.11.6", features = ["test"] }
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
+# 2.11.6 is the floor: earlier 2.x let another webview read queued channel payloads
+# (GHSA-w28w-mhc8-qvjv).
+tauri = { version = "2.11.6", features = ["tray-icon"] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
 uuid = { version = "1", features = ["v4"] }
-# serde_json · sha2 · chrono are transitive deps already pulled by tauri — declaring
-# direct dependencies adds zero new supply-chain surface (same rationale as objc2). One line
-# of audit log used only for serialization, payload hash anchor, and ISO-8601 timestamps.
+# serde_json and sha2 are transitive deps already pulled by tauri — declaring them adds zero
+# new supply-chain surface (same rationale as objc2). chrono is ours alone and RustSec marks it
+# unmaintained (RUSTSEC-2026-0543); `time` is already in the graph through tauri if it moves.
+# Used for serialization, payload hash anchors, and RFC 3339 timestamps.
 serde_json = "1"
 sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
@@ -78,8 +81,9 @@ keyring = { version = "3", features = ["apple-native"] }
 keyring = { version = "3", features = ["windows-native"] }
 
 # Cargo's release defaults leave 16 codegen units, no cross-crate inlining, and full debug symbols.
-# Measured on this app: these three take the Rust half of the binary from 13.4 MB to 8.3 MB, with no
-# change to what the code means.
+# Measured on this app: these three take the Rust half of the binary from 13.4 MB to 8.3 MB under fat
+# LTO, with no change to what the code means. Thin LTO adds 0.75 MB (1.7% of the binary), times the
+# same on the hashing and walking paths, and shortens the release build.
 #
 # Tauri's size guidance names two more that are deliberately absent.
 # `opt-level = "s"` saves a further 1.5 MB by optimising for size over speed; the Rust half of this
@@ -94,7 +98,7 @@ keyring = { version = "3", features = ["windows-native"] }
 # source files and lines.
 [profile.release]
 codegen-units = 1
-lto = true
+lto = "thin"
 debug = "line-tables-only"
 split-debuginfo = "packed"
 strip = true

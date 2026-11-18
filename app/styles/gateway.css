@@ -366,6 +366,14 @@
   }
 }
 
+/* A phone close-up is a crop of the app window, so its cut edges fade instead of ending on a line. */
+.harness-phone-shots {
+  mask-image:
+    linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, black 6%, black 84%, transparent 100%);
+  mask-composite: intersect;
+}
+
 /* On a phone every pixel of the recording counts more than the gutter: the window keeps 8px a side. */
 @media (width < 40rem) {
   .gateway-hero-window {

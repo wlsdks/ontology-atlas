@@ -196,6 +196,7 @@
     "pr:ci": "node scripts/landing/pr-land.mjs --ci",
     "bundle:plan": "node scripts/landing/bundle-branches.mjs plan",
     "e2e:durations": "node scripts/ci/refresh-playwright-durations.mjs",
+    "unit:durations": "node scripts/ci/refresh-vitest-durations.mjs",
     "e2e:sleeps:check": "node scripts/quality/check-e2e-sleeps.mjs",
     "test:e2e:sleeps": "node --test scripts/quality/check-e2e-sleeps.test.mjs",
     "bundle:prune": "node scripts/landing/bundle-branches.mjs prune",
@@ -254,10 +255,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",
-    "@radix-ui/react-dialog": "^1.1.23",
-    "@radix-ui/react-tooltip": "^1.2.16",
-    "@radix-ui/react-visually-hidden": "^1.2.11",
-    "@tanstack/react-virtual": "^3.14.8",
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-tooltip": "^1.4.1",
+    "@radix-ui/react-visually-hidden": "^1.2.13",
+    "@tanstack/react-virtual": "^3.14.26",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.1",
@@ -270,21 +271,21 @@
     "jsonc-parser": "3.3.1",
     "lucide-react": "^1.27.0",
     "next": "16.4.6",
-    "next-intl": "^4.13.4",
+    "next-intl": "^4.15.1",
     "pretendard": "^1.3.9",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "react-hook-form": "^7.83.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-hook-form": "^7.92.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "11.0.0",
-    "smol-toml": "1.9.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
+    "smol-toml": "1.9.1",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.7.0",
     "three": "0.187.0",
     "unified": "11.0.5",
     "usehooks-ts": "^3.1.1",
-    "zod": "^4.6.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@formatjs/icu-messageformat-parser": "3.5.15",
@@ -294,8 +295,8 @@
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26.1.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/three": "0.187.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-react": "^6.0.4",
@@ -317,7 +318,7 @@
       "unrs-resolver"
     ],
     "auditConfig": {
-      "//": "GHSA-fc5q-39xc-vjpf (picomatch ReDoS, no patched release): reached only through next-intl > @parcel/watcher, which compiles the ignore globs its caller passes while watching source files in development. No pattern comes from outside the repository and the module is not in the exported app. Remove when picomatch ships a fix.",
+      "//": "GHSA-fc5q-39xc-vjpf (picomatch ReDoS, high, every release through 4.0.7, no patched release): reached through development tools only: next-intl > @parcel/watcher while watching source in development, and vite, vitest, knip, eslint-config-next and eslint-plugin-boundaries matching file globs. Every pattern comes from this repository and the module is not in the exported app. Remove when picomatch ships a fix.",
       "ignoreGhsas": [
         "GHSA-fc5q-39xc-vjpf"
       ]

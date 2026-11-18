@@ -5,6 +5,9 @@ provably has it. This is the order that keeps both promises cheap.
 
 ## 1. Read the slice; brief one reviewer when one is due
 
+Start its CI first, so the run is done or nearly done when you merge:
+`pnpm pr:ci <number>`. A fix round's push runs it again by itself.
+
 Read a returned slice yourself against its brief. One reviewer is due, even
 for a change you wrote, when the change is one-way (the `AGENTS.md` workflow
 table), adds or removes a primary surface or changes navigation or grouping,
@@ -54,10 +57,12 @@ lettered amendments at the top of the shared brief before the rest start
 One branch, from its worktree:
 
     pnpm conflicts:scan -- --head=<branch>
-    pnpm pr:land <number>    # in the background; exit 0 merged, 1 ejected or closed
+    pnpm pr:land <number>    # in the background; exit 0 merged, 1 red, ejected or closed
 
-The merge run waits and reports. Do not poll GitHub in a loop: every merging
-shares one API quota. `pnpm pr:queue` once shows the queue and the train.
+A branch that contains today's `main` and overlaps no train merges as soon as
+its own CI is green; the rest ride a train. The merge run waits and reports. Do not poll
+GitHub in a loop: every merging shares one API quota. `pnpm pr:queue` once
+shows the queue and the train.
 
 - **Refused or ejected on a conflict**: in the branch worktree run
   `git fetch origin main` and `git merge origin/main`. Resolve by intent, never
@@ -66,19 +71,23 @@ shares one API quota. `pnpm pr:queue` once shows the queue and the train.
   wording where it still fits; a hunk where both sides changed behaviour goes
   back to the author. Rerun the slice's acceptance and
   `pnpm checks:changed -- --run`, push, and run `pnpm pr:land <number>` again.
-- **Ejected red**: read the failing context and its run. A context known to
-  flake gets one more attempt with `--flaky=<context>`; any other failure goes
-  to a debugging agent with the run URL and the ejection comment.
+- **Red on its own CI** (nothing was queued) or **ejected red**: `pnpm pr:land`
+  already reran only the failed jobs once on the same head, so this is red
+  twice. Read the failing context and its run. A context known to flake gets
+  one more attempt on a train with `--flaky=<context>`; any other failure goes
+  to a debugging agent with the run URL and what `pnpm pr:land` printed or the
+  ejection comment.
 
 Several branches ([bundle guide](guides/bundle.md)): `pnpm bundle:plan -- <branches or --match=<glob>>` reports
 each as `empty`, `contained` or `pending`, the files two branches share, and
 the trial-merge conflicts. Select only branches you created.
 
-- **The train**, the default when each branch stands alone and the trial
-  merge is clean: each branch pushed with an open draft (the author's, when
-  its brief said so); in each run `pnpm conflicts:scan` and
-  `pnpm pr:land <number> --no-wait`; then run `pnpm pr:land --conduct`, or
-  keep one merging waiting. `pnpm pr:land --plan <n...>` is the dry run.
+- **Separate merges**, the default when each branch stands alone and the
+  trial merge is clean: each branch pushed with an open draft (the author's,
+  when its brief said so); in each run `pnpm conflicts:scan`, then
+  `pnpm pr:land <number>` in the background. Their CI runs side by side and
+  each merges on its own; overlapping ones ride a train by themselves.
+  `pnpm pr:land --plan <n...>` is the dry run.
 - **One integration branch**, when the trial merge conflicts, a shared file
   needs a reading neither branch can do alone, or one slice does not build
   without another: in a clean worktree,
