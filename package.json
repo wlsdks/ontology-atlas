@@ -315,6 +315,12 @@
       "@swc/core",
       "unrs-resolver"
     ],
+    "auditConfig": {
+      "//": "GHSA-fc5q-39xc-vjpf (picomatch ReDoS, no patched release): reached only through next-intl > @parcel/watcher, which compiles the ignore globs its caller passes while watching source files in development. No pattern comes from outside the repository and the module is not in the exported app. Remove when picomatch ships a fix.",
+      "ignoreGhsas": [
+        "GHSA-fc5q-39xc-vjpf"
+      ]
+    },
     "//": "Security floors for transitive dependencies whose parents still accept vulnerable versions, including source-map-js (GHSA-68fv-2mgg-jv7q). Remove each floor when every parent range excludes the vulnerable versions.",
     "overrides": {
       "brace-expansion@<1.1.21": "1.1.21",
