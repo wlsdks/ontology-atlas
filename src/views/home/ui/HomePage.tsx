@@ -2,6 +2,7 @@
 import type { VaultAgentPrefill } from "../model/agent/agent-chat-door";
 import { useTopologyGrayArea } from "../model/gray-area/use-topology-gray-area";
 import { useTopologyAgentActivity } from "../model/agent/use-topology-agent-activity";
+import { useChangedSourceConcepts } from "../model/use-changed-source-concepts";
 import { useTopologyAgentOrchestration } from "../model/agent/use-topology-agent-orchestration";
 import { useTopologyAnalysisReview } from "../model/agent/use-topology-analysis-review";
 import { useTopologyAssetPreload } from "../model/map-canvas/use-topology-asset-preload";
@@ -421,7 +422,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const acpRuntimeController = useAcpRuntimeController(setAcpChatOpen, topologyVaultReadModel.gitVaultPath);
   const { chatWidth, acpRuntime } = acpRuntimeController;
   // Derived from this folder's state here, so the chat panel needs no `LocalVaultProvider`.
-  const chatSuggestions = useChatSuggestions(projectSourceReadiness.state);
+  const changedSourceConcepts = useChangedSourceConcepts(topologyVaultReadModel.ontologyInsight?.nodes);
+  const chatSuggestions = useChatSuggestions(projectSourceReadiness.state, changedSourceConcepts);
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   const topologyAgentActivity = useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeController, topologyAuthoring });
 

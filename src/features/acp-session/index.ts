@@ -5,7 +5,7 @@ export { vaultMcpServers, vaultSelfReadSlot, VAULT_MCP_SERVER_NAME } from "./mod
 export { connectorAcpServers } from "./model/runtime-wiring/connector-servers";
 export { useChatSuggestions } from "./model/chat-suggestions/use-chat-suggestions";
 export type { ChatSuggestion } from "./model/chat-suggestions/chat-suggestions";
-export { subjectSuggestions } from "./model/chat-suggestions/chat-suggestions";
+export { isPressableSuggestion, isSendableSuggestion, subjectSuggestions } from "./model/chat-suggestions/chat-suggestions";
 export { useAcpSession } from "./model/use-acp-session";
 export type { InvestigationSendGuard } from './model/investigation/guard';
 export type { AcpEvent, PendingPermission } from "./model/use-acp-session";

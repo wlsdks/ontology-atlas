@@ -57,10 +57,7 @@ export {
   detectMeaningGaps,
   type ConceptDocFacts,
 } from "./lib/meaning-gaps";
-export {
-  capabilitiesWithoutImplementationEvidence,
-  computeVaultHealth,
-} from "./lib/vault-health";
+export { computeVaultHealth } from "./lib/vault-health";
 export type { VaultHealthResult } from "./lib/vault-health";
 export {
   isContainmentRelation,

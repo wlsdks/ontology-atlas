@@ -21,7 +21,10 @@ interface TranscriptOffersProps {
   presentationOfferRef: RefObject<HTMLButtonElement | null>;
   showPostTurnSuggestions: boolean;
   postTurnSuggestionsHeld: readonly ChatSuggestion[];
+  canSend: boolean;
   onChooseSuggestion: (suggestion: ChatSuggestion) => void;
+  onDoneWithSuggestions: () => void;
+  onEscapeSuggestions: () => void;
 }
 
 export function TranscriptOffers({
@@ -31,7 +34,10 @@ export function TranscriptOffers({
   presentationOfferRef,
   showPostTurnSuggestions,
   postTurnSuggestionsHeld,
+  canSend,
   onChooseSuggestion,
+  onDoneWithSuggestions,
+  onEscapeSuggestions,
 }: TranscriptOffersProps) {
   const { presentationTrace, presentationBlocked, presentationVisible, heldPresentationTrace, openPresentation } = presentation;
   return (
@@ -94,20 +100,19 @@ export function TranscriptOffers({
         as="section"
         open={showPostTurnSuggestions}
         origin="top center"
-        role="group"
-        aria-label={t('suggest.followUpHeading')}
         data-testid="acp-chat-post-turn-suggestions"
         className="mt-1 border-t border-[color:var(--color-divider)] pt-3"
       >
         <SuggestionRows
+          t={t}
           heading={t('suggest.followUpHeading')}
           testId="acp-chat-post-turn-suggestion-rows"
           centered={false}
           items={postTurnSuggestionsHeld}
-          labelFor={(suggestion) =>
-            t(`suggest.${suggestion.kind}.label`, suggestion.params)
-          }
+          canSend={canSend}
           onSelect={onChooseSuggestion}
+          onDone={onDoneWithSuggestions}
+          onEscape={onEscapeSuggestions}
         />
       </Surface>
     </>
