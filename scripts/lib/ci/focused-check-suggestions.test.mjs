@@ -133,6 +133,8 @@ describe('focused check suggestions', () => {
       'pnpm gateway:specimen:check',
       'pnpm test:run tests/contract/copy/em-dash-ratchet.contract.test.ts',
       'pnpm test:run tests/contract/vault-data/vault-section-shape.contract.test.ts',
+      // Two MCP tests read the dogfood vault itself: the `path:` drift test and the project receipt.
+      'pnpm exec node --test mcp/src/drift/detect-drift.test.mjs mcp/src/project-meaning/project-meaning-receipt.test.mjs',
     ]);
   });
 
