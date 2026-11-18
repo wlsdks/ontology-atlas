@@ -3512,6 +3512,60 @@ test('A README heading no code answers to is neither a domain nor a parent for u
   }
 });
 
+test('A README heading stays a domain when an ability the prose states and the code implements answers to it', () => {
+  const r = analyzeRepoStructure(join(meaningCorpusRoot, 'collaboration-monorepo'));
+  assert.deepEqual(
+    r.domains.map((domain) => domain.slug),
+    ['domains/coordination', 'domains/access-control'],
+    'no folder is named after either heading; the three abilities under them are the witness',
+  );
+});
+
+test('An ability tied to a heading by one shared word does not keep the heading as a domain', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'http-kit' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Http Kit\n\nA promise based HTTP client for the browser and node.\n\n## Pull Requests\n\nSend them.\n',
+    );
+    mkdirSync(join(r, 'lib/adapters'), { recursive: true });
+    writeFileSync(join(r, 'lib/adapters/http.js'), 'export const adapter = 1;\n');
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(r.domains, []);
+    assert.deepEqual(
+      r.meaningGate.proposedBusinessOntology.capabilities.map((row) => [row.slug, row.domain]),
+      [['capabilities/request-client', undefined]],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('An ability is matched against the headings that survived, so a dropped heading cannot tie the match', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'loader' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Loader\n\nLoader validates the data records before they enter the pipeline.\n\n## Data Pipeline\n\n## Test Data\n',
+    );
+    mkdirSync(join(r, 'src/pipeline'), { recursive: true });
+    writeFileSync(join(r, 'src/pipeline/index.ts'), 'export const pipeline = 1;\n');
+    mkdirSync(join(r, 'src/schema'), { recursive: true });
+    writeFileSync(join(r, 'src/schema/index.ts'), 'export const schema = 1;\n');
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(r.domains.map((row) => row.slug), ['domains/data-pipeline']);
+    const validation = r.meaningGate.proposedBusinessOntology.capabilities
+      .find((row) => row.slug === 'capabilities/data-validation');
+    assert.equal(validation.domain, 'domains/data-pipeline');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Business containment spine — fuzzy domain match connects project → domain → nodes', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'claims' }));
