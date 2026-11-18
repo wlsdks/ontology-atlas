@@ -20,7 +20,7 @@ const AA_TEXT = 4.5;
 
 function themeBlock(): string {
   // The @theme block has no nested braces, so the first `}` ends it.
-  const m = GLOBALS.match(/@theme\s*\{([^}]*)\}/);
+  const m = GLOBALS.match(/@theme(?:\s+static)?\s*\{([^}]*)\}/);
   if (!m) throw new Error('@theme block not found in globals.css');
   return m[1];
 }

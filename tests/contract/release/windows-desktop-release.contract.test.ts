@@ -26,7 +26,7 @@ describe('Windows desktop beta release contract', () => {
     expect(pullRequestWorkflow).toContain('pull_request:');
     expect(pullRequestWorkflow).not.toContain('secrets.');
     expect(workflow).toContain('runs-on: windows-2022');
-    expect(workflow).toContain('rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998');
+    expect(workflow).not.toContain('rustsec/audit-check');
     for (const source of [releaseWorkflow, pullRequestWorkflow]) {
       expect(source).toContain(
         'cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429',
@@ -42,7 +42,7 @@ describe('Windows desktop beta release contract', () => {
     expect(workflow).toContain('ontology-atlas-windows-x64');
     expect(workflow).toContain('(Get-Content package.json | ConvertFrom-Json).version');
     expect(releaseWorkflow).toContain(
-      'needs: [admit-release, test-macos, test-windows, build-macos, sign-macos, build-windows, audit-rust]',
+      'needs: [admit-release, test-release-gates, test-macos, test-windows, check-release-credentials, build-macos, sign-macos, build-windows, audit-rust]',
     );
     expect(workflowJob(releaseWorkflow, 'test-windows')).toContain('run: pnpm test:desktop:bridge');
     expect(workflowJob(releaseWorkflow, 'test-windows')).toContain('runs-on: windows-2022');

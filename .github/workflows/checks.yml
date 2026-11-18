@@ -3,12 +3,17 @@
 # seconds. A missing plan is RED. Scheduled/manual runs and planner changes run every
 # command registered in `scripts/ci/classify-change.mjs`.
 #
+# Before merge a train runs what its change can affect plus a fixed core (the security
+# and vault-format contracts); after the merge every push to main runs the full set
+# (`--main-push=full`), so a suite the plan left out turns main red, not the train.
+# A manual run given `compare_to` plans like a pull request against that branch, which
+# is how a planned run is measured without opening one.
+#
 # A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
 # it on a landing train built from today's main, and the train's pull request
 # fires this workflow **once**, on exactly the tree that is about to land. Owner's shape, 2026-09-12: most
 # changes overlap, so CI on a branch that is not yet the thing being merged is a
-# round paid twice. An identical main tree reuses that successful review;
-# unproven main pushes and scheduled/manual runs still execute their evidence.
+# round paid twice.
 #
 # `merge_group` is wired for the day this repository belongs to an organization
 # and GitHub's own merge queue becomes available. Until then no merge group is
@@ -22,6 +27,12 @@ on:
   schedule:
     - cron: "17 19 * * *"
   workflow_dispatch:
+    inputs:
+      compare_to:
+        description: Branch to compare with; empty runs the full set
+        required: false
+        type: string
+        default: ""
   push:
     branches:
       - main
@@ -29,9 +40,13 @@ on:
 permissions:
   contents: read
 
+# A push to main runs the full set behind the trains' affected checks, so every one must finish.
+# GitHub keeps only one waiting run per group and replaces it, so a push gets a group of its own
+# (its run id) and is never cancelled or dropped. Pull requests and trains still cancel a
+# superseded run.
 concurrency:
-  group: checks-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'change' }}
-  cancel-in-progress: true
+  group: checks-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || github.event_name == 'push' && format('push-{0}', github.run_id) || 'change' }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -57,11 +72,17 @@ jobs:
       unit_sharded: ${{ steps.impact.outputs.unit_sharded }}
       perf: ${{ steps.impact.outputs.perf }}
       mcp: ${{ steps.impact.outputs.mcp }}
+      base: ${{ steps.impact.outputs.base }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          # History without old file contents: the planner reads commits and trees only, and a
+          # full clone spent 22 s of this job's 27 s (22 trains, 2026-11-17/18). Lanes that
+          # install keep the full clone: `prepare` builds the docs vault, whose rename-aware
+          # history pass would fetch old contents one by one (15 s measured).
+          filter: blob:none
 
       - name: Build impact plan
         id: impact
@@ -73,7 +94,8 @@ jobs:
           # A merge group has no base branch ref, and its two SHAs are minted by
           # GitHub, so they are data rather than a string anyone can choose.
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
-        run: node scripts/ci/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"
+          COMPARE_TO: ${{ inputs.compare_to }}
+        run: node scripts/ci/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}" --main-push=full --compare-to="$COMPARE_TO"
 
   gates:
     name: Types · Lint · Docs
@@ -125,7 +147,8 @@ jobs:
         if: env.ACTIVE == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/ci/run-ci-lane.mjs --lane=gates --base="${PUSH_BEFORE:-origin/$BASE_REF}"
+          PLAN_BASE: ${{ needs.plan.outputs.base }}
+        run: node scripts/ci/run-ci-lane.mjs --lane=gates --base="${PLAN_BASE:-${PUSH_BEFORE:-origin/$BASE_REF}}"
 
       - name: Check live catalogue freshness
         if: env.ACTIVE == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
@@ -163,12 +186,18 @@ jobs:
   # measured cost of the widest shard, which is what a matrix's shared ceiling has to
   # cover. The aggregating job below refused to go green for the cancelled shard, which
   # is the whole reason it exists.
+  #
+  # Since 2026-11-18 `--shard` splits by measured seconds (`vitest-shard-sequencer.mjs`), not
+  # file count: the full sweep had measured 271 s, 222 s and 186 s on the three runners.
+  # Every run appends per-file costs to `vitest-timings.jsonl`; `pnpm unit:durations` folds a
+  # full run's files into the weights. `pnpm knip` runs here only in full runs (after a merge,
+  # nightly) or when the analyzer's own scope changed.
   unit:
     name: Unit · Contract ${{ matrix.shard }}/3
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 310s (shard 1 also carries the whole-graph commands)
+    # budget: 310s (a full run's shard 1 also carries the whole-graph commands)
     timeout-minutes: 7
     strategy:
       fail-fast: false
@@ -179,6 +208,10 @@ jobs:
       ACTIVE: ${{ needs.plan.outputs.unit != 'skip' && (needs.plan.outputs.unit_sharded != 'false' || matrix.shard == 1) }}
       NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
+      VITEST_TIMINGS_FILE: ${{ github.workspace }}/vitest-timings.jsonl
+      # Ratchets compare with this commit. On a push to main the merge base with origin/main is
+      # HEAD itself, which would let any count pass, so a push compares with the previous tip.
+      DECISION_BASE_REF: ${{ github.event_name == 'push' && github.event.before || needs.plan.outputs.base }}
     steps:
       - name: Require impact plan
         if: needs.plan.result != 'success'
@@ -217,7 +250,8 @@ jobs:
         if: env.ACTIVE == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/ci/run-ci-lane.mjs --lane=unit --base="${PUSH_BEFORE:-origin/$BASE_REF}" --shard=${{ matrix.shard }}/3
+          PLAN_BASE: ${{ needs.plan.outputs.base }}
+        run: node scripts/ci/run-ci-lane.mjs --lane=unit --base="${PLAN_BASE:-${PUSH_BEFORE:-origin/$BASE_REF}}" --shard=${{ matrix.shard }}/3
 
       - name: Skip unaffected unit setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
@@ -232,6 +266,16 @@ jobs:
           path: ci-lane-report.jsonl
           if-no-files-found: ignore
           retention-days: 90
+
+      - name: Upload per-file timings
+        continue-on-error: true
+        if: always() && env.ACTIVE == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: vitest-timings-${{ matrix.shard }}
+          path: vitest-timings.jsonl
+          if-no-files-found: ignore
+          retention-days: 30
 
   # The measurement files (the Vitest `perf` project), alone on a runner of
   # their own. Their verdicts are cached-against-naive ratios, and only the cached side pays for
@@ -293,7 +337,8 @@ jobs:
         if: env.ACTIVE == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/ci/run-ci-lane.mjs --lane=perf --base="${PUSH_BEFORE:-origin/$BASE_REF}"
+          PLAN_BASE: ${{ needs.plan.outputs.base }}
+        run: node scripts/ci/run-ci-lane.mjs --lane=perf --base="${PLAN_BASE:-${PUSH_BEFORE:-origin/$BASE_REF}}"
 
       - name: Skip unaffected performance setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'

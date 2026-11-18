@@ -250,7 +250,7 @@ export function ArchitectureImportMatrix({
                 onClick={() => onSelectRole(id)}
                 className={cn(
                   'flex min-w-0 max-w-[16rem] flex-col justify-center rounded-micro pl-2 pr-3 text-left transition-colors',
-                  'hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+                  'hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
                   active && 'bg-[color:var(--color-overlay-2)]',
                 )}
               >
@@ -372,7 +372,7 @@ function MatrixCell({
       onClick={onSelect}
       className={cn(
         'relative flex items-center justify-center rounded-micro font-mono text-label tabular-nums transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
         cell.kind === 'violation'
           ? 'border border-[color:var(--color-danger-a50)] bg-[color:var(--color-danger-a10)] font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)] hover:bg-[color:var(--color-danger-a12)]'
           : cell.kind === 'self'

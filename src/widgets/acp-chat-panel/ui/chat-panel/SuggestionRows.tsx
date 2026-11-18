@@ -39,7 +39,7 @@ const KIND_GLYPH: Record<ChatSuggestion['kind'], LucideIcon> = {
 const CHOICE_CLASS = cn(
   CONTROL_DISABLED_CLASS,
   CONTROL_PRESS_TRAVEL,
-  'group/choice relative block w-full rounded-card text-left transition-[translate] focus-visible:outline-none',
+  'group/choice relative block w-full rounded-card text-left transition-[translate] focus-visible:outline-hidden',
 );
 
 /** The visible card. It sits above the panel at rest and lifts on hover and focus, inside the hit box. */

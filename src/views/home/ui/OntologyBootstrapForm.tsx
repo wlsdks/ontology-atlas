@@ -125,7 +125,7 @@ export function OntologyBootstrapForm({
             shape: "icon",
             size: "sm",
             tone: "muted",
-            className: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
+            className: "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
           })}
         >
           <X size={ICON_SIZE.sm} aria-hidden />
@@ -251,7 +251,7 @@ export function OntologyBootstrapForm({
             shape: "pill",
             tone: "accent",
             className:
-              "h-[var(--control-h-lg)] justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body-lg font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
+              "h-[var(--control-h-lg)] justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body-lg font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
           })}
         >
           <MapIcon size={ICON_SIZE.sm} aria-hidden />

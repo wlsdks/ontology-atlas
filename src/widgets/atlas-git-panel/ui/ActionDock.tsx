@@ -280,7 +280,7 @@ export function ActionDock({
           ref={resultRef}
           tabIndex={-1}
           role="status"
-          className="rounded-[var(--radius-chip)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+          className="rounded-[var(--radius-chip)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
           <SnapshotResultLine
             t={t}

@@ -274,14 +274,14 @@ export function TabBar({
              */
             className={
               segmented
-                ? "relative inline-flex min-h-[var(--control-h-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                ? "relative inline-flex min-h-[var(--control-h-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
                   (selfPainted
                     ? "bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
                     : active
                       ? "text-[color:var(--color-text-primary)]"
                       : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]")
                 : vertical
-                ? "atlas-touch-floor relative inline-flex w-full items-center gap-2 rounded-card text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                ? "atlas-touch-floor relative inline-flex w-full items-center gap-2 rounded-card text-left transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
                   (reading ? "min-h-[var(--touch-target-min)] px-4 py-2.5 " : "min-h-[var(--control-h-lg)] px-3 ") +
                   (selfPainted
                     ? "bg-[color:var(--color-indigo-a14)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
@@ -289,7 +289,7 @@ export function TabBar({
                     ? "bg-transparent font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                     : "bg-transparent font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
                 :
-              "atlas-touch-floor atlas-touch-floor-wide relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+              "atlas-touch-floor atlas-touch-floor-wide relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (selfPainted
                 ? "border-b-[color:var(--color-indigo-accent)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                 : active

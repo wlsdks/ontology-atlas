@@ -10,7 +10,7 @@ const buttonVariants = cva(
     'border border-transparent',
     'select-none',
     CONTROL_TRANSITION,
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
+    'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
     CONTROL_PRESS_TRAVEL,
     // Disabled keeps pointer events so hovering still answers "why won't this press".
     'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:bg-inherit disabled:hover:border-inherit',

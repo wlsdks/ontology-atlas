@@ -909,7 +909,7 @@ export function VaultAgentPanel({
                     submit();
                   }
                 }}
-                className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]`}
+                className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]`}
               />
               {/* The mirror that measures growth. **Same class = same typography and same
                   width**, so it wraps identically. Why it is not moved off screen but kept
@@ -943,7 +943,7 @@ export function VaultAgentPanel({
                     size: 'lg',
                     tone: 'strong',
                     className:
-                      'shrink-0 justify-center font-[var(--font-weight-emphasis)] tracking-body hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                      'shrink-0 justify-center font-[var(--font-weight-emphasis)] tracking-body hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                   })}
                 >
                   {t('stop')}

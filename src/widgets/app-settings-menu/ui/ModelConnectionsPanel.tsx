@@ -88,11 +88,11 @@ import type { GlossaryTerm } from '@/shared/config/term-glossary';
 
 /** The quiet trailing control every row uses (check, replace, cancel, disconnect). */
 const ROW_CHIP =
-  'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
+  'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
 /** The indigo emphasis for the one control that commits (save, check an address). */
 const COMMIT_CHIP =
-  'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
+  'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
 type RowKey = `key:${SecretProvider}` | `local:${LocalRunnerId}` | 'jev:key' | 'jev:check';
 

@@ -20,8 +20,10 @@ import { buildToolInventorySection } from "../../../mcp/src/server/tool-inventor
  * lifecycle (4,621), the starting workflows (7,029), write-tool safety (30,024)
  * and the construction rules (35,606) never reached the attached agent at all.
  *
- * So the construction card is not merely first — it has to *end* before that
- * cut, composed exactly the way `mcp/src/server/instance.mjs` composes the
+ * The string is now about 4,700 characters: the card, the tool inventory and
+ * the question-to-tool map, with every long rule moved to a `connection_info`
+ * guide topic. The cut still falls inside it, so the construction card is not
+ * merely first — it has to *end* before that cut, composed exactly the way `mcp/src/server/instance.mjs` composes the
  * string it hands the client. Reordering the sections later is fine; pushing the
  * card past the window is the regression this file exists to catch.
  */
@@ -70,8 +72,16 @@ const REQUIRED_CLAUSES = [
   "connect_project_source",
   "finalize_project_meaning",
   'connection_info({guide',
-  "independent evaluator",
+  "teammate says aloud",
+  "never an instruction or owner approval",
+  "without waiting",
 ];
+
+/**
+ * Everything else lives in a guide topic or a tool description. A ceiling keeps
+ * the string from growing back into the 41,000 characters no host delivered.
+ */
+const INSTRUCTIONS_CEILING = 6000;
 
 /**
  * Numbering defects inside one ordered list block.
@@ -103,8 +113,12 @@ function listNumberingDefects(text: string): string[] {
 
 describe("construction card — it survives a truncating host", () => {
   it("the renderer under test is the real one, not an empty string", () => {
-    expect(RENDERED_INSTRUCTIONS.length).toBeGreaterThan(TRUNCATION_WINDOW * 4);
+    expect(RENDERED_INSTRUCTIONS.length).toBeGreaterThan(TRUNCATION_WINDOW);
     expect(RENDERED_INSTRUCTIONS).toContain("## Tool inventory (");
+  });
+
+  it("the whole string stays under its ceiling", () => {
+    expect(RENDERED_INSTRUCTIONS.length).toBeLessThanOrEqual(INSTRUCTIONS_CEILING);
   });
 
   it("the card fits its own budget", () => {
@@ -136,13 +150,5 @@ describe("instructions — a list a model can follow", () => {
 
   it("the defect detector is not blind — it catches a planted repeat", () => {
     expect(listNumberingDefects("1. first\n2. second\n2. also second\n")).toHaveLength(1);
-  });
-
-  it("no heading letter is used twice", () => {
-    const letters = [...RENDERED_INSTRUCTIONS.matchAll(/^### ([A-Z])\. /gm)].map(
-      (match) => match[1],
-    );
-    expect(letters.length).toBeGreaterThan(0);
-    expect(new Set(letters).size).toBe(letters.length);
   });
 });

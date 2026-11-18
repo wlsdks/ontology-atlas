@@ -214,6 +214,22 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
         continue;
       }
       if (!/pull_request|push:/.test(text)) continue;
+      // The push to main runs the full Checks set after the trains' affected checks, so it must
+      // finish; pull requests and trains still cancel their superseded runs.
+      if (file === "checks.yml") {
+        expect(text, "checks.yml must cancel everything but a push to main").toContain(
+          "cancel-in-progress: ${{ github.event_name != 'push' }}",
+        );
+        expect(text, "checks.yml push must stay limited to main").toMatch(/^  push:\n    branches:\n      - main$/m);
+        // One waiting run per group is all GitHub keeps, so a shared group would drop the middle
+        // of three back-to-back merges: each push gets its own group.
+        const group = /^  group: (.*)$/m.exec(text)?.[1] ?? "";
+        expect(group, "each push to main needs a group of its own").toContain(
+          "github.event_name == 'push' && format('push-{0}', github.run_id)",
+        );
+        expect(group, "pull requests and trains keep the shared per-ref group").toMatch(/\|\| 'change' \}\}$/);
+        continue;
+      }
       expect(text, `${file} has no concurrency group`).toMatch(/^concurrency:/m);
       expect(text, `${file} does not cancel a superseded run`).toContain("cancel-in-progress: true");
     }

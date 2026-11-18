@@ -161,7 +161,7 @@ describe("TopologyEmptyState", () => {
     // Guards the regression where a keyboard user could not see which recovery action had focus.
     for (const link of screen.getAllByRole("link")) {
       expect(link.className).toContain("focus-visible:ring-2");
-      expect(link.className).toContain("focus-visible:outline-none");
+      expect(link.className).toContain("focus-visible:outline-hidden");
     }
   });
 

@@ -54,50 +54,20 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         initialize: {
           ...okShape.initialize,
-          instructions: okShape.initialize.instructions.replace("Tool errors include structuredContent.errorCode values such as unknown_tool, unknown_argument, and invalid_arguments.", "Tool errors are plain text."),
+          instructions: okShape.initialize.instructions.replace("-> `finalize_project_meaning`", ""),
         },
       }),
-      ["initialize: initialize instructions missing structured errorCode guidance"],
+      ["initialize: initialize instructions missing build write sequence"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
         initialize: {
           ...okShape.initialize,
-          instructions: okShape.initialize.instructions.replace("Tool errors include structuredContent repair fields such as receivedTool, receivedArgument, unknownArguments, rowName, receivedField, unknownFields, allowedFields, receivedFields, firstSeenAt, receivedValue, suggestion, allowedTools, allowedArguments, and allowedValues.", "Tool errors are plain text."),
+          instructions: okShape.initialize.instructions.replace("`write_safety`", ""),
         },
       }),
-      ["initialize: initialize instructions missing structured repair fields guidance"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        initialize: {
-          ...okShape.initialize,
-          instructions: okShape.initialize.instructions.replace("rowName, receivedField, unknownFields, allowedFields, receivedFields, firstSeenAt, ", ""),
-        },
-      }),
-      ["initialize: initialize instructions missing structured row field repair guidance"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        initialize: {
-          ...okShape.initialize,
-          instructions: okShape.initialize.instructions.replace('unknown type row errors include a closest-value hint such as Did you mean "depends_on"?', "unknown type row errors fail"),
-        },
-      }),
-      ["initialize: initialize instructions missing batch relation type hint guidance"],
-    );
-    assert.deepEqual(
-      evaluateDogfoodGate({
-        ...okShape,
-        initialize: {
-          ...okShape.initialize,
-          instructions: okShape.initialize.instructions.replace("depends_on, relates, contains, describes", "relation values"),
-        },
-      }),
-      ["initialize: initialize instructions missing health relation filter enum guidance"],
+      ["initialize: initialize instructions missing long-rule guide pointer"],
     );
   });
 

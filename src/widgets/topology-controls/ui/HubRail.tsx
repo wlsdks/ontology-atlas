@@ -101,7 +101,7 @@ export function HubRail({
           type="button"
           onClick={() => setOpenPersisted(true)}
           aria-label={t('expandAriaLabel')}
-          className="pointer-events-auto absolute left-0 top-1/2 z-10 hidden h-16 w-5 -translate-y-1/2 items-center justify-center rounded-r-chip border border-l-0 border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset md:flex"
+          className="pointer-events-auto absolute left-0 top-1/2 z-10 hidden h-16 w-5 -translate-y-1/2 items-center justify-center rounded-r-chip border border-l-0 border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset md:flex"
         >
           <ChevronRight className="h-3 w-3" />
         </button>
@@ -140,7 +140,7 @@ export function HubRail({
               size: 'sm',
               tone: 'muted',
               className:
-                'hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]',
+                'hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]',
             })}
           >
             <ChevronLeft className="h-3 w-3" />
@@ -188,7 +188,7 @@ export function HubRail({
               shape: 'row',
               size: 'sm',
               active,
-              className: `relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
+              className: `relative focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
                 active
                   ? ''
                   : 'hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'

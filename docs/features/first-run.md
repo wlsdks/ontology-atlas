@@ -33,7 +33,12 @@ creates a new folder (through the folder guide) and opens the map's glossary in 
 small centred dialog with the plain-view action. The terminal command is the
 folder guide's last section; a browser without folder access shows it from the
 row instead, in its own dialog. The installed app also shows the build-from-code
-door on the card. It does not launch a step-by-step popup tour. The
+door on the card. Its first turn asks the agent to outline every source unit,
+read the one main flow, say the outline in a few sentences and write the whole
+first map in the same run, with titles in the words a teammate says aloud; a
+question the agent asks carries the default it takes. Each write still meets the
+permission card unless Auto-approve is on, and binding the code folder and
+finishing the map always ask. It does not launch a step-by-step popup tour. The
 optional automatic folder-opening guide remains controlled in Screen settings.
 
 Entering Map from another screen reveals the existing start actions for an empty
