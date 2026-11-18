@@ -474,63 +474,63 @@ test('the context a symbol read adds stays within 6 KiB, naming what it left out
  */
 test('a field call lists the implementations it may reach, and serves the one that refuses', () => {
   const root = fixture();
-  mkdirSync(join(root, 'node'));
-  mkdirSync(join(root, 'broker'));
-  writeFileSync(join(root, 'node', 'node.go'), [
-    'package node',
+  mkdirSync(join(root, 'service'));
+  mkdirSync(join(root, 'store'));
+  writeFileSync(join(root, 'service', 'service.go'), [
+    'package service',
     '',
-    'func (n *Node) Presence(stream string) error {',
-    '\tinfo, err := n.broker.PresenceInfo(stream)',
+    'func (s *Service) Find(key string) error {',
+    '\tinfo, err := s.store.Lookup(key)',
     '\treturn send(info, err)',
     '}',
     '',
   ].join('\n'));
-  writeFileSync(join(root, 'broker', 'memory.go'), 'package broker\n\nfunc (m *Memory) PresenceInfo(stream string) (*Info, error) {\n\treturn m.presence[stream], nil\n}\n');
-  writeFileSync(join(root, 'broker', 'legacy.go'), 'package broker\n\nfunc (LegacyBroker) PresenceInfo(stream string) (*Info, error) {\n\treturn nil, errors.New("presence not supported")\n}\n');
-  writeFileSync(join(root, 'broker', 'nats.go'), 'package broker\n\nfunc (n *NATS) PresenceInfo(stream string) (*Info, error) {\n\treturn nil, errors.New("presence not supported")\n}\n');
-  const [row] = readSourceEvidence(root, [{ path: 'node/node.go', symbol: 'Node.Presence' }]).rows;
-  assert.deepEqual(row.callees.filter((callee) => callee.name === 'PresenceInfo').map((callee) => [callee.path, callee.implementation]).sort(), [
-    ['broker/legacy.go', true], ['broker/memory.go', true], ['broker/nats.go', true],
+  writeFileSync(join(root, 'store', 'memory.go'), 'package store\n\nfunc (m *Memory) Lookup(key string) (*Info, error) {\n\treturn m.rows[key], nil\n}\n');
+  writeFileSync(join(root, 'store', 'null.go'), 'package store\n\nfunc (NullStore) Lookup(key string) (*Info, error) {\n\treturn nil, errors.New("lookup not supported")\n}\n');
+  writeFileSync(join(root, 'store', 'remote.go'), 'package store\n\nfunc (r *Remote) Lookup(key string) (*Info, error) {\n\treturn nil, errors.New("lookup not supported")\n}\n');
+  const [row] = readSourceEvidence(root, [{ path: 'service/service.go', symbol: 'Service.Find' }]).rows;
+  assert.deepEqual(row.callees.filter((callee) => callee.name === 'Lookup').map((callee) => [callee.path, callee.implementation]).sort(), [
+    ['store/memory.go', true], ['store/null.go', true], ['store/remote.go', true],
   ]);
   const served = row.context.filter((part) => part.role === 'implementation').map((part) => part.symbol).sort();
-  assert.deepEqual(served, ['LegacyBroker.PresenceInfo', 'NATS.PresenceInfo'], 'only the implementations that decide are served');
-  assert.match(row.context.find((part) => part.symbol === 'NATS.PresenceInfo').text, /presence not supported/);
+  assert.deepEqual(served, ['NullStore.Lookup', 'Remote.Lookup'], 'only the implementations that decide are served');
+  assert.match(row.context.find((part) => part.symbol === 'Remote.Lookup').text, /lookup not supported/);
 });
 
 test('a call on self reaches the override the owner inherits, not the base it replaces', () => {
   const root = fixture();
-  writeFileSync(join(root, 'transform.py'), [
-    'class Transform:',                                       // 1
-    '    def _get_images(self, batch):',                      // 2
-    '        return batch.images',                            // 3
+  writeFileSync(join(root, 'shape.py'), [
+    'class Shape:',                                           // 1
+    '    def _targets(self, batch):',                         // 2
+    '        return batch.items',                             // 3
     '',                                                       // 4
     '',                                                       // 5
-    'class IntensityTransform(Transform):',                   // 6
-    '    def _get_images(self, batch):',                      // 7
-    '        if self.include is not None:',                   // 8
-    '            return [i for i in batch.images if i.scalar]', // 9
-    '        return [i for i in batch.images if i.scalar]',   // 10
+    'class FilledShape(Shape):',                              // 6
+    '    def _targets(self, batch):',                         // 7
+    '        if self.only is not None:',                      // 8
+    '            return [i for i in batch.items if i.filled]', // 9
+    '        return [i for i in batch.items if i.filled]',    // 10
     '',
   ].join('\n'));
-  writeFileSync(join(root, 'crop.py'), 'def _get_images(batch):\n    return batch\n');
-  writeFileSync(join(root, 'normalize.py'), [
-    'from transform import IntensityTransform',
+  writeFileSync(join(root, 'crop.py'), 'def _targets(batch):\n    return batch\n');
+  writeFileSync(join(root, 'square.py'), [
+    'from shape import FilledShape',
     '',
     '',
-    'class Normalize(IntensityTransform):',
-    '    def make_params(self, batch):',
-    '        return {name: 1 for name in self._get_images(batch)}',
+    'class Square(FilledShape):',
+    '    def measure(self, batch):',
+    '        return {name: 1 for name in self._targets(batch)}',
     '',
   ].join('\n'));
-  const [row] = readSourceEvidence(root, [{ path: 'normalize.py', symbol: 'Normalize.make_params' }]).rows;
-  assert.deepEqual(row.callees, [{ name: '_get_images', path: 'transform.py', line: 7 }]);
-  assert.equal(row.context.find((part) => part.role === 'callee')?.cite, 'transform.py:L7-L10');
+  const [row] = readSourceEvidence(root, [{ path: 'square.py', symbol: 'Square.measure' }]).rows;
+  assert.deepEqual(row.callees, [{ name: '_targets', path: 'shape.py', line: 7 }]);
+  assert.equal(row.context.find((part) => part.role === 'callee')?.cite, 'shape.py:L7-L10');
 });
 
 test('a method of a field is never the owner\'s own method of the same name', () => {
   const root = fixture();
-  writeFileSync(join(root, 'auto.ts'), [
-    'export class Auto {',
+  writeFileSync(join(root, 'releaser.ts'), [
+    'export class Releaser {',
     '  async comment() {',
     '    this.logger.verbose.info("commenting");',
     '    return this.check();',
@@ -546,78 +546,78 @@ test('a method of a field is never the owner\'s own method of the same name', ()
     '}',
     '',
   ].join('\n'));
-  const [row] = readSourceEvidence(root, [{ path: 'auto.ts', symbol: 'Auto.comment' }]).rows;
-  assert.deepEqual(row.callees, [{ name: 'check', path: 'auto.ts', line: 11 }], 'the logger\'s info is not the info command');
+  const [row] = readSourceEvidence(root, [{ path: 'releaser.ts', symbol: 'Releaser.comment' }]).rows;
+  assert.deepEqual(row.callees, [{ name: 'check', path: 'releaser.ts', line: 11 }], 'the logger\'s info is not the info command');
 });
 
 test('a symbol read serves the rule one call deeper, through an accessor, and names the call it came through', () => {
   const root = fixture();
-  mkdirSync(join(root, 'cli'));
-  writeFileSync(join(root, 'cli', 'cli.go'), [
-    'package cli',                                              // 1
+  mkdirSync(join(root, 'app'));
+  writeFileSync(join(root, 'app', 'app.go'), [
+    'package app',                                              // 1
     '',                                                         // 2
-    'func (r *Runner) runNode() error {',                      // 3
-    '\tcontroller := r.newController()',                       // 4
-    '\treturn serve(controller)',                               // 5
+    'func (a *App) start() error {',                           // 3
+    '\thandler := a.newHandler()',                              // 4
+    '\treturn serve(handler)',                                  // 5
     '}',                                                        // 6
     '',                                                         // 7
-    'func (r *Runner) newController() Controller {',           // 8
-    '\tcontroller := rpc()',                                    // 9
-    '\tif !r.Router().Empty() {',                               // 10
-    '\t\tcontroller = r.Router()',                              // 11
+    'func (a *App) newHandler() Handler {',                    // 8
+    '\thandler := base()',                                      // 9
+    '\tif !a.Routes().Empty() {',                               // 10
+    '\t\thandler = a.Routes()',                                 // 11
     '\t}',                                                      // 12
-    '\treturn controller',                                      // 13
+    '\treturn handler',                                         // 13
     '}',                                                        // 14
     '',                                                         // 15
-    'func (r *Runner) Router() *RouterController {',           // 16
-    '\tif r.router == nil {',                                   // 17
-    '\t\tr.router = r.defaultRouter()',                         // 18
+    'func (a *App) Routes() *RouteTable {',                     // 16
+    '\tif a.routes == nil {',                                   // 17
+    '\t\ta.routes = a.defaultRoutes()',                         // 18
     '\t}',                                                      // 19
-    '\treturn r.router',                                        // 20
+    '\treturn a.routes',                                        // 20
     '}',                                                        // 21
     '',                                                         // 22
-    'func (r *Runner) defaultRouter() *RouterController {',    // 23
-    '\trouter := NewRouterController()',                        // 24
-    '\tif r.config.Streams.Turbo && r.config.Streams.Secret != "" {', // 25
-    '\t\trouter.Route("Turbo::StreamsChannel", turbo())',       // 26
+    'func (a *App) defaultRoutes() *RouteTable {',             // 23
+    '\ttable := NewRouteTable()',                               // 24
+    '\tif a.config.Live.Enabled && a.config.Live.Secret != "" {', // 25
+    '\t\ttable.Add("live", liveChannel())',                     // 26
     '\t}',                                                      // 27
-    '\treturn router',                                          // 28
+    '\treturn table',                                           // 28
     '}',                                                        // 29
     '',
   ].join('\n'));
-  const [row] = readSourceEvidence(root, [{ path: 'cli/cli.go', symbol: 'Runner.runNode' }]).rows;
-  const deeper = row.context.find((part) => part.symbol === 'Runner.defaultRouter');
-  assert.ok(deeper, `defaultRouter is served: ${row.context.map((part) => part.symbol).join(', ')}`);
-  assert.equal(deeper.cite, 'cli/cli.go:L23-L29');
-  assert.equal(deeper.via, 'Runner.Router');
-  assert.equal(row.context.find((part) => part.symbol === 'Runner.Router')?.via, 'Runner.newController');
+  const [row] = readSourceEvidence(root, [{ path: 'app/app.go', symbol: 'App.start' }]).rows;
+  const deeper = row.context.find((part) => part.symbol === 'App.defaultRoutes');
+  assert.ok(deeper, `defaultRoutes is served: ${row.context.map((part) => part.symbol).join(', ')}`);
+  assert.equal(deeper.cite, 'app/app.go:L23-L29');
+  assert.equal(deeper.via, 'App.Routes');
+  assert.equal(row.context.find((part) => part.symbol === 'App.Routes')?.via, 'App.newHandler');
 });
 
 test('a symbol read serves the named constant its served code compares against', () => {
   const root = fixture();
-  mkdirSync(join(root, 'cli'));
-  writeFileSync(join(root, 'cli', 'session.go'), [
-    'package cli',                                      // 1
+  mkdirSync(join(root, 'client'));
+  writeFileSync(join(root, 'client', 'resume.go'), [
+    'package client',                                      // 1
     '',                                                 // 2
     'const (',                                          // 3
-    '\tprevSessionHeader = "X-RESTORE-SID"',            // 4
-    '\tprevSessionParam  = "sid"',                      // 5
+    '\tresumeHeader = "X-RESUME-ID"',                   // 4
+    '\tresumeParam  = "rid"',                           // 5
     ')',                                                // 6
     '',                                                 // 7
-    'func (r *Runner) sessionOptions(info *Info) []Option {', // 8
+    'func (c *Client) options(info *Info) []Option {',  // 8
     '\topts := []Option{}',                             // 9
-    '\tif hval := info.Header(prevSessionHeader); hval != "" {', // 10
+    '\tif hval := info.Header(resumeHeader); hval != "" {', // 10
     '\t\topts = append(opts, restore(hval))',           // 11
     '\t}',                                              // 12
     '\treturn opts',                                    // 13
     '}',                                                // 14
     '',
   ].join('\n'));
-  const [row] = readSourceEvidence(root, [{ path: 'cli/session.go', symbol: 'Runner.sessionOptions' }]).rows;
+  const [row] = readSourceEvidence(root, [{ path: 'client/resume.go', symbol: 'Client.options' }]).rows;
   const constant = row.context.find((part) => part.role === 'constant');
-  assert.deepEqual([constant?.symbol, constant?.cite], ['prevSessionHeader', 'cli/session.go:L4-L4']);
-  assert.equal(constant.text, '\tprevSessionHeader = "X-RESTORE-SID"\n');
-  assert.equal(row.context.some((part) => part.symbol === 'prevSessionParam'), false, 'a constant the code does not use is not served');
+  assert.deepEqual([constant?.symbol, constant?.cite], ['resumeHeader', 'client/resume.go:L4-L4']);
+  assert.equal(constant.text, '\tresumeHeader = "X-RESUME-ID"\n');
+  assert.equal(row.context.some((part) => part.symbol === 'resumeParam'), false, 'a constant the code does not use is not served');
 });
 
 /*

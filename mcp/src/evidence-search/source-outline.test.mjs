@@ -120,23 +120,23 @@ test('lists a TypeScript method whose parameters start on the next line, and not
 
 test('a wrapped head ends where its parentheses close, past an object type, a default and a doc comment', () => {
   const text = [
-    'export class Auto {',                              // 1
+    'export class Releaser {',                          // 1
     '  constructor(',                                   // 2
-    '    options: ApiOptions & {',                      // 3
+    '    options: ClientOptions & {',                   // 3
     '      /** Turn the loader off. */',                // 4
-    '      disableTsNode?: boolean;',                   // 5
+    '      disableLoader?: boolean;',                   // 5
     '    } = {}',                                       // 6
     '  ) {',                                            // 7
     '    this.options = options;',                      // 8
     '  }',                                              // 9
-    '  private async publishFullRelease(',              // 10
-    '    options: LatestOptions & {',                   // 11
+    '  private async publishRelease(',                  // 10
+    '    options: PublishOptions & {',                  // 11
     '      from?: string;',                             // 12
     '    }',                                            // 13
-    '  ): Promise<ShipitInfo | undefined> {',           // 14
+    '  ): Promise<ReleaseInfo | undefined> {',          // 14
     '    entries',                                      // 15
     '      .map(([key, result]) =>',                    // 16
-    '        processQueryResult({',                     // 17
+    '        processRow({',                             // 17
     '          sha: key,',                              // 18
     '        })',                                       // 19
     '      )',                                          // 20
@@ -147,8 +147,8 @@ test('a wrapped head ends where its parentheses close, past an object type, a de
     '}',                                                // 25
   ].join('\n');
   assert.deepEqual(
-    outlineSource(text, 'auto.ts').declarations.map((row) => [row.line, row.kind, row.name]),
-    [[1, 'class', 'Auto'], [2, 'method', 'constructor'], [10, 'method', 'publishFullRelease']],
+    outlineSource(text, 'releaser.ts').declarations.map((row) => [row.line, row.kind, row.name]),
+    [[1, 'class', 'Releaser'], [2, 'method', 'constructor'], [10, 'method', 'publishRelease']],
   );
 });
 

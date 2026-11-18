@@ -4,8 +4,8 @@
  * Places that hold a rule the body alone hides: the caller's guard (the `if` or
  * early return around the call), the owner's constructor or header (defaults,
  * the resolver a field holds), a direct callee (an options builder, a
- * `_drain_if_full`), the implementations a field call may reach (a broker that
- * refuses presence), a callee one call deeper (the router a lazy accessor
+ * `_drain_if_full`), the implementations a field call may reach (a store that
+ * refuses a lookup), a callee one call deeper (the route table a lazy accessor
  * builds), and a named constant the served code uses (a header name). Each
  * candidate is ranked by its lines that decide: a condition, a branch, a throw,
  * or a literal default. A callee named in the body's own condition, or one that
@@ -84,7 +84,7 @@ function withoutTerminator(line) {
   return end === line.length ? line : line.slice(0, end);
 }
 
-/** Names called on the lines that branch: `if !r.Router().Empty()` names Router. */
+/** Names called on the lines that branch: `if !a.Routes().Empty()` names Routes. */
 function calledInConditions(lines) {
   const names = new Set();
   for (const line of lines) {
@@ -107,7 +107,7 @@ const CONSTANTS = new WeakMap();
 
 /**
  * name -> line of each literal constant a file declares at module level (or in a
- * Go `const (` block): `prevSessionHeader = "X-RESTORE-SID"`, `MAX_RETRIES = 3`.
+ * Go `const (` block): `resumeHeader = "X-RESUME-ID"`, `MAX_RETRIES = 3`.
  * One anchored match per line.
  */
 function constantsOf(file) {
