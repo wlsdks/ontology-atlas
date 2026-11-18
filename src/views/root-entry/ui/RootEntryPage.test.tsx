@@ -65,7 +65,7 @@ describe('RootEntryPage', () => {
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true };
   });
 
-  it('tells a returning visitor who lost the connected folder what happened and offers the picker', () => {
+  it('tells a returning visitor who lost the connected folder what happened and offers the picker', async () => {
     const open = vi.fn(() => Promise.resolve());
     mocks.open = open;
     mocks.vaultState = {
@@ -80,7 +80,7 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
-    expect(screen.getByTestId('gateway-landing')).toBeInTheDocument();
+    expect(await screen.findByTestId('gateway-landing')).toBeInTheDocument();
     expect(screen.getByTestId('root-entry-lost-vault-notice')).toHaveTextContent(
       'Cannot find my-atlas',
     );
@@ -142,10 +142,10 @@ describe('RootEntryPage', () => {
     expect(screen.queryByTestId('root-entry-lost-vault-notice')).not.toBeInTheDocument();
   });
 
-  it('shows the gateway, not the map, at the root for a web visitor with no vault', () => {
+  it('shows the gateway, not the map, at the root for a web visitor with no vault', async () => {
     render(<RootEntryPage />);
 
-    expect(screen.getByTestId('gateway-landing')).toBeInTheDocument();
+    expect(await screen.findByTestId('gateway-landing')).toBeInTheDocument();
     expect(screen.queryByTestId('topology-hub')).not.toBeInTheDocument();
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
@@ -184,7 +184,11 @@ describe('RootEntryPage', () => {
   it('keeps landing copy out of the server-rendered root shell', () => {
     const html = renderToString(<RootEntryPage />);
 
+    // Until the browser knows whether this is the installed app, nothing gateway-specific paints:
+    // the app must never be offered its own download, even for a frame.
     expect(html).toContain('Opening local vault picker');
+    expect(html).not.toContain('gateway-landing');
+    expect(html).not.toContain('gateway-entry-fallback');
     expect(html).not.toContain('data-testid="landing"');
     expect(html).not.toContain('landing');
   });
