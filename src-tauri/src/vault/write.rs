@@ -34,9 +34,11 @@ pub(super) fn write_text_atomically(path: &std::path::Path, content: &str) -> Re
     let mut created = None;
     for _ in 0..64 {
         let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let candidate = parent.join(format!(
-            ".{file_name}.oatlas-tmp-{}-{nonce:x}-{sequence:x}",
-            std::process::id()
+        let candidate = parent.join(crate::temporary_names::atomic_temporary_name(
+            &file_name,
+            std::process::id(),
+            nonce,
+            sequence,
         ));
         match fs::OpenOptions::new()
             .write(true)

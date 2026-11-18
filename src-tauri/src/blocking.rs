@@ -8,7 +8,9 @@
 //! finish its rename before the process ends.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Condvar, Mutex, OnceLock};
+#[cfg(not(test))]
+use std::sync::OnceLock;
+use std::sync::{Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 /// Long enough for an fsync on a slow disk, short enough that quitting still feels immediate.
@@ -24,14 +26,33 @@ struct InFlight {
     finished: Condvar,
 }
 
-fn in_flight() -> &'static InFlight {
-    static STATE: OnceLock<InFlight> = OnceLock::new();
-    STATE.get_or_init(|| InFlight {
+fn new_state() -> InFlight {
+    InFlight {
         closing: AtomicBool::new(false),
         running: AtomicUsize::new(0),
         lock: Mutex::new(()),
         finished: Condvar::new(),
-    })
+    }
+}
+
+#[cfg(not(test))]
+fn in_flight() -> &'static InFlight {
+    static STATE: OnceLock<InFlight> = OnceLock::new();
+    STATE.get_or_init(new_state)
+}
+
+/// One state per test thread, so a test that exits cannot close the commands of another.
+#[cfg(test)]
+fn in_flight() -> &'static InFlight {
+    thread_local! {
+        static STATE: &'static InFlight = Box::leak(Box::new(new_state()));
+    }
+    STATE.with(|state| *state)
+}
+
+#[cfg(test)]
+pub(crate) fn is_closing() -> bool {
+    in_flight().closing.load(Ordering::SeqCst)
 }
 
 /// Counted before the closing check, so [`drain`] either sees this work or this work
@@ -98,18 +119,11 @@ fn drain_state(state: &InFlight, limit: Duration) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::{drain_state, run_blocking, InFlight, Ticket, CLOSING};
-    use std::sync::atomic::{AtomicBool, AtomicUsize};
-    use std::sync::{Condvar, Mutex};
+    use super::{drain_state, new_state, run_blocking, InFlight, Ticket, CLOSING};
     use std::time::{Duration, Instant};
 
     fn fresh() -> &'static InFlight {
-        Box::leak(Box::new(InFlight {
-            closing: AtomicBool::new(false),
-            running: AtomicUsize::new(0),
-            lock: Mutex::new(()),
-            finished: Condvar::new(),
-        }))
+        Box::leak(Box::new(new_state()))
     }
 
     #[test]
