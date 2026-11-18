@@ -24,12 +24,14 @@ const NOTARY_CREDENTIALS = [
 /**
  * `build` runs third-party build code with no credential, and CI imports the signing
  * certificate only after it; `sign` follows. No `--phase` walks every step locally.
+ * The static export is built once: the bundle step turns Tauri's `beforeBuildCommand`
+ * off, so the app carries the `out/` that `desktop:smoke` checked.
  */
 export const RELEASE_ARTIFACT_STEPS = Object.freeze([
   { phase: "validate", label: "validate release credentials", command: "pnpm", args: ["desktop:release-secrets"], allow: CURRENT_RELEASE_SECRET_NAMES },
   { phase: "build", label: "build static application", command: "pnpm", args: ["build"], allow: [], env: { NODE_OPTIONS: "--max-old-space-size=4096" } },
   { phase: "build", label: "smoke static application", command: "pnpm", args: ["desktop:smoke"], allow: [] },
-  { phase: "build", label: "build app bundle", command: "pnpm", args: ["desktop:build:app"], allow: [], env: { NODE_OPTIONS: "--max-old-space-size=4096" } },
+  { phase: "build", label: "build app bundle from the smoked export", command: "pnpm", args: ["desktop:build:app:prebuilt"], allow: [] },
   { phase: "sign", label: "sign app bundle", command: "pnpm", args: ["desktop:sign"], allow: [] },
   { phase: "sign", label: "repack signed updater archive", command: "pnpm", args: ["desktop:repack-updater"], allow: TAURI_UPDATER_SECRETS },
   { phase: "sign", label: "package DMG", command: process.execPath, args: ["scripts/desktop/package-macos-dmg.mjs"], allow: [] },

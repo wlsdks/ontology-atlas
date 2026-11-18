@@ -10,8 +10,9 @@ import { describe, expect, it } from "vitest";
  * build script checks the resource path exists and dies with
  * `resource path ... doesn't exist` when it does not.
  *
- * The workflow runs `cargo test` (= `test:desktop:bridge`) before
- * `desktop:build:app`, so the sidecar must be built before both.
+ * The test jobs run `cargo test` (= `test:desktop:bridge`) and the build jobs run
+ * `tauri build`, each on its own clean runner, so every such job builds the sidecar
+ * itself before its first cargo call.
  *
  * It does not show up locally — once a person has built the file it stays, and
  * every later cargo call passes. **A defect visible only on a clean checkout**, so
@@ -32,7 +33,21 @@ const PACKAGE_PATH = join(process.cwd(), "package.json");
  */
 const CARGO_RUN_LINES = [/^\s*run:\s*pnpm test:desktop:bridge\b/m, /^\s*run:.*\bcargo\s/m] as const;
 
+/** `cargo audit --file` reads the lockfile alone and never runs the build script. */
+const LOCKFILE_ONLY_CARGO = /\bcargo audit --file\b/;
+
 const SIDECAR_STEP = "pnpm mcp:build-binary";
+
+/** Package scripts that bake the sidecar themselves before they call cargo. */
+const SELF_BAKING_BUILDS = ["desktop:build:app:prebuilt", "desktop:build:windows"] as const;
+
+function jobBlocks(workflow: string): { name: string; block: string }[] {
+  const jobs = workflow.slice(workflow.indexOf("\njobs:\n") + 1);
+  return jobs
+    .split(/^(?= {2}[A-Za-z][\w-]*:\s*$)/m)
+    .map((block) => ({ name: /^ {2}([A-Za-z][\w-]*):/.exec(block)?.[1] ?? "", block }))
+    .filter((job) => job.name !== "");
+}
 
 describe("release workflow — the sidecar is built before the first cargo call", () => {
   const workflow = readFileSync(WORKFLOW_PATH, "utf8");
@@ -54,48 +69,67 @@ describe("release workflow — the sidecar is built before the first cargo call"
   });
 
   /**
-   * The compiler that builds the sidecar (`bun build --compile`) is not on the runner
-   * by default, so its install step must precede the sidecar build.
-   *
-   * Locking the order alone cannot catch "called first, but the tool to call is
-   * missing".
+   * The sidecar is baked by `bun build --compile` from `mcp/`, which is not a pnpm
+   * workspace member: the runner ships neither bun nor `mcp/node_modules`. Each job
+   * starts on a clean runner, so each job that bakes the sidecar, directly or through a
+   * build script, installs both before that step.
    */
-  it("the bun install comes before the sidecar build", () => {
-    const bunAt = workflow.indexOf("oven-sh/setup-bun");
-    expect(bunAt, "there is no bun install step that bakes the sidecar").toBeGreaterThan(-1);
-    expect(bunAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
-  });
+  it("every job that bakes the sidecar installs bun and the MCP dependencies first", () => {
+    const bakes = [SIDECAR_STEP, "--phase=build", "desktop:build:windows"];
+    const baking = jobBlocks(workflow)
+      .map(({ name, block }) => ({
+        name,
+        block,
+        bakeAt: Math.min(...bakes.map((marker) => block.indexOf(marker)).filter((at) => at > -1)),
+      }))
+      .filter((job) => Number.isFinite(job.bakeAt));
+    expect(baking.map((job) => job.name)).toEqual(["test-macos", "test-windows", "build-macos", "build-windows"]);
 
-  /**
-   * `mcp/` is not a pnpm workspace member; it uses its own `node_modules`, which the
-   * root `pnpm install` does not populate. A person's machine still has an old
-   * install, so local compilation passes and only the runner fails to find
-   * `@modelcontextprotocol/sdk`.
-   *
-   * Even with the tool (bun) and the order both locked, an empty **dependency tree
-   * for the compilation target** stops it at the same place. All three conditions
-   * must be locked for this step to actually pass.
-   */
-  it("the bundled MCP dependency install comes before the sidecar build", () => {
-    const depsAt = workflow.indexOf("pnpm --dir mcp install");
-    expect(depsAt, "there is no install step for the bundled MCP server dependencies").toBeGreaterThan(-1);
-    expect(depsAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
-  });
-
-  it("the sidecar build comes before every step that runs cargo", () => {
-    const sidecarAt = workflow.indexOf(SIDECAR_STEP);
-    expect(sidecarAt).toBeGreaterThan(-1);
-
-    for (const pattern of CARGO_RUN_LINES) {
-      const global = new RegExp(pattern.source, "gm");
-      for (const match of workflow.matchAll(global)) {
-        expect(
-          match.index,
-          `"${match[0].trim()}" comes before the sidecar build: in a clean ` +
-            `checkout the resource path is missing and cargo dies`,
-        ).toBeGreaterThan(sidecarAt);
+    for (const { name, block, bakeAt } of baking) {
+      for (const [label, marker] of [
+        ["the bun install", "oven-sh/setup-bun"],
+        ["the bundled MCP dependency install", "pnpm --dir mcp install"],
+      ]) {
+        const at = block.indexOf(marker);
+        expect(at, `${name} bakes the sidecar without ${label}`).toBeGreaterThan(-1);
+        expect(at, `${name}: ${label} comes after the sidecar is baked`).toBeLessThan(bakeAt);
       }
     }
+  });
+
+  it("every job builds the sidecar before its own first cargo call", () => {
+    const cargoJobs: string[] = [];
+    for (const { name, block } of jobBlocks(workflow)) {
+      const sidecarAt = block.indexOf(SIDECAR_STEP);
+      for (const pattern of CARGO_RUN_LINES) {
+        for (const match of block.matchAll(new RegExp(pattern.source, "gm"))) {
+          const line = block.slice(match.index, block.indexOf("\n", match.index));
+          if (LOCKFILE_ONLY_CARGO.test(line)) continue;
+          cargoJobs.push(name);
+          expect(sidecarAt, `${name} runs "${line.trim()}" on a runner that never built the sidecar`).toBeGreaterThan(-1);
+          expect(
+            match.index,
+            `${name}: "${match[0].trim()}" comes before the sidecar build: in a clean ` +
+              `checkout the resource path is missing and cargo dies`,
+          ).toBeGreaterThan(sidecarAt);
+        }
+      }
+    }
+    expect(new Set(cargoJobs)).toEqual(new Set(["test-macos", "test-windows"]));
+  });
+
+  it("each build script bakes the sidecar itself before tauri build", () => {
+    for (const script of SELF_BAKING_BUILDS) {
+      const commands = pkg.scripts?.[script]?.split(" && ") ?? [];
+      const sidecarAt = commands.indexOf(SIDECAR_STEP);
+      const tauriAt = commands.findIndex((command) => command.startsWith("pnpm tauri build"));
+      expect(tauriAt, `${script} does not run tauri build`).toBeGreaterThan(-1);
+      expect(sidecarAt, `${script} does not build the sidecar`).toBeGreaterThan(-1);
+      expect(sidecarAt).toBeLessThan(tauriAt);
+    }
+    const artifact = readFileSync(join(process.cwd(), "scripts/desktop-release/build-macos-release-artifact.mjs"), "utf8");
+    expect(artifact).toContain('args: ["desktop:build:app:prebuilt"]');
+    expect(workflow).toContain("run: pnpm desktop:build:windows");
   });
 
   it("the local release preflight also bakes the sidecar before the bridge cargo call", () => {
