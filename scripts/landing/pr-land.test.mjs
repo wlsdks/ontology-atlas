@@ -17,6 +17,7 @@ import {
   describeCleanup,
   describeScheduledRun,
   fullBrowserRunKind,
+  NO_FULL_RUN,
   lockTrains,
   describeLock,
   otherCheckState,
@@ -1698,6 +1699,28 @@ describe('scheduled checks on main', () => {
     assert.ok(calls.some((args) => args.includes('.[] | select(.title == "failing spec") | .path')));
     assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml', 'push', { fullBrowser: true }), null);
     assert.ok(!calls.some((args) => /\/runs\/5\//.test(args[1] ?? '')), 'a 45-second reused push costs no artifact read');
+  });
+
+  it('says so when main has push runs but none of them ran the full suite, instead of looking green', () => {
+    const github = createGithub('owner/repo', (args) => {
+      if (args[0] === 'run') {
+        return JSON.stringify([
+          { conclusion: 'cancelled', createdAt: '2026-10-09T10:30:00Z', url: 'cancelled', databaseId: 10 },
+          { conclusion: 'success', createdAt: '2026-10-09T10:00:00Z', updatedAt: '2026-10-09T10:00:45Z', url: 'https://x/reused', databaseId: 9 },
+          { conclusion: 'success', createdAt: '2026-10-09T09:00:00Z', updatedAt: '2026-10-09T09:06:00Z', url: 'https://x/partial', databaseId: 8 },
+        ]);
+      }
+      if (/\/actions\/runs\/8\/artifacts/.test(args[1])) return 'playwright-timings-smoke-1\n';
+      return undefined;
+    });
+    const verdict = github.readScheduledRun('e2e.yml', 'push', { fullBrowser: true });
+    assert.deepEqual(verdict, { conclusion: NO_FULL_RUN, createdAt: '2026-10-09T10:00:00Z', url: 'https://x/reused', examined: 2 });
+    const [browser] = SCHEDULED_CHECKS;
+    assert.equal(
+      describeScheduledRun(browser, verdict, Date.parse('2026-10-09T12:00:00Z')),
+      "main's latest 2 push runs did not run the full browser suite (newest: https://x/reused); last full run: none among them, so a red outside the merge smoke set would not show here",
+    );
+    assert.equal(createGithub('owner/repo', (args) => (args[0] === 'run' ? '[]' : undefined)).readScheduledRun('e2e.yml', 'push', { fullBrowser: true }), null, 'no push yet is not a finding');
   });
 
   it('counts a run as full only by what its shards uploaded', () => {

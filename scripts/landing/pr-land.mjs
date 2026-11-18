@@ -121,9 +121,15 @@ export const CONFLICT_INSTRUCTION =
   + '  write command. Then run `pnpm pr:land <number>` again. It was not queued, so\n'
   + '  nothing waits on it meanwhile.';
 
+/** A reader verdict: main's latest push runs finished, but none of them ran the full browser suite. */
+export const NO_FULL_RUN = 'no-full-run';
+
 export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (!run) return null;
   const day = String(run.createdAt ?? '').slice(0, 10);
+  if (run.conclusion === NO_FULL_RUN) {
+    return `main's latest ${run.examined} push runs did not run the full browser suite (newest: ${run.url}); last full run: none among them, so a red outside the merge smoke set would not show here`;
+  }
   if (run.conclusion === 'failure') {
     const specs = Array.isArray(run.failingSpecs) && run.failingSpecs.length > 0
       ? `: ${run.failingSpecs.length > 6 ? `${run.failingSpecs.slice(0, 6).join(', ')} and ${run.failingSpecs.length - 6} more` : run.failingSpecs.join(', ')}`
@@ -756,7 +762,10 @@ export function createGithub(slug, run = ghRun) {
         }
         return { ...result, failingSpecs: [...failingSpecs].sort() };
       }
-      return null;
+      // Push runs exist but none of the latest ran the whole suite: say so rather than look green.
+      const newest = rows.find((row) => row.conclusion && row.conclusion !== 'cancelled');
+      const examined = rows.filter((row) => row.conclusion && row.conclusion !== 'cancelled').length;
+      return newest ? { conclusion: NO_FULL_RUN, createdAt: newest.createdAt, url: newest.url, examined } : null;
     },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
