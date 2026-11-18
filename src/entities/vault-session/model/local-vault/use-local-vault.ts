@@ -350,10 +350,15 @@ export function useLocalVaultInternal() {
    * Applies one watcher batch on top of the last build without walking the folder
    * (`applyVaultChanges`), after any load in flight has settled. Falls back to `syncWithDisk` for a
    * rescan or a batch the delta cannot apply exactly; a load that starts meanwhile read the disk
-   * after these changes, so its result wins and the delta is dropped.
+   * after these changes, so its result wins and the delta is dropped. A batch watched for another
+   * folder than the one now loaded is dropped too: its paths describe that folder's disk.
    */
-  const applyChangeBatch = useCallback(async (changes: readonly VaultPathChange[], rescan: boolean): Promise<void> => {
-    if (!loadedHandle) return;
+  const applyChangeBatch = useCallback(async (
+    watched: FileSystemDirectoryHandle,
+    changes: readonly VaultPathChange[],
+    rescan: boolean,
+  ): Promise<void> => {
+    if (!loadedHandle || watched !== loadedHandle) return;
     const handle = loadedHandle;
     const session = vaultReadSessionRef.current;
     const isSession = () => mountedRef.current && vaultReadSessionRef.current === session && session.handle === handle;
@@ -399,12 +404,22 @@ export function useLocalVaultInternal() {
     }
   }, [loadedHandle, stateRef, syncWithDisk]);
 
-  /** Batches that arrive while one is applied merge into the next, so deltas never overlap. */
-  const queuedChangesRef = useRef<{ changes: Map<string, VaultPathChange>; rescan: boolean } | null>(null);
+  /**
+   * Batches that arrive while one is applied merge into the next, so deltas never overlap. Only
+   * batches for one folder merge; a batch for another replaces what was queued.
+   */
+  const queuedChangesRef = useRef<{
+    handle: FileSystemDirectoryHandle;
+    changes: Map<string, VaultPathChange>;
+    rescan: boolean;
+  } | null>(null);
   const drainingChangesRef = useRef(false);
   const applyChangeBatchRef = useLatestRef(applyChangeBatch);
-  const applyVaultChangeBatch = useCallback((batch: VaultChangeBatch): Promise<void> => {
-    const queued = (queuedChangesRef.current ??= { changes: new Map(), rescan: false });
+  const applyVaultChangeBatch = useCallback((batch: VaultChangeBatch, watched: FileSystemDirectoryHandle): Promise<void> => {
+    if (queuedChangesRef.current?.handle !== watched) {
+      queuedChangesRef.current = { handle: watched, changes: new Map(), rescan: false };
+    }
+    const queued = queuedChangesRef.current;
     queued.rescan ||= batch.rescan;
     // The later stamp for a path wins.
     for (const change of batch.changes) queued.changes.set(change.path, change);
@@ -415,7 +430,7 @@ export function useLocalVaultInternal() {
         while (queuedChangesRef.current) {
           const next = queuedChangesRef.current;
           queuedChangesRef.current = null;
-          await applyChangeBatchRef.current([...next.changes.values()], next.rescan);
+          await applyChangeBatchRef.current(next.handle, [...next.changes.values()], next.rescan);
         }
       } finally {
         drainingChangesRef.current = false;
