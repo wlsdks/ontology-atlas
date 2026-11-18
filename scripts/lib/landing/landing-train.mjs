@@ -406,7 +406,7 @@ export function mergeCommitMessage(components) {
 
 const componentLine = (c) => `- #${c.number} \`${c.headRefName}@${String(c.headRefOid ?? '').slice(0, 9)}\` ${c.title ?? ''}`.trimEnd();
 
-export function trainBody({ components, base, onTopOf = null }) {
+export function trainBody({ components, base, onTopOf = null, notes = [] }) {
   const onto = onTopOf
     ? `onto train #${onTopOf} (\`${String(base).slice(0, 9)}\`), speculatively: it lands only after train #${onTopOf} lands, and is discarded if that one does not`
     : `onto \`main@${String(base).slice(0, 9)}\``;
@@ -420,6 +420,7 @@ export function trainBody({ components, base, onTopOf = null }) {
     '## Test plan',
     '',
     '- The required contexts on this pull request, once. Each component ran `pnpm checks:changed` on its own branch.',
+    ...notes.map((note) => `- Not this train's gate: ${note}.`),
   ].join('\n');
 }
 

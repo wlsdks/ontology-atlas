@@ -652,16 +652,6 @@ export async function buildMoru() {
     for (const file of [`${canonical}/mascot-${state}-row-64.png`, `public/brand/mascot-${state}-row.png`]) await put(file, row);
   }
   for (const size of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) await put(join(ROOT, `icons/atlas-compass-${size}.png`), await sharp(join(ROOT, spec.compass)).resize(size, size).png().toBuffer());
-  const proof = [];
-  for (const [row, background] of ['#171923', '#fff8ed'].entries()) {
-    for (const [column, size] of [16, 24, 32, 48, 64, 128].entries()) {
-      const x = 12 + column * 142, y = 12 + row * 180;
-      proof.push({ input: await readFile(join(ROOT, `icons/atlas-compass-${size}.png`)), left: x + Math.floor((128 - size) / 2), top: y + Math.floor((128 - size) / 2) });
-      proof.push({ input: Buffer.from(`<svg width="128" height="24"><text x="64" y="17" text-anchor="middle" font-family="sans-serif" font-size="13" fill="${row ? '#171923' : '#fff1d7'}">${size}px</text></svg>`), left: x, top: y + 132 });
-    }
-    proof.unshift({ input: await sharp({ create: { width: 864, height: 180, channels: 4, background } }).png().toBuffer(), left: 0, top: row * 180 });
-  }
-  await put(join(ROOT, 'icons/compass-size-proof.png'), await sharp({ create: { width: 864, height: 360, channels: 4, background: '#00000000' } }).composite(proof).png().toBuffer());
   // A monochrome compass silhouette is the system-tinted macOS menu-bar template.
   for (const size of [16, 32]) {
     const data = await sharp(join(ROOT, spec.compass)).resize(16, 16).ensureAlpha().raw().toBuffer();

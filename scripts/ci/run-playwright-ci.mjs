@@ -44,7 +44,7 @@ export function balanceFiles(files, history, total) {
 }
 
 function parseArguments(argv) {
-  const options = { shard: '1/3', project: [], excluded: [], help: false };
+  const options = { shard: '1/3', project: [], excluded: [], only: [], help: false };
   const seen = new Set();
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
@@ -52,10 +52,10 @@ function parseArguments(argv) {
       options.help = true;
       continue;
     }
-    const match = /^(--shard|--project|--exclude)=(.+)$/.exec(arg);
+    const match = /^(--shard|--project|--exclude|--only)=(.+)$/.exec(arg);
     if (!match) throw new Error(`unknown or malformed argument: ${arg}; use --help`);
     const [, key, value] = match;
-    const identity = key === '--exclude' ? arg : key;
+    const identity = key === '--exclude' || key === '--only' ? arg : key;
     if (seen.has(identity)) throw new Error(`duplicate argument: ${key}`);
     seen.add(identity);
     if (key === '--shard') options.shard = value;
@@ -69,6 +69,10 @@ function parseArguments(argv) {
       }
       options.excluded.push(value);
     }
+    if (key === '--only') {
+      if (value.match(/^(?:[\w-]+\/)*[\w-]+\.spec\.ts$/)?.[0] !== value) throw new Error(`unsupported spec path: ${value}`);
+      options.only.push(value);
+    }
   }
   const { shard } = options;
   if (!/^[1-9]\d*\/[1-9]\d*$/.test(shard)) throw new Error('invalid shard');
@@ -76,6 +80,26 @@ function parseArguments(argv) {
   if (!Number.isSafeInteger(index) || !Number.isSafeInteger(total)) throw new Error('invalid shard');
   if (index > total) throw new Error('shard index exceeds total');
   return { ...options, index, total };
+}
+
+/**
+ * One `::error` line per spec file with a failed test, titled so `pnpm pr:land` can read the
+ * failing files of `main`'s full run back from the check annotations without downloading logs.
+ */
+export const FAILING_SPEC_TITLE = 'failing spec';
+
+export function failingSpecFiles(report) {
+  const failed = new Set();
+  for (const spec of specsIn(report)) {
+    if ((spec.tests ?? []).some((test) => test.status === 'unexpected')) failed.add(spec.file);
+  }
+  return [...failed].sort();
+}
+
+function failureAnnotations(reportFile) {
+  let report;
+  try { report = JSON.parse(readFileSync(reportFile, 'utf8')); } catch { return []; }
+  return failingSpecFiles(report).map((file) => `::error file=tests/e2e/${file},title=${FAILING_SPEC_TITLE}::tests/e2e/${file}`);
 }
 
 function executionSummary(report) {
@@ -99,9 +123,9 @@ function executionSummary(report) {
 }
 
 export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), env = process.env } = {}) {
-  const { shard, index, total, project, excluded, help } = parseArguments(argv);
+  const { shard, index, total, project, excluded, only, help } = parseArguments(argv);
   if (help) {
-    console.log('Usage: node scripts/ci/run-playwright-ci.mjs [--shard=N/M] [--project=smoke|post-merge] [--exclude=SPEC]\nDefaults: shard 1/3, both projects. Exclusions: web-surface-smoke.spec.ts, contextual-meaning-editor.spec.ts.\nUse --help or -h alone to display this help without running tests.');
+    console.log('Usage: node scripts/ci/run-playwright-ci.mjs [--shard=N/M] [--project=smoke|post-merge] [--exclude=SPEC] [--only=SPEC...]\nDefaults: shard 1/3, both projects, every file. Exclusions: web-surface-smoke.spec.ts, contextual-meaning-editor.spec.ts. --only names files under tests/e2e/; one that discovery cannot find is an error.\nUse --help or -h alone to display this help without running tests.');
     return 0;
   }
   const discovered = spawn('pnpm', ['exec', 'playwright', 'test', ...project, '--list', '--reporter=json'], {
@@ -110,7 +134,12 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
   if (discovered.status !== 0) throw new Error(`Playwright discovery failed: ${discovered.stderr ?? ''}`);
   const discovery = JSON.parse(discovered.stdout);
   const inventory = inventoryFiles(discovery);
-  const files = inventory.filter((row) => !excluded.includes(row.file));
+  if (only.length > 0) {
+    const discovered = new Set(inventory.map((row) => row.file));
+    const missing = only.filter((file) => !discovered.has(file));
+    if (missing.length > 0) throw new Error(`named spec(s) not discovered: ${missing.join(', ')}`);
+  }
+  const files = inventory.filter((row) => !excluded.includes(row.file) && (only.length === 0 || only.includes(row.file)));
   if (files.length === 0) throw new Error('no suite files remain after surface allocation');
   const history = JSON.parse(readFileSync(new URL('../data/playwright-file-durations.json', import.meta.url), 'utf8'));
   const assignment = balanceFiles(files, history, total);
@@ -139,6 +168,9 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
   const result = spawn('pnpm', ['exec', 'playwright', 'test', ...project, ...filters, ...failFast, '--reporter=list,json'], {
     cwd, env: { ...env, PLAYWRIGHT_JSON_OUTPUT_NAME: reportFile }, stdio: 'inherit',
   });
+  if (result.status !== 0 && (env.GITHUB_ACTIONS === 'true')) {
+    for (const line of failureAnnotations(reportFile)) console.log(line);
+  }
   if (result.status === 0) {
     const report = JSON.parse(readFileSync(reportFile, 'utf8'));
     const actual = inventoryFiles(report).sort((a, b) => a.file.localeCompare(b.file));

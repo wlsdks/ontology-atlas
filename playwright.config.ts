@@ -55,15 +55,15 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   reporter: [['list']],
   /**
-   * PR gate / post-merge sweep — two projects, one list.
+   * Gate / post-merge sweep — two projects, one list.
    *
    * The source of truth for the boundary is `tests/e2e/post-merge-specs.ts` (why that boundary
    * is chosen is also documented there). Here we only split the list into its complement (smoke) and
    * the post-merge list — new specs not in the list are **automatically smoke**, i.e., run in PRs.
    * The direction of error is «PR slows down» rather than «gate loss».
    *
-   * `pnpm exec playwright test` without filters runs both projects —
-   * local and main push behavior remains unchanged pre-split. Only PRs use `--project=smoke`.
+   * `pnpm exec playwright test` without filters runs both projects, as every push to main does in CI.
+   * A train runs its mapped specs and the merge smoke set (`scripts/ci/merge-smoke-specs.mjs`) by file.
    * Verify wiring is alive via `tests/contract/ci-gates/e2e-suite-split.contract.test.ts`.
    */
   projects: [
