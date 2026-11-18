@@ -214,9 +214,9 @@ jobs:
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
 
-  # The build runs third-party build code, so it runs outside `release-signing` and never
-  # sees a signing secret. It hands the unsigned bundle to `sign-macos`, and a signing or
-  # notarization failure reruns that short job alone.
+  # The build steps run third-party build code in a job that references no secret. The
+  # bundle they produce is still executed in `sign-macos` (exact-case probe, install smoke).
+  # A signing or notarization failure reruns that short job alone.
   build-macos:
     name: Build unsigned macOS app (${{ matrix.arch }})
     needs: admit-release
@@ -313,11 +313,12 @@ jobs:
       # tar keeps the bundle's modes and extended attributes, which the artifact's zip would
       # drop. Staging needs the symbols of this binary; Cargo leaves the dSYM as a symlink
       # into `deps/`, so it is appended with `-L` to carry the directory, not the link.
+      # `/usr/bin/tar` is bsdtar: a GNU tar on PATH reads `-L` as a tape length.
       - name: Archive unsigned app bundle
         id: archive
         run: |
-          tar -cf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release bundle/macos
-          tar -rLf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release ontology-atlas.dSYM
+          /usr/bin/tar -cf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release bundle/macos
+          /usr/bin/tar -rLf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release ontology-atlas.dSYM
           echo "sha256=$(shasum -a 256 "$RUNNER_TEMP/macos-unsigned.tar" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 
       - name: Upload unsigned app bundle
@@ -401,7 +402,7 @@ jobs:
           [[ "$UNSIGNED_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "build-macos reported no archive digest" >&2; exit 1; }
           echo "${UNSIGNED_SHA256}  ${ARCHIVE}" | shasum -a 256 --check --strict
           mkdir -p src-tauri/target/release
-          tar -xf "$ARCHIVE" -C src-tauri/target/release
+          /usr/bin/tar -xf "$ARCHIVE" -C src-tauri/target/release
           rm -f "$ARCHIVE"
           [[ -d src-tauri/target/release/ontology-atlas.dSYM/Contents ]] || { echo "the archive carried no dSYM directory" >&2; exit 1; }
 

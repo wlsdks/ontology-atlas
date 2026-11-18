@@ -128,6 +128,9 @@ test("the app bundle step packages the export the smoke checked instead of build
   assert.equal(conf.build.beforeBuildCommand, "pnpm build", "a bare tauri build still builds its own export");
   const override = ` --config '${JSON.stringify({ build: { beforeBuildCommand: "" } })}'`;
   assert.equal(pkg.scripts["desktop:build:app:prebuilt"], `${pkg.scripts["desktop:build:app"]}${override}`);
+
+  const rehearsed = pkg.scripts["desktop:release-artifact:unsigned"].split(" && ");
+  assert.deepEqual(rehearsed.slice(0, 3), ["pnpm build", "pnpm desktop:smoke", "pnpm desktop:build:app:prebuilt"]);
 });
 
 test("an unknown phase runs nothing", () => {

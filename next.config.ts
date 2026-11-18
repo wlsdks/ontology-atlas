@@ -37,7 +37,8 @@ const nextConfig: NextConfig = {
   experimental: { useTypeScriptCli: false, mcpServer: false },
   // The browser-evidence build in e2e.yml and the release builds in release-macos.yml skip
   // the type check: `pnpm typecheck` in the required Checks gate owns the same program, route
-  // types included, for every commit that reaches main. Every other build still checks types.
+  // types included, and runs on the merge tree of every change the CI planner finds can reach
+  // it. Every other build still checks types.
   typescript: { ignoreBuildErrors: process.env.ATLAS_BUILD_SKIP_TYPECHECK === '1' },
   env: { NEXT_PUBLIC_RELEASE_VERSION: releaseVersion },
   output: 'export',

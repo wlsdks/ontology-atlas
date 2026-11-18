@@ -433,8 +433,8 @@ describe("workflow security contract", () => {
     expect(sign).toContain("UNSIGNED_SHA256: ${{ needs.build-macos.outputs.unsigned_sha256 }}");
     const digestCheck = 'echo "${UNSIGNED_SHA256}  ${ARCHIVE}" | shasum -a 256 --check --strict';
     expect(at(digestCheck)).toBeGreaterThan(-1);
-    expect(at(digestCheck), "the archive is unpacked before its digest is checked").toBeLessThan(at('tar -xf "$ARCHIVE"'));
-    expect(at('tar -xf "$ARCHIVE"')).toBeLessThan(at("- name: Import Apple Developer ID certificate"));
+    expect(at(digestCheck), "the archive is unpacked before its digest is checked").toBeLessThan(at('/usr/bin/tar -xf "$ARCHIVE"'));
+    expect(at('/usr/bin/tar -xf "$ARCHIVE"')).toBeLessThan(at("- name: Import Apple Developer ID certificate"));
     expect(at("- name: Import Apple Developer ID certificate")).toBeLessThan(at("--phase=sign"));
 
     // The unsigned hand-off must not match the pattern publishing downloads wholesale.

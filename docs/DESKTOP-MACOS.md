@@ -89,10 +89,12 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   static export once, route-smoke it, bundle that same export, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
-  workflow runs `--phase=build` in `build-macos`, a job outside the signing
-  environment that holds no secret, and hands the unsigned bundle as a tar
-  archive to `sign-macos`, which checks its digest, imports the certificate and
-  runs `--phase=sign`. A signing or notarization failure reruns only that job.
+  workflow runs `--phase=build` in `build-macos`, a job that references no
+  secret, and hands the unsigned bundle as a tar archive to `sign-macos`, which
+  checks its digest, imports the certificate and runs `--phase=sign`. The
+  bundle the build produced is still executed there (the MCP exact-case probe
+  and the install smoke). A signing or notarization failure reruns only that
+  job.
 
 ## Installed-app log
 
@@ -248,8 +250,9 @@ and masks it with `::add-mask::`, and derives the identity from the imported
 certificate. An `always()` step deletes the temporary keychain and decoded
 `.p12` after the per-arch handoff, even on failure.
 `scripts/desktop-release/check-macos-release-secrets.mjs` rejects a missing, blank, or
-structurally unusable secret (including base64 that is not PKCS#12 DER) before
-build. The `.p8` is written to a `0600` temporary file only for notarization.
+structurally unusable secret (including base64 that is not PKCS#12 DER) at the
+start of `sign-macos`, after `build-macos` has finished and before the
+certificate is imported. The `.p8` is written to a `0600` temporary file only for notarization.
 
 In the workflow, `scripts/desktop/sign-macos-app.mjs` deep-signs the `.app` with
 hardened runtime and verifies with strict deep `codesign`, and with `--dmg`
@@ -377,7 +380,7 @@ updater artifacts.
 |---|---|
 | `desktop:smoke` reports a missing route, asset, or offline doc | Rebuild with `pnpm build`; if only copy or a component marker differs, compare the product and `scripts/desktop/desktop-smoke.mjs` before rebuilding once |
 | `desktop:verify-app` exits early or finds no window | Rerun with `--kill-existing --print-window-diagnostics`; a stale `/Applications` copy shares the bundle id |
-| Workflow fails before build on secrets | `pnpm desktop:release-github -- --tag=<tag>`, then `node scripts/desktop-release/apple-signing-setup.mjs verify`; set values with the commands above |
+| `sign-macos` fails on secrets before signing | `pnpm desktop:release-github -- --tag=<tag>`, then `node scripts/desktop-release/apple-signing-setup.mjs verify`; set values with the commands above |
 | Admission fails: version | Align the three version files; `pnpm desktop:release-tag -- --tag=<tag>` |
 | Admission fails: release facts | The previous release's facts PR has not landed; land it or `pnpm desktop:release-run -- --tag=<previous tag> --refresh-only` |
 | Admission fails: ACP registry | Refresh drift with `pnpm acp:registry` and land it |

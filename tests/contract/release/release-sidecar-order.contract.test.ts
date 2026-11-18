@@ -69,32 +69,32 @@ describe("release workflow — the sidecar is built before the first cargo call"
   });
 
   /**
-   * The compiler that builds the sidecar (`bun build --compile`) is not on the runner
-   * by default, so its install step must precede the sidecar build.
-   *
-   * Locking the order alone cannot catch "called first, but the tool to call is
-   * missing".
+   * The sidecar is baked by `bun build --compile` from `mcp/`, which is not a pnpm
+   * workspace member: the runner ships neither bun nor `mcp/node_modules`. Each job
+   * starts on a clean runner, so each job that bakes the sidecar, directly or through a
+   * build script, installs both before that step.
    */
-  it("the bun install comes before the sidecar build", () => {
-    const bunAt = workflow.indexOf("oven-sh/setup-bun");
-    expect(bunAt, "there is no bun install step that bakes the sidecar").toBeGreaterThan(-1);
-    expect(bunAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
-  });
+  it("every job that bakes the sidecar installs bun and the MCP dependencies first", () => {
+    const bakes = [SIDECAR_STEP, "--phase=build", "desktop:build:windows"];
+    const baking = jobBlocks(workflow)
+      .map(({ name, block }) => ({
+        name,
+        block,
+        bakeAt: Math.min(...bakes.map((marker) => block.indexOf(marker)).filter((at) => at > -1)),
+      }))
+      .filter((job) => Number.isFinite(job.bakeAt));
+    expect(baking.map((job) => job.name)).toEqual(["test-macos", "test-windows", "build-macos", "build-windows"]);
 
-  /**
-   * `mcp/` is not a pnpm workspace member; it uses its own `node_modules`, which the
-   * root `pnpm install` does not populate. A person's machine still has an old
-   * install, so local compilation passes and only the runner fails to find
-   * `@modelcontextprotocol/sdk`.
-   *
-   * Even with the tool (bun) and the order both locked, an empty **dependency tree
-   * for the compilation target** stops it at the same place. All three conditions
-   * must be locked for this step to actually pass.
-   */
-  it("the bundled MCP dependency install comes before the sidecar build", () => {
-    const depsAt = workflow.indexOf("pnpm --dir mcp install");
-    expect(depsAt, "there is no install step for the bundled MCP server dependencies").toBeGreaterThan(-1);
-    expect(depsAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
+    for (const { name, block, bakeAt } of baking) {
+      for (const [label, marker] of [
+        ["the bun install", "oven-sh/setup-bun"],
+        ["the bundled MCP dependency install", "pnpm --dir mcp install"],
+      ]) {
+        const at = block.indexOf(marker);
+        expect(at, `${name} bakes the sidecar without ${label}`).toBeGreaterThan(-1);
+        expect(at, `${name}: ${label} comes after the sidecar is baked`).toBeLessThan(bakeAt);
+      }
+    }
   });
 
   it("every job builds the sidecar before its own first cargo call", () => {
