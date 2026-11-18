@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { analyzeRepoStructure } from './analyze.mjs';
-import { detectExistingOntologyEvidence } from './analyze/project-detection.mjs';
+import { detectDomainsFromReadme, detectExistingOntologyEvidence } from './analyze/project-detection.mjs';
 import { selectExactCaseEntry } from './analyze/scan-guards.mjs';
 
 // Resolved from this file, not process.cwd(), so the suite runs from the repo
@@ -60,6 +60,7 @@ test('lowercase root readme keeps exact source case through semantic and domain 
         'Fulfillment Control owns admission and completion policy.',
       ].join('\n'),
     );
+    mkdirSync(join(r, 'src', 'fulfillment'), { recursive: true });
   });
   try {
     const result = analyzeRepoStructure(root);
@@ -168,9 +169,10 @@ test('FSD repo — features/ → capabilities, entities/widgets/views → implem
     );
     const userEl = r.elements.find((e) => e.slug === 'elements/user');
     assert.equal(userEl.path, 'src/entities/user');
+    // `features/billing` answers to "## Billing"; no folder answers to "## Authentication".
     assert.deepEqual(
       r.domains.map((d) => d.slug),
-      ['domains/authentication', 'domains/billing'],
+      ['domains/billing'],
     );
     assert.equal(r.project.slug, 'my-app');
     assert.equal(r.project.title, 'My App');
@@ -2261,10 +2263,14 @@ test('Generic README sections (Usage / Installation / Tests) skipped from domain
     );
   });
   try {
-    const r = analyzeRepoStructure(root);
     assert.deepEqual(
-      r.domains.map((d) => d.slug),
+      detectDomainsFromReadme(root).domains.map((d) => d.slug),
       ['domains/real-domain'],
+    );
+    assert.deepEqual(
+      analyzeRepoStructure(root).domains,
+      [],
+      'a heading no folder, package or separate document names is not a domain candidate',
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -2276,7 +2282,7 @@ test('README ampersand community support sections stay out of domains', () => {
     writeFileSync(
       join(r, 'README.md'),
       '# Native Tool\n\n## Documentation\n\n## Community & Support\n\n## Documentation & Community Support\n\n## Runtime\n',
-    );
+    );    mkdirSync(join(r, 'src', 'runtime'), { recursive: true });
   });
   try {
     const result = analyzeRepoStructure(root);
@@ -2538,9 +2544,8 @@ test('Narrative / language-guide / sentence README H2s skipped from domains', ()
     );
   });
   try {
-    const r = analyzeRepoStructure(root);
     assert.deepEqual(
-      r.domains.map((d) => d.slug),
+      detectDomainsFromReadme(root).domains.map((d) => d.slug),
       [
         'domains/provider-management',
         'domains/providers-and-local-marketplace',
@@ -3485,7 +3490,7 @@ test('README domain and feature with same name do not collide', () => {
   }
 });
 
-test('A sole README domain does not absorb otherwise unmatched code candidates', () => {
+test('A README heading no code answers to is neither a domain nor a parent for unmatched candidates', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'bootstrap-app' }));
     writeFileSync(join(r, 'README.md'), '# Bootstrap App\n\n## Accounts\n');
@@ -3497,8 +3502,8 @@ test('A sole README domain does not absorb otherwise unmatched code candidates',
     const r = analyzeRepoStructure(root);
     assert.equal(r.capabilities[0].domain, undefined);
     assert.equal(r.elements[0].domain, undefined);
+    assert.deepEqual(r.domains, []);
     assert.deepEqual(r.suggestedRelations, [
-      { from: 'bootstrap-app', to: 'domains/accounts', type: 'contains' },
       { from: 'bootstrap-app', to: 'capabilities/auth', type: 'contains' },
       { from: 'bootstrap-app', to: 'elements/session', type: 'contains' },
     ]);
@@ -3548,7 +3553,7 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     assert.deepEqual(r.meaningGate.businessOntology.capabilities, []);
     assert.deepEqual(
       r.meaningGate.proposedBusinessOntology.domains.map((row) => row.slug),
-      ['domains/checkout', 'domains/inventory'],
+      ['domains/checkout'],
     );
     assert.deepEqual(
       r.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug),
@@ -3587,7 +3592,7 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     assert.equal(r.extractionContract.assertionPolicy.humanApprovalRequired, true);
     assert.equal(r.suggestedRelations.some((relation) => relation.type === 'depends_on'), false);
     assert.equal(r.proposalValidation.canWrite, false);
-    assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 2);
+    assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 1);
     assert.equal(r.extractionContract.qualityGates.uncertaintyExplicit, true);
     assert.equal(r.extractionContract.competencyQuestions.length, 5);
     assert.deepEqual(
@@ -3732,6 +3737,7 @@ test('duplicated semantic prose does not become a second purpose or domain witne
     writeFileSync(join(r, 'README.md'), prose);
     mkdirSync(join(r, 'docs'), { recursive: true });
     writeFileSync(join(r, 'docs', 'product-contract.md'), prose);
+    mkdirSync(join(r, 'src', 'reconciliation'), { recursive: true });
   });
   try {
     const result = analyzeRepoStructure(root);
@@ -3788,18 +3794,15 @@ test('domain boundaries require a separate responsibility witness and never reus
     assert.match(invoiceReconciliation.definition, /Invoice Reconciliation domain owns invoice matching/);
     assert.deepEqual(accountSupport.evidenceSources, ['README.md', 'docs/architecture.md']);
     assert.match(accountSupport.definition, /Account Support handles account access requests/);
-    assert.deepEqual(billing.evidenceSources, ['README.md']);
-    assert.equal(
-      billing.definition,
-      'Proposed responsibility boundary named by README heading; repository-contained responsibility remains unconfirmed.',
-    );
+    assert.equal(billing, undefined, 'a heading nothing else names is not a domain candidate');
     assert.ok(
       domains.every((domain) => !domain.definition.includes('Ledger Bridge provides invoice reconciliation')),
     );
-    assert.ok(
+    assert.equal(
       result.meaningGate.reviewQuestions.some((question) =>
-        question.startsWith('[weak · domain-boundary]'),
-      ),
+        question.startsWith('[weak · domain-boundary]')),
+      false,
+      'every domain left has a separate witness, so none is weak',
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

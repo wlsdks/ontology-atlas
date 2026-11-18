@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { analyzeRepoStructure } from './analyze.mjs';
+import { detectDomainsFromReadme } from './analyze/project-detection.mjs';
 import { readSourceEvidence } from './evidence-search/source-evidence.mjs';
 
 function withAdversarialRepo(readme, extraSetup = () => {}) {
@@ -120,7 +121,7 @@ test('literal README headings cannot invent project identity or domain candidate
   try {
     const result = analyzeRepoStructure(root);
     assert.equal(result.project.title, 'Recorded Identity');
-    assert.deepEqual(result.domains.map((row) => row.title), ['Audit']);
+    assert.deepEqual(detectDomainsFromReadme(root).domains.map((row) => row.title), ['Audit']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -324,7 +325,7 @@ test('future, negated, and deprecated claims require review instead of current-f
     'The legacy invoice exporter is deprecated and no longer supported.',
     '',
     '## Billing',
-  ].join('\n'));
+  ].join('\n'), (repo) => mkdirSync(join(repo, 'src', 'billing'), { recursive: true }));
   try {
     const result = analyzeRepoStructure(root);
     const evidence = result.semanticEvidence.find((row) => row.source === 'README.md');
