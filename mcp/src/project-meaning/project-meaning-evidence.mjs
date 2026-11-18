@@ -8,6 +8,19 @@ const COMPETENCY_HEADING = '## Competency answers';
  * malformed row yields an empty set, and the strict parser reports it at finalization.
  */
 export function extractProjectMeaningEvidencePaths(body) {
+  return [...new Set(competencyEvidenceValues(body).map(({ path }) => path))]
+    .sort((left, right) => left.localeCompare(right, 'en'));
+}
+
+/** The pinned `source:<path>#L..@sha256:..` citations among the section's Evidence values. */
+export function extractProjectMeaningEvidenceCitations(body) {
+  return [...new Set(competencyEvidenceValues(body)
+    .filter(({ citation }) => citation !== null)
+    .map(({ citation }) => citation))]
+    .sort((left, right) => left.localeCompare(right, 'en'));
+}
+
+function competencyEvidenceValues(body) {
   if (typeof body !== 'string') return [];
   const heading = /^## Competency answers$/gm;
   const matches = [...body.matchAll(heading)];
@@ -17,14 +30,14 @@ export function extractProjectMeaningEvidencePaths(body) {
   const remainder = body.slice(start);
   const nextHeading = /\n## (?!#)/.exec(remainder);
   const section = remainder.slice(0, nextHeading?.index ?? remainder.length);
-  const paths = new Set();
+  const values = [];
 
   for (const line of section.split('\n')) {
     const row = /^- (Evidence|Paths): (.+)$/.exec(line);
     if (!row) continue;
-    const values = row[2].split(', ');
-    if (values.length === 0) return [];
-    for (const value of values) {
+    const cells = row[2].split(', ');
+    if (cells.length === 0) return [];
+    for (const value of cells) {
       const literal = /^`([^`]+)`$/.exec(value);
       if (!literal) return [];
       const range = row[1] === 'Evidence' ? parseSourceRangeCitation(literal[1]) : null;
@@ -32,9 +45,8 @@ export function extractProjectMeaningEvidencePaths(body) {
       if (row[1] === 'Paths' && literal[1].startsWith('source:')) return [];
       const path = range?.path ?? literal[1];
       if (!isPersistableRelativePath(path, { allowRoot: true })) return [];
-      paths.add(path);
+      values.push({ path, citation: range ? literal[1] : null });
     }
   }
-
-  return [...paths].sort((left, right) => left.localeCompare(right, 'en'));
+  return values;
 }

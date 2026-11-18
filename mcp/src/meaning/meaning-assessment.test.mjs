@@ -7,6 +7,7 @@ import {
   MEANING_COMPETENCY_QUESTIONS,
   MEANING_WITNESS_INVENTORY_CONTRACT,
   deriveMeaningAssessment,
+  unresolvedCompetencyRows,
 } from './meaning-assessment.mjs';
 import { compileOntology } from '../ontology-compiler.mjs';
 import { queryCompiledOntology } from '../ontology-engine.mjs';
@@ -111,7 +112,7 @@ test('a real agent_brief 100/100 cannot override missing semantic witnesses', ()
   assert.notEqual(assessment.status, 'verified_current');
 });
 
-test('a fresh assessment rejects answered competency witnesses that cover only a strict subset', () => {
+test('an answered row that resolves is not refused for naming only some of the domains or capabilities', () => {
   const inventory = {
     contract: MEANING_WITNESS_INVENTORY_CONTRACT,
     graphHash: GRAPH_HASH,
@@ -203,16 +204,13 @@ test('a fresh assessment rejects answered competency witnesses that cover only a
     },
   });
 
-  assert.equal(assessment.status, 'needs_evidence');
-  assert.deepEqual(assessment.topGap, {
-    dimension: 'competency',
-    id: 'competency_question_incomplete',
-    questionId: 'abilities',
-  });
+  // Whether a partial list answers "each" is the person's call from the answer text;
+  // a resolvable witness set is not refused for it.
   assert.deepEqual(
-    assessment.dimensions.competency.questions.find(({ id }) => id === 'abilities'),
-    { id: 'abilities', status: 'answered', witnessStatus: 'missing' },
+    assessment.dimensions.competency.questions.map(({ witnessStatus }) => witnessStatus),
+    ['resolved', 'resolved', 'resolved', 'resolved', 'resolved'],
   );
+  assert.equal(assessment.dimensions.competency.status, 'answered');
 });
 
 test('a supported underlying path cannot resolve an exact source-range witness', () => {
@@ -245,4 +243,57 @@ test('a supported underlying path cannot resolve an exact source-range witness',
   assert.equal(evidence.witnessStatus, 'missing');
   questions.find((row) => row.id === 'evidence').witnesses.paths = [reference];
   assert.equal(deriveMeaningAssessment(rangeInput).status, 'invalid');
+});
+
+function evidenceOnlyCompetency(evidenceWitnesses, inventoryOverrides = {}) {
+  return {
+    contract: MEANING_COMPETENCY_CONTRACT, receiptVersion: 1,
+    evaluator: MEANING_COMPETENCY_EVALUATOR, graphHash: GRAPH_HASH,
+    inventory: {
+      contract: MEANING_WITNESS_INVENTORY_CONTRACT, graphHash: GRAPH_HASH,
+      sourceFingerprint: 'git:abc123:clean', concepts: ['capabilities/a'],
+      kinds: { 'capabilities/a': 'capability' }, relations: [],
+      evidence: ['src/a.ts'], paths: ['src/a.ts'],
+      ...inventoryOverrides,
+    },
+    questions: MEANING_COMPETENCY_QUESTIONS.map(({ id }) => ({
+      id,
+      status: id === 'evidence' ? 'answered' : 'visible-gap',
+      witnesses: id === 'evidence'
+        ? { concepts: ['capabilities/a', 'capabilities/ghost'], relations: [], evidence: evidenceWitnesses, paths: ['src/a.ts'] }
+        : { concepts: [], relations: [], evidence: [], paths: [] },
+      unresolvedWitnesses: id === 'evidence' ? [] : ['declared_gap'],
+    })),
+  };
+}
+
+test('a pinned citation the inventory verified resolves like its plain path', () => {
+  const reference = `source:src/a.ts#L1-L1@sha256:${'a'.repeat(64)}`;
+  const competency = evidenceOnlyCompetency([reference], { concepts: ['capabilities/a', 'capabilities/ghost'], evidence: ['src/a.ts', reference] });
+  assert.deepEqual(unresolvedCompetencyRows({ competency }), []);
+});
+
+test('the refusal names every unresolved witness and why, not only the question', () => {
+  const stale = `source:src/a.ts#L1-L1@sha256:${'b'.repeat(64)}`;
+  const rows = unresolvedCompetencyRows({ competency: evidenceOnlyCompetency([stale, 'src/unmeasured.ts']) });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].id, 'evidence');
+  const text = rows[0].problems.join('\n');
+  assert.match(text, /concept `capabilities\/ghost` is not in this project's containment graph/);
+  assert.match(text, /no longer matches `src\/a\.ts`; read it again/);
+  assert.match(text, /evidence `src\/unmeasured\.ts` is not a measured source witness/);
+});
+
+test('containment cited as contains resolves against the typed key and the other way round', () => {
+  const competency = evidenceOnlyCompetency(['src/a.ts'], {
+    concepts: ['capabilities/a', 'capabilities/ghost', 'p', 'domains/d'],
+    relations: [{ from: 'p', to: 'domains/d', type: 'domains' }],
+  });
+  const domains = competency.questions.find(({ id }) => id === 'domains');
+  Object.assign(domains, {
+    status: 'answered',
+    unresolvedWitnesses: [],
+    witnesses: { concepts: ['domains/d'], relations: [{ from: 'p', to: 'domains/d', type: 'contains' }], evidence: ['src/a.ts'], paths: [] },
+  });
+  assert.deepEqual(unresolvedCompetencyRows({ competency }).map(({ id }) => id), []);
 });

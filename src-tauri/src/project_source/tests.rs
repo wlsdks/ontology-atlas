@@ -17,8 +17,8 @@ fn inspect_project_source_returns_a_deterministic_bounded_folder_inventory() {
     fs::write(root.join("src/index.ts"), "export const value = 1;\n").unwrap();
     fs::write(root.join("node_modules/pkg/index.js"), "ignored").unwrap();
 
-    let first = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
-    let second = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+    let first = inspect_project_source(root.to_string_lossy().to_string(), None).unwrap();
+    let second = inspect_project_source(root.to_string_lossy().to_string(), None).unwrap();
 
     assert_eq!(first.kind, "folder");
     assert_eq!(
@@ -83,7 +83,7 @@ fn inspect_project_source_promotes_a_selected_subfolder_to_its_git_worktree() {
         .output()
         .unwrap();
     let selected = root.join("packages/app");
-    let clean = inspect_project_source(selected.to_string_lossy().to_string()).unwrap();
+    let clean = inspect_project_source(selected.to_string_lossy().to_string(), None).unwrap();
     assert_eq!(clean.dirty, Some(false));
 
     fs::write(
@@ -93,7 +93,7 @@ fn inspect_project_source_promotes_a_selected_subfolder_to_its_git_worktree() {
     .unwrap();
     fs::write(root.join("packages/app/new.ts"), "export {};\n").unwrap();
 
-    let inspection = inspect_project_source(selected.to_string_lossy().to_string()).unwrap();
+    let inspection = inspect_project_source(selected.to_string_lossy().to_string(), None).unwrap();
     let head = Command::new("git")
         .args(["rev-parse", "HEAD"])
         .current_dir(&root)
@@ -268,7 +268,7 @@ fn inspect_project_source_uses_git_visible_files_instead_of_ignored_inventory_no
         );
     }
 
-    let inspection = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+    let inspection = inspect_project_source(root.to_string_lossy().to_string(), None).unwrap();
 
     assert!(!inspection.truncated);
     assert_eq!(inspection.files, [".gitignore", "src/index.ts"]);
@@ -306,7 +306,7 @@ fn inspect_project_source_reports_when_the_file_inventory_is_truncated() {
         fs::write(root.join(format!("{index:04}.txt")), "x").unwrap();
     }
 
-    let inspection = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+    let inspection = inspect_project_source(root.to_string_lossy().to_string(), None).unwrap();
 
     assert!(inspection.truncated);
     assert_eq!(inspection.files.len(), SOURCE_INVENTORY_MAX_FILES);
@@ -320,4 +320,139 @@ fn inspect_project_source_reports_when_the_file_inventory_is_truncated() {
     );
 
     fs::remove_dir_all(root).ok();
+}
+
+#[test]
+fn the_vault_exclusion_rule_matches_the_cases_the_mcp_probe_also_runs() {
+    let cases: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../mcp/src/project-source/vault-exclusion-cases.json"
+    ))
+    .unwrap();
+    for case in cases["folders"].as_array().unwrap() {
+        let source = case["source"].as_str().unwrap();
+        let vault = case["vault"].as_str().unwrap();
+        assert_eq!(
+            vault_folder_inside(source, vault).as_deref(),
+            case["inside"].as_str(),
+            "{source} :: {vault}"
+        );
+    }
+    let encode = |entries: &serde_json::Value| -> Vec<u8> {
+        let entries: Vec<&str> = entries
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|entry| entry.as_str().unwrap())
+            .collect();
+        if entries.is_empty() {
+            return Vec::new();
+        }
+        format!("{}\0", entries.join("\0")).into_bytes()
+    };
+    for case in cases["status"].as_array().unwrap() {
+        assert_eq!(
+            filter_vault_status(&encode(&case["entries"]), case["excluded"].as_str()),
+            encode(&case["kept"])
+        );
+    }
+}
+
+#[test]
+fn a_vault_inside_the_repository_does_not_change_its_own_source_probe() {
+    let root = std::env::temp_dir().join(format!(
+        "ontology-atlas-project-source-vault-inside-{}",
+        std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir_all(root.join("src")).unwrap();
+    fs::create_dir_all(root.join("atlas/projects")).unwrap();
+    fs::write(root.join("src/main.go"), "package main\n").unwrap();
+    fs::write(
+        root.join("atlas/projects/app.md"),
+        "---\nkind: project\n---\n",
+    )
+    .unwrap();
+    for args in [
+        vec!["init"],
+        vec!["config", "user.email", "atlas@example.invalid"],
+        vec!["config", "user.name", "Atlas Test"],
+        vec!["add", "."],
+        vec!["commit", "-m", "initial"],
+    ] {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+    }
+    let source = root.to_string_lossy().to_string();
+    let vault = Some(root.join("atlas").to_string_lossy().to_string());
+    let clean = inspect_project_source(source.clone(), vault.clone()).unwrap();
+    assert!(!clean.files.iter().any(|file| file.starts_with("atlas/")));
+    assert_eq!(clean.files, ["src/main.go"]);
+
+    fs::write(
+        root.join("atlas/projects/app.md"),
+        "---\nkind: project\n---\nedited\n",
+    )
+    .unwrap();
+    fs::write(root.join("atlas/domains.md"), "new\n").unwrap();
+    let after_vault_write = inspect_project_source(source.clone(), vault.clone()).unwrap();
+    assert_eq!(after_vault_write.fingerprint, clean.fingerprint);
+    assert_eq!(after_vault_write.dirty, Some(false));
+    let unexcluded = inspect_project_source(source.clone(), None).unwrap();
+    assert_eq!(unexcluded.dirty, Some(true));
+
+    fs::write(root.join("src/main.go"), "package main\n\nfunc main() {}\n").unwrap();
+    let after_source_edit = inspect_project_source(source, vault).unwrap();
+    assert_ne!(after_source_edit.fingerprint, clean.fingerprint);
+    assert_eq!(after_source_edit.dirty, Some(true));
+
+    fs::remove_dir_all(root).ok();
+}
+
+#[test]
+fn a_vault_path_typed_in_another_case_is_still_the_bound_folder_on_a_case_insensitive_disk() {
+    let parent = std::env::temp_dir().join(format!(
+        "ontology-atlas-project-source-case-{}",
+        std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let root = parent.join("Repo");
+    fs::create_dir_all(root.join("src")).unwrap();
+    if !parent.join("repo").exists() {
+        fs::remove_dir_all(parent).ok();
+        return;
+    }
+    fs::create_dir_all(root.join("atlas")).unwrap();
+    fs::write(root.join("src/main.go"), "package main\n").unwrap();
+    for args in [
+        vec!["init"],
+        vec!["config", "user.email", "atlas@example.invalid"],
+        vec!["config", "user.name", "Atlas Test"],
+        vec!["add", "."],
+        vec!["commit", "-m", "initial"],
+    ] {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+    }
+    fs::write(root.join("atlas/project.md"), "---\nkind: project\n---\n").unwrap();
+    let inspection = inspect_project_source(
+        parent.join("repo").to_string_lossy().to_string(),
+        Some(parent.join("REPO/atlas").to_string_lossy().to_string()),
+    )
+    .unwrap();
+    assert_eq!(inspection.dirty, Some(false));
+    assert_eq!(inspection.files, ["src/main.go"]);
+
+    fs::remove_dir_all(parent).ok();
 }

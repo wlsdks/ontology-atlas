@@ -64,9 +64,14 @@ project node's body. The parser is exact: anything else fails with
    plain prose and must be the last row.
 7. An \`answered\` row must not declare a \`Gap\`; a \`partial\` or \`visible-gap\` row
    must. An \`answered\` row must also have witnesses that still resolve against
-   the current graph, or finalize refuses by name.
+   the current graph, or finalize refuses and names each witness and why.
 8. An \`Evidence\` value is a repository-relative path, or a pinned citation
-   \`source:<path>#L<start>-L<end>@sha256:<64 hex>\`. \`Paths\` takes plain paths only.
+   \`source:<path>#L<start>-L<end>@sha256:<64 hex>\` that counts while the file still
+   has that hash. \`Paths\` takes plain paths only. A path counts once
+   \`connect_project_source\` has measured it: after adding one, connect again.
+9. Containment relations use the typed keys the writer stores: project
+   \`--domains-->\` domain, domain \`--capabilities-->\` capability, \`--elements-->\`
+   element. \`--contains-->\` is read as the same edge.
 
 The five questions are fixed. Copy them exactly:
 
@@ -97,7 +102,7 @@ Which stable business responsibilities or decision boundaries form its domains?
 Invoicing owns what a customer is charged; delivery owns when the order ships.
 
 - Concepts: \`domains/invoicing\`
-- Relations: \`billing\` --contains--> \`domains/invoicing\`
+- Relations: \`billing\` --domains--> \`domains/invoicing\`
 - Evidence: \`README.md\`
 
 ### abilities: answered
@@ -107,7 +112,7 @@ Which observable abilities realize those outcomes inside each domain?
 Invoicing issues one invoice per completed order.
 
 - Concepts: \`capabilities/issue-invoice\`
-- Relations: \`domains/invoicing\` --contains--> \`capabilities/issue-invoice\`
+- Relations: \`domains/invoicing\` --capabilities--> \`capabilities/issue-invoice\`
 - Evidence: \`src/billing/issue-invoice.ts\`
 
 ### evidence: answered

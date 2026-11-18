@@ -2,7 +2,11 @@ import {
   MEANING_WITNESS_INVENTORY_CONTRACT,
 } from '../meaning/meaning-assessment.mjs';
 import { WRITE_RELATION_TYPE_VALUES } from '../ontology-engine.mjs';
-import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
+import {
+  extractProjectMeaningEvidenceCitations,
+  extractProjectMeaningEvidencePaths,
+} from './project-meaning-evidence.mjs';
+import { parseSourceRangeCitation } from '../meaning/source-range-citation.mjs';
 // One vocabulary, declared in project-source-vocabulary.mjs.
 import {
   PROJECT_SOURCE_ACTION_IDS as SOURCE_ACTION_IDS,
@@ -139,6 +143,7 @@ export function buildProjectMeaningInventory({
   artifactEdges,
   scopedDocs,
   projectSource,
+  verifyCitation = null,
 } = {}) {
   if (!safeSlug(projectSlug, 200)) return unavailable('invalid_project');
   if (!safeGraphHash(graphHash)) return unavailable('invalid_graph_hash');
@@ -185,6 +190,7 @@ export function buildProjectMeaningInventory({
   }
 
   const claims = new Set();
+  const citations = [];
   for (const doc of scopedDocs) {
     const path = doc?.frontmatter?.path;
     if (scope.has(doc?.slug) && safeRelativePath(path)) {
@@ -198,6 +204,7 @@ export function buildProjectMeaningInventory({
       for (const evidencePath of extractProjectMeaningEvidencePaths(doc.body)) {
         claims.add(`${doc.slug}\0${evidencePath}`);
       }
+      citations.push(...extractProjectMeaningEvidenceCitations(doc.body));
     }
   }
   const evidence = new Set();
@@ -216,6 +223,16 @@ export function buildProjectMeaningInventory({
     }
   }
 
+  const paths = [...evidence];
+  // A pinned citation resolves when its file is a measured witness and still hashes
+  // to the pinned sha256; the caller owns the read, so this stays pure.
+  for (const reference of citations) {
+    const citation = parseSourceRangeCitation(reference);
+    if (citation && evidence.has(citation.path) && typeof verifyCitation === 'function' && verifyCitation(citation) === true) {
+      evidence.add(reference);
+    }
+  }
+
   return {
     status: 'ready',
     evidenceClaims: [...evidenceClaims.entries()]
@@ -229,7 +246,7 @@ export function buildProjectMeaningInventory({
       ...(Object.keys(kinds).length > 0 ? { kinds } : {}),
       relations: [...relationsByKey.values()].sort((a, b) => relationKey(a).localeCompare(relationKey(b))),
       evidence: [...evidence].sort((a, b) => a.localeCompare(b)),
-      paths: [...evidence].sort((a, b) => a.localeCompare(b)),
+      paths: paths.sort((a, b) => a.localeCompare(b)),
     },
   };
 }

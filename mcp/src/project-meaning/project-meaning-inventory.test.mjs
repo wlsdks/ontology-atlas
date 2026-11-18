@@ -370,3 +370,39 @@ test('deduplicates and sorts concepts, relations, and evidence deterministically
   ]);
   assert.deepEqual(result.inventory.evidence, ['src/a.ts', 'src/z.ts']);
 });
+
+test('admits a pinned competency citation only when its measured file still has the pinned hash', () => {
+  const good = `source:src/search.ts#L1-L4@sha256:${'a'.repeat(64)}`;
+  const stale = `source:src/search.ts#L5-L9@sha256:${'b'.repeat(64)}`;
+  const unmeasured = `source:src/other.ts#L1-L2@sha256:${'a'.repeat(64)}`;
+  const body = [
+    '## Competency answers',
+    '',
+    '### evidence — answered',
+    '',
+    'Question',
+    '',
+    'Answer',
+    '',
+    `- Evidence: \`${good}\`, \`${stale}\`, \`${unmeasured}\``,
+  ].join('\n');
+  const checked = [];
+  const result = buildProjectMeaningInventory({
+    projectSlug: 'project',
+    graphHash: GRAPH_HASH,
+    projectScope: scope([{ slug: 'project', kind: 'project' }]),
+    artifactEdges: [],
+    scopedDocs: [{ slug: 'project', frontmatter: { slug: 'project', kind: 'project' }, body }],
+    projectSource: source([
+      { id: 'competency-evidence:1', nodeSlug: 'project', role: 'competency-evidence', path: 'src/search.ts', supported: true },
+    ]),
+    verifyCitation: (citation) => {
+      checked.push(citation.reference);
+      return citation.sha256 === 'a'.repeat(64);
+    },
+  });
+
+  assert.deepEqual(result.inventory.evidence, [good, 'src/search.ts']);
+  assert.deepEqual(result.inventory.paths, ['src/search.ts'], 'Paths stay plain paths');
+  assert.ok(!checked.includes(unmeasured), 'an unmeasured file is never read');
+});

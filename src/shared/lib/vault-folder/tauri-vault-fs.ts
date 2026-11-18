@@ -272,12 +272,14 @@ export async function revealTauriVaultFile(
 }
 
 /** Classifies the chosen folder as a canonical Git worktree or a bounded folder source. */
+/** `vaultRoot` inside the source is left out of the probe, as the MCP probe does, so the vault's own writes never stale its receipt. */
 export async function inspectTauriProjectSource(
   rootPath: string,
+  vaultRoot?: string | null,
 ): Promise<ProjectSourceInspection | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<ProjectSourceInspection>('inspect_project_source', { rootPath });
+  return invoke<ProjectSourceInspection>('inspect_project_source', { rootPath, vaultRoot: vaultRoot ?? null });
 }
 
 /** Fixed V4 continuity probe; callers name a vault slug, never arbitrary exclusion paths. */

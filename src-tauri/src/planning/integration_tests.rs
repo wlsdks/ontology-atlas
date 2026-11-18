@@ -71,7 +71,7 @@ fn planning_selection_does_not_grant_existing_vault_or_source_commands() {
         assert!(read_vault_text_file(root.clone(), "plan.md".into()).is_err());
         assert!(write_vault_text_file(root.clone(), "planted.md".into(), "x".into()).is_err());
         assert!(list_vault_directory(root.clone(), "".into(), None).is_err());
-        assert!(inspect_project_source(root.clone()).is_err());
+        assert!(inspect_project_source(root.clone(), None).is_err());
         let briefing =
             serde_json::to_value(git_source_briefing(root.clone(), 0, 1).unwrap()).unwrap();
         assert_eq!(briefing["status"], "ungranted");
@@ -92,9 +92,9 @@ fn planning_selection_does_not_grant_existing_vault_or_source_commands() {
 fn wrong_shared_source_grant_changes_existing_source_access_positive_control() {
     let f = Fixture::new();
     let _scope = EnforcedScope::granting(&[]);
-    assert!(inspect_project_source(f.path()).is_err());
+    assert!(inspect_project_source(f.path(), None).is_err());
     vault_grants::grant_source_root(&f.root);
-    assert!(inspect_project_source(f.path()).is_ok());
+    assert!(inspect_project_source(f.path(), None).is_ok());
     assert!(read_vault_text_file(f.path(), "plan.md".into()).is_err());
 }
 
@@ -114,12 +114,12 @@ fn separately_granted_source_survives_planning_revocation_without_parent_or_vaul
     let f = Fixture::new();
     let _scope = EnforcedScope::granting(&[]);
     vault_grants::grant_source_root(&f.root);
-    assert!(inspect_project_source(f.path()).is_ok());
+    assert!(inspect_project_source(f.path(), None).is_ok());
     let session = PlanningSession::default();
     f.grant(&session);
     session.revoke().unwrap();
-    assert!(inspect_project_source(f.path()).is_ok());
-    assert!(inspect_project_source(f.base.to_string_lossy().into_owned()).is_err());
+    assert!(inspect_project_source(f.path(), None).is_ok());
+    assert!(inspect_project_source(f.base.to_string_lossy().into_owned(), None).is_err());
     assert!(read_vault_text_file(f.path(), "plan.md".into()).is_err());
 }
 

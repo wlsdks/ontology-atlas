@@ -176,8 +176,16 @@ const two = turn("turn-two");
 const byKind = {};
 if (existsSync(vault)) {
   for (const entry of readdirSync(vault, { withFileTypes: true })) {
-    if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
-    byKind[entry.name] = readdirSync(`${vault}/${entry.name}`).filter((f) => f.endsWith(".md")).length;
+    if (entry.name.startsWith(".")) continue;
+    if (entry.isDirectory()) {
+      byKind[entry.name] = readdirSync(`${vault}/${entry.name}`).filter((f) => f.endsWith(".md")).length;
+      continue;
+    }
+    // Project and document nodes live at the vault root; count them by their kind.
+    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+    const head = readFileSync(`${vault}/${entry.name}`, "utf8").slice(0, 4096);
+    const kind = /^---\n[\s\S]*?^kind:\s*"?([\w-]+)/m.exec(head)?.[1];
+    if (kind && kind !== "vault-readme") byKind[kind] = (byKind[kind] ?? 0) + 1;
   }
 }
 const finalText = typeof two?.result === "string" ? two.result : "";

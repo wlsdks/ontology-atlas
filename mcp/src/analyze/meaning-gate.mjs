@@ -370,7 +370,7 @@ function semanticClaimTerms(value) {
   )));
 }
 
-function findDomainResponsibilityWitness(candidate, semanticEvidence) {
+export function findDomainResponsibilityWitness(candidate, semanticEvidence) {
   const nameSource = candidate.evidence?.source;
   const normalizedDomain = normalizeSemanticText(candidate.title);
   const nameFingerprint = semanticEvidenceFingerprint(

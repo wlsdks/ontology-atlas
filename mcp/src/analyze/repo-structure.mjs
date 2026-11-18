@@ -57,6 +57,7 @@ import {
   buildMeaningGate,
   deriveBusinessCapabilityCandidates,
   enrichProjectCandidate,
+  findDomainResponsibilityWitness,
 } from './meaning-gate.mjs';
 
 /** Walks a codebase root and analyses its README into ontology node candidates. */
@@ -419,6 +420,16 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     ...(importAnalysis?.edges ?? []),
     ...mapGoPackageImportReceipts(importAnalysis?.packageImportEvidence),
   ];
+
+  // A README heading is a domain candidate only when something besides the heading
+  // answers to it: a source folder or package the scan matched to it, or a separate
+  // document stating its responsibility. "Contributing", "Credits" or "Security
+  // Contact" name a section of the README, and nothing else ever does.
+  const codeBackedDomains = new Set(
+    [...capabilities, ...elements].map((node) => node.domain).filter(Boolean),
+  );
+  domains.splice(0, domains.length, ...domains.filter((domain) =>
+    codeBackedDomains.has(domain.slug) || findDomainResponsibilityWitness(domain, semanticEvidence)));
 
   const semanticCapabilityCandidates = deriveBusinessCapabilityCandidates({
     domains,

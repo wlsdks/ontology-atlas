@@ -42,7 +42,8 @@ export interface ProjectSourceRuntime {
   available(): boolean;
   /** The OS picker's window title, so pass it in the screen's language. */
   pickRoot(title?: string): Promise<string | null>;
-  inspect(rootPath: string): Promise<ProjectSourceInspection | null>;
+  /** `vaultRoot` names the open vault so a vault inside the source is left out of the probe. */
+  inspect(rootPath: string, vaultRoot?: string | null): Promise<ProjectSourceInspection | null>;
   /** The only input to inference; the web has none, so it infers nothing there. */
   rootPathOf(handle: FileSystemDirectoryHandle): string | null;
   now(): string;
@@ -237,6 +238,10 @@ export function useProjectSourceModel(input: {
       nextAction: { id: "remeasure_source" },
     };
   }, [snapshot, input.projectSlug, repairUnavailable, graphHash]);
+  const vaultRootPath = useMemo(
+    () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
+    [runtimeAvailable, input.vaultHandle, runtime],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ProjectSourceModelError | null>(null);
   const generation = useRef(0);
@@ -257,7 +262,7 @@ export function useProjectSourceModel(input: {
       store,
       projectSlug: input.projectSlug,
       graphHash,
-      inspect: runtimeAvailable ? runtime.inspect : undefined,
+      inspect: runtimeAvailable ? (rootPath) => runtime.inspect(rootPath, vaultRootPath) : undefined,
     }).then((next) => {
       if (cancelled || generation.current !== currentGeneration) return;
       setSnapshot(next);
@@ -265,7 +270,7 @@ export function useProjectSourceModel(input: {
       else if (next.readStatus === "unavailable") setError("sidecar_unavailable");
     });
     return () => { cancelled = true; };
-  }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable]);
+  }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable, vaultRootPath]);
 
   /**
    * One `inspect_project_source` call already climbs to the enclosing git repository
@@ -274,10 +279,6 @@ export function useProjectSourceModel(input: {
    * in `.claude/rules/architecture.md`, or one click pays for two measurements. "M of N declared
    * paths" is measured from real witnesses; the receipt is built in memory, never written.
    */
-  const vaultRootPath = useMemo(
-    () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
-    [runtimeAvailable, input.vaultHandle, runtime],
-  );
   const proposalWanted = Boolean(
     vaultRootPath
     && graphHash
@@ -296,7 +297,7 @@ export function useProjectSourceModel(input: {
     void (async () => {
       let inspection: ProjectSourceInspection | null;
       try {
-        inspection = await runtime.inspect(vaultRootPath);
+        inspection = await runtime.inspect(vaultRootPath, vaultRootPath);
       } catch {
         // With no proposal the screen falls back to the folder picker.
         inspection = null;
@@ -383,7 +384,7 @@ export function useProjectSourceModel(input: {
 
       let inspection: ProjectSourceInspection | null;
       try {
-        inspection = await runtime.inspect(rootPath);
+        inspection = await runtime.inspect(rootPath, vaultRootPath);
       } catch {
         inspection = null;
       }
@@ -447,6 +448,7 @@ export function useProjectSourceModel(input: {
     witnesses,
     currentView,
     input.pickerTitle,
+    vaultRootPath,
   ]);
 
   const snapshotMatchesProject = Boolean(
