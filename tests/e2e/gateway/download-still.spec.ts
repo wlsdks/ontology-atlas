@@ -10,6 +10,22 @@ test.describe("download — still", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await seedFirstRunSeen(page);
     await installFrameProbe(page);
+    /* Sampling getAnimations() misses a transition that starts and ends between samples, such as a layout that changes on hydration. */
+    await page.addInitScript(() => {
+      const runs: string[] = [];
+      (window as unknown as { __transitionRuns: string[] }).__transitionRuns = runs;
+      addEventListener(
+        "transitionrun",
+        (event) => {
+          if (/color/i.test(event.propertyName)) return;
+          const target = event.target as Element;
+          // The dev server's own overlay is not the page.
+          if (target.tagName === "NEXTJS-PORTAL") return;
+          runs.push(`${event.propertyName} on ${target.closest("[data-testid]")?.getAttribute("data-testid") ?? target.tagName}`);
+        },
+        true,
+      );
+    });
     await page.goto("/en/download/?guides=off", { waitUntil: "load" });
     await expect(page.getByTestId("gateway-hero")).toBeVisible();
 
@@ -31,6 +47,8 @@ test.describe("download — still", () => {
     await scrollHostTo(page, "bottom");
     await waitFrames(page, 3);
     expect(animationsSeen, "an animation exists under reduced motion").toEqual([]);
+    const transitionRuns = await page.evaluate(() => (window as unknown as { __transitionRuns: string[] }).__transitionRuns);
+    expect([...new Set(transitionRuns)], "a property other than colour transitioned under reduced motion").toEqual([]);
 
     const probe = await readFrameProbe(page);
     expect(probe.field, "the field drew more than its one still frame").toBe(1);

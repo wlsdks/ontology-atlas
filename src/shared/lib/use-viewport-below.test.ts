@@ -40,6 +40,13 @@ describe("useViewportBelow", () => {
     expect(result.current).toBe(false);
   });
 
+  it("a caller whose wide layout is rare can prerender narrow", () => {
+    // @ts-expect-error — reproduces the static-export prerender environment.
+    window.matchMedia = undefined;
+    const { result } = renderHook(() => useViewportBelow(1792, true));
+    expect(result.current).toBe(true);
+  });
+
   it("answers the real width from the first render, without catching up after a wrong frame", () => {
     installMatchMedia(true);
     const { result } = renderHook(() => useViewportBelow(LG_BREAKPOINT_PX));
