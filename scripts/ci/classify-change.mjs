@@ -103,6 +103,8 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     // the release uploads the exact artifact the registry entry points at.
     'pnpm test:mcp:bundle',
     'pnpm dogfood:release-gate',
+    // A new module reachable from the server must also be in mcp/package.json#files.
+    'node scripts/packaging/check-package-contracts.mjs',
   ]),
 });
 

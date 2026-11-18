@@ -21,4 +21,4 @@ Wraps one architecture conformance measurement as a dated machine receipt carryi
 - Becoming an ontology node or in-vault Markdown; the record is deliberately not committed.
 
 ## Uncertainty
-- Read from the module header and its two imports. No module under `mcp/src/` imports it, so its consumer is on the application side and was not opened; whether a record is produced on every measurement is unverified here.
+- Read on 2026-11-19 with its consumers. No module under `mcp/src/` imports it; its writer is the terminal, where `ontology-atlas architecture --record` (`cli/src/commands/repo-analysis/architecture.mjs`) builds and writes one and refuses when the scan carries no import-usage receipt, so a record exists only when asked for, not for every measurement. The app's architecture screen reads stored records (`src/views/architecture/model/use-architecture-record.ts`) and rebuilds one from an analysis run. No record has been written for this vault.

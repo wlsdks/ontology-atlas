@@ -1,0 +1,25 @@
+[package]
+name = "vault-index"
+version = "0.1.0"
+description = "Rebuildable full-text index of a vault's Markdown files, kept in the OS cache directory"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+# SQLite is compiled from the bundled amalgamation (public domain) so FTS5 and WAL do not depend on
+# the operating system's SQLite build.
+rusqlite = { version = "=0.43.0", default-features = false, features = ["bundled", "cache"] }
+sha2 = "=0.10.9"
+
+[features]
+# Lets a release build (the benchmark) read OATLAS_INDEX_DIR; the app never enables it.
+index-dir-override = []
+
+[[bin]]
+name = "vault-index-bench"
+path = "src/bin/vault-index-bench.rs"
+test = false
+
+[dev-dependencies]
+rusqlite = { version = "=0.43.0", default-features = false, features = ["bundled", "cache"] }

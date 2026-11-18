@@ -6,6 +6,9 @@ authors = ["ontology-atlas contributors"]
 edition = "2021"
 license = "MIT"
 
+[workspace]
+members = ["crates/vault-index"]
+
 [lib]
 name = "ontology_atlas_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
@@ -49,6 +52,7 @@ tauri-plugin-window-state = "2.4.1"
 # log is a transitive dep already pulled by tauri (0.4, single version in Cargo.lock) — declaring it
 # directly adds zero new supply-chain surface (same rationale as objc2).
 log = "0.4"
+vault-index = { path = "crates/vault-index" }
 
 # Unix process-group termination also clears descendants of failed ACP probes.
 # libc is already in the resolved dependency graph.
@@ -110,6 +114,14 @@ lto = "thin"
 debug = "line-tables-only"
 split-debuginfo = "packed"
 strip = true
+
+# The index's tests build and kill a 10,000-file index twenty times; unoptimised SQLite makes that
+# minutes instead of seconds.
+[profile.dev.package.libsqlite3-sys]
+opt-level = 3
+
+[profile.dev.package.vault-index]
+opt-level = 3
 
 # macOS rejects some stripped proc-macro dylibs (rust-lang/rust#157750).
 [profile.release.build-override]

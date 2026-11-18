@@ -7,7 +7,7 @@ display_en: Vault Git history
 display_ko: 볼트 Git 이력
 domain: domains/human-workbench
 elements: []
-path: src/views/git/index.ts
+path: src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx
 created_by: "agent:claude-code"
 ---
 

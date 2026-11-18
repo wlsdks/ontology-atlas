@@ -236,6 +236,14 @@ the libraries Bun statically links. Bun's complete third-party inventory, includ
 BoringSSL, brotli, libarchive, lol-html, ls-hpack, mimalloc, tinycc, zlib and
 zstd, is published in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
 
+## SQLite (public domain)
+
+The application binary links SQLite for the search index the app keeps in the OS
+cache folder, compiled from the amalgamation bundled by the \`libsqlite3-sys\` crate
+(MIT) and reached through \`rusqlite\` (MIT); both are listed with the Rust crates
+below. SQLite itself is dedicated to the public domain by its authors:
+<https://sqlite.org/copyright.html>.
+
 ## Pretendard (SIL Open Font License 1.1)
 
 The static export ships \`PretendardVariable\` as a woff2 font file. Pretendard is

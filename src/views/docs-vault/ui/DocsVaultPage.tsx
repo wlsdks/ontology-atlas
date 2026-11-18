@@ -255,8 +255,6 @@ function DocsVaultContent({
     collectionCounts,
     collectionPinnedSlugs,
     collectionRecentSlugs,
-    docsBodyIndex,
-    docsBodyIndexing,
     handleCollectionChange,
     handleSelect,
     handleCloseDocTab,
@@ -271,8 +269,6 @@ function DocsVaultContent({
     setSelectedSlug,
     setActiveTag,
     setSampleWelcomeDismissed,
-    paletteOpen,
-    getDocContent,
   });
   const handleSelectFromSidebar = useCallback(
     (slug: string) => {
@@ -657,8 +653,7 @@ function DocsVaultContent({
             onTagSelect={(tag) => setActiveTag(tag)}
             initialQuery={paletteQuery ?? ''}
             getDocHref={getDocHref}
-            bodyIndex={docsBodyIndex}
-            bodyIndexing={docsBodyIndexing}
+            getDocContent={getDocContent}
           />
         ) : null}
       </AnimatePresence>

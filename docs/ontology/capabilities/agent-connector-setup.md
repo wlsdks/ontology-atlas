@@ -7,7 +7,7 @@ display_en: Agent connector setup
 display_ko: 에이전트 커넥터 설정
 domain: domains/agent-access
 elements: [elements/vault-connector-registry]
-path: src/features/mcp-connectors/index.ts
+path: src-tauri/src/agent_setup.rs
 created_by: "agent:claude-code"
 relation_notes: { elements/vault-connector-registry: "You asked for element nodes named by role under the capability that uses them; keeping the folder's connector list is this role.", capabilities/mcp-tool-server: "Setup proves itself against the server over the protocol, not through an import: `verify_mcp_server` in src-tauri/src/agent_setup.rs starts the bundled server, sends it initialize, tools/list and one get_concept, and reports success only when the server lists at least one tool and resolves a concept. Nothing in the webview invokes that command in this checkout; src-tauri/src/lib.rs registers it and only the vault grant test calls it, so it is a check the app can run, not one setup runs today. A protocol call is a relation the code cannot witness by file name, so it is recorded as one rather than as a code dependency." }
 relates: [capabilities/mcp-tool-server]
@@ -24,4 +24,4 @@ Registers Atlas's MCP server with the agent hosts a person already uses, writing
 - Registration from the website, which the repository states cannot record an absolute path.
 
 ## Uncertainty
-- Read from `src/features/mcp-connectors/`, `src-tauri/src/connectors.rs` and the `mcp-verify` command by name. No host was configured during this scan, and which agent hosts are supported today was not enumerated.
+- Read from `src/features/mcp-connectors/`, `src-tauri/src/connectors.rs` and the `mcp-verify` command by name. On 2026-11-19 `path:` moved from `src/features/mcp-connectors/index.ts`, which only re-exports the folder's connector list, to `src-tauri/src/agent_setup.rs`, whose header says it points agents at the bundled MCP server and verifies it in place. No host was configured during this scan, and which agent hosts are supported today was not enumerated.
