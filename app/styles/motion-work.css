@@ -52,11 +52,69 @@
     animation: motionWorkSweep calc(var(--motion-settle) * 4) linear infinite;
   }
 
+  /* One part of the work trail as the signal passes it: it lights fast, swells a little and fades
+     for the rest of the trip. Opacity and scale only. */
+  @keyframes motionWorkHop {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    9% {
+      opacity: 1;
+      transform: scale(1.18);
+    }
+    22% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    55%,
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  .motion-work-trail-part {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: opacity var(--motion-base) var(--motion-ease);
+  }
+
+  .motion-work-hop {
+    opacity: 0;
+    animation: motionWorkHop calc(var(--motion-settle) * 9) var(--motion-ease) infinite;
+  }
+
+  /* An edge only lights: swelling it would push its ends past the nodes it joins. */
+  @keyframes motionWorkHopEdge {
+    0% {
+      opacity: 0;
+    }
+    9%,
+    22% {
+      opacity: 1;
+    }
+    55%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  line.motion-work-hop {
+    animation-name: motionWorkHopEdge;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .motion-work-spin,
     .motion-work-sweep {
       animation: none !important;
       transform: none !important;
+    }
+
+    .motion-work-hop {
+      animation: none !important;
+      transform: none !important;
+      opacity: 0.6;
     }
 
     .motion-work-mark,

@@ -23,6 +23,8 @@ import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
+import type { AskMotion } from '@/shared/ui/marks/moru-rows';
+import { AskMoru } from './chat-panel/AskMoru';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
@@ -176,6 +178,7 @@ export function AcpPermissionCard({
   const failed = outcome === 'failed';
   const settled = outcome === 'done';
   const [receiptKey, setReceiptKey] = useState<string | null>(null);
+  const [answerInReach, setAnswerInReach] = useState<'allow' | 'reject' | null>(null);
   const receiptReady = settled && receiptKey === reviewStateKey;
   useEffect(() => {
     if (!settled) return;
@@ -204,6 +207,13 @@ export function AcpPermissionCard({
   const askedSentence = serverConsent ? request.title : null;
   const scope = permissionScope(request.options);
   const locality = permissionLocality(vaultPath ?? null, request.filePath ?? null);
+  const askMotion: AskMotion = answerInReach === 'allow'
+    ? 'tail-wag'
+    : answerInReach === 'reject'
+      ? 'stop'
+      : locality === 'elsewhere'
+        ? 'uncertain'
+        : 'await-permission';
 
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
@@ -349,7 +359,7 @@ export function AcpPermissionCard({
   const titleIcon = ontologyWrite ? (
     <GitCompareArrows size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
   ) : locality !== 'elsewhere' ? (
-    <Eye size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
+    taskBound ? <Eye size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-tertiary)]" /> : null
   ) : (
     <ShieldAlert size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-status-warning)]" />
   );
@@ -386,18 +396,21 @@ export function AcpPermissionCard({
           ontologyWrite
             ? 'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] [@media(max-width:480px)]:overflow-y-auto [@media(max-height:520px)]:overflow-y-auto'
             : locality !== 'elsewhere'
-              ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]'
-              : 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)]',
+              ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]'
+              : 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-elevated)] bg-[image:linear-gradient(var(--color-amber-source-a08),var(--color-amber-source-a08))] shadow-[var(--shadow-elevation-2)]',
         )}
       >
-        <header className="grid shrink-0 gap-2">
+        <header className={cn('grid shrink-0 gap-2', !taskBound && 'justify-items-center text-center')}>
+          {taskBound ? null : (
+            <AskMoru motion={askMotion} />
+          )}
           <p
             id="acp-permission-title"
             ref={titleRef}
             tabIndex={-1}
             className="text-body-lg leading-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] focus-visible:outline-none"
           >
-            <span className="mr-2 inline-flex h-[1lh] items-center align-top">{titleIcon}</span>
+            {titleIcon ? <span className="mr-2 inline-flex h-[1lh] items-center align-top">{titleIcon}</span> : null}
             {titleText}
           </p>
           {taskBound && changeSet ? (
@@ -688,27 +701,37 @@ export function AcpPermissionCard({
               {askedSentence}
             </p>
           ) : (
-            <p
-              data-testid="acp-permission-intent"
-              data-intent={intent}
-              className="text-label leading-label text-[color:var(--color-text-primary)]"
-            >
-              {t(`intent.${intent}`)}
-            </p>
+            <div className="grid gap-1 rounded-chip bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+              <p
+                data-testid="acp-permission-intent"
+                data-intent={intent}
+                className="text-label leading-label text-[color:var(--color-text-primary)]"
+              >
+                {t(`intent.${intent}`)}
+              </p>
+              {ontologyWrite ? null : request.filePath ? (
+                <p
+                  data-testid="acp-permission-path"
+                  className="break-all font-mono text-label leading-label text-[color:var(--color-text-primary)]"
+                >
+                  {request.filePath}
+                </p>
+              ) : (
+                <p className="text-body leading-body text-[color:var(--color-text-secondary)]">
+                  {request.title ?? t('unknownTarget')}
+                </p>
+              )}
+            </div>
           )}
 
-          {!ontologyWrite && request.filePath ? (
+          {(changeSet || askedSentence) && !ontologyWrite && request.filePath ? (
             <p
               data-testid="acp-permission-path"
-              className="break-all rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label leading-label text-[color:var(--color-text-secondary)]"
+              className="break-all rounded-chip bg-[color:var(--color-overlay-1)] px-3 py-2.5 font-mono text-label leading-label text-[color:var(--color-text-primary)]"
             >
               {request.filePath}
             </p>
-          ) : ontologyWrite || askedSentence ? null : (
-            <p className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
-              {request.title ?? t('unknownTarget')}
-            </p>
-          )}
+          ) : null}
 
           {writeVerdict ? (
             <div
@@ -716,7 +739,7 @@ export function AcpPermissionCard({
               data-ok={writeVerdict.ok ? 'true' : 'false'}
               className={
                 writeVerdict.ok
-                  ? 'rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]'
+                  ? 'px-1 text-label leading-label text-[color:var(--color-text-tertiary)]'
                   : 'rounded-chip border border-[color:var(--color-border-strong)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-secondary)]'
               }
             >
@@ -806,6 +829,8 @@ export function AcpPermissionCard({
                 variant="outline"
                 className="atlas-touch-floor w-full"
                 data-testid="acp-permission-reject"
+                onPointerEnter={() => setAnswerInReach('reject')}
+                onPointerLeave={() => setAnswerInReach(null)}
                 onClick={() => answerWith('reject', () => resolve(rejectOnce?.optionId ?? null))}
               >
                 {t('reject')}
@@ -816,6 +841,10 @@ export function AcpPermissionCard({
                 data-testid="acp-permission-allow"
                 aria-describedby={taskBound ? `${legendId}-allow` : undefined}
                 disabled={allowDisabled}
+                onPointerEnter={() => setAnswerInReach('allow')}
+                onPointerLeave={() => setAnswerInReach(null)}
+                onFocus={() => setAnswerInReach('allow')}
+                onBlur={() => setAnswerInReach(null)}
                 onClick={() => answerWith('allow', () => resolve(allowOnce?.optionId ?? null))}
               >
                 {t('allowOnce')}
