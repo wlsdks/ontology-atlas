@@ -9,6 +9,14 @@ import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from
  * from listing sizes.
  */
 
+/**
+ * Markdown sources are searched by the vault index like every other `.md` file, so this reader never
+ * opens one; it covers the formats the index does not read (PDF, CSV, DOCX and the rest).
+ */
+export function isIndexedSource(path: string): boolean {
+  return path.toLowerCase().endsWith('.md');
+}
+
 /** Files one search may read, however small they are. */
 const SOURCE_SEARCH_MAX_FILES = 200;
 /** Bytes one search may read, however few files that is. */
@@ -111,7 +119,10 @@ export function useSourceSearch({
    * happened to return first.
    */
   const { planned, capped } = useMemo(() => {
-    const ordered = sourceSearchPrefix(sources, SOURCE_SEARCH_MAX_FILES + 1);
+    const ordered = sourceSearchPrefix(
+      sources.filter((source) => !isIndexedSource(source.path)),
+      SOURCE_SEARCH_MAX_FILES + 1,
+    );
     const planned: PlannedRead[] = [];
     let bytes = 0;
     let capped = false;

@@ -25,12 +25,15 @@ While the first build runs, a line under the field counts it up ("Indexing 12,40
 cannot be opened, or the folder cannot be read, the same line says search covers titles,
 summaries and tags only, and past the app's 100,000-file or 12-level limit it says how
 many documents it searches inside. The Library's wiki list asks the same index, so a page
-is found by its text there too. Settings › Privacy · data, "Stored on this computer",
+is found by its text there too, and so is a Markdown file under `sources/`; the Library's
+source search reads only the other formats (PDF, CSV, DOCX and the like), so no Markdown
+file is searched twice. On the web a Markdown source matches by its name. Settings › Privacy · data, "Stored on this computer",
 says the index holds each document's words with their positions, so its text can be read
 back by anyone who can read the account's cache folder; it shows the open folder's index
 size, deletes that index, and turns indexing off (off leaves no index file). A folder's
-index is also deleted when the folder is taken off the folder list or left unopened for
-fourteen days. The web has no index: there the palette searches titles, summaries and
+index is also deleted when the folder is taken off the folder list, or at launch when the
+folder is gone or was left unopened for fourteen days; an index being built or that cannot
+be read is kept. The web has no index: there the palette searches titles, summaries and
 tags, and its zero-result note says exactly that.
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised

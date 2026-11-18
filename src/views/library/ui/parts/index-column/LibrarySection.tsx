@@ -27,7 +27,7 @@ import {
 
 import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
-import { useSourceSearch } from "../../../lib/sources/use-source-search";
+import { isIndexedSource, useSourceSearch } from "../../../lib/sources/use-source-search";
 import { useVaultIndexHits } from "@/shared/lib/vault-folder/use-vault-index-hits";
 import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
@@ -354,8 +354,8 @@ export function LibrarySection({
     enabled: true,
   });
   /*
-   * A page matches on its title, excerpt and tags everywhere, and in the installed app also on its
-   * text, through the same index the documents palette asks.
+   * A page matches on its title, excerpt and tags everywhere, and a page or a Markdown source also
+   * on its text in the installed app, through the same index the documents palette asks.
    */
   const { hits: indexHits } = useVaultIndexHits({ rootPath: vaultRootPath, query: needle, limit: LIBRARY_INDEX_HITS });
   const indexedPaths = useMemo(() => (indexHits ? new Set(indexHits.map((hit) => hit.path)) : null), [indexHits]);
@@ -400,10 +400,11 @@ export function LibrarySection({
             (row) =>
               row.path.toLowerCase().includes(needle) ||
               search.hits.has(row.path) ||
-              (search.phase === "reading" && !search.read.has(row.path)),
+              (indexedPaths?.has(row.path) ?? false) ||
+              (search.phase === "reading" && !isIndexedSource(row.path) && !search.read.has(row.path)),
           )
         : model.sources,
-    [model.sources, needle, search.hits, search.phase, search.read],
+    [indexedPaths, model.sources, needle, search.hits, search.phase, search.read],
   );
   /**
    * The majority state is said once at the head and rows keep the exceptions, as `majorityWriter` does

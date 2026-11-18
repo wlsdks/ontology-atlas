@@ -40,7 +40,7 @@ function handleFor(text: string): FileSystemFileHandle {
 
 const SOURCES = [
   { path: "sources/fee-schedule.csv", name: "fee-schedule.csv", format: "csv", bytes: FEES.length, mtime: 1, state: "not-compiled", citedBy: [] },
-  { path: "sources/settlement-policy.md", name: "settlement-policy.md", format: "md", bytes: SETTLEMENT.length, mtime: 1, state: "not-compiled", citedBy: [] },
+  { path: "sources/settlement-policy.txt", name: "settlement-policy.txt", format: "txt", bytes: SETTLEMENT.length, mtime: 1, state: "not-compiled", citedBy: [] },
 ];
 
 function modelWith(sources: typeof SOURCES, wikiPages: unknown[] = [], verdicts: Map<string, unknown> = new Map()): LibraryUiModel {
@@ -115,13 +115,13 @@ function renderWith(props: Parameters<typeof Harness>[0]) {
 const bothHandles = () =>
   new Map<string, FileSystemFileHandle>([
     ["sources/fee-schedule.csv", handleFor(FEES)],
-    ["sources/settlement-policy.md", handleFor(SETTLEMENT)],
+    ["sources/settlement-policy.txt", handleFor(SETTLEMENT)],
   ]);
 
 /** One file whose read never lands, so the reading phase can be held open. */
 const pendingHandles = () =>
   new Map<string, FileSystemFileHandle>([
-    ["sources/settlement-policy.md", handleFor(SETTLEMENT)],
+    ["sources/settlement-policy.txt", handleFor(SETTLEMENT)],
     [
       "sources/fee-schedule.csv",
       { getFile: () => new Promise(() => {}) } as unknown as FileSystemFileHandle,
@@ -146,6 +146,17 @@ describe("the wiki list searches inside pages through the app's index", () => {
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "quillwort" } });
     await waitFor(() => expect(screen.getByTestId("library-wiki-wiki/beta")).toBeInTheDocument());
     expect(screen.queryByTestId("library-wiki-wiki/alpha")).toBeNull();
+  });
+
+  it("finds a Markdown source by its text through the index, never by reading it", async () => {
+    const read = vi.fn();
+    const handles = new Map([["sources/notes.md", { getFile: read } as unknown as FileSystemFileHandle]]);
+    const sources = [{ path: "sources/notes.md", name: "notes.md", format: "md", bytes: 10, mtime: 1, state: "not-compiled", citedBy: [] }];
+    index.hits = [{ path: "sources/notes.md", rank: -1 }];
+    renderWith({ handles, sources, segment: "sources" });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "quillwort" } });
+    await waitFor(() => expect(screen.getByTestId("library-source-sources/notes.md")).toBeInTheDocument());
+    expect(read).not.toHaveBeenCalled();
   });
 
   it("matches titles, excerpts and tags when there is no index, as on the web", async () => {
@@ -179,7 +190,7 @@ describe("the index search reads the sources", () => {
      * the full fixture, 5 here, and in both cases the reader's number rather than the
      * wiki page's stale `#l14`.
      */
-    const hit = screen.getByTestId("library-source-hit-sources/settlement-policy.md");
+    const hit = screen.getByTestId("library-source-hit-sources/settlement-policy.txt");
     expect(hit).toHaveTextContent("line 5");
     // Verbatim, and therefore past the sentence: a hard-wrapped line ends mid-thought.
     expect(hit).toHaveTextContent("Card payments settle on T+2 business days. Bank transfers settle same day when");
@@ -195,7 +206,7 @@ describe("the index search reads the sources", () => {
      * different facts, and only one of them is a search result.
      */
     const handles = new Map<string, FileSystemFileHandle>([
-      ["sources/settlement-policy.md", handleFor(SETTLEMENT)],
+      ["sources/settlement-policy.txt", handleFor(SETTLEMENT)],
       [
         "sources/fee-schedule.csv",
         { getFile: () => new Promise(() => {}) } as unknown as FileSystemFileHandle,
@@ -242,9 +253,9 @@ describe("the index search reads the sources", () => {
       expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
     });
 
-    fireEvent.click(screen.getByTestId("library-source-hit-sources/settlement-policy.md"));
+    fireEvent.click(screen.getByTestId("library-source-hit-sources/settlement-policy.txt"));
     expect(onOpenSource).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "sources/settlement-policy.md" }),
+      expect.objectContaining({ path: "sources/settlement-policy.txt" }),
       "l5",
     );
 
@@ -252,9 +263,9 @@ describe("the index search reads the sources", () => {
      * The row itself still opens the file plainly — one argument, no anchor. The two
      * presses going to different places is the reason the caption is its own control.
      */
-    fireEvent.click(screen.getByTestId("library-source-sources/settlement-policy.md"));
+    fireEvent.click(screen.getByTestId("library-source-sources/settlement-policy.txt"));
     expect(onOpenSource).toHaveBeenLastCalledWith(
-      expect.objectContaining({ path: "sources/settlement-policy.md" }),
+      expect.objectContaining({ path: "sources/settlement-policy.txt" }),
     );
   });
 
@@ -264,7 +275,7 @@ describe("the index search reads the sources", () => {
     await waitFor(() => {
       expect(screen.getByTestId("library-source-sources/fee-schedule.csv")).toBeTruthy();
     });
-    expect(screen.queryByTestId("library-source-sources/settlement-policy.md")).toBeNull();
+    expect(screen.queryByTestId("library-source-sources/settlement-policy.txt")).toBeNull();
     // A path match carries no caption: nothing inside the file matched.
     expect(screen.queryByTestId("library-source-hit-sources/fee-schedule.csv")).toBeNull();
   });
@@ -275,9 +286,9 @@ describe("the index search reads the sources", () => {
      * is read, so the line can name it on the first keystroke.
      */
     const many = Array.from({ length: 201 }, (_, index) => ({
-      path: `sources/note-${String(index).padStart(3, "0")}.md`,
-      name: `note-${index}.md`,
-      format: "md",
+      path: `sources/note-${String(index).padStart(3, "0")}.txt`,
+      name: `note-${index}.txt`,
+      format: "txt",
       bytes: SETTLEMENT.length,
       mtime: 1,
       state: "not-compiled",
@@ -308,7 +319,7 @@ describe("the index search reads the sources", () => {
       expect(screen.getByTestId("library-source-list")).toHaveAttribute("data-phase", "reading");
     });
     // The matched file and the one still being read: the list narrows, it does not empty.
-    expect(screen.getByTestId("library-source-sources/settlement-policy.md")).toBeTruthy();
+    expect(screen.getByTestId("library-source-sources/settlement-policy.txt")).toBeTruthy();
     expect(screen.getByTestId("library-source-sources/fee-schedule.csv")).toBeTruthy();
     // And the unread row carries no caption: nothing has been found in it to caption.
     expect(screen.queryByTestId("library-source-hit-sources/fee-schedule.csv")).toBeNull();
@@ -341,7 +352,7 @@ describe("the index search reads the sources", () => {
   it("says which passage it opens, and which one the reader is standing on", async () => {
     renderWith({
       handles: bothHandles(),
-      selectedSourcePath: "sources/settlement-policy.md",
+      selectedSourcePath: "sources/settlement-policy.txt",
       selectedSourceAnchor: "l5",
     });
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "T+2" } });
@@ -349,7 +360,7 @@ describe("the index search reads the sources", () => {
       expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
     });
 
-    const open = screen.getByTestId("library-source-hit-sources/settlement-policy.md");
+    const open = screen.getByTestId("library-source-hit-sources/settlement-policy.txt");
     expect(open).toHaveAttribute("data-anchor", "l5");
     /* `location`, not `page`: the pane is the page, this is the place inside it. */
     expect(open).toHaveAttribute("aria-current", "location");
