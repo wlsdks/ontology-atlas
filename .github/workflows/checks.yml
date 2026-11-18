@@ -78,8 +78,10 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-          # History without old file contents: the planner reads commits and trees, and a
-          # full clone spent 22 s of every job's 35 s setup (22 trains, 2026-11-17/18).
+          # History without old file contents: the planner reads commits and trees only, and a
+          # full clone spent 22 s of this job's 27 s (22 trains, 2026-11-17/18). Lanes that
+          # install keep the full clone: `prepare` builds the docs vault, whose rename-aware
+          # history pass would fetch old contents one by one (15 s measured).
           filter: blob:none
 
       - name: Build impact plan
@@ -119,7 +121,6 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-          filter: blob:none
 
       - name: Setup Node.js
         if: env.ACTIVE == 'true'
@@ -208,6 +209,9 @@ jobs:
       NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
       VITEST_TIMINGS_FILE: ${{ github.workspace }}/vitest-timings.jsonl
+      # Ratchets compare with this commit. On a push to main the merge base with origin/main is
+      # HEAD itself, which would let any count pass, so a push compares with the previous tip.
+      DECISION_BASE_REF: ${{ github.event_name == 'push' && github.event.before || needs.plan.outputs.base }}
     steps:
       - name: Require impact plan
         if: needs.plan.result != 'success'
@@ -220,7 +224,6 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-          filter: blob:none
 
       - name: Setup Node.js
         if: env.ACTIVE == 'true'
@@ -312,7 +315,6 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-          filter: blob:none
 
       - name: Setup Node.js
         if: env.ACTIVE == 'true'
