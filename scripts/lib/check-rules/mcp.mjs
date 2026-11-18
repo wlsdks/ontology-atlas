@@ -107,6 +107,12 @@ export const rules = [
     matches: [/^mcp\/scripts\/verify(?:\.mjs|\/.+\.mjs)$/, /^mcp\/src\/verify-script\.test\.mjs$/],
   },
   {
+    order: 1105,
+    command: 'pnpm dogfood:verify',
+    reason: 'MCP first-contact instructions changed; the verifier checks every clause they must carry',
+    matches: [/^mcp\/src\/server\/instructions\.mjs$/, /^mcp\/src\/construction\/construction-(?:card|rules)\.mjs$/],
+  },
+  {
     order: 1110,
     command: 'pnpm test:mcp:verify',
     reason: 'MCP verify helper changed',

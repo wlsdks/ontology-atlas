@@ -24,4 +24,4 @@ Checks whether a local agent runtime is actually installed and reachable, names 
 - Registering Atlas with agent hosts, which connector setup does.
 
 ## Uncertainty
-- Read from the bridge module header, which names the two native commands as the source of truth. Those native commands were not opened, the check list was not enumerated, and no diagnosis was run.
+- Read the bridge (`src/features/acp-doctor/model/acp-doctor.ts`) and its source of truth `src-tauri/src/acp_doctor.rs` on 2026-11-19: eight checks in dependency order (`cli`, `launcher`, `gate`, `npx-cache`, `config-dir`, `credentials-link`, `shadow-keychain`, `login`), of which only the middle four are repairable; `acp_diagnose` and `acp_repair` are defined in `src-tauri/src/acp_runtime/mod.rs`. No diagnosis was run, because that needs the installed app.

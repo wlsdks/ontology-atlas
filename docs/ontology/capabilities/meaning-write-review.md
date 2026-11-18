@@ -7,7 +7,7 @@ display_en: Meaning write review
 display_ko: 의미 변경 검토
 domain: domains/human-workbench
 elements: [elements/change-summary-headline]
-path: src/features/ontology-change-review/index.ts
+path: src/features/ontology-change-review/ui/OntologyChangeReview.tsx
 created_by: "agent:claude-code"
 dependencies: [capabilities/meaning-write-safety, elements/change-summary-headline]
 relation_notes: { elements/change-summary-headline: "You asked me to turn imports I actually witnessed into dependencies: the review barrel re-exports ontologyChangeHeadline from lib/change-summary.ts as one of the two things outside the feature actually calls.", capabilities/meaning-write-safety: "You asked me to name where the witness is: `AcpPermissionCard` in src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx renders this review (`OntologyChangeReview`) and picks the `allow_once` or `reject_once` option, which is the answer the server checkpoint waits for: the comment on `ISOLATED_CODEX_CONFIG` in src-tauri/src/acp/isolation.rs names mcp/src/server/write-consent.mjs as that checkpoint." }
