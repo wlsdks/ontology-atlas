@@ -10,7 +10,7 @@ import {
 } from '@/entities/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { getDataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
-import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
+import { getSampleSourceSnapshot, type SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import { LocalVaultContext } from './local-vault-context';
 import { useSampleSource } from './use-sample-source';
 
@@ -27,6 +27,15 @@ interface StaticVaultState {
 }
 
 const getServerSnapshot = () => null;
+
+/**
+ * A web browser starts the sample the moment this module runs, so the download overlaps the rest of
+ * the page's scripts instead of waiting for the first effect after hydration. The installed app
+ * starts nothing, and neither does a build step.
+ */
+if (typeof window !== 'undefined' && !isDesktopShell()) {
+  void loadStaticVaultSource(getSampleSourceSnapshot());
+}
 
 /**
  * Reads the bundled sample the screen shows and starts its download once, after hydration, when

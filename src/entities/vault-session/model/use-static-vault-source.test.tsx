@@ -50,4 +50,19 @@ describe('useStaticVaultSource', () => {
     });
     expect(screen.getByTestId('probe')).toHaveTextContent('none:storefront:0');
   });
+
+  it('starts the web sample at module load and nothing in the installed app', async () => {
+    for (const [isDesktop, expected] of [[false, 'storefront'], [true, null]] as const) {
+      desktop.value = isDesktop;
+      vi.resetModules();
+      const loader = await import('@/entities/docs-vault/lib/bundled-vault/load-static-vault-source');
+      await import('./use-static-vault-source');
+      if (expected) {
+        await vi.waitFor(() => expect(loader.peekStaticVaultSource(expected)).not.toBeNull());
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(loader.peekStaticVaultSource('storefront')).toBeNull();
+      }
+    }
+  });
 });
