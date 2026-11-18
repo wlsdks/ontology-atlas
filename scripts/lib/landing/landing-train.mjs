@@ -212,8 +212,9 @@ export function splitTrain(numbers) {
  *
  * - This train has not spent its rerun, and it carries one pull request or every failing context
  *   is in the flaky set: **rerun** only the failed jobs, on the unchanged head. Ejecting a lone
- *   pull request costs its author a fix-and-requeue round; 6 of the 20 red trains before
- *   2026-11-18 passed later on the same head. For several, a bisect over a flaky context costs
+ *   pull request costs its author a fix-and-requeue round; in 4 of the 20 red trains before
+ *   2026-11-18 the next train carrying the same head went green. A run with jobs still going,
+ *   only cancelled contexts, or a refused rerun request settles as red without one. For several, a bisect over a flaky context costs
  *   `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
  * - More than one component: **split** into halves, run as successive trains (bors-style).
  * - One component: **eject** it, naming the contexts.

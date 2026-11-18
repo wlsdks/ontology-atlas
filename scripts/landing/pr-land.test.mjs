@@ -932,6 +932,16 @@ describe('the conductor runs trains', () => {
     assert.ok(real.pulls.get(7).comments.at(-1).body.startsWith(EJECTED_MARKER));
   });
 
+  it('settles a lone red train as red at once when GitHub refuses its rerun', () => {
+    const world = fakeWorld({ prs: [component(8)], queued: [8], ci: () => red(['MCP'], 993) });
+    let asked = 0;
+    world.deps.gh.rerunFailed = () => { asked += 1; return false; };
+    assert.deepEqual(runConductor(world).landed, []);
+    assert.equal(asked, 1);
+    assert.ok(world.out.some((line) => /train #\d+ is red and GitHub refused to rerun its failed jobs; settling it as red/.test(line)));
+    assert.ok(world.pulls.get(8).comments.at(-1).body.startsWith(EJECTED_MARKER));
+  });
+
   it('rebuilds a green train when main moved into its files while CI ran', () => {
     const world = fakeWorld({
       prs: [component(5)],
@@ -1247,6 +1257,78 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
       assert.equal(called(world, 'mergePr')[0][1], 72);
     });
 
+    it('hands it back at once, naming the red contexts, when GitHub refuses the rerun', () => {
+      const world = fakeWorld({ prs: [component(74)], ownCi: () => red(['MCP'], 505) });
+      let asked = 0;
+      world.deps.gh.rerunFailed = () => { asked += 1; return false; };
+      assert.equal(land(world, ['74']), 1);
+      assert.equal(asked, 1, 'a refused rerun is not asked for again on every read');
+      const text = world.out.join('\n');
+      assert.match(text, /ERROR PR #74 is red on its own CI and was not rerun \(GitHub refused to rerun run 505\); nothing was queued/);
+      assert.match(text, /ERROR {3}MCP FAILURE https:\/\/github.com\/wlsdks\/ontology-atlas\/actions\/runs\/505/);
+      assert.ok(world.events.filter((e) => e === 'sleep').length <= 2);
+    });
+
+    it('asks for the rerun only once every job of that run has finished', () => {
+      let reads = 0;
+      const going = { name: 'Playwright (chromium 5/5)', status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:00:00Z', detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/506/job/9' };
+      const world = fakeWorld({
+        prs: [component(75)],
+        ownCi: (n, reruns) => {
+          reads += 1;
+          if (reruns > 0) return green();
+          return reads < 3 ? [...red(['MCP'], 506), going] : red(['MCP'], 506);
+        },
+      });
+      let askedWhileGoing = false;
+      const rerun = world.deps.gh.rerunFailed;
+      world.deps.gh.rerunFailed = (id) => {
+        askedWhileGoing ||= world.pulls.get(75).statusCheckRollup.some((r) => r.status === 'IN_PROGRESS');
+        return rerun(id);
+      };
+      assert.equal(land(world, ['75']), 0);
+      assert.equal(askedWhileGoing, false);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+    });
+
+    it('never reruns a run that was only cancelled, and stops when nothing replaces it', () => {
+      const cancelled = () => REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'CANCELLED', startedAt: '2026-09-26T10:00:00Z', detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/509/job/1' }));
+      const world = fakeWorld({ prs: [component(76)], ownCi: cancelled });
+      assert.equal(land(world, ['76']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 0);
+      assert.ok(world.out.some((line) => /stopped waiting for its own CI: its run on 76ccccccc was cancelled and nothing replaced it/.test(line)));
+    });
+
+    it('asks once per head even when the attempt still reads as the first', () => {
+      const world = fakeWorld({ prs: [component(77)], ownCi: () => red(['MCP'], 510) });
+      world.deps.gh.readRunAttempt = () => 1;
+      assert.equal(land(world, ['77']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+      assert.ok(world.out.some((line) => /again after one rerun of the failed jobs/.test(line)));
+    });
+
+    it('reruns nothing when any of the red runs was rerun already', () => {
+      const rollup = REQUIRED_CONTEXTS.map((name) => ({
+        name,
+        status: 'COMPLETED',
+        conclusion: name === 'MCP' || name === 'Unit · Contract' ? 'FAILURE' : 'SUCCESS',
+        startedAt: '2026-09-26T10:00:00Z',
+        detailsUrl: `https://github.com/wlsdks/ontology-atlas/actions/runs/${name === 'MCP' ? 507 : 508}/job/1`,
+      }));
+      const world = fakeWorld({ prs: [component(78, { isDraft: false, statusCheckRollup: rollup })] });
+      world.deps.gh.readRunAttempt = (id) => (String(id) === '507' ? 2 : 1);
+      assert.equal(land(world, ['78']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 0);
+      assert.ok(world.out.some((line) => /was not rerun \(its run was rerun already\)/.test(line)));
+    });
+
+    it('hands a red pull request back with --no-wait instead of queueing it', () => {
+      const world = fakeWorld({ prs: [component(79, { isDraft: false, statusCheckRollup: red(['MCP']) })] });
+      assert.equal(land(world, ['79', '--no-wait']), 1);
+      assert.equal(called(world, 'addLabel').length, 0);
+      assert.equal(called(world, 'rerunFailed').length, 0);
+    });
+
     it('does not rerun a run someone already reran, or one whose attempt it cannot read', () => {
       for (const attempt of [2, null]) {
         const world = fakeWorld({ prs: [component(73, { isDraft: false, statusCheckRollup: red([flaky], 504) })] });
@@ -1255,6 +1337,15 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
         assert.equal(called(world, 'rerunFailed').length, 0, String(attempt));
       }
     });
+  });
+
+  it('reports a direct merge even when the queue behind it cannot be read', () => {
+    const world = fakeWorld({ prs: [component(80, { isDraft: false, statusCheckRollup: green() })] });
+    world.deps.gh.listQueue = () => { throw new Error('gh api graphql failed: rate limit exceeded'); };
+    assert.equal(land(world, ['80']), 0);
+    const merged = world.out.findIndex((line) => /PR #80 is merged/.test(line));
+    const warned = world.out.findIndex((line) => /ERROR warning: PR #80 is merged, but the queue behind it could not be conducted \(.*rate limit exceeded\)/.test(line));
+    assert.ok(merged >= 0 && warned > merged, 'the merge is reported first, the queue failure only warns');
   });
 
   describe('waiting for its own CI', () => {

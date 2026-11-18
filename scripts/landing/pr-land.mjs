@@ -15,6 +15,7 @@ import { isContained, makeGit, planBundle } from './bundle-branches.mjs';
 import { buildImpactPlan } from '../ci/classify-change.mjs';
 import {
   DEFAULT_BATCH,
+  EMPTY_BEFORE_REFIRE,
   MAX_REBUILDS,
   QUEUE_LABEL,
   RED_CLOSE_PREFIX,
@@ -355,6 +356,14 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
   const unrun = [...missing, ...skipped];
   const state = failed.length > 0 ? 'failed' : pending.length + unrun.length > 0 ? 'waiting' : 'green';
   return { state, pending, failed, missing, skipped, unrun, neverRan: pending.length === 0 && unrun.length === requiredContexts.length };
+}
+
+/** Does workflow run `runId` still have a job queued or running in this rollup? */
+export function runStillGoing(rollup = [], runId) {
+  return rollup.some((run) => {
+    const status = String(run?.status ?? run?.state ?? '').toUpperCase();
+    return status !== 'COMPLETED' && String(run?.detailsUrl ?? run?.targetUrl ?? '').includes(`/actions/runs/${runId}/`);
+  });
 }
 
 /** Is any check run for this head still queued or running? */
@@ -997,23 +1006,32 @@ function tryFastPath({ pr, deps, requiredContexts, args, token }) {
  */
 function awaitOwnCi({ pr, deps, args, requiredContexts, deadline, red = null }) {
   const { gh, log } = deps;
-  // One rerun of only the failed jobs per head: a red with no code change passed later in 6 of
-  // the 20 red trains before 2026-11-18, and the failed jobs alone took about half a full run.
+  // One rerun of only the failed jobs per head: in 4 of the 20 red trains before 2026-11-18 the
+  // next train carrying the same head went green, and the failed jobs took about half a run.
+  // `tryRerun` answers `rerun`, `wait` (the run still has jobs going, and GitHub reruns only a
+  // finished run), `not-run` (only cancellations: something replaced the run, not a failure) or
+  // the reason it hands the pull request back.
   let rerunHead = null;
-  const rerunOnce = (failed, sha) => {
+  const tryRerun = (failed, sha, rollup) => {
+    if (rerunHead === sha) return 'its failed jobs were rerun once already';
+    if (!failed.some((check) => check.conclusion === 'FAILURE')) return 'not-run';
     const ids = runIdsFromChecks(failed);
-    if (ids.length === 0) return false;
+    if (ids.length === 0) return 'no workflow run to rerun was named';
+    if (ids.some((id) => runStillGoing(rollup, id))) return 'wait';
     // A run on a second attempt was rerun already, by this lander or anyone; an unreadable attempt
     // is not a first.
-    if (ids.some((id) => (gh.readRunAttempt?.(id) ?? null) !== 1)) return false;
-    for (const id of ids) gh.rerunFailed(id);
+    if (ids.some((id) => (gh.readRunAttempt?.(id) ?? null) !== 1)) return 'its run was rerun already';
     rerunHead = sha;
+    if (ids.some((id) => !gh.rerunFailed(id))) return `GitHub refused to rerun run ${ids.join(', ')}`;
     log(`PR #${pr.number} is red on ${failed.map((check) => check.name).join(', ')} at ${sha.slice(0, 9)}; `
       + `re-running only the failed jobs of run ${ids.join(', ')} once on the same head before handing it back`);
-    return true;
+    return 'rerun';
   };
+  let cancelledReads = 0;
   if (red) {
-    if (!rerunOnce(red, pr.headRefOid)) return { state: 'red', failed: red, pr, reran: false };
+    const first = tryRerun(red, pr.headRefOid, pr.statusCheckRollup ?? []);
+    if (!['rerun', 'wait', 'not-run'].includes(first)) return { state: 'red', failed: red, pr, reran: false, why: first };
+    if (first !== 'rerun') log(`PR #${pr.number}'s red run is ${first === 'wait' ? 'still finishing' : 'cancelled, not failed'}; waiting before judging it`);
   } else if (pr.isDraft) {
     if (!gh.markReady(pr.number)) return { state: 'stopped', reason: 'GitHub refused to mark it ready, so its CI never started' };
     log(`PR #${pr.number} was a draft; marked ready, so its own CI runs now instead of a train's`);
@@ -1031,6 +1049,7 @@ function awaitOwnCi({ pr, deps, args, requiredContexts, deadline, red = null }) 
       log(`PR #${pr.number}'s head moved to ${current.headRefOid.slice(0, 9)}; waiting for that push's CI`);
       head = current.headRefOid;
       idle = 0;
+      cancelledReads = 0;
     }
     const rollup = current.statusCheckRollup ?? [];
     const checks = requiredCheckState({ rollup, requiredContexts });
@@ -1045,8 +1064,17 @@ function awaitOwnCi({ pr, deps, args, requiredContexts, deadline, red = null }) 
       refires += 1;
       idle = 0;
     } else if (step.action === 'red') {
-      if (rerunOnce(step.failed, current.headRefOid)) continue;
-      return { state: 'red', failed: step.failed, pr: current, reran: rerunHead === current.headRefOid };
+      const verdict = tryRerun(step.failed, current.headRefOid, rollup);
+      if (verdict === 'rerun' || verdict === 'wait') continue;
+      if (verdict === 'not-run') {
+        cancelledReads += 1;
+        if (cancelledReads >= EMPTY_BEFORE_REFIRE) {
+          return { state: 'stopped', reason: `its run on ${current.headRefOid.slice(0, 9)} was cancelled and nothing replaced it`, pr: current };
+        }
+        continue;
+      }
+      const reran = rerunHead === current.headRefOid && verdict === 'its failed jobs were rerun once already';
+      return { state: 'red', failed: step.failed, pr: current, reran, why: reran ? null : verdict };
     }
     else if (step.action === 'green') return { state: 'green', pr: current };
   }
@@ -1060,6 +1088,16 @@ function queueNeedsConductor(deps, except) {
   return deps.gh.listQueue().some((queued) => queued.number !== except);
 }
 
+/** `queueNeedsConductor`, where an unreadable queue is a warning and no reason to wait. */
+function queueNeedsConductorOrWarn(deps, except) {
+  try {
+    return queueNeedsConductor(deps, except);
+  } catch (error) {
+    deps.error(`warning: the landing queue could not be read (${error.message}); not waiting on it`);
+    return false;
+  }
+}
+
 /** Conduct the queue a direct merge would otherwise leave unconducted. `null` when there was none. */
 function conductLeftovers({ deps, args, requiredContexts, token, deadline, except }) {
   if (!queueNeedsConductor(deps, except)) return null;
@@ -1069,8 +1107,9 @@ function conductLeftovers({ deps, args, requiredContexts, token, deadline, excep
 }
 
 /** A red own run goes back to its author with the contexts and the ways forward. */
-function reportOwnRed({ number, failed, deps, reran = false }) {
-  deps.error(`PR #${number} is red on its own CI${reran ? ', again after one rerun of the failed jobs' : ''}; nothing was queued:`);
+function reportOwnRed({ number, failed, deps, reran = false, why = null }) {
+  const after = reran ? ', again after one rerun of the failed jobs' : why ? ` and was not rerun (${why})` : '';
+  deps.error(`PR #${number} is red on its own CI${after}; nothing was queued:`);
   for (const check of failed) deps.error(`  ${check.name} ${check.conclusion ?? ''} ${check.url ?? ''}`.trimEnd());
   deps.error('  Fix it and push: the pull request is ready now, so the push runs CI again. Then');
   deps.error(`  \`pnpm pr:land ${number}\` again. A context known to flake: add \`--flaky=<context>\`, and the`);
@@ -1192,11 +1231,22 @@ function pollTrain({ train, deps, requiredContexts, args }) {
   if (step.action === 'red') {
     const plan = redTrainPlan({ components: train.included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns: train.reruns });
     if (plan.action === 'rerun') {
+      const ids = runIdsFromChecks(step.failed);
+      // GitHub reruns only a finished run: wait for its other jobs before asking.
+      if (ids.some((id) => runStillGoing(rollup, id))) return;
+      const failedReally = step.failed.some((check) => check.conclusion === 'FAILURE');
+      const refused = !failedReally || ids.length === 0 || ids.some((id) => !gh.rerunFailed(id));
+      train.reruns += 1;
+      if (refused) {
+        log(failedReally
+          ? `train #${train.pr} is red and GitHub refused to rerun its failed jobs; settling it as red`
+          : `train #${train.pr} has only cancelled contexts, which a rerun would not judge; settling it as red`);
+        train.verdict = { kind: 'red', plan: redTrainPlan({ components: train.included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns: train.reruns }), failed: step.failed };
+        return;
+      }
       log(train.included.length === 1
         ? `train #${train.pr} red on ${plan.names.join(', ')}; rerunning only the failed jobs once on the same head before ejecting #${train.included[0].number}, since a red with no code change often passes`
         : `train #${train.pr} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
-      for (const id of runIdsFromChecks(step.failed)) gh.rerunFailed(id);
-      train.reruns += 1;
       return;
     }
     train.verdict = { kind: 'red', plan, failed: step.failed };
@@ -1602,10 +1652,16 @@ function landOne({ args, deps }) {
   let current = pr;
   if (args.fast) {
     const direct = () => {
-      // A direct merge leaves no queue behind: whatever waits with nobody conducting is conducted now.
-      const leftovers = conductLeftovers({ deps, args, requiredContexts, token, deadline, except: number });
-      if (leftovers === 'aborted') deps.error('the queue this lander picked up stopped; `pnpm pr:land --conduct` resumes it');
-      return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+      const code = reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+      // A direct merge leaves no queue behind: whatever waits with nobody conducting is conducted
+      // now. This pull request is merged either way, so a failure here is a warning.
+      try {
+        const leftovers = conductLeftovers({ deps, args, requiredContexts, token, deadline, except: number });
+        if (leftovers === 'aborted') deps.error('warning: the queue this lander picked up stopped; `pnpm pr:land --conduct` resumes it');
+      } catch (error) {
+        deps.error(`warning: PR #${number} is merged, but the queue behind it could not be conducted (${error.message}); \`pnpm pr:land --conduct\` resumes it`);
+      }
+      return code;
     };
     let attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
     if (attempt.merged) return direct();
@@ -1616,7 +1672,7 @@ function landOne({ args, deps }) {
     // A queued pull request is the conductor's; one that waits unconducted means this lander conducts.
     const yieldTo = !ownRoute ? null
       : hasQueueLabel(current) ? 'it is already queued for a train'
-        : args.wait && queueNeedsConductor(deps, number) ? 'other pull requests are queued and nobody conducts them' : null;
+        : args.wait && queueNeedsConductorOrWarn(deps, number) ? 'other pull requests are queued and nobody conducts them' : null;
     if (yieldTo) deps.log(`taking the train: ${yieldTo}`);
     else if (route.route === 'red' && !args.wait) return reportOwnRed({ number, failed: route.failed, deps });
     // `--no-wait` keeps its meaning: queue and leave. Waiting on its own run is for a lander that stays.
@@ -1624,7 +1680,7 @@ function landOne({ args, deps }) {
       const own = awaitOwnCi({ pr: current, deps, args, requiredContexts, deadline, red: route.route === 'red' ? route.failed : null });
       current = own.pr ?? current;
       if (own.state === 'red' && !own.failed.every((check) => tolerated.includes(check.name))) {
-        return reportOwnRed({ number, failed: own.failed, deps, reran: own.reran });
+        return reportOwnRed({ number, failed: own.failed, deps, reran: own.reran, why: own.why });
       }
       if (own.state === 'stopped') {
         deps.error(`PR #${number} stopped waiting for its own CI: ${own.reason}; nothing was queued`);
