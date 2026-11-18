@@ -421,22 +421,25 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     ...mapGoPackageImportReceipts(importAnalysis?.packageImportEvidence),
   ];
 
-  // A README heading is a domain candidate only when something besides the heading
-  // answers to it: a source folder or package the scan matched to it, or a separate
-  // document stating its responsibility. "Contributing", "Credits" or "Security
-  // Contact" name a section of the README, and nothing else ever does.
-  const codeBackedDomains = new Set(
-    [...capabilities, ...elements].map((node) => node.domain).filter(Boolean),
-  );
-  domains.splice(0, domains.length, ...domains.filter((domain) =>
-    codeBackedDomains.has(domain.slug) || findDomainResponsibilityWitness(domain, semanticEvidence)));
-
   const semanticCapabilityCandidates = deriveBusinessCapabilityCandidates({
     domains,
     capabilities,
     elements,
     semanticEvidence,
   });
+
+  // A README heading is a domain candidate only when something besides the heading
+  // answers to it: a source folder or package the scan matched to it, an ability the
+  // prose states and the code implements, or a separate document stating its
+  // responsibility. "Credits" or "Security Contact" name a section of the README,
+  // and nothing else ever does.
+  const answeredDomains = new Set(
+    [...capabilities, ...elements, ...semanticCapabilityCandidates]
+      .map((node) => node.domain)
+      .filter(Boolean),
+  );
+  domains.splice(0, domains.length, ...domains.filter((domain) =>
+    answeredDomains.has(domain.slug) || findDomainResponsibilityWitness(domain, semanticEvidence)));
 
   // Element paths are implementation observations: even an exact token match with a
   // README domain does not prove the role, so raw elements stay project-scoped until

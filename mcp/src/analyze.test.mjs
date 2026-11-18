@@ -3512,6 +3512,15 @@ test('A README heading no code answers to is neither a domain nor a parent for u
   }
 });
 
+test('A README heading stays a domain when an ability the prose states and the code implements answers to it', () => {
+  const r = analyzeRepoStructure(join(meaningCorpusRoot, 'collaboration-monorepo'));
+  assert.deepEqual(
+    r.domains.map((domain) => domain.slug),
+    ['domains/coordination', 'domains/access-control'],
+    'no folder is named after either heading; the three abilities under them are the witness',
+  );
+});
+
 test('Business containment spine — fuzzy domain match connects project → domain → nodes', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'claims' }));
