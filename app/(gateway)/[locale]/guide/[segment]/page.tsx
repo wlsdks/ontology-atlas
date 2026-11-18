@@ -5,6 +5,7 @@ import {
   GUIDE_PAGES,
   GUIDE_ENTRY_PAGE,
   guideCanonicalPath,
+  readGatewayDocument,
   resolveGuidePage,
 } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
@@ -51,7 +52,7 @@ export default async function Page({
 
   return (
     <GatewayDocPage
-      slug={page.slug}
+      document={readGatewayDocument(page.slug)}
       title={t(`guidePages.${page.titleKey}`)}
       {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
       /*

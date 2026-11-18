@@ -6,7 +6,7 @@ import { VaultConflictError, useLocalVault } from '@/entities/vault-session';
 import { useToast } from '@/shared/ui';
 import { useReviewQueue } from '../lib/use-review-queue';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import { resolveStaticVaultSource, reviewDigest, type VaultManifest } from '@/entities/docs-vault';
+import { reviewDigest, type StaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
 import type { DocsVaultSource as Source } from '../lib/persistence';
 
 export function useDocReview({
@@ -20,7 +20,7 @@ export function useDocReview({
   scopedDocs: VaultManifest['docs'];
   getDocContent: ((slug: string) => Promise<string>) | undefined;
   source: Source;
-  staticVault: ReturnType<typeof resolveStaticVaultSource>;
+  staticVault: StaticVaultSource;
   selectedSlug: string | null;
   selectedDoc: VaultManifest['docs'][number] | null;
 }) {

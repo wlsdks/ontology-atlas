@@ -15,11 +15,10 @@ import {
   extractEntries,
   separateCategoryLines,
   normalizeHeadingKey,
-  readVaultDoc,
-  readVaultDocOmittedSections,
   trimToRecentSections,
   type DocEntry,
 } from '../lib/vault-doc';
+import type { GatewayDocument } from '../lib/read-vault-doc';
 import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, type GuidePage } from '../model/guide-pages';
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
@@ -30,8 +29,11 @@ import { controlClass } from '@/shared/ui/control-class';
  * (`.claude/rules/design.md`), wide section gaps, and the neutrals-plus-indigo palette.
  */
 export interface GatewayDocPageProps {
-  /** Vault slug: `GUIDE` or `CHANGELOG`. */
-  slug: string;
+  /**
+   * The vault document, read by the route's server component (`readGatewayDocument`): drawing it
+   * from the bundled JSON here would put that JSON in every guide page's script.
+   */
+  document: GatewayDocument;
   /** The screen title, used instead of the vault document's `# H1` because it must be translated. */
   title: string;
   /** One line under the title, only on the first chapter, where it introduces the guide as a whole. */
@@ -54,7 +56,7 @@ export interface GatewayDocPageProps {
 }
 
 export function GatewayDocPage({
-  slug,
+  document,
   title,
   lead,
   recentSectionLimit,
@@ -70,7 +72,7 @@ export function GatewayDocPage({
   const bodyIsForeign = locale !== 'en';
 
   const { body, omittedSections } = useMemo(() => {
-    const raw = readVaultDoc(slug);
+    const raw = document.raw;
     if (raw === null) return { body: '', omittedSections: 0 };
     /* The screen title occupies the `# H1` slot, so the document's own is stripped. */
     const withoutH1 = raw.replace(/^#\s+.*(\r?\n)+/, '');
@@ -79,7 +81,7 @@ export function GatewayDocPage({
       ? separateCategoryLines(withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, ''))
       : withoutH1;
     /* Folded sections are the bundle-time fold (`gateway-changelog.json`) plus the screen's own; either alone understates. */
-    const bundledOmitted = readVaultDocOmittedSections(slug);
+    const bundledOmitted = document.bundledOmittedSections;
     if (!recentSectionLimit) {
       return { body: withoutPreamble, omittedSections: bundledOmitted };
     }
@@ -88,7 +90,7 @@ export function GatewayDocPage({
       body: trimmed.body,
       omittedSections: trimmed.omittedSections + bundledOmitted,
     };
-  }, [slug, recentSectionLimit, entryNav]);
+  }, [document, recentSectionLimit, entryNav]);
 
   /** The entry list and the body headings get ids from the same function, or anchors silently miss. */
   const entries = useMemo(() => (entryNav ? extractEntries(body) : []), [entryNav, body]);

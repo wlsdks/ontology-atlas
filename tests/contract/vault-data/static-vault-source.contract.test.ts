@@ -4,8 +4,10 @@ import path from 'node:path';
 
 /**
  * Single-source guard: in static mode the answer to which bundled vault is in use must come from
- * `resolveStaticVaultSource` / `useStaticVaultSource`. Walks with node:fs and asserts the file count,
- * since a missing external tool returns 0 hits quietly.
+ * `useStaticVaultSource`, which downloads the sample on demand and never in the installed app.
+ * `resolveStaticVaultSource` statically imports all five JSON files, so only the build-time and
+ * `/download` callers named below may use it. Walks with node:fs and asserts the file count, since a
+ * missing external tool returns 0 hits quietly.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');
@@ -20,6 +22,21 @@ const FORBIDDEN_BINDINGS = [
   'sampleStorefrontManifest',
   'sampleStorefrontContent',
 ];
+
+/**
+ * The only files outside the entity that may take bundled JSON statically. Anything else would put
+ * the bundled vault back into every route's first load (docs/DECISIONS.md, 2026-07-28, 2026-08-30).
+ * `resolveStaticVaultSource` carries all five files and runs only at build time; `dogfoodManifest` is
+ * the one manifest `/download` draws before first paint.
+ */
+const STATIC_IMPORTERS: Record<string, Set<string>> = {
+  resolveStaticVaultSource: new Set([
+    path.join('src', 'views', 'gateway-doc', 'lib', 'read-vault-doc.ts'),
+  ]),
+  dogfoodManifest: new Set([
+    path.join('src', 'features', 'vault-ontology', 'model', 'use-dogfood-insight.ts'),
+  ]),
+};
 
 /** Captures an `import ... from '...'` whole, even spanning several lines. */
 const IMPORT_STATEMENT = /import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g;
@@ -79,11 +96,34 @@ describe('static vault single entry point contract', () => {
       [
         'Importing the bundled vault sources (the dogfood or storefront manifest and bodies) directly',
         'makes that one surface silently ignore the choice to view the sample business.',
-        'Screen code uses useStaticVaultSource() instead, and code outside hooks uses',
-        'resolveStaticVaultSource(source), so the manifest and bodies arrive as a pair.',
+        'Screen code uses useStaticVaultSource() instead, so the manifest and bodies arrive as a pair',
+        'and only when a web screen shows them.',
         'Offending files:',
         ...offenders,
       ].join('\n'),
     ).toEqual([]);
+  });
+
+  it('only the named files take the bundled vault as a static import', () => {
+    const used = new Map<string, string[]>();
+    for (const file of collectSourceFiles(SRC_DIR)) {
+      const rel = path.relative(process.cwd(), file);
+      if (rel.startsWith(ALLOWED_PREFIX)) continue;
+      const text = readFileSync(file, 'utf8');
+      for (const binding of Object.keys(STATIC_IMPORTERS)) {
+        if (new RegExp(`\\b${binding}\\b`).test(text)) {
+          used.set(binding, [...(used.get(binding) ?? []), rel]);
+        }
+      }
+    }
+    for (const [binding, allowed] of Object.entries(STATIC_IMPORTERS)) {
+      const callers = used.get(binding) ?? [];
+      expect(
+        callers.filter((rel) => !allowed.has(rel)),
+        `${binding} imports bundled vault JSON statically; screen code uses useStaticVaultSource().`,
+      ).toEqual([]);
+      // Alive both ways: a renamed caller must leave the list rather than rot in it.
+      expect([...allowed].filter((rel) => !callers.includes(rel))).toEqual([]);
+    }
   });
 });

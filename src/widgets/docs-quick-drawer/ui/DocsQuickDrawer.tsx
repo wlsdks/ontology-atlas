@@ -306,7 +306,7 @@ export function DocsQuickDrawer({
   // bundled sample.
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
-  const staticVault = useStaticVaultSource();
+  const staticVault = useStaticVaultSource(undefined, { demand: open });
   const isLocalLoaded =
     mode === "local" && localVault.status === "loaded" && Boolean(localVault.manifest);
   const activeManifest: VaultManifest =
