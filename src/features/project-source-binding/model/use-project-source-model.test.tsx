@@ -326,7 +326,7 @@ describe("project source model", () => {
 
     await act(async () => { await result.current.runNextAction(); });
 
-    expect(inspect).toHaveBeenCalledWith(inspection.rootPath);
+    expect(inspect).toHaveBeenCalledWith(inspection.rootPath, null);
     expect(result.current.view).toMatchObject({
       status: "verified_current",
       currentness: "current",
@@ -359,7 +359,7 @@ describe("project source model", () => {
 
     await waitFor(() => expect(result.current.proposedRoot).not.toBeNull());
     expect(inspect).toHaveBeenCalledTimes(1);
-    expect(inspect).toHaveBeenCalledWith(vaultRootPath);
+    expect(inspect).toHaveBeenCalledWith(vaultRootPath, vaultRootPath);
     expect(result.current.proposedRoot).toEqual({
       rootPath: inspection.rootPath,
       marker: "enclosing_git_repository",
@@ -434,7 +434,7 @@ describe("project source model", () => {
       runtime: sourceRuntime,
     }));
 
-    await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath));
+    await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath, vaultRootPath));
     await waitFor(() => expect(result.current.canRunSourceAction).toBe(true));
     expect(result.current.proposedRoot).toBeNull();
   });
@@ -451,7 +451,7 @@ describe("project source model", () => {
       runtime: sourceRuntime,
     }));
 
-    await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath));
+    await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath, vaultRootPath));
     await waitFor(() => expect(result.current.canRunSourceAction).toBe(true));
     // 0 of 1 declared path is low confidence, never sold as a confirm button.
     expect(result.current.proposedRoot).toBeNull();

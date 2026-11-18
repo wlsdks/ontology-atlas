@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
-import { inspectProjectSource } from './project-source-inspection.mjs';
+import { filterStatus, inspectProjectSource, vaultFolderInside } from './project-source-inspection.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   readProjectSourceView,
@@ -303,4 +303,15 @@ test('a vault the repository ignores hashes the same with or without the exclusi
     inspectProjectSource(sourceRoot).fingerprint,
     'a receipt the app minted, which never excludes the vault, keeps verifying',
   );
+});
+
+test('the vault exclusion rule matches the shared cases the app probe also runs', () => {
+  const cases = JSON.parse(readFileSync(new URL('./vault-exclusion-cases.json', import.meta.url), 'utf8'));
+  for (const { source, vault, inside } of cases.folders) {
+    assert.equal(vaultFolderInside(source, vault), inside, `${source} :: ${vault}`);
+  }
+  const encode = (entries) => Buffer.from(entries.length > 0 ? `${entries.join('\0')}\0` : '', 'utf8');
+  for (const { excluded, entries, kept } of cases.status) {
+    assert.deepEqual(filterStatus(encode(entries), excluded), encode(kept));
+  }
 });

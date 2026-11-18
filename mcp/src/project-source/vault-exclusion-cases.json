@@ -1,0 +1,33 @@
+{
+  "folders": [
+    { "source": "/work/app", "vault": "/work/app/atlas", "inside": "atlas" },
+    { "source": "/work/app/", "vault": "/work/app/docs/ontology/", "inside": "docs/ontology" },
+    { "source": "/work/app", "vault": "/work/app", "inside": null },
+    { "source": "/work/app", "vault": "/work/app-vault", "inside": null },
+    { "source": "/work/app", "vault": "/work", "inside": null },
+    { "source": "/work/app", "vault": "/elsewhere/atlas", "inside": null },
+    { "source": "/", "vault": "/atlas", "inside": "atlas" },
+    { "source": "C:\\Users\\dev\\app", "vault": "c:\\Users\\dev\\app\\atlas", "inside": "atlas" },
+    { "source": "\\\\?\\C:\\Users\\dev\\app", "vault": "C:/Users/dev/app/docs/ontology", "inside": "docs/ontology" },
+    { "source": "C:\\", "vault": "c:\\atlas", "inside": "atlas" },
+    { "source": "C:\\Users\\dev\\app", "vault": "D:\\Users\\dev\\app\\atlas", "inside": null },
+    { "source": "\\\\?\\UNC\\server\\share\\app", "vault": "\\\\server\\share\\app\\atlas", "inside": "atlas" }
+  ],
+  "status": [
+    {
+      "excluded": "atlas",
+      "entries": [" M atlas/projects/app.md", "?? atlas/domains/new.md", " M src/main.go"],
+      "kept": [" M src/main.go"]
+    },
+    {
+      "excluded": "atlas",
+      "entries": ["R  atlas/b.md", "atlas/a.md", "R  src/b.go", "atlas/a.go", " M atlas-tools/run.sh"],
+      "kept": ["R  src/b.go", "atlas/a.go", " M atlas-tools/run.sh"]
+    },
+    {
+      "excluded": "atlas",
+      "entries": [" M atlas/readme.md"],
+      "kept": []
+    }
+  ]
+}

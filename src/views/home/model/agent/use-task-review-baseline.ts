@@ -23,7 +23,7 @@ interface TaskReviewBaselineState {
 interface TaskReviewBaselineRuntime {
   capture?: typeof captureTaskBaseline;
   createSourceStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
-  inspectSource?: (rootPath: string) => Promise<ProjectSourceInspection | null>;
+  inspectSource?: (rootPath: string, vaultRoot?: string | null) => Promise<ProjectSourceInspection | null>;
 }
 
 function baselineSlugs(nodes: readonly KnowledgeGraphNode[]): string[] {
@@ -68,7 +68,7 @@ export async function captureTaskReviewBaseline(
       const before = await store.list(captured.projectSlug!);
       if (!isCurrent() || before.status !== 'ok' || before.bindings.length !== 1) return null;
       const binding = before.bindings[0]!;
-      const observation = await inspect(binding.rootPath);
+      const observation = await inspect(binding.rootPath, captured.vaultRoot);
       if (!isCurrent()) return null;
       const after = await store.list(captured.projectSlug!);
       if (!isCurrent() || after.status !== 'ok' || after.bindings.length !== 1) return null;

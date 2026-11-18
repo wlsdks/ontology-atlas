@@ -131,6 +131,7 @@ fn walk_source_inventory(
     prefix: &str,
     depth: usize,
     inventory: &mut SourceInventory,
+    excluded: Option<&str>,
 ) -> Result<(), String> {
     if inventory.files.len() >= SOURCE_INVENTORY_MAX_FILES {
         inventory.truncated = true;
@@ -164,12 +165,15 @@ fn walk_source_inventory(
         } else {
             format!("{prefix}/{name}")
         };
+        if is_vault_path(&relative, excluded) {
+            continue;
+        }
         let path = dir.join(&name);
         if is_dir {
             if SOURCE_PRUNE_DIR_NAMES.contains(&name.as_str()) {
                 continue;
             }
-            walk_source_inventory(&path, &relative, depth + 1, inventory)?;
+            walk_source_inventory(&path, &relative, depth + 1, inventory, excluded)?;
             continue;
         }
 
@@ -178,7 +182,10 @@ fn walk_source_inventory(
     Ok(())
 }
 
-fn inspect_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), String> {
+fn inspect_source_inventory(
+    root: &Path,
+    excluded: Option<&str>,
+) -> Result<(String, bool, Vec<String>), String> {
     let mut inventory = SourceInventory {
         hasher: Sha256::new(),
         files: Vec::new(),
@@ -187,7 +194,7 @@ fn inspect_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), 
     };
     inventory.hasher.update(SOURCE_INVENTORY_VERSION.as_bytes());
     inventory.hasher.update([0]);
-    walk_source_inventory(root, "", 0, &mut inventory)?;
+    walk_source_inventory(root, "", 0, &mut inventory, excluded)?;
     let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
     Ok((fingerprint, inventory.truncated, inventory.files))
 }
@@ -214,7 +221,10 @@ pub(crate) fn run_source_git(root: &Path, args: &[&str]) -> Result<Vec<u8>, Stri
     Ok(output.stdout)
 }
 
-fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), String> {
+fn inspect_git_source_inventory(
+    root: &Path,
+    excluded: Option<&str>,
+) -> Result<(String, bool, Vec<String>), String> {
     let listing = run_source_git(
         root,
         &[
@@ -229,6 +239,7 @@ fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String
         .split(|byte| *byte == 0)
         .filter(|path| !path.is_empty())
         .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+        .filter(|path| !is_vault_path(path, excluded))
         .collect();
     paths.sort();
     paths.dedup();
@@ -240,12 +251,14 @@ fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String
     .split(|byte| *byte == 0)
     .filter(|path| !path.is_empty())
     .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+    .filter(|path| !is_vault_path(path, excluded))
     .collect();
     dirty_paths.extend(
         run_source_git(root, &["ls-files", "--others", "--exclude-standard", "-z"])?
             .split(|byte| *byte == 0)
             .filter(|path| !path.is_empty())
-            .map(|path| String::from_utf8_lossy(path).replace('\\', "/")),
+            .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+            .filter(|path| !is_vault_path(path, excluded)),
     );
 
     let mut inventory = SourceInventory {
@@ -275,6 +288,104 @@ fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String
     }
     let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
     Ok((fingerprint, inventory.truncated, inventory.files))
+}
+
+fn is_vault_path(relative: &str, excluded: Option<&str>) -> bool {
+    excluded.is_some_and(|folder| {
+        relative == folder
+            || relative
+                .strip_prefix(folder)
+                .is_some_and(|rest| rest.starts_with('/'))
+    })
+}
+
+/// One absolute path as forward-slash text: the `\\?\` verbatim prefix dropped, the
+/// drive letter lower-cased, no trailing separator, so a Windows path and its
+/// canonical form compare equal.
+fn comparable_path(path: &str) -> String {
+    let unified = path.replace('\\', "/");
+    let unverbatim = unified
+        .strip_prefix("//?/UNC/")
+        .map(|rest| format!("//{rest}"))
+        .or_else(|| unified.strip_prefix("//?/").map(str::to_string))
+        .unwrap_or(unified);
+    let mut chars: Vec<char> = unverbatim.chars().collect();
+    if chars.len() >= 2 && chars[1] == ':' && chars[0].is_ascii_alphabetic() {
+        chars[0] = chars[0].to_ascii_lowercase();
+    }
+    let mut out: String = chars.into_iter().collect();
+    while out.len() > 1 && out.ends_with('/') && !out.ends_with(":/") {
+        out.pop();
+    }
+    out
+}
+
+/// The vault's folder relative to the source root when it lies strictly inside it,
+/// else None. Its files are the ontology, not the code it describes, so writing the
+/// vault must not make its own source binding stale. The MCP probe applies the same
+/// rule (`mcp/src/project-source/project-source-inspection.mjs`), and both sides run
+/// `mcp/src/project-source/vault-exclusion-cases.json`.
+pub(crate) fn vault_folder_inside(source_root: &str, vault_root: &str) -> Option<String> {
+    let base = comparable_path(source_root);
+    let vault = comparable_path(vault_root);
+    let rest = vault.strip_prefix(&base)?;
+    let inside = if base.ends_with('/') {
+        rest
+    } else {
+        rest.strip_prefix('/')?
+    };
+    if inside.is_empty()
+        || inside
+            .split('/')
+            .any(|part| part.is_empty() || part == "." || part == "..")
+    {
+        return None;
+    }
+    Some(inside.to_string())
+}
+
+/// Drops porcelain v1 `-z` entries under the vault folder; a rename or copy entry
+/// carries its source path as the next token.
+pub(crate) fn filter_vault_status(status: &[u8], excluded: Option<&str>) -> Vec<u8> {
+    let Some(folder) = excluded else {
+        return status.to_vec();
+    };
+    if status.is_empty() {
+        return Vec::new();
+    }
+    let text = String::from_utf8_lossy(status);
+    let mut tokens: Vec<&str> = text.split('\0').collect();
+    if tokens.last() == Some(&"") {
+        tokens.pop();
+    }
+    let mut kept: Vec<&str> = Vec::new();
+    let mut index = 0;
+    while index < tokens.len() {
+        let entry = tokens[index];
+        let renamed = entry.starts_with('R') || entry.starts_with('C');
+        let source = if renamed {
+            tokens.get(index + 1).copied()
+        } else {
+            None
+        };
+        index += if renamed { 2 } else { 1 };
+        let path = entry.get(3..).unwrap_or("");
+        let inside = is_vault_path(path, Some(folder))
+            && source.is_none_or(|from| is_vault_path(from, Some(folder)));
+        if inside {
+            continue;
+        }
+        kept.push(entry);
+        if let Some(from) = source {
+            kept.push(from);
+        }
+    }
+    if kept.is_empty() {
+        return Vec::new();
+    }
+    let mut out = kept.join("\0").into_bytes();
+    out.push(0);
+    out
 }
 
 fn continuity_excluded(relative: &str, target: Option<&str>, archive_prefix: Option<&str>) -> bool {
@@ -453,21 +564,36 @@ pub(crate) fn inspect_project_source_continuity(
     })
 }
 
+/// `vault_root`, when given and inside the source, is left out of the probe; without it
+/// the probe is unchanged, so every existing receipt keeps its fingerprint.
 #[tauri::command(async)]
-pub(crate) fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, String> {
+pub(crate) fn inspect_project_source(
+    root_path: String,
+    vault_root: Option<String>,
+) -> Result<ProjectSourceInspection, String> {
     let selected_root = canonical_source_root(&root_path)?;
+    let canonical_vault = vault_root
+        .as_deref()
+        .and_then(|path| fs::canonicalize(path).ok())
+        .map(|path| path.to_string_lossy().to_string());
     match git::find_repo_root(&selected_root)? {
         Some(repo_root) => {
+            let canonical = repo_root.to_string_lossy().to_string();
+            let excluded = canonical_vault
+                .as_deref()
+                .and_then(|vault| vault_folder_inside(&canonical, vault));
             // Git's tracked plus unignored set keeps caches and ignored artifacts out of the budget.
             let (inventory_fingerprint, truncated, files) =
-                inspect_git_source_inventory(&repo_root)?;
+                inspect_git_source_inventory(&repo_root, excluded.as_deref())?;
             let head = run_source_git(&repo_root, &["rev-parse", "HEAD"])?;
             let revision = String::from_utf8_lossy(&head).trim().to_string();
-            let status = run_source_git(
-                &repo_root,
-                &["status", "--porcelain=v1", "-z", "--untracked-files=all"],
-            )?;
-            let canonical = repo_root.to_string_lossy().to_string();
+            let status = filter_vault_status(
+                &run_source_git(
+                    &repo_root,
+                    &["status", "--porcelain=v1", "-z", "--untracked-files=all"],
+                )?,
+                excluded.as_deref(),
+            );
             Ok(ProjectSourceInspection {
                 root_path: canonical.clone(),
                 source_id: source_digest(&[b"git", canonical.as_bytes()]),
@@ -485,8 +611,12 @@ pub(crate) fn inspect_project_source(root_path: String) -> Result<ProjectSourceI
             })
         }
         None => {
-            let (fingerprint, truncated, files) = inspect_source_inventory(&selected_root)?;
             let canonical = selected_root.to_string_lossy().to_string();
+            let excluded = canonical_vault
+                .as_deref()
+                .and_then(|vault| vault_folder_inside(&canonical, vault));
+            let (fingerprint, truncated, files) =
+                inspect_source_inventory(&selected_root, excluded.as_deref())?;
             Ok(ProjectSourceInspection {
                 root_path: canonical.clone(),
                 source_id: source_digest(&[b"folder", canonical.as_bytes()]),

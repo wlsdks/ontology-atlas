@@ -117,12 +117,12 @@ export function useMeaningTransitionCapture(input: {
     const isAcceptedSource = (observation: Awaited<ReturnType<typeof inspectTauriProjectSource>>) => observation
       && !observation.truncated && observation.rootPath === source.rootPath && observation.sourceId === source.sourceId
       && observation.kind === source.kind && observation.revision === source.revision && observation.fingerprint === source.fingerprint;
-    const firstSource = await inspectTauriProjectSource(source.rootPath);
+    const firstSource = await inspectTauriProjectSource(source.rootPath, identity.vaultId);
     if (!state.isCurrent() || !isAcceptedSource(firstSource)) return false;
     let continuity: ProjectSourceContinuityInspection | null = null;
     try { continuity = await inspectTauriProjectSourceContinuity({ sourceRoot: source.rootPath, vaultRoot: identity.vaultId, targetSlug: target }); }
     catch { /* A folder source can retain meaning evidence without a Git continuity claim. */ }
-    const secondSource = await inspectTauriProjectSource(source.rootPath);
+    const secondSource = await inspectTauriProjectSource(source.rootPath, identity.vaultId);
     if (!state.isCurrent() || !isAcceptedSource(secondSource)) return false;
     state.targets.set(identityKey(identity), { handle, sourceRoot: source.rootPath, slug: target, continuity });
     const correlation = decision.request.writerCorrelation;
