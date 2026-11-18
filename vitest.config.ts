@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 import packageJson from './package.json' with { type: 'json' };
+import { DurationShardSequencer, VitestTimingsReporter } from './scripts/ci/vitest-shard-sequencer.mjs';
 
 // Only these contract files render components; source/parser guards need no DOM.
 const domContracts = [
@@ -27,6 +28,12 @@ export default defineConfig({
      * measured budget (`.claude/rules/testing.md`).
      */
     testTimeout: 30_000,
+    // `--shard` splits by measured seconds (`scripts/data/vitest-file-durations.json`), not count.
+    sequence: { sequencer: DurationShardSequencer },
+    // CI sets the file to collect per-file costs for the next rebalance (`pnpm unit:durations`).
+    ...(process.env.VITEST_TIMINGS_FILE
+      ? { reporters: ['default', new VitestTimingsReporter()] }
+      : {}),
     /*
      * ⚠️ Mirrors what `next.config.ts` does at build time. `/download` reads its version from
      * `package.json` rather than carrying a copy, and without this the tests would see the
