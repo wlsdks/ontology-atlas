@@ -217,7 +217,9 @@ function measureAbilities(docs, survey) {
     if (onFile.some((doc) => sameFile === 1 || names(textOf(doc), row))) return 'node';
     if (nodes.some((doc) => names(textOf(doc), row))) return 'named';
     // A path excludes only the ability it alone holds: one line about cli/options.go is not a reason for every flag group in it.
-    if (exclusionLines.some((line) => (sameFile === 1 && line.includes(row.path)) || names(line, row))) return 'excluded';
+    // The survey's own evidence cite (`config/config.go:L45`) names the one row it points at.
+    const cited = (line) => Boolean(row.evidence) && new RegExp(`${escapeRegExp(row.evidence)}(?!\\d)`).test(line);
+    if (exclusionLines.some((line) => (sameFile === 1 && line.includes(row.path)) || cited(line) || names(line, row))) return 'excluded';
     return 'unplaced';
   };
   const placed = abilities.map((row) => ({ ...row, place: place(row) }));

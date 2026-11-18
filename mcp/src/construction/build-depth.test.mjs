@@ -481,3 +481,19 @@ test('finalize names every unplaced ability, none cut', () => {
   assert.doesNotMatch(reason, /and \d+ more/);
   assert.match(reason, /with a line that says why/);
 });
+
+test('an exclusion that cites the survey row\'s own line excludes a row whose name is a common word', (t) => {
+  const root = repository({
+    'go.mod': 'module x\n',
+    'cmd/x/main.go': 'package main\n\nfunc main() {}\n',
+    'config/config.go': 'package config\n\ntype Config struct {\n\tApp node.Config\n\tPublicMode bool\n}\n',
+  });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  assert.equal(repo.survey.abilities.find((row) => row.name === 'App').evidence, 'config/config.go:L4');
+  const project = (line) => [doc('project', {}, `Runs a server.\n\n## Uncertainty\n${line}\n`)];
+  const unplaced = (line) => measureBuildDepth(project(line), repo, null).breadth.unplaced.map((row) => row.name);
+  assert.ok(unplaced('- The app settings group is not an ability of its own.').includes('App'));
+  assert.ok(!unplaced('- The App setting (config/config.go:L4) is not an ability; it groups node settings.').includes('App'));
+  assert.ok(unplaced('- The App setting (config/config.go:L41) is not an ability; it groups node settings.').includes('App'), 'another line is another row');
+});
