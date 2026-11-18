@@ -5,7 +5,9 @@
  * Depth is measured against the lines this server process served, never against a
  * body's wording: which capabilities' entry files were read, and whether each
  * stated rule cites read lines that hold its condition. Ability-to-ability edges
- * are counted so impact does not end at shared roles. The findings name what a
+ * are counted so impact does not end at shared roles, and the roles several
+ * capabilities' reads pass through are measured against the elements, the same
+ * floor abilities have. The findings name what a
  * newcomer would trip over (a relation note about a node nobody read, a rule with
  * no read lines, a dependency both ways, an entry file with no code, one file for
  * many nodes). Writes and validate_vault report the line,
@@ -413,6 +415,103 @@ function measureRules(docs, reads, repoRoot) {
   return { capabilities: capabilities.length, uncited, judgedAgainstReads: Boolean(reads) };
 }
 
+/** Context parts that are code a capability leans on: not its callers, its own class header or a constant. */
+const ROLE_PARTS = new Set(['callee', 'constructor', 'implementation']);
+/** Shared roles listed at most, most shared first; a longer list is a tail of helpers. */
+const ROLE_LIMIT = 8;
+
+/** A Go method's role is its type: `Session.Send` and `Session.close` are both the session. */
+function roleName(symbol) {
+  const [owner, member] = String(symbol).split('.');
+  return member && /^[A-Z]/.test(owner) ? owner : String(symbol);
+}
+
+/**
+ * The implementation roles two or more capabilities' reads pass through, and
+ * where each sits: an element whose `path:` is its file or that names it, one
+ * line in the project's ## Uncertainty or ## Excludes that points at it alone
+ * and says why, or unplaced. A capability's reads are the symbol reads whose
+ * served lines (body or context) its body cites; a role is a callee,
+ * constructor or implementation one of those reads returned, grouped by its
+ * type. A capability's own entry symbol, or lines it cites in its own entry
+ * file, are an ability, not a role. Null without
+ * this session's reads: a restarted server cannot tell.
+ */
+function measureRoles(docs, reads, repoRoot) {
+  if (!reads || reads.size === 0) return null;
+  const capabilities = docs.filter((doc) => kindOf(doc) === 'capability');
+  const usersOf = new Map();
+  const entries = new Set();
+  // The lines a capability cites in its own entry file: code there is that ability, not a role it leans on.
+  const own = [];
+  for (const doc of capabilities) {
+    const path = pathOf(doc);
+    const symbol = path ? citedSymbol(doc, path) : null;
+    if (symbol) entries.add(`${path}\0${symbol.split('.').pop()}`);
+    for (const cite of lineCites(doc.body, reads, repoRoot)) {
+      if (cite.path === path) own.push(cite);
+      for (const range of reads.get(cite.path) ?? []) {
+        if (!range.read || range.startLine > cite.endLine || range.endLine < cite.startLine) continue;
+        if (!usersOf.has(range.read)) usersOf.set(range.read, new Set());
+        usersOf.get(range.read).add(doc.slug);
+      }
+    }
+  }
+  const groups = new Map();
+  for (const [path, ranges] of reads) {
+    if (reads.cited?.has(path)) continue;
+    for (const range of ranges) {
+      const users = range.read ? usersOf.get(range.read) : null;
+      if (!users || !ROLE_PARTS.has(range.role) || typeof range.symbol !== 'string') continue;
+      if (entries.has(`${path}\0${range.symbol.split('.').pop()}`)
+        || own.some((cite) => cite.path === path && cite.startLine <= range.endLine && cite.endLine >= range.startLine)) continue;
+      const name = roleName(range.symbol);
+      const key = `${path}\0${name}`;
+      const group = groups.get(key) ?? { name, symbol: name, kind: 'role', path, line: range.startLine, users: new Set() };
+      group.line = Math.min(group.line, range.startLine);
+      for (const slug of users) group.users.add(slug);
+      groups.set(key, group);
+    }
+  }
+  const candidates = [...groups.values()].filter((group) => group.users.size >= 2)
+    .sort((a, b) => b.users.size - a.users.size || a.path.localeCompare(b.path) || a.line - b.line)
+    .slice(0, ROLE_LIMIT)
+    .map((group) => ({ ...group, evidence: `${group.path}:L${group.line}`, users: [...group.users].sort() }));
+  const elements = docs.filter((doc) => kindOf(doc) === 'element').map((doc) => {
+    const body = String(doc.body ?? '');
+    return { path: pathOf(doc), title: String(doc.frontmatter?.title ?? ''), body, tokens: codeTokens(body) };
+  });
+  const project = docs.find((doc) => kindOf(doc) === 'project');
+  const exclusionLines = project
+    ? `${sectionOf(project.body, 'Uncertainty')}\n${sectionOf(project.body, 'Excludes')}`.split('\n').filter((line) => line.trim())
+    : [];
+  const place = (row) => {
+    if (elements.some((element) => element.path === row.path || namedInCode(element.body, row, element.tokens)
+      || spokenForms(row.name).some((form) => namesWord(element.title, form)))) return 'element';
+    const excluded = exclusionLines.some((line) => {
+      const pointed = candidates.filter((other) => new RegExp(`${escapeRegExp(other.evidence)}(?!\\d)`).test(line)
+        || namedInCode(line, other, codeTokens(line)) || exactlyNamed(line, other));
+      return pointed.length === 1 && pointed[0] === row && givesReason(line, pointed);
+    });
+    return excluded ? 'excluded' : 'unplaced';
+  };
+  const placed = candidates.map((row) => ({ ...row, place: place(row) }));
+  return {
+    candidates: placed.length,
+    element: placed.filter((row) => row.place === 'element').length,
+    excluded: placed.filter((row) => row.place === 'excluded').length,
+    unplaced: placed.filter((row) => row.place === 'unplaced'),
+  };
+}
+
+function roleLabel(row) {
+  const users = row.users.slice(0, 3).join(', ') + (row.users.length > 3 ? ` and ${row.users.length - 3} more` : '');
+  return `${repoText(row.name, 120)} (${repoText(row.evidence)}, read for ${users})`;
+}
+
+/** The writes that give each unplaced role its element, or its one-line exclusion. */
+const ROLE_REPAIR = 'add_concepts an element for each, titled for the job it does for those abilities (not its code name), with path: its file and a body saying what they rely on it for with the cite of the read lines; then add_relations from each capability that leans on it. Or exclude one in the project\'s ## Uncertainty with one line for it alone that cites its path:Lline and says why it is no shared role';
+
 /** Capability -> capability `depends_on` edges, and the capabilities in none. */
 function measureAbilityEdges(docs) {
   const capability = new Set(docs.filter((doc) => kindOf(doc) === 'capability').map((doc) => doc.slug));
@@ -445,6 +544,7 @@ export function measureBuildDepth(docs, repo, reads) {
   const depth = measureReads(docs, reads, repo?.repoRoot ?? null);
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
+  const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
@@ -459,6 +559,9 @@ export function measureBuildDepth(docs, repo, reads) {
   if (repo && rules.uncited.length > 0) {
     parts.push(`Rules: ${rules.uncited.length} of ${rules.capabilities} capabilities state a rule without citing ${rules.judgedAgainstReads ? 'read ' : ''}lines that hold its condition: ${listed(rules.uncited, (row) => row.slug)}. Next: ${citeRepair(rules.uncited)}.`);
   }
+  if (repo && roles && roles.unplaced.length > 0) {
+    parts.push(`Roles: ${roles.unplaced.length} of the ${roles.candidates} implementation roles that two or more capabilities' reads pass through have no element: ${listedAll(roles.unplaced, roleLabel)}. Next: ${ROLE_REPAIR}.`);
+  }
   if (repo && capabilities.length > 1 && abilityEdges.alone.length > 0) {
     parts.push(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
   }
@@ -467,6 +570,7 @@ export function measureBuildDepth(docs, repo, reads) {
     reads: depth,
     rules,
     abilityEdges,
+    roles,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
@@ -660,7 +764,10 @@ export function competencyDepthRefusals(questions, depth) {
   if (breadth && status.get('abilities') === 'answered' && breadth.unplaced.length > 0) {
     reasons.push(`- abilities: ${breadth.unplaced.length} of ${breadth.abilities} abilities the survey lists, the floor under the map, sit on no node by name and no exclusion: ${listedAll(breadth.unplaced, abilityLabel)}. Next call: add_concepts a capability for each thing a user or operator gets there, or patch_concept the node that covers it to name it in its title or in code form (\`name\`, a family or group names its members; a word in passing does not count), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why it is not an ability. ${fallback('abilities', 'abilities not yet placed')}`);
   }
-  if (status.get('impact') === 'answered' && depth.capabilities > 0) {
+  if (status.get('impact') === 'answered' && depth.roles?.unplaced.length > 0) {
+    reasons.push(`- impact: ${depth.roles.unplaced.length} implementation roles that two or more capabilities' reads pass through have no element, so "what breaks if I change it" has no node to start from: ${listedAll(depth.roles.unplaced, roleLabel)}. Next call: ${ROLE_REPAIR}. ${fallback('impact', 'shared roles not modelled as elements')}`);
+  }
+  if (status.get('impact') === 'answered' && depth.capabilities > 0 && !reasons.some((reason) => reason.startsWith('- impact:'))) {
     const edges = depth.abilityEdges;
     if (depth.dependsOn * 2 < depth.capabilities) {
       reasons.push(`- impact: ${depth.dependsOn} depends_on edges for ${depth.capabilities} capabilities, below one per two. Next call: add_relations with the dependencies the code shows, each why naming the call. ${fallback('impact', 'dependencies are recorded for only part of the map')}`);

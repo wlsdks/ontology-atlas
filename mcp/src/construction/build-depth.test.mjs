@@ -515,3 +515,50 @@ test('an exclusion that cites the survey row\'s own line excludes a row whose na
   assert.ok(!unplaced('- The App setting (config/config.go:L4) is not an ability; it groups node settings.').includes('App'));
   assert.ok(unplaced('- The App setting (config/config.go:L41) is not an ability; it groups node settings.').includes('App'), 'another line is another row');
 });
+
+/*
+ * Key elements fell from 25 to 11 over five stages: every message asked for
+ * capabilities and none for the roles they share. A role two capabilities'
+ * reads pass through is now a floor beside the abilities.
+ */
+test('a role two capabilities\' reads pass through is listed until an element holds it or a line excludes it', () => {
+  resetSessionReads();
+  const root = repository({
+    'pyproject.toml': '[project]\nname = "shop"\n',
+    'shop/__init__.py': '',
+    'shop/store.py': 'class Store:\n    def save(self, item):\n        if item.locked:\n            raise ValueError("locked")\n        return item\n',
+    'shop/ship.py': 'from shop.store import Store\n\n\ndef ship(item):\n    if item.ready:\n        return Store().save(item)\n    return None\n',
+    'shop/canary.py': 'from shop.store import Store\n\n\ndef canary(item):\n    if item.beta:\n        return Store().save(item)\n    return None\n',
+    'shop/audit.py': 'from shop.store import Store\n\n\ndef audit(item):\n    if item.flagged:\n        return Store().save(item)\n    return None\n',
+  });
+  try {
+    for (const [path, symbol] of [['shop/ship.py', 'ship'], ['shop/canary.py', 'canary'], ['shop/audit.py', 'audit']]) {
+      const packet = readSourceEvidence(root, [{ path, symbol }]);
+      assert.match(packet.rows[0].context.find((part) => part.role === 'callee')?.symbol ?? '', /^Store\b/);
+      recordSourceEvidence(root, packet);
+    }
+    const capability = (name) => doc(`capabilities/${name}`, { path: `shop/${name}.py` }, `Does ${name}.\n\nOnly when ready (\`shop/${name}.py:L4-L7\`).\n\n## Uncertainty\n- None.\n`);
+    const project = (uncertainty) => doc('shop', {}, `Shop.\n\n## Uncertainty\n${uncertainty}\n`);
+    const base = [capability('ship'), capability('canary'), doc('capabilities/audit', { path: 'shop/audit.py' })];
+    const repo = repositorySurvey(root, join(root, 'atlas'));
+    const unplaced = measureBuildDepth([project('- None.'), ...base], repo, sessionReads(root));
+    assert.deepEqual(unplaced.roles.unplaced.map((row) => [row.name, row.evidence, row.users]), [['Store', 'shop/store.py:L1', ['capabilities/canary', 'capabilities/ship']]],
+      'audit cites no read lines, so its read is not counted as its own');
+    assert.match(unplaced.line, /Roles: 1 of the 1 implementation roles that two or more capabilities' reads pass through have no element: Store \(shop\/store\.py:L1, read for capabilities\/canary, capabilities\/ship\)\. Next: add_concepts an element/);
+    const [refusal] = competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...unplaced, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } });
+    assert.match(refusal, /^- impact: 1 implementation roles .* Store \(shop\/store\.py:L1, .*Only if that cannot be done, mark impact partial/);
+
+    const element = doc('elements/item-store', { path: 'shop/store.py', title: 'Item store' });
+    assert.deepEqual(measureBuildDepth([project('- None.'), ...base, element], repo, sessionReads(root)).roles.unplaced, []);
+    const excluded = measureBuildDepth([project('- `shop/store.py:L1` is a thin persistence call each command makes, not a role of its own.'), ...base], repo, sessionReads(root));
+    assert.deepEqual([excluded.roles.excluded, excluded.roles.unplaced.length], [1, 0]);
+    const listOnly = measureBuildDepth([project('- Not modelled: `Store`.'), ...base], repo, sessionReads(root));
+    assert.equal(listOnly.roles.unplaced.length, 1, 'a name with no reason excludes nothing');
+
+    const entry = doc('capabilities/store', { path: 'shop/store.py' }, 'Stores items.\n\nRefuses a locked item (`shop/store.py` `Store.save`, `shop/store.py:L3-L4`).\n\n## Uncertainty\n- None.\n');
+    assert.deepEqual(measureBuildDepth([project('- None.'), ...base, entry], repo, sessionReads(root)).roles.unplaced, [], 'an ability\'s own entry is no role');
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
