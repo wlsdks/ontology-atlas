@@ -189,7 +189,7 @@ export function AgentTranscript({
                   /* `min-h-11` is the WCAG 2.5.8 touch target — the value layer still
                      has that axis only on `link`, so it is carried per site here. */
                   className:
-                    'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                    'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                 })}
               >
                 <span className="line-clamp-2 [word-break:keep-all]">{asked}</span>
@@ -331,7 +331,7 @@ function renderEvent(
                   /* `min-h-11` is the WCAG 2.5.8 touch target — the value layer still
                      has that axis only on `link`, so it is carried per site here. */
                   className:
-                    'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                    'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                 })}
               >
                 <span className="line-clamp-2 [word-break:keep-all]">{event.nextStep}</span>
@@ -395,7 +395,7 @@ function ConceptChip({
       data-testid="agent-citation-chip"
       data-citation-slug={slug}
       onClick={() => onFocusNode(slug)}
-      className={controlClass({ shape: "chip", size: "sm", tone: "secondary", className: "mx-0.5 max-w-full border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-px align-baseline tracking-label hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]" })}
+      className={controlClass({ shape: "chip", size: "sm", tone: "secondary", className: "mx-0.5 max-w-full border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-px align-baseline tracking-label hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]" })}
     >
       <span className="truncate">{label ?? tailOfSlug(slug)}</span>
     </button>

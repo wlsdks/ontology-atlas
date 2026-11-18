@@ -68,7 +68,7 @@ export function AgentHandoffPacket({
           size: 'md',
           tone: 'secondary',
           className:
-            'mt-2 tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+            'mt-2 tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
         })}
       >
         {copied ? labels.copied : labels.copy}

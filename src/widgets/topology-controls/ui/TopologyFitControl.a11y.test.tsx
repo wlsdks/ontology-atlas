@@ -31,7 +31,7 @@ describe('TopologyFitControl fit tile', () => {
     render(<TopologyFitControl onFitView={() => {}} />);
     const fitButton = screen.getByRole('button', { name: '지도 전체 맞추기' });
     expect(fitButton.className).toMatch(/focus-visible:ring-2/);
-    expect(fitButton.className).toContain('focus-visible:outline-none');
+    expect(fitButton.className).toContain('focus-visible:outline-hidden');
   });
 
   it('keeps the right-rail desktop-top position token', () => {

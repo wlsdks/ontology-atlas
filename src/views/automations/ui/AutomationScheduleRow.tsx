@@ -88,7 +88,7 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
       <div role="row" aria-selected={selected} tabIndex={tabbable ? 0 : -1} data-schedule-row data-testid={`automation-${round.id}`}
         onClick={onSelect} onKeyDown={(event) => onRowKeyDown(event, onSelect)}
         className={cn(AUTOMATION_ROW_GRID, 'cursor-pointer py-3.5 transition-[background-color] motion-reduce:transition-none',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+          'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
           selected ? 'bg-[color:var(--color-overlay-2)]' : 'hover:bg-[color:var(--color-overlay-1)]')}>
         <div role="gridcell" data-automation-col="name" className={AUTOMATION_CELL.name}>
           <span title={round.name} className="block truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{round.name}</span>

@@ -200,7 +200,7 @@ export function TopologyRealmLedger({
               size: "md",
               tone: "muted",
               className:
-                "shrink-0 text-[color:var(--map-panel-text-quaternary)] hover:text-[color:var(--map-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
+                "shrink-0 text-[color:var(--map-panel-text-quaternary)] hover:text-[color:var(--map-panel-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
             })}
           >
             {labels.exit}
@@ -309,7 +309,7 @@ export function TopologyRealmLedger({
               aria-expanded={boundaryOpen}
               aria-label={labels.boundaryToggleAria}
               data-testid="topology-realm-boundary-toggle"
-              className={controlClass({ shape: "row", className: "gap-1.5 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+              className={controlClass({ shape: "row", className: "gap-1.5 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
             >
               <span className="min-w-0 flex-1 truncate text-label text-[color:var(--map-panel-text-tertiary)]">
                 {labels.boundaryHeading}
@@ -351,7 +351,7 @@ export function TopologyRealmLedger({
                         shape: "link",
                         size: "md",
                         className:
-                          "shrink-0 text-[color:var(--color-indigo-accent)] [@media(hover:hover)]:opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none",
+                          "shrink-0 text-[color:var(--color-indigo-accent)] [@media(hover:hover)]:opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none",
                       })}
                     >
                       <CornerUpRight size={ICON_SIZE.sm} aria-hidden="true" />

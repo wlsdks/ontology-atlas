@@ -52,7 +52,10 @@ function collectTsx(): string[] {
 
 const ROOT = process.cwd();
 const RING = 'focus-visible:ring-';
-const OUTLINE_OFF = 'focus-visible:outline-none';
+/** `outline-hidden` turns the outline off but keeps it under `forced-colors`, where a ring is not painted. */
+const OUTLINE_OFF = 'focus-visible:outline-hidden';
+/** Either spelling turns the browser ring off, so the scan below reads both. */
+const TURNS_OUTLINE_OFF = /focus-visible:outline-(?:none|hidden)\b/;
 
 const SHAPES = ['chip', 'icon', 'row', 'link', 'pill', 'card'] as const;
 const SIZES = ['sm', 'md', 'lg'] as const;
@@ -121,7 +124,7 @@ describe('keyboard focus — the base layer lays the floor and the value layer b
   });
 
   /**
-   * A consumer turning off the browser ring with `outline-none` and giving no replacement leaves focus
+   * A consumer turning off the browser ring with `outline-hidden` and giving no replacement leaves focus
    * invisible (WCAG 2.4.7). Scope is the opening tag; a border change counts as an indicator and
    * `tabIndex={-1}` containers are exempt because a ring there is the defect.
    */
@@ -138,7 +141,7 @@ describe('keyboard focus — the base layer lays the floor and the value layer b
       const src = stripComments(readFileSync(f, 'utf8'));
       for (const m of src.matchAll(/<[a-zA-Z][a-zA-Z0-9.]*\b/g)) {
         const tag = openingTag(src, m.index ?? 0);
-        if (!tag.includes(OUTLINE_OFF)) continue;
+        if (!TURNS_OUTLINE_OFF.test(tag)) continue;
         scannedTags += 1;
         // For programmatically moved focus (modal and panel containers) a ring is the defect
         if (/tabIndex=\{-1\}/.test(tag)) continue;
@@ -148,10 +151,10 @@ describe('keyboard focus — the base layer lays the floor and the value layer b
       }
     }
 
-    expect(scannedTags, 'could not find a single tag using `outline-none` — the detector is dead').toBeGreaterThan(50);
+    expect(scannedTags, 'could not find a single tag using `outline-hidden` — the detector is dead').toBeGreaterThan(50);
     expect(
       offenders,
-      '`focus-visible:outline-none` **only removes** the default browser ring. Without a replacement\n' +
+      '`focus-visible:outline-hidden` **only removes** the default browser ring. Without a replacement\n' +
         '(one of ring, border, bg or shadow) focus is not visible at all (WCAG 2.4.7).\n' +
         `Violations: ${offenders.join(', ')}`,
     ).toEqual([]);
@@ -163,7 +166,7 @@ describe('keyboard focus — the base layer lays the floor and the value layer b
       const out: string[] = [];
       for (const m of src.matchAll(/<[a-zA-Z][a-zA-Z0-9.]*\b/g)) {
         const tag = openingTag(src, m.index ?? 0);
-        if (!tag.includes(OUTLINE_OFF)) continue;
+        if (!TURNS_OUTLINE_OFF.test(tag)) continue;
         if (/tabIndex=\{-1\}/.test(tag)) continue;
         if (/focus-visible:(ring-|border-|bg-|shadow-|text-)/.test(tag)) continue;
         out.push('hit');
@@ -171,12 +174,13 @@ describe('keyboard focus — the base layer lays the floor and the value layer b
       return out;
     };
     // Violation — turned off with nothing in its place
+    expect(scan('<button className="focus-visible:outline-hidden" />')).toHaveLength(1);
     expect(scan('<button className="focus-visible:outline-none" />')).toHaveLength(1);
     // Legitimate — ring, border, programmatic container
-    expect(scan('<button className="focus-visible:outline-none focus-visible:ring-2" />')).toEqual([]);
-    expect(scan('<input className="focus-visible:outline-none focus-visible:border-x" />')).toEqual([]);
-    expect(scan('<div tabIndex={-1} className="focus-visible:outline-none" />')).toEqual([]);
+    expect(scan('<button className="focus-visible:outline-hidden focus-visible:ring-2" />')).toEqual([]);
+    expect(scan('<input className="focus-visible:outline-hidden focus-visible:border-x" />')).toEqual([]);
+    expect(scan('<div tabIndex={-1} className="focus-visible:outline-hidden" />')).toEqual([]);
     // A quotation inside a comment is not a value
-    expect(scan('// <button className="focus-visible:outline-none" />\nconst a = 1;')).toEqual([]);
+    expect(scan('// <button className="focus-visible:outline-hidden" />\nconst a = 1;')).toEqual([]);
   });
 });

@@ -58,7 +58,7 @@ export function TopologyEmptyState({
    * comes from fill, not width.
    */
   const ACTION =
-    "w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
+    "w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
   const PRIMARY = controlClass({
     shape: 'chip',
     size: 'lg',

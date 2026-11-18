@@ -423,7 +423,7 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className={controlClass({ shape: "row", className: "group -mx-2 mb-3 w-auto gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+        className={controlClass({ shape: "row", className: "group -mx-2 mb-3 w-auto gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
       >
         <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-primary)]">
           {labels.label}

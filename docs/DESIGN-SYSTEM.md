@@ -97,9 +97,10 @@ Overview first, zoom and filter, details on demand (`docs/design/topology-focus-
 
 ### Where values live
 
-`app/globals.css` imports the parts in `app/styles/` in order (`@theme` ramps in `tokens.css`, `:root` alpha in `base-root-alpha.css`, `--map-*` in `base-map-tokens.css`); gates read the joined text through `readGlobalCss()` (`scripts/lib/design/global-css.mjs`).
+`app/globals.css` imports the parts in `app/styles/` in order (`@theme static` ramps in `tokens.css`, other global `:root` tokens in `base-root-alpha.css`, `--map-*` in `base-map-tokens.css`); gates read the joined text through `readGlobalCss()` (`scripts/lib/design/global-css.mjs`).
 
-- Every colour is a CSS variable; declare translucent values in `:root` too (Tailwind v4 may emit the utility without the root variable).
+- Every colour is a CSS variable, declared once. `@theme static` emits every theme value to `:root` whether or not a class names it, so a theme token never gets a second `:root` copy.
+- A control that turns the browser outline off uses `outline-hidden` (`focus-visible:outline-hidden` beside its ring), never `outline-none`: under `forced-colors` the box-shadow ring is not painted and `outline-hidden` keeps a 2px outline in its place. `outline-none` stays only where focus is moved for announcement (a dialog, panel or heading with `tabIndex={-1}` and no ring) or is drawn inside a canvas.
 - A token needs a living consumer, and a token this document cites must exist (`design-doc-token-integrity`).
 - A new topology token states its product reason, state or layer, responsive fallback and a WebView or test marker.
 - Lint blocks raw hex and colour functions, `text-[Npx]`, `rounded-[Npx]`, hand-built shadows, numeric `duration-*` and z-index 20+ without `--z-*`. Spacing is deliberately unenforced.
