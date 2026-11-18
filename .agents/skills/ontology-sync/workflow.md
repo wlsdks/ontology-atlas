@@ -73,6 +73,9 @@ For each confirmed delta, prefer one tool:
 | Existing node, new field or refined body | `patch_concept` (pass `expected_mtime` from a prior `get_concept`) |
 | Edge between existing nodes | `add_relation(from, to, type)` |
 
+Shape each body and test each `depends_on` by the construction card that
+`connection_info` returns.
+
 Rename, merge, and deletion are separate procedures, not ordinary sync steps.
 Require an explicit request covering the exact operation, perform its dry-run
 or preflight review, then use the operation's concurrency guards. For rename

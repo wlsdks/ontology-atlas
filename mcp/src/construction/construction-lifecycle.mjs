@@ -25,44 +25,6 @@ export const CONSTRUCTION_LIFECYCLE_PHASES = Object.freeze([
   'prior_cq_regression',
 ]);
 
-export const CONSTRUCTION_LIFECYCLE_EN = `## Ontology construction lifecycle — review before write
-
-Ontology construction uses one public read tool in two phases; there is no
-separate approval tool or writer token.
-
-1. Call \`analyze_repo_structure\` with the complete proposal and no
-   \`qualification\`. A valid proposal returns a non-writing \`reviewPlan\`,
-   \`planDigest\`, \`planRevision\`, \`sourceDigest\`, and exact
-   \`requiredGapIds\`. \`canWrite\` remains false and \`writePlan\` is absent. A
-   mandatory proposal warning that cannot become a human gap blocks this first
-   review and must be repaired before qualification starts.
-2. A separately identified evaluator must run the approved competency questions,
-   verify current portable witnesses and citations, execute the complete
-   source-hidden task, report every quality axis, and run the prior-CQ regression.
-   Every qualification claim must carry \`proposalRefs\` for the exact current
-   review-plan rows; missing, foreign, or source-hidden-uncovered rows block
-   writing. Builder-only evaluation, \`not_measured\`, stale evidence, or a red
-   mandatory axis also blocks writing.
-3. Show the exact review plan and every required gap to the person. If they
-   accept, record declared human provenance bound to the returned plan digest,
-   revision, and exact accepted gap ids. This records an assertion; Atlas does
-   not authenticate the person's identity or certify the claims as truth.
-4. Call the same tool again with the unchanged proposal and the complete
-   \`constructionQualification:v1\` packet. Write only when it returns
-   \`canWrite:true\`, lifecycle \`writeEligibility:"executable"\`, and an exact
-   \`writePlan\`. Any source or plan change invalidates the acceptance.
-   The response also contains a shadow-only \`admission\` disposition. It
-   classifies whether the packet is self-qualified, has a visible measured
-   gap, needs human review, or is hard-blocked. \`self_qualified\` is only an
-   auto-write candidate in this phase; it does not bypass human acceptance.
-5. Pass those rows unchanged to the batch writers, then run \`validate_vault\`,
-   \`compile_ontology({summary:true})\`, and \`finalize_project_meaning\` after
-   connecting the project source. A post-write failure is repaired forward; it
-   is never concealed as a successful construction.
-
-Always obtain explicit user approval for the exact plan and visible gaps.
-Unknown is a valid result; invented completeness is not.`;
-
 // The bulk writePlan waits for an independent evaluation, but add_concepts and
 // add_relation do not, so a blocked caller is told the path that stays open.
 // It names tools, not a skill, since skills ship only for some clients.

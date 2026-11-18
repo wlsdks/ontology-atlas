@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
-import { loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -406,11 +406,15 @@ function gatesPlan({ suggestions, full }) {
   // These scripts spawn the source MCP server (`test:cli:commands` runs the real `growth` command,
   // which calls it). Without them listed, a gates lane dies on missing mcp/node_modules, a false red
   // no rerun fixes, since checks.yml gates `pnpm --dir mcp install` on this flag.
-  const needsMcp = commands.some((command) =>
-    /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
-      command,
-    ),
-  );
+  // A script test that imports mcp/src (a dogfood-walk test reaching mdast-util-from-markdown)
+  // needs the same install, so any command whose files' import closure enters mcp/ raises it too.
+  const commandFiles = commands.flatMap((command) => command.split(/\s+/).filter((token) => /^(?:scripts|cli|tests)\/.+\.[cm]?js$/.test(token)));
+  const needsMcp =
+    commands.some((command) =>
+      /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
+        command,
+      ),
+    ) || [...importClosure(commandFiles)].some((path) => path.startsWith('mcp/'));
   // The PO pilot sunset and decision-ledger diff are cheap standing checks, so
   // every comparable PR keeps this required lane alive even with no mapping.
   return { run: true, commands, needsMcp };

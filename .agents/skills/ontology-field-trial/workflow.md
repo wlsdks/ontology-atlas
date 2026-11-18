@@ -190,7 +190,7 @@ a pointer to them, the way this repository's visibility table allows:
 cp .claude/skills/ontology-field-trial/scripts/sealed-questions.template.md \
    "$TRIAL"/sealed-questions.md
 
-# 2. Replay the door: two turns, the second resuming the first.
+# 2. Replay the door: one turn, and a resumed "go ahead" turn only if it stopped.
 .claude/skills/ontology-field-trial/scripts/acp-replay.sh "$TRIAL"/repo \
   --model opus --out "$TRIAL"/replay
 
@@ -204,7 +204,7 @@ node .claude/skills/ontology-field-trial/scripts/scan-findings.mjs \
 ```
 
 Phase 2 still runs from the CLI and phase 4 is still done by hand against the
-clone. Record in [the current replay baseline](../../../.claude/skills/ontology-field-trial/BASELINE.md): the two turns' cost and wall clock
+clone. Record in [the current replay baseline](../../../.claude/skills/ontology-field-trial/BASELINE.md): each turn's cost and wall clock
 from the run's `<out>/replay.json`; nodes per kind folder and whether the final answer reached
 finalizing the project meaning; one verdict per sealed question plus the seventh
 question's answer verbatim; the finding tally from `<scripts>/scan-findings.mjs`; and the

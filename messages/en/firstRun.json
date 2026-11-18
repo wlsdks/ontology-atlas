@@ -5,7 +5,7 @@
   "openTitle": "Open a folder",
   "openBody": "Pick an existing Markdown folder to use as your ontology folder.",
   "codeTitle": "Start from a code project",
-  "codeBody": "Choose your code folder and Atlas makes an atlas folder inside it. You see the path first, and a connected coding agent then reads the code and proposes a draft.",
+  "codeBody": "Choose your code folder and Atlas makes an atlas folder inside it. You see the path first, and a connected coding agent then reads the code and writes a first map.",
   "codeFailed": "Could not open the code folder. Try again.",
   "justStartTitle": "Create in home folder",
   "justStartBody": "Creates it under Ontology Atlas in your home folder, with no picker. Your coding agent can read and write it too.",
