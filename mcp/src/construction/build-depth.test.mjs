@@ -112,16 +112,20 @@ test('a stated rule needs a cite of read lines that hold its condition', (t) => 
 /*
  * Impact needs conditions between abilities, not only edges into shared roles.
  */
-test('capabilities no ability-to-ability edge touches are listed with the question to ask', () => {
-  const docs = [
-    doc('capabilities/presence', { depends_on: ['capabilities/subscribe', 'elements/broker'] }),
-    doc('capabilities/subscribe', { depends_on: ['elements/broker'] }),
-    doc('capabilities/whisper', { depends_on: ['elements/broker'] }),
-    doc('elements/broker', {}),
-  ];
-  const depth = measureBuildDepth(docs, null, null);
+const edgeDocs = [
+  doc('capabilities/presence', { depends_on: ['capabilities/subscribe', 'elements/broker'] }),
+  doc('capabilities/subscribe', { depends_on: ['elements/broker'] }),
+  doc('capabilities/whisper', { depends_on: ['elements/broker'] }),
+  doc('elements/broker', {}),
+];
+
+test('capabilities no ability-to-ability edge touches are listed with the question to ask', (t) => {
+  const root = product();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const depth = measureBuildDepth(edgeDocs, repositorySurvey(root, join(root, 'atlas')), null);
   assert.deepEqual(depth.abilityEdges, { edges: 1, alone: ['capabilities/whisper'] });
   assert.match(depth.line, /none touch capabilities\/whisper\. For each, ask which other ability must have run, be configured or be present first/);
+  assert.doesNotMatch(measureBuildDepth(edgeDocs, null, null).line ?? '', /capabilities\/whisper/, 'without a grounded repository the line names no slug');
 });
 
 /*

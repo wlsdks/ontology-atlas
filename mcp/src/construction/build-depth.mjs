@@ -319,10 +319,11 @@ export function measureBuildDepth(docs, repo, reads) {
   } else if (!depth && capabilities.length > 0) {
     parts.push('Depth: this server process has served no line or symbol reads, so which entry files were read is unknown.');
   }
-  if (rules.uncited.length > 0) {
+  // The rule and edge lists name slugs across the vault; they speak only for a grounded build.
+  if (repo && rules.uncited.length > 0) {
     parts.push(`Rules: ${rules.uncited.length} of ${rules.capabilities} capabilities state a rule without citing ${rules.judgedAgainstReads ? 'read ' : ''}lines that hold its condition: ${listed(rules.uncited, (row) => row.slug)}. Next: ${citeRepair(rules.uncited)}.`);
   }
-  if (capabilities.length > 1 && abilityEdges.alone.length > 0) {
+  if (repo && capabilities.length > 1 && abilityEdges.alone.length > 0) {
     parts.push(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
   }
   return {
