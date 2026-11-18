@@ -9,7 +9,7 @@
   "openLabel": "Open a folder",
   "openBusy": "Opening folder…",
   "buildFromCodeLabel": "Build ontology from code",
-  "buildFromCodeHint": "Pick a code folder and Atlas creates an atlas folder inside it; your coding agent reads the code and writes a first map in one go. It shows you the path before creating, and asks you to allow each write unless you turned on Auto-approve.",
+  "buildFromCodeHint": "Pick a code folder and Atlas creates an atlas folder inside it; your coding agent reads the code and writes a first map in one go. It shows you the path before creating and asks you to allow each write; with Auto-approve on, it still asks before binding the code folder and finishing the map.",
   "buildFromCodeBusy": "Opening the folder…",
   "createLabel": "Create a new folder",
   "createBusy": "Writing starter structure…",

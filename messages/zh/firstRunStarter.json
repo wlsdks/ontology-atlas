@@ -9,7 +9,7 @@
   "openLabel": "打开文件夹",
   "openBusy": "正在打开文件夹…",
   "buildFromCodeLabel": "根据代码构建本体",
-  "buildFromCodeHint": "选择代码文件夹，Atlas 会在其中创建 atlas 文件夹，编码智能体读取代码并一次写出第一张地图。创建前会先显示路径；除非你开启了自动批准，每次写入前都会请你允许。",
+  "buildFromCodeHint": "选择代码文件夹，Atlas 会在其中创建 atlas 文件夹，编码智能体读取代码并一次写出第一张地图。创建前会先显示路径，每次写入前都会请你允许；即使开启了自动批准，连接代码文件夹和最后完成这两步仍会询问。",
   "buildFromCodeBusy": "正在打开文件夹…",
   "createLabel": "新建文件夹",
   "createBusy": "正在写入起步结构…",

@@ -37,7 +37,8 @@ door on the card. Its first turn asks the agent to outline every source unit,
 read the one main flow, say the outline in a few sentences and write the whole
 first map in the same run, with titles in the words a teammate says aloud; a
 question the agent asks carries the default it takes. Each write still meets the
-permission card unless Auto-approve is on. It does not launch a step-by-step popup tour. The
+permission card unless Auto-approve is on, and binding the code folder and
+finishing the map always ask. It does not launch a step-by-step popup tour. The
 optional automatic folder-opening guide remains controlled in Screen settings.
 
 Entering Map from another screen reveals the existing start actions for an empty

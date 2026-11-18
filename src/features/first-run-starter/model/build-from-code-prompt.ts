@@ -6,7 +6,7 @@
  *   end to end. Three earlier builds read a few bodies deeply and mapped a fifth of the product.
  * - The agent says the outline and writes it in the same run; a question it asks carries the
  *   default it takes (decision 0f78a22b). Each write still meets the app's permission card
- *   unless the person turned on auto-approve.
+ *   unless the person turned on auto-approve; binding the folder and finalizing always do.
  * - Titles are the words a teammate says aloud, never an identifier.
  * English, in the person's voice, because it lands in the transcript as their turn.
  */
@@ -37,8 +37,8 @@ export function buildFromCodePrompt(
     '   that default without waiting for me.',
     '4. Write all of it: project and domains, then abilities, then roles, then relations. Then run',
     '   `validate_vault`, `connect_project_source` and `finalize_project_meaning`, and tell me what the',
-    '   folder holds and what is still unopened. The app may ask me to allow each write unless I',
-    '   turned on auto-approve; that is not a reason to stop and ask me here.',
+    '   folder holds and what is still unopened. The app may ask me to allow a write; that is not a',
+    '   reason to stop and ask me here.',
     '',
     'Name each node the way a teammate would say it aloud, in words from the docs, README, interface',
     'text or command help: no file path, camelCase, snake_case, file extension or class suffix in a',
