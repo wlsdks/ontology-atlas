@@ -684,7 +684,7 @@ const RELEASE_ARTIFACT_STEP_MARKERS = [
   'args: ["desktop:release-secrets"]',
   'args: ["build"]',
   'args: ["desktop:smoke"]',
-  'args: ["desktop:build:app"]',
+  'args: ["desktop:build:app:prebuilt"]',
   'args: ["desktop:sign"]',
   'args: ["desktop:repack-updater"]',
   'args: ["scripts/desktop/package-macos-dmg.mjs"]',
@@ -1045,6 +1045,7 @@ if (
 
 const admitReleaseJob = workflowJob(releaseWorkflow, "admit-release");
 const buildMacosJob = workflowJob(releaseWorkflow, "build-macos");
+const signMacosJob = workflowJob(releaseWorkflow, "sign-macos");
 const buildWindowsJob = workflowJob(releaseWorkflow, "build-windows");
 const stageReleaseJob = workflowJob(releaseWorkflow, "stage-macos");
 const publishReleaseJob = workflowJob(releaseWorkflow, "publish-macos");
@@ -1086,13 +1087,17 @@ if (
 }
 
 if (
-  [buildMacosJob, buildWindowsJob].every((job) =>
+  [signMacosJob, buildWindowsJob].every((job) =>
     needsAdmission(job) && /environment:\s*release-signing/.test(job) && hasAdmittedCheckout(job),
-  )
+  ) &&
+  needsAdmission(buildMacosJob) &&
+  hasAdmittedCheckout(buildMacosJob) &&
+  !/environment:/.test(buildMacosJob) &&
+  !/\$\{\{\s*secrets\./.test(buildMacosJob)
 ) {
-  pass("macOS and Windows signing builds consume the admitted commit from release-signing");
+  pass("macOS signing and the Windows build consume the admitted commit from release-signing, and the macOS build holds no secret");
 } else {
-  fail("build-macos and build-windows must need admit-release, use release-signing, and checkout needs.admit-release.outputs.release_sha");
+  fail("sign-macos and build-windows must need admit-release, use release-signing, and checkout needs.admit-release.outputs.release_sha; build-macos must do the same outside any environment and reference no secret");
 }
 
 if (

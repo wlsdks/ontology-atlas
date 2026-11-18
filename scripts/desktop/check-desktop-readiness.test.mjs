@@ -216,7 +216,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(readinessOutput, /protected release trigger accepts only a dispatched tag input and names that tag in the run|release-macos\.yml must have only workflow_dispatch/);
   assert.match(readinessOutput, /unprivileged release admission binds a protected branch dispatch to its trusted workflow commit|admit-release must be unprivileged/);
-  assert.match(readinessOutput, /macOS and Windows signing builds consume the admitted commit from release-signing|build-macos and build-windows must need admit-release/);
+  assert.match(readinessOutput, /macOS signing and the Windows build consume the admitted commit from release-signing|sign-macos and build-windows must need admit-release/);
   assert.match(readinessOutput, /staging and publication use the admitted commit and requested release tag|stage-macos and publish-macos must need admit-release/);
   assert.match(readinessOutput, /Windows builds its installer with no signing secret in the job|build-windows must run desktop:build:windows and reference no secret/);
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect \.p8 credentials/);

@@ -41,7 +41,11 @@ describe('Windows desktop beta release contract', () => {
     expect(workflow).toContain('verify-mcp-binary.mjs');
     expect(workflow).toContain('ontology-atlas-windows-x64');
     expect(workflow).toContain('(Get-Content package.json | ConvertFrom-Json).version');
-    expect(releaseWorkflow).toContain('needs: [admit-release, build-macos, build-windows, audit-rust]');
+    expect(releaseWorkflow).toContain(
+      'needs: [admit-release, test-macos, test-windows, build-macos, sign-macos, build-windows, audit-rust]',
+    );
+    expect(workflowJob(releaseWorkflow, 'test-windows')).toContain('run: pnpm test:desktop:bridge');
+    expect(workflowJob(releaseWorkflow, 'test-windows')).toContain('runs-on: windows-2022');
     expect(workflowJob(releaseWorkflow, 'build-windows')).not.toContain('secrets.');
   });
 

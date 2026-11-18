@@ -20,7 +20,7 @@ import {
   ephemeralUpdaterKey,
   localCommandFor,
   parseAdmitReleaseSteps,
-  parseBuildMacosSteps,
+  parseRehearsedMacosSteps,
   PROBE_TIMEOUT_MS,
   probeTool,
 } from "../../../scripts/desktop-release/release-rehearsal.mjs";
@@ -148,7 +148,7 @@ describe("the updater archive must contain the signed app", () => {
 
 describe("the rehearsal covers every release job", () => {
   const admissionSteps = parseAdmitReleaseSteps(workflow);
-  const steps = parseBuildMacosSteps(workflow);
+  const steps = parseRehearsedMacosSteps(workflow);
 
   it("actually reads the tag verification and source admission steps of the admit-release job", () => {
     expect(admissionSteps.map((step) => step.name)).toContain("Verify requested release version");
@@ -210,9 +210,11 @@ describe("the rehearsal covers every release job", () => {
     );
   });
 
-  it("actually reads the steps of the build-macos job", () => {
+  it("actually reads the steps of the test-macos, build-macos and sign-macos jobs", () => {
     // If the parser silently returns 0 steps, the rehearsal does nothing and goes green.
     expect(steps.length).toBeGreaterThan(10);
+    expect(new Set(steps.map((step) => step.job))).toEqual(new Set(["test-macos", "build-macos", "sign-macos"]));
+    expect(steps.map((step) => step.name)).toContain("MCP release gate");
     expect(steps.map((step) => step.name)).toContain("Build bundled MCP sidecar");
     expect(steps.map((step) => step.name)).toContain("Stage release assets");
   });

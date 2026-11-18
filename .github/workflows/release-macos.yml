@@ -100,15 +100,133 @@ jobs:
           echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
-  build-macos:
-    name: Build macOS DMG (${{ matrix.arch }})
+  # The gates that do not produce the artifact run beside the builds instead of before
+  # them. `stage-macos` needs both test jobs, so a red gate still stops the draft release.
+  # Neither job enters `release-signing`: no step here reads a secret.
+  test-macos:
+    name: Verify macOS release gates
     needs: admit-release
-    environment: release-signing
+    runs-on: macos-15
+    # budget: 480s (v2.2.2: these steps took 277 s inside build-macos, its setup 90 s;
+    # no standalone run measured yet)
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: stable
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled MCP server dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      - name: MCP release gate
+        run: pnpm dogfood:release-gate
+
+      - name: Desktop checker tests
+        run: pnpm test:desktop:check
+
+      - name: Desktop runtime split tests
+        run: pnpm test:desktop:runtime
+
+      # `tauri.conf.json` declares the MCP sidecar as `externalBin`, so every cargo call,
+      # the `cargo test` below included, needs that file to exist first.
+      - name: Build bundled MCP sidecar
+        run: pnpm mcp:build-binary
+
+      # The only macOS `cargo test` in CI.
+      - name: Native vault bridge tests
+        run: pnpm test:desktop:bridge
+
+  test-windows:
+    name: Verify Windows native bridge
+    needs: admit-release
+    runs-on: windows-2022
+    # budget: 400s (v2.2.2: these steps took 197 s inside build-windows, its setup 88 s;
+    # no standalone run measured yet)
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: stable
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled MCP server dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      - name: Windows release contract tests
+        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
+
+      - name: Build and verify Windows MCP sidecar
+        run: pnpm mcp:build-binary
+
+      - name: Native bridge tests on Windows
+        run: pnpm test:desktop:bridge
+
+  # The build steps run third-party build code in a job that references no secret. The
+  # bundle they produce is still executed in `sign-macos` (exact-case probe, install smoke).
+  # A signing or notarization failure reruns that short job alone.
+  build-macos:
+    name: Build unsigned macOS app (${{ matrix.arch }})
+    needs: admit-release
     runs-on: ${{ matrix.runner }}
-    # Measured aarch64 lane: v1.4.0 20m37s, v1.5.0 16m53s (cold build plus
-    # notarization).
-    # budget: 1300s
+    # No standalone run measured yet: the v2.2.2 steps this job keeps took about 720 s, and
+    # v2.2.1 ran 14% slower. A timeout cancels the build and the rerun repeats all of it.
+    # budget: 1200s
     timeout-minutes: 30
+    outputs:
+      unsigned_sha256: ${{ steps.archive.outputs.sha256 }}
     strategy:
       fail-fast: false
       matrix:
@@ -167,31 +285,11 @@ jobs:
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
-      - name: MCP release gate
-        run: pnpm dogfood:release-gate
-
       - name: Desktop readiness
         run: pnpm desktop:check
 
       - name: Docs vault freshness
         run: pnpm docs-vault:check
-
-      - name: Desktop checker tests
-        run: pnpm test:desktop:check
-
-      - name: Desktop runtime split tests
-        run: pnpm test:desktop:runtime
-
-      # After `tauri.conf.json` declares the MCP sidecar via `externalBin`,
-      # **all cargo calls** require that file — not just the bundle step but also the below
-      # `cargo test`, which checks resource paths in the build script, so the sidecar is built
-      # here first. The runner is native architecture, so the host triple default is correct.
-      # The later bundle step calls it again but produces the same output.
-      - name: Build bundled MCP sidecar
-        run: pnpm mcp:build-binary
-
-      - name: Native vault bridge tests
-        run: pnpm test:desktop:bridge
 
       - name: Desktop runtime doctor
         run: pnpm desktop:doctor -- --require-runtime
@@ -204,6 +302,74 @@ jobs:
 
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
+
+      # `admit-release` accepts only the head of main, and the required Checks gate ran
+      # `pnpm typecheck` on that program when it merged (next.config.ts).
+      - name: Build release app bundle
+        run: pnpm desktop:release-artifact -- --phase=build
+        env:
+          ATLAS_BUILD_SKIP_TYPECHECK: "1"
+
+      # tar keeps the bundle's modes and extended attributes, which the artifact's zip would
+      # drop. Staging needs the symbols of this binary; Cargo leaves the dSYM as a symlink
+      # into `deps/`, so it is appended with `-L` to carry the directory, not the link.
+      # `/usr/bin/tar` is bsdtar: a GNU tar on PATH reads `-L` as a tape length.
+      - name: Archive unsigned app bundle
+        id: archive
+        run: |
+          /usr/bin/tar -cf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release bundle/macos
+          /usr/bin/tar -rLf "$RUNNER_TEMP/macos-unsigned.tar" -C src-tauri/target/release ontology-atlas.dSYM
+          echo "sha256=$(shasum -a 256 "$RUNNER_TEMP/macos-unsigned.tar" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned app bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          # Not `ontology-atlas-macos-*`: publishing downloads every artifact of that pattern.
+          name: ontology-atlas-unsigned-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/macos-unsigned.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  sign-macos:
+    name: Sign and notarize macOS DMG (aarch64)
+    needs: [admit-release, build-macos]
+    environment: release-signing
+    runs-on: macos-15
+    # No standalone run measured yet: signing and notarization took 108 s in v2.2.2, staging
+    # and upload 12 s; setup and the artifact download are estimated at 90 s. Apple's
+    # notary queue is the variable part.
+    # budget: 480s
+    timeout-minutes: 12
+    env:
+      TAURI_ARCH: aarch64
+      RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Recheck release source commit before signing
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
 
       # The decision to forgo signature was overturned on the same day as certificate issuance
       # (`docs/DECISIONS.md`, 2026-07-27). Direct download DMGs are created only when Developer ID
@@ -220,10 +386,25 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm desktop:release-secrets
 
-      # The certificate is imported only after this step, and this step's environment holds
-      # no credential. The build makes no updater archive.
-      - name: Build release app bundle
-        run: pnpm desktop:release-artifact -- --phase=build
+      - name: Download unsigned app bundle
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-unsigned-macos-aarch64
+          path: ${{ runner.temp }}/macos-unsigned
+
+      # The digest travels as a job output, not inside the artifact, so the bundle signed
+      # here is the one `build-macos` archived.
+      - name: Restore the unsigned app bundle that build-macos archived
+        env:
+          UNSIGNED_SHA256: ${{ needs.build-macos.outputs.unsigned_sha256 }}
+        run: |
+          ARCHIVE="$RUNNER_TEMP/macos-unsigned/macos-unsigned.tar"
+          [[ "$UNSIGNED_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "build-macos reported no archive digest" >&2; exit 1; }
+          echo "${UNSIGNED_SHA256}  ${ARCHIVE}" | shasum -a 256 --check --strict
+          mkdir -p src-tauri/target/release
+          /usr/bin/tar -xf "$ARCHIVE" -C src-tauri/target/release
+          rm -f "$ARCHIVE"
+          [[ -d src-tauri/target/release/ontology-atlas.dSYM/Contents ]] || { echo "the archive carried no dSYM directory" >&2; exit 1; }
 
       # Without `-A`, only codesign may use the key unprompted; exporting it needs this step's
       # random keychain password. `-x` was ignored for PKCS#12 on macOS 27 (2026-09-27).
@@ -287,7 +468,7 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ontology-atlas-macos-${{ matrix.arch }}
+          name: ontology-atlas-macos-aarch64
           # There is **one** path. If there are multiple, the root is set to the lowest common ancestor.
           path: release-upload
           if-no-files-found: error
@@ -362,17 +543,8 @@ jobs:
             }
           }
 
-      - name: Windows release contract tests
-        run: node --test scripts/lib/packaging/mcp-binary.test.mjs scripts/download/stage-windows-release-assets.test.mjs scripts/packaging/verify-mcp-binary.test.mjs
-
       - name: Desktop readiness
         run: pnpm desktop:check
-
-      - name: Build and verify Windows MCP sidecar
-        run: pnpm mcp:build-binary
-
-      - name: Native bridge tests on Windows
-        run: pnpm test:desktop:bridge
 
       - name: Verify release source commit
         run: pnpm desktop:release-source -- --mode=pin --tag="$env:RELEASE_TAG" --sha="$env:RELEASE_SHA"
@@ -385,8 +557,11 @@ jobs:
 
       # No updater key: the Windows beta ships no in-app update (latest.json lists macOS only),
       # so the build makes no updater signature for anything to publish.
+      # The admitted commit is the type-checked head of main (next.config.ts).
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
+        env:
+          ATLAS_BUILD_SKIP_TYPECHECK: "1"
 
       - name: Require the beta installer to be unsigned
         shell: pwsh
@@ -508,9 +683,9 @@ jobs:
   # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.test-macos.result == 'success' && needs.test-windows.result == 'success' && needs.build-macos.result == 'success' && needs.sign-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [admit-release, build-macos, build-windows, audit-rust]
+    needs: [admit-release, test-macos, test-windows, build-macos, sign-macos, build-windows, audit-rust]
     # budget: 120s
     timeout-minutes: 3
     permissions:
