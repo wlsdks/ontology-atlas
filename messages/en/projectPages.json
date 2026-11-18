@@ -200,6 +200,7 @@
     "loadingLabel": "Loading…",
     "returnToProjectDetail": "Back to project detail",
     "returnToProjectsList": "Back to project list",
+    "returnToMap": "Back to the map",
     "deleteToast": "Project deleted",
     "savedToast": "\"{name}\" saved",
     "vaultConflict": "This project file was changed first by another editor or AI agent. Refresh and save again.",
