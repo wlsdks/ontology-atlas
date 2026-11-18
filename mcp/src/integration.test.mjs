@@ -721,32 +721,6 @@ await test("tools/list — each single-item tool description cross-references it
       /separately audit material Definition, Includes, Excludes, and Uncertainty assertions[\s\S]*several claims share one proposal ref/i,
       "analyze_repo_structure description requires body-assertion rather than ref-only qualification",
     );
-    const initializeInstructions = responses.find((response) => response.id === 1)?.result?.instructions ?? "";
-    assert.match(
-      initializeInstructions,
-      /Ontology construction lifecycle[\s\S]*reviewPlan[\s\S]*sourceDigest[\s\S]*separately identified evaluator[\s\S]*declared human provenance[\s\S]*writeEligibility:"executable"[\s\S]*finalize_project_meaning/,
-      "initialize instructions expose the non-bypassable review, evaluation, approval, write, and post-write lifecycle",
-    );
-    assert.match(
-      initializeInstructions,
-      /unqualified-project-exclusion[\s\S]*exact required gap[\s\S]*Raw source absence[\s\S]*source-aware citation check/,
-      "initialize instructions keep human-review warnings and source-hidden uncertainty in their proper phases",
-    );
-    assert.match(
-      initializeInstructions,
-      /Seal one exact claim manifest before qualification forks: claim id, statement, and proposalRefs cannot change\.[\s\S]{0,900}Run the source-hidden evaluation and source-aware citation audit in parallel isolation; the lanes must not exchange results\.[\s\S]{0,300}Record human acceptance only after the sealed outputs join without mismatch\./,
-      "initialize instructions seal parallel qualification lanes before human acceptance",
-    );
-    assert.match(
-      initializeInstructions,
-      /Proposal-ref coverage alone is insufficient:[\s\S]*Definition assertion[\s\S]*Includes\/Excludes bullet[\s\S]*Uncertainty assertion[\s\S]*several claims to share one concept ref/,
-      "initialize instructions require source-aware coverage of each material body assertion",
-    );
-    assert.match(
-      initializeInstructions,
-      /mandatory warning that is not gap-eligible[\s\S]*writeEligibility:"blocked"[\s\S]*do not count that response as a candidate release/i,
-      "initialize instructions keep mandatory warnings out of the qualification lanes",
-    );
     assert.match(
       analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",
       /Repository root to analyze[\s\S]*Defaults to the MCP server cwd/i,
@@ -2132,11 +2106,17 @@ await test("tools/list — each single-item tool description cross-references it
 });
 
 await test("initialize — exposes agent guidance in the instructions field", async () => {
-  // A connected agent learns the kind boundary, call order and dry-run pattern
-  // from initialize instead of by trial and error.
+  // A connected agent learns the kinds, the build order and where the long rules
+  // are from initialize; each tool's own contract is its description, and the
+  // long rules arrive whole through connection_info({guide}).
   const root = makeVault([]);
   try {
-    const { responses } = await rpc(root, INIT_REQUESTS);
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "connection_info", { guide: "write_safety" }),
+      callTool(3, "connection_info", { guide: "meta_model" }),
+      callTool(4, "connection_info", { guide: "construction" }),
+    ]);
     const init = responses.find((r) => r.id === 1);
     assert.ok(init);
     const instructions = init.result?.instructions;
@@ -2145,109 +2125,28 @@ await test("initialize — exposes agent guidance in the instructions field", as
       instructions.length > 200,
       `instructions must have a meaningful length (got ${instructions.length})`,
     );
-    assert.match(instructions, /five authorable kinds/i);
-    assert.match(instructions, /vault-readme.*reserved reader kind/i);
-    assert.match(instructions, /dry-run|confirm/i);
-    assert.match(instructions, /expected_mtime/i);
-    assert.match(instructions, /overwrite: true/);
-    assert.match(instructions, /existing `newSlug`/);
-    assert.match(instructions, /force: true/);
-    assert.match(instructions, /dangling referrers/);
     for (const toolName of EXPECTED_TOOLS) {
       assert.match(instructions, new RegExp(`\\b${toolName}\\b`), `instructions mention ${toolName}`);
     }
-    assert.match(instructions, /add_concepts/);
-    assert.match(instructions, /add_relations/);
-    assert.match(instructions, /non-object row/);
-    assert.match(instructions, /unknown row field/);
-    assert.match(instructions, /ok: false/);
-    assert.match(instructions, /Invalid-only batches return no row-level write metadata/);
-    assert.match(instructions, /Invalid-only batches return no row-level `changed` \/ `alreadyExists` write metadata/);
-    assert.match(instructions, /dry validation evidence/);
-    assert.match(instructions, /get_concepts/);
-    assert.match(instructions, /find_neighbors/);
-    assert.match(instructions, /compile_ontology/);
-    assert.match(instructions, /query_ontology/);
-    assert.match(instructions, /validate_vault/);
-    // Cold-start extraction must fail closed instead of promoting repository
-    // structure into accepted business concepts.
-    assert.match(instructions, /semanticEvidence/);
-    assert.match(instructions, /extractionContract/);
-    assert.match(instructions, /observed facts, proposed meanings, and persisted shared concepts/);
-    assert.match(instructions, /non-circular definition/);
-    assert.match(instructions, /includes\/excludes boundary/);
-    assert.match(instructions, /unsupported assertions/);
-    assert.match(instructions, /implementation-name leakage/);
-    assert.match(instructions, /Unknown is a valid result/);
-    assert.match(instructions, /obtain explicit user approval/);
-    assert.match(instructions, /read-only first-contact diagnosis/);
-    assert.match(instructions, /operation:'agent_brief'/);
-    assert.match(instructions, /Claude Code\/Codex handoff/);
-    assert.match(instructions, /write guardrails/);
-    assert.match(instructions, /relationDecisionGuide/);
-    assert.match(instructions, /skip_existing/);
-    assert.match(instructions, /review_inverse/);
-    assert.match(instructions, /safe_to_add/);
-    assert.match(instructions, /review_new_schema/);
-    assert.match(instructions, /preflight_relation/);
-    assert.match(instructions, /preflight_rename/);
-    assert.match(instructions, /post_change_sync/);
+    assert.match(instructions, /## Construction card/);
+    assert.match(instructions, /add_concepts[\s\S]*add_relations[\s\S]*validate_vault[\s\S]*connect_project_source[\s\S]*finalize_project_meaning/);
+    assert.match(instructions, /connection_info\(\{guide:"construction"\}\)/);
+    assert.match(instructions, /find_backlinks/);
     assert.match(instructions, /workspace_brief/);
-    assert.match(instructions, /operation:'overview'/);
-    assert.match(
-      instructions,
-      new RegExp(
-        `operation:${QUERY_ONTOLOGY_OPERATIONS.map((operation) => `'${operation}'`).join("\\|")}`,
-      ),
-      "instructions expose the runtime query_ontology operation enum",
-    );
-    assert.match(instructions, /targetOperation:'overview'/);
-    assert.match(instructions, /targetOperation:'project_map'/);
-    assert.ok(
-      instructions.includes(
-        `\`targetOperation\` accepts ${QUERY_PLAN_TARGET_OPERATIONS.map((operation) => `'${operation}'`).join("|")}`,
-      ),
-      "instructions expose the runtime query_plan targetOperation enum",
-    );
-    assert.match(instructions, /health/);
-    assert.match(instructions, /componentLimit/);
-    assert.match(instructions, /cycleLimit/);
-    assert.match(instructions, /recommendationLimit/);
-    assert.match(instructions, /orderLimit/);
-    assert.match(instructions, /nodeLimit/);
-    assert.match(instructions, /dependencyTypes/);
-    assert.match(instructions, /componentTypes/);
-    assert.match(instructions, /depends_on/);
-    assert.match(instructions, /contains/);
-    assert.match(instructions, /describes/);
-    assert.match(instructions, /nearest-value hints/);
-    assert.match(instructions, /unknown arguments are rejected/i);
-    assert.match(instructions, /Unknown argument "lmit" for list_concepts/);
-    assert.match(instructions, /Did you mean "limit"\?/);
-    assert.match(instructions, /Unknown arguments for list_concepts/);
-    assert.match(instructions, /"summry" \(did you mean "summary"\?\)/);
-    assert.match(instructions, /maintenance_plan/);
-    assert.match(instructions, /phases.*severities.*kinds/);
-    assert.match(instructions, /totalActions/);
-    assert.match(instructions, /filteredActions/);
-    assert.match(instructions, /remainingActions/);
-    assert.match(instructions, /executableActions/);
-    assert.match(instructions, /reviewActions/);
-    assert.match(instructions, /byPhase/);
-    assert.match(instructions, /bySeverity/);
-    assert.match(instructions, /byKind/);
-    assert.match(instructions, /bucket totals.*remainingActions/);
-    assert.match(instructions, /cursor\.found=true/);
-    assert.match(instructions, /cursor\.reason=null/);
-    assert.match(instructions, /cursor\.nextAfterActionId/);
-    assert.match(instructions, /last returned action id/);
-    assert.match(instructions, /cursor\.hasMore/);
-    assert.match(instructions, /afterActionId/);
-    assert.match(instructions, /cursor\.found=false/);
-    assert.match(instructions, /cursor\.reason/);
-    assert.match(instructions, /zero remaining actions/);
-    assert.match(instructions, /cursor\.nextAfterActionId=null/);
-    assert.match(instructions, /cursor\.hasMore=false/);
+    assert.doesNotMatch(instructions, /qualification|writePlan|independent evaluator/);
+
+    const writeSafety = getCallParsed(responses, 2).guideText;
+    assert.match(writeSafety, /expected_mtime/);
+    assert.match(writeSafety, /overwrite: true/);
+    assert.match(writeSafety, /existing `newSlug`/);
+    assert.match(writeSafety, /force: true/);
+    assert.match(writeSafety, /dangling referrers/);
+    const metaModel = getCallParsed(responses, 3).guideText;
+    assert.match(metaModel, /five authorable kinds/i);
+    assert.match(metaModel, /vault-readme.*reserved reader kind/i);
+    const construction = getCallParsed(responses, 4).guideText;
+    assert.match(construction, /teammate says aloud/);
+    assert.match(construction, /depends_on/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -11,9 +11,10 @@ import {
   COMPETENCY_SECTION_HINT_EN,
   CONSTRUCTION_CARD_EN,
   CONSTRUCTION_CARD_MAX_CHARS,
+  CONSTRUCTION_GUIDE_EN,
+  CONSTRUCTION_GUIDE_MAX_CHARS,
   CONSTRUCTION_GUIDE_TOPICS,
 } from './construction-card.mjs';
-import { CONSTRUCTION_RULES_EN } from './construction-rules.mjs';
 import { parseProjectCompetencyMarkdown } from '../project-meaning/project-meaning-receipt.mjs';
 
 /** `read.mjs` resolves the vault root at import time and exits on a non-vault, so the root is set first. */
@@ -35,10 +36,14 @@ test('connection_info carries the card and the topic list without being asked', 
   assert.equal('guideText' in info, false);
 });
 
-test('connection_info({guide}) returns the same constant the instructions interpolate', () => {
+test('connection_info({guide:"construction"}) returns the construction guide within its budget', () => {
   const info = connectionInfoTool({ guide: 'construction' });
-  assert.equal(info.guideText, CONSTRUCTION_RULES_EN);
+  assert.equal(info.guideText, CONSTRUCTION_GUIDE_EN);
   assert.equal(info.guide.card, CONSTRUCTION_CARD_EN);
+  assert.ok(
+    CONSTRUCTION_GUIDE_EN.length <= CONSTRUCTION_GUIDE_MAX_CHARS,
+    `guide is ${CONSTRUCTION_GUIDE_EN.length} characters, budget is ${CONSTRUCTION_GUIDE_MAX_CHARS}`,
+  );
 });
 
 test('every advertised topic resolves to real text, and nothing else does', () => {
@@ -62,8 +67,24 @@ test('the card states where a slug lives', () => {
  * out made builders omit it and nodes claim a completeness nobody measured.
  */
 test('the card says where an unknown goes', () => {
-  assert.ok(CONSTRUCTION_CARD_EN.includes('`## Uncertainty`'));
-  assert.ok(CONSTRUCTION_CARD_EN.includes('claims completeness'));
+  const body = CONSTRUCTION_CARD_EN.split('\n').find((line) => line.includes('Body, at most 120 words'));
+  assert.ok(body?.includes('`## Uncertainty`'), 'the body enumeration must name Uncertainty');
+  assert.ok(body?.includes('Unread code is never an Excludes bullet'));
+});
+
+/**
+ * The build is written in one run (decision 0f78a22b): no text tells an agent
+ * to hold writes for a reply, and none sends it to the bulk qualification route
+ * that an app session cannot finish.
+ */
+test('no card or guide text asks the agent to wait or names the qualification route', () => {
+  const texts = [['card', CONSTRUCTION_CARD_EN]];
+  for (const topic of CONSTRUCTION_GUIDE_TOPICS) {
+    texts.push([topic, connectionInfoTool({ guide: topic }).guideText]);
+  }
+  for (const [name, text] of texts) {
+    assert.doesNotMatch(text, /qualification|writePlan|independent evaluator|you propose|after (?:approval|I say yes)/i, name);
+  }
 });
 
 test('the competency guide returns the layout and an example the real parser accepts', () => {

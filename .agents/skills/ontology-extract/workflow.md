@@ -79,6 +79,8 @@ without consent fills the vault with hallucinated meaning.
 
 Use `add_concepts` and `add_relations` for approved batches. Cite the source in
 the body so a person can verify it later.
+Shape each body and test each `depends_on` by the construction card that
+`connection_info` returns.
 
 ```markdown
 # Password Reset

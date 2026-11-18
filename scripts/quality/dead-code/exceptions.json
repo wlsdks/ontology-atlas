@@ -170,6 +170,12 @@
       "witness": "matchesPathPattern"
     },
     {
+      "key": "mcp:runtime:exports:src/construction/construction-rules.mjs:CONSTRUCTION_RULES_EN",
+      "reason": "The in-app agent carries a literal copy of the bridge procedure and the vault-schema contract test holds it byte-equal to this export; the MCP serves the shorter construction guide instead, so no runtime module imports it.",
+      "consumer": "tests/contract/vault-format/vault-schema.contract.test.ts",
+      "witness": "CONSTRUCTION_RULES_EN"
+    },
+    {
       "key": "mcp:runtime:exports:src/construction/construction-rules.mjs:CHAT_RULES_DELTA_EN",
       "reason": "The construction-rules contract test reads the chat delta directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "tests/contract/mcp/construction-rules.contract.test.ts",

@@ -20,7 +20,7 @@ export function verifyHandshake(responses, { initRes }) {
     log('fail', instructionFailure);
     return false;
   }
-  log('ok', 'initialize instructions: tool inventory plus first-contact safety and recovery guidance present');
+  log('ok', 'initialize instructions: tool inventory, construction card, write sequence and guide pointer present');
 
   if (!listRes || !listRes.result?.tools) {
     log('fail', 'no tools/list response');

@@ -9,7 +9,7 @@
   "openLabel": "폴더 열기",
   "openBusy": "폴더 여는 중…",
   "buildFromCodeLabel": "코드로 온톨로지 만들기",
-  "buildFromCodeHint": "코드 폴더를 고르면 그 안에 atlas 폴더를 만들고, 코딩 에이전트가 코드를 읽고 초안을 제안해요. 만들기 전에 경로를 보여 주고, 쓰기 전에 하나씩 물어봐요.",
+  "buildFromCodeHint": "코드 폴더를 고르면 그 안에 atlas 폴더를 만들고, 코딩 에이전트가 코드를 읽고 첫 지도를 한 번에 써요. 만들기 전에 경로를 보여 주고 쓰기마다 허락을 물어봐요. 자동 승인을 켜도 코드 폴더 연결과 마무리 단계는 물어봐요.",
   "buildFromCodeBusy": "폴더 여는 중…",
   "createLabel": "새 폴더 만들기",
   "createBusy": "시작 구조 작성 중…",

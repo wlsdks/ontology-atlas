@@ -53,8 +53,14 @@ const NAMING_FINGERPRINT = "an element names a CONCEPT a capability uses";
 const BATCH_FINGERPRINT = "Rows whose `title` is a bare file path";
 
 describe("construction spec text reaches the place the LLM reads", () => {
-  it("SERVER_INSTRUCTIONS interpolates the full spec", () => {
-    expect(SERVER_SOURCE).toContain("${CONSTRUCTION_RULES_EN}");
+  it("connection_info serves the construction guide by import, not a copy", () => {
+    // The bridge procedure below stays with the in-app agent; an MCP client reads
+    // the shorter construction guide on demand instead of in `initialize`.
+    const read = readFileSync(resolve(__dirname, "../../../mcp/src/tools/read.mjs"), "utf-8");
+    expect(read).toMatch(
+      /import \{[\s\S]*?CONSTRUCTION_GUIDE_EN[\s\S]*?\} from '\.\.\/construction\/construction-card\.mjs';/,
+    );
+    expect(read).toContain("construction: CONSTRUCTION_GUIDE_EN,");
   });
 
   it("add_concept and add_concepts descriptions attach the naming rule", () => {
@@ -65,9 +71,9 @@ describe("construction spec text reaches the place the LLM reads", () => {
     expect(SERVER_SOURCE).toContain("ELEMENT_NAMING_RULE_BATCH_EN");
   });
 
-  it("really imports the three constants", () => {
+  it("really imports the naming rules", () => {
     expect(SERVER_SOURCE).toMatch(
-      /import \{[\s\S]*?CONSTRUCTION_RULES_EN[\s\S]*?\} from '\.\.\/construction\/construction-rules\.mjs';/,
+      /import \{[\s\S]*?ELEMENT_NAMING_RULE_EN[\s\S]*?\} from '(?:\.\.\/)+construction\/construction-rules\.mjs';/,
     );
   });
 });
