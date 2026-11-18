@@ -147,6 +147,7 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
 | `pnpm design:tokens -- [--prefix=<name>]` | The current token ramps, resolved from app/styles |
+| `pnpm dev:clean` | Delete the Turbopack dev cache in `.next/dev`; `pnpm dev` reuses it, so a warm start reaches the first route in about 3 s instead of 7 s |
 | `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/` |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
 | `pnpm docs:meta` · `pnpm doc:history -- <path>` | Every living document's kind, status and area; one document's commits across moves |
