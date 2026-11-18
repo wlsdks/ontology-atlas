@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { HomePage } from "@/views/home";
+import { HomePage, MapSampleHead } from "@/views/home";
 import { buildPageMetadata } from "@/shared/lib/public-pages/page-metadata";
 import { MapEntryFallback } from "@/shared/ui/fallbacks/map-entry-fallback";
 
@@ -36,8 +36,11 @@ export default async function Page({
 }) {
   const { locale } = await params;
   return (
-    <Suspense fallback={<MapEntryFallback locale={locale} />}>
-      <HomePage />
-    </Suspense>
+    <>
+      <MapSampleHead />
+      <Suspense fallback={<MapEntryFallback locale={locale} />}>
+        <HomePage />
+      </Suspense>
+    </>
   );
 }

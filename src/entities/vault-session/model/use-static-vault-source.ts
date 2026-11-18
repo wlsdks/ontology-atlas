@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useSyncExternalStore } from 'react'
 import { bundledSamples, type StaticVaultSource } from '@/entities/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { getDataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
-import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
+import { getSampleSourceSnapshot, type SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import { LocalVaultContext } from './local-vault-context';
 import { useSampleSource } from './use-sample-source';
 
@@ -108,4 +108,19 @@ export function useStaticVaultGate(override?: SampleSource): {
 } {
   const { status, wait, retry } = useStaticVaultState(override, true);
   return { status, wait, retry };
+}
+
+/**
+ * Starts the preferred sample's download without a screen: a web route that is about to draw the
+ * sample calls this when its code loads, so the download overlaps the rest of the page's scripts
+ * instead of waiting for the first render. The installed app, which never draws a sample, starts
+ * nothing, and neither does a build step.
+ */
+export function startPreferredSampleDownload(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!isDesktopShell()) void bundledSamples.load(getSampleSourceSnapshot());
+  } catch {
+    // A failed check starts nothing; the screen's own demand decides later.
+  }
 }
