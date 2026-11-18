@@ -40,6 +40,8 @@ export class MemoryVault {
   private clock = 1_700_000_000_000;
   /** `getFile()` calls per path, to prove a change reads only what changed. */
   readonly opens = new Map<string, number>();
+  /** Body reads (`text()`) per path: an image or a raw source must never appear here. */
+  readonly bodyReads = new Map<string, number>();
 
   constructor(files: Record<string, string> = {}) {
     for (const [path, text] of Object.entries(files)) this.write(path, text);
@@ -66,6 +68,11 @@ export class MemoryVault {
       for (const name of index.files.keys()) out.push(dir ? `${dir}/${name}` : name);
     }
     return out;
+  }
+
+  /** Every folder path but the root, in no particular order. */
+  folders(): string[] {
+    return [...this.dirs.keys()].filter(Boolean);
   }
 
   read(path: string): MemoryFile | undefined {
@@ -129,6 +136,21 @@ export class MemoryVault {
     return this.dirHandle('', name);
   }
 
+  /** What the app's `list_vault_directory` with stamps answers for one folder; reads no file. */
+  stampedListing(dir: string): Array<{ name: string; kind: 'file' | 'directory'; lastModified?: number; size?: number }> {
+    const index = this.dirs.get(dir);
+    if (!index) throw notFound(dir);
+    return [
+      ...[...index.files].map(([name, file]) => ({
+        name,
+        kind: 'file' as const,
+        lastModified: file.lastModified,
+        size: new TextEncoder().encode(file.text).length,
+      })),
+      ...[...index.dirs].map((name) => ({ name, kind: 'directory' as const })),
+    ];
+  }
+
   private fileHandle(path: string): FileSystemFileHandle {
     return {
       kind: 'file',
@@ -138,7 +160,10 @@ export class MemoryVault {
         const file = this.read(path);
         if (!file) throw notFound(path);
         return {
-          text: async () => file.text,
+          text: async () => {
+            this.bodyReads.set(path, (this.bodyReads.get(path) ?? 0) + 1);
+            return file.text;
+          },
           lastModified: file.lastModified,
           size: new TextEncoder().encode(file.text).length,
         } as unknown as File;

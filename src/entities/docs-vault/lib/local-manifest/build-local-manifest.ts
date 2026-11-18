@@ -72,15 +72,12 @@ export type RefResolver = (ref: string) => string | null;
 
 /**
  * Whether one of the document's relation refs ends in a tail from `tails`: the documents whose
- * frontmatter backlinks a created or removed slug can re-resolve. A substring test screens each
- * ref before the exact one, since most refs share nothing with the few tails a change moves.
+ * frontmatter backlinks a created or removed slug can re-resolve. One set lookup per ref, so a
+ * burst of k moved tails costs O(refs), not O(refs · k).
  */
 export function refersToTail(doc: VaultDoc, tails: ReadonlySet<string>): boolean {
   for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
-    const normalized = ref.normalize('NFC');
-    for (const tail of tails) {
-      if (normalized.includes(tail) && tails.has(slugTail(refSlug(normalized)))) return true;
-    }
+    if (tails.has(slugTail(refSlug(ref)))) return true;
   }
   return false;
 }
@@ -511,7 +508,8 @@ function aggregateBuild(
     generatedAt: new Date().toISOString(),
     // Walk fields are emitted only when set, so manifests compare equal across builds.
     ...(walkInfo?.truncated ? { walkTruncated: true } : {}),
-    ...(walkInfo?.prunedDirs.length ? { prunedDirs: walkInfo.prunedDirs } : {}),
+    // Sorted, so the list depends on what is pruned, not on the order a folder was listed in.
+    ...(walkInfo?.prunedDirs.length ? { prunedDirs: [...walkInfo.prunedDirs].sort() } : {}),
     ...(walkInfo?.sourceFileCount ? { sourceFileCount: walkInfo.sourceFileCount } : {}),
     docs,
     ...(sources.length ? { sources } : {}),

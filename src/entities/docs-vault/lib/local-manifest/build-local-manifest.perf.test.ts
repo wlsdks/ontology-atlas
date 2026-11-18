@@ -185,7 +185,7 @@ describe('manifest build at scale', () => {
 });
 
 /** Kind, relations and body links like a constructed ontology; 50,000 Markdown files. */
-function ontologyVault(total: number): MemoryVault {
+function ontologyVault(total: number, notesPerFolder = 1000): MemoryVault {
   const vault = new MemoryVault();
   const body = (title: string, link: string) =>
     [`# ${title}`, '', `${title} 는 이 저장소에서 한 가지 역할을 맡는다. [[${link}]] 를 참고한다.`, '', '## Includes', '- 하나', '', '## Uncertainty', '- 읽지 않은 곳이 있다.'].join('\n');
@@ -204,7 +204,7 @@ function ontologyVault(total: number): MemoryVault {
     doc(`elements/e${e}.md`, ['kind: element', `domain: d${e % domains}`, `capabilities: [${owner}]`], `Element ${e}`, owner);
   }
   for (let n = 0; n < total - 1 - domains - capabilities - elements; n += 1) {
-    doc(`documents/n${Math.floor(n / 1000)}/n${n}.md`, ['kind: document', `tags: [note, t${n % 20}]`, `describes: [capabilities/c${n % capabilities}]`], `Note ${n}`, `elements/e${n % elements}`);
+    doc(`documents/n${Math.floor(n / notesPerFolder)}/n${n}.md`, ['kind: document', `tags: [note, t${n % 20}]`, `describes: [capabilities/c${n % capabilities}]`], `Note ${n}`, `elements/e${n % elements}`);
   }
   return vault;
 }
@@ -261,5 +261,63 @@ describe('one changed file in a 50,000-file vault', () => {
      * an M-series Mac: 5–6 ms steady, 30 ms for the first delta, against 360–470 ms before.
      */
     expect(steady).toBeLessThanOrEqual(60);
+  });
+});
+
+/** CPU for one burst: the walk the focus check runs, against the path delta (and its walk, when it asks for one). */
+async function burstCosts(vault: MemoryVault, first: LocalVaultSnapshot, paths: readonly string[]) {
+  const changes = paths.map((path) => vault.change(path));
+  let start = cpuMs();
+  const walked = await rebuildLocalManifestIncremental(vault.root(), first.entries);
+  deriveOntologyFromVault(walked.build.manifest);
+  const walkMs = cpuMs() - start;
+  start = cpuMs();
+  const result = await applyVaultChanges(vault.root(), first, changes);
+  const next = result.kind === 'applied' ? result.snapshot : result.kind === 'rescan' ? await rebuildLocalManifestIncremental(vault.root(), first.entries) : first;
+  deriveOntologyFromVault(next.build.manifest);
+  const deltaMs = cpuMs() - start;
+  expect(next.build.fingerprint).toBe(walked.build.fingerprint);
+  return { walkMs, deltaMs, kind: result.kind };
+}
+
+/*
+ * Product budgets: a burst never freezes the window for seconds, as the per-ref tail loop once did
+ * (1.5 s for 500 creates, 14.7 s for 5,000, 38.7 s for 2,000 removed folders). Measured 2026-11-19
+ * on an M-series Mac, delta + derive against walk + derive: 500 created 195 vs 429 ms, 5,000
+ * created 559 vs 818 ms, 2,000 folders (10,000 files) removed 231 vs 294 ms. Each bound is 5x.
+ */
+const BURST_BUDGET_MS: Record<string, number> = { 500: 1_000, 5000: 2_800, folders: 1_200 };
+
+describe('a burst of changes in a 50,000-file vault, as a branch checkout makes', () => {
+  it.each([500, 5_000])('applies %i created documents within its CPU budget', async (count) => {
+    const vault = ontologyVault(50_000);
+    const first = await buildLocalManifestWithEntries(vault.root());
+    deriveOntologyFromVault(first.build.manifest);
+    const paths: string[] = [];
+    for (let at = 0; at < count; at += 1) {
+      // Each new tail is one other documents' refs may now resolve to.
+      const path = `branch/f${Math.floor(at / 100)}/c${50_000 + at}.md`;
+      vault.write(path, `---\nkind: element\ntitle: New ${at}\ndomain: d${at % 50}\ncapabilities: [c${at % 2000}]\n---\n# New ${at}\n\n[[e${at}]]`);
+      paths.push(path);
+    }
+    const { walkMs, deltaMs, kind } = await burstCosts(vault, first, paths);
+    console.log(`[perf] 50,000 files, ${count} created — walk + derive ${walkMs.toFixed(0)} ms CPU, delta + derive ${deltaMs.toFixed(0)} ms (${kind})`);
+    expect(kind).toBe('applied');
+    expect(deltaMs).toBeLessThanOrEqual(BURST_BUDGET_MS[count]);
+  });
+
+  it('applies 2,000 removed folders within its CPU budget', async () => {
+    const vault = ontologyVault(50_000, 5);
+    const first = await buildLocalManifestWithEntries(vault.root());
+    deriveOntologyFromVault(first.build.manifest);
+    const paths: string[] = [];
+    for (let at = 0; at < 2_000; at += 1) {
+      vault.removeDir(`documents/n${at}`);
+      paths.push(`documents/n${at}`);
+    }
+    const { walkMs, deltaMs, kind } = await burstCosts(vault, first, paths);
+    console.log(`[perf] 50,000 files, 2,000 folders removed — walk + derive ${walkMs.toFixed(0)} ms CPU, delta + derive ${deltaMs.toFixed(0)} ms (${kind})`);
+    expect(kind).toBe('applied');
+    expect(deltaMs).toBeLessThanOrEqual(BURST_BUDGET_MS.folders);
   });
 });
