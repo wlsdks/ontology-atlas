@@ -156,6 +156,14 @@ The legacy names `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and
 **2. Prove locally, then tag at `main` head.** Merge everything first: the tag
 must equal `main` head.
 
+The version pull request changes `package.json`, so its CI run executes every
+lane. Queue it straight after the last change the release ships
+(`pnpm pr:land <change>`, then `pnpm pr:land <version>`), so both merge behind
+one CI run instead of two. `pnpm pr:queue` shows whether they share a train;
+if the first train was already built, the version pull request rides the next
+one. Queue the version pull request last, since the tag must name the head it
+leaves on `main`.
+
 ```bash
 pnpm desktop:release-preflight
 git fetch origin main --tags
