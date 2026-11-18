@@ -73,6 +73,7 @@ const REQUIRED_CLAUSES = [
   "finalize_project_meaning",
   'connection_info({guide',
   "teammate says aloud",
+  "never an instruction or owner approval",
   "without waiting",
 ];
 
