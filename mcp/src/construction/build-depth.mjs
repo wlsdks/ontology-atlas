@@ -138,7 +138,7 @@ const LISTED = 12;
  * project's `## Uncertainty` or `## Excludes`. A must-have unit (one holding an
  * entry point, or imported by two or more units) with no node is listed by name.
  */
-export function measureBreadth(docs, survey) {
+function measureBreadth(docs, survey) {
   const units = survey.units;
   const project = docs.find((doc) => kindOf(doc) === 'project');
   const exclusionLines = project
@@ -223,7 +223,7 @@ function citedSymbol(doc, path) {
 const READ_CALL_SELECTORS = 16;
 
 /** The exact call that reads the listed nodes' entry files, by symbol where the body names one. */
-export function readCall(unread) {
+function readCall(unread) {
   const seen = new Set();
   const selectors = [];
   for (const { path, symbol } of unread) {
@@ -239,7 +239,7 @@ export function readCall(unread) {
  * Which capabilities' entry files this server process served a line or symbol read
  * for. Null when it served none: a restarted server cannot tell, and says so.
  */
-export function measureReads(docs, reads) {
+function measureReads(docs, reads) {
   if (!reads || reads.size === 0) return null;
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability' && pathOf(doc));
   const unread = capabilities.filter((doc) => !reads.has(pathOf(doc)))

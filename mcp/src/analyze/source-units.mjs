@@ -253,31 +253,3 @@ export function unitForPath(collection, rawPath) {
   if (byFile) return byFile;
   return collection.units.find((unit) => unit.path === path) ?? null;
 }
-
-/**
- * The share of product source lines whose unit a node `path:` touches. A floor, not
- * proof: a touched unit may still hold abilities no node names.
- */
-export function measureUnitCoverage(collection, nodePaths) {
-  const touched = new Set();
-  for (const path of nodePaths) {
-    const unit = unitForPath(collection, path);
-    if (unit) touched.add(unit.path);
-  }
-  const productLines = collection.productLines;
-  const touchedLines = collection.units
-    .filter((unit) => touched.has(unit.path))
-    .reduce((sum, unit) => sum + unit.lines, 0);
-  const untouched = collection.units
-    .filter((unit) => !touched.has(unit.path))
-    .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path))
-    .map((unit) => ({ path: unit.path, lines: unit.lines }));
-  return {
-    percent: productLines === 0 ? 100 : Math.floor((touchedLines / productLines) * 100),
-    touchedUnits: touched.size,
-    productUnits: collection.units.length,
-    touchedLines,
-    productLines,
-    untouched,
-  };
-}
