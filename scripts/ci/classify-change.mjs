@@ -15,6 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -141,7 +142,21 @@ const E2E_BROAD_INPUTS = [
   /^postcss\.config\.mjs$/,
   /^\.github\/actions\/setup-playwright\//,
   /^scripts\/(?:web\/serve-static-export|ci\/run-with-retry)(?:\.test)?\.mjs$/,
+  // Path aliases and compiler options the Next build reads.
+  /^tsconfig\.json$/,
 ];
+
+/**
+ * The scripts `pnpm build` runs (and the install's `prepare`), followed through `pnpm <script>`
+ * and their imports, with the two configs that import build code. A change to any of them can
+ * change the artifact every browser job tests, so each is a broad browser input.
+ */
+export function browserBuildFiles(root = '.') {
+  return [...importClosure([...packageScriptFiles(['build', 'build:static', 'prepare'], root), 'next.config.ts', 'playwright.config.ts'], root)].sort();
+}
+
+let browserBuild;
+const isBrowserBuildFile = (path) => (browserBuild ??= new Set(browserBuildFiles())).has(path);
 
 const KNOWN_PATHS = [
   /^(?:app|assets|cli|docs|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
@@ -501,7 +516,9 @@ function gatesPlan({ suggestions, full }) {
     ) || [...importClosure(commandFiles)].some((path) => path.startsWith('mcp/'));
   // The PO pilot sunset and decision-ledger diff are cheap standing checks, so
   // every comparable PR keeps this required lane alive even with no mapping.
-  return { run: true, commands, needsMcp };
+  // `vault:audit` (0.05 s) is standing too: a vault `path:` breaks when any file it names is moved
+  // or deleted, and the rename-aware diff above names only a moved file's new path.
+  return { run: true, commands: unique([...commands, 'pnpm vault:audit']), needsMcp };
 }
 
 /**
@@ -535,7 +552,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
   const broadPaths = full
     ? paths.filter((path) => !matchesAny(path, KNOWN_PATHS))
     : paths.filter((path) =>
-      (!isSourceTest(path) && matchesAny(path, E2E_BROAD_INPUTS)) ||
+      (!isSourceTest(path) && (matchesAny(path, E2E_BROAD_INPUTS) || isBrowserBuildFile(path))) ||
       (path.startsWith('tests/e2e/') && !PLAYWRIGHT_SPEC_PATH.test(path)));
   const e2e = e2ePlan({ paths, suggestions, full: e2eFull, broadPaths });
   const gates = gatesPlan({ suggestions, full });
@@ -595,7 +612,7 @@ export function reuseReviewedMainPlan(plan, proof, { eventName, base, head } = {
       !/^[a-f0-9]{40}$/.test(proof.tree ?? '') || !/^[a-f0-9]{40}$/.test(proof.reviewedHead ?? '') ||
       !Number.isSafeInteger(proof.pullRequest) || proof.pullRequest < 1 || plan.unknownPaths.length > 0) return plan;
   const idle = buildImpactPlan();
-  idle.lanes.gates.run = false;
+  idle.lanes.gates = { ...idle.lanes.gates, run: false, commands: [] };
   return {
     ...plan,
     full: false,

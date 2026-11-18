@@ -80,6 +80,16 @@ export const rules = [
     reason: 'vault node bodies changed — a section may now hold more than one idea',
     matches: [/^docs\/ontology\/.*\.md$/],
   },
+  {
+    order: 1345,
+    /*
+     * Two MCP tests read the dogfood vault itself: the drift test resolves every `path:` against
+     * the repository and the receipt test reads the project node. A vault edit is their input.
+     */
+    command: 'pnpm exec node --test mcp/src/drift/detect-drift.test.mjs mcp/src/project-meaning/project-meaning-receipt.test.mjs',
+    reason: 'the dogfood vault changed — the MCP tests that read it run',
+    matches: [/^docs\/ontology\//],
+  },
 ];
 
 export const directTests = {
