@@ -30,8 +30,8 @@ release surface, or user workflow requires it. Keep required CI unchanged.
 
 ## Where CI internals live
 
-How main reuses a reviewed PR's result, how pre-push and PR CI split the
-lanes, and how browser jobs are sharded belong to the code that does it: the
+How main treats a reviewed PR's result, how pre-push and PR CI split the
+lanes, and how browser and unit jobs are sharded belong to the code that does it: the
 headers of `scripts/ci/classify-change.mjs`, `scripts/ci/run-ci-lane.mjs`,
 `scripts/ci/run-playwright-ci.mjs`, `scripts/landing/pr-land.mjs`, and the workflow files
 under `.github/workflows/`.
@@ -43,6 +43,15 @@ their composed catalogue once; cross-package imports also select their frontend
 tests. Relevant documentation-registry and workflow-security checks run locally.
 The whole hook includes preparation in its reported duration. Full contract,
 Knip and browser suites remain CI work.
+
+Before merge, a train's Checks run what its change can affect plus a fixed
+core: changed-file lint, the typecheck, the contracts whose import graph
+reaches the change, and every security and vault-format contract. After the
+merge, each push to main runs the full Checks set, including `pnpm knip` and the
+full contract sweep, so a suite the plan left out turns main red rather than
+the train; `pnpm pr:land` warns while that run is red. The unit shards split by
+measured seconds (`scripts/data/vitest-file-durations.json`, refreshed with
+`pnpm unit:durations`). The browser workflow keeps its own policy.
 
 CI tooling test edits keep their regression checks without promoting unrelated
 lanes to full runs. Runtime planner edits, unknown paths and invalid comparison
@@ -81,7 +90,7 @@ before relying on it.
 | **PR CI, wall clock** | 8 min | plan 25 s, then the slowest job | — |
 | Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
 | Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
-| Checks · Unit · Contract (x3) | 260 s | was 437 s avg / 705 s max unsharded | unit regressions and the full contract sweep |
+| Checks · Unit · Contract (x3) | 310 s | 2026-11-18, 22 trains: shards 79-340 s, 4-201 s, 4-285 s; full sweep 271 / 222 / 186 s by file count | affected unit tests and reached plus core contracts; the full sweep after merge |
 | Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
 | E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
 | E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |
