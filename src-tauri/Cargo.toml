@@ -78,8 +78,9 @@ keyring = { version = "3", features = ["apple-native"] }
 keyring = { version = "3", features = ["windows-native"] }
 
 # Cargo's release defaults leave 16 codegen units, no cross-crate inlining, and full debug symbols.
-# Measured on this app: these three take the Rust half of the binary from 13.4 MB to 8.3 MB, with no
-# change to what the code means.
+# Measured on this app: these three take the Rust half of the binary from 13.4 MB to 8.3 MB under fat
+# LTO, with no change to what the code means. Thin LTO adds 0.75 MB (1.7% of the binary), times the
+# same on the hashing and walking paths, and shortens the release build.
 #
 # Tauri's size guidance names two more that are deliberately absent.
 # `opt-level = "s"` saves a further 1.5 MB by optimising for size over speed; the Rust half of this
@@ -94,7 +95,7 @@ keyring = { version = "3", features = ["windows-native"] }
 # source files and lines.
 [profile.release]
 codegen-units = 1
-lto = true
+lto = "thin"
 debug = "line-tables-only"
 split-debuginfo = "packed"
 strip = true
