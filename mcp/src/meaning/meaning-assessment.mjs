@@ -1,4 +1,3 @@
-import { evaluateQuantifiedCompetencyCoverage } from "./competency-coverage.mjs";
 import { isPersistableEvidenceReference, isPersistablePathWitness, parseSourceRangeCitation } from './source-range-citation.mjs';
 
 /**
@@ -134,6 +133,16 @@ function relationKey(value) {
   return `${value.from}\0${value.to}\0${value.type}`;
 }
 
+/**
+ * Containment written as `contains` or as its typed key (`domains`, `capabilities`,
+ * `elements`) is one edge, so a witness row may cite either spelling.
+ */
+const CONTAINMENT_TYPES = new Set(["contains", "domains", "capabilities", "elements"]);
+
+function containmentKey(value) {
+  return CONTAINMENT_TYPES.has(value.type) ? `${value.from}\0${value.to}` : null;
+}
+
 function normalizeInventory(value) {
   const kindEntries = value?.kinds && typeof value.kinds === "object" && !Array.isArray(value.kinds)
     ? Object.entries(value.kinds)
@@ -162,12 +171,13 @@ function normalizeInventory(value) {
     concepts: new Set(valid ? value.concepts : []),
     kinds: new Map(valid ? kindEntries : []),
     relations: new Set(valid ? value.relations.map(relationKey) : []),
+    containment: new Set(valid ? value.relations.map(containmentKey).filter(Boolean) : []),
     evidence: new Set(valid ? value.evidence : []),
     paths: new Set(valid ? value.paths : []),
   };
 }
 
-function normalizeQuestions(competency, projectSlug) {
+function normalizeQuestions(competency) {
   /*
    * An absent competency block (a fresh `init` vault) is not malformed: same result, but the name
    * and remedy say "not written yet".
@@ -176,6 +186,7 @@ function normalizeQuestions(competency, projectSlug) {
   const rows = Array.isArray(competency?.questions) ? competency.questions : [];
   const inventory = normalizeInventory(competency?.inventory);
   const byId = new Map();
+  const problems = new Map();
   let malformed = competency?.contract !== MEANING_COMPETENCY_CONTRACT
     || competency?.receiptVersion !== 1
     || competency?.evaluator !== MEANING_COMPETENCY_EVALUATOR
@@ -207,29 +218,9 @@ function normalizeQuestions(competency, projectSlug) {
       continue;
     }
 
-    const requiredWitnessesPresent = contract.requiredWitnesses.every(
-      (key) => witnesses[key].length > 0,
-    );
-    const impactDependencyPresent = contract.id !== "impact"
-      || witnesses.relations.some((relation) => relation.type === "depends_on");
-    const witnessesResolve = witnesses.concepts.every((slug) => inventory.concepts.has(slug))
-      && witnesses.relations.every((relation) => inventory.relations.has(relationKey(relation)))
-      && witnesses.evidence.every((reference) =>
-        parseSourceRangeCitation(reference) === null && inventory.evidence.has(reference))
-      && witnesses.paths.every((path) => inventory.paths.has(path));
-    const quantifiedCoverage = competencyCoverage({
-      id: contract.id,
-      projectSlug,
-      inventory,
-      witnesses,
-    });
-    const witnessStatus = requiredWitnessesPresent
-      && impactDependencyPresent
-      && witnessesResolve
-      && (!quantifiedCoverage || quantifiedCoverage.uncovered.length === 0)
-      && row.unresolvedWitnesses.length === 0
-      ? "resolved"
-      : "missing";
+    const rowProblems = witnessProblems(contract, row, inventory);
+    problems.set(row.id, rowProblems);
+    const witnessStatus = rowProblems.length === 0 ? "resolved" : "missing";
     byId.set(row.id, { id: row.id, status: row.status, witnessStatus });
   }
 
@@ -237,37 +228,73 @@ function normalizeQuestions(competency, projectSlug) {
     malformed,
     absent,
     inventory,
+    problems,
     questions: MEANING_COMPETENCY_QUESTIONS.map(({ id }) => (
       byId.get(id) ?? { id, status: "unassessed", witnessStatus: "unavailable" }
     )),
   };
 }
 
-function competencyCoverage({ id, projectSlug, inventory, witnesses }) {
-  if (!safeProjectSlug(projectSlug)) return null;
-  const relations = [...inventory.relations].map((key) => {
-    const [from, to, type] = key.split("\0");
-    return { from, to, type };
-  });
-  const hasKindInventory = inventory.kinds.size > 0;
-  const capabilityParents = new Set(relations
-    .filter((row) => row.type === "capabilities" || row.type === "contains")
-    .map((row) => row.from));
-  const domains = relations.filter((row) =>
-    row.from === projectSlug
-    && (row.type === "domains" || row.type === "contains")
-    && (hasKindInventory
-      ? inventory.kinds.get(row.to) === "domain"
-      : capabilityParents.has(row.to)))
-    .map((row) => ({ slug: row.to }));
-  const domainSlugs = new Set(domains.map((row) => row.slug));
-  const capabilities = relations
-    .filter((row) =>
-      domainSlugs.has(row.from)
-      && (row.type === "capabilities" || row.type === "contains")
-      && (!hasKindInventory || inventory.kinds.get(row.to) === "capability"))
-    .map((row) => ({ slug: row.to, domain: row.from }));
-  return evaluateQuantifiedCompetencyCoverage({ id, domains, capabilities, witnesses });
+const WITNESS_ROW_LABEL = Object.freeze({
+  concepts: "Concepts",
+  relations: "Relations",
+  evidence: "Evidence",
+  paths: "Paths",
+});
+
+/**
+ * Every reason one row's witnesses fail, each naming the witness and the form that
+ * would resolve, so a refusal can be repaired in one patch instead of by guessing.
+ */
+function witnessProblems(contract, row, inventory) {
+  const witnesses = row.witnesses;
+  const out = [];
+  for (const key of contract.requiredWitnesses) {
+    if (witnesses[key].length === 0) {
+      out.push(`no \`- ${WITNESS_ROW_LABEL[key]}:\` row; this question needs ${contract.requiredWitnesses.map((name) => WITNESS_ROW_LABEL[name]).join(", ")}`);
+    }
+  }
+  if (contract.id === "impact" && !witnesses.relations.some((relation) => relation.type === "depends_on")) {
+    out.push("no `--depends_on-->` relation; an answered impact row cites at least one declared dependency");
+  }
+  for (const slug of witnesses.concepts) {
+    if (!inventory.concepts.has(slug)) {
+      out.push(`concept \`${slug}\` is not in this project's containment graph`);
+    }
+  }
+  for (const relation of witnesses.relations) {
+    const contained = containmentKey(relation);
+    if (!inventory.relations.has(relationKey(relation)) && !(contained && inventory.containment.has(contained))) {
+      out.push(`relation \`${relation.from}\` --${relation.type}--> \`${relation.to}\` is not declared in frontmatter`);
+    }
+  }
+  for (const reference of witnesses.evidence) {
+    if (inventory.evidence.has(reference)) continue;
+    const citation = parseSourceRangeCitation(reference);
+    out.push(citation
+      ? (inventory.evidence.has(citation.path)
+        ? `evidence \`${reference}\` no longer matches \`${citation.path}\`; read it again with analyze_repo_structure sourceReads and cite the new sha256, or cite the plain path`
+        : `evidence \`${reference}\`: \`${citation.path}\` is not a measured source witness`)
+      : `evidence \`${reference}\` is not a measured source witness`);
+  }
+  for (const path of witnesses.paths) {
+    if (!inventory.paths.has(path)) out.push(`path \`${path}\` is not a measured source witness`);
+  }
+  if (row.unresolvedWitnesses.length > 0) {
+    out.push(`unresolved witnesses ${row.unresolvedWitnesses.map((value) => `\`${value}\``).join(", ")}`);
+  }
+  return out;
+}
+
+/**
+ * Why each answered competency row does not resolve, for the finalize refusal; an
+ * empty list when every answered row resolves.
+ */
+export function unresolvedCompetencyRows({ competency } = {}) {
+  const normalized = normalizeQuestions(competency);
+  return normalized.questions
+    .filter((row) => row.status === "answered" && row.witnessStatus !== "resolved")
+    .map((row) => ({ id: row.id, problems: normalized.problems.get(row.id) ?? [] }));
 }
 
 function sourceReceiptMalformed(source) {
@@ -361,7 +388,7 @@ function result(input, normalized, status, topGap, nextAction) {
  */
 export function deriveMeaningAssessment(input) {
   const safeInput = input && typeof input === "object" ? input : {};
-  const normalized = normalizeQuestions(safeInput.competency, safeInput.projectSlug);
+  const normalized = normalizeQuestions(safeInput.competency);
   const sourceStatus = safeInput.source?.status;
   const currentness = safeInput.source?.currentness;
   const rawStructureStatus = safeInput.structure?.status;

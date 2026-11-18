@@ -269,3 +269,38 @@ test('readProjectSourceView re-checks the witnesses the current graph declares a
   assert.equal(recorded.live.basis, 'receipt');
   assert.equal(recorded.live.status, 'witnesses_supported');
 });
+
+test('a vault inside the bound repository does not stale its own binding when it is written', () => {
+  const sourceRoot = gitSource();
+  const root = join(sourceRoot, 'atlas');
+  mkdirSync(root);
+  writeFileSync(join(root, 'project.md'), '---\nkind: project\n---\nfirst\n');
+  const inspection = inspectProjectSource(sourceRoot, { excludePath: root });
+  assert.equal(inspection.vaultExcluded, 'atlas');
+  assert.equal(inspection.dirty, false, 'the untracked vault is not a source change');
+  assert.ok(!inspection.files.some((path) => path.startsWith('atlas/')));
+  writeState(root, [boundInspection(sourceRoot, inspection)]);
+  writeFileSync(join(root, 'project.md'), '---\nkind: project\n---\nsecond\n');
+  mkdirSync(join(root, 'domains'));
+  writeFileSync(join(root, 'domains', 'playback.md'), '---\nkind: domain\n---\n');
+
+  const result = readProjectSourceView(root, 'music-streaming', 'graph-a');
+
+  assert.equal(result.currentness, 'current');
+  assert.equal(result.topGap, null);
+  writeFileSync(join(sourceRoot, 'src', 'player.ts'), 'export const player = false;\n');
+  assert.equal(readProjectSourceView(root, 'music-streaming', 'graph-a').currentness, 'stale');
+});
+
+test('a vault the repository ignores hashes the same with or without the exclusion', () => {
+  const sourceRoot = gitSource();
+  writeFileSync(join(sourceRoot, '.gitignore'), 'atlas/\n');
+  const root = join(sourceRoot, 'atlas');
+  mkdirSync(root);
+  writeFileSync(join(root, 'project.md'), '---\nkind: project\n---\n');
+  assert.equal(
+    inspectProjectSource(sourceRoot, { excludePath: root }).fingerprint,
+    inspectProjectSource(sourceRoot).fingerprint,
+    'a receipt the app minted, which never excludes the vault, keeps verifying',
+  );
+});
