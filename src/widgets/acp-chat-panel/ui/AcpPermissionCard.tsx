@@ -23,9 +23,8 @@ import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
-import { ASK_ROW_FRAMES, type AskMotion } from '@/shared/ui/marks/moru-rows';
-import { withBasePath } from '@/shared/lib/public-pages/base-path';
+import type { AskMotion } from '@/shared/ui/marks/moru-rows';
+import { AskMoru } from './chat-panel/AskMoru';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
@@ -294,11 +293,6 @@ export function AcpPermissionCard({
           : undefined;
   const initiallyTaskBound = useRef(taskBound);
   useEffect(() => {
-    // A row first loads when its clip first plays; warm the answers' rows so a hover never swaps to a blank.
-    if (initiallyTaskBound.current) return;
-    for (const row of Object.keys(ASK_ROW_FRAMES)) new Image().src = withBasePath(`/brand/mascot-${row}-row-128.png`);
-  }, []);
-  useEffect(() => {
     if (initiallyTaskBound.current) titleRef.current?.focus({ preventScroll: true });
     else rejectRef.current?.focus();
   }, []);
@@ -410,9 +404,7 @@ export function AcpPermissionCard({
       >
         <header className={cn('grid shrink-0 gap-2', !taskBound && 'justify-items-center text-center')}>
           {taskBound ? null : (
-            <span data-testid="acp-permission-moru" className="inline-flex">
-              <BrandWaitingMark key={askMotion} active scale={2} motion={askMotion} />
-            </span>
+            <AskMoru motion={askMotion} />
           )}
           <p
             id="acp-permission-title"

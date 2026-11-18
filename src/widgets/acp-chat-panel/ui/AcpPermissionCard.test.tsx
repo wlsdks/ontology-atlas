@@ -52,7 +52,7 @@ const alwaysWith = (targets: unknown[]) => [
 ];
 
 describe('permission card: Moru acts the ask and the answer within reach', () => {
-  const clip = () => within(screen.getByTestId('acp-permission-moru')).getByTestId('brand-waiting-mark').getAttribute('data-moru-motion');
+  const clip = () => screen.getByTestId('acp-permission-moru').querySelector('[data-ask-clip="current"] [data-testid="brand-waiting-mark"]')?.getAttribute('data-moru-motion');
 
   it('plays a different clip for an ask inside the folder, one outside it, and each answer under the pointer', () => {
     const { unmount } = render(card('edit', '/vault/notes/a.md', [], '/vault'));
