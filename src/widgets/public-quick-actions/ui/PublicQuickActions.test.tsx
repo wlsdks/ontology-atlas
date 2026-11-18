@@ -55,6 +55,7 @@ describe("PublicQuickActions", () => {
     expect(screen.getByRole("link", { name: enMessages.publicQuickActions.buttonNew })).toBeInTheDocument();
   });
 
+  // The query-addressed editor opens any slug; a pre-rendered `/project/<slug>/edit/` exists only for samples.
   it("offers the edit action for the project in context and drops the create action", () => {
     pathname = "/topology";
     search = "";
@@ -63,6 +64,6 @@ describe("PublicQuickActions", () => {
     expect(screen.queryByRole("link", { name: enMessages.publicQuickActions.buttonNew })).toBeNull();
     expect(
       screen.getByRole("link", { name: enMessages.publicQuickActions.buttonEdit }),
-    ).toHaveAttribute("href", "/project/ontology%20atlas%2Fv2/edit/?returnTo=%2Ftopology");
+    ).toHaveAttribute("href", "/project/fallback/?slug=ontology+atlas%2Fv2&mode=edit&returnTo=%2Ftopology");
   });
 });

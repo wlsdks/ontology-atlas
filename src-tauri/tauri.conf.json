@@ -5,9 +5,9 @@
   "identifier": "dev.jinan.ontology-atlas",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm build && node scripts/desktop/stage-desktop-frontend.mjs",
     "devUrl": "http://localhost:3000",
-    "frontendDist": "../out"
+    "frontendDist": "target/desktop-frontend"
   },
   "app": {
     "windows": [

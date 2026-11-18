@@ -26,10 +26,11 @@ This file owns the bridge roster and the rules for adding to it.
 
 ## One build, thin bridges
 
-Tauri loads the same static export (`frontendDist: "../out"`). Surfaces differ
-only at capability bridges: a bridge calls the native ability in the app and
-returns absence on the web, and the UI then removes the action or shows a
-degradation card. Every new desktop capability uses `getInvoke()`/`isTauri()`;
+Tauri loads the same static export minus website-only pages and media
+(`frontendDist`, staged by `scripts/desktop/stage-desktop-frontend.mjs`).
+Surfaces differ only at capability bridges: a bridge calls the native ability
+in the app and returns absence on the web, and the UI then removes the action
+or shows a degradation card. Every new desktop capability uses `getInvoke()`/`isTauri()`;
 never a parallel router or surface fork.
 
 | Capability | Bridge | Web behaviour |
