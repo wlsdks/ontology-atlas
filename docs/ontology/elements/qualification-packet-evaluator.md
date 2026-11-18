@@ -21,4 +21,4 @@ Validates the packet an independent evaluator submits about a proposed ontology 
 - Standing in for a person; approval remains declared provenance, not a truth certificate.
 
 ## Uncertainty
-- Read from the module header and its consumers. At roughly 1,600 lines it is the largest module in this domain and its body was not read; no qualification packet was ever submitted in this session, because this setup has no independent evaluator.
+- Read from the module header, its consumers and, on 2026-11-19, its entry point `evaluateConstructionQualification`: it validates each part of the packet in turn, derives the seven axes, and returns `qualified` only when no finding is an error, every axis, competency question and claim passes, every citation is verified, the source-hidden task passes and acceptance is `accepted`. The per-part validators in its roughly 1,600 lines were not read one by one, and no qualification packet was ever submitted, because this setup has no independent evaluator.
