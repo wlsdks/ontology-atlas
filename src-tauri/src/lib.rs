@@ -9,6 +9,7 @@ mod agent_setup;
 mod analysis_archive;
 mod app_shell;
 mod audit_read;
+mod blocking;
 mod command_output;
 mod connector_secrets;
 mod connectors;
@@ -31,6 +32,7 @@ mod planning;
 mod project_source;
 mod secrets;
 mod source_access;
+mod temporary_names;
 mod vault;
 mod vault_grants;
 mod webview_verify;
@@ -351,32 +353,125 @@ pub fn run() {
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")
-        .run(|app_handle, event| match event {
-            RunEvent::Ready => {
-                show_main_window(app_handle);
-                apply_verify_window_size(app_handle);
-                schedule_show_main_window(app_handle.clone());
-            }
-            #[cfg(target_os = "macos")]
-            RunEvent::Reopen { .. } => {
-                show_main_window(app_handle);
-                apply_verify_window_size(app_handle);
-                schedule_show_main_window(app_handle.clone());
-            }
-            RunEvent::WindowEvent {
-                label,
-                event: tauri::WindowEvent::Destroyed,
-                ..
-            } => {
-                llm::requests::cancel_owner(Some(&label));
-                audit_read::cancel_owner(Some(&label));
-            }
-            // Adapters and their children must not outlive the window.
-            RunEvent::ExitRequested { .. } | RunEvent::Exit => {
+        .run(|app_handle, event| {
+            let unfinished = shut_down(shutdown_for(&event), || {
                 llm::requests::cancel_owner(None);
                 audit_read::cancel_owner(None);
                 terminate_all_acp_sessions(app_handle);
+            });
+            if unfinished > 0 {
+                log::warn!("exit cut {unfinished} file or keychain operation(s) short");
             }
-            _ => {}
+            on_run_event(app_handle, event);
         });
+}
+
+/// What an app event asks of the shutdown path.
+#[derive(Debug, PartialEq, Eq)]
+enum Shutdown {
+    None,
+    /// Adapters and their children must not outlive the window.
+    StopAgents,
+    /// Every exit path reaches `Exit`, including Cmd+Q, which skips `ExitRequested` and
+    /// cannot be prevented, so a save already running finishes its rename here.
+    StopAgentsAndFinishWork,
+}
+
+fn shutdown_for(event: &RunEvent) -> Shutdown {
+    match event {
+        RunEvent::ExitRequested { .. } => Shutdown::StopAgents,
+        RunEvent::Exit => Shutdown::StopAgentsAndFinishWork,
+        _ => Shutdown::None,
+    }
+}
+
+/// Returns how many blocking operations were still running when the exit wait ended.
+fn shut_down(step: Shutdown, stop_agents: impl FnOnce()) -> usize {
+    if step == Shutdown::None {
+        return 0;
+    }
+    stop_agents();
+    if step == Shutdown::StopAgentsAndFinishWork {
+        blocking::drain(blocking::EXIT_DRAIN_LIMIT)
+    } else {
+        0
+    }
+}
+
+fn on_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
+    match event {
+        RunEvent::Ready => {
+            show_main_window(app_handle);
+            apply_verify_window_size(app_handle);
+            schedule_show_main_window(app_handle.clone());
+        }
+        #[cfg(target_os = "macos")]
+        RunEvent::Reopen { .. } => {
+            show_main_window(app_handle);
+            apply_verify_window_size(app_handle);
+            schedule_show_main_window(app_handle.clone());
+        }
+        RunEvent::WindowEvent {
+            label,
+            event: tauri::WindowEvent::Destroyed,
+            ..
+        } => {
+            llm::requests::cancel_owner(Some(&label));
+            audit_read::cancel_owner(Some(&label));
+        }
+        _ => {}
+    }
+}
+
+#[cfg(test)]
+mod shutdown_tests {
+    use super::{shut_down, shutdown_for, Shutdown};
+    use tauri::RunEvent;
+
+    #[test]
+    fn exit_stops_agents_and_waits_for_running_work() {
+        assert_eq!(
+            shutdown_for(&RunEvent::Exit),
+            Shutdown::StopAgentsAndFinishWork
+        );
+        assert_eq!(shutdown_for(&RunEvent::Ready), Shutdown::None);
+        let mut stopped = false;
+        assert!(!crate::blocking::is_closing());
+        assert_eq!(
+            shut_down(shutdown_for(&RunEvent::Exit), || stopped = true),
+            0
+        );
+        assert!(stopped);
+        assert!(
+            crate::blocking::is_closing(),
+            "exit returned without waiting for running file or keychain work"
+        );
+    }
+
+    #[test]
+    fn a_non_exit_event_leaves_work_running() {
+        let mut stopped = false;
+        assert_eq!(
+            shut_down(shutdown_for(&RunEvent::Ready), || stopped = true),
+            0
+        );
+        assert!(!stopped);
+        assert!(!crate::blocking::is_closing());
+    }
+
+    /// `run` needs a live event loop, so its call is pinned in the code above this module only;
+    /// the whole file would also match this test's own text.
+    #[test]
+    fn the_event_loop_routes_every_event_through_the_shutdown_path() {
+        let file = include_str!("lib.rs");
+        let (code, _) = file
+            .split_once("mod shutdown_tests {")
+            .expect("the shutdown tests follow the code they pin");
+        let code: String = code.split_whitespace().collect();
+        let call = ["shut_down(", "shutdown_for(&event),"].concat();
+        assert!(
+            code.contains(&[".run(|app_handle,event|{letunfinished=", &call].concat()),
+            "the event loop no longer hands each event to the shutdown step"
+        );
+    }
 }

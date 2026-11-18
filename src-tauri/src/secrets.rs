@@ -5,6 +5,7 @@
 use keyring::Entry;
 use serde::Serialize;
 
+use crate::blocking::run_blocking;
 use crate::errors::coded;
 
 /// Users find the entry under this name in Keychain Access.
@@ -43,8 +44,13 @@ pub struct SecretStatus {
 }
 
 /// An empty key is rejected; erasing goes through `secret_clear`.
+/// Async: a Keychain prompt waits on the person and must not freeze the window.
 #[tauri::command]
-pub fn secret_set(provider: String, secret: String) -> Result<SecretStatus, String> {
+pub async fn secret_set(provider: String, secret: String) -> Result<SecretStatus, String> {
+    run_blocking(move || secret_set_blocking(provider, secret)).await
+}
+
+fn secret_set_blocking(provider: String, secret: String) -> Result<SecretStatus, String> {
     let trimmed = secret.trim();
     if trimmed.is_empty() {
         return Err(coded("secret-empty", ""));
@@ -90,7 +96,11 @@ pub(crate) fn read_secret(provider: &str) -> Result<String, String> {
 /// key was deleted while it remains is worse than an error. Verify with a
 /// read-back, not `secret_status`, which demotes a locked keychain to absent.
 #[tauri::command]
-pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
+pub async fn secret_clear(provider: String) -> Result<SecretStatus, String> {
+    run_blocking(move || secret_clear_blocking(provider)).await
+}
+
+fn secret_clear_blocking(provider: String) -> Result<SecretStatus, String> {
     let known = validate_provider(&provider)?;
     let handle = entry(&provider)?;
     let cleared = SecretStatus {
@@ -206,8 +216,11 @@ mod tests {
 
     #[test]
     fn empty_secret_is_rejected_so_saving_cannot_silently_erase() {
-        assert!(secret_set("anthropic".into(), "   ".into()).is_err());
-        assert!(secret_set("anthropic".into(), "".into()).is_err());
+        for empty in ["   ", ""] {
+            let saved =
+                tauri::async_runtime::block_on(secret_set("anthropic".into(), empty.into()));
+            assert_eq!(saved.unwrap_err(), "secret-empty");
+        }
     }
 
     #[test]

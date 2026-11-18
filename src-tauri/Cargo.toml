@@ -80,6 +80,14 @@ keyring = { version = "3", features = ["apple-native"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
 
+# "Show in Explorer" and its Linux equivalent: the official opener plugin's Rust function
+# `reveal_item_in_dir`, called only from commands that have already resolved the path inside
+# a granted vault. The plugin is not registered, so the WebView gets none of its commands and
+# no capability names it. macOS keeps `open -R` / `open -a Finder` and does not link it.
+# Pinned below 2.6, which requires tauri 2.12; a tauri upgrade can lift the pin.
+[target.'cfg(any(target_os = "windows", target_os = "linux"))'.dependencies]
+tauri-plugin-opener = "~2.5.5"
+
 # Cargo's release defaults leave 16 codegen units, no cross-crate inlining, and full debug symbols.
 # Measured on this app: these three take the Rust half of the binary from 13.4 MB to 8.3 MB under fat
 # LTO, with no change to what the code means. Thin LTO adds 0.75 MB (1.7% of the binary), times the

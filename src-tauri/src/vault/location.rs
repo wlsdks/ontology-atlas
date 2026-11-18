@@ -1,6 +1,7 @@
 use super::scope::{canonical_root, vault_root_rejection};
 #[cfg(target_os = "macos")]
 use crate::app_shell::reveal_in_finder_command;
+use crate::blocking::run_blocking;
 use crate::vault_grants;
 use std::fs;
 use std::path::PathBuf;
@@ -27,7 +28,11 @@ pub(crate) fn pick_vault_directory(dialog_title: Option<String>) -> Result<Optio
 }
 
 #[tauri::command]
-pub(crate) fn open_vault_in_finder(root_path: String) -> Result<(), String> {
+pub(crate) async fn open_vault_in_finder(root_path: String) -> Result<(), String> {
+    run_blocking(move || open_vault_in_finder_blocking(root_path)).await
+}
+
+pub(crate) fn open_vault_in_finder_blocking(root_path: String) -> Result<(), String> {
     // Only reveal a folder the user granted; an XSS must not open Finder anywhere.
     let root = canonical_root(&root_path)?;
     // A `.app` passes `is_dir()` and `open` would launch it; the same gate as the vault
@@ -49,10 +54,10 @@ pub(crate) fn open_vault_in_finder(root_path: String) -> Result<(), String> {
         }
     }
 
+    // Explorer and Linux file managers open the parent with the vault folder selected.
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = root;
-        Err("Finder reveal is only available on macOS".into())
+        crate::app_shell::reveal_in_file_manager(&root)
     }
 }
 
@@ -82,7 +87,7 @@ mod tests {
 
     #[test]
     fn open_vault_in_finder_rejects_non_directory_root() {
-        let error = open_vault_in_finder("/path/that/does/not/exist".into()).unwrap_err();
+        let error = open_vault_in_finder_blocking("/path/that/does/not/exist".into()).unwrap_err();
         assert!(!error.is_empty());
     }
 

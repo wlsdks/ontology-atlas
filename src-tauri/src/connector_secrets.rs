@@ -6,6 +6,7 @@ use keyring::Entry;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::blocking::run_blocking;
 use crate::errors::coded;
 use crate::secrets::{is_cleared, Step};
 
@@ -62,74 +63,85 @@ pub struct ConnectorSecretStatus {
     last4: Option<String>,
 }
 
+/// Async: a Keychain prompt waits on the person and must not freeze the window. The
+/// bodies stay inline so each command names its return type once.
 #[tauri::command]
-pub fn connector_secret_set(
+pub async fn connector_secret_set(
     secret_ref: String,
     secret: String,
 ) -> Result<ConnectorSecretStatus, String> {
-    let trimmed = secret.trim();
-    if trimmed.is_empty() {
-        return Err(coded("secret-empty", ""));
-    }
-    validate_secret_ref(&secret_ref)?;
-    entry(&secret_ref)?
-        .set_password(trimmed)
-        .map_err(|err| coded("keychain-write-failed", err))?;
-    Ok(ConnectorSecretStatus {
-        secret_ref,
-        stored: true,
-        last4: Some(tail4(trimmed)),
+    run_blocking(move || {
+        let trimmed = secret.trim();
+        if trimmed.is_empty() {
+            return Err(coded("secret-empty", ""));
+        }
+        validate_secret_ref(&secret_ref)?;
+        entry(&secret_ref)?
+            .set_password(trimmed)
+            .map_err(|err| coded("keychain-write-failed", err))?;
+        Ok(ConnectorSecretStatus {
+            secret_ref,
+            stored: true,
+            last4: Some(tail4(trimmed)),
+        })
     })
+    .await
 }
 
 /// The screen checks this before switching a connector on.
 #[tauri::command]
-pub fn connector_secret_status(secret_ref: String) -> Result<ConnectorSecretStatus, String> {
-    validate_secret_ref(&secret_ref)?;
-    match entry(&secret_ref)?.get_password() {
-        Ok(secret) => Ok(ConnectorSecretStatus {
-            secret_ref,
-            stored: true,
-            last4: Some(tail4(&secret)),
-        }),
-        // A locked keychain reads as absent, as in `secrets.rs`.
-        Err(_) => Ok(ConnectorSecretStatus {
-            secret_ref,
-            stored: false,
-            last4: None,
-        }),
-    }
+pub async fn connector_secret_status(secret_ref: String) -> Result<ConnectorSecretStatus, String> {
+    run_blocking(move || {
+        validate_secret_ref(&secret_ref)?;
+        match entry(&secret_ref)?.get_password() {
+            Ok(secret) => Ok(ConnectorSecretStatus {
+                secret_ref,
+                stored: true,
+                last4: Some(tail4(&secret)),
+            }),
+            // A locked keychain reads as absent, as in `secrets.rs`.
+            Err(_) => Ok(ConnectorSecretStatus {
+                secret_ref,
+                stored: false,
+                last4: None,
+            }),
+        }
+    })
+    .await
 }
 
 /// Absence is success; a failed delete is reported, or someone hands on a machine
 /// believing the token is gone.
 #[tauri::command]
-pub fn connector_secret_delete(secret_ref: String) -> Result<ConnectorSecretStatus, String> {
-    validate_secret_ref(&secret_ref)?;
-    let handle = entry(&secret_ref)?;
-    let deleted = match handle.delete_credential() {
-        Ok(()) => Step::Done,
-        Err(keyring::Error::NoEntry) => Step::Missing,
-        Err(_) => Step::Failed,
-    };
-    let readback = if deleted == Step::Done {
-        match handle.get_password() {
-            Ok(_) => Step::Done,
+pub async fn connector_secret_delete(secret_ref: String) -> Result<ConnectorSecretStatus, String> {
+    run_blocking(move || {
+        validate_secret_ref(&secret_ref)?;
+        let handle = entry(&secret_ref)?;
+        let deleted = match handle.delete_credential() {
+            Ok(()) => Step::Done,
             Err(keyring::Error::NoEntry) => Step::Missing,
             Err(_) => Step::Failed,
+        };
+        let readback = if deleted == Step::Done {
+            match handle.get_password() {
+                Ok(_) => Step::Done,
+                Err(keyring::Error::NoEntry) => Step::Missing,
+                Err(_) => Step::Failed,
+            }
+        } else {
+            Step::Failed
+        };
+        if is_cleared(deleted, readback) {
+            Ok(ConnectorSecretStatus {
+                secret_ref,
+                stored: false,
+                last4: None,
+            })
+        } else {
+            Err(coded("keychain-clear-failed", ""))
         }
-    } else {
-        Step::Failed
-    };
-    if is_cleared(deleted, readback) {
-        Ok(ConnectorSecretStatus {
-            secret_ref,
-            stored: false,
-            last4: None,
-        })
-    } else {
-        Err(coded("keychain-clear-failed", ""))
-    }
+    })
+    .await
 }
 
 /// Resolves only at `params.mcpServers[*].env[*]` and `.headers[*]`; anywhere

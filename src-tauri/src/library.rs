@@ -659,7 +659,15 @@ pub fn discover_source_candidates(
 
 /// Reveal, not open: the app never launches a program on the person's behalf.
 #[tauri::command]
-pub fn reveal_vault_file(root_path: String, relative_path: String) -> Result<(), String> {
+pub async fn reveal_vault_file(root_path: String, relative_path: String) -> Result<(), String> {
+    crate::blocking::run_blocking(move || reveal_vault_file_blocking(root_path, relative_path))
+        .await
+}
+
+pub(crate) fn reveal_vault_file_blocking(
+    root_path: String,
+    relative_path: String,
+) -> Result<(), String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
     if !path.is_file() {
         return Err("reveal target must be a file".into());
@@ -681,16 +689,9 @@ pub fn reveal_vault_file(root_path: String, relative_path: String) -> Result<(),
 
     #[cfg(not(target_os = "macos"))]
     {
-        // A code, not a sentence, so the translation stays on the screen; nothing is
-        // launched on Windows or Linux.
-        let _ = path;
-        Err(REVEAL_UNSUPPORTED.into())
+        crate::app_shell::reveal_in_file_manager(&path)
     }
 }
-
-/// Scoped to the arm that returns it, or it is dead code on macOS.
-#[cfg(not(target_os = "macos"))]
-pub(crate) const REVEAL_UNSUPPORTED: &str = "reveal-unsupported-on-this-platform";
 
 #[cfg(test)]
 mod tests;
