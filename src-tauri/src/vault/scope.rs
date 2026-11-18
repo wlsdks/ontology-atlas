@@ -212,7 +212,10 @@ mod tests {
     use crate::vault::read::read_vault_text_file;
     #[cfg(unix)]
     use crate::vault::write::{
-        ensure_vault_directory, remove_vault_entry, vault_path_exists, write_vault_text_file,
+        ensure_vault_directory_blocking as ensure_vault_directory,
+        remove_vault_entry_blocking as remove_vault_entry,
+        vault_path_exists_blocking as vault_path_exists,
+        write_vault_text_file_blocking as write_vault_text_file,
     };
     #[cfg(unix)]
     use std::time::UNIX_EPOCH;

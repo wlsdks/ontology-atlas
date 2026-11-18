@@ -1,6 +1,7 @@
 use super::*;
 use crate::meaning_transition_archive::append::{
-    append_meaning_transition_bundle, MeaningTransitionArtifactInput,
+    append_meaning_transition_bundle_blocking as append_meaning_transition_bundle,
+    MeaningTransitionArtifactInput,
 };
 use crate::meaning_transition_archive::envelope::digest_hex;
 use crate::meaning_transition_archive::tests::{fixture, identity};

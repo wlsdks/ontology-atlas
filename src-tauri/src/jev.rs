@@ -1,6 +1,7 @@
 //! Optional Jev judgment. The saved key stays in Keychain; only an explicit
 //! app action sends the exact previewed JSON to the fixed TypeSafe endpoint.
 
+use crate::blocking::run_blocking;
 use crate::errors::coded;
 use crate::llm::curl::{curl_argv_with_timeout, curl_config_for, run_curl};
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope};
@@ -33,8 +34,13 @@ pub struct JevSecretStatus {
     last4: Option<String>,
 }
 
+/// Async: a Keychain prompt waits on the person and must not freeze the window.
 #[tauri::command]
-pub fn jev_secret_set(secret: String) -> Result<JevSecretStatus, String> {
+pub async fn jev_secret_set(secret: String) -> Result<JevSecretStatus, String> {
+    run_blocking(move || jev_secret_set_blocking(secret)).await
+}
+
+fn jev_secret_set_blocking(secret: String) -> Result<JevSecretStatus, String> {
     let trimmed = secret.trim();
     if trimmed.is_empty() || trimmed.contains(['\r', '\n']) {
         return Err(coded("secret-empty", "enter one key without line breaks"));
@@ -64,7 +70,11 @@ pub fn jev_secret_status() -> Result<JevSecretStatus, String> {
 }
 
 #[tauri::command]
-pub fn jev_secret_clear() -> Result<JevSecretStatus, String> {
+pub async fn jev_secret_clear() -> Result<JevSecretStatus, String> {
+    run_blocking(jev_secret_clear_blocking).await
+}
+
+fn jev_secret_clear_blocking() -> Result<JevSecretStatus, String> {
     let handle = entry()?;
     let deleted = match handle.delete_credential() {
         Ok(()) => Step::Done,

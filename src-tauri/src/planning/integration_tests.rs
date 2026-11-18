@@ -5,7 +5,7 @@ use crate::{
     project_source::inspect_project_source,
     vault::{
         read::read_vault_text_file, scope::canonical_root, walk::list_vault_directory,
-        write::write_vault_text_file,
+        write::write_vault_text_file_blocking as write_vault_text_file,
     },
     vault_grants::{self, EnforcedScope},
 };

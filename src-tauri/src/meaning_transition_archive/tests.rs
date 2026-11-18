@@ -3,7 +3,7 @@ use super::envelope::digest_hex;
 use super::*;
 #[cfg(not(unix))]
 use super::{
-    append::append_meaning_transition_bundle,
+    append::append_meaning_transition_bundle_blocking as append_meaning_transition_bundle,
     history::list_meaning_transition_history,
     read::{read_meaning_transition_artifact_text, read_meaning_transition_record_text},
 };
@@ -79,4 +79,30 @@ fn unsupported_platform_refuses_every_archive_entrypoint_without_creating_files(
     assert!(list_meaning_transition_history(path, expected, 0, 10).is_err());
     assert!(!root.join(".ontology-atlas").exists());
     fs::remove_dir_all(root).unwrap();
+}
+
+/// A save cut short at quit leaves this file; the next vault open must remove it.
+#[test]
+fn a_leftover_transition_temporary_is_removed_by_the_vault_open_sweep() {
+    let name = super::confined::temporary_name();
+    let root = std::env::temp_dir().join(format!(
+        "atlas-transition-leftover-{}-{name}",
+        std::process::id()
+    ));
+    let leftover = root
+        .join(".ontology-atlas/meaning-transitions/records")
+        .join(&name);
+    fs::create_dir_all(leftover.parent().unwrap()).unwrap();
+    fs::write(&leftover, "partial").unwrap();
+    let root = fs::canonicalize(root).unwrap();
+    let later = std::time::SystemTime::now()
+        + crate::vault::temp_sweep::STALE_AFTER
+        + std::time::Duration::from_secs(1);
+    let removed = crate::vault::temp_sweep::sweep_stale_temporaries(
+        &root,
+        later,
+        crate::vault::temp_sweep::STALE_AFTER,
+    );
+    assert_eq!(removed, 1);
+    fs::remove_dir_all(root).ok();
 }
