@@ -3,7 +3,7 @@
  * graph and is above zero; the screen translates the keys, and a press sends the request at once.
  */
 
-/** How many are shown at once. Given too many choices, people choose none (Hick). */
+/** How many measured fixes are shown at once, before the whole-map check. Given too many choices, people choose none (Hick). */
 export const SUGGESTION_LIMIT = 3;
 
 /** How many slugs a request names before it says only the count. */
@@ -104,5 +104,5 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
 
   if (repairs.length === 0) return [{ kind: 'nothingLeft', params: {} }];
   const check: ChatSuggestion = { kind: 'check', params: { count: input.nodeCount } };
-  return [...repairs, check].slice(0, SUGGESTION_LIMIT);
+  return [...repairs.slice(0, SUGGESTION_LIMIT), check];
 }

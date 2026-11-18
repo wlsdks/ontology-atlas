@@ -40,10 +40,10 @@ describe('next steps point at this folder even when passed through the real vaul
     expect(nextStepsForRealVault().health.summary.nodes).toBeGreaterThan(50);
   });
 
-  it('the path does not break — rows or the quiet line always appear, at most three', () => {
+  it('the path does not break — rows or the quiet line always appear, at most three fixes and the check', () => {
     const { out } = nextStepsForRealVault();
     expect(out.length).toBeGreaterThan(0);
-    expect(out.length).toBeLessThanOrEqual(3);
+    expect(out.length).toBeLessThanOrEqual(4);
   });
 
   it('every slug a request names is a node that exists, and every count matches its fact', () => {

@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import {
   BookOpen,
   FolderGit2,
@@ -15,7 +15,7 @@ import {
 import { isPressableSuggestion, type ChatSuggestion } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui';
-import { CONTROL_PRESS_TRAVEL } from '@/shared/ui/control-class';
+import { CONTROL_DISABLED_CLASS, CONTROL_PRESS_TRAVEL } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { ChatT } from './types';
@@ -33,15 +33,43 @@ const KIND_GLYPH: Record<ChatSuggestion['kind'], LucideIcon> = {
   subjectImpact: Waypoints,
 };
 
+/** The hit box: it never moves on hover, and travels one pixel while pressed, like `Button`. */
+// Tailwind reads these class names from the source text, so each variant is written out in full.
 const CHOICE_CLASS = cn(
-  controlClass({ shape: 'card', size: 'lg', hoverBorder: 'strong' }),
+  CONTROL_DISABLED_CLASS,
   CONTROL_PRESS_TRAVEL,
-  'group/choice relative isolate w-full gap-3 bg-[color:var(--color-elevated)] text-left shadow-[inset_0_1px_0_var(--color-overlay-2)] focus-visible:border-[color:var(--color-border-strong)]',
+  'group/choice relative block w-full rounded-card text-left transition-[translate] focus-visible:outline-none',
 );
 
-/** The lifted surface fades in on a layer of its own, so hover changes opacity and nothing moves. */
-const LIFT_LAYER_CLASS =
-  'pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-[color:var(--color-overlay-2)] opacity-0 transition-opacity group-hover/choice:opacity-100 group-focus-visible/choice:opacity-100 group-disabled/choice:opacity-0';
+/** The visible card. It sits above the panel at rest and lifts on hover and focus, inside the hit box. */
+const CARD_CLASS = cn(
+  'relative isolate flex h-full min-h-10 items-center gap-3 overflow-hidden rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-3.5 py-2 shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-[translate,border-color,box-shadow]',
+  'group-[:enabled:hover]/choice:-translate-y-px group-[:enabled:hover]/choice:border-[color:var(--color-indigo-accent-a50)] group-[:enabled:hover]/choice:ring-1 group-[:enabled:hover]/choice:ring-[color:var(--color-indigo-accent-a32)]',
+  'group-[:focus-visible]/choice:-translate-y-px group-[:focus-visible]/choice:border-[color:var(--color-indigo-accent-a50)] group-[:focus-visible]/choice:ring-2 group-[:focus-visible]/choice:ring-[color:var(--color-indigo-focus-ring)]',
+  'group-active/choice:translate-y-0',
+);
+
+/** One surface step up, and while pressed a short accent fill. */
+const LIFT_LAYER_CLASS = cn(
+  'pointer-events-none absolute inset-0 -z-10 bg-[color:var(--color-overlay-2)] opacity-0 transition-[opacity,background-color]',
+  'group-[:enabled:hover]/choice:opacity-100 group-[:focus-visible]/choice:opacity-100 group-[:enabled:active]/choice:bg-[color:var(--color-indigo-accent-a12)]',
+);
+
+/** The pointer spotlight follows the cursor through two custom properties; focus centres it. */
+const SPOTLIGHT_CLASS = cn(
+  'pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity',
+  'bg-[radial-gradient(circle_at_var(--spot-x,50%)_var(--spot-y,50%),var(--color-indigo-accent-a12),transparent_60%)]',
+  'group-[:enabled:hover]/choice:opacity-100 group-[:focus-visible]/choice:opacity-100',
+);
+
+const GLYPH_CLASS =
+  'flex size-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-accent-a32)] bg-[color:var(--color-indigo-accent-a12)] text-[color:var(--color-indigo-accent)]';
+
+function followPointer(event: PointerEvent<HTMLButtonElement>) {
+  const box = event.currentTarget.getBoundingClientRect();
+  event.currentTarget.style.setProperty('--spot-x', `${event.clientX - box.left}px`);
+  event.currentTarget.style.setProperty('--spot-y', `${event.clientY - box.top}px`);
+}
 
 const KEY_STEP: Record<string, number> = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
 
@@ -140,12 +168,16 @@ export function SuggestionRows({
                 title={`${label}\n${because}`}
                 data-testid={`acp-chat-suggestion-${suggestion.kind}`}
                 className={cn(CHOICE_CLASS, 'motion-stagger-in')}
-                style={{ '--motion-stagger-index': index } as CSSProperties}
+                // Two stagger steps apart, so each row is seen to arrive after the one above it.
+                style={{ '--motion-stagger-index': index * 2 } as CSSProperties}
+                onPointerMove={followPointer}
                 onFocus={() => setActiveIndex(index)}
                 onClick={() => onSelect(suggestion)}
               >
+                <span className={CARD_CLASS}>
                 <span aria-hidden className={LIFT_LAYER_CLASS} />
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-text-soft)]">
+                <span aria-hidden className={SPOTLIGHT_CLASS} />
+                <span className={GLYPH_CLASS}>
                   <Glyph size={ICON_SIZE.md} aria-hidden />
                 </span>
                 <span className="grid min-w-0 flex-1 gap-0.5">
@@ -156,7 +188,8 @@ export function SuggestionRows({
                     {because}
                   </span>
                 </span>
-              </button>
+              </span>
+            </button>
             );
           })}
         </div>
@@ -172,7 +205,7 @@ export function SuggestionRows({
             'motion-stagger-fade px-2',
             centered ? 'self-center' : 'self-start',
           )}
-          style={{ '--motion-stagger-index': choices.length } as CSSProperties}
+          style={{ '--motion-stagger-index': choices.length * 2 } as CSSProperties}
           onFocus={() => setActiveIndex(choices.length)}
           onClick={onDone}
         >

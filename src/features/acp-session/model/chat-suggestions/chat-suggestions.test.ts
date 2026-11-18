@@ -69,7 +69,7 @@ describe('next steps come only from measured facts', () => {
     expect(chatSuggestions({ ...built, codeShaped: ['elements/a'] }).at(-1)).toEqual({ kind: 'check', params: { count: 40 } });
   });
 
-  it('shows at most three', () => {
+  it('shows at most three fixes, then the check', () => {
     const out = kinds({
       ...built,
       withoutDependency: ['capabilities/a'],
@@ -77,8 +77,8 @@ describe('next steps come only from measured facts', () => {
       codeShaped: ['elements/c'],
       changedSource: ['capabilities/d'],
     });
-    expect(out).toEqual(['dependencies', 'standAlone', 'rename']);
-    expect(out).toHaveLength(SUGGESTION_LIMIT);
+    expect(out).toEqual(['dependencies', 'standAlone', 'rename', 'check']);
+    expect(out).toHaveLength(SUGGESTION_LIMIT + 1);
   });
 });
 
