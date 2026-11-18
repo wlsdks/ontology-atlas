@@ -100,7 +100,6 @@ it("never opens a Markdown source, which the vault index searches", async () => 
   const text = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode("match").buffer }));
   const handles = new Map([
     ["sources/notes.md", { getFile: markdown } as unknown as FileSystemFileHandle],
-    ["sources/NOTES.MD", { getFile: markdown } as unknown as FileSystemFileHandle],
     ["sources/fees.csv", { getFile: text } as unknown as FileSystemFileHandle],
   ]);
   const { result } = renderHook(() => useSourceSearch({
@@ -111,4 +110,15 @@ it("never opens a Markdown source, which the vault index searches", async () => 
   expect(markdown).not.toHaveBeenCalled();
   expect([...result.current.hits.keys()]).toEqual(["sources/fees.csv"]);
   expect(result.current.plannedCount).toBe(1);
+});
+
+it("searches an upper-case .MD source, which the vault index does not admit", async () => {
+  const upper = vi.fn(async () => ({ arrayBuffer: async () => new TextEncoder().encode("match").buffer }));
+  const handles = new Map([["sources/README.MD", { getFile: upper } as unknown as FileSystemFileHandle]]);
+  const { result } = renderHook(() => useSourceSearch({
+    sources: [{ path: "sources/README.MD", bytes: 10, mtime: 1 }],
+    sourceHandles: handles, vaultScope: "markdown", needle: "match", enabled: true,
+  }));
+  await waitFor(() => expect(result.current.phase).toBe("ready"));
+  expect([...result.current.hits.keys()]).toEqual(["sources/README.MD"]);
 });

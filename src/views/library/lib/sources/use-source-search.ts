@@ -11,10 +11,11 @@ import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from
 
 /**
  * Markdown sources are searched by the vault index like every other `.md` file, so this reader never
- * opens one; it covers the formats the index does not read (PDF, CSV, DOCX and the rest).
+ * opens one; it covers the formats the index does not read (PDF, CSV, DOCX and the rest). The match is
+ * case-sensitive like the vault's own `.md` rule, so `README.MD` stays searchable here.
  */
 export function isIndexedSource(path: string): boolean {
-  return path.toLowerCase().endsWith('.md');
+  return path.endsWith('.md');
 }
 
 /** Files one search may read, however small they are. */
