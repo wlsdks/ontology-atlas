@@ -18,11 +18,7 @@ export { useDataSourceMode } from './model/use-data-source-mode';
 export { useVaultLoadProgress } from './model/vault-load-progress';
 export { useArrivingManifest } from './model/vault-arrival';
 export { useSampleSource } from './model/use-sample-source';
-export {
-  useStaticVaultSource,
-  useStaticVaultStatus,
-  type StaticVaultStatus,
-} from './model/use-static-vault-source';
+export { useStaticVaultSource, useStaticVaultStatus } from './model/use-static-vault-source';
 export {
   useArrivingVaultIdentityScope,
   useVaultIdentityScope,
