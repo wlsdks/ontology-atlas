@@ -27,6 +27,16 @@ pub(crate) fn create_temporary_name(pid: u32, nonce: u128, sequence: u64) -> Str
     format!("{CREATE_PREFIX}{pid}-{nonce:x}-{sequence:x}{CREATE_SUFFIX}")
 }
 
+/// A fresh create-only name for a writer that keeps no sequence of its own.
+pub(crate) fn next_create_temporary_name() -> String {
+    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |elapsed| elapsed.as_nanos());
+    let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    create_temporary_name(std::process::id(), nonce, sequence)
+}
+
 fn is_digits(text: &str) -> bool {
     !text.is_empty() && text.bytes().all(|byte| byte.is_ascii_digit())
 }
@@ -98,6 +108,9 @@ mod tests {
         }
         let create = create_temporary_name(41, 0x18f, 3);
         assert!(is_atlas_temporary(&create), "{create}");
+        let first = next_create_temporary_name();
+        assert!(is_atlas_temporary(&first), "{first}");
+        assert_ne!(first, next_create_temporary_name());
     }
 
     /// The JS writers cannot call this module, so their source must still spell the shape

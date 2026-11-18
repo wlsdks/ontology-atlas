@@ -329,6 +329,31 @@ mod tests {
         fs::remove_dir_all(root).ok();
     }
 
+    /// A junction is how a Windows folder points elsewhere without admin rights.
+    #[cfg(windows)]
+    #[test]
+    fn never_enters_a_windows_junction() {
+        let base = vault("junction");
+        let name = atomic_temporary_name("note.md", 41, 0x18f, 0);
+        fs::create_dir_all(base.join("vault")).unwrap();
+        plant(&base, &format!("outside/{name}"));
+        let made = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(base.join("vault").join("docs"))
+            .arg(base.join("outside"))
+            .status()
+            .unwrap();
+        assert!(made.success());
+        plant(&base, &format!("vault/real/{name}"));
+        assert_eq!(
+            sweep_stale_temporaries(&base.join("vault"), an_hour_later(), STALE_AFTER),
+            1
+        );
+        assert!(base.join(format!("outside/{name}")).exists());
+        fs::remove_dir(base.join("vault").join("docs")).ok();
+        fs::remove_dir_all(base).ok();
+    }
+
     #[cfg(unix)]
     #[test]
     fn never_follows_or_removes_a_link() {

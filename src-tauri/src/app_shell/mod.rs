@@ -185,6 +185,17 @@ mod tests {
         }
     }
 
+    /// Reveal calls the opener crate from Rust only. Registering the plugin or granting an
+    /// `opener:` permission would let the WebView open any URL or program, which reveal never needs.
+    #[test]
+    fn the_webview_gets_no_opener_permission() {
+        let capability = include_str!("../../capabilities/default.json");
+        assert!(
+            !capability.contains("opener:"),
+            "the WebView was granted the opener plugin"
+        );
+    }
+
     #[test]
     fn reveal_app_log_dir_opens_only_the_given_folder_in_finder() {
         let command = reveal_in_finder_command(Path::new("/tmp/atlas logs"));

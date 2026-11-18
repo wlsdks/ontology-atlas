@@ -67,6 +67,11 @@ pub(super) fn publish_confined(
     publish_in_open_parent(&parent, &name, bytes, limit)
 }
 
+/// The vault-open sweep removes a leftover only under a name it recognises.
+pub(super) fn temporary_name() -> String {
+    crate::temporary_names::next_create_temporary_name()
+}
+
 #[cfg(unix)]
 pub(super) fn publish_in_open_parent(
     parent: &fs::File,
@@ -79,13 +84,8 @@ pub(super) fn publish_in_open_parent(
     if bytes.len() > limit {
         return Err("archive payload exceeds byte budget".into());
     }
-    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let temporary_name = std::ffi::CString::new(format!(
-        ".transition-{}-{}.tmp",
-        std::process::id(),
-        SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    ))
-    .unwrap();
+    let temporary_name =
+        std::ffi::CString::new(temporary_name()).map_err(|error| error.to_string())?;
     let fd = unsafe {
         libc::openat(
             parent.as_raw_fd(),
@@ -308,14 +308,7 @@ pub(super) fn publish_confined(
     crate::ensure_inside_canonical(root_path, &directory)?;
     let target = crate::resolve_write_target_inside(root_path, relative)?;
     checked_root(root_path, expected)?;
-    let temporary = target.with_extension(format!(
-        "{}-{}.tmp",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| e.to_string())?
-            .as_nanos()
-    ));
+    let temporary = target.with_file_name(temporary_name());
     let mut file = OpenOptions::new()
         .write(true)
         .create_new(true)

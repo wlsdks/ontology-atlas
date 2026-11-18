@@ -459,11 +459,19 @@ mod shutdown_tests {
         assert!(!crate::blocking::is_closing());
     }
 
-    /// `run` itself needs a live event loop, so its one line is pinned by source.
+    /// `run` needs a live event loop, so its call is pinned in the code above this module only;
+    /// the whole file would also match this test's own text.
     #[test]
     fn the_event_loop_routes_every_event_through_the_shutdown_path() {
-        let source: String = include_str!("lib.rs").split_whitespace().collect();
-        assert!(source
-            .contains(".run(|app_handle,event|{letunfinished=shut_down(shutdown_for(&event),"));
+        let file = include_str!("lib.rs");
+        let (code, _) = file
+            .split_once("#[cfg(test)]\nmod shutdown_tests")
+            .expect("the shutdown tests follow the code they pin");
+        let code: String = code.split_whitespace().collect();
+        let call = ["shut_down(", "shutdown_for(&event),"].concat();
+        assert!(
+            code.contains(&[".run(|app_handle,event|{letunfinished=", &call].concat()),
+            "the event loop no longer hands each event to the shutdown step"
+        );
     }
 }
