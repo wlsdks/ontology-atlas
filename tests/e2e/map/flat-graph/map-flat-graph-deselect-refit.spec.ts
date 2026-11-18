@@ -78,7 +78,10 @@ const NEARLY_CLOSED_SHARE = 0.85;
 const escapeAsTheDockCloses = (page: Page, dockedWidth: number, freeWidth: number) => page.evaluate(({ docked, free, share }) => {
   const canvas = document.querySelector<HTMLElement>("[data-testid=\"ontology-map-canvas\"]")!;
   const tick = () => {
-    if (canvas.getBoundingClientRect().width < docked + (free - docked) * share) return requestAnimationFrame(tick);
+    if (canvas.getBoundingClientRect().width < docked + (free - docked) * share) {
+      requestAnimationFrame(tick);
+      return;
+    }
     canvas.focus();
     canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
   };

@@ -9924,9 +9924,9 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.rootPath, realpathSync(repo));
     assert.equal(data.analyze.framework, 'fsd');
     assert.equal(data.plan.concepts, 3);
-    // The containment spine includes the project node plus both FSD capability candidates, per the
-    // analyzer relation contract.
-    assert.equal(data.plan.suggestedRelations, 3);
+    // The survey sends no project-contains-candidate edges (`surveyResponse` in
+    // mcp/src/tools/repo-analysis.mjs); only the edge between the two capability candidates stays.
+    assert.equal(data.plan.suggestedRelations, 1);
     assert.ok(data.imports.filesScanned >= 2);
     assert.ok(data.plan.importRelations >= 1);
     assert.equal(data.meaningGate.policy, 'business-first');

@@ -3187,7 +3187,10 @@ describe('suggestions for a finished conversation: connect the answer to the nex
       vi.stubGlobal(
         'ResizeObserver',
         class {
-          constructor(private readonly callback: () => void) {}
+          private readonly callback: () => void;
+          constructor(callback: () => void) {
+            this.callback = callback;
+          }
           observe() { observers.add(this.callback); }
           unobserve() {}
           disconnect() { observers.delete(this.callback); }

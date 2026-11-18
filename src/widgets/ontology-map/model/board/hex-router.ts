@@ -230,15 +230,18 @@ function scratchOf(L: HexLattice): Scratch {
 export class HexRouter {
   private use = new Map<number, Map<string, number>>();
   private used: Uint8Array | null = null;
-  constructor(
-    readonly lattice: HexLattice,
-    private otherPenalty = 1.15,
-    /**
-     * The padding rings can lie under the toolbar, INDEX, inspector or legend on screen;
-     * without closing them the cheapest way round ran under the toolbar.
-     */
-    private readonly blocked: Uint8Array | null = null,
-  ) {}
+  readonly lattice: HexLattice;
+  private otherPenalty: number;
+  /**
+   * The padding rings can lie under the toolbar, INDEX, inspector or legend on screen;
+   * without closing them the cheapest way round ran under the toolbar.
+   */
+  private readonly blocked: Uint8Array | null;
+  constructor(lattice: HexLattice, otherPenalty = 1.15, blocked: Uint8Array | null = null) {
+    this.lattice = lattice;
+    this.otherPenalty = otherPenalty;
+    this.blocked = blocked;
+  }
 
   private search(
     src: ReadonlySet<number>,
@@ -449,12 +452,14 @@ export class HexRouteRun<Role extends string = string> {
   readonly routes: (HexRoute & { role: Role })[] = [];
   private next = 0;
   private readonly router: HexRouter;
+  readonly jobs: readonly HexRouteJob<Role>[];
   constructor(
     lattice: HexLattice,
-    readonly jobs: readonly HexRouteJob<Role>[],
+    jobs: readonly HexRouteJob<Role>[],
     otherPenalty: number,
     blocked: Uint8Array | null,
   ) {
+    this.jobs = jobs;
     this.router = new HexRouter(lattice, otherPenalty, blocked);
   }
 
