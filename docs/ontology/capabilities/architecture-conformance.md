@@ -24,4 +24,4 @@ Sets the architecture rules a person reviewed and wrote down beside the imports 
 - Enforcing the rules or blocking a change.
 
 ## Uncertainty
-- Read from `mcp/src/architecture/architecture-profile.mjs` and the `inspect_architecture` description; no profile exists in this vault yet, so the capability was never run here, and the app-side architecture screen under `src/views/architecture/` was listed but not opened.
+- Read from `mcp/src/architecture/architecture-profile.mjs` and the `inspect_architecture` description; no profile exists in this vault yet, so the capability was never run here, and the app-side screen under `src/views/architecture/` was read on 2026-11-19 where it loads stored records (`model/use-architecture-record.ts`) and rebuilds one from an analysis run (`model/analysis-architecture-record.ts`); what it renders was not checked.
