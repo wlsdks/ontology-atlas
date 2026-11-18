@@ -104,7 +104,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:mcp:bundle',
     'pnpm dogfood:release-gate',
     // A new module reachable from the server must also be in mcp/package.json#files.
-    'pnpm package:check',
+    'node scripts/packaging/check-package-contracts.mjs',
   ]),
 });
 
