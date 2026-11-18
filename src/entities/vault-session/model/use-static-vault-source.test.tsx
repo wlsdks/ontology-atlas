@@ -1,4 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { useEffect } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   loadStaticVaultSource,
@@ -89,6 +92,35 @@ describe('useStaticVaultSource', () => {
     // Never empty and never the old name's mismatch: the previous sample stays until the next lands.
     expect(screen.getByTestId('shown')).toHaveTextContent('storefront');
     await waitFor(() => expect(screen.getByTestId('shown')).toHaveTextContent('dogfood'));
+    act(() => writeSampleSourcePreference('storefront'));
+  });
+
+  it('never downloads or shows the server default when the stored choice is the other sample', async () => {
+    act(() => writeSampleSourcePreference('dogfood'));
+    resetStaticVaultSourcesForTests();
+    const drawn: string[] = [];
+    function Drawn() {
+      const source = useStaticVaultSource();
+      const status = useStaticVaultStatus();
+      useEffect(() => {
+        drawn.push(`${status}:${source.source}`);
+      });
+      return <span>{status}</span>;
+    }
+    // Hydration renders with the server's default sample before the stored choice is read.
+    const container = document.createElement('div');
+    document.body.append(container);
+    container.innerHTML = renderToString(<Drawn />);
+    let root!: Root;
+    await act(async () => {
+      root = hydrateRoot(container, <Drawn />);
+      await loadStaticVaultSource('dogfood');
+    });
+    expect(drawn.at(-1)).toBe('ready:dogfood');
+    expect(drawn).not.toContain('ready:storefront');
+    expect(bundledSamples.state('storefront')).toBe('idle');
+    act(() => root.unmount());
+    container.remove();
     act(() => writeSampleSourcePreference('storefront'));
   });
 });

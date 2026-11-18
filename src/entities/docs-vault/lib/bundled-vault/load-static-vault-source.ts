@@ -15,8 +15,6 @@ const loaded = new Map<SampleSource, StaticVaultSource>();
 const inflight = new Map<SampleSource, Promise<StaticVaultSource | null>>();
 const failed = new Set<SampleSource>();
 const listeners = new Set<() => void>();
-/** The sample that arrived last, so a screen keeps it on show while the next one downloads. */
-let lastReady: StaticVaultSource | null = null;
 
 // JSON imports infer unions as `string`; the build fixes the schema, so this casts once.
 async function importSource(source: SampleSource): Promise<StaticVaultSource> {
@@ -88,10 +86,6 @@ export function staticVaultSourceState(source: SampleSource): StaticVaultSourceS
   return inflight.has(source) ? 'loading' : 'idle';
 }
 
-export function lastReadyStaticVaultSource(): StaticVaultSource | null {
-  return lastReady;
-}
-
 export function subscribeStaticVaultSource(onChange: () => void): () => void {
   listeners.add(onChange);
   return () => {
@@ -128,7 +122,6 @@ export function loadStaticVaultSource(source: SampleSource): Promise<StaticVault
     pending = importWithRetry(source).then(
       (value) => {
         loaded.set(source, value);
-        lastReady = value;
         inflight.delete(source);
         notify();
         return value;
@@ -155,7 +148,6 @@ export function retryStaticVaultSource(source: SampleSource): Promise<StaticVaul
 export const bundledSamples = {
   empty: emptyStaticVaultSource,
   peek: peekStaticVaultSource,
-  lastReady: lastReadyStaticVaultSource,
   state: staticVaultSourceState,
   subscribe: subscribeStaticVaultSource,
   load: loadStaticVaultSource,
@@ -167,5 +159,4 @@ export function resetStaticVaultSourcesForTests(): void {
   loaded.clear();
   inflight.clear();
   failed.clear();
-  lastReady = null;
 }

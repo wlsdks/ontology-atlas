@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useContext, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 import { bundledSamples, type StaticVaultSource } from '@/entities/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { getDataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
@@ -49,11 +49,20 @@ function useStaticVaultState(
     'local';
   const wanted = override !== undefined || !local;
 
-  const loaded = useSyncExternalStore(
+  // The sample to download is the stored choice itself: while hydrating, `sample` is the server's
+  // default, and downloading that would show a sample nobody chose.
+  const target = override ?? getSampleSourceSnapshot();
+
+  const exactLoaded = useSyncExternalStore(
     bundledSamples.subscribe,
-    () => bundledSamples.peek(sample) ?? (override === undefined ? bundledSamples.lastReady() : null),
+    () => bundledSamples.peek(sample),
     getServerSnapshot,
   );
+  // What this reader last drew stays on show while the next sample downloads, so choosing the
+  // other sample swaps data in place. Only a sample this reader drew qualifies.
+  const [kept, setKept] = useState<StaticVaultSource | null>(null);
+  if (exactLoaded && kept !== exactLoaded) setKept(exactLoaded);
+  const loaded = exactLoaded ?? (override === undefined ? kept : null);
   const phase = useSyncExternalStore(
     bundledSamples.subscribe,
     () => bundledSamples.state(sample),
@@ -63,8 +72,8 @@ function useStaticVaultState(
 
   useEffect(() => {
     if (!demand || !wanted || exact || phase === 'failed' || isDesktopShell()) return;
-    void bundledSamples.load(sample);
-  }, [demand, wanted, exact, phase, sample]);
+    void bundledSamples.load(target);
+  }, [demand, wanted, exact, phase, target]);
 
   const retry = useCallback(() => {
     void bundledSamples.retry(sample);
@@ -77,7 +86,7 @@ function useStaticVaultState(
   const source = bundledSamples.empty(sample);
   if (absent) return { source, status: 'none', sample, wait: settled, retry };
   if (phase === 'failed') return { source, status: 'failed', sample, wait: settled, retry };
-  return { source, status: 'loading', sample, wait: () => bundledSamples.load(sample), retry };
+  return { source, status: 'loading', sample, wait: () => bundledSamples.load(target), retry };
 }
 
 /**

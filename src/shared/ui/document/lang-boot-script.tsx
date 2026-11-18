@@ -15,8 +15,11 @@ const TEXT_SIZE_BOOT = [
 
 // The installed app's runtime sets `window.isTauri` before any page script; the exported gateway frame
 // stays invisible under this mark.
+const SAMPLE_BOOT =
+  "try{if(localStorage.getItem('demo:sample-source:v1')==='dogfood'){document.documentElement.setAttribute('data-sample','dogfood');}}catch(e){}";
+
 const SHELL_BOOT = "try{if(window.isTauri){document.documentElement.setAttribute('data-shell','desktop');}}catch(e){}";
 
 export function LangBootScript() {
-  return <script async dangerouslySetInnerHTML={{ __html: LANG_BOOT + TEXT_SIZE_BOOT + SHELL_BOOT }} />;
+  return <script async dangerouslySetInnerHTML={{ __html: LANG_BOOT + TEXT_SIZE_BOOT + SHELL_BOOT + SAMPLE_BOOT }} />;
 }

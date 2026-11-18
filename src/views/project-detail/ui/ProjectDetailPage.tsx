@@ -308,6 +308,8 @@ export function ProjectDetailPage({
   const { insight } = useOntologyInsight();
   /* A bundled sample still downloading is not an empty folder: the sections drawn from it wait. */
   const insightPending = insight === null;
+  // The stand-ins are sized to the loaded sample; the boot script marks the stored choice on <html>, so
+  // the size is right before hydration (this repository's own vault has no lead and a shorter composition).
   // Until the body read settles, "no overview yet" would be a claim about a file not yet read.
   const bodyPending = insightPending || (project?.detail == null && bodySettled === false);
   const insightNodes = insight?.nodes ?? [];
@@ -529,7 +531,7 @@ export function ProjectDetailPage({
             />
             {bodyPending ? (
               /* The lead and its link arrive with the sample and the body read; their height is held so nothing below moves. */
-              <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem]" />
+              <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem] [html[data-sample=dogfood]_&]:md:min-h-[1.75rem] [html[data-sample=dogfood]_&]:max-md:min-h-[1.5rem]" />
             ) : (
               <>
               {leadParagraph ? (
@@ -651,7 +653,7 @@ export function ProjectDetailPage({
             </p>
           </div>
           {insightPending ? (
-            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-[22.75rem] max-md:min-h-[48rem]" />
+            <div data-testid="project-detail-composition-pending" aria-busy="true" className="min-h-[22.75rem] max-md:min-h-[48rem] [html[data-sample=dogfood]_&]:md:min-h-[16rem] [html[data-sample=dogfood]_&]:max-md:min-h-[41.75rem]" />
           ) : domainComposition.domains.length > 0 ? (
             <DomainMasterDetail
               domains={domainComposition.domains}
