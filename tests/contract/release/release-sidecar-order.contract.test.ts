@@ -10,8 +10,9 @@ import { describe, expect, it } from "vitest";
  * build script checks the resource path exists and dies with
  * `resource path ... doesn't exist` when it does not.
  *
- * The workflow runs `cargo test` (= `test:desktop:bridge`) before
- * `desktop:build:app`, so the sidecar must be built before both.
+ * The test jobs run `cargo test` (= `test:desktop:bridge`) and the build jobs run
+ * `tauri build`, each on its own clean runner, so every such job builds the sidecar
+ * itself before its first cargo call.
  *
  * It does not show up locally — once a person has built the file it stays, and
  * every later cargo call passes. **A defect visible only on a clean checkout**, so
@@ -32,7 +33,21 @@ const PACKAGE_PATH = join(process.cwd(), "package.json");
  */
 const CARGO_RUN_LINES = [/^\s*run:\s*pnpm test:desktop:bridge\b/m, /^\s*run:.*\bcargo\s/m] as const;
 
+/** `cargo audit --file` reads the lockfile alone and never runs the build script. */
+const LOCKFILE_ONLY_CARGO = /\bcargo audit --file\b/;
+
 const SIDECAR_STEP = "pnpm mcp:build-binary";
+
+/** Package scripts that bake the sidecar themselves before they call cargo. */
+const SELF_BAKING_BUILDS = ["desktop:build:app:prebuilt", "desktop:build:windows"] as const;
+
+function jobBlocks(workflow: string): { name: string; block: string }[] {
+  const jobs = workflow.slice(workflow.indexOf("\njobs:\n") + 1);
+  return jobs
+    .split(/^(?= {2}[A-Za-z][\w-]*:\s*$)/m)
+    .map((block) => ({ name: /^ {2}([A-Za-z][\w-]*):/.exec(block)?.[1] ?? "", block }))
+    .filter((job) => job.name !== "");
+}
 
 describe("release workflow — the sidecar is built before the first cargo call", () => {
   const workflow = readFileSync(WORKFLOW_PATH, "utf8");
@@ -82,20 +97,39 @@ describe("release workflow — the sidecar is built before the first cargo call"
     expect(depsAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
   });
 
-  it("the sidecar build comes before every step that runs cargo", () => {
-    const sidecarAt = workflow.indexOf(SIDECAR_STEP);
-    expect(sidecarAt).toBeGreaterThan(-1);
-
-    for (const pattern of CARGO_RUN_LINES) {
-      const global = new RegExp(pattern.source, "gm");
-      for (const match of workflow.matchAll(global)) {
-        expect(
-          match.index,
-          `"${match[0].trim()}" comes before the sidecar build: in a clean ` +
-            `checkout the resource path is missing and cargo dies`,
-        ).toBeGreaterThan(sidecarAt);
+  it("every job builds the sidecar before its own first cargo call", () => {
+    const cargoJobs: string[] = [];
+    for (const { name, block } of jobBlocks(workflow)) {
+      const sidecarAt = block.indexOf(SIDECAR_STEP);
+      for (const pattern of CARGO_RUN_LINES) {
+        for (const match of block.matchAll(new RegExp(pattern.source, "gm"))) {
+          const line = block.slice(match.index, block.indexOf("\n", match.index));
+          if (LOCKFILE_ONLY_CARGO.test(line)) continue;
+          cargoJobs.push(name);
+          expect(sidecarAt, `${name} runs "${line.trim()}" on a runner that never built the sidecar`).toBeGreaterThan(-1);
+          expect(
+            match.index,
+            `${name}: "${match[0].trim()}" comes before the sidecar build: in a clean ` +
+              `checkout the resource path is missing and cargo dies`,
+          ).toBeGreaterThan(sidecarAt);
+        }
       }
     }
+    expect(new Set(cargoJobs)).toEqual(new Set(["test-macos", "test-windows"]));
+  });
+
+  it("each build script bakes the sidecar itself before tauri build", () => {
+    for (const script of SELF_BAKING_BUILDS) {
+      const commands = pkg.scripts?.[script]?.split(" && ") ?? [];
+      const sidecarAt = commands.indexOf(SIDECAR_STEP);
+      const tauriAt = commands.findIndex((command) => command.startsWith("pnpm tauri build"));
+      expect(tauriAt, `${script} does not run tauri build`).toBeGreaterThan(-1);
+      expect(sidecarAt, `${script} does not build the sidecar`).toBeGreaterThan(-1);
+      expect(sidecarAt).toBeLessThan(tauriAt);
+    }
+    const artifact = readFileSync(join(process.cwd(), "scripts/desktop-release/build-macos-release-artifact.mjs"), "utf8");
+    expect(artifact).toContain('args: ["desktop:build:app:prebuilt"]');
+    expect(workflow).toContain("run: pnpm desktop:build:windows");
   });
 
   it("the local release preflight also bakes the sidecar before the bridge cargo call", () => {

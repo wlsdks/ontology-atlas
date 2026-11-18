@@ -358,6 +358,30 @@ describe("workflow security contract", () => {
     expect(publish.indexOf(pin, edit)).toBeGreaterThan(edit);
   });
 
+  it("runs the release tests beside the builds without secrets, and staging still waits for them", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    for (const jobName of ["test-macos", "test-windows"]) {
+      const header = jobHeader(release, jobName);
+      const block = jobBlock(release, jobName);
+      expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*admit-release/);
+      expect(header, `${jobName} must stay outside the secret environment`).not.toMatch(/environment:/);
+      expect(header).not.toMatch(/^    permissions:/m);
+      expect(expressions(block).filter((body) => SECRETS.test(body))).toEqual([]);
+      expect(block, `${jobName} trusted checkout`).toContain("ref: ${{ needs.admit-release.outputs.release_sha }}");
+      expect(block).toMatch(/^\s+persist-credentials: false$/m);
+    }
+
+    // `always()` in the staging condition turns a failed need into a skipped check unless
+    // the condition names that need, so every needed job must be required by name.
+    const stage = jobHeader(release, "stage-macos");
+    const needed = /^    needs: \[(.+)\]$/m.exec(stage)![1].split(",").map((name) => name.trim());
+    expect(needed).toEqual(["admit-release", "test-macos", "test-windows", "build-macos", "build-windows", "audit-rust"]);
+    const condition = /^    if: (.+)$/m.exec(stage)![1];
+    for (const job of needed) {
+      expect(condition, `staging does not require ${job}`).toContain(`needs.${job}.result == 'success'`);
+    }
+  });
+
   it("keeps every signing secret out of the Windows job, which ships no in-app update", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
     const windows = jobBlock(release, "build-windows");
