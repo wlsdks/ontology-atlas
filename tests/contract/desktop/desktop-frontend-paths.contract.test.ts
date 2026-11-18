@@ -114,8 +114,48 @@ describe("the desktop bundle carries every screen the app can open", () => {
 });
 
 describe("what the desktop bundle leaves out has no way in from the app", () => {
-  it("/download: the installed app never offers its own download", () => {
-    expect(architecture).toMatch(/installed app must never offer "download this app"/);
+  it("/download: only reviewed files link it, and each shows the link on the web alone", () => {
+    // The installed app must never offer its own download (route list, `/`). Every file below
+    // gates its link behind the web runtime or renders only on a gateway page; a new file that
+    // links `/download` or renders `GetAppLink` has to be read for that gate and added here.
+    const reviewed = new Set([
+      "src/shared/ui/controls/get-app-link.tsx",
+      "src/shared/lib/navigation/nav-destination.ts",
+      "src/features/docs-vault-local/ui/AgentClientButtons.tsx",
+      "src/features/docs-vault-local/ui/OpenVaultCta.tsx",
+      "src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx",
+      "src/features/first-run-starter/ui/FirstRunStarterModule.tsx",
+      "src/features/gray-area/ui/GrayAreaInspector.tsx",
+      "src/features/library/ui/FindDocumentsDialog.tsx",
+      "src/features/mcp-connectors/ui/AddConnectorDialog.tsx",
+      "src/views/architecture/ui/ArchitectureWorkbench.tsx",
+      "src/views/architecture/ui/HarnessPage.tsx",
+      "src/views/automations/ui/AutomationsPage.tsx",
+      "src/views/change-briefing/ui/BriefingRepositoryStage.tsx",
+      "src/views/home/model/project-source/use-topology-source-actions.tsx",
+      "src/views/library/ui/parts/compile/LibraryStage.tsx",
+      "src/views/library/ui/parts/index-column/LibrarySection.tsx",
+      "src/views/planning/ui/PlanningFolderStage.tsx",
+      "src/widgets/app-nav-rail/ui/AppNavRail.tsx",
+      "src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx",
+      "src/widgets/app-settings-menu/ui/AgentSetupSection.tsx",
+      "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
+      "src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx",
+      "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
+      "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
+      "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
+      "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
+      "src/widgets/library-import/ui/LibraryImportDialog.tsx",
+      "src/widgets/topology-controls/ui/TopologyEmptyState.tsx",
+    ]);
+    const linksDownload = /["']\/download\/?["'?#]|<GetAppLink\b/;
+    const naming = appSource.filter(
+      (file) => !file.startsWith("src/views/download/") && linksDownload.test(readFileSync(join(ROOT, file), "utf8")),
+    );
+    expect(naming).toContain("src/shared/ui/controls/get-app-link.tsx");
+    expect(naming.filter((file) => !reviewed.has(file))).toEqual([]);
+    // A file that stops linking leaves the list, so the list stays the set that was read.
+    expect([...reviewed].filter((file) => !naming.includes(file))).toEqual([]);
   });
 
   it("/project/<slug>: the app opens every project, to read or to edit, through the query-addressed pages", () => {
