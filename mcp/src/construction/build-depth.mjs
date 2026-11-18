@@ -68,7 +68,7 @@ function slugResolver(docs) {
 }
 
 /** Every `depends_on` edge as [from, to] slugs that resolve. */
-export function dependencyEdges(docs) {
+function dependencyEdges(docs) {
   const resolve = slugResolver(docs);
   const edges = [];
   for (const doc of docs) {

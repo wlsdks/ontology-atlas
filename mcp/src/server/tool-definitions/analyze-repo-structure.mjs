@@ -15,7 +15,8 @@ import {
 export const ANALYZE_REPO_STRUCTURE_TOOL = {
   name: 'analyze_repo_structure',
   description:
-    'Survey a code repository before mapping it. Read-only; nothing is written. With no proposal, ' +
+    'Survey a code repository before mapping it; call it first when someone asks "이 codebase 분석해줘" or to ' +
+    'map or bootstrap the ontology. Read-only; nothing is written. With no proposal, ' +
     'returns the breadth map: size (product source files and lines; tests, examples, benchmarks, ' +
     'generated, vendored, docs and tooling code counted apart), every product unit (a top-level package, ' +
     'workspace member or module folder, split when large) with its files, lines, up to three main files, ' +

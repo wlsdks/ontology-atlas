@@ -26,10 +26,10 @@ const CONTAINER_FOLDERS = new Set([
 ]);
 
 /** A unit holding more product files than this is split into its subfolders. */
-export const UNIT_SPLIT_FILES = 25;
+const UNIT_SPLIT_FILES = 25;
 
 /** A file this long in a split folder is a module of its own (not Go: a Go folder is one package). */
-export const MODULE_UNIT_LINES = 300;
+const MODULE_UNIT_LINES = 300;
 
 const MAX_FILES = 8000;
 const MAX_FILE_BYTES = 1024 * 1024;

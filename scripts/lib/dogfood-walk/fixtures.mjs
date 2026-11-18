@@ -15,34 +15,6 @@ import { TOOLS_FOR_LIST } from "../../../mcp/src/server/registry.mjs";
 export const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 const DOGFOOD_UID = "11111111-1111-4111-8111-111111111111";
 
-function rustConfigurationEvidenceFixture() {
-  return {
-    contract: "rustFeatureConfigurationEvidence:v1",
-    status: "not_present",
-    claimBoundary: {
-      compileTimePredicateLocations: false,
-      predicateEvaluation: false,
-      runtimeImpact: false,
-      importDependency: false,
-      macroConsumers: false,
-      semanticDependency: false,
-    },
-    coverage: {
-      predicateEvaluation: false,
-      macroExpansion: false,
-      buildScriptsExecuted: false,
-    },
-    packages: [],
-    unsupportedWorkspaceMembers: [],
-    writePolicy: {
-      automaticRelation: false,
-      writeAllowed: false,
-      humanApprovalRequired: true,
-    },
-    limitations: ["No Cargo manifest was observed."],
-  };
-}
-
 function importScanCoverageFixture() {
   return {
     contract: "importScanCoverage:v1",
