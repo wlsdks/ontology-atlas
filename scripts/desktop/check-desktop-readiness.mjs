@@ -191,7 +191,7 @@ if (/trailingSlash\s*:\s*true/.test(nextConfig)) {
   fail("next.config.ts must keep trailingSlash: true for static out/ routes");
 }
 
-if (pkg.scripts?.build === "pnpm docs-vault:build && pnpm messages:build && next build && node scripts/web/localize-html-lang.mjs") {
+if (pkg.scripts?.build === "pnpm docs-vault:build && pnpm messages:build && node scripts/web/next-build.mjs && node scripts/web/localize-html-lang.mjs") {
   pass("build script refreshes docs-vault and composes message catalogues before next build, then gives localized pages their own html lang");
 } else {
   fail("package.json build script must refresh docs-vault and compose message catalogues before next build");
