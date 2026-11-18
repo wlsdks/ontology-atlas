@@ -13,6 +13,7 @@ import { hostname } from 'node:os';
 
 import { isContained, makeGit, planBundle } from './bundle-branches.mjs';
 import { buildImpactPlan } from '../ci/classify-change.mjs';
+import { FAILING_SPEC_TITLE } from '../ci/run-playwright-ci.mjs';
 import {
   DEFAULT_BATCH,
   EMPTY_BEFORE_REFIRE,
@@ -66,9 +67,13 @@ export const LEASE_MINUTES = 45;
 export const SCHEDULED_CHECKS = [
   {
     workflow: 'e2e.yml',
-    name: 'daily full browser run',
-    red: 'the specs that run only after merge are red until someone fixes them',
-    idle: 'the specs that run only after merge have not run since',
+    name: 'full browser run',
+    // Every push to main runs the whole browser suite; a train runs only its mapped specs and the
+    // merge smoke set, so this line is where a defect the train did not reach is announced.
+    event: 'push',
+    afterMerge: true,
+    red: 'trains run only their mapped specs and the merge smoke set, so these stay red until someone fixes them; landing continues',
+    idle: null,
   },
   {
     workflow: 'acp-registry.yml',
@@ -116,13 +121,61 @@ export const CONFLICT_INSTRUCTION =
   + '  write command. Then run `pnpm pr:land <number>` again. It was not queued, so\n'
   + '  nothing waits on it meanwhile.';
 
+/** A reader verdict: main's latest push runs finished, but none of them ran the full browser suite. */
+export const NO_FULL_RUN = 'no-full-run';
+
 export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (!run) return null;
   const day = String(run.createdAt ?? '').slice(0, 10);
-  if (run.conclusion === 'failure') return `the ${check.name} on main failed on ${day} (${run.url}); ${check.red}`;
+  if (run.conclusion === NO_FULL_RUN) {
+    return `main's latest ${run.examined} push runs did not run the full browser suite (newest: ${run.url}); last full run: none among them, so a red outside the merge smoke set would not show here`;
+  }
+  if (run.conclusion === 'failure') {
+    const specs = Array.isArray(run.failingSpecs) && run.failingSpecs.length > 0
+      ? `: ${run.failingSpecs.length > 6 ? `${run.failingSpecs.slice(0, 6).join(', ')} and ${run.failingSpecs.length - 6} more` : run.failingSpecs.join(', ')}`
+      : check.afterMerge ? ', with no failing spec annotated (open the run)' : '';
+    return `the ${check.name} on main failed on ${day} (${run.url})${specs}; ${check.red}`;
+  }
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
   if (check.idle && ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
+}
+
+const MAIN_FULL_RUN_CANDIDATES = 5;
+/** A reused push that ran nothing finishes in about 45 s; any run that ran the suite takes 5 minutes or more. */
+const MAIN_FULL_RUN_MIN_MS = 2 * 60_000;
+
+/**
+ * What a finished run on main proves about the browser suite, from its timing artifacts, which
+ * carry the plan's mode (`playwright-timings-<mode>-<shard>`). `full`: the whole suite ran.
+ * `partial`: it ran only a change's plan (smoke or targeted timings, or a push from before the mode
+ * was named). A green run that uploaded none executed nothing; a red one that uploaded none failed
+ * before its specs and still counts, so a broken build on main is not hidden behind a green run.
+ */
+export function fullBrowserRunKind(conclusion, artifactNames) {
+  const timings = artifactNames.filter((name) => name.startsWith('playwright-timings-'));
+  if (timings.some((name) => name.startsWith('playwright-timings-full-'))) return 'full';
+  if (timings.length > 0) return 'partial';
+  return conclusion === 'failure' ? 'full' : 'empty';
+}
+
+/** One line per red or stalled check on main; reading them never blocks a landing. */
+export function mainHealthWarnings(deps) {
+  return SCHEDULED_CHECKS
+    .map((check) => describeScheduledRun(check, readCheckRun(deps, check), deps.now()))
+    .filter(Boolean);
+}
+
+/** One reader for every check on main: the event it names (a push, not the nightly run) included. */
+function readCheckRun(deps, check) {
+  return deps.gh.readScheduledRun?.(check.workflow, check.event, { fullBrowser: Boolean(check.afterMerge) }) ?? null;
+}
+
+/** The red after-merge browser run, for the body of the train being cut. */
+function mainBrowserNotes(deps) {
+  const check = SCHEDULED_CHECKS.find((row) => row.afterMerge);
+  const run = readCheckRun(deps, check);
+  return run?.conclusion === 'failure' ? [describeScheduledRun(check, run, deps.now())] : [];
 }
 
 const FEATURE_TITLE = /^(feat)(\([^)]*\))?!?:/;
@@ -669,16 +722,50 @@ export function createGithub(slug, run = ghRun) {
       const out = run(['api', '--paginate', `repos/${slug}/pulls/${number}/files`, '--jq', '.[].filename'], { allowFailure: true });
       return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
     },
-    readScheduledRun: (workflow, event = 'schedule') => {
-      // Pushes to main cancel each other, so the newest verdict may sit behind a cancelled run.
-      const out = run(['run', 'list', '--workflow', workflow, '--event', event, '--branch', 'main', '--limit', event === 'push' ? '5' : '1',
-        '--json', 'conclusion,createdAt,url'], { allowFailure: true });
+    /**
+     * The newest verdict of a check on main, for the event it names. Pushes to main may be
+     * cancelled, so the verdict can sit behind a cancelled run. With `fullBrowser`, a run counts
+     * only by what its shards uploaded (`fullBrowserRunKind`), and a red one carries the spec files
+     * its shards annotated as failing.
+     */
+    readScheduledRun: (workflow, event = 'schedule', { fullBrowser = false } = {}) => {
+      const out = run(['run', 'list', '--workflow', workflow, '--event', event, '--branch', 'main',
+        '--limit', fullBrowser ? '20' : event === 'push' ? '5' : '1',
+        '--json', fullBrowser ? 'conclusion,createdAt,updatedAt,url,databaseId' : 'conclusion,createdAt,url'], { allowFailure: true });
       if (typeof out !== 'string') return null;
+      let rows;
       try {
-        return JSON.parse(out).find((row) => row.conclusion && row.conclusion !== 'cancelled') ?? null;
+        rows = JSON.parse(out);
       } catch {
         return null;
       }
+      if (!fullBrowser) return rows.find((row) => row.conclusion && row.conclusion !== 'cancelled') ?? null;
+      const finished = rows.filter((row) => ['success', 'failure'].includes(row.conclusion) && Number.isSafeInteger(row.databaseId)
+        // Read artifacts only for a run long enough to have run specs, or one that went red.
+        && (row.conclusion === 'failure' || Date.parse(row.updatedAt) - Date.parse(row.createdAt) >= MAIN_FULL_RUN_MIN_MS));
+      for (const candidate of finished.slice(0, MAIN_FULL_RUN_CANDIDATES)) {
+        const names = run(['api', `repos/${slug}/actions/runs/${candidate.databaseId}/artifacts?per_page=100`,
+          '--jq', '.artifacts[].name'], { allowFailure: true });
+        if (typeof names !== 'string') return null;
+        if (fullBrowserRunKind(candidate.conclusion, names.split('\n')) !== 'full') continue;
+        const result = { conclusion: candidate.conclusion, createdAt: candidate.createdAt, url: candidate.url };
+        if (candidate.conclusion !== 'failure') return result;
+        const jobs = run(['api', `repos/${slug}/actions/runs/${candidate.databaseId}/jobs?per_page=100`,
+          '--jq', '.jobs[] | select(.conclusion == "failure") | .id'], { allowFailure: true });
+        const failingSpecs = new Set();
+        for (const id of (typeof jobs === 'string' ? jobs.split('\n').filter((line) => /^\d+$/.test(line)) : []).slice(0, 10)) {
+          const paths = run(['api', `repos/${slug}/check-runs/${id}/annotations`,
+            '--jq', `.[] | select(.title == "${FAILING_SPEC_TITLE}") | .path`], { allowFailure: true });
+          for (const path of typeof paths === 'string' ? paths.split('\n') : []) {
+            if (/^tests\/e2e\/[\w./-]+\.spec\.ts$/.test(path)) failingSpecs.add(path);
+          }
+        }
+        return { ...result, failingSpecs: [...failingSpecs].sort() };
+      }
+      // Push runs exist but none of the latest ran the whole suite: say so rather than look green.
+      const newest = rows.find((row) => row.conclusion && row.conclusion !== 'cancelled');
+      const examined = rows.filter((row) => row.conclusion && row.conclusion !== 'cancelled').length;
+      return newest ? { conclusion: NO_FULL_RUN, createdAt: newest.createdAt, url: newest.url, examined } : null;
     },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
@@ -1198,7 +1285,7 @@ function cutTrain({ batch, parent = null, deps, holder, key }) {
     return { outcome: 'abort', reason: `could not fetch ${branch} to read its files`, errored };
   }
   holder.put(key, { components: included.map((c) => c.number), files });
-  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base, onTopOf }) });
+  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base, onTopOf, notes: mainBrowserNotes(deps) }) });
   holder.put(key, { pr: opened.number, url: opened.url });
   log(`train #${opened.number} opened ready: one CI run for ${included.length} pull request(s)${parent ? `, concurrent with train #${onTopOf}'s` : ''} (${opened.url})`);
   return {
@@ -1650,10 +1737,7 @@ function landOne({ args, deps }) {
   const requiredContexts = readProtection(deps);
   if (!requiredContexts) return 1;
   deps.log(`PR #${number} ${pr.title}`);
-  for (const check of SCHEDULED_CHECKS) {
-    const warning = describeScheduledRun(check, deps.gh.readScheduledRun?.(check.workflow, check.event) ?? null, deps.now());
-    if (warning) deps.error(`warning: ${warning}`);
-  }
+  for (const warning of mainHealthWarnings(deps)) deps.error(`warning: ${warning}`);
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
   const deadline = deps.now() + args.timeoutMinutes * 60_000;
   const tolerated = [...args.flaky, ...args.allowFailing];
