@@ -196,6 +196,7 @@
     "pr:ci": "node scripts/landing/pr-land.mjs --ci",
     "bundle:plan": "node scripts/landing/bundle-branches.mjs plan",
     "e2e:durations": "node scripts/ci/refresh-playwright-durations.mjs",
+    "unit:durations": "node scripts/ci/refresh-vitest-durations.mjs",
     "e2e:sleeps:check": "node scripts/quality/check-e2e-sleeps.mjs",
     "test:e2e:sleeps": "node --test scripts/quality/check-e2e-sleeps.test.mjs",
     "bundle:prune": "node scripts/landing/bundle-branches.mjs prune",

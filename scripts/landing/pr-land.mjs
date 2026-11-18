@@ -76,6 +76,14 @@ export const SCHEDULED_CHECKS = [
     red: 'an agent adapter moved upstream, and release admission refuses it until the registry is refreshed and reviewed (`pnpm acp:registry:check` names what moved)',
     idle: 'an adapter that moved upstream since then is unknown until release admission',
   },
+  {
+    // A train runs only what its change can affect; the merged tree's push runs the full set.
+    workflow: 'checks.yml',
+    event: 'push',
+    name: 'post-merge full Checks run',
+    red: 'a suite the pre-merge plan left out is red on main, and every train inherits it until someone fixes it',
+    idle: null,
+  },
 ];
 const SCHEDULED_RUN_STALE_HOURS = 48;
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
@@ -113,7 +121,7 @@ export function describeScheduledRun(check, run, nowMs = Date.now()) {
   const day = String(run.createdAt ?? '').slice(0, 10);
   if (run.conclusion === 'failure') return `the ${check.name} on main failed on ${day} (${run.url}); ${check.red}`;
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
-  if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
+  if (check.idle && ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
 }
 
@@ -661,12 +669,13 @@ export function createGithub(slug, run = ghRun) {
       const out = run(['api', '--paginate', `repos/${slug}/pulls/${number}/files`, '--jq', '.[].filename'], { allowFailure: true });
       return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
     },
-    readScheduledRun: (workflow) => {
-      const out = run(['run', 'list', '--workflow', workflow, '--event', 'schedule', '--branch', 'main', '--limit', '1',
+    readScheduledRun: (workflow, event = 'schedule') => {
+      // Pushes to main cancel each other, so the newest verdict may sit behind a cancelled run.
+      const out = run(['run', 'list', '--workflow', workflow, '--event', event, '--branch', 'main', '--limit', event === 'push' ? '5' : '1',
         '--json', 'conclusion,createdAt,url'], { allowFailure: true });
       if (typeof out !== 'string') return null;
       try {
-        return JSON.parse(out).find((row) => row.conclusion) ?? null;
+        return JSON.parse(out).find((row) => row.conclusion && row.conclusion !== 'cancelled') ?? null;
       } catch {
         return null;
       }
@@ -1642,7 +1651,7 @@ function landOne({ args, deps }) {
   if (!requiredContexts) return 1;
   deps.log(`PR #${number} ${pr.title}`);
   for (const check of SCHEDULED_CHECKS) {
-    const warning = describeScheduledRun(check, deps.gh.readScheduledRun?.(check.workflow) ?? null, deps.now());
+    const warning = describeScheduledRun(check, deps.gh.readScheduledRun?.(check.workflow, check.event) ?? null, deps.now());
     if (warning) deps.error(`warning: ${warning}`);
   }
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;

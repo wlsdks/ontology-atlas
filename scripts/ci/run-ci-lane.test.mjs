@@ -18,20 +18,21 @@ test('verified main reuse emits no duplicate commands in any required lane', () 
   assert.ok(commandsForLane({ lane: 'gates', plan: full, eventName: 'push' }).length > 0);
 });
 
-test('affected unit lane uses the module graph and keeps filesystem contracts separate', () => {
+test('affected unit lane uses the module graph and runs the reached and core contracts by name', () => {
   const plan = buildImpactPlan({
     files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'],
   });
   const commands = commandsForLane({ lane: 'unit', plan, base: 'abc123', shard: '1/3' });
 
-  assert.ok(commands.includes('pnpm knip'));
+  assert.ok(!commands.includes('pnpm knip'), 'the whole-graph analyzer runs after the merge');
   assert.ok(
     commands.includes(
       "pnpm exec vitest run --changed='abc123' --exclude='tests/contract/**' --project=contract-node --project=jsdom --passWithNoTests --shard=1/3",
     ),
   );
-  assert.ok(commands.includes('pnpm exec vitest run tests/contract --shard=1/3'));
-  assert.equal(commands.filter((command) => command.includes('tests/contract')).length, 2);
+  assert.ok(!commands.includes('pnpm exec vitest run tests/contract --shard=1/3'), 'the full contract sweep runs after the merge');
+  const contracts = commands.find((command) => command.includes('tests/contract/security/workflow-security.contract.test.ts'));
+  assert.ok(contracts?.endsWith('--passWithNoTests --project=contract-node --project=jsdom --shard=1/3'), contracts);
 });
 
 test('a related sweep is split across every shard and leaves the measurement project out', () => {
@@ -56,7 +57,7 @@ test('sharding the unit lane splits the file sweeps and keeps whole-graph checks
     const commands = of(shard);
     assert.ok(!commands.includes('pnpm knip'), `knip must not run on shard ${shard}`);
     assert.ok(commands.every((command) => command.includes(`--shard=${shard}`)));
-    assert.ok(commands.includes(`pnpm exec vitest run tests/contract --shard=${shard}`));
+    assert.ok(commands.some((command) => command.includes('tests/contract/vault-format/') && command.endsWith(`--shard=${shard}`)));
   }
 
   // Every Vitest file the unsharded lane would have run is covered exactly once

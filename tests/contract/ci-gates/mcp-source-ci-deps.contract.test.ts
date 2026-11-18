@@ -41,7 +41,7 @@ describe("Unit CI can launch the source MCP used by contract tests", () => {
     expect(jobBlock(workflow, "unit")).toContain("NEED_MCP:");
   });
 
-  it("installs the MCP lockfile before the full Unit + Contract suite", () => {
+  it("installs the MCP lockfile before any Unit + Contract run that executes contracts", () => {
     const unit = jobBlock(read(".github/workflows/checks.yml"), "unit");
     const installAt = unit.indexOf("pnpm --dir mcp install --frozen-lockfile");
     const testAt = unit.indexOf("node scripts/ci/run-ci-lane.mjs --lane=unit");
@@ -51,8 +51,9 @@ describe("Unit CI can launch the source MCP used by contract tests", () => {
 
     expect(installAt, "Unit job cannot import @modelcontextprotocol/sdk from mcp/src/index.js").toBeGreaterThan(-1);
     expect(FULL_LANE_COMMANDS.unit).toContain("pnpm test:run");
-    expect(contractPlan.lanes.unit.contract).toBe("full");
+    expect(contractPlan.lanes.unit.contract).toBe("focused");
     expect(contractPlan.lanes.unit.needsMcp).toBe(true);
+    expect(buildImpactPlan({ files: [], forceFull: true }).lanes.unit.needsMcp).toBe(true);
     expect(testAt, "Unit job no longer invokes the planned suite").toBeGreaterThan(-1);
     expect(installAt, "MCP dependencies must exist before contract tests spawn the server").toBeLessThan(testAt);
   });

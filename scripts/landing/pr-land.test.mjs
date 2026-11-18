@@ -1564,12 +1564,14 @@ describe('train history', () => {
 
 describe('scheduled checks on main', () => {
   const now = Date.parse('2026-10-09T12:00:00Z');
-  const [browser, acp] = SCHEDULED_CHECKS;
+  const [browser, acp, postMerge] = SCHEDULED_CHECKS;
   const CASES = [
     ['a green run from today says nothing', browser, { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
     ['a red run names its day and link', browser, { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /full browser run on main failed on 2026-10-08 \(https:\/\/x\/1\)/],
     ['a green run older than two days says the schedule stalled', browser, { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
     ['an unreadable run says nothing', browser, null, null],
+    ['a red post-merge Checks run says main inherited the red', postMerge, { conclusion: 'failure', createdAt: '2026-10-09T10:00:00Z', url: 'https://x/3' }, /post-merge full Checks run on main failed on 2026-10-09 \(https:\/\/x\/3\)/],
+    ['an old green post-merge run is not a stalled schedule', postMerge, { conclusion: 'success', createdAt: '2026-10-01T10:00:00Z', url: 'u' }, null],
     ['a red ACP registry check names the command that shows what moved', acp, { conclusion: 'failure', createdAt: '2026-10-08T03:41:00Z', url: 'https://x/2' }, /ACP registry check on main failed on 2026-10-08 .*`pnpm acp:registry:check`/],
   ];
   for (const [name, check, run, expected] of CASES) {
@@ -1589,18 +1591,43 @@ describe('scheduled checks on main', () => {
     assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml'), null);
   });
 
+  it('reads past a cancelled main push to the newest verdict', () => {
+    const calls = [];
+    const red = { conclusion: 'failure', createdAt: '2026-10-09T09:00:00Z', url: 'u' };
+    const github = createGithub('owner/repo', (args) => {
+      calls.push(args);
+      return JSON.stringify([{ conclusion: '' }, { conclusion: 'cancelled' }, red]);
+    });
+    assert.deepEqual(github.readScheduledRun('checks.yml', 'push'), red);
+    assert.ok(calls[0].includes('push'));
+  });
+
   it('warns at landing for every red scheduled check', () => {
     const world = fakeWorld({ prs: [component(71)] });
     world.deps.gh.readScheduledRun = (workflow) => ({ conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: `https://x/${workflow}` });
     runPrLand(['71'], world.io, () => world.deps);
-    for (const workflow of ['e2e.yml', 'acp-registry.yml']) {
+    for (const workflow of ['e2e.yml', 'acp-registry.yml', 'checks.yml']) {
       assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes(`https://x/${workflow}`)), workflow);
     }
   });
 
-  it('names only workflows that run on a schedule', () => {
-    for (const { workflow } of SCHEDULED_CHECKS) {
-      assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), /^ {2}schedule:/m, workflow);
+  it('reads the post-merge Checks verdict from the push run, not the nightly one', () => {
+    const world = fakeWorld({ prs: [component(72)] });
+    const asked = [];
+    world.deps.gh.readScheduledRun = (workflow, event) => {
+      asked.push(`${workflow}:${event ?? 'schedule'}`);
+      return workflow === 'checks.yml' && event === 'push'
+        ? { conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/push-run' }
+        : { conclusion: 'success', createdAt: new Date(world.deps.now()).toISOString(), url: 'u' };
+    };
+    runPrLand(['72'], world.io, () => world.deps);
+    assert.ok(asked.includes('checks.yml:push'), asked.join(', '));
+    assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes('https://x/push-run')));
+  });
+
+  it('names only workflows that run on the event it reads', () => {
+    for (const { workflow, event = 'schedule' } of SCHEDULED_CHECKS) {
+      assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), new RegExp(`^ {2}${event}:`, 'm'), workflow);
     }
   });
 });
