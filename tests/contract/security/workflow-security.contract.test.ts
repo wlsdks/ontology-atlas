@@ -469,21 +469,28 @@ describe("workflow security contract", () => {
         }
       }
     }
-    expect(guarded, "no guarded checkout found").toBeGreaterThanOrEqual(6);
+    expect(guarded, "no guarded checkout found").toBeGreaterThanOrEqual(5);
     expect(offenders).toEqual([]);
   });
 
-  it("checks out only the lockfile where the audit's check-run token lives", () => {
-    const checkWriters = all.flatMap(({ name, source }) =>
+  it("audits Rust from the lockfile alone, with a verified binary and no write token", () => {
+    // The audit needs no GitHub token: cargo audit itself fails the job. A job that
+    // regains `checks: write` would hand a token to whatever the audit step runs.
+    const writers = all.flatMap(({ name, source }) =>
       Object.entries(writePermissionsByJob(source))
         .filter(([, keys]) => keys.includes("checks"))
-        .map(([job]) => ({ name, block: jobBlock(source, job) })),
+        .map(([job]) => `${name}:${job}`),
     );
-    expect(checkWriters.map(({ name }) => name).sort()).toEqual(["release-macos.yml", "windows-beta-check.yml"]);
-    for (const { name, block } of checkWriters) {
+    expect(writers).toEqual([]);
+    const audits = all.filter(({ source }) => /^  audit-rust:\s*$/m.test(source));
+    expect(audits.map(({ name }) => name).sort()).toEqual(["release-macos.yml", "windows-beta-check.yml"]);
+    for (const { name, source } of audits) {
+      const block = jobBlock(source, "audit-rust");
       expect(block, name).toMatch(/sparse-checkout: src-tauri\/Cargo\.lock\n\s+sparse-checkout-cone-mode: false\n/);
       expect(block, name).not.toMatch(/\bpnpm\b|\bnode\b/);
       expect(block, name).toMatch(/CARGO_AUDIT_SHA256: [a-f0-9]{64}\n[\s\S]*sha256sum --check --strict/);
+      expect(block, name).toContain("cargo audit --file src-tauri/Cargo.lock --deny unsound");
+      expect(block, name).not.toMatch(/^\s+token:/m);
     }
   });
 
@@ -505,7 +512,7 @@ describe("workflow security contract", () => {
     expect(jobBlock(release, "sign-macos")).not.toMatch(/^    permissions:/m);
     expect(jobBlock(release, "build-windows")).not.toMatch(/^    permissions:/m);
     expect(jobBlock(release, "audit-rust")).toMatch(
-      /^    permissions:\n      contents: read\n      checks: write\s*$/m,
+      /^    permissions:\n      contents: read\s*$/m,
     );
     expect(jobBlock(release, "stage-macos")).toMatch(
       /^    permissions:\n      contents: write\s*$/m,
@@ -518,7 +525,6 @@ describe("workflow security contract", () => {
     // proof of namespace ownership. It is listed rather than exempted, so a job that
     // quietly gained `contents: write` beside it would still show up here.
     expect(writePermissionsByJob(release)).toEqual({
-      "audit-rust": ["checks"],
       "stage-macos": ["contents"],
       "publish-macos": ["contents"],
       "list-mcp-registry": ["id-token"],
