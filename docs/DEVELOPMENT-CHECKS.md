@@ -46,7 +46,11 @@ Knip and browser suites remain CI work.
 
 Before merge, a train's Checks run what its change can affect plus a fixed
 core: changed-file lint, the typecheck, the contracts whose import graph
-reaches the change, and every security and vault-format contract. After the
+reaches the change (a message part counts as its composed catalogue), every
+security and vault-format contract, and the forbidden-pattern contracts
+(`FORBIDDEN_PATTERN_CONTRACTS` in `scripts/ci/classify-change.mjs`). A change
+to `src/` or `app/` code or styles, or to `messages/`, also runs every ratchet;
+after a merge a ratchet compares with the previous main tip. After the
 merge, each push to main runs the full Checks set, including `pnpm knip` and the
 full contract sweep, so a suite the plan left out turns main red rather than
 the train; `pnpm pr:land` warns while that run is red. The unit shards split by

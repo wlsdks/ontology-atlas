@@ -1268,6 +1268,20 @@ describe('scheduled checks on main', () => {
     }
   });
 
+  it('reads the post-merge Checks verdict from the push run, not the nightly one', () => {
+    const world = fakeWorld({ prs: [component(72)] });
+    const asked = [];
+    world.deps.gh.readScheduledRun = (workflow, event) => {
+      asked.push(`${workflow}:${event ?? 'schedule'}`);
+      return workflow === 'checks.yml' && event === 'push'
+        ? { conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/push-run' }
+        : { conclusion: 'success', createdAt: new Date(world.deps.now()).toISOString(), url: 'u' };
+    };
+    runPrLand(['72'], world.io, () => world.deps);
+    assert.ok(asked.includes('checks.yml:push'), asked.join(', '));
+    assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes('https://x/push-run')));
+  });
+
   it('names only workflows that run on the event it reads', () => {
     for (const { workflow, event = 'schedule' } of SCHEDULED_CHECKS) {
       assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), new RegExp(`^ {2}${event}:`, 'm'), workflow);

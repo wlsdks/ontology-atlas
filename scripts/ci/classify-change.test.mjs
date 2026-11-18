@@ -8,6 +8,8 @@ import { commandsForLane } from './run-ci-lane.mjs';
 import {
   CORE_CONTRACT_DIRECTORIES,
   coreContractFiles,
+  FORBIDDEN_PATTERN_CONTRACTS,
+  ratchetContractFiles,
   buildImpactPlan,
   decide,
   decodePlan,
@@ -81,10 +83,11 @@ test('app tests run affected Vitest and the test-source ratchets without waking 
   assert.equal(plan.lanes.unit.mode, 'affected');
   assert.equal(plan.lanes.unit.affected, true);
   assert.equal(plan.lanes.unit.contract, 'focused');
-  assert.deepEqual(plan.lanes.unit.contractFiles, [
+  assert.deepEqual(plan.lanes.unit.contractFiles, [...new Set([
     'tests/contract/ci-gates/test-title-language.contract.test.ts',
     ...coreContractFiles(),
-  ].sort());
+    ...ratchetContractFiles(),
+  ])].sort());
   assert.equal(plan.lanes.e2e.mode, 'skip');
 });
 
@@ -489,10 +492,44 @@ test('push entrypoint uses the exact ancestor and fails closed for missing or un
       cwd, encoding:'utf8', env:{...process.env, GITHUB_OUTPUT:'', PUSH_BEFORE:base},
     });
     assert.match(run(before), /unit=skip perf=skip mcp=skip playwright=skip/, "a repository with no core contracts has nothing to run");
+    const merged = execFileSync(process.execPath,[script,'--event=push','--main-push=full'],{
+      cwd, encoding:'utf8', env:{...process.env, GITHUB_OUTPUT:'', PUSH_BEFORE:before},
+    });
+    assert.match(merged, /unit=full perf=full mcp=full playwright=full .*post-merge/, 'the Checks post-merge push must run the full set');
+    assert.doesNotMatch(merged, /main-push reuse/, 'the post-merge push must not reuse the train\'s partial result');
     for (const base of ['', '0'.repeat(40), 'a'.repeat(40), git('commit-tree',git('rev-parse','HEAD^{tree}'),'-m','unrelated')]) {
       assert.match(run(base), /unit=full perf=full mcp=full playwright=full/);
     }
   } finally { rmSync(cwd,{recursive:true,force:true}); }
+});
+
+test('only the Checks workflow asks its planner for the full set after a merge', async () => {
+  const { readFileSync } = await import('node:fs');
+  const read = (name) => readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
+  const plan = read('checks').split('\n').find((line) => line.includes('node scripts/ci/classify-change.mjs'));
+  assert.match(plan, /--main-push=full/, 'checks.yml plan step lost --main-push=full');
+  assert.doesNotMatch(read('e2e'), /--main-push=full/);
+  // On a push the merge base with origin/main is HEAD itself, and a ratchet compared with HEAD
+  // can never fail; the post-merge run compares with the previous tip.
+  assert.match(read('checks'), /^      DECISION_BASE_REF: \$\{\{ github\.event_name == 'push' && github\.event\.before \|\| needs\.plan\.outputs\.base \}\}$/m);
+});
+
+test('ratchets run for the files they count, and message parts reach their catalogue readers', () => {
+  const ratchets = ratchetContractFiles();
+  assert.ok(ratchets.includes('tests/contract/control-adoption/tab-adoption-ratchet.contract.test.ts'));
+  assert.ok(ratchets.includes('tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts'));
+  const ui = buildImpactPlan({ files: ['src/views/download/ui/ScreensStage.tsx'] }).lanes.unit.contractFiles;
+  for (const ratchet of ratchets) assert.ok(ui.includes(ratchet), ratchet);
+  assert.ok(!buildImpactPlan({ files: ['README.md'] }).lanes.unit.contractFiles.some((path) => ratchets.includes(path) && !path.includes('/security/')));
+  const part = buildImpactPlan({ files: ['messages/ko/library.json'] }).lanes.unit.contractFiles;
+  const nonCore = part.filter((path) => !coreContractFiles().includes(path) && !ratchets.includes(path));
+  assert.ok(nonCore.length > 10, `a message part reached only ${nonCore.length} catalogue readers`);
+});
+
+test('the forbidden-pattern contracts run before every merge', () => {
+  const core = coreContractFiles();
+  for (const path of FORBIDDEN_PATTERN_CONTRACTS) assert.ok(core.includes(path), `${path} is missing or left the core`);
+  assert.ok(buildImpactPlan({ files: ['README.md'] }).lanes.unit.contractFiles.includes('tests/contract/copy/label-decoration.contract.test.ts'));
 });
 
 test('both workflows retain exhaustive triggers isolated from ordinary push cancellation', async () => {

@@ -10,7 +10,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, readdirSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { loadTestReach } from '../lib/import-graph/test-reach.mjs';
 
@@ -272,10 +272,53 @@ function exactContractFiles(command) {
  */
 export const CORE_CONTRACT_DIRECTORIES = Object.freeze(['tests/contract/security', 'tests/contract/vault-format']);
 
+/**
+ * The forbidden patterns `.claude/rules/forbidden.md` says are rejected before merge, and the
+ * parity check that keeps that list in step with `docs/DESIGN-SYSTEM.md`. They read the tree or
+ * the composed catalogues, so no import edge reaches them; together they take about a second.
+ */
+export const FORBIDDEN_PATTERN_CONTRACTS = Object.freeze([
+  'tests/contract/agent-instructions/design-donts-parity.contract.test.ts',
+  'tests/contract/copy/label-decoration.contract.test.ts',
+  'tests/contract/design-tokens/design-inline-hex-guard.test.ts',
+  'tests/contract/motion/infinite-motion.contract.test.ts',
+  'tests/contract/motion/reduced-motion-equivalent.contract.test.ts',
+  'tests/contract/routes/retired-routes.contract.test.ts',
+]);
+
 export function coreContractFiles(list = (directory) => (existsSync(directory) ? readdirSync(directory, { recursive: true }) : [])) {
-  return CORE_CONTRACT_DIRECTORIES.flatMap((directory) =>
-    list(directory).map((name) => `${directory}/${String(name).replaceAll('\\', '/')}`),
-  ).filter((path) => CONTRACT_FILE.test(path)).sort();
+  return unique([
+    ...CORE_CONTRACT_DIRECTORIES.flatMap((directory) =>
+      list(directory).map((name) => `${directory}/${String(name).replaceAll('\\', '/')}`),
+    ),
+    ...FORBIDDEN_PATTERN_CONTRACTS.filter((path) => list(path.slice(0, path.lastIndexOf('/'))).some((name) => path.endsWith(`/${name}`))),
+  ]).filter((path) => CONTRACT_FILE.test(path)).sort();
+}
+
+/**
+ * Ratchets count a pattern across the tree and compare with the merge base, so no import edge
+ * reaches them from the file that adds one more. A change to the kind of file they count runs
+ * them all (about 6 s together). A ratchet is a contract named `*ratchet*` or one that reads
+ * `tests/contract/lib/ratchet-base.ts`.
+ */
+const RATCHET_INPUTS = [/^(?:src|app)\/.+\.(?:tsx?|css)$/, /^messages\//];
+
+export function ratchetContractFiles(root = '.') {
+  const directory = `${root}/tests/contract`;
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { recursive: true })
+    .map((name) => `tests/contract/${String(name).replaceAll('\\', '/')}`)
+    .filter((path) => CONTRACT_FILE.test(path))
+    .filter((path) => path.includes('ratchet') || readFileSync(`${root}/${path}`, 'utf8').includes('lib/ratchet-base'))
+    .sort();
+}
+
+/** A message part reaches its readers through the composed catalogue built from it. */
+function withMessageComposites(list) {
+  return unique([
+    ...list,
+    ...list.filter((path) => /^messages\/[^/]+\/[^/]+\.json$/.test(path)).map((path) => `messages/${path.split('/')[1]}.json`),
+  ]);
 }
 
 /**
@@ -312,12 +355,13 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
   const reach = loadTestReach();
   const sources = (list) => list.filter((path) => !isGenerated(path));
   const reachedContracts = reach
-    .testsReaching([...sources(existingPaths), ...sources(deletedPaths)])
+    .testsReaching(withMessageComposites([...sources(existingPaths), ...sources(deletedPaths)]))
     .contract.filter((path) => !deletedPaths.includes(path));
   const contractFiles = unique([
     ...existingPaths.filter((path) => CONTRACT_FILE.test(path)),
     ...rows.flatMap((row) => exactContractFiles(row.command)),
     ...reachedContracts,
+    ...(paths.some((path) => !isGenerated(path) && matchesAny(path, RATCHET_INPUTS)) ? ratchetContractFiles() : []),
     // The core runs for every change that is not only regenerated output.
     ...(paths.some((path) => !isGenerated(path)) ? coreContractFiles() : []),
   ]).sort();
