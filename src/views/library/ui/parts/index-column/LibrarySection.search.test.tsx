@@ -7,6 +7,11 @@ import { writeLibraryIndexQuery } from "@/shared/lib/preferences/appearance-pref
 import type { LibraryUiModel } from "@/features/library";
 import { LibrarySection } from "./LibrarySection";
 
+const index = vi.hoisted(() => ({ hits: undefined as Array<{ path: string; rank: number }> | undefined }));
+vi.mock("@/shared/lib/vault-folder/use-vault-index-hits", () => ({
+  useVaultIndexHits: () => ({ hits: index.hits, answeredQuery: null, status: null }),
+}));
+
 /**
  * Pins the three ways a search that reads files can lie: reporting no match for a file not yet
  * opened, captioning with an address that is not the unit's own, and truncating a folder silently.
@@ -126,6 +131,29 @@ const pendingHandles = () =>
 beforeEach(() => {
   // Module memory, so one case's query would otherwise reach the next case's mount.
   writeLibraryIndexQuery("", "");
+  index.hits = undefined;
+});
+
+describe("the wiki list searches inside pages through the app's index", () => {
+  const pages = [
+    { slug: "wiki/alpha", title: "Alpha", createdBy: null, compiledAt: null, sourcePaths: [], excerpt: "", tags: ["ledger"] },
+    { slug: "wiki/beta", title: "Beta", createdBy: null, compiledAt: null, sourcePaths: [], excerpt: "", tags: [] },
+  ];
+
+  it("lists a page whose body matched in the index, however its title reads", async () => {
+    index.hits = [{ path: "wiki/beta.md", rank: -1 }];
+    renderWith({ handles: new Map(), wikiPages: pages, segment: "wiki" });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "quillwort" } });
+    await waitFor(() => expect(screen.getByTestId("library-wiki-wiki/beta")).toBeInTheDocument());
+    expect(screen.queryByTestId("library-wiki-wiki/alpha")).toBeNull();
+  });
+
+  it("matches titles, excerpts and tags when there is no index, as on the web", async () => {
+    renderWith({ handles: new Map(), wikiPages: pages, segment: "wiki" });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "ledger" } });
+    await waitFor(() => expect(screen.getByTestId("library-wiki-wiki/alpha")).toBeInTheDocument());
+    expect(screen.queryByTestId("library-wiki-wiki/beta")).toBeNull();
+  });
 });
 
 describe("the index search reads the sources", () => {

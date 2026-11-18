@@ -77,7 +77,7 @@ export async function searchVaultIndex(
   return invoke('vault_index_search', { rootPath, query, limit, enabled: enabled() });
 }
 
-/** Deletes every folder's index; each stays deleted until its folder is opened again. */
+/** Deletes the open folder's index, or every folder's with `null`; it stays deleted until reopened. */
 export async function clearVaultIndex(rootPath: string | null): Promise<VaultIndexStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;

@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use vault_index::{Check, Progress, Searcher};
 
-const MAX_HITS: usize = 50;
+const MAX_HITS: usize = 5000;
 /// Delete waits this long for a running build to reach its next commit and stop.
 const STOP_WAIT: Duration = Duration::from_secs(10);
 
@@ -368,7 +368,16 @@ fn search_entry(
 
 /// Stops every build, closes every connection, then deletes every vault's index.
 fn delete_every_index() -> Result<(), String> {
-    let entries = all_entries();
+    delete_indexes(None)
+}
+
+/// Stops and deletes one vault's index, or every vault's when `root` is `None`. Each stays
+/// deleted until its folder is opened again.
+fn delete_indexes(root: Option<&Path>) -> Result<(), String> {
+    let entries = match root {
+        Some(root) => vec![entry(root)],
+        None => all_entries(),
+    };
     for entry in &entries {
         entry.paused.store(true, Ordering::Release);
         entry.progress.request_cancel();
@@ -385,11 +394,11 @@ fn delete_every_index() -> Result<(), String> {
         *lock(&entry.searcher) = None;
         *lock(&entry.failure) = None;
     }
-    vault_index::delete(None).map_err(|error| error.to_string())
+    vault_index::delete(root).map_err(|error| error.to_string())
 }
 
-/// Settings' Delete: every vault's index, at once. Each stays deleted until its folder is opened
-/// again.
+/// Settings' Delete: the open folder's index, or every folder's when none is open. It stays
+/// deleted until its folder is opened again.
 #[tauri::command]
 pub(crate) async fn vault_index_clear(
     root_path: Option<String>,
@@ -397,7 +406,7 @@ pub(crate) async fn vault_index_clear(
 ) -> Result<VaultIndexStatus, String> {
     run_blocking(move || {
         let root = root_path.as_deref().map(granted_root).transpose()?;
-        delete_every_index()?;
+        delete_indexes(root.as_deref())?;
         Ok(status_of(root.as_deref(), enabled))
     })
     .await

@@ -24,7 +24,8 @@ function formatBytes(bytes: number, locale: string): string {
 
 /**
  * What the installed app keeps beside the folders: the search index's size, a Delete, and the
- * switch that turns it off. Off deletes every index file; the choice stays on this computer.
+ * switch that turns it off. With a folder open, size and Delete are that folder's; with none, every
+ * folder's. Off deletes every index file; the choice stays on this computer.
  */
 export function StoredHereSettings() {
   const t = useTranslations('settingsPrivacy.storedHere');
@@ -73,16 +74,19 @@ export function StoredHereSettings() {
     await refresh();
   };
 
-  const allBytes = status?.allBytes ?? 0;
+  const thisFolder = rootPath !== null;
+  const shownBytes = (thisFolder ? status?.sizeBytes : status?.allBytes) ?? 0;
   const sizeCaption = !on
     ? t('offCaption')
     : outcome === 'deleted'
-      ? t('deleted')
+      ? t(thisFolder ? 'deletedThisFolder' : 'deletedAll')
       : outcome === 'failed'
         ? t('failed')
-        : allBytes > 0
-          ? t('size', { size: formatBytes(allBytes, locale), count: status?.vaults ?? 0 })
-          : t('empty');
+        : shownBytes === 0
+          ? t('empty')
+          : thisFolder
+            ? t('sizeThisFolder', { size: formatBytes(shownBytes, locale) })
+            : t('sizeAllFolders', { size: formatBytes(shownBytes, locale), count: status?.vaults ?? 0 });
 
   return (
     <SettingsGroup label={t('title')} testId="app-settings-privacy-stored-here">
@@ -111,7 +115,7 @@ export function StoredHereSettings() {
         caption={sizeCaption}
         captionTone={outcome === 'failed' ? 'danger' : 'neutral'}
         control={
-          on && allBytes > 0 ? (
+          on && shownBytes > 0 ? (
             <ArmedChip
               label={t('delete')}
               armedLabel={t('deleteArmed')}

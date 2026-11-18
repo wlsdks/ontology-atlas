@@ -28,6 +28,7 @@ import {
 import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
 import { useSourceSearch } from "../../../lib/sources/use-source-search";
+import { useVaultIndexHits } from "@/shared/lib/vault-folder/use-vault-index-hits";
 import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
@@ -37,6 +38,8 @@ import { IndexGlyph } from "./IndexGlyph";
 
 /** A source row before it is measured: one line of `text-body` in `RowButton` with its inset. */
 const SOURCE_ROW_ESTIMATE_PX = 36;
+/** Every page the wiki list can show for one query; the app's search command caps at the same. */
+const LIBRARY_INDEX_HITS = 5000;
 /** One screen of index rows: past this, a pill repeated on every row is texture and folds into the head. */
 const SOURCE_STATE_FOLDS_FROM = 12;
 /** The order the head counts states in: what to act on first, what is done last. */
@@ -100,6 +103,8 @@ export interface LibrarySectionProps {
    * stops one folder's text from answering another folder's search.
    */
   vaultScope: string;
+  /** The installed app's folder path; with it, the wiki list searches inside pages through the index. */
+  vaultRootPath?: string | null;
   /** The one-click "add files" door. */
   onAddFiles: () => void;
   addFilesFeedback?: ActionFeedbackState;
@@ -303,6 +308,7 @@ export function LibrarySection({
   selectedSourceAnchor = null,
   sourceHandles,
   vaultScope,
+  vaultRootPath = null,
   onAddFiles,
   addFilesFeedback = 'idle',
   onFindDocuments,
@@ -347,6 +353,12 @@ export function LibrarySection({
     needle,
     enabled: true,
   });
+  /*
+   * Pages are searched inside through the installed app's index, the same one the documents
+   * palette asks; on the web a page matches on its title, excerpt and tags.
+   */
+  const { hits: indexHits } = useVaultIndexHits({ rootPath: vaultRootPath, query: needle, limit: LIBRARY_INDEX_HITS });
+  const indexedPaths = useMemo(() => (indexHits ? new Set(indexHits.map((hit) => hit.path)) : null), [indexHits]);
   /*
    * **Hold the reading sentence back for `READING_TEXT_DELAY_MS`.** Measured on the
    * day-one folder: the six files are read and split in 34 ms, which draws the state for
@@ -428,10 +440,13 @@ export function LibrarySection({
         ? model.wikiPages.filter(
             (page) =>
               page.title.toLowerCase().includes(needle) ||
-              (model.pageTexts.get(page.slug) ?? "").toLowerCase().includes(needle),
+              (indexedPaths
+                ? indexedPaths.has(`${page.slug}.md`)
+                : (page.excerpt ?? "").toLowerCase().includes(needle) ||
+                  (page.tags ?? []).some((tag) => tag.toLowerCase().includes(needle))),
           )
         : model.wikiPages,
-    [model.pageTexts, model.wikiPages, needle],
+    [indexedPaths, model.wikiPages, needle],
   );
   /*
    * The writer label prints only on exception rows: the majority writer is silent and every other
