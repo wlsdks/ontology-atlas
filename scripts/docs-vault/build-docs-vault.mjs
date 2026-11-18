@@ -158,7 +158,9 @@ function gitLastCommitDays(rootDir, scopeDir) {
         '[docs-vault] shallow git clone: every document date collapses to the same day. Check out full history (CI: fetch-depth: 0).',
       );
     }
-    const log = execSync(`git log --format=%x01%cs --name-only -- "${scope}"`, {
+    // `--no-renames`: rename detection reads old file contents, which a blobless CI clone
+    // fetches one by one (15 s of every install); current paths get the same dates and counts.
+    const log = execSync(`git log --no-renames --format=%x01%cs --name-only -- "${scope}"`, {
       cwd: rootDir,
       encoding: 'utf-8',
       maxBuffer: 64 * 1024 * 1024,
