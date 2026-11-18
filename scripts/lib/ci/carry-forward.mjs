@@ -101,7 +101,7 @@ const MAPPED_CODE = /^(?:scripts|mcp\/src|cli\/src|src|app|tests)\/(?:[\w@[\]().
  * Trees whose modules are loaded by a computed path or spawned by file name, or which read files at
  * run time, so no import edge names their readers. A change inside one carries nothing.
  */
-export const RUNTIME_LOADED_TREES = Object.freeze([
+const RUNTIME_LOADED_TREES = Object.freeze([
   ['mcp/', 'the server is spawned by path, loads its tools and guides at run time, and the app bundles its modules'],
   ['cli/src/', 'commands load by a computed path (`cli-commands.mjs`) and the MCP bridge imports the server by path'],
   ['scripts/dogfood/', 'the dogfood checks spawn the MCP server and the CLI by file name'],
