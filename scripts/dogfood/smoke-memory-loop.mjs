@@ -160,6 +160,7 @@ assert.deepEqual(changedFiles, ['src/features/export/index.ts']);
 
 const proposal = await callMcpTool(vault, 'analyze_repo_structure', {
   rootPath: project,
+  view: 'analysis',
 });
 assert.equal(proposal.framework, 'fsd');
 assert.ok(
