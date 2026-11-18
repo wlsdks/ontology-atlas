@@ -21,6 +21,7 @@ import { repoText } from '../analyze/repo-text.mjs';
 import { surveyEntry } from '../analyze/survey-paths.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
 import { decidesLine } from '../evidence-search/symbol-context.mjs';
+import { readPath } from './session-reads.mjs';
 
 /** Wording a node uses for a subject it only outlined; read under `## Uncertainty` alone. */
 const OUTLINED_ONLY = /\b(?:outlined only|only outlined|outline only|outlined,? (?:but )?(?:the )?(?:body |bodies )?(?:not read|unread)|bod(?:y|ies) (?:was |were |is |are )?(?:not read|unread)|unread|not opened)\b/i;
@@ -237,26 +238,45 @@ function measureReads(docs, reads, repoRoot) {
   if (!reads) return null;
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability' && pathOf(doc));
   const unread = capabilities
-    .filter((doc) => !lineCites(doc.body).some((cite) => servedLines(reads, cite) && citedLinesDecide(repoRoot, cite)))
+    .filter((doc) => !lineCites(doc.body, reads, repoRoot).some((cite) => servedLines(reads, cite) && citedLinesDecide(repoRoot, cite)))
     .map((doc) => ({ slug: doc.slug, path: pathOf(doc), symbol: citedSymbol(doc, pathOf(doc)) }));
   return { capabilities: capabilities.length, read: capabilities.length - unread.length, unread, served: reads.size };
 }
 
 /** Wording that states a rule: a condition, an order or a default. */
 const RULE_WORDS = /\b(?:if|unless|only|when|whenever|before|after|until|otherwise|default|defaults|first|must|requires?|refuses?|rejects?|never|skips?|falls? back|instead)\b/i;
-/** A cite of lines: `path:L12-L30`, `path#L12-30`, `path L12–30`, `path:12`. */
-const LINE_CITE = /([\w./-]+\.[A-Za-z]{1,5})(?::|#|\s+)L?(\d+)(?:\s*[-–]\s*L?(\d+))?/g;
+/**
+ * A cite of lines: `path:L12-L30`, `path#L12-30`, `path L12–30`, `path:12`. The
+ * path takes any character a repository file name may hold (`app/[locale]/(shop)`,
+ * `@scope/x`, `$id`, `+page`), so every cite the server emits parses.
+ */
+const LINE_CITE = /([^\s`'"<>|,;]{1,300}?\.[A-Za-z]{1,5})(?::|#|\s+)L?(\d+)(?:\s*[-–]\s*L?(\d+))?/g;
+const OPENERS = /^[([{]/;
 
 function preSectionParagraphs(body) {
   const head = String(body ?? '').split(/^##\s/m)[0];
   return head.split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
 }
 
-function lineCites(body) {
+/**
+ * The repository path a cited token names. Prose brackets around a cite join the
+ * token (`(app/(shop)/page.tsx:L2)`), so each leading bracket is tried off in turn;
+ * a path this session read wins, mapped back from the sub-root it was cited under,
+ * then a file that exists in the repository.
+ */
+function citePath(token, reads, repoRoot) {
+  const candidates = [token.replace(/^\.\//, '')];
+  while (OPENERS.test(candidates.at(-1))) candidates.push(candidates.at(-1).slice(1).replace(/^\.\//, ''));
+  const read = candidates.find((path) => reads?.has(path));
+  if (read) return readPath(reads, read);
+  return (repoRoot && candidates.find((path) => surveyEntry(repoRoot, path))) || candidates.at(-1);
+}
+
+function lineCites(body, reads = null, repoRoot = null) {
   return [...String(body ?? '').matchAll(LINE_CITE)].map((match) => {
     const startLine = Number(match[2]);
     const endLine = Number(match[3] ?? match[2]);
-    return { path: match[1].replace(/^\.\//, ''), startLine: Math.min(startLine, endLine), endLine: Math.max(startLine, endLine) };
+    return { path: citePath(match[1], reads, repoRoot), startLine: Math.min(startLine, endLine), endLine: Math.max(startLine, endLine) };
   }).filter((cite) => cite.startLine > 0 && cite.endLine - cite.startLine < 400);
 }
 
@@ -287,7 +307,7 @@ function measureRules(docs, reads, repoRoot) {
   for (const doc of capabilities) {
     const rules = preSectionParagraphs(doc.body).slice(1).filter((paragraph) => RULE_WORDS.test(paragraph));
     if (rules.length === 0) continue;
-    const cites = lineCites(doc.body);
+    const cites = lineCites(doc.body, reads, repoRoot);
     const exact = cites.some((cite) => (!reads || servedLines(reads, cite)) && citedLinesDecide(repoRoot, cite));
     if (exact) continue;
     const path = pathOf(doc);

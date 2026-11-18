@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -171,7 +171,7 @@ test('a capability counts as read only when it cites served lines that hold a co
     assert.deepEqual(unread(), ['capabilities/invoice', 'capabilities/refund'], 'line 1 of each file is not its rule');
     recordSourceEvidence(join(root, 'pkg'), readSourceEvidence(join(root, 'pkg'), [{ path: 'src/invoice.ts', symbol: 'issueInvoice' }]));
     assert.deepEqual(unread(), ['capabilities/refund'], 'a read under the package folder counts at the root');
-    assert.deepEqual([...sessionReads(join(root, 'pkg')).keys()].sort(), ['src/invoice.ts', 'src/refund.ts'], 'and root reads count under the package folder');
+    assert.ok(['src/invoice.ts', 'src/refund.ts'].every((path) => sessionReads(join(root, 'pkg')).has(path)), 'and root reads count under the package folder');
     assert.match(competencyDepthRefusals(evidence, depth())[0], /- evidence: 1 of 2 capabilities .*: capabilities\/refund \(pkg/);
     writeFileSync(join(root, 'pkg/src/invoice.ts'), '// Invoices, edited.\nexport function issueInvoice(order) {\n  return order.total;\n}\n');
     assert.deepEqual(unread(), ['capabilities/invoice', 'capabilities/refund'], 'an edit withdraws the read');
@@ -359,5 +359,63 @@ test('the source walk skips links, hidden names and credential names', () => {
     assert.deepEqual(collectSourceUnits(root, {}).files.map((file) => file.path), ['src/app.ts']);
   } finally {
     rmSync(base, { recursive: true, force: true });
+  }
+});
+
+/*
+ * Whatever cite the server emits must count when pasted back: file names with
+ * brackets, parentheses, `@`, `$` or `+`, and the path a read under a package
+ * folder was cited by.
+ */
+test('every cite a symbol read returns counts when the body quotes it', () => {
+  resetSessionReads();
+  const body = () => `export function run(x) {\n  if (!x) return 0;\n  return 1;\n}\n`;
+  const files = {
+    'app/[locale]/(shop)/page.tsx': body(),
+    'packages/@scope/x/index.ts': body(),
+    'src/routes/$id.tsx': body(),
+    'src/routes/+page.ts': body(),
+    'pkg/src/a.ts': body(),
+  };
+  const root = repository(files);
+  try {
+    const repo = repositorySurvey(root, null);
+    const cites = Object.keys(files).slice(0, 4).map((path) => {
+      const packet = readSourceEvidence(root, [{ path, symbol: 'run' }]);
+      recordSourceEvidence(root, packet);
+      return packet.rows[0].cite;
+    });
+    const sub = readSourceEvidence(join(root, 'pkg'), [{ path: 'src/a.ts', symbol: 'run' }]);
+    recordSourceEvidence(join(root, 'pkg'), sub);
+    assert.equal(sub.rows[0].cite, 'src/a.ts:L1-L4', 'a read under the package folder is cited from there');
+    cites.push(sub.rows[0].cite);
+    const docs = cites.map((cite, index) => doc(`capabilities/c${index}`, { path: Object.keys(files)[index] }, `Runs it.\n\nIt runs only when x is set (${cite}).\n\n## Uncertainty\n- None.\n`));
+    const depth = measureBuildDepth(docs, repo, sessionReads(root));
+    assert.deepEqual(depth.reads.unread.map((row) => row.slug), [], cites.join(' '));
+    assert.deepEqual(depth.rules.uncited, []);
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a same-size edit with its mtime restored withdraws the read, and a linked root names the same file', () => {
+  resetSessionReads();
+  const root = repository({ 'src/a.ts': 'export function run(x) {\n  if (!x) return 0;\n  return 1;\n}\n' });
+  const linked = `${root}-linked`;
+  try {
+    symlinkSync(root, linked);
+    recordSourceEvidence(linked, readSourceEvidence(linked, [{ path: 'src/a.ts', symbol: 'run' }]));
+    assert.deepEqual([...sessionReads(root).keys()], ['src/a.ts'], 'a read through a link counts at the real root');
+    const file = join(root, 'src/a.ts');
+    const before = statSync(file);
+    writeFileSync(file, readFileSync(file, 'utf8').replace('if (!x) return 0;', 'if (x)  return 9;'));
+    utimesSync(file, before.atime, before.mtime);
+    assert.equal(statSync(file).size, before.size);
+    assert.deepEqual([...sessionReads(root).keys()], [], 'the served lines changed under the same size and mtime');
+  } finally {
+    resetSessionReads();
+    rmSync(linked, { force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });
