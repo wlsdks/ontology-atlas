@@ -22,8 +22,8 @@ export const dependencyWitnessFinding = meaningFindings.dependencyWitnessFinding
 export const starterExampleFindings = meaningFindings.starterExampleFindings;
 
 /*
- * The four build-depth warnings (`relation-note-on-unread`, `dependency-both-ways`, `path-without-code`,
- * `path-shared`) come from the module `validate_vault` runs, so the two tools never describe one vault two ways.
+ * The five build-depth warnings (`relation-note-on-unread`, `rule-without-read-lines`, `dependency-both-ways`,
+ * `path-without-code`, `path-shared`) come from the module `validate_vault` runs, so the two tools never describe one vault two ways.
  */
 /** @type {typeof import('../../../../mcp/src/construction/build-depth.mjs')} */
 const buildDepth = await loadMcpModule('construction/build-depth.mjs');

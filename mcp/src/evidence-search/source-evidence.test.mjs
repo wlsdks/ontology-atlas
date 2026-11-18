@@ -364,3 +364,78 @@ test('a symbol read takes the implementation over typing overload stubs', () => 
   assert.deepEqual(row.actualRange, { startLine: 5, endLine: 8 });
   assert.deepEqual(row.callees, [{ name: 'gated_out', path: 'apply.py', line: 10 }]);
 });
+
+/*
+ * Depth comes from the tool: a symbol read returns, beside the body, the code
+ * that decides what the body does. Two rules were once written backwards from a
+ * body alone: a guard in the resolver the constructor builds, and a default in
+ * the options builder the body calls.
+ */
+test('a symbol read returns the constructor guard and the callee default that decide its body', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'streams'));
+  writeFileSync(join(root, 'streams', 'controller.go'), [
+    'package streams',
+    '',
+    'type Controller struct {',
+    '\tresolver func(string) (string, error)',
+    '}',
+    '',
+    'func (c *Controller) Verified(id string) (string, error) {',
+    '\tname, err := c.resolver(id)',
+    '\topts := newOptions()',
+    '\treturn name, err',
+    '}',
+    '',
+    'func NewStreamsController(allowPublic bool) *Controller {',
+    '\tresolver := func(id string) (string, error) {',
+    '\t\tif !allowPublic && !signed(id) {',
+    '\t\t\treturn "", errPublic',
+    '\t\t}',
+    '\t\treturn id, nil',
+    '\t}',
+    '\treturn &Controller{resolver: resolver}',
+    '}',
+    '',
+    'func newOptions() *Options {',
+    '\treturn &Options{DisconnectOnFailure: true}',
+    '}',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'streams/controller.go', symbol: 'Controller.Verified' }]).rows;
+  assert.equal(row.cite, 'streams/controller.go:L7-L11');
+  const byRole = Object.fromEntries(row.context.map((part) => [part.symbol, part]));
+  assert.equal(byRole.NewStreamsController.role, 'constructor');
+  assert.equal(byRole.NewStreamsController.cite, 'streams/controller.go:L13-L21');
+  assert.match(byRole.NewStreamsController.text, /if !allowPublic/);
+  assert.equal(byRole.newOptions.role, 'callee');
+  assert.match(byRole.newOptions.text, /DisconnectOnFailure: true/);
+  assert.ok(row.returnedBytes >= Buffer.byteLength(row.text) + byRole.newOptions.text.length);
+});
+
+test('a symbol read with no condition shows the guard in its caller, or names the caller to read', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'queue.py'), [
+    'def drain(buffer):',
+    '    buffer.clear()',
+    '',
+    '',
+    'def put(buffer, item, max_length=300):',
+    '    buffer.append(item)',
+    '    if len(buffer) >= max_length:',
+    '        drain(buffer)',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'queue.py', symbol: 'drain' }]).rows;
+  const caller = row.context.find((part) => part.role === 'caller');
+  assert.equal(caller.symbol, 'put');
+  assert.equal(caller.cite, 'queue.py:L5-L8');
+  assert.match(caller.text, /max_length=300/);
+  assert.equal(row.deciding, undefined);
+
+  writeFileSync(join(root, 'many.py'), ['from queue import drain', '', ...[1, 2, 3].map((n) => `def caller_${n}(b):\n    drain(b)\n`)].join('\n'));
+  const [wide] = readSourceEvidence(root, [{ path: 'queue.py', symbol: 'drain' }]).rows;
+  assert.equal(wide.context.some((part) => part.role === 'caller'), false, 'four callers are too many to show');
+  assert.match(wide.deciding, /This body holds no condition; the deciding condition is in its callers/);
+  assert.match(wide.deciding, /Read it: \{"path":"[^"]+","symbol":"[^"]+"\}/);
+});

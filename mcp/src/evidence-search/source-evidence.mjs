@@ -13,6 +13,7 @@ import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
 import { declarationIndex } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
+import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
 
 const SOURCE_READ_LIMITS = Object.freeze({
   requests: 16,
@@ -284,6 +285,42 @@ function outlineOne(selector, bytes, text, fileLines, fullFileSha256) {
   };
 }
 
+/**
+ * Another file a symbol read draws context from, under the same path policy and
+ * stable-read checks as the selector itself; null when either refuses it.
+ */
+function contextOpener(rootPath, ignore, hooks) {
+  const cache = new Map();
+  return (path) => {
+    if (cache.has(path)) return cache.get(path);
+    let file = null;
+    if (!pathRefusal(path, ignore)) {
+      const stable = readStableFile(rootPath, path, hooks);
+      if (!stable.reason && !stable.bytes.includes(0)) {
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(stable.bytes);
+          file = { path, lines: completeLines(text), declarations: outlineSource(text, path).declarations, sha256: sha256(stable.bytes) };
+        } catch {
+          file = null;
+        }
+      }
+    }
+    cache.set(path, file);
+    return file;
+  };
+}
+
+/**
+ * The context bytes one symbol read may add: an even share of what the call has
+ * left (so the last of eight reads is not starved), at least 1.5 KiB for the
+ * best part when the call can afford it, at most `SYMBOL_CONTEXT_LIMITS.bytes`.
+ */
+function contextBudget(hooks, bodyBytes) {
+  const remaining = (hooks?.remainingBytes ?? SOURCE_READ_LIMITS.aggregateTextBytes) - bodyBytes;
+  const share = Math.floor((hooks?.remainingBytes ?? SOURCE_READ_LIMITS.aggregateTextBytes) / Math.max(1, hooks?.readsLeft ?? 1)) - bodyBytes;
+  return Math.max(0, Math.min(SYMBOL_CONTEXT_LIMITS.bytes, remaining, Math.max(1536, share)));
+}
+
 function readOne(rootPath, selector, ignore, hooks) {
   const policyReason = pathRefusal(selector.path, ignore);
   if (policyReason) return refuse(selector, policyReason);
@@ -323,6 +360,21 @@ function readOne(rootPath, selector, ignore, hooks) {
   const hasMore = endLine < lines.length;
   const truncated = delivered.length < requested.length || hasMore;
   const symbolEnd = declaration ? declarationEnd(lines, outline.declarations, declaration) : null;
+  const callees = declaration ? calleesOf(delivered.join(''), selector, outline.declarations, declaration, hooks) : null;
+  const context = declaration && hooks?.rootPath
+    ? symbolContext({
+      rootPath: hooks.rootPath,
+      ignore: hooks.ignore ?? [],
+      path: selector.path,
+      lines,
+      declarations: outline.declarations,
+      declaration,
+      bodyEnd: endLine,
+      callees,
+      open: hooks.open ?? contextOpener(rootPath, ignore, hooks),
+      budget: contextBudget(hooks, returnedBytes),
+    })
+    : null;
   return {
     status: 'read',
     path: selector.path,
@@ -333,12 +385,19 @@ function readOne(rootPath, selector, ignore, hooks) {
     requestedRange: { startLine, maxLines },
     actualRange: { startLine, endLine },
     text: delivered.join(''),
-    returnedBytes,
+    ...(declaration ? { cite: `${selector.path}:L${startLine}-L${endLine}` } : {}),
+    returnedBytes: returnedBytes + (context?.bytes ?? 0),
     truncated,
     requestComplete: delivered.length === requested.length,
     fileComplete: startLine === 1 && endLine === lines.length,
     citation: `source:${selector.path}#L${startLine}-L${endLine}@sha256:${fullFileSha256}`,
-    ...(declaration ? { callees: calleesOf(delivered.join(''), selector, outline.declarations, declaration, hooks) } : {}),
+    ...(declaration ? { callees } : {}),
+    ...(context ? {
+      context: context.parts,
+      ...(context.omitted.length > 0 ? { contextOmitted: context.omitted } : {}),
+      ...(context.callers.length > 0 ? { callers: context.callers } : {}),
+      ...(context.deciding ? { deciding: context.deciding } : {}),
+    } : {}),
     // A symbol read continues inside its own declaration only; past it is another symbol.
     next: declaration
       ? (endLine < symbolEnd ? { path: selector.path, startLine: endLine + 1, maxLines: Math.min(SOURCE_READ_LIMITS.maxLines, symbolEnd - endLine), expectedSha256: fullFileSha256 } : null)
@@ -459,8 +518,13 @@ export function readSourceEvidence(
     totalReturnedBytes: 0,
     serializedBytes: 0,
   };
-  for (const selector of selectors) {
-    let row = readOne(rootPath, selector, ignore, { onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore });
+  const open = contextOpener(rootPath, ignore, {});
+  for (const [index, selector] of selectors.entries()) {
+    let row = readOne(rootPath, selector, ignore, {
+      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open,
+      remainingBytes: SOURCE_READ_LIMITS.aggregateTextBytes - packet.totalReturnedBytes,
+      readsLeft: selectors.slice(index).filter((candidate) => !isOutline(candidate)).length,
+    });
     const delivered = row.status === 'read' || row.status === 'outlined';
     if (delivered && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
       row = { ...refuse(selector, 'aggregate_text_budget'), status: 'omitted' };

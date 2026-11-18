@@ -14,22 +14,30 @@ function rootKey(rootPath) {
   return resolve(String(rootPath ?? ''));
 }
 
-/** Records every delivered line range and symbol read in a `sourceEvidence:v1` packet. */
+/** Records every delivered line range, symbol read and context part in a `sourceEvidence:v1` packet. */
 export function recordSourceEvidence(rootPath, packet) {
   if (!packet || !Array.isArray(packet.rows)) return;
   const key = rootKey(rootPath);
+  const files = READS.get(key) ?? new Map();
+  const add = (path, range) => {
+    const ranges = files.get(path) ?? [];
+    ranges.push(range);
+    files.set(path, ranges);
+  };
   for (const row of packet.rows) {
     if (row?.status !== 'read' || !row.actualRange || typeof row.path !== 'string') continue;
-    const files = READS.get(key) ?? new Map();
-    READS.set(key, files);
-    const ranges = files.get(row.path) ?? [];
-    ranges.push({
+    add(row.path, {
       startLine: row.actualRange.startLine,
       endLine: row.actualRange.endLine,
       ...(row.symbol ? { symbol: row.symbol } : {}),
     });
-    files.set(row.path, ranges);
+    // The context a symbol read returned was served too: a caller's guard, a constructor, a callee.
+    for (const part of Array.isArray(row.context) ? row.context : []) {
+      if (typeof part?.path !== 'string' || !Number.isSafeInteger(part.startLine) || !Number.isSafeInteger(part.endLine)) continue;
+      add(part.path, { startLine: part.startLine, endLine: part.endLine, symbol: part.symbol, role: part.role });
+    }
   }
+  if (files.size > 0) READS.set(key, files);
 }
 
 /** path -> ranges read under `rootPath` in this process; empty when nothing was read. */

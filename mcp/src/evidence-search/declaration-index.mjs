@@ -12,29 +12,42 @@ import { collectSourceUnits } from '../analyze/source-units.mjs';
 import { outlineSource } from './source-outline.mjs';
 
 const MAX_INDEXED_BYTES = 256 * 1024;
-const OUTLINES = new Map();
+const FILES = new Map();
 
-function declarationsOf(file) {
+/** One product file's text and declarations, kept by size and mtime. */
+function factsOf(file) {
   const key = `${file.abs}\0${file.size}\0${file.mtimeMs}`;
-  const cached = OUTLINES.get(key);
+  const cached = FILES.get(key);
   if (cached) return cached;
-  let declarations = [];
+  let facts = { text: '', declarations: [] };
   if (file.size <= MAX_INDEXED_BYTES) {
     try {
-      declarations = outlineSource(readFileSync(file.abs, 'utf8'), file.path).declarations
-        .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export')
-        .map(({ name, line }) => ({ name, line }));
+      const text = readFileSync(file.abs, 'utf8');
+      facts = {
+        text,
+        declarations: outlineSource(text, file.path).declarations
+          .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export')
+          .map(({ name, line, kind }) => ({ name, line, kind })),
+      };
     } catch {
-      declarations = [];
+      facts = { text: '', declarations: [] };
     }
   }
-  if (OUTLINES.size > 20000) OUTLINES.clear();
-  OUTLINES.set(key, declarations);
-  return declarations;
+  if (FILES.size > 20000) FILES.clear();
+  FILES.set(key, facts);
+  return facts;
+}
+
+function productFiles(rootPath, ignore) {
+  try {
+    return collectSourceUnits(rootPath, { ignore }).files.filter((file) => file.class === 'product');
+  } catch {
+    return [];
+  }
 }
 
 /**
- * name -> [{ path, line }] over every product source file under `rootPath`; a
+ * name -> [{ path, line, kind }] over every product source file under `rootPath`; a
  * `Receiver.method` declaration is also listed under `*.method`.
  *
  * @param {string} rootPath absolute repository root
@@ -42,23 +55,46 @@ function declarationsOf(file) {
  */
 export function declarationIndex(rootPath, { ignore = [] } = {}) {
   const index = new Map();
-  let collection;
-  try {
-    collection = collectSourceUnits(rootPath, { ignore });
-  } catch {
-    return index;
-  }
-  for (const file of collection.files) {
-    if (file.class !== 'product') continue;
-    for (const { name, line } of declarationsOf(file)) {
+  for (const file of productFiles(rootPath, ignore)) {
+    for (const { name, line, kind } of factsOf(file).declarations) {
       // A Go method `Node.Subscribe` is also found by the bare name its callers write.
       const keys = name.includes('.') ? [name, `*.${name.split('.').pop()}`] : [name];
       for (const key of keys) {
         const rows = index.get(key);
-        if (rows) rows.push({ path: file.path, line });
-        else index.set(key, [{ path: file.path, line }]);
+        if (rows) rows.push({ path: file.path, line, kind });
+        else index.set(key, [{ path: file.path, line, kind }]);
       }
     }
   }
   return index;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Where product code calls `name(`: each call line outside a declaration line, at
+ * most `limit` (the rest only counted), so a symbol read can show the guard its
+ * caller puts around it.
+ *
+ * @returns {{ sites: { path: string, line: number }[], total: number }}
+ */
+export function callSitesOf(rootPath, name, { ignore = [], limit = 8 } = {}) {
+  const pattern = new RegExp(`(?:^|[^\\w$])${escapeRegExp(name)}\\s*\\(`, 'u');
+  const sites = [];
+  let total = 0;
+  for (const file of productFiles(rootPath, ignore)) {
+    const { text, declarations } = factsOf(file);
+    if (!text.includes(name)) continue;
+    const declared = new Set(declarations.map((declaration) => declaration.line));
+    const lines = text.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index += 1) {
+      if (declared.has(index + 1) || !pattern.test(lines[index])) continue;
+      if (/^\s*(?:\/\/|#|\*|\/\*)/.test(lines[index])) continue;
+      total += 1;
+      if (sites.length < limit) sites.push({ path: file.path, line: index + 1 });
+    }
+  }
+  return { sites, total };
 }

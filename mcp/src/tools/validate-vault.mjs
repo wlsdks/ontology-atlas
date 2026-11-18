@@ -237,12 +237,13 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   }
   const depthRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : (REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
   const repo = repositorySurvey(depthRoot, VAULT_ROOT);
-  for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: repo?.collection ?? null })) {
+  const reads = depthRoot ? sessionReads(depthRoot) : null;
+  for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: repo?.collection ?? null, reads })) {
     const issues = docIssues.get(finding.slug) || [];
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
     docIssues.set(finding.slug, issues);
   }
-  const coverage = measureBuildDepth(docs, repo, depthRoot ? sessionReads(depthRoot) : null).line;
+  const coverage = measureBuildDepth(docs, repo, reads).line;
   // A single-file check cannot see a parent; this pass holds the whole vault, so it
   // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);

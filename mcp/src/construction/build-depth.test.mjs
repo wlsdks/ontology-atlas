@@ -29,57 +29,99 @@ const doc = (slug, frontmatter, body = 'Defines it.\n\n## Uncertainty\n- None.\n
 });
 const OUTLINED = 'Defines it.\n\n## Uncertainty\n- Outlined only, body not read.\n';
 
-/** A product with three plugins, a core library and a command entry point. */
+/** A command whose dispatcher routes three operations, each in its own file. */
 function product() {
   return repository({
-    'packages/core/src/release.ts': lines(320),
-    'packages/core/src/semver.ts': lines(40),
-    'packages/core/package.json': JSON.stringify({ name: 'core', main: 'src/release.ts' }),
-    'packages/cli/src/bin/run.ts': "import { release } from '../../../core/src/release';\nexport function main() { release(); }\n",
-    'packages/cli/package.json': JSON.stringify({ name: 'cli', bin: { tool: 'src/bin/run.ts' } }),
-    'plugins/npm/src/index.ts': "import { release } from '../../../packages/core/src/release';\nexport class NpmPlugin { apply() { release(); } }\n",
-    'plugins/slack/src/index.ts': "import { release } from '../../../packages/core/src/release';\nexport class SlackPlugin { apply() { release(); } }\n",
-    'plugins/s3/src/index.ts': 'export class S3Plugin { apply() { return 1; } }\n',
-    'package.json': JSON.stringify({ name: 'root', workspaces: ['packages/*', 'plugins/*'] }),
+    'package.json': JSON.stringify({ name: 'tool', bin: { tool: 'src/cli.ts' } }),
+    'src/cli.ts': [
+      "import { ship } from './ship';",
+      "import { canary } from './canary';",
+      "import { whisper } from './whisper';",
+      'export function run(command: string) {',
+      '  switch (command) {',
+      '    case "ship":',
+      '      ship();',
+      '      break;',
+      '    case "canary":',
+      '      canary();',
+      '      break;',
+      '    case "whisper":',
+      '      whisper();',
+      '      break;',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    'src/ship.ts': 'export function ship(tagged = false) {\n  if (!tagged) return;\n  publish();\n}\nfunction publish() {\n  return 1;\n}\n',
+    'src/canary.ts': 'export function canary() {\n  return 2;\n}\n',
+    'src/whisper.ts': 'export function whisper() {\n  return 3;\n}\n',
   });
 }
 
 /*
- * Breadth is placement against the survey, not lines under a path: a family node
- * that names its siblings places them, a reasoned exclusion places a unit, and a
- * unit nothing names is listed with its next call.
+ * Breadth counts abilities, not folders: an operation inside a file some node
+ * already covers is still listed by name when no capability or element names it,
+ * and a word in a domain sentence does not place it.
  */
-test('every surveyed unit is under a node, named inside one, excluded with a reason, or listed', (t) => {
+test('every surveyed ability has a node, is named inside one, is excluded with a reason, or is listed', (t) => {
   const root = product();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const repo = repositorySurvey(root, join(root, 'atlas'));
+  assert.deepEqual(repo.survey.abilities.map((row) => `${row.kind} ${row.name}`), ['command tool', 'operation ship', 'operation canary', 'operation whisper']);
   const docs = [
-    doc('project', {}, 'Ships releases.\n\n## Uncertainty\n- plugins/s3 is left out: it uploads files and decides nothing about a release.\n'),
-    doc('capabilities/ship-a-release', { path: 'packages/core/src/release.ts' }),
-    doc('capabilities/publish-packages', { path: 'plugins/npm/src/index.ts' }, 'Publishes.\n\n## Includes\n- npm and slack plugins.\n\n## Uncertainty\n- None.\n'),
+    doc('project', {}, 'Ships releases.\n\n## Uncertainty\n- The tool command is only the launcher for the operations below.\n'),
+    doc('domains/release', {}, 'Releases, canaries and whisper messages.\n'),
+    doc('capabilities/ship-a-release', { path: 'src/cli.ts' }, 'Ships a release with `ship`.\n'),
+    doc('capabilities/publish', { path: 'src/ship.ts' }, 'Publishes.\n\n## Includes\n- Canary builds too.\n'),
   ];
   const depth = measureBuildDepth(docs, repo, null);
   const { breadth } = depth;
-  assert.equal(breadth.units, repo.survey.units.length);
-  const placed = breadth.node + breadth.named + breadth.excluded;
-  assert.equal(placed + breadth.unplaced.length, breadth.units);
-  assert.ok(breadth.named >= 1, 'the family node places its sibling by name');
-  assert.ok(breadth.excluded >= 1, 'a reasoned exclusion places a unit');
-  assert.deepEqual(breadth.unplaced.map((unit) => unit.path), ['packages/cli']);
-  assert.match(depth.line, /Not placed: packages\/cli/);
-  assert.match(depth.line, /add_concepts a node whose path is inside it/);
-  const without = measureBuildDepth(docs.slice(0, 2), repo, null).breadth;
-  assert.ok(without.unplaced.some((unit) => unit.path === 'plugins/npm'), 'without the family node the plugin is unplaced');
+  assert.deepEqual([breadth.abilities, breadth.node, breadth.named, breadth.excluded], [4, 1, 1, 1]);
+  assert.deepEqual(breadth.unplaced.map((row) => row.name), ['whisper'], 'a domain sentence does not place an ability');
+  assert.match(depth.line, /Not placed: whisper \(operation, src\/cli\.ts\)/);
+  assert.match(depth.line, /add_concepts a capability for it/);
 });
 
-test('a must-have unit with no node is listed by name even when the line count is small', (t) => {
+/*
+ * A rule a body states is checked against the lines this session served: the
+ * cite must fall inside a served range and hold a condition. Without reads (the
+ * CLI), only the cited lines are checked.
+ */
+test('a stated rule needs a cite of read lines that hold its condition', (t) => {
   const root = product();
   t.after(() => rmSync(root, { recursive: true, force: true }));
+  resetSessionReads();
+  recordSourceEvidence(root, { rows: [{ status: 'read', path: 'src/ship.ts', actualRange: { startLine: 1, endLine: 4 }, symbol: 'ship' }] });
+  const reads = sessionReads(root);
+  const cited = doc('capabilities/ship', { path: 'src/ship.ts' }, 'Ships a release.\n\nShips only when tagged (`src/ship.ts:L1-L2`).\n\n## Uncertainty\n- None.\n');
+  const unserved = doc('capabilities/publish', { path: 'src/ship.ts' }, 'Publishes.\n\nPublishes only after ship (src/ship.ts L5-L7).\n\n## Uncertainty\n- None.\n');
+  const bare = doc('capabilities/canary', { path: 'src/canary.ts' }, 'Ships a canary.\n\nRuns only on a pull request, `src/canary.ts` `canary`.\n\n## Uncertainty\n- None.\n');
+  const plain = doc('capabilities/whisper', { path: 'src/whisper.ts' }, 'Sends a whisper.\n\n## Uncertainty\n- None.\n');
   const repo = repositorySurvey(root, join(root, 'atlas'));
-  const docs = [doc('project', {}), doc('capabilities/run-the-tool', { path: 'packages/cli/src/bin/run.ts' })];
-  const { breadth } = measureBuildDepth(docs, repo, null);
-  assert.ok(breadth.mustHaveWithoutNode.some((unit) => unit.path === 'packages/core'), JSON.stringify(breadth.mustHaveWithoutNode));
-  assert.ok(breadth.mainUnplaced.some((file) => file.path === 'packages/core/src/release.ts'));
+  const depth = measureBuildDepth([cited, unserved, bare, plain], repo, reads);
+  assert.deepEqual(depth.rules.uncited.map((row) => row.slug), ['capabilities/publish', 'capabilities/canary'], 'a definition alone states no rule');
+  assert.match(depth.line, /Rules: 2 of 4 capabilities state a rule without citing read lines/);
+  assert.match(depth.line, /"path":"src\/canary\.ts","symbol":"canary"\}\]\}\), then patch_concept each rule with the cite/);
+  const findings = buildDepthFindings([cited, unserved, bare, plain], { repoRoot: root, reads }).filter((row) => row.code === 'rule-without-read-lines');
+  assert.deepEqual(findings.map((row) => row.slug), ['capabilities/publish', 'capabilities/canary']);
+  const offline = buildDepthFindings([cited, unserved], { repoRoot: root }).filter((row) => row.code === 'rule-without-read-lines');
+  assert.deepEqual(offline.map((row) => row.slug), ['capabilities/publish'], 'without reads the cited lines must still hold a condition');
+  resetSessionReads();
+});
+
+/*
+ * Impact needs conditions between abilities, not only edges into shared roles.
+ */
+test('capabilities no ability-to-ability edge touches are listed with the question to ask', () => {
+  const docs = [
+    doc('capabilities/presence', { depends_on: ['capabilities/subscribe', 'elements/broker'] }),
+    doc('capabilities/subscribe', { depends_on: ['elements/broker'] }),
+    doc('capabilities/whisper', { depends_on: ['elements/broker'] }),
+    doc('elements/broker', {}),
+  ];
+  const depth = measureBuildDepth(docs, null, null);
+  assert.deepEqual(depth.abilityEdges, { edges: 1, alone: ['capabilities/whisper'] });
+  assert.match(depth.line, /none touch capabilities\/whisper\. For each, ask which other ability must have run, be configured or be present first/);
 });
 
 /*
@@ -119,6 +161,25 @@ test('a relation note about a node that says it was not read names the read and 
   assert.match(findings[0].message, /"sourceReads":\[\{"path":"src\/queue\.ts","symbol":"Queue\.push"\}\]/);
   assert.match(findings[0].message, /replace_relation\(\{"from":"capabilities\/send","oldTo":"elements\/queue","oldType":"depends_on","newTo":"elements\/queue","newType":"depends_on"/);
   assert.equal(buildDepthFindings([docs[0], doc('elements/queue', {})]).length, 0);
+});
+
+/*
+ * With this session's reads the check asks the record, not the wording: a node
+ * whose file was served passes whatever its Uncertainty says, and one whose file
+ * never was is flagged even when its body claims nothing.
+ */
+test('with session reads a relation note is judged by what was served', () => {
+  resetSessionReads();
+  recordSourceEvidence('/repo', { rows: [{ status: 'read', path: 'src/queue.ts', actualRange: { startLine: 1, endLine: 9 }, symbol: 'Queue.push' }] });
+  const reads = sessionReads('/repo');
+  const docs = [
+    doc('capabilities/send', { path: 'src/send.ts', dependencies: ['elements/queue'], relation_notes: { 'elements/queue': 'Every message waits in the queue.' } }, 'Sends.\n\n## Uncertainty\n- None.\n'),
+    doc('elements/queue', { path: 'src/queue.ts' }, 'Holds messages.\n\n## Uncertainty\n- Outlined only.\n'),
+  ];
+  const findings = buildDepthFindings(docs, { reads }).filter((row) => row.code === 'relation-note-on-unread');
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /but capabilities\/send was never read this session/);
+  resetSessionReads();
 });
 
 test('a dependency both ways is one finding naming the direction rule', () => {
@@ -161,26 +222,28 @@ test('finalize refuses answered rows the map does not support, leading with the 
     capabilities: 6,
     dependsOn: 2,
     reads: { capabilities: 6, read: 3, unread },
-    breadth: {
-      units: 4, node: 2, named: 0, excluded: 0,
-      unplaced: [{ path: 'src/refunds', lines: 10 }],
-      mustHaveWithoutNode: [{ path: 'src/refunds', lines: 10 }],
-      entryUnplaced: [], mainUnplaced: [],
-    },
+    rules: { capabilities: 6, judgedAgainstReads: true, uncited: [{ slug: 'capabilities/d', path: 'src/d.ts', symbol: 'runD', cited: false }] },
+    abilityEdges: { edges: 0, alone: ['capabilities/a'] },
+    breadth: { abilities: 4, node: 2, named: 1, excluded: 0, unplaced: [{ kind: 'operation', name: 'whisper', path: 'src/cli.ts', symbol: 'whisper' }] },
   };
   const reasons = competencyDepthRefusals(questions, depth);
-  assert.deepEqual(reasons.map((reason) => reason.split(':')[0]), ['- evidence', '- domains', '- abilities', '- impact']);
+  assert.deepEqual(reasons.map((reason) => reason.split(':')[0]), ['- evidence', '- evidence', '- abilities', '- impact']);
   assert.match(reasons[0], /Next call: analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/a\.ts","symbol":"runA"\},\{"path":"src\/b\.ts","startLine":1,"maxLines":200\}/);
   assert.ok(reasons[0].indexOf('Next call') < reasons[0].indexOf('partial'), 'reading comes before the partial fallback');
-  assert.match(reasons[1], /src\/refunds/);
+  assert.match(reasons[1], /state a rule without citing read lines.*Next call: analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/d\.ts","symbol":"runD"\}\]\}\), then patch_concept/);
+  assert.match(reasons[2], /whisper \(operation, src\/cli\.ts\)/);
   assert.match(reasons[3], /add_relations/);
+  const edgesOnly = competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...depth, dependsOn: 6 });
+  assert.match(edgesOnly[0], /0 depends_on edges run from one capability to another for 6 capabilities/);
   const held = competencyDepthRefusals(questions, {
     capabilities: 6, dependsOn: 3,
     reads: { capabilities: 6, read: 4, unread: unread.slice(0, 2) },
-    breadth: { ...depth.breadth, unplaced: [], mustHaveWithoutNode: [] },
+    rules: { ...depth.rules, uncited: [] },
+    abilityEdges: { edges: 2, alone: [] },
+    breadth: { ...depth.breadth, unplaced: [] },
   });
   assert.deepEqual(held, []);
   assert.deepEqual(competencyDepthRefusals(questions.map((row) => ({ ...row, status: 'partial' })), depth), []);
-  const unmeasured = competencyDepthRefusals([{ id: 'evidence', status: 'answered' }], { ...depth, reads: null });
+  const unmeasured = competencyDepthRefusals([{ id: 'evidence', status: 'answered' }], { ...depth, reads: null, rules: { ...depth.rules, judgedAgainstReads: false } });
   assert.deepEqual(unmeasured, [], 'a server that served no reads does not refuse on reads it cannot see');
 });

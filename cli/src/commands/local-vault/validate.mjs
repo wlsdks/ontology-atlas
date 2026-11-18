@@ -150,7 +150,13 @@ export const KNOWN_CODES = [
     code: 'relation-note-on-unread',
     severity: 'warning',
     scope: 'vault',
-    description: 'a relation `why` states how two nodes work together while one of them says, under Uncertainty, that it was not read; the message names the read and the replace_relation call that repair it.',
+    description: 'a relation `why` states how two nodes work together while one of them was never read (validate_vault: by the lines its server served; here: by its own Uncertainty wording); the message names the read and the replace_relation call that repair it.',
+  },
+  {
+    code: 'rule-without-read-lines',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a capability states a rule (a condition, order or default) but cites no lines that hold it, as `path:L12-L30`; validate_vault also requires the lines were served this session. The cited lines are checked with OATLAS_REPO_ROOT.',
   },
   {
     code: 'dependency-both-ways',
@@ -668,8 +674,9 @@ function findFolderOnlyEvidenceIssues(entries) {
 }
 
 /**
- * The build-depth warnings `validate_vault` reports, from the same implementation. The two relation checks need
- * only the vault; the entry-path checks need `OATLAS_REPO_ROOT`, as the MCP server reads it.
+ * The build-depth warnings `validate_vault` reports, from the same implementation. The CLI holds no session reads,
+ * so the relation-note check reads Uncertainty wording and the rule check asks only for cited lines that hold a
+ * condition; the entry-path checks and the cited lines need `OATLAS_REPO_ROOT`, as the MCP server reads it.
  */
 function findBuildDepthIssues(entries, vaultPath) {
   const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'

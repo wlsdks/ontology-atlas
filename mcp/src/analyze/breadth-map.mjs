@@ -1,7 +1,7 @@
 /**
  * The survey `analyze_repo_structure` returns by default: the breadth map. Size,
  * every product unit with its main files, exported names and import edges, the
- * entry points, and the documents, so the agent can outline the whole product
+ * entry points, the abilities to place (`abilities.mjs`), and the documents, so the agent can outline the whole product
  * before reading any part of it. It proposes no node: a folder is evidence, and the
  * agent names what the product does. Static text scans only; nothing runs.
  */
@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
 
 import { inferImports } from '../infer-imports.mjs';
+import { abilitiesOf } from './abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;
@@ -405,16 +406,18 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     outside[row.class] = entry;
   }
   const entryPoints = entryPointsOf(rootPath, collection);
+  const abilities = abilitiesOf(rootPath, collection, entryPoints.rows, { ignore });
   const pages = docPages(rootPath, ignoreSet);
   const readme = readmePurpose(rootPath);
   const next = units.length === 0
     ? 'No product source file was found here: check rootPath and ignore, or build the map from documents.'
     : `${units.length} product units, ${formatCount(collection.productLines)} lines in ${formatCount(collection.productFiles)} files. ` +
-      'Outline each unit\'s main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true) and ' +
-      'place every unit: a node, inside a named node, or excluded with a reason. Then, for each must-have ability, ' +
-      'read from its entry function (sourceReads symbol) along the calls it names until you reach the condition, ' +
-      'order or default that decides its behaviour. Nothing is written yet; add_concepts and validate_vault report ' +
-      'which units, entry points and main files no node places, and which entry files were never read.';
+      `Outline each unit's main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true) and ` +
+      `place each of the ${abilities.rows.length} abilities listed: a capability for it, its name inside the node that covers it ` +
+      '(a family names its members), or excluded with a reason. Then read each capability by symbol ' +
+      '(sourceReads {path, symbol}, three or four per call): the read returns the body with the guards, defaults ' +
+      'and callees that decide it, each with path and lines to cite. Nothing is written yet; add_concepts and ' +
+      'validate_vault report which abilities no node places and which rules cite no read lines.';
   const map = {
     contract: 'breadthMap:v1',
     rootPath,
@@ -428,6 +431,8 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     units,
     entryPoints: entryPoints.rows,
     ...(entryPoints.omitted > 0 ? { entryPointsOmitted: entryPoints.omitted } : {}),
+    abilities: abilities.rows,
+    ...(abilities.omitted > 0 ? { abilitiesOmitted: abilities.omitted } : {}),
     docs: {
       readme,
       pages: pages.rows,
@@ -513,6 +518,15 @@ function renderBreadthMap(map) {
     lines.push('', 'Entry points: kind path symbol');
     for (const row of map.entryPoints) lines.push(`${row.kind} ${row.path} ${row.symbol}`);
     if (map.entryPointsOmitted) lines.push(`+${map.entryPointsOmitted} more`);
+  }
+  if (map.abilities?.length > 0) {
+    lines.push('', 'Abilities to place: kind name path symbol (a family lists its members)');
+    for (const row of map.abilities) {
+      lines.push(row.kind === 'family'
+        ? `family ${row.path}: ${row.members.join(', ')}`
+        : `${row.kind} ${row.name} ${row.path}${row.symbol && row.symbol !== row.name ? ` ${row.symbol}` : ''}`);
+    }
+    if (map.abilitiesOmitted) lines.push(`+${map.abilitiesOmitted} more`);
   }
   if (map.docs.pages.length > 0) {
     lines.push('', 'Docs: path - title');
