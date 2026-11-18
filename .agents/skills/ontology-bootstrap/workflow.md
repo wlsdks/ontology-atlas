@@ -1,105 +1,87 @@
-# Bootstrap a trustworthy ontology
+# Bootstrap a first map
 
-Create a shared meaning model, not a labeled file tree. Treat repository
-structure as implementation evidence. Never promote a folder, package, README
-heading, or model-generated phrase into a business concept without a definition
-and source-backed justification.
+Build the whole product in outline first, then the one flow it exists for in
+depth, then write all of it in one run. Repository structure is evidence: a
+folder, package or README heading becomes a node only with a definition. The
+kind tests and relation matrix live in the
+[Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind);
+the construction card that `connection_info` returns states the body shape,
+the naming rules and the `depends_on` test, and
+[guides/meaning-extraction.md](guides/meaning-extraction.md) adds the
+definition and relation rules. A "unit" below is one top-level source package,
+workspace member or module folder.
 
-Use only ontology-atlas MCP tools for the core workflow. Do not depend on
-other skills, shell search, or an AST index. Those may exist, but a
-plain agent connected only to Atlas must still succeed at the meaning model.
-The optional, bounded task-navigation enrichment below is the sole exception:
-after meaning selects a stable element, a source-aware builder may use an
-available local source reader to verify exact coordinates that Atlas then
-checks again. Navigation may remain unknown without blocking the core model.
+## 0. Confirm the roots
 
-## Meaning contract
+Call `connection_info({})` and compare both roots with the intended vault and
+repository before any other call. On a mismatch, stop that process; do not send
+a harmless-looking read to learn whether the wrong server still works.
+Continue when the vault is empty, holds only starter nodes, or the person asks
+for a rebuild. A vault with 20 or more curated nodes goes to `ontology-sync`.
 
-The normative five-kind discriminator, relation support matrix, direct
-`is_a` test, and inference/standards boundary live only in the
-[Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
-This skill owns the bootstrap sequence and evidence/approval states; it does
-not redefine the model. If the linked file is unavailable, use the compact
-meta-model boundary supplied by the connected Atlas MCP instructions.
+## 1. Survey (one call)
 
-Keep these epistemic states separate:
+`analyze_repo_structure` once, skipping the vault folder. Note every unit, its
+main files, the entry points and the documents.
 
-- `observed`: directly present in a returned source excerpt, path, package, or
-  import.
-- `proposed`: an interpretation supported by observed evidence but not yet
-  accepted by the user.
-- `shared`: a user-approved concept persisted in the vault.
+## 2. Breadth (3 to 6 calls)
 
-Before extracting concepts, read
-[guides/meaning-extraction.md](guides/meaning-extraction.md). Apply its
-definition, boundary, evidence, naming, relation, and self-audit rules.
+Outline the main file of every product unit, eight files per call, before
+reading any function body. An outline row plus the unit's document heading is
+enough to name a capability and its entry symbol; it is not enough to state a
+rule, and the body says so under `## Uncertainty`.
 
-## Workflow
+## 3. Write down the product outline
 
-### 1. Confirm cold-start scope
+Every ability a user, operator or dependent system gets, verb-first, each with
+its entry file and symbol, grouped under 4 to 7 domains. Expect about one
+capability per 1,000 non-test source lines, 10 to 30 on a first build, and 5 to
+15 elements. Fewer than 10 capabilities on a repository of a few hundred files
+means the pass stopped early. For a family of siblings (many transforms,
+plugins or adapters), write one capability per thing the user gets, members
+named in the body: never one node per class, never one node for the family.
 
-Call:
+## 4. Main flow (2 to 4 calls)
 
-```text
-connection_info({})
-list_kinds({})
-```
+Pick the flow the product exists for and read it end to end, input to output,
+following one hop into each role it crosses. That gives the `depends_on` spine.
+Read further only where a name does not say who decides, and to list each
+interface's implementations.
 
-Compare both roots returned by `connection_info` with the intended absolute
-vault and repository before calling `list_kinds` or reading project evidence.
-On any mismatch, stop that process immediately; do not send a harmless-looking
-read to learn whether the wrong server might still work. A source checkout that
-already exposes its own dogfood MCP is especially easy to mistake for the new
-vault.
+## 5. Stop reading
 
-For an in-session scratch run that cannot restart in the target folder, prepare
-`.agents/skills/ontology-bootstrap/scripts/rooted-mcp-read.mjs` before the first
-measured call. Resolve it from the Atlas source checkout that carries this
-skill, never from the target repository root. Run its `schema` discovery once, author the input from the
-emitted JSON Schema and example. The bootstrap invocation is the resolved script
-with the single positional argument `schema`; do not add `--schema`, `--output`,
-or use an empty invocation. Then make one `--input` / `--output` call for
-each deliberately authored read packet; do not retry a packet to probe CLI forms
-or inspect implementation source. The input names the
-absolute source-checkout JavaScript `serverPath`, absolute `vaultRoot` /
-`repoRoot`, and an ordered read request list. The runner itself invokes and
-verifies `connection_info` first, exposes only read/analysis operations, and
-writes one transcript only after every read succeeds. It is not a write path;
-accepted plans still use the normal MCP writer tools after the human gate.
+Breadth is done when every product unit is touched by a node `path:` or named as
+unopened in the project's `## Uncertainty`. Depth is done when the main flow is
+traced and about 60% of the read budget is spent. When cost is the limit, cut
+depth, never breadth.
 
-Continue when the vault is empty, contains only starter/example nodes, or the
-user explicitly requests a rebuild. If it has 20+ curated nodes, use
-`ontology-sync` unless the user explicitly asks for re-bootstrap. This only
-chooses the safer workflow; Atlas has no whole-vault or per-project node cap.
+## 6. Say the outline, then write it
 
-### Continue by phase
+Tell the person the outline in a few short plain sentences: purpose, domains,
+one line per capability with its entry file, the elements, the dependency
+spine, what was only outlined and what was not opened. Ask only a question
+whose answer changes which nodes exist, say the default you take, and continue
+with it; record that choice under `## Uncertainty` as yours, not the person's.
+Do not wait for a reply. Writes still show the host's permission prompt unless
+the person chose to auto-approve them.
 
-Open only the reference for the current phase. Complete every phase in order;
-this routing changes when detail is read, not the required evidence or approval.
+Write in four calls: project and domains, then capabilities, then elements
+(`add_concepts`), then relations (`add_relations`, each `why` the mechanism).
 
-| Current work | Required reference | Completion boundary |
-|---|---|---|
-| Collect evidence and construct the non-writing review plan | [Construction](guides/construction.md) | Evidence ledger, definitions, relations, competency answers, meaning audit, and full review plan |
-| Qualify that exact plan and prepare its human decision | [Qualification](guides/qualification.md) | Independent source-hidden and citation evidence; exact-plan acceptance and released writer rows |
-| Persist a released plan | [Persistence](guides/persistence.md) | Authorized writes, full readback, validation, compilation, and honest meaning assessment |
+## 7. Validate, connect, finalize
 
-Do not enter persistence because source analysis, structural validation, or code
-approval passed. The qualification reference owns the exact acceptance boundary.
-When returning to an earlier phase, invalidate the dependent receipts as that
-reference requires. Report unfinished phases and the exact missing evidence.
+`validate_vault`, then `connect_project_source`, then
+`finalize_project_meaning` with the project's `## Competency answers`
+(`connection_info({guide:"competency"})` has the layout). Answer a warning by
+the repair it names, or say why not. Tell the person what the folder holds and
+what is still unopened.
 
 ## Stop conditions
 
 Stop without writes when:
 
-- evidence cannot establish the project outcome;
-- proposed domains are only folders, teams, technologies, or README sections;
-- a capability cannot be defined without naming its implementation;
-- important sources contradict one another and the user has not resolved them;
-- an independent evaluator or complete source-hidden task is unavailable;
-- the user has not approved the proposed meaning;
-- the plan/source digest changed after approval or any required gap was not
-  explicitly accepted;
-- the MCP reports a mismatched vault and the target write location is unclear.
+- the server's vault or repository root is not the intended one, or the write
+  location is unclear;
+- no document or entry point establishes what the product is for.
 
-Unknown is a valid result. An invented ontology is not.
+Unknown is a valid result. An invented map is not.

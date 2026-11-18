@@ -129,7 +129,7 @@ writeFileSync(`${prefix}.tools.json`, JSON.stringify({ calls, reads }, null, 2))
 ' "$1"
 }
 
-printf 'acp-replay: turn one (survey and proposal)\n'
+printf 'acp-replay: turn one (the door instruction)\n'
 # stream-json keeps every tool call in turn-<n>.jsonl; the last `result` line is
 # the same record --output-format json would have written, saved as turn-<n>.json.
 # Kept because the 2026-09-23 Rust row could not say whether the builder had
@@ -147,14 +147,23 @@ if (!data.session_id) { console.error("acp-replay: turn one returned no session 
 console.log(data.session_id);
 ' "$out/turn-one.json")
 
-printf 'acp-replay: turn two (the person says go ahead), session %s\n' "$session"
-claude -p "Yes. Go ahead and build all of it exactly as you proposed, and finish the job in this turn: create the nodes and relations, bind the code folder, validate, and tell me what the vault now holds." \
-  --resume "$session" \
-  --model "$model" --max-turns 120 --output-format stream-json --verbose \
-  --mcp-config "$out/mcp.json" --strict-mcp-config --allowedTools "$allowed" \
-  --append-system-prompt "$(cat "$out/handoff.txt")" \
-  > "$out/turn-two.jsonl" 2> "$out/turn-two.err" || true
-extract_result "$out/turn-two"
+# The door asks for the whole build in one run, so the person's "go ahead" turn is
+# sent only when turn one stopped before finalizing (it asked, or ran out).
+if node -e '
+const { calls } = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+process.exit(Object.keys(calls).some((name) => name.endsWith("finalize_project_meaning")) ? 0 : 1);
+' "$out/turn-one.tools.json"; then
+  printf 'acp-replay: turn one finalized the map; no second turn\n'
+else
+  printf 'acp-replay: turn two (the person says go ahead), session %s\n' "$session"
+  claude -p "Yes. Go ahead and build all of it exactly as you proposed, and finish the job in this turn: create the nodes and relations, bind the code folder, validate, and tell me what the vault now holds." \
+    --resume "$session" \
+    --model "$model" --max-turns 120 --output-format stream-json --verbose \
+    --mcp-config "$out/mcp.json" --strict-mcp-config --allowedTools "$allowed" \
+    --append-system-prompt "$(cat "$out/handoff.txt")" \
+    > "$out/turn-two.jsonl" 2> "$out/turn-two.err" || true
+  extract_result "$out/turn-two"
+fi
 
 elapsed=$(( $(date +%s) - started ))
 
@@ -188,23 +197,30 @@ if (existsSync(vault)) {
     if (kind && kind !== "vault-readme") byKind[kind] = (byKind[kind] ?? 0) + 1;
   }
 }
-const finalText = typeof two?.result === "string" ? two.result : "";
 const tools = (name) => {
   try { return JSON.parse(readFileSync(`${outDir}/${name}.tools.json`, "utf8")); } catch { return null; }
 };
+const oneTools = tools("turn-one");
 const twoTools = tools("turn-two");
+// The calls of both turns, so a build finished in turn one counts as finished.
+const allCalls = {};
+for (const t of [oneTools, twoTools]) {
+  for (const [name, n] of Object.entries(t?.calls ?? {})) allCalls[name] = (allCalls[name] ?? 0) + n;
+}
+const traced = Boolean(oneTools || twoTools);
 // The tool trace decides; the wording of the final answer only stands in when
 // the trace is missing (the 2026-09-23 Rust run finalized and said "finalization").
-const finalized = twoTools
-  ? Object.keys(twoTools.calls).some((name) => name.endsWith("finalize_project_meaning"))
-  : finalText.includes("finalize_project_meaning") || /finali[sz]/i.test(finalText);
+const lastText = typeof two?.result === "string" ? two.result : typeof one?.result === "string" ? one.result : "";
+const finalized = traced
+  ? Object.keys(allCalls).some((name) => name.endsWith("finalize_project_meaning"))
+  : lastText.includes("finalize_project_meaning") || /finali[sz]/i.test(lastText);
 const report = {
   target, vault, model,
   wallClockSeconds: Number(elapsed),
   turns: { one: summarise(one), two: summarise(two) },
   nodesByKindFolder: byKind,
   finalized,
-  toolCalls: twoTools?.calls ?? null,
+  toolCalls: traced ? allCalls : null,
 };
 writeFileSync(`${outDir}/replay.json`, JSON.stringify(report, null, 1));
 const cost = (t) => (t?.total_cost_usd == null ? "?" : `$${t.total_cost_usd.toFixed(2)}`);
@@ -215,13 +231,14 @@ console.log("");
 console.log(`  target        ${target}`);
 console.log(`  model         ${model}`);
 console.log(`  turn one      ${one?.num_turns ?? "?"} agent turns, ${secs(one)}, ${cost(one)}`);
-console.log(`  turn two      ${two?.num_turns ?? "?"} agent turns, ${secs(two)}, ${cost(two)}`);
+console.log(two ? `  turn two      ${two.num_turns ?? "?"} agent turns, ${secs(two)}, ${cost(two)}` : "  turn two      not sent: turn one finalized");
 console.log(`  wall clock    ${elapsed}s      total $${total.toFixed(2)}`);
 console.log(`  vault         ${nodes} nodes — ${Object.entries(byKind).map(([k, n]) => `${k} ${n}`).join(", ") || "empty"}`);
-console.log(`  finished      ${finalized ? (twoTools ? "finalize_project_meaning was called" : "the final answer speaks of finalizing the project meaning") : (twoTools ? "finalize_project_meaning was never called — the build stopped short" : "the final answer never mentions finalizing — the build stopped short")}`);
-if (twoTools) {
-  const outlines = twoTools.reads.filter((r) => r.mode === "outline").length;
-  console.log(`  reads         ${twoTools.reads.length} read_source calls in turn two, ${outlines} in outline mode`);
+console.log(`  finished      ${finalized ? (traced ? "finalize_project_meaning was called" : "the final answer speaks of finalizing the project meaning") : (traced ? "finalize_project_meaning was never called — the build stopped short" : "the final answer never mentions finalizing — the build stopped short")}`);
+if (traced) {
+  const reads = [...(oneTools?.reads ?? []), ...(twoTools?.reads ?? [])];
+  const outlines = reads.filter((r) => r.mode === "outline").length;
+  console.log(`  reads         ${reads.length} read_source calls, ${outlines} in outline mode`);
 }
 console.log(`  written to    ${outDir}/replay.json`);
 console.log("");

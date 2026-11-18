@@ -280,15 +280,15 @@ const VAULT_HANDOFF_BASE = [
    * **State the order.** Left unsaid, the agent invents its own, and that order is usually
    * "create first, explain later" — which is what the measurement showed.
    */
-  'Work in this order: (1) orient with `connection_info` and `list_kinds`, and on a large vault do not dump every node; (2) before creating anything, look for what is already there with `query_ontology` `similar_nodes` or `find_evidence`, and if something close exists, say what you found and ask whether to extend it before making a second node for the same idea; (3) write only after the shape is settled, preferring `patch_concept` on an existing node over a new one.',
+  'In a vault that already has nodes, work in this order: orient with `connection_info` and `list_kinds` without dumping every node, look for an existing node with `find_evidence` or `query_ontology` `similar_nodes` before creating one, and extend it with `patch_concept` rather than adding a twin.',
   'When the person asks you to find or show one concept, resolve its exact slug and call `get_concept`. When they ask how two concepts connect, resolve both exact slugs and call `find_path`, even if you can answer from context. Atlas uses those exact read calls to move and highlight the map; never guess a slug.',
-  'Whenever you add or change a relation, put the reason in the `why` field, in the person\'s own words — what they asked for, not what the tool did. Write "고객이 결제를 되돌릴 수 있어야 한다고 해서", not "added depends_on edge".',
+  'Whenever you add or change a relation, put in `why` the reason the relation is true: what the source needs from the target, or the reason the person gave. Write "a refund reverses a captured payment, so it needs the payment record", not "added depends_on edge" and not "you approved this".',
   /*
-   * **Ask when unsure.** This one line changed the most in the measurement — without it the agent
-   * created a node the user may not have wanted and then asked afterwards, "shall I merge these if
-   * they are the same?". A node is more expensive to remove than to create.
+   * **Ask when unsure, with a default.** Without this line an agent made both nodes and asked
+   * afterwards whether to merge them. The question carries the default, so the build does not
+   * stop on it (decision 0f78a22b).
    */
-  'If you are unsure whether two things are the same concept, that is a question for the person, not a judgement call for you. Ask first: an extra node is harder to remove than to add.',
+  'If two candidates look like the same concept, ask the person which they mean, say which one you will write if they do not answer, and write that one; record the choice under `## Uncertainty` as yours.',
   ANSWER_LANGUAGE_SLOT,
   /*
    * Report outcomes as sentences, not raw payloads: tool results are machine answers, and the
@@ -300,22 +300,22 @@ const VAULT_HANDOFF_BASE = [
    * exist so that someone who does not know the vocabulary can still judge the meaning.
    */
   'Prefer ordinary words over jargon. When a term from this product is unavoidable (concept, capability, element, relation), say it once in plain words the first time you use it in a conversation.',
-  'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
+  'Write only inside this folder. Reading the project\'s code around it through the tools is expected.',
 ];
 /**
  * Claim the vault server is wired only when it is: an empty server list happens, and
  * insisting on absent tools sends the agent hunting.
  */
 const VAULT_MCP_SENTENCE =
-  'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the markdown files yourself to find your way around — the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made. When you report counts, keep their units explicit and treat `query_ontology` health `relationCensus` as the authority: MCP `graph.edges` and `internalEdges` count compiled frontmatter relation declarations, so parent and child declarations can describe the same containment twice; the map\'s canonical relation census counts deduplicated normalized typed edges across the loaded ontology, not the current view filter. The MCP process does not know that app-side numeric census. Neither number is wrong, and never present them as the same census.';
+  'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the vault\'s markdown files yourself: the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made.';
 
 /**
- * Construction routing, not a qualification result; it grants no write authority, every
- * write still stops at the card. The bulk lifecycle needs an evaluator the app lacks, so one
- * completing path is named.
+ * Construction routing. It grants no write authority: each write still meets the permission
+ * card unless the person turned on auto-approve. The agent no longer waits for a reply between
+ * the outline and the writes (decision 0f78a22b).
  */
 const VAULT_CONSTRUCTION_SENTENCE =
-  'When the person asks you to build or rebuild this repository\'s ontology: verify `connection_info` and read the construction card in its `guide`; survey with `analyze_repo_structure`, `index_project`, and `infer_imports` where structure does not say what depends on what; propose in plain sentences — each candidate one definition, what it includes and excludes, and the file proving it — preferring few well-evidenced concepts to many thin ones; then wait. Once they agree, write in reviewed batches of ≤12 with `add_concepts`: each slug under its kind folder, each body carrying the definition, `## Includes` / `## Excludes`, an `## Uncertainty` line naming what you did not read or could not check, and on a capability or element a `path:` naming a file. Then `add_relations` each with a `why`, `validate_vault`, `connect_project_source`, `finalize_project_meaning`. Answer every warning by the repair it names, or say why not. This session does not have an independent evaluator, and the bulk `analyze_repo_structure` writePlan route needs one, so do not author a qualification proposal or wait for `canWrite`; it stays open to a terminal run with one. Do not fabricate an evaluator.';
+  'When the person asks you to build or rebuild this repository\'s map, follow the construction card that `connection_info` returns: cover the whole product in outline before reading any part in depth, tell them the outline in short plain sentences, then write everything in the same run, then `validate_vault`, `connect_project_source`, `finalize_project_meaning`. If you ask a question, say the default you will take and continue with it; record it under `## Uncertainty` as your choice, not theirs. When a warning names a one-call repair, make it; otherwise say why you left it.';
 
 function vaultHandoffPrompt(hasVaultMcp: boolean, locale: string): string {
   const rules = hasVaultMcp
