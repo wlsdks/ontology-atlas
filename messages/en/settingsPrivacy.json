@@ -69,5 +69,21 @@
     "failed": "Could not clear the list. Try again.",
     "forgetAll": "Clear all",
     "forgetAllArmed": "Press again to clear all"
+  },
+  "storedHere": {
+    "title": "Stored on this computer",
+    "keywords": "search index cache disk size storage delete full text",
+    "switchLabel": "Keep a search index on this computer",
+    "switchCaption": "Lets search find words inside every document. It holds file paths, modified times and each document's words in a searchable form, not a readable copy, in this computer's cache folder, and never leaves it. Anyone who can open that file can check which documents contain a word.",
+    "on": "On",
+    "off": "Off",
+    "sizeLabel": "Search index",
+    "size": "{size} · {count, plural, one {# folder} other {# folders}}",
+    "empty": "Nothing stored",
+    "offCaption": "Off. Search covers titles, summaries and tags, and no index file exists.",
+    "deleted": "Deleted. Each folder rebuilds its index when you open it again.",
+    "failed": "Could not delete the search index. Try again.",
+    "delete": "Delete",
+    "deleteArmed": "Press again to delete"
   }
 }

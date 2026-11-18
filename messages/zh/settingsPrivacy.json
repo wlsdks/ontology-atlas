@@ -69,5 +69,21 @@
     "failed": "无法清除该列表，请重试。",
     "forgetAll": "全部清除",
     "forgetAllArmed": "再按一次以全部清除"
+  },
+  "storedHere": {
+    "title": "保存在这台电脑上的内容",
+    "keywords": "搜索 索引 缓存 磁盘 大小 存储 删除 正文 search index cache",
+    "switchLabel": "在这台电脑上保留搜索索引",
+    "switchCaption": "让搜索能找到每个文档正文里的词。它以可搜索的形式而不是可读副本保存文件路径、修改时间和每个文档的词，放在这台电脑的缓存文件夹中，从不发送出去。能打开该文件的人可以查出哪些文档包含某个词。",
+    "on": "开",
+    "off": "关",
+    "sizeLabel": "搜索索引",
+    "size": "{size} · {count, number} 个文件夹",
+    "empty": "没有保存任何内容",
+    "offCaption": "已关闭。搜索只查找标题、摘要和标签，不存在索引文件。",
+    "deleted": "已删除。再次打开文件夹时会重新建立它的索引。",
+    "failed": "无法删除搜索索引，请重试。",
+    "delete": "删除",
+    "deleteArmed": "再按一次以删除"
   }
 }

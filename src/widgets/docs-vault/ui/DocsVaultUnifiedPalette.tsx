@@ -5,7 +5,7 @@ import { fieldClass } from '@/shared/ui/control-class';
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Clock,
   ExternalLink,
@@ -20,7 +20,8 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { IconButton, LiveAnnouncer, controlClass } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
-import type { DocsBodyIndex } from '../lib/body-index';
+import { useVaultTextSearch } from '../lib/use-vault-text-search';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
@@ -48,10 +49,8 @@ interface Props {
   /** The initial query — `> ` (commands) / `#` (tags) / '' (default). */
   initialQuery?: string;
   getDocHref?: (slug: string) => string;
-  /** The body search index (`use-docs-body-index`). Without it the body tier is off. */
-  bodyIndex?: DocsBodyIndex;
-  /** Whether the body index is still building — adds a "coming shortly" hint to the zero-result notice. */
-  bodyIndexing?: boolean;
+  /** Reads a hit document's text for its matching line; without it search covers titles only. */
+  getDocContent?: (slug: string) => Promise<string>;
 }
 
 // One id rule for the listbox option and the input's aria-activedescendant (WAI-ARIA combobox).
@@ -98,6 +97,40 @@ function Highlight({
   );
 }
 
+/** Says what search covers while the index builds, or why it covers titles only. */
+function IndexStatusLine({ status }: { status: VaultIndexStatus }) {
+  const t = useTranslations('vaultWidgets.palette.indexStatus');
+  const building = status.state === 'building' || status.state === 'absent';
+  const share = status.total > 0 ? Math.min(1, status.indexed / status.total) : 0;
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0, transition: EXIT_TRANSITION }}
+      transition={MOTION.base}
+      className="overflow-hidden border-b border-[color:var(--color-overlay-2)]"
+      data-testid="docs-palette-index-status"
+      data-state={status.state}
+    >
+      <p className="px-3 py-1.5 text-caption tabular-nums text-[color:var(--color-text-tertiary)]" aria-live="polite">
+        {building
+          ? status.total > 0
+            ? t('building', { indexed: status.indexed, total: status.total })
+            : t('preparing')
+          : t(status.state)}
+      </p>
+      {building ? (
+        <div aria-hidden className="h-px w-full bg-[color:var(--color-overlay-2)]">
+          <div
+            className="h-full w-full origin-left bg-[color:var(--color-indigo-accent)] transition-transform duration-[var(--motion-slow)] ease-[var(--motion-ease)] motion-reduce:transition-none"
+            style={{ transform: `scaleX(${share})` }}
+          />
+        </div>
+      ) : null}
+    </motion.div>
+  );
+}
+
 /**
  * Unified palette: empty query shows pinned, recent and suggested commands; `>` matches commands,
  * a `#` prefix tags, and plain text searches documents plus matching commands.
@@ -113,8 +146,7 @@ export function DocsVaultUnifiedPalette({
   onTagSelect,
   initialQuery = '',
   getDocHref = (slug) => buildDocsVaultHref({ slug }),
-  bodyIndex,
-  bodyIndexing = false,
+  getDocContent,
 }: Props) {
   const t = useTranslations('vaultWidgets.palette');
   const locale = useLocale();
@@ -125,6 +157,10 @@ export function DocsVaultUnifiedPalette({
   const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const listRef = useRef<HTMLUListElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const trimmedQuery = query.trim();
+  const docQuery = trimmedQuery.startsWith('>') || trimmedQuery.startsWith('#') ? '' : trimmedQuery;
+  const { bodyIndex, status: indexStatus } = useVaultTextSearch({ query: docQuery, docs, getDocContent });
 
   const bySlug = useMemo(() => {
     const m = new Map<string, VaultDoc>();
@@ -426,8 +462,7 @@ export function DocsVaultUnifiedPalette({
         : t('resultsAnnounce', { count: rows.length });
 
   // The extended notice (search reach and canonical shortcuts) appears only on zero results in
-  // document mode, with an indexing hint while the body index builds.
-  const trimmedQuery = query.trim();
+  // document mode.
   const isDocSearchZero =
     trimmedQuery !== '' &&
     !trimmedQuery.startsWith('>') &&
@@ -535,6 +570,11 @@ export function DocsVaultUnifiedPalette({
             <X size={ICON_SIZE.sm} />
           </IconButton>
         </div>
+        <AnimatePresence initial={false}>
+          {indexStatus !== null && indexStatus.state !== 'ready' ? (
+            <IndexStatusLine key="index-status" status={indexStatus} />
+          ) : null}
+        </AnimatePresence>
         <ul
           ref={listRef}
           id={PALETTE_LISTBOX_ID}
@@ -548,13 +588,8 @@ export function DocsVaultUnifiedPalette({
                   {t('noBodySearchTitle')}
                 </p>
                 <p className="mt-1 text-caption text-[color:var(--color-text-tertiary)]">
-                  {t('noBodySearchHint')}
+                  {indexStatus?.state === 'ready' ? t('noBodySearchHint') : t('noTitleSearchHint')}
                 </p>
-                {bodyIndexing ? (
-                  <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
-                    {t('bodyIndexingNotice')}
-                  </p>
-                ) : null}
                 <p className="mt-4 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                   {t('canonicalDocsLabel')}
                 </p>

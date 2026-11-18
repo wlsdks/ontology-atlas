@@ -193,7 +193,14 @@
     "noMatches": "No matches",
     "noBodySearchTitle": "Not found anywhere in your docs",
     "noBodySearchHint": "Titles, summaries, tags, and full body text were all searched. Try a different word or a shorter phrase.",
-    "bodyIndexingNotice": "Still preparing body search: more body matches may appear in a moment.",
+    "noTitleSearchHint": "Titles, summaries and tags were searched. Try a different word or a shorter phrase.",
+    "indexStatus": {
+      "preparing": "Getting ready to search inside every document. Titles, summaries and tags meanwhile.",
+      "building": "Indexing {indexed, number} of {total, number} documents. Showing what is indexed so far.",
+      "off": "Titles, summaries and tags only. The search index is off in Settings › Privacy · data.",
+      "paused": "Titles, summaries and tags only. The search index was deleted; it is rebuilt when you open this folder again.",
+      "unavailable": "Titles, summaries and tags only. The search index could not be opened on this computer."
+    },
     "canonicalDocsLabel": "Jump to the main guide docs",
     "canonicalMcp": "MCP setup guide",
     "canonicalCli": "CLI reference",

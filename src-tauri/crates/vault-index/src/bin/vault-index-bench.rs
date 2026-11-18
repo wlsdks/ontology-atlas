@@ -53,26 +53,28 @@ fn main() {
         }
         "search" => {
             let searcher = Searcher::open(&root).expect("open").expect("index exists");
-            let mut timings = Vec::new();
             let queries = &args[3..];
-            for _ in 0..5 {
-                for query in queries {
-                    let started = Instant::now();
-                    searcher.search(query, 20).expect("search");
-                    timings.push(started.elapsed().as_secs_f64() * 1000.0);
-                }
+            let mut samples = Vec::new();
+            let mut medians = Vec::new();
+            for query in queries {
+                let mut runs: Vec<f64> = (0..5)
+                    .map(|_| {
+                        let started = Instant::now();
+                        searcher.search(query, 20).expect("search");
+                        started.elapsed().as_secs_f64() * 1000.0
+                    })
+                    .collect();
+                runs.sort_by(f64::total_cmp);
+                medians.push(runs[runs.len() / 2]);
+                samples.extend(runs);
             }
-            timings.sort_by(f64::total_cmp);
-            let at = |share: f64| {
-                timings
-                    [((timings.len() as f64 * share).ceil() as usize).clamp(1, timings.len()) - 1]
-            };
             println!(
-                "{{\"queries\":{},\"p50Ms\":{:.2},\"p95Ms\":{:.2},\"maxMs\":{:.2}}}",
-                timings.len(),
-                at(0.5),
-                at(0.95),
-                at(1.0)
+                "{{\"queries\":{},\"p50Ms\":{:.2},\"p95Ms\":{:.2},\"maxMs\":{:.2},\"p95OfMediansMs\":{:.2}}}",
+                queries.len(),
+                percentile(&mut samples, 0.5),
+                percentile(&mut samples, 0.95),
+                percentile(&mut samples, 1.0),
+                percentile(&mut medians, 0.95)
             );
         }
         "read-loop" => {
@@ -110,4 +112,11 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+/// Nearest-rank percentile.
+fn percentile(values: &mut [f64], share: f64) -> f64 {
+    values.sort_by(f64::total_cmp);
+    let rank = ((values.len() as f64 * share).ceil() as usize).clamp(1, values.len());
+    values[rank - 1]
 }

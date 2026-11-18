@@ -202,11 +202,33 @@ fn sync_locked(
         Err(Error::Cancelled) => Some(Error::Cancelled),
         Err(error) => return Err(error),
     };
+    if stopped.is_none() && report.indexed >= SETTLE_AFTER_FILES {
+        settle_merges(&conn)?;
+    }
     clear_meta(&conn, META_WRITING)?;
     report.write = written.elapsed();
     match stopped {
         Some(error) => Err(error),
         None => Ok(report),
+    }
+}
+
+/// A large build leaves FTS5 merge work pending, which the next small writes would each pay for
+/// (one edited file took up to 175 ms after a 10,000-file build). Finishing it here keeps a
+/// one-file update to a few milliseconds.
+const SETTLE_AFTER_FILES: usize = 1000;
+const MERGE_PAGES_PER_STEP: i64 = 500;
+
+fn settle_merges(conn: &Connection) -> rusqlite::Result<()> {
+    loop {
+        let before = conn.total_changes();
+        conn.execute(
+            "INSERT INTO terms(terms, rank) VALUES ('merge', ?1)",
+            [MERGE_PAGES_PER_STEP],
+        )?;
+        if conn.total_changes() - before < 2 {
+            return Ok(());
+        }
     }
 }
 
@@ -366,6 +388,8 @@ const TEXT_CAP_BYTES: usize = 8 * 1024 * 1024;
 /// Prepared files waiting for the writer; bounds memory to a few dozen documents.
 const PIPELINE_DEPTH: usize = 64;
 const BATCH_FILES: usize = 1000;
+/// An edit or two is read on the calling thread; starting workers would cost more than the work.
+const INLINE_WORK_FILES: usize = 16;
 /// Each commit makes progress visible to searches and to the status line.
 const BATCH_TIME: Duration = Duration::from_millis(250);
 
@@ -402,6 +426,16 @@ fn index_work(
     work: &[Work],
     progress: &Progress,
 ) -> Result<Counts> {
+    if work.len() <= INLINE_WORK_FILES {
+        let (sender, receiver) = sync_channel::<Prepared>(work.len());
+        for (slot, item) in work.iter().enumerate() {
+            sender
+                .send(prepare(root, item, slot))
+                .map_err(|_| Error::Cancelled)?;
+        }
+        drop(sender);
+        return write_prepared(conn, receiver, work, progress);
+    }
     let next = AtomicUsize::new(0);
     std::thread::scope(|scope| {
         let (sender, receiver) = sync_channel::<Prepared>(PIPELINE_DEPTH);
