@@ -8,3 +8,32 @@
   .title { font-size: var(--text-display); line-height: var(--leading-display); }
   .frame { gap: 0.75rem; }
 }
+
+/* First run: one centred column that scrolls when the window is small, two fixed columns when it is not. */
+.start { container: first-run / size; }
+.startScroll { display: flex; justify-content: center; width: 100%; height: 100%; overflow: auto; padding-block: 2.5rem; }
+.startFrame { display: grid; gap: 1.5rem; width: 100%; max-width: var(--dialog-w-md); height: fit-content; margin-block: auto; }
+.startBody { display: grid; gap: 1.5rem; min-width: 0; }
+.startRecents { display: grid; gap: 0.5rem; min-height: 0; }
+@container first-run (min-width: 60rem) and (min-height: 34rem) {
+  .startScroll { overflow: hidden; padding-block: 1.5rem; }
+  .startFrame {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+    column-gap: 4rem;
+    row-gap: 1.5rem;
+    max-width: 68rem;
+    height: 100%;
+    margin-block: 0;
+  }
+  .startIntro { grid-column: 1; grid-row: 2; justify-items: start; text-align: start; }
+  .startIntro .identity { justify-items: start; }
+  .startIntro .titleRow { justify-content: flex-start; }
+  .startIntro .description { max-width: 30rem; margin-inline: 0; }
+  .startIntro .title { font-size: var(--text-hero); line-height: var(--leading-hero); }
+  .startAside { grid-column: 1; grid-row: 3; max-width: 30rem; }
+  .startBody { display: flex; flex-direction: column; grid-column: 2; grid-row: 1 / span 4; align-self: center; gap: 1rem; min-height: 0; max-height: 100%; }
+  .startRecents { display: flex; flex: 0 1 auto; flex-direction: column; }
+  .startList { flex: 0 1 auto; min-height: 0; max-height: none; }
+  .startDoors { flex: none; }
+}
