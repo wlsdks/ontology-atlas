@@ -1,6 +1,8 @@
 /**
- * The browser specs every train and ready pull request runs, beside the specs its impact plan
- * maps: the core journeys a merge must never break. Everything else runs after merge, in the full
+ * The browser specs a train or ready pull request runs beside the specs its impact plan maps,
+ * whenever its change reaches the browser: any non-test file under `src/` or `app/`, messages,
+ * public assets or Playwright inputs. A change that reaches none (documents, CI tests) runs no
+ * browser spec. These are the core journeys a merge must never break. Everything else runs after merge, in the full
  * suite on each push to `main`, and `pnpm pr:land` names that run's failing specs while it is red.
  *
  * Paths are relative to `tests/e2e/`. A name that discovery cannot find fails the shard, so a

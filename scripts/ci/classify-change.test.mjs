@@ -168,10 +168,10 @@ test('every library graph source runs the graph specs and its ui keeps the smoke
   }
 });
 
-test('unmapped pure TypeScript relies on affected units instead of browser guesswork', () => {
+test('unmapped pure TypeScript runs its affected units and the merge smoke set', () => {
   const plan = buildImpactPlan({ files: ['src/shared/lib/cn.ts'] });
   assert.equal(plan.lanes.unit.mode, 'affected');
-  assert.equal(plan.lanes.e2e.mode, 'skip');
+  assert.equal(plan.lanes.e2e.mode, 'smoke');
 });
 
 test('MCP is skipped when untouched and focused by handler family when touched', () => {
@@ -247,7 +247,12 @@ test('dedicated static and web jobs own their exact specs without suite duplicat
     files: ['src/features/ontology-change-review/ui/OntologyChangeReview.tsx'],
   });
   assert.equal(staticPlan.lanes.e2e.staticExport, true);
-  assert.equal(staticPlan.lanes.e2e.mode, 'skip');
+  // The source change still runs the merge smoke set on the shards, never the delegated spec.
+  assert.equal(staticPlan.lanes.e2e.mode, 'smoke');
+  assert.deepEqual(staticPlan.lanes.e2e.specs, []);
+  for (const command of commandsForLane({ lane: 'e2e', plan: staticPlan, shard: '1/8', prebuilt: true })) {
+    assert.doesNotMatch(command, /contextual-meaning-editor/);
+  }
 
   const webPlan = buildImpactPlan({ files: ['src-tauri/src/lib.rs'] });
   assert.equal(webPlan.lanes.e2e.webSurface, true);
@@ -326,8 +331,8 @@ test('dependency patches are known and run every exhaustive lane', () => {
     assert.deepEqual(plan.unknownPaths, []);
     assert.equal(plan.full, true);
     assert.equal(plan.lanes.gates.run, true);
-    for (const lane of ['unit', 'perf', 'mcp']) assert.equal(plan.lanes[lane].mode, 'full');
-    assert.equal(plan.lanes.e2e.mode, 'smoke');
+    // A dependency can move any screen: the whole browser suite runs before merge.
+    for (const lane of ['unit', 'perf', 'mcp', 'e2e']) assert.equal(plan.lanes[lane].mode, 'full');
     assert.equal(plan.lanes.e2e.staticExport, true);
     assert.equal(plan.lanes.e2e.webSurface, true);
   }
@@ -381,14 +386,19 @@ test('per-file lint carries the warning ratchet', () => {
   assert.match(lint, /--max-warnings 0/);
 });
 
-test('rendering .ts in a ui/ segment fails closed to smoke; lib .ts stays with units', () => {
-  const ui = buildImpactPlan({
-    files: ['src/widgets/ontology-map/ui/input/topology-pointer-handlers.ts'],
-  });
-  assert.equal(ui.lanes.e2e.mode, 'smoke');
-
-  const lib = buildImpactPlan({ files: ['src/shared/lib/cn.ts'] });
-  assert.equal(lib.lanes.e2e.mode, 'skip');
+test('every non-test source file reaches the browser; its own tests do not', () => {
+  for (const file of [
+    'src/widgets/ontology-map/ui/input/topology-pointer-handlers.ts',
+    // A model module can break first run or sending as surely as a component.
+    'src/entities/vault-session/model/local-vault/vault-starter.ts',
+    'src/widgets/acp-chat-panel/model/use-vault-agent-runtime.ts',
+    'app/[locale]/layout.tsx',
+  ]) {
+    assert.ok(['smoke', 'targeted'].includes(buildImpactPlan({ files: [file] }).lanes.e2e.mode), file);
+  }
+  for (const file of ['src/shared/lib/cn.test.ts', 'src/widgets/acp-chat-panel/ui/AcpChatPanel.test.tsx']) {
+    assert.equal(buildImpactPlan({ files: [file] }).lanes.e2e.mode, 'skip', file);
+  }
 });
 
 test('MCP-spawning smokes raise the needsMcp flag', () => {
@@ -565,4 +575,13 @@ test('every push to main runs the browser suite in full, even over a reused revi
   assert.doesNotThrow(() => validatePlan(after));
   const pr = buildImpactPlan({ files: ['src/views/x/ui/view.tsx'] });
   assert.equal(fullBrowserAfterMerge(pr, { eventName: 'pull_request' }), pr, 'a pull request keeps its narrow plan');
+});
+
+test('root dependencies plan the whole browser suite before merge', () => {
+  for (const file of ['package.json', 'pnpm-lock.yaml', 'patches/three@0.185.1.patch']) {
+    const plan = buildImpactPlan({ files: [file] });
+    assert.equal(plan.lanes.e2e.mode, 'full', file);
+    assert.equal(plan.lanes.e2e.staticExport, true, file);
+    assert.equal(plan.lanes.e2e.webSurface, true, file);
+  }
 });

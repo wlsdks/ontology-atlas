@@ -53,11 +53,13 @@ once across command aliases; flags and lifecycle hooks keep their semantics.
 The browser suite is split by time. Before merge, a train runs the specs its
 change maps plus the merge smoke set in `scripts/ci/merge-smoke-specs.mjs`
 (first run, opening a folder, the map and node selection, the agent panel
-sending, the gateway and download pages), balanced over eight shards; a
-change no mapping reaches runs the smoke set alone, and only a planner or
-browser-executor change runs the whole suite. After merge, every push to
-`main` runs the whole suite, measurements and both surfaces included, and
-the next merge does not cancel it. A defect outside the smoke set is
+sending, the gateway and download pages), balanced over eight shards. Any
+non-test file under `src/` or `app/` reaches the browser, so one no mapping
+names runs the smoke set alone; only a planner, browser-executor or root
+dependency change (`package.json`, the lockfile, `patches/`) runs the whole
+suite. After merge, every push to `main` runs the whole suite, measurements
+and both surfaces included, even when the push reuses the train's reviewed
+result for every other lane, and the next merge does not cancel it. A defect outside the smoke set is
 therefore found on `main`, not on the train.
 
 CI rejects focused `.only` tests on every execution path. It records a trace on
