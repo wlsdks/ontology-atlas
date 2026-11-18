@@ -66,6 +66,8 @@ if [ -z "$out" ]; then
   out="${TMPDIR:-/tmp}/atlas-acp-replay-$(basename "$target")-$(date +%Y%m%d-%H%M%S)"
 fi
 mkdir -p "$out"
+# A reused --out must not lend an earlier run's turns to this one.
+rm -f "$out"/turn-one.* "$out"/turn-two.* "$out"/replay.json
 printf 'acp-replay: target %s\nacp-replay: vault  %s\nacp-replay: output %s\n' "$target" "$vault" "$out"
 
 node -e '
@@ -97,11 +99,16 @@ EXTRACT
 unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT || true
 cd "$target"
 
+# The app's session reaches the vault through Atlas tools only. Built-in tools are
+# limited to ToolSearch (it loads the deferred MCP schemas) and anything else that
+# would need permission is refused, so a build cannot shell out around a refusal.
 allowed="mcp__atlas-vault__*"
+builtins="ToolSearch"
 started=$(date +%s)
 
 # <prefix>.jsonl -> <prefix>.json (the final result record) and <prefix>.tools.json
-# (tool name -> call count, plus every read_source call's file and mode).
+# (tool name -> call count, every read_source call's file and mode, how many
+# finalize_project_meaning calls succeeded, and every call to a tool outside Atlas).
 extract_result() {
   node -e '
 const { readFileSync, writeFileSync } = require("node:fs");
@@ -109,6 +116,9 @@ const prefix = process.argv[1];
 let result = null;
 const calls = {};
 const reads = [];
+const foreign = [];
+const finalizeIds = new Set();
+let finalizeOk = 0;
 for (const line of readFileSync(`${prefix}.jsonl`, "utf8").split("\n")) {
   if (!line.trim()) continue;
   let event;
@@ -117,15 +127,22 @@ for (const line of readFileSync(`${prefix}.jsonl`, "utf8").split("\n")) {
   const content = event.type === "assistant" ? event.message?.content : null;
   for (const block of Array.isArray(content) ? content : []) {
     if (block.type !== "tool_use") continue;
-    const name = String(block.name).replace(/^mcp__[^_]+(?:_[^_]+)*__/, "");
+    const raw = String(block.name);
+    if (!raw.startsWith("mcp__atlas-vault__") && raw !== "ToolSearch") foreign.push(raw);
+    if (raw.endsWith("__finalize_project_meaning")) finalizeIds.add(block.id);
+    const name = raw.replace(/^mcp__[^_]+(?:_[^_]+)*__/, "");
     calls[name] = (calls[name] ?? 0) + 1;
     if (/read_source$/.test(String(block.name))) {
       reads.push({ path: block.input?.path ?? null, mode: block.input?.mode ?? "text" });
     }
   }
+  const returned = event.type === "user" ? event.message?.content : null;
+  for (const block of Array.isArray(returned) ? returned : []) {
+    if (block.type === "tool_result" && finalizeIds.has(block.tool_use_id) && !block.is_error) finalizeOk += 1;
+  }
 }
 writeFileSync(`${prefix}.json`, result ? JSON.stringify(result) : "");
-writeFileSync(`${prefix}.tools.json`, JSON.stringify({ calls, reads }, null, 2));
+writeFileSync(`${prefix}.tools.json`, JSON.stringify({ calls, reads, finalizeOk, foreign }, null, 2));
 ' "$1"
 }
 
@@ -137,6 +154,7 @@ printf 'acp-replay: turn one (the door instruction)\n'
 claude -p "$(cat "$out/turn-one.txt")" \
   --model "$model" --max-turns 80 --output-format stream-json --verbose \
   --mcp-config "$out/mcp.json" --strict-mcp-config --allowedTools "$allowed" \
+  --tools "$builtins" --permission-mode dontAsk \
   --append-system-prompt "$(cat "$out/handoff.txt")" \
   > "$out/turn-one.jsonl" 2> "$out/turn-one.err" || true
 extract_result "$out/turn-one"
@@ -150,8 +168,8 @@ console.log(data.session_id);
 # The door asks for the whole build in one run, so the person's "go ahead" turn is
 # sent only when turn one stopped before finalizing (it asked, or ran out).
 if node -e '
-const { calls } = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
-process.exit(Object.keys(calls).some((name) => name.endsWith("finalize_project_meaning")) ? 0 : 1);
+const { finalizeOk } = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+process.exit(finalizeOk > 0 ? 0 : 1);
 ' "$out/turn-one.tools.json"; then
   printf 'acp-replay: turn one finalized the map; no second turn\n'
 else
@@ -160,6 +178,7 @@ else
     --resume "$session" \
     --model "$model" --max-turns 120 --output-format stream-json --verbose \
     --mcp-config "$out/mcp.json" --strict-mcp-config --allowedTools "$allowed" \
+  --tools "$builtins" --permission-mode dontAsk \
     --append-system-prompt "$(cat "$out/handoff.txt")" \
     > "$out/turn-two.jsonl" 2> "$out/turn-two.err" || true
   extract_result "$out/turn-two"
@@ -211,9 +230,11 @@ const traced = Boolean(oneTools || twoTools);
 // The tool trace decides; the wording of the final answer only stands in when
 // the trace is missing (the 2026-09-23 Rust run finalized and said "finalization").
 const lastText = typeof two?.result === "string" ? two.result : typeof one?.result === "string" ? one.result : "";
+// A refused finalize is not a finished build: only a successful call counts.
 const finalized = traced
-  ? Object.keys(allCalls).some((name) => name.endsWith("finalize_project_meaning"))
+  ? (oneTools?.finalizeOk ?? 0) + (twoTools?.finalizeOk ?? 0) > 0
   : lastText.includes("finalize_project_meaning") || /finali[sz]/i.test(lastText);
+const foreign = [...(oneTools?.foreign ?? []), ...(twoTools?.foreign ?? [])];
 const report = {
   target, vault, model,
   wallClockSeconds: Number(elapsed),
@@ -221,6 +242,7 @@ const report = {
   nodesByKindFolder: byKind,
   finalized,
   toolCalls: traced ? allCalls : null,
+  foreignToolCalls: foreign,
 };
 writeFileSync(`${outDir}/replay.json`, JSON.stringify(report, null, 1));
 const cost = (t) => (t?.total_cost_usd == null ? "?" : `$${t.total_cost_usd.toFixed(2)}`);
@@ -234,13 +256,18 @@ console.log(`  turn one      ${one?.num_turns ?? "?"} agent turns, ${secs(one)},
 console.log(two ? `  turn two      ${two.num_turns ?? "?"} agent turns, ${secs(two)}, ${cost(two)}` : "  turn two      not sent: turn one finalized");
 console.log(`  wall clock    ${elapsed}s      total $${total.toFixed(2)}`);
 console.log(`  vault         ${nodes} nodes — ${Object.entries(byKind).map(([k, n]) => `${k} ${n}`).join(", ") || "empty"}`);
-console.log(`  finished      ${finalized ? (traced ? "finalize_project_meaning was called" : "the final answer speaks of finalizing the project meaning") : (traced ? "finalize_project_meaning was never called — the build stopped short" : "the final answer never mentions finalizing — the build stopped short")}`);
+console.log(`  finished      ${finalized ? (traced ? "finalize_project_meaning succeeded" : "the final answer speaks of finalizing the project meaning") : (traced ? "finalize_project_meaning never succeeded — the build stopped short" : "the final answer never mentions finalizing — the build stopped short")}`);
 if (traced) {
   const reads = [...(oneTools?.reads ?? []), ...(twoTools?.reads ?? [])];
   const outlines = reads.filter((r) => r.mode === "outline").length;
   console.log(`  reads         ${reads.length} read_source calls, ${outlines} in outline mode`);
 }
 console.log(`  written to    ${outDir}/replay.json`);
+if (foreign.length > 0) {
+  console.log("");
+  console.log(`  FAIL: the agent called tools outside Atlas: ${[...new Set(foreign)].join(", ")} (${foreign.length} calls). This build is not a measurement of the door.`);
+  process.exitCode = 1;
+}
 console.log("");
 console.log("  The permission card was replaced by an allow-list. This run is not evidence that the card holds.");
 ' "$out" "$vault" "$target" "$model" "$elapsed"
