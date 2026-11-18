@@ -222,8 +222,12 @@ jobs:
 
       # The certificate is imported only after this step, and this step's environment holds
       # no credential. The build makes no updater archive.
+      # `admit-release` accepts only the head of main, and the required Checks gate ran
+      # `pnpm typecheck` on that program when it merged (next.config.ts).
       - name: Build release app bundle
         run: pnpm desktop:release-artifact -- --phase=build
+        env:
+          ATLAS_BUILD_SKIP_TYPECHECK: "1"
 
       # Without `-A`, only codesign may use the key unprompted; exporting it needs this step's
       # random keychain password. `-x` was ignored for PKCS#12 on macOS 27 (2026-09-27).
@@ -385,8 +389,11 @@ jobs:
 
       # No updater key: the Windows beta ships no in-app update (latest.json lists macOS only),
       # so the build makes no updater signature for anything to publish.
+      # The admitted commit is the type-checked head of main (next.config.ts).
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
+        env:
+          ATLAS_BUILD_SKIP_TYPECHECK: "1"
 
       - name: Require the beta installer to be unsigned
         shell: pwsh

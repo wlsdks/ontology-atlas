@@ -35,9 +35,9 @@ const nextConfig: NextConfig = {
   // The TypeScript 6 compatibility package exposes tsc6, not bin/tsc.
   // Keep build-time type checking on its supported programmatic API.
   experimental: { useTypeScriptCli: false, mcpServer: false },
-  // The browser-evidence build in e2e.yml skips the type check: `pnpm typecheck` in the
-  // Checks gate owns the same program, route types included, and here it cost 54 of the
-  // build's 82 seconds on the E2E critical path. Every other build still checks types.
+  // The browser-evidence build in e2e.yml and the release builds in release-macos.yml skip
+  // the type check: `pnpm typecheck` in the required Checks gate owns the same program, route
+  // types included, for every commit that reaches main. Every other build still checks types.
   typescript: { ignoreBuildErrors: process.env.ATLAS_BUILD_SKIP_TYPECHECK === '1' },
   env: { NEXT_PUBLIC_RELEASE_VERSION: releaseVersion },
   output: 'export',
