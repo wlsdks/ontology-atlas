@@ -535,7 +535,7 @@ describe('vault server: says it is plugged in only when it is', () => {
      */
     const append = meta?.systemPrompt?.append ?? '';
     expect(append).toContain('follow the construction card that `connection_info` returns');
-    expect(append).toContain('cover the whole product in outline, then read the entry function of every must-have ability with line ranges');
+    expect(append).toContain('cover the whole product in outline and place every unit first, then read each must-have ability from its entry along its callees');
     expect(append).toContain('write everything in the same run');
     expect(append).toContain('say the default you will take and continue with it');
     expect(append).not.toMatch(/then wait|qualification|writePlan|independent evaluator/);

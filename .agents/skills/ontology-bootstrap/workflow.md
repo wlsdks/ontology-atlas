@@ -1,7 +1,8 @@
 # Bootstrap a first map
 
-Build the whole product in outline first, then read how every must-have
-ability works, then write all of it in one run. Repository structure is evidence: a
+Build the whole product in outline and place every unit first, then read
+each must-have ability down to the rule that decides it, then write all of it
+in one run. Repository structure is evidence: a
 folder, package or README heading becomes a node only with a definition. The
 kind tests and relation matrix live in the
 [Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind);
@@ -36,6 +37,10 @@ Outline the main file of every product unit with `sourceReads` mode
 the unit's document heading is enough to name a capability and its entry
 symbol; it is not enough to say how it works.
 
+Breadth is a floor, not a count: every product unit the survey lists ends up
+as a node, inside a named node (the node that covers it names it in
+`## Includes`), or excluded with a reason in the project's `## Uncertainty`.
+
 ## 3. Write down the product outline
 
 Every ability a user, operator or dependent system gets, verb-first, each with
@@ -45,24 +50,26 @@ one capability with its members named in the body, never one node per class
 and never one node for the whole family. Keep real class or product names the
 docs use. Mark the must-have set: the abilities the product cannot do without.
 
-## 4. Depth (one read per must-have ability, batched)
+## 4. Depth (from each must-have entry to the rule that decides it)
 
-Before writing a must-have ability's node, read its entry function with line
-ranges (`sourceReads` with `startLine` and `maxLines`, up to 16 per call),
-following one hop into each role it crosses. The body then says how it works in
-1 to 3 sentences: the rule, condition, order or default a newcomer asks about,
-with no branch ladders and no status codes. Only abilities beyond the
-must-have set may say "outlined only" under `## Uncertainty`; the writes report
-how many do. Also list each interface's implementations: that gives the
-`depends_on` spine.
+For each must-have ability, read its entry by `symbol` (`sourceReads` with
+`symbol`, up to 16 per call). The read returns the declaration and its
+`callees`, each with path and line. When the entry hands the decision to one of
+them (an interface, a `default*` factory, a helper the body names), read that
+one by symbol too, and keep following until you reach the condition, order or
+default that decides the behaviour. Choose the bound (two or three calls deep
+is usual) and say it under `## Uncertainty`. The body then states that rule in
+1 to 3 sentences, with no branch ladders and no status codes. Also list each
+interface's implementations: that gives the `depends_on` spine.
 
 ## 5. Stop reading
 
-Breadth is done when every product unit is touched by a node `path:` or named
-as unopened in the project's `## Uncertainty`; `add_concepts` and
-`validate_vault` report this coverage and name the untouched units. Depth is
-done when every must-have ability's entry function is read. When cost is the
-limit, cut abilities beyond the must-have set, never breadth.
+Breadth is done when every unit is placed; depth is done when every must-have
+ability's rule is read. Breadth comes first: when cost is the limit, cut depth
+on abilities beyond the must-have set, never breadth. `add_concepts` and
+`validate_vault` list the units, entry points and main files nothing places,
+and the capabilities whose entry file this server never read, each with the
+exact next call; make those calls before finalizing.
 
 ## 6. Say the outline, then write it
 
@@ -85,11 +92,14 @@ both.
 `validate_vault`, then `connect_project_source`, then
 `finalize_project_meaning` with the project's `## Competency answers`
 (`connection_info({guide:"competency"})` has the layout). Finalize refuses
-`domains` or `abilities` answered below 80% coverage, `impact` answered below
-one `depends_on` per two capabilities, and `evidence` answered when more than a
-third of capabilities say outlined only; mark such a row `partial` with its
-`Gap`, or fix the map with the call the refusal names. Answer a warning by
-the repair it names, or say why not. Tell the person what the folder holds and
+`domains` answered while a unit is unplaced, `abilities` answered while a
+must-have unit, entry point or main file has no node, `evidence` answered when
+more than a third of capabilities' entry files were never read in this
+session, and `impact` answered below one `depends_on` per two capabilities.
+Each refusal names its next call: make it and finalize again; mark the row
+`partial` with its `Gap` only when the map cannot be repaired. Answer a
+warning by the repair it names (`relation-note-on-unread` names the read and
+the `replace_relation` call), or say why not. Tell the person what the folder holds and
 what is still unopened.
 
 ## Stop conditions

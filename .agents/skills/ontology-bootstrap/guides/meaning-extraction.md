@@ -69,7 +69,8 @@ what A does, in the product as it is wired by default:
 - `relates` is for alternatives or neighbours with no change impact either way.
 - `why` is one checkable sentence: what A needs from B and where it happens.
   Never consent ("you approved"). A relation note states only what was read:
-  `validate_vault` warns when it describes a node that says outlined only.
+  `validate_vault` warns when it describes a node that says it was not read,
+  and names the read and the `replace_relation` call that rewrites the note.
 - Every capability has a `depends_on` or `elements` edge, or its
   `## Uncertainty` says why none is known. A first build ends with at least one
   `depends_on` per two capabilities.

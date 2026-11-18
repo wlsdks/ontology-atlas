@@ -19,17 +19,24 @@ describe('build-from-code prompt', () => {
     expect([...steps].sort((a, b) => a - b)).toEqual(steps);
   });
 
-  it('outlines every unit, then reads each must-have entry function with line ranges', () => {
+  it('places every unit before reading any ability in depth', () => {
     expect(flat).toContain('outline the main file of every unit it lists');
-    expect(flat).toContain('read its entry function with line ranges');
-    expect(flat).toContain('before you write its node');
     expect(flat).toContain('one ability per thing the user gets');
+    expect(flat).toContain('as a node, inside a named node, or excluded with a reason');
+    expect(flat).toContain('cut depth on the abilities beyond the must-have set, never breadth');
+  });
+
+  // The rule a question asks about usually sits one call below the entry function.
+  it('reads from the entry along its callees to the rule that decides it', () => {
+    expect(flat).toContain('read its entry by symbol');
+    expect(flat).toContain('follow the callees each read names until you reach the condition, order or default');
+    expect(flat).toContain('Choose how many calls deep you go and say why');
   });
 
   // Count targets made agents pad to a number; the tools report coverage instead.
   it('sets no count target and points at the coverage the writes report', () => {
     expect(flat).not.toMatch(/fewer than ten|15 to 30|5 to 15|per 1,000/);
-    expect(flat).toContain('reports how much of the product the node paths cover');
+    expect(flat).toContain('lists what no node places yet and which entry files were never read');
   });
 
   it('states dependency direction from consumer to provider', () => {
