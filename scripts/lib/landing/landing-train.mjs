@@ -210,16 +210,19 @@ export function splitTrain(numbers) {
 /**
  * What a red train does next.
  *
- * - Every failing context is in the flaky set and this train has not spent its rerun: **rerun** the
- *   failed jobs. This applies at every size, not only to a single pull request, because a bisect
- *   over a flaky context costs `log2(n)` CI runs to learn nothing.
+ * - This train has not spent its rerun, and it carries one pull request or every failing context
+ *   is in the flaky set: **rerun** only the failed jobs, on the unchanged head. Ejecting a lone
+ *   pull request costs its author a fix-and-requeue round; 6 of the 20 red trains before
+ *   2026-11-18 passed later on the same head. For several, a bisect over a flaky context costs
+ *   `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
  * - More than one component: **split** into halves, run as successive trains (bors-style).
  * - One component: **eject** it, naming the contexts.
  */
 export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0 }) {
   const names = unique(failed.map((check) => check.name));
   const flakySet = new Set(flaky);
-  if (names.length > 0 && names.every((name) => flakySet.has(name)) && reruns < FLAKY_RERUNS) {
+  const lone = components.length === 1;
+  if (names.length > 0 && (lone || names.every((name) => flakySet.has(name))) && reruns < FLAKY_RERUNS) {
     return { action: 'rerun', names };
   }
   if (components.length > 1) return { action: 'split', halves: splitTrain(components), names };

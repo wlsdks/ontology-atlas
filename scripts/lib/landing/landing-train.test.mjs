@@ -102,7 +102,14 @@ describe('bisect', () => {
     const failed = [{ name: 'Unit · Contract' }];
     assert.deepEqual(redTrainPlan({ components: [1, 2, 3], failed }).action, 'split');
     assert.deepEqual(redTrainPlan({ components: [1, 2, 3], failed }).halves, [[1, 2], [3]]);
-    assert.equal(redTrainPlan({ components: [1], failed }).action, 'eject');
+    assert.equal(redTrainPlan({ components: [1], failed, reruns: 1 }).action, 'eject');
+  });
+
+  it('reruns the failed jobs of a lone red train once, flagged or not, before ejecting it', () => {
+    const failed = [{ name: 'Unit · Contract' }];
+    assert.equal(redTrainPlan({ components: [1], failed, reruns: 0 }).action, 'rerun');
+    assert.equal(redTrainPlan({ components: [1], failed, reruns: 1 }).action, 'eject');
+    assert.equal(redTrainPlan({ components: [1, 2], failed, reruns: 0 }).action, 'split');
   });
 
   it('reruns once when every failing context is flaky, at any size, then bisects', () => {
@@ -112,7 +119,7 @@ describe('bisect', () => {
     assert.equal(redTrainPlan({ components: [1, 2], failed, flaky, reruns: 0 }).action, 'rerun');
     assert.equal(redTrainPlan({ components: [1], failed, flaky, reruns: 1 }).action, 'eject');
     // One non-flaky failure beside a flaky one is a real failure.
-    assert.equal(redTrainPlan({ components: [1], failed: [...failed, { name: 'MCP' }], flaky }).action, 'eject');
+    assert.equal(redTrainPlan({ components: [1, 2], failed: [...failed, { name: 'MCP' }], flaky }).action, 'split');
     assert.equal(redTrainPlan({ components: [1], failed: [], flaky }).action, 'eject');
   });
 

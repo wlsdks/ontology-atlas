@@ -71,10 +71,12 @@ shows the queue and the train.
   wording where it still fits; a hunk where both sides changed behaviour goes
   back to the author. Rerun the slice's acceptance and
   `pnpm checks:changed -- --run`, push, and run `pnpm pr:land <number>` again.
-- **Red on its own CI** (nothing was queued) or **ejected red**: read the
-  failing context and its run. A context known to flake gets one more attempt
-  with `--flaky=<context>`; any other failure goes to a debugging agent with
-  the run URL and what `pnpm pr:land` printed or the ejection comment.
+- **Red on its own CI** (nothing was queued) or **ejected red**: `pnpm pr:land`
+  already reran only the failed jobs once on the same head, so this is red
+  twice. Read the failing context and its run. A context known to flake gets
+  one more attempt on a train with `--flaky=<context>`; any other failure goes
+  to a debugging agent with the run URL and what `pnpm pr:land` printed or the
+  ejection comment.
 
 Several branches ([bundle guide](guides/bundle.md)): `pnpm bundle:plan -- <branches or --match=<glob>>` reports
 each as `empty`, `contained` or `pending`, the files two branches share, and

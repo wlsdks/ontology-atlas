@@ -699,6 +699,11 @@ export function createGithub(slug, run = ghRun) {
     markReady: (number) => ok(['pr', 'ready', String(number)]),
     markDraft: (number) => ok(['pr', 'ready', String(number), '--undo']),
     rerunFailed: (runId) => ok(['run', 'rerun', String(runId), '--failed']),
+    /** Which attempt a workflow run is on: 1 until someone reran it. `null` when unreadable. */
+    readRunAttempt: (runId) => {
+      const run = read(['api', `repos/${slug}/actions/runs/${runId}`]);
+      return Number.isInteger(run.value?.run_attempt) ? run.value.run_attempt : null;
+    },
   };
 }
 
@@ -990,9 +995,26 @@ function tryFastPath({ pr, deps, requiredContexts, args, token }) {
  * run, then read its required contexts every `OWN_CI_POLL_SECONDS`. `green` and `red` carry the
  * last read; `stopped` says why it gave up, and the caller decides what that costs.
  */
-function awaitOwnCi({ pr, deps, args, requiredContexts, deadline }) {
+function awaitOwnCi({ pr, deps, args, requiredContexts, deadline, red = null }) {
   const { gh, log } = deps;
-  if (pr.isDraft) {
+  // One rerun of only the failed jobs per head: a red with no code change passed later in 6 of
+  // the 20 red trains before 2026-11-18, and the failed jobs alone took about half a full run.
+  let rerunHead = null;
+  const rerunOnce = (failed, sha) => {
+    const ids = runIdsFromChecks(failed);
+    if (ids.length === 0) return false;
+    // A run on a second attempt was rerun already, by this lander or anyone; an unreadable attempt
+    // is not a first.
+    if (ids.some((id) => (gh.readRunAttempt?.(id) ?? null) !== 1)) return false;
+    for (const id of ids) gh.rerunFailed(id);
+    rerunHead = sha;
+    log(`PR #${pr.number} is red on ${failed.map((check) => check.name).join(', ')} at ${sha.slice(0, 9)}; `
+      + `re-running only the failed jobs of run ${ids.join(', ')} once on the same head before handing it back`);
+    return true;
+  };
+  if (red) {
+    if (!rerunOnce(red, pr.headRefOid)) return { state: 'red', failed: red, pr, reran: false };
+  } else if (pr.isDraft) {
     if (!gh.markReady(pr.number)) return { state: 'stopped', reason: 'GitHub refused to mark it ready, so its CI never started' };
     log(`PR #${pr.number} was a draft; marked ready, so its own CI runs now instead of a train's`);
   } else log(`PR #${pr.number}'s own CI is running on ${pr.headRefOid.slice(0, 9)}; waiting for it instead of a train`);
@@ -1022,7 +1044,10 @@ function awaitOwnCi({ pr, deps, args, requiredContexts, deadline }) {
       gh.markReady(pr.number);
       refires += 1;
       idle = 0;
-    } else if (step.action === 'red') return { state: 'red', failed: step.failed, pr: current };
+    } else if (step.action === 'red') {
+      if (rerunOnce(step.failed, current.headRefOid)) continue;
+      return { state: 'red', failed: step.failed, pr: current, reran: rerunHead === current.headRefOid };
+    }
     else if (step.action === 'green') return { state: 'green', pr: current };
   }
   return { state: 'stopped', reason: `its CI gave no verdict within ${args.timeoutMinutes} minutes`, pr: current };
@@ -1044,8 +1069,8 @@ function conductLeftovers({ deps, args, requiredContexts, token, deadline, excep
 }
 
 /** A red own run goes back to its author with the contexts and the ways forward. */
-function reportOwnRed({ number, failed, deps }) {
-  deps.error(`PR #${number} is red on its own CI; nothing was queued:`);
+function reportOwnRed({ number, failed, deps, reran = false }) {
+  deps.error(`PR #${number} is red on its own CI${reran ? ', again after one rerun of the failed jobs' : ''}; nothing was queued:`);
   for (const check of failed) deps.error(`  ${check.name} ${check.conclusion ?? ''} ${check.url ?? ''}`.trimEnd());
   deps.error('  Fix it and push: the pull request is ready now, so the push runs CI again. Then');
   deps.error(`  \`pnpm pr:land ${number}\` again. A context known to flake: add \`--flaky=<context>\`, and the`);
@@ -1167,7 +1192,9 @@ function pollTrain({ train, deps, requiredContexts, args }) {
   if (step.action === 'red') {
     const plan = redTrainPlan({ components: train.included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns: train.reruns });
     if (plan.action === 'rerun') {
-      log(`train #${train.pr} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
+      log(train.included.length === 1
+        ? `train #${train.pr} red on ${plan.names.join(', ')}; rerunning only the failed jobs once on the same head before ejecting #${train.included[0].number}, since a red with no code change often passes`
+        : `train #${train.pr} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
       for (const id of runIdsFromChecks(step.failed)) gh.rerunFailed(id);
       train.reruns += 1;
       return;
@@ -1591,13 +1618,13 @@ function landOne({ args, deps }) {
       : hasQueueLabel(current) ? 'it is already queued for a train'
         : args.wait && queueNeedsConductor(deps, number) ? 'other pull requests are queued and nobody conducts them' : null;
     if (yieldTo) deps.log(`taking the train: ${yieldTo}`);
-    else if (route.route === 'red') return reportOwnRed({ number, failed: route.failed, deps });
+    else if (route.route === 'red' && !args.wait) return reportOwnRed({ number, failed: route.failed, deps });
     // `--no-wait` keeps its meaning: queue and leave. Waiting on its own run is for a lander that stays.
-    else if (route.route === 'own-ci' && args.wait) {
-      const own = awaitOwnCi({ pr: current, deps, args, requiredContexts, deadline });
+    else if ((route.route === 'own-ci' || route.route === 'red') && args.wait) {
+      const own = awaitOwnCi({ pr: current, deps, args, requiredContexts, deadline, red: route.route === 'red' ? route.failed : null });
       current = own.pr ?? current;
       if (own.state === 'red' && !own.failed.every((check) => tolerated.includes(check.name))) {
-        return reportOwnRed({ number, failed: own.failed, deps });
+        return reportOwnRed({ number, failed: own.failed, deps, reran: own.reran });
       }
       if (own.state === 'stopped') {
         deps.error(`PR #${number} stopped waiting for its own CI: ${own.reason}; nothing was queued`);

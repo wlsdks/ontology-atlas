@@ -525,7 +525,7 @@ function component(number, extra = {}) {
  *
  * - `ci(numbers, reruns)` decides a train's rollup from the components it carries.
  * - `conflicts` is the set of component numbers whose merge onto a train answers 409.
- * - `ownCi(number)` decides a pull request's own rollup once it is marked ready.
+ * - `ownCi(number, reruns)` decides a pull request's own rollup once it is marked ready.
  * - `mainDrift(trainIndex)` is the files `main` changed under the n-th train while its CI ran.
  * - `mainMoves()` is the files `main` changed since a pull request's merge base, with no train.
  * - `behindMain(sha)` says that head lacks today's `main`; any `mainMoves()` implies it for every head.
@@ -575,7 +575,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = () => gr
         onOwnCiRead(pr, pr.ownCiPolls);
         // Its own run: in flight on the first read after ready, decided on the second.
         if (pr.state === 'OPEN') pr.statusCheckRollup = pr.ownCiPolls >= 2
-          ? ownCi(number)
+          ? ownCi(number, pr.ownCiReruns ?? 0)
           : REQUIRED_CONTEXTS.map((name) => ({ name, status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:01:00Z' }));
       }
       return view(pr);
@@ -658,7 +658,19 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = () => gr
       return true;
     }),
     markDraft: write('markDraft', () => true),
+    readRunAttempt: (runId) => {
+      const has = (rollup) => (rollup ?? []).some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`));
+      for (const train of trains.values()) if (has(train.rollup)) return 1 + train.reruns;
+      for (const pr of pulls.values()) if (!trains.has(pr.number) && has(pr.statusCheckRollup)) return 1 + (pr.ownCiReruns ?? 0);
+      return null;
+    },
     rerunFailed: write('rerunFailed', (runId) => {
+      for (const pr of pulls.values()) {
+        if (trains.has(pr.number) || !(pr.statusCheckRollup ?? []).some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`))) continue;
+        // Only the failed jobs go again; the pull request's own run is in flight until they end.
+        pr.ownCiReruns = (pr.ownCiReruns ?? 0) + 1;
+        pr.ownCiPolls = 0;
+      }
       for (const train of trains.values()) if (train.rollup?.some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`))) {
         // A rerun replaces the failed verdicts with runs in flight until the new verdict lands.
         train.reruns += 1;
@@ -903,17 +915,21 @@ describe('the conductor runs trains', () => {
     assert.deepEqual(world.pulls.get(3).labels, []);
   });
 
-  it('reruns a flaky failure once instead of ejecting, and ejects without the flag', () => {
+  it('reruns the failed jobs of a lone red train once instead of ejecting, flagged or not', () => {
     const flakyCi = (numbers, reruns) => (reruns === 0 ? red(['Playwright (chromium 2/3)'], 991) : green());
     const flaky = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
     assert.deepEqual(runConductor(flaky, { flaky: ['Playwright (chromium 2/3)'] }).landed, [7]);
     assert.deepEqual(called(flaky, 'rerunFailed').map(([, id]) => id), ['991']);
     assert.equal(called(flaky, 'openPr').length, 1, 'a rerun reuses the train, not a new CI run set');
 
-    const strict = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
-    assert.deepEqual(runConductor(strict).landed, []);
-    assert.equal(called(strict, 'rerunFailed').length, 0);
-    assert.ok(strict.pulls.get(7).comments.at(-1).body.startsWith(EJECTED_MARKER));
+    const unflagged = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
+    assert.deepEqual(runConductor(unflagged).landed, [7]);
+    assert.equal(called(unflagged, 'rerunFailed').length, 1);
+
+    const real = fakeWorld({ prs: [component(7)], queued: [7], ci: () => red(['MCP'], 992) });
+    assert.deepEqual(runConductor(real).landed, []);
+    assert.equal(called(real, 'rerunFailed').length, 1, 'one rerun, then the author gets it back');
+    assert.ok(real.pulls.get(7).comments.at(-1).body.startsWith(EJECTED_MARKER));
   });
 
   it('rebuilds a green train when main moved into its files while CI ran', () => {
@@ -1120,12 +1136,13 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.equal(called(world, 'addLabel').length, 0);
     assert.equal(called(world, 'openPr').length, 0);
     const text = world.out.join('\n');
-    assert.match(text, /ERROR PR #28 is red on its own CI; nothing was queued/);
+    assert.match(text, /ERROR PR #28 is red on its own CI, again after one rerun of the failed jobs; nothing was queued/);
     assert.match(text, /ERROR {3}MCP FAILURE https:\/\/github.com\/wlsdks\/ontology-atlas\/actions\/runs\/4242/);
   });
 
-  it('hands back a ready pull request that is already red without waiting', () => {
+  it('hands back a ready pull request already red after its rerun, without waiting', () => {
     const world = fakeWorld({ prs: [component(29, { isDraft: false, statusCheckRollup: red(['Unit · Contract']) })] });
+    world.deps.gh.readRunAttempt = () => 2;
     assert.equal(land(world, ['29']), 1);
     assert.equal(world.events.filter((e) => e === 'sleep').length, 0);
     assert.equal(called(world, 'addLabel').length, 0);
@@ -1199,6 +1216,45 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.equal(called(green42, 'mergePr')[0][1], 42, '#42 merged directly');
     assert.ok(green42.out.some((line) => /conducting them before leaving/.test(line)));
     assert.equal(green42.pulls.get(41).state, 'CLOSED', 'and #41 did not stay queued with nobody conducting');
+  });
+
+  describe('a red own run gets one rerun of its failed jobs', () => {
+    const flaky = 'Playwright (chromium 2/3)';
+
+    it('reruns only the failed jobs once and merges when they pass on the same head', () => {
+      const world = fakeWorld({ prs: [component(70)], ownCi: (n, reruns) => (reruns === 0 ? red([flaky], 501) : green()) });
+      assert.equal(land(world, ['70']), 0);
+      assert.deepEqual(called(world, 'rerunFailed').map(([, id]) => id), ['501']);
+      assert.ok(world.out.some((line) => /PR #70 is red on Playwright \(chromium 2\/3\) at 70ccccccc; re-running only the failed jobs of run 501 once on the same head/.test(line)));
+      assert.equal(called(world, 'mergePr')[0][1], 70);
+    });
+
+    it('hands it back after the one rerun fails too, never rerunning twice', () => {
+      const world = fakeWorld({ prs: [component(71)], ownCi: () => red(['MCP'], 502) });
+      assert.equal(land(world, ['71']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+      assert.ok(world.out.some((line) => /ERROR PR #71 is red on its own CI, again after one rerun of the failed jobs; nothing was queued/.test(line)));
+    });
+
+    it('reruns a pull request that is already red when the lander arrives, then waits for it', () => {
+      const world = fakeWorld({
+        prs: [component(72, { isDraft: false, statusCheckRollup: red([flaky], 503) })],
+        ownCi: (n, reruns) => (reruns === 0 ? red([flaky], 503) : green()),
+      });
+      assert.equal(land(world, ['72']), 0);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+      assert.equal(called(world, 'markReady').length, 0);
+      assert.equal(called(world, 'mergePr')[0][1], 72);
+    });
+
+    it('does not rerun a run someone already reran, or one whose attempt it cannot read', () => {
+      for (const attempt of [2, null]) {
+        const world = fakeWorld({ prs: [component(73, { isDraft: false, statusCheckRollup: red([flaky], 504) })] });
+        world.deps.gh.readRunAttempt = () => attempt;
+        assert.equal(land(world, ['73']), 1, String(attempt));
+        assert.equal(called(world, 'rerunFailed').length, 0, String(attempt));
+      }
+    });
   });
 
   describe('waiting for its own CI', () => {
