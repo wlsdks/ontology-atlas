@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, useEffect, useState, useSyncExternalStore } from "react";
+import { Suspense, lazy, useEffect, useState, useSyncExternalStore } from "react";
 import { Bot, FolderSearch, HardDrive, Network, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
@@ -16,9 +16,8 @@ import { requestRootWorkbench, useRootWorkbenchViews } from "../model/root-workb
  * The gateway is its own chunk: it draws this repository's vault from a static JSON import, which
  * the installed app, whose `/` is the map or first-run, must never fetch. A web browser starts the
  * import the moment this module runs, so it overlaps the page's other scripts, and the installed
- * app starts nothing. The component is lazy without an inner boundary, so while it finishes the
- * page's own Suspense fallback (`GatewayEntryFallback`, the exported HTML) stays on screen and
- * nothing flashes in between.
+ * app starts nothing. While the chunk finishes, the opening frame stays up, so the web never sees
+ * the exported gateway frame come back between the two.
  */
 function startGatewayImport() {
   if (typeof window === "undefined") return null;
@@ -93,7 +92,11 @@ export function RootEntryPage() {
           onDismiss={() => setNoticeDismissed(true)}
         />
       ) : null}
-      <GatewayLandingPage />
+      {/* The opening frame stays up until the gateway chunk lands; the exported gateway frame must not
+          return between them, or two gateway-shaped screens swap in a row. */}
+      <Suspense fallback={<DesktopVaultRedirect />}>
+        <GatewayLandingPage />
+      </Suspense>
     </>
   );
 }
