@@ -11,9 +11,8 @@
    topology, tree, and editing workflow immediately. The browser path uses the
    File System Access API.
 3. **The answer lives on the user's disk.** Vault frontmatter is the ontology.
-   Only the user's files hold it. Beside them Atlas keeps only what it can
-   rebuild or ask for again: the vault handle and preferences, and the installed
-   app's derived index.
+   Only the user's files hold it; beside them Atlas keeps only what it can
+   rebuild or ask for again (vault handle, preferences, the app's index).
 4. **Single-person first.** v0.x is a personal tool.
 
 ## Outbound data
@@ -35,16 +34,9 @@
 - `src/entities/vault-session/` and `src/features/docs-vault-local/` own
   local-folder access; new work joins them.
 - Vault frontmatter is the schema. Do not create a second canonical store.
-  IndexedDB may cache the vault handle and preferences, and the installed app
-  may keep a derived index (`src-tauri/crates/vault-index`); neither ever wins a
-  disagreement with the files on disk.
-- A derived index holds only what can be recomputed from vault files: no user
-  state, edits, approvals or drafts. A row is used only while its stored stamp
-  equals the file's stamp. It lives in the OS cache directory, never in the
-  vault or Git, private to the user account, and never leaves the computer. A
-  missing, older, newer or damaged index is discarded and rebuilt without a
-  prompt. Settings shows its size, deletes it, and can turn it off; with it off
-  the app still opens and edits every vault.
+  IndexedDB may cache the vault handle and preferences, and the app may keep a
+  derived index (`docs/ARCHITECTURE.md`); neither wins a disagreement with the
+  files on disk.
 - Do not pre-install authentication for a possible future cloud mode.
 
 ## Security

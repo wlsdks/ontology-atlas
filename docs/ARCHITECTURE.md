@@ -186,9 +186,13 @@ vault path>/`. `search.sqlite` holds a full-text index of every Markdown file
 holds, per file and per producer, the result a program computed from that file.
 Every row carries the stamp of the file it came from (modified time, size, and
 change time on Unix) and is used only while that stamp still matches; a file
-modified within two seconds of its row is compared by SHA-256 instead. The
-crate never interprets frontmatter: parsing, the graph and validation stay in
-the TypeScript and MCP code that already own them, and graph queries stay in
+modified within two seconds of its row is compared by SHA-256 instead. A
+derived index holds only what can be recomputed from vault files: no user state,
+edits, approvals or drafts. It lives in the OS cache directory, never in the
+vault or Git, is private to the user account, and never leaves the computer;
+with it off the app still opens and edits every vault. The crate never
+interprets frontmatter: parsing, the graph and validation stay in the
+TypeScript and MCP code that already own them, and graph queries stay in
 memory.
 
 The folder watcher, the slow poll and vault open each start a stamp pass on a

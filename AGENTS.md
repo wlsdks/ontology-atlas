@@ -20,10 +20,8 @@ meaning to source evidence. Structural health is not accepted meaning.
   draws light only; three.js paints Neural alone, canvas 2D its fallback;
   Graphology supplies ForceAtlas2 only. Another renderer needs a decision.
 - MCP internals split by responsibility.
-- State is React/URL/in-memory and the files are the only truth. The installed
-  app may keep a derived index of them in the OS cache directory: rebuildable,
-  deletable, never canonical (`.claude/rules/local-first.md`). IndexedDB stores
-  only the vault handle.
+- State is React/URL/in-memory; IndexedDB stores only the vault handle. The
+  app's derived index (OS cache) is rebuildable and never canonical.
   App and web share parser/data contracts, not identical screens.
 
 ## Working and finishing
