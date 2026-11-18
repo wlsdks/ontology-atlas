@@ -141,8 +141,8 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brand:sprites` | Rebuild Moru sprites, 74 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
-| `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm build:first-load -- out en en/topology` | After `pnpm build`: per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; `--allow-json=<route>` exempts a route |
+| `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
 | `pnpm checks:changed` | Which gates this change needs |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
