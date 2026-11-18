@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
-import { useVaultSessionIdentityScope } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';
-import { useDocsBodyIndex, pushRecentDoc } from '@/widgets/docs-vault';
+import { pushRecentDoc } from '@/widgets/docs-vault';
 import {
   buildTagIndexForDocs,
   filterDocsByCollection,
@@ -34,8 +33,6 @@ export function useDocCollection({
   setSelectedSlug,
   setActiveTag,
   setSampleWelcomeDismissed,
-  paletteOpen,
-  getDocContent,
 }: {
   address: ReturnType<typeof useDocsVaultAddress>;
   vault: ReturnType<typeof useVaultManifest>;
@@ -47,8 +44,6 @@ export function useDocCollection({
   setSelectedSlug: (slug: string | null) => void;
   setActiveTag: (tag: string | null) => void;
   setSampleWelcomeDismissed: (dismissed: boolean) => void;
-  paletteOpen: boolean;
-  getDocContent: ((slug: string) => Promise<string>) | undefined;
 }) {
   const { routePathname, replaceUrlState, generalDocsHref } = address;
   const {
@@ -67,11 +62,8 @@ export function useDocCollection({
     closeDocTabInWorkingSet,
   } = tabs;
   const router = useRouter();
-  const vaultSessionScope = useVaultSessionIdentityScope();
   const [docCollection, setDocCollection] = useState<DocsVaultCollection>(initialCollection);
   const [highlightQuery, setHighlightQuery] = useState<string | undefined>(undefined);
-  const [paletteOpened, setPaletteOpened] = useState(false);
-  if (paletteOpen && !paletteOpened) setPaletteOpened(true);
   const collectionDocs = useMemo(
     () => documentScope === 'ontology'
       ? scopedDocs
@@ -123,14 +115,6 @@ export function useDocCollection({
     () => followMovedSlugs(recentSlugs, manifest.aliases).filter((slug) => collectionDocSlugs.has(slug)),
     [collectionDocSlugs, manifest.aliases, recentSlugs],
   );
-  // Palette full-text index from the first open, keyed by mtime.
-  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } = useDocsBodyIndex({
-    docs: collectionDocs,
-    enabled: paletteOpened,
-    scope: vaultSessionScope,
-    getDocContent,
-  });
-
   // Reinterpret the default collection once, when documents first land, so the first screen
   // is not empty; repeating it would undo a deliberately chosen empty collection.
   const initialCollectionResolvedRef = useRef(false);
@@ -282,8 +266,6 @@ export function useDocCollection({
     collectionCounts,
     collectionPinnedSlugs,
     collectionRecentSlugs,
-    docsBodyIndex,
-    docsBodyIndexing,
     handleCollectionChange,
     handleSelect,
     handleCloseDocTab,

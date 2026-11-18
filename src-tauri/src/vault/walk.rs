@@ -90,8 +90,8 @@ pub(crate) fn list_vault_directory(
 /// Path and mtime only, never content.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-struct VaultStamp {
-    relative_path: String,
+pub(super) struct VaultStamp {
+    pub(super) relative_path: String,
     last_modified: u128,
     /// From directory metadata; reading the file would undo this command's purpose.
     size: u64,
@@ -101,9 +101,16 @@ struct VaultStamp {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct VaultFingerprint {
-    entries: Vec<VaultStamp>,
+    pub(super) entries: Vec<VaultStamp>,
     truncated: bool,
     pruned_dirs: Vec<String>,
+}
+
+impl VaultFingerprint {
+    /// The walk stopped at its entry or depth limit, so `entries` is part of the folder.
+    pub(super) fn truncated(&self) -> bool {
+        self.truncated
+    }
 }
 
 /// Must equal TS `VAULT_WALK_MAX_DEPTH`; a contract test watches it.

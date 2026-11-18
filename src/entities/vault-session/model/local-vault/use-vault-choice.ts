@@ -20,6 +20,7 @@ import {
 import { classifyVaultAccessError, isMissingFolderError } from '../classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { isPickerAbort } from '@/shared/lib/failures/picker-abort';
+import { forgetVaultIndex } from '@/shared/lib/vault-folder/tauri-vault-index';
 import { emptyAgentActivityStatus } from '../agent-activity-status';
 import {
   isSupported,
@@ -227,13 +228,18 @@ export function useVaultChoice({
   );
 
   /**
-   * Stops listing one folder, or several, as a known folder; the folders are never touched.
+   * Stops listing one folder, or several, as a known folder, and deletes their search indexes; the
+   * folders are never touched.
    * Every write goes through the store's queue and the list is read back once, so it redraws once.
    */
   const forgetRecent = useCallback(
     async (target: LocalFsHandleRecord | readonly LocalFsHandleRecord[]) => {
       const records = ([] as LocalFsHandleRecord[]).concat(target);
-      for (const record of records) await forgetRecentLocalFsHandle(record);
+      for (const record of records) {
+        await forgetRecentLocalFsHandle(record);
+        // The app's search index holds the folder's words; it goes with the folder's place in the list.
+        if (record.desktopRootPath) await forgetVaultIndex(record.desktopRootPath).catch(() => undefined);
+      }
       await refreshRecentVaults();
     },
     [refreshRecentVaults],

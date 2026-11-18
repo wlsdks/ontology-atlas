@@ -6,6 +6,20 @@ import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import { buildBodyEntry, type DocsBodyIndex } from '../lib/body-index';
 import type { VaultDoc } from '@/entities/docs-vault';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
+
+const textSearch = vi.hoisted(() => ({
+  bodyIndex: undefined as DocsBodyIndex | undefined,
+  status: null as VaultIndexStatus | null,
+}));
+
+vi.mock('../lib/use-vault-text-search', () => ({
+  useVaultTextSearch: () => ({ bodyIndex: textSearch.bodyIndex, status: textSearch.status }),
+}));
+
+function indexStatus(state: VaultIndexStatus['state'], indexed = 0, total = 0): VaultIndexStatus {
+  return { state, indexed, total, sizeBytes: 0, allBytes: 0, vaults: 0 };
+}
 
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
@@ -54,14 +68,16 @@ function doc(slug: string, title: string): VaultDoc {
 function renderPalette({
   initialQuery = '',
   bodyIndex,
-  bodyIndexing = false,
+  status = null,
   onDocSelect = () => {},
 }: {
   initialQuery?: string;
   bodyIndex?: DocsBodyIndex;
-  bodyIndexing?: boolean;
+  status?: VaultIndexStatus | null;
   onDocSelect?: (slug: string, query?: string) => void;
 } = {}) {
+  textSearch.bodyIndex = bodyIndex;
+  textSearch.status = status;
   const docs = [doc('alpha', 'Alpha Doc'), doc('beta', 'Beta Doc')];
   return render(
     <DocsVaultUnifiedPalette
@@ -74,8 +90,6 @@ function renderPalette({
       onDocSelect={onDocSelect}
       onTagSelect={() => {}}
       initialQuery={initialQuery}
-      bodyIndex={bodyIndex}
-      bodyIndexing={bodyIndexing}
     />,
   );
 }
@@ -121,17 +135,47 @@ describe('DocsVaultUnifiedPalette body search results', () => {
     expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
   });
 
-  it('says the body was searched too when zero results come without a bodyIndex', () => {
+  it('says every document was searched only when the index is ready', () => {
+    const palette = koMessages.vaultWidgets.palette;
+    const { unmount } = renderPalette({ initialQuery: 'zzz-no-match', status: indexStatus('ready', 2, 2) });
+    expect(screen.getByText(palette.noBodySearchHint)).toBeInTheDocument();
+    unmount();
     renderPalette({ initialQuery: 'zzz-no-match' });
-    expect(screen.getByText('문서 어디에서도 못 찾았어요')).toBeInTheDocument();
+    expect(screen.getByText(palette.noTitleSearchHint)).toBeInTheDocument();
   });
 
-  it('adds an indexing notice when zero results come while indexing', () => {
-    // Found by message key: the contract is that the notice appears, not its wording.
-    renderPalette({ initialQuery: 'zzz-no-match', bodyIndexing: true });
-    expect(
-      screen.getByText(koMessages.vaultWidgets.palette.bodyIndexingNotice),
-    ).toBeInTheDocument();
+  it('counts the build up in a status line and names why search covers titles only', () => {
+    const lines = koMessages.vaultWidgets.palette.indexStatus;
+    const { unmount } = renderPalette({ initialQuery: 'alpha', status: indexStatus('building', 12_400, 50_000) });
+    const line = screen.getByTestId('docs-palette-index-status');
+    expect(line).toHaveAttribute('data-state', 'building');
+    expect(line.textContent).toMatch(/12,400/);
+    expect(line.textContent).toMatch(/50,000/);
+    unmount();
+    renderPalette({ initialQuery: 'alpha', status: indexStatus('off') });
+    expect(screen.getByText(lines.off)).toBeInTheDocument();
+  });
+
+  it('says when the index covers only part of the folder, and when the folder could not be read', () => {
+    const palette = koMessages.vaultWidgets.palette;
+    const { unmount } = renderPalette({ initialQuery: 'zzz-no-match', status: indexStatus('partial', 100_000, 100_000) });
+    const line = screen.getByTestId('docs-palette-index-status');
+    expect(line).toHaveAttribute('data-state', 'partial');
+    expect(line.textContent).toMatch(/100,000/);
+    expect(screen.getByText(palette.noPartialSearchHint)).toBeInTheDocument();
+    expect(screen.queryByText(palette.noBodySearchHint)).not.toBeInTheDocument();
+    unmount();
+    renderPalette({ initialQuery: 'zzz-no-match', status: indexStatus('unreadable') });
+    expect(screen.getByText(palette.indexStatus.unreadable)).toBeInTheDocument();
+    expect(screen.getByText(palette.noTitleSearchHint)).toBeInTheDocument();
+  });
+
+  it('shows no status line once the index is ready, or on the web', () => {
+    const { unmount } = renderPalette({ initialQuery: 'alpha', status: indexStatus('ready', 2, 2) });
+    expect(screen.queryByTestId('docs-palette-index-status')).not.toBeInTheDocument();
+    unmount();
+    renderPalette({ initialQuery: 'alpha' });
+    expect(screen.queryByTestId('docs-palette-index-status')).not.toBeInTheDocument();
   });
 
   it('does not repeat a snippet on title-match rows', () => {
