@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { compileOntology } from '../ontology-compiler.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { createVaultDocCache, loadVaultDocs } from '../vault/documents.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 
 const rawFor = (title) => `---\nuid: 11111111-1111-4111-8111-111111111111\nkind: capability\ntitle: ${title}\n---\n\nFixture.\n`;
@@ -90,14 +90,19 @@ describe('compiled cache over the vault document cache', () => {
     assert.equal(after.nodes[0].title, 'Alpha renamed');
   });
 
-  it('recompiles a same-size edit that kept its mtime', (t) => {
+  it('recompiles a same-size edit that kept its whole-second mtime', (t) => {
     const root = makeVault(t, 'AAf');
     const path = join(root, 'capabilities/a.md');
-    const { atime, mtime } = statSync(path);
-    const cache = createCompiledOntologyCache({ loadDocs: () => loadVaultDocs(root), compile: compileOntology });
-    assert.equal(cache.get().nodes[0].title, 'AAf');
+    utimesSync(path, 1_700_000_000, 1_700_000_000);
+    const before = statSync(path);
+    const docs = createVaultDocCache(root, { now: () => Date.now() + 10_000 });
+    const cache = createCompiledOntologyCache({ loadDocs: docs.load, compile: compileOntology });
+    const first = cache.get();
+    assert.equal(first.nodes[0].title, 'AAf');
+    assert.equal(cache.get(), first);
     writeFileSync(path, rawFor('AFA'));
-    utimesSync(path, atime, mtime);
+    utimesSync(path, 1_700_000_000, 1_700_000_000);
+    assert.equal(statSync(path).mtimeMs, before.mtimeMs);
     assert.equal(cache.get().nodes[0].title, 'AFA');
   });
 });

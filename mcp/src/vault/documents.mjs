@@ -168,7 +168,9 @@ function docFromSnapshot(rootPath, filePath, snapshot) {
 /** @typedef {ReturnType<typeof docFromSnapshot>} VaultDoc */
 
 export function readDoc(rootPath, filePath) {
-  return docFromSnapshot(rootPath, filePath, readStableFileSnapshot(filePath));
+  const doc = docFromSnapshot(rootPath, filePath, readStableFileSnapshot(filePath));
+  forgetCachedFile(filePath, doc.raw);
+  return doc;
 }
 
 /**
@@ -328,11 +330,25 @@ export function createVaultDocCache(rootPath, io = {}) {
     return doc;
   }
 
+  /**
+   * Drops the entry for `filePath` unless its bytes equal `raw` (any bytes when
+   * `raw` is omitted). On a filesystem whose stamp cannot show an edit (FAT/exFAT
+   * keep no ctime; a tool can restore mtime), a write path's fresh read is the
+   * only witness, and without this the stale parse would outlive every retry.
+   */
+  function forget(filePath, raw) {
+    const entry = entries.get(filePath);
+    if (!entry || (raw !== undefined && entry.doc.raw === raw)) return false;
+    entries.delete(filePath);
+    generation += 1;
+    return true;
+  }
+
   function stats() {
     return { files: entries.size, generation, passes: pass, reads };
   }
 
-  return { load, stats };
+  return { forget, load, stats };
 }
 
 /** Insertion order is recency: a hit is re-inserted, the oldest root is evicted. */
@@ -351,6 +367,18 @@ function vaultCacheFor(rootPath) {
     vaultCaches.delete(vaultCaches.keys().next().value);
   }
   return cache;
+}
+
+/**
+ * Tells every cached vault that a fresh read of `filePath` found `raw` (or, with
+ * `raw` omitted, bytes other than a cached doc expected), so a differing entry is
+ * read again on the next load. O(number of cached vaults), at most two.
+ */
+export function forgetCachedFile(filePath, raw) {
+  const key = resolve(filePath);
+  let forgotten = false;
+  for (const cache of vaultCaches.values()) forgotten = cache.forget(key, raw) || forgotten;
+  return forgotten;
 }
 
 const readSnapshotScope = new AsyncLocalStorage();

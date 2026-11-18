@@ -1,10 +1,11 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import {
+import fs, {
   appendFileSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -12,6 +13,7 @@ import {
   utimesSync,
   writeFileSync,
 } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -41,6 +43,9 @@ function makeVault(t, files = {}) {
   return root;
 }
 
+/** Seconds since the epoch with no fraction, so restoring it restores `mtimeMs` exactly. */
+const WHOLE_SECOND = 1_700_000_000;
+
 /** A clock far enough ahead that files written by the test are no longer racy. */
 const later = () => Date.now() + RACY_WINDOW_MS * 5;
 
@@ -57,17 +62,35 @@ describe('vault document cache', () => {
     assert.equal(titles(cache.load())['capabilities/a'], 'Alpha edited elsewhere');
   });
 
-  it('sees a same-size edit whose mtime was put back within the same second', (t) => {
+  it('sees a same-size edit whose whole-second mtime was put back (only ctime moves)', (t) => {
     const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
     const path = join(root, 'capabilities/a.md');
+    utimesSync(path, WHOLE_SECOND, WHOLE_SECOND);
     const before = statSync(path);
-    const cache = createVaultDocCache(root);
+    const cache = createVaultDocCache(root, { now: later });
     assert.equal(titles(cache.load())['capabilities/a'], 'AAAA');
-    writeFileSync(path, readDocRaw(root, path).replace('AAAA', 'BBBB'));
-    utimesSync(path, before.atime, before.mtime);
-    assert.equal(statSync(path).size, before.size);
+    writeFileSync(path, readFileSync(path, 'utf8').replace('AAAA', 'BBBB'));
+    utimesSync(path, WHOLE_SECOND, WHOLE_SECOND);
+    const after = statSync(path);
+    assert.deepEqual([after.mtimeMs, after.size, after.ino], [before.mtimeMs, before.size, before.ino]);
     assert.equal(titles(cache.load())['capabilities/a'], 'BBBB');
   });
+
+  for (const field of ['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs']) {
+    it(`sees an edit that moved only the stamp's ${field}`, (t) => {
+      const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
+      const path = join(root, 'capabilities/a.md');
+      const base = statSync(path);
+      let current = { ...base, isFile: () => true };
+      const stat = (filePath) => (filePath === path ? current : statSync(filePath));
+      const readSnapshot = (filePath) => ({ raw: readFileSync(filePath, 'utf8'), stats: stat(filePath) });
+      const cache = createVaultDocCache(root, { stat, readSnapshot, now: later });
+      assert.equal(titles(cache.load())['capabilities/a'], 'AAAA');
+      writeFileSync(path, readFileSync(path, 'utf8').replace('AAAA', 'BBBB'));
+      current = { ...current, [field]: base[field] + 1 };
+      assert.equal(titles(cache.load())['capabilities/a'], 'BBBB');
+    });
+  }
 
   it('compares bytes for a racy entry whose stamp the filesystem left unchanged', (t) => {
     const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
@@ -245,6 +268,56 @@ describe('vault document cache', () => {
   it('gives arrays it did not produce no version', () => {
     assert.equal(vaultDocsVersion([]), undefined);
     assert.equal(vaultDocsVersion(null), undefined);
+  });
+});
+
+/**
+ * A FAT-family volume: no ctime, and a same-size edit whose mtime is restored more
+ * than 2 s later leaves every stamp field equal. Simulated by reporting the first
+ * stamp of one file for as long as the test runs.
+ */
+function freezeStampOf(t, path) {
+  const originalStat = fs.statSync;
+  const originalFstat = fs.fstatSync;
+  const first = originalStat(path);
+  const frozen = Object.assign(Object.create(Object.getPrototypeOf(first)), first, { mtimeMs: 1e12, ctimeMs: 1e12 });
+  const same = (stats) => stats && stats.ino === first.ino && stats.dev === first.dev;
+  t.mock.method(fs, 'statSync', (...args) => { const stats = originalStat(...args); return same(stats) ? frozen : stats; });
+  t.mock.method(fs, 'fstatSync', (...args) => { const stats = originalFstat(...args); return same(stats) ? frozen : stats; });
+  syncBuiltinESMExports();
+  t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+}
+
+describe('a stamp that cannot show an edit (FAT/exFAT)', () => {
+  it('stays stale only until a write path reads the file fresh', (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
+    const path = join(root, 'capabilities/a.md');
+    freezeStampOf(t, path);
+    const before = loadVaultDocs(root);
+    writeFileSync(path, readFileSync(path, 'utf8').replace('AAAA', 'BBBB'));
+    assert.equal(titles(loadVaultDocs(root))['capabilities/a'], 'AAAA', 'the simulated volume hides the edit');
+    assert.equal(readDoc(root, path).frontmatter.title, 'BBBB');
+    const after = loadVaultDocs(root);
+    assert.equal(titles(after)['capabilities/a'], 'BBBB');
+    assert.notEqual(vaultDocsVersion(after), vaultDocsVersion(before));
+    patchFrontmatter(root, 'capabilities/a', { title: 'CCCC' });
+    assert.equal(readDoc(root, path).frontmatter.title, 'CCCC');
+  });
+
+  it('a refused plan drops the stale parse, so the retry plans from the file', (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
+    const path = join(root, 'capabilities/a.md');
+    freezeStampOf(t, path);
+    loadVaultDocs(root);
+    writeFileSync(path, readFileSync(path, 'utf8').replaceAll('AAAA', 'BBBB'));
+    const plan = (doc) => [{ op: 'write', path, content: doc.raw.replace('The ', 'Then '), expectedMtime: doc.mtime, expectedRaw: doc.raw }];
+    const stale = loadVaultDocs(root).find((doc) => doc.slug === 'capabilities/a');
+    assert.equal(stale.frontmatter.title, 'AAAA');
+    assert.throws(() => applyAllOrNothing(plan(stale), { requireRevisions: true }), /changed on disk/);
+    const fresh = loadVaultDocs(root).find((doc) => doc.slug === 'capabilities/a');
+    assert.equal(fresh.frontmatter.title, 'BBBB');
+    applyAllOrNothing(plan(fresh), { requireRevisions: true });
+    assert.match(readFileSync(path, 'utf8'), /title: BBBB[\s\S]*Then BBBB/);
   });
 });
 
