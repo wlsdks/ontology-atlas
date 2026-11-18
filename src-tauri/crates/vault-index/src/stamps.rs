@@ -49,7 +49,7 @@ pub(crate) fn now_ns() -> i64 {
 }
 
 /// Two seconds covers one FAT/exFAT timestamp tick and a same-size rewrite inside one tick.
-const RACY_WINDOW_NS: i64 = 2_000_000_000;
+pub(crate) const RACY_WINDOW_NS: i64 = 2_000_000_000;
 
 /// A row whose file was modified within the window before the row was read from disk may describe
 /// an older version with the same stamp, so its stamp alone is not trusted.

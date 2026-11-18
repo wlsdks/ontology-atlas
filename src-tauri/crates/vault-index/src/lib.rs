@@ -1,8 +1,11 @@
 //! A rebuildable full-text index of a vault's Markdown files, kept per vault in the OS cache
 //! directory. The vault files are the only truth: the index holds only what can be recomputed from
 //! them, every row carries the stamp of the file it came from, and deleting it changes no answer.
-//! The crate never interprets frontmatter; the caller's folder walk decides which files exist.
+//! The crate never interprets frontmatter; the caller's folder walk lists the files, and the crate
+//! itself admits only `.md` files under the root that are reached without a symlink or dot-name
+//! (`confine`).
 
+mod confine;
 mod lifecycle;
 mod location;
 mod search;
@@ -10,7 +13,7 @@ mod segment;
 mod stamps;
 
 use lifecycle::{
-    clear_meta, create_private_dir, is_damage, lock_writer, open_reader, open_writer,
+    clear_meta, create_index_dir, is_damage, lock_writer, open_reader, open_writer,
     quick_check_passes, set_aside, write_meta, META_LAST_USED_MS, META_WRITING,
 };
 use rusqlite::{params, Connection};
@@ -25,7 +28,8 @@ use std::time::{Duration, Instant, SystemTime};
 
 pub use lifecycle::Repair;
 pub use location::{
-    canonical_vault_root, index_dir, indexes_root, vault_key, INDEX_DIR_OVERRIDE_ENV,
+    canonical_vault_root, index_dir, index_dir_override_honoured, indexes_root, vault_key,
+    INDEX_DIR_OVERRIDE_ENV,
 };
 pub use search::{Found, Hit};
 pub use stamps::Stamp;
@@ -127,8 +131,9 @@ pub fn sync(
     progress: &Progress,
     check: Check,
 ) -> Result<SyncReport> {
+    let root = &canonical_vault_root(root)?;
     let dir = index_dir(root)?;
-    create_private_dir(&dir)?;
+    create_index_dir(&dir)?;
     let _lock = lock_writer(&dir)?;
     progress.cancel.store(false, Ordering::Relaxed);
     progress.building.store(true, Ordering::Relaxed);
@@ -202,10 +207,16 @@ fn sync_locked(
         Err(Error::Cancelled) => Some(Error::Cancelled),
         Err(error) => return Err(error),
     };
-    if stopped.is_none() && report.indexed >= SETTLE_AFTER_FILES {
+    let settle = stopped.is_none() && report.indexed >= SETTLE_AFTER_FILES;
+    if settle {
         settle_merges(&conn)?;
     }
     clear_meta(&conn, META_WRITING)?;
+    if settle {
+        // The merges leave the WAL near its checkpoint size; emptying it now keeps the next
+        // one-file commit from paying for that checkpoint.
+        conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
+    }
     report.write = written.elapsed();
     match stopped {
         Some(error) => Err(error),
@@ -272,7 +283,7 @@ fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result
     };
     let mut seen = HashSet::with_capacity(files.len());
     for (path, stamp) in files.iter().zip(stamps) {
-        if !seen.insert(path.as_str()) {
+        if !confine::admits_name(path) || !seen.insert(path.as_str()) {
             continue;
         }
         let row = rows.remove(path.as_str());
@@ -337,6 +348,7 @@ fn worker_count() -> usize {
         .clamp(1, 6)
 }
 
+/// `None` for a file that is gone or that `confine` does not admit.
 fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
     let chunk = files.len().div_ceil(worker_count()).max(1);
     std::thread::scope(|scope| {
@@ -344,9 +356,10 @@ fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
             .chunks(chunk)
             .map(|paths| {
                 let handle = scope.spawn(move || {
+                    let mut folders = confine::Folders::new(root);
                     paths
                         .iter()
-                        .map(|path| stamp_of(&root.join(path)))
+                        .map(|path| folders.stamp(path))
                         .collect::<Vec<_>>()
                 });
                 (paths.len(), handle)
@@ -357,13 +370,6 @@ fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
             .flat_map(|(count, handle)| handle.join().unwrap_or_else(|_| vec![None; count]))
             .collect()
     })
-}
-
-fn stamp_of(path: &Path) -> Option<Stamp> {
-    std::fs::metadata(path)
-        .ok()
-        .filter(|meta| meta.is_file())
-        .map(|meta| Stamp::of(&meta))
 }
 
 fn remove_rows(conn: &mut Connection, ids: &[i64]) -> Result<()> {
@@ -463,11 +469,7 @@ fn index_work(
 
 fn prepare(root: &Path, work: &Work, slot: usize) -> Prepared {
     let read_at_ns = now_ns();
-    let path = root.join(work.path);
-    let Ok(mut file) = std::fs::File::open(&path) else {
-        return Prepared::Gone { slot };
-    };
-    let Ok(metadata) = file.metadata() else {
+    let Some((mut file, metadata)) = confine::open(root, work.path) else {
         return Prepared::Gone { slot };
     };
     let stamp = Stamp::of(&metadata);
@@ -621,11 +623,9 @@ pub struct Searcher {
 
 impl Searcher {
     pub fn open(root: &Path) -> Result<Option<Searcher>> {
-        let dir = index_dir(root)?;
-        Ok(open_reader(&dir)?.map(|conn| Searcher {
-            conn,
-            root: root.to_path_buf(),
-        }))
+        let root = canonical_vault_root(root)?;
+        let dir = index_dir(&root)?;
+        Ok(open_reader(&dir)?.map(|conn| Searcher { conn, root }))
     }
 
     /// Best `limit` files for `query`, each verified against the disk before it is returned.
@@ -641,65 +641,70 @@ impl Searcher {
     }
 }
 
+/// The key folder for `root`, spelled as `sync` spells it while the folder exists.
+fn dir_for(root: &Path) -> Result<PathBuf> {
+    Ok(index_dir(
+        &canonical_vault_root(root).unwrap_or_else(|_| root.to_path_buf()),
+    )?)
+}
+
 /// Moves a damaged index aside so the next `sync` rebuilds it.
 pub fn set_aside_damaged(root: &Path) -> Result<()> {
-    let dir = index_dir(root)?;
+    let dir = dir_for(root)?;
     let _lock = lock_writer(&dir)?;
     Ok(set_aside(&dir)?)
 }
 
-/// Deletes one vault's index, or every vault's when `root` is `None`. The caller stops its own
-/// builds first; waiting for the writer lock covers another process's.
+/// Deletes one vault's index, or every vault's when `root` is `None`; a vault folder that no
+/// longer exists is found by the path it had. Only folders this crate made are touched
+/// (`lifecycle::is_index_folder`). The caller stops its own builds first; waiting for the writer
+/// lock covers another process's.
 pub fn delete(root: Option<&Path>) -> Result<()> {
-    let target = match root {
-        Some(root) => index_dir(root)?,
-        None => indexes_root()?,
-    };
-    let folders: Vec<PathBuf> = match root {
-        Some(_) => vec![target.clone()],
-        None => std::fs::read_dir(&target)
-            .map(|entries| {
-                entries
-                    .flatten()
-                    .map(|entry| entry.path())
-                    .filter(|path| path.is_dir())
-                    .collect()
-            })
-            .unwrap_or_default(),
+    let folders = match root {
+        Some(root) => vec![dir_for(root)?],
+        None => lifecycle::index_folders(&indexes_root()?),
     };
     for folder in &folders {
-        if folder.is_dir() {
-            drop(lock_writer(folder)?);
+        if !lifecycle::is_index_folder(folder) {
+            continue;
         }
+        drop(lock_writer(folder)?);
         lifecycle::delete_folder(folder)?;
     }
     if root.is_none() {
-        lifecycle::delete_folder(&target)?;
+        // Removed only when nothing else was left in it.
+        let _ = std::fs::remove_dir(indexes_root()?);
     }
     Ok(())
 }
 
 /// Bytes on disk for one vault's index, or for every vault's when `root` is `None`.
 pub fn stored_bytes(root: Option<&Path>) -> Result<u64> {
-    Ok(lifecycle::folder_bytes(&match root {
-        Some(root) => index_dir(root)?,
-        None => indexes_root()?,
-    }))
+    Ok(match root {
+        Some(root) => {
+            let dir = dir_for(root)?;
+            if lifecycle::is_index_folder(&dir) {
+                lifecycle::folder_bytes(&dir)
+            } else {
+                0
+            }
+        }
+        None => lifecycle::index_folders(&indexes_root()?)
+            .iter()
+            .map(|dir| lifecycle::folder_bytes(dir))
+            .sum(),
+    })
 }
 
 /// Vault folders with an index on this computer.
 pub fn stored_vaults() -> Result<usize> {
-    Ok(std::fs::read_dir(indexes_root()?)
-        .map(|entries| {
-            entries
-                .flatten()
-                .filter(|entry| entry.path().join(lifecycle::SEARCH_FILE).is_file())
-                .count()
-        })
-        .unwrap_or(0))
+    Ok(lifecycle::index_folders(&indexes_root()?)
+        .iter()
+        .filter(|dir| dir.join(lifecycle::SEARCH_FILE).is_file())
+        .count())
 }
 
-/// Deletes the index of every vault whose folder is gone and that was unused for sixty days.
+/// Deletes the index of every vault whose folder is gone or that was not opened for fourteen days.
 pub fn sweep_orphans() -> Result<usize> {
     Ok(lifecycle::sweep_orphans(
         &indexes_root()?,
@@ -710,6 +715,46 @@ pub fn sweep_orphans() -> Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn insert_row(conn: &Connection, path: &str, stamp: Stamp, read_at_ns: i64) {
+        conn.execute(
+            "INSERT INTO files(path, mtime_ns, size, ctime_ns, read_at_ns, sha256) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![path, stamp.mtime_ns, stamp.size, stamp.ctime_ns, read_at_ns, vec![0u8; 32]],
+        )
+        .unwrap();
+    }
+
+    /// The row's stamp equals the file's here, so only the read time decides; on macOS and Linux a
+    /// rewrite also moves the change time, which would hide a missing window check.
+    #[test]
+    fn a_row_read_within_two_seconds_of_its_edit_is_checked_by_hash() {
+        let vault = std::env::temp_dir().join(format!("vault-index-racy-{}", std::process::id()));
+        std::fs::create_dir_all(&vault).unwrap();
+        let vault = std::fs::canonicalize(&vault).unwrap();
+        std::fs::write(vault.join("a.md"), "지도").unwrap();
+        std::fs::write(vault.join("b.md"), "map").unwrap();
+        let stamp_of = |name: &str| Stamp::of(&std::fs::metadata(vault.join(name)).unwrap());
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(include_str!("../sql/search.sql"))
+            .unwrap();
+        let (a, b) = (stamp_of("a.md"), stamp_of("b.md"));
+        insert_row(&conn, "a.md", a, a.mtime_ns);
+        insert_row(&conn, "b.md", b, b.mtime_ns + stamps::RACY_WINDOW_NS);
+        let files = vec!["a.md".to_string(), "b.md".to_string()];
+        let plan = stamp_pass(&conn, &vault, &files).unwrap();
+        let racy: Vec<_> = plan
+            .work
+            .iter()
+            .map(|work| (work.path, work.racy_sha.is_some()))
+            .collect();
+        assert_eq!(
+            racy,
+            vec![("a.md", true)],
+            "only the row read inside the window is re-checked"
+        );
+        assert_eq!(plan.unchanged, 1);
+        std::fs::remove_dir_all(&vault).unwrap();
+    }
 
     #[test]
     fn a_duplicate_listing_is_indexed_once() {

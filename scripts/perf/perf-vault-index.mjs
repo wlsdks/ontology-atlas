@@ -48,7 +48,7 @@ function parseArgs(argv) {
 }
 
 function buildBench() {
-  execFileSync('cargo', ['build', '--release', '--quiet', '-p', 'vault-index', '--bin', 'vault-index-bench', '--manifest-path', MANIFEST], { stdio: 'inherit' });
+  execFileSync('cargo', ['build', '--release', '--quiet', '-p', 'vault-index', '--bin', 'vault-index-bench', '--features', 'index-dir-override', '--manifest-path', MANIFEST], { stdio: 'inherit' });
 }
 
 /** Runs one bench phase; on macOS and Linux also reads the process's peak resident memory. */
@@ -69,6 +69,8 @@ function run(args, env, { measureMemory = false } = {}) {
 
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
+const RACY_WINDOW_MS = 2100;
+
 function measure(files, shape) {
   const vault = join(WORK, `${shape}-${files}`);
   const indexDir = join(WORK, `index-${shape}-${files}`);
@@ -76,6 +78,9 @@ function measure(files, shape) {
     rmSync(vault, { recursive: true, force: true });
     mkdirSync(vault, { recursive: true });
     generateScaleVault(vault, files, shape);
+    // Rows read within two seconds of a file's write are re-hashed on the next pass by design;
+    // a vault written all at once just before its first open is not the case being measured.
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, RACY_WINDOW_MS);
   }
   rmSync(indexDir, { recursive: true, force: true });
   const env = { OATLAS_INDEX_DIR: indexDir };

@@ -7,6 +7,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 use vault_index::{delete, index_dir, stored_bytes, sync, Check, Progress, Searcher};
 
+/// Names a way to damage an index file, and does it.
+type Damage = fn(&std::path::Path);
+
 const BENCH: &str = env!("CARGO_BIN_EXE_vault-index-bench");
 
 fn sync_all(vault: &TempVault, check: Check) -> vault_index::SyncReport {
@@ -66,7 +69,7 @@ fn damaged_files_are_set_aside_and_rebuilt() {
     let vault = TempVault::new("damage");
     let files = write_corpus(&vault.root, 1_500, 11);
     let index = vault.index_file();
-    let damages: [(&str, fn(&std::path::Path)); 3] = [
+    let damages: [(&str, Damage); 3] = [
         ("truncated to half", |path| {
             let file = std::fs::OpenOptions::new().write(true).open(path).unwrap();
             let length = file.metadata().unwrap().len();
@@ -395,28 +398,90 @@ fn index_missing_or_off_answers_from_files() {
 }
 
 #[test]
-fn unused_indexes_of_vanished_folders_are_swept() {
-    let vault = TempVault::new("sweep");
-    write_corpus(&vault.root, 20, 29);
-    sync_all(&vault, Check::IfInterrupted);
-    assert_eq!(
-        vault_index::sweep_orphans().unwrap(),
-        0,
-        "a recent index of a present folder stays"
-    );
-    let dir = index_dir(&vault.root).unwrap();
-    let conn = rusqlite::Connection::open(vault.index_file()).unwrap();
-    conn.execute("UPDATE meta SET value = '0' WHERE key = 'last_used_ms'", [])
+fn only_markdown_inside_the_vault_is_indexed_whatever_the_listing_says() {
+    let vault = TempVault::new("confine");
+    let outside = vault.root.with_extension("outside");
+    std::fs::create_dir_all(&outside).unwrap();
+    std::fs::write(outside.join("secret.md"), "quillwort outside").unwrap();
+    std::fs::write(vault.root.join("inside.md"), "quillwort inside").unwrap();
+    std::fs::create_dir_all(vault.root.join(".hidden")).unwrap();
+    std::fs::write(vault.root.join(".hidden/note.md"), "quillwort hidden").unwrap();
+    std::fs::write(vault.root.join(".dot.md"), "quillwort dot").unwrap();
+    std::fs::write(vault.root.join("notes.txt"), "quillwort text").unwrap();
+    let mut listed = vec![
+        "inside.md".to_string(),
+        "../outside/secret.md".to_string(),
+        format!(
+            "../{}/secret.md",
+            outside.file_name().unwrap().to_string_lossy()
+        ),
+        ".hidden/note.md".to_string(),
+        ".dot.md".to_string(),
+        "notes.txt".to_string(),
+    ];
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(outside.join("secret.md"), vault.root.join("linked.md"))
+            .unwrap();
+        std::os::unix::fs::symlink(&outside, vault.root.join("linked-folder")).unwrap();
+        listed.push("linked.md".to_string());
+        listed.push("linked-folder/secret.md".to_string());
+    }
+    let report = sync(&vault.root, &listed, &Progress::default(), Check::Always).unwrap();
+    assert_eq!(report.files, 1, "one listed file is admitted");
+    let found = Searcher::open(&vault.root)
+        .unwrap()
+        .unwrap()
+        .search("quillwort", 10)
         .unwrap();
-    drop(conn);
-    assert!(dir.exists());
-    std::fs::rename(&vault.root, vault.root.with_extension("gone")).unwrap();
-    vault_index::sweep_orphans().unwrap();
+    let paths: Vec<_> = found.hits.iter().map(|hit| hit.path.as_str()).collect();
+    assert_eq!(paths, vec!["inside.md"]);
+
+    // A file indexed inside the vault and later swapped for a link stops being a hit.
+    #[cfg(unix)]
+    {
+        std::fs::remove_file(vault.root.join("inside.md")).unwrap();
+        std::os::unix::fs::symlink(outside.join("secret.md"), vault.root.join("inside.md"))
+            .unwrap();
+        let found = Searcher::open(&vault.root)
+            .unwrap()
+            .unwrap()
+            .search("quillwort", 10)
+            .unwrap();
+        assert!(
+            found.hits.is_empty(),
+            "a hit reached through a link is dropped"
+        );
+    }
+    std::fs::remove_dir_all(&outside).unwrap();
+}
+
+#[test]
+fn an_edit_not_yet_indexed_never_shows_its_old_words() {
+    let vault = TempVault::new("stale-hit");
+    std::fs::write(vault.root.join("a.md"), "quillwort").unwrap();
+    sync_all(&vault, Check::IfInterrupted);
+    let searcher = Searcher::open(&vault.root).unwrap().unwrap();
+    assert_eq!(searcher.search("quillwort", 10).unwrap().hits.len(), 1);
+    std::fs::write(vault.root.join("a.md"), "bladderwrack and more").unwrap();
+    let found = searcher.search("quillwort", 10).unwrap();
+    assert_eq!((found.hits.len(), found.stale), (0, 1));
+}
+
+#[test]
+fn a_pasted_page_as_a_query_answers_at_once() {
+    let vault = TempVault::new("long-query");
+    write_corpus(&vault.root, 200, 47);
+    sync_all(&vault, Check::IfInterrupted);
+    let searcher = Searcher::open(&vault.root).unwrap().unwrap();
+    let page = "graph ".repeat(200_000);
+    let started = Instant::now();
+    searcher.search(&page, 20).unwrap();
     assert!(
-        !dir.exists(),
-        "an index unused for sixty days whose folder is gone is deleted"
+        started.elapsed().as_millis() < 1000,
+        "took {:?}",
+        started.elapsed()
     );
-    std::fs::rename(vault.root.with_extension("gone"), &vault.root).unwrap();
 }
 
 #[cfg(windows)]

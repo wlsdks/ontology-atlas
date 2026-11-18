@@ -19,7 +19,8 @@ CREATE TABLE files (
   sha256 BLOB NOT NULL
 );
 
--- Contentless: tokens and positions only, never a readable copy of a document.
+-- Contentless: FTS5 stores no column text, but it keeps every token with its position, so a
+-- document's words can be read back in order (fts5vocab). Treat this file as holding the text.
 -- body holds the whole file text, name the words of its path; ranked 1 : 4.
 CREATE VIRTUAL TABLE terms USING fts5(
   body,

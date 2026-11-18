@@ -66,11 +66,27 @@ pub(crate) fn segment_into(text: &str, out: &mut String) {
     });
 }
 
+/// A query is read up to this many bytes and terms; past them it is cut, so one pasted page cannot
+/// hold the search for seconds. No one types a sixteen-word search.
+pub(crate) const MAX_QUERY_BYTES: usize = 512;
+pub(crate) const MAX_QUERY_TERMS: usize = 16;
+
+fn query_head(query: &str) -> &str {
+    if query.len() <= MAX_QUERY_BYTES {
+        return query;
+    }
+    let mut end = MAX_QUERY_BYTES;
+    while !query.is_char_boundary(end) {
+        end -= 1;
+    }
+    &query[..end]
+}
+
 /// Each whitespace-separated term becomes a phrase of its tokens, and every term must match. A
 /// lone Hangul, kana or CJK character matches as a prefix, because it is only indexed inside pairs.
 pub(crate) fn match_expression(query: &str) -> Option<String> {
     let mut phrases = Vec::new();
-    for term in query.split_whitespace() {
+    for term in query_head(query).split_whitespace().take(MAX_QUERY_TERMS) {
         let mut tokens = String::new();
         segment_into(term, &mut tokens);
         if tokens.is_empty() {
@@ -118,6 +134,21 @@ mod tests {
         );
         assert_eq!(match_expression("값").as_deref(), Some("\"값\"*"));
         assert_eq!(match_expression(" \"-- ").as_deref(), None);
+    }
+
+    #[test]
+    fn a_pasted_page_is_cut_to_the_query_limits() {
+        let page = "alpha ".repeat(200_000);
+        let started = std::time::Instant::now();
+        let expression = match_expression(&page).unwrap();
+        assert!(started.elapsed() < std::time::Duration::from_millis(50));
+        assert_eq!(expression.matches("AND").count(), MAX_QUERY_TERMS - 1);
+        let hangul = "가".repeat(MAX_QUERY_BYTES);
+        let cut = match_expression(&hangul).unwrap();
+        assert!(
+            cut.len() <= MAX_QUERY_BYTES * 3,
+            "a long run is cut at a character boundary"
+        );
     }
 
     /// Changing what the rules emit without bumping `SEGMENTATION_VERSION` would leave old indexes

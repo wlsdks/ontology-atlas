@@ -7,14 +7,23 @@ use std::path::{Path, PathBuf};
 
 const APP_IDENTIFIER: &str = "dev.jinan.ontology-atlas";
 const INDEXES_FOLDER: &str = "vault-index";
-/// Replaces `<OS cache dir>/dev.jinan.ontology-atlas/vault-index` for tests and benchmarks.
+/// Replaces `<OS cache dir>/dev.jinan.ontology-atlas/vault-index` in debug builds (tests) and with
+/// the `index-dir-override` feature (the benchmark). A release app ignores it, so no environment
+/// can point its Delete at another folder.
 pub const INDEX_DIR_OVERRIDE_ENV: &str = "OATLAS_INDEX_DIR";
-const VAULT_KEY_HEX_CHARS: usize = 16;
+pub(crate) const VAULT_KEY_HEX_CHARS: usize = 16;
+
+/// Whether this build reads `INDEX_DIR_OVERRIDE_ENV`.
+pub const fn index_dir_override_honoured() -> bool {
+    cfg!(any(debug_assertions, feature = "index-dir-override"))
+}
 
 /// The folder holding every vault's index folder.
 pub fn indexes_root() -> io::Result<PathBuf> {
-    if let Some(dir) = std::env::var_os(INDEX_DIR_OVERRIDE_ENV).filter(|dir| !dir.is_empty()) {
-        return Ok(PathBuf::from(dir));
+    if index_dir_override_honoured() {
+        if let Some(dir) = std::env::var_os(INDEX_DIR_OVERRIDE_ENV).filter(|dir| !dir.is_empty()) {
+            return Ok(PathBuf::from(dir));
+        }
     }
     Ok(os_cache_dir()?.join(APP_IDENTIFIER).join(INDEXES_FOLDER))
 }

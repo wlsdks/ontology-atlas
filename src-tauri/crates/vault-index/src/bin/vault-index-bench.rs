@@ -17,6 +17,12 @@ fn main() {
         );
         std::process::exit(2);
     }
+    if std::env::var_os(vault_index::INDEX_DIR_OVERRIDE_ENV).is_some()
+        && !vault_index::index_dir_override_honoured()
+    {
+        eprintln!("this build ignores OATLAS_INDEX_DIR; build with --features index-dir-override");
+        std::process::exit(2);
+    }
     let root = canonical_vault_root(Path::new(&args[2])).expect("vault folder");
     let started = Instant::now();
     let files = walk::markdown_files(&root);
@@ -44,8 +50,9 @@ fn main() {
             let searcher = Searcher::open(&root).expect("open").expect("index exists");
             let found = searcher.search("benchmarkupdate", 5).expect("search");
             println!(
-                "{{\"indexed\":{},\"stampPassMs\":{:.1},\"writeMs\":{:.2},\"found\":{}}}",
+                "{{\"indexed\":{},\"verified\":{},\"stampPassMs\":{:.1},\"writeMs\":{:.2},\"found\":{}}}",
                 report.indexed,
+                report.verified,
                 report.stamp_pass.as_secs_f64() * 1000.0,
                 report.write.as_secs_f64() * 1000.0,
                 found.hits.len()

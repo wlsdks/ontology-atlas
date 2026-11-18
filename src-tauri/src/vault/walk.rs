@@ -84,6 +84,13 @@ pub(crate) struct VaultFingerprint {
     pruned_dirs: Vec<String>,
 }
 
+impl VaultFingerprint {
+    /// The walk stopped at its entry or depth limit, so `entries` is part of the folder.
+    pub(super) fn truncated(&self) -> bool {
+        self.truncated
+    }
+}
+
 /// Must equal TS `VAULT_WALK_MAX_DEPTH`; a contract test watches it.
 pub(super) const VAULT_WALK_MAX_DEPTH: usize = 12;
 /// Same value as TS `VAULT_WALK_MAX_ENTRIES`.

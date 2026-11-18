@@ -1,5 +1,6 @@
 //! Ranked lookup, and the check that every hit still describes the file on disk.
 
+use crate::confine;
 use crate::segment::match_expression;
 use crate::stamps::{is_racy, sha256, Sha, Stamp};
 use rusqlite::{params, Connection};
@@ -82,9 +83,12 @@ pub(crate) fn search(
 }
 
 /// A row is used only while its stamp equals the file's, and a racy one only while its hash does.
+/// The file is reached as the index reached it (`confine`), or the hit is dropped.
 fn still_describes_disk(root: &Path, candidate: &Candidate) -> bool {
-    let path = root.join(&candidate.hit.path);
-    let Ok(metadata) = std::fs::metadata(&path) else {
+    let Some(path) = confine::resolve(root, &candidate.hit.path) else {
+        return false;
+    };
+    let Ok(metadata) = std::fs::symlink_metadata(&path) else {
         return false;
     };
     let stamp = Stamp::of(&metadata);
@@ -92,11 +96,12 @@ fn still_describes_disk(root: &Path, candidate: &Candidate) -> bool {
         return false;
     }
     !is_racy(stamp.mtime_ns, candidate.read_at_ns)
-        || file_sha(&path).is_some_and(|sha| sha.as_slice() == candidate.sha.as_slice())
+        || file_sha(root, &candidate.hit.path)
+            .is_some_and(|sha| sha.as_slice() == candidate.sha.as_slice())
 }
 
-pub(crate) fn file_sha(path: &Path) -> Option<Sha> {
-    let mut file = std::fs::File::open(path).ok()?;
+fn file_sha(root: &Path, relative: &str) -> Option<Sha> {
+    let (mut file, _) = confine::open(root, relative)?;
     let mut hasher = Sha256::new();
     let mut buffer = [0u8; 64 * 1024];
     loop {
@@ -106,5 +111,80 @@ pub(crate) fn file_sha(path: &Path) -> Option<Sha> {
             Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
             Err(_) => return None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stamps::RACY_WINDOW_NS;
+
+    struct Vault(std::path::PathBuf);
+
+    impl Vault {
+        fn new(name: &str) -> Vault {
+            let dir =
+                std::env::temp_dir().join(format!("vault-index-{name}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            Vault(std::fs::canonicalize(&dir).unwrap())
+        }
+    }
+
+    impl Drop for Vault {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn candidate(stamp: Stamp, read_at_ns: i64, sha: &[u8]) -> Candidate {
+        Candidate {
+            hit: Hit {
+                path: "a.md".into(),
+                rank: -1.0,
+            },
+            stamp,
+            read_at_ns,
+            sha: sha.to_vec(),
+        }
+    }
+
+    /// Every branch of the check, with the row's stamp and read time set by hand rather than by
+    /// whatever the file system's clock granularity happens to be.
+    #[test]
+    fn a_hit_is_kept_only_while_its_row_still_describes_the_file() {
+        let vault = Vault::new("describes");
+        std::fs::write(vault.0.join("a.md"), "alpha").unwrap();
+        let stamp = Stamp::of(&std::fs::symlink_metadata(vault.0.join("a.md")).unwrap());
+        let right = file_sha(&vault.0, "a.md").unwrap().to_vec();
+        let wrong = vec![0u8; 32];
+        let settled = stamp.mtime_ns + RACY_WINDOW_NS + 1;
+        let racy = stamp.mtime_ns;
+
+        assert!(
+            still_describes_disk(&vault.0, &candidate(stamp, settled, &wrong)),
+            "a settled stamp is trusted without reading"
+        );
+        assert!(
+            still_describes_disk(&vault.0, &candidate(stamp, racy, &right)),
+            "a racy row whose hash matches is kept"
+        );
+        assert!(
+            !still_describes_disk(&vault.0, &candidate(stamp, racy, &wrong)),
+            "a racy row whose hash differs is dropped"
+        );
+        let older = Stamp {
+            size: stamp.size + 1,
+            ..stamp
+        };
+        assert!(
+            !still_describes_disk(&vault.0, &candidate(older, settled, &wrong)),
+            "a different stamp is dropped"
+        );
+        std::fs::remove_file(vault.0.join("a.md")).unwrap();
+        assert!(
+            !still_describes_disk(&vault.0, &candidate(stamp, settled, &wrong)),
+            "a vanished file is dropped"
+        );
     }
 }

@@ -10,8 +10,21 @@ use std::time::{Duration, SystemTime};
 
 pub(crate) const SEARCH_FILE: &str = "search.sqlite";
 const LOCK_FILE: &str = "index.lock";
+/// Written into every folder this crate creates. Deletion touches only folders that carry it and
+/// hold nothing but the files below, so a mistaken index root never costs a person's own folder.
+const MARKER_FILE: &str = "vault-index.marker";
+const MARKER_TEXT: &str = "vault-index: rebuildable search index; safe to delete\n";
 const DAMAGED_SUFFIX: &str = ".damaged";
 const SQLITE_SIDE_SUFFIXES: [&str; 2] = ["-wal", "-shm"];
+/// Every name an index folder can hold.
+const INDEX_FILE_NAMES: [&str; 6] = [
+    SEARCH_FILE,
+    "search.sqlite-wal",
+    "search.sqlite-shm",
+    "search.sqlite.damaged",
+    LOCK_FILE,
+    MARKER_FILE,
+];
 const SEARCH_SCHEMA: &str = include_str!("../sql/search.sql");
 /// Table layout and segmentation together: either changing means a rebuild, never an `ALTER`.
 const TABLES_VERSION: i32 = 1;
@@ -50,14 +63,65 @@ pub(crate) fn is_damage(error: &rusqlite::Error) -> bool {
     )
 }
 
-pub(crate) fn create_private_dir(dir: &Path) -> io::Result<()> {
+/// Creates the vault's index folder, private to the user account, with its marker.
+pub(crate) fn create_index_dir(dir: &Path) -> io::Result<()> {
+    if let Some(parent) = dir.parent() {
+        fs::create_dir_all(parent)?;
+    }
     fs::create_dir_all(dir)?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(dir, fs::Permissions::from_mode(0o700))?;
     }
+    let marker = dir.join(MARKER_FILE);
+    if !marker.is_file() {
+        use std::io::Write;
+        create_private_file(&marker)?.write_all(MARKER_TEXT.as_bytes())?;
+    }
     Ok(())
+}
+
+/// A folder this crate made and may delete: a real directory named by a vault key, carrying the
+/// marker, and holding only index file names.
+pub(crate) fn is_index_folder(dir: &Path) -> bool {
+    let named_by_key = dir
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| {
+            name.len() == crate::location::VAULT_KEY_HEX_CHARS
+                && name
+                    .bytes()
+                    .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+        });
+    if !named_by_key || !fs::symlink_metadata(dir).is_ok_and(|meta| meta.is_dir()) {
+        return false;
+    }
+    if !fs::symlink_metadata(dir.join(MARKER_FILE)).is_ok_and(|meta| meta.is_file()) {
+        return false;
+    }
+    fs::read_dir(dir).is_ok_and(|entries| {
+        entries.flatten().all(|entry| {
+            entry.file_type().is_ok_and(|kind| kind.is_file())
+                && entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| INDEX_FILE_NAMES.contains(&name))
+        })
+    })
+}
+
+/// The index folders directly under `root`; anything else there is left alone.
+pub(crate) fn index_folders(root: &Path) -> Vec<PathBuf> {
+    fs::read_dir(root)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|entry| entry.path())
+                .filter(|path| is_index_folder(path))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn create_private_file(path: &Path) -> io::Result<File> {
@@ -271,13 +335,24 @@ pub(crate) fn folder_bytes(dir: &Path) -> u64 {
         .sum()
 }
 
-/// Deletes a vault's index folder. Where another process still holds the file open (Windows
-/// refuses to delete it), the tables are emptied in place instead.
-pub(crate) fn delete_folder(dir: &Path) -> io::Result<()> {
-    match fs::remove_dir_all(dir) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
-        Err(error) => empty_in_place(dir).map_err(|_| error),
+/// Deletes a vault's index folder file by file, and only if it is one (`is_index_folder`); returns
+/// whether it did. Where another process still holds the index open (Windows refuses to delete
+/// it), the tables are emptied in place instead.
+pub(crate) fn delete_folder(dir: &Path) -> io::Result<bool> {
+    if !is_index_folder(dir) {
+        return Ok(false);
+    }
+    let search = search_path(dir);
+    if let Err(error) = remove_if_present(&search) {
+        empty_in_place(dir).map_err(|_| error)?;
+        return Ok(true);
+    }
+    for name in INDEX_FILE_NAMES {
+        remove_if_present(&dir.join(name))?;
+    }
+    match fs::remove_dir(dir) {
+        Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
+        _ => Ok(true),
     }
 }
 
@@ -289,25 +364,19 @@ fn empty_in_place(dir: &Path) -> rusqlite::Result<()> {
     )
 }
 
-const ORPHAN_AFTER: Duration = Duration::from_secs(60 * 24 * 60 * 60);
+/// The index holds each document's words, so it should not outlive its use: a folder opened at
+/// least every two weeks keeps its index, and one left longer pays one rebuild (seconds, even at
+/// 50,000 files) when it is opened again.
+pub(crate) const UNUSED_AFTER: Duration = Duration::from_secs(14 * 24 * 60 * 60);
 
-/// Deletes the index of every vault whose folder no longer exists and that was last used more than
-/// sixty days ago, so text-derived data never outlives its folder indefinitely.
+/// Deletes the index of every vault whose folder no longer exists or that was not opened for
+/// `UNUSED_AFTER`.
 pub(crate) fn sweep_orphans(root: &Path, now: SystemTime) -> usize {
-    let Ok(entries) = fs::read_dir(root) else {
-        return 0;
-    };
-    let mut removed = 0;
-    for entry in entries.flatten() {
-        let dir = entry.path();
-        if !entry.file_type().is_ok_and(|kind| kind.is_dir()) {
-            continue;
-        }
-        if is_orphan(&dir, now) && delete_folder(&dir).is_ok() {
-            removed += 1;
-        }
-    }
-    removed
+    index_folders(root)
+        .iter()
+        .filter(|dir| is_orphan(dir, now))
+        .filter(|dir| delete_folder(dir).unwrap_or(false))
+        .count()
 }
 
 fn is_orphan(dir: &Path, now: SystemTime) -> bool {
@@ -337,5 +406,5 @@ fn is_orphan(dir: &Path, now: SystemTime) -> bool {
         }
         _ => (false, folder_age()),
     };
-    !vault_exists && unused_for.is_some_and(|age| age > ORPHAN_AFTER)
+    !vault_exists || unused_for.is_some_and(|age| age > UNUSED_AFTER)
 }
