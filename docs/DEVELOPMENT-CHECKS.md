@@ -59,17 +59,20 @@ measured seconds (`scripts/data/vitest-file-durations.json`, refreshed with
 
 After a fix push to a pull request that is ready for review, a lane that
 passed on the previous head is carried forward instead of run again
-(`scripts/ci/carry-forward.mjs`). Every condition must hold: the previous
-run tested a merge of the same base commit, and Git rebuilds the same tested
-tree; no workflow file or planner module differs from the base; the push
-plans nothing for the lane beyond what an empty change plans; the lane's
-planned work is unchanged; and every job of the lane passed in the workflow
-run whose plan job printed the `CI tested tree` annotation, without having
-been carried itself. Types · Lint · Docs always runs. Unit · Contract almost
-never carries, because the security and vault-format contracts read every
-file. A carried lane reports success through its inactive path, and the plan
-job prints a `CI lane carried forward` annotation naming the check runs.
-Anything unreadable carries nothing.
+(`scripts/ci/carry-forward.mjs`). A carried lane's job skips its work and
+prints `carried from run <id> on <sha>`. Every condition must hold: the push
+adds or modifies code modules only, so a move, deletion, prose, data or
+configuration file carries nothing; no workflow file or planner module
+differs from the base; the previous run tested a merge of the same base
+commit, and Git rebuilds the same tested tree; the push plans no work for the
+lane, and none of the lane's tests, commands or build imports a changed file;
+the lane's planned work is unchanged; and every job of the lane passed in the
+workflow run whose plan job printed the `CI tested tree` annotation, without
+having been carried itself. Types · Lint · Docs always runs, and with it
+`pnpm vault:audit`, because moving or deleting a file a vault `path:` names
+breaks the vault. Unit · Contract almost never carries, because the security
+and vault-format contracts read every file. Anything unreadable carries
+nothing.
 
 CI tooling test edits keep their regression checks without promoting unrelated
 lanes to full runs. Runtime planner edits, unknown paths and invalid comparison

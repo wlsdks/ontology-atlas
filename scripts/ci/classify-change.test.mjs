@@ -10,6 +10,7 @@ import {
   coreContractFiles,
   FORBIDDEN_PATTERN_CONTRACTS,
   ratchetContractFiles,
+  browserBuildFiles,
   buildImpactPlan,
   decide,
   decodePlan,
@@ -681,4 +682,55 @@ test('root dependencies plan the whole browser suite before merge', () => {
     assert.equal(plan.lanes.e2e.staticExport, true, file);
     assert.equal(plan.lanes.e2e.webSurface, true, file);
   }
+});
+
+test('a vault edit runs the MCP tests that read the vault, and every plan audits vault paths', () => {
+  const plan = buildImpactPlan({ files: ['docs/ontology/capabilities/gray-area-discovery.md'] });
+  assert.deepEqual(plan.lanes.mcp, {
+    mode: 'focused',
+    commands: ['pnpm exec node --test mcp/src/drift/detect-drift.test.mjs mcp/src/project-meaning/project-meaning-receipt.test.mjs'],
+  });
+  // A move or deletion anywhere can break a vault `path:`; the rename-aware diff cannot see it.
+  assert.ok(buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }).lanes.gates.commands.includes('pnpm vault:audit'));
+});
+
+test('tsconfig and every script the browser build runs are broad browser inputs', () => {
+  const build = browserBuildFiles();
+  for (const path of ['scripts/web/next-build.mjs', 'scripts/web/localize-html-lang.mjs', 'scripts/docs-vault/build-docs-vault.mjs', 'scripts/i18n/build-messages.mjs']) {
+    assert.ok(build.includes(path), path);
+  }
+  for (const path of ['tsconfig.json', 'scripts/web/next-build.mjs', 'scripts/docs-vault/build-docs-vault.mjs']) {
+    const { e2e } = buildImpactPlan({ files: [path] }).lanes;
+    assert.deepEqual([e2e.mode, e2e.staticExport, e2e.webSurface], ['smoke', true, true], path);
+  }
+  assert.equal(buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }).lanes.e2e.mode, 'skip');
+});
+
+test('a pull request plan prints its tested tree and gives every carriable lane a mark output', async () => {
+  const { mkdtempSync, writeFileSync, readFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const cwd = mkdtempSync(join(tmpdir(), 'atlas-pr-plan-'));
+  try {
+    const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    git('init', '-q', '-b', 'main'); git('config', 'user.email', 'test@example.com'); git('config', 'user.name', 'Test');
+    writeFileSync(join(cwd, 'README.md'), 'base'); git('add', '.'); git('commit', '-qm', 'base');
+    const base = git('rev-parse', 'HEAD');
+    git('checkout', '-qb', 'topic'); writeFileSync(join(cwd, 'README.md'), 'head'); git('commit', '-qam', 'head');
+    const head = git('rev-parse', 'HEAD');
+    git('checkout', '-q', '--detach', base); git('merge', '-q', '--no-ff', '-m', 'merge', head);
+    const output = join(cwd, 'github-output');
+    const script = new URL('./classify-change.mjs', import.meta.url).pathname;
+    const log = execFileSync(process.execPath, [script, '--event=pull_request', `--base=${base}`], {
+      cwd, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: output, GITHUB_EVENT_NAME: 'pull_request', PUSH_BEFORE: '' },
+    });
+    assert.match(log, new RegExp(`::notice title=CI tested tree::head=${head} base=${base} tree=${git('rev-parse', 'HEAD^{tree}')} carried=none`));
+    const written = readFileSync(output, 'utf8');
+    for (const lane of ['unit', 'perf', 'mcp', 'playwright', 'static', 'web']) assert.match(written, new RegExp(`^carried_${lane}=$`, 'm'));
+    // A manual run that plans like a pull request has no previous head and prints no tested tree.
+    const manual = execFileSync(process.execPath, [script, '--event=pull_request', `--base=${base}`], {
+      cwd, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '', GITHUB_EVENT_NAME: 'workflow_dispatch', PUSH_BEFORE: '' },
+    });
+    assert.doesNotMatch(manual, /CI tested tree/);
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
 });

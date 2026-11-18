@@ -13,10 +13,11 @@
 
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
-import { carryForward } from './carry-forward.mjs';
+import { carryForward, laneReaders } from './carry-forward.mjs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
-import { CARRIED_LANE_TITLE, carriedProvenanceProblem, TESTED_TREE_TITLE, testedTreeMessage } from '../lib/ci/carry-forward.mjs';
+import { CARRIED_LANE_TITLE, CARRY_LANE_NAMES, carriedMark, carriedProvenanceProblem, TESTED_TREE_TITLE, testedTreeMessage } from '../lib/ci/carry-forward.mjs';
 import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -142,7 +143,21 @@ const E2E_BROAD_INPUTS = [
   /^postcss\.config\.mjs$/,
   /^\.github\/actions\/setup-playwright\//,
   /^scripts\/(?:web\/serve-static-export|ci\/run-with-retry)(?:\.test)?\.mjs$/,
+  // Path aliases and compiler options the Next build reads.
+  /^tsconfig\.json$/,
 ];
+
+/**
+ * The scripts `pnpm build` runs (and the install's `prepare`), followed through `pnpm <script>`
+ * and their imports, with the two configs that import build code. A change to any of them can
+ * change the artifact every browser job tests, so each is a broad browser input.
+ */
+export function browserBuildFiles(root = '.') {
+  return [...importClosure([...packageScriptFiles(['build', 'build:static', 'prepare'], root), 'next.config.ts', 'playwright.config.ts'], root)].sort();
+}
+
+let browserBuild;
+const isBrowserBuildFile = (path) => (browserBuild ??= new Set(browserBuildFiles())).has(path);
 
 const KNOWN_PATHS = [
   /^(?:app|assets|cli|docs|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
@@ -502,7 +517,9 @@ function gatesPlan({ suggestions, full }) {
     ) || [...importClosure(commandFiles)].some((path) => path.startsWith('mcp/'));
   // The PO pilot sunset and decision-ledger diff are cheap standing checks, so
   // every comparable PR keeps this required lane alive even with no mapping.
-  return { run: true, commands, needsMcp };
+  // `vault:audit` (0.05 s) is standing too: a vault `path:` breaks when any file it names is moved
+  // or deleted, and the rename-aware diff above names only a moved file's new path.
+  return { run: true, commands: unique([...commands, 'pnpm vault:audit']), needsMcp };
 }
 
 /**
@@ -536,7 +553,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
   const broadPaths = full
     ? paths.filter((path) => !matchesAny(path, KNOWN_PATHS))
     : paths.filter((path) =>
-      (!isSourceTest(path) && matchesAny(path, E2E_BROAD_INPUTS)) ||
+      (!isSourceTest(path) && (matchesAny(path, E2E_BROAD_INPUTS) || isBrowserBuildFile(path))) ||
       (path.startsWith('tests/e2e/') && !PLAYWRIGHT_SPEC_PATH.test(path)));
   const e2e = e2ePlan({ paths, suggestions, full: e2eFull, broadPaths });
   const gates = gatesPlan({ suggestions, full });
@@ -596,7 +613,7 @@ export function reuseReviewedMainPlan(plan, proof, { eventName, base, head } = {
       !/^[a-f0-9]{40}$/.test(proof.tree ?? '') || !/^[a-f0-9]{40}$/.test(proof.reviewedHead ?? '') ||
       !Number.isSafeInteger(proof.pullRequest) || proof.pullRequest < 1 || plan.unknownPaths.length > 0) return plan;
   const idle = buildImpactPlan();
-  idle.lanes.gates.run = false;
+  idle.lanes.gates = { ...idle.lanes.gates, run: false, commands: [] };
   return {
     ...plan,
     full: false,
@@ -803,6 +820,8 @@ function emit(plan, base = null) {
     playwright: e2e.mode,
     static: e2e.staticExport,
     web: e2e.webSurface,
+    // A carried lane's own job prints where its result came from (`carried_mcp`, ...), empty otherwise.
+    ...Object.fromEntries(CARRY_LANE_NAMES.map((lane) => [`carried_${lane}`, carriedMark(plan, lane)])),
   };
   appendFileSync(
     output,
@@ -865,9 +884,10 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
     console.log(`[ci-impact] read-only credential probe: ${JSON.stringify(credentialProbe)}`);
   }
   let planned = reuseReviewedMainPlan(plan, proof, { eventName, base, head });
-  if (eventName === 'pull_request' && base) {
+  // A manual run that plans like a pull request (`plan_from`) is still not one: it has no previous head.
+  if (eventName === 'pull_request' && (process.env.GITHUB_EVENT_NAME ?? 'pull_request') === 'pull_request' && base) {
     // A fix push re-runs only the lanes whose inputs it touched (`carry-forward.mjs`).
-    const carry = await carryForward({ plan: planned, base, previousHead: process.env.PUSH_BEFORE, planFor: buildImpactPlan, git });
+    const carry = await carryForward({ plan: planned, base, previousHead: process.env.PUSH_BEFORE, planFor: buildImpactPlan, git, readers: () => laneReaders({ mcpCommands: FULL_LANE_COMMANDS.mcp }) });
     planned = carry.plan;
     console.log(`[ci-impact] carry-forward: ${carry.verdict.reason}`);
     for (const { lane, reason } of carry.verdict.refused) console.log(`[ci-impact] ${lane} runs again: ${reason}`);

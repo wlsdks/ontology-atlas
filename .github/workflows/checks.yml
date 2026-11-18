@@ -73,6 +73,9 @@ jobs:
       perf: ${{ steps.impact.outputs.perf }}
       mcp: ${{ steps.impact.outputs.mcp }}
       base: ${{ steps.impact.outputs.base }}
+      carried_unit: ${{ steps.impact.outputs.carried_unit }}
+      carried_perf: ${{ steps.impact.outputs.carried_perf }}
+      carried_mcp: ${{ steps.impact.outputs.carried_mcp }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -255,7 +258,9 @@ jobs:
 
       - name: Skip unaffected unit setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
-        run: echo "No affected unit or contract evidence"
+        env:
+          CARRIED: ${{ needs.plan.outputs.carried_unit }}
+        run: echo "${CARRIED:-No affected unit or contract evidence}"
 
       - name: Upload lane report
         continue-on-error: true
@@ -342,7 +347,9 @@ jobs:
 
       - name: Skip unaffected performance setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
-        run: echo "No changed module can reach a performance ratio"
+        env:
+          CARRIED: ${{ needs.plan.outputs.carried_perf }}
+        run: echo "${CARRIED:-No changed module can reach a performance ratio}"
 
       - name: Upload lane report
         continue-on-error: true
@@ -446,7 +453,9 @@ jobs:
 
       - name: Skip unaffected MCP setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
-        run: echo "MCP and CLI boundaries are untouched — skipped both dependency trees and tests"
+        env:
+          CARRIED: ${{ needs.plan.outputs.carried_mcp }}
+        run: echo "${CARRIED:-MCP and CLI boundaries are untouched — skipped both dependency trees and tests}"
 
       - name: Upload lane report
         continue-on-error: true

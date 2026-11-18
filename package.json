@@ -187,7 +187,7 @@
     "checks:changed": "node scripts/ci/suggest-focused-checks.mjs",
     "test:checks:proof": "node --test scripts/lib/ci/focused-checks-proof.test.mjs",
     "test:checks:changed": "node --test scripts/lib/ci/focused-check-suggestions.test.mjs scripts/ci/suggest-focused-checks.test.mjs scripts/lib/import-graph/test-reach.test.mjs",
-    "test:ci:impact": "node --test scripts/ci/classify-change.test.mjs scripts/ci/run-ci-lane.test.mjs scripts/lib/ci/reviewed-main-push.test.mjs scripts/ci/reviewed-main-push.test.mjs",
+    "test:ci:impact": "node --test scripts/ci/classify-change.test.mjs scripts/ci/run-ci-lane.test.mjs scripts/lib/ci/reviewed-main-push.test.mjs scripts/ci/reviewed-main-push.test.mjs scripts/lib/ci/carry-forward.test.mjs scripts/ci/carry-forward.test.mjs",
     "pr:land": "node scripts/landing/pr-land.mjs",
     "pr:queue": "node scripts/landing/pr-land.mjs --queue",
     "review:facts": "node scripts/harness/review-facts.mjs",

@@ -73,7 +73,7 @@ const CARRY_LANES = Object.freeze({
   },
 });
 
-const CARRY_LANE_NAMES = Object.freeze(Object.keys(CARRY_LANES));
+export const CARRY_LANE_NAMES = Object.freeze(Object.keys(CARRY_LANES));
 export const CARRY_OWNERS = Object.freeze([...new Set(Object.values(CARRY_LANES).map((lane) => lane.owner))]);
 
 /** The one-line annotation every pull request plan job prints, and its strict reader. */
@@ -89,6 +89,20 @@ export function parseTestedTree(message) {
   return { head: match[1], base: match[2], tree: match[3], carried };
 }
 
+/**
+ * The changes the planner maps with certainty: an added or modified code module, whose readers the
+ * import graph names. A deleted or moved file, prose, data or configuration can be read from disk
+ * by a test no mapping names (the dogfood vault's `path:` drift test reads every file it names),
+ * so any such path in the push carries nothing at all.
+ */
+const MAPPED_CODE = /^(?:scripts|mcp\/src|cli\/src|src|app|tests)\/(?:[\w@[\]().-]+\/)*[\w@[\]().-]+\.(?:[cm]?js|tsx?)$/;
+
+export function uncertainChange({ files = [], deleted = [] }) {
+  if (deleted.length > 0) return `the push deletes or moves ${deleted[0]}, and a missing file's readers are not mapped`;
+  const unmapped = files.find((path) => !MAPPED_CODE.test(path));
+  return unmapped ? `${unmapped} is not a code module the planner maps by imports` : null;
+}
+
 function completeShards(runs) {
   const sets = new Map();
   for (const { shard, of } of runs) {
@@ -100,12 +114,14 @@ function completeShards(runs) {
 
 /**
  * Decide which lanes carry. Every input is data: the plans come from `buildImpactPlan`, the proof
- * from `readCarryProof`, and `plannerFiles` is the planner's import closure.
+ * from `readCarryProof`, `change` lists the push's files (renames as a delete and an add),
+ * `readers` maps a lane to every file its tests, commands or build import, and `plannerFiles` is
+ * the planner's import closure.
  *
  * @returns {{ lanes: string[], refused: { lane: string, reason: string }[], reason: string, runs: Record<string, number[]> }}
  */
-export function carryVerdict({ plan, previous, delta, idle, expected, proof, plannerFiles = [] }) {
-  const none = (reason) => ({ lanes: [], refused: [], reason, runs: {} });
+export function carryVerdict({ plan, previous, delta, idle, expected, proof, change, readers = {}, plannerFiles = [] }) {
+  const none = (reason) => ({ lanes: [], refused: [], reason, runs: {}, from: {} });
   if (!expected || !['head', 'base', 'tree', 'previousHead', 'previousTree'].every((key) => SHA.test(expected[key] ?? ''))) {
     return none('the tested commits are unknown');
   }
@@ -116,16 +132,21 @@ export function carryVerdict({ plan, previous, delta, idle, expected, proof, pla
   const planner = new Set(plannerFiles);
   const touched = [...previous.paths, ...delta.paths].find((path) => path.startsWith('.github/') || planner.has(path));
   if (touched) return none(`${touched} differs from the base, so the earlier jobs and their planner are not these`);
+  const uncertain = change ? uncertainChange(change) : 'the push is unknown';
+  if (uncertain) return none(uncertain);
   if (!proof?.ok) return none(`the previous head's results are unreadable: ${proof?.reason ?? 'no proof'}`);
 
   const lanes = [];
   const refused = [];
   const runs = {};
+  const from = {};
   for (const [name, lane] of Object.entries(CARRY_LANES)) {
     const now = lane.slice(plan.lanes);
     if (lane.idle(plan.lanes)) continue;
     const refuse = (reason) => refused.push({ lane: name, reason });
     if (!isDeepStrictEqual(lane.slice(delta.lanes), lane.slice(idle.lanes))) { refuse('this push changed one of its inputs'); continue; }
+    const read = change.files.find((path) => !readers[name] || readers[name].has(path));
+    if (read) { refuse(readers[name] ? `its tests or build import ${read}` : 'its readers are unknown'); continue; }
     if (!isDeepStrictEqual(lane.slice(previous.lanes), now)) { refuse('its planned work differs from the previous head'); continue; }
     const owner = proof.owners?.[lane.owner];
     if (!owner) { refuse(`no tested-tree annotation from ${lane.owner} at the previous head`); continue; }
@@ -145,8 +166,15 @@ export function carryVerdict({ plan, previous, delta, idle, expected, proof, pla
     }))) { refuse('a shard is missing at the previous head'); continue; }
     lanes.push(name);
     runs[name] = jobs.map((run) => run.id).sort((a, b) => a - b);
+    from[name] = owner.runId;
   }
-  return { lanes, refused, reason: lanes.length > 0 ? `carried ${lanes.join(', ')}` : 'no lane qualified', runs };
+  return { lanes, refused, reason: lanes.length > 0 ? `carried ${lanes.join(', ')}` : 'no lane qualified', runs, from };
+}
+
+/** The line a carried lane's own job prints instead of running. */
+export function carriedMark(plan, lane) {
+  const carried = plan.carriedFrom;
+  return carried?.lanes.includes(lane) ? `carried from run ${carried.runs[lane]} on ${carried.head}` : '';
 }
 
 /** The plan with every carried lane set to what an empty change plans, and its provenance. */
@@ -163,7 +191,13 @@ export function applyCarry(plan, verdict, { idle, expected }) {
     ...plan,
     reason: `${plan.reason}; ${verdict.lanes.join(', ')} carried from ${expected.previousHead.slice(0, 9)}`,
     lanes,
-    carriedFrom: { head: expected.previousHead, base: expected.base, tree: expected.previousTree, lanes: [...verdict.lanes] },
+    carriedFrom: {
+      head: expected.previousHead,
+      base: expected.base,
+      tree: expected.previousTree,
+      lanes: [...verdict.lanes],
+      runs: Object.fromEntries(verdict.lanes.map((name) => [name, verdict.from[name]])),
+    },
   };
 }
 
@@ -176,5 +210,8 @@ export function carriedProvenanceProblem(plan) {
   if (!Array.isArray(carried.lanes) || carried.lanes.length === 0 || new Set(carried.lanes).size !== carried.lanes.length ||
       carried.lanes.some((lane) => !CARRY_LANE_NAMES.includes(lane))) return 'carried lane names';
   if (carried.lanes.some((lane) => !CARRY_LANES[lane].idle(plan.lanes))) return 'a carried lane still plans work';
+  const runs = carried.runs;
+  if (!runs || typeof runs !== 'object' || Object.keys(runs).sort().join() !== [...carried.lanes].sort().join() ||
+      carried.lanes.some((lane) => !Number.isSafeInteger(runs[lane]) || runs[lane] < 1)) return 'carried lane runs';
   return null;
 }

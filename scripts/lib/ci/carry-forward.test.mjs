@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildImpactPlan, validatePlan } from '../../ci/classify-change.mjs';
-import { applyCarry, carryVerdict, parseTestedTree, testedTreeMessage } from './carry-forward.mjs';
+import { applyCarry, carriedMark, carryVerdict, parseTestedTree, testedTreeMessage, uncertainChange } from './carry-forward.mjs';
 
 const sha = (digit) => digit.repeat(40);
 const expected = { base: sha('b'), head: sha('c'), tree: sha('d'), previousHead: sha('a'), previousTree: sha('e') };
 const idle = buildImpactPlan();
+// What each lane's tests, commands or build import; the real sets come from `laneReaders`.
+const readers = { mcp: new Set(['mcp/src/index.js']), perf: new Set(), playwright: new Set(['scripts/lib/design/ui-audit-probe.mjs']), static: new Set(), web: new Set() };
 
 // The previous head changed an MCP analyzer, a rendered component and the landing script.
 const BEFORE = ['mcp/src/analyze/repo-structure.mjs', 'src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx', 'scripts/landing/pr-land.mjs'];
@@ -18,7 +20,7 @@ function passingProof() {
   const annotation = { head: expected.previousHead, base: expected.base, tree: expected.previousTree, carried: [] };
   return {
     ok: true,
-    owners: { 'Check impact plan': { ...annotation, suite: 1 }, 'E2E impact plan': { ...annotation, suite: 2 } },
+    owners: { 'Check impact plan': { ...annotation, suite: 1, runId: 501 }, 'E2E impact plan': { ...annotation, suite: 2, runId: 502 } },
     runs: [
       job(10, 'Check impact plan', 1), job(11, 'Types · Lint · Docs', 1),
       job(12, 'Unit · Contract 1/3', 1), job(13, 'Unit · Contract 2/3', 1), job(14, 'Unit · Contract 3/3', 1),
@@ -33,7 +35,7 @@ function cycle(fix, { proof = passingProof(), previousFiles = BEFORE } = {}) {
   const previous = buildImpactPlan({ files: previousFiles });
   const plan = buildImpactPlan({ files: [...new Set([...previousFiles, ...fix])] });
   const delta = buildImpactPlan({ files: fix });
-  return { plan, verdict: carryVerdict({ plan, previous, delta, idle, expected, proof, plannerFiles: ['scripts/ci/classify-change.mjs'] }) };
+  return { plan, verdict: carryVerdict({ plan, previous, delta, idle, expected, proof, change: { files: fix, deleted: [] }, readers, plannerFiles: ['scripts/ci/classify-change.mjs'] }) };
 }
 
 const refusal = (verdict, lane) => verdict.refused.find((row) => row.lane === lane)?.reason;
@@ -56,7 +58,9 @@ test('planted: a fix that touches none of a lane input carries it, and the plan 
   assert.equal(carried.lanes.gates.run, true, 'Types · Lint · Docs always runs');
   assert.deepEqual(carried.lanes.gates, plan.lanes.gates);
   assert.deepEqual(carried.lanes.unit, plan.lanes.unit);
-  assert.deepEqual(carried.carriedFrom, { head: expected.previousHead, base: expected.base, tree: expected.previousTree, lanes: ['mcp', 'playwright'] });
+  assert.deepEqual(carried.carriedFrom, { head: expected.previousHead, base: expected.base, tree: expected.previousTree, lanes: ['mcp', 'playwright'], runs: { mcp: 501, playwright: 502 } });
+  assert.equal(carriedMark(carried, 'mcp'), `carried from run 501 on ${expected.previousHead}`);
+  assert.equal(carriedMark(carried, 'unit'), '');
   assert.deepEqual(verdict.runs.playwright, [31, 32, 33, 34, 35]);
 });
 
@@ -97,7 +101,7 @@ test('planned work that differs between the heads runs the lane again', () => {
   const previous = buildImpactPlan({ files: BEFORE });
   const plan = buildImpactPlan({ files: BEFORE });
   plan.lanes.mcp = { mode: 'focused', commands: [...plan.lanes.mcp.commands, 'pnpm test:mcp:smoke'] };
-  const verdict = carryVerdict({ plan, previous, delta: buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }), idle, expected, proof: passingProof() });
+  const verdict = carryVerdict({ plan, previous, delta: buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }), idle, expected, proof: passingProof(), change: { files: ['scripts/landing/pr-land.mjs'], deleted: [] }, readers });
   assert.equal(refusal(verdict, 'mcp'), 'its planned work differs from the previous head');
   assert.ok(verdict.lanes.includes('playwright'));
 });
@@ -106,7 +110,7 @@ test('exhaustive, unreadable, workflow or planner changes carry nothing', () => 
   const run = (overrides) => {
     const previous = buildImpactPlan({ files: BEFORE });
     const plan = buildImpactPlan({ files: BEFORE });
-    return carryVerdict({ plan, previous, delta: buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }), idle, expected, proof: passingProof(), plannerFiles: ['scripts/ci/classify-change.mjs'], ...overrides });
+    return carryVerdict({ plan, previous, delta: buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }), idle, expected, proof: passingProof(), change: { files: ['scripts/landing/pr-land.mjs'], deleted: [] }, readers, plannerFiles: ['scripts/ci/classify-change.mjs'], ...overrides });
   };
   const cases = [
     [{ delta: buildImpactPlan({ files: ['scripts/ci/classify-change.mjs'] }) }, /^the push needs an exhaustive run: CI impact authority changed/],
@@ -119,6 +123,10 @@ test('exhaustive, unreadable, workflow or planner changes carry nothing', () => 
     [{ proof: undefined }, /unreadable: no proof$/],
     [{ expected: { ...expected, previousHead: expected.head } }, /^the previous head is this head$/],
     [{ expected: { ...expected, previousTree: 'not-a-sha' } }, /^the tested commits are unknown$/],
+    [{ change: { files: ['scripts/landing/pr-land.mjs'], deleted: ['scripts/landing/old.mjs'] } }, /^the push deletes or moves scripts\/landing\/old\.mjs/],
+    [{ change: { files: ['tsconfig.json'], deleted: [] } }, /^tsconfig\.json is not a code module/],
+    [{ change: { files: ['mcp/src/data/catalogue.json'], deleted: [] } }, /^mcp\/src\/data\/catalogue\.json is not a code module/],
+    [{ change: undefined }, /^the push is unknown$/],
   ];
   for (const [overrides, reason] of cases) {
     const verdict = run(overrides);
@@ -126,7 +134,29 @@ test('exhaustive, unreadable, workflow or planner changes carry nothing', () => 
     assert.match(verdict.reason, reason);
   }
   const plan = buildImpactPlan({ files: BEFORE });
-  assert.deepEqual(carryVerdict({ plan: { ...plan, reusedFrom: {} }, previous: plan, delta: idle, idle, expected, proof: passingProof() }).lanes, []);
+  assert.deepEqual(carryVerdict({ plan: { ...plan, reusedFrom: {} }, previous: plan, delta: idle, idle, expected, proof: passingProof(), change: { files: [], deleted: [] }, readers }).lanes, []);
+});
+
+test('reproduced: a fix that edits a vault path the MCP drift test reads carries nothing', () => {
+  // The previous head changed an analyzer; the fix moves a vault node's `path:`.
+  const fix = ['docs/ontology/capabilities/gray-area-discovery.md'];
+  const delta = buildImpactPlan({ files: fix });
+  assert.match(delta.lanes.mcp.commands.join(' '), /mcp\/src\/drift\/detect-drift\.test\.mjs/, 'the planner now plans the drift test for a vault edit');
+  assert.ok(delta.lanes.gates.commands.includes('pnpm vault:audit'));
+  const { verdict } = cycle(fix);
+  assert.deepEqual(verdict.lanes, []);
+  assert.match(verdict.reason, /^docs\/ontology\/capabilities\/gray-area-discovery\.md is not a code module/);
+  assert.match(uncertainChange({ files: fix }), /not a code module/);
+});
+
+test('a lane whose tests or build import a changed module runs again', () => {
+  const { verdict } = cycle(['scripts/lib/design/ui-audit-probe.mjs']);
+  assert.ok(!verdict.lanes.includes('playwright'));
+  assert.ok(verdict.lanes.includes('mcp'));
+  const unknown = cycle(['scripts/landing/pr-land.mjs']);
+  const withoutReaders = carryVerdict({ plan: unknown.plan, previous: buildImpactPlan({ files: BEFORE }), delta: buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }), idle, expected, proof: passingProof(), change: { files: ['scripts/landing/pr-land.mjs'], deleted: [] }, readers: {} });
+  assert.deepEqual(withoutReaders.lanes, []);
+  assert.equal(refusal(withoutReaders, 'mcp'), 'its readers are unknown');
 });
 
 test('a lane already idle on this head is neither carried nor refused', () => {
@@ -152,8 +182,12 @@ test('validatePlan refuses carried provenance that is malformed or still plans w
     { ...carried, carriedFrom: { ...carried.carriedFrom, lanes: [] } },
     { ...carried, carriedFrom: { ...carried.carriedFrom, lanes: ['mcp', 'mcp'] } },
     { ...carried, carriedFrom: { ...carried.carriedFrom, base: 'main' } },
-    { ...carried, carriedFrom: { ...carried.carriedFrom, lanes: ['unit'] } },
+    { ...carried, carriedFrom: { ...carried.carriedFrom, lanes: ['unit'], runs: { unit: 501 } } },
+    { ...carried, carriedFrom: { ...carried.carriedFrom, runs: { mcp: 501, playwright: 502, unit: 503 } } },
     { ...carried, carriedFrom: null },
+    { ...carried, carriedFrom: { ...carried.carriedFrom, runs: { mcp: 501 } } },
+    { ...carried, carriedFrom: { ...carried.carriedFrom, runs: { mcp: 501, playwright: 0 } } },
+    { ...carried, carriedFrom: { ...carried.carriedFrom, runs: undefined } },
   ];
   for (const candidate of broken) assert.throws(() => validatePlan(candidate), /unsupported CI impact plan/);
 });

@@ -15,11 +15,15 @@ function response(value, { status = 200, link = '' } = {}) {
   return { ok: status >= 200 && status < 300, status, headers: { get: (name) => (name.toLowerCase() === 'link' ? link : null) }, json: async () => value };
 }
 
+function plan(id, name, suite, conclusion = 'success', runId = 900, appId = 15368) {
+  return { id, name, status: 'completed', conclusion, check_suite: { id: suite }, app: { id: appId }, head_sha: A, details_url: `https://github.com/owner/repo/actions/runs/${runId}/job/${id}` };
+}
+
 function world({ runs, annotations = {}, pages = 1, override = () => undefined } = {}) {
   const checkRuns = runs ?? [
-    { id: 1, name: 'Check impact plan', status: 'completed', conclusion: 'success', check_suite: { id: 7 }, app: { id: 15368 }, head_sha: A },
-    { id: 2, name: 'MCP', status: 'completed', conclusion: 'success', check_suite: { id: 7 }, app: { id: 15368 }, head_sha: A },
-    { id: 3, name: 'E2E impact plan', status: 'completed', conclusion: 'success', check_suite: { id: 8 }, app: { id: 15368 }, head_sha: A },
+    plan(1, 'Check impact plan', 7, 'success', 901),
+    plan(2, 'MCP', 7, 'success', 901),
+    plan(3, 'E2E impact plan', 8, 'success', 902),
   ];
   const tested = testedTreeMessage({ head: A, base: 'b'.repeat(40), tree: 'c'.repeat(40) });
   const notes = { 1: [{ annotation_level: 'notice', title: 'CI tested tree', message: tested }], 3: [{ annotation_level: 'notice', title: '', message: 'runner image notice' }], ...annotations };
@@ -45,7 +49,7 @@ test('a complete read returns every latest run and each plan job annotation', as
   const proof = await readCarryProof({ ...input, fetchImpl: state.fetchImpl });
   assert.equal(proof.ok, true);
   assert.equal(proof.runs.length, 3);
-  assert.deepEqual(proof.owners['Check impact plan'], { head: A, base: 'b'.repeat(40), tree: 'c'.repeat(40), carried: [], suite: 7 });
+  assert.deepEqual(proof.owners['Check impact plan'], { head: A, base: 'b'.repeat(40), tree: 'c'.repeat(40), carried: [], suite: 7, runId: 901 });
   assert.equal(proof.owners['E2E impact plan'], null, 'a plan job without the annotation proves nothing');
   assert.ok(state.calls.every((call) => call.options.headers.Authorization === 'Bearer test-token' && call.options.signal.aborted));
 });
@@ -82,10 +86,33 @@ test('a duplicated, failed or forged plan-job annotation proves nothing', async 
   assert.equal((await readCarryProof({ ...input, fetchImpl: twice.fetchImpl })).owners['Check impact plan'], null);
   const warning = world({ annotations: { 1: [{ annotation_level: 'warning', title: 'CI tested tree', message: tested }] } });
   assert.equal((await readCarryProof({ ...input, fetchImpl: warning.fetchImpl })).owners['Check impact plan'], null);
-  const failedPlan = world({ runs: [{ id: 1, name: 'Check impact plan', status: 'completed', conclusion: 'failure', check_suite: { id: 7 }, app: { id: 15368 }, head_sha: A }] });
+  const failedPlan = world({ runs: [plan(1, 'Check impact plan', 7, 'failure')] });
   const read = await readCarryProof({ ...input, fetchImpl: failedPlan.fetchImpl });
   assert.equal(read.owners['Check impact plan'], null);
   assert.ok(!failedPlan.calls.some((call) => call.url.includes('/annotations')), 'a failed plan job is not read');
+});
+
+test('the skipped twin a draft push leaves is set aside, so the ready run on the same head proves', async () => {
+  const runs = [
+    plan(10, 'Check impact plan', 3, 'skipped', 800), plan(11, 'MCP', 3, 'skipped', 800),
+    plan(1, 'Check impact plan', 7, 'success', 901), plan(2, 'MCP', 7, 'success', 901),
+  ];
+  const proof = await readCarryProof({ ...input, fetchImpl: world({ runs }).fetchImpl });
+  assert.equal(proof.owners['Check impact plan']?.runId, 901);
+  assert.deepEqual(proof.runs.map((run) => run.id), [1, 2], 'the skipped suite is gone, lane jobs too');
+});
+
+test('two ready runs, a plan job from another app or without a run link prove nothing', async () => {
+  const cases = [
+    [plan(1, 'Check impact plan', 7, 'success', 901), plan(4, 'Check impact plan', 9, 'success', 903)],
+    [plan(1, 'Check impact plan', 7, 'success', 901, 7)],
+    [{ ...plan(1, 'Check impact plan', 7), details_url: 'https://example.com/elsewhere' }],
+  ];
+  for (const runs of cases) {
+    const proof = await readCarryProof({ ...input, fetchImpl: world({ runs }).fetchImpl });
+    assert.equal(proof.ok, true);
+    assert.equal(proof.owners['Check impact plan'], null, JSON.stringify(runs.map((run) => run.id)));
+  }
 });
 
 // A real repository: base Y, previous head A, fix B, and GitHub-style merge commits of each.
@@ -132,7 +159,7 @@ test('a real fix push rebuilds the tested tree with Git and carries only the unt
     let asked;
     const readProof = async ({ previousHead }) => {
       asked = previousHead;
-      const owner = { head: previousHead, base: repo.movedBase, tree: previousMerge.tree, carried: [], suite: 1 };
+      const owner = { head: previousHead, base: repo.movedBase, tree: previousMerge.tree, carried: [], suite: 1, runId: 77 };
       return { ok: true, owners: { 'Check impact plan': owner, 'E2E impact plan': { ...owner, suite: 2 } }, runs: [{ id: 5, name: 'MCP', status: 'completed', conclusion: 'success', suite: 1, appId: 15368, headSha: previousHead }] };
     };
     const result = await carryForward({ plan, base: repo.movedBase, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
@@ -162,14 +189,17 @@ test('a fix that moves a lane input away runs the lane again, though Git calls i
     mergeOf(repo, repo.base, repo.git(['rev-parse', 'topic']));
     const changed = (filter) => repo.git(['diff', '--name-only', `--diff-filter=${filter}`, `${repo.base}...HEAD`]).split('\n').filter(Boolean);
     const plan = buildImpactPlan({ files: changed('ACMRTUXB'), deletedFiles: changed('D') });
+    let reads = 0;
     const readProof = async ({ previousHead }) => {
-      const owner = { head: previousHead, base: repo.base, tree: previousMerge.tree, carried: [], suite: 1 };
+      reads += 1;
+      const owner = { head: previousHead, base: repo.base, tree: previousMerge.tree, carried: [], suite: 1, runId: 77 };
       return { ok: true, owners: { 'Check impact plan': owner, 'E2E impact plan': owner }, runs: [{ id: 5, name: 'MCP', status: 'completed', conclusion: 'success', suite: 1, appId: 15368, headSha: previousHead }] };
     };
     const result = await carryForward({ plan, base: repo.base, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
     assert.equal(plan.lanes.mcp.mode, 'focused', 'the head still plans the analyzer work');
     assert.deepEqual(result.verdict.lanes, []);
-    assert.equal(result.verdict.refused.find((row) => row.lane === 'mcp')?.reason, 'this push changed one of its inputs');
+    assert.equal(result.verdict.reason, 'the push deletes or moves mcp/src/lib/other.mjs, and a missing file\'s readers are not mapped');
+    assert.equal(reads, 0, 'an uncertain push spends no GitHub request');
   } finally {
     repo.cleanup();
   }

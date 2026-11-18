@@ -64,6 +64,9 @@ jobs:
       playwright: ${{ steps.impact.outputs.playwright }}
       static: ${{ steps.impact.outputs.static }}
       web: ${{ steps.impact.outputs.web }}
+      carried_playwright: ${{ steps.impact.outputs.carried_playwright }}
+      carried_static: ${{ steps.impact.outputs.carried_static }}
+      carried_web: ${{ steps.impact.outputs.carried_web }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -177,7 +180,9 @@ jobs:
 
       - name: Skip unaffected Playwright setup
         if: env.ACTIVE != 'true' && needs.changes.result == 'success'
-        run: echo "Static-export-only behavior is untouched"
+        env:
+          CARRIED: ${{ needs.changes.outputs.carried_static }}
+        run: echo "${CARRIED:-Static-export-only behavior is untouched}"
 
       - name: Upload failure evidence or retry traces
         if: always() && env.ACTIVE == 'true'
@@ -238,7 +243,9 @@ jobs:
 
       - name: Skip unaffected Playwright setup
         if: env.ACTIVE != 'true' && needs.changes.result == 'success'
-        run: echo "The unattended web gateway is untouched"
+        env:
+          CARRIED: ${{ needs.changes.outputs.carried_web }}
+        run: echo "${CARRIED:-The unattended web gateway is untouched}"
 
       - name: Upload failure evidence or retry traces
         if: always() && env.ACTIVE == 'true'
@@ -312,7 +319,9 @@ jobs:
 
       - name: Skip unaffected Playwright setup
         if: env.ACTIVE != 'true' && needs.changes.result == 'success'
-        run: echo "No browser evidence assigned to this shard"
+        env:
+          CARRIED: ${{ needs.changes.outputs.carried_playwright }}
+        run: echo "${CARRIED:-No browser evidence assigned to this shard}"
 
       - name: Upload failure evidence or retry traces
         if: always() && env.ACTIVE == 'true'
