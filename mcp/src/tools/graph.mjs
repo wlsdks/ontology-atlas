@@ -197,9 +197,9 @@ function completeAgentBriefProjectScope(artifact, projectSlug, loadedDocs) {
   };
 }
 
-// The parent artifact is reused only after current vault bytes have been read
-// and their signature checked. Keep at most one separately compiled project
-// per parent, without retaining its source documents or older vault versions.
+// The parent artifact is reused only while the vault's stamp-set version is
+// unchanged. Keep at most one separately compiled project per parent, without
+// retaining its source documents or older vault versions.
 const lastProjectArtifact = new WeakMap();
 
 function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, loadedDocs) {
