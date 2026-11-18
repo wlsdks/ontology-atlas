@@ -129,6 +129,8 @@ async function auditRoute(page: Page) {
       .evaluate((node, devTooling) => {
         // Tooling UI that exists only on the dev server is not ours — see the constant's comment above.
         if (node.closest(devTooling)) return false;
+        // An inert subtree, such as a film playing the real screen as a picture, takes no pointer: nobody can hover it.
+        if (node.closest("[inert]")) return false;
         const c = getComputedStyle(node), r = node.getBoundingClientRect();
         /*
          * Controls outside the first viewport are measured: Playwright's `hover()` scrolls into view itself,
