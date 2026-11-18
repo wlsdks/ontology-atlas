@@ -278,7 +278,7 @@ export function fastPathEligibility({ checks, other, mergeClean, prFiles, mainFi
   else if (checks.state !== 'green') {
     const why = checks.state === 'failed'
       ? `${checks.failed.length} required context(s) failed`
-      : `${checks.pending.length} required context(s) running, ${checks.unrun.length} not run (a draft runs none; \`pnpm pr:ci\` fires one)`;
+      : `${checks.pending.length} required context(s) running, ${checks.unrun.length} not run (a draft runs none until it is marked ready)`;
     add('ready-green', false, why);
   } else if (other?.state === 'failed') add('ready-green', false, `unrequired check(s) red: ${other.failed.map((c) => c.name).join(', ')}`);
   else add('ready-green', true, 'every required context is green on its head');
@@ -322,6 +322,33 @@ function trainOverlapRule(lock, prFiles) {
   return overlap.length === 0
     ? [true, `${subject} touch${trains.length > 1 ? '' : 'es'} none of its files`]
     : [false, `${subject} also change${trains.length > 1 ? '' : 's'} ${overlap.slice(0, 3).join(', ')}`];
+}
+
+/**
+ * Where `pnpm pr:land <n>` sends a pull request the fast path did not take at once.
+ *
+ * - `merge`: the fast path takes it now.
+ * - `own-ci`: every rule but `ready-green` passes and its required contexts have not finished (a
+ *   draft never ran them; a ready one is still running). Its own run is the evidence a train would
+ *   buy, bought without the lock and alongside every other pull request's; it is judged again
+ *   when the run ends.
+ * - `red`: its own run failed a context that `tolerated` (`--flaky`, `--allow-failing`) does not
+ *   name. A train would run the same change to the same verdict and eject it, so it goes back now.
+ * - `train`: anything else. `blockers` names the rules that sent it there.
+ */
+export function landingRoute({ verdict, checks, other, tolerated = [] }) {
+  if (verdict.eligible) return { route: 'merge', blockers: [] };
+  const blockers = verdict.rules.filter((row) => !row.ok && row.rule !== 'ready-green').map((row) => row.rule);
+  if (blockers.length > 0) return { route: 'train', blockers };
+  const failed = [...(checks?.failed ?? []), ...(other?.failed ?? [])];
+  if (failed.length > 0) {
+    const allowed = new Set(tolerated);
+    return failed.every((check) => allowed.has(check.name))
+      ? { route: 'train', blockers: ['ready-green'] }
+      : { route: 'red', blockers: ['ready-green'], failed };
+  }
+  if (checks?.state === 'waiting') return { route: 'own-ci', blockers: [] };
+  return { route: 'train', blockers: ['ready-green'] };
 }
 
 export function describeFastPath(verdict) {

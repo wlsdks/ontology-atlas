@@ -525,10 +525,12 @@ function component(number, extra = {}) {
  *
  * - `ci(numbers, reruns)` decides a train's rollup from the components it carries.
  * - `conflicts` is the set of component numbers whose merge onto a train answers 409.
+ * - `ownCi(number)` decides a pull request's own rollup once it is marked ready.
  * - `mainDrift(trainIndex)` is the files `main` changed under the n-th train while its CI ran.
+ * - `mainMoves()` is the files `main` changed since a pull request's merge base, with no train.
  * - `readOnly` makes every write throw, for `--plan`.
  */
-function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new Set(), mainDrift = () => [], lock = null, readOnly = false, history = [] } = {}) {
+function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = () => green(), conflicts = new Set(), mainDrift = () => [], mainMoves = () => [], lock = null, readOnly = false, history = [] } = {}) {
   const calls = [];
   const events = [];
   let clock = Date.parse('2026-09-26T10:00:00Z');
@@ -565,6 +567,13 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
         train.polls += 1;
         // The first poll sees nothing yet; the next one sees the result.
         if (train.polls >= 2) train.rollup = ci(train.components, train.reruns);
+      }
+      if (!train && pr.ownCiPolls !== undefined && pr.state === 'OPEN') {
+        pr.ownCiPolls += 1;
+        // Its own run: in flight on the first read after ready, decided on the second.
+        pr.statusCheckRollup = pr.ownCiPolls >= 2
+          ? ownCi(number)
+          : REQUIRED_CONTEXTS.map((name) => ({ name, status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:01:00Z' }));
       }
       return view(pr);
     },
@@ -640,7 +649,9 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       return { ok: true, detail: '{"merged":true}' };
     }),
     markReady: write('markReady', (number) => {
-      pulls.get(number).isDraft = false;
+      const pr = pulls.get(number);
+      pr.isDraft = false;
+      if (!trains.has(number)) pr.ownCiPolls = 0;
       return true;
     }),
     markDraft: write('markDraft', () => true),
@@ -672,7 +683,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
         // The drift under the open train cut from `from`: main's own sha, or a train head.
         const open = [...trains.values()].filter((t) => pulls.get(t.number).state === 'OPEN');
         const current = open.find((t) => t.base === from) ?? [...trains.values()].at(-1);
-        return current ? mainDrift(current.index) : [];
+        return current ? mainDrift(current.index) : mainMoves();
       }
       if (to.startsWith('head:')) return (branchTrain.get(to.slice('head:'.length)) ?? []).flatMap((n) => pulls.get(n).files);
       return [];
@@ -1066,13 +1077,92 @@ describe('the train size a conductor chooses', () => {
 describe('pnpm pr:land <n>, end to end against the fake', () => {
   const land = (world, argv) => runPrLand(argv, world.io, () => world.deps);
 
-  it('queues a draft, conducts when the lock is free, and exits 0 once it landed', () => {
-    const world = fakeWorld({ prs: [component(21)] });
+  it('queues a draft main moved into, conducts when the lock is free, and exits 0 once it landed', () => {
+    const world = fakeWorld({ prs: [component(21)], mainMoves: () => ['src/change-21.ts'] });
     assert.equal(land(world, ['21']), 0);
     assert.ok(world.out.some((line) => /FAIL ready-green/.test(line)), 'the fast-path verdict is printed rule by rule');
+    assert.ok(world.out.some((line) => /taking the train: disjoint-from-main/.test(line)));
+    assert.equal(called(world, 'markReady').length, 0, 'a change the fast path cannot take spends no run of its own');
     assert.ok(world.out.some((line) => /PR #21 landed through a train/.test(line)));
     assert.equal(called(world, 'addLabel').length, 1);
     assert.equal(world.pulls.get(21).state, 'CLOSED');
+  });
+
+  it('marks a disjoint draft ready, waits for its own CI and merges it without a train', () => {
+    const world = fakeWorld({ prs: [component(26)] });
+    assert.equal(land(world, ['26']), 0);
+    assert.equal(called(world, 'markReady').length, 1);
+    const [merge] = called(world, 'mergePr');
+    assert.equal(merge[1], 26);
+    assert.equal(merge[2].sha, component(26).headRefOid, 'it merges the head its own CI measured');
+    assert.equal(merge[2].method, 'merge');
+    assert.equal(called(world, 'openPr').length, 0, 'no train ran');
+    assert.equal(called(world, 'addLabel').length, 0, 'it never joined the queue');
+    assert.equal(world.locks.has(LOCK_REF), false);
+    assert.ok(world.out.some((line) => /PR #26 merged on the fast path/.test(line)));
+  });
+
+  it('waits for the run already going on a ready pull request without asking for another', () => {
+    const running = REQUIRED_CONTEXTS.map((name) => ({ name, status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:01:00Z' }));
+    const world = fakeWorld({ prs: [component(27, { isDraft: false, statusCheckRollup: running, ownCiPolls: 0 })] });
+    assert.equal(land(world, ['27']), 0);
+    assert.equal(called(world, 'markReady').length, 0);
+    assert.equal(called(world, 'mergePr')[0][1], 27);
+  });
+
+  it('hands a red own run back to its author, unqueued and without a train', () => {
+    const world = fakeWorld({ prs: [component(28)], ownCi: () => red(['MCP'], 4242) });
+    assert.equal(land(world, ['28']), 1);
+    assert.equal(called(world, 'mergePr').length, 0);
+    assert.equal(called(world, 'addLabel').length, 0);
+    assert.equal(called(world, 'openPr').length, 0);
+    const text = world.out.join('\n');
+    assert.match(text, /ERROR PR #28 is red on its own CI; nothing was queued/);
+    assert.match(text, /ERROR {3}MCP FAILURE https:\/\/github.com\/wlsdks\/ontology-atlas\/actions\/runs\/4242/);
+  });
+
+  it('hands back a ready pull request that is already red without waiting', () => {
+    const world = fakeWorld({ prs: [component(29, { isDraft: false, statusCheckRollup: red(['Unit · Contract']) })] });
+    assert.equal(land(world, ['29']), 1);
+    assert.equal(world.events.filter((e) => e === 'sleep').length, 0);
+    assert.equal(called(world, 'addLabel').length, 0);
+  });
+
+  it('sends a red own run to the train when every failed context is named --flaky', () => {
+    const flaky = 'Playwright (chromium 1/3)';
+    const world = fakeWorld({ prs: [component(30)], ownCi: () => red([flaky]) });
+    assert.equal(land(world, ['30', `--flaky=${flaky}`]), 0);
+    assert.ok(world.out.some((line) => /red only on Playwright \(chromium 1\/3\), named as tolerated; the train reruns it/.test(line)));
+    assert.equal(called(world, 'openPr').length, 1);
+    assert.ok(world.out.some((line) => /PR #30 landed through a train/.test(line)));
+  });
+
+  it('checks main again under the fast lock and takes the train when it moved in between', () => {
+    let moved = false;
+    const world = fakeWorld({ prs: [component(36)], mainMoves: () => (moved ? ['src/change-36.ts'] : []) });
+    const takeLock = world.deps.gh.takeLock;
+    world.deps.gh.takeLock = (ref, ...rest) => {
+      if (ref === FAST_LOCK_REF) moved = true;
+      return takeLock(ref, ...rest);
+    };
+    assert.equal(land(world, ['36']), 0);
+    assert.ok(world.out.some((line) => /now FAIL disjoint-from-main: main also changed src\/change-36.ts/.test(line)));
+    assert.notEqual(called(world, 'mergePr')[0][1], 36, 'the train merged, not the pull request directly');
+  });
+
+  it('takes the train when main moves into its files while its own CI runs', () => {
+    let ready = false;
+    const world = fakeWorld({ prs: [component(34)], mainMoves: () => (ready ? ['src/change-34.ts'] : []) });
+    const markReady = world.deps.gh.markReady;
+    world.deps.gh.markReady = (number) => {
+      ready = true;
+      return markReady(number);
+    };
+    assert.equal(land(world, ['34']), 0);
+    assert.ok(world.out.some((line) => /FAIL disjoint-from-main: main also changed src\/change-34.ts/.test(line)));
+    assert.ok(world.out.some((line) => /own CI is green, but it cannot merge directly; the train runs it on today's main/.test(line)));
+    assert.equal(called(world, 'mergePr').length, 1, 'only the train merged');
+    assert.notEqual(called(world, 'mergePr')[0][1], 34);
   });
 
   it('merges a green, disjoint pull request on the fast path without queueing it', () => {
@@ -1106,6 +1196,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.equal(land(world, ['24', '--no-wait']), 0);
     assert.ok(world.out.some((line) => /pnpm pr:land --conduct/.test(line)));
     assert.equal(called(world, 'openPr').length, 0);
+    assert.equal(called(world, 'markReady').length, 0, '--no-wait queues and leaves; it starts no run it will not wait for');
   });
 
   it('exits 1 when its pull request is ejected', () => {
@@ -1116,18 +1207,20 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
 
   it('plans without writing anything to GitHub', () => {
     const world = fakeWorld({
-      prs: [component(31), component(32, { isDraft: false, statusCheckRollup: green() }), component(33)],
+      prs: [component(31), component(32, { isDraft: false, statusCheckRollup: green() }), component(33), component(35, { files: ['src/moved.ts'] })],
       queued: [33],
-      conflicts: new Set([31]),
+      conflicts: new Set([35]),
+      mainMoves: () => ['src/moved.ts'],
       readOnly: true,
     });
-    assert.equal(land(world, ['--plan', '31', '32']), 0);
+    assert.equal(land(world, ['--plan', '31', '32', '35']), 0);
     const text = world.out.join('\n');
     assert.match(text, /PR #31: fast path not eligible/);
-    assert.match(text, /PR #31: would be queued/);
+    assert.match(text, /PR #31: would mark it ready and wait for its own CI, then merge directly if still disjoint/);
     assert.match(text, /PR #32: would merge now/);
-    assert.match(text, /next train \(2 of 2 queued\): chore\(merge\): #33 #31/);
-    assert.match(text, /#31 feat\/change-31@31ccccccc: would conflict and be ejected/);
+    assert.match(text, /PR #35: would be queued/);
+    assert.match(text, /next train \(2 of 2 queued\): chore\(merge\): #33 #35/);
+    assert.match(text, /#35 feat\/change-35@35ccccccc: would conflict and be ejected/);
     assert.match(text, /\| feat: change 33 \(#33\)  \(Author 33\)/, 'the plan shows the commit main would get for each pull request');
     assert.match(text, /dry run: nothing was written to GitHub/);
     assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');

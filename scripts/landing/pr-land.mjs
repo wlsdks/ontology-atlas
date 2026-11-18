@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * `pnpm pr:land <n>` is the only way a PR reaches `main`: it enqueues with the `landing-queue`
- * label, and the lock-holding conductor merges queued PRs into a train with one CI run, bisecting
- * red trains. Disjoint changes take a lock-free fast path.
+ * `pnpm pr:land <n>` is the only way a PR reaches `main`. A change disjoint from `main` and from
+ * every train in flight takes the lock-free fast path on its own CI: a draft is marked ready, its
+ * one run is awaited, and green merges it directly; red goes back to its author unqueued.
+ * Anything else enqueues with the `landing-queue` label, and the lock-holding conductor merges
+ * queued PRs into a train with one CI run, bisecting red trains.
  */
 
 import { runMainCopyIfStale } from '../lib/landing/run-main-copy.mjs';
@@ -25,6 +27,7 @@ import {
   driftVerdict,
   ejectComment,
   fastPathEligibility,
+  landingRoute,
   landedComment,
   maySpeculate,
   nextTrain,
@@ -76,6 +79,12 @@ export const SCHEDULED_CHECKS = [
 const SCHEDULED_RUN_STALE_HOURS = 48;
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 export const POLL_SECONDS = 30;
+
+/**
+ * How often `pnpm pr:land <n>` reads its own pull request's CI. One GraphQL read each, none from
+ * the shared REST quota; a run takes minutes, so 20 s adds about 10 s on average.
+ */
+export const OWN_CI_POLL_SECONDS = 20;
 
 /**
  * With one train in flight and nothing queued behind it, how long before the conductor lists the
@@ -917,7 +926,7 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
     }
   }
   const lock = readLockState(deps);
-  return fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan });
+  return { ...fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan }), checks, other };
 }
 
 function takeFastLock(deps, token, number) {
@@ -939,17 +948,15 @@ function takeFastLock(deps, token, number) {
   return false;
 }
 
+/** `{ merged, verdict }`: `verdict` is the first reading, which `landingRoute` routes when it did not merge. */
 function tryFastPath({ pr, deps, requiredContexts, args, token }) {
   const verdict = evaluateFastPath({ pr, deps, requiredContexts, allowFailing: args.allowFailing });
   deps.log(`fast path for PR #${pr.number}:`);
   for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
-  if (!verdict.eligible) {
-    deps.log('not eligible for the fast path; taking the train');
-    return false;
-  }
+  if (!verdict.eligible) return { merged: false, verdict };
   if (!takeFastLock(deps, token, pr.number)) {
     deps.log(`another fast-path merge kept ${FAST_LOCK_REF} for 30 s; taking the train`);
-    return false;
+    return { merged: false, verdict: null };
   }
   const releaseFast = deps.onExit(() => deps.gh.releaseLock(FAST_LOCK_REF));
   try {
@@ -958,21 +965,74 @@ function tryFastPath({ pr, deps, requiredContexts, args, token }) {
     if (!again.eligible) {
       for (const line of describeFastPath(again).filter((l) => l.startsWith('FAIL'))) deps.log(`  now ${line}`);
       deps.log('no longer eligible; taking the train');
-      return false;
+      return { merged: false, verdict: null };
     }
     const merged = deps.gh.mergePr(pr.number, { sha: pr.headRefOid, method: 'merge', title: `${pr.title} (#${pr.number})` });
     if (!merged.ok) {
       deps.log(`GitHub refused the fast-path merge (${merged.detail || 'no detail'}); taking the train`);
-      return false;
+      return { merged: false, verdict: null };
     }
     deps.log(`PR #${pr.number} merged on the fast path at ${pr.headRefOid.slice(0, 9)}; post-merge CI on main still runs`);
     deps.gh.deleteBranch(pr.headRefName);
     if (hasQueueLabel(pr)) deps.gh.removeLabel(pr.number);
-    return true;
+    return { merged: true, verdict: again };
   } finally {
     releaseFast();
     deps.gh.releaseLock(FAST_LOCK_REF);
   }
+}
+
+/**
+ * Run a pull request's own CI and wait for its verdict: mark a draft ready, which fires the one
+ * run, then read its required contexts every `OWN_CI_POLL_SECONDS`. `green` and `red` carry the
+ * last read; `stopped` says why it gave up, and the caller decides what that costs.
+ */
+function awaitOwnCi({ pr, deps, args, requiredContexts, deadline }) {
+  const { gh, log } = deps;
+  if (pr.isDraft) {
+    if (!gh.markReady(pr.number)) return { state: 'stopped', reason: 'GitHub refused to mark it ready, so its CI never started' };
+    log(`PR #${pr.number} was a draft; marked ready, so its own CI runs now instead of a train's`);
+  } else log(`PR #${pr.number}'s own CI is running on ${pr.headRefOid.slice(0, 9)}; waiting for it instead of a train`);
+  let head = pr.headRefOid;
+  let idle = 0;
+  let refires = 0;
+  let current = pr;
+  while (deps.now() < deadline) {
+    deps.sleep(OWN_CI_POLL_SECONDS);
+    current = gh.readPr(pr.number);
+    if (current.state !== 'OPEN') return { state: 'stopped', reason: `it is ${String(current.state).toLowerCase()} now`, pr: current };
+    if (current.isDraft) return { state: 'stopped', reason: 'it was turned back into a draft while its CI ran', pr: current };
+    if (current.headRefOid !== head) {
+      log(`PR #${pr.number}'s head moved to ${current.headRefOid.slice(0, 9)}; waiting for that push's CI`);
+      head = current.headRefOid;
+      idle = 0;
+    }
+    const rollup = current.statusCheckRollup ?? [];
+    const checks = requiredCheckState({ rollup, requiredContexts });
+    const other = otherCheckState({ rollup, requiredContexts, allowFailing: args.allowFailing });
+    const inFlight = runInFlight(current);
+    idle = checks.neverRan && !inFlight ? idle + 1 : 0;
+    const step = trainCiStep({ checks, other, inFlight, emptyRollupObservations: idle, refires });
+    if (step.action === 'refire') {
+      log(`PR #${pr.number} reported no run after ${idle} reads; toggling draft to ask GitHub once`);
+      gh.markDraft(pr.number);
+      gh.markReady(pr.number);
+      refires += 1;
+      idle = 0;
+    } else if (step.action === 'red') return { state: 'red', failed: step.failed, pr: current };
+    else if (step.action === 'green') return { state: 'green', pr: current };
+  }
+  return { state: 'stopped', reason: `its CI gave no verdict within ${args.timeoutMinutes} minutes`, pr: current };
+}
+
+/** A red own run goes back to its author with the contexts and the ways forward. */
+function reportOwnRed({ number, failed, deps }) {
+  deps.error(`PR #${number} is red on its own CI; nothing was queued:`);
+  for (const check of failed) deps.error(`  ${check.name} ${check.conclusion ?? ''} ${check.url ?? ''}`.trimEnd());
+  deps.error('  Fix it and push: the pull request is ready now, so the push runs CI again. Then');
+  deps.error(`  \`pnpm pr:land ${number}\` again. A context known to flake: add \`--flaky=<context>\`, and the`);
+  deps.error('  train reruns it once.');
+  return 1;
 }
 
 /*
@@ -1491,13 +1551,42 @@ function landOne({ args, deps }) {
     if (warning) deps.error(`warning: ${warning}`);
   }
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
+  const deadline = deps.now() + args.timeoutMinutes * 60_000;
+  const tolerated = [...args.flaky, ...args.allowFailing];
 
-  if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {
-    return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+  let current = pr;
+  if (args.fast) {
+    let attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
+    if (attempt.merged) return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+    const route = attempt.verdict
+      ? landingRoute({ verdict: attempt.verdict, checks: attempt.verdict.checks, other: attempt.verdict.other, tolerated })
+      : { route: 'train', blockers: [] };
+    if (route.route === 'red') return reportOwnRed({ number, failed: route.failed, deps });
+    // `--no-wait` keeps its meaning: queue and leave. Waiting on its own run is for a lander that stays.
+    if (route.route === 'own-ci' && args.wait) {
+      const own = awaitOwnCi({ pr: current, deps, args, requiredContexts, deadline });
+      current = own.pr ?? current;
+      if (own.state === 'red' && !own.failed.every((check) => tolerated.includes(check.name))) {
+        return reportOwnRed({ number, failed: own.failed, deps });
+      }
+      if (own.state === 'stopped') {
+        deps.error(`PR #${number} stopped waiting for its own CI: ${own.reason}; nothing was queued`);
+        return 1;
+      }
+      if (own.state === 'green') {
+        attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
+        if (attempt.merged) return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+      }
+      deps.log(own.state === 'red'
+        ? `PR #${number}'s own CI is red only on ${own.failed.map((check) => check.name).join(', ')}, named as tolerated; the train reruns it`
+        : `PR #${number}'s own CI is green, but it cannot merge directly; the train runs it on today's main`);
+    } else if (route.route === 'train' && route.blockers.length > 0) {
+      deps.log(`taking the train: ${route.blockers.join(', ')}`);
+    } else if (route.route !== 'merge') deps.log('taking the train');
   }
 
   const sinceIso = new Date(deps.now()).toISOString();
-  if (!hasQueueLabel(pr) && !deps.gh.addLabel(number)) {
+  if (!hasQueueLabel(current) && !deps.gh.addLabel(number)) {
     deps.error(`could not put the \`${QUEUE_LABEL}\` label on PR #${number}; nothing was queued`);
     return 1;
   }
@@ -1509,7 +1598,6 @@ function landOne({ args, deps }) {
       : `landing now: ${describeLock(lock, deps.now())}. \`pnpm pr:queue\` shows the line.`);
     return 0;
   }
-  const deadline = deps.now() + args.timeoutMinutes * 60_000;
   return waitForOutcome({ number, sinceIso, deps, args, requiredContexts, token, deadline });
 }
 
@@ -1558,6 +1646,15 @@ export function planLanding({ args, deps }) {
       for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
       if (verdict.eligible) {
         deps.log(`PR #${number}: would merge now at ${pr.headRefOid.slice(0, 9)}, without the train lock`);
+        continue;
+      }
+      const route = landingRoute({ verdict, checks: verdict.checks, other: verdict.other, tolerated: [...args.flaky, ...args.allowFailing] });
+      if (route.route === 'own-ci') {
+        deps.log(`PR #${number}: would ${pr.isDraft ? 'mark it ready and ' : ''}wait for its own CI, then merge directly if still disjoint`);
+        continue;
+      }
+      if (route.route === 'red') {
+        deps.log(`PR #${number}: would be handed back red on its own CI (${route.failed.map((c) => c.name).join(', ')})`);
         continue;
       }
     }
@@ -1669,14 +1766,14 @@ export function runPrLand(argv, io = console, makeDeps = defaultDeps) {
   }
 
   if (args.ci) {
-    // Opt-in early CI: a draft that wants a round now, so the fast path can take it once green.
+    // Early CI: the author is done, so the one run starts now and is ready, or nearly, at landing.
     const pr = deps.gh.readPr(args.number);
     if (!pr.isDraft) {
       deps.log(`PR #${args.number} is already ready; CI has been asked for`);
       return 0;
     }
     deps.gh.markReady(args.number);
-    deps.log(`PR #${args.number} is ready: one CI run is now firing. Once green, \`pnpm pr:land ${args.number}\` can take the fast path.`);
+    deps.log(`PR #${args.number} is ready: one CI run is now firing, and every later push runs it again. \`pnpm pr:land ${args.number}\` waits for it and merges directly when nothing on main overlaps.`);
     return 0;
   }
 

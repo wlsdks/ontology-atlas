@@ -24,6 +24,7 @@ import {
   driftVerdict,
   ejectComment,
   fastPathEligibility,
+  landingRoute,
   intersect,
   landedComment,
   nextTrain,
@@ -236,6 +237,61 @@ describe('fast-path eligibility', () => {
     // The speculative train is still assembling: nothing can be proven disjoint yet.
     assert.deepEqual(failing(fastPathEligibility({ ...base, lock: held([head, { pr: null, files: null }]) })), ['no-overlapping-train']);
     assert.equal(fastPathEligibility({ ...base, lock: held([]) }).eligible, true);
+  });
+});
+
+describe('where pr:land sends a pull request', () => {
+  const base = {
+    checks: { state: 'green', pending: [], failed: [], unrun: [] },
+    other: { state: 'clear', failed: [] },
+    mergeClean: true,
+    prFiles: ['src/a.ts'],
+    mainFiles: ['src/b.ts'],
+    lock: { state: 'free' },
+    fullPlan: { full: false, reason: 'comparable change' },
+  };
+  const route = (patch, tolerated = []) => {
+    const input = { ...base, ...patch };
+    return landingRoute({ verdict: fastPathEligibility(input), checks: input.checks, other: input.other, tolerated });
+  };
+  const draft = { state: 'waiting', pending: [], failed: [], unrun: ['MCP'] };
+  const running = { state: 'waiting', pending: ['MCP'], failed: [], unrun: [] };
+  const redMcp = { state: 'failed', pending: [], failed: [{ name: 'MCP', conclusion: 'FAILURE' }], unrun: [] };
+
+  it('merges what the fast path takes now', () => {
+    assert.equal(route({}).route, 'merge');
+  });
+
+  it('runs its own CI when an unfinished run is the only thing missing', () => {
+    assert.equal(route({ checks: draft }).route, 'own-ci');
+    assert.equal(route({ checks: running }).route, 'own-ci');
+  });
+
+  it('takes the train, without a run of its own, when any other rule fails', () => {
+    for (const patch of [
+      { mainFiles: ['src/a.ts'] },
+      { mergeClean: false },
+      { mergeClean: null },
+      { fullPlan: { full: true, reason: 'CI impact authority changed' } },
+      { lock: { state: 'held', holder: { pr: 1, train: { files: ['src/a.ts'] } } } },
+      { lock: { state: 'unknown' } },
+    ]) {
+      const verdict = route({ checks: draft, ...patch });
+      assert.equal(verdict.route, 'train', JSON.stringify(patch));
+      assert.ok(verdict.blockers.length > 0 && !verdict.blockers.includes('ready-green'));
+    }
+  });
+
+  it('hands back a red run, required or not, unless every failure is tolerated by name', () => {
+    assert.equal(route({ checks: redMcp }).route, 'red');
+    assert.deepEqual(route({ checks: redMcp }).failed.map((c) => c.name), ['MCP']);
+    assert.equal(route({ other: { state: 'failed', failed: [{ name: 'Windows' }] } }).route, 'red');
+    assert.equal(route({ checks: redMcp }, ['MCP']).route, 'train');
+    assert.equal(route({ checks: redMcp, other: { state: 'failed', failed: [{ name: 'Windows' }] } }, ['MCP']).route, 'red');
+  });
+
+  it('never routes a run it could not read to its own CI', () => {
+    assert.equal(route({ checks: null }).route, 'train');
   });
 });
 
