@@ -204,10 +204,12 @@ export function vaultFolderInside(sourceRoot, vaultRoot) {
   return inside;
 }
 
+// `realpathSync.native` returns the case stored on disk, as Rust `canonicalize` does; the
+// JS `realpathSync` keeps the typed case, so `/Repo` and `/repo/atlas` would not compare.
 function excludedVaultFolder(root, excludePath) {
   if (typeof excludePath !== 'string' || excludePath.length === 0) return null;
   try {
-    return vaultFolderInside(root, realpathSync(excludePath));
+    return vaultFolderInside(realpathSync.native(root), realpathSync.native(excludePath));
   } catch {
     return null;
   }

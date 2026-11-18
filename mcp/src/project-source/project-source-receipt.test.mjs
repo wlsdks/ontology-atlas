@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -301,7 +301,7 @@ test('a vault the repository ignores hashes the same with or without the exclusi
   assert.equal(
     inspectProjectSource(sourceRoot, { excludePath: root }).fingerprint,
     inspectProjectSource(sourceRoot).fingerprint,
-    'a receipt the app minted, which never excludes the vault, keeps verifying',
+    'a receipt minted without the vault root keeps verifying',
   );
 });
 
@@ -314,4 +314,20 @@ test('the vault exclusion rule matches the shared cases the app probe also runs'
   for (const { excluded, entries, kept } of cases.status) {
     assert.deepEqual(filterStatus(encode(entries), excluded), encode(kept));
   }
+});
+
+test('a vault path typed in another case is still the bound folder on a case-insensitive disk', (t) => {
+  const parent = mkdtempSync(join(tmpdir(), 'atlas-project-source-case-'));
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const sourceRoot = join(parent, 'Repo');
+  renameSync(gitSource(), sourceRoot);
+  if (!existsSync(join(parent, 'repo'))) {
+    t.skip('this disk is case-sensitive, so the typed case names another folder');
+    return;
+  }
+  mkdirSync(join(sourceRoot, 'atlas'));
+  writeFileSync(join(sourceRoot, 'atlas', 'project.md'), '---\nkind: project\n---\n');
+  const inspection = inspectProjectSource(join(parent, 'repo'), { excludePath: join(parent, 'REPO', 'atlas') });
+  assert.equal(inspection.vaultExcluded, 'atlas');
+  assert.equal(inspection.dirty, false);
 });

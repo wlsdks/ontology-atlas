@@ -413,3 +413,46 @@ fn a_vault_inside_the_repository_does_not_change_its_own_source_probe() {
 
     fs::remove_dir_all(root).ok();
 }
+
+#[test]
+fn a_vault_path_typed_in_another_case_is_still_the_bound_folder_on_a_case_insensitive_disk() {
+    let parent = std::env::temp_dir().join(format!(
+        "ontology-atlas-project-source-case-{}",
+        std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let root = parent.join("Repo");
+    fs::create_dir_all(root.join("src")).unwrap();
+    if !parent.join("repo").exists() {
+        fs::remove_dir_all(parent).ok();
+        return;
+    }
+    fs::create_dir_all(root.join("atlas")).unwrap();
+    fs::write(root.join("src/main.go"), "package main\n").unwrap();
+    for args in [
+        vec!["init"],
+        vec!["config", "user.email", "atlas@example.invalid"],
+        vec!["config", "user.name", "Atlas Test"],
+        vec!["add", "."],
+        vec!["commit", "-m", "initial"],
+    ] {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+    }
+    fs::write(root.join("atlas/project.md"), "---\nkind: project\n---\n").unwrap();
+    let inspection = inspect_project_source(
+        parent.join("repo").to_string_lossy().to_string(),
+        Some(parent.join("REPO/atlas").to_string_lossy().to_string()),
+    )
+    .unwrap();
+    assert_eq!(inspection.dirty, Some(false));
+    assert_eq!(inspection.files, ["src/main.go"]);
+
+    fs::remove_dir_all(parent).ok();
+}

@@ -6,6 +6,7 @@
     { "source": "/work/app", "vault": "/work/app-vault", "inside": null },
     { "source": "/work/app", "vault": "/work", "inside": null },
     { "source": "/work/app", "vault": "/elsewhere/atlas", "inside": null },
+    { "source": "/work/Repo", "vault": "/work/repo/atlas", "inside": null, "note": "case past the drive letter is exact, so each side canonicalizes to the on-disk case first" },
     { "source": "/", "vault": "/atlas", "inside": "atlas" },
     { "source": "C:\\Users\\dev\\app", "vault": "c:\\Users\\dev\\app\\atlas", "inside": "atlas" },
     { "source": "\\\\?\\C:\\Users\\dev\\app", "vault": "C:/Users/dev/app/docs/ontology", "inside": "docs/ontology" },
