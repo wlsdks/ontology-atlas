@@ -107,7 +107,7 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
             hoverSurface: 'lift',
             className: cn(
               // The same box as a tab row beside it.
-              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] min-[112rem]:w-full',
+              'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] min-[112rem]:w-full',
               'rounded-none border-b border-[color:var(--color-divider)] min-[112rem]:rounded-card min-[112rem]:border-b-0',
             ),
           })}

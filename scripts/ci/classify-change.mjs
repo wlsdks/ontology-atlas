@@ -10,9 +10,9 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
-import { loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -54,6 +54,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:checks:proof',
     'pnpm test:ci:impact',
     'node --test scripts/ci/run-playwright-ci.test.mjs',
+    'node --test scripts/ci/vitest-shard-sequencer.test.mjs',
     'node --test scripts/ci/prepush.test.mjs',
     'pnpm test:source:language',
     'pnpm test:docs:language',
@@ -264,6 +265,70 @@ function exactContractFiles(command) {
     .filter((token) => /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?[A-Za-z0-9._/-]+\.test\.ts$/.test(token));
 }
 
+/**
+ * Contracts that run before every merge whatever the change: the security boundary and the
+ * vault write format. Every other contract runs before merge only when the import graph says it
+ * reaches a changed file, and in full after the merge (`--main-push=full`) and nightly.
+ */
+export const CORE_CONTRACT_DIRECTORIES = Object.freeze(['tests/contract/security', 'tests/contract/vault-format']);
+
+/**
+ * The forbidden patterns `.claude/rules/forbidden.md` says are rejected before merge, and the
+ * parity check that keeps that list in step with `docs/DESIGN-SYSTEM.md`. They read the tree or
+ * the composed catalogues, so no import edge reaches them; together they take about a second.
+ */
+export const FORBIDDEN_PATTERN_CONTRACTS = Object.freeze([
+  'tests/contract/agent-instructions/design-donts-parity.contract.test.ts',
+  'tests/contract/copy/label-decoration.contract.test.ts',
+  'tests/contract/design-tokens/design-inline-hex-guard.test.ts',
+  'tests/contract/motion/infinite-motion.contract.test.ts',
+  'tests/contract/motion/reduced-motion-equivalent.contract.test.ts',
+  'tests/contract/routes/retired-routes.contract.test.ts',
+]);
+
+export function coreContractFiles(list = (directory) => (existsSync(directory) ? readdirSync(directory, { recursive: true }) : [])) {
+  return unique([
+    ...CORE_CONTRACT_DIRECTORIES.flatMap((directory) =>
+      list(directory).map((name) => `${directory}/${String(name).replaceAll('\\', '/')}`),
+    ),
+    ...FORBIDDEN_PATTERN_CONTRACTS.filter((path) => list(path.slice(0, path.lastIndexOf('/'))).some((name) => path.endsWith(`/${name}`))),
+  ]).filter((path) => CONTRACT_FILE.test(path)).sort();
+}
+
+/**
+ * Ratchets count a pattern across the tree and compare with the merge base, so no import edge
+ * reaches them from the file that adds one more. A change to the kind of file they count runs
+ * them all (about 6 s together). A ratchet is a contract named `*ratchet*` or one that reads
+ * `tests/contract/lib/ratchet-base.ts`.
+ */
+const RATCHET_INPUTS = [/^(?:src|app)\/.+\.(?:tsx?|css)$/, /^messages\//];
+
+export function ratchetContractFiles(root = '.') {
+  const directory = `${root}/tests/contract`;
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { recursive: true })
+    .map((name) => `tests/contract/${String(name).replaceAll('\\', '/')}`)
+    .filter((path) => CONTRACT_FILE.test(path))
+    .filter((path) => path.includes('ratchet') || readFileSync(`${root}/${path}`, 'utf8').includes('lib/ratchet-base'))
+    .sort();
+}
+
+/** A message part reaches its readers through the composed catalogue built from it. */
+function withMessageComposites(list) {
+  return unique([
+    ...list,
+    ...list.filter((path) => /^messages\/[^/]+\/[^/]+\.json$/.test(path)).map((path) => `messages/${path.split('/')[1]}.json`),
+  ]);
+}
+
+/**
+ * The whole-graph dead-code analyzer runs before merge only when its own scope or adapter
+ * changed; for every other change it runs after the merge with the rest of the full set.
+ */
+const KNIP_SELF_INPUTS = [/^scripts\/quality\/dead-code\//];
+
+const CONTRACT_FILE = /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?.+\.test\.ts$/;
+
 function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
   if (full || paths.some((path) => matchesAny(path, ROOT_UNIT_FULL_INPUTS))) {
     return {
@@ -280,23 +345,31 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
   const rows = suggestions.commands.filter(
     (row) => commandLane(row.command) === 'unit' && !(row.paths.length > 0 && row.paths.every(isGenerated)),
   );
-  const broadContractRows = rows.filter((row) => row.command === 'pnpm test:contracts');
-  const broadContractInputs = broadContractRows.flatMap((row) => row.paths);
-  const contractFull = broadContractInputs.some(
-    (path) =>
-      deletedPaths.includes(path) || !/^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?.+\.test\.ts$/.test(path),
-  );
-  const contractFiles = contractFull
-    ? []
-    : unique([
-        ...existingPaths.filter((path) => /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?.+\.test\.ts$/.test(path)),
-        ...rows.flatMap((row) => exactContractFiles(row.command)),
-      ]).sort();
-  const knip = rows.some((row) => row.command === 'pnpm knip');
+  /*
+   * `pnpm test:contracts` (every contract) is what `checks:changed` recommends locally for a UI
+   * file or a message part, because some contracts scan the tree from disk. Before merge the
+   * planner narrows it to the contracts the import graph reaches plus the core; the full sweep
+   * runs after the merge. Measured over 22 trains (2026-11-18): the full sweep ran on 15 of the
+   * 18 comparable ones and failed none.
+   */
+  const reach = loadTestReach();
+  const sources = (list) => list.filter((path) => !isGenerated(path));
+  const reachedContracts = reach
+    .testsReaching(withMessageComposites([...sources(existingPaths), ...sources(deletedPaths)]))
+    .contract.filter((path) => !deletedPaths.includes(path));
+  const contractFiles = unique([
+    ...existingPaths.filter((path) => CONTRACT_FILE.test(path)),
+    ...rows.flatMap((row) => exactContractFiles(row.command)),
+    ...reachedContracts,
+    ...(paths.some((path) => !isGenerated(path) && matchesAny(path, RATCHET_INPUTS)) ? ratchetContractFiles() : []),
+    // The core runs for every change that is not only regenerated output.
+    ...(paths.some((path) => !isGenerated(path)) ? coreContractFiles() : []),
+  ]).sort();
+  const knip = rows.some((row) => row.command === 'pnpm knip') && paths.some((path) => matchesAny(path, KNIP_SELF_INPUTS));
   const graphPaths = existingPaths.filter((path) => !isGenerated(path) && !matchesAny(path, ROOT_VITEST_INPUTS));
   const affected =
     paths.some((path) => !isGenerated(path) && matchesAny(path, ROOT_VITEST_INPUTS)) ||
-    (graphPaths.length > 0 && loadTestReach().testsReaching(graphPaths).unit.length > 0);
+    (graphPaths.length > 0 && reach.testsReaching(graphPaths).unit.length > 0);
   const changed = new Set(paths);
   const extraCommands = unique(
     rows
@@ -311,7 +384,7 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
           !(affected && coversOnly(vitestFileArguments(command), changed)),
       ),
   );
-  const contract = contractFull ? 'full' : contractFiles.length > 0 ? 'focused' : 'skip';
+  const contract = contractFiles.length > 0 ? 'focused' : 'skip';
   const mode =
     affected ? 'affected' : contract !== 'skip' || knip || extraCommands.length > 0 ? 'focused' : 'skip';
 
@@ -406,11 +479,15 @@ function gatesPlan({ suggestions, full }) {
   // These scripts spawn the source MCP server (`test:cli:commands` runs the real `growth` command,
   // which calls it). Without them listed, a gates lane dies on missing mcp/node_modules, a false red
   // no rerun fixes, since checks.yml gates `pnpm --dir mcp install` on this flag.
-  const needsMcp = commands.some((command) =>
-    /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
-      command,
-    ),
-  );
+  // A script test that imports mcp/src (a dogfood-walk test reaching mdast-util-from-markdown)
+  // needs the same install, so any command whose files' import closure enters mcp/ raises it too.
+  const commandFiles = commands.flatMap((command) => command.split(/\s+/).filter((token) => /^(?:scripts|cli|tests)\/.+\.[cm]?js$/.test(token)));
+  const needsMcp =
+    commands.some((command) =>
+      /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
+        command,
+      ),
+    ) || [...importClosure(commandFiles)].some((path) => path.startsWith('mcp/'));
   // The PO pilot sunset and decision-ledger diff are cheap standing checks, so
   // every comparable PR keeps this required lane alive even with no mapping.
   return { run: true, commands, needsMcp };
@@ -477,17 +554,25 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
  *   eventName?: string,
  * }} input
  */
-export function decide({ base, head, files = [], deletedFiles = [], eventName = 'pull_request' }) {
+export function decide({ base, head, files = [], deletedFiles = [], eventName = 'pull_request', mainPushFull = false }) {
   // A merge group is a tree nothing has ever built: GitHub stacks one or more
   // pull requests on today's main and asks whether the combination is green.
   // Narrowing that to one pull request's paths would test the part and merge
   // the whole, so it is exhaustive by name here rather than by accident of the
   // `eventName !== 'pull_request'` fallthrough below.
   const mergeGroup = eventName === 'merge_group';
-  const forceFull = mergeGroup || !['pull_request', 'push'].includes(eventName) || !base || (head && base === head);
+  // Before merge a train runs the affected checks plus a fixed core; the rest of the full set
+  // runs here, on the merged tree, so main's own run is where an unaffected suite turns red.
+  const postMerge = eventName === 'push' && mainPushFull;
+  // A manual run given a branch to compare with plans like a pull request against it.
+  const comparedDispatch = eventName === 'workflow_dispatch' && Boolean(base);
+  const forceFull = mergeGroup || postMerge ||
+    (!['pull_request', 'push'].includes(eventName) && !comparedDispatch) || !base || (head && base === head);
   const fullReason = mergeGroup
     ? 'merge group: this combination has never been built — exhaustive lanes'
-    : null;
+    : postMerge
+      ? 'post-merge run on main: the full set behind the affected pre-merge checks'
+      : null;
   return buildImpactPlan({ files, deletedFiles, forceFull, fullReason });
 }
 
@@ -524,8 +609,8 @@ function git(args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
 
-function resolveBase(explicit) {
-  for (const ref of [explicit, 'origin/main', 'main'].filter(Boolean)) {
+function resolveBase(explicit, { fallback = true } = {}) {
+  for (const ref of (fallback ? [explicit, 'origin/main', 'main'] : [explicit]).filter(Boolean)) {
     try {
       return git(['merge-base', 'HEAD', ref]);
     } catch {
@@ -654,7 +739,7 @@ export function decodePlan(encoded) {
   return validatePlan(plan);
 }
 
-function emit(plan) {
+function emit(plan, base = null) {
   validatePlan(plan);
   const { gates, unit, perf, mcp, e2e } = plan.lanes;
   const summary =
@@ -673,6 +758,8 @@ function emit(plan) {
     unit: unit.mode,
     unit_needs_mcp: unit.needsMcp,
     unit_sharded: unitUsesAllShards(unit),
+    // The exact commit every lane compares with, so a lane never re-reads a moved branch.
+    base: base && /^[a-f0-9]{40}$/.test(base) ? base : '',
     perf: perf.mode,
     mcp: mcp.mode,
     playwright: e2e.mode,
@@ -689,6 +776,8 @@ function emit(plan) {
 
 if (process.argv[1]?.endsWith('classify-change.mjs')) {
   const baseArg = process.argv.find((arg) => arg.startsWith('--base='))?.slice('--base='.length);
+  const mainPushFull = process.argv.includes('--main-push=full');
+  const compareTo = process.argv.find((arg) => arg.startsWith('--compare-to='))?.slice('--compare-to='.length) ?? '';
   const eventName =
     process.argv.find((arg) => arg.startsWith('--event='))?.slice('--event='.length) ||
     process.env.GITHUB_EVENT_NAME ||
@@ -703,6 +792,11 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
       base = git(['rev-parse', '--verify', `${before}^{commit}`]);
       git(['merge-base', '--is-ancestor', base, 'HEAD']);
     } catch { base = null; }
+  } else if (eventName === 'workflow_dispatch') {
+    // Only an explicit, plain branch name compares; anything else stays an exhaustive run.
+    base = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/.test(compareTo) && !compareTo.includes('..')
+      ? resolveBase(`origin/${compareTo}`, { fallback: false })
+      : null;
   } else {
     base = resolveBase(baseArg?.trim());
   }
@@ -714,9 +808,9 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
   }
   const files = changedFiles(base, 'ACMRTUXB');
   const deletedFiles = changedFiles(base, 'D');
-  const plan = decide({ base, head, files, deletedFiles, eventName });
+  const plan = decide({ base, head, files, deletedFiles, eventName, mainPushFull });
   let proof;
-  if (eventName === 'push' && base && head) {
+  if (eventName === 'push' && base && head && !mainPushFull) {
     proof = await verifyReviewedMainPush({
       eventName, ref: process.env.GITHUB_REF, sha: head,
       currentTreeSha: git(['rev-parse', 'HEAD^{tree}']),
@@ -732,5 +826,5 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
     });
     console.log(`[ci-impact] read-only credential probe: ${JSON.stringify(credentialProbe)}`);
   }
-  emit(reuseReviewedMainPlan(plan, proof, { eventName, base, head }));
+  emit(reuseReviewedMainPlan(plan, proof, { eventName, base, head }), base);
 }

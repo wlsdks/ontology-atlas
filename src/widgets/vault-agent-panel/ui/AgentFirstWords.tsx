@@ -76,7 +76,7 @@ export function AgentFirstWords({
                   tone: 'secondary',
                   /* `min-h-11` is the WCAG 2.5.8 touch target — the value layer still
                      has that axis only on `link`, so it is carried per site here. */
-                  className: 'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  className: 'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                 })}
               >
                 {/* Up to two lines. An overflowing sentence does not decide the chip's height. */}

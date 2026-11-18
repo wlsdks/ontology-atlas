@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AVAILABLE_DEMO_CLIP_IDS,
   DEMO_CLIPS,
+  DEMO_WEBM_TYPE,
   availableDemoClips,
 } from '@/views/download/model/demo-clips';
 
@@ -37,6 +38,25 @@ function readMp4Seconds(path: string): number {
   throw new Error(`${path}: unknown mvhd version ${version}`);
 }
 
+/**
+ * Builds the `av01.P.LLT.DD` codec string from the WebM's CodecPrivate (`av1C`): byte 1 holds the
+ * profile and level, byte 2 the tier and bit-depth flags. Throws rather than guessing.
+ */
+function readWebmAv1Codec(path: string): string {
+  const buf = readFileSync(path);
+  const marker = buf.indexOf(Buffer.from([0x63, 0xa2]));
+  if (marker < 0) throw new Error(`${path}: no CodecPrivate element`);
+  const sizeByte = buf.readUInt8(marker + 2);
+  const sizeLength = Math.clz32(sizeByte) - 23;
+  const av1c = marker + 2 + sizeLength;
+  if (buf.readUInt8(av1c) !== 0x81) throw new Error(`${path}: CodecPrivate is not an av1C record`);
+  const profileLevel = buf.readUInt8(av1c + 1);
+  const flags = buf.readUInt8(av1c + 2);
+  const bitDepth = flags & 0x40 ? (flags & 0x20 ? 12 : 10) : 8;
+  const level = String(profileLevel & 0x1f).padStart(2, '0');
+  return `av01.${profileLevel >> 5}.${level}${flags & 0x80 ? 'H' : 'M'}.${String(bitDepth).padStart(2, '0')}`;
+}
+
 describe('demo clip — declaration and assets', () => {
   it('a clip declared as attached is really in the declaration table', () => {
     const declared = new Set(DEMO_CLIPS.map((clip) => clip.id));
@@ -63,6 +83,11 @@ describe('demo clip — declaration and assets', () => {
         it(`${locale}: the poster is the declared frame size, which the video reserves before it loads`, () => {
           const png = readFileSync(join(DEMO_DIR, `${clip.basename}.${locale}-poster.png`));
           expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([clip.width, clip.height]);
+        });
+
+        it(`${locale}: the declared webm codec matches the file, or an iPhone without AV1 picks it and shows black`, () => {
+          const codec = readWebmAv1Codec(join(DEMO_DIR, `${clip.basename}.${locale}.webm`));
+          expect(DEMO_WEBM_TYPE).toBe(`video/webm; codecs="${codec}"`);
         });
 
         it(`${locale}: the measured MP4 length equals the declared seconds`, () => {

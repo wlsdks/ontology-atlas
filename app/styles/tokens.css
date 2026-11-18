@@ -13,7 +13,11 @@
  * - More than two color systems
  */
 
-@theme {
+/*
+ * `static`: every value below reaches `:root`, whether or not a scanned class names it, so a token
+ * read only through `var()` in CSS, an inline style or a canvas reader needs no second copy.
+ */
+@theme static {
   /* Background surfaces */
   --color-canvas: #0b0b0a;
   --color-panel: #121211;
@@ -377,9 +381,6 @@
    * consumers, so the name stays.
    */
   --card-pad: 16px;
-  /* List slot height for one row inside repeated cards — this space is reserved even if empty.
-     A spec preventing content length from determining card height (dimension regularity). */
-  --card-row-h: 22px;
   /*
    * `--measure-prose-steps` is the single measure: the line cap, document column, notice cards,
    * header, meta bar and outline rail all derive from it. Spent at `--text-reading`, 66 steps give

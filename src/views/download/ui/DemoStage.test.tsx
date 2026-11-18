@@ -69,9 +69,9 @@ describe('DemoStage', () => {
     expect(demoPoster(clip, 'ko')).toContain('.ko-poster');
   });
 
-  it('offers webm first with mp4 as the fallback', () => {
+  it('offers webm first, naming its codec so a browser without AV1 falls through to mp4', () => {
     const [first, second] = demoSources(DEMO_CLIPS[0], 'en');
-    expect(first.type).toBe('video/webm');
+    expect(first.type).toMatch(/^video\/webm; codecs="av01\./);
     expect(second.type).toBe('video/mp4');
   });
 

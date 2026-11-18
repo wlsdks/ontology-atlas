@@ -25,7 +25,7 @@ import { SettingsDoorRow, SettingsGroup, SettingsRow } from '../settings-primiti
 const WEBSITE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? '';
 const LICENSES_PATH = '/third-party-licenses.txt';
 const PANE_CHIP =
-  'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+  'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export function AboutPane({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('settingsAbout');

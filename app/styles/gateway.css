@@ -366,6 +366,13 @@
   }
 }
 
+/* On a phone every pixel of the recording counts more than the gutter: the window keeps 8px a side. */
+@media (width < 40rem) {
+  .gateway-hero-window {
+    width: calc(100vw - 1rem);
+  }
+}
+
 /*
  * Japanese has no spaces, so a heading otherwise breaks inside a word, splitting a two-character
  * word over two lines. `auto-phrase` breaks between phrases where the browser can segment them;

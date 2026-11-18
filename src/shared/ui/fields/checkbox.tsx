@@ -22,7 +22,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         <input
           ref={ref}
           type="checkbox"
-          className={`${CONTROL_DISABLED_CLASS} motion-checkbox-box peer col-start-1 row-start-1 m-0 size-4 shrink-0 cursor-[inherit] appearance-none rounded-micro border border-[color:var(--color-text-quaternary)] bg-[color:var(--color-canvas)] checked:border-[color:var(--color-indigo-brand)] checked:bg-[color:var(--color-indigo-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]`}
+          className={`${CONTROL_DISABLED_CLASS} motion-checkbox-box peer col-start-1 row-start-1 m-0 size-4 shrink-0 cursor-[inherit] appearance-none rounded-micro border border-[color:var(--color-text-quaternary)] bg-[color:var(--color-canvas)] checked:border-[color:var(--color-indigo-brand)] checked:bg-[color:var(--color-indigo-brand)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]`}
           {...rest}
         />
         <DrawnCheck

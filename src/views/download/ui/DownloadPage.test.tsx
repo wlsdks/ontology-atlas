@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
-import { MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
 import { DEMO_CLIPS } from '../model/demo-clips';
 import { FAQ_KEYS } from '../model/faq';
 import { RELEASE_VERSION } from '../lib/release-facts';
@@ -309,13 +309,19 @@ describe('DownloadPage', () => {
       }
     });
 
-    it('tells a phone, which is offered the browser map, that there is nothing to install', () => {
+    it('offers a phone the browser map and the source, with nothing to install and no file facts', () => {
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
         configurable: true,
       });
       try {
         renderDownloadPage();
+
+        for (const scope of ['hero', 'closing'] as const) {
+          expect(screen.getByTestId(`gateway-${scope}-github`)).toHaveAttribute('href', GITHUB_REPO_URL);
+        }
+        expect(screen.queryByTestId('gateway-facts-sha')).not.toBeInTheDocument();
+        expect(screen.queryByText('DMG')).not.toBeInTheDocument();
 
         expect(screen.getByTestId('gateway-hero-cta')).toHaveAttribute('href', '/topology');
         expect(screen.getByTestId('gateway-hero-trust')).toHaveTextContent(enMessages.download.trustLineHandheld);

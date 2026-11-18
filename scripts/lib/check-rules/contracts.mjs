@@ -38,7 +38,7 @@ export const rules = [
   {
     order: 445,
     command: 'pnpm exec vitest run tests/contract/controls/ime-enter-guard.contract.test.ts',
-    reason: 'a TypeScript source can hold an Enter handler, which must wait for IME composition to end',
-    matches: [/^(?:src|app)\/(?!.*\.(?:test|spec)\.ts$).*\.ts$/],
+    reason: 'a TypeScript or TSX source can hold an Enter handler, which must wait for IME composition to end',
+    matches: [/^(?:src|app)\/(?!.*\.(?:test|spec)\.tsx?$).*\.tsx?$/],
   },
 ];

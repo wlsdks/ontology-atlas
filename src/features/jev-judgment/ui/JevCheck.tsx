@@ -126,7 +126,7 @@ export function JevCheck({
           data-testid="jev-send"
           disabled={!ready || sending}
           onClick={() => void send()}
-          className="shrink-0 border-[color:var(--color-indigo-line-a32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+          className="shrink-0 border-[color:var(--color-indigo-line-a32)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
           {sending ? t('sending') : t('send')}
         </Chip>

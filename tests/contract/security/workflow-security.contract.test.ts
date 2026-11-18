@@ -148,16 +148,20 @@ const readsSecretIndirectly = (source: string): boolean =>
 const interpolatesInputInShell = (source: string): boolean =>
   shellScripts(source).some((script) => expressions(script).some((body) => INPUTS.test(body)));
 
+const UNNAMED = "<unnamed step>";
+const stepsOf = (source: string): string[] => source.split(/(?=^ {6}- )/m).filter((step) => step.startsWith("      - "));
+const stepName = (step: string): string => /^ {6}- name: (.+)/.exec(step)?.[1].trim() ?? UNNAMED;
+
+/** Text outside a step (workflow `env`, a job header) reaches every step under it, so it is reported, not dropped. */
 function stepNamesUsingSecret(source: string, secretName: string): string[] {
-  const steps = source.split(/(?=^      - (?:name|uses):)/m);
-  return steps
-    .filter((step) => step.includes(`secrets.${secretName}`))
-    .map((step) => {
-      const named = /^      - name: (.+)$/m.exec(step)?.[1];
-      const action = /^      - uses: (.+)$/m.exec(step)?.[1];
-      return named ?? action ?? "<unscoped>";
-    });
+  return source
+    .split(/(?=^ {6}- )|(?=^ {2}[A-Za-z0-9_-]+:\s*$)/m)
+    .filter((chunk) => chunk.includes(`secrets.${secretName}`))
+    .map((chunk) => (chunk.startsWith("      - ") ? stepName(chunk) : "<unscoped>"));
 }
+
+const keysAt = (source: string, indent: number): string[] =>
+  [...source.matchAll(new RegExp(`^ {${indent}}(?:- )?([a-z-]+):`, "gm"))].map((match) => match[1]);
 
 function writePermissionsByJob(source: string): Record<string, string[]> {
   const jobsStart = source.indexOf("\njobs:\n");
@@ -360,7 +364,7 @@ describe("workflow security contract", () => {
 
   it("runs the release tests beside the builds without secrets, and staging still waits for them", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    for (const jobName of ["test-macos", "test-windows"]) {
+    for (const jobName of ["test-release-gates", "test-macos", "test-windows"]) {
       const header = jobHeader(release, jobName);
       const block = jobBlock(release, jobName);
       expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*admit-release/);
@@ -377,8 +381,10 @@ describe("workflow security contract", () => {
     const needed = /^    needs: \[(.+)\]$/m.exec(stage)![1].split(",").map((name) => name.trim());
     expect(needed).toEqual([
       "admit-release",
+      "test-release-gates",
       "test-macos",
       "test-windows",
+      "check-release-credentials",
       "build-macos",
       "sign-macos",
       "build-windows",
@@ -426,7 +432,11 @@ describe("workflow security contract", () => {
 
     const sign = jobBlock(release, "sign-macos");
     const at = (marker: string) => sign.indexOf(marker);
-    expect(jobHeader(release, "sign-macos")).toMatch(/needs: \[admit-release, build-macos\]/);
+    expect(jobHeader(release, "sign-macos")).toMatch(/needs: \[admit-release, check-release-credentials, build-macos\]/);
+    for (const [job, block] of [["build-macos", build], ["sign-macos", sign]]) {
+      expect(stepsOf(block).length, `${job} steps were not read`).toBeGreaterThan(8);
+      expect(stepsOf(block).map(stepName), `${job} has a step no check can place by name`).not.toContain(UNNAMED);
+    }
     for (const buildCode of ["--phase=build", "pnpm build", "tauri build", "cargo ", "mcp:build-binary", "setup-bun", "rust-toolchain"]) {
       expect(sign, `sign-macos runs build code beside the signing identity: ${buildCode}`).not.toContain(buildCode);
     }
@@ -452,6 +462,61 @@ describe("workflow security contract", () => {
     );
   });
 
+  it("checks the signing credentials beside the build in a job that runs one repository script", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const header = jobHeader(release, "check-release-credentials");
+    const block = jobBlock(release, "check-release-credentials");
+    expect(header).toMatch(/^    needs: admit-release$/m);
+    expect(header).toMatch(/^    environment: release-signing$/m);
+    expect(header).toMatch(/^    runs-on: ubuntu-latest$/m);
+    expect(header).not.toMatch(/^    permissions:/m);
+    expect(expressions(header).filter((body) => SECRETS.test(body))).toEqual([]);
+
+    expect(keysAt(block, 4), "a key such as container or services changes where the job runs").toEqual([
+      "name",
+      "needs",
+      "environment",
+      "runs-on",
+      "timeout-minutes",
+      "steps",
+    ]);
+
+    const steps = stepsOf(block);
+    expect(steps.map(stepName)).toEqual(["Checkout", "Setup Node.js", "Check release credentials early"]);
+    expect(steps[0]).toContain("ref: ${{ needs.admit-release.outputs.release_sha }}");
+    expect(steps[0]).toMatch(/^\s+persist-credentials: false$/m);
+    expect(steps.filter((step) => expressions(step).some((body) => SECRETS.test(body))).map(stepName)).toEqual([
+      "Check release credentials early",
+    ]);
+    const stepKeys = (step: string) => [...step.matchAll(/^ {6}- ([a-z-]+):|^ {8}([a-z-]+):/gm)].map((match) => match[1] ?? match[2]);
+    expect(steps.map(stepKeys), "a key such as shell changes what a step runs").toEqual([
+      ["name", "uses", "with"],
+      ["name", "uses", "with"],
+      ["name", "env", "run"],
+    ]);
+    const script = "scripts/desktop-release/check-macos-release-secrets.mjs";
+    expect([...block.matchAll(/^ {8}run: ?(.*)$/gm)].map((match) => match[1])).toEqual([`node ${script}`]);
+    expect([...block.matchAll(/^ {8}uses: ([^@\s]+)@/gm)].map((match) => match[1])).toEqual([
+      "actions/checkout",
+      "actions/setup-node",
+    ]);
+    for (const marker of ["install", "pnpm", "npm ", "--phase=build", "tauri build", "cargo ", "mcp:build-binary", "setup-bun", "rust-toolchain"]) {
+      expect(block.replace(/^\s*#.*$/gm, ""), `the job that holds every signing secret runs ${marker}`).not.toContain(marker);
+    }
+
+    // No install is safe only while the script needs nothing installed and starts nothing.
+    const read = (file: string) => readFileSync(join(WORKFLOW_DIR, "../..", file), "utf8");
+    const imports = (file: string) => [...read(file).matchAll(/(?:from|import)\s*["']([^"']+)["']/g)].map((match) => match[1]);
+    expect(imports(script)).toEqual(["../lib/desktop-release/notary-credentials.mjs"]);
+    for (const file of [script, "scripts/lib/desktop-release/notary-credentials.mjs"]) {
+      expect(read(file), `${file} loads a module at run time or starts a process`).not.toMatch(/child_process|\bimport\s*\(|\brequire\s*\(/);
+    }
+    expect(imports("scripts/lib/desktop-release/notary-credentials.mjs")).toEqual([]);
+
+    expect(jobHeader(release, "sign-macos"), "signing starts without the early check").toContain("check-release-credentials");
+    expect(jobBlock(release, "sign-macos"), "the gate beside the identity is gone").toContain("run: pnpm desktop:release-secrets");
+  });
+
   it("keeps the token out of git config wherever a job can write or holds a secret", () => {
     let guarded = 0;
     const offenders: string[] = [];
@@ -469,21 +534,28 @@ describe("workflow security contract", () => {
         }
       }
     }
-    expect(guarded, "no guarded checkout found").toBeGreaterThanOrEqual(6);
+    expect(guarded, "no guarded checkout found").toBeGreaterThanOrEqual(5);
     expect(offenders).toEqual([]);
   });
 
-  it("checks out only the lockfile where the audit's check-run token lives", () => {
-    const checkWriters = all.flatMap(({ name, source }) =>
+  it("audits Rust from the lockfile alone, with a verified binary and no write token", () => {
+    // The audit needs no GitHub token: cargo audit itself fails the job. A job that
+    // regains `checks: write` would hand a token to whatever the audit step runs.
+    const writers = all.flatMap(({ name, source }) =>
       Object.entries(writePermissionsByJob(source))
         .filter(([, keys]) => keys.includes("checks"))
-        .map(([job]) => ({ name, block: jobBlock(source, job) })),
+        .map(([job]) => `${name}:${job}`),
     );
-    expect(checkWriters.map(({ name }) => name).sort()).toEqual(["release-macos.yml", "windows-beta-check.yml"]);
-    for (const { name, block } of checkWriters) {
+    expect(writers).toEqual([]);
+    const audits = all.filter(({ source }) => /^  audit-rust:\s*$/m.test(source));
+    expect(audits.map(({ name }) => name).sort()).toEqual(["release-macos.yml", "windows-beta-check.yml"]);
+    for (const { name, source } of audits) {
+      const block = jobBlock(source, "audit-rust");
       expect(block, name).toMatch(/sparse-checkout: src-tauri\/Cargo\.lock\n\s+sparse-checkout-cone-mode: false\n/);
       expect(block, name).not.toMatch(/\bpnpm\b|\bnode\b/);
       expect(block, name).toMatch(/CARGO_AUDIT_SHA256: [a-f0-9]{64}\n[\s\S]*sha256sum --check --strict/);
+      expect(block, name).toContain("cargo audit --file src-tauri/Cargo.lock --deny unsound");
+      expect(block, name).not.toMatch(/^\s+token:/m);
     }
   });
 
@@ -505,7 +577,7 @@ describe("workflow security contract", () => {
     expect(jobBlock(release, "sign-macos")).not.toMatch(/^    permissions:/m);
     expect(jobBlock(release, "build-windows")).not.toMatch(/^    permissions:/m);
     expect(jobBlock(release, "audit-rust")).toMatch(
-      /^    permissions:\n      contents: read\n      checks: write\s*$/m,
+      /^    permissions:\n      contents: read\s*$/m,
     );
     expect(jobBlock(release, "stage-macos")).toMatch(
       /^    permissions:\n      contents: write\s*$/m,
@@ -518,7 +590,6 @@ describe("workflow security contract", () => {
     // proof of namespace ownership. It is listed rather than exempted, so a job that
     // quietly gained `contents: write` beside it would still show up here.
     expect(writePermissionsByJob(release)).toEqual({
-      "audit-rust": ["checks"],
       "stage-macos": ["contents"],
       "publish-macos": ["contents"],
       "list-mcp-registry": ["id-token"],
@@ -544,20 +615,20 @@ describe("workflow security contract", () => {
 
   it("signing secrets are visible only in the release steps that need them", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    for (const jobName of ["admit-release", "build-macos", "sign-macos", "build-windows", "stage-macos", "publish-macos"]) {
+    for (const jobName of ["admit-release", "check-release-credentials", "build-macos", "sign-macos", "build-windows", "stage-macos", "publish-macos"]) {
       expect(jobHeader(release, jobName), `${jobName} job env`).not.toMatch(
         /\$\{\{\s*secrets\.(?:APPLE_|TAURI_SIGNING_)/,
       );
     }
 
     const expectedSteps: Record<string, string[]> = {
-      APPLE_CERTIFICATE_P12_BASE64: ["Require signed release credentials", "Import Apple Developer ID certificate"],
-      APPLE_CERTIFICATE_PASSWORD: ["Require signed release credentials", "Import Apple Developer ID certificate"],
-      APPLE_API_KEY_P8_BASE64: ["Require signed release credentials", "Sign and notarize release artifact"],
-      APPLE_API_KEY_ID: ["Require signed release credentials", "Sign and notarize release artifact"],
-      APPLE_API_ISSUER_ID: ["Require signed release credentials", "Sign and notarize release artifact"],
-      TAURI_SIGNING_PRIVATE_KEY: ["Require signed release credentials", "Sign and notarize release artifact"],
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ["Require signed release credentials", "Sign and notarize release artifact"],
+      APPLE_CERTIFICATE_P12_BASE64: ["Check release credentials early", "Require signed release credentials", "Import Apple Developer ID certificate"],
+      APPLE_CERTIFICATE_PASSWORD: ["Check release credentials early", "Require signed release credentials", "Import Apple Developer ID certificate"],
+      APPLE_API_KEY_P8_BASE64: ["Check release credentials early", "Require signed release credentials", "Sign and notarize release artifact"],
+      APPLE_API_KEY_ID: ["Check release credentials early", "Require signed release credentials", "Sign and notarize release artifact"],
+      APPLE_API_ISSUER_ID: ["Check release credentials early", "Require signed release credentials", "Sign and notarize release artifact"],
+      TAURI_SIGNING_PRIVATE_KEY: ["Check release credentials early", "Require signed release credentials", "Sign and notarize release artifact"],
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ["Check release credentials early", "Require signed release credentials", "Sign and notarize release artifact"],
     };
 
     for (const [secret, steps] of Object.entries(expectedSteps)) {

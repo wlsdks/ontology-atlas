@@ -79,7 +79,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             onClick={dismiss}
             label={t("closeAriaLabel")}
             size="md"
-            className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+            className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
           >
             <X size={ICON_SIZE.sm} />
           </IconButton>
