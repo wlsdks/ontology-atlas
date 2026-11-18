@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import playwrightConfig, { resolvePlaywrightWorkers } from '../../../playwright.config';
 import { loadCheckRules } from '../../../scripts/lib/ci/focused-check-suggestions.mjs';
+import { MERGE_SMOKE_SPECS } from '../../../scripts/ci/merge-smoke-specs.mjs';
 import { POST_MERGE_SPECS } from '../../e2e/post-merge-specs';
 
 /**
@@ -81,6 +82,18 @@ function runBlocks(source: string): { text: string; indents: number[] }[] {
   }
   return blocks;
 }
+
+describe('the merge smoke set every train runs holds only specs that exist', () => {
+  it('is non-empty, has no duplicates and leaves the post-merge measurements out', () => {
+    expect(MERGE_SMOKE_SPECS.length, 'a train would run nothing but its mapped specs').toBeGreaterThanOrEqual(5);
+    expect(new Set(MERGE_SMOKE_SPECS).size).toBe(MERGE_SMOKE_SPECS.length);
+    expect(MERGE_SMOKE_SPECS.filter((file) => (POST_MERGE_SPECS as readonly string[]).includes(file))).toEqual([]);
+  });
+
+  it.each([...MERGE_SMOKE_SPECS])('%s exists in tests/e2e', (file) => {
+    expect(existsSync(join(E2E_DIR, file)), `${file} is missing — if renamed, fix merge-smoke-specs.mjs`).toBe(true);
+  });
+});
 
 describe('the post-merge sweep list holds only specs that exist', () => {
   it('is non-empty and has no duplicates', () => {

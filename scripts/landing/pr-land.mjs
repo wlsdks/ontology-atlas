@@ -11,6 +11,7 @@ import { hostname } from 'node:os';
 
 import { isContained, makeGit, planBundle } from './bundle-branches.mjs';
 import { buildImpactPlan } from '../ci/classify-change.mjs';
+import { FAILING_SPEC_TITLE } from '../ci/run-playwright-ci.mjs';
 import {
   DEFAULT_BATCH,
   MAX_REBUILDS,
@@ -62,9 +63,12 @@ export const LEASE_MINUTES = 45;
 export const SCHEDULED_CHECKS = [
   {
     workflow: 'e2e.yml',
-    name: 'daily full browser run',
-    red: 'the specs that run only after merge are red until someone fixes them',
-    idle: 'the specs that run only after merge have not run since',
+    name: 'full browser run',
+    // Every push to main runs the whole browser suite; a train runs only its mapped specs and the
+    // merge smoke set, so this line is where a defect the train did not reach is announced.
+    afterMerge: true,
+    red: 'trains run only their mapped specs and the merge smoke set, so these stay red until someone fixes them; landing continues',
+    idle: 'specs outside the merge smoke set have not run since',
   },
   {
     workflow: 'acp-registry.yml',
@@ -101,10 +105,30 @@ export const CONFLICT_INSTRUCTION =
 export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (!run) return null;
   const day = String(run.createdAt ?? '').slice(0, 10);
-  if (run.conclusion === 'failure') return `the ${check.name} on main failed on ${day} (${run.url}); ${check.red}`;
+  if (run.conclusion === 'failure') {
+    const specs = Array.isArray(run.failingSpecs) && run.failingSpecs.length > 0
+      ? `: ${run.failingSpecs.length > 6 ? `${run.failingSpecs.slice(0, 6).join(', ')} and ${run.failingSpecs.length - 6} more` : run.failingSpecs.join(', ')}`
+      : '';
+    return `the ${check.name} on main failed on ${day} (${run.url})${specs}; ${check.red}`;
+  }
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
   if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
+}
+
+/** One line per red or stalled check on main; reading them never blocks a landing. */
+export function mainHealthWarnings(deps) {
+  return SCHEDULED_CHECKS.map((check) => {
+    const read = check.afterMerge ? deps.gh.readMainFullRun : deps.gh.readScheduledRun;
+    return describeScheduledRun(check, read?.(check.workflow) ?? null, deps.now());
+  }).filter(Boolean);
+}
+
+/** The red after-merge browser run, for the body of the train being cut. */
+function mainBrowserNotes(deps) {
+  const check = SCHEDULED_CHECKS.find((row) => row.afterMerge);
+  const run = deps.gh.readMainFullRun?.(check.workflow) ?? null;
+  return run?.conclusion === 'failure' ? [describeScheduledRun(check, run, deps.now())] : [];
 }
 
 const FEATURE_TITLE = /^(feat)(\([^)]*\))?!?:/;
@@ -653,6 +677,36 @@ export function createGithub(slug, run = ghRun) {
         return null;
       }
     },
+    /**
+     * The newest finished full browser run on main: every push runs one, as do manual and
+     * scheduled runs. A red one carries the spec files its shards annotated as failing.
+     */
+    readMainFullRun: (workflow) => {
+      const out = run(['run', 'list', '--workflow', workflow, '--branch', 'main', '--limit', '20',
+        '--json', 'conclusion,createdAt,url,event,databaseId'], { allowFailure: true });
+      if (typeof out !== 'string') return null;
+      let latest;
+      try {
+        latest = JSON.parse(out).find((row) => ['push', 'schedule', 'workflow_dispatch'].includes(row.event)
+          && ['success', 'failure'].includes(row.conclusion));
+      } catch {
+        return null;
+      }
+      if (!latest) return null;
+      const finished = { conclusion: latest.conclusion, createdAt: latest.createdAt, url: latest.url };
+      if (latest.conclusion !== 'failure') return finished;
+      const jobs = run(['api', `repos/${slug}/actions/runs/${latest.databaseId}/jobs?per_page=100`,
+        '--jq', '.jobs[] | select(.conclusion == "failure") | .id'], { allowFailure: true });
+      const failingSpecs = new Set();
+      for (const id of (typeof jobs === 'string' ? jobs.split('\n').filter((line) => /^\d+$/.test(line)) : []).slice(0, 10)) {
+        const paths = run(['api', `repos/${slug}/check-runs/${id}/annotations`,
+          '--jq', `.[] | select(.title == "${FAILING_SPEC_TITLE}") | .path`], { allowFailure: true });
+        for (const path of typeof paths === 'string' ? paths.split('\n') : []) {
+          if (/^tests\/e2e\/[\w./-]+\.spec\.ts$/.test(path)) failingSpecs.add(path);
+        }
+      }
+      return { ...finished, failingSpecs: [...failingSpecs].sort() };
+    },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
     createBranch: (branch, sha) => ok(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=refs/heads/${branch}`, '-f', `sha=${sha}`]),
@@ -1047,7 +1101,7 @@ function cutTrain({ batch, parent = null, deps, holder, key }) {
     return { outcome: 'abort', reason: `could not fetch ${branch} to read its files`, errored };
   }
   holder.put(key, { components: included.map((c) => c.number), files });
-  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base, onTopOf }) });
+  const opened = gh.openPr({ title: trainTitle(included), head: branch, base: 'main', body: trainBody({ components: included, base, onTopOf, notes: mainBrowserNotes(deps) }) });
   holder.put(key, { pr: opened.number, url: opened.url });
   log(`train #${opened.number} opened ready: one CI run for ${included.length} pull request(s)${parent ? `, concurrent with train #${onTopOf}'s` : ''} (${opened.url})`);
   return {
@@ -1486,10 +1540,7 @@ function landOne({ args, deps }) {
   const requiredContexts = readProtection(deps);
   if (!requiredContexts) return 1;
   deps.log(`PR #${number} ${pr.title}`);
-  for (const check of SCHEDULED_CHECKS) {
-    const warning = describeScheduledRun(check, deps.gh.readScheduledRun?.(check.workflow) ?? null, deps.now());
-    if (warning) deps.error(`warning: ${warning}`);
-  }
+  for (const warning of mainHealthWarnings(deps)) deps.error(`warning: ${warning}`);
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
 
   if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {

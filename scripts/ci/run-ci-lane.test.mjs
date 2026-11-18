@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { buildImpactPlan, FULL_LANE_COMMANDS, reuseReviewedMainPlan } from './classify-change.mjs';
 import { commandsForLane, MACOS_ONLY_GATE_COMMANDS, runCommands } from './run-ci-lane.mjs';
+import { MERGE_SMOKE_SPECS } from './merge-smoke-specs.mjs';
 
 test('verified main reuse emits no duplicate commands in any required lane', () => {
   const head = 'b'.repeat(40);
@@ -121,36 +122,39 @@ test('a focused contract list is not split three ways', () => {
   assert.ok(second.every((command) => !command.includes('tests/contract/')));
 });
 
-test('targeted Playwright runs exact specs once without an empty shard', () => {
+test('before merge every shard balances the mapped specs with the merge smoke set', () => {
   const plan = buildImpactPlan({
     files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'],
   });
-  const commands = commandsForLane({ lane: 'e2e', plan, shard: '1/3' });
-
-  assert.equal(commands.length, 1);
-  assert.match(commands[0], /docs-deeplink\.spec\.ts/);
-  assert.match(commands[0], /document-scroll-lock\.spec\.ts/);
-  assert.match(commands[0], /vault-truth-telling\.spec\.ts/);
-  assert.doesNotMatch(commands[0], /--shard/);
+  assert.equal(plan.lanes.e2e.mode, 'targeted');
+  for (const shard of ['1/8', '8/8']) {
+    const commands = commandsForLane({ lane: 'e2e', plan, shard });
+    assert.equal(commands.length, 1);
+    assert.match(commands[0], new RegExp(`run-playwright-ci\\.mjs --shard=${shard} `));
+    for (const file of ['docs-deeplink.spec.ts', 'document-scroll-lock.spec.ts', 'vault-truth-telling.spec.ts', ...MERGE_SMOKE_SPECS]) {
+      assert.ok(commands[0].includes(`--only=`) && commands[0].includes(file), `${shard} misses ${file}`);
+    }
+    assert.doesNotMatch(commands[0], /--project=/, 'a mapped post-merge spec must stay reachable');
+  }
 });
 
-test('unmapped browser work retains the PR smoke sweep and its shard', () => {
+test('unmapped browser work runs the merge smoke set, not the whole suite', () => {
   const plan = buildImpactPlan({ files: ['src/views/guide/ui/GuidePage.tsx'] });
-  assert.deepEqual(commandsForLane({ lane: 'e2e', plan, shard: '2/3' }), [
-    'pnpm build && PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs --project=smoke --shard=2/3',
+  assert.equal(plan.lanes.e2e.mode, 'smoke');
+  const only = MERGE_SMOKE_SPECS.filter((file) => file !== 'web-surface-smoke.spec.ts').slice().sort();
+  assert.deepEqual(commandsForLane({ lane: 'e2e', plan, shard: '2/8' }), [
+    `pnpm build && PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs --shard=2/8${only.map((file) => ` --only=${file}`).join('')}`,
   ]);
 });
 
-test('smoke keeps the mapped specs that run after merge, once, on the first shard', () => {
+test('a mapped post-merge spec rides beside the smoke set before merge', () => {
   const plan = buildImpactPlan({ files: [
     'src/views/library/ui/parts/questions/LibraryQuestionDesk.tsx',
     'src/views/guide/ui/GuidePage.tsx',
   ] });
   assert.equal(plan.lanes.e2e.mode, 'smoke');
-  const first = commandsForLane({ lane: 'e2e', plan, shard: '1/3' });
-  assert.equal(first.length, 2);
-  assert.match(first[1], /tests\/e2e\/library\/answers\/library-question-desk\.spec\.ts .*--project=post-merge --pass-with-no-tests --output=output\/playwright\/mapped-post-merge$/);
-  assert.equal(commandsForLane({ lane: 'e2e', plan, shard: '2/3' }).length, 1);
+  const [command] = commandsForLane({ lane: 'e2e', plan, shard: '1/8' });
+  assert.match(command, / --only=library\/answers\/library-question-desk\.spec\.ts/);
 });
 
 test('main plan retains the exhaustive Playwright sweep', () => {

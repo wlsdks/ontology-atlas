@@ -1246,18 +1246,66 @@ describe('scheduled checks on main', () => {
     assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml'), null);
   });
 
-  it('warns at landing for every red scheduled check', () => {
+  it('warns at landing for every red check on main, and a red browser run names its failing specs', () => {
+    const red = (workflow) => ({ conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: `https://x/${workflow}` });
     const world = fakeWorld({ prs: [component(71)] });
-    world.deps.gh.readScheduledRun = (workflow) => ({ conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: `https://x/${workflow}` });
+    world.deps.gh.readScheduledRun = red;
+    world.deps.gh.readMainFullRun = (workflow) => ({ ...red(workflow), failingSpecs: ['tests/e2e/a.spec.ts', 'tests/e2e/b/c.spec.ts'] });
     runPrLand(['71'], world.io, () => world.deps);
-    for (const workflow of ['e2e.yml', 'acp-registry.yml']) {
-      assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes(`https://x/${workflow}`)), workflow);
-    }
+    const warnings = world.out.filter((line) => line.startsWith('ERROR warning:'));
+    assert.equal(warnings.length, 2);
+    assert.ok(warnings.some((line) => line.includes('https://x/acp-registry.yml')));
+    const browser = warnings.find((line) => line.includes('https://x/e2e.yml'));
+    assert.match(browser, /full browser run on main failed on 2026-09-26 \(https:\/\/x\/e2e\.yml\): tests\/e2e\/a\.spec\.ts, tests\/e2e\/b\/c\.spec\.ts; .*landing continues/);
   });
 
-  it('names only workflows that run on a schedule', () => {
-    for (const { workflow } of SCHEDULED_CHECKS) {
-      assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), /^ {2}schedule:/m, workflow);
+  it('a red browser run on main is a line, not a refusal: the same landing still merges', () => {
+    const land = (failing) => {
+      const world = fakeWorld({ prs: [component(72)], queued: [72] });
+      world.deps.gh.readMainFullRun = () => (failing
+        ? { conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/run', failingSpecs: ['tests/e2e/a.spec.ts'] }
+        : { conclusion: 'success', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/run' });
+      return { world, result: runConductor(world) };
+    };
+    const green = land(false);
+    const red = land(true);
+    assert.deepEqual(red.result.landed, green.result.landed);
+    assert.deepEqual(red.result.landed, [72]);
+    assert.match(called(red.world, 'openPr')[0][1].body, /- Not this train's gate: the full browser run on main failed on 2026-09-26 \(https:\/\/x\/run\): tests\/e2e\/a\.spec\.ts;/);
+    assert.doesNotMatch(called(green.world, 'openPr')[0][1].body, /Not this train's gate/);
+  });
+
+  it('reads the newest finished full run on main and the specs its failed jobs annotated', () => {
+    const calls = [];
+    const github = createGithub('owner/repo', (args) => {
+      calls.push(args);
+      if (args[0] === 'run') {
+        return JSON.stringify([
+          { conclusion: '', event: 'push', createdAt: '2026-10-09T10:00:00Z', url: 'running', databaseId: 9 },
+          { conclusion: 'cancelled', event: 'push', createdAt: '2026-10-09T09:00:00Z', url: 'cancelled', databaseId: 8 },
+          { conclusion: 'failure', event: 'pull_request', createdAt: '2026-10-09T08:30:00Z', url: 'train', databaseId: 7 },
+          { conclusion: 'failure', event: 'push', createdAt: '2026-10-09T08:00:00Z', url: 'https://x/6', databaseId: 6 },
+        ]);
+      }
+      if (args[1].endsWith('/actions/runs/6/jobs?per_page=100')) return '41\n42\n';
+      if (args[1].endsWith('/check-runs/41/annotations')) return 'tests/e2e/b.spec.ts\ntests/e2e/a.spec.ts\n';
+      if (args[1].endsWith('/check-runs/42/annotations')) return 'tests/e2e/a.spec.ts\n../etc/passwd\n';
+      return undefined;
+    });
+    assert.deepEqual(github.readMainFullRun('e2e.yml'), {
+      conclusion: 'failure', createdAt: '2026-10-09T08:00:00Z', url: 'https://x/6',
+      failingSpecs: ['tests/e2e/a.spec.ts', 'tests/e2e/b.spec.ts'],
+    });
+    assert.ok(calls[0].includes('main') && calls[0].includes('e2e.yml'));
+    assert.ok(calls.some((args) => args.includes('.[] | select(.title == "failing spec") | .path')));
+    assert.equal(createGithub('owner/repo', () => undefined).readMainFullRun('e2e.yml'), null);
+  });
+
+  it('names only workflows that run where their reader looks', () => {
+    for (const { workflow, afterMerge } of SCHEDULED_CHECKS) {
+      const text = readFileSync(join('.github/workflows', workflow), 'utf8');
+      if (afterMerge) assert.match(text, /^ {2}push:\n {4}branches:\n {6}- main$/m, workflow);
+      else assert.match(text, /^ {2}schedule:/m, workflow);
     }
   });
 });

@@ -1,6 +1,10 @@
-# Browser CI uses the same impact plan as unit/MCP CI. Exact source-to-spec
-# mappings run on shard 1 only; unmapped rendered dependencies fail closed to
-# the PR smoke project on every shard. Scheduled/manual runs and planner changes run every project.
+# Browser CI uses the same impact plan as unit/MCP CI. Before merge a train runs
+# the specs its change maps plus the merge smoke set (scripts/ci/merge-smoke-specs.mjs),
+# balanced over every shard; an unmapped rendered dependency runs the smoke set alone.
+# Only a planner or browser-executor change runs the full suite before merge. Every
+# push to main runs it in full after merge, measurements and both surfaces included,
+# and `pnpm pr:land` names that run's failing specs while it is red (owner, 2026-11-18:
+# merges took too long). Manual runs are full unless they name a base to plan from.
 #
 # A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
 # it on a landing train built from today's main, and the train's pull request
@@ -21,6 +25,11 @@ on:
   schedule:
     - cron: "17 19 * * *"
   workflow_dispatch:
+    inputs:
+      plan_from:
+        description: "Plan as a pull request against this commit SHA (rehearses a train); empty runs the full suite"
+        required: false
+        default: ""
   push:
     branches:
       - main
@@ -28,9 +37,11 @@ on:
 permissions:
   contents: read
 
+# A push to main is not cancelled by the next one: the full run must finish to be read. GitHub keeps
+# at most one waiting run per group, so a burst of merges still tests only the newest tree.
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'change' }}
-  cancel-in-progress: true
+  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('full{0}', inputs.plan_from) || 'change' }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -68,7 +79,18 @@ jobs:
           # A merge group has no base branch ref, and its two SHAs are minted by
           # GitHub, so they are data rather than a string anyone can choose.
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
-        run: node scripts/ci/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"
+          PLAN_FROM: ${{ inputs.plan_from }}
+        run: |
+          if [ "$EVENT_NAME" = workflow_dispatch ] && [ -n "$PLAN_FROM" ]; then
+            if ! printf '%s' "$PLAN_FROM" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "::error::plan_from must be a full commit SHA"
+              exit 1
+            fi
+            EVENT_NAME=pull_request
+            BASE_REF=
+            MERGE_GROUP_BASE_SHA=$PLAN_FROM
+          fi
+          node scripts/ci/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}" --full-browser-after-merge
 
   build:
     name: Build browser artifact
@@ -230,10 +252,11 @@ jobs:
   # CPU-bound: on the same four cores (2026-09-27) four workers ran a 129-test sample
   # in 219 s against two workers' 242 s, because each test took 44% longer. Machines
   # scale; workers on one machine do not, and a public repository's standard runners
-  # are free. Five shards of a full run (2026-11-18, about 4,600 test-seconds) took
-  # 6.8 to 10.0 minutes of test time each and 13.8 minutes end to end. Eight cut each
-  # shard to about 575 estimated test-seconds. One train peaks near 17 jobs at once
-  # (8 shards, web surface, six Checks jobs, Windows), inside the 20-job limit.
+  # are free. A full run (2026-11-18, about 4,600 test-seconds) took 13.8 minutes from
+  # start to the last shard on five shards (7.6 to 12.3 minutes per shard) and 9.4 on
+  # eight (6.0 to 7.9). One train peaks near 17 jobs at once (8 shards, web surface, six
+  # Checks jobs, Windows), inside the account's 20; a second train in flight or main's
+  # full run beside it queues instead.
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/8)
     needs: [changes, build]
@@ -247,7 +270,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     env:
-      ACTIVE: ${{ needs.changes.outputs.playwright == 'full' || needs.changes.outputs.playwright == 'smoke' || (needs.changes.outputs.playwright == 'targeted' && matrix.shard == 1) }}
+      ACTIVE: ${{ needs.changes.outputs.playwright != 'skip' }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
       PLAYWRIGHT_PREBUILT: "1"
     steps:

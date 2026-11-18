@@ -14,6 +14,8 @@ import {
   unitUsesAllShards,
   isRelatedSweep,
   reuseReviewedMainPlan,
+  fullBrowserAfterMerge,
+  validatePlan,
 } from './classify-change.mjs';
 
 test('only a proven main push reuses every lane while retaining changed-path evidence', () => {
@@ -205,9 +207,10 @@ test('direct Playwright spec edits run that spec, including post-merge instrumen
     const plan = buildImpactPlan({ files: [spec] });
     assert.equal(plan.lanes.e2e.mode, 'targeted', spec);
     assert.deepEqual(plan.lanes.e2e.specs, [spec]);
-    assert.deepEqual(commandsForLane({ lane: 'e2e', plan, prebuilt: true }), [
-      `PLAYWRIGHT_STATIC=1 pnpm exec playwright test ${spec}`,
-    ]);
+    const commands = commandsForLane({ lane: 'e2e', plan, prebuilt: true });
+    assert.equal(commands.length, 1);
+    assert.ok(commands[0].startsWith('PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs '), commands[0]);
+    assert.ok(commands[0].includes(` --only=${spec.replace('tests/e2e/', '')}`), commands[0]);
   }
 });
 
@@ -221,7 +224,7 @@ test('unsafe spec paths never become browser command arguments', () => {
     'tests/e2e/gray-area/;echo-injected.spec.ts',
   ]) {
     const plan = buildImpactPlan({ files: [path] });
-    assert.equal(plan.lanes.e2e.mode, 'full', path);
+    assert.ok(['smoke', 'full'].includes(plan.lanes.e2e.mode), path);
     assert.deepEqual(plan.lanes.e2e.specs, [], path);
     for (const command of commandsForLane({ lane: 'e2e', plan, prebuilt: true })) {
       assert.ok(!command.includes(path), command);
@@ -229,10 +232,11 @@ test('unsafe spec paths never become browser command arguments', () => {
   }
 });
 
-test('Playwright helpers and configuration run every browser project', () => {
+test('Playwright helpers and configuration run the merge smoke set and both surfaces, not the full suite', () => {
   for (const path of ['tests/e2e/global-setup.ts', 'playwright.config.ts']) {
     const plan = buildImpactPlan({ files: [path] });
-    assert.equal(plan.lanes.e2e.mode, 'full');
+    assert.equal(plan.lanes.e2e.mode, 'smoke');
+    assert.deepEqual(plan.lanes.e2e.unmappedPaths, [path]);
     assert.equal(plan.lanes.e2e.staticExport, true);
     assert.equal(plan.lanes.e2e.webSurface, true);
   }
@@ -263,12 +267,15 @@ test('generated documentation bundles do not masquerade as runtime changes', () 
 });
 
 test('unknown paths and planner changes fail closed to exhaustive verification', () => {
-  for (const path of ['new-runtime/entry.wasm', 'scripts/ci/run-ci-lane.mjs']) {
+  for (const [path, browser] of [['new-runtime/entry.wasm', 'smoke'], ['scripts/ci/run-ci-lane.mjs', 'full'], ['scripts/ci/merge-smoke-specs.mjs', 'full']]) {
     const plan = buildImpactPlan({ files: [path] });
     assert.equal(plan.full, true);
     assert.equal(plan.lanes.unit.mode, 'full');
     assert.equal(plan.lanes.mcp.mode, 'full');
-    assert.equal(plan.lanes.e2e.mode, 'full');
+    // Only a planner change runs the whole browser suite before merge; the rest runs after it.
+    assert.equal(plan.lanes.e2e.mode, browser, path);
+    assert.equal(plan.lanes.e2e.staticExport, true);
+    assert.equal(plan.lanes.e2e.webSurface, true);
   }
 });
 
@@ -319,7 +326,8 @@ test('dependency patches are known and run every exhaustive lane', () => {
     assert.deepEqual(plan.unknownPaths, []);
     assert.equal(plan.full, true);
     assert.equal(plan.lanes.gates.run, true);
-    for (const lane of ['unit', 'perf', 'mcp', 'e2e']) assert.equal(plan.lanes[lane].mode, 'full');
+    for (const lane of ['unit', 'perf', 'mcp']) assert.equal(plan.lanes[lane].mode, 'full');
+    assert.equal(plan.lanes.e2e.mode, 'smoke');
     assert.equal(plan.lanes.e2e.staticExport, true);
     assert.equal(plan.lanes.e2e.webSurface, true);
   }
@@ -457,7 +465,8 @@ test('both workflows retain exhaustive triggers isolated from ordinary push canc
     const group = source.split('\n').find((line) => line.startsWith('  group:'));
     assert.match(group, /github\.event_name == 'schedule'/);
     assert.match(group, /github\.event_name == 'workflow_dispatch'/);
-    assert.match(group, /'full' \|\| 'change'/);
+    // A rehearsal that plans from a named base gets its own group, so it never cancels the full run.
+    assert.match(group, name === 'e2e' ? /format\('full\{0\}', inputs\.plan_from\) \|\| 'change'/ : /'full' \|\| 'change'/);
   }
 });
 
@@ -536,9 +545,24 @@ test('CI regression-test edits run their checks without promoting unrelated prod
     assert.equal(plan.lanes.e2e.webSurface, false, file);
     assert.ok(plan.lanes.gates.commands.some((command) => command.includes(file) && command.includes('node --test')), file);
     const implementation = file.replace('.test.mjs', '.mjs');
+    // The planner and the browser executor run the whole suite; the static server reaches it broadly.
+    const browser = implementation === 'scripts/web/serve-static-export.mjs' ? 'smoke' : 'full';
     const runtime = buildImpactPlan({ files: [implementation] });
-    assert.equal(runtime.lanes.e2e.mode, 'full', implementation);
+    assert.equal(runtime.lanes.e2e.mode, browser, implementation);
     const mixed = buildImpactPlan({ files: [file, implementation] });
-    assert.equal(mixed.lanes.e2e.mode, 'full', `${implementation} with its test`);
+    assert.equal(mixed.lanes.e2e.mode, browser, `${implementation} with its test`);
   }
+});
+
+test('every push to main runs the browser suite in full, even over a reused reviewed tree', () => {
+  const reused = reuseReviewedMainPlan(buildImpactPlan({ files: ['src/views/x/ui/view.tsx'] }), {
+    skip: true, commit: 'a'.repeat(40), tree: 'b'.repeat(40), reviewedHead: 'c'.repeat(40), pullRequest: 7,
+  }, { eventName: 'push', base: 'd'.repeat(40), head: 'a'.repeat(40) });
+  assert.equal(reused.lanes.e2e.mode, 'skip');
+  const after = fullBrowserAfterMerge(reused, { eventName: 'push' });
+  assert.deepEqual(after.lanes.e2e, { mode: 'full', specs: [], unmappedPaths: [], staticExport: true, webSurface: true });
+  assert.equal(after.lanes.unit.mode, 'skip', 'only the browser lane runs again');
+  assert.doesNotThrow(() => validatePlan(after));
+  const pr = buildImpactPlan({ files: ['src/views/x/ui/view.tsx'] });
+  assert.equal(fullBrowserAfterMerge(pr, { eventName: 'pull_request' }), pr, 'a pull request keeps its narrow plan');
 });

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 
 import { decodePlan, FULL_LANE_COMMANDS, isRelatedSweep } from './classify-change.mjs';
 import { collapseCoveredContractCommands } from './suggest-focused-checks.mjs';
+import { MERGE_SMOKE_SPECS } from './merge-smoke-specs.mjs';
 
 /*
  * Measurement files never ride a shard: a ratio's result depends on which files land beside it.
@@ -141,19 +142,21 @@ export function commandsForLane({
       ...(e2e.staticExport ? ['contextual-meaning-editor.spec.ts'] : []),
       ...(e2e.webSurface ? ['web-surface-smoke.spec.ts'] : []),
     ];
-    if (e2e.mode === 'targeted') {
-      if (e2e.specs.length === 0) throw new Error('targeted Playwright plan has no specs');
-      const specs = e2e.specs.filter((file) => !dedicated.includes(file.split('/').at(-1)));
-      return specs.length ? [`${build}PLAYWRIGHT_STATIC=1 pnpm exec playwright test ${specs.join(' ')}`] : [];
-    }
-    const [shardIndex] = shardParts(shard);
-    if (e2e.mode === 'smoke' || e2e.mode === 'full') {
-      const project = e2e.mode === 'smoke' ? ' --project=smoke' : '';
+    shardParts(shard);
+    if (e2e.mode === 'full') {
       const exclusions = dedicated.map((file) => ` --exclude=${file}`).join('');
-      const sweep = `${build}PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs${project} --shard=${shard}${exclusions}`;
-      const mapped = e2e.specs.filter((file) => !dedicated.includes(file.split('/').at(-1)));
-      if (e2e.mode !== 'smoke' || shardIndex !== 1 || mapped.length === 0) return [sweep];
-      return [sweep, `PLAYWRIGHT_STATIC=1 pnpm exec playwright test ${mapped.join(' ')} --project=post-merge --pass-with-no-tests --output=output/playwright/mapped-post-merge`];
+      return [`${build}PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs --shard=${shard}${exclusions}`];
+    }
+    if (e2e.mode === 'targeted' || e2e.mode === 'smoke') {
+      if (e2e.mode === 'targeted' && e2e.specs.length === 0) throw new Error('targeted Playwright plan has no specs');
+      // Before merge: the specs the change reaches plus the merge smoke set, balanced over every
+      // shard. Both Playwright projects are named, so a mapped post-merge spec runs too.
+      const files = [...new Set([
+        ...e2e.specs.map((file) => file.replace(/^tests\/e2e\//, '')),
+        ...MERGE_SMOKE_SPECS,
+      ])].filter((file) => !dedicated.includes(file)).sort();
+      const only = files.map((file) => ` --only=${file}`).join('');
+      return [`${build}PLAYWRIGHT_STATIC=1 node scripts/ci/run-playwright-ci.mjs --shard=${shard}${only}`];
     }
     return [];
   }

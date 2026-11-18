@@ -215,6 +215,14 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
       }
       if (!/pull_request|push:/.test(text)) continue;
       expect(text, `${file} has no concurrency group`).toMatch(/^concurrency:/m);
+      // Main's full browser run is read by `pnpm pr:land`, so the next merge must not cancel it;
+      // pull requests and trains still cancel their superseded runs.
+      if (file === "e2e.yml") {
+        expect(text, "e2e.yml must cancel everything but a push to main").toContain(
+          "cancel-in-progress: ${{ github.event_name != 'push' }}",
+        );
+        continue;
+      }
       expect(text, `${file} does not cancel a superseded run`).toContain("cancel-in-progress: true");
     }
   });
