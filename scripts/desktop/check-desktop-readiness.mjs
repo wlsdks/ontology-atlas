@@ -684,7 +684,7 @@ const RELEASE_ARTIFACT_STEP_MARKERS = [
   'args: ["desktop:release-secrets"]',
   'args: ["build"]',
   'args: ["desktop:smoke"]',
-  'args: ["desktop:build:app"]',
+  'args: ["desktop:build:app:prebuilt"]',
   'args: ["desktop:sign"]',
   'args: ["desktop:repack-updater"]',
   'args: ["scripts/desktop/package-macos-dmg.mjs"]',

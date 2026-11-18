@@ -46,7 +46,7 @@ test("the release pipeline exposes each credential only to the step that needs i
     assert.equal(secretCheck.env[name], value, `${name} must reach only the credential validator first`);
   }
 
-  for (const script of ["build", "desktop:smoke", "desktop:build:app", "desktop:sign", "desktop:sign:dmg", "desktop:verify-release-dmg", "desktop:verify-install"]) {
+  for (const script of ["build", "desktop:smoke", "desktop:build:app:prebuilt", "desktop:sign", "desktop:sign:dmg", "desktop:verify-release-dmg", "desktop:verify-install"]) {
     const call = byScript.get(script);
     assert.equal(call.env.NOTARYTOOL_KEY_PATH, undefined, `${script} inherited the notary key path`);
     for (const name of Object.keys(ALL_SECRETS)) {
@@ -85,7 +85,7 @@ test("the build phase runs before any signing material and receives no credentia
     phases[phase] = calls;
   }
 
-  assert.deepEqual(phases.build.map((call) => call.script), ["build", "desktop:smoke", "desktop:build:app"]);
+  assert.deepEqual(phases.build.map((call) => call.script), ["build", "desktop:smoke", "desktop:build:app:prebuilt"]);
   for (const call of phases.build) {
     for (const name of [...Object.keys(ALL_SECRETS), "NOTARYTOOL_KEY_PATH"]) {
       assert.equal(call.env[name], undefined, `${call.script} inherited ${name}`);
@@ -103,7 +103,7 @@ test("the build phase runs before any signing material and receives no credentia
   assert.equal(releaseArtifactSteps().length, phases.build.length + phases.sign.length + 1);
 });
 
-test("both static builds get a heap that four locales fit in on a 7 GB runner", () => {
+test("the one static build gets a heap that four locales fit in on a 7 GB runner", () => {
   const calls = [];
   runReleaseArtifactPipeline({
     env: { PATH: "/usr/bin:/bin" },
@@ -114,8 +114,20 @@ test("both static builds get a heap that four locales fit in on a 7 GB runner", 
     },
   });
   assert.equal(calls.find((call) => call.script === "build").env.NODE_OPTIONS, "--max-old-space-size=4096");
-  assert.equal(calls.find((call) => call.script === "desktop:build:app").env.NODE_OPTIONS, "--max-old-space-size=4096");
   assert.equal(calls.find((call) => call.script === "desktop:smoke").env.NODE_OPTIONS, undefined);
+});
+
+test("the app bundle step packages the export the smoke checked instead of building a second one", () => {
+  const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+  const conf = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8"));
+  const scripts = releaseArtifactSteps("build").map((step) => step.args[0]);
+  assert.equal(scripts.filter((script) => script === "build").length, 1);
+  assert.ok(scripts.indexOf("build") < scripts.indexOf("desktop:smoke"));
+  assert.ok(scripts.indexOf("desktop:smoke") < scripts.indexOf("desktop:build:app:prebuilt"));
+
+  assert.equal(conf.build.beforeBuildCommand, "pnpm build", "a bare tauri build still builds its own export");
+  const override = ` --config '${JSON.stringify({ build: { beforeBuildCommand: "" } })}'`;
+  assert.equal(pkg.scripts["desktop:build:app:prebuilt"], `${pkg.scripts["desktop:build:app"]}${override}`);
 });
 
 test("an unknown phase runs nothing", () => {

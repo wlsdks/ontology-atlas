@@ -85,8 +85,8 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   of an unsigned artifact. Source MCP and ontology readiness run separately in
   `pnpm dogfood:release-gate`.
 - `desktop:release-artifact` is the credentialed local path;
-  `scripts/desktop-release/build-macos-release-artifact.mjs` owns the order: rebuild,
-  route-smoke, sign the `.app`, repack the updater archive, package the DMG,
+  `scripts/desktop-release/build-macos-release-artifact.mjs` owns the order: build the
+  static export once, route-smoke it, bundle that same export, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
   workflow runs it as `--phase=build`, imports the certificate, then runs
