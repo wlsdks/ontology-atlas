@@ -10,6 +10,7 @@ import {
   coreContractFiles,
   FORBIDDEN_PATTERN_CONTRACTS,
   ratchetContractFiles,
+  browserBuildFiles,
   buildImpactPlan,
   decide,
   decodePlan,
@@ -681,4 +682,34 @@ test('root dependencies plan the whole browser suite before merge', () => {
     assert.equal(plan.lanes.e2e.staticExport, true, file);
     assert.equal(plan.lanes.e2e.webSurface, true, file);
   }
+});
+
+test('reproduced: a vault edit plans the MCP tests that read the vault, so a moved `path:` turns the PR red', () => {
+  // A fix that edits a node's `path:` was planned no MCP work, and `detect-drift.test.mjs` failed on main.
+  const plan = buildImpactPlan({ files: ['docs/ontology/capabilities/gray-area-discovery.md'] });
+  assert.deepEqual(plan.lanes.mcp, {
+    mode: 'focused',
+    commands: ['pnpm exec node --test mcp/src/drift/detect-drift.test.mjs mcp/src/project-meaning/project-meaning-receipt.test.mjs'],
+  });
+});
+
+test('every plan audits vault paths, because a move anywhere can break one', () => {
+  for (const files of [['scripts/landing/pr-land.mjs'], ['docs/FEATURES.md'], ['src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx']]) {
+    assert.ok(buildImpactPlan({ files }).lanes.gates.commands.includes('pnpm vault:audit'), files[0]);
+  }
+  assert.deepEqual(reuseReviewedMainPlan(buildImpactPlan({ files: ['README.md'] }), {
+    skip: true, commit: 'c'.repeat(40), tree: 'd'.repeat(40), reviewedHead: 'e'.repeat(40), pullRequest: 1,
+  }, { eventName: 'push', base: 'b'.repeat(40), head: 'c'.repeat(40) }).lanes.gates.commands, [], 'a reused tree runs nothing again');
+});
+
+test('tsconfig and every script the browser build runs are broad browser inputs', () => {
+  const build = browserBuildFiles();
+  for (const path of ['scripts/web/next-build.mjs', 'scripts/web/localize-html-lang.mjs', 'scripts/docs-vault/build-docs-vault.mjs', 'scripts/i18n/build-messages.mjs', 'scripts/prepare-worktree.mjs']) {
+    assert.ok(build.includes(path), path);
+  }
+  for (const path of ['tsconfig.json', 'scripts/web/next-build.mjs', 'scripts/docs-vault/build-docs-vault.mjs']) {
+    const { e2e } = buildImpactPlan({ files: [path] }).lanes;
+    assert.deepEqual([e2e.mode, e2e.staticExport, e2e.webSurface], ['smoke', true, true], path);
+  }
+  assert.equal(buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }).lanes.e2e.mode, 'skip');
 });

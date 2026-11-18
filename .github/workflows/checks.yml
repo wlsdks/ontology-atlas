@@ -132,7 +132,7 @@ jobs:
         if: env.ACTIVE == 'true'
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -235,7 +235,7 @@ jobs:
         if: env.ACTIVE == 'true'
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -326,7 +326,7 @@ jobs:
         if: env.ACTIVE == 'true'
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -429,7 +429,7 @@ jobs:
         if: env.ACTIVE == 'true'
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -514,7 +514,7 @@ jobs:
         shell: pwsh
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       # The whole point: `prepare` runs here, and `prepare` composes the ledgers.

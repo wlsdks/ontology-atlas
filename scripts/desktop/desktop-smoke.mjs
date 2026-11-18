@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { listLocales } from "../i18n/build-messages.mjs";
+import { isDesktopFrontendPath } from "./stage-desktop-frontend.mjs";
 
 export const DESKTOP_SMOKE_LOCALES = listLocales();
 export const DESKTOP_SMOKE_ROUTES = [
@@ -12,6 +13,8 @@ export const DESKTOP_SMOKE_ROUTES = [
   "/ontology/edit",
   "/ontology/insights",
 ];
+/** Smoked in `out/` for the website; the desktop bundle leaves them out. */
+export const DESKTOP_SMOKE_WEB_ONLY_ROUTES = ["/download"];
 export const DESKTOP_SMOKE_ROOT_ENTRY = "index.html";
 /**
  * Two samples proving the whole vault directory was copied into the bundle; they must be files
@@ -152,6 +155,10 @@ function routeIndexPath({ locale, route }) {
   return path.join(locale, cleanRoute, "index.html");
 }
 
+function toPosix(relativePath) {
+  return relativePath.split(path.sep).join("/");
+}
+
 function existsUnder(root, relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
@@ -229,7 +236,7 @@ export function evaluateDesktopSmoke({
   addCheck(
     "root-entry",
     "Tauri app root entry exists",
-    existsUnder(outDir, DESKTOP_SMOKE_ROOT_ENTRY),
+    existsUnder(outDir, DESKTOP_SMOKE_ROOT_ENTRY) && isDesktopFrontendPath(DESKTOP_SMOKE_ROOT_ENTRY, { locales }),
     DESKTOP_SMOKE_ROOT_ENTRY,
   );
 
@@ -243,6 +250,13 @@ export function evaluateDesktopSmoke({
         `${locale}${route} static route exists`,
         exists,
         relativePath,
+      );
+      const webOnly = DESKTOP_SMOKE_WEB_ONLY_ROUTES.includes(route);
+      addCheck(
+        `bundle:${locale}:${route}`,
+        webOnly ? `${locale}${route} stays out of the desktop bundle` : `${locale}${route} ships in the desktop bundle`,
+        isDesktopFrontendPath(toPosix(relativePath), { locales }) !== webOnly,
+        "scripts/desktop/stage-desktop-frontend.mjs",
       );
 
       const expectedTitle = routeTitles[`${locale}:${route}`];
@@ -285,7 +299,7 @@ export function evaluateDesktopSmoke({
     addCheck(
       `doc:${doc}`,
       `${doc} is bundled for offline docs`,
-      existsUnder(outDir, doc),
+      existsUnder(outDir, doc) && isDesktopFrontendPath(doc, { locales }),
       doc,
     );
   }
@@ -293,7 +307,8 @@ export function evaluateDesktopSmoke({
   addCheck(
     "third-party-licenses",
     "the third-party license texts ship with the static export",
-    existsUnder(outDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES),
+    existsUnder(outDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES) &&
+      isDesktopFrontendPath(DESKTOP_SMOKE_THIRD_PARTY_LICENSES, { locales }),
     DESKTOP_SMOKE_THIRD_PARTY_LICENSES,
   );
 

@@ -285,6 +285,26 @@ test("desktop smoke reports the exact missing packaged route", () => {
   assert.match(report.nextAction, /pnpm build/);
 });
 
+test("desktop smoke refuses a smoked workbench route the desktop bundle would leave out", () => {
+  // `/project/<sample>` pages are pre-rendered for the website, and the stage drops them.
+  const route = "/project/storefront";
+  const outDir = makeCurrentOut();
+  for (const locale of DESKTOP_SMOKE_LOCALES) writeRoute(outDir, locale, route, {});
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    routes: [...DESKTOP_SMOKE_ROUTES, route],
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    DESKTOP_SMOKE_LOCALES.map((locale) => `bundle:${locale}:${route}`),
+  );
+  assert.ok(report.checks.some((check) => check.id === "bundle:en:/download" && check.ok));
+});
+
 test("desktop smoke reports the exact missing Tauri root entry", () => {
   const outDir = makeCurrentOut();
   fs.rmSync(path.join(outDir, DESKTOP_SMOKE_ROOT_ENTRY));

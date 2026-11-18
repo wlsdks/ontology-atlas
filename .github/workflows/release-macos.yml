@@ -62,7 +62,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Verify requested release version
@@ -126,7 +126,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -166,7 +166,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Setup Rust
@@ -222,7 +222,7 @@ jobs:
         shell: pwsh
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Setup Rust
@@ -292,7 +292,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Setup Rust
@@ -428,7 +428,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -577,7 +577,7 @@ jobs:
         shell: pwsh
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Setup Rust
@@ -772,7 +772,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
@@ -896,7 +896,7 @@ jobs:
       - name: Enable Corepack pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.18.0 --activate
+          corepack prepare pnpm@10.34.9 --activate
           pnpm --version
 
       - name: Install dependencies
