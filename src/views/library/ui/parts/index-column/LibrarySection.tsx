@@ -354,8 +354,8 @@ export function LibrarySection({
     enabled: true,
   });
   /*
-   * Pages are searched inside through the installed app's index, the same one the documents
-   * palette asks; on the web a page matches on its title, excerpt and tags.
+   * A page matches on its title, excerpt and tags everywhere, and in the installed app also on its
+   * text, through the same index the documents palette asks.
    */
   const { hits: indexHits } = useVaultIndexHits({ rootPath: vaultRootPath, query: needle, limit: LIBRARY_INDEX_HITS });
   const indexedPaths = useMemo(() => (indexHits ? new Set(indexHits.map((hit) => hit.path)) : null), [indexHits]);
@@ -440,10 +440,9 @@ export function LibrarySection({
         ? model.wikiPages.filter(
             (page) =>
               page.title.toLowerCase().includes(needle) ||
-              (indexedPaths
-                ? indexedPaths.has(`${page.slug}.md`)
-                : (page.excerpt ?? "").toLowerCase().includes(needle) ||
-                  (page.tags ?? []).some((tag) => tag.toLowerCase().includes(needle))),
+              (page.excerpt ?? "").toLowerCase().includes(needle) ||
+              (page.tags ?? []).some((tag) => tag.toLowerCase().includes(needle)) ||
+              (indexedPaths?.has(`${page.slug}.md`) ?? false),
           )
         : model.wikiPages,
     [indexedPaths, model.wikiPages, needle],

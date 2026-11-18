@@ -156,6 +156,20 @@ describe('DocsVaultUnifiedPalette body search results', () => {
     expect(screen.getByText(lines.off)).toBeInTheDocument();
   });
 
+  it('says when the index covers only part of the folder, and when the folder could not be read', () => {
+    const palette = koMessages.vaultWidgets.palette;
+    const { unmount } = renderPalette({ initialQuery: 'zzz-no-match', status: indexStatus('partial', 100_000, 100_000) });
+    const line = screen.getByTestId('docs-palette-index-status');
+    expect(line).toHaveAttribute('data-state', 'partial');
+    expect(line.textContent).toMatch(/100,000/);
+    expect(screen.getByText(palette.noPartialSearchHint)).toBeInTheDocument();
+    expect(screen.queryByText(palette.noBodySearchHint)).not.toBeInTheDocument();
+    unmount();
+    renderPalette({ initialQuery: 'zzz-no-match', status: indexStatus('unreadable') });
+    expect(screen.getByText(palette.indexStatus.unreadable)).toBeInTheDocument();
+    expect(screen.getByText(palette.noTitleSearchHint)).toBeInTheDocument();
+  });
+
   it('shows no status line once the index is ready, or on the web', () => {
     const { unmount } = renderPalette({ initialQuery: 'alpha', status: indexStatus('ready', 2, 2) });
     expect(screen.queryByTestId('docs-palette-index-status')).not.toBeInTheDocument();

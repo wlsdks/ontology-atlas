@@ -21,11 +21,17 @@ the matching line, and ranks them beside title, summary and tag matches. A Korea
 is found inside a word that carries a particle or sits in a compound, and a term that joins
 Latin letters to Hangul, such as `MCP` written against a Korean noun, matches as one phrase.
 While the first build runs, a line under the field counts it up ("Indexing 12,400 of
-50,000 documents") and the results so far are shown; when the index is off, deleted or
-cannot be opened, the same line says search covers titles, summaries and tags only.
-Settings › Privacy · data, "Stored on this computer", shows the index's size, deletes
-it, and turns it off; off leaves no index file. The web has no index: there the palette
-searches titles, summaries and tags, and its zero-result note says exactly that.
+50,000 documents") and the results so far are shown; when the index is off, deleted,
+cannot be opened, or the folder cannot be read, the same line says search covers titles,
+summaries and tags only, and past the app's 100,000-file or 12-level limit it says how
+many documents it searches inside. The Library's wiki list asks the same index, so a page
+is found by its text there too. Settings › Privacy · data, "Stored on this computer",
+says the index holds each document's words with their positions, so its text can be read
+back by anyone who can read the account's cache folder; it shows the open folder's index
+size, deletes that index, and turns indexing off (off leaves no index file). A folder's
+index is also deleted when the folder is taken off the folder list or left unopened for
+fourteen days. The web has no index: there the palette searches titles, summaries and
+tags, and its zero-result note says exactly that.
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
 substrings only, so the two things a Korean typist does first found nothing on the

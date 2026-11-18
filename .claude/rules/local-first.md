@@ -37,6 +37,8 @@
   IndexedDB may cache the vault handle and preferences, and the app may keep a
   derived index (`docs/ARCHITECTURE.md`); neither wins a disagreement with the
   files on disk.
+- A derived index holds only what can be recomputed from vault files: no user
+  state, edits, approvals or drafts.
 - Do not pre-install authentication for a possible future cloud mode.
 
 ## Security

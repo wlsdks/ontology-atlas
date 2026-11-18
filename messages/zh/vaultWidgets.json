@@ -195,12 +195,15 @@
     "noBodySearchHint": "标题、摘要、标签和全部正文都搜过了。换个词或更短的短语试试。",
     "noTitleSearchHint": "已搜索标题、摘要和标签。换个词或更短的短语试试。",
     "noIndexingSearchHint": "已搜索标题、摘要、标签以及目前已建立索引的文档正文。索引完成后再试一次，或换个词试试。",
+    "noPartialSearchHint": "已搜索标题、摘要、标签以及应用读取的所有文档正文。换个词或更短的短语试试。",
     "indexStatus": {
       "preparing": "正在准备搜索每个文档的正文。在此之前按标题、摘要和标签查找。",
       "building": "已为 {total, number} 个文档中的 <count>{indexed, number}</count> 个建立索引。显示目前已索引的结果。",
+      "partial": "正在 {indexed, number} 个文档中搜索。此文件夹其余部分超出了应用读取的上限（100,000 个文件或 12 层文件夹），不会被搜索。",
       "off": "只搜索标题、摘要和标签。搜索索引已在 设置 › 隐私 · 数据 中关闭。",
       "paused": "只搜索标题、摘要和标签。搜索索引已删除，再次打开此文件夹时会重新建立。",
-      "unavailable": "只搜索标题、摘要和标签。无法在这台电脑上打开搜索索引。"
+      "unavailable": "只搜索标题、摘要和标签。无法在这台电脑上打开搜索索引。",
+      "unreadable": "只搜索标题、摘要和标签。无法读取此文件夹来建立搜索索引。"
     },
     "canonicalDocsLabel": "跳转到主要指南文档",
     "canonicalMcp": "MCP 设置指南",

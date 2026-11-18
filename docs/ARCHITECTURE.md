@@ -179,12 +179,13 @@ file, and write tools save confirmed changes back into the markdown.
 
 ### Derived index (installed app)
 
-`src-tauri/crates/vault-index` keeps two SQLite files per vault under
-`<OS cache dir>/dev.jinan.ontology-atlas/vault-index/<hash of the canonical
-vault path>/`. `search.sqlite` holds a full-text index of every Markdown file
-(tokens only, no document text) and is opened only by the app. `rows.sqlite`
-holds, per file and per producer, the result a program computed from that file.
-Every row carries the stamp of the file it came from (modified time, size, and
+`src-tauri/crates/vault-index` keeps one SQLite file per vault, `search.sqlite`,
+under `<OS cache dir>/dev.jinan.ontology-atlas/vault-index/<hash of the
+canonical vault path>/`, opened only by the app. It is a full-text index of
+every Markdown file: paths, stamps, and each document's words with their
+positions, so a document's text can be pieced back together from it. Anyone
+who can read the user account's cache folder can read those words; Settings
+says so beside the switch. Every row carries the stamp of the file it came from (modified time, size, and
 change time on Unix) and is used only while that stamp still matches; a file
 modified within two seconds of its row is compared by SHA-256 instead. A
 derived index holds only what can be recomputed from vault files: no user state,
@@ -195,16 +196,26 @@ interprets frontmatter: parsing, the graph and validation stay in the
 TypeScript and MCP code that already own them, and graph queries stay in
 memory.
 
+The crate decides what it reads: only `.md` files under the canonical vault
+root, reached through real folders, never through a symlink or a component
+that starts with a dot. It deletes only folders that carry its marker file and
+hold nothing but index file names, and a release build ignores
+`OATLAS_INDEX_DIR`. A query is read up to 512 bytes and 16 terms. A folder's
+index is deleted when the folder is taken off the app's folder list, when the
+folder is gone, or after fourteen days unopened; Delete in Settings removes the
+open folder's index, or every folder's when none is open.
+
 The folder watcher, the slow poll and vault open each start a stamp pass on a
-background thread. A schema or producer version that differs in either
-direction discards the data and rebuilds it; a damaged file is set aside and
-rebuilt while the session continues from the vault files. Both files use WAL,
+background thread. A schema version that differs in either direction
+discards the index and rebuilds it; a damaged file is set aside and
+rebuilt while the session continues from the vault files. The file uses WAL,
 so the app and another process can read at the same time. Settings › Privacy ·
 data shows the size, deletes the index and can turn it off. The web playground
 has no index.
 
-Only `search.sqlite` exists so far; `rows.sqlite` arrives with the reopen from
-cached rows. Searching is one rule shared by indexing and queries: words of
+A second file, `rows.sqlite`, holding per file and per producer the result a
+program computed from that file, is planned for reopening from cached rows; it
+does not exist yet. Searching is one rule shared by indexing and queries: words of
 alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
 become overlapping pairs, so a Korean term is found inside a word that carries
 a particle. The palette reads only the hit files to show their matching lines.

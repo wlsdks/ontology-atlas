@@ -15,7 +15,19 @@ export const vaultIndexPreference = definePreference({
   fallback: 'on',
 });
 
-export type VaultIndexState = 'off' | 'absent' | 'building' | 'ready' | 'paused' | 'unavailable';
+/**
+ * `partial`: ready over the part of the folder the walk reached before its limit. `unavailable`: the
+ * index could not be opened or written. `unreadable`: the folder could not be listed.
+ */
+export type VaultIndexState =
+  | 'off'
+  | 'absent'
+  | 'building'
+  | 'ready'
+  | 'partial'
+  | 'paused'
+  | 'unavailable'
+  | 'unreadable';
 
 export interface VaultIndexStatus {
   state: VaultIndexState;
@@ -82,6 +94,13 @@ export async function clearVaultIndex(rootPath: string | null): Promise<VaultInd
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke('vault_index_clear', { rootPath, enabled: enabled() });
+}
+
+/** Deletes the index of a folder taken off the folder list; the folder itself is never touched. */
+export async function forgetVaultIndex(rootPath: string): Promise<void> {
+  const invoke = getInvoke();
+  if (!invoke) return;
+  await invoke('vault_index_forget', { rootPath });
 }
 
 /**

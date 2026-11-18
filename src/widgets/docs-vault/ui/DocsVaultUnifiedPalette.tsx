@@ -130,7 +130,9 @@ function IndexStatusLine({ status }: { status: VaultIndexStatus }) {
                 ),
               })
             : t('preparing')
-          : t(status.state)}
+          : status.state === 'partial'
+            ? t('partial', { indexed: status.indexed })
+            : t(status.state)}
       </p>
       {building ? (
         <div aria-hidden className="h-px w-full bg-[color:var(--color-overlay-2)]">
@@ -605,7 +607,9 @@ export function DocsVaultUnifiedPalette({
                     ? t('noBodySearchHint')
                     : indexStatus?.state === 'building'
                       ? t('noIndexingSearchHint')
-                      : t('noTitleSearchHint')}
+                      : indexStatus?.state === 'partial'
+                        ? t('noPartialSearchHint')
+                        : t('noTitleSearchHint')}
                 </p>
                 <p className="mt-4 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                   {t('canonicalDocsLabel')}

@@ -74,7 +74,7 @@
     "title": "Stored on this computer",
     "keywords": "search index cache disk size storage delete full text",
     "switchLabel": "Keep a search index on this computer",
-    "switchCaption": "Lets search find words inside every document. It holds file paths, modified times and each document's words in a searchable form, not a readable copy, in this computer's cache folder, and never leaves it. Anyone who can open that file can check which documents contain a word.",
+    "switchCaption": "Lets search find words inside every document. The index holds file paths, modified times and each document's words with their positions, so its text can be pieced back together. It stays in this computer's cache folder and never leaves it; anyone who can read your user account's cache folder can read those words. A folder's index is deleted when you take the folder off the list or leave it unopened for two weeks.",
     "on": "On",
     "off": "Off",
     "sizeLabel": "Search index",
