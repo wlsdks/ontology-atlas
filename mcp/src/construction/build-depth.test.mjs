@@ -82,6 +82,19 @@ test('every surveyed ability has a node, is named inside one, is excluded with a
   assert.match(depth.line, /add_concepts a capability for it/);
 });
 
+test('a plugin is named by its package folder as well as its class', (t) => {
+  const root = repository({
+    'package.json': JSON.stringify({ name: 'root', workspaces: ['plugins/*'] }),
+    'plugins/all-contributors/package.json': JSON.stringify({ name: 'all-contributors' }),
+    'plugins/all-contributors/src/index.ts': 'export default class AllContributorsPlugin implements IPlugin {\n  apply() {\n    return 1;\n  }\n}\n',
+  });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = repositorySurvey(root, join(root, 'atlas'));
+  assert.deepEqual(repo.survey.abilities.map((row) => row.name), ['AllContributorsPlugin']);
+  const docs = [doc('capabilities/thank-contributors', { path: 'src/other.ts' }, 'Thanks contributors.\n\n## Includes\n- The all-contributors plugin.\n')];
+  assert.equal(measureBuildDepth(docs, repo, null).breadth.named, 1);
+});
+
 /*
  * A rule a body states is checked against the lines this session served: the
  * cite must fall inside a served range and hold a condition. Without reads (the

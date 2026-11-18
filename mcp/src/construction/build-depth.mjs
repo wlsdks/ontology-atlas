@@ -125,6 +125,17 @@ function spokenForms(name) {
   return [...new Set([plain, words].filter((form) => form.length >= 3))];
 }
 
+const ENTRY_STEMS = new Set(['index', '__init__', 'main', 'mod', 'lib']);
+const LAYOUT_FOLDERS = new Set(['src', 'lib', 'bin', 'source', 'dist']);
+
+/** The package folder an entry file opens, or null when the file is not a package entry. */
+function packageFolder(path) {
+  const parts = String(path ?? '').split('/');
+  if (!ENTRY_STEMS.has(lastSegment(parts.at(-1) ?? ''))) return null;
+  const folders = parts.slice(0, -1).filter((part) => !LAYOUT_FOLDERS.has(part));
+  return folders.at(-1) ?? null;
+}
+
 /**
  * Where every ability the survey lists sits on the map: a capability or element
  * for it (its file and its name), its name inside a capability or element (a
@@ -142,8 +153,10 @@ function measureAbilities(docs, survey) {
   const nodes = docs.filter((doc) => NAMING_KINDS.has(kindOf(doc)));
   const textOf = (doc) => `${doc.frontmatter?.title ?? ''}\n${doc.body ?? ''}`;
   // A common word ("next", "label") names an ability only in code form or as "the next command".
+  // An ability whose file is a package's entry (index, __init__, main) also answers to the
+  // package folder: "the all-contributors plugin" names AllContributorsPlugin.
   const names = (text, row) => {
-    const words = [row.name, row.symbol].filter(Boolean).map(String);
+    const words = [row.name, row.symbol, packageFolder(row.path)].filter(Boolean).map(String);
     const forms = words.filter((word) => !GENERIC_SYMBOLS.has(word.toLowerCase())).flatMap(spokenForms);
     if (forms.some((form) => namesWord(text, form))) return true;
     if (words.some((word) => GENERIC_SYMBOLS.has(word.toLowerCase())
