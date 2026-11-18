@@ -1,6 +1,6 @@
 # Browser CI uses the same impact plan as unit/MCP CI. Exact source-to-spec
 # mappings run on shard 1 only; unmapped rendered dependencies fail closed to
-# the five-shard PR smoke project. Scheduled/manual runs and planner changes run every project.
+# the PR smoke project on every shard. Scheduled/manual runs and planner changes run every project.
 #
 # A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
 # it on a landing train built from today's main, and the train's pull request
@@ -226,13 +226,16 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # Five runners, not more workers. A runner here has four vCPUs, but the suite is
+  # Eight runners, not more workers. A runner here has four vCPUs, but the suite is
   # CPU-bound: on the same four cores (2026-09-27) four workers ran a 129-test sample
   # in 219 s against two workers' 242 s, because each test took 44% longer. Machines
-  # scale; workers on one machine do not. Three shards of a full run took 16.4 minutes
-  # (5,163 test-seconds); five split it into about 1,030 test-seconds each.
+  # scale; workers on one machine do not, and a public repository's standard runners
+  # are free. Five shards of a full run (2026-11-18, about 4,600 test-seconds) took
+  # 6.8 to 10.0 minutes of test time each and 13.8 minutes end to end. Eight cut each
+  # shard to about 575 estimated test-seconds. One train peaks near 17 jobs at once
+  # (8 shards, web surface, six Checks jobs, Windows), inside the 20-job limit.
   suite:
-    name: Playwright (chromium ${{ matrix.shard }}/5)
+    name: Playwright (chromium ${{ matrix.shard }}/8)
     needs: [changes, build]
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
@@ -242,7 +245,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     env:
       ACTIVE: ${{ needs.changes.outputs.playwright == 'full' || needs.changes.outputs.playwright == 'smoke' || (needs.changes.outputs.playwright == 'targeted' && matrix.shard == 1) }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
@@ -277,9 +280,9 @@ jobs:
         if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      - name: Run browser evidence (shard ${{ matrix.shard }}/5)
+      - name: Run browser evidence (shard ${{ matrix.shard }}/8)
         if: env.ACTIVE == 'true'
-        run: node scripts/ci/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/5
+        run: node scripts/ci/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/8
         env:
           CI: true
 
@@ -337,4 +340,4 @@ jobs:
             echo "::error::a Playwright (chromium) shard reported $SHARDS"
             exit 1
           fi
-          echo "all five Playwright (chromium) shards passed"
+          echo "all eight Playwright (chromium) shards passed"
