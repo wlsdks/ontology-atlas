@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 /**
  * Edge writes and the frontmatter keys they land in: `add_relation`,
  * `add_relations`, `remove_relation`, `replace_relation`, with the alias-key
@@ -38,17 +39,44 @@ import {
   resolveExistingVaultSlug,
 } from './vault-nodes.mjs';
 
-function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
+/**
+ * The typed containment key `contains` stands for when the endpoint kinds have one
+ * (spec §5: `contains` is for containment the typed keys do not fit), so one
+ * project's containment is written in one vocabulary whichever word the writer used.
+ */
+const TYPED_CONTAINMENT = Object.freeze({
+  domain: Object.freeze({ type: 'domains', parents: new Set(['project']) }),
+  capability: Object.freeze({ type: 'capabilities', parents: new Set(['project', 'domain']) }),
+  element: Object.freeze({ type: 'elements', parents: new Set(['project', 'domain', 'capability']) }),
+});
+
+function typedContainmentType(fromKind, toKind) {
+  const typed = TYPED_CONTAINMENT[toKind];
+  return typed && typed.parents.has(fromKind) ? typed.type : null;
+}
+
+function fileMtime(slug) {
+  return statSync(slugToPath(VAULT_ROOT, slug)).mtimeMs;
+}
+
+function addRelation({ from, to, type: requestedType, why, expected_mtime }, options = {}) {
   requireNonBlankString(from, 'from');
   requireNonBlankString(to, 'to');
-  requireNonBlankString(type, 'type');
+  requireNonBlankString(requestedType, 'type');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
-  const key = RELATION_KEY[type];
-  if (!key) {
-    throw new Error(formatAllowedValueError('type', type, RELATION_TYPES));
+  if (!RELATION_KEY[requestedType]) {
+    throw new Error(formatAllowedValueError('type', requestedType, RELATION_TYPES));
   }
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
+  const fromKind = readDocIfPresent(canonicalFrom ?? from)?.frontmatter?.kind;
+  const toKind = readDocIfPresent(canonicalTo ?? to)?.frontmatter?.kind;
+  const typed = requestedType === 'contains' ? typedContainmentType(fromKind, toKind) : null;
+  const type = typed ?? requestedType;
+  const key = RELATION_KEY[type];
+  const notice = typed
+    ? `"contains" from a ${fromKind} to a ${toKind} is written as the typed key "${typed}"; cite it as --${typed}--> in competency Relations rows.`
+    : null;
   requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relation');
   // Both endpoints must exist, so a typo or hallucinated slug is an error rather than
   // a dangling reference; tail and frontmatter slug aliases are stored as the
@@ -71,7 +99,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   if (key === 'domain') {
     const existingDomain = doc.frontmatter.domain;
     if (relationRefMatches(existingDomain, canonicalTo)) {
-      return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
+      return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type, mtime: doc.mtime };
     }
     if (typeof existingDomain === 'string' && existingDomain.trim()) {
       throw new Error(`Source slug already has domain "${existingDomain}". Use patch_concept to change it explicitly.`);
@@ -87,14 +115,19 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
       to: canonicalTo,
       type,
       key,
+      mtime: fileMtime(canonicalFrom),
       ...(options.includePostWriteMaintenance === false
         ? {}
         : { postWriteMaintenance: compactPostWriteMaintenance() }),
     };
   }
   const existing = relationRefsFor(doc, key);
-  if (existing.some((ref) => relationRefMatches(ref, canonicalTo))) {
-    return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
+  if (existing.some((ref) => relationRefMatches(ref, canonicalTo))
+    || (typed && relationExists(doc, 'contains', canonicalTo))) {
+    return {
+      ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type, mtime: doc.mtime,
+      ...(notice ? { notice } : {}),
+    };
   }
   if (type === 'depends_on' && (typeof why !== 'string' || !why.trim())) {
     throw new Error(
@@ -123,6 +156,8 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
     to: canonicalTo,
     type,
     key,
+    mtime: fileMtime(canonicalFrom),
+    ...(notice ? { notice } : {}),
     ...(options.includePostWriteMaintenance === false
       ? {}
       : { postWriteMaintenance: compactPostWriteMaintenance() }),
@@ -300,8 +335,16 @@ function addRelationsBatch({ relations }) {
       };
     }
   });
+  // A row's own `mtime` goes stale when a later row writes the same source, so the
+  // batch also returns each touched source's mtime after the last row.
+  const mtimes = {};
+  for (const row of results) {
+    if (!row.ok || row.changed !== true) continue;
+    try { mtimes[row.from] = fileMtime(row.from); } catch { /* removed meanwhile */ }
+  }
   return {
     relations: results,
+    ...(Object.keys(mtimes).length > 0 ? { mtimes } : {}),
     postWriteMaintenance: results.some((row) => row.ok && row.changed !== false)
       ? compactPostWriteMaintenance()
       : undefined,

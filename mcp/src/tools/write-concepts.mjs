@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import {
   CREATED_BY_KEY,
   buildFrontmatter,
@@ -33,6 +34,18 @@ import {
 } from './vault-nodes.mjs';
 
 /** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
+
+/** The `display_<locale>` codes any node in the vault carries. */
+function vaultLocaleCodes(docs) {
+  const codes = new Set();
+  for (const doc of docs) {
+    for (const key of Object.keys(doc?.frontmatter ?? {})) {
+      const match = /^display_([a-z]{2})$/.exec(key);
+      if (match) codes.add(match[1]);
+    }
+  }
+  return codes;
+}
 
 /*
  * These three are the only writes that can set a `path:`, so the write gate learns
@@ -78,10 +91,8 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   });
   // Advisory title-collision warning before the write; it never blocks. Batches skip
   // it: their candidates were already reviewed and a per-node vault load costs.
-  const duplicateWarning =
-    options.includePostWriteMaintenance === false
-      ? null
-      : detectDuplicateTitle(title, slug, loadVaultDocs(VAULT_ROOT));
+  const vaultDocs = options.includePostWriteMaintenance === false ? null : loadVaultDocs(VAULT_ROOT);
+  const duplicateWarning = vaultDocs ? detectDuplicateTitle(title, slug, vaultDocs) : null;
   const filePath = writeDoc(VAULT_ROOT, slug, {
     frontmatter: fm,
     body: body === undefined ? defaultBody(kind, title) : body,
@@ -89,13 +100,16 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   // Missing `requiredExtras` become advisories rather than a throw, so the flow
   // continues and a follow-up patch_concept fills the gap.
   const missing = missingExpectedFields(kind, fm);
-  // Guards the mistake of filling one locale and moving on: the author only ever
-  // sees their own screen language, while other-locale users get the raw title.
+  // Guards filling one locale and moving on in a vault that names its nodes in more
+  // than one: other-locale readers would see the raw title. A one-locale vault has
+  // nothing to add, so it gets no warning.
   const localeCodes = localeLabelCodes(localeLabels);
-  const partialLocaleWarning =
-    localeCodes.length === 1
-      ? `labels only has "${localeCodes[0]}" — add the other locale (e.g. labels: { ko, en }) so both audiences read a native name`
-      : null;
+  const vaultLocales = options.vaultLocales ?? vaultLocaleCodes(vaultDocs ?? []);
+  const usedLocales = new Set([...vaultLocales, ...localeCodes]);
+  const missingLocales = [...usedLocales].filter((code) => !localeCodes.includes(code)).sort();
+  const partialLocaleWarning = usedLocales.size >= 2 && missingLocales.length > 0
+    ? `labels has no ${missingLocales.map((code) => `"${code}"`).join(', ')}, which other nodes in this vault use; add it (labels: { ${[...usedLocales].sort().join(', ')} }) so those readers see a native name`
+    : null;
   const warnings = [
     ...missing.map((k) => `expected field "${k}" missing for kind "${kind}"`),
     ...(duplicateWarning ? [duplicateWarning] : []),
@@ -106,6 +120,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     slug,
     filePath,
     changed: true,
+    mtime: statSync(filePath).mtimeMs,
     ...(warnings.length > 0 ? { warnings } : {}),
     ...(options.includePostWriteMaintenance === false
       ? {}
@@ -135,6 +150,11 @@ function addConceptsBatch({ concepts }) {
   // Rows already landed in this batch ({slug, frontmatter}) — the in-memory
   // comparison target that catches a later row as a near-duplicate (zero vault loads).
   const landed = [];
+  // Every locale the vault or this batch names, read once for the whole batch.
+  const vaultLocales = new Set([
+    ...vaultLocaleCodes(loadVaultDocs(VAULT_ROOT)),
+    ...concepts.flatMap((spec) => localeLabelCodes(normalizeLocaleLabels(spec?.labels))),
+  ]);
   const results = concepts.map((spec, index) => {
     let slug = '';
     try {
@@ -166,7 +186,7 @@ function addConceptsBatch({ concepts }) {
         };
       }
       if (slug) seenInBatch.set(slug, index);
-      const result = addConcept(spec, { includePostWriteMaintenance: false });
+      const result = addConcept(spec, { includePostWriteMaintenance: false, vaultLocales });
       // Advisory warning when a node already landed in this batch has the same
       // normalised title, catching one concept split into two nodes without a vault load.
       if (result.ok) {
@@ -229,6 +249,7 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
     slug,
     filePath,
     changed: true,
+    mtime: statSync(filePath).mtimeMs,
     // Say when this write gave identity (`uid:`) to a hand-authored node, so a person
     // knows why it appeared.
     ...(mintedUid

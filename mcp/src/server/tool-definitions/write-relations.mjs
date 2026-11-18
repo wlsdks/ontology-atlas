@@ -19,8 +19,8 @@ export const ADD_RELATION_TOOL = {
     'frontmatter graph key (domains / capabilities / elements / dependencies / relates / contains / describes); ' +
     '`domain` sets the source node\'s inline parent domain. The relation type picks which key receives the entry. ' +
     'A new `depends_on` relation requires a nonblank `why`; an already-existing edge remains an idempotent read even if legacy data has no rationale. **R11**: optional ' +
-    '`expected_mtime` — pass the source-side `mtime` from a prior get_concept ' +
-    'so concurrent external edits throw VaultConflictError. ' +
+    '`expected_mtime` — pass the source-side `mtime` from a prior get_concept or from this tool\'s last result ' +
+    'so concurrent external edits throw VaultConflictError. `contains` between kinds a typed key fits (project→domain, project/domain→capability, project/domain/capability→element) is written as that typed key and the result says so in `notice`. ' +
     'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields in `structuredContent`, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. ' +
     'Changed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately see graph cleanup / relation suggestions after the edge lands. ' +
     '**For multiple already-approved semantic edges use `add_relations({relations: [...]})` (batch, idempotent, max 50). `infer_imports.moduleEdges` require exact-evidence review, a semantic rationale, and human approval first.**',
@@ -59,6 +59,8 @@ export const ADD_RELATION_TOOL = {
       key: { type: 'string' },
       changed: { type: 'boolean' },
       alreadyExists: { type: 'boolean' },
+      mtime: { type: 'number', minimum: 0 },
+      notice: { type: 'string' },
       postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
     },
     required: ['ok', 'from', 'to', 'type'],
@@ -73,7 +75,7 @@ export const ADD_RELATIONS_TOOL = {
     'Use after `analyze_repo_structure` or another review flow when the agent has K semantic edges accepted by the user — replaces K×`add_relation` round-trips. Inferred module edges are not accepted merely because imports exist; review exact evidence and include the required nonblank `why` for every new `depends_on`. ' +
     'Each row is processed independently and idempotently: existing edges return `{ok: true, alreadyExists: true}`; ' +
     'missing source/target slugs / unknown type / non-object row shape / unknown row fields surface as `{ok: false, error}` with a `relations[n]` row label and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and `Received fields: ...`. ' +
-    '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
+    '`relations[]` order in the response matches the input; `mtimes` maps every changed source slug to its mtime after the last row, ready as the next `expected_mtime`. Cap = 50 per call. ' +
     'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
     'Tip: avoid `expected_mtime` in batch when multiple rows share the same `from` slug — ' +
     'the first row mutates that file so the second would see a stale mtime. Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
@@ -119,6 +121,8 @@ export const ADD_RELATIONS_TOOL = {
             key: { type: 'string' },
             changed: { type: 'boolean' },
             alreadyExists: { type: 'boolean' },
+            mtime: { type: 'number', minimum: 0 },
+            notice: { type: 'string' },
             error: { type: 'string' },
             errorCode: { type: 'string' },
             valueName: { type: 'string' },
@@ -151,6 +155,7 @@ export const ADD_RELATIONS_TOOL = {
           additionalProperties: false,
         },
       },
+      mtimes: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
       postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
     },
     required: ['relations'],
