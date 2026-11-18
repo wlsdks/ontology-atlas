@@ -36,8 +36,7 @@ export type CelebrationMotion = (typeof CELEBRATION_MOTIONS)[number];
 export const ASK_ROW_FRAMES = {
   'await-permission': 24,
   uncertain: 24,
-  'review-proposal': 24,
-  'hat-tip': 32,
+  'tail-wag': 24,
   stop: 24,
 } as const;
 export type AskMotion = keyof typeof ASK_ROW_FRAMES;

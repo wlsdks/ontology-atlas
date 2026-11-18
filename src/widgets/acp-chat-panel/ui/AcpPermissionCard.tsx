@@ -208,14 +208,12 @@ export function AcpPermissionCard({
   const scope = permissionScope(request.options);
   const locality = permissionLocality(vaultPath ?? null, request.filePath ?? null);
   const askMotion: AskMotion = answerInReach === 'allow'
-    ? 'hat-tip'
+    ? 'tail-wag'
     : answerInReach === 'reject'
       ? 'stop'
-      : ontologyWrite
-        ? 'review-proposal'
-        : locality === 'elsewhere'
-          ? 'uncertain'
-          : 'await-permission';
+      : locality === 'elsewhere'
+        ? 'uncertain'
+        : 'await-permission';
 
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
@@ -399,7 +397,7 @@ export function AcpPermissionCard({
             ? 'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] [@media(max-width:480px)]:overflow-y-auto [@media(max-height:520px)]:overflow-y-auto'
             : locality !== 'elsewhere'
               ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]'
-              : 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]',
+              : 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-elevated)] bg-[image:linear-gradient(var(--color-amber-source-a08),var(--color-amber-source-a08))] shadow-[var(--shadow-elevation-2)]',
         )}
       >
         <header className={cn('grid shrink-0 gap-2', !taskBound && 'justify-items-center text-center')}>
@@ -707,7 +705,7 @@ export function AcpPermissionCard({
               <p
                 data-testid="acp-permission-intent"
                 data-intent={intent}
-                className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+                className="text-label leading-label text-[color:var(--color-text-primary)]"
               >
                 {t(`intent.${intent}`)}
               </p>

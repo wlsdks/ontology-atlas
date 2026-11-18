@@ -9,7 +9,8 @@ import { ASK_ROW_FRAMES, type AskMotion } from '@/shared/ui/marks/moru-rows';
 
 /**
  * Moru above a permission ask. A new clip fades in over the one it replaces, which keeps playing
- * until it is gone, so a change of clip never cuts a gesture short on screen.
+ * until it is gone, so a change of clip never cuts a gesture short on screen. He leaves at the
+ * window height where the slot halves the card, so the path keeps its room.
  */
 export function AskMoru({ motion }: { motion: AskMotion }) {
   const reducedMotion = usePrefersReducedMotion();
@@ -22,7 +23,7 @@ export function AskMoru({ motion }: { motion: AskMotion }) {
   }, []);
 
   return (
-    <span data-testid="acp-permission-moru" className="inline-grid">
+    <span data-testid="acp-permission-moru" className="inline-grid [@media(max-height:800px)]:hidden">
       {(reducedMotion ? [motion] : drawn).map((clip) => (
         <span
           key={clip}
