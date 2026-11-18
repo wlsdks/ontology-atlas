@@ -51,7 +51,7 @@ const RS_IMPL = /^impl(?:<[^>]*>)?\s+(?:[\w:]+\s+for\s+)?([A-Za-z_]\w*)/;
 const JS_KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'constructor']);
 
 /** `{ owner, name }` of the function the line at `index` is inside, or null. */
-export function enclosingDeclaration(lines, index, language) {
+function enclosingDeclaration(lines, index, language) {
   if (language === 'go') {
     for (let cursor = index; cursor >= 0; cursor -= 1) {
       const match = GO_FUNC.exec(lines[cursor]);
