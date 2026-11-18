@@ -6,4 +6,4 @@ description: Build an initial Atlas ontology or explicitly rebuild one from repo
 # ontology-bootstrap
 
 Follow the [shared workflow](workflow.md) at the requested or routed scope.
-Read supporting references only for the current phase.
+Read the meaning-extraction guide when classifying or relating a node.

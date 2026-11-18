@@ -200,7 +200,7 @@ the existing authority thresholds, with sourced counter-boundaries and explicit
 uncertainty. Its conditions and effects belong in the candidate body so they
 can be independently reviewed. Unsupported assignments remain in the external
 construction report; a lower confidence score never substitutes for evidence. The
-[source-first workflow](../../.agents/skills/ontology-bootstrap/guides/meaning-extraction.md#source-first-hypothesis-workflow)
+[bootstrap workflow](../../.agents/skills/ontology-bootstrap/workflow.md)
 is an investigation method, not a measured general reconstruction guarantee.
 The mirrored bootstrap skill also provides a deterministic
 scratch helper for those receipt stages. Agents still decide every meaning,

@@ -81,8 +81,8 @@ The parallel receipts are scratch measurement evidence, not a new public MCP
 schema or an authenticated identity proof. If the two lanes cannot be isolated,
 run them serially and report that timing honestly; never count overlapping work
 that shared source or answers as a source-hidden pass. A serial run cannot earn
-the helper's overlap receipt; use the bootstrap manual protocol or defer that
-helper result. Do not repeatedly retry `join` with unchanged serial timestamps.
+the helper's overlap receipt; defer that helper result. Do not repeatedly
+retry `join` with unchanged serial timestamps.
 When the bootstrap skill's qualification helper is available, record each
 helper stage separately and require the `join` receipt to prove parallel overlap;
 helper runtime does not replace actor isolation, source hiding, or the four
