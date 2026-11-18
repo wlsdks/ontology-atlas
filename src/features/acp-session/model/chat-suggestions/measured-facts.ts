@@ -36,21 +36,23 @@ export function capabilitiesWithoutDependency(docs: readonly FactDoc[]): string[
 
 const CODE_EXTENSION = /\.(m?[jt]sx?|py|rb|go|rs|java|kt|swift|c|cc|cpp|h|hpp|css|scss|json|ya?ml|toml|sh)$/i;
 const CLASS_SUFFIX = /[a-z0-9](Service|Manager|Controller|Handler|Utils?)$/;
-const CAMEL_CASE = /^[a-z]+[0-9]*(?:[A-Z][a-z0-9]+)+$/;
+const CAMEL_CASE = /^[a-z]{2,}[0-9]*(?:[A-Z][a-z0-9]+)+$/;
 const SNAKE_CASE = /[A-Za-z0-9]_[A-Za-z0-9]/;
+/** Words people write that only look like code: `CI/CD`, `I/O`, `Node.js`. */
+const ACRONYM_PAIR = /^[A-Z0-9&]+(?:\/[A-Z0-9&]+)+$/;
+const DOTTED_PRODUCT = /^[A-Z][A-Za-z]*\.js$/;
 
 /**
- * A title a teammate would not say aloud: a path (the MCP `path-shaped-title` rule), a file name, or a
- * word in camelCase, snake_case or with a class suffix joined on.
+ * A title a teammate would not say aloud: one word that is a path (the MCP `path-shaped-title`
+ * rule), a file name, or a word in camelCase, snake_case or with a class suffix joined on. A title
+ * with a space is a phrase, and a phrase is not code.
  */
 export function readsLikeCode(title: string): boolean {
-  const trimmed = title.trim();
-  if (!trimmed) return false;
-  if (!/\s/.test(trimmed) && (/[/\\]/.test(trimmed) || CODE_EXTENSION.test(trimmed))) return true;
-  return trimmed.split(/\s+/).some((word) => {
-    const bare = word.replace(/^[("'`]+|[)"'`,.:;]+$/g, '');
-    return CLASS_SUFFIX.test(bare) || CAMEL_CASE.test(bare) || SNAKE_CASE.test(bare);
-  });
+  const word = title.trim();
+  if (!word || /\s/.test(word)) return false;
+  if (ACRONYM_PAIR.test(word) || DOTTED_PRODUCT.test(word)) return false;
+  if (/[/\\]/.test(word) || CODE_EXTENSION.test(word)) return true;
+  return CLASS_SUFFIX.test(word) || CAMEL_CASE.test(word) || SNAKE_CASE.test(word);
 }
 
 /** Domains, capabilities and elements whose `title` reads like code. */

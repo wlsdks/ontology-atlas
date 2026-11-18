@@ -24,8 +24,10 @@ type SuggestionKind =
   | 'update'
   /** Read-only review of the whole map, always last. */
   | 'check'
-  /** Not a choice: the quiet line shown when nothing measured is left. */
+  /** Not a choice: the quiet line shown when every fact was measured and none is left. */
   | 'nothingLeft'
+  /** Not a choice: nothing counted, while one fact (changed source) could not be measured. */
+  | 'nothingCounted'
   /** A concept is picked: explain it from its own record and relations. */
   | 'explainSubject'
   /** A concept is picked: name what a change to it would reach. */
@@ -56,23 +58,45 @@ export interface SuggestionInput {
  */
 const STARTER_NODE_CEILING = 5;
 
-export function isPressableSuggestion(suggestion: ChatSuggestion): boolean {
-  return suggestion.kind !== 'nothingLeft';
+/**
+ * The only shape a slug may have to be named in a request sent without the person reading it: a flat
+ * kind folder or root name in lower-case words. Frontmatter is the folder's text, so anything else
+ * (a sentence, a quote, a newline) is counted but never named.
+ */
+const SAFE_SLUG = /^(?:(?:domains|capabilities|elements|documents)\/)?[a-z0-9][a-z0-9-]{0,63}$/;
+
+export function isSafeSlug(slug: unknown): slug is string {
+  return typeof slug === 'string' && SAFE_SLUG.test(slug);
 }
 
-/** Asks about one picked concept; the folder-wide list returns when nothing is picked. */
+export function isPressableSuggestion(suggestion: ChatSuggestion): boolean {
+  return suggestion.kind !== 'nothingLeft' && suggestion.kind !== 'nothingCounted';
+}
+
+/**
+ * Whether a press may send the request at once. A picked-concept row sends only its validated slug;
+ * one whose slug fails the shape fills the message box instead, so the person reads it first.
+ */
+export function isSendableSuggestion(suggestion: ChatSuggestion): boolean {
+  if (suggestion.kind === 'explainSubject' || suggestion.kind === 'subjectImpact') {
+    return isSafeSlug(suggestion.params.slug);
+  }
+  return true;
+}
+
+/** Asks about one picked concept; the label shows its name, the request names only its slug. */
 export function subjectSuggestions(subject: { slug: string; label: string }): ChatSuggestion[] {
-  const params = { slug: subject.slug, subject: subject.label };
+  const params = { slug: subject.slug.replace(/^ontology\//, ''), subject: subject.label };
   return [
     { kind: 'explainSubject', params },
     { kind: 'subjectImpact', params },
   ];
 }
 
-function slugsParams(slugs: readonly string[]): { count: number; slugs: string; rest: number } {
-  const unique = [...new Set(slugs)].sort();
-  const named = unique.slice(0, NAMED_SLUG_LIMIT);
-  return { count: unique.length, slugs: named.join(', '), rest: unique.length - named.length };
+function slugsParams(slugs: readonly string[]): { count: number; named: number; slugs: string; rest: number } {
+  const unique = [...new Set(slugs.map((slug) => slug.replace(/^ontology\//, '')))].sort();
+  const named = unique.filter(isSafeSlug).slice(0, NAMED_SLUG_LIMIT);
+  return { count: unique.length, named: named.length, slugs: named.join(', '), rest: unique.length - named.length };
 }
 
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
@@ -102,7 +126,9 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
     if (slugs.length > 0) repairs.push({ kind, params: slugsParams(slugs) });
   }
 
-  if (repairs.length === 0) return [{ kind: 'nothingLeft', params: {} }];
+  if (repairs.length === 0) {
+    return [{ kind: input.changedSource === null ? 'nothingCounted' : 'nothingLeft', params: {} }];
+  }
   const check: ChatSuggestion = { kind: 'check', params: { count: input.nodeCount } };
   return [...repairs.slice(0, SUGGESTION_LIMIT), check];
 }

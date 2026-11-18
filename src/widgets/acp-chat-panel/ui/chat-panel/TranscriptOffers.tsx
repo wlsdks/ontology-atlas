@@ -24,6 +24,7 @@ interface TranscriptOffersProps {
   canSend: boolean;
   onChooseSuggestion: (suggestion: ChatSuggestion) => void;
   onDoneWithSuggestions: () => void;
+  onEscapeSuggestions: () => void;
 }
 
 export function TranscriptOffers({
@@ -36,6 +37,7 @@ export function TranscriptOffers({
   canSend,
   onChooseSuggestion,
   onDoneWithSuggestions,
+  onEscapeSuggestions,
 }: TranscriptOffersProps) {
   const { presentationTrace, presentationBlocked, presentationVisible, heldPresentationTrace, openPresentation } = presentation;
   return (
@@ -110,6 +112,7 @@ export function TranscriptOffers({
           canSend={canSend}
           onSelect={onChooseSuggestion}
           onDone={onDoneWithSuggestions}
+          onEscape={onEscapeSuggestions}
         />
       </Surface>
     </>

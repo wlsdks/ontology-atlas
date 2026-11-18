@@ -83,7 +83,7 @@ export function ConnectStoppedState({ t, onConnectAgain }: { t: ChatT; onConnect
   );
 }
 
-export function EmptyState({ t, seatedRequestWaiting, suggestions, canSend, providerNote, onChoose, onDone }: {
+export function EmptyState({ t, seatedRequestWaiting, suggestions, canSend, providerNote, onChoose, onDone, onEscape }: {
   t: ChatT;
   seatedRequestWaiting: boolean;
   suggestions: readonly ChatSuggestion[];
@@ -92,6 +92,7 @@ export function EmptyState({ t, seatedRequestWaiting, suggestions, canSend, prov
   providerNote: string;
   onChoose: (suggestion: ChatSuggestion) => void;
   onDone: () => void;
+  onEscape: () => void;
 }) {
   const showSteps = suggestions.length > 0 && !seatedRequestWaiting;
   return (
@@ -114,6 +115,7 @@ export function EmptyState({ t, seatedRequestWaiting, suggestions, canSend, prov
           canSend={canSend}
           onSelect={onChoose}
           onDone={onDone}
+          onEscape={onEscape}
         />
       ) : null}
       <p

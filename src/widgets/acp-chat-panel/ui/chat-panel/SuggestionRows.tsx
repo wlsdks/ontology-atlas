@@ -29,6 +29,7 @@ const KIND_GLYPH: Record<ChatSuggestion['kind'], LucideIcon> = {
   update: RefreshCw,
   check: ListChecks,
   nothingLeft: ListChecks,
+  nothingCounted: ListChecks,
   explainSubject: BookOpen,
   subjectImpact: Waypoints,
 };
@@ -83,6 +84,8 @@ interface SuggestionRowsProps {
   canSend: boolean;
   onSelect: (suggestion: ChatSuggestion) => void;
   onDone: () => void;
+  /** Escape from a choice hands focus back to the message box. */
+  onEscape: () => void;
 }
 
 /**
@@ -98,6 +101,7 @@ export function SuggestionRows({
   canSend,
   onSelect,
   onDone,
+  onEscape,
 }: SuggestionRowsProps) {
   const headingId = useId();
   const choices = items.filter(isPressableSuggestion);
@@ -114,7 +118,7 @@ export function SuggestionRows({
           data-testid="acp-chat-nothing-left"
           className={cn('text-label leading-label text-[color:var(--color-text-tertiary)]', centered && 'text-center')}
         >
-          {t('suggest.nothingLeft')}
+          {t(items[0]?.kind === 'nothingCounted' ? 'suggest.nothingCounted' : 'suggest.nothingLeft')}
         </p>
       </div>
     ) : null;
@@ -122,6 +126,12 @@ export function SuggestionRows({
 
   const enabled = (suggestion: ChatSuggestion) => canSend || suggestion.kind === 'connectSource';
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      onEscape();
+      return;
+    }
     const step = KEY_STEP[event.key];
     let next: number | null = null;
     if (step !== undefined) next = (tabStop + step + stopCount) % stopCount;

@@ -58,7 +58,7 @@ describe('next steps point at this folder even when passed through the real vaul
       const fact = factFor[row.kind];
       if (!fact) continue;
       expect(row.params.count, row.kind).toBe(new Set(fact).size);
-      for (const slug of String(row.params.slugs).split(', ')) {
+      for (const slug of String(row.params.slugs).split(', ').filter(Boolean)) {
         expect(known.has(slug), `${row.kind} names "${slug}", which is not in the vault`).toBe(true);
       }
     }
@@ -67,6 +67,6 @@ describe('next steps point at this folder even when passed through the real vaul
   it('a fact that really exists in our vault surfaces as a row', () => {
     const { out, facts } = nextStepsForRealVault();
     const hasWork = facts.islands.length > 0 || facts.withoutDependency.length > 0 || facts.codeShaped.length > 0;
-    expect(out.some((row) => row.kind === 'nothingLeft')).toBe(!hasWork);
+    expect(out.some((row) => row.kind === 'nothingCounted')).toBe(!hasWork);
   });
 });

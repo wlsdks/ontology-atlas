@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
+import { isSendableSuggestion, readAcpTrouble, useAcpSession, VAULT_MCP_SERVER_NAME, type ChatSuggestion } from '@/features/acp-session';
 import { MOTION } from '@/shared/motion';
 import { KeptPanelSeat } from './KeptPanelSeat';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
@@ -294,8 +294,15 @@ export function AcpChatPanelBody({
   }, [latestUserEventId, onPresentationVisibilityChange, send]);
   const chooseSuggestion = (suggestion: ChatSuggestion, allowAppAction: boolean) => {
     if (allowAppAction && onSuggestionAction?.(suggestion)) return;
+    const request = t(`suggest.${suggestion.kind}.prompt`, suggestion.params);
+    // A row whose slug fails the shape is read by the person before anything leaves.
+    if (!isSendableSuggestion(suggestion)) {
+      setDraft(request);
+      inputRef.current?.focus();
+      return;
+    }
     if (status !== 'ready') return;
-    sendAsPerson(t(`suggest.${suggestion.kind}.prompt`, suggestion.params));
+    sendAsPerson(request);
   };
   const nextSteps = nextStepsDismissed ? [] : suggestions;
   const postTurnNextSteps =
@@ -491,6 +498,7 @@ export function AcpChatPanelBody({
             providerNote={t('suggest.providerNote', { runtime: runtimeLabel })}
             onChoose={(suggestion) => chooseSuggestion(suggestion, true)}
             onDone={() => setNextStepsDismissed(true)}
+            onEscape={() => inputRef.current?.focus()}
           />
         ) : null}
         <TranscriptRows
@@ -517,6 +525,7 @@ export function AcpChatPanelBody({
           canSend={canSend}
           onChooseSuggestion={(suggestion) => chooseSuggestion(suggestion, false)}
           onDoneWithSuggestions={() => setNextStepsDismissed(true)}
+          onEscapeSuggestions={() => inputRef.current?.focus()}
         />
       </TranscriptPane>
 
