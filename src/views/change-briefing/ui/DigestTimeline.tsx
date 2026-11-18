@@ -16,7 +16,7 @@ const MINUTES_PER_DAY = 1440;
 /** Columns past this many label every seventh, so a month's numbers never collide. */
 const LABEL_EVERY_COLUMN = 7;
 
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+const FOCUS_RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 interface Mark {
   key: string;

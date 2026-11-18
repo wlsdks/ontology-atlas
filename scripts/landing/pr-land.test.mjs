@@ -526,10 +526,14 @@ function component(number, extra = {}) {
  *
  * - `ci(numbers, reruns)` decides a train's rollup from the components it carries.
  * - `conflicts` is the set of component numbers whose merge onto a train answers 409.
+ * - `ownCi(number, reruns)` decides a pull request's own rollup once it is marked ready.
  * - `mainDrift(trainIndex)` is the files `main` changed under the n-th train while its CI ran.
+ * - `mainMoves()` is the files `main` changed since a pull request's merge base, with no train.
+ * - `behindMain(sha)` says that head lacks today's `main`; any `mainMoves()` implies it for every head.
+ * - `onOwnCiRead(pr, reads)` may change a pull request while its own CI is awaited.
  * - `readOnly` makes every write throw, for `--plan`.
  */
-function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new Set(), mainDrift = () => [], lock = null, readOnly = false, history = [] } = {}) {
+function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = () => green(), onOwnCiRead = () => {}, conflicts = new Set(), mainDrift = () => [], mainMoves = () => [], behindMain = () => false, lock = null, readOnly = false, history = [] } = {}) {
   const calls = [];
   const events = [];
   let clock = Date.parse('2026-09-26T10:00:00Z');
@@ -566,6 +570,14 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
         train.polls += 1;
         // The first poll sees nothing yet; the next one sees the result.
         if (train.polls >= 2) train.rollup = ci(train.components, train.reruns);
+      }
+      if (!train && pr.ownCiPolls !== undefined && pr.state === 'OPEN') {
+        pr.ownCiPolls += 1;
+        onOwnCiRead(pr, pr.ownCiPolls);
+        // Its own run: in flight on the first read after ready, decided on the second.
+        if (pr.state === 'OPEN') pr.statusCheckRollup = pr.ownCiPolls >= 2
+          ? ownCi(number, pr.ownCiReruns ?? 0)
+          : REQUIRED_CONTEXTS.map((name) => ({ name, status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:01:00Z' }));
       }
       return view(pr);
     },
@@ -641,11 +653,25 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       return { ok: true, detail: '{"merged":true}' };
     }),
     markReady: write('markReady', (number) => {
-      pulls.get(number).isDraft = false;
+      const pr = pulls.get(number);
+      pr.isDraft = false;
+      if (!trains.has(number)) pr.ownCiPolls = 0;
       return true;
     }),
     markDraft: write('markDraft', () => true),
+    readRunAttempt: (runId) => {
+      const has = (rollup) => (rollup ?? []).some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`));
+      for (const train of trains.values()) if (has(train.rollup)) return 1 + train.reruns;
+      for (const pr of pulls.values()) if (!trains.has(pr.number) && has(pr.statusCheckRollup)) return 1 + (pr.ownCiReruns ?? 0);
+      return null;
+    },
     rerunFailed: write('rerunFailed', (runId) => {
+      for (const pr of pulls.values()) {
+        if (trains.has(pr.number) || !(pr.statusCheckRollup ?? []).some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`))) continue;
+        // Only the failed jobs go again; the pull request's own run is in flight until they end.
+        pr.ownCiReruns = (pr.ownCiReruns ?? 0) + 1;
+        pr.ownCiPolls = 0;
+      }
       for (const train of trains.values()) if (train.rollup?.some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`))) {
         // A rerun replaces the failed verdicts with runs in flight until the new verdict lands.
         train.reruns += 1;
@@ -673,14 +699,14 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
         // The drift under the open train cut from `from`: main's own sha, or a train head.
         const open = [...trains.values()].filter((t) => pulls.get(t.number).state === 'OPEN');
         const current = open.find((t) => t.base === from) ?? [...trains.values()].at(-1);
-        return current ? mainDrift(current.index) : [];
+        return current ? mainDrift(current.index) : mainMoves();
       }
       if (to.startsWith('head:')) return (branchTrain.get(to.slice('head:'.length)) ?? []).flatMap((n) => pulls.get(n).files);
       return [];
     },
     diffNameStatus: (base, sha) => (byHead(sha)?.files ?? []).map((path) => ({ status: 'M', path })),
     isContained: () => false,
-    isAncestor: () => true,
+    isAncestor: (ancestor, descendant) => ancestor !== 'main'.padEnd(40, '0') || !(behindMain(descendant) || mainMoves().length > 0),
     coAuthorLog: (base, sha) => `Co-authored-by: Author ${byHead(sha)?.number} <a${byHead(sha)?.number}@example.com>\nfeat: something\n`,
     trialMerge: (base, shas) => shas.map((sha) => ({ sha, state: 'pending', conflicts: conflicts.has(byHead(sha)?.number) ? ['src/shared.ts'] : [] })),
   };
@@ -890,17 +916,31 @@ describe('the conductor runs trains', () => {
     assert.deepEqual(world.pulls.get(3).labels, []);
   });
 
-  it('reruns a flaky failure once instead of ejecting, and ejects without the flag', () => {
+  it('reruns the failed jobs of a lone red train once instead of ejecting, flagged or not', () => {
     const flakyCi = (numbers, reruns) => (reruns === 0 ? red(['Playwright (chromium 2/3)'], 991) : green());
     const flaky = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
     assert.deepEqual(runConductor(flaky, { flaky: ['Playwright (chromium 2/3)'] }).landed, [7]);
     assert.deepEqual(called(flaky, 'rerunFailed').map(([, id]) => id), ['991']);
     assert.equal(called(flaky, 'openPr').length, 1, 'a rerun reuses the train, not a new CI run set');
 
-    const strict = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
-    assert.deepEqual(runConductor(strict).landed, []);
-    assert.equal(called(strict, 'rerunFailed').length, 0);
-    assert.ok(strict.pulls.get(7).comments.at(-1).body.startsWith(EJECTED_MARKER));
+    const unflagged = fakeWorld({ prs: [component(7)], queued: [7], ci: flakyCi });
+    assert.deepEqual(runConductor(unflagged).landed, [7]);
+    assert.equal(called(unflagged, 'rerunFailed').length, 1);
+
+    const real = fakeWorld({ prs: [component(7)], queued: [7], ci: () => red(['MCP'], 992) });
+    assert.deepEqual(runConductor(real).landed, []);
+    assert.equal(called(real, 'rerunFailed').length, 1, 'one rerun, then the author gets it back');
+    assert.ok(real.pulls.get(7).comments.at(-1).body.startsWith(EJECTED_MARKER));
+  });
+
+  it('settles a lone red train as red at once when GitHub refuses its rerun', () => {
+    const world = fakeWorld({ prs: [component(8)], queued: [8], ci: () => red(['MCP'], 993) });
+    let asked = 0;
+    world.deps.gh.rerunFailed = () => { asked += 1; return false; };
+    assert.deepEqual(runConductor(world).landed, []);
+    assert.equal(asked, 1);
+    assert.ok(world.out.some((line) => /train #\d+ is red and GitHub refused to rerun its failed jobs; settling it as red/.test(line)));
+    assert.ok(world.pulls.get(8).comments.at(-1).body.startsWith(EJECTED_MARKER));
   });
 
   it('rebuilds a green train when main moved into its files while CI ran', () => {
@@ -1067,13 +1107,313 @@ describe('the train size a conductor chooses', () => {
 describe('pnpm pr:land <n>, end to end against the fake', () => {
   const land = (world, argv) => runPrLand(argv, world.io, () => world.deps);
 
-  it('queues a draft, conducts when the lock is free, and exits 0 once it landed', () => {
-    const world = fakeWorld({ prs: [component(21)] });
+  it('queues a draft main moved into, conducts when the lock is free, and exits 0 once it landed', () => {
+    const world = fakeWorld({ prs: [component(21)], mainMoves: () => ['src/change-21.ts'] });
     assert.equal(land(world, ['21']), 0);
     assert.ok(world.out.some((line) => /FAIL ready-green/.test(line)), 'the fast-path verdict is printed rule by rule');
+    assert.ok(world.out.some((line) => /taking the train: contains-main, disjoint-from-main/.test(line)));
+    assert.equal(called(world, 'markReady').length, 0, 'a change the fast path cannot take spends no run of its own');
     assert.ok(world.out.some((line) => /PR #21 landed through a train/.test(line)));
     assert.equal(called(world, 'addLabel').length, 1);
     assert.equal(world.pulls.get(21).state, 'CLOSED');
+  });
+
+  it('marks a disjoint draft ready, waits for its own CI and merges it without a train', () => {
+    const world = fakeWorld({ prs: [component(26)] });
+    assert.equal(land(world, ['26']), 0);
+    assert.equal(called(world, 'markReady').length, 1);
+    const [merge] = called(world, 'mergePr');
+    assert.equal(merge[1], 26);
+    assert.equal(merge[2].sha, component(26).headRefOid, 'it merges the head its own CI measured');
+    assert.equal(merge[2].method, 'merge');
+    assert.equal(called(world, 'openPr').length, 0, 'no train ran');
+    assert.equal(called(world, 'addLabel').length, 0, 'it never joined the queue');
+    assert.equal(world.locks.has(LOCK_REF), false);
+    assert.ok(world.out.some((line) => /PR #26 merged on the fast path/.test(line)));
+  });
+
+  it('waits for the run already going on a ready pull request without asking for another', () => {
+    const running = REQUIRED_CONTEXTS.map((name) => ({ name, status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:01:00Z' }));
+    const world = fakeWorld({ prs: [component(27, { isDraft: false, statusCheckRollup: running, ownCiPolls: 0 })] });
+    assert.equal(land(world, ['27']), 0);
+    assert.equal(called(world, 'markReady').length, 0);
+    assert.equal(called(world, 'mergePr')[0][1], 27);
+  });
+
+  it('hands a red own run back to its author, unqueued and without a train', () => {
+    const world = fakeWorld({ prs: [component(28)], ownCi: () => red(['MCP'], 4242) });
+    assert.equal(land(world, ['28']), 1);
+    assert.equal(called(world, 'mergePr').length, 0);
+    assert.equal(called(world, 'addLabel').length, 0);
+    assert.equal(called(world, 'openPr').length, 0);
+    const text = world.out.join('\n');
+    assert.match(text, /ERROR PR #28 is red on its own CI, again after one rerun of the failed jobs; nothing was queued/);
+    assert.match(text, /ERROR {3}MCP FAILURE https:\/\/github.com\/wlsdks\/ontology-atlas\/actions\/runs\/4242/);
+  });
+
+  it('hands back a ready pull request already red after its rerun, without waiting', () => {
+    const world = fakeWorld({ prs: [component(29, { isDraft: false, statusCheckRollup: red(['Unit · Contract']) })] });
+    world.deps.gh.readRunAttempt = () => 2;
+    assert.equal(land(world, ['29']), 1);
+    assert.equal(world.events.filter((e) => e === 'sleep').length, 0);
+    assert.equal(called(world, 'addLabel').length, 0);
+  });
+
+  it('sends a red own run to the train when every failed context is named --flaky', () => {
+    const flaky = 'Playwright (chromium 1/3)';
+    const world = fakeWorld({ prs: [component(30)], ownCi: () => red([flaky]) });
+    assert.equal(land(world, ['30', `--flaky=${flaky}`]), 0);
+    assert.ok(world.out.some((line) => /red only on Playwright \(chromium 1\/3\), named as tolerated; the train reruns it/.test(line)));
+    assert.equal(called(world, 'openPr').length, 1);
+    assert.ok(world.out.some((line) => /PR #30 landed through a train/.test(line)));
+  });
+
+  it('checks main again under the fast lock and takes the train when it moved in between', () => {
+    let moved = false;
+    const world = fakeWorld({ prs: [component(36)], mainMoves: () => (moved ? ['src/change-36.ts'] : []) });
+    const takeLock = world.deps.gh.takeLock;
+    world.deps.gh.takeLock = (ref, ...rest) => {
+      if (ref === FAST_LOCK_REF) moved = true;
+      return takeLock(ref, ...rest);
+    };
+    assert.equal(land(world, ['36']), 0);
+    assert.ok(world.out.some((line) => /now FAIL disjoint-from-main: main also changed src\/change-36.ts/.test(line)));
+    assert.notEqual(called(world, 'mergePr')[0][1], 36, 'the train merged, not the pull request directly');
+  });
+
+  it('never merges directly a head behind main, even green and disjoint, and spends no run of its own', () => {
+    const behind = (sha) => sha === component(37).headRefOid || sha === component(39).headRefOid;
+    const world = fakeWorld({ prs: [component(37, { isDraft: false, statusCheckRollup: green() }), component(39)], behindMain: behind });
+    assert.equal(land(world, ['37']), 0);
+    assert.ok(world.out.some((line) => /FAIL contains-main: its head is behind origin\/main/.test(line)));
+    assert.ok(called(world, 'mergePr').every(([, number]) => number !== 37), 'the train merged it, on the tree that lands');
+    assert.ok(world.out.some((line) => /PR #37 landed through a train/.test(line)));
+    assert.equal(land(world, ['39']), 0);
+    assert.equal(called(world, 'markReady').length, 0, 'a draft behind main goes to the train without its own run');
+  });
+
+  it('takes the train when main moves on while its own CI runs, even into no file of its own', () => {
+    let ready = false;
+    const world = fakeWorld({ prs: [component(40)], behindMain: () => ready });
+    const markReady = world.deps.gh.markReady;
+    world.deps.gh.markReady = (number) => {
+      ready = true;
+      return markReady(number);
+    };
+    assert.equal(land(world, ['40']), 0);
+    assert.ok(world.out.some((line) => /own CI is green, but it cannot merge directly/.test(line)));
+    assert.ok(called(world, 'mergePr').every(([, number]) => number !== 40));
+  });
+
+  it('leaves a pull request already queued to the train instead of running its own CI', () => {
+    const world = fakeWorld({ prs: [component(43)], queued: [43] });
+    assert.equal(land(world, ['43']), 0);
+    assert.ok(world.out.some((line) => /taking the train: it is already queued for a train/.test(line)));
+    assert.equal(called(world, 'markReady').length, 0);
+    assert.ok(world.out.some((line) => /PR #43 landed through a train/.test(line)));
+  });
+
+  it('conducts a queue nobody conducts instead of leaving it behind a direct merge', () => {
+    const world = fakeWorld({ prs: [component(41), component(42)] });
+    assert.equal(land(world, ['41', '--no-wait']), 0);
+    assert.equal(land(world, ['42']), 0);
+    assert.ok(world.out.some((line) => /taking the train: other pull requests are queued and nobody conducts them/.test(line)));
+    assert.equal(world.pulls.get(41).state, 'CLOSED', '#41 landed through the train #42 conducted');
+    assert.equal(world.pulls.get(41).labels.length, 0);
+
+    const green42 = fakeWorld({ prs: [component(41), component(42, { isDraft: false, statusCheckRollup: green() })] });
+    assert.equal(land(green42, ['41', '--no-wait']), 0);
+    assert.equal(land(green42, ['42']), 0);
+    assert.equal(called(green42, 'mergePr')[0][1], 42, '#42 merged directly');
+    assert.ok(green42.out.some((line) => /conducting them before leaving/.test(line)));
+    assert.equal(green42.pulls.get(41).state, 'CLOSED', 'and #41 did not stay queued with nobody conducting');
+  });
+
+  describe('a red own run gets one rerun of its failed jobs', () => {
+    const flaky = 'Playwright (chromium 2/3)';
+
+    it('reruns only the failed jobs once and merges when they pass on the same head', () => {
+      const world = fakeWorld({ prs: [component(70)], ownCi: (n, reruns) => (reruns === 0 ? red([flaky], 501) : green()) });
+      assert.equal(land(world, ['70']), 0);
+      assert.deepEqual(called(world, 'rerunFailed').map(([, id]) => id), ['501']);
+      assert.ok(world.out.some((line) => /PR #70 is red on Playwright \(chromium 2\/3\) at 70ccccccc; re-running only the failed jobs of run 501 once on the same head/.test(line)));
+      assert.equal(called(world, 'mergePr')[0][1], 70);
+    });
+
+    it('hands it back after the one rerun fails too, never rerunning twice', () => {
+      const world = fakeWorld({ prs: [component(71)], ownCi: () => red(['MCP'], 502) });
+      assert.equal(land(world, ['71']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+      assert.ok(world.out.some((line) => /ERROR PR #71 is red on its own CI, again after one rerun of the failed jobs; nothing was queued/.test(line)));
+    });
+
+    it('reruns a pull request that is already red when the lander arrives, then waits for it', () => {
+      const world = fakeWorld({
+        prs: [component(72, { isDraft: false, statusCheckRollup: red([flaky], 503) })],
+        ownCi: (n, reruns) => (reruns === 0 ? red([flaky], 503) : green()),
+      });
+      assert.equal(land(world, ['72']), 0);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+      assert.equal(called(world, 'markReady').length, 0);
+      assert.equal(called(world, 'mergePr')[0][1], 72);
+    });
+
+    it('hands it back at once, naming the red contexts, when GitHub refuses the rerun', () => {
+      const world = fakeWorld({ prs: [component(74)], ownCi: () => red(['MCP'], 505) });
+      let asked = 0;
+      world.deps.gh.rerunFailed = () => { asked += 1; return false; };
+      assert.equal(land(world, ['74']), 1);
+      assert.equal(asked, 1, 'a refused rerun is not asked for again on every read');
+      const text = world.out.join('\n');
+      assert.match(text, /ERROR PR #74 is red on its own CI and was not rerun \(GitHub refused to rerun run 505\); nothing was queued/);
+      assert.match(text, /ERROR {3}MCP FAILURE https:\/\/github.com\/wlsdks\/ontology-atlas\/actions\/runs\/505/);
+      assert.ok(world.events.filter((e) => e === 'sleep').length <= 2);
+    });
+
+    it('asks for the rerun only once every job of that run has finished', () => {
+      let reads = 0;
+      const going = { name: 'Playwright (chromium 5/5)', status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:00:00Z', detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/506/job/9' };
+      const world = fakeWorld({
+        prs: [component(75)],
+        ownCi: (n, reruns) => {
+          reads += 1;
+          if (reruns > 0) return green();
+          return reads < 3 ? [...red(['MCP'], 506), going] : red(['MCP'], 506);
+        },
+      });
+      let askedWhileGoing = false;
+      const rerun = world.deps.gh.rerunFailed;
+      world.deps.gh.rerunFailed = (id) => {
+        askedWhileGoing ||= world.pulls.get(75).statusCheckRollup.some((r) => r.status === 'IN_PROGRESS');
+        return rerun(id);
+      };
+      assert.equal(land(world, ['75']), 0);
+      assert.equal(askedWhileGoing, false);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+    });
+
+    it('never reruns a run that was only cancelled, and stops when nothing replaces it', () => {
+      const cancelled = () => REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'CANCELLED', startedAt: '2026-09-26T10:00:00Z', detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/509/job/1' }));
+      const world = fakeWorld({ prs: [component(76)], ownCi: cancelled });
+      assert.equal(land(world, ['76']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 0);
+      assert.ok(world.out.some((line) => /stopped waiting for its own CI: its run on 76ccccccc was cancelled and nothing replaced it/.test(line)));
+    });
+
+    it('asks once per head even when the attempt still reads as the first', () => {
+      const world = fakeWorld({ prs: [component(77)], ownCi: () => red(['MCP'], 510) });
+      world.deps.gh.readRunAttempt = () => 1;
+      assert.equal(land(world, ['77']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 1);
+      assert.ok(world.out.some((line) => /again after one rerun of the failed jobs/.test(line)));
+    });
+
+    it('reruns nothing when any of the red runs was rerun already', () => {
+      const rollup = REQUIRED_CONTEXTS.map((name) => ({
+        name,
+        status: 'COMPLETED',
+        conclusion: name === 'MCP' || name === 'Unit · Contract' ? 'FAILURE' : 'SUCCESS',
+        startedAt: '2026-09-26T10:00:00Z',
+        detailsUrl: `https://github.com/wlsdks/ontology-atlas/actions/runs/${name === 'MCP' ? 507 : 508}/job/1`,
+      }));
+      const world = fakeWorld({ prs: [component(78, { isDraft: false, statusCheckRollup: rollup })] });
+      world.deps.gh.readRunAttempt = (id) => (String(id) === '507' ? 2 : 1);
+      assert.equal(land(world, ['78']), 1);
+      assert.equal(called(world, 'rerunFailed').length, 0);
+      assert.ok(world.out.some((line) => /was not rerun \(its run was rerun already\)/.test(line)));
+    });
+
+    it('hands a red pull request back with --no-wait instead of queueing it', () => {
+      const world = fakeWorld({ prs: [component(79, { isDraft: false, statusCheckRollup: red(['MCP']) })] });
+      assert.equal(land(world, ['79', '--no-wait']), 1);
+      assert.equal(called(world, 'addLabel').length, 0);
+      assert.equal(called(world, 'rerunFailed').length, 0);
+    });
+
+    it('does not rerun a run someone already reran, or one whose attempt it cannot read', () => {
+      for (const attempt of [2, null]) {
+        const world = fakeWorld({ prs: [component(73, { isDraft: false, statusCheckRollup: red([flaky], 504) })] });
+        world.deps.gh.readRunAttempt = () => attempt;
+        assert.equal(land(world, ['73']), 1, String(attempt));
+        assert.equal(called(world, 'rerunFailed').length, 0, String(attempt));
+      }
+    });
+  });
+
+  it('reports a direct merge even when the queue behind it cannot be read', () => {
+    const world = fakeWorld({ prs: [component(80, { isDraft: false, statusCheckRollup: green() })] });
+    world.deps.gh.listQueue = () => { throw new Error('gh api graphql failed: rate limit exceeded'); };
+    assert.equal(land(world, ['80']), 0);
+    const merged = world.out.findIndex((line) => /PR #80 is merged/.test(line));
+    const warned = world.out.findIndex((line) => /ERROR warning: PR #80 is merged, but the queue behind it could not be conducted \(.*rate limit exceeded\)/.test(line));
+    assert.ok(merged >= 0 && warned > merged, 'the merge is reported first, the queue failure only warns');
+  });
+
+  describe('waiting for its own CI', () => {
+    const running = () => REQUIRED_CONTEXTS.map((name) => ({ name, status: 'IN_PROGRESS', conclusion: '', startedAt: '2026-09-26T10:01:00Z' }));
+    const sleeps = (world) => world.events.filter((e) => e === 'sleep').length;
+
+    it('stops, unqueued, when GitHub refuses to mark the draft ready', () => {
+      const world = fakeWorld({ prs: [component(60)] });
+      world.deps.gh.markReady = () => false;
+      assert.equal(land(world, ['60']), 1);
+      assert.ok(world.out.some((line) => /ERROR PR #60 stopped waiting for its own CI: GitHub refused to mark it ready/.test(line)));
+      assert.equal(sleeps(world), 0);
+      assert.equal(called(world, 'addLabel').length, 0);
+    });
+
+    it('stops at once, unqueued, when the pull request is closed meanwhile', () => {
+      const world = fakeWorld({ prs: [component(61)], onOwnCiRead: (pr) => { pr.state = 'CLOSED'; } });
+      assert.equal(land(world, ['61']), 1);
+      assert.ok(world.out.some((line) => /ERROR PR #61 stopped waiting for its own CI: it is closed now; nothing was queued/.test(line)));
+      assert.equal(sleeps(world), 1);
+      assert.equal(called(world, 'addLabel').length, 0, 'a stopped wait never falls through to the queue');
+    });
+
+    it('stops when the pull request is turned back into a draft, and merges nothing', () => {
+      const world = fakeWorld({ prs: [component(62)], onOwnCiRead: (pr) => { pr.isDraft = true; } });
+      assert.equal(land(world, ['62']), 1);
+      assert.ok(world.out.some((line) => /it was turned back into a draft while its CI ran/.test(line)));
+      assert.equal(called(world, 'mergePr').length, 0);
+    });
+
+    it('asks GitHub again only once when no run ever reports', () => {
+      const world = fakeWorld({ prs: [component(63)], ownCi: () => [] });
+      assert.equal(land(world, ['63', '--timeout-minutes=10']), 1);
+      assert.equal(called(world, 'markDraft').length, 1);
+      assert.ok(world.out.some((line) => /gave no verdict within 10 minutes/.test(line)));
+    });
+
+    it('gives up at the deadline without merging', () => {
+      const world = fakeWorld({ prs: [component(64)], ownCi: running });
+      assert.equal(land(world, ['64', '--timeout-minutes=2']), 1);
+      assert.ok(world.out.some((line) => /ERROR PR #64 stopped waiting for its own CI: its CI gave no verdict within 2 minutes/.test(line)));
+      assert.equal(called(world, 'mergePr').length, 0);
+      assert.equal(called(world, 'addLabel').length, 0);
+    });
+
+    it('follows a push made while it waits and merges the new head', () => {
+      const moved = 'f'.repeat(40);
+      const world = fakeWorld({ prs: [component(65)], onOwnCiRead: (pr, reads) => { if (reads === 1) pr.headRefOid = moved; } });
+      assert.equal(land(world, ['65']), 0);
+      assert.ok(world.out.some((line) => /PR #65's head moved to fffffffff; waiting for that push's CI/.test(line)));
+      assert.equal(called(world, 'mergePr')[0][2].sha, moved);
+    });
+  });
+
+  it('takes the train when main moves into its files while its own CI runs', () => {
+    let ready = false;
+    const world = fakeWorld({ prs: [component(34)], mainMoves: () => (ready ? ['src/change-34.ts'] : []) });
+    const markReady = world.deps.gh.markReady;
+    world.deps.gh.markReady = (number) => {
+      ready = true;
+      return markReady(number);
+    };
+    assert.equal(land(world, ['34']), 0);
+    assert.ok(world.out.some((line) => /FAIL disjoint-from-main: main also changed src\/change-34.ts/.test(line)));
+    assert.ok(world.out.some((line) => /own CI is green, but it cannot merge directly; the train runs it on today's main/.test(line)));
+    assert.equal(called(world, 'mergePr').length, 1, 'only the train merged');
+    assert.notEqual(called(world, 'mergePr')[0][1], 34);
   });
 
   it('merges a green, disjoint pull request on the fast path without queueing it', () => {
@@ -1107,6 +1447,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.equal(land(world, ['24', '--no-wait']), 0);
     assert.ok(world.out.some((line) => /pnpm pr:land --conduct/.test(line)));
     assert.equal(called(world, 'openPr').length, 0);
+    assert.equal(called(world, 'markReady').length, 0, '--no-wait queues and leaves; it starts no run it will not wait for');
   });
 
   it('exits 1 when its pull request is ejected', () => {
@@ -1117,18 +1458,20 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
 
   it('plans without writing anything to GitHub', () => {
     const world = fakeWorld({
-      prs: [component(31), component(32, { isDraft: false, statusCheckRollup: green() }), component(33)],
+      prs: [component(31), component(32, { isDraft: false, statusCheckRollup: green() }), component(33), component(35, { files: ['src/moved.ts'] })],
       queued: [33],
-      conflicts: new Set([31]),
+      conflicts: new Set([35]),
+      behindMain: (sha) => sha === component(35).headRefOid,
       readOnly: true,
     });
-    assert.equal(land(world, ['--plan', '31', '32']), 0);
+    assert.equal(land(world, ['--plan', '31', '32', '35']), 0);
     const text = world.out.join('\n');
     assert.match(text, /PR #31: fast path not eligible/);
-    assert.match(text, /PR #31: would be queued/);
+    assert.match(text, /PR #31: would mark it ready and wait for its own CI, then merge directly if main has not moved/);
     assert.match(text, /PR #32: would merge now/);
-    assert.match(text, /next train \(2 of 2 queued\): chore\(merge\): #33 #31/);
-    assert.match(text, /#31 feat\/change-31@31ccccccc: would conflict and be ejected/);
+    assert.match(text, /PR #35: would be queued/);
+    assert.match(text, /next train \(2 of 2 queued\): chore\(merge\): #33 #35/);
+    assert.match(text, /#35 feat\/change-35@35ccccccc: would conflict and be ejected/);
     assert.match(text, /\| feat: change 33 \(#33\)  \(Author 33\)/, 'the plan shows the commit main would get for each pull request');
     assert.match(text, /dry run: nothing was written to GitHub/);
     assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
@@ -1222,12 +1565,15 @@ describe('train history', () => {
 
 describe('scheduled checks on main', () => {
   const now = Date.parse('2026-10-09T12:00:00Z');
-  const [browser, acp] = SCHEDULED_CHECKS;
+  const [browser, acp, postMerge] = SCHEDULED_CHECKS;
   const CASES = [
     ['a green run from today says nothing', browser, { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
     ['a red run names its day and link', browser, { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /full browser run on main failed on 2026-10-08 \(https:\/\/x\/1\)/],
-    ['a green run older than two days says the schedule stalled', browser, { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
+    ['a green run older than two days says the schedule stalled', acp, { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
+    ['an old green browser push is not a stalled schedule: no merge, nothing to run', browser, { conclusion: 'success', createdAt: '2026-10-01T10:00:00Z', url: 'u' }, null],
     ['an unreadable run says nothing', browser, null, null],
+    ['a red post-merge Checks run says main inherited the red', postMerge, { conclusion: 'failure', createdAt: '2026-10-09T10:00:00Z', url: 'https://x/3' }, /post-merge full Checks run on main failed on 2026-10-09 \(https:\/\/x\/3\)/],
+    ['an old green post-merge run is not a stalled schedule', postMerge, { conclusion: 'success', createdAt: '2026-10-01T10:00:00Z', url: 'u' }, null],
     ['a red ACP registry check names the command that shows what moved', acp, { conclusion: 'failure', createdAt: '2026-10-08T03:41:00Z', url: 'https://x/2' }, /ACP registry check on main failed on 2026-10-08 .*`pnpm acp:registry:check`/],
   ];
   for (const [name, check, run, expected] of CASES) {
@@ -1247,23 +1593,64 @@ describe('scheduled checks on main', () => {
     assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml'), null);
   });
 
+  it('reads past a cancelled main push to the newest verdict', () => {
+    const calls = [];
+    const red = { conclusion: 'failure', createdAt: '2026-10-09T09:00:00Z', url: 'u' };
+    const github = createGithub('owner/repo', (args) => {
+      calls.push(args);
+      return JSON.stringify([{ conclusion: '' }, { conclusion: 'cancelled' }, red]);
+    });
+    assert.deepEqual(github.readScheduledRun('checks.yml', 'push'), red);
+    assert.ok(calls[0].includes('push'));
+  });
+
   it('warns at landing for every red check on main, and a red browser run names its failing specs', () => {
     const red = (workflow) => ({ conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: `https://x/${workflow}` });
     const world = fakeWorld({ prs: [component(71)] });
-    world.deps.gh.readScheduledRun = red;
-    world.deps.gh.readMainFullRun = (workflow) => ({ ...red(workflow), failingSpecs: ['tests/e2e/a.spec.ts', 'tests/e2e/b/c.spec.ts'] });
+    world.deps.gh.readScheduledRun = (workflow) => (workflow === 'e2e.yml'
+      ? { ...red(workflow), failingSpecs: ['tests/e2e/a.spec.ts', 'tests/e2e/b/c.spec.ts'] }
+      : red(workflow));
     runPrLand(['71'], world.io, () => world.deps);
     const warnings = world.out.filter((line) => line.startsWith('ERROR warning:'));
-    assert.equal(warnings.length, 2);
-    assert.ok(warnings.some((line) => line.includes('https://x/acp-registry.yml')));
+    for (const workflow of ['e2e.yml', 'acp-registry.yml', 'checks.yml']) {
+      assert.ok(warnings.some((line) => line.includes(`https://x/${workflow}`)), workflow);
+    }
     const browser = warnings.find((line) => line.includes('https://x/e2e.yml'));
     assert.match(browser, /full browser run on main failed on 2026-09-26 \(https:\/\/x\/e2e\.yml\): tests\/e2e\/a\.spec\.ts, tests\/e2e\/b\/c\.spec\.ts; .*landing continues/);
+  });
+
+  it('reads the post-merge Checks verdict from the push run, not the nightly one', () => {
+    const world = fakeWorld({ prs: [component(72)] });
+    const asked = [];
+    world.deps.gh.readScheduledRun = (workflow, event) => {
+      asked.push(`${workflow}:${event ?? 'schedule'}`);
+      return workflow === 'checks.yml' && event === 'push'
+        ? { conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/push-run' }
+        : { conclusion: 'success', createdAt: new Date(world.deps.now()).toISOString(), url: 'u' };
+    };
+    runPrLand(['72'], world.io, () => world.deps);
+    assert.ok(asked.includes('checks.yml:push'), asked.join(', '));
+    assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes('https://x/push-run')));
+  });
+
+  it('reads the full browser verdict from the push run with full-run checks, and nothing else does', () => {
+    const world = fakeWorld({ prs: [component(73)] });
+    const asked = [];
+    world.deps.gh.readScheduledRun = (workflow, event, options = {}) => {
+      asked.push(`${workflow}:${event ?? 'schedule'}:${options.fullBrowser === true}`);
+      return workflow === 'e2e.yml' && event === 'push' && options.fullBrowser
+        ? { conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/browser-push', failingSpecs: ['tests/e2e/a.spec.ts'] }
+        : { conclusion: 'success', createdAt: new Date(world.deps.now()).toISOString(), url: 'u' };
+    };
+    runPrLand(['73'], world.io, () => world.deps);
+    assert.deepEqual(asked.sort(), ['acp-registry.yml:schedule:false', 'checks.yml:push:false', 'e2e.yml:push:true']);
+    assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes('https://x/browser-push')));
   });
 
   it('a red browser run on main is a line, not a refusal: the same landing still merges', () => {
     const land = (failing) => {
       const world = fakeWorld({ prs: [component(72)], queued: [72] });
-      world.deps.gh.readMainFullRun = () => (failing
+      world.deps.gh.readScheduledRun = (workflow) => (workflow === 'e2e.yml' && failing
         ? { conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/run', failingSpecs: ['tests/e2e/a.spec.ts'] }
         : { conclusion: 'success', createdAt: '2026-09-26T03:00:00Z', url: 'https://x/run' });
       return { world, result: runConductor(world) };
@@ -1276,10 +1663,10 @@ describe('scheduled checks on main', () => {
     assert.doesNotMatch(called(green.world, 'openPr')[0][1].body, /Not this train's gate/);
   });
 
-  it('reads the newest run on main that really ran the full suite, and the specs its failed jobs annotated', () => {
+  it('reads the newest push on main that really ran the full suite, and the specs its failed jobs annotated', () => {
     const calls = [];
     const artifacts = {
-      9: 'playwright-timings-smoke-1\nplaywright-timings-smoke-2\n', // a plan_from rehearsal on main
+      9: 'playwright-timings-smoke-1\nplaywright-timings-smoke-2\n', // a push that planned only its change
       8: '', // a green push whose shards executed nothing
       6: 'playwright-timings-full-1\nplaywright-report-shard-3\nplaywright-timings-full-3\n',
     };
@@ -1287,13 +1674,12 @@ describe('scheduled checks on main', () => {
       calls.push(args);
       if (args[0] === 'run') {
         return JSON.stringify([
-          { conclusion: '', event: 'push', createdAt: '2026-10-09T11:00:00Z', url: 'running', databaseId: 11 },
-          { conclusion: 'cancelled', event: 'push', createdAt: '2026-10-09T10:30:00Z', url: 'cancelled', databaseId: 10 },
-          { conclusion: 'failure', event: 'workflow_dispatch', createdAt: '2026-10-09T10:00:00Z', url: 'rehearsal', databaseId: 9 },
-          { conclusion: 'success', event: 'push', createdAt: '2026-10-09T09:00:00Z', updatedAt: '2026-10-09T09:10:00Z', url: 'empty', databaseId: 8 },
-          { conclusion: 'success', event: 'push', createdAt: '2026-10-09T08:50:00Z', updatedAt: '2026-10-09T08:50:45Z', url: 'reused', databaseId: 5 },
-          { conclusion: 'failure', event: 'pull_request', createdAt: '2026-10-09T08:30:00Z', url: 'train', databaseId: 7 },
-          { conclusion: 'failure', event: 'push', createdAt: '2026-10-09T08:00:00Z', url: 'https://x/6', databaseId: 6 },
+          { conclusion: '', createdAt: '2026-10-09T11:00:00Z', url: 'running', databaseId: 11 },
+          { conclusion: 'cancelled', createdAt: '2026-10-09T10:30:00Z', url: 'cancelled', databaseId: 10 },
+          { conclusion: 'failure', createdAt: '2026-10-09T10:00:00Z', url: 'partial', databaseId: 9 },
+          { conclusion: 'success', createdAt: '2026-10-09T09:00:00Z', updatedAt: '2026-10-09T09:10:00Z', url: 'empty', databaseId: 8 },
+          { conclusion: 'success', createdAt: '2026-10-09T08:50:00Z', updatedAt: '2026-10-09T08:50:45Z', url: 'reused', databaseId: 5 },
+          { conclusion: 'failure', createdAt: '2026-10-09T08:00:00Z', url: 'https://x/6', databaseId: 6 },
         ]);
       }
       const artifact = /\/actions\/runs\/(\d+)\/artifacts/.exec(args[1]);
@@ -1303,31 +1689,29 @@ describe('scheduled checks on main', () => {
       if (args[1].endsWith('/check-runs/42/annotations')) return 'tests/e2e/a.spec.ts\n../etc/passwd\n';
       return undefined;
     });
-    assert.deepEqual(github.readMainFullRun('e2e.yml'), {
+    assert.deepEqual(github.readScheduledRun('e2e.yml', 'push', { fullBrowser: true }), {
       conclusion: 'failure', createdAt: '2026-10-09T08:00:00Z', url: 'https://x/6',
       failingSpecs: ['tests/e2e/a.spec.ts', 'tests/e2e/b.spec.ts'],
     });
-    assert.ok(calls[0].includes('main') && calls[0].includes('e2e.yml'));
+    const listed = calls[0].join(' ');
+    assert.match(listed, /--workflow e2e\.yml --event push --branch main/);
     assert.ok(calls.some((args) => args.includes('.[] | select(.title == "failing spec") | .path')));
-    assert.equal(createGithub('owner/repo', () => undefined).readMainFullRun('e2e.yml'), null);
+    assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml', 'push', { fullBrowser: true }), null);
     assert.ok(!calls.some((args) => /\/runs\/5\//.test(args[1] ?? '')), 'a 45-second reused push costs no artifact read');
   });
 
   it('counts a run as full only by what its shards uploaded', () => {
     assert.equal(fullBrowserRunKind('success', ['playwright-timings-full-2', 'x']), 'full');
-    assert.equal(fullBrowserRunKind('failure', ['playwright-timings-smoke-1']), 'rehearsal');
-    assert.equal(fullBrowserRunKind('success', ['playwright-timings-targeted-1']), 'rehearsal');
+    assert.equal(fullBrowserRunKind('failure', ['playwright-timings-smoke-1']), 'partial');
+    assert.equal(fullBrowserRunKind('success', ['playwright-timings-targeted-1']), 'partial');
+    assert.equal(fullBrowserRunKind('success', ['playwright-timings-3']), 'partial', 'a push from before the mode was named');
     assert.equal(fullBrowserRunKind('success', []), 'empty', 'a reused push that ran nothing proves nothing');
     assert.equal(fullBrowserRunKind('failure', []), 'full', 'red before any spec ran is still red');
-    assert.equal(fullBrowserRunKind('failure', ['playwright-timings-3'], 'schedule'), 'full', 'a scheduled run before the mode was named');
-    assert.equal(fullBrowserRunKind('success', ['playwright-timings-3'], 'push'), 'rehearsal', 'an older push ran only its own plan');
   });
 
-  it('names only workflows that run where their reader looks', () => {
-    for (const { workflow, afterMerge } of SCHEDULED_CHECKS) {
-      const text = readFileSync(join('.github/workflows', workflow), 'utf8');
-      if (afterMerge) assert.match(text, /^ {2}push:\n {4}branches:\n {6}- main$/m, workflow);
-      else assert.match(text, /^ {2}schedule:/m, workflow);
+  it('names only workflows that run on the event it reads', () => {
+    for (const { workflow, event = 'schedule' } of SCHEDULED_CHECKS) {
+      assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), new RegExp(`^ {2}${event}:`, 'm'), workflow);
     }
   });
 });

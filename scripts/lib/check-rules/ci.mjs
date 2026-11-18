@@ -32,6 +32,12 @@ export const rules = [
     matches: [/^scripts\/ci\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/ci\/refresh-playwright-durations\.mjs$/, /^scripts\/ci\/run-ci-lane(?:\.test)?\.mjs$/],
   },
   {
+    order: 52,
+    command: 'node --test scripts/ci/vitest-shard-sequencer.test.mjs',
+    reason: 'unit shard balancing, its timing reporter, or its weights changed',
+    matches: [/^scripts\/ci\/(?:vitest-shard-sequencer|refresh-vitest-durations)(?:\.test)?\.mjs$/, /^scripts\/data\/vitest-file-durations\.json$/],
+  },
+  {
     order: 55,
     command: 'node --test scripts/ci/gate-yield.test.mjs',
     reason: 'the CI gate-yield report or its aggregation changed',

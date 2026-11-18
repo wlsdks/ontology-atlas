@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * `pnpm pr:land <n>` is the only way a PR reaches `main`: it enqueues with the `landing-queue`
- * label, and the lock-holding conductor merges queued PRs into a train with one CI run, bisecting
- * red trains. Disjoint changes take a lock-free fast path.
+ * `pnpm pr:land <n>` is the only way a PR reaches `main`. A head that contains today's `main` and
+ * overlaps no train in flight takes the lock-free fast path on its own CI: a draft is marked ready,
+ * its one run is awaited, and green merges it directly; red goes back to its author unqueued.
+ * Anything else enqueues with the `landing-queue` label, and the lock-holding conductor merges
+ * queued PRs into a train with one CI run, bisecting red trains.
  */
 
 import { runMainCopyIfStale } from '../lib/landing/run-main-copy.mjs';
@@ -14,6 +16,7 @@ import { buildImpactPlan } from '../ci/classify-change.mjs';
 import { FAILING_SPEC_TITLE } from '../ci/run-playwright-ci.mjs';
 import {
   DEFAULT_BATCH,
+  EMPTY_BEFORE_REFIRE,
   MAX_REBUILDS,
   QUEUE_LABEL,
   RED_CLOSE_PREFIX,
@@ -26,6 +29,7 @@ import {
   driftVerdict,
   ejectComment,
   fastPathEligibility,
+  landingRoute,
   landedComment,
   maySpeculate,
   nextTrain,
@@ -66,9 +70,10 @@ export const SCHEDULED_CHECKS = [
     name: 'full browser run',
     // Every push to main runs the whole browser suite; a train runs only its mapped specs and the
     // merge smoke set, so this line is where a defect the train did not reach is announced.
+    event: 'push',
     afterMerge: true,
     red: 'trains run only their mapped specs and the merge smoke set, so these stay red until someone fixes them; landing continues',
-    idle: 'specs outside the merge smoke set have not run since',
+    idle: null,
   },
   {
     workflow: 'acp-registry.yml',
@@ -76,10 +81,24 @@ export const SCHEDULED_CHECKS = [
     red: 'an agent adapter moved upstream, and release admission refuses it until the registry is refreshed and reviewed (`pnpm acp:registry:check` names what moved)',
     idle: 'an adapter that moved upstream since then is unknown until release admission',
   },
+  {
+    // A train runs only what its change can affect; the merged tree's push runs the full set.
+    workflow: 'checks.yml',
+    event: 'push',
+    name: 'post-merge full Checks run',
+    red: 'a suite the pre-merge plan left out is red on main, and every train inherits it until someone fixes it',
+    idle: null,
+  },
 ];
 const SCHEDULED_RUN_STALE_HOURS = 48;
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 export const POLL_SECONDS = 30;
+
+/**
+ * How often `pnpm pr:land <n>` reads its own pull request's CI. One GraphQL read each, none from
+ * the shared REST quota; a run takes minutes, so 20 s adds about 10 s on average.
+ */
+export const OWN_CI_POLL_SECONDS = 20;
 
 /**
  * With one train in flight and nothing queued behind it, how long before the conductor lists the
@@ -112,7 +131,7 @@ export function describeScheduledRun(check, run, nowMs = Date.now()) {
     return `the ${check.name} on main failed on ${day} (${run.url})${specs}; ${check.red}`;
   }
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
-  if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
+  if (check.idle && ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
 }
 
@@ -122,33 +141,34 @@ const MAIN_FULL_RUN_MIN_MS = 2 * 60_000;
 
 /**
  * What a finished run on main proves about the browser suite, from its timing artifacts, which
- * carry the plan's mode (`playwright-timings-<mode>-<shard>`). `full`: the whole suite ran. A
- * `plan_from` rehearsal uploads smoke or targeted timings and is not one. A green run that
- * uploaded none executed nothing; a red one that uploaded none failed before its specs and still
- * counts, so a broken build on main is not hidden behind an older green run. Timings named
- * before the mode was (`playwright-timings-<shard>`) came from full runs only on a schedule or
- * by hand; an older push ran its own change's plan.
+ * carry the plan's mode (`playwright-timings-<mode>-<shard>`). `full`: the whole suite ran.
+ * `partial`: it ran only a change's plan (smoke or targeted timings, or a push from before the mode
+ * was named). A green run that uploaded none executed nothing; a red one that uploaded none failed
+ * before its specs and still counts, so a broken build on main is not hidden behind a green run.
  */
-export function fullBrowserRunKind(conclusion, artifactNames, event = 'push') {
+export function fullBrowserRunKind(conclusion, artifactNames) {
   const timings = artifactNames.filter((name) => name.startsWith('playwright-timings-'));
   if (timings.some((name) => name.startsWith('playwright-timings-full-'))) return 'full';
-  if (event !== 'push' && timings.some((name) => /^playwright-timings-\d+$/.test(name))) return 'full';
-  if (timings.length > 0) return 'rehearsal';
+  if (timings.length > 0) return 'partial';
   return conclusion === 'failure' ? 'full' : 'empty';
 }
 
 /** One line per red or stalled check on main; reading them never blocks a landing. */
 export function mainHealthWarnings(deps) {
-  return SCHEDULED_CHECKS.map((check) => {
-    const read = check.afterMerge ? deps.gh.readMainFullRun : deps.gh.readScheduledRun;
-    return describeScheduledRun(check, read?.(check.workflow) ?? null, deps.now());
-  }).filter(Boolean);
+  return SCHEDULED_CHECKS
+    .map((check) => describeScheduledRun(check, readCheckRun(deps, check), deps.now()))
+    .filter(Boolean);
+}
+
+/** One reader for every check on main: the event it names (a push, not the nightly run) included. */
+function readCheckRun(deps, check) {
+  return deps.gh.readScheduledRun?.(check.workflow, check.event, { fullBrowser: Boolean(check.afterMerge) }) ?? null;
 }
 
 /** The red after-merge browser run, for the body of the train being cut. */
 function mainBrowserNotes(deps) {
   const check = SCHEDULED_CHECKS.find((row) => row.afterMerge);
-  const run = deps.gh.readMainFullRun?.(check.workflow) ?? null;
+  const run = readCheckRun(deps, check);
   return run?.conclusion === 'failure' ? [describeScheduledRun(check, run, deps.now())] : [];
 }
 
@@ -391,6 +411,14 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
   const unrun = [...missing, ...skipped];
   const state = failed.length > 0 ? 'failed' : pending.length + unrun.length > 0 ? 'waiting' : 'green';
   return { state, pending, failed, missing, skipped, unrun, neverRan: pending.length === 0 && unrun.length === requiredContexts.length };
+}
+
+/** Does workflow run `runId` still have a job queued or running in this rollup? */
+export function runStillGoing(rollup = [], runId) {
+  return rollup.some((run) => {
+    const status = String(run?.status ?? run?.state ?? '').toUpperCase();
+    return status !== 'COMPLETED' && String(run?.detailsUrl ?? run?.targetUrl ?? '').includes(`/actions/runs/${runId}/`);
+  });
 }
 
 /** Is any check run for this head still queued or running? */
@@ -688,39 +716,32 @@ export function createGithub(slug, run = ghRun) {
       const out = run(['api', '--paginate', `repos/${slug}/pulls/${number}/files`, '--jq', '.[].filename'], { allowFailure: true });
       return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
     },
-    readScheduledRun: (workflow) => {
-      const out = run(['run', 'list', '--workflow', workflow, '--event', 'schedule', '--branch', 'main', '--limit', '1',
-        '--json', 'conclusion,createdAt,url'], { allowFailure: true });
-      if (typeof out !== 'string') return null;
-      try {
-        return JSON.parse(out).find((row) => row.conclusion) ?? null;
-      } catch {
-        return null;
-      }
-    },
     /**
-     * The newest finished full browser run on main: every push runs one, as do manual and
-     * scheduled runs. A run counts only by what its shards uploaded (`fullBrowserRunKind`), and
-     * a red one carries the spec files its shards annotated as failing.
+     * The newest verdict of a check on main, for the event it names. Pushes to main may be
+     * cancelled, so the verdict can sit behind a cancelled run. With `fullBrowser`, a run counts
+     * only by what its shards uploaded (`fullBrowserRunKind`), and a red one carries the spec files
+     * its shards annotated as failing.
      */
-    readMainFullRun: (workflow) => {
-      const out = run(['run', 'list', '--workflow', workflow, '--branch', 'main', '--limit', '20',
-        '--json', 'conclusion,createdAt,updatedAt,url,event,databaseId'], { allowFailure: true });
+    readScheduledRun: (workflow, event = 'schedule', { fullBrowser = false } = {}) => {
+      const out = run(['run', 'list', '--workflow', workflow, '--event', event, '--branch', 'main',
+        '--limit', fullBrowser ? '20' : event === 'push' ? '5' : '1',
+        '--json', fullBrowser ? 'conclusion,createdAt,updatedAt,url,databaseId' : 'conclusion,createdAt,url'], { allowFailure: true });
       if (typeof out !== 'string') return null;
-      let finished;
+      let rows;
       try {
-        finished = JSON.parse(out).filter((row) => ['push', 'schedule', 'workflow_dispatch'].includes(row.event)
-          && ['success', 'failure'].includes(row.conclusion) && Number.isSafeInteger(row.databaseId)
-          // Read artifacts only for a run long enough to have run specs, or one that went red.
-          && (row.conclusion === 'failure' || Date.parse(row.updatedAt) - Date.parse(row.createdAt) >= MAIN_FULL_RUN_MIN_MS));
+        rows = JSON.parse(out);
       } catch {
         return null;
       }
+      if (!fullBrowser) return rows.find((row) => row.conclusion && row.conclusion !== 'cancelled') ?? null;
+      const finished = rows.filter((row) => ['success', 'failure'].includes(row.conclusion) && Number.isSafeInteger(row.databaseId)
+        // Read artifacts only for a run long enough to have run specs, or one that went red.
+        && (row.conclusion === 'failure' || Date.parse(row.updatedAt) - Date.parse(row.createdAt) >= MAIN_FULL_RUN_MIN_MS));
       for (const candidate of finished.slice(0, MAIN_FULL_RUN_CANDIDATES)) {
         const names = run(['api', `repos/${slug}/actions/runs/${candidate.databaseId}/artifacts?per_page=100`,
           '--jq', '.artifacts[].name'], { allowFailure: true });
         if (typeof names !== 'string') return null;
-        if (fullBrowserRunKind(candidate.conclusion, names.split('\n'), candidate.event) !== 'full') continue;
+        if (fullBrowserRunKind(candidate.conclusion, names.split('\n')) !== 'full') continue;
         const result = { conclusion: candidate.conclusion, createdAt: candidate.createdAt, url: candidate.url };
         if (candidate.conclusion !== 'failure') return result;
         const jobs = run(['api', `repos/${slug}/actions/runs/${candidate.databaseId}/jobs?per_page=100`,
@@ -774,6 +795,11 @@ export function createGithub(slug, run = ghRun) {
     markReady: (number) => ok(['pr', 'ready', String(number)]),
     markDraft: (number) => ok(['pr', 'ready', String(number), '--undo']),
     rerunFailed: (runId) => ok(['run', 'rerun', String(runId), '--failed']),
+    /** Which attempt a workflow run is on: 1 until someone reran it. `null` when unreadable. */
+    readRunAttempt: (runId) => {
+      const run = read(['api', `repos/${slug}/actions/runs/${runId}`]);
+      return Number.isInteger(run.value?.run_attempt) ? run.value.run_attempt : null;
+    },
   };
 }
 
@@ -980,6 +1006,7 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
   const other = otherCheckState({ rollup, requiredContexts, allowFailing });
   const sha = pr.headRefOid;
   let mergeClean = null;
+  let containsMain = null;
   let prFiles = null;
   let mainFiles = null;
   let fullPlan = null;
@@ -987,6 +1014,8 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
   const have = fetched && (deps.git.hasCommit(sha) || (deps.git.fetch([sha]) && deps.git.hasCommit(sha)));
   if (have) {
     mergeClean = deps.git.mergeTreeClean('origin/main', sha);
+    const mainSha = deps.git.revParse('origin/main');
+    containsMain = mainSha ? deps.git.isAncestor(mainSha, sha) : null;
     const base = deps.git.mergeBase('origin/main', sha);
     if (base) {
       const changes = deps.git.diffNameStatus(base, sha);
@@ -1001,7 +1030,7 @@ export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = []
     }
   }
   const lock = readLockState(deps);
-  return fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan });
+  return { ...fastPathEligibility({ checks, other, mergeClean, containsMain, prFiles, mainFiles, lock, fullPlan }), checks, other };
 }
 
 function takeFastLock(deps, token, number) {
@@ -1023,17 +1052,15 @@ function takeFastLock(deps, token, number) {
   return false;
 }
 
+/** `{ merged, verdict }`: `verdict` is the first reading, which `landingRoute` routes when it did not merge. */
 function tryFastPath({ pr, deps, requiredContexts, args, token }) {
   const verdict = evaluateFastPath({ pr, deps, requiredContexts, allowFailing: args.allowFailing });
   deps.log(`fast path for PR #${pr.number}:`);
   for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
-  if (!verdict.eligible) {
-    deps.log('not eligible for the fast path; taking the train');
-    return false;
-  }
+  if (!verdict.eligible) return { merged: false, verdict };
   if (!takeFastLock(deps, token, pr.number)) {
     deps.log(`another fast-path merge kept ${FAST_LOCK_REF} for 30 s; taking the train`);
-    return false;
+    return { merged: false, verdict: null };
   }
   const releaseFast = deps.onExit(() => deps.gh.releaseLock(FAST_LOCK_REF));
   try {
@@ -1042,21 +1069,139 @@ function tryFastPath({ pr, deps, requiredContexts, args, token }) {
     if (!again.eligible) {
       for (const line of describeFastPath(again).filter((l) => l.startsWith('FAIL'))) deps.log(`  now ${line}`);
       deps.log('no longer eligible; taking the train');
-      return false;
+      return { merged: false, verdict: null };
     }
     const merged = deps.gh.mergePr(pr.number, { sha: pr.headRefOid, method: 'merge', title: `${pr.title} (#${pr.number})` });
     if (!merged.ok) {
       deps.log(`GitHub refused the fast-path merge (${merged.detail || 'no detail'}); taking the train`);
-      return false;
+      return { merged: false, verdict: null };
     }
     deps.log(`PR #${pr.number} merged on the fast path at ${pr.headRefOid.slice(0, 9)}; post-merge CI on main still runs`);
     deps.gh.deleteBranch(pr.headRefName);
     if (hasQueueLabel(pr)) deps.gh.removeLabel(pr.number);
-    return true;
+    return { merged: true, verdict: again };
   } finally {
     releaseFast();
     deps.gh.releaseLock(FAST_LOCK_REF);
   }
+}
+
+/**
+ * Run a pull request's own CI and wait for its verdict: mark a draft ready, which fires the one
+ * run, then read its required contexts every `OWN_CI_POLL_SECONDS`. `green` and `red` carry the
+ * last read; `stopped` says why it gave up, and the caller decides what that costs.
+ */
+function awaitOwnCi({ pr, deps, args, requiredContexts, deadline, red = null }) {
+  const { gh, log } = deps;
+  // One rerun of only the failed jobs per head: in 4 of the 20 red trains before 2026-11-18 the
+  // next train carrying the same head went green, and the failed jobs took about half a run.
+  // `tryRerun` answers `rerun`, `wait` (the run still has jobs going, and GitHub reruns only a
+  // finished run), `not-run` (only cancellations: something replaced the run, not a failure) or
+  // the reason it hands the pull request back.
+  let rerunHead = null;
+  const tryRerun = (failed, sha, rollup) => {
+    if (rerunHead === sha) return 'its failed jobs were rerun once already';
+    if (!failed.some((check) => check.conclusion === 'FAILURE')) return 'not-run';
+    const ids = runIdsFromChecks(failed);
+    if (ids.length === 0) return 'no workflow run to rerun was named';
+    if (ids.some((id) => runStillGoing(rollup, id))) return 'wait';
+    // A run on a second attempt was rerun already, by this lander or anyone; an unreadable attempt
+    // is not a first.
+    if (ids.some((id) => (gh.readRunAttempt?.(id) ?? null) !== 1)) return 'its run was rerun already';
+    rerunHead = sha;
+    if (ids.some((id) => !gh.rerunFailed(id))) return `GitHub refused to rerun run ${ids.join(', ')}`;
+    log(`PR #${pr.number} is red on ${failed.map((check) => check.name).join(', ')} at ${sha.slice(0, 9)}; `
+      + `re-running only the failed jobs of run ${ids.join(', ')} once on the same head before handing it back`);
+    return 'rerun';
+  };
+  let cancelledReads = 0;
+  if (red) {
+    const first = tryRerun(red, pr.headRefOid, pr.statusCheckRollup ?? []);
+    if (!['rerun', 'wait', 'not-run'].includes(first)) return { state: 'red', failed: red, pr, reran: false, why: first };
+    if (first !== 'rerun') log(`PR #${pr.number}'s red run is ${first === 'wait' ? 'still finishing' : 'cancelled, not failed'}; waiting before judging it`);
+  } else if (pr.isDraft) {
+    if (!gh.markReady(pr.number)) return { state: 'stopped', reason: 'GitHub refused to mark it ready, so its CI never started' };
+    log(`PR #${pr.number} was a draft; marked ready, so its own CI runs now instead of a train's`);
+  } else log(`PR #${pr.number}'s own CI is running on ${pr.headRefOid.slice(0, 9)}; waiting for it instead of a train`);
+  let head = pr.headRefOid;
+  let idle = 0;
+  let refires = 0;
+  let current = pr;
+  while (deps.now() < deadline) {
+    deps.sleep(OWN_CI_POLL_SECONDS);
+    current = gh.readPr(pr.number);
+    if (current.state !== 'OPEN') return { state: 'stopped', reason: `it is ${String(current.state).toLowerCase()} now`, pr: current };
+    if (current.isDraft) return { state: 'stopped', reason: 'it was turned back into a draft while its CI ran', pr: current };
+    if (current.headRefOid !== head) {
+      log(`PR #${pr.number}'s head moved to ${current.headRefOid.slice(0, 9)}; waiting for that push's CI`);
+      head = current.headRefOid;
+      idle = 0;
+      cancelledReads = 0;
+    }
+    const rollup = current.statusCheckRollup ?? [];
+    const checks = requiredCheckState({ rollup, requiredContexts });
+    const other = otherCheckState({ rollup, requiredContexts, allowFailing: args.allowFailing });
+    const inFlight = runInFlight(current);
+    idle = checks.neverRan && !inFlight ? idle + 1 : 0;
+    const step = trainCiStep({ checks, other, inFlight, emptyRollupObservations: idle, refires });
+    if (step.action === 'refire') {
+      log(`PR #${pr.number} reported no run after ${idle} reads; toggling draft to ask GitHub once`);
+      gh.markDraft(pr.number);
+      gh.markReady(pr.number);
+      refires += 1;
+      idle = 0;
+    } else if (step.action === 'red') {
+      const verdict = tryRerun(step.failed, current.headRefOid, rollup);
+      if (verdict === 'rerun' || verdict === 'wait') continue;
+      if (verdict === 'not-run') {
+        cancelledReads += 1;
+        if (cancelledReads >= EMPTY_BEFORE_REFIRE) {
+          return { state: 'stopped', reason: `its run on ${current.headRefOid.slice(0, 9)} was cancelled and nothing replaced it`, pr: current };
+        }
+        continue;
+      }
+      const reran = rerunHead === current.headRefOid && verdict === 'its failed jobs were rerun once already';
+      return { state: 'red', failed: step.failed, pr: current, reran, why: reran ? null : verdict };
+    }
+    else if (step.action === 'green') return { state: 'green', pr: current };
+  }
+  return { state: 'stopped', reason: `its CI gave no verdict within ${args.timeoutMinutes} minutes`, pr: current };
+}
+
+/** Pull requests other than `except` wait in the queue, and no live conductor holds the lock. */
+function queueNeedsConductor(deps, except) {
+  const lock = readLockState(deps);
+  if (lock.state === 'held' || lock.state === 'unknown') return false;
+  return deps.gh.listQueue().some((queued) => queued.number !== except);
+}
+
+/** `queueNeedsConductor`, where an unreadable queue is a warning and no reason to wait. */
+function queueNeedsConductorOrWarn(deps, except) {
+  try {
+    return queueNeedsConductor(deps, except);
+  } catch (error) {
+    deps.error(`warning: the landing queue could not be read (${error.message}); not waiting on it`);
+    return false;
+  }
+}
+
+/** Conduct the queue a direct merge would otherwise leave unconducted. `null` when there was none. */
+function conductLeftovers({ deps, args, requiredContexts, token, deadline, except }) {
+  if (!queueNeedsConductor(deps, except)) return null;
+  const lock = readLockState(deps);
+  deps.log('pull requests are queued and nobody conducts them; conducting them before leaving');
+  return conduct({ deps, args, requiredContexts, token, force: lock.state !== 'free', deadline }).state;
+}
+
+/** A red own run goes back to its author with the contexts and the ways forward. */
+function reportOwnRed({ number, failed, deps, reran = false, why = null }) {
+  const after = reran ? ', again after one rerun of the failed jobs' : why ? ` and was not rerun (${why})` : '';
+  deps.error(`PR #${number} is red on its own CI${after}; nothing was queued:`);
+  for (const check of failed) deps.error(`  ${check.name} ${check.conclusion ?? ''} ${check.url ?? ''}`.trimEnd());
+  deps.error('  Fix it and push: the pull request is ready now, so the push runs CI again. Then');
+  deps.error(`  \`pnpm pr:land ${number}\` again. A context known to flake: add \`--flaky=<context>\`, and the`);
+  deps.error('  train reruns it once.');
+  return 1;
 }
 
 /*
@@ -1173,9 +1318,22 @@ function pollTrain({ train, deps, requiredContexts, args }) {
   if (step.action === 'red') {
     const plan = redTrainPlan({ components: train.included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns: train.reruns });
     if (plan.action === 'rerun') {
-      log(`train #${train.pr} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
-      for (const id of runIdsFromChecks(step.failed)) gh.rerunFailed(id);
+      const ids = runIdsFromChecks(step.failed);
+      // GitHub reruns only a finished run: wait for its other jobs before asking.
+      if (ids.some((id) => runStillGoing(rollup, id))) return;
+      const failedReally = step.failed.some((check) => check.conclusion === 'FAILURE');
+      const refused = !failedReally || ids.length === 0 || ids.some((id) => !gh.rerunFailed(id));
       train.reruns += 1;
+      if (refused) {
+        log(failedReally
+          ? `train #${train.pr} is red and GitHub refused to rerun its failed jobs; settling it as red`
+          : `train #${train.pr} has only cancelled contexts, which a rerun would not judge; settling it as red`);
+        train.verdict = { kind: 'red', plan: redTrainPlan({ components: train.included.map((c) => c.number), failed: step.failed, flaky: [...args.flaky, ...args.allowFailing], reruns: train.reruns }), failed: step.failed };
+        return;
+      }
+      log(train.included.length === 1
+        ? `train #${train.pr} red on ${plan.names.join(', ')}; rerunning only the failed jobs once on the same head before ejecting #${train.included[0].number}, since a red with no code change often passes`
+        : `train #${train.pr} red only on flaky context(s) ${plan.names.join(', ')}; rerunning the failed jobs once`);
       return;
     }
     train.verdict = { kind: 'red', plan, failed: step.failed };
@@ -1572,13 +1730,60 @@ function landOne({ args, deps }) {
   deps.log(`PR #${number} ${pr.title}`);
   for (const warning of mainHealthWarnings(deps)) deps.error(`warning: ${warning}`);
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
+  const deadline = deps.now() + args.timeoutMinutes * 60_000;
+  const tolerated = [...args.flaky, ...args.allowFailing];
 
-  if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {
-    return reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+  let current = pr;
+  if (args.fast) {
+    const direct = () => {
+      const code = reportOutcome({ number, outcome: { state: 'merged' }, deps, args });
+      // A direct merge leaves no queue behind: whatever waits with nobody conducting is conducted
+      // now. This pull request is merged either way, so a failure here is a warning.
+      try {
+        const leftovers = conductLeftovers({ deps, args, requiredContexts, token, deadline, except: number });
+        if (leftovers === 'aborted') deps.error('warning: the queue this lander picked up stopped; `pnpm pr:land --conduct` resumes it');
+      } catch (error) {
+        deps.error(`warning: PR #${number} is merged, but the queue behind it could not be conducted (${error.message}); \`pnpm pr:land --conduct\` resumes it`);
+      }
+      return code;
+    };
+    let attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
+    if (attempt.merged) return direct();
+    const route = attempt.verdict
+      ? landingRoute({ verdict: attempt.verdict, checks: attempt.verdict.checks, other: attempt.verdict.other, tolerated })
+      : { route: 'train', blockers: [] };
+    const ownRoute = route.route === 'own-ci' || route.route === 'red';
+    // A queued pull request is the conductor's; one that waits unconducted means this lander conducts.
+    const yieldTo = !ownRoute ? null
+      : hasQueueLabel(current) ? 'it is already queued for a train'
+        : args.wait && queueNeedsConductorOrWarn(deps, number) ? 'other pull requests are queued and nobody conducts them' : null;
+    if (yieldTo) deps.log(`taking the train: ${yieldTo}`);
+    else if (route.route === 'red' && !args.wait) return reportOwnRed({ number, failed: route.failed, deps });
+    // `--no-wait` keeps its meaning: queue and leave. Waiting on its own run is for a lander that stays.
+    else if ((route.route === 'own-ci' || route.route === 'red') && args.wait) {
+      const own = awaitOwnCi({ pr: current, deps, args, requiredContexts, deadline, red: route.route === 'red' ? route.failed : null });
+      current = own.pr ?? current;
+      if (own.state === 'red' && !own.failed.every((check) => tolerated.includes(check.name))) {
+        return reportOwnRed({ number, failed: own.failed, deps, reran: own.reran, why: own.why });
+      }
+      if (own.state === 'stopped') {
+        deps.error(`PR #${number} stopped waiting for its own CI: ${own.reason}; nothing was queued`);
+        return 1;
+      }
+      if (own.state === 'green') {
+        attempt = tryFastPath({ pr: current, deps, requiredContexts, args, token });
+        if (attempt.merged) return direct();
+      }
+      deps.log(own.state === 'red'
+        ? `PR #${number}'s own CI is red only on ${own.failed.map((check) => check.name).join(', ')}, named as tolerated; the train reruns it`
+        : `PR #${number}'s own CI is green, but it cannot merge directly; the train runs it on today's main`);
+    } else if (route.route === 'train' && route.blockers.length > 0) {
+      deps.log(`taking the train: ${route.blockers.join(', ')}`);
+    } else if (route.route !== 'merge') deps.log('taking the train');
   }
 
   const sinceIso = new Date(deps.now()).toISOString();
-  if (!hasQueueLabel(pr) && !deps.gh.addLabel(number)) {
+  if (!hasQueueLabel(current) && !deps.gh.addLabel(number)) {
     deps.error(`could not put the \`${QUEUE_LABEL}\` label on PR #${number}; nothing was queued`);
     return 1;
   }
@@ -1590,7 +1795,6 @@ function landOne({ args, deps }) {
       : `landing now: ${describeLock(lock, deps.now())}. \`pnpm pr:queue\` shows the line.`);
     return 0;
   }
-  const deadline = deps.now() + args.timeoutMinutes * 60_000;
   return waitForOutcome({ number, sinceIso, deps, args, requiredContexts, token, deadline });
 }
 
@@ -1639,6 +1843,15 @@ export function planLanding({ args, deps }) {
       for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
       if (verdict.eligible) {
         deps.log(`PR #${number}: would merge now at ${pr.headRefOid.slice(0, 9)}, without the train lock`);
+        continue;
+      }
+      const route = landingRoute({ verdict, checks: verdict.checks, other: verdict.other, tolerated: [...args.flaky, ...args.allowFailing] });
+      if (route.route === 'own-ci') {
+        deps.log(`PR #${number}: would ${pr.isDraft ? 'mark it ready and ' : ''}wait for its own CI, then merge directly if main has not moved`);
+        continue;
+      }
+      if (route.route === 'red') {
+        deps.log(`PR #${number}: would be handed back red on its own CI (${route.failed.map((c) => c.name).join(', ')})`);
         continue;
       }
     }
@@ -1750,14 +1963,14 @@ export function runPrLand(argv, io = console, makeDeps = defaultDeps) {
   }
 
   if (args.ci) {
-    // Opt-in early CI: a draft that wants a round now, so the fast path can take it once green.
+    // Early CI: the author is done, so the one run starts now and is ready, or nearly, at landing.
     const pr = deps.gh.readPr(args.number);
     if (!pr.isDraft) {
       deps.log(`PR #${args.number} is already ready; CI has been asked for`);
       return 0;
     }
     deps.gh.markReady(args.number);
-    deps.log(`PR #${args.number} is ready: one CI run is now firing. Once green, \`pnpm pr:land ${args.number}\` can take the fast path.`);
+    deps.log(`PR #${args.number} is ready: one CI run is now firing, and every later push runs it again. \`pnpm pr:land ${args.number}\` waits for it and merges directly when the branch contains main.`);
     return 0;
   }
 

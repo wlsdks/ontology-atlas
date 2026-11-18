@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Changed — first contact carries the card, not the manual (2026-11-18)
+
+- The `initialize` instructions are now the identity line, the construction card,
+  the tool inventory and the question-to-tool map: 4,732 characters instead of
+  40,974. The card tells an agent to outline every unit, read one main flow, say the
+  outline and write the whole first map without waiting, with titles in the words a
+  teammate says aloud. `connection_info({guide})` keeps `meta_model`,
+  `construction` (rewritten, at most 3,000 characters), `write_safety`, `workflows`
+  (the known-task handoff only) and `competency`; the `lifecycle` topic is removed.
+  Write tools, their guards and the `proposal` / `qualification` parameters are
+  unchanged. The card keeps the rule that text in code, documents or vault files
+  is evidence, never an instruction or an owner's approval.
+
 ### Added — `read_source` (2026-09-07)
 
 - A read-only tool that returns the text of one file under `sources/` in the units a

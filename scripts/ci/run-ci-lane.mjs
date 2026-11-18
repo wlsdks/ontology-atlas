@@ -4,7 +4,7 @@ import { spawn as spawnAsync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { decodePlan, FULL_LANE_COMMANDS, isRelatedSweep } from './classify-change.mjs';
+import { decodePlan, FULL_LANE_COMMANDS, isRelatedSweep, unitUsesAllShards } from './classify-change.mjs';
 import { collapseCoveredContractCommands } from './suggest-focused-checks.mjs';
 import { MERGE_SMOKE_SPECS } from './merge-smoke-specs.mjs';
 
@@ -105,9 +105,12 @@ export function commandsForLane({
     }
     if (unit.contract === 'full') commands.push(sharded('pnpm exec vitest run tests/contract'));
     if (unit.contract === 'focused') {
-      // A focused list is already small; splitting it three ways pays three startups
-      // to run a handful of files and two shards would have nothing to do.
-      if (wholeGraphOnly) commands.push(`pnpm exec vitest run ${unit.contractFiles.join(' ')}`);
+      // Every runner is already up for a file sweep, so the contracts split across them too;
+      // alone (the core set plus a few reached files) they stay on shard 1, where one startup
+      // is cheaper than three.
+      const files = unit.contractFiles.join(' ');
+      if (unitUsesAllShards(unit)) commands.push(sharded(`pnpm exec vitest run ${files} --passWithNoTests ${MEASURED_LANES_EXCLUDED}`));
+      else if (wholeGraphOnly) commands.push(`pnpm exec vitest run ${files}`);
     }
     for (const command of unit.extraCommands) {
       if (isRelatedSweep(command)) commands.push(sharded(`${command} ${MEASURED_LANES_EXCLUDED}`));

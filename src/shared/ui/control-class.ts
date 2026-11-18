@@ -25,7 +25,7 @@ export const CONTROL_PRESS_TRAVEL =
  * an inset ring changes the box by zero pixels.
  */
 const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
+  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /**
  * Raises a control to 44px under `pointer: coarse` only. Real height rather than
@@ -438,8 +438,8 @@ const field = cva(`${fieldBase} ${DISABLED}`, {
        * emits width makes the latter **not a 0px migration**.
        */
       boxed:
-        'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-focus-ring)] focus-visible:outline-none',
-      bare: 'bg-transparent text-body focus:outline-none',
+        'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-focus-ring)] focus-visible:outline-hidden',
+      bare: 'bg-transparent text-body focus:outline-hidden',
     },
     /** Single line or growing. **Not a separate shape** — border, background, radius, focus and placeholder are identical; only the dimension grammar differs. */
     multiline: { false: '', true: 'resize-none' },

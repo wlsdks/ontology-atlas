@@ -30,8 +30,8 @@ release surface, or user workflow requires it. Keep required CI unchanged.
 
 ## Where CI internals live
 
-How main reuses a reviewed PR's result, how pre-push and PR CI split the
-lanes, and how browser jobs are sharded belong to the code that does it: the
+How main treats a reviewed PR's result, how pre-push and PR CI split the
+lanes, and how browser and unit jobs are sharded belong to the code that does it: the
 headers of `scripts/ci/classify-change.mjs`, `scripts/ci/run-ci-lane.mjs`,
 `scripts/ci/run-playwright-ci.mjs`, `scripts/landing/pr-land.mjs`, and the workflow files
 under `.github/workflows/`.
@@ -43,6 +43,19 @@ their composed catalogue once; cross-package imports also select their frontend
 tests. Relevant documentation-registry and workflow-security checks run locally.
 The whole hook includes preparation in its reported duration. Full contract,
 Knip and browser suites remain CI work.
+
+Before merge, a train's Checks run what its change can affect plus a fixed
+core: changed-file lint, the typecheck, the contracts whose import graph
+reaches the change (a message part counts as its composed catalogue), every
+security and vault-format contract, and the forbidden-pattern contracts
+(`FORBIDDEN_PATTERN_CONTRACTS` in `scripts/ci/classify-change.mjs`). A change
+to `src/` or `app/` code or styles, or to `messages/`, also runs every ratchet;
+after a merge a ratchet compares with the previous main tip. After the
+merge, each push to main runs the full Checks set, including `pnpm knip` and the
+full contract sweep, so a suite the plan left out turns main red rather than
+the train; `pnpm pr:land` warns while that run is red. The unit shards split by
+measured seconds (`scripts/data/vitest-file-durations.json`, refreshed with
+`pnpm unit:durations`). The browser workflow keeps its own policy.
 
 CI tooling test edits keep their regression checks without promoting unrelated
 lanes to full runs. Runtime planner edits, unknown paths and invalid comparison
@@ -59,7 +72,8 @@ names runs the smoke set alone; only a planner, browser-executor or root
 dependency change (`package.json`, the lockfile, `patches/`) runs the whole
 suite. After merge, every push to `main` runs the whole suite, measurements
 and both surfaces included, even when the push reuses the train's reviewed
-result for every other lane, and the next merge does not cancel it. A defect outside the smoke set is
+result for every other lane. Each push has a concurrency group of its own, so
+no later merge cancels or replaces it. A defect outside the smoke set is
 therefore found on `main`, not on the train.
 
 CI rejects focused `.only` tests on every execution path. It records a trace on
@@ -86,7 +100,7 @@ before relying on it.
 
 | Lane | Budget | Measured | What it guards |
 |---|---|---|---|
-| **pre-push, whole hook** | 90 s | **80 s** (was 367 s) | the common failure, found before CI |
+| **pre-push, whole hook** | 90 s | **10-15 s** (2026-11-18, a UI and an MCP change replayed; was 80 s, then 367 s) | the common failure, found before CI |
 | PR CI `contract` | — | formerly 80 s locally | full ratchets stay in CI; removed from pre-push |
 | PR CI `dead_code` | — | formerly 33 s locally | whole-graph Knip stays in CI; removed from pre-push |
 | pre-push `unit` | — | 6-19 s; skipped when every change since the merge base passed `checks:changed -- --run` on the same content | the tests that import the change |
@@ -97,7 +111,7 @@ before relying on it.
 | **PR CI, wall clock** | 8 min | plan 25 s, then the slowest job | — |
 | Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
 | Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
-| Checks · Unit · Contract (x3) | 260 s | was 437 s avg / 705 s max unsharded | unit regressions and the full contract sweep |
+| Checks · Unit · Contract (x3) | 310 s | 2026-11-18, 22 trains: shards 79-340 s, 4-201 s, 4-285 s; full sweep 271 / 222 / 186 s by file count | affected unit tests and reached plus core contracts; the full sweep after merge |
 | Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
 | E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
 | E2E · Playwright chromium (x8) | 600 s | full suite 6.0-7.9 min per shard, 9.4 min end to end (2026-11-18; five shards took 13.8) | rendered journeys; before merge only the mapped specs and the merge smoke set |

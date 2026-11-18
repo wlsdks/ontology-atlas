@@ -242,7 +242,7 @@ export function VaultSwitchRailTile() {
         className={controlClass({
           shape: 'card',
           className:
-            'group relative w-full flex-col gap-1 border-0 px-0 py-1 aria-disabled:cursor-progress aria-disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+            'group relative w-full flex-col gap-1 border-0 px-0 py-1 aria-disabled:cursor-progress aria-disabled:opacity-55 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
         })}
       >
         <span

@@ -66,6 +66,25 @@ describe('field trial replay scripts', () => {
     }
   });
 
+  it('acp-replay.sh gives every turn the Atlas tools and nothing that can touch the disk', () => {
+    // A build that can shell out can rewrite a file around a refused finalize and still
+    // read as finished, which is what an earlier py-library run did.
+    const script = read('acp-replay.sh');
+    const turns = script.split('claude -p').slice(1).map((turn) => turn.split('\n\n')[0]);
+    expect(turns).toHaveLength(2);
+    for (const turn of turns) {
+      expect(turn).toContain('--tools "$builtins" --permission-mode dontAsk');
+    }
+    expect(script).toContain('builtins="ToolSearch"');
+    expect(script).toMatch(/foreign\.length > 0[\s\S]*process\.exitCode = 1/);
+  });
+
+  it('acp-replay.sh counts only a finalize that succeeded, in this run', () => {
+    const script = read('acp-replay.sh');
+    expect(script).toMatch(/tool_result" && finalizeIds\.has\(block\.tool_use_id\) && !block\.is_error/);
+    expect(script).toContain('rm -f "$out"/turn-one.* "$out"/turn-two.* "$out"/replay.json');
+  });
+
   it('acp-replay.sh holds no copy of the handoff it is supposed to read', () => {
     // The sentence carries backticks in the source it comes from, so a paste of
     // the real thing would slip past a plain substring check — the assertion

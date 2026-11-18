@@ -6,6 +6,10 @@ import test from 'node:test';
 import { suggestFocusedChecks } from '../lib/ci/focused-check-suggestions.mjs';
 import { commandsForLane } from './run-ci-lane.mjs';
 import {
+  CORE_CONTRACT_DIRECTORIES,
+  coreContractFiles,
+  FORBIDDEN_PATTERN_CONTRACTS,
+  ratchetContractFiles,
   buildImpactPlan,
   decide,
   decodePlan,
@@ -59,11 +63,15 @@ test('scheduled runs and missing comparisons run every exhaustive lane', () => {
   }
 });
 
-test('prose-only PRs do not install or execute unrelated test lanes', () => {
+test('prose-only PRs run only the core contracts beside their documentation gates', () => {
   const plan = buildImpactPlan({ files: ['README.md'] });
 
   assert.equal(plan.full, false);
-  assert.equal(plan.lanes.unit.mode, 'skip');
+  assert.equal(plan.lanes.unit.mode, 'focused');
+  assert.equal(plan.lanes.unit.affected, false);
+  assert.equal(plan.lanes.unit.knip, false);
+  assert.deepEqual(plan.lanes.unit.contractFiles, coreContractFiles());
+  assert.equal(unitUsesAllShards(plan.lanes.unit), false, 'the core alone stays on one runner');
   assert.equal(plan.lanes.mcp.mode, 'skip');
   assert.equal(plan.lanes.e2e.mode, 'skip');
   assert.equal(plan.lanes.e2e.staticExport, false);
@@ -77,9 +85,11 @@ test('app tests run affected Vitest and the test-source ratchets without waking 
   assert.equal(plan.lanes.unit.mode, 'affected');
   assert.equal(plan.lanes.unit.affected, true);
   assert.equal(plan.lanes.unit.contract, 'focused');
-  assert.deepEqual(plan.lanes.unit.contractFiles, [
+  assert.deepEqual(plan.lanes.unit.contractFiles, [...new Set([
     'tests/contract/ci-gates/test-title-language.contract.test.ts',
-  ]);
+    ...coreContractFiles(),
+    ...ratchetContractFiles(),
+  ])].sort());
   assert.equal(plan.lanes.e2e.mode, 'skip');
 });
 
@@ -113,10 +123,11 @@ test('code outside app and src runs every suite and contract its importers reach
   assert.equal(unitUsesAllShards(unit), true);
 });
 
-test('a message part runs the suites importing the composed catalogue on every shard, and the contracts', () => {
+test('a message part runs the suites importing the composed catalogue on every shard, and the core contracts', () => {
   const unit = buildImpactPlan({ files: ['messages/en/library.json'] }).lanes.unit;
   assert.equal(unit.affected, false, 'no module imports a part, so --changed would select nothing');
-  assert.equal(unit.contract, 'full');
+  assert.equal(unit.contract, 'focused', 'the full contract sweep runs after the merge');
+  for (const core of coreContractFiles()) assert.ok(unit.contractFiles.includes(core), core);
   assert.ok(unit.extraCommands.some(isRelatedSweep));
   assert.equal(unitUsesAllShards(unit), true);
 });
@@ -134,7 +145,9 @@ test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2
   });
 
   assert.equal(plan.lanes.unit.mode, 'affected');
-  assert.equal(plan.lanes.unit.contract, 'full');
+  assert.equal(plan.lanes.unit.contract, 'focused', 'the full contract sweep runs after the merge');
+  assert.equal(plan.lanes.unit.knip, false, 'the whole-graph analyzer runs after the merge');
+  assert.ok(plan.lanes.unit.contractFiles.includes('tests/contract/security/workflow-security.contract.test.ts'));
   assert.equal(plan.lanes.mcp.mode, 'skip');
   assert.equal(plan.lanes.e2e.mode, 'targeted');
   assert.deepEqual(plan.lanes.e2e.specs, [
@@ -289,8 +302,35 @@ test('deletions still participate in rule mapping without becoming direct file a
     deletedFiles: ['tests/contract/obsolete.contract.test.ts'],
   });
 
-  assert.equal(plan.lanes.unit.contract, 'full');
-  assert.deepEqual(plan.lanes.unit.contractFiles, []);
+  assert.equal(plan.lanes.unit.contract, 'focused');
+  assert.ok(!plan.lanes.unit.contractFiles.includes('tests/contract/obsolete.contract.test.ts'));
+  for (const core of coreContractFiles()) assert.ok(plan.lanes.unit.contractFiles.includes(core), core);
+});
+
+test('the core contracts are the security and vault-format directories, and never empty', () => {
+  assert.deepEqual([...CORE_CONTRACT_DIRECTORIES], ['tests/contract/security', 'tests/contract/vault-format']);
+  const core = coreContractFiles();
+  assert.ok(core.length >= 40, `the core measured ${core.length} files`);
+  for (const directory of CORE_CONTRACT_DIRECTORIES) assert.ok(core.some((path) => path.startsWith(`${directory}/`)), directory);
+  assert.deepEqual(coreContractFiles(() => ['a.contract.test.ts', 'notes.md', 'nested/b.contract.test.ts']), [
+    'tests/contract/security/a.contract.test.ts',
+    'tests/contract/security/nested/b.contract.test.ts',
+    'tests/contract/vault-format/a.contract.test.ts',
+    'tests/contract/vault-format/nested/b.contract.test.ts',
+  ]);
+});
+
+test('knip runs before merge only when the analyzer itself changed', () => {
+  assert.equal(buildImpactPlan({ files: ['src/shared/lib/cn.ts'] }).lanes.unit.knip, false);
+  assert.equal(buildImpactPlan({ files: ['scripts/quality/dead-code/scope-configs.mjs'] }).lanes.unit.knip, true);
+  assert.equal(buildImpactPlan({ files: ['package.json'] }).lanes.unit.knip, true, 'a full plan keeps it');
+});
+
+test('a contract the import graph reaches runs before merge; one it does not reach waits for main', () => {
+  const unit = buildImpactPlan({ files: ['scripts/lib/parse-frontmatter.mjs'] }).lanes.unit;
+  assert.ok(unit.contractFiles.includes('tests/contract/vault-format/parse-frontmatter.contract.test.ts'));
+  const ui = buildImpactPlan({ files: ['src/views/download/ui/DownloadPage.tsx'] }).lanes.unit;
+  assert.ok(!ui.contractFiles.includes('tests/contract/ci-gates/workflow-budgets.contract.test.ts'));
 });
 
 test('the serialized workflow plan is versioned and round-trips exactly', () => {
@@ -410,6 +450,17 @@ test('MCP-spawning smokes raise the needsMcp flag', () => {
   }
 });
 
+test('a script test whose imports reach mcp/src raises the needsMcp flag', () => {
+  // gate-evaluator.test.mjs loads mcp/src/agent-brief/reviewed-evidence.mjs, which needs
+  // mdast-util-from-markdown from mcp/node_modules; without the flag the lane never installs it.
+  const plan = buildImpactPlan({ files: ['scripts/lib/dogfood-walk/gate-evaluator.test.mjs'] });
+  assert.ok(plan.lanes.gates.commands.includes('pnpm exec node --test scripts/lib/dogfood-walk/gate-evaluator.test.mjs'));
+  assert.equal(plan.lanes.gates.needsMcp, true);
+
+  const unrelated = buildImpactPlan({ files: ['scripts/ci/run-with-retry.mjs'] });
+  assert.equal(unrelated.lanes.gates.needsMcp, false);
+});
+
 test('the Playwright setup action is planner surface and forces the full plan', () => {
   const plan = buildImpactPlan({ files: ['.github/actions/setup-playwright/action.yml'] });
   assert.equal(plan.full, true);
@@ -437,9 +488,20 @@ test('a merge group builds every lane and says why', () => {
  test('push with a verified comparison uses the same scope as a PR', () => {
   const plan = decide({base:'before', head:'after', files:['README.md'], eventName:'push'});
   assert.equal(plan.full, false);
-  assert.equal(plan.lanes.unit.mode, 'skip');
+  assert.equal(plan.lanes.unit.mode, 'focused');
   assert.equal(plan.lanes.e2e.mode, 'skip');
   assert.equal(decide({base:null, head:'after', eventName:'push'}).full, true);
+});
+
+test('the Checks post-merge push runs the full set; a compared manual run plans like a PR', () => {
+  const merged = decide({base:'before', head:'after', files:['README.md'], eventName:'push', mainPushFull:true});
+  assert.equal(merged.full, true);
+  assert.match(merged.reason, /post-merge/);
+  assert.equal(merged.lanes.unit.knip, true);
+  assert.equal(merged.lanes.unit.contract, 'full');
+  const compared = decide({base:'before', head:'after', files:['README.md'], eventName:'workflow_dispatch'});
+  assert.equal(compared.full, false);
+  assert.equal(decide({base:null, head:'after', eventName:'workflow_dispatch'}).full, true);
 });
 
 test('push entrypoint uses the exact ancestor and fails closed for missing or unrelated history', async () => {
@@ -458,11 +520,45 @@ test('push entrypoint uses the exact ancestor and fails closed for missing or un
     const run = (base) => execFileSync(process.execPath,[script,'--event=push'],{
       cwd, encoding:'utf8', env:{...process.env, GITHUB_OUTPUT:'', PUSH_BEFORE:base},
     });
-    assert.match(run(before), /unit=skip perf=skip mcp=skip playwright=skip/);
+    assert.match(run(before), /unit=skip perf=skip mcp=skip playwright=skip/, "a repository with no core contracts has nothing to run");
+    const merged = execFileSync(process.execPath,[script,'--event=push','--main-push=full'],{
+      cwd, encoding:'utf8', env:{...process.env, GITHUB_OUTPUT:'', PUSH_BEFORE:before},
+    });
+    assert.match(merged, /unit=full perf=full mcp=full playwright=full .*post-merge/, 'the Checks post-merge push must run the full set');
+    assert.doesNotMatch(merged, /main-push reuse/, 'the post-merge push must not reuse the train\'s partial result');
     for (const base of ['', '0'.repeat(40), 'a'.repeat(40), git('commit-tree',git('rev-parse','HEAD^{tree}'),'-m','unrelated')]) {
       assert.match(run(base), /unit=full perf=full mcp=full playwright=full/);
     }
   } finally { rmSync(cwd,{recursive:true,force:true}); }
+});
+
+test('only the Checks workflow asks its planner for the full set after a merge', async () => {
+  const { readFileSync } = await import('node:fs');
+  const read = (name) => readFileSync(new URL(`../../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
+  const plan = read('checks').split('\n').find((line) => line.includes('node scripts/ci/classify-change.mjs'));
+  assert.match(plan, /--main-push=full/, 'checks.yml plan step lost --main-push=full');
+  assert.doesNotMatch(read('e2e'), /--main-push=full/);
+  // On a push the merge base with origin/main is HEAD itself, and a ratchet compared with HEAD
+  // can never fail; the post-merge run compares with the previous tip.
+  assert.match(read('checks'), /^      DECISION_BASE_REF: \$\{\{ github\.event_name == 'push' && github\.event\.before \|\| needs\.plan\.outputs\.base \}\}$/m);
+});
+
+test('ratchets run for the files they count, and message parts reach their catalogue readers', () => {
+  const ratchets = ratchetContractFiles();
+  assert.ok(ratchets.includes('tests/contract/control-adoption/tab-adoption-ratchet.contract.test.ts'));
+  assert.ok(ratchets.includes('tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts'));
+  const ui = buildImpactPlan({ files: ['src/views/download/ui/ScreensStage.tsx'] }).lanes.unit.contractFiles;
+  for (const ratchet of ratchets) assert.ok(ui.includes(ratchet), ratchet);
+  assert.ok(!buildImpactPlan({ files: ['README.md'] }).lanes.unit.contractFiles.some((path) => ratchets.includes(path) && !path.includes('/security/')));
+  const part = buildImpactPlan({ files: ['messages/ko/library.json'] }).lanes.unit.contractFiles;
+  const nonCore = part.filter((path) => !coreContractFiles().includes(path) && !ratchets.includes(path));
+  assert.ok(nonCore.length > 10, `a message part reached only ${nonCore.length} catalogue readers`);
+});
+
+test('the forbidden-pattern contracts run before every merge', () => {
+  const core = coreContractFiles();
+  for (const path of FORBIDDEN_PATTERN_CONTRACTS) assert.ok(core.includes(path), `${path} is missing or left the core`);
+  assert.ok(buildImpactPlan({ files: ['README.md'] }).lanes.unit.contractFiles.includes('tests/contract/copy/label-decoration.contract.test.ts'));
 });
 
 test('both workflows retain exhaustive triggers isolated from ordinary push cancellation', async () => {
@@ -475,10 +571,9 @@ test('both workflows retain exhaustive triggers isolated from ordinary push canc
     const group = source.split('\n').find((line) => line.startsWith('  group:'));
     assert.match(group, /github\.event_name == 'schedule'/);
     assert.match(group, /github\.event_name == 'workflow_dispatch'/);
+    assert.match(group, /'full(?:\{0\}', inputs\.plan_from\))?'? \|\|.*'change' \}\}$/);
     // A rehearsal that plans from a named base gets its own group, so it never cancels the full run.
-    assert.match(group, name === 'e2e'
-      ? /format\('full\{0\}', inputs\.plan_from\) \|\| github\.event_name == 'push' && format\('push-\{0\}', github\.sha\) \|\| 'change'/
-      : /'full' \|\| 'change'/);
+    if (name === 'e2e') assert.match(group, /format\('full\{0\}', inputs\.plan_from\)/);
   }
 });
 
@@ -492,7 +587,7 @@ test('browser execution inputs promote only browser evidence, while shared routi
     assert.ok(!plan.lanes.gates.commands.includes('pnpm lint'));
     assert.ok(plan.lanes.gates.commands.includes('node --test scripts/ci/run-playwright-ci.test.mjs'));
   }
-  assert.equal(buildImpactPlan({files:['scripts/data/playwright-file-durations.json']}).lanes.unit.mode,'skip');
+  assert.equal(buildImpactPlan({files:['scripts/data/playwright-file-durations.json']}).lanes.unit.affected,false);
   for (const file of ['scripts/ci/classify-change.mjs','scripts/ci/run-ci-lane.mjs','.github/workflows/checks.yml']) {
     assert.equal(buildImpactPlan({files:[file]}).full,true);
   }

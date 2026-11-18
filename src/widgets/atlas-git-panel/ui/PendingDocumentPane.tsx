@@ -244,7 +244,7 @@ export function DocumentChangeReader({
       // destructive door.
       tabIndex={0}
       aria-label={label}
-      className="git-fade-in flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+      className="git-fade-in flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
     >
       {/*
         One reading measure for header, door, box and body, left-anchored at every width, so

@@ -210,16 +210,20 @@ export function splitTrain(numbers) {
 /**
  * What a red train does next.
  *
- * - Every failing context is in the flaky set and this train has not spent its rerun: **rerun** the
- *   failed jobs. This applies at every size, not only to a single pull request, because a bisect
- *   over a flaky context costs `log2(n)` CI runs to learn nothing.
+ * - This train has not spent its rerun, and it carries one pull request or every failing context
+ *   is in the flaky set: **rerun** only the failed jobs, on the unchanged head. Ejecting a lone
+ *   pull request costs its author a fix-and-requeue round; in 4 of the 20 red trains before
+ *   2026-11-18 the next train carrying the same head went green. A run with jobs still going,
+ *   only cancelled contexts, or a refused rerun request settles as red without one. For several, a bisect over a flaky context costs
+ *   `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
  * - More than one component: **split** into halves, run as successive trains (bors-style).
  * - One component: **eject** it, naming the contexts.
  */
 export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0 }) {
   const names = unique(failed.map((check) => check.name));
   const flakySet = new Set(flaky);
-  if (names.length > 0 && names.every((name) => flakySet.has(name)) && reruns < FLAKY_RERUNS) {
+  const lone = components.length === 1;
+  if (names.length > 0 && (lone || names.every((name) => flakySet.has(name))) && reruns < FLAKY_RERUNS) {
     return { action: 'rerun', names };
   }
   if (components.length > 1) return { action: 'split', halves: splitTrain(components), names };
@@ -263,6 +267,9 @@ export function driftVerdict({ trainFiles, mainFiles }) {
  *
  * - `ready-green`: every required context is green on its head and no unaccepted check is red.
  * - `clean-merge`: `git merge-tree --write-tree origin/main <head>` is clean.
+ * - `contains-main`: its head already contains today's `main`, so the tree its own CI tested is
+ *   the tree that lands. A head behind `main` may import a file `main` changed since; it takes
+ *   the train, which tests the merged tree.
  * - `disjoint-from-main`: the files it changes do not intersect the files `main` changed since
  *   the merge base, so the merged tree differs from the tested one only in files it never touched.
  * - `no-overlapping-train`: the lock is free, or its train records a file set that does not
@@ -270,7 +277,7 @@ export function driftVerdict({ trainFiles, mainFiles }) {
  * - `not-full-plan`: `classify-change` does not plan the full lanes for it. A change to the impact
  *   authority, CI itself or the root contracts always takes the train.
  */
-export function fastPathEligibility({ checks, other, mergeClean, prFiles, mainFiles, lock, fullPlan }) {
+export function fastPathEligibility({ checks, other, mergeClean, containsMain, prFiles, mainFiles, lock, fullPlan }) {
   const rules = [];
   const add = (rule, ok, detail) => rules.push({ rule, ok, detail });
 
@@ -278,13 +285,18 @@ export function fastPathEligibility({ checks, other, mergeClean, prFiles, mainFi
   else if (checks.state !== 'green') {
     const why = checks.state === 'failed'
       ? `${checks.failed.length} required context(s) failed`
-      : `${checks.pending.length} required context(s) running, ${checks.unrun.length} not run (a draft runs none; \`pnpm pr:ci\` fires one)`;
+      : `${checks.pending.length} required context(s) running, ${checks.unrun.length} not run (a draft runs none until it is marked ready)`;
     add('ready-green', false, why);
   } else if (other?.state === 'failed') add('ready-green', false, `unrequired check(s) red: ${other.failed.map((c) => c.name).join(', ')}`);
   else add('ready-green', true, 'every required context is green on its head');
 
   if (mergeClean === null || mergeClean === undefined) add('clean-merge', false, 'the trial merge could not run');
   else add('clean-merge', mergeClean, mergeClean ? 'merges onto origin/main without conflict' : 'conflicts with origin/main');
+
+  if (containsMain === null || containsMain === undefined) add('contains-main', false, 'whether its head contains origin/main could not be read');
+  else add('contains-main', containsMain, containsMain
+    ? 'its head contains origin/main, so its own CI tested the tree that lands'
+    : 'its head is behind origin/main, so its own CI did not test the tree that would land (merge origin/main into the branch to go direct)');
 
   if (!Array.isArray(prFiles) || !Array.isArray(mainFiles)) add('disjoint-from-main', false, 'the changed files could not be read');
   else {
@@ -322,6 +334,33 @@ function trainOverlapRule(lock, prFiles) {
   return overlap.length === 0
     ? [true, `${subject} touch${trains.length > 1 ? '' : 'es'} none of its files`]
     : [false, `${subject} also change${trains.length > 1 ? '' : 's'} ${overlap.slice(0, 3).join(', ')}`];
+}
+
+/**
+ * Where `pnpm pr:land <n>` sends a pull request the fast path did not take at once.
+ *
+ * - `merge`: the fast path takes it now.
+ * - `own-ci`: every rule but `ready-green` passes and its required contexts have not finished (a
+ *   draft never ran them; a ready one is still running). Its own run is the evidence a train would
+ *   buy, bought without the lock and alongside every other pull request's; it is judged again
+ *   when the run ends.
+ * - `red`: its own run failed a context that `tolerated` (`--flaky`, `--allow-failing`) does not
+ *   name. A train would run the same change to the same verdict and eject it, so it goes back now.
+ * - `train`: anything else. `blockers` names the rules that sent it there.
+ */
+export function landingRoute({ verdict, checks, other, tolerated = [] }) {
+  if (verdict.eligible) return { route: 'merge', blockers: [] };
+  const blockers = verdict.rules.filter((row) => !row.ok && row.rule !== 'ready-green').map((row) => row.rule);
+  if (blockers.length > 0) return { route: 'train', blockers };
+  const failed = [...(checks?.failed ?? []), ...(other?.failed ?? [])];
+  if (failed.length > 0) {
+    const allowed = new Set(tolerated);
+    return failed.every((check) => allowed.has(check.name))
+      ? { route: 'train', blockers: ['ready-green'] }
+      : { route: 'red', blockers: ['ready-green'], failed };
+  }
+  if (checks?.state === 'waiting') return { route: 'own-ci', blockers: [] };
+  return { route: 'train', blockers: ['ready-green'] };
 }
 
 export function describeFastPath(verdict) {

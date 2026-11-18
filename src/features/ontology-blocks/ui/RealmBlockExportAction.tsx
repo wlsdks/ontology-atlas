@@ -137,7 +137,7 @@ export function RealmBlockExportAction({
           tone: "muted",
           scope: "panel",
           className:
-            "shrink-0 enabled:hover:text-[color:var(--map-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
+            "shrink-0 enabled:hover:text-[color:var(--map-panel-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
         })}
       >
         <PackagePlus size={ICON_SIZE.sm} aria-hidden="true" />

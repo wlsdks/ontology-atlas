@@ -8290,41 +8290,14 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
-  it('fails initialize instructions missing first-contact safety and recovery guidance', () => {
+  it('fails initialize instructions missing the card, the write sequence or the guide pointer', () => {
     const safeInstructions = [
-      'Use read-only first-contact diagnosis before write tools.',
+      '## Construction card',
+      'Write it all without waiting: `add_concepts` -> `add_relations` -> `validate_vault` -> `connect_project_source` -> `finalize_project_meaning`.',
+      'More: `connection_info({guide:"construction"})`, `competency`, `meta_model`, `write_safety`.',
       `Tool inventory includes ${EXPECTED_TOOLS.join(', ')}.`,
-      'rename_concept refuses an existing `newSlug` unless overwrite: true is explicit.',
-      'delete_concept force: true means accepting dangling referrers.',
-      'Use expected_mtime when patching a previously-read concept.',
-      'Tool schemas reject unknown arguments with nearest hints.',
-      'unknown arguments are rejected instead of being ignored.',
-      'unknown tool names are rejected with closest tool-name hints.',
-      'Tool-level errors include structuredContent errorCode values such as unknown_tool for unknown tool names, unknown_argument for unknown argument names and invalid_arguments for invalid enum/filter/type values.',
-      'Tool-level errors include structuredContent repair fields such as receivedTool, receivedArgument, unknownArguments, rowName, receivedField, unknownFields, allowedFields, receivedFields, firstSeenAt, receivedValue, suggestion, allowedTools, allowedArguments, and allowedValues.',
-      'Missing node errors include structuredContent repair fields such as missingSlug, similarSlugs, recoveryTools, and createTool.',
-      'Slug conflict errors include structuredContent repair fields such as conflictSlug, recoveryTools, and overwriteOption.',
-      'Unknown tool: list_concept. Did you mean "list_concepts"?',
-      'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
-      'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)',
-      'Batch add_concepts and add_relations isolate each non-object row and unknown row fields as ok:false.',
-      'Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`; if every row failed, treat the call as dry validation evidence and retry corrected rows.',
-      'Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`; if every row failed, treat the call as dry validation evidence and retry corrected rows.',
-      'Batch add_relations unknown type row errors include a closest-value hint such as Did you mean "depends_on"?',
-      'Duplicate add_concepts input slugs report concepts[n] duplicate slug in input batch; first seen at concepts[m].',
-      'operation must be one of: ... Invalid value: overveiw. Did you mean "overview"?',
-      'maintenance_plan phases, severities, and kinds filters are enum-validated.',
-      'health and workspace_brief tune probes with componentLimit, cycleLimit, recommendationLimit, orderLimit, nodeLimit, dependencyTypes, and componentTypes.',
-      'dependencyTypes / componentTypes accept relation types domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes; typoed values fail with nearest-value hints.',
-      'maintenance_plan ready pages return cursor.found=true with cursor.reason=null.',
-      'maintenance_plan ready pages set cursor.nextAfterActionId to the last returned action id and cursor.hasMore for remaining pages.',
-      'maintenance_plan nextExecutableAction and nextReviewAction point only at the first executable/review action in the current returned page.',
-      'maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.',
-      'maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.',
-      'query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.',
-      'query_ontology agent_brief returns graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.',
-      'query_ontology agent_brief returns traversalStrategy rows plan_before_enumeration, bounded_path_evidence, and containment_cross_check.',
-      'query_ontology agent_brief returns resultContracts for all_paths requiring callers to report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.',
+      '- *"Who references X?"* (always before a rename, merge, or delete) → `find_backlinks(slug)`.',
+      '- *"Where do I start?"* → `query_ontology({operation:\'workspace_brief\'})`, then `validate_vault({})`.',
       'This filler keeps the instructions representative of a real initialize response.',
     ].join('\n');
 
@@ -8338,108 +8311,28 @@ describe('verify.mjs first-contact gates', () => {
       'initialize instructions missing tool inventory entry: infer_imports',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('overwrite: true', '') } }),
-      'initialize instructions missing overwrite safety',
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('## Construction card', '## Notes') } }),
+      'initialize instructions missing construction card',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('dangling referrers', '') } }),
-      'initialize instructions missing dangling referrers safety',
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('-> `finalize_project_meaning`', '') } }),
+      'initialize instructions missing build write sequence',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('expected_mtime', '') } }),
-      'initialize instructions missing expected_mtime conflict guard',
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('`write_safety`', '') } }),
+      'initialize instructions missing long-rule guide pointer',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('unknown arguments are rejected', '') } }),
-      'initialize instructions missing strict arguments guidance',
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('before a rename, merge, or delete', 'first') } }),
+      'initialize instructions missing backlinks before rename guidance',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('Unknown tool: list_concept. Did you mean "list_concepts"?', '') } }),
-      'initialize instructions missing unknown tool guidance',
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace(', then `validate_vault({})`', '') } }),
+      'initialize instructions missing read-only first-contact diagnosis',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('unknown_argument', 'argument_error') } }),
-      'initialize instructions missing structured errorCode guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('rowName, receivedField, unknownFields, allowedFields, receivedFields, firstSeenAt, ', '') } }),
-      'initialize instructions missing structured row field repair guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('missingSlug, similarSlugs, recoveryTools, and createTool', 'missing node fields') } }),
-      'initialize instructions missing structured missing slug guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('conflictSlug, recoveryTools, and overwriteOption', 'conflict fields') } }),
-      'initialize instructions missing structured conflict guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('"summry" (did you mean "summary"?)', '"summry"') } }),
-      'initialize instructions missing multiple unknown arguments guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('non-object row and unknown row fields', 'bad rows') } }),
-      'initialize instructions missing batch row isolation guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('no row-level write metadata and no top-level `postWriteMaintenance`', 'write result metadata maybe present') } }),
-      'initialize instructions missing batch no-write metadata guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`', 'relation metadata maybe present') } }),
-      'initialize instructions missing batch relation no-write metadata guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('unknown type row errors include a closest-value hint such as Did you mean "depends_on"?', 'unknown type row errors fail') } }),
-      'initialize instructions missing batch relation type hint guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('concepts[n] duplicate slug in input batch; first seen at concepts[m]', 'duplicate slug') } }),
-      'initialize instructions missing batch duplicate slug guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('Did you mean "overview"?', '') } }),
-      'initialize instructions missing nearest enum hint guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('phases, severities, and kinds', 'filters') } }),
-      'initialize instructions missing maintenance filter enum guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('componentLimit, cycleLimit, recommendationLimit, orderLimit, nodeLimit, dependencyTypes, and componentTypes', 'tuning options') } }),
-      'initialize instructions missing health tuning guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('depends_on, relates, contains, describes', 'relation values') } }),
-      'initialize instructions missing health relation filter enum guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.found=true with cursor.reason=null', 'ready cursor') } }),
-      'initialize instructions missing maintenance ready cursor guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.nextAfterActionId to the last returned action id', 'cursor marker') } }),
-      'initialize instructions missing maintenance ready cursor pagination guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('current returned page', 'remaining queue') } }),
-      'initialize instructions missing maintenance current-page pointer guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.found=false and cursor.reason', 'empty page') } }),
-      'initialize instructions missing maintenance cursor miss guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.nextAfterActionId=null and cursor.hasMore=false', 'no pagination metadata') } }),
-      'initialize instructions missing maintenance cursor miss pagination guidance',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema', 'relation decision docs') } }),
-      'initialize instructions missing agent brief relation decision guide',
-    );
-    assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack') } }),
-      'initialize instructions missing agent brief graph DB query pack guidance',
+      initializeInstructionsFailure({ result: { instructions: `${safeInstructions}\nPass a qualification packet to reach the writePlan.` } }),
+      'initialize instructions name the bulk qualification route',
     );
   });
 

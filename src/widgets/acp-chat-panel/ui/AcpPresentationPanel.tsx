@@ -72,7 +72,7 @@ export function AcpPresentationPanel({
       tabIndex={-1}
       data-testid="acp-presentation"
       aria-label={t('ariaLabel')}
-      className="flex h-full min-h-0 flex-col gap-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-accent)]"
+      className="flex h-full min-h-0 flex-col gap-4 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-accent)]"
     >
       <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
         <div className="grid min-w-0 gap-1">
