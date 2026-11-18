@@ -1,28 +1,57 @@
 /**
- * The source lines this server process served through `analyze_repo_structure`
- * sourceReads: per repository root, each file with the line ranges and symbols read.
- * Outlines are not reads. The depth check asks this record, not a node's wording,
- * whether a capability's entry file was read; it lives as long as the process, so a
- * restarted server has none and says so instead of guessing.
+ * The source lines this server served through `analyze_repo_structure`
+ * sourceReads, each file with the line ranges and symbols read. Outlines are not
+ * reads. The depth check asks this record, not a node's wording, which lines were
+ * read.
+ *
+ * Over stdio one server process serves one client connection, and the transport
+ * carries no session id, so the process is the session: a restarted server has
+ * no record and says so. Files are keyed by their real absolute path, so a read
+ * made with `rootPath` at a package folder counts for the repository it sits in
+ * and the other way round. Each file keeps the size and mtime it had when read;
+ * once either changes, its ranges no longer count.
  */
 
-import { resolve } from 'node:path';
+import { realpathSync, statSync } from 'node:fs';
+import { isAbsolute, join, relative, sep } from 'node:path';
 
-const READS = new Map();
+const FILES = new Map();
+const FILE_LIMIT = 20_000;
+const RANGES_PER_FILE = 256;
 
-function rootKey(rootPath) {
-  return resolve(String(rootPath ?? ''));
+function realRoot(rootPath) {
+  try {
+    return realpathSync(String(rootPath ?? ''));
+  } catch {
+    return null;
+  }
+}
+
+function stampOf(abs) {
+  try {
+    const stat = statSync(abs);
+    return stat.isFile() ? `${stat.size}:${stat.mtimeMs}` : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Records every delivered line range, symbol read and context part in a `sourceEvidence:v1` packet. */
 export function recordSourceEvidence(rootPath, packet) {
   if (!packet || !Array.isArray(packet.rows)) return;
-  const key = rootKey(rootPath);
-  const files = READS.get(key) ?? new Map();
+  const root = realRoot(rootPath);
+  if (!root) return;
   const add = (path, range) => {
-    const ranges = files.get(path) ?? [];
-    ranges.push(range);
-    files.set(path, ranges);
+    if (typeof path !== 'string' || !path || isAbsolute(path) || path.split('/').includes('..')) return;
+    const abs = join(root, ...path.split('/'));
+    const stamp = stampOf(abs);
+    if (!stamp) return;
+    let entry = FILES.get(abs);
+    if (!entry || entry.stamp !== stamp) entry = { stamp, ranges: [] };
+    FILES.delete(abs);
+    if (entry.ranges.length < RANGES_PER_FILE) entry.ranges.push(range);
+    FILES.set(abs, entry);
+    if (FILES.size > FILE_LIMIT) FILES.delete(FILES.keys().next().value);
   };
   for (const row of packet.rows) {
     if (row?.status !== 'read' || !row.actualRange || typeof row.path !== 'string') continue;
@@ -37,15 +66,26 @@ export function recordSourceEvidence(rootPath, packet) {
       add(part.path, { startLine: part.startLine, endLine: part.endLine, symbol: part.symbol, role: part.role });
     }
   }
-  if (files.size > 0) READS.set(key, files);
 }
 
-/** path -> ranges read under `rootPath` in this process; empty when nothing was read. */
+/** Repository-relative `/` path -> ranges read inside `rootPath` and still current; empty when none. */
 export function sessionReads(rootPath) {
-  return READS.get(rootKey(rootPath)) ?? new Map();
+  const reads = new Map();
+  const root = realRoot(rootPath);
+  if (!root) return reads;
+  for (const [abs, entry] of FILES) {
+    const rel = relative(root, abs);
+    if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) continue;
+    if (stampOf(abs) !== entry.stamp) {
+      FILES.delete(abs);
+      continue;
+    }
+    reads.set(rel.split(sep).join('/'), entry.ranges);
+  }
+  return reads;
 }
 
 /** Forgets every recorded read; tests only. */
 export function resetSessionReads() {
-  READS.clear();
+  FILES.clear();
 }

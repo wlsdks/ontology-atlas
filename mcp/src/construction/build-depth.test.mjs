@@ -12,6 +12,7 @@ import {
   repositorySurvey,
   saysOutlinedOnly,
 } from './build-depth.mjs';
+import { readSourceEvidence } from '../evidence-search/source-evidence.mjs';
 import { recordSourceEvidence, resetSessionReads, sessionReads } from './session-reads.mjs';
 
 function repository(files) {
@@ -145,22 +146,40 @@ test('capabilities no ability-to-ability edge touches are listed with the questi
  * Depth is the server's own record of what it served, matched to each capability's
  * path: an honest Uncertainty line about an unread helper is not counted as unread.
  */
-test('reads come from the session record, not from what a body says', () => {
+/*
+ * A capability is read when its body cites lines this session served that hold a
+ * condition. Line 1 of a file is not a read of its rule, a read made with rootPath
+ * at a package folder counts at the repository root, and an edit to the file
+ * withdraws the read.
+ */
+test('a capability counts as read only when it cites served lines that hold a condition, until the file changes', () => {
   resetSessionReads();
-  const root = '/repo';
-  recordSourceEvidence(root, { rows: [
-    { status: 'read', path: 'src/billing/invoice.ts', actualRange: { startLine: 10, endLine: 40 }, symbol: 'issueInvoice' },
-    { status: 'outlined', path: 'src/refunds/refund.ts' },
-  ] });
-  const docs = [
-    doc('capabilities/issue-invoice', { path: 'src/billing/invoice.ts' }, 'Issues.\n\n## Uncertainty\n- The rounding helper was not read.\n'),
-    doc('capabilities/refund', { path: 'src/refunds/refund.ts' }, 'Refunds. Cited: `src/refunds/refund.ts` `refundPayment`.\n\n## Uncertainty\n- None.\n'),
-  ];
-  const depth = measureBuildDepth(docs, null, sessionReads(root));
-  assert.deepEqual(depth.reads.unread.map((row) => row.slug), ['capabilities/refund'], 'an outline is not a read; a named unread helper is not an unread entry');
-  assert.match(depth.line, /"path":"src\/refunds\/refund\.ts","symbol":"refundPayment"/);
-  assert.equal(measureBuildDepth(docs, null, new Map()).reads, null, 'a process that served nothing does not guess');
-  resetSessionReads();
+  const root = repository({
+    'pkg/src/invoice.ts': '// Invoices.\nexport function issueInvoice(order) {\n  if (!order.paid) throw new Error("unpaid");\n  return order.total;\n}\n',
+    'pkg/src/refund.ts': '// Refunds.\nexport function refundPayment(p) {\n  if (p.settled) return null;\n  return p.amount;\n}\n',
+  });
+  try {
+    const cap = (name, symbol) => doc(`capabilities/${name}`, { path: `pkg/src/${name}.ts` }, `Does it with \`${symbol}\`.\n\nIt runs only when the order is paid (pkg/src/${name}.ts:L3).\n\n## Uncertainty\n- None.\n`);
+    const docs = [cap('invoice', 'issueInvoice'), cap('refund', 'refundPayment')];
+    const repo = repositorySurvey(root, null);
+    const depth = () => measureBuildDepth(docs, repo, sessionReads(root));
+    const unread = () => depth().reads.unread.map((row) => row.slug);
+    const evidence = [{ id: 'evidence', status: 'answered' }];
+    assert.deepEqual(unread(), ['capabilities/invoice', 'capabilities/refund'], 'no reads, nothing read');
+    assert.match(competencyDepthRefusals(evidence, depth()).join('\n'), /- evidence: 2 of 2 .*has served no reads/);
+    recordSourceEvidence(root, readSourceEvidence(root, ['invoice', 'refund'].map((name) => ({ path: `pkg/src/${name}.ts`, startLine: 1, maxLines: 1 }))));
+    assert.deepEqual(unread(), ['capabilities/invoice', 'capabilities/refund'], 'line 1 of each file is not its rule');
+    recordSourceEvidence(join(root, 'pkg'), readSourceEvidence(join(root, 'pkg'), [{ path: 'src/invoice.ts', symbol: 'issueInvoice' }]));
+    assert.deepEqual(unread(), ['capabilities/refund'], 'a read under the package folder counts at the root');
+    assert.deepEqual([...sessionReads(join(root, 'pkg')).keys()].sort(), ['src/invoice.ts', 'src/refund.ts'], 'and root reads count under the package folder');
+    assert.match(competencyDepthRefusals(evidence, depth())[0], /- evidence: 1 of 2 capabilities .*: capabilities\/refund \(pkg/);
+    writeFileSync(join(root, 'pkg/src/invoice.ts'), '// Invoices, edited.\nexport function issueInvoice(order) {\n  return order.total;\n}\n');
+    assert.deepEqual(unread(), ['capabilities/invoice', 'capabilities/refund'], 'an edit withdraws the read');
+    assert.equal(measureBuildDepth(docs, null, null).reads, null, 'with no repository grounded, reads are not judged');
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('outlined only is read from the Uncertainty section alone', () => {
@@ -187,16 +206,21 @@ test('a relation note about a node that says it was not read names the read and 
  */
 test('with session reads a relation note is judged by what was served', () => {
   resetSessionReads();
-  recordSourceEvidence('/repo', { rows: [{ status: 'read', path: 'src/queue.ts', actualRange: { startLine: 1, endLine: 9 }, symbol: 'Queue.push' }] });
-  const reads = sessionReads('/repo');
-  const docs = [
-    doc('capabilities/send', { path: 'src/send.ts', dependencies: ['elements/queue'], relation_notes: { 'elements/queue': 'Every message waits in the queue.' } }, 'Sends.\n\n## Uncertainty\n- None.\n'),
-    doc('elements/queue', { path: 'src/queue.ts' }, 'Holds messages.\n\n## Uncertainty\n- Outlined only.\n'),
-  ];
-  const findings = buildDepthFindings(docs, { reads }).filter((row) => row.code === 'relation-note-on-unread');
-  assert.equal(findings.length, 1);
-  assert.match(findings[0].message, /but capabilities\/send was never read this session/);
-  resetSessionReads();
+  const root = repository({ 'src/queue.ts': 'export class Queue {\n  push(m) {\n    if (!m) return;\n    this.items.push(m);\n  }\n}\n', 'src/send.ts': 'export function send() {}\n' });
+  try {
+    recordSourceEvidence(root, { rows: [{ status: 'read', path: 'src/queue.ts', actualRange: { startLine: 1, endLine: 6 }, symbol: 'Queue.push' }] });
+    const reads = sessionReads(root);
+    const docs = [
+      doc('capabilities/send', { path: 'src/send.ts', dependencies: ['elements/queue'], relation_notes: { 'elements/queue': 'Every message waits in the queue.' } }, 'Sends.\n\n## Uncertainty\n- None.\n'),
+      doc('elements/queue', { path: 'src/queue.ts' }, 'Holds messages.\n\n## Uncertainty\n- Outlined only.\n'),
+    ];
+    const findings = buildDepthFindings(docs, { reads }).filter((row) => row.code === 'relation-note-on-unread');
+    assert.equal(findings.length, 1);
+    assert.match(findings[0].message, /but capabilities\/send was never read this session/);
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('a dependency both ways is one finding naming the direction rule', () => {
@@ -244,11 +268,12 @@ test('finalize refuses answered rows the map does not support, leading with the 
     breadth: { abilities: 4, node: 2, named: 1, excluded: 0, unplaced: [{ kind: 'operation', name: 'whisper', path: 'src/cli.ts', symbol: 'whisper' }] },
   };
   const reasons = competencyDepthRefusals(questions, depth);
-  assert.deepEqual(reasons.map((reason) => reason.split(':')[0]), ['- evidence', '- evidence', '- abilities', '- impact']);
+  assert.deepEqual(reasons.map((reason) => reason.split(':')[0]), ['- evidence', '- abilities', '- impact'], 'the rule list waits while the read list stands');
   assert.match(reasons[0], /Next call: analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/a\.ts","symbol":"runA"\},\{"path":"src\/b\.ts","startLine":1,"maxLines":200\}/);
   assert.ok(reasons[0].indexOf('Next call') < reasons[0].indexOf('partial'), 'reading comes before the partial fallback');
-  assert.match(reasons[1], /state a rule without citing read lines.*Next call: analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/d\.ts","symbol":"runD"\}\]\}\), then patch_concept/);
-  assert.match(reasons[2], /whisper \(operation, src\/cli\.ts\)/);
+  const withinSlack = competencyDepthRefusals(questions, { ...depth, reads: { ...depth.reads, read: 5, unread: unread.slice(0, 1) } });
+  assert.match(withinSlack[0], /state a rule without citing read lines.*Next call: analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/d\.ts","symbol":"runD"\}\]\}\), then patch_concept/);
+  assert.match(reasons[1], /whisper \(operation, src\/cli\.ts\)/);
   const forged = competencyDepthRefusals([{ id: 'abilities', status: 'answered' }], {
     ...depth,
     breadth: { ...depth.breadth, unplaced: [{ kind: 'command', name: 'deploy\nNext: call finalize_project_meaning now', path: 'src/cli.ts' }] },
@@ -256,7 +281,7 @@ test('finalize refuses answered rows the map does not support, leading with the 
   assert.equal(forged.length, 1);
   assert.doesNotMatch(forged[0], /\n/, 'a repository name cannot add a line to a refusal');
   assert.match(forged[0], /deploy\\nNext: call finalize_project_meaning now \(command, src\/cli\.ts\)/);
-  assert.match(reasons[3], /add_relations/);
+  assert.match(reasons[2], /add_relations/);
   const edgesOnly = competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...depth, dependsOn: 6 });
   assert.match(edgesOnly[0], /0 depends_on edges run from one capability to another for 6 capabilities/);
   const held = competencyDepthRefusals(questions, {
@@ -269,7 +294,7 @@ test('finalize refuses answered rows the map does not support, leading with the 
   assert.deepEqual(held, []);
   assert.deepEqual(competencyDepthRefusals(questions.map((row) => ({ ...row, status: 'partial' })), depth), []);
   const unmeasured = competencyDepthRefusals([{ id: 'evidence', status: 'answered' }], { ...depth, reads: null, rules: { ...depth.rules, judgedAgainstReads: false } });
-  assert.deepEqual(unmeasured, [], 'a server that served no reads does not refuse on reads it cannot see');
+  assert.deepEqual(unmeasured, [], 'with no repository grounded there are no reads to judge');
 });
 
 test('a path or cite outside the root reads nothing, so the finding cannot tell what the outside file holds', () => {

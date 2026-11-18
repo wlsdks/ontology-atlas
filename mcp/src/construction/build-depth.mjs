@@ -228,12 +228,18 @@ function readCall(unread) {
  * Which capabilities' entry files this server process served a line or symbol read
  * for. Null when it served none: a restarted server cannot tell, and says so.
  */
-function measureReads(docs, reads) {
-  if (!reads || reads.size === 0) return null;
+/**
+ * A capability counts as read when its body cites lines this session served, under
+ * the file's current stamp, and those lines hold a condition. Opening a file, or
+ * line 1 of it, is not reading the rule. Null only when no repository is grounded.
+ */
+function measureReads(docs, reads, repoRoot) {
+  if (!reads) return null;
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability' && pathOf(doc));
-  const unread = capabilities.filter((doc) => !reads.has(pathOf(doc)))
+  const unread = capabilities
+    .filter((doc) => !lineCites(doc.body).some((cite) => servedLines(reads, cite) && citedLinesDecide(repoRoot, cite)))
     .map((doc) => ({ slug: doc.slug, path: pathOf(doc), symbol: citedSymbol(doc, pathOf(doc)) }));
-  return { capabilities: capabilities.length, read: capabilities.length - unread.length, unread };
+  return { capabilities: capabilities.length, read: capabilities.length - unread.length, unread, served: reads.size };
 }
 
 /** Wording that states a rule: a condition, an order or a default. */
@@ -282,12 +288,12 @@ function measureRules(docs, reads, repoRoot) {
     const rules = preSectionParagraphs(doc.body).slice(1).filter((paragraph) => RULE_WORDS.test(paragraph));
     if (rules.length === 0) continue;
     const cites = lineCites(doc.body);
-    const exact = cites.some((cite) => (!reads || reads.size === 0 || servedLines(reads, cite)) && citedLinesDecide(repoRoot, cite));
+    const exact = cites.some((cite) => (!reads || servedLines(reads, cite)) && citedLinesDecide(repoRoot, cite));
     if (exact) continue;
     const path = pathOf(doc);
     uncited.push({ slug: doc.slug, path, symbol: path ? citedSymbol(doc, path) : null, cited: cites.length > 0 });
   }
-  return { capabilities: capabilities.length, uncited, judgedAgainstReads: Boolean(reads && reads.size > 0) };
+  return { capabilities: capabilities.length, uncited, judgedAgainstReads: Boolean(reads) };
 }
 
 /** Capability -> capability `depends_on` edges, and the capabilities in none. */
@@ -319,7 +325,7 @@ export function measureBuildDepth(docs, repo, reads) {
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability');
   const dependsOn = dependencyEdges(docs).length;
   const breadth = repo ? measureAbilities(docs, repo.survey) : null;
-  const depth = measureReads(docs, reads);
+  const depth = measureReads(docs, reads, repo?.repoRoot ?? null);
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const parts = [];
@@ -330,9 +336,7 @@ export function measureBuildDepth(docs, repo, reads) {
     }
   }
   if (depth && depth.unread.length > 0) {
-    parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities had their entry file read this session. Not read: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next; each symbol read returns the guards, defaults and callees that decide it: ${readCall(depth.unread)}.`);
-  } else if (!depth && capabilities.length > 0) {
-    parts.push('Depth: this server process has served no line or symbol reads, so which entry files were read is unknown.');
+    parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.${depth.served === 0 ? ' This server process has served no reads; a restarted server keeps none.' : ''} Not yet: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(depth.unread)}.`);
   }
   // The rule and edge lists name slugs across the vault; they speak only for a grounded build.
   if (repo && rules.uncited.length > 0) {
@@ -498,7 +502,7 @@ function ruleCiteFindings(docs, reads, repoRoot) {
   return measureRules(docs, reads, repoRoot).uncited.map((row) => ({
     slug: row.slug,
     code: 'rule-without-read-lines',
-    message: `${row.slug} states a rule but cites no ${reads && reads.size > 0 ? 'read ' : ''}lines that hold its condition${row.cited ? ' (its cites name lines that were not served or hold no condition)' : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
+    message: `${row.slug} states a rule but cites no ${reads ? 'read ' : ''}lines that hold its condition${row.cited ? ' (its cites name lines that were not served or hold no condition)' : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
   }));
 }
 
@@ -531,10 +535,10 @@ export function competencyDepthRefusals(questions, depth) {
   const fallback = (id, gap) => `Only if that cannot be done, mark ${id} partial with "- Gap: ${gap}".`;
   const reads = depth.reads;
   if (status.get('evidence') === 'answered' && reads && reads.capabilities > 0 && reads.unread.length * 3 > reads.capabilities) {
-    reasons.push(`- evidence: ${reads.unread.length} of ${reads.capabilities} capabilities have an entry file this server never served a read for: ${listed(reads.unread, (row) => `${row.slug} (${row.path})`)}. Next call: ${readCall(reads.unread)}; each read returns the guards, defaults and callees that decide it. Patch each body with that rule and the cite of its lines, and finalize again. ${fallback('evidence', 'these abilities were outlined, not read')}`);
+    reasons.push(`- evidence: ${reads.unread.length} of ${reads.capabilities} capabilities cite no lines this server read that hold a condition${reads.served === 0 ? ' (this server process has served no reads; a restarted server keeps none)' : ''}: ${listed(reads.unread, (row) => `${row.slug} (${row.path})`)}. Next call: ${readCall(reads.unread)}; each read returns the guards, defaults and callees that decide it. Patch each body with that rule and the cite of its lines, and finalize again. ${fallback('evidence', 'these abilities were outlined, not read')}`);
   }
   const rules = depth.rules;
-  if (status.get('evidence') === 'answered' && rules?.judgedAgainstReads && rules.uncited.length > 0) {
+  if (status.get('evidence') === 'answered' && reasons.length === 0 && rules?.judgedAgainstReads && rules.uncited.length > 0) {
     reasons.push(`- evidence: ${rules.uncited.length} capabilities state a rule without citing read lines that hold its condition: ${listed(rules.uncited, (row) => row.slug)}. Next call: ${citeRepair(rules.uncited)}, and finalize again. ${fallback('evidence', 'some rules cite no read lines')}`);
   }
   const breadth = depth.breadth;

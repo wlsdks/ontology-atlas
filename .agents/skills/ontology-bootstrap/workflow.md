@@ -76,8 +76,8 @@ Breadth is done when every ability is placed; depth is done when every
 capability states its rule with a cite of read lines. Breadth comes first: when
 cost is the limit, cut depth on abilities beyond the must-have set, never
 breadth. `add_concepts` and `validate_vault` list the abilities nothing places,
-the capabilities whose entry file this server never read, the rules that cite
-no read lines, and the capabilities no ability-to-ability edge touches, each
+the capabilities that cite no lines this server read holding a condition, the
+rules that cite no read lines, and the capabilities no ability-to-ability edge touches, each
 with the exact next call; make those calls before finalizing.
 
 ## 6. Say the outline, then write it
