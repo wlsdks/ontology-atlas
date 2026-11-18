@@ -465,7 +465,7 @@ mod shutdown_tests {
     fn the_event_loop_routes_every_event_through_the_shutdown_path() {
         let file = include_str!("lib.rs");
         let (code, _) = file
-            .split_once("#[cfg(test)]\nmod shutdown_tests")
+            .split_once("mod shutdown_tests {")
             .expect("the shutdown tests follow the code they pin");
         let code: String = code.split_whitespace().collect();
         let call = ["shut_down(", "shutdown_for(&event),"].concat();
