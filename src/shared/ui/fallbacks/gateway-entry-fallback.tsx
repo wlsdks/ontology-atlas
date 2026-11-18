@@ -9,21 +9,18 @@ import { controlClass } from '@/shared/ui/control-class';
  * `MapEntryFallback` stays where the map description is true. Both
  * links are real destinations, so the gateway works with no JS.
  */
-const HIDE_IN_INSTALLED_APP =
-  "if(window.isTauri){var m=document.currentScript.previousElementSibling;if(m)m.style.visibility='hidden'}";
-
 export async function GatewayEntryFallback({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'download' });
 
   return (
-    <>
     <main
       id="main"
       tabIndex={-1}
       data-route-loading="true"
       data-testid="gateway-entry-fallback"
       aria-busy="true"
-      className="flex h-full min-h-full flex-1 flex-col justify-center bg-[color:var(--color-canvas)] px-6 py-10 md:px-12"
+      // The boot script marks the installed app on <html> before first paint; it is never offered its own download.
+      className="flex h-full min-h-full flex-1 flex-col justify-center bg-[color:var(--color-canvas)] px-6 py-10 md:px-12 [html[data-shell=desktop]_&]:invisible"
     >
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
@@ -57,9 +54,5 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       </p>
       </div>
     </main>
-    {/* The installed app sets `window.isTauri` before any page script and must not be offered its own
-        download: hide this frame at parse time, so it never paints while the app's own entry loads. */}
-    <script dangerouslySetInnerHTML={{ __html: HIDE_IN_INSTALLED_APP }} />
-    </>
   );
 }
