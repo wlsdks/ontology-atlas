@@ -114,7 +114,26 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   if (sourceReads !== undefined && sourceBefore !== sourceAfter) {
     throw new Error('Repository source changed during source-sensitive proposal analysis; retry against one stable snapshot.');
   }
-  return result;
+  return reviewing ? result : analysisView(result);
+}
+
+/**
+ * The structural analysis the CLI asks for by name. Relations that only restate
+ * "the project contains every candidate" or connect folder-named element candidates
+ * are not sent (infer_imports carries the import edges with their evidence), and a
+ * scan that found no ability says so in one line.
+ */
+function analysisView(result) {
+  const proposable = new Set([
+    ...result.domains.map((row) => row.slug),
+    ...result.capabilities.map((row) => row.slug),
+  ]);
+  const suggestedRelations = result.suggestedRelations
+    .filter((row) => proposable.has(row.from) && proposable.has(row.to));
+  const note = result.capabilities.length === 0
+    ? `No capability candidate: folder and package names are not abilities. Outline the entry points with sourceReads mode:"outline" and propose capabilities from what the code does; the ${result.elements.length} element candidates are folder names, not roles.`
+    : null;
+  return { ...result, suggestedRelations, ...(note ? { note } : {}) };
 }
 
 function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {

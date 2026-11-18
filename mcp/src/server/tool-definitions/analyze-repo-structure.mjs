@@ -223,6 +223,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
       next: NON_BLANK_STRING_SCHEMA,
       delivery: { type: 'string', const: 'source_only' },
       canWrite: { type: 'boolean', const: false },
+      note: { type: 'string', description: 'With view "analysis": one line when the analysis has nothing of a kind to offer, such as no capability candidate.' },
       framework: {
         type: 'string',
         enum: ['fsd', 'next', 'generic'],
