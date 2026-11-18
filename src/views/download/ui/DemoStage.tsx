@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { Maximize2 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
 import { controlClass } from '@/shared/ui/control-class';
@@ -51,6 +53,17 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
       ?.play()
       ?.then(() => setStarted(true))
       .catch(() => setStarted(false));
+  }, []);
+
+  /** iPhone Safari has no element fullscreen for video, only its own player's `webkitEnterFullscreen`. */
+  const expand = useCallback(() => {
+    const video = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    if (!video) return;
+    if (typeof video.requestFullscreen === 'function') {
+      void video.requestFullscreen().catch(() => video.webkitEnterFullscreen?.());
+      return;
+    }
+    video.webkitEnterFullscreen?.();
   }, []);
 
   /**
@@ -119,6 +132,25 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
             {t('demoPlay')}
           </span>
         </button>
+
+        {/* On a touch screen the recording of a desktop window is too small to read, so a tap anywhere on it opens the player full screen. */}
+        {started ? (
+          <button
+            type="button"
+            onClick={expand}
+            data-testid={`demo-expand-${clip.id}`}
+            className={controlClass({
+              shape: 'row',
+              stacked: true,
+              className: 'absolute inset-0 hidden items-end justify-end p-3 pointer-coarse:flex',
+            })}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-label leading-label text-[color:var(--color-text-secondary)]">
+              <Maximize2 size={ICON_SIZE.sm} aria-hidden />
+              {t('demoExpand')}
+            </span>
+          </button>
+        ) : null}
       </div>
     </div>
   );
