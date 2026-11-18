@@ -2671,7 +2671,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       "utf-8",
     );
     mkdirSync(join(repoRoot, "src", "review"), { recursive: true });
-    writeFileSync(join(repoRoot, "src", "review", "index.ts"), "export const review = true;\n", "utf-8");
+    writeFileSync(join(repoRoot, "src", "review", "index.ts"), "export function review(claim) {\n  if (!claim.approved) return false;\n  return true;\n}\n", "utf-8");
     const proposal = {
       project: {
         slug: "claims",
@@ -2919,19 +2919,31 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     ]);
     assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
 
+    const finalizeCall = (id) => callTool(id, "finalize_project_meaning", {
+      projectSlug: "claims",
+      expected_mtime: statSync(join(vaultRoot, "claims.md")).mtimeMs,
+    });
+    // An answered evidence row needs the cited condition lines read by this server process.
+    const unread = await rpcForRepo(vaultRoot, repoRoot, [...INIT_REQUESTS, finalizeCall(2)]);
+    assert.match(getCallText(unread.responses, 2), /- evidence: 1 of 1 capabilities cite no lines this server read/);
+    const reviewPath = join(vaultRoot, "capabilities", "review.md");
     const finalized = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
-      callTool(2, "finalize_project_meaning", {
-        projectSlug: "claims",
-        expected_mtime: statSync(join(vaultRoot, "claims.md")).mtimeMs,
+      callTool(2, "analyze_repo_structure", { sourceOnly: true, sourceReads: [{ path: "src/review/index.ts", symbol: "review" }] }),
+      callTool(3, "patch_concept", {
+        slug: "capabilities/review",
+        expected_mtime: statSync(reviewPath).mtimeMs,
+        body: `${readFileSync(reviewPath, "utf-8").replace(/^---[\s\S]*?\n---\n/, "")}\nOnly an approved claim passes review (src/review/index.ts:L2).\n`,
       }),
+      finalizeCall(4),
     ]);
+    assert.equal(isErrorResponse(finalized.responses, 3), false, getCallText(finalized.responses, 3));
     assert.equal(
-      isErrorResponse(finalized.responses, 2),
+      isErrorResponse(finalized.responses, 4),
       false,
-      getCallText(finalized.responses, 2),
+      getCallText(finalized.responses, 4),
     );
-    const finalizedResult = getCallParsed(finalized.responses, 2);
+    const finalizedResult = getCallParsed(finalized.responses, 4);
     assert.equal(finalizedResult.ok, true);
     assert.equal(finalizedResult.meaningAssessment.dimensions.competency.questions
       .find((row) => row.id === "scope")?.witnessStatus, "resolved");
