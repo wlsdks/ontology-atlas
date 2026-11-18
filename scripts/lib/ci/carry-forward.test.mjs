@@ -109,18 +109,21 @@ test('exhaustive, unreadable, workflow or planner changes carry nothing', () => 
     return carryVerdict({ plan, previous, delta: buildImpactPlan({ files: ['scripts/landing/pr-land.mjs'] }), idle, expected, proof: passingProof(), plannerFiles: ['scripts/ci/classify-change.mjs'], ...overrides });
   };
   const cases = [
-    { delta: buildImpactPlan({ files: ['scripts/ci/classify-change.mjs'] }) },
-    { delta: buildImpactPlan({ files: ['unknown-top-level-file.xyz'] }) },
-    { plan: buildImpactPlan({ forceFull: true }) },
-    { previous: buildImpactPlan({ files: [...BEFORE, '.github/workflows/deploy-pages.yml'] }) },
-    { plannerFiles: ['scripts/landing/pr-land.mjs'] },
-    { proof: { ok: false, reason: 'GitHub HTTP 403' } },
-    { proof: undefined },
-    { expected: { ...expected, previousHead: expected.head } },
-    { expected: { ...expected, previousTree: 'not-a-sha' } },
+    [{ delta: buildImpactPlan({ files: ['scripts/ci/classify-change.mjs'] }) }, /^the push needs an exhaustive run: CI impact authority changed/],
+    [{ delta: buildImpactPlan({ files: ['unknown-top-level-file.xyz'] }) }, /^the push needs an exhaustive run: unclassified paths/],
+    [{ plan: buildImpactPlan({ forceFull: true }) }, /^this plan is exhaustive/],
+    [{ previous: buildImpactPlan({ forceFull: true }) }, /^the previous head planned an exhaustive run/],
+    [{ previous: buildImpactPlan({ files: [...BEFORE, '.github/workflows/deploy-pages.yml'] }) }, /^\.github\/workflows\/deploy-pages\.yml differs from the base/],
+    [{ plannerFiles: ['scripts/landing/pr-land.mjs'] }, /^scripts\/landing\/pr-land\.mjs differs from the base/],
+    [{ proof: { ok: false, reason: 'GitHub HTTP 403' } }, /unreadable: GitHub HTTP 403$/],
+    [{ proof: undefined }, /unreadable: no proof$/],
+    [{ expected: { ...expected, previousHead: expected.head } }, /^the previous head is this head$/],
+    [{ expected: { ...expected, previousTree: 'not-a-sha' } }, /^the tested commits are unknown$/],
   ];
-  for (const overrides of cases) {
-    assert.deepEqual(run(overrides).lanes, [], JSON.stringify(Object.keys(overrides)));
+  for (const [overrides, reason] of cases) {
+    const verdict = run(overrides);
+    assert.deepEqual(verdict.lanes, [], JSON.stringify(Object.keys(overrides)));
+    assert.match(verdict.reason, reason);
   }
   const plan = buildImpactPlan({ files: BEFORE });
   assert.deepEqual(carryVerdict({ plan: { ...plan, reusedFrom: {} }, previous: plan, delta: idle, idle, expected, proof: passingProof() }).lanes, []);

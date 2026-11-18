@@ -96,6 +96,7 @@ function repository() {
   git(['init', '-q', '-b', 'main']);
   write('mcp/src/analyze/repo-structure.mjs', 'export const a = 1;\n');
   write('scripts/landing/pr-land.mjs', 'export const b = 1;\n');
+  write('mcp/src/lib/other.mjs', 'export const other = 1;\n');
   write('README.md', 'base\n');
   git(['add', '.']); git(['commit', '-qm', 'base']);
   const base = git(['rev-parse', 'HEAD']);
@@ -119,31 +120,56 @@ function mergeOf(repo, base, head) {
 test('a real fix push rebuilds the tested tree with Git and carries only the untouched lane', async () => {
   const repo = repository();
   try {
-    const previousMerge = mergeOf(repo, repo.base, repo.previousHead);
+    // Main moved before the previous run, so the tree it tested is a real merge, not the head's tree.
+    const previousMerge = mergeOf(repo, repo.movedBase, repo.previousHead);
+    assert.notEqual(previousMerge.tree, repo.git(['rev-parse', `${repo.previousHead}^{tree}`]));
     repo.git(['checkout', '-q', 'topic']);
     repo.write('scripts/landing/pr-land.mjs', 'export const b = 2;\n');
     repo.git(['commit', '-qam', 'fix']);
     const head = repo.git(['rev-parse', 'HEAD']);
-    mergeOf(repo, repo.base, head);
-    const plan = buildImpactPlan({ files: repo.git(['diff', '--name-only', `${repo.base}...HEAD`]).split('\n') });
+    mergeOf(repo, repo.movedBase, head);
+    const plan = buildImpactPlan({ files: repo.git(['diff', '--name-only', `${repo.movedBase}...HEAD`]).split('\n') });
     let asked;
     const readProof = async ({ previousHead }) => {
       asked = previousHead;
-      const owner = { head: previousHead, base: repo.base, tree: previousMerge.tree, carried: [], suite: 1 };
+      const owner = { head: previousHead, base: repo.movedBase, tree: previousMerge.tree, carried: [], suite: 1 };
       return { ok: true, owners: { 'Check impact plan': owner, 'E2E impact plan': { ...owner, suite: 2 } }, runs: [{ id: 5, name: 'MCP', status: 'completed', conclusion: 'success', suite: 1, appId: 15368, headSha: previousHead }] };
     };
-    const result = await carryForward({ plan, base: repo.base, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
+    const result = await carryForward({ plan, base: repo.movedBase, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
     assert.equal(asked, repo.previousHead);
-    assert.deepEqual(result.tested, { base: repo.base, head, tree: repo.git(['rev-parse', 'HEAD^{tree}']) });
+    assert.deepEqual(result.tested, { base: repo.movedBase, head, tree: repo.git(['rev-parse', 'HEAD^{tree}']) });
     assert.deepEqual(result.verdict.lanes, ['mcp'], result.verdict.reason);
     assert.equal(result.plan.carriedFrom.tree, previousMerge.tree);
     validatePlan(result.plan);
 
-    // The same push tested on a base that moved: the previous run's base no longer matches.
-    mergeOf(repo, repo.movedBase, head);
-    const moved = await carryForward({ plan, base: repo.movedBase, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
+    // The same push tested on another base: the previous run's base no longer matches.
+    mergeOf(repo, repo.base, head);
+    const moved = await carryForward({ plan, base: repo.base, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
     assert.deepEqual(moved.verdict.lanes, []);
     assert.match(moved.verdict.refused.find((row) => row.lane === 'mcp').reason, /tested base/);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test('a fix that moves a lane input away runs the lane again, though Git calls it a rename', async () => {
+  const repo = repository();
+  try {
+    const previousMerge = mergeOf(repo, repo.base, repo.previousHead);
+    repo.git(['checkout', '-q', 'topic']);
+    repo.git(['mv', 'mcp/src/lib/other.mjs', 'scripts/landing/moved.mjs']);
+    repo.git(['commit', '-qm', 'move']);
+    mergeOf(repo, repo.base, repo.git(['rev-parse', 'topic']));
+    const changed = (filter) => repo.git(['diff', '--name-only', `--diff-filter=${filter}`, `${repo.base}...HEAD`]).split('\n').filter(Boolean);
+    const plan = buildImpactPlan({ files: changed('ACMRTUXB'), deletedFiles: changed('D') });
+    const readProof = async ({ previousHead }) => {
+      const owner = { head: previousHead, base: repo.base, tree: previousMerge.tree, carried: [], suite: 1 };
+      return { ok: true, owners: { 'Check impact plan': owner, 'E2E impact plan': owner }, runs: [{ id: 5, name: 'MCP', status: 'completed', conclusion: 'success', suite: 1, appId: 15368, headSha: previousHead }] };
+    };
+    const result = await carryForward({ plan, base: repo.base, previousHead: repo.previousHead, planFor: buildImpactPlan, git: repo.git, readProof, plannerFiles: [] });
+    assert.equal(plan.lanes.mcp.mode, 'focused', 'the head still plans the analyzer work');
+    assert.deepEqual(result.verdict.lanes, []);
+    assert.equal(result.verdict.refused.find((row) => row.lane === 'mcp')?.reason, 'this push changed one of its inputs');
   } finally {
     repo.cleanup();
   }

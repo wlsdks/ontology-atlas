@@ -57,6 +57,20 @@ the train; `pnpm pr:land` warns while that run is red. The unit shards split by
 measured seconds (`scripts/data/vitest-file-durations.json`, refreshed with
 `pnpm unit:durations`). The browser workflow keeps its own policy.
 
+After a fix push to a pull request that is ready for review, a lane that
+passed on the previous head is carried forward instead of run again
+(`scripts/ci/carry-forward.mjs`). Every condition must hold: the previous
+run tested a merge of the same base commit, and Git rebuilds the same tested
+tree; no workflow file or planner module differs from the base; the push
+plans nothing for the lane beyond what an empty change plans; the lane's
+planned work is unchanged; and every job of the lane passed in the workflow
+run whose plan job printed the `CI tested tree` annotation, without having
+been carried itself. Types · Lint · Docs always runs. Unit · Contract almost
+never carries, because the security and vault-format contracts read every
+file. A carried lane reports success through its inactive path, and the plan
+job prints a `CI lane carried forward` annotation naming the check runs.
+Anything unreadable carries nothing.
+
 CI tooling test edits keep their regression checks without promoting unrelated
 lanes to full runs. Runtime planner edits, unknown paths and invalid comparison
 history stay exhaustive. Unit and performance reach excludes explicit type-only

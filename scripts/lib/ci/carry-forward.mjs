@@ -137,7 +137,7 @@ export function carryVerdict({ plan, previous, delta, idle, expected, proof, pla
     if (jobs.length === 0) { refuse('no job of this lane reported at the previous head'); continue; }
     const foreign = jobs.find((run) => run.suite !== owner.suite || run.appId !== GITHUB_ACTIONS_APP_ID);
     if (foreign) { refuse(`${foreign.name} came from another workflow run or app`); continue; }
-    const unfinished = jobs.find((run) => run.status !== 'completed' || run.conclusion !== 'success');
+    const unfinished = jobs.find((run) => run.conclusion !== 'success');
     if (unfinished) { refuse(`${unfinished.name} was ${unfinished.conclusion ?? unfinished.status} at the previous head`); continue; }
     if (lane.sharded && !completeShards(jobs.map((run) => {
       const [, shard, of] = lane.jobs.exec(run.name);
