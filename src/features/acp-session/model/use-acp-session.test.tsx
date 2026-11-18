@@ -535,7 +535,7 @@ describe('vault server: says it is plugged in only when it is', () => {
      */
     const append = meta?.systemPrompt?.append ?? '';
     expect(append).toContain('follow the construction card that `connection_info` returns');
-    expect(append).toContain('cover the whole product in outline before reading any part in depth');
+    expect(append).toContain('cover the whole product in outline and place every ability the survey lists first, then read each capability by symbol and state the rule its returned context shows with the cite of those lines');
     expect(append).toContain('write everything in the same run');
     expect(append).toContain('say the default you will take and continue with it');
     expect(append).not.toMatch(/then wait|qualification|writePlan|independent evaluator/);

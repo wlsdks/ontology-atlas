@@ -107,8 +107,10 @@ builtins="ToolSearch"
 started=$(date +%s)
 
 # <prefix>.jsonl -> <prefix>.json (the final result record) and <prefix>.tools.json
-# (tool name -> call count, every read_source call's file and mode, how many
-# finalize_project_meaning calls succeeded, and every call to a tool outside Atlas).
+# (tool name -> call count, every read_source call's file and mode, every
+# analyze_repo_structure sourceReads selector, which is how a build reads code,
+# how many finalize_project_meaning calls succeeded, and every call to a tool
+# outside Atlas).
 extract_result() {
   node -e '
 const { readFileSync, writeFileSync } = require("node:fs");
@@ -116,6 +118,7 @@ const prefix = process.argv[1];
 let result = null;
 const calls = {};
 const reads = [];
+const sourceReads = [];
 const foreign = [];
 const finalizeIds = new Set();
 let finalizeOk = 0;
@@ -135,6 +138,15 @@ for (const line of readFileSync(`${prefix}.jsonl`, "utf8").split("\n")) {
     if (/read_source$/.test(String(block.name))) {
       reads.push({ path: block.input?.path ?? null, mode: block.input?.mode ?? "text" });
     }
+    if (/analyze_repo_structure$/.test(raw)) {
+      for (const read of Array.isArray(block.input?.sourceReads) ? block.input.sourceReads : []) {
+        sourceReads.push(read?.mode === "outline"
+          ? { path: read.path ?? null, mode: "outline" }
+          : read?.symbol
+            ? { path: read.path ?? null, symbol: read.symbol }
+            : { path: read?.path ?? null, startLine: read?.startLine ?? null, maxLines: read?.maxLines ?? null });
+      }
+    }
   }
   const returned = event.type === "user" ? event.message?.content : null;
   for (const block of Array.isArray(returned) ? returned : []) {
@@ -142,7 +154,7 @@ for (const line of readFileSync(`${prefix}.jsonl`, "utf8").split("\n")) {
   }
 }
 writeFileSync(`${prefix}.json`, result ? JSON.stringify(result) : "");
-writeFileSync(`${prefix}.tools.json`, JSON.stringify({ calls, reads, finalizeOk, foreign }, null, 2));
+writeFileSync(`${prefix}.tools.json`, JSON.stringify({ calls, reads, sourceReads, finalizeOk, foreign }, null, 2));
 ' "$1"
 }
 

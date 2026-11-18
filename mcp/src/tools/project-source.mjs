@@ -4,6 +4,12 @@
  * `finalize_project_meaning` receipt.
  */
 
+import {
+  competencyDepthRefusals,
+  measureBuildDepth,
+  repositorySurvey,
+} from '../construction/build-depth.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
 import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
@@ -34,6 +40,8 @@ import {
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import {
   COMPILED_ONTOLOGY_CACHE,
+  REPO_ROOT,
+  REPO_ROOT_IS_GROUNDED,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
 import {
@@ -365,6 +373,18 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
   const unresolvedRows = unresolvedCompetencyRows({ competency: competencyInput });
   if (unresolvedRows.length > 0) {
     throw new Error(competencyRefusal(unresolvedRows));
+  }
+  // An `answered` the map contradicts: most entry files never read this session,
+  // units or entry points no node places, or almost no dependency recorded.
+  const grounded = REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null;
+  const depth = measureBuildDepth(allDocs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
+  const depthRefusals = competencyDepthRefusals(competency.questions, depth);
+  if (depthRefusals.length > 0) {
+    throw new Error([
+      `finalize_project_meaning blocked: ${depthRefusals.length} answered competency row(s) claim more than the map holds.`,
+      ...depthRefusals,
+      'Make the next call each row names, then call finalize_project_meaning again; marking a row partial is the fallback when the map cannot be repaired.',
+    ].join('\n'));
   }
 
   const receipt = finalizeProjectMeaningReceipt({

@@ -10,11 +10,12 @@ export const VALIDATE_VAULT_TOOL = {
   description:
     'R+ (cycle 46) — validate every doc in the vault, return per-doc + per-code aggregate. ' +
     'Replaces the K-round-trip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). ' +
-    `8 issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
+    `Issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
     'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], problemsPagination, summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
     '`problems` is one page, files with errors first and then by slug: `offset` (default 0) and `limit` (default 100, max 500) choose it, a page left at the default `limit` stops sooner when its text would pass 128 KiB, and `problemsPagination.nextOffset` resumes it, so follow pages until `hasMore` is false before calling the vault clean. `summary` always counts the whole vault; each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
     'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: the active resolved repository root from connection_info). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
     'Also returns `evidenceDrift`: one Git walk dates every cited path and every concept document, and each concept is `current` (cited code unchanged since the document), `stale` (a cited file changed after the document — read it before trusting the recorded meaning), `missing` (cited path gone) or `unknown` (nothing cited, no commit in the window, or only a folder-level path moved — listed under `folderOnly`, because a folder changes on almost any commit). `checked: false` names why nothing was dated; it never means nothing moved. ' +
+    'Also returns `coverage`, one line: which abilities the survey lists (entry points, dispatched operations, library exports) no node places, which capabilities\' entry files were never read this session, which rules cite no read lines, and which capabilities no ability-to-ability edge touches, each with its next call. Build-depth warnings: `relation-note-on-unread` (judged by the lines this session served), `rule-without-read-lines`, `dependency-both-ways`, `path-without-code`, `path-shared`. ' +
     'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
   inputSchema: {
     type: 'object',
@@ -40,6 +41,10 @@ export const VALIDATE_VAULT_TOOL = {
   outputSchema: {
     type: 'object',
     properties: {
+      coverage: {
+        type: 'string',
+        description: 'One line: of the abilities the survey lists (entry points, dispatched operations, library exports, families), how many have their own node, are named inside a capability or element or are excluded with a reason, and each unplaced ability by name; the capabilities that cite no lines this server process read holding a condition, with the exact analyze_repo_structure call that reads them; the capabilities stating a rule without citing read lines that hold its condition, with the read and patch; and the capabilities no ability-to-ability depends_on touches. Absent when no repository root is grounded or it has no product source.',
+      },
       scanned: {
         type: 'integer',
         minimum: 0,

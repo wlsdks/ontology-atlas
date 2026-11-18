@@ -31,6 +31,8 @@ import {
   folderOnlyEvidenceFinding,
   starterExampleFindings,
 } from '../meaning/meaning-findings.mjs';
+import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
@@ -233,6 +235,15 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
     issues.push(issue);
     docIssues.set(slug, issues);
   }
+  const depthRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : (REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
+  const repo = repositorySurvey(depthRoot, VAULT_ROOT);
+  const reads = depthRoot ? sessionReads(depthRoot) : null;
+  for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: repo?.collection ?? null, reads })) {
+    const issues = docIssues.get(finding.slug) || [];
+    issues.push({ code: finding.code, severity: 'warning', message: finding.message });
+    docIssues.set(finding.slug, issues);
+  }
+  const coverage = measureBuildDepth(docs, repo, reads).line;
   // A single-file check cannot see a parent; this pass holds the whole vault, so it
   // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);
@@ -304,6 +315,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   if (!driftGrounded) {
     return {
       scanned: docs.length,
+      ...(coverage ? { coverage } : {}),
       problems,
       summary: { problemFiles: problems.length, errorFiles, warningFiles, byCode },
       summaryFreshness: buildSummaryFreshness(docs),
@@ -341,6 +353,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   }
   return {
     scanned: docs.length,
+    ...(coverage ? { coverage } : {}),
     problems,
     summary: {
       problemFiles: problems.length,

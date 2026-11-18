@@ -4,17 +4,18 @@ import { startTransition, useCallback, useEffect, useRef, useState } from 'react
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { countVaultContents } from '@/shared/lib/vault-folder/vault-shape';
 import {
+  applyVaultChanges,
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprintWithStamps,
+  type LocalVaultSnapshot,
   type VaultStampIndex,
-  type BuiltVaultEntry,
-  type LocalVaultBuild,
   type VaultBuildObserver,
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import type { VaultChangeBatch, VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
 import { classifyVaultAccessError } from '../classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { codedFailure } from '@/shared/lib/failures/failure-code';
@@ -64,11 +65,10 @@ export function useLocalVaultInternal() {
   /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
   const lastFingerprintRef = useRef<string | null>(null);
 
-  /** Reusable entries of the last build plus their handle, for incremental rebuilds. A ref, no re-render. */
-  const lastBuildRef = useRef<{
-    handle: FileSystemDirectoryHandle;
-    entries: BuiltVaultEntry[];
-  } | null>(null);
+  /** The last build, its entries and their handle, for incremental rebuilds and path deltas. A ref, no re-render. */
+  const lastBuildRef = useRef<(LocalVaultSnapshot & { handle: FileSystemDirectoryHandle }) | null>(null);
+  /** Loads not yet settled; a path delta waits for them so it patches what they commit. */
+  const loadsInFlightRef = useRef(new Set<Promise<unknown>>());
   const vaultReadSessionRef = useRef<{ handle: FileSystemDirectoryHandle | null }>({ handle: null });
   const loadSequenceRef = useRef(0);
   const pickerSequenceRef = useRef(0);
@@ -98,7 +98,7 @@ export function useLocalVaultInternal() {
     };
   }, [beginVaultReadSession]);
 
-  const load = useCallback(async (
+  const runLoad = useCallback(async (
     handle: FileSystemDirectoryHandle,
     options: VaultOpenOptions = {},
     nativeStamps: VaultStampIndex | null = null,
@@ -142,7 +142,7 @@ export function useLocalVaultInternal() {
                 setState((s) => withArrivedPart(s, progress.total));
               },
             };
-      let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
+      let result: LocalVaultSnapshot;
       if (reuse) {
         try {
           // Use the stamps `refresh()` just walked for, when it has them; otherwise the
@@ -190,7 +190,7 @@ export function useLocalVaultInternal() {
         await readVaultSidecarStatuses(handle);
       if (!isCurrent()) return null;
       lastFingerprintRef.current = fingerprint;
-      lastBuildRef.current = { handle, entries };
+      lastBuildRef.current = { handle, entries, build };
       settled = true;
       loadProgressStore.set(null);
       const loaded: State = {
@@ -258,6 +258,15 @@ export function useLocalVaultInternal() {
       return null;
     }
   }, [arrivalStore, loadProgressStore, stateRef]);
+
+  const load: typeof runLoad = useCallback((...args) => {
+    const running = runLoad(...args);
+    const inFlight = loadsInFlightRef.current;
+    inFlight.add(running);
+    const settle = () => inFlight.delete(running);
+    running.then(settle, settle);
+    return running;
+  }, [runLoad]);
 
   /** User-initiated refresh: an unchanged fingerprint skips the rebuild but updates `lastLoadedAt`. */
   const refresh = useCallback(async () => {
@@ -337,6 +346,98 @@ export function useLocalVaultInternal() {
     void loadRef.current(handle, {}, nativeStamps);
     return true;
   }, [loadedHandle]);
+  /**
+   * Applies one watcher batch on top of the last build without walking the folder
+   * (`applyVaultChanges`), after any load in flight has settled. Falls back to `syncWithDisk` for a
+   * rescan or a batch the delta cannot apply exactly; a load that starts meanwhile read the disk
+   * after these changes, so its result wins and the delta is dropped. A batch watched for another
+   * folder than the one now loaded is dropped too: its paths describe that folder's disk.
+   */
+  const applyChangeBatch = useCallback(async (
+    watched: FileSystemDirectoryHandle,
+    changes: readonly VaultPathChange[],
+    rescan: boolean,
+  ): Promise<void> => {
+    if (!loadedHandle || watched !== loadedHandle) return;
+    const handle = loadedHandle;
+    const session = vaultReadSessionRef.current;
+    const isSession = () => mountedRef.current && vaultReadSessionRef.current === session && session.handle === handle;
+    while (loadsInFlightRef.current.size > 0) await Promise.allSettled([...loadsInFlightRef.current]);
+    if (!isSession()) return;
+    const last = lastBuildRef.current;
+    if (rescan || !last || last.handle !== handle || stateRef.current.manifestHandle !== handle) {
+      await syncWithDisk();
+      return;
+    }
+    const sequence = loadSequenceRef.current;
+    const isCurrent = () => isSession() && loadSequenceRef.current === sequence && lastBuildRef.current === last;
+    const result = await applyVaultChanges(handle, last, changes).catch(() => ({ kind: 'rescan' as const }));
+    if (!isCurrent()) return;
+    if (result.kind === 'rescan') {
+      await syncWithDisk();
+      return;
+    }
+    const sidecars = result.sidecarsTouched ? await readVaultSidecarStatuses(handle) : null;
+    if (!isCurrent()) return;
+    if (result.kind === 'unchanged') {
+      if (sidecars) setState((s) => (isCurrent() ? { ...s, ...sidecars, lastLoadedAt: Date.now() } : s));
+      return;
+    }
+    const { build, entries } = result.snapshot;
+    lastFingerprintRef.current = build.fingerprint;
+    lastBuildRef.current = { handle, entries, build };
+    setState((s) => s.handle !== handle ? s : {
+      ...s,
+      ...(sidecars ?? {}),
+      manifest: build.manifest,
+      fileHandles: build.fileHandles,
+      imageHandles: build.imageHandles,
+      sourceHandles: build.sourceHandles,
+      lastLoadedAt: Date.now(),
+    });
+    if (build.manifest.docs.length !== last.build.manifest.docs.length) {
+      try {
+        void recordLocalFsHandleContents(countVaultContents(build.manifest.docs)).catch(() => {});
+      } catch {
+        /* The chooser's counts stay as they were. */
+      }
+    }
+  }, [loadedHandle, stateRef, syncWithDisk]);
+
+  /**
+   * Batches that arrive while one is applied merge into the next, so deltas never overlap. Only
+   * batches for one folder merge; a batch for another replaces what was queued.
+   */
+  const queuedChangesRef = useRef<{
+    handle: FileSystemDirectoryHandle;
+    changes: Map<string, VaultPathChange>;
+    rescan: boolean;
+  } | null>(null);
+  const drainingChangesRef = useRef(false);
+  const applyChangeBatchRef = useLatestRef(applyChangeBatch);
+  const applyVaultChangeBatch = useCallback((batch: VaultChangeBatch, watched: FileSystemDirectoryHandle): Promise<void> => {
+    if (queuedChangesRef.current?.handle !== watched) {
+      queuedChangesRef.current = { handle: watched, changes: new Map(), rescan: false };
+    }
+    const queued = queuedChangesRef.current;
+    queued.rescan ||= batch.rescan;
+    // The later stamp for a path wins.
+    for (const change of batch.changes) queued.changes.set(change.path, change);
+    if (drainingChangesRef.current) return Promise.resolve();
+    drainingChangesRef.current = true;
+    return (async () => {
+      try {
+        while (queuedChangesRef.current) {
+          const next = queuedChangesRef.current;
+          queuedChangesRef.current = null;
+          await applyChangeBatchRef.current(next.handle, [...next.changes.values()], next.rescan);
+        }
+      } finally {
+        drainingChangesRef.current = false;
+      }
+    })();
+  }, [applyChangeBatchRef]);
+
   useEffect(() => {
     if (!loadedHandle) return;
     const tracker = autoRefreshRef.current;
@@ -490,6 +591,8 @@ export function useLocalVaultInternal() {
     close,
     refresh,
     syncWithDisk,
+    /** The app watcher's changed paths; `TauriVaultWatchBridge` feeds it. */
+    applyVaultChangeBatch,
     requestPermission,
     saveDoc,
     createDoc,

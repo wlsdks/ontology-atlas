@@ -54,7 +54,7 @@ export async function runIndex(args) {
     analyzeResult = await callMcpTool(
       vaultRoot,
       'analyze_repo_structure',
-      { rootPath: target, maxDepth: parsed.maxDepth },
+      { rootPath: target, maxDepth: parsed.maxDepth, view: 'analysis' },
       { repoRoot: target },
     );
     assertAnalyzeRepoStructureResult(analyzeResult);

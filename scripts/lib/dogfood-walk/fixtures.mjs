@@ -15,34 +15,6 @@ import { TOOLS_FOR_LIST } from "../../../mcp/src/server/registry.mjs";
 export const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 const DOGFOOD_UID = "11111111-1111-4111-8111-111111111111";
 
-function rustConfigurationEvidenceFixture() {
-  return {
-    contract: "rustFeatureConfigurationEvidence:v1",
-    status: "not_present",
-    claimBoundary: {
-      compileTimePredicateLocations: false,
-      predicateEvaluation: false,
-      runtimeImpact: false,
-      importDependency: false,
-      macroConsumers: false,
-      semanticDependency: false,
-    },
-    coverage: {
-      predicateEvaluation: false,
-      macroExpansion: false,
-      buildScriptsExecuted: false,
-    },
-    packages: [],
-    unsupportedWorkspaceMembers: [],
-    writePolicy: {
-      automaticRelation: false,
-      writeAllowed: false,
-      humanApprovalRequired: true,
-    },
-    limitations: ["No Cargo manifest was observed."],
-  };
-}
-
 function importScanCoverageFixture() {
   return {
     contract: "importScanCoverage:v1",
@@ -450,27 +422,25 @@ export const okShape = {
     limited: true,
   },
   analyzedRepo: {
+    contract: "breadthMap:v1",
     rootPath: "/repo",
-    framework: "fsd",
-    project: { slug: "sample", title: "Sample" },
-    domains: [{ slug: "domains/auth", title: "Auth", evidence: { source: "README.md", line: 3 } }],
-    capabilities: [{ slug: "capabilities/auth", title: "Auth", evidence: { source: "src/features/auth" } }],
-    elements: [{ slug: "elements/src/views/home", title: "Home", path: "src/views/home", evidence: { source: "src/views/home" } }],
-    suggestedRelations: [{ from: "sample", to: "capabilities/auth", type: "contains" }],
-    skipped: [{ path: "src/.cache", reason: "dotfile/ignore" }],
-    configurationEvidence: rustConfigurationEvidenceFixture(),
+    size: { productFiles: 1, productLines: 3, units: 1, outside: {} },
+    units: [{ path: "src/features/auth", files: 1, lines: 3, mainFiles: [{ path: "src/features/auth/index.ts", lines: 3 }], exports: ["auth"], importedBy: 0, imports: [] }],
+    entryPoints: [],
+    docs: { readme: { path: "README.md", purpose: "Sample signs people in." }, pages: [] },
+    next: "1 product units, 3 lines in 1 files.",
   },
+
   analyzedRepoStructured: {
+    contract: "breadthMap:v1",
     rootPath: "/repo",
-    framework: "fsd",
-    project: { slug: "sample", title: "Sample" },
-    domains: [{ slug: "domains/auth", title: "Auth", evidence: { source: "README.md", line: 3 } }],
-    capabilities: [{ slug: "capabilities/auth", title: "Auth", evidence: { source: "src/features/auth" } }],
-    elements: [{ slug: "elements/src/views/home", title: "Home", path: "src/views/home", evidence: { source: "src/views/home" } }],
-    suggestedRelations: [{ from: "sample", to: "capabilities/auth", type: "contains" }],
-    skipped: [{ path: "src/.cache", reason: "dotfile/ignore" }],
-    configurationEvidence: rustConfigurationEvidenceFixture(),
+    size: { productFiles: 1, productLines: 3, units: 1, outside: {} },
+    units: [{ path: "src/features/auth", files: 1, lines: 3, mainFiles: [{ path: "src/features/auth/index.ts", lines: 3 }], exports: ["auth"], importedBy: 0, imports: [] }],
+    entryPoints: [],
+    docs: { readme: { path: "README.md", purpose: "Sample signs people in." }, pages: [] },
+    next: "1 product units, 3 lines in 1 files.",
   },
+
   inferredImports: {
     rootPath: "/repo",
     filesScanned: 2,

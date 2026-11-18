@@ -47,7 +47,7 @@ mod vault_scope_tests {
             ".ssh/id_rsa".into(),
             None,
         ));
-        refused(list_vault_directory(home_path.clone(), String::new(), None).map(|_| ()));
+        refused(list_vault_directory(home_path.clone(), String::new(), None, None).map(|_| ()));
         refused(crate::git::validate_vault_dir(&home_path).map(|_| ()));
         refused(canonical_root(&base.to_string_lossy()).map(|_| ()));
         assert!(!home.join("planted.md").exists());

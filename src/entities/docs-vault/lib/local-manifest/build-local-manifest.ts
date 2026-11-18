@@ -58,29 +58,85 @@ function frontmatterRefStrings(frontmatter: Record<string, unknown>): string[] {
   return out;
 }
 
-/** Resolves a ref by exact slug or unique tail; null for no match or an ambiguous tail. */
-function resolveRefToDocSlug(
-  ref: string,
-  slugSet: ReadonlySet<string>,
-  tailToSlug: ReadonlyMap<string, string | null>,
-): string | null {
-  // NFC on both sides, or identical characters fail to match (the CLI validator's rule).
-  const normalized = ref.normalize('NFC').replace(/\.md$/i, '');
-  if (slugSet.has(normalized)) return normalized;
-  const tail = normalized.split('/').pop() ?? normalized;
-  const byTail = tailToSlug.get(tail);
-  // `byTail === null` marks an ambiguous tail (2+ docs share it) — don't guess.
-  return byTail ?? null;
+/** `ref` as a slug: NFC on both sides, or identical characters fail to match (the CLI validator's rule). */
+function refSlug(ref: string): string {
+  return ref.normalize('NFC').replace(/\.md$/i, '');
+}
+
+export function slugTail(slug: string): string {
+  return slug.split('/').pop() ?? slug;
+}
+
+/** Resolves a frontmatter ref by exact slug or unique tail; null for no match or an ambiguous tail. */
+export type RefResolver = (ref: string) => string | null;
+
+/**
+ * Whether one of the document's relation refs ends in a tail from `tails`: the documents whose
+ * frontmatter backlinks a created or removed slug can re-resolve. One set lookup per ref, so a
+ * burst of k moved tails costs O(refs), not O(refs · k).
+ */
+export function refersToTail(doc: VaultDoc, tails: ReadonlySet<string>): boolean {
+  for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
+    if (tails.has(slugTail(refSlug(ref)))) return true;
+  }
+  return false;
+}
+
+export function refResolver(
+  hasSlug: (slug: string) => boolean,
+  slugForTail: (tail: string) => string | null,
+): RefResolver {
+  return (ref) => {
+    const normalized = refSlug(ref);
+    return hasSlug(normalized) ? normalized : slugForTail(slugTail(normalized));
+  };
+}
+
+/**
+ * One document's backlinks by target, O(links + refs): its first body link to a target wins, and a
+ * frontmatter relation ref counts only where no body link does. Full builds and path deltas both
+ * aggregate through this, so they cannot disagree.
+ */
+export function backlinkContribution(
+  doc: VaultDoc,
+  linkContexts: readonly LinkContext[] | undefined,
+  resolve: RefResolver,
+): Map<string, VaultBacklinkEntry> {
+  const out = new Map<string, VaultBacklinkEntry>();
+  for (const ctx of linkContexts ?? []) {
+    if (!out.has(ctx.target)) out.set(ctx.target, { fromSlug: doc.slug, context: ctx.context, linkText: ctx.linkText });
+  }
+  for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
+    const target = resolve(ref);
+    // No self-backlinks; the first ref to a target speaks for the document.
+    if (!target || target === doc.slug || out.has(target)) continue;
+    out.set(target, { fromSlug: doc.slug, context: `frontmatter · **[${ref}]**`, linkText: ref });
+  }
+  return out;
 }
 
 /** `'sources/plan.PDF'` → `'pdf'`; a name with no extension yields `''`. */
-function vaultSourceFormat(name: string): string {
+export function vaultSourceFormat(name: string): string {
   const at = name.lastIndexOf('.');
   return at > 0 ? name.slice(at + 1).toLowerCase() : '';
 }
 
 /** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
 const KO_COLLATOR = new Intl.Collator('ko');
+
+/**
+ * Korean collation, then code units where the collator calls two names equal, so the order is
+ * total and does not depend on the order a walk happened to list files in.
+ */
+export function compareCollated(a: string, b: string): number {
+  return KO_COLLATOR.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0);
+}
+
+/** Folders before documents, then by name: the order every tree level is kept in. */
+export function compareTreeNodes(a: VaultTreeNode, b: VaultTreeNode): number {
+  if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+  return compareCollated(a.name, b.name);
+}
 const METADATA_STRING_POOL_LIMIT = 1024;
 
 /** `childIndex` finds a child by name; a linear search made a flat folder quadratic. */
@@ -125,10 +181,7 @@ function insertIntoTree(
 
 function sortTree(node: VaultTreeNode) {
   if (!node.children) return;
-  node.children.sort((a, b) => {
-    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-    return KO_COLLATOR.compare(a.name, b.name);
-  });
+  node.children.sort(compareTreeNodes);
   for (const c of node.children) sortTree(c);
 }
 
@@ -139,18 +192,65 @@ export interface LocalVaultBuild {
   imageHandles: Map<string, FileSystemFileHandle>;
   /** Raw sources under `sources/`; opened only on a person's explicit request, never by the build. */
   sourceHandles: Map<string, FileSystemFileHandle>;
-  /** Sorted `${path}@${mtime}` entries; an equal `computeLocalVaultFingerprint` skips a rebuild. */
+  /** Multiset hash of `${path}@${mtime}` stamps; an equal `computeLocalVaultFingerprint` skips a rebuild. */
   fingerprint: string;
 }
 
+/** Running multiset hash of `${NFC path}@${mtime}` stamps: a count and two 32-bit sums. */
+export interface FingerprintSum {
+  count: number;
+  a: number;
+  b: number;
+}
+
+/** Murmur3's finalizer: spreads every input bit over the word. */
+function fmix32(h: number): number {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/** Adds (`sign` 1) or removes (`sign` -1) one stamp in O(path length). */
+export function addStamp(sum: FingerprintSum, relativePath: string, lastModified: number, sign: 1 | -1): void {
+  // NFC here too, or native NFD names would report a change on every focus.
+  const stamp = `${relativePath.normalize('NFC')}@${lastModified}`;
+  let a = 0x811c9dc5;
+  let b = 0x9747b28c;
+  for (let at = 0; at < stamp.length; at += 1) {
+    const code = stamp.charCodeAt(at);
+    a = Math.imul(a ^ code, 0x01000193);
+    b = Math.imul(b ^ code, 0x5bd1e995);
+    b ^= b >>> 15;
+  }
+  sum.count += sign;
+  sum.a = (sum.a + sign * fmix32(a)) >>> 0;
+  sum.b = (sum.b + sign * fmix32(b ^ stamp.length)) >>> 0;
+}
+
+export function fingerprintText(sum: FingerprintSum): string {
+  return sum.count === 0 ? '' : `${sum.count}.${sum.a.toString(16)}.${sum.b.toString(16)}`;
+}
+
+export function parseFingerprint(text: string): FingerprintSum | null {
+  if (text === '') return { count: 0, a: 0, b: 0 };
+  const [count, a, b] = text.split('.');
+  const sum = { count: Number(count), a: parseInt(a, 16), b: parseInt(b, 16) };
+  return Number.isInteger(sum.count) && Number.isInteger(sum.a) && Number.isInteger(sum.b) ? sum : null;
+}
+
+/**
+ * Order-free, so neither a build nor a path delta sorts 50,000 stamps: a delta adds and removes
+ * only the stamps it touched. Two different stamp sets collide with probability about 2^-64,
+ * and the next change or focus check repairs a collision.
+ */
 function fingerprintFromEntries(
   entries: ReadonlyArray<{ relativePath: string; lastModified: number }>,
 ): string {
-  // NFC here too, or native NFD names would report a change on every focus.
-  return entries
-    .map((e) => `${e.relativePath.normalize('NFC')}@${e.lastModified}`)
-    .sort()
-    .join('\n');
+  const sum: FingerprintSum = { count: 0, a: 0, b: 0 };
+  for (const entry of entries) addStamp(sum, entry.relativePath, entry.lastModified, 1);
+  return fingerprintText(sum);
 }
 
 /** Size travels with mtime so a raw source is listed without opening it over IPC. */
@@ -163,7 +263,7 @@ function stampIndex(entries: readonly NativeVaultStamp[]): VaultStampIndex {
 }
 
 /** The desktop shim's absolute root path, or `null` for a web handle. */
-function nativeRootPath(root: FileSystemDirectoryHandle): string | null {
+export function nativeRootPath(root: FileSystemDirectoryHandle): string | null {
   const rootPath = (root as { rootPath?: unknown }).rootPath;
   return typeof rootPath === 'string' && rootPath ? rootPath : null;
 }
@@ -238,7 +338,7 @@ export interface BuiltVaultEntry {
   linkContexts?: LinkContext[];
 }
 
-function createMetadataStringPool() {
+export function createMetadataStringPool() {
   const strings = new Map<string, string>();
   return (value: string) => {
     const held = strings.get(value);
@@ -249,7 +349,7 @@ function createMetadataStringPool() {
 }
 
 /** Pure: one `.md` body to a BuiltVaultEntry. */
-function buildMdEntry(
+export function buildMdEntry(
   entry: WalkEntry,
   raw: string,
   lastModified: number,
@@ -338,13 +438,10 @@ function aggregateBuild(
   const sourceHandles = new Map<string, FileSystemFileHandle>();
   const backlinksDetailMap = new Map<string, VaultBacklinkEntry[]>();
   const tagsMap = new Map<string, Set<string>>();
-  const fingerprintStamps: Array<{ relativePath: string; lastModified: number }> = [];
+  const stamps: FingerprintSum = { count: 0, a: 0, b: 0 };
 
   for (const entry of entries) {
-    fingerprintStamps.push({
-      relativePath: entry.relativePath,
-      lastModified: entry.lastModified,
-    });
+    addStamp(stamps, entry.relativePath, entry.lastModified, 1);
     if (entry.kind === 'image') {
       imageHandles.set(entry.relativePath, entry.handle);
       continue;
@@ -364,17 +461,6 @@ function aggregateBuild(
     const doc = entry.doc;
     if (!doc) continue;
     fileHandles.set(doc.slug, entry.handle);
-
-    for (const ctx of entry.linkContexts ?? []) {
-      if (!backlinksDetailMap.has(ctx.target)) {
-        backlinksDetailMap.set(ctx.target, []);
-      }
-      backlinksDetailMap.get(ctx.target)!.push({
-        fromSlug: doc.slug,
-        context: ctx.context,
-        linkText: ctx.linkText,
-      });
-    }
     for (const tag of doc.tags) {
       if (!tagsMap.has(tag)) tagsMap.set(tag, new Set());
       tagsMap.get(tag)!.add(doc.slug);
@@ -382,33 +468,26 @@ function aggregateBuild(
     docs.push(doc);
   }
 
-  // Frontmatter relation refs add backlinks too, deduped by fromSlug so a body link's richer
-  // context wins.
+  // Body links and frontmatter relation refs, one entry per (target, document).
   const slugSet = new Set(docs.map((doc) => doc.slug));
   const tailToSlug = new Map<string, string | null>();
   for (const doc of docs) {
-    const tail = doc.slug.split('/').pop() ?? doc.slug;
+    const tail = slugTail(doc.slug);
     // A tail shared by two docs becomes null (ambiguous).
     tailToSlug.set(tail, tailToSlug.has(tail) ? null : doc.slug);
   }
-  for (const doc of docs) {
-    const seenTargets = new Set<string>();
-    for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
-      const target = resolveRefToDocSlug(ref, slugSet, tailToSlug);
-      // No self-backlinks; dedup repeated refs to the same target within a doc.
-      if (!target || target === doc.slug || seenTargets.has(target)) continue;
-      seenTargets.add(target);
-      if (!backlinksDetailMap.has(target)) backlinksDetailMap.set(target, []);
-      backlinksDetailMap.get(target)!.push({
-        fromSlug: doc.slug,
-        context: `frontmatter · **[${ref}]**`,
-        linkText: ref,
-      });
+  const resolve = refResolver((slug) => slugSet.has(slug), (tail) => tailToSlug.get(tail) ?? null);
+  for (const entry of entries) {
+    if (!entry.doc) continue;
+    for (const [target, backlink] of backlinkContribution(entry.doc, entry.linkContexts, resolve)) {
+      const list = backlinksDetailMap.get(target);
+      if (list) list.push(backlink);
+      else backlinksDetailMap.set(target, [backlink]);
     }
   }
 
-  docs.sort((a, b) => KO_COLLATOR.compare(a.slug, b.slug));
-  sources.sort((a, b) => KO_COLLATOR.compare(a.path, b.path));
+  docs.sort((a, b) => compareCollated(a.slug, b.slug));
+  sources.sort((a, b) => compareCollated(a.path, b.path));
 
   const tree: VaultTreeNode = { name: rootName, path: '', type: 'dir' };
   const childIndex = new Map<VaultTreeNode, Map<string, VaultTreeNode>>();
@@ -417,13 +496,7 @@ function aggregateBuild(
 
   const backlinksDetail: Record<string, VaultBacklinkEntry[]> = {};
   for (const [slug, list] of backlinksDetailMap) {
-    const byFrom = new Map<string, VaultBacklinkEntry>();
-    for (const entry of list) {
-      if (!byFrom.has(entry.fromSlug)) byFrom.set(entry.fromSlug, entry);
-    }
-    backlinksDetail[slug] = [...byFrom.values()].sort((a, b) =>
-      KO_COLLATOR.compare(a.fromSlug, b.fromSlug),
-    );
+    backlinksDetail[slug] = list.sort((a, b) => compareCollated(a.fromSlug, b.fromSlug));
   }
   const tags: Record<string, string[]> = {};
   for (const [tag, set] of tagsMap) {
@@ -435,7 +508,8 @@ function aggregateBuild(
     generatedAt: new Date().toISOString(),
     // Walk fields are emitted only when set, so manifests compare equal across builds.
     ...(walkInfo?.truncated ? { walkTruncated: true } : {}),
-    ...(walkInfo?.prunedDirs.length ? { prunedDirs: walkInfo.prunedDirs } : {}),
+    // Sorted, so the list depends on what is pruned, not on the order a folder was listed in.
+    ...(walkInfo?.prunedDirs.length ? { prunedDirs: [...walkInfo.prunedDirs].sort() } : {}),
     ...(walkInfo?.sourceFileCount ? { sourceFileCount: walkInfo.sourceFileCount } : {}),
     docs,
     ...(sources.length ? { sources } : {}),
@@ -448,7 +522,7 @@ function aggregateBuild(
     fileHandles,
     imageHandles,
     sourceHandles,
-    fingerprint: fingerprintFromEntries(fingerprintStamps),
+    fingerprint: fingerprintText(stamps),
   };
 }
 
@@ -458,7 +532,7 @@ const VAULT_READ_CONCURRENCY = 64;
  * Maps `items` through `read` with at most `concurrency` in flight, results in input order. The
  * first failure in time rejects the call, and no worker starts another read after it.
  */
-async function mapPooled<T, R>(
+export async function mapPooled<T, R>(
   items: readonly T[],
   concurrency: number,
   read: (item: T) => Promise<R>,
@@ -484,8 +558,8 @@ async function mapPooled<T, R>(
   return results;
 }
 
-const NATIVE_READ_BATCH = 64;
-const NATIVE_BATCH_CONCURRENCY = 8;
+export const NATIVE_READ_BATCH = 64;
+export const NATIVE_BATCH_CONCURRENCY = 8;
 const PARTIAL_AFTER_MS = 200;
 const PARTIAL_INTERVAL_MS = 1000;
 const PARTIAL_SPLIT_PUBLISHES = 3;
@@ -525,7 +599,7 @@ async function readMarkdownFile(entry: WalkEntry, nativeRoot: string | null): Pr
   return { text: await file.text(), lastModified: file.lastModified };
 }
 
-function createMarkdownReader(nativeRoot: string | null) {
+export function createMarkdownReader(nativeRoot: string | null) {
   let batchUnavailable = false;
   const one = (entry: WalkEntry) => readMarkdownFile(entry, nativeRoot);
   const fallbackConcurrency = VAULT_READ_CONCURRENCY / NATIVE_BATCH_CONCURRENCY;

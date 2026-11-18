@@ -24,6 +24,8 @@ import { loadVaultDocs } from '../vault/documents.mjs';
 import { configureNodeEligibilityRepoRoot } from '../vault/eligibility-gate.mjs';
 import { updateDoc, writeDoc } from '../vault/doc-writes.mjs';
 import { detectDuplicateTitle } from '../vault/graph-queries.mjs';
+import { measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,
@@ -208,12 +210,27 @@ function addConceptsBatch({ concepts }) {
       };
     }
   });
+  const wrote = results.some((row) => row.ok && row.changed !== false);
+  const coverage = wrote ? buildCoverageLine() : null;
   return {
     concepts: results,
-    postWriteMaintenance: results.some((row) => row.ok && row.changed !== false)
-      ? compactPostWriteMaintenance()
-      : undefined,
+    postWriteMaintenance: wrote ? compactPostWriteMaintenance() : undefined,
+    ...(coverage ? { coverage } : {}),
   };
+}
+
+/**
+ * The coverage line after a batch: which abilities nothing places yet, which entry
+ * files were never read, which rules cite no read lines, and which capabilities no
+ * ability-to-ability edge touches. A measurement failure never fails the write.
+ */
+function buildCoverageLine() {
+  if (!REPO_ROOT_IS_GROUNDED) return null;
+  try {
+    return measureBuildDepth(loadVaultDocs(VAULT_ROOT), repositorySurvey(REPO_ROOT, VAULT_ROOT), sessionReads(REPO_ROOT)).line;
+  } catch {
+    return null;
+  }
 }
 
 function patchConcept({ slug, frontmatter, body, expected_mtime }) {

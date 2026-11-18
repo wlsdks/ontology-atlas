@@ -92,3 +92,29 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
     expect(elapsed).toBeLessThan(2500);
   });
 });
+
+describe('deriveOntologyFromVault — one edited document at 50,000', () => {
+  it('re-derives an edited body or title at under a twentieth of a full derivation', () => {
+    const { manifest, docCount } = buildLargeManifest(50, 100, 9);
+    expect(docCount).toBeGreaterThan(50_000);
+
+    let start = performance.now();
+    deriveOntologyFromVault(manifest);
+    const fullMs = performance.now() - start;
+
+    // An editor save: same relations, new title and summary, so a new VaultDoc in the same place.
+    const at = 1234;
+    const docs = manifest.docs.slice();
+    docs[at] = { ...docs[at], title: 'Edited title', definitionPreview: 'Edited summary.' };
+    start = performance.now();
+    const edited = deriveOntologyFromVault({ ...manifest, docs });
+    const editMs = performance.now() - start;
+
+    expect(edited.nodes.find((node) => node.sourceSlug === docs[at].slug)?.title).toBe('Edited title');
+    console.log(
+      `[perf] deriveOntologyFromVault — ${docCount} docs: full ${fullMs.toFixed(1)} ms, one edited document ${editMs.toFixed(2)} ms`,
+    );
+    // Measured 2026-11-19: full ~550 ms, edit ~0.3 ms; a ratio holds across machines.
+    expect(editMs * 20).toBeLessThan(fullMs);
+  });
+});
