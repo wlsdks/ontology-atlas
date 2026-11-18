@@ -122,7 +122,10 @@ const CELL_PX = 96;
 /** Uniform grid over world-space boxes: insert and overlap queries cost O(cells touched). */
 class Occupancy {
   private readonly cells = new Map<string, Box[]>();
-  constructor(private readonly cell: number) {}
+  private readonly cell: number;
+  constructor(cell: number) {
+    this.cell = cell;
+  }
 
   private keys(b: Box): string[] {
     const out: string[] = [];
@@ -163,7 +166,9 @@ class Occupancy {
  */
 class StepOccupancy {
   private readonly grids: readonly Occupancy[];
-  constructor(private readonly scales: readonly [number, number, number]) {
+  private readonly scales: readonly [number, number, number];
+  constructor(scales: readonly [number, number, number]) {
+    this.scales = scales;
     this.grids = scales.map((scale) => new Occupancy(CELL_PX / scale));
   }
 

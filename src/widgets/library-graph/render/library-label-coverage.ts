@@ -5,7 +5,12 @@ export class LibraryLabelCoverage {
   private readonly first: Array<string | undefined>;
   private readonly crowded: boolean[];
 
-  private constructor(private readonly columns: number, private readonly rows: number) {
+  private readonly columns: number;
+  private readonly rows: number;
+
+  private constructor(columns: number, rows: number) {
+    this.columns = columns;
+    this.rows = rows;
     this.first = new Array(columns * rows).fill(undefined);
     this.crowded = new Array(columns * rows).fill(false);
   }

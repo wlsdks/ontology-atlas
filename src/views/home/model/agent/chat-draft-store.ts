@@ -10,7 +10,10 @@ const routeDrafts = new WeakMap<object, ChatDraft>();
 class ChatDraftStore {
   private current: ChatDraft;
 
-  constructor(private readonly scope: object | null) {
+  private readonly scope: object | null;
+
+  constructor(scope: object | null) {
+    this.scope = scope;
     this.current = (scope ? routeDrafts.get(scope) : undefined) ?? { text: '', prefillNonce: null };
   }
 

@@ -68,12 +68,15 @@ async function chunkToText(chunk: WritableChunk): Promise<string> {
 
 class TauriWritableFileStream {
   private content = '';
+  private readonly rootPath: string;
+  private readonly relativePath: string;
+  private readonly invoke: TauriInvoke;
 
-  constructor(
-    private readonly rootPath: string,
-    private readonly relativePath: string,
-    private readonly invoke: TauriInvoke,
-  ) {}
+  constructor(rootPath: string, relativePath: string, invoke: TauriInvoke) {
+    this.rootPath = rootPath;
+    this.relativePath = relativePath;
+    this.invoke = invoke;
+  }
 
   async write(chunk: WritableChunk): Promise<void> {
     this.content += await chunkToText(chunk);
@@ -91,12 +94,14 @@ class TauriWritableFileStream {
 class TauriFileHandle {
   readonly kind = 'file';
   readonly name: string;
+  private readonly rootPath: string;
+  private readonly relativePath: string;
+  private readonly invoke: TauriInvoke;
 
-  constructor(
-    private readonly rootPath: string,
-    private readonly relativePath: string,
-    private readonly invoke: TauriInvoke,
-  ) {
+  constructor(rootPath: string, relativePath: string, invoke: TauriInvoke) {
+    this.rootPath = rootPath;
+    this.relativePath = relativePath;
+    this.invoke = invoke;
     this.name = basename(relativePath);
   }
 
@@ -296,12 +301,14 @@ export async function inspectTauriProjectSourceContinuity(input: {
 class TauriDirectoryHandle {
   readonly kind = 'directory';
   readonly name: string;
+  readonly rootPath: string;
+  private readonly relativePath: string;
+  private readonly invoke: TauriInvoke;
 
-  constructor(
-    readonly rootPath: string,
-    private readonly relativePath: string,
-    private readonly invoke: TauriInvoke,
-  ) {
+  constructor(rootPath: string, relativePath: string, invoke: TauriInvoke) {
+    this.rootPath = rootPath;
+    this.relativePath = relativePath;
+    this.invoke = invoke;
     this.name = relativePath ? basename(relativePath) : basename(rootPath);
   }
 

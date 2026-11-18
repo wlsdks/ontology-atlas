@@ -152,7 +152,11 @@ export const LLM_AUDIT_LOG_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
 
 export type AuditReadFailure = 'changed' | 'expired' | 'failed';
 export class AuditReadError extends Error {
-  constructor(readonly reason: AuditReadFailure) { super(`audit-read-${reason}`); }
+  readonly reason: AuditReadFailure;
+  constructor(reason: AuditReadFailure) {
+    super(`audit-read-${reason}`);
+    this.reason = reason;
+  }
 }
 
 export interface LlmAuditSummary {
@@ -180,7 +184,10 @@ class SummaryCollector {
   private entries: (AuditRecord | LlmAuditEntry)[] = [];
   private projected: boolean[] = [];
   private pending = '';
-  constructor(private readonly limit: number) {}
+  private readonly limit: number;
+  constructor(limit: number) {
+    this.limit = limit;
+  }
   private line(line: string) {
     const parsed = parseRecord(line);
     if (!parsed) return;
