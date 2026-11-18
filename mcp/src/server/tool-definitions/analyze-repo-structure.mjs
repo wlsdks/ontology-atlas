@@ -80,6 +80,11 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
           additionalProperties: false,
         },
       },
+      view: {
+        type: 'string',
+        enum: ['breadth', 'analysis'],
+        description: 'What a call with no proposal and no sourceReads returns: "breadth" (the default) is the breadth map; "analysis" is the structural analysis with its project, framework and node candidates, the shape the CLI `analyze`, `bootstrap` and `index` commands read. Ignored with sourceReads or a proposal.',
+      },
       sourceOnly: {
         type: 'boolean',
         description: 'Return only rootPath, delivery:"source_only", canWrite:false and sourceEvidence, without rescanning the repository. Requires sourceReads; forbids proposal and qualification even when null. sourceReads without a proposal answer the same way when this is omitted.',

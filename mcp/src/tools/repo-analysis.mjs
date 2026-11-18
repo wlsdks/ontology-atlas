@@ -49,8 +49,11 @@ import {
   sep,
 } from 'node:path';
 
-function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification } = {}) {
+function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification, view } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
+  if (view !== undefined && view !== 'breadth' && view !== 'analysis') {
+    throw new Error('view must be "breadth" or "analysis".');
+  }
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalBoolean(sourceOnly, 'sourceOnly');
@@ -70,7 +73,8 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
     recordSourceEvidence(target, sourceEvidence);
     return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
   }
-  if (!reviewing) {
+  // The CLI readers ask for the structural analysis by name; an agent gets the map.
+  if (!reviewing && view !== 'analysis') {
     return buildBreadthMap(target, { ignore, vaultRoot: VAULT_ROOT });
   }
   if (sourceReads !== undefined && (proposal != null || qualification != null)) {
