@@ -6,6 +6,7 @@
  * agent names what the product does. Static text scans only; nothing runs.
  */
 
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
 
@@ -374,8 +375,8 @@ function formatCount(value) {
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], vaultRoot?: string }} [options]
  */
-export function buildBreadthMap(rootPath, { ignore = [], vaultRoot } = {}) {
-  const collection = collectSourceUnits(rootPath, { ignore, vaultRoot });
+export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: given, fit = true } = {}) {
+  const collection = given ?? collectSourceUnits(rootPath, { ignore, vaultRoot });
   const ignoreSet = new Set(ignore);
   const imports = unitImports(rootPath, collection, ignore);
   const importedBy = new Map();
@@ -409,9 +410,11 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot } = {}) {
   const next = units.length === 0
     ? 'No product source file was found here: check rootPath and ignore, or build the map from documents.'
     : `${units.length} product units, ${formatCount(collection.productLines)} lines in ${formatCount(collection.productFiles)} files. ` +
-      'Outline each unit\'s main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true), ' +
-      'then read the entry function of every must-have ability with line ranges before writing its node. ' +
-      'Nothing is written yet; add_concepts and validate_vault report how much of these lines node paths cover.';
+      'Outline each unit\'s main file next (sourceReads mode "outline", up to 16 per call, sourceOnly true) and ' +
+      'place every unit: a node, inside a named node, or excluded with a reason. Then, for each must-have ability, ' +
+      'read from its entry function (sourceReads symbol) along the calls it names until you reach the condition, ' +
+      'order or default that decides its behaviour. Nothing is written yet; add_concepts and validate_vault report ' +
+      'which units, entry points and main files no node places, and which entry files were never read.';
   const map = {
     contract: 'breadthMap:v1',
     rootPath,
@@ -432,7 +435,7 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot } = {}) {
     },
     next,
   };
-  return fitBreadthMap(map);
+  return fit ? fitBreadthMap(map) : map;
 }
 
 /** The rendered map's ceiling: a few hundred files fit whole; a larger repository keeps its largest units. */
@@ -520,3 +523,28 @@ function renderBreadthMap(map) {
   return lines.join('\n');
 }
 
+const SURVEYS = new Map();
+
+/**
+ * The breadth map and its unit collection for a repository, rebuilt only when a
+ * source file was added, removed or changed since the last call. Writes and
+ * validation measure placement against it on every call; the full map costs
+ * seconds on a large repository, the file walk under a tenth of that.
+ *
+ * @param {string} rootPath absolute repository root
+ * @param {{ vaultRoot?: string }} [options]
+ * @returns {{ collection: ReturnType<typeof collectSourceUnits>, survey: ReturnType<typeof buildBreadthMap> }}
+ */
+export function cachedSurvey(rootPath, { vaultRoot } = {}) {
+  const collection = collectSourceUnits(rootPath, { vaultRoot });
+  const fingerprint = createHash('sha256');
+  for (const file of collection.files) fingerprint.update(`${file.path}\0${file.size}\0${file.mtimeMs}\n`);
+  const key = `${rootPath}\0${vaultRoot ?? ''}`;
+  const digest = fingerprint.digest('hex');
+  const cached = SURVEYS.get(key);
+  if (cached && cached.digest === digest) return { collection, survey: cached.survey };
+  const survey = buildBreadthMap(rootPath, { vaultRoot, collection, fit: false });
+  if (SURVEYS.size > 8) SURVEYS.clear();
+  SURVEYS.set(key, { digest, survey });
+  return { collection, survey };
+}

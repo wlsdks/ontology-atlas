@@ -11,6 +11,7 @@ import {
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
+import { declarationIndex } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 
 const SOURCE_READ_LIMITS = Object.freeze({
@@ -64,12 +65,21 @@ function isOutline(selector) {
   return selector.mode === 'outline';
 }
 
+function isSymbol(selector) {
+  return typeof selector.symbol === 'string';
+}
+
+/** A declared name, or `Owner.member` for a method inside a class or type. */
+const SYMBOL_NAME = /^[A-Za-z_$#][\w$#]*(?:\.[A-Za-z_$#][\w$#]*)?$/u;
+const CALLEES_LIMIT = 12;
+
 function refuse(selector, reason) {
   return {
     status: 'refused',
     path: selector.path,
     ...(isOutline(selector) ? { mode: 'outline' } : {}),
-    requestedRange: isOutline(selector)
+    ...(isSymbol(selector) ? { symbol: selector.symbol } : {}),
+    requestedRange: isOutline(selector) || isSymbol(selector)
       ? null
       : { startLine: selector.startLine, maxLines: selector.maxLines },
     reason,
@@ -86,7 +96,7 @@ export function validateSourceReadSelectors(selectors) {
     if (!selector || typeof selector !== 'object' || Array.isArray(selector)) {
       throw new Error(`sourceReads[${index}] must be an object.`);
     }
-    const allowed = new Set(['path', 'startLine', 'maxLines', 'expectedSha256', 'mode']);
+    const allowed = new Set(['path', 'startLine', 'maxLines', 'expectedSha256', 'mode', 'symbol']);
     const unknown = Object.keys(selector).filter((key) => !allowed.has(key));
     if (unknown.length) throw new Error(`Unknown field "${unknown[0]}" in sourceReads[${index}].`);
     if (selector.mode !== undefined && selector.mode !== 'lines' && selector.mode !== 'outline') {
@@ -101,7 +111,19 @@ export function validateSourceReadSelectors(selectors) {
     if ([...selector.path].length > SOURCE_READ_LIMITS.pathCharacters) {
       throw new Error(`sourceReads[${index}].path must be at most ${SOURCE_READ_LIMITS.pathCharacters} characters.`);
     }
-    if (isOutline(selector)) {
+    if (selector.symbol !== undefined) {
+      if (typeof selector.symbol !== 'string' || !SYMBOL_NAME.test(selector.symbol) || selector.symbol.length > 200) {
+        throw new Error(`sourceReads[${index}].symbol must be one declared name such as "issueInvoice" or "Invoice.total".`);
+      }
+      if (isOutline(selector)) throw new Error(`sourceReads[${index}].symbol does not apply to mode "outline".`);
+      if (selector.startLine !== undefined) throw new Error(`sourceReads[${index}].startLine does not apply with symbol; the declaration decides where the read starts.`);
+      if (selector.maxLines !== undefined && (!Number.isSafeInteger(selector.maxLines) || selector.maxLines <= 0)) {
+        throw new Error(`sourceReads[${index}].maxLines must be a positive safe integer.`);
+      }
+      if (selector.maxLines > SOURCE_READ_LIMITS.maxLines) {
+        throw new Error(`sourceReads[${index}].maxLines must be <= ${SOURCE_READ_LIMITS.maxLines}.`);
+      }
+    } else if (isOutline(selector)) {
       // An outline lists the whole file; a range with it asks for two reads, and
       // ignoring the range would return lines nobody sees.
       for (const key of ['startLine', 'maxLines']) {
@@ -274,8 +296,20 @@ function readOne(rootPath, selector, ignore, hooks) {
   if (selector.expectedSha256 && selector.expectedSha256 !== fullFileSha256) return refuse(selector, 'hash_mismatch');
   const lines = completeLines(text);
   if (isOutline(selector)) return outlineOne(selector, stable.bytes, text, lines.length, fullFileSha256);
-  if (selector.startLine > lines.length) return refuse(selector, 'range_beyond_eof');
-  const requested = lines.slice(selector.startLine - 1, selector.startLine - 1 + selector.maxLines);
+  let startLine = selector.startLine;
+  let maxLines = selector.maxLines;
+  let declaration = null;
+  let outline = null;
+  if (isSymbol(selector)) {
+    outline = outlineSource(text, selector.path);
+    declaration = findDeclaration(lines, outline.declarations, selector.symbol);
+    if (!declaration) return refuse(selector, 'symbol_not_found');
+    startLine = declaration.line;
+    const end = declarationEnd(lines, outline.declarations, declaration);
+    maxLines = Math.min(selector.maxLines ?? SOURCE_READ_LIMITS.maxLines, end - startLine + 1, SOURCE_READ_LIMITS.maxLines);
+  }
+  if (startLine > lines.length) return refuse(selector, 'range_beyond_eof');
+  const requested = lines.slice(startLine - 1, startLine - 1 + maxLines);
   const delivered = [];
   let returnedBytes = 0;
   for (const line of requested) {
@@ -285,25 +319,116 @@ function readOne(rootPath, selector, ignore, hooks) {
     delivered.push(line);
     returnedBytes += lineBytes;
   }
-  const endLine = selector.startLine + delivered.length - 1;
+  const endLine = startLine + delivered.length - 1;
   const hasMore = endLine < lines.length;
   const truncated = delivered.length < requested.length || hasMore;
+  const symbolEnd = declaration ? declarationEnd(lines, outline.declarations, declaration) : null;
   return {
     status: 'read',
     path: selector.path,
+    ...(declaration ? { symbol: selector.symbol } : {}),
     fullFileSha256,
     fileBytes: stable.bytes.length,
     fileLines: lines.length,
-    requestedRange: { startLine: selector.startLine, maxLines: selector.maxLines },
-    actualRange: { startLine: selector.startLine, endLine },
+    requestedRange: { startLine, maxLines },
+    actualRange: { startLine, endLine },
     text: delivered.join(''),
     returnedBytes,
     truncated,
     requestComplete: delivered.length === requested.length,
-    fileComplete: selector.startLine === 1 && endLine === lines.length,
-    citation: `source:${selector.path}#L${selector.startLine}-L${endLine}@sha256:${fullFileSha256}`,
-    next: hasMore ? { path: selector.path, startLine: endLine + 1, maxLines: selector.maxLines, expectedSha256: fullFileSha256 } : null,
+    fileComplete: startLine === 1 && endLine === lines.length,
+    citation: `source:${selector.path}#L${startLine}-L${endLine}@sha256:${fullFileSha256}`,
+    ...(declaration ? { callees: calleesOf(delivered.join(''), selector, outline.declarations, declaration, hooks) } : {}),
+    // A symbol read continues inside its own declaration only; past it is another symbol.
+    next: declaration
+      ? (endLine < symbolEnd ? { path: selector.path, startLine: endLine + 1, maxLines: Math.min(SOURCE_READ_LIMITS.maxLines, symbolEnd - endLine), expectedSha256: fullFileSha256 } : null)
+      : (hasMore ? { path: selector.path, startLine: endLine + 1, maxLines: selector.maxLines, expectedSha256: fullFileSha256 } : null),
   };
+}
+
+/** Whether a declaration answers to `name`: exactly, or as `Receiver.name` (Go methods). */
+function declares(declaration, name) {
+  return declaration.name === name || declaration.name.endsWith(`.${name}`);
+}
+
+function isCode(declaration) {
+  return declaration.kind !== 'export' && declaration.kind !== 'section';
+}
+
+/**
+ * The declaration a symbol names. An exact name wins (Go outlines `Node.Subscribe`);
+ * `Owner.member` otherwise finds the member inside its owner (Python, TypeScript); a
+ * bare name also finds a Go method declared on any receiver. Among several (typing
+ * overloads before the implementation), the one with the longest body.
+ */
+function findDeclaration(lines, declarations, symbol) {
+  const code = declarations.filter(isCode);
+  const longest = (candidates) => candidates.reduce((best, candidate) => (
+    !best || declarationEnd(lines, declarations, candidate) - candidate.line > declarationEnd(lines, declarations, best) - best.line
+      ? candidate : best), null);
+  const exact = code.filter((declaration) => declaration.name === symbol);
+  if (exact.length > 0) return longest(exact);
+  if (symbol.includes('.')) {
+    const [owner, member] = symbol.split('.');
+    const ownerDeclaration = longest(code.filter((declaration) => declaration.name === owner));
+    if (!ownerDeclaration) return null;
+    const ownerEnd = declarationEnd(lines, declarations, ownerDeclaration);
+    return longest(code.filter((declaration) => declaration.name === member
+      && declaration.line > ownerDeclaration.line && declaration.line <= ownerEnd));
+  }
+  const methods = code.filter((declaration) => declares(declaration, symbol));
+  return methods.length === 1 ? methods[0] : null;
+}
+
+function indentAt(lines, line) {
+  return /^[\t ]*/u.exec(lines[line - 1] ?? '')[0].length;
+}
+
+/** The last line of a declaration: before the next declaration at its indent or shallower. */
+function declarationEnd(lines, declarations, declaration) {
+  const indent = indentAt(lines, declaration.line);
+  const next = declarations.find((candidate) => candidate.line > declaration.line && indentAt(lines, candidate.line) <= indent);
+  let end = next ? next.line - 1 : lines.length;
+  while (end > declaration.line && (lines[end - 1] ?? '').trim() === '') end -= 1;
+  return end;
+}
+
+const CALL = /([A-Za-z_$][\w$]*)\s*\(/gu;
+const NOT_A_CALLEE = new Set([
+  'if', 'for', 'while', 'switch', 'catch', 'return', 'function', 'func', 'def', 'class', 'new', 'typeof',
+  'await', 'yield', 'super', 'print', 'len', 'make', 'append', 'cap', 'panic', 'require', 'import',
+  'isinstance', 'range', 'str', 'int', 'float', 'list', 'dict', 'set', 'tuple', 'bool', 'with', 'elif',
+  'assert', 'not', 'and', 'or', 'in', 'is', 'lambda', 'match', 'case', 'select', 'go', 'defer', 'fn',
+]);
+
+/**
+ * Functions the read body calls that the repository declares, each with the file
+ * and line to read next by symbol. A name declared in more than two places is left
+ * out: following it would be a guess.
+ */
+function calleesOf(text, selector, declarations, declaration, hooks) {
+  const own = selector.symbol.split('.').pop();
+  const names = [];
+  for (const match of text.matchAll(CALL)) {
+    const name = match[1];
+    if (name === own || NOT_A_CALLEE.has(name) || names.includes(name)) continue;
+    names.push(name);
+  }
+  const callees = [];
+  let index = null;
+  for (const name of names) {
+    if (callees.length >= CALLEES_LIMIT) break;
+    const local = declarations.filter((candidate) => declares(candidate, name) && candidate.line !== declaration.line && isCode(candidate));
+    if (local.length > 0) {
+      if (local.length <= 2) for (const candidate of local) callees.push({ name, path: selector.path, line: candidate.line });
+      continue;
+    }
+    if (!hooks?.rootPath) continue;
+    index ??= declarationIndex(hooks.rootPath, { ignore: hooks.ignore ?? [] });
+    const elsewhere = [...(index.get(name) ?? []), ...(index.get(`*.${name}`) ?? [])].filter((row) => row.path !== selector.path);
+    if (elsewhere.length > 0 && elsewhere.length <= 2) for (const row of elsewhere) callees.push({ name, path: row.path, line: row.line });
+  }
+  return callees.slice(0, CALLEES_LIMIT);
 }
 
 function packetBytes(packet) {
@@ -335,7 +460,7 @@ export function readSourceEvidence(
     serializedBytes: 0,
   };
   for (const selector of selectors) {
-    let row = readOne(rootPath, selector, ignore, { onBeforeOpen, onDescriptorRead });
+    let row = readOne(rootPath, selector, ignore, { onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore });
     const delivered = row.status === 'read' || row.status === 'outlined';
     if (delivered && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
       row = { ...refuse(selector, 'aggregate_text_budget'), status: 'omitted' };

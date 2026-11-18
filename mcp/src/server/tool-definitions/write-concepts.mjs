@@ -171,7 +171,7 @@ export const ADD_CONCEPTS_TOOL = {
       postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       coverage: {
         type: 'string',
-        description: 'One line: the share of product source lines whose unit a node path touches, the untouched units by name, and how many nodes say outlined only. Absent when the repository root is not grounded or has no product source.',
+        description: 'One line: of the product units the survey lists, how many hold a node path, are named inside a node or are excluded with a reason; the units, must-have units, entry points and main files nothing places, by name; and the capabilities whose entry file this server never served a read for, with the exact analyze_repo_structure call that reads them. Absent when the repository root is not grounded or has no product source.',
       },
     },
     required: ['concepts'],

@@ -5,7 +5,9 @@ import { walkMd } from '../../lib/vault-files/walk-vault.mjs';
 import { parseFrontmatter } from '../../lib/mcp-bridge/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
 import {
+  buildDepthFindings,
   dependencyWitnessFinding,
+  repositorySurvey,
   folderOnlyEvidenceFinding,
   rawSourceKindIssues,
   starterExampleFindings,
@@ -148,25 +150,25 @@ export const KNOWN_CODES = [
     code: 'relation-note-on-unread',
     severity: 'warning',
     scope: 'vault',
-    description: 'a relation `why` states how two nodes work together while one of them says, under Uncertainty, that it was outlined only (MCP validate_vault).',
+    description: 'a relation `why` states how two nodes work together while one of them says, under Uncertainty, that it was not read; the message names the read and the replace_relation call that repair it.',
   },
   {
     code: 'dependency-both-ways',
     severity: 'warning',
     scope: 'vault',
-    description: 'two nodes each declare a dependency on the other, so one arrow points from provider to consumer (MCP validate_vault).',
+    description: 'two nodes each declare a dependency on the other, so one arrow points from provider to consumer.',
   },
   {
     code: 'path-without-code',
     severity: 'warning',
     scope: 'vault',
-    description: 'a capability or element `path:` names a file with no code: empty, comments or a docstring only, or a bare re-export (MCP validate_vault).',
+    description: 'a capability or element `path:` names a file with no code: empty, comments or a docstring only, or a bare re-export. Needs OATLAS_REPO_ROOT.',
   },
   {
     code: 'path-shared',
     severity: 'warning',
     scope: 'vault',
-    description: 'more than five capabilities and elements share one `path:`, so a drift check cannot tell them apart (MCP validate_vault).',
+    description: 'more than five capabilities and elements share one `path:`, so a drift check cannot tell them apart. Needs OATLAS_REPO_ROOT.',
   },
   {
     code: 'starter-example-node',
@@ -294,6 +296,7 @@ export function runValidate(args) {
   ]) {
     attachVaultIssues(reportByFile, findVaultIssues(entries));
   }
+  attachVaultIssues(reportByFile, findBuildDepthIssues(entries, vaultPath));
 
   for (const file of files) {
     const report = reportByFile.get(file);
@@ -662,6 +665,24 @@ function findFolderOnlyEvidenceIssues(entries) {
     });
   }
   return issues;
+}
+
+/**
+ * The build-depth warnings `validate_vault` reports, from the same implementation. The two relation checks need
+ * only the vault; the entry-path checks need `OATLAS_REPO_ROOT`, as the MCP server reads it.
+ */
+function findBuildDepthIssues(entries, vaultPath) {
+  const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'
+    ? process.env.OATLAS_REPO_ROOT.trim()
+    : '';
+  const fileBySlug = new Map(entries.map((entry) => [entry.slug, entry.file]));
+  const collection = repoRoot ? repositorySurvey(repoRoot, vaultPath)?.collection ?? null : null;
+  return buildDepthFindings(entries, { repoRoot: repoRoot || null, collection })
+    .filter((finding) => fileBySlug.has(finding.slug))
+    .map((finding) => ({
+      file: fileBySlug.get(finding.slug),
+      issue: { code: finding.code, severity: 'warning', message: finding.message },
+    }));
 }
 
 /**

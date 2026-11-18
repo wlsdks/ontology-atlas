@@ -1,27 +1,24 @@
 /**
- * How deep a first map went, measured from the vault and the repository: the share
- * of product source lines whose unit a node `path:` touches, how many nodes say
- * they were outlined only, and the findings a newcomer would trip over (a relation
- * note about code nobody read, a dependency both ways, an entry file with no code,
- * one file for many nodes). Writes report the coverage line, validate_vault adds the
- * findings, and finalize_project_meaning refuses an `answered` these numbers do not
- * support. Every message names the call that repairs it.
+ * How far a first map reaches and how deep it read. Breadth is measured against the
+ * survey: every product unit, entry point and main file is under a node's `path:`,
+ * named inside a node, or excluded with a reason. Depth is measured against the
+ * reads this server process served, matched to each capability's `path:`, never
+ * against a body's wording. The findings name what a newcomer would trip over (a
+ * relation note about a node that says it was not read, a dependency both ways, an
+ * entry file with no code, one file for many nodes). Writes and validate_vault report
+ * the line, finalize_project_meaning refuses an `answered` it does not support, and
+ * every message names the next call.
  */
 
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 
-import {
-  UNIT_SOURCE_EXTENSIONS,
-  collectSourceUnits,
-  measureUnitCoverage,
-  unitForPath,
-} from '../analyze/source-units.mjs';
+import { cachedSurvey } from '../analyze/breadth-map.mjs';
+import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
 
 /** Wording a node uses for a subject it only outlined; read under `## Uncertainty` alone. */
 const OUTLINED_ONLY = /\b(?:outlined only|only outlined|outline only|outlined,? (?:but )?(?:the )?(?:body |bodies )?(?:not read|unread)|bod(?:y|ies) (?:was |were |is |are )?(?:not read|unread)|unread|not opened)\b/i;
 
-const UNTOUCHED_NAMED = 12;
 const SHARED_PATH_LIMIT = 5;
 const PATH_KINDS = new Set(['capability', 'element']);
 
@@ -80,12 +77,15 @@ function dependencyEdges(docs) {
   return edges;
 }
 
-/** The product units of a grounded repository, or null when it has none to measure. */
-export function repositoryUnits(repoRoot, vaultRoot) {
+/**
+ * The survey of a grounded repository (`cachedSurvey`: every unit with its main
+ * files and importers, and the entry points) or null when it has no product units.
+ */
+export function repositorySurvey(repoRoot, vaultRoot) {
   if (!repoRoot) return null;
   try {
-    const collection = collectSourceUnits(repoRoot, { vaultRoot });
-    return collection.units.length > 0 ? collection : null;
+    const { collection, survey } = cachedSurvey(repoRoot, { vaultRoot });
+    return collection.units.length > 0 ? { repoRoot, collection, survey } : null;
   } catch {
     return null;
   }
@@ -95,35 +95,196 @@ function formatLines(value) {
   return value.toLocaleString('en-US');
 }
 
+function sectionOf(body, heading) {
+  const match = new RegExp(`^##\\s+${heading}\\s*$([\\s\\S]*?)(?=^##\\s|(?![\\s\\S]))`, 'im').exec(String(body ?? ''));
+  return match ? match[1] : '';
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function namesWord(text, word) {
+  if (!word || word.length < 3) return false;
+  return new RegExp(`(^|[^\\w/.-])${escapeRegExp(word)}(?=$|[^\\w-])`, 'i').test(text);
+}
+
+function lastSegment(path) {
+  return path.split('/').pop().replace(/\.[^.]+$/, '');
+}
+
+function parentOf(path) {
+  return path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
+}
+
+/** The unit a node path enters: the longest unit path equal to it or above it. */
+function unitPathFor(units, path) {
+  let best = null;
+  for (const unit of units) {
+    if ((path === unit.path || path.startsWith(`${unit.path}/`)) && (!best || unit.path.length > best.length)) best = unit.path;
+  }
+  return best;
+}
+
+/** Entry symbols too generic to place anything by name. */
+const GENERIC_SYMBOLS = new Set(['main', '__main__', 'run', 'default', 'index', 'app', 'cli', 'server']);
+const MAIN_FILE_LINES = 300;
+const GENERIC_STEMS = new Set(['index', 'main', 'utils', 'util', 'types', 'base', 'core', 'init', '__init__', 'common', 'helpers', 'config', 'constants', 'module', 'server', 'client', 'handler']);
+const LISTED = 12;
+
 /**
- * Coverage of the product by node paths, plus how many capabilities and elements say
- * they were outlined only, with the one line a write reports.
+ * Where every unit, entry point and main file the survey lists sits on the map:
+ * under a node's `path:`, named inside a node, or excluded with a reason in the
+ * project's `## Uncertainty` or `## Excludes`. A must-have unit (one holding an
+ * entry point, or imported by two or more units) with no node is listed by name.
  */
-export function measureBuildDepth(docs, collection) {
+export function measureBreadth(docs, survey) {
+  const units = survey.units;
+  const project = docs.find((doc) => kindOf(doc) === 'project');
+  const exclusionLines = project
+    ? `${sectionOf(project.body, 'Uncertainty')}\n${sectionOf(project.body, 'Excludes')}`
+      .split('\n').filter((line) => line.trim().split(/\s+/).length >= 4)
+    : [];
+  const excludes = (path, words = []) => exclusionLines.some((line) => line.includes(path) || words.some((word) => namesWord(line, word)));
+  const nodes = docs.filter((doc) => doc !== project && kindOf(doc) !== 'vault-readme');
+  const nodeText = nodes.map((doc) => `${doc.frontmatter?.title ?? ''}\n${doc.body ?? ''}`).join('\n');
+  const nodePaths = nodes.map(pathOf).filter(Boolean);
+  const pathSet = new Set(nodePaths);
+  const unitsWithNode = new Set(nodePaths.map((path) => unitPathFor(units, path)).filter(Boolean));
+  // A family node names its siblings in `## Includes`: the parent folder its path's unit sits in.
+  const includesByParent = new Map();
+  for (const doc of nodes) {
+    const path = pathOf(doc);
+    const unit = path ? unitPathFor(units, path) : null;
+    if (!unit) continue;
+    const parent = parentOf(unit);
+    includesByParent.set(parent, `${includesByParent.get(parent) ?? ''}\n${sectionOf(doc.body, 'Includes')}\n${doc.frontmatter?.title ?? ''}`);
+  }
+  const place = new Map();
+  for (const unit of units) {
+    if (unitsWithNode.has(unit.path)) place.set(unit.path, 'node');
+    else if (nodeText.includes(unit.path) || namesWord(includesByParent.get(parentOf(unit.path)) ?? '', lastSegment(unit.path))) place.set(unit.path, 'named');
+    else if (excludes(unit.path, [lastSegment(unit.path)])) place.set(unit.path, 'excluded');
+    else place.set(unit.path, 'unplaced');
+  }
+  const entryUnits = new Set(survey.entryPoints.map((entry) => unitPathFor(units, entry.path)).filter(Boolean));
+  const mustHave = units.filter((unit) => entryUnits.has(unit.path) || unit.importedBy >= 2);
+  const inherited = (path) => {
+    const unit = unitPathFor(units, path);
+    return unit ? ['named', 'excluded'].includes(place.get(unit)) : false;
+  };
+  const entryUnplaced = survey.entryPoints.filter((entry) => {
+    if (pathSet.has(entry.path) || nodeText.includes(entry.path) || inherited(entry.path)) return false;
+    const words = [entry.symbol, entry.name].filter((word) => word && !GENERIC_SYMBOLS.has(word));
+    if (words.some((word) => namesWord(nodeText, word))) return false;
+    return !excludes(entry.path, words);
+  });
+  const mainFiles = units.flatMap((unit) => unit.mainFiles.filter((file) => file.lines >= MAIN_FILE_LINES));
+  // A main file is named by its path, its file name, or its stem as a word ("motion.py" by "Random motion").
+  const stemOf = (path) => {
+    const stem = lastSegment(path);
+    return stem.length >= 4 && !GENERIC_STEMS.has(stem.toLowerCase()) ? stem.replace(/[_-]+/g, ' ') : null;
+  };
+  const mainUnplaced = mainFiles.filter((file) => !(pathSet.has(file.path) || nodeText.includes(file.path)
+    || namesWord(nodeText, file.path.split('/').pop()) || namesWord(nodeText, stemOf(file.path))
+    || inherited(file.path) || excludes(file.path, [file.path.split('/').pop()])));
+  const count = (state) => units.filter((unit) => place.get(unit.path) === state).length;
+  return {
+    units: units.length,
+    node: count('node'),
+    named: count('named'),
+    excluded: count('excluded'),
+    unplaced: units.filter((unit) => place.get(unit.path) === 'unplaced')
+      .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path))
+      .map((unit) => ({ path: unit.path, lines: unit.lines })),
+    mustHaveWithoutNode: mustHave.filter((unit) => !['node', 'named'].includes(place.get(unit.path)))
+      .map((unit) => ({ path: unit.path, lines: unit.lines })),
+    entryPoints: survey.entryPoints.length,
+    entryUnplaced: entryUnplaced.map((entry) => ({ path: entry.path, symbol: entry.symbol, kind: entry.kind })),
+    mainFiles: mainFiles.length,
+    mainUnplaced: mainUnplaced.map((file) => ({ path: file.path, lines: file.lines })),
+  };
+}
+
+/**
+ * The symbol a body cites right after its path, in any of the forms builders write:
+ * "`src/x.ts` `issueInvoice`", "src/x.ts issueInvoice", "src/x.py#Owner.method".
+ */
+function citedSymbol(doc, path) {
+  const body = String(doc?.body ?? '');
+  const pattern = new RegExp(`${escapeRegExp(path)}\`?(?:#|:|\\s+|,\\s*)\`?([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)?)`, 'g');
+  for (const match of body.matchAll(pattern)) {
+    const symbol = match[1].replace(/\.$/, '');
+    if (!/^(?:L\d+|and|or|the|was|is|not|in|at|line|lines)$/i.test(symbol)) return symbol;
+  }
+  return null;
+}
+
+const READ_CALL_SELECTORS = 16;
+
+/** The exact call that reads the listed nodes' entry files, by symbol where the body names one. */
+export function readCall(unread) {
+  const seen = new Set();
+  const selectors = [];
+  for (const { path, symbol } of unread) {
+    const key = `${path}\0${symbol ?? ''}`;
+    if (seen.has(key) || selectors.length >= READ_CALL_SELECTORS) continue;
+    seen.add(key);
+    selectors.push(symbol ? { path, symbol } : { path, startLine: 1, maxLines: 200 });
+  }
+  return `analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: selectors })})`;
+}
+
+/**
+ * Which capabilities' entry files this server process served a line or symbol read
+ * for. Null when it served none: a restarted server cannot tell, and says so.
+ */
+export function measureReads(docs, reads) {
+  if (!reads || reads.size === 0) return null;
+  const capabilities = docs.filter((doc) => kindOf(doc) === 'capability' && pathOf(doc));
+  const unread = capabilities.filter((doc) => !reads.has(pathOf(doc)))
+    .map((doc) => ({ slug: doc.slug, path: pathOf(doc), symbol: citedSymbol(doc, pathOf(doc)) }));
+  return { capabilities: capabilities.length, read: capabilities.length - unread.length, unread };
+}
+
+function listed(rows, render) {
+  const shown = rows.slice(0, LISTED).map(render);
+  const more = rows.length - shown.length;
+  return `${shown.join(', ')}${more > 0 ? ` and ${more} more` : ''}`;
+}
+
+/**
+ * Placement against the survey and reads against this session, with the line a
+ * write and validate_vault report. Each list names what to do next.
+ */
+export function measureBuildDepth(docs, repo, reads) {
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability');
-  const outlined = docs
-    .filter((doc) => PATH_KINDS.has(kindOf(doc)) && saysOutlinedOnly(doc.body))
-    .map((doc) => doc.slug);
-  const outlinedCapabilities = capabilities.filter((doc) => saysOutlinedOnly(doc.body)).map((doc) => doc.slug);
   const dependsOn = dependencyEdges(docs).length;
-  const coverage = collection ? measureUnitCoverage(collection, docs.map(pathOf).filter(Boolean)) : null;
+  const breadth = repo ? measureBreadth(docs, repo.survey) : null;
+  const depth = measureReads(docs, reads);
   const parts = [];
-  if (coverage) {
-    parts.push(`Coverage ${coverage.percent}%: node paths touch ${coverage.touchedUnits} of ${coverage.productUnits} product units (${formatLines(coverage.touchedLines)} of ${formatLines(coverage.productLines)} lines).`);
-    if (coverage.untouched.length > 0) {
-      const named = coverage.untouched.slice(0, UNTOUCHED_NAMED).map((unit) => `${unit.path} (${formatLines(unit.lines)})`);
-      const more = coverage.untouched.length - named.length;
-      parts.push(`Untouched: ${named.join(', ')}${more > 0 ? ` and ${more} more` : ''}. Add nodes whose path enters them, or name them in the project's ## Uncertainty.`);
+  if (breadth) {
+    parts.push(`Breadth, of ${breadth.units} product units the survey lists: ${breadth.node} under a node's path, ${breadth.named} named inside a node, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
+    if (breadth.unplaced.length > 0) parts.push(`Not placed: ${listed(breadth.unplaced, (unit) => `${unit.path} (${formatLines(unit.lines)} lines)`)}.`);
+    if (breadth.mustHaveWithoutNode.length > 0) parts.push(`Must-have units with no node: ${listed(breadth.mustHaveWithoutNode, (unit) => unit.path)}.`);
+    const loose = [
+      ...breadth.entryUnplaced.map((entry) => `${entry.path} ${entry.symbol} (${entry.kind})`),
+      ...breadth.mainUnplaced.map((file) => `${file.path} (${formatLines(file.lines)} lines)`),
+    ];
+    if (loose.length > 0) parts.push(`Entry points and main files no node names: ${listed(loose, (row) => row)}.`);
+    if (breadth.unplaced.length + breadth.mustHaveWithoutNode.length + loose.length > 0) {
+      parts.push('Place each: add_concepts a node whose path is inside it, name it in the ## Includes of the node that covers it, or name it with a reason in the project\'s ## Uncertainty.');
     }
   }
-  if (outlined.length > 0) {
-    parts.push(`${outlinedCapabilities.length} of ${capabilities.length} capabilities and ${outlined.length - outlinedCapabilities.length} elements say outlined only.`);
+  if (depth && depth.unread.length > 0) {
+    parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities had their entry file read this session. Not read: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next, then follow the calls each names until the deciding condition: ${readCall(depth.unread)}.`);
+  } else if (!depth && capabilities.length > 0) {
+    parts.push('Depth: this server process has served no line or symbol reads, so which entry files were read is unknown.');
   }
   return {
-    coverage,
+    breadth,
+    reads: depth,
     capabilities: capabilities.length,
-    outlined,
-    outlinedCapabilities,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
   };
@@ -134,6 +295,7 @@ export function measureBuildDepth(docs, collection) {
  * ------------------------------------------------------------------------- */
 
 const NOTE_KEYS = ['dependencies', 'depends_on', 'relates', 'elements', 'capabilities'];
+const TYPE_OF_KEY = { dependencies: 'depends_on', depends_on: 'depends_on', relates: 'relates', elements: 'elements', capabilities: 'capabilities' };
 
 function relationNoteFindings(docs) {
   const resolve = slugResolver(docs);
@@ -142,17 +304,22 @@ function relationNoteFindings(docs) {
   for (const doc of docs) {
     const notes = doc?.frontmatter?.relation_notes;
     if (!notes || typeof notes !== 'object' || Array.isArray(notes)) continue;
-    const related = new Set(refsOf(doc, NOTE_KEYS));
+    const typeOf = new Map();
+    for (const key of NOTE_KEYS) for (const ref of refsOf(doc, [key])) if (!typeOf.has(ref)) typeOf.set(ref, TYPE_OF_KEY[key]);
     for (const [ref, note] of Object.entries(notes)) {
-      if (typeof note !== 'string' || !note.trim() || !related.has(ref)) continue;
+      if (typeof note !== 'string' || !note.trim() || !typeOf.has(ref)) continue;
       const target = bySlug.get(resolve(ref));
       if (!target) continue;
-      const unread = [doc, target].filter((node) => saysOutlinedOnly(node.body)).map((node) => node.slug);
+      const unread = [doc, target].filter((node) => saysOutlinedOnly(node.body));
       if (unread.length === 0) continue;
+      const type = typeOf.get(ref);
+      const reads = unread.map((node) => pathOf(node)).filter(Boolean)
+        .map((path) => ({ path, symbol: citedSymbol(unread.find((node) => pathOf(node) === path), path) }));
+      const rewrite = `replace_relation(${JSON.stringify({ from: doc.slug, oldTo: target.slug, oldType: type, newTo: target.slug, newType: type, why: '<what the read shows>', confirm: true })})`;
       findings.push({
         slug: doc.slug,
         code: 'relation-note-on-unread',
-        message: `The why on ${doc.slug} -> ${target.slug} states how they work together, but ${unread.join(' and ')} says it was outlined only. Read the entry function with analyze_repo_structure sourceReads (startLine, maxLines) and patch_concept what you find; if the read does not confirm the edge, remove_relation it.`,
+        message: `The why on ${doc.slug} -> ${target.slug} says how they work together, but ${unread.map((node) => node.slug).join(' and ')} says it was not read. Repair in two calls: ${reads.length > 0 ? readCall(reads) : 'read the entry with analyze_repo_structure sourceReads'}, then ${rewrite}, and patch_concept the ## Uncertainty line that said it was not read. Without the read, make the same replace_relation call with a why that says only what the outline shows.`,
       });
     }
   }
@@ -264,30 +431,35 @@ export function buildDepthFindings(docs, { repoRoot, collection } = {}) {
  * finalize_project_meaning
  * ------------------------------------------------------------------------- */
 
-const ANSWERED_COVERAGE_PERCENT = 80;
-
 /**
- * Why an `answered` competency row is not supported by the map, one reason per row,
- * each naming what is missing and the call that fixes it; empty when all hold.
+ * Why an `answered` competency row is not supported by the map, one reason per row.
+ * Each leads with the call that fixes the map (reading is the cheapest repair for
+ * evidence), and only then the partial fallback.
  */
 export function competencyDepthRefusals(questions, depth) {
   const status = new Map(questions.map((question) => [question.id, question.status]));
   const reasons = [];
-  const partialHint = (id, gap) => `or mark ${id} partial with "- Gap: ${gap}"`;
-  if (status.get('evidence') === 'answered' && depth.capabilities > 0
-    && depth.outlinedCapabilities.length * 3 > depth.capabilities) {
-    const named = depth.outlinedCapabilities.slice(0, 8).join(', ');
-    reasons.push(`- evidence: ${depth.outlinedCapabilities.length} of ${depth.capabilities} capabilities say outlined only (${named}${depth.outlinedCapabilities.length > 8 ? ', …' : ''}), more than a third. Read each entry function with analyze_repo_structure sourceReads (startLine, maxLines) and patch_concept the body with what it does, ${partialHint('evidence', 'these abilities were outlined, not read')}.`);
+  const fallback = (id, gap) => `Only if that cannot be done, mark ${id} partial with "- Gap: ${gap}".`;
+  const reads = depth.reads;
+  if (status.get('evidence') === 'answered' && reads && reads.capabilities > 0 && reads.unread.length * 3 > reads.capabilities) {
+    reasons.push(`- evidence: ${reads.unread.length} of ${reads.capabilities} capabilities have an entry file this server never served a read for: ${listed(reads.unread, (row) => `${row.slug} (${row.path})`)}. Next call: ${readCall(reads.unread)}; follow the callees each read names to the condition, order or default that decides it, patch_concept the body with that rule, and finalize again. ${fallback('evidence', 'these abilities were outlined, not read')}`);
   }
-  if (depth.coverage && depth.coverage.percent < ANSWERED_COVERAGE_PERCENT) {
-    const untouched = depth.coverage.untouched.slice(0, UNTOUCHED_NAMED).map((unit) => unit.path).join(', ');
-    for (const id of ['domains', 'abilities']) {
-      if (status.get(id) !== 'answered') continue;
-      reasons.push(`- ${id}: node paths cover ${depth.coverage.percent}% of product source lines, below ${ANSWERED_COVERAGE_PERCENT}%. Untouched: ${untouched}. Add nodes for them with add_concepts (each with a path: inside the unit), ${partialHint(id, `untouched units ${untouched}`)}.`);
+  const breadth = depth.breadth;
+  if (breadth && status.get('domains') === 'answered' && breadth.unplaced.length > 0) {
+    reasons.push(`- domains: ${breadth.unplaced.length} of ${breadth.units} product units the survey lists sit under no node and no exclusion: ${listed(breadth.unplaced, (unit) => unit.path)}. Next call: add_concepts a node for each, or patch_concept the node that covers it to name it in ## Includes, or name it with a reason in the project's ## Uncertainty. ${fallback('domains', 'units not placed')}`);
+  }
+  if (breadth && status.get('abilities') === 'answered') {
+    const loose = [
+      ...breadth.mustHaveWithoutNode.map((unit) => `${unit.path} (must-have unit)`),
+      ...breadth.entryUnplaced.map((entry) => `${entry.path} ${entry.symbol}`),
+      ...breadth.mainUnplaced.map((file) => file.path),
+    ];
+    if (loose.length > 0) {
+      reasons.push(`- abilities: no node names ${listed(loose, (row) => row)}. Next call: add_concepts a capability for each thing a user gets there, or patch_concept the node that covers it to name it in ## Includes. ${fallback('abilities', 'abilities not yet named')}`);
     }
   }
   if (status.get('impact') === 'answered' && depth.capabilities > 0 && depth.dependsOn * 2 < depth.capabilities) {
-    reasons.push(`- impact: ${depth.dependsOn} depends_on edges for ${depth.capabilities} capabilities, below one per two. Add the dependencies the code shows with add_relations (each why naming the call), ${partialHint('impact', 'dependencies are recorded for only part of the map')}.`);
+    reasons.push(`- impact: ${depth.dependsOn} depends_on edges for ${depth.capabilities} capabilities, below one per two. Next call: add_relations with the dependencies the code shows, each why naming the call. ${fallback('impact', 'dependencies are recorded for only part of the map')}`);
   }
   return reasons;
 }

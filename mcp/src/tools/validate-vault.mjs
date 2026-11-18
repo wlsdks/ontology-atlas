@@ -31,7 +31,8 @@ import {
   folderOnlyEvidenceFinding,
   starterExampleFindings,
 } from '../meaning/meaning-findings.mjs';
-import { buildDepthFindings, measureBuildDepth, repositoryUnits } from '../construction/build-depth.mjs';
+import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
@@ -235,13 +236,13 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
     docIssues.set(slug, issues);
   }
   const depthRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : (REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
-  const units = repositoryUnits(depthRoot, VAULT_ROOT);
-  for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: units })) {
+  const repo = repositorySurvey(depthRoot, VAULT_ROOT);
+  for (const finding of buildDepthFindings(docs, { repoRoot: depthRoot, collection: repo?.collection ?? null })) {
     const issues = docIssues.get(finding.slug) || [];
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
     docIssues.set(finding.slug, issues);
   }
-  const coverage = measureBuildDepth(docs, units).line;
+  const coverage = measureBuildDepth(docs, repo, depthRoot ? sessionReads(depthRoot) : null).line;
   // A single-file check cannot see a parent; this pass holds the whole vault, so it
   // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);

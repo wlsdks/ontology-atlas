@@ -24,7 +24,8 @@ import { loadVaultDocs } from '../vault/documents.mjs';
 import { configureNodeEligibilityRepoRoot } from '../vault/eligibility-gate.mjs';
 import { updateDoc, writeDoc } from '../vault/doc-writes.mjs';
 import { detectDuplicateTitle } from '../vault/graph-queries.mjs';
-import { measureBuildDepth, repositoryUnits } from '../construction/build-depth.mjs';
+import { measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,
@@ -219,13 +220,14 @@ function addConceptsBatch({ concepts }) {
 }
 
 /**
- * The coverage line after a batch: how much of the product the node paths now touch
- * and which units nothing names yet. A measurement failure never fails the write.
+ * The coverage line after a batch: which units, entry points and main files nothing
+ * places yet, and which entry files were never read. A measurement failure never
+ * fails the write.
  */
 function buildCoverageLine() {
   if (!REPO_ROOT_IS_GROUNDED) return null;
   try {
-    return measureBuildDepth(loadVaultDocs(VAULT_ROOT), repositoryUnits(REPO_ROOT, VAULT_ROOT)).line;
+    return measureBuildDepth(loadVaultDocs(VAULT_ROOT), repositorySurvey(REPO_ROOT, VAULT_ROOT), sessionReads(REPO_ROOT)).line;
   } catch {
     return null;
   }

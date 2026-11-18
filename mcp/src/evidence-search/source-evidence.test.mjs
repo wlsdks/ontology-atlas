@@ -305,3 +305,62 @@ test('an outline binds the source digest to the file it listed', () => {
   assert.notEqual(composeSourceDigest(repository, first), composeSourceDigest(repository, second));
   assert.equal(composeSourceDigest(repository, first), composeSourceDigest(repository, first));
 });
+
+/*
+ * A rule usually sits one call below the entry a builder reads. A symbol read
+ * returns the declaration and the declared functions it calls, so the next read
+ * follows the call by name instead of guessing a line range.
+ */
+test('a symbol read returns one declaration and names the callees it can follow', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  writeFileSync(join(root, 'src', 'release.py'), [
+    'class Release:',
+    '    def ship(self, labels):',
+    '        bump = decide_bump(labels)',
+    '        return self.publish(bump)',
+    '',
+    '    def publish(self, bump):',
+    '        return bump',
+    '',
+    'def unrelated():',
+    '    return 0',
+    '',
+  ].join('\n'));
+  writeFileSync(join(root, 'src', 'bump.py'), 'def decide_bump(labels):\n    return "major" if "breaking" in labels else "patch"\n');
+  const [row] = readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'Release.ship' }]).rows;
+  assert.equal(row.status, 'read');
+  assert.equal(row.symbol, 'Release.ship');
+  assert.deepEqual(row.actualRange, { startLine: 2, endLine: 4 });
+  assert.deepEqual(row.callees, [
+    { name: 'decide_bump', path: 'src/bump.py', line: 1 },
+    { name: 'publish', path: 'src/release.py', line: 6 },
+  ]);
+  assert.equal(row.next, null, 'a symbol read does not continue past its declaration');
+  const [missing] = readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'Release.cancel' }]).rows;
+  assert.equal(missing.status, 'refused');
+  assert.equal(missing.reason, 'symbol_not_found');
+  assert.throws(() => readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'ship', startLine: 1 }]), /startLine does not apply with symbol/);
+  assert.throws(() => readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'not a name' }]), /one declared name/);
+});
+
+test('a symbol read takes the implementation over typing overload stubs', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'apply.py'), [
+    'class Transform:',
+    '    @overload',
+    '    def forward(self, data: int) -> int: ...',
+    '',
+    '    def forward(self, data):',
+    '        if gated_out(data):',
+    '            return data',
+    '        return data + 1',
+    '',
+    'def gated_out(data):',
+    '    return data < 0',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'apply.py', symbol: 'Transform.forward' }]).rows;
+  assert.deepEqual(row.actualRange, { startLine: 5, endLine: 8 });
+  assert.deepEqual(row.callees, [{ name: 'gated_out', path: 'apply.py', line: 10 }]);
+});

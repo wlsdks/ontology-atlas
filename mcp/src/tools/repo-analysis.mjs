@@ -5,6 +5,7 @@
  */
 
 import { buildBreadthMap } from '../analyze/breadth-map.mjs';
+import { recordSourceEvidence } from '../construction/session-reads.mjs';
 import { analyzeRepoStructure } from '../analyze/repo-structure.mjs';
 import {
   buildArchitectureBrief,
@@ -65,8 +66,9 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   // Reads without a proposal return the reads alone: the map was already sent once,
   // and repeating it on every outline call cost more than the outlines.
   if (sourceOnly || (sourceReads !== undefined && !reviewing)) {
-    return { rootPath: target, delivery: 'source_only', canWrite: false,
-      sourceEvidence: readSourceEvidence(target, sourceReads, { ignore }) };
+    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore });
+    recordSourceEvidence(target, sourceEvidence);
+    return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
   }
   if (!reviewing) {
     return buildBreadthMap(target, { ignore, vaultRoot: VAULT_ROOT });
@@ -81,6 +83,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   const sourceEvidence = sourceReads === undefined
     ? undefined
     : readSourceEvidence(target, sourceReads, { ignore });
+  if (sourceEvidence) recordSourceEvidence(target, sourceEvidence);
   const sourceDigest = proposal == null
     ? undefined
     : composeSourceDigest(sourceBefore, sourceEvidence);

@@ -236,3 +236,37 @@ test('outline reads take sixteen selectors and answer without the map or a limit
   assert.equal(reads.sourceEvidence.rows.length, 16);
   assert.equal(reads.sourceEvidence.limits, undefined);
 });
+
+/*
+ * Depth is judged by the reads this server served, so a builder's honest Uncertainty
+ * line does not count against it and a read it never made cannot be claimed.
+ */
+test('validate names the capabilities whose entry file this server process never read, with the call that reads them', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const vault = join(root, 'atlas');
+  mkdirSync(vault, { recursive: true });
+  const request = (id, name, args) => ({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } });
+  const { responses } = await runJsonRpcProcess({
+    command: process.execPath, args: [serverEntry], timeoutMs: 30_000,
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: root },
+    requests: [
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: {
+        protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'construction-door-test', version: '1' },
+      } },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      request(2, 'add_concepts', { concepts: [
+        { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, path: 'src/charge.mjs', body: `${BODY}Cited: \`src/charge.mjs\` \`charge\`.\n` },
+        { slug: 'capabilities/refund', kind: 'capability', title: 'Refund', labels: { en: 'Refund' }, path: 'src/refund.mjs', body: `${BODY}Cited: \`src/refund.mjs\` \`refund\`.\n` },
+      ] }),
+      request(3, 'analyze_repo_structure', { sourceOnly: true, sourceReads: [{ path: 'src/charge.mjs', symbol: 'charge' }] }),
+      request(4, 'validate_vault', {}),
+    ],
+  });
+  const result = (id) => responses.find((response) => response.id === id)?.result;
+  assert.match(result(2).structuredContent.coverage, /Depth: this server process has served no line or symbol reads/);
+  assert.equal(result(3).structuredContent.sourceEvidence.rows[0].symbol, 'charge');
+  const coverage = result(4).structuredContent.coverage;
+  assert.match(coverage, /Depth: 1 of 2 capabilities had their entry file read this session\. Not read: capabilities\/refund \(src\/refund\.mjs\)/);
+  assert.match(coverage, /analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/refund\.mjs","symbol":"refund"\}\]\}\)/);
+});

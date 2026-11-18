@@ -7,8 +7,9 @@
 import {
   competencyDepthRefusals,
   measureBuildDepth,
-  repositoryUnits,
+  repositorySurvey,
 } from '../construction/build-depth.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
 import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
@@ -373,15 +374,16 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
   if (unresolvedRows.length > 0) {
     throw new Error(competencyRefusal(unresolvedRows));
   }
-  // An `answered` the map's own numbers contradict: most abilities outlined, most of
-  // the product untouched, or almost no dependency recorded.
-  const depth = measureBuildDepth(allDocs, repositoryUnits(REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null, VAULT_ROOT));
+  // An `answered` the map contradicts: most entry files never read this session,
+  // units or entry points no node places, or almost no dependency recorded.
+  const grounded = REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null;
+  const depth = measureBuildDepth(allDocs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
   const depthRefusals = competencyDepthRefusals(competency.questions, depth);
   if (depthRefusals.length > 0) {
     throw new Error([
       `finalize_project_meaning blocked: ${depthRefusals.length} answered competency row(s) claim more than the map holds.`,
       ...depthRefusals,
-      'Repair the map and call finalize_project_meaning again, or patch_concept the project body so each row is partial with its gap.',
+      'Make the next call each row names, then call finalize_project_meaning again; marking a row partial is the fallback when the map cannot be repaired.',
     ].join('\n'));
   }
 
