@@ -439,3 +439,29 @@ test('a symbol read with no condition shows the guard in its caller, or names th
   assert.match(wide.deciding, /This body holds no condition; the deciding condition is in its callers/);
   assert.match(wide.deciding, /Read it: \{"path":"[^"]+","symbol":"[^"]+"\}/);
 });
+
+test('context comes only from files a read selector could name', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'ledger.py'), 'def settle(entry):\n    entry.close()\n');
+  // A caller in a file whose name a selector refuses (a citation delimiter) is never opened.
+  writeFileSync(join(root, 'batch#nightly.py'), 'from ledger import settle\n\n\ndef nightly(entries):\n    for entry in entries:\n        if entry.due:\n            settle(entry)\n');
+  const [row] = readSourceEvidence(root, [{ path: 'ledger.py', symbol: 'settle' }]).rows;
+  assert.equal(row.status, 'read');
+  assert.deepEqual((row.context ?? []).filter((part) => part.path.includes('#')), []);
+  assert.doesNotMatch(JSON.stringify(row), /entry\.due/);
+});
+
+test('the context a symbol read adds stays within 6 KiB, naming what it left out', () => {
+  const root = fixture();
+  const helper = (n) => [`def check_${n}(order):`, ...Array.from({ length: 50 }, (_, line) => `    if order.flag_${line} > ${line}: return ${n * 100 + line}  # rule ${line}`), '    return 0', '', ''].join('\n');
+  writeFileSync(join(root, 'rules.py'), [
+    ...Array.from({ length: 8 }, (_, n) => helper(n)),
+    'def review(order):',
+    ...Array.from({ length: 8 }, (_, n) => `    check_${n}(order)`),
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'rules.py', symbol: 'review' }]).rows;
+  const contextBytes = row.context.reduce((sum, part) => sum + Buffer.byteLength(part.text, 'utf8'), 0);
+  assert.ok(contextBytes > 0 && contextBytes <= 6144, `context held ${contextBytes} bytes`);
+  assert.ok(row.contextOmitted.length > 0, 'the callees that did not fit are named');
+});

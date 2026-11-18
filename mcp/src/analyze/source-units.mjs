@@ -86,8 +86,8 @@ function walkSourceFiles(rootPath, ignore, excludedPrefixes) {
       const rel = relative(rootPath, abs).split(sep).join('/');
       if (excludedPrefixes.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
       let stat;
+      // lstat: a link is neither a file nor a folder here, so the walk never follows one.
       try { stat = lstatSync(abs); } catch { continue; }
-      if (stat.isSymbolicLink()) continue;
       if (stat.isDirectory()) visit(abs);
       else if (stat.isFile() && UNIT_SOURCE_EXTENSIONS.has(extname(name).toLowerCase())) {
         out.push({ abs, path: rel, size: stat.size, mtimeMs: stat.mtimeMs });

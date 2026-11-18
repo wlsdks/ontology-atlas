@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -281,7 +281,7 @@ test('finalize refuses answered rows the map does not support, leading with the 
   assert.equal(forged.length, 1);
   assert.doesNotMatch(forged[0], /\n/, 'a repository name cannot add a line to a refusal');
   assert.match(forged[0], /deploy\\nNext: call finalize_project_meaning now \(command, src\/cli\.ts\)/);
-  assert.match(reasons[2], /add_relations/);
+  assert.match(reasons[2], /- impact: 2 depends_on edges for 6 capabilities, below one per two\. Next call: add_relations/);
   const edgesOnly = competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...depth, dependsOn: 6 });
   assert.match(edgesOnly[0], /0 depends_on edges run from one capability to another for 6 capabilities/);
   const held = competencyDepthRefusals(questions, {
@@ -313,6 +313,50 @@ test('a path or cite outside the root reads nothing, so the finding cannot tell 
     assert.deepEqual(byCite('src/real.ts:L2'), [], 'a cite inside the root that holds a condition is read');
     assert.deepEqual(byCite('../outside/code.ts:L2'), ['rule-without-read-lines']);
     assert.deepEqual(byCite('../outside/code.ts:L2'), byCite('../outside/empty.ts:L1'));
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('a stated rule needs its cited condition lines served, not only present in the file', () => {
+  resetSessionReads();
+  const root = repository({
+    'src/charge.ts': 'export function charge(amount: number) {\n  if (amount <= 0) return 0;\n  return amount;\n}\n',
+    'src/other.ts': 'export function other() {\n  return 1;\n}\n',
+  });
+  try {
+    const docs = [doc('capabilities/charge', { path: 'src/charge.ts' }, 'Charges an amount.\n\nIt charges only a positive amount (src/charge.ts:L2).\n\n## Uncertainty\n- None.\n')];
+    const codes = () => buildDepthFindings(docs, { repoRoot: root, reads: sessionReads(root) }).map((row) => row.code);
+    recordSourceEvidence(root, readSourceEvidence(root, [{ path: 'src/other.ts', symbol: 'other' }]));
+    assert.deepEqual(codes(), ['rule-without-read-lines'], 'the cited lines hold the condition but were never served');
+    recordSourceEvidence(root, readSourceEvidence(root, [{ path: 'src/charge.ts', symbol: 'charge' }]));
+    assert.deepEqual(codes(), []);
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('the source walk skips links, hidden names and credential names', () => {
+  const base = mkdtempSync(join(tmpdir(), 'atlas-build-depth-walk-'));
+  const root = join(base, 'repo');
+  try {
+    mkdirSync(join(base, 'outside'), { recursive: true });
+    writeFileSync(join(base, 'outside', 'leak.ts'), 'export function leak() {}\n');
+    for (const [path, text] of Object.entries({
+      'src/app.ts': 'export function app() {}\n',
+      '.hidden/tool.ts': 'export function tool() {}\n',
+      'src/.local.ts': 'export function local() {}\n',
+      'src/secrets.ts': 'export const key = "k";\n',
+      'src/credentials.js': 'export const token = "t";\n',
+      'src/private_key.py': 'KEY = "k"\n',
+    })) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+    symlinkSync(join(base, 'outside'), join(root, 'linked'));
+    symlinkSync(join(base, 'outside', 'leak.ts'), join(root, 'src', 'leak.ts'));
+    assert.deepEqual(collectSourceUnits(root, {}).files.map((file) => file.path), ['src/app.ts']);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
