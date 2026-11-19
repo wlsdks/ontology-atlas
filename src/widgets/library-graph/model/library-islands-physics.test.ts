@@ -64,4 +64,47 @@ describe("island physics", () => {
     expect(isIslandFieldMoving(field)).toBe(false);
     for (const body of field.bodies) expect(Math.hypot(body.x - body.home.x, body.y - body.home.y)).toBeLessThan(0.5);
   });
+
+  /** A fitted map: a grid of islands whose homes stand closer than the 10-unit gap. */
+  function tightField(columns: number, rows: number, gap: number) {
+    const r = 6;
+    const islands = Array.from({ length: columns * rows }, (_, i) => ({
+      id: `i${i}`,
+      x: (i % columns) * (2 * r + gap),
+      y: Math.floor(i / columns) * (2 * r + gap),
+      r,
+    }));
+    return createIslandField(islands, { x: ((columns - 1) * (2 * r + gap)) / 2, y: ((rows - 1) * (2 * r + gap)) / 2 }, { arriving: true });
+  }
+
+  it("rests on its homes when the fitted map stands tighter than its usual gap", () => {
+    const field = tightField(40, 25, 3);
+    expect(field.gap).toBeCloseTo(3, 6);
+    let steps = 0;
+    while (stepIslandField(field, Infinity) && steps < 600) steps += 1;
+    expect(steps).toBeLessThan(120);
+    for (const body of field.bodies) expect(Math.hypot(body.x - body.home.x, body.y - body.home.y)).toBe(0);
+  });
+
+  it("still comes to rest when every step runs out of its time, each picking up where the last stopped", () => {
+    const field = tightField(40, 25, 3);
+    let steps = 0;
+    while (stepIslandField(field, 0) && steps < 600) steps += 1;
+    expect(isIslandFieldMoving(field)).toBe(false);
+    for (const body of field.bodies) expect(Math.hypot(body.x - body.home.x, body.y - body.home.y)).toBe(0);
+  });
+
+  it("sleeps at rest and wakes only what a held island touches", () => {
+    const field = tightField(40, 25, 3);
+    settleIslandField(field);
+    expect([...field.asleep].every((flag) => flag === 1)).toBe(true);
+    // Hold the middle island a little to the right: it and its right-hand neighbour wake, nothing far away.
+    const middle = field.bodies[12 * 40 + 20];
+    pinIsland(field, middle.id, { x: middle.x + 8, y: middle.y });
+    stepIslandField(field, Infinity);
+    const awake = field.bodies.filter((_, i) => field.asleep[i] === 0).map((body) => body.id);
+    expect(awake).toContain(middle.id);
+    expect(awake).toContain(field.bodies[12 * 40 + 21].id);
+    expect(awake.length).toBeLessThan(10);
+  });
 });
