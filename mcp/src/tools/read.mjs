@@ -63,12 +63,14 @@ import {
   relationNoteFor,
 } from '../vault/relation-refs.mjs';
 import { slugToPath } from '../vault/slug-paths.mjs';
+import { docBodyIncluder, loadedDocIsEmpty, validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
 import {
   FULL_BODY_MAX_CHARS,
   GET_CONCEPTS_FULL_BODY_MAX,
   describeBodyDelivery,
   loadVaultDocs,
   readDoc,
+  readVaultDocText,
 } from '../vault/documents.mjs';
 import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/graph-queries.mjs';
 import {
@@ -105,8 +107,8 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   // `mcp-verify` fails on.
   const issuesBySlugForCount = new Map();
   for (const doc of docs) {
-    if (!doc.raw) continue;
-    const report = validateVaultDocument(doc.raw, { parsed: doc });
+    if (loadedDocIsEmpty(doc)) continue;
+    const report = validateLoadedVaultDocument(doc);
     if (report.issues.length > 0) issuesBySlugForCount.set(doc.slug, [...report.issues]);
   }
   for (const [slug, issues] of groupDanglingIssuesBySlug(docs, undefined, false)) {
@@ -365,29 +367,42 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   requireOptionalBoolean(nodesOnly, 'nodesOnly');
   const docs = loadVaultDocs(VAULT_ROOT);
-  const matches = [];
+  const needle = String(title).toLowerCase().trim();
+  const bodyIncludes = docBodyIncluder(needle);
+  const scored = [];
   for (const doc of docs) {
     const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '');
     // capabilities/elements joined with \n so a needle can't false-match across
     // the field boundary — keeps inclusion identical to the prior per-field sweep.
     const frontmatterHaystack = `${String(doc.frontmatter.capabilities ?? '')}\n${String(doc.frontmatter.elements ?? '')}`;
     // Relevance score: title > frontmatter ref > body + title token overlap; score > 0
-    // exactly when a substring matched.
-    const { score, matchedIn } = scoreEvidence(title, {
-      title: docTitle,
-      frontmatterHaystack,
-      body: doc.body,
-    });
+    // exactly when a substring matched. The body counts only when title and
+    // frontmatter did not match, and is read only when its fingerprint allows the
+    // needle and no earlier call answered it (`docBodyIncluder`).
+    let { score, matchedIn } = scoreEvidence(title, { title: docTitle, frontmatterHaystack, body: '' });
+    if (score <= 0) {
+      if (!bodyIncludes(doc)) continue;
+      ({ score, matchedIn } = scoreEvidence(title, { title: docTitle, frontmatterHaystack, bodyIncludes: true }));
+    }
     if (score <= 0) continue;
-    // Match excerpts get truncated too — and find_evidence can match *inside* the
-    // body, so without saying it was cut, the very sentence that matched can be
-    // absent from the response. The two fields appear only when truncated.
-    const evidenceDelivery = describeBodyDelivery(doc.body, { maxLen: 200 });
     // The row states whether it is a node, because an absent `kind` key vanishes from
     // JSON and agents would cite memos as nodes.
     const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
     if (nodesOnly && !isNode) continue;
-    matches.push({
+    scored.push({ doc, isNode, matchedIn, score });
+  }
+  // Best match first: score desc, then nodes before non-nodes, then slug asc. Body
+  // matches tie at 0.3, so without the middle key loose memos crowd out nodes; it
+  // never beats score, so a memo whose title matches still ranks high.
+  scored.sort(
+    (a, b) =>
+      b.score - a.score ||
+      Number(b.isNode) - Number(a.isNode) ||
+      a.doc.slug.localeCompare(b.doc.slug),
+  );
+  // Only the rows returned carry an excerpt, so only their bodies are read for it.
+  const matches = scored.map(({ doc, isNode, matchedIn, score }, index) => {
+    const row = {
       uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: doc.frontmatter.kind,
@@ -400,27 +415,22 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
       mtime: doc.mtime,
       matchedIn,
       score,
-      // One-line prose summary of the matched doc (max 200 chars) so an agent
-      // knows what a match is about without a follow-up get_concept. Same
-      // prose-aware extraction as get_concept's 800-char helper, shorter cap.
-      excerpt: evidenceDelivery.text,
-      ...(evidenceDelivery.info.truncated
-        ? {
-            excerptTruncated: true,
-            bodyChars: evidenceDelivery.info.totalChars,
-          }
-        : {}),
-    });
-  }
-  // Best match first: score desc, then nodes before non-nodes, then slug asc. Body
-  // matches tie at 0.3, so without the middle key loose memos crowd out nodes; it
-  // never beats score, so a memo whose title matches still ranks high.
-  matches.sort(
-    (a, b) =>
-      b.score - a.score ||
-      Number(b.isNode) - Number(a.isNode) ||
-      a.slug.localeCompare(b.slug),
-  );
+    };
+    if (index >= limit) return row;
+    // Match excerpts get truncated too — and find_evidence can match *inside* the
+    // body, so without saying it was cut, the very sentence that matched can be
+    // absent from the response. The two fields appear only when truncated.
+    // One-line prose summary of the matched doc (max 200 chars) so an agent
+    // knows what a match is about without a follow-up get_concept. Same
+    // prose-aware extraction as get_concept's 800-char helper, shorter cap.
+    const evidenceDelivery = describeBodyDelivery(readVaultDocText(doc).body, { maxLen: 200 });
+    row.excerpt = evidenceDelivery.text;
+    if (evidenceDelivery.info.truncated) {
+      row.excerptTruncated = true;
+      row.bodyChars = evidenceDelivery.info.totalChars;
+    }
+    return row;
+  });
   const limited = matches.slice(0, limit);
   const moreMatched = limited.length < matches.length;
   const result = {
