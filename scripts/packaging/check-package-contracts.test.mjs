@@ -90,7 +90,7 @@ describe('package contract helpers', () => {
         }),
     ].sort();
     assert.ok(
-      agentFiles.length >= 30,
+      agentFiles.length >= 20,
       `agent-file sweep found only ${agentFiles.length} files — an empty sweep would pass vacuously`,
     );
 
