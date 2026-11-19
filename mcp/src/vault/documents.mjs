@@ -634,12 +634,6 @@ export function createVaultDocCache(rootPath, io = {}) {
    * @param {{ fresh?: boolean, keepTextBytes?: number }} [options]
    * @returns {VaultDoc[]}
    */
-  /**
-   * `keepTextBytes`: how much of the text this pass reads it hands out with the
-   * documents (see {@link PASS_TEXT_MAX_BYTES}); the cache itself keeps none.
-   * @param {{ fresh?: boolean, keepTextBytes?: number }} [options]
-   * @returns {VaultDoc[]}
-   */
   function load({ fresh: readEveryFile = false, keepTextBytes = 0 } = {}) {
     pass += 1;
     if (readEveryFile) freshPasses += 1;
@@ -853,9 +847,7 @@ export async function withVaultReadSnapshot(fn) {
  * one in the call is a stamp pass. Every decision the write takes from other files
  * (the backlinks that refuse a delete, the references a rename or merge rewrites)
  * then comes from bytes read during this call, while the stamp passes still see the
- * call's own writes: an atomic write replaces the file, so its inode moves. A write
- * made of several loads used to pay a fresh pass for each, three for patch_concept
- * (150,000 reads at 50,000 files).
+ * call's own writes: an atomic write replaces the file, so its inode moves.
  */
 export async function withVaultWriteSnapshot(fn) {
   const scope = { open: true, write: true, freshRoots: new Set(), docsByRoot: new Map() };
