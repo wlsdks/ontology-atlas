@@ -12,6 +12,14 @@ export async function waitForDocumentPaint(page: Page) {
   await waitForFiniteAnimations(page);
 }
 
+/**
+ * The gateway's own chrome is on screen. `/` exports a stand-in and chooses gateway or map in the
+ * browser, after `load`, so a reader of the gateway at `/` waits for this first.
+ */
+export async function waitForGatewayDrawn(page: Page) {
+  await expect(page.getByTestId('gateway-brand-mark').first()).toBeVisible();
+}
+
 /** Hover-in/out and entrance transitions finish; continuous decorative motion keeps running. */
 export async function waitForFiniteAnimations(page: Page) {
   await page.evaluate(async () => {
