@@ -46,15 +46,33 @@ import {
 } from '../server/validate.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { validateVaultReport } from './validate-vault.mjs';
+import { existsSync } from 'node:fs';
 import {
+  dirname,
+  join,
   relative,
   sep,
 } from 'node:path';
 
+/** The nearest folder at or above `target` holding `.git`, else `target`: a family is counted across the whole repository. */
+function repositoryRootOf(target) {
+  for (let folder = target; ; folder = dirname(folder)) {
+    if (existsSync(join(folder, '.git'))) return folder;
+    if (dirname(folder) === folder) return target;
+  }
+}
+
 /** Each symbol read that belongs to a family gets one line saying how many members there are and how many this session read. */
 function noteFamilies(target, sourceEvidence, ignore) {
   try {
-    noteReadFamilies(sourceEvidence, { repoRoot: target, files: productFiles(target, ignore ?? []), reads: sessionReads(target) });
+    const repoRoot = repositoryRootOf(target);
+    noteReadFamilies(sourceEvidence, {
+      root: target,
+      repoRoot,
+      files: productFiles(repoRoot, repoRoot === target ? ignore ?? [] : []),
+      reads: sessionReads(target),
+      rootReads: repoRoot === target ? undefined : sessionReads(repoRoot),
+    });
   } catch {
     // The line is a fact beside the read; a repository that cannot be walked leaves the read as it is.
   }

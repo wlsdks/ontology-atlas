@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 
 import { collectSourceUnits } from '../analyze/source-units.mjs';
 import { outlineSource } from './source-outline.mjs';
+import { typeTiesOf } from './type-ties.mjs';
 
 const MAX_INDEXED_BYTES = 256 * 1024;
 // Declarations and a small filter of the identifiers a file names are kept for
@@ -116,80 +117,37 @@ function factsOf(file) {
   const text = textOf(file);
   const facts = {
     stamp,
-    declarations: text
-      ? outlineSource(text, file.path).declarations
-        .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export')
-        // A copy: a substring would keep the whole file text alive.
-        .map(({ name, line, kind, signature }) => ({ name: Buffer.from(name).toString(), line, kind, ...tiesOf(kind, signature, line, file.path, text) }))
-      : [],
+    declarations: [],
+    goImports: [],
     names: identifierFilter(text),
   };
+  if (text) {
+    const outline = outlineSource(text, file.path).declarations
+      .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
+    const { ties, goImports } = typeTiesOf(outline, text, file.path);
+    // A copy: a substring would keep the whole file text alive.
+    facts.declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
+    facts.goImports = goImports;
+  }
   DECLARATIONS.delete(file.abs);
   DECLARATIONS.set(file.abs, facts);
   if (DECLARATIONS.size > FILE_LIMIT) DECLARATIONS.delete(DECLARATIONS.keys().next().value);
   return facts;
 }
 
-const copy = (value) => Buffer.from(value).toString();
-const IDENTIFIER_NAME = /^[A-Za-z_$][\w$]*$/u;
-const PYTHON_CLASS = /^class\s+[A-Za-z_]\w*\s*\(([^)]{0,300})\)/u;
-const EXTENDS = /\bextends\s+([A-Za-z_$][\w$.]*)/u;
-const IMPLEMENTS = /\bimplements\s+([^{]{1,300})/u;
-const RUST_TRAIT_IMPL = /^impl\b(?:\s*<[^{]{0,200}?>)?\s+([A-Za-z_][\w:]*)(?:<[^{]{0,200}>)?\s+for\s/u;
-const GO_INTERFACE_METHOD = /^\s+([A-Za-z_]\w*)\s*\(/u;
-const GO_EMBEDDED = /^\s+\*?[A-Za-z_][\w.]*\s*(?:\/\/.*)?$/u;
-// An interface body longer than this is not read as a method set.
-const GO_INTERFACE_LINES = 200;
-
-/** The bare name a written type reference ends in: `mod.Base[T]` -> `Base`. */
-function typeName(written) {
-  let text = written.trim();
-  for (let pass = 0; pass < 4 && /[<[]/u.test(text); pass += 1) text = text.replace(/<[^<>]*>|\[[^[\]]*\]/gu, '');
-  const name = text.trim().split('.').pop();
-  return IDENTIFIER_NAME.test(name) ? name : null;
-}
-
 /**
- * What a declaration says it is tied to (a keyword argument such as
- * `metaclass=` is no name and drops out): a class header's bases (`class A(B):`,
- * `extends B`, `implements C, D`, Rust's `impl Trait for Type`), and a Go interface's method set, or `open`
- * when the interface embeds another and so its full set is not written here.
- */
-function tiesOf(kind, signature, line, path, text) {
-  if (kind === 'class' && typeof signature === 'string' && signature.length <= 2000) {
-    const header = signature.trim();
-    const python = PYTHON_CLASS.exec(header);
-    const trait = path.endsWith('.rs') ? RUST_TRAIT_IMPL.exec(header) : null;
-    const written = trait ? [trait[1].split('::').pop()] : python
-      ? python[1].split(',')
-      : [EXTENDS.exec(header)?.[1], ...(IMPLEMENTS.exec(header)?.[1].replace(/<[^<>]*>/gu, '').split(',') ?? [])];
-    const bases = written.filter(Boolean).map(typeName).filter(Boolean);
-    return bases.length > 0 ? { bases: bases.map(copy) } : {};
-  }
-  if (kind === 'interface' && path.endsWith('.go')) {
-    const lines = text.split('\n', line + GO_INTERFACE_LINES).slice(line);
-    const methods = [];
-    for (const body of lines) {
-      if (/^\}/u.test(body)) return methods.length > 0 ? { methods: methods.map(copy) } : {};
-      const method = GO_INTERFACE_METHOD.exec(body);
-      if (method) methods.push(method[1]);
-      else if (GO_EMBEDDED.test(body)) return { open: true };
-    }
-    return { open: true };
-  }
-  return {};
-}
-
-/**
- * Each product file's declarations, with the ties `tiesOf` reads, from the
- * same cache the index uses.
+ * Each product file's declarations, with the ties `typeTiesOf` reads, and the
+ * packages a Go file imports, from the same cache the index uses.
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], files?: object[] }} [options]
- * @returns {Generator<{ path: string, declarations: object[] }>}
+ * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], mayName: (name: string) => boolean }>}
  */
 export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
-  for (const file of files ?? productFiles(rootPath, ignore)) yield { path: file.path, declarations: factsOf(file).declarations };
+  for (const file of files ?? productFiles(rootPath, ignore)) {
+    const facts = factsOf(file);
+    yield { path: file.path, declarations: facts.declarations, goImports: facts.goImports, mayName: (name) => mayName(facts, name) };
+  }
 }
 
 /** False only when the file certainly never names `name` as a whole identifier. */

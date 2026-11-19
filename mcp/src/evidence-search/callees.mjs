@@ -136,7 +136,7 @@ function declares(declaration, name) {
 }
 
 /** The last line of a declaration: before the next declaration at its indent or shallower. */
-function declarationEnd(lines, declarations, declaration) {
+export function declarationEnd(lines, declarations, declaration) {
   const indent = indentAt(lines, declaration.line);
   const next = declarations.find((candidate) => candidate.line > declaration.line && isCode(candidate) && indentAt(lines, candidate.line) <= indent);
   let end = next ? next.line - 1 : lines.length;

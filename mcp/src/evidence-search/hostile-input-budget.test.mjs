@@ -10,6 +10,8 @@ import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
+import { noteReadFamilies } from '../construction/read-family.mjs';
+import { declarationIndex } from './declaration-index.mjs';
 import { importsOf } from './import-bindings.mjs';
 import { readSourceEvidence } from './source-evidence.mjs';
 
@@ -368,5 +370,71 @@ describe('oversized files are named, not read', () => {
     });
     assert.deepEqual(findings.map((finding) => finding.code), ['dependency-unjudged']);
     assert.match(findings[0].message, /src\/lib\.rs/);
+  });
+});
+
+/*
+ * A family line once matched every interface against every type: 3,200
+ * interfaces and 10,640 types took 2.8 s and 429 MB for one read row, and each
+ * Go interface body was found by splitting the file again, so a 247 KiB file
+ * of 400 interfaces took 500 ms to index. Method sets are indexed once, an
+ * interface's members are its package's types and its importers', and past a
+ * cap there is no family.
+ */
+describe('a family costs time linear in the types and interfaces that could join it', () => {
+  const GO_MOD = 'module example.com/tool\n\ngo 1.22\n';
+  const method = (type, name) => `\nfunc (t *${type}) ${name}(s string) error {\n\treturn nil\n}\n`;
+  const goRepo = ({ faceFiles, facesPerFile, typeFiles, typesPerFile }) => {
+    const files = { 'go.mod': GO_MOD };
+    for (let f = 0; f < faceFiles; f += 1) {
+      files[`faces/f${f}.go`] = `package faces\n${Array.from({ length: facesPerFile }, (_, i) => `\ntype Face${f}x${i} interface {\n\tOpen(s string) error\n\tClose(s string) error\n}\n`).join('')}`;
+    }
+    for (let f = 0; f < typeFiles; f += 1) {
+      files[`faces/t${f}.go`] = `package faces\n${Array.from({ length: typesPerFile }, (_, i) => `\ntype T${f}x${i} struct{}\n${method(`T${f}x${i}`, 'Open')}${method(`T${f}x${i}`, 'Close')}`).join('')}`;
+    }
+    return repoWith(files);
+  };
+  const familyRead = (root) => {
+    const packet = readSourceEvidence(root, [{ path: 'faces/t0.go', symbol: 'T0x0.Open' }]);
+    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
+  };
+  const blankRuns = (copies) => {
+    const one = `package faces\n${Array.from({ length: 400 }, (_, i) => `${'\n'.repeat(560)}type Face${i} interface {\n\tOpen(s string) error\n\tClose(s string) error\n}\n`).join('')}`;
+    return () => {
+      const files = { 'go.mod': GO_MOD };
+      for (let f = 0; f < copies; f += 1) files[`faces/f${f}.go`] = one.replace('package faces', `package faces // ${f}`);
+      declarationIndex(repoWith(files));
+    };
+  };
+  const classRepo = (classes) => {
+    const files = { 'package.json': '{"name":"x"}', 'src/base.ts': 'export interface Plugin {\n  apply(v: number): number;\n}\n' };
+    for (let at = 0; at < classes; at += 1) {
+      files[`src/p${at}.ts`] = `import { Plugin } from './base';\nexport class P${at} implements Plugin {\n  apply(v: number) {\n    if (v) return 1;\n    return 0;\n  }\n}\n`;
+    }
+    const root = repoWith(files);
+    const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'apply' }]);
+    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
+  };
+
+  it('notes one read row against thousands of interfaces and types within the budget', (t) => {
+    assertWithinBudget(t, '3,200 interfaces and 10,640 types', familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 })), 1000);
+    assertWithinBudget(t, '16 interfaces and 4,000 types in their package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 })), 1000);
+    assertWithinBudget(t, '500 classes naming one base', classRepo(500), 1000);
+    assertWithinBudget(t, 'a 247 KiB Go file of 400 interfaces between blank runs', blankRuns(1));
+  });
+
+  it('doubling the interfaces, types, classes or interface files about doubles the time', (t) => {
+    const pairs = [
+      ['interfaces and types', familyRead(goRepo({ faceFiles: 4, facesPerFile: 400, typeFiles: 40, typesPerFile: 133 })), familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 }))],
+      ['types in the interfaces\' package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 20, typesPerFile: 100 })), familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 }))],
+      ['classes naming one base', classRepo(200), classRepo(400)],
+      ['Go files of interfaces between blank runs', blankRuns(1), blankRuns(2)],
+    ];
+    for (const [name, small, large] of pairs) {
+      const smallMs = fastestRunMs(small);
+      const largeMs = fastestRunMs(large);
+      t.diagnostic(`${name}: ${smallMs.toFixed(1)} ms -> ${largeMs.toFixed(1)} ms`);
+      assert.ok(largeMs < smallMs * 3 + 30, `${name}: doubled input took ${largeMs.toFixed(0)} ms against ${smallMs.toFixed(0)} ms`);
+    }
   });
 });

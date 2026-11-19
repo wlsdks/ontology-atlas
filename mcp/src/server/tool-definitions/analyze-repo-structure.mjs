@@ -498,6 +498,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   },
                 },
                 deciding: NON_BLANK_STRING_SCHEMA,
+                family: NON_BLANK_STRING_SCHEMA,
                 mode: { type: 'string', enum: ['outline'] },
                 sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
                 language: NON_BLANK_STRING_SCHEMA,
