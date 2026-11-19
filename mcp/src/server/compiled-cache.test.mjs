@@ -56,6 +56,31 @@ describe('createCompiledOntologyCache', () => {
     assert.equal(compilations, 2);
   });
 
+  it('drops every view of the old version once the version moves', () => {
+    const source = versioned();
+    const cache = createCompiledOntologyCache({ ...source, compile: (docs, view) => ({ raw: docs[0].raw, view }) });
+    cache.get({ summary: true });
+    cache.get();
+    source.set('v2');
+    assert.equal(cache.get().raw, 'v2');
+    assert.equal(cache.get({ summary: true }).raw, 'v2', 'a view compiled for v1 must not answer for v2');
+  });
+
+  it('collects garbage after a large compile, never on a hit or a small vault', () => {
+    let collections = 0;
+    const collectGarbage = () => { collections += 1; };
+    const large = Array.from({ length: 2000 }, (_, index) => ({ slug: `capabilities/n${index}` }));
+    const versions = new WeakMap();
+    const loadDocs = () => { const docs = large.slice(); versions.set(docs, 'v1'); return docs; };
+    const cache = createCompiledOntologyCache({ loadDocs, compile: () => ({}), versionOf: (docs) => versions.get(docs), collectGarbage });
+    cache.get();
+    cache.get();
+    assert.equal(collections, 1);
+    const small = createCompiledOntologyCache({ ...versioned(), compile: () => ({}), collectGarbage });
+    small.get({ summary: true });
+    assert.equal(collections, 1);
+  });
+
   it('can be cleared after explicit write paths', () => {
     const source = versioned();
     let compilations = 0;

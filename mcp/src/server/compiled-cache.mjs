@@ -9,6 +9,23 @@ const VIEW_KEYS = ['includeIndexes', 'summary', 'nodesLimit', 'nodesOffset', 'ed
  */
 const MAX_VIEWS = 4;
 
+/**
+ * Below this many documents a compile's garbage is a few megabytes and the
+ * collector's own schedule is soon enough.
+ */
+const COLLECT_AFTER_DOCS = 2000;
+
+/**
+ * A compile of 50,000 files allocates about 450 MB that is garbage once the
+ * artifact exists. Bun leaves it resident until its next full collection, so the
+ * server kept about 1 GB after the first compile; one synchronous collection
+ * (about 30 ms at that size, beside a 500 ms compile) returns it. Only a miss
+ * pays it. Node has no collector hook without a flag; its own collection runs.
+ */
+function collectAfterCompile() {
+  globalThis.Bun?.gc(true);
+}
+
 function viewOf(options) {
   const view = { includeIndexes: options.includeIndexes === true };
   for (const key of VIEW_KEYS.slice(1)) {
@@ -29,7 +46,12 @@ function viewOf(options) {
  * caller-built list) has no version and is compiled on every call, so it can never be
  * served a stale artifact.
  */
-export function createCompiledOntologyCache({ loadDocs, compile, versionOf = vaultDocsVersion }) {
+export function createCompiledOntologyCache({
+  loadDocs,
+  compile,
+  versionOf = vaultDocsVersion,
+  collectGarbage = collectAfterCompile,
+}) {
   let cachedVersion;
   const views = new Map();
   let hits = 0;
@@ -55,6 +77,7 @@ export function createCompiledOntologyCache({ loadDocs, compile, versionOf = vau
     }
     misses += 1;
     const artifact = compile(docs, view);
+    if (docs.length >= COLLECT_AFTER_DOCS) collectGarbage();
     if (version === undefined) return { artifact, docs };
     if (version !== cachedVersion) {
       views.clear();
