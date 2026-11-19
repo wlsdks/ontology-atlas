@@ -39,8 +39,6 @@ const FADE_MS = 520;
 /** A pressable this small is wrapped by the ring; anything larger only fills it. */
 const WRAP_MAX = { width: 360, height: 96 };
 const WRAP_PAD_PX = 6;
-/** Pull of the wrapped ring toward the pointer, as a share of the pointer's offset from the centre. */
-const MAGNET = 0.14;
 
 const PRESSABLE = 'a,button:not([data-moru-companion]),[role="button"],summary,label,select';
 const TEXT_ENTRY = 'input,textarea,[contenteditable="true"]';
@@ -157,9 +155,8 @@ export function startGatewayPointer({ host, ring, dot, canvas, stars, ink }: Gat
   const ringGoal = () => {
     if (wrapped && ring.dataset.state === 'wrap') {
       const box = wrapped.getBoundingClientRect();
-      const cx = box.left + box.width / 2;
-      const cy = box.top + box.height / 2;
-      return { x: cx + (px - cx) * MAGNET, y: cy + (py - cy) * MAGNET };
+      // Concentric with what it wraps: any pull toward the pointer reads as a misaligned outline.
+      return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
     }
     return { x: px, y: py };
   };
@@ -242,7 +239,8 @@ export function startGatewayPointer({ host, ring, dot, canvas, stars, ink }: Gat
     host.style.transform = `translate3d(${rx}px,${ry}px,0)`;
 
     const idle = t - lastMove;
-    const want = visible && idle < LINGER_MS ? 1 : 0;
+    // Over a control the links step aside, so no line crosses the label being pressed.
+    const want = visible && idle < LINGER_MS && !wrapped ? 1 : 0;
     presence += (want - presence) * (1 - Math.exp(-dt / (want ? 160 : FADE_MS / 3)));
 
     const drag = Math.exp(-dt / 220);
