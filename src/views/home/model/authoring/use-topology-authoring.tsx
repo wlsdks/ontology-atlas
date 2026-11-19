@@ -1,7 +1,7 @@
 import type { useTopologyPreferences } from "../use-topology-preferences";
 import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model";
 
-import { buildNewNodeDoc } from "@/entities/docs-vault";
+import { applyFrontmatterUpdates, buildNewNodeDoc } from "@/entities/docs-vault";
 import { buildOntologyRelationRemovalPlan, edgeAuthoredByFromNode, type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyRelationEditPlan, parseOntologyMeaningEditParam } from "@/entities/knowledge-graph";
 import { useAgentServer, VaultConflictError } from "@/entities/vault-session";
 import type { AcpTurnActivity } from "@/features/acp-session";
@@ -17,6 +17,7 @@ import { resolveAgentFocusNodeId, resolveOntologyRelationPreview } from "../../l
 import { resolveNodeVaultRef, resolveTopologyNodeEditTarget } from "../../lib/authoring/topology-node-edit";
 import { type CreateNodeInput } from "../../ui/CreateNodeForm";
 import { type CreateSelection } from "./create-defaults";
+import { renameTitleHeading, replaceLeadParagraph } from "./lead-paragraph";
 import { useManualWriteUndo } from "./use-manual-write-undo";
 import { selectTopologyNodeRouteState } from "../route-state/url-state";
 import { useAgentConnectModel } from "../agent/use-agent-connect-model";
@@ -474,13 +475,101 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [nodeEditTarget, nodeBody, vault, toast, t],
   );
+  /** The file's current bytes, read fresh so an edit never builds on a stale copy. */
+  const readEditTarget = useCallback(async () => {
+    if (!nodeEditTarget || !selectedOntologyNode) return null;
+    const handle = vault.fileHandles.get(nodeEditTarget.vaultSlug);
+    const raw = handle ? await (await handle.getFile()).text() : nodeBody?.slug === nodeEditTarget.vaultSlug ? nodeBody.raw : null;
+    return raw === null ? null : { target: nodeEditTarget, node: selectedOntologyNode, raw };
+  }, [nodeBody, nodeEditTarget, selectedOntologyNode, vault.fileHandles]);
+  const saveInPlace = useCallback(
+    async (slug: string, mtime: number | undefined, content: string, message: string) => {
+      try {
+        await runManualWrite({ slug, write: () => vault.saveDoc(slug, content, { expectedMtime: mtime }), written: content, message });
+      } catch (error) {
+        toast.show(t(error instanceof VaultConflictError ? "explanationEdit.conflict" : "explanationEdit.error"), "error");
+        throw error;
+      }
+    },
+    [runManualWrite, t, toast, vault],
+  );
+  /**
+   * Renames in place: the name shown in this screen's language changes, with the title heading
+   * when it spelled the old name. Slug and uid stay, so every reference still resolves.
+   */
+  const renameConcept = useCallback(
+    async (next: string) => {
+      const name = next.trim();
+      const edit = await readEditTarget();
+      if (!edit || !name) return;
+      const { frontmatter } = parseFrontmatter(edit.raw);
+      const localeKey = `display_${activeLocale}`;
+      const key = typeof frontmatter[localeKey] === "string" && frontmatter[localeKey] !== "" ? localeKey : "title";
+      const previous = String(frontmatter[key] ?? "");
+      if (previous === name) return;
+      // A title that spelled the same name moves with it, so the two never drift apart.
+      const updates = { [key]: name, ...(key !== "title" && frontmatter.title === previous ? { title: name } : {}) };
+      const content = renameTitleHeading(applyFrontmatterUpdates(edit.raw, updates), previous, name);
+      await saveInPlace(edit.target.vaultSlug, edit.target.mtime, content, t("conceptEdit.renamed", { from: previous, to: name }));
+    },
+    [activeLocale, readEditTarget, saveInPlace, t],
+  );
+  /** The description is `description:` when the file keeps one, else the paragraph under the title. */
+  const saveConceptDescription = useCallback(
+    async (next: string) => {
+      const edit = await readEditTarget();
+      if (!edit) return;
+      const { frontmatter } = parseFrontmatter(edit.raw);
+      const titles = Object.entries(frontmatter)
+        .filter(([key, value]) => (key === "title" || key.startsWith("display_")) && typeof value === "string")
+        .map(([, value]) => (value as string).trim());
+      const content =
+        typeof frontmatter.description === "string"
+          ? applyFrontmatterUpdates(edit.raw, { description: next.trim() || null })
+          : replaceLeadParagraph(edit.raw, next, titles);
+      if (content === edit.raw) return;
+      await saveInPlace(edit.target.vaultSlug, edit.target.mtime, content, t("conceptEdit.described", { name: edit.node.display ?? edit.node.title }));
+    },
+    [readEditTarget, saveInPlace, t],
+  );
+  /** The documents whose lines would point at nothing once this one is gone, as the docs delete names them. */
+  const deleteReferrers = useMemo(() => {
+    const slug = nodeEditTarget?.vaultSlug;
+    if (!slug || !vault.manifest) return [];
+    const seen = new Set<string>();
+    const referrers: { slug: string; title: string }[] = [];
+    for (const entry of vault.manifest.backlinksDetail?.[slug] ?? []) {
+      if (entry.fromSlug === slug || seen.has(entry.fromSlug)) continue;
+      seen.add(entry.fromSlug);
+      const doc = vault.manifest.docs.find((d) => d.slug === entry.fromSlug);
+      const localized = doc?.frontmatter?.[`display_${activeLocale}`];
+      referrers.push({ slug: entry.fromSlug, title: typeof localized === "string" && localized ? localized : doc?.title ?? entry.fromSlug });
+    }
+    return referrers;
+  }, [activeLocale, nodeEditTarget, vault.manifest]);
+  const deleteConcept = useCallback(async () => {
+    if (!nodeEditTarget || !selectedOntologyNode) return;
+    const slug = nodeEditTarget.vaultSlug;
+    try {
+      await runManualWrite({
+        slug,
+        write: () => vault.deleteDoc(slug, { expectedMtime: nodeEditTarget.mtime }),
+        written: null,
+        message: t("conceptEdit.deleted", { name: selectedOntologyNode.display ?? selectedOntologyNode.title }),
+      });
+      setRouteState((current) => ({ ...current, selectedSlug: null }));
+    } catch (error) {
+      toast.show(t(error instanceof VaultConflictError ? "conceptEdit.deleteConflict" : "conceptEdit.deleteFailed"), "error");
+      throw error;
+    }
+  }, [nodeEditTarget, runManualWrite, selectedOntologyNode, setRouteState, t, toast, vault]);
   return {
     canCreateNode, createNodeOpen, bootstrapOpen, setCreateNodeOpen, nodeEditTarget, agentActivityStatus,
     agentFocusNodeId, agentServer, acpTurnActivityFrame, setAcpTurnActivityFrame, nodeBody,
     saveNodeExplanation, meaningEditorState, meaningEditorSource, edgePanelOpen, setHoverEdge,
     setMeaningEditorState, setSelectedEdge, closeCreateNode, selectedEdge, setBootstrapOpen, bootstrapPlan,
     runBootstrap, createNode, createNodeDomainOptions, createNodeExistingConcepts, createSelection,
-    runManualWrite, addConceptInGroup,
+    runManualWrite, addConceptInGroup, renameConcept, saveConceptDescription, deleteReferrers, deleteConcept,
     agentAttributedRecentNodeId, agentConnect, mapRevealToken, handleHoverEdge, mapRelationPreview,
     handleHoverCluster, openMeaningEditor, heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview,
     applyMeaningEditor, closeMeaningEditor, meaningEditorRelations, removeIncomingRelation, hoverEdgeCardModel, clusterHoverCardModel, heldEdgePanelModel,

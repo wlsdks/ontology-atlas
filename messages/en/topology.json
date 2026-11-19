@@ -466,5 +466,12 @@
     "undoChanged": "Not undone: the file changed on disk after that change.",
     "undoNotLatest": "Only the most recent change can be undone.",
     "undoFailed": "Could not undo. The file is unchanged."
+  },
+  "conceptEdit": {
+    "renamed": "Renamed “{from}” to “{to}”",
+    "described": "Description of “{name}” saved",
+    "deleted": "Deleted “{name}”",
+    "deleteConflict": "Not deleted: the file changed on disk first. Check the change, then try again.",
+    "deleteFailed": "Could not delete the file. Try again."
   }
 }

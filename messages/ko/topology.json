@@ -466,5 +466,12 @@
     "undoChanged": "되돌리지 않았어요. 그 뒤에 디스크에서 파일이 바뀌었어요.",
     "undoNotLatest": "가장 최근 변경만 되돌릴 수 있어요.",
     "undoFailed": "되돌리지 못했어요. 파일은 그대로예요."
+  },
+  "conceptEdit": {
+    "renamed": "이름을 바꿨어요: “{from}” → “{to}”",
+    "described": "“{name}” 설명을 저장했어요",
+    "deleted": "“{name}” 삭제했어요",
+    "deleteConflict": "삭제하지 않았어요. 디스크에서 파일이 먼저 바뀌었어요. 바뀐 내용을 확인하고 다시 해 주세요.",
+    "deleteFailed": "파일을 삭제하지 못했어요. 다시 해 주세요."
   }
 }

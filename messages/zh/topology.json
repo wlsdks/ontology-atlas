@@ -466,5 +466,12 @@
     "undoChanged": "未撤销：那次更改之后，磁盘上的文件已被修改。",
     "undoNotLatest": "只能撤销最近的一次更改。",
     "undoFailed": "无法撤销，文件没有变化。"
+  },
+  "conceptEdit": {
+    "renamed": "已重命名：“{from}” → “{to}”",
+    "described": "已保存“{name}”的说明",
+    "deleted": "已删除“{name}”",
+    "deleteConflict": "未删除：磁盘上的文件先被修改了。请检查更改后重试。",
+    "deleteFailed": "无法删除文件，请重试。"
   }
 }

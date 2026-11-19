@@ -122,6 +122,10 @@ interface TopologyInspectorSurfacesProps {
     | "closeCreateNode"
     | "createNodeDomainOptions"
     | "createNodeExistingConcepts"
+    | "renameConcept"
+    | "saveConceptDescription"
+    | "deleteReferrers"
+    | "deleteConcept"
   >;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tKinds" | "tWorkbench" | "audiencePlain" | "activeLocale">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "createNodeDefaults" | "openCreateNode">;
@@ -144,8 +148,11 @@ export function TopologyInspectorSurfaces({
     createNodeOpen, nodeEditTarget, setMeaningEditorState, meaningEditorSource, openMeaningEditor, canCreateNode,
     heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview, applyMeaningEditor,
     closeMeaningEditor, meaningEditorRelations, removeIncomingRelation, hoverEdgeCardModel, selectedEdge, clusterHoverCardModel, heldEdgePanelModel,
-    edgePanelOpen, setSelectedEdge, createNode, closeCreateNode, createNodeDomainOptions, createNodeExistingConcepts
+    edgePanelOpen, setSelectedEdge, createNode, closeCreateNode, createNodeDomainOptions, createNodeExistingConcepts,
+    renameConcept, saveConceptDescription, deleteReferrers, deleteConcept
   } = topologyAuthoring;
+  // Changing the concept in place needs its own file in an open folder.
+  const conceptWritable = canCreateNode && nodeEditTarget !== null;
   const { handleSelectImpactMode } = topologyKeyboard;
   const { handleClose, handleSelect, handleDatasheetClose } = topologyNavigationActions;
   const {
@@ -384,6 +391,9 @@ export function TopologyInspectorSurfaces({
                     ? () => openCreateNode({ kind: "capability", parent: resolveNodeVaultRef(canvasSelectedGraphNode) })
                     : undefined
               }
+              onRename={conceptWritable ? renameConcept : undefined}
+              onSaveDescription={conceptWritable ? saveConceptDescription : undefined}
+              deleteConcept={conceptWritable ? { referrers: deleteReferrers, onDelete: deleteConcept } : undefined}
               // Without an agent surface (web) only the handoff copy is offered; no door that will
               // not open.
               onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
