@@ -1,12 +1,12 @@
 # 概念之间的关系
 
-关系是本体知识图谱中带类型的边：“这项能力依赖那项能力”“这个元素属于那项能力”。在 Atlas 中，每条关系都是某个概念 frontmatter 里的一个条目。本章列出各种关系类型，演示如何编写它们，并说明地图以及你的编码智能体调用的 MCP 工具（例如 `find_path` 和 `find_backlinks`）如何读取它们。
+关系是本体知识图谱中带类型的边：“这项能力依赖那项能力”“这个元素属于那项能力”。在 Atlas 中，每条关系都是某个概念 frontmatter 里的一个条目。本章列出各种关系类型，演示如何编写它们，并说明地图和编码智能体调用的 MCP 工具（例如 `find_path` 和 `find_backlinks`）怎样读取它们。
 
 ## 结构与含义
 
 关系分为两组。
 
-- **结构** 说明什么包含什么：项目包含领域，领域包含能力，能力包含元素。仅有结构只能构成一棵树。
+- **结构** 说明什么包含什么：项目包含领域，领域包含能力，能力包含元素。只有结构的话，只能构成一棵树。
 - **含义** 说明概念之间如何相互依赖或相互关联，可以跨越任何层级。一个领域中的能力可以依赖另一个领域中的能力，两个领域之间也可以直接相关。只要有一条这样的关系，树就变成了图。
 
 ## 关系类型
@@ -46,21 +46,21 @@ relation_notes: { capabilities/map-render: "检测到的文件改动必须重绘
 
 `relation_notes` 为每条关系保存一句话，说明它为什么成立，以目标的 slug 为键。通过 MCP 服务器或地图编辑器新写入的 `depends_on` 必须带上这句话；其他关系只要你知道理由，也应当写上。概念面板会把没有理由的关系标为 **无理由**。
 
-值都是 slug，所以人在文件里就能读懂这张图。唯一的简写形式也可以使用，例如用 `map-render` 代替 `capabilities/map-render`。通过 Atlas 重命名概念时，所有指向它的关系都会被改写。
+值都是 slug，所以人在文件里就能读懂这张图。只要不产生歧义，也可以用简写，例如用 `map-render` 代替 `capabilities/map-render`。通过 Atlas 重命名概念时，Atlas 会改写所有指向它的关系。
 
-Atlas 写入关系列表时，会去除空白、去重并排序，所以顺序没有任何含义。它不会自行添加反向关系或传递关系：写在一侧的 `relates` 不会复制到另一侧；A 依赖 B、B 依赖 C，也不会写出 A 依赖 C。缺少某条关系意味着“没有记录”，而不是“没有关系”。
+Atlas 写入关系列表时，会去掉多余空白、去重并排序，所以顺序没有任何含义。Atlas 从不自行添加反向关系或传递关系：写在一侧的 `relates` 不会复制到另一侧；A 依赖 B、B 依赖 C，Atlas 也不会写出“A 依赖 C”。缺少某条关系意味着“没有记录”，而不是“没有关系”。
 
 ## 地图如何使用关系
 
-- 静止时，领域之间淡淡的弧线按方向统计它们的概念之间有多少条 `depends_on` 关系。
-- 当你指向或选中一个概念时，地图只画出该概念自身声明的关系，每个另一端的概念一条线：**依赖** 和 **被依赖** 用渐细线，**相关** 用点状线，**上位概念** 用双线。
+- 静止时，领域之间淡淡的弧线按方向表示两个领域的概念之间有多少条 `depends_on` 关系。
+- 当你指向或选中一个概念时，地图只画出该概念自身声明的关系，另一端的每个概念各一条线：**依赖** 和 **被依赖** 用渐细线，**相关** 用点状线，**上位概念** 用双线。
 - 概念面板中的 **依赖** 和 **被依赖** 只根据 `depends_on` 列出。相关和上位关系计入 **其他关系**。
 
 完整的线条图例见 [读懂地图](/guide/reading-the-map)。
 
 ## 智能体如何使用关系
 
-MCP 服务器根据同样的 frontmatter 回答图相关的问题，因此你的智能体不必逐个读取文件：
+MCP 服务器根据同一批 frontmatter 回答关于图的问题，所以你的智能体不必逐个读取文件：
 
 - `find_backlinks` 列出通过任意关系键或正文中的链接指向某个 slug 的所有概念。在重命名或删除之前调用它。
 - `find_path` 返回两个概念之间的最短路径。每一跳都会注明连接它的键（`via`），如果记录了理由，还会给出理由（`rationale`）。
@@ -70,7 +70,7 @@ MCP 服务器根据同样的 frontmatter 回答图相关的问题，因此你的
 
 写入时，`add_relation` 接收 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 和 `replace_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入。`broader` 目前还不是 `add_relation` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
 
-[CLI](/guide/cli) 在终端中提供同样的读取功能。在 Atlas 源码的检出目录中运行时，下面这些命令读取的是本仓库自己的本体：
+[CLI](/guide/cli) 在终端里提供同样的读取功能。在 Atlas 源码的本地克隆中运行时，下面这些命令读取的是 Atlas 仓库自己的本体：
 
 ```bash
 node cli/src/index.mjs backlinks capabilities/mcp-tool-server --vault docs/ontology
@@ -79,8 +79,8 @@ node cli/src/index.mjs blast-radius capabilities/mcp-tool-server --direction inc
 node cli/src/index.mjs domain-matrix docs/ontology --types depends_on
 ```
 
-`relate` 和 `remove-relation` 写入一条关系，执行的检查与 MCP 工具相同。在地图上，**编辑关系** 也能做同样的事，每次处理一条关系；见 [编辑概念和关系](/guide/studio)。
+`relate` 和 `remove-relation` 用于写入或移除一条关系，执行的检查与 MCP 工具相同。在地图上，**编辑关系** 也能做同样的事，每次处理一条关系；见 [编辑概念和关系](/guide/studio)。
 
 ## 文件始终是事实
 
-添加一条关系，就是修改一个文件中的一行，这个改动和其他改动一样会出现在 `git diff` 中。智能体写的关系与你写的看起来完全一样，所以一次审查就能覆盖两者。
+添加一条关系，就是改动某个文件里的一行，它和其他改动一样会出现在 `git diff` 中。智能体写的关系和你写的看起来完全一样，所以审查一次就能把两者都看到。

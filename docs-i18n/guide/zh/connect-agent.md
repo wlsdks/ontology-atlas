@@ -1,6 +1,6 @@
 # 通过 MCP 连接编码智能体
 
-本章通过 MCP（Model Context Protocol，模型上下文协议）把 Claude Code、Codex、Cursor 或 Antigravity 等编码智能体连接到你的本体文件夹。连接之后，智能体可以在修改代码之前读取你的代码库本体，也可以把新的概念和关系记录到地图所显示的那批 Markdown 文件中。
+本章介绍如何通过 MCP（Model Context Protocol，模型上下文协议）把 Claude Code、Codex、Cursor 或 Antigravity 等编码智能体连接到你的本体文件夹。连接之后，智能体可以在改代码之前读取你的代码库本体，也可以把新的概念和关系写进地图所用的同一批 Markdown 文件。
 
 ## 智能体连接的是文件夹
 
@@ -25,17 +25,17 @@
 | Cursor | `.cursor/mcp.json` |
 | Antigravity | `.agents/mcp_config.json` |
 
-每个按钮只写入对应工具自己的文件，而且只在该文件不存在时才写。应用从不覆盖已经存在的文件。配置指向应用内置的 MCP 服务器，并包含文件夹的绝对路径，因此你不需要 Node.js，也不需要 Atlas 源代码的副本。
+每个按钮只写入对应工具自己的文件，而且只在该文件不存在时才写。应用从不覆盖已经存在的文件。配置指向应用内置的 MCP 服务器，并包含文件夹的绝对路径，因此你不需要 Node.js，也不需要 Atlas 源码的本地克隆。
 
-如果 `.mcp.json` 或 `.codex/config.toml` 已经存在，但不是 Atlas 的连接文件，那一行会显示警告，并提供一份修正后的配置供你复制。请阅读之后自己把它合并到你的文件中。
+如果 `.mcp.json` 或 `.codex/config.toml` 已经存在，但不是 Atlas 的连接文件，那一行会显示警告，并提供一份修正后的配置供你复制。请先读一遍，再自己合并到你的文件里。
 
 然后退出并重新打开你的智能体。智能体只在会话开始时读取 MCP 配置。
 
-在浏览器中，Atlas 无法保存配置文件，因为网页不知道文件夹的绝对路径。这时 MCP 标签页会请你填写这个路径以及 Atlas 源码检出目录的路径，然后生成配置文本，供你复制并保存。不会写入或发送任何内容。桌面应用是更省事的途径：[在这里下载](https://ontologyatlas.com/zh/download/)。
+在浏览器中，Atlas 无法保存配置文件，因为网页不知道文件夹的绝对路径。这时 MCP 标签页会请你填写这个路径和 Atlas 源码本地克隆的路径，然后生成配置文本，供你复制保存。整个过程不写入也不发送任何内容。桌面应用更省事：[在这里下载](https://ontologyatlas.com/zh/download/)。
 
-## 从源码检出目录连接
+## 从源码克隆连接
 
-如果不用应用，例如在 Linux 上，可以从仓库的克隆中运行服务器。你需要 Git、Node.js 24 和 pnpm：
+不用应用时（例如在 Linux 上），可以从仓库的本地克隆运行服务器。你需要 Git、Node.js 24 和 pnpm：
 
 ```bash
 git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
@@ -71,9 +71,9 @@ node ~/tools/ontology-atlas/cli/src/index.mjs agent-setup ./atlas --write
 codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/your/atlas -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
 ```
 
-Codex 只有在你信任某个项目文件夹之后，才会读取该项目的 `.codex/config.toml`。信任之后，`codex mcp list` 应当会显示 `ontology-atlas`。
+Codex 只有在你信任某个项目文件夹之后，才会读取该项目的 `.codex/config.toml`。信任之后，`codex mcp list` 里应该能看到 `ontology-atlas`。
 
-如果只想给某个客户端读取权限，在 `env` 中加上 `"OATLAS_READ_ONLY": "1"`。这样服务器只列出读取类工具，并拒绝所有写入。
+如果只想给某个客户端只读权限，就在 `env` 中加上 `"OATLAS_READ_ONLY": "1"`。这样服务器只列出读取类工具，并拒绝所有写入。
 
 ## 检查连接
 
@@ -96,18 +96,18 @@ node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
 服务器自己的工具列表才是准确的清单。这些工具大致分为几组：
 
 - **工作前读取：** `get_concept` 返回一个概念及其相邻概念，`find_backlinks` 显示哪些概念指向某个概念，`find_path` 显示两个概念如何相连，`query_ontology` 回答诸如工作区概览或一次改动的影响范围之类的问题。
-- **读取代码：** `analyze_repo_structure`、`index_project` 和 `infer_imports` 会勘察仓库，但不写入任何内容。
+- **读取代码：** `analyze_repo_structure`、`index_project` 和 `infer_imports` 会扫描仓库，但不写入任何内容。
 - **写入：** `add_concepts`、`add_relations`、`patch_concept`、`rename_concept`、`merge_concepts`、`delete_concept` 等。重命名、合并、删除以及移除关系时，会先预览改动，只有在带确认参数再次调用时才真正写入。
 - **检查：** `validate_vault` 和 `compile_ontology` 报告失效的引用和缺失的部分。
 
-每一次写入都会落为一处 Markdown 改动。如果智能体传入了读取时得到的 `expected_mtime`，而文件此后又在磁盘上被修改，写入工具会拒绝覆盖它；不传则照常写入。
+每次写入的结果都是一处 Markdown 改动。如果智能体传入读取时拿到的 `expected_mtime`，而磁盘上的文件在那之后又改过，写入工具就会拒绝覆盖；不传则照常写入。
 
 ## 仍然由你决定的事
 
 - **写入是否需要你的批准。** 对外部智能体来说，这由它自己的权限设置决定。在应用内置的智能体对话中，每次写入都会先询问你，除非你开启了 **自动批准**。
 - **含义是否正确。** 写入成功并不等于含义被接受。提交之前请先阅读 diff。
-- **智能体做什么。** 在地图上，概念操作中的 **复制提示词** 会复制该概念的上下文，交给你的智能体。
+- **智能体处理什么。** 在地图上，概念操作中的 **复制提示词** 会复制该概念的上下文，方便你交给智能体。
 
-同一页面上的 **智能体** 标签页会列出在你电脑上找到的编码工具，并检查它们能否运行。在应用中，它还可以在地图旁边与其中某个工具开启对话，使用的是同一个 MCP 服务器。
+同一页面上的 **智能体** 标签页会列出在你电脑上找到的编码工具，并检查它们能否运行。在应用中，还可以在地图旁边和其中某个工具对话，用的是同一个 MCP 服务器。
 
 下一步：[从代码构建第一张地图](/guide/from-your-repo)。关于哪些内容会离开你的电脑，请看 [数据、隐私与安全](/guide/trust)。

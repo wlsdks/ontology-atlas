@@ -7,7 +7,7 @@ area: product
 
 # The ontology folder: Markdown files and their info block
 
-An Atlas ontology is a folder of plain Markdown files. Each concept in your codebase's knowledge graph is one `.md` file, and the YAML frontmatter at the top of that file says what the concept is and how it connects to others. This chapter shows that file format, the fields Atlas reads, and where the files go. There is no database behind it: the files are the ontology.
+An Atlas ontology is a folder of plain Markdown files. Each concept is one `.md` file. The info block at the top of the file, its YAML frontmatter, says what the concept is and how it connects to other concepts. There is no database behind it: the files are the ontology. Below are the file format, the fields Atlas reads, and where the files go.
 
 ## One concept, one file
 
@@ -34,21 +34,21 @@ Issues a revocable session token after a successful sign-in.
 - Checking the password, which belongs to credential verification.
 ```
 
-The frontmatter is the graph: kind, name, parent and relations. The body is the meaning a person or an agent reads: a definition, what the concept includes and excludes, the evidence, and what is still uncertain.
+The frontmatter is the graph: kind, name, parent and relations. The body is the meaning that a person or an agent reads: a definition, what the concept includes and excludes, the evidence, and what is still uncertain.
 
 ## The fields
 
 | Field | What it holds |
 |---|---|
 | `uid` | The permanent identity, a lowercase UUIDv4. It never changes. |
-| `slug` | The readable current address, such as `capabilities/token-issue`. Relations point at slugs. It can be renamed. |
+| `slug` | The current readable address, such as `capabilities/token-issue`. Relations point at slugs. It can be renamed. |
 | `kind` | One of `project`, `domain`, `capability`, `element`, `document`. See [Choosing concepts](/guide/what-becomes-a-node). |
 | `title` | The canonical name. Search and matching use it in every language. |
 | `display_<locale>` | The name shown on a screen in that language, for example `display_en`, `display_ko`. |
 | `display` | An optional short name for labels when `title` is long. |
 | `description` | An optional one-line summary. |
 | `domain` | The parent domain of a capability or element. Expected; a missing one is a warning. |
-| `path` | For a capability or element, the one file or folder an unfamiliar reader should open first. |
+| `path` | For a capability or element, the one file or folder that a newcomer should open first. |
 | Relation keys | `domains`, `capabilities`, `elements`, `dependencies`, `relates`, `broader`, `contains`, `describes`. See [Relations](/guide/relations). |
 | `relation_notes` | One sentence per relation saying why it holds, keyed by the target's slug. |
 | `created_by` | Who created the file: `human`, or `agent:` followed by the agent's name. |
@@ -58,17 +58,17 @@ The frontmatter is the graph: kind, name, parent and relations. The body is the 
 
 ### Identity: uid and slug
 
-The writer that creates a concept (the app, the MCP server or the CLI) mints its `uid` once. You do not choose it. Renaming a concept changes its `slug` and rewrites every relation that points to it, but keeps the `uid`. Merging two concepts keeps the surviving `uid` and records the absorbed one in `merged_uids`, so an old `uid` still finds the right concept. Do not write `merged_uids` by hand.
+Whatever creates a concept (the app, the MCP server or the CLI) generates its `uid` once. You do not choose it. Renaming a concept changes its `slug` and rewrites every relation that points to it, but keeps the `uid`. Merging two concepts keeps the surviving concept's `uid` and records the other one in `merged_uids`, so an old `uid` still leads to the right concept. Do not write `merged_uids` by hand.
 
-Use the slug when you write relations and links; it is what people read in the file. Use the `uid` when a tool or a handoff must point at the same concept even after a rename.
+Use the slug when you write relations and links, because it is what people read in the file. Use the `uid` when a tool or a handoff note must point at the same concept even after a rename.
 
 ### Names in several languages
 
-The map, lists and panels show `display_<locale>` for the screen's language when it exists, and fall back to the canonical name otherwise. `title` stays the same for every language, so search and matching do not depend on translation. If your team reads the map in two languages, fill in both names; a missing one shows the other language's name instead.
+The map, lists and panels show `display_<locale>` for the screen's language when it exists, and fall back to the canonical name otherwise. `title` stays the same in every language, so search and matching do not depend on translation. If your team reads the map in two languages, fill in both names. When one is missing, the screen shows the other language's name instead.
 
 ## Where the files go
 
-Keep the ontology folder inside the repository it describes, so a code change and the matching meaning change can be reviewed in the same pull request. This repository keeps its own ontology in `docs/ontology/`.
+Keep the ontology folder inside the repository it describes. Then a code change and the matching change in meaning can be reviewed in the same pull request. The Atlas repository keeps its own ontology in `docs/ontology/`.
 
 ```text
 your-repo/
@@ -82,21 +82,21 @@ your-repo/
     └── .ontology-atlas/    files the app keeps beside the ontology
 ```
 
-Projects and documents sit at the root of the folder; domains, capabilities and elements sit in their own folders. By convention the file path mirrors the slug, but the `slug:` in the frontmatter is the address Atlas trusts. Under a kind folder a slug must be flat: `elements/jwt-signer`, never `elements/src/auth/jwt-signer`. The code location belongs in `path`.
+Projects and documents sit at the root of the folder. Domains, capabilities and elements each have their own folder. By convention the file path matches the slug, but the `slug:` in the frontmatter is the address Atlas trusts. Under a kind folder, a slug must be flat: `elements/jwt-signer`, never `elements/src/auth/jwt-signer`. The code location belongs in `path`.
 
-Files under `sources/` are raw material, such as documents a wiki page cites, and are never read as concepts. `.ontology-atlas/` holds files the app writes beside your ontology, such as review results and the link to your code folder. When Atlas first writes that link, it also adds a `.gitignore` there so the folder stays out of Git.
+Files under `sources/` are raw material, such as documents a wiki page cites, and are never read as concepts. `.ontology-atlas/` holds files the app writes beside your ontology, such as review results and the link to your code folder. When Atlas first writes that link, it also adds a `.gitignore` there so that the folder stays out of Git.
 
-To start a folder from the command line in a checkout of the Atlas source:
+To start a folder from the command line, in a checkout of the Atlas source:
 
 ```bash
 node cli/src/index.mjs init docs/ontology
 node cli/src/index.mjs validate docs/ontology
 ```
 
-`validate` reports broken references, unknown kinds and malformed identities. Most findings are warnings that do not stop you from working; a duplicate `uid` is an error. [The CLI](/guide/cli) lists the other commands.
+`validate` reports broken references, unknown kinds and malformed identities. Most findings are warnings that do not stop your work; a duplicate `uid` is an error. [The CLI](/guide/cli) lists the other commands.
 
 ## The files are the truth
 
-Atlas reads the ontology from the files every time. Edit a file in your editor, through the CLI, or through an agent, and the map picks the change up within seconds. There is no sync button and no hidden state. Every change, including one an agent makes, is a line in `git diff` that you can review, keep or revert.
+Atlas always reads the ontology from the files. Edit a file in your editor, through the CLI or through an agent, and the map picks up the change within seconds. There is no sync button and no hidden state. Every change, including one an agent makes, shows up in `git diff`, where you can review, keep or revert it.
 
 Next: [Choosing concepts](/guide/what-becomes-a-node).

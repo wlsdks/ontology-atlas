@@ -2,9 +2,9 @@
 
 本章介绍 Ontology Atlas 的命令行工具：如何运行它、日常常用的命令，以及它如何与 Claude Code、Codex 等编码智能体调用的 MCP 服务器共用同一个引擎。CLI 所做的一切，都作用于地图所显示的同一个 Markdown 本体文件夹。
 
-## 从源码检出目录运行
+## 从源码克隆运行
 
-Atlas 没有 npm 包，所以 `npx` 不可用。CLI 需要从仓库的克隆中运行，依赖 Git、Node.js 24 和 pnpm。请把克隆放在你要描述的那个仓库之外：
+Atlas 没有 npm 包，所以 `npx` 不可用。CLI 要从仓库的本地克隆运行，需要 Git、Node.js 24 和 pnpm。请把克隆放在你要描述的那个仓库之外：
 
 ```bash
 git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
@@ -26,11 +26,11 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 
 | 入口 | 谁在用 |
 |---|---|
-| 应用或网站中的地图 | 人 |
+| 应用或浏览器版中的地图 | 人 |
 | MCP 工具 | 编码智能体 |
 | CLI | 在终端中工作的人和脚本 |
 
-图相关的命令，例如 `backlinks`、`blast-radius`、`rename` 和 `relate`，会为一次调用启动 MCP 服务器，用完再停止。因此，你在终端里运行的命令和智能体调用的同一个工具会给出相同的答案，并遵循相同的写入规则。如果文件夹很大导致这些命令超时，可以用 `OATLAS_CLI_MCP_TIMEOUT_MS` 延长等待时间。
+图相关的命令，例如 `backlinks`、`blast-radius`、`rename` 和 `relate`，每次调用都会启动一次 MCP 服务器，用完即停。因此，你在终端里运行的命令和智能体调用的同一个工具会给出相同的答案，并遵循相同的写入规则。如果文件夹很大导致这些命令超时，可以用 `OATLAS_CLI_MCP_TIMEOUT_MS` 延长等待时间。
 
 ## 起步命令
 
@@ -43,11 +43,11 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 | 把 `CLAUDE.md` 或 `AGENTS.md` 转成概念 | `absorb CLAUDE.md --vault ./atlas` |
 | 导入已有的 Markdown 文件 | `import <path...> --vault ./atlas` |
 
-`bootstrap`、`analyze`、`index` 和 `infer-imports` 只做预览。它们不写入任何概念，`bootstrap` 还会以退出码 3 结束，表示仍需批准。概念本身来自一个由你审查的智能体，详见 [从代码构建第一张地图](/guide/from-your-repo)。
+`bootstrap`、`analyze`、`index` 和 `infer-imports` 只做预览。它们不写入任何概念，`bootstrap` 还会以退出码 3 结束，表示仍需批准。概念本身由智能体写出，并经过你的审查，详见 [从代码构建第一张地图](/guide/from-your-repo)。
 
 ## 查询命令
 
-这些命令只读取，可以随意运行。
+这些命令只读不写，可以随意运行。
 
 | 问题 | 命令 |
 |---|---|
@@ -71,7 +71,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 | 合并两个概念 | `merge <from> <into> --vault ./atlas` | 预览；`--confirm` 执行 |
 | 删除概念 | `delete <slug> --vault ./atlas` | 预览；仍有引用时拒绝执行 |
 
-每次写入之前，先运行对应的读取命令。`relation-check` 会在 `relate` 之前按模式检查一条关系，`backlinks` 会显示重命名或删除将会涉及哪些内容。
+每次写入之前，先运行对应的读取命令。`relation-check` 会在 `relate` 之前按模式（schema）检查一条关系，`backlinks` 会显示重命名或删除将会涉及哪些内容。
 
 ## 检查命令
 
@@ -83,7 +83,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 | 依赖关系是否形成了环？ | `cycles ./atlas` |
 | 我暂存的文件涉及哪些概念？ | `preflight ./atlas --staged` |
 
-`validate` 只读取本体文件夹。`health` 还会把被引用的路径与代码进行比对，因此能发现那些依据已被重构删除的概念。`validate` 发现错误时以退出码 1 结束，因此适合放进 CI。`preflight` 从不阻止提交。
+`validate` 只读取本体文件夹。`health` 还会把被引用的路径与代码比对，因此能发现依据已在重构中被删掉的概念。`validate` 发现错误时以退出码 1 结束，因此适合放进 CI。`preflight` 从不阻止提交。
 
 ## 面向智能体和共享的命令
 
@@ -102,4 +102,4 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 node ~/tools/ontology-atlas/cli/src/index.mjs --help
 ```
 
-要在代码变化时用这些命令让地图保持最新，请看 [在代码变化时让地图保持最新](/guide/growing-vault)。
+怎样用这些命令让地图跟上代码的变化，见 [在代码变化时让地图保持最新](/guide/growing-vault)。
