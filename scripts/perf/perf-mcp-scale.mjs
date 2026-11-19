@@ -5,9 +5,12 @@
 //   --server: an entry script (run with node) or a compiled binary; default the source server.
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
 //   --check: at 50,000 files and both flows unless given, gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
-//     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or memory exceeds --max-rss-mb
-//     (1024). The source server is measured after it and printed, not gated: Node keeps freed heap
-//     pages resident, so its memory says little about what the app costs.
+//     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or, on macOS, the physical
+//     footprint after 20 calls exceeds --max-footprint-mb (512) or its peak --max-peak-footprint-mb
+//     (1024). The footprint is what Activity Monitor shows and what the user pays. RSS is printed,
+//     never gated: on macOS it keeps counting freed pages the allocator holds for reuse, and
+//     elsewhere the footprint is not read, so memory is not gated there. The source server is
+//     measured after it and printed, not gated.
 // CPU is the server process's user+system time across one call, read from the OS, so it
 // includes everything the call cost and nothing the harness did.
 
@@ -34,7 +37,8 @@ const server = explicitServer ? resolve(explicitServer) : check ? builtBinary() 
 const isScript = (path) => /\.(?:c|m)?js$/.test(path);
 const baseDir = resolve(flag('dir', join(tmpdir(), 'atlas-mcp-scale')));
 const maxCpuMs = Number(flag('max-cpu-ms', '600'));
-const maxRssMb = Number(flag('max-rss-mb', '1024'));
+const maxFootprintMb = Number(flag('max-footprint-mb', '512'));
+const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '1024'));
 const TOTAL_CALLS = 20;
 const SHAPES = { a: 'all', b: 'key' };
 
@@ -192,10 +196,12 @@ function printTable(serverPath, results, note = '') {
     console.log(`${READS[index][0].padEnd(18)}${results.map((result) => `${result.rows[index].first} / ${result.rows[index].second}`.padStart(24)).join('')}`);
   }
   console.log(`${'after 1-file edit'.padEnd(18)}${results.map((result) => `get_concept ${result.afterEdit}`.padStart(24)).join('')}`);
-  console.log(`${`rss after ${TOTAL_CALLS} calls`.padEnd(18)}${results.map((result) => `${result.rss} MB`.padStart(24)).join('')}`);
   if (results.some((result) => result.footprint)) {
-    console.log(`${'footprint / peak'.padEnd(18)}${results.map((result) => `${result.footprint?.now ?? '?'} / ${result.footprint?.peak ?? '?'} MB`.padStart(24)).join('')}`);
+    console.log(`${`footprint after ${TOTAL_CALLS}`.padEnd(18)}${results.map((result) => `${result.footprint?.now ?? '?'} MB`.padStart(24)).join('')}`);
+    console.log(`${'footprint peak'.padEnd(18)}${results.map((result) => `${result.footprint?.peak ?? '?'} MB`.padStart(24)).join('')}`);
   }
+  console.log(`${'rss (not gated)'.padEnd(18)}${results.map((result) => `${result.rss} MB`.padStart(24)).join('')}`);
+  if (process.platform !== 'darwin') console.log('# memory is not gated on this OS: only macOS reports the physical footprint here');
 }
 
 const results = [];
@@ -214,11 +220,20 @@ if (check) {
     for (const row of result.rows) {
       if (row.second > maxCpuMs) failures.push(`flow ${result.flow} ${row.name} second call ${row.second} ms > ${maxCpuMs} ms`);
     }
-    if (result.rss > maxRssMb) failures.push(`flow ${result.flow} resident memory ${result.rss} MB > ${maxRssMb} MB`);
+    if (process.platform !== 'darwin') continue;
+    const footprint = result.footprint;
+    if (footprint?.now == null || footprint?.peak == null) {
+      failures.push(`flow ${result.flow} physical footprint could not be read (vmmap)`);
+      continue;
+    }
+    if (footprint.now > maxFootprintMb) failures.push(`flow ${result.flow} physical footprint after ${TOTAL_CALLS} calls ${footprint.now} MB > ${maxFootprintMb} MB`);
+    if (footprint.peak > maxPeakFootprintMb) failures.push(`flow ${result.flow} peak physical footprint ${footprint.peak} MB > ${maxPeakFootprintMb} MB`);
   }
   if (failures.length > 0) {
     console.error(failures.map((line) => `✗ ${line}`).join('\n'));
     process.exit(1);
   }
-  console.log(`✓ every second call ≤ ${maxCpuMs} ms CPU and resident memory ≤ ${maxRssMb} MB`);
+  console.log(process.platform === 'darwin'
+    ? `✓ every second call ≤ ${maxCpuMs} ms CPU; physical footprint ≤ ${maxFootprintMb} MB after ${TOTAL_CALLS} calls, peak ≤ ${maxPeakFootprintMb} MB`
+    : `✓ every second call ≤ ${maxCpuMs} ms CPU; memory not gated on this OS`);
 }
