@@ -1,9 +1,56 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import fs, { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
 import { inferImports } from '../infer-imports.mjs';
 import { withRepo } from './repo-fixture.mjs';
+
+/** How many times `run` reads a file whose path ends with `suffix`. */
+function readsOf(suffix, run) {
+  const original = fs.readFileSync;
+  let reads = 0;
+  fs.readFileSync = (path, ...rest) => {
+    if (String(path).endsWith(suffix)) reads += 1;
+    return original(path, ...rest);
+  };
+  syncBuiltinESMExports();
+  try {
+    run();
+  } finally {
+    fs.readFileSync = original;
+    syncBuiltinESMExports();
+  }
+  return reads;
+}
+
+test('a workspace package imported from many files reads its manifest a fixed number of times', () => {
+  const repoWith = (importers) => withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'policy'), { recursive: true });
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ workspaces: ['packages/*'] }));
+    writeFileSync(join(r, 'packages', 'policy', 'package.json'), JSON.stringify({ name: 'policy', main: 'index.ts' }));
+    writeFileSync(join(r, 'packages', 'policy', 'index.ts'), 'export const policy = true;\n');
+    for (let index = 0; index < importers; index += 1) {
+      writeFileSync(join(r, 'src', `screen-${index}.ts`), "import { policy } from 'policy';\n");
+    }
+  });
+  const few = repoWith(2);
+  const many = repoWith(40);
+  try {
+    const manifest = join('packages', 'policy', 'package.json');
+    let edges = 0;
+    const readsForFew = readsOf(manifest, () => inferImports(few));
+    const readsForMany = readsOf(manifest, () => {
+      edges = inferImports(many).edges.filter((edge) => edge.to === 'packages/policy/index.ts').length;
+    });
+    assert.equal(edges, 40);
+    assert.equal(readsForMany, readsForFew);
+  } finally {
+    rmSync(few, { recursive: true, force: true });
+    rmSync(many, { recursive: true, force: true });
+  }
+});
 
 test('relative import resolved to file path', () => {
   const root = withRepo((r) => {
