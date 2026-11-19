@@ -295,6 +295,21 @@
    * heartbeat (`.agent-pending-dot`) and decorative flows stay stopped.
    */
   @media (prefers-reduced-motion: reduce) {
+    /* The download page's build section, once pressed: Moru's words, the cards and a pose swap
+       still arrive and leave, as a fade without travel. Before that the page stands still. */
+    [data-build-pressed] .build-line,
+    [data-build-pressed] .build-details {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+    }
+
+    .build-moru-layer,
+    .build-detail {
+      translate: none;
+      transition-duration: var(--motion-fast) !important;
+    }
+
     /* ① Already opacity-only — revert time only. */
     .gateway-screen-in,
     .gateway-screen-out,
