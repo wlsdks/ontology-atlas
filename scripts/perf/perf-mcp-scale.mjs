@@ -4,7 +4,7 @@
 //   flow a: every page is a node. flow b: a few thousand nodes over many plain documents.
 //   --server: an entry script (run with node) or a compiled binary; default the source server.
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
-//   --check: gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
+//   --check: at 50,000 files and both flows unless given, gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
 //     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or memory exceeds --max-rss-mb
 //     (1024). The source server is measured after it and printed, not gated: Node keeps freed heap
 //     pages resident, so its memory says little about what the app costs.
@@ -24,10 +24,11 @@ import { generateScaleVault } from './gen-scale-vault.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const flag = (name, fallback) => args.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
-const files = Number(flag('files', '10000'));
 const flows = args.filter((arg) => arg.startsWith('--flow=')).map((arg) => arg.slice(7));
 const SOURCE_SERVER = join(ROOT, 'mcp/src/index.js');
 const check = args.includes('--check');
+// The gate measures the scale the budgets were set for; a smaller default would pass by size alone.
+const files = Number(flag('files', check ? '50000' : '10000'));
 const explicitServer = flag('server', null);
 const server = explicitServer ? resolve(explicitServer) : check ? builtBinary() : SOURCE_SERVER;
 const isScript = (path) => /\.(?:c|m)?js$/.test(path);
@@ -39,7 +40,7 @@ const SHAPES = { a: 'all', b: 'key' };
 
 if (!Number.isInteger(files) || files < 100) usage('--files must be an integer of at least 100');
 if (check && isScript(server)) usage('--check gates the compiled binary the app ships; pass --server=<binary> or omit --server');
-if (flows.length === 0) flows.push('a');
+if (flows.length === 0) flows.push(...(check ? ['a', 'b'] : ['a']));
 for (const flow of flows) if (!SHAPES[flow]) usage(`unknown --flow=${flow}`);
 
 function usage(message) {
