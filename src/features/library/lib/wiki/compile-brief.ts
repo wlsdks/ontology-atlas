@@ -85,7 +85,7 @@ export function selectCompileBatch(
  * Rule g's last clause and rule i's targets. A source that adds nothing new still gets cited, or it
  * would read "no wiki page" forever; a link may reach any existing page, because the brief lists
  * at most `COMPILE_BRIEF_PAGE_CAP` of them. Both routes get the same words: who fills `sources`
- * is rule b's business.
+ * and `source_hash` is rule b's business.
  */
 function meaningRuleLines(locale: string): string[] {
   const ko = locale === "ko";
@@ -93,8 +93,8 @@ function meaningRuleLines(locale: string): string[] {
     ? "위 목록에서, 목록이 잘렸으면 그 밖에서도."
     : "in the list above, and beyond it when the list is cut short.";
   const nothingNew = ko
-    ? "원문이 위키에 이미 있는 것 말고는 더할 게 없으면 새 문서를 만들지 마. 대신 그 사실을 이미 담은 문서를 고쳐서 이 원문을 그 문서의 원문 목록에 올리고, 그 사실 중 하나 이상에 이 원문도 인용해. 이건 다른 원문의 문서에 이 원문이 들어가는 유일한 경우이고, 이 원문을 인용 없이 남기지 마."
-    : "If a source adds nothing the wiki does not already hold, write no new page for it. Instead revise the page that already holds its facts so that page lists this source among its sources and cites it on at least one of those facts. This is the one case where a source joins a page written for another; never leave the source uncited.";
+    ? "원문이 위키에 이미 있는 것 말고는 더할 게 없으면 새 문서를 만들지 마. 대신 그 사실을 이미 담은 문서의 `sources:` 와 `source_hash:` 에 이 원문을 더하고, 그 사실 중 하나 이상에 이 원문도 인용해. 둘 중 하나만 고치면 이 원문은 위키 문서가 있는 것으로 세지 않아. 이건 다른 원문의 문서에 이 원문이 들어가는 유일한 경우이고, 이 원문을 인용 없이 남기지 마."
+    : "If a source adds nothing the wiki does not already hold, write no new page for it. Instead add it to the `sources:` and `source_hash:` of the page that already holds its facts, and cite it on at least one of those facts. Adding it to only one of the two leaves the source counted as without a page. This is the one case where a source joins a page written for another; never leave the source uncited.";
   const linkTargets = ko
     ? "목록에 없어도 있는 줄 아는 문서면 어디든 걸 수 있어. 없는 문서를 지어내지 마."
     : `Link to any page under \`${WIKI_DIR}/\` you know exists, listed above or not; never invent a target.`;
@@ -173,16 +173,34 @@ function ruleLines(
 
 /** Existing pages a brief lists at most: those citing the request's sources first, then the newest. */
 export const COMPILE_BRIEF_PAGE_CAP = 200;
-/**
- * UTF-8 bytes the listed page lines may take. With the rules, template and ten sources, this keeps
- * a brief under 64 KB whatever the titles hold; a page past it is counted, not listed.
- */
+/** The most a brief may weigh in UTF-8 bytes; the two vault-sized lists share what the rest leaves. */
+export const COMPILE_BRIEF_BYTE_LIMIT = 64 * 1024;
+/** Room kept for the list headings and the two "not listed" lines, which are measured after. */
+const BRIEF_BYTE_MARGIN = 1_024;
+/** The review list goes first, because it names work; it takes at most this much. */
+const REVIEW_LIST_BYTE_BUDGET = 16_000;
+/** The existing-page list is context; it takes at most this much of what remains. */
 const PAGE_LIST_BYTE_BUDGET = 40_000;
 const PAGE_TITLE_CHARS = 80;
 const PAGE_CITES_SHOWN = 2;
 const EARLIEST_RECORDED = Date.UTC(2000, 0, 1);
 const ISO_DATE_PREFIX = /^\d{4}-\d{2}-\d{2}/;
 const utf8 = new TextEncoder();
+
+function byteLength(text: string): number {
+  return utf8.encode(text).length;
+}
+
+/** Line breaks, other control characters and bidirectional overrides. */
+const UNSAFE_IN_LINE = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]+/gu;
+
+/**
+ * A vault-derived string (title, path, slug, folder) as one inert line. A title holding a newline
+ * would otherwise start a line of its own, which reads to the agent as an instruction.
+ */
+function oneLine(value: string): string {
+  return value.replace(UNSAFE_IN_LINE, " ");
+}
 
 /** The instant a page records in `compiled_at`, or -1 when it has none worth believing. */
 function recordedInstant(value: string | null, now: number): number {
@@ -203,16 +221,16 @@ interface BriefPages {
 }
 
 function pageLine(page: LibraryWikiPage, targets: ReadonlySet<string>): string {
-  const chars = [...page.title];
-  const title = chars.length > PAGE_TITLE_CHARS ? `${chars.slice(0, PAGE_TITLE_CHARS - 1).join("")}…` : page.title;
+  const chars = [...oneLine(page.title)];
+  const title = chars.length > PAGE_TITLE_CHARS ? `${chars.slice(0, PAGE_TITLE_CHARS - 1).join("")}…` : chars.join("");
   // The request's own sources first: they are why this page is listed.
   const cites = [
     ...page.sourcePaths.filter((path) => targets.has(path)),
     ...page.sourcePaths.filter((path) => !targets.has(path)),
   ];
-  const shown = cites.slice(0, PAGE_CITES_SHOWN).join(", ");
+  const shown = cites.slice(0, PAGE_CITES_SHOWN).map(oneLine).join(", ");
   const more = cites.length > PAGE_CITES_SHOWN ? ` (+${cites.length - PAGE_CITES_SHOWN})` : "";
-  return `- ${page.slug}.md — ${title}${shown ? ` — ${shown}${more}` : ""}`;
+  return `- ${oneLine(page.slug)}.md — ${title}${shown ? ` — ${shown}${more}` : ""}`;
 }
 
 /**
@@ -223,6 +241,7 @@ function selectBriefPages(
   pages: readonly LibraryWikiPage[],
   targets: readonly LibrarySourceRow[],
   now: number,
+  budget: number,
 ): BriefPages {
   const targetPaths = new Set(targets.map((row) => row.path));
   const reviewSlugs = new Set(targets.flatMap((row) => row.reviewPages ?? []));
@@ -238,8 +257,8 @@ function selectBriefPages(
   for (const page of [...citing, ...others.map((entry) => entry.page)]) {
     if (listed.length >= COMPILE_BRIEF_PAGE_CAP) break;
     const line = pageLine(page, targetPaths);
-    bytes += utf8.encode(line).length + 1;
-    if (bytes > PAGE_LIST_BYTE_BUDGET) break;
+    bytes += byteLength(line) + 1;
+    if (bytes > budget) break;
     listed.push({ page, line });
   }
   return { listed, omitted: pages.length - listed.length };
@@ -257,7 +276,8 @@ function omittedPagesLine(omitted: number, locale: string, execution: "acp" | "l
     : `${omitted} more pages under \`${WIKI_DIR}/\` are not listed here; look in the folder when a topic may already have one (rules g, i).`];
 }
 
-function existingPageLines(pages: readonly BriefPage[], locale: string): string[] {
+function existingPageLines(pages: readonly BriefPage[], locale: string, omitted = 0): string[] {
+  if (pages.length === 0 && omitted > 0) return [];
   if (pages.length === 0) {
     return [locale === "ko" ? `\`${WIKI_DIR}/\` 에 아직 문서가 없어. 전부 새로 쓰는 거야.` : `Nothing is under \`${WIKI_DIR}/\` yet; every page is new.`];
   }
@@ -265,7 +285,8 @@ function existingPageLines(pages: readonly BriefPage[], locale: string): string[
   return [head, ...pages.map((entry) => entry.line)];
 }
 
-function localExistingPageLines(pages: readonly BriefPage[], locale: string): string[] {
+function localExistingPageLines(pages: readonly BriefPage[], locale: string, omitted = 0): string[] {
+  if (pages.length === 0 && omitted > 0) return [];
   // Match the reader's safe inventoried addresses; this list does not grant write authority.
   const reachablePages = pages.filter(({ page }) => {
     const slug = page.slug;
@@ -391,26 +412,74 @@ function composeCompileBrief({
     ? targets
         .map((row) => [row.path, hashes?.get(row.path)] as const)
         .filter((pair): pair is readonly [string, string] => typeof pair[1] === "string")
-        .map(([path, sha]) => `${path}: ${sha}`)
+        .map(([path, sha]) => `${oneLine(path)}: ${oneLine(sha)}`)
     : [];
-  const paths = targets.map((row) => `- ${row.path}`).join("\n");
-  const { listed, omitted } = selectBriefPages(existingPages, targets, (now ?? new Date()).getTime());
+  const paths = targets.map((row) => `- ${oneLine(row.path)}`).join("\n");
+  const sections = WIKI_SECTION_ORDER.join(" → ");
+  const rules = ruleLines(locale, oneLine(writerId), hashLines, compiledAt, execution).join("\n");
+  const assemble = (existing: string, review: readonly string[]) =>
+    assembleCompileBrief({ locale, execution, vaultRoot: oneLine(vaultRoot), paths, existing, review, sections, rules });
+
+  // The fixed part is measured; the review list, then the page list, share what it leaves.
+  let available = COMPILE_BRIEF_BYTE_LIMIT - BRIEF_BYTE_MARGIN - byteLength(assemble("", []));
+  const revisions = targets.flatMap((row) =>
+    (row.reviewPages ?? []).filter((slug) => !isRetainedAnswerPath(slug)).map((slug) => `- ${oneLine(slug)}.md ← ${oneLine(row.path)}`));
+  const reviewBudget = Math.min(REVIEW_LIST_BYTE_BUDGET, Math.max(0, available));
+  const listedRevisions: string[] = [];
+  let reviewBytes = 0;
+  for (const line of revisions) {
+    const cost = byteLength(line) + 1;
+    if (reviewBytes + cost > reviewBudget) break;
+    reviewBytes += cost;
+    listedRevisions.push(line);
+  }
+  available -= reviewBytes;
+  const review = reviewLines(listedRevisions, revisions.length - listedRevisions.length, locale);
+
+  const { listed, omitted } = selectBriefPages(existingPages, targets, (now ?? new Date()).getTime(), Math.max(0, Math.min(PAGE_LIST_BYTE_BUDGET, available)));
   const existing = [
-    ...(execution === "local" ? localExistingPageLines : existingPageLines)(listed, locale),
+    ...(execution === "local" ? localExistingPageLines : existingPageLines)(listed, locale, omitted),
     ...omittedPagesLine(omitted, locale, execution),
   ].join("\n");
-  const revisions = targets.flatMap((row) => (row.reviewPages ?? []).filter((slug) => !isRetainedAnswerPath(slug)).map((slug) => `- ${slug}.md ← ${row.path}`));
-  const review = revisions.length === 0 ? [] : [
-    locale === 'ko'
+  return assemble(existing, review);
+}
+
+function reviewLines(listed: readonly string[], omitted: number, locale: string): string[] {
+  if (listed.length === 0 && omitted === 0) return [];
+  const ko = locale === 'ko';
+  return [
+    ko
       ? '원본 버전을 다시 확인할 기존 위키 문서. 각 문서를 먼저 읽고 인용된 원문을 확인한 뒤 같은 경로에 수정해. 이미 최신인 문서를 복제하지 마. 옛 값과 변경 근거를 함께 남겨. 해시만 바꾸지 마:'
       : 'Existing Wiki pages whose source version needs review. Read each page and its cited originals, then revise that same path. Do not duplicate a current write-up. Keep the earlier value and the evidence for its change; never update only a hash:',
-    ...revisions,
+    ...listed,
+    ...(omitted === 0
+      ? []
+      : [ko
+          ? `이 원문들을 인용하는 문서 ${omitted}개도 다시 확인해야 하지만 여기 싣지 않았어. 그 문서들은 다음 요청에 다시 나와.`
+          : `${omitted} more pages citing these sources also need review and are not listed here; a later request names them.`]),
     '',
   ];
+}
 
-  const sections = WIKI_SECTION_ORDER.join(" → ");
-  const rules = ruleLines(locale, writerId, hashLines, compiledAt, execution).join("\n");
-
+function assembleCompileBrief({
+  locale,
+  execution,
+  vaultRoot,
+  paths,
+  existing,
+  review,
+  sections,
+  rules,
+}: {
+  locale: string;
+  execution: "acp" | "local";
+  vaultRoot: string;
+  paths: string;
+  existing: string;
+  review: readonly string[];
+  sections: string;
+  rules: string;
+}): string {
   if (execution === "local") {
     return buildLocalBrief({ locale, vaultRoot, paths, existing: [existing, ...review].join("\n"), sections, rules });
   }
