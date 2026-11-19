@@ -18,9 +18,13 @@ const BUDGET_MS = 200;
 // took 0.2 to 4.2 s on the first six. Unterminated instructions take 8 ms, and
 // 2.9 s when each one searches ahead for its terminator.
 const MARKDOWN_BUDGET_MS = 100;
-// Measured 2026-11-19: 128 KiB of NUL headings takes 58 ms, most of it
-// markdown-it's own parse, and 770 ms when each heading is searched for.
-const HEADING_BUDGET_MS = 300;
+// Pages of tiny blocks cost markdown-it's own parse about 0.8 ms a KiB.
+// Measured 2026-11-19: 128 KiB of NUL headings takes 58 ms, and 770 ms when
+// each heading is searched for; 48 KiB of quotes each followed by a lazy line
+// takes 50 ms, and 1.7 s when each quote scans every lazy line after it; a
+// lazy paragraph 19 quotes deep takes 45 ms, and 1.6 s when each enclosing
+// quote's retry repeats the probes of the quotes inside it.
+const DENSE_BUDGET_MS = 300;
 const scratchRoots = [];
 
 after(() => {
@@ -118,8 +122,10 @@ describe('hostile Markdown costs the survey time linear in its size', () => {
       ['block quotes nested 25,000 deep', `${'> '.repeat(25_000)}x`],
       ['backtick runs of every length to 500', Array.from({ length: 500 }, (_, index) => `e${'`'.repeat(index + 1)}`).join('')],
       ['10,000 link definitions then a reference', `${Array.from({ length: 10_000 }, (_, index) => `[${index}]: u\n`).join('')}[0]`],
-      ['headings holding NUL below a fence', `\`\`\`\nfence\n\`\`\`\n${'# a\0 <b>x</b>\n'.repeat(9_400)}`, HEADING_BUDGET_MS],
+      ['headings holding NUL below a fence', `\`\`\`\nfence\n\`\`\`\n${'# a\0 <b>x</b>\n'.repeat(9_400)}`, DENSE_BUDGET_MS],
       ['unterminated processing instructions', `x ${'<? '.repeat(21_800)}`],
+      ['quotes each followed by a lazy line', '> # h\nx\n'.repeat(6_000), DENSE_BUDGET_MS],
+      ['a lazy paragraph 19 quotes deep', `${'> '.repeat(19)}a\n${'b\n'.repeat(12_000)}`, DENSE_BUDGET_MS],
     ];
     for (const [name, text, budgetMs = MARKDOWN_BUDGET_MS] of cases) {
       let lines = [];

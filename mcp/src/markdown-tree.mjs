@@ -36,6 +36,49 @@ parser.block.State = class extends BlockState {
   }
 };
 
+// markdown-it's blockquote rule reads every lazy line that follows a quote, to
+// the end of the container, before it parses the quote; a page of short quotes
+// each followed by a lazy line costs quadratic time. The rule first runs with a
+// bounded end. When the quote's parse stops before that end, it never read a line
+// past it, so the result is the unbounded one; otherwise the attempt is undone,
+// including the definitions it recorded, and the bound grows. Each quote
+// remembers the largest bound it has reached, so an enclosing quote's retry does
+// not repeat the probes of the quotes inside it.
+const QUOTE_FIRST_SPAN = 4;
+const QUOTE_SPAN_GROWTH = 4;
+const quoteRule = parser.block.ruler.__rules__.find((rule) => rule.name === 'blockquote');
+const unboundedQuote = quoteRule.fn;
+function boundedQuote(state, startLine, endLine, silent) {
+  if (silent) return unboundedQuote(state, startLine, endLine, true);
+  state.quoteSpansReached ??= new Map();
+  const quote = `${startLine}:${state.level}`;
+  const tokenCount = state.tokens.length;
+  const reached = state.quoteSpansReached.get(quote);
+  for (let span = reached ? reached * QUOTE_SPAN_GROWTH : QUOTE_FIRST_SPAN; startLine + span < endLine; span *= QUOTE_SPAN_GROWTH) {
+    const limit = startLine + span;
+    const references = state.env.references;
+    const attempt = Object.create(references ?? null);
+    state.env.references = attempt;
+    const matched = unboundedQuote(state, startLine, limit, false);
+    state.env.references = references;
+    if (!matched) return false;
+    if (state.line < limit) {
+      const added = Object.keys(attempt);
+      if (added.length) {
+        state.env.references ??= {};
+        for (const label of added) state.env.references[label] = attempt[label];
+      }
+      return true;
+    }
+    state.tokens.length = tokenCount;
+    state.quoteSpansReached.set(quote, span);
+  }
+  const matched = unboundedQuote(state, startLine, endLine, false);
+  if (matched && state.line >= endLine) state.quoteSpansReached.set(quote, Math.max(reached ?? 0, endLine - startLine));
+  return matched;
+}
+parser.block.ruler.at('blockquote', boundedQuote, { alt: quoteRule.alt });
+
 // mdast drops every space and tab before a line ending, and a tab among them
 // makes the break soft; markdown-it trims only spaces.
 function lineEndingBreak(state) {
