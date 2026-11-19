@@ -34,8 +34,9 @@ file that changes while a call is reading its body fails that call with
 `compile_ontology` reuse the compiled artifact while no file was added, removed
 or changed. A write tool trusts no stamp: it reads every file it decides from
 (the backlinks that refuse a delete or that a rename or merge rewrites) and
-compares hashes, and it reads its target from disk and refuses to overwrite a
-newer file. A write that finds bytes other than the kept parse discards it, under
+compares hashes, once per call: the call's later loads check stamps, and see the
+call's own writes because each write replaces its file. It reads its target from
+disk and refuses to overwrite a newer file. A write that finds bytes other than the kept parse discards it, under
 whatever spelling of the path it used, which is what reveals an edit on a FAT or
 exFAT volume that restored the file's size and modification time.
 
