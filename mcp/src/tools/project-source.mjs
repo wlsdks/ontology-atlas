@@ -10,6 +10,7 @@ import {
   repositorySurvey,
 } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
+import { unreadClaimRefusal } from '../construction/unread-claims.mjs';
 import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
@@ -379,13 +380,17 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
   const grounded = REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null;
   const depth = measureBuildDepth(allDocs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
   const depthRefusals = competencyDepthRefusals(competency.questions, depth);
+  // A symbol a node says was not read, declared here, is refused whatever the rows say.
+  const unreadRefusal = unreadClaimRefusal(depth.unread);
   if (depthRefusals.length > 0) {
     throw new Error([
       `finalize_project_meaning blocked: ${depthRefusals.length} answered competency row(s) claim more than the map holds.`,
       ...depthRefusals,
       'Make the next call each row names, then call finalize_project_meaning again; marking a row partial is the fallback when the map cannot be repaired.',
+      ...(unreadRefusal ? ['', unreadRefusal] : []),
     ].join('\n'));
   }
+  if (unreadRefusal) throw new Error(unreadRefusal);
 
   const receipt = finalizeProjectMeaningReceipt({
     vaultRoot: VAULT_ROOT,

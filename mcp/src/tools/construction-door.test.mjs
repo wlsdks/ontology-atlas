@@ -147,6 +147,46 @@ test('a build on an empty vault inside its repository reaches finalize without e
   assert.equal(finalized.ok, true);
 });
 
+/*
+ * The stage this guards: a builder wrote "`x` not read" for code one read away,
+ * finalized, and a reader asking about `x` got "not read". Every competency row
+ * here is partial, so only the unread symbol can refuse.
+ */
+test('finalize refuses a symbol a node says was not read until it is read and the node says what or why', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  writeFileSync(join(root, 'src', 'fees.mjs'), 'export function applyFee(amount) {\n  if (amount > 100) return amount * 0.9;\n  return amount;\n}\n');
+  const call = server(root);
+  const capability = (uncertainty) => `Charges an amount (src/charge.mjs:L2).\n\n## Includes\n- Charging.\n\n## Excludes\n- Refunds.\n\n## Uncertainty\n${uncertainty}\n`;
+  const created = await call('add_concepts', { concepts: [
+    { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
+    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, path: 'src/charge.mjs', body: capability('- `applyFee` was not read.') },
+  ] });
+  const mtime = Object.fromEntries(created.concepts.map((row) => [row.slug, row.mtime]));
+  await call('add_relation', { from: 'ledger', to: 'capabilities/charge', type: 'capabilities', why: 'Charging is the ledger\'s ability.' });
+  await call('connect_project_source', { projectSlug: 'ledger', rootPath: root, confirm: true });
+  const gap = (id) => ({ status: 'partial', answer: `The ${id} answer is partial.`, gap: 'The fixture leaves this open.', witnesses: { concepts: [], relations: [], evidence: [], paths: [] } });
+  const project = await call('get_concept', { slug: 'ledger' });
+  const patched = await call('patch_concept', {
+    slug: 'ledger',
+    expected_mtime: project.mtime,
+    body: `Ledger charges customers.\n\n${renderProjectCompetencyMarkdown(Object.fromEntries(['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => [id, gap(id)])))}`,
+  });
+
+  const refused = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime });
+  assert.match(refused.error ?? '', /finalize_project_meaning blocked: 1 symbol the vault says was not read is in this repository/);
+  const call_ = /analyze_repo_structure\((\{.*?\})\)/.exec(refused.error);
+  assert.deepEqual(JSON.parse(call_[1]).sourceReads, [{ path: 'src/fees.mjs', symbol: 'applyFee' }]);
+
+  const [, stillSaid] = await call.session([['analyze_repo_structure', JSON.parse(call_[1])], ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime }]]);
+  assert.match(stillSaid.error ?? '', /Read, still said unread: applyFee \(src\/fees\.mjs:L1, said unread in capabilities\/charge\)/);
+
+  await call('patch_concept', { slug: 'capabilities/charge', expected_mtime: mtime['capabilities/charge'], body: capability('- `applyFee` still cannot be read in full because the fee table loads at run time.') });
+  const [, finalized] = await call.session([['analyze_repo_structure', JSON.parse(call_[1])], ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime }]]);
+  assert.equal(finalized.error, undefined, finalized.error);
+  assert.equal(finalized.ok, true);
+});
+
 test('a relation write never hands out an mtime that would let a body write pass over an unread edit', async (t) => {
   const root = repository();
   t.after(() => rmSync(root, { recursive: true, force: true }));

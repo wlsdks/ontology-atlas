@@ -25,6 +25,7 @@ import { withoutSpans } from '../analyze/text.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
 import { decidesLine } from '../evidence-search/symbol-context.mjs';
 import { readPath } from './session-reads.mjs';
+import { measureUnreadClaims, unreadClaimParts } from './unread-claims.mjs';
 
 /** Wording a node uses for a subject it only outlined; read under `## Uncertainty` alone. */
 const OUTLINED_ONLY = /\b(?:outlined only|only outlined|outline only|outlined,? (?:but )?(?:the )?(?:body |bodies )?(?:not read|unread)|bod(?:y|ies) (?:was |were |is |are )?(?:not read|unread)|unread|not opened)\b/i;
@@ -559,6 +560,7 @@ export function measureBuildDepth(docs, repo, reads) {
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
+  const unread = measureUnreadClaims(docs, repo, reads);
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
@@ -576,6 +578,7 @@ export function measureBuildDepth(docs, repo, reads) {
   if (repo && roles && roles.unplaced.length > 0) {
     parts.push(`Roles: ${roles.unplaced.length} of the ${roles.candidates} implementation roles that two or more capabilities' reads pass through have no element: ${listedAll(roles.unplaced, roleLabel)}. Next: ${ROLE_REPAIR}.`);
   }
+  parts.push(...unreadClaimParts(unread));
   if (repo && capabilities.length > 1 && abilityEdges.alone.length > 0) {
     parts.push(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
   }
@@ -585,6 +588,7 @@ export function measureBuildDepth(docs, repo, reads) {
     rules,
     abilityEdges,
     roles,
+    unread,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
