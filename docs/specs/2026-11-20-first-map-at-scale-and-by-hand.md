@@ -47,15 +47,16 @@ The manual surface was inventoried the same day: 13 entry points across three pl
 
 ### A large repository
 
-4. When the flat map does not fit, the first response lists areas, splitting the largest folder while rows remain, so every product area is named. Ability rows go to product-facing kinds first and to every area before any area's second share.
+4. When the flat map does not fit, the first response lists areas, splitting the largest folder while rows remain, so every product area is named. Ability rows go to product-facing kinds first and to every area before any area's second share; a module API or a lone export is listed only for an area with no other row, and a folder of view files is not a family.
+4a. The first build of such a repository is bounded: it puts every domain on the map and reads the deciding operation of each domain's main ability. A capability nobody read states no rule and says so, and the project's Uncertainty lists the areas not opened. The agent panel then offers one next step that reads the next eight unread capabilities per press.
 5. Migration history is left out and counted, like tests.
 6. Writes and validation name the areas no node falls in, with the call that opens the next one.
-7. Java and Kotlin join import inference, and JVM endpoints, executables, scheduled work and class families become ability rows.
+7. Java and Kotlin join import inference as file edges, and JVM endpoints, executables, scheduled work and class families become ability rows, a family named by its base type. `supportedLanguages` is unchanged: symbol reads for Java and Kotlin stay line reads.
 
 ### Cost of a build
 
 8. The map the first call builds is reused until a source file changes; each path question is asked of the disk once per inference pass.
-9. `finalize_project_meaning` takes the five answers as arguments, renders the section itself and measures the evidence it is shown inside the connected root, in one call.
+9. `finalize_project_meaning` takes the five answers as arguments, renders the section itself and measures the evidence it is shown inside the connected root, in one call. With `answers` it replaces only that section in the body as it is on disk, so an older `expected_mtime` is accepted; the argument description names the witness lists each question needs.
 
 ### The agent panel
 
@@ -73,14 +74,18 @@ The manual surface was inventoried the same day: 13 entry points across three pl
 
 - Drag-to-connect on the canvas.
 - A build orchestrated by the app across several agent sessions.
-- Trimming `validate_vault` and vault loading, which two open pull requests change.
+- Trimming `validate_vault` and vault loading, which two open pull requests change. One message is shortened here because it repeats per edge: the unwitnessed dependency warning, from about 1,000 characters to about 400.
 
 ## Acceptance
 
-- The three builds are repeated on the integration branch with the same script and model. Each survey is accepted by the host; the Python and Java maps name every product area the survey lists or record it as unopened; cited lines still all exist; cost per written node does not rise.
+- The three builds are repeated on the integration branch with the same script and model. Each survey is accepted by the host; the Python and Java maps name every product area the survey lists or record it as unopened; cited lines still all exist; cost per written node does not rise; the first `finalize_project_meaning` call is not refused for its mtime.
+- One bounded second request on a finished build reads the capabilities it names and cites lines that exist.
 - An independent reader checks a sample of dependency edges and rules in each vault against the clone.
 - The manual flow passes `tests/e2e/map/build-by-hand.spec.ts`, and the agent panel states are captured in dark mode at two widths.
 
 ## Revisions
 
 - 2026-11-20: first version.
+- 2026-11-20: decision 4a added. Two builds whose guidance asked for one long turn (about 50 calls) were cut short by the builder itself, which wrote that it used about a quarter of the plan; a second request naming eight capabilities was completed in 13 calls and 75 s with every rule cited. The first build is therefore bounded and the depth is a repeatable next step.
+- 2026-11-20: decisions 4, 7 and 9 narrowed from measurements. View folders made 44 family rows on the TypeScript client and module APIs 26 rows on the Python platform, all counted as abilities not placed. Six JVM families in one package shared one name. Every build lost one to three finalize calls to the mtime guard and to witness lists the description never named.
+- 2026-11-20: a reopened folder kept the camera framing of the bundled example (half size at 1280 by 1080, domain titles overlapping); the fix and `tests/e2e/map/first-map-fit.spec.ts` ride this work because a first build ends on that screen.
