@@ -1186,7 +1186,7 @@ fn a_closing_line_that_cannot_be_written_is_reported_not_dropped() {
     let closed = run.finish(RunEnd::Complete);
     holder.join().unwrap();
     assert!(
-        matches!(&closed, Err(EmbedError::AuditBlocked(detail)) if detail.starts_with("audit-log-busy")),
+        matches!(&closed, Err(EmbedError::AuditBlocked(detail)) if detail == "audit-blocked:audit-log-busy"),
         "{closed:?}"
     );
     std::fs::remove_dir_all(&vault).ok();

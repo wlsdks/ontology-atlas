@@ -4,6 +4,7 @@
 // another send waits for it, within a bound, instead of being lost.
 
 use super::super::local_endpoint::LOCAL_PROVIDER;
+use super::super::AUDIT_BLOCKED_PREFIX;
 use super::{BuildPlan, EmbedError, LocalRunner, Sent};
 use crate::llm_audit::{
     self, AuditDownload, AuditDraft, AuditEmbedRun, AuditOutcome, AuditReservation, AuditScope,
@@ -93,7 +94,7 @@ fn draft(runner: &LocalRunner, line: &Line<'_>) -> AuditDraft {
 }
 
 fn blocked(error: String) -> EmbedError {
-    EmbedError::AuditBlocked(error)
+    EmbedError::AuditBlocked(format!("{AUDIT_BLOCKED_PREFIX}{error}"))
 }
 
 /// Retries only while another send holds the log, with a growing pause, until
@@ -105,15 +106,17 @@ fn reserve_waiting(
 ) -> Result<AuditReservation, EmbedError> {
     let deadline = Instant::now() + wait;
     let mut pause = Duration::from_millis(10);
+    let busy = format!("{AUDIT_BLOCKED_PREFIX}audit-log-busy");
     loop {
-        match llm_audit::reserve(vault_dir, make()) {
+        let error = match llm_audit::reserve(vault_dir, make()) {
             Ok(reservation) => return Ok(reservation),
-            Err(error) if error.starts_with("audit-log-busy") && Instant::now() < deadline => {
-                std::thread::sleep(pause.min(deadline.saturating_duration_since(Instant::now())));
-                pause = (pause * 2).min(Duration::from_millis(250));
-            }
-            Err(error) => return Err(blocked(error)),
+            Err(error) => format!("{AUDIT_BLOCKED_PREFIX}{error}"),
+        };
+        if !error.starts_with(&busy) || Instant::now() >= deadline {
+            return Err(EmbedError::AuditBlocked(error));
         }
+        std::thread::sleep(pause.min(deadline.saturating_duration_since(Instant::now())));
+        pause = (pause * 2).min(Duration::from_millis(250));
     }
 }
 
