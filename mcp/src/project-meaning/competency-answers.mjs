@@ -19,6 +19,8 @@ const RELATION_TYPE = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 /** A line the section parser would read as a witness row or a heading, not as answer prose. */
 const STRUCTURAL_LINE = /^(?:#|- [A-Z][A-Za-z ]*:)/;
 const LINE_CITE_SUFFIX = /^(.+):L\d+(?:-L?\d+)?$/;
+/** Witnesses one row may list per field; a row needing more names its family node instead. */
+export const COMPETENCY_ROW_WITNESSES_MAX = 50;
 
 function evidenceProblem(value) {
   if (typeof value === 'string' && !value.startsWith('source:')) {
@@ -35,6 +37,9 @@ function listProblems(row, field, label, valueProblem) {
   const values = row[field];
   if (values === undefined) return [];
   if (!Array.isArray(values)) return [`${label}.${field} must be an array`];
+  if (values.length > COMPETENCY_ROW_WITNESSES_MAX) {
+    return [`${label}.${field} lists ${values.length}; keep at most ${COMPETENCY_ROW_WITNESSES_MAX}`];
+  }
   return values.flatMap((value, index) => {
     const problem = valueProblem(value);
     return problem ? [`${label}.${field}[${index}]: ${problem}`] : [];

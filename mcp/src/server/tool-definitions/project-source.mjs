@@ -1,4 +1,5 @@
 import { MEANING_COMPETENCY_QUESTIONS } from '../../meaning/meaning-assessment.mjs';
+import { COMPETENCY_ROW_WITNESSES_MAX } from '../../project-meaning/competency-answers.mjs';
 import {
   NON_BLANK_MULTILINE_TEXT_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
@@ -52,9 +53,10 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
             id: { type: 'string', enum: MEANING_COMPETENCY_QUESTIONS.map(({ id }) => id) },
             status: { type: 'string', enum: ['answered', 'partial', 'visible-gap'] },
             answer: { ...NON_BLANK_MULTILINE_TEXT_SCHEMA, description: 'Plain sentences; no heading and no "- Label:" line.' },
-            concepts: { type: 'array', items: NON_BLANK_STRING_SCHEMA, description: 'Slugs inside this project.' },
+            concepts: { type: 'array', maxItems: COMPETENCY_ROW_WITNESSES_MAX, items: NON_BLANK_STRING_SCHEMA, description: 'Slugs inside this project.' },
             relations: {
               type: 'array',
+              maxItems: COMPETENCY_ROW_WITNESSES_MAX,
               items: {
                 type: 'object',
                 properties: { from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA, type: NON_BLANK_STRING_SCHEMA },
@@ -65,10 +67,11 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
             },
             evidence: {
               type: 'array',
+              maxItems: COMPETENCY_ROW_WITNESSES_MAX,
               items: NON_BLANK_STRING_SCHEMA,
               description: 'Repository-relative files or folders, such as `README.md`, or a pinned `source:<path>#L<a>-L<b>@sha256:<64 hex>`.',
             },
-            paths: { type: 'array', items: NON_BLANK_STRING_SCHEMA, description: 'Repository-relative files or folders.' },
+            paths: { type: 'array', maxItems: COMPETENCY_ROW_WITNESSES_MAX, items: NON_BLANK_STRING_SCHEMA, description: 'Repository-relative files or folders.' },
             gap: nonBlankStringSchema('What is missing, in one line; required unless status is answered.'),
           },
           required: ['id', 'status', 'answer'],
