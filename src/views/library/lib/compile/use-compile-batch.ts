@@ -39,6 +39,13 @@ function writeSession(key: string, next: BatchSession): void {
   for (const listener of listeners) listener();
 }
 
+/** A press whose turn never ran sent nothing: its sources wait where they were. */
+function abandon(key: string): void {
+  const session = readSession(key);
+  if (session.inFlight.length === 0 || session.started) return;
+  writeSession(key, { ...session, inFlight: [], started: false });
+}
+
 function settle(key: string, sources: readonly LibrarySourceRow[]): void {
   const session = readSession(key);
   if (session.inFlight.length === 0) return;
@@ -57,7 +64,10 @@ export interface UseCompileBatchArgs {
   folderKey: string | null;
   /** Sources per request: `COMPILE_BATCH_SIZE`, or the local runner's `COMPILE_SOURCES_PER_TURN`. */
   size?: number;
-  /** True while a Compile turn runs. Its fall back to false, after `begin`, settles the request. */
+  /**
+   * True while a Compile turn runs. Its fall back to false, after `begin`, settles the request:
+   * the sources it named that still wait become returned, whether the turn completed or was stopped.
+   */
   running: boolean;
 }
 
@@ -72,7 +82,10 @@ export interface CompileBatchState {
   returned: number;
   /** Call on press: marks `targets` in flight and returns them, for `buildCompileBrief({ sources })`. */
   begin: () => readonly LibrarySourceRow[];
-  /** Settles the request in flight now, for a turn that failed to start. */
+  /**
+   * For a press whose turn never started (the agent refused or threw): drops the request without
+   * marking anything returned. A turn that did run is settled by `running` falling, not by this.
+   */
   finish: () => void;
 }
 
@@ -109,7 +122,7 @@ export function useCompileBatch({
     return targets;
   }, [batch.targets, key, running]);
 
-  const finish = useCallback(() => settle(key, sources), [key, sources]);
+  const finish = useCallback(() => abandon(key), [key]);
 
   return {
     targets: batch.targets,
