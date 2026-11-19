@@ -33,7 +33,6 @@ import {
   readDocIfPresent,
   requireNodeNotReservedForHuman,
   requireValidFrontmatterPatch,
-  universalQuoter,
 } from './vault-nodes.mjs';
 
 /** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
@@ -117,7 +116,6 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     ...missing.map((k) => `expected field "${k}" missing for kind "${kind}"`),
     ...(duplicateWarning ? [duplicateWarning] : []),
     ...(partialLocaleWarning ? [partialLocaleWarning] : []),
-    ...(options.quoter ?? universalQuoter()).quote(body, { body: true }),
   ];
   return {
     ok: true,
@@ -159,7 +157,6 @@ function addConceptsBatch({ concepts }) {
     ...vaultLocaleCodes(loadVaultDocs(VAULT_ROOT)),
     ...concepts.flatMap((spec) => localeLabelCodes(normalizeLocaleLabels(spec?.labels))),
   ]);
-  const quoter = universalQuoter();
   const results = concepts.map((spec, index) => {
     let slug = '';
     try {
@@ -191,7 +188,7 @@ function addConceptsBatch({ concepts }) {
         };
       }
       if (slug) seenInBatch.set(slug, index);
-      const result = addConcept(spec, { includePostWriteMaintenance: false, vaultLocales, quoter });
+      const result = addConcept(spec, { includePostWriteMaintenance: false, vaultLocales });
       // Advisory warning when a node already landed in this batch has the same
       // normalised title, catching one concept split into two nodes without a vault load.
       if (result.ok) {
@@ -264,14 +261,12 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
     body,
     expectedMtime: typeof expected_mtime === 'number' ? expected_mtime : undefined,
   });
-  const warnings = universalQuoter().quote(body, { body: true });
   return {
     ok: true,
     slug,
     filePath,
     changed: true,
     mtime: statSync(filePath).mtimeMs,
-    ...(warnings.length > 0 ? { warnings } : {}),
     // Say when this write gave identity (`uid:`) to a hand-authored node, so a person
     // knows why it appeared.
     ...(mintedUid

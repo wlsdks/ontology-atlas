@@ -116,7 +116,7 @@ export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element 
  * members it read. A symbol read of a family member carries `family`, the
  * member count and how many this session read.
  */
-export const FAMILY_SCOPE_RULE_EN = 'A sentence about a family (plugins, transforms, brokers, handlers) says how many members were read against the count found ("2 of at least 16 read") or speaks only for the member read: never "every", "each", "all" or "they" unless every member was read. A symbol read of a member carries `family` with that count, a floor: a member written in a way the server cannot follow is not in it. What the unread members do is an `## Uncertainty` line, not part of the definition. A body or `why` sentence that starts from every, each, all, both or only about a family read in part comes back in `warnings` with the count and the repair; nothing is refused.';
+export const FAMILY_SCOPE_RULE_EN = 'A sentence about a family (plugins, transforms, brokers, handlers) says how many members were read against the count found ("2 of at least 16 read") or speaks only for the member read: never "every", "each", "all" or "they" unless every member was read. A symbol read of a member carries `family` with that count, a floor: a member written in a way the server cannot follow is not in it. What the unread members do is an `## Uncertainty` line, not part of the definition.';
 
 export const ELEMENT_NAMING_RULE_BATCH_EN = `Rows whose \`title\` is a bare file path follow the same rule as \`add_concept\` above. Prefer one capability node covering a directory plus a short \`elements:\` list over one row per file, unless each file's role differs in a stated sentence.`;
 

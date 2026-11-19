@@ -51,24 +51,7 @@ import {
 } from 'node:path';
 
 /** Each symbol read that belongs to a family gets one line saying how many members the analysed folder holds and how many this session read. */
-/** What a follow-up read repeats from this call so it reads the same folder the same way. */
-function followUpArguments(rootPath, ignore) {
-  return { ...(rootPath ? { rootPath } : {}), ...(ignore?.length ? { ignore } : {}) };
-}
-
-/** A deciding caller this session has already been served needs no call to read it. */
-function dropReadDecidingCalls(target, sourceEvidence) {
-  const reads = sessionReads(target);
-  for (const row of sourceEvidence.rows) {
-    const call = row.decidingNextCall?.arguments.sourceReads[0];
-    const site = row.callers?.[0];
-    if (!call || !site) continue;
-    if ((reads.get(site.path) ?? []).some((range) => range.startLine <= site.line && site.line <= range.endLine)) delete row.decidingNextCall;
-  }
-}
-
 function noteFamilies(target, sourceEvidence, ignore) {
-  dropReadDecidingCalls(target, sourceEvidence);
   try {
     noteReadFamilies(sourceEvidence, { root: target, ignore: ignore ?? [], reads: sessionReads(target) });
   } catch {
@@ -96,7 +79,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   // Reads without a proposal return the reads alone: the map was already sent once,
   // and repeating it on every outline call cost more than the outlines.
   if (sourceOnly || (sourceReads !== undefined && !reviewing)) {
-    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore, callArguments: followUpArguments(rootPath, ignore) });
+    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore });
     recordSourceEvidence(target, sourceEvidence);
     noteFamilies(target, sourceEvidence, ignore);
     return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
@@ -114,7 +97,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   const sourceBefore = proposal == null ? undefined : inspectProjectSource(target).fingerprint;
   const sourceEvidence = sourceReads === undefined
     ? undefined
-    : readSourceEvidence(target, sourceReads, { ignore, callArguments: followUpArguments(rootPath, ignore) });
+    : readSourceEvidence(target, sourceReads, { ignore });
   if (sourceEvidence) {
     recordSourceEvidence(target, sourceEvidence);
     noteFamilies(target, sourceEvidence, ignore);

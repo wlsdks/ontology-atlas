@@ -16,8 +16,6 @@
 
 import { calleesOf, callsOnLine, enclosingClass } from './callees.mjs';
 import { callSitesOf } from './declaration-index.mjs';
-import { repoText } from '../analyze/repo-text.mjs';
-import { continuationOf, endKnown } from './read-continuation.mjs';
 
 /**
  * 6 KiB holds the three to five deciding parts measured on the trial
@@ -246,32 +244,11 @@ function qualified(file, symbol, line) {
  * @param {(path: string) => ({ lines: string[], declarations: object[], sha256: string } | null)} input.open
  * @param {number} input.budget bytes this read may add
  */
-/**
- * The read that returns the first caller around its call: the whole caller when
- * it fits one range, else the range that ends a little past the call site.
- */
-function callerRead(row, callArguments) {
-  const start = row.caller.line;
-  const end = declarationEnd(row.file.lines, row.file.declarations, row.caller);
-  const site = row.sites[0];
-  const startLine = end - start + 1 <= 200 ? start : Math.max(start, Math.min(site + 20, end) - 199);
-  const maxLines = Math.min(200, end - startLine + 1);
-  return {
-    tool: 'analyze_repo_structure',
-    arguments: {
-      ...callArguments,
-      sourceOnly: true,
-      sourceReads: [{ path: row.file.path, startLine, maxLines, ...(row.file.sha256 ? { expectedSha256: row.file.sha256 } : {}) }],
-    },
-  };
-}
-
-export function symbolContext({ rootPath, ignore, path, lines, declarations, outlineTruncated = false, declaration, bodyEnd, callees, open, files, budget, callArguments = {} }) {
+export function symbolContext({ rootPath, ignore, path, lines, declarations, declaration, bodyEnd, callees, open, files, budget }) {
   const candidates = [];
   const bodyDecides = decidingCount(lines.slice(declaration.line - 1, bodyEnd)) > 0;
   const own = declaration.name.split('.').pop();
-  // `span` is the whole declaration a part is cut from, when the part is a window of it (a caller's guard).
-  const add = (role, file, symbol, startLine, endLine, bonus = 0, { via = null, cap = Infinity, byName = false, span = null } = {}) => {
+  const add = (role, file, symbol, startLine, endLine, bonus = 0, { via = null, cap = Infinity, byName = false } = {}) => {
     const cut = Math.min(endLine, startLine + SYMBOL_CONTEXT_LIMITS.partLines - 1);
     const text = slice(file.lines, startLine, cut);
     const deciding = Math.min(cap, decidingCount(file.lines.slice(startLine - 1, cut)));
@@ -279,15 +256,11 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, out
     if (role === 'implementation' && deciding === 0) return;
     const score = deciding * 2 + bonus;
     if (score <= 0 || text.length === 0) return;
-    const whole = span ?? { startLine, endLine };
-    const declared = file.declarations.find((row) => row.line === whole.startLine);
-    // Where the outline may have missed what ends the declaration, its end is not claimed.
-    const known = !declared || endKnown({ lines: file.lines, declarations: file.declarations, truncated: Boolean(file.outlineTruncated), declaration: declared, end: whole.endLine });
-    const candidate = { role, path: file.path, symbol: qualified(file, symbol, startLine), startLine, endLine: cut, more: cut < endLine ? endLine : null, span: known ? whole : null, text, sha256: file.sha256, score, via, byName };
+    const candidate = { role, path: file.path, symbol: qualified(file, symbol, startLine), startLine, endLine: cut, more: cut < endLine ? endLine : null, text, sha256: file.sha256, score, via, byName };
     candidates.push(candidate);
     return candidate;
   };
-  const self = { path, lines, declarations, outlineTruncated, sha256: open(path)?.sha256 };
+  const self = { path, lines, declarations, sha256: open(path)?.sha256 };
 
   // The owner: its header (a class docstring, fields with defaults) and its constructors.
   const owner = ownerOf(lines, declarations, declaration);
@@ -346,9 +319,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, out
           if (indentAt(row.file.lines, line) < siteIndent && decidesLine(row.file.lines[line - 1] ?? '')) numbers.add(line);
         }
       }
-      for (const run of runs([...numbers].sort((a, b) => a - b))) {
-        add('caller', row.file, qualified(row.file, row.caller.name, row.caller.line), run.startLine, run.endLine, bonus, { span: { startLine: start, endLine: end } });
-      }
+      for (const run of runs([...numbers].sort((a, b) => a - b))) add('caller', row.file, qualified(row.file, row.caller.name, row.caller.line), run.startLine, run.endLine, bonus);
     }
   }
 
@@ -446,11 +417,6 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, out
     }
     bytes += size;
     taken.push(candidate);
-    // The owner's header is its head by design; any other part cut from a longer declaration says where it ends.
-    const continuation = candidate.role === 'owner' || !candidate.span ? null : continuationOf({
-      path: candidate.path, name: candidate.symbol, served: { startLine: candidate.startLine, endLine: candidate.endLine },
-      declaration: candidate.span, sha256: candidate.sha256, callArguments,
-    });
     parts.push({
       role: candidate.role,
       path: candidate.path,
@@ -462,7 +428,6 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, out
       ...(candidate.via ? { via: candidate.via } : {}),
       ...(candidate.byName ? { byName: true } : {}),
       ...(candidate.more ? { next: { path: candidate.path, startLine: candidate.endLine + 1, maxLines: Math.min(200, candidate.more - candidate.endLine) } } : {}),
-      ...(continuation ?? {}),
     });
   }
 
@@ -477,13 +442,11 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, out
   parts.sort((a, b) => order[a.role] - order[b.role] || a.path.localeCompare(b.path) || a.startLine - b.startLine);
 
   let deciding = null;
-  let decidingNextCall = null;
   const callerShown = parts.some((part) => part.role === 'caller');
   if (!callerShown && callers.length > 0 && (!bodyDecides || callers.length > SYMBOL_CONTEXT_LIMITS.callers)) {
-    const named = callers.slice(0, 4).map((row) => `${repoText(row.name, 80)} (${repoText(row.path)}:L${row.line})`).join(', ');
+    const named = callers.slice(0, 4).map((row) => `${row.name} (${row.path}:L${row.line})`).join(', ');
     const first = callers[0];
-    deciding = `${bodyDecides ? 'This body decides part of it; when it runs at all' : 'This body holds no condition; the deciding condition'} is in its caller${callers.length > 1 ? 's' : ''} ${named}${total > callers.length ? ` and ${total - callers.length} more call sites` : ''}. Read it: ${JSON.stringify({ path: repoText(first.path), symbol: repoText(first.name, 80) })}; decidingNextCall returns its lines.`;
-    decidingNextCall = callerRead(callerRows[0], callArguments);
+    deciding = `${bodyDecides ? 'This body decides part of it; when it runs at all' : 'This body holds no condition; the deciding condition'} is in its caller${callers.length > 1 ? 's' : ''} ${named}${total > callers.length ? ` and ${total - callers.length} more call sites` : ''}. Read it: {"path":"${first.path}","symbol":"${first.name}"}.`;
   }
-  return { parts, bytes, omitted: omitted.slice(0, 6), callers: callers.slice(0, 6), callerSites: total, deciding, decidingNextCall };
+  return { parts, bytes, omitted: omitted.slice(0, 6), callers: callers.slice(0, 6), callerSites: total, deciding };
 }

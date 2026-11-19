@@ -13,7 +13,6 @@ import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
 import { calleesOf } from './callees.mjs';
 import { productFiles } from './declaration-index.mjs';
-import { continuationOf, enclosingDeclaration, endKnown } from './read-continuation.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
 
@@ -300,8 +299,7 @@ function contextOpener(rootPath, ignore, hooks) {
       if (!stable.reason && !stable.bytes.includes(0)) {
         try {
           const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(stable.bytes);
-          const outline = outlineSource(text, path);
-          file = { path, lines: completeLines(text), declarations: outline.declarations, outlineTruncated: outline.truncated, sha256: sha256(stable.bytes) };
+          file = { path, lines: completeLines(text), declarations: outlineSource(text, path).declarations, sha256: sha256(stable.bytes) };
         } catch {
           file = null;
         }
@@ -374,37 +372,14 @@ function readOne(rootPath, selector, ignore, hooks) {
       path: selector.path,
       lines,
       declarations: outline.declarations,
-      outlineTruncated: outline.truncated,
       declaration,
       bodyEnd: endLine,
       callees,
       open,
       files: hooks.files,
       budget: contextBudget(hooks, returnedBytes),
-      callArguments: hooks.callArguments,
     })
     : null;
-  // Less than the whole declaration: a symbol read cut at its line or byte limit, or a range that stops inside one.
-  let continuation = null;
-  if (declaration && endKnown({ lines, declarations: outline.declarations, truncated: outline.truncated, declaration, end: symbolEnd })) {
-    continuation = continuationOf({
-      path: selector.path, name: selector.symbol, served: { startLine, endLine },
-      declaration: { startLine, endLine: symbolEnd }, sha256: fullFileSha256, callArguments: hooks?.callArguments,
-    });
-  } else if (hasMore) {
-    const rangeOutline = outlineSource(text, selector.path);
-    const declarations = rangeOutline.declarations;
-    const end = (candidate) => declarationEnd(lines, declarations, candidate);
-    const inside = enclosingDeclaration(declarations, startLine, (line) => indentAt(lines, line), end);
-    if (inside && end(inside) > endLine && endKnown({ lines, declarations, truncated: rangeOutline.truncated, declaration: inside, end: end(inside) })) {
-      // A method is named with its class, as a symbol read names it.
-      const owner = inside.name.includes('.') ? null : enclosingDeclaration(declarations, inside.line, (line) => indentAt(lines, line), end, { before: true });
-      continuation = continuationOf({
-        path: selector.path, name: owner?.kind === 'class' ? `${owner.name}.${inside.name}` : inside.name, served: { startLine, endLine }, afterOnly: true,
-        declaration: { startLine: inside.line, endLine: end(inside) }, sha256: fullFileSha256, callArguments: hooks?.callArguments,
-      });
-    }
-  }
   return {
     status: 'read',
     path: selector.path,
@@ -427,9 +402,7 @@ function readOne(rootPath, selector, ignore, hooks) {
       ...(context.omitted.length > 0 ? { contextOmitted: context.omitted } : {}),
       ...(context.callers.length > 0 ? { callers: context.callers } : {}),
       ...(context.deciding ? { deciding: context.deciding } : {}),
-      ...(context.decidingNextCall ? { decidingNextCall: context.decidingNextCall } : {}),
     } : {}),
-    ...(continuation ?? {}),
     // A symbol read continues inside its own declaration only; past it is another symbol.
     next: declaration
       ? (endLine < symbolEnd ? { path: selector.path, startLine: endLine + 1, maxLines: Math.min(SOURCE_READ_LIMITS.maxLines, symbolEnd - endLine), expectedSha256: fullFileSha256 } : null)
@@ -499,7 +472,7 @@ function setSerializedBytes(packet) {
 export function readSourceEvidence(
   rootPath,
   selectors,
-  { ignore: extraIgnore = [], onBeforeOpen, onDescriptorRead, callArguments = {} } = {},
+  { ignore: extraIgnore = [], onBeforeOpen, onDescriptorRead } = {},
 ) {
   validateSourceReadSelectors(selectors);
   const ignore = new Set([...DEFAULT_IGNORE, ...extraIgnore]);
@@ -518,7 +491,7 @@ export function readSourceEvidence(
   const files = () => (walked ??= productFiles(rootPath, extraIgnore));
   for (const [index, selector] of selectors.entries()) {
     let row = readOne(rootPath, selector, ignore, {
-      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open, files, callArguments,
+      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open, files,
       remainingBytes: SOURCE_READ_LIMITS.aggregateTextBytes - packet.totalReturnedBytes,
       readsLeft: selectors.slice(index).filter((candidate) => !isOutline(candidate)).length,
     });
