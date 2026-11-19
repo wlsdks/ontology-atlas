@@ -1051,17 +1051,23 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.ok?.type, "boolean");
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.warnings?.items?.type, "string");
     assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.receivedValue?.type, "string");
-    assert.equal(addConcepts?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.mtime?.type, "number");
+    assert.equal(addConcepts?.outputSchema?.properties?.concepts?.items?.properties?.filePath, undefined);
+    assert.equal(addConcepts?.outputSchema?.properties?.findings?.items?.type, "string");
+    assert.equal(addConcepts?.outputSchema?.properties?.coverage?.type, "string");
+    assert.equal(addConcepts?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const addConcept = findTool("add_concept");
     assert.equal(addConcept?.outputSchema?.type, "object");
-    assert.deepEqual(addConcept?.outputSchema?.required, ["ok", "slug", "filePath", "changed"]);
+    assert.deepEqual(addConcept?.outputSchema?.required, ["ok", "slug", "changed", "mtime"]);
     assert.equal(addConcept?.outputSchema?.additionalProperties, false);
     assert.equal(addConcept?.outputSchema?.properties?.ok?.type, "boolean");
     assert.equal(addConcept?.outputSchema?.properties?.slug?.type, "string");
-    assert.equal(addConcept?.outputSchema?.properties?.filePath?.type, "string");
+    assert.equal(addConcept?.outputSchema?.properties?.mtime?.type, "number");
     assert.equal(addConcept?.outputSchema?.properties?.changed?.type, "boolean");
     assert.equal(addConcept?.outputSchema?.properties?.warnings?.items?.type, "string");
-    assert.equal(addConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(addConcept?.outputSchema?.properties?.findings?.items?.type, "string");
+    assert.equal(addConcept?.outputSchema?.properties?.filePath, undefined);
+    assert.equal(addConcept?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const addRelations = findTool("add_relations");
     assert.equal(addRelations?.outputSchema?.type, "object");
     assert.deepEqual(addRelations?.outputSchema?.required, ["relations"]);
@@ -1071,7 +1077,9 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.ok?.type, "boolean");
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.alreadyExists?.type, "boolean");
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.receivedValue?.type, "string");
-    assert.equal(addRelations?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.key, undefined);
+    assert.equal(addRelations?.outputSchema?.properties?.findings?.items?.type, "string");
+    assert.equal(addRelations?.outputSchema?.properties?.postWriteMaintenance, undefined);
     assert.equal(addRelations?.inputSchema?.properties?.relations?.items?.properties?.why?.type, "string");
     assert.equal(addRelations?.inputSchema?.properties?.relations?.items?.properties?.why?.maxLength, 300);
     const addRelation = findTool("add_relation");
@@ -1083,16 +1091,20 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(addRelation?.outputSchema?.properties?.to?.type, "string");
     assert.equal(addRelation?.outputSchema?.properties?.type?.type, "string");
     assert.equal(addRelation?.outputSchema?.properties?.alreadyExists?.type, "boolean");
-    assert.equal(addRelation?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(addRelation?.outputSchema?.properties?.findings?.items?.type, "string");
+    assert.equal(addRelation?.outputSchema?.properties?.key, undefined);
+    assert.equal(addRelation?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const patchConcept = findTool("patch_concept");
     assert.equal(patchConcept?.outputSchema?.type, "object");
-    assert.deepEqual(patchConcept?.outputSchema?.required, ["ok", "slug", "filePath", "changed", "postWriteMaintenance"]);
+    assert.deepEqual(patchConcept?.outputSchema?.required, ["ok", "slug", "changed", "mtime"]);
     assert.equal(patchConcept?.outputSchema?.additionalProperties, false);
     assert.equal(patchConcept?.outputSchema?.properties?.ok?.type, "boolean");
     assert.equal(patchConcept?.outputSchema?.properties?.slug?.type, "string");
-    assert.equal(patchConcept?.outputSchema?.properties?.filePath?.type, "string");
+    assert.equal(patchConcept?.outputSchema?.properties?.mtime?.type, "number");
     assert.equal(patchConcept?.outputSchema?.properties?.changed?.type, "boolean");
-    assert.equal(patchConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(patchConcept?.outputSchema?.properties?.findings?.items?.type, "string");
+    assert.equal(patchConcept?.outputSchema?.properties?.filePath, undefined);
+    assert.equal(patchConcept?.outputSchema?.properties?.postWriteMaintenance, undefined);
     const renameConcept = findTool("rename_concept");
     assert.equal(renameConcept?.outputSchema?.type, "object");
     assert.deepEqual(renameConcept?.outputSchema?.required, [
@@ -1230,26 +1242,24 @@ await test("tools/list — each single-item tool description cross-references it
     assert.ok(addC && /add_concepts/.test(addC), "add_concept → add_concepts hint");
     assert.match(
       addCs ?? "",
-      /Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`/,
+      /Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`/,
       "add_concepts invalid-only batches are visibly non-writing",
     );
     assert.ok(addR && /add_relations/.test(addR), "add_relation → add_relations hint");
     assert.match(
       addR ?? "",
-      /Invalid relation `type`[\s\S]*no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata/,
+      /Invalid relation `type`[\s\S]*no `changed`, `alreadyExists`, or `findings` write metadata/,
       "add_relation invalid-type preflight is visibly non-writing",
     );
     assert.match(
       addRs ?? "",
-      /Invalid-only batches return no row-level `changed` \/ `alreadyExists` write metadata and no top-level `postWriteMaintenance`/,
+      /Invalid-only batches return no row-level `changed` \/ `alreadyExists` write metadata and no top-level `findings`/,
       "add_relations invalid-only batches are visibly non-writing",
     );
+    for (const toolName of ["add_concept", "add_concepts", "add_relation", "add_relations", "patch_concept"]) {
+      assert.match(findTool(toolName)?.description ?? "", /`findings`/, `${toolName} describes the findings on the nodes it wrote`);
+    }
     for (const toolName of [
-      "add_concept",
-      "add_concepts",
-      "add_relation",
-      "add_relations",
-      "patch_concept",
       "rename_concept",
       "merge_concepts",
       "delete_concept",
@@ -6944,8 +6954,10 @@ await test("add_concepts — batch write keeps order and returns partial results
     assert.equal(result.concepts.length, 4, "one concepts row per input");
     assert.equal(result.concepts[0].slug, "alpha");
     assert.equal(result.concepts[0].ok, true);
-    assert.equal(typeof result.concepts[0].filePath, "string");
+    assert.equal(typeof result.concepts[0].mtime, "number");
+    assert.equal(result.concepts[0].filePath, undefined, "no absolute path leaves the server");
     assert.equal(result.concepts[0].changed, true);
+    assert.equal(result.concepts[1].mtime, undefined, "a refused row carries no write metadata");
     assert.equal(result.concepts[1].slug, "exist");
     assert.equal(result.concepts[1].ok, false);
     assert.match(result.concepts[1].error, /already exists|exist/i);
@@ -6958,8 +6970,11 @@ await test("add_concepts — batch write keeps order and returns partial results
     assert.equal(result.concepts[3].slug, "gamma");
     assert.equal(result.concepts[3].ok, false);
     assert.match(result.concepts[3].error, /required|title/i);
-    assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch concept postWriteMaintenance");
-    assert.equal(result.concepts[0].postWriteMaintenance, undefined);
+    assert.equal(result.postWriteMaintenance, undefined);
+    assert.ok(result.findings.length > 0, "the dangling domain on the written rows is a finding");
+    for (const line of result.findings) {
+      assert.match(line, /"(alpha|beta)"/, "each finding is about a node this call wrote");
+    }
     const list = getCallParsed(responses, 3);
     const slugs = list.nodes.map((n) => n.slug).sort();
     assert.ok(slugs.includes("alpha"), "alpha land");
@@ -7984,9 +7999,9 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     assert.equal(result.relations.length, 6, "one relations row per input");
     assert.equal(result.relations[0].ok, true);
     assert.equal(result.relations[0].to, "c2");
-    // `contains` from a project to a capability is stored under the typed key.
-    assert.equal(result.relations[0].key, "capabilities");
+    // `contains` from a project to a capability is stored under the typed key, which the row's type names.
     assert.equal(result.relations[0].type, "capabilities");
+    assert.equal(result.relations[0].key, undefined);
     assert.equal(result.mtimes, undefined, "no row passed expected_mtime, so no mtime proves a read");
     assert.equal(result.relations[0].changed, true);
     assert.equal(result.relations[1].ok, true);
@@ -8010,8 +8025,11 @@ await test("add_relations — batch write keeps row order, sorts canonically and
     assert.match(result.relations[5].error, /Received: "depend_on"/i);
     assert.match(result.relations[5].error, /Did you mean "depends_on"\?/i);
     assert.equal(result.relations[5].suggestion, "depends_on");
-    assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch relation postWriteMaintenance");
-    assert.equal(result.relations[0].postWriteMaintenance, undefined);
+    assert.equal(result.postWriteMaintenance, undefined);
+    assert.equal(result.relations[3].changed, undefined, "a refused row carries no write metadata");
+    for (const line of result.findings ?? []) {
+      assert.match(line, /"p"/, "each finding is about the node this call wrote");
+    }
     const p = getCallParsed(responses, 3);
     assert.deepEqual(p.frontmatter.capabilities, ["c1", "c2"]);
     assert.equal(p.frontmatter.contains, undefined);
@@ -8319,7 +8337,13 @@ await test("patch_concept — a graph array patch is stored as a canonical set",
     const patched = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), patched);
     assert.equal(patched.changed, true);
-    assertPostWriteMaintenanceShape(patched.postWriteMaintenance, "patch_concept postWriteMaintenance");
+    assert.equal(typeof patched.mtime, "number");
+    assert.equal(patched.filePath, undefined, "no absolute path leaves the server");
+    assert.equal(patched.postWriteMaintenance, undefined);
+    assert.ok(patched.findings.length > 0, "the domains the patch names do not exist yet");
+    for (const line of patched.findings) {
+      assert.match(line, /"foo"/, "each finding is about the node this call wrote");
+    }
     const result = getCallParsed(responses, 3);
     assert.deepEqual(result.frontmatter.domains, ["domains/a", "domains/z"]);
     assert.deepEqual(result.frontmatter.dependencies, ["a", "b"]);
@@ -9159,11 +9183,12 @@ await test("add_relation — adding the same edge twice returns alreadyExists:tr
     assert.equal(first.ok, true);
     assert.equal(first.alreadyExists, undefined);
     assert.equal(first.changed, true);
-    assertPostWriteMaintenanceShape(first.postWriteMaintenance, "single relation postWriteMaintenance");
+    assert.equal(first.key, undefined);
+    assert.equal(first.postWriteMaintenance, undefined);
     assert.equal(second.ok, true);
     assert.equal(second.alreadyExists, true);
     assert.equal(second.changed, false);
-    assert.equal(second.postWriteMaintenance, undefined);
+    assert.equal(second.findings, undefined, "an edge that already existed wrote nothing to report on");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
