@@ -53,6 +53,10 @@ say is one line: `None — <reason>`. The spec covers the first slice only and
 stays under about 250 lines with at most eight acceptance criteria; a spec that
 needs more is two slices.
 
+The spec is committed. When it changes after the draft, including an owner
+decision, edit it and add a dated line to `## Revisions`; a reversal of its core
+is a new spec that names the old one in `supersedes`.
+
 - **Flow**: numbered steps, each "When <the person does X>, Atlas <does Y>",
   including one where the agent is wrong or the evidence is missing.
 - **States**: every row has a web cell and a macOS app cell, and every state the
