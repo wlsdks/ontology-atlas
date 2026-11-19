@@ -1,7 +1,7 @@
 /*
  * The family line as the server returns it: through `analyze_repo_structure`,
- * declared by its output schema, and counted across the repository root even
- * when the read is made with `rootPath` at one package.
+ * declared by its output schema, and counted only inside the folder the server
+ * was granted, even when that folder sits inside a larger repository.
  */
 
 import assert from 'node:assert/strict';
@@ -18,21 +18,19 @@ import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, '..', 'index.js');
 
-const plugin = (name) => `import { Plugin } from '../../core/src/plugin';\nexport class ${name} implements Plugin {\n  apply(token: string) {\n    if (!token) throw new Error('${name}: no token');\n    return true;\n  }\n}\n`;
+const plugin = (name, from) => `import { Plugin } from '${from}';\nexport class ${name} implements Plugin {\n  apply(token: string) {\n    if (!token) throw new Error('${name}: no token');\n    return true;\n  }\n}\n`;
 
+/** A repository whose `granted/` folder holds a plugin family; a sibling folder outside it holds one more member. */
 function repository() {
   const root = mkdtempSync(join(tmpdir(), 'atlas-read-family-door-'));
   const files = {
     'README.md': '# Release\n',
-    'package.json': '{"name":"release","private":true,"workspaces":["packages/*"]}',
-    'packages/core/package.json': '{"name":"core"}',
-    'packages/core/src/plugin.ts': 'export interface Plugin {\n  apply(token: string): boolean;\n}\n',
-    'packages/slack/package.json': '{"name":"slack"}',
-    'packages/slack/src/slack.ts': plugin('Slack'),
-    'packages/mail/package.json': '{"name":"mail"}',
-    'packages/mail/src/mail.ts': plugin('Mail'),
-    'packages/sms/package.json': '{"name":"sms"}',
-    'packages/sms/src/sms.ts': plugin('Sms'),
+    'package.json': '{"name":"release","private":true}',
+    'granted/package.json': '{"name":"tool"}',
+    'granted/src/plugin.ts': 'export interface Plugin {\n  apply(token: string): boolean;\n}\n',
+    'granted/src/slack.ts': plugin('Slack', './plugin'),
+    'granted/src/mail.ts': plugin('Mail', './plugin'),
+    'private/notes/plan.ts': plugin('UnannouncedBridge', '../../granted/src/plugin'),
   };
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -44,31 +42,43 @@ function repository() {
   return root;
 }
 
-test('a symbol read through the server carries its family, schema-valid, counted across the repository root', async () => {
+/** The structured answers of one server opened for `granted`, plus the tool's output schema. */
+async function answers(granted, vault, calls) {
+  const { responses } = await runJsonRpcProcess({
+    command: process.execPath, args: [serverEntry], timeoutMs: 30_000,
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: granted },
+    requests: [
+      { jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'read-family-door-test', version: '1' } } },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} },
+      ...calls.map((args, index) => ({ jsonrpc: '2.0', id: index + 2, method: 'tools/call', params: { name: 'analyze_repo_structure', arguments: args } })),
+    ],
+  });
+  const schema = responses.find(({ id }) => id === 1).result.tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema;
+  return { schema, results: calls.map((_, index) => responses.find(({ id }) => id === index + 2).result) };
+}
+
+test('a family is counted only inside the folder the server was granted, never in a folder above it', async () => {
   const root = repository();
   try {
-    const vault = join(root, 'atlas');
+    const granted = join(root, 'granted');
+    const vault = join(granted, 'atlas');
     mkdirSync(vault, { recursive: true });
-    const calls = [
-      { sourceOnly: true, sourceReads: [{ path: 'packages/slack/src/slack.ts', symbol: 'Slack.apply' }] },
-      { sourceOnly: true, rootPath: join(root, 'packages', 'mail'), sourceReads: [{ path: 'src/mail.ts', symbol: 'Mail.apply' }] },
-    ];
-    const { responses } = await runJsonRpcProcess({
-      command: process.execPath, args: [serverEntry], timeoutMs: 30_000,
-      env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: root },
-      requests: [
-        { jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'read-family-door-test', version: '1' } } },
-        { jsonrpc: '2.0', method: 'notifications/initialized' },
-        { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} },
-        ...calls.map((args, index) => ({ jsonrpc: '2.0', id: index + 2, method: 'tools/call', params: { name: 'analyze_repo_structure', arguments: args } })),
-      ],
-    });
-    const schema = responses.find(({ id }) => id === 1).result.tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema;
-    const [atRoot, atPackage] = calls.map((_, index) => responses.find(({ id }) => id === index + 2).result.structuredContent);
-    for (const answer of [atRoot, atPackage]) assert.deepEqual(schemaErrors(schema, answer), []);
-    assert.match(atRoot.sourceEvidence.rows[0].family, /^This family has 3 members: the classes whose header names `Plugin` \(packages\/core\/src\/plugin\.ts:L1\) \(Mail packages\/mail\/src\/mail\.ts:L2, Slack packages\/slack\/src\/slack\.ts:L2, Sms packages\/sms\/src\/sms\.ts:L2\)\. This session has read 1 of them/);
-    assert.match(atPackage.sourceEvidence.rows[0].family, /^This family has 3 members: the classes whose header names `Plugin` \(\.\.\/core\/src\/plugin\.ts:L1\) \(Mail src\/mail\.ts:L2, Slack \.\.\/slack\/src\/slack\.ts:L2, Sms \.\.\/sms\/src\/sms\.ts:L2\)\. This session has read 2 of them/,
-      'a read at one package counts the members across the repository root and the reads made at the root');
+    const slack = { sourceOnly: true, sourceReads: [{ path: 'src/slack.ts', symbol: 'Slack.apply' }] };
+    const inside = await answers(granted, vault, [slack, { ...slack, rootPath: join(root, 'private') }]);
+    const [atFolder, outside] = inside.results;
+    assert.deepEqual(schemaErrors(inside.schema, atFolder.structuredContent), []);
+    const family = atFolder.structuredContent.sourceEvidence.rows[0].family;
+    assert.match(family, /^This family has 2 members within this folder: the classes whose header names `Plugin` \(src\/plugin\.ts:L1\) \(Mail src\/mail\.ts:L2, Slack src\/slack\.ts:L2\)\. This session has read 1 of them/);
+    assert.doesNotMatch(family, /plan\.ts|UnannouncedBridge|private/, 'a file above the granted folder never reaches the line');
+    assert.equal(outside.isError, true, 'a read addressed to a sibling folder is refused');
+
+    mkdirSync(join(root, 'atlas'));
+    const whole = await answers(root, join(root, 'atlas'), [{ sourceOnly: true, sourceReads: [{ path: 'granted/src/slack.ts', symbol: 'Slack.apply' }] }]);
+    const repositoryFamily = whole.results[0].structuredContent.sourceEvidence.rows[0].family;
+    assert.deepEqual(schemaErrors(whole.schema, whole.results[0].structuredContent), []);
+    assert.match(repositoryFamily, /^This family has 3 members: the classes whose header names `Plugin` \(granted\/src\/plugin\.ts:L1\) \(Mail granted\/src\/mail\.ts:L2, Slack granted\/src\/slack\.ts:L2, UnannouncedBridge private\/notes\/plan\.ts:L2\)\./,
+      'a server granted the repository root counts the whole repository and does not say "within this folder"');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

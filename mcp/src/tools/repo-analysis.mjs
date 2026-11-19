@@ -6,7 +6,6 @@
 
 import { buildBreadthMap } from '../analyze/breadth-map.mjs';
 import { noteReadFamilies } from '../construction/read-family.mjs';
-import { productFiles } from '../evidence-search/declaration-index.mjs';
 import { recordSourceEvidence, sessionReads } from '../construction/session-reads.mjs';
 import { analyzeRepoStructure } from '../analyze/repo-structure.mjs';
 import {
@@ -46,35 +45,17 @@ import {
 } from '../server/validate.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { validateVaultReport } from './validate-vault.mjs';
-import { existsSync } from 'node:fs';
 import {
-  dirname,
-  join,
   relative,
   sep,
 } from 'node:path';
 
-/** The nearest folder at or above `target` holding `.git`, else `target`: a family is counted across the whole repository. */
-function repositoryRootOf(target) {
-  for (let folder = target; ; folder = dirname(folder)) {
-    if (existsSync(join(folder, '.git'))) return folder;
-    if (dirname(folder) === folder) return target;
-  }
-}
-
-/** Each symbol read that belongs to a family gets one line saying how many members there are and how many this session read. */
+/** Each symbol read that belongs to a family gets one line saying how many members the analysed folder holds and how many this session read. */
 function noteFamilies(target, sourceEvidence, ignore) {
   try {
-    const repoRoot = repositoryRootOf(target);
-    noteReadFamilies(sourceEvidence, {
-      root: target,
-      repoRoot,
-      files: productFiles(repoRoot, repoRoot === target ? ignore ?? [] : []),
-      reads: sessionReads(target),
-      rootReads: repoRoot === target ? undefined : sessionReads(repoRoot),
-    });
+    noteReadFamilies(sourceEvidence, { root: target, ignore: ignore ?? [], reads: sessionReads(target) });
   } catch {
-    // The line is a fact beside the read; a repository that cannot be walked leaves the read as it is.
+    // The line is a fact beside the read; a folder that cannot be walked leaves the read as it is.
   }
 }
 

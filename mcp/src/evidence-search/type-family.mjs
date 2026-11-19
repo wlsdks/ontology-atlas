@@ -18,6 +18,9 @@
  *   promoted methods from embedded types included, has each method with the
  *   same parameter and result types. A type in scope whose embedded type
  *   cannot be followed, and that lacks a method, withholds the family.
+ * - **Truncation**: a walk that stopped at its file cap has no families; a
+ *   file whose declarations were cut short (past the size cap, or an outline
+ *   that stopped early) withholds every family it could hold a member of.
  *
  * The index is one pass over the cached declarations; each family costs its
  * candidates, with caps past which there is no family.
@@ -26,7 +29,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 
-import { declarationEnd, enclosingClass } from './callees.mjs';
 import { declarationsByFile } from './declaration-index.mjs';
 import { buildSurvey } from './declaration-survey.mjs';
 import { childSpec, importsOf, languageOf } from './import-bindings.mjs';
@@ -52,6 +54,12 @@ const KNOWN_EMBEDS = new Map([
   ['sync\0Once', { Do: '(func())()' }],
 ]);
 const ENTRY_EXTENSIONS = ['.ts', '.tsx', '.mts', '.js', '.jsx', '.mjs'];
+// What a module's default export names: `export default class X`, `export default X`, `module.exports = X`.
+const DEFAULT_EXPORTS = [
+  /^export\s+default\s+(?:abstract\s+)?(?:class|interface)\s+([A-Za-z_$][\w$]*)/gmu,
+  /^export\s+default\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gmu,
+  /^module\.exports\s*=\s*(?:class\s+)?([A-Za-z_$][\w$]*)/gmu,
+];
 
 const lastSegment = (name) => String(name).split('.').pop();
 const sameDeclaration = (a, b) => a && b && typeof a === 'object' && typeof b === 'object' && a.path === b.path && a.line === b.line;
@@ -61,9 +69,10 @@ const isType = (declaration, path) => TYPE_KINDS.has(declaration.kind) && !(decl
  * The families of one repository walk.
  *
  * @param {string} repoRoot absolute repository root
- * @param {object[]} files product files (`productFiles`)
+ * @param {object[]} files product files (`productWalk`)
+ * @param {{ truncated?: boolean }} [walk] whether the walk stopped before it listed every file
  */
-export function createFamilies(repoRoot, files) {
+export function createFamilies(repoRoot, files, { truncated: walkTruncated = false } = {}) {
   const byPath = new Map();
   const mayNameIn = new Map();
   const goImportsOf = new Map();
@@ -78,14 +87,21 @@ export function createFamilies(repoRoot, files) {
   const goFacesByMethod = new Map();
   const goFolderTypes = new Map();
   const goFolderFiles = new Map();
+  const defaultLocalsIn = new Map();
+  const defaultCandidates = [];
+  const cutShort = [];
   const add = (map, key, value) => {
     const held = map.get(key);
     if (held) held.push(value);
     else map.set(key, [value]);
   };
-  for (const { path, declarations, goImports, mayName } of declarationsByFile(repoRoot, { files })) {
+  for (const { path, declarations, goImports, defaultImports, truncated, capped, mayName } of declarationsByFile(repoRoot, { files })) {
     byPath.set(path, declarations);
     mayNameIn.set(path, mayName);
+    // A file past the size cap was never read: it may name anything.
+    if (truncated) cutShort.push({ path, language: languageOf(path), folder: posix.dirname(path), mayName: capped ? () => true : mayName, defaults: Boolean(defaultImports?.length) });
+    const defaults = new Set(defaultImports ?? []);
+    if (defaults.size) defaultLocalsIn.set(path, [...defaults]);
     const folder = posix.dirname(path);
     for (let dir = folder; dir !== '.' && dir !== '/' && !dirs.has(dir); dir = posix.dirname(dir)) {
       dirs.add(dir);
@@ -99,7 +115,10 @@ export function createFamilies(repoRoot, files) {
     for (const declaration of declarations) {
       add(index, declaration.name, { path, line: declaration.line, kind: declaration.kind, name: declaration.name });
       if (declaration.kind === 'class' && declaration.open) openHeaders.push(path);
-      for (const ref of declaration.bases ?? []) add(classesByBase, lastSegment(ref), { path, declaration, ref });
+      for (const ref of declaration.bases ?? []) {
+        add(classesByBase, lastSegment(ref), { path, declaration, ref });
+        if (defaults.has(ref)) defaultCandidates.push({ path, declaration, ref });
+      }
       if (!go) continue;
       const key = `${folder}\0${declaration.name}`;
       if (declaration.kind === 'interface') {
@@ -201,6 +220,7 @@ export function createFamilies(repoRoot, files) {
   /** The type `name` the module `spec` declares or re-exports by name. */
   function resolveExport(spec, name, language, depth) {
     if (!spec) return null;
+    if (name === 'default' && language === 'js') return resolveDefault(spec, language, depth);
     const list = modulePaths(spec, language);
     if (list.length === 0) return external(spec) ? 'external' : null;
     const found = list.flatMap((path) => (byPath.get(path) ?? [])
@@ -217,21 +237,61 @@ export function createFamilies(repoRoot, files) {
     return agree(results);
   }
 
+  /** The type `name` means in `path`: its own declaration, or what an import of that name resolves to. */
+  function resolveName(path, name, language, depth) {
+    const file = fileOf(path);
+    if (!file) return null;
+    const local = (byPath.get(path) ?? []).filter((declaration) => isType(declaration, path) && declaration.name === name);
+    if (local.length === 1) return { path, line: local[0].line, name };
+    if (local.length > 1) return null;
+    const bindings = importsOf(file);
+    const rows = bindings.names.get(name);
+    if (!rows) return null;
+    // `import Name from` binds whatever the module exports by default, under any name.
+    const byDefault = (row) => language === 'js' && row.imported === name && bindings.modules.get(name) === row.spec;
+    return agree(rows.map((row) => (byDefault(row) ? resolveDefault(row.spec, language, depth) : resolveExport(row.spec, row.imported, language, depth))));
+  }
+
+  const defaults = new Map();
+  /** The type a module's default export names, `external`, or null when it cannot be told. */
+  function resolveDefault(spec, language, depth) {
+    const list = modulePaths(spec, language);
+    if (list.length === 0) return external(spec) ? 'external' : null;
+    if (depth >= FAMILY_LIMITS.reexportDepth) return null;
+    return agree(list.map((path) => defaultOf(path, language, depth)));
+  }
+
+  /** The type the module at `path` exports by default, or null when it cannot be told. */
+  function defaultOf(path, language, depth) {
+    if (defaults.has(path)) return defaults.get(path);
+    defaults.set(path, null);
+    const file = fileOf(path);
+    let result = null;
+    if (file) {
+      const names = new Set();
+      for (const pattern of DEFAULT_EXPORTS) for (const match of file.text.matchAll(pattern)) names.add(match[1]);
+      for (const match of file.text.matchAll(/\bexport\s*\{([^}]*)\}(?!\s*from\b)/gu)) {
+        for (const item of match[1].split(',')) {
+          const [local, exported] = item.trim().split(/\s+as\s+/u);
+          if (exported === 'default') names.add(local);
+        }
+      }
+      const reexports = importsOf(file).names.get('default') ?? [];
+      if (names.size === 1 && reexports.length === 0) result = resolveName(path, [...names][0], language, depth + 1);
+      else if (names.size === 0 && reexports.length === 1) result = resolveExport(reexports[0].spec, reexports[0].imported, language, depth + 1);
+    }
+    defaults.set(path, result);
+    return result;
+  }
+
   /** The declaration a base reference written in `path` names, `external`, or null when it cannot be told. */
   function resolveReference(path, reference) {
     const file = fileOf(path);
     if (!file) return null;
     const language = languageOf(path);
     const segments = reference.split('.');
+    if (segments.length === 1) return resolveName(path, segments[0], language, 0);
     const bindings = importsOf(file);
-    if (segments.length === 1) {
-      const [name] = segments;
-      const local = (byPath.get(path) ?? []).filter((declaration) => isType(declaration, path) && declaration.name === name);
-      if (local.length === 1) return { path, line: local[0].line, name };
-      if (local.length > 1) return null;
-      const rows = bindings.names.get(name);
-      return rows ? agree(rows.map((row) => resolveExport(row.spec, row.imported, language, 0))) : null;
-    }
     let spec = bindings.modules.get(segments[0]) ?? null;
     for (const middle of segments.slice(1, -1)) spec = spec ? childSpec(spec, middle) : null;
     return spec ? resolveExport(spec, segments.at(-1), language, 0) : null;
@@ -244,33 +304,52 @@ export function createFamilies(repoRoot, files) {
   function namesOf(base, language) {
     const names = new Set([base.name]);
     const scanned = new Set();
+    // A base its module exports by default is also reached as `default`: `export { default as Channel } from './base'`.
+    const byDefault = language === 'js' && sameDeclaration(defaultOf(base.path, language, 0), base);
+    const reaches = (row) => names.has(row.imported) || (byDefault && row.imported === 'default' && modulePaths(row.spec, language).includes(base.path));
     for (let round = 0; round < FAMILY_LIMITS.reexportDepth; round += 1) {
       const before = names.size;
       for (const [path, mayName] of mayNameIn) {
-        if (scanned.has(path) || languageOf(path) !== language || ![...names].some((name) => mayName(name))) continue;
+        if (scanned.has(path) || languageOf(path) !== language || !((byDefault && mayName('default')) || [...names].some((name) => mayName(name)))) continue;
         scanned.add(path);
         if (scanned.size > FAMILY_LIMITS.aliasFiles) return null;
         const file = fileOf(path);
         if (!file) return null;
-        for (const [local, rows] of importsOf(file).names) if (rows.some((row) => names.has(row.imported))) names.add(local);
+        for (const [local, rows] of importsOf(file).names) if (local !== 'default' && rows.some(reaches)) names.add(local);
       }
       if (names.size === before) break;
     }
     return names;
   }
 
+  const memberSets = new Map();
   /** Every class whose header names `base`, or null when one cannot be decided. */
   function classMembers(base, language) {
+    const key = `${base.path}\0${base.line}`;
+    if (!memberSets.has(key)) memberSets.set(key, findClassMembers(base, language));
+    return memberSets.get(key);
+  }
+
+  function findClassMembers(base, language) {
     const names = namesOf(base, language);
     if (!names) return null;
-    const candidates = [...names].flatMap((name) => classesByBase.get(name) ?? []).filter((candidate) => languageOf(candidate.path) === language);
+    // A member may be cut from a file whose declarations were not all read.
+    if (cutShort.some((file) => file.language === language && (file.defaults || [...names].some((name) => file.mayName(name))))) return null;
+    const candidates = [...names].flatMap((name) => classesByBase.get(name) ?? [])
+      .concat(defaultCandidates.filter((candidate) => !names.has(candidate.ref)))
+      .filter((candidate) => languageOf(candidate.path) === language);
     if (candidates.length > FAMILY_LIMITS.candidates) return null;
-    const unread = [...new Set(openHeaders)].filter((path) => languageOf(path) === language && [...names].some((name) => mayNameIn.get(path)?.(name)));
+    const unread = [...new Set(openHeaders)].filter((path) => languageOf(path) === language
+      && (defaultLocalsIn.has(path) || [...names].some((name) => mayNameIn.get(path)?.(name))));
     if (unread.length > FAMILY_LIMITS.openHeaders) return null;
     const words = [...names].map((name) => new RegExp(`(?<![\\w$])${name.replace(/[$]/gu, '\\$&')}(?![\\w$])`, 'u'));
     for (const path of unread) {
       const file = fileOf(path);
       if (!file || words.some((word) => word.test(file.text))) return null;
+      for (const local of defaultLocalsIn.get(path) ?? []) {
+        const resolved = resolveReference(path, local);
+        if (resolved === null || sameDeclaration(resolved, base)) return null;
+      }
     }
     const members = new Map();
     for (const { path, declaration, ref } of candidates) {
@@ -284,11 +363,7 @@ export function createFamilies(repoRoot, files) {
   function classFamily(path, declaration) {
     const language = languageOf(path);
     if (!CLASS_LANGUAGES.has(language)) return null;
-    let owner = declaration.kind === 'class' ? declaration : null;
-    if (!owner) {
-      const file = fileOf(path);
-      owner = file ? enclosingClass({ lines: file.lines, declarations: byPath.get(path) ?? [] }, declaration) : null;
-    }
+    const owner = declaration.kind === 'class' ? declaration : structureOf(path)?.ownerOf.get(declaration) ?? null;
     if (!owner?.bases || owner.open) return null;
     for (const ref of owner.bases) {
       const base = resolveReference(path, ref);
@@ -387,6 +462,8 @@ export function createFamilies(repoRoot, files) {
 
   function goMembers(face, method) {
     const folders = [face.folder, ...importersOf(face.folder)];
+    const scope = new Set(folders);
+    if (cutShort.some((file) => file.language === 'go' && scope.has(file.folder))) return null;
     const keys = [...new Set(folders.flatMap((folder) => goFolderTypes.get(folder) ?? []))];
     if (keys.length > FAMILY_LIMITS.scopeTypes) return null;
     const members = [];
@@ -409,6 +486,8 @@ export function createFamilies(repoRoot, files) {
     const method = lastSegment(declaration.name);
     const own = methodSet(`${posix.dirname(path)}\0${receiver}`);
     if (own.unknown) return null;
+    // An interface or a type with this method may sit in what a cut-short file did not list.
+    if (cutShort.some((file) => file.language === 'go' && file.mayName(method))) return null;
     const faces = goFacesByMethod.get(method) ?? [];
     if (faces.length > FAMILY_LIMITS.interfaces) return null;
     const covered = [];
@@ -429,6 +508,52 @@ export function createFamilies(repoRoot, files) {
     return { members: sets[0], base: { path: face.path, line: face.declaration.line, name: face.declaration.name }, method, tie: 'go' };
   }
 
+  const structures = new Map();
+  /**
+   * One pass over a file's declarations, by indentation the way
+   * `declarationEnd` reads them: each declaration's last line, the class it is
+   * a direct member of, and each class's own methods by name.
+   */
+  function structureOf(path) {
+    if (structures.has(path)) return structures.get(path);
+    const file = fileOf(path);
+    let structure = null;
+    if (file) {
+      const declarations = [...(byPath.get(path) ?? [])].sort((a, b) => a.line - b.line);
+      const indentOf = (line) => /^[\t ]*/u.exec(file.lines[line - 1] ?? '')[0].length;
+      const endOf = new Map();
+      const ownerOf = new Map();
+      const methodsOf = new Map();
+      const atLine = new Map();
+      const close = (declaration, last) => {
+        let end = last;
+        while (end > declaration.line && (file.lines[end - 1] ?? '').trim() === '') end -= 1;
+        endOf.set(declaration, end);
+      };
+      const open = [];
+      for (const declaration of declarations) {
+        if (!atLine.has(declaration.line)) atLine.set(declaration.line, declaration);
+        const indent = indentOf(declaration.line);
+        while (open.length && open.at(-1).indent >= indent) close(open.pop().declaration, declaration.line - 1);
+        // Only a class's direct members are its own: a function nested in a method belongs to that method.
+        const parent = open.at(-1)?.declaration;
+        const owner = parent?.kind === 'class' ? parent : null;
+        ownerOf.set(declaration, owner);
+        if (owner && (declaration.kind === 'method' || declaration.kind === 'function')) {
+          let methods = methodsOf.get(owner);
+          if (!methods) methodsOf.set(owner, (methods = new Map()));
+          const name = lastSegment(declaration.name);
+          if (!methods.has(name)) methods.set(name, declaration);
+        }
+        open.push({ declaration, indent });
+      }
+      while (open.length) close(open.pop().declaration, file.lines.length);
+      structure = { endOf, ownerOf, methodsOf, atLine };
+    }
+    structures.set(path, structure);
+    return structure;
+  }
+
   return {
     /**
      * The family of the declaration a read served, or null.
@@ -441,21 +566,17 @@ export function createFamilies(repoRoot, files) {
       const declarations = byPath.get(path) ?? [];
       const declaration = declarations.find((candidate) => candidate.line === range.startLine)
         ?? declarations.find((candidate) => candidate.name === symbol && candidate.line >= range.startLine && candidate.line <= range.endLine);
-      if (!declaration) return null;
+      if (!declaration || walkTruncated) return null;
       return classFamily(path, declaration) ?? goFamily(path, declaration);
     },
     /** The lines a member's own code spans: its own declaration of the read method, else the whole class or method. */
     spanOf(member, method) {
-      const file = fileOf(member.path);
-      const declarations = byPath.get(member.path) ?? [];
-      const own = declarations.find((candidate) => candidate.line === member.line);
-      if (!file || !own) return null;
-      if (member.kind === 'class' && method) {
-        const mine = declarations.find((candidate) => lastSegment(candidate.name) === method && candidate.line > own.line
-          && (candidate.kind === 'method' || candidate.kind === 'function') && enclosingClass({ lines: file.lines, declarations }, candidate) === own);
-        if (mine) return { startLine: mine.line, endLine: declarationEnd(file.lines, declarations, mine) };
-      }
-      return { startLine: own.line, endLine: declarationEnd(file.lines, declarations, own) };
+      const structure = structureOf(member.path);
+      const own = structure?.atLine.get(member.line);
+      if (!own) return null;
+      const mine = member.kind === 'class' && method ? structure.methodsOf.get(own)?.get(method) : null;
+      if (mine) return { startLine: mine.line, endLine: structure.endOf.get(mine) };
+      return { startLine: own.line, endLine: structure.endOf.get(own) };
     },
   };
 }

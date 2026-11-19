@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
+import { productWalk } from '../evidence-search/declaration-index.mjs';
 import { readSourceEvidence } from '../evidence-search/source-evidence.mjs';
+import { createFamilies } from '../evidence-search/type-family.mjs';
 import { noteReadFamilies } from './read-family.mjs';
 import { recordSourceEvidence, resetSessionReads, sessionReads } from './session-reads.mjs';
 
@@ -20,6 +22,8 @@ function readIn(files, selectors) {
   resetSessionReads();
   const root = mkdtempSync(join(tmpdir(), 'atlas-read-family-'));
   try {
+    // A repository root: the line then speaks for the whole repository.
+    mkdirSync(join(root, '.git'));
     for (const [path, text] of Object.entries({ 'package.json': '{"name":"tool"}', ...files })) {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), text);
@@ -101,6 +105,78 @@ test('a base is the declaration its reference resolves to, through a barrel and 
   }, [{ path: 'plugins/slack/src/index.ts', symbol: 'apply' }])), 2, 'a workspace package whose entry re-exports the base');
 });
 
+test('a class naming its base through a default import, under any name, is a member', () => {
+  const DEFAULT_BASE = 'export default class Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n';
+  const extending = (name, local, prelude) => ts(`export class ${name} extends ${local} {`, prelude);
+  const files = {
+    'src/base.ts': DEFAULT_BASE,
+    'src/slack.ts': extending('Slack', 'Plugin', "import Plugin from './base';"),
+    'src/mail.ts': extending('Mail', 'Plugin', "import Plugin from './base';"),
+    'src/sms.ts': extending('Sms', 'BasePlugin', "import BasePlugin from './base';"),
+  };
+  const read = [{ path: 'src/slack.ts', symbol: 'Slack.apply' }];
+  assert.equal(sizeOf(readIn(files, read)), 3, 'a default import under another name');
+  assert.equal(sizeOf(readIn({
+    ...files,
+    'src/index.ts': "export { default as Channel } from './base';\n",
+    'src/push.ts': extending('Push', 'Channel', "import { Channel } from './index';"),
+    'src/hook.ts': extending('Hook', 'Base', "import { default as Base } from './base';"),
+    'src/relay.ts': "export { default } from './base';\n",
+    'src/hub.ts': extending('Hub', 'Relay', "import Relay from './relay';"),
+  }, read)), 6, 'the default re-exported by a barrel under a name or as the default, and imported as `default`');
+  assert.equal(sizeOf(readIn({ ...files, 'src/base.ts': DEFAULT_BASE.replace('export default class', 'class') + 'export { Plugin as default };\n' }, read)), 3,
+    'a base exported as the default by name');
+  assert.equal(sizeOf(readIn({ ...files, 'src/base.ts': 'export class Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n' }, read)), 0,
+    'a default import from a module with no default export');
+  assert.equal(sizeOf(readIn({
+    ...files,
+    'src/wrapped.ts': `import Plugin from './base';\nconst wrap = (base: unknown) => base;\nexport default wrap(Plugin);\n`,
+    'src/push.ts': extending('Push', 'Wrapped', "import Wrapped from './wrapped';"),
+  }, read)), 0, 'a member through a default export that names no declaration');
+  assert.equal(sizeOf(readIn({ ...files, 'src/mixed.ts': extending('Mixed', 'mix(Mixin)', "import Mixin from './base';\nimport { mix } from './mix';") }, read)), 0,
+    'a header that cannot be read in a file importing the base by default');
+  assert.equal(sizeOf(readIn({ ...files, 'src/long.ts': `import Relay from './base';\nexport class Long extends Relay { apply(token: string) { return ${'1 + '.repeat(300)}1 > 0; } }\n` }, read)), 0,
+    'a line too long to outline in a file importing a base by default');
+});
+
+test('a count that a cut-short file or walk could change has no line', () => {
+  const handlers = (count) => `from .base import Plugin\n\n\n${Array.from({ length: count }, (_, at) => `class Handler${at}(Plugin):\n${['apply', 'validate', 'store', 'render', 'close', 'retry', 'audit', 'load', 'name'].map((name) => `    def ${name}(self, token):\n        return token\n\n`).join('')}\n`).join('')}`;
+  const read = [{ path: 'app/handlers.py', symbol: 'Handler0.apply' }];
+  assert.equal(sizeOf(readIn({ 'app/__init__.py': '', 'app/base.py': PY_BASE, 'app/handlers.py': handlers(39) }, read)), 39);
+  assert.equal(sizeOf(readIn({ 'app/__init__.py': '', 'app/base.py': PY_BASE, 'app/handlers.py': handlers(45) }, read)), 0,
+    'an outline that stopped at its declaration cap');
+  const long = `x = "${'y'.repeat(1200)}"\n`;
+  const pyFiles = { 'app/__init__.py': '', 'app/base.py': PY_BASE, 'app/slack.py': py('class Slack(Plugin):'), 'app/mail.py': py('class Mail(Plugin):') };
+  const slack = [{ path: 'app/slack.py', symbol: 'Slack.apply' }];
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/push.py': `${long}${py('class Push(Plugin):')}` }, slack)), 0, 'a line too long to outline in a file naming the base');
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/data.py': long }, slack)), 2, 'a line too long to outline in a file that never names the base');
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/huge.py': `${'# filler\n'.repeat(30_000)}` }, slack)), 0, 'a file past the size cap may name anything');
+  const goFiles = {
+    'go.mod': GO_MOD,
+    'store/store.go': 'package store\n\ntype Store interface {\n\tGet(key string) string\n\tSet(key string, value string)\n}\n',
+    'store/disk.go': goType('store', 'Disk', ['Get(key string) string', 'Set(key string, value string)']),
+    'store/memory.go': goType('store', 'Memory', ['Get(key string) string', 'Set(key string, value string)']),
+  };
+  const disk = [{ path: 'store/disk.go', symbol: 'Disk.Get' }];
+  assert.equal(sizeOf(readIn(goFiles, disk)), 2);
+  assert.equal(sizeOf(readIn({ ...goFiles, 'store/cache.go': `package store\n\nvar blob = "${'y'.repeat(1200)}"\n` }, disk)), 0, 'a cut-short Go file in the interface package');
+  assert.equal(sizeOf(readIn({ ...goFiles, 'other/blob.go': `package other\n\nvar blob = "${'y'.repeat(1200)}"\n` }, disk)), 2, 'a cut-short Go file out of scope that never names the method');
+  assert.equal(sizeOf(readIn({ ...goFiles, 'other/blob.go': `package other\n\n// Get\nvar blob = "${'y'.repeat(1200)}"\n` }, disk)), 0, 'a cut-short Go file that names the method');
+  const root = mkdtempSync(join(tmpdir(), 'atlas-read-family-walk-'));
+  try {
+    for (const [path, text] of Object.entries(goFiles)) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), text);
+    }
+    const walk = productWalk(root);
+    const range = { startLine: 7, endLine: 11 };
+    assert.ok(createFamilies(root, walk.files).familyOf('store/disk.go', range, 'Disk.Get'));
+    assert.equal(createFamilies(root, walk.files, { truncated: true }).familyOf('store/disk.go', range, 'Disk.Get'), null, 'a walk that stopped at its file cap');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('a family that cannot be decided has no line', () => {
   const both = { 'src/base.ts': TS_BASE, 'src/slack.ts': ts('export class Slack implements Plugin {'), 'src/mail.ts': ts('export class Mail implements Plugin {') };
   assert.equal(readIn({ ...both, 'src/sms.ts': ts('export class Sms implements Plugin {', '') }, [{ path: 'src/slack.ts', symbol: 'apply' }]).family, undefined,
@@ -149,6 +225,18 @@ test('a member with a nested class before the read method is read', () => {
     'app/mail.py': py('class Mail(Plugin):'),
   }, [{ path: 'app/slack.py', symbol: 'Slack.apply' }]);
   assert.equal(readOf(nested), 1, 'the nested class\'s own method of that name is not the member\'s');
+});
+
+test('a member is read only where its own method of that name was served', () => {
+  const files = {
+    'app/__init__.py': '',
+    'app/base.py': PY_BASE,
+    'app/slack.py': py('class Slack(Plugin):'),
+    'app/mail.py': py('class Mail(Plugin):', 'from .base import Plugin', '    def send(self, token):\n        def apply(value):\n            return value\n        return apply(token)\n\n    def close(self):\n        return None\n\n'),
+  };
+  const slack = { path: 'app/slack.py', symbol: 'Slack.apply' };
+  assert.match(readIn(files, [{ path: 'app/mail.py', symbol: 'Mail.apply' }, slack]).family, /read 2 of them/, 'a helper of that name nested in another method is not the member\'s own');
+  assert.match(readIn(files, [{ path: 'app/mail.py', symbol: 'Mail.close' }, slack]).family, /read 1 of them/, 'another method of the member');
 });
 
 test('Go types are members only in or importing the interface package, with the same signatures, promoted methods included', () => {

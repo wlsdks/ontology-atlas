@@ -119,15 +119,22 @@ function factsOf(file) {
     stamp,
     declarations: [],
     goImports: [],
+    defaultImports: [],
+    // A file past the size cap is not read at all; one whose outline stopped early is read only in part.
+    capped: file.size > MAX_INDEXED_BYTES,
+    truncated: file.size > MAX_INDEXED_BYTES,
     names: identifierFilter(text),
   };
   if (text) {
-    const outline = outlineSource(text, file.path).declarations
+    const outlined = outlineSource(text, file.path);
+    const outline = outlined.declarations
       .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
-    const { ties, goImports } = typeTiesOf(outline, text, file.path);
+    const { ties, goImports, defaultImports } = typeTiesOf(outline, text, file.path, { partial: Boolean(outlined.truncated) });
     // A copy: a substring would keep the whole file text alive.
     facts.declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
     facts.goImports = goImports;
+    facts.defaultImports = defaultImports;
+    facts.truncated = Boolean(outlined.truncated);
   }
   DECLARATIONS.delete(file.abs);
   DECLARATIONS.set(file.abs, facts);
@@ -141,12 +148,20 @@ function factsOf(file) {
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], files?: object[] }} [options]
- * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], mayName: (name: string) => boolean }>}
+ * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], defaultImports: string[], truncated: boolean, capped: boolean, mayName: (name: string) => boolean }>}
  */
 export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
   for (const file of files ?? productFiles(rootPath, ignore)) {
     const facts = factsOf(file);
-    yield { path: file.path, declarations: facts.declarations, goImports: facts.goImports, mayName: (name) => mayName(facts, name) };
+    yield {
+      path: file.path,
+      declarations: facts.declarations,
+      goImports: facts.goImports,
+      defaultImports: facts.defaultImports,
+      truncated: facts.truncated,
+      capped: facts.capped,
+      mayName: (name) => mayName(facts, name),
+    };
   }
 }
 
@@ -163,6 +178,23 @@ export function productFiles(rootPath, ignore = []) {
     return collectSourceUnits(rootPath, { ignore }).files.filter((file) => file.class === 'product');
   } catch {
     return [];
+  }
+}
+
+/**
+ * Product source files under `rootPath` and whether the walk stopped at its
+ * file cap before reaching them all.
+ *
+ * @param {string} rootPath absolute repository root
+ * @param {string[]} [ignore]
+ * @returns {{ files: object[], truncated: boolean }}
+ */
+export function productWalk(rootPath, ignore = []) {
+  try {
+    const collection = collectSourceUnits(rootPath, { ignore });
+    return { files: collection.files.filter((file) => file.class === 'product'), truncated: Boolean(collection.truncated) };
+  } catch {
+    return { files: [], truncated: true };
   }
 }
 

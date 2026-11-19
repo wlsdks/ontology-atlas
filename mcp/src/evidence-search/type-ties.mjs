@@ -8,7 +8,9 @@
  * - a Rust `impl Trait for Type` header's trait;
  * - a Go interface's methods with their parameter and result types, a Go
  *   struct's embedded types, a Go method's parameter and result types, and the
- *   packages a Go file imports.
+ *   packages a Go file imports;
+ * - the local names a JavaScript or TypeScript file binds by default import,
+ *   when its classes name a base.
  *
  * Whatever cannot be read for certain is marked `open` rather than guessed: a
  * header that does not end within `HEADER_LINES` lines, a base that is a call,
@@ -206,13 +208,15 @@ function goStruct(lines, line, signature) {
 
 /**
  * The ties of each declaration in `declarations` (outline rows with their
- * `signature`), by index, and the packages a Go file imports.
+ * `signature`), by index, the packages a Go file imports, and the local
+ * names a JavaScript file binds by default import.
  *
  * @param {object[]} declarations
  * @param {string} text the file's text
  * @param {string} path repository-relative path
+ * @param {{ partial?: boolean }} [outline] whether the outline skipped part of the file
  */
-export function typeTiesOf(declarations, text, path) {
+export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
   const python = path.endsWith('.py') || path.endsWith('.pyi');
   const js = /\.(?:[cm]?[jt]sx?)$/u.test(path);
   const rust = path.endsWith('.rs');
@@ -246,5 +250,13 @@ export function typeTiesOf(declarations, text, path) {
   const goImports = go
     ? [...importsOf({ path, lines: linesOf() }).modules].filter(([, spec]) => spec?.go).map(([local, spec]) => [copy(local), copy(spec.go)])
     : [];
-  return { ties, goImports };
+  // A default import may give a base any local name, so a file whose class headers name a base, or that was not all outlined, keeps those names.
+  let defaultImports = [];
+  if (js && (partial || [...ties.values()].some((tie) => tie.bases || tie.open))) {
+    const bindings = importsOf({ path, lines: linesOf() });
+    defaultImports = [...bindings.names]
+      .filter(([local, rows]) => rows.some((row) => row.imported === local && bindings.modules.get(local) === row.spec))
+      .map(([local]) => copy(local));
+  }
+  return { ties, goImports, defaultImports };
 }

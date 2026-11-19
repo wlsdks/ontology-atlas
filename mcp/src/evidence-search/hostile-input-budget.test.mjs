@@ -415,11 +415,27 @@ describe('a family costs time linear in the types and interfaces that could join
     const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'apply' }]);
     return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
   };
+  // Every member in one file, each with the read method, and a read of that file: each member's span is looked up.
+  const oneFile = (classes) => {
+    const members = Array.from({ length: classes }, (_, at) => `export class P${at} extends Base {\n  apply(v: number) {\n    return v > 1 ? 1 : 0;\n  }\n}\n`).join('');
+    const root = repoWith({
+      'package.json': '{"name":"x"}',
+      'src/base.ts': 'export class Base {\n  apply(v: number) {\n    return v;\n  }\n}\n',
+      'src/impl.ts': `import { Base } from './base';\n\n${members}`,
+    });
+    const packet = readSourceEvidence(root, [{ path: 'src/impl.ts', symbol: 'P0.apply' }]);
+    const reads = new Map([['src/impl.ts', [{ startLine: 1, endLine: 2 }]]]);
+    return () => {
+      const row = noteReadFamilies(structuredClone(packet), { root, reads }).rows[0];
+      assert.match(row.family ?? '', new RegExp(`^This family has ${classes} members`));
+    };
+  };
 
   it('notes one read row against thousands of interfaces and types within the budget', (t) => {
     assertWithinBudget(t, '3,200 interfaces and 10,640 types', familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 })), 1000);
     assertWithinBudget(t, '16 interfaces and 4,000 types in their package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 })), 1000);
     assertWithinBudget(t, '500 classes naming one base', classRepo(500), 1000);
+    assertWithinBudget(t, 'one file of 180 members, each with the read method', oneFile(180), 1000);
     assertWithinBudget(t, 'a 247 KiB Go file of 400 interfaces between blank runs', blankRuns(1));
   });
 
@@ -428,6 +444,7 @@ describe('a family costs time linear in the types and interfaces that could join
       ['interfaces and types', familyRead(goRepo({ faceFiles: 4, facesPerFile: 400, typeFiles: 40, typesPerFile: 133 })), familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 }))],
       ['types in the interfaces\' package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 20, typesPerFile: 100 })), familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 }))],
       ['classes naming one base', classRepo(200), classRepo(400)],
+      ['members in one file', oneFile(90), oneFile(180)],
       ['Go files of interfaces between blank runs', blankRuns(1), blankRuns(2)],
     ];
     for (const [name, small, large] of pairs) {
