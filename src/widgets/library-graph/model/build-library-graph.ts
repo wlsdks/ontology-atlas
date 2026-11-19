@@ -31,7 +31,8 @@ export type LibraryGraphSourceState =
   | "compiled"
   | "partial"
   | "stale"
-  | "checking";
+  | "checking"
+  | "unreadable";
 
 export interface LibraryGraphNode {
   /** `source:<path>` · `page:<slug>` · `concept:<slug>`. Stable across renders. */

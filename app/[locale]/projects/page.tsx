@@ -17,6 +17,7 @@ export async function generateMetadata({
     path: 'projects',
     title: t("pages.projects"),
     description: t('descriptions.projects'),
+    noindex: true,
   });
 }
 

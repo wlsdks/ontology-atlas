@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { McpRedirectPage } from '@/views/mcp-redirect';
 import { RouteLoadingFallback } from '@/shared/ui';
-import { absoluteUrl } from '@/shared/config';
 
 export async function generateMetadata({
   params,
@@ -12,8 +11,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'mcp' });
-  // Canonical is the Agents destination so search engines see one page.
-  return { title: t('title'), alternates: { canonical: absoluteUrl(`/${locale}/agents/`) } };
+  // A redirect into the Agents workbench, which itself is noindex: nothing here to index or canonicalize.
+  return { title: t('title'), robots: { index: false, follow: true } };
 }
 
 /**

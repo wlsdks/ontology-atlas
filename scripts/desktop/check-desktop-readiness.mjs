@@ -80,6 +80,8 @@ const corepackPrepare = new RegExp(`corepack prepare ${pinnedPnpm.replace(/[.*+?
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
+// The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
+const siteEntity = readText("src/shared/config/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
@@ -432,10 +434,10 @@ if (
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace"
+  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
 ) {
   pass(
-    "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, and Rust path guard",
+    "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, Rust path guard, and a manifest from cached rows equal to one from files",
   );
 } else {
   fail(
@@ -1502,7 +1504,8 @@ if (
   // Official Pages now serves at a custom-domain root. Keep the manifest helper so
   // forks that still deploy beneath a base path do not regress (#617).
   rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
-  rootLayout.includes("alternateName: 'ontology-atlas'") &&
+  rootLayout.includes("siteEntityGraph(") &&
+  siteEntity.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&
   webManifest.short_name === "Ontology Atlas" &&
   enMessages.metadata.siteName === "Ontology Atlas" &&

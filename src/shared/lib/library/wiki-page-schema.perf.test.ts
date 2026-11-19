@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import { WIKI_PAGE_CASES } from '../../../../tests/fixtures/wiki-page-cases.mjs';
 import {
+  buildWikiNodeIndex as buildNodesMcp,
   validateWikiFolder as validateFolderMcp,
   validateWikiPage as validatePageMcp,
 } from '../../../../mcp/src/library/wiki-schema.mjs';
-import { validateWikiFolder as validateFolderTs, validateWikiPage as validateTs } from './wiki-page-schema';
+import {
+  buildWikiNodeIndex as buildNodesTs,
+  validateWikiFolder as validateFolderTs,
+  validateWikiPage as validateTs,
+} from './wiki-page-schema';
 
 describe('validation stays linear as a folder grows', () => {
   /**
@@ -132,6 +137,7 @@ describe('validation stays linear as a folder grows', () => {
    * Every page written from one source: naming every partner was k² findings, 11.8 s and 5.5 GB
    * for 4,000 pages (2026-11-19). Each page now names ten and counts the rest. Measured
    * 2026-11-19: 41 ms for 4,000 pages (MCP); the budget catches the quadratic shape returning.
+   * No growth ratio: at tens of milliseconds GC noise swings it from 5 to 12 on one machine.
    */
   it('one source shared by thousands of pages stays linear in both twins', () => {
     const folder = (size: number) =>
@@ -139,12 +145,12 @@ describe('validation stays linear as a folder grows', () => {
         path: `wiki/p-${index}.md`,
         raw: `---\ntitle: p${index}\nsources: [sources/one.pdf]\n---\n\n## Summary\n\nAbout [[wiki/hub]].\n`,
       }));
-    const small = folder(1000);
     const large = folder(4000);
     for (const validate of [validateFolderTs, validateFolderMcp]) {
+      validate(large);
       const time = (pages: Array<{ path: string; raw: string }>) => {
         let fastest = Infinity;
-        for (let run = 0; run < 3; run += 1) {
+        for (let run = 0; run < 5; run += 1) {
           const started = performance.now();
           validate(pages);
           fastest = Math.min(fastest, performance.now() - started);
@@ -152,11 +158,60 @@ describe('validation stays linear as a folder grows', () => {
         return fastest;
       };
       const largeMs = time(large);
-      const ratio = largeMs / Math.max(time(small), 0.5);
-      console.log(`[wiki-schema perf] one shared source: 4,000 pages in ${largeMs.toFixed(1)} ms, ratio ${ratio.toFixed(1)}`);
+      console.log(`[wiki-schema perf] one shared source: 4,000 pages in ${largeMs.toFixed(1)} ms`);
       expect(largeMs).toBeLessThan(1500);
-      expect(ratio).toBeLessThan(8);
       expect(validate(large)[0]!.problems.length).toBeLessThan(20);
+    }
+  });
+
+  /**
+   * `describes:` entries resolve through an index built once per folder, so each is O(1). A scan of
+   * every document per entry would be 40,000 x 25,000 comparisons here, seconds rather than
+   * milliseconds. Measured 2026-11-19 on an M-series Mac at load 70-100: 20,000 pages took 95-173 ms
+   * without the check and 9-14 ms more to build the index, 33-80 ms more to resolve; the whole
+   * `validate_wiki` call on that folder went from 1,268-1,401 ms to 1,315-1,489 ms (1.04-1.06x). The
+   * budget is on the added time, far above that, so it catches the shape changing, not machine speed.
+   */
+  it('resolving every describes entry adds well under a second to 20,000 pages, in both twins', () => {
+    const concepts = Array.from({ length: 5000 }, (_, index) => ({ slug: `capabilities/concept-${index}`, kind: 'capability' }));
+    const pages = Array.from({ length: 20000 }, (_, index) => ({
+      slug: `wiki/p${index}`,
+      raw: [
+        '---', `title: p${index}`, 'created_by: agent:claude', 'compiled_at: 2026-11-19T00:00:00Z',
+        'sources: []', 'source_hash: {}', 'status: draft', `summary: s${index}.`,
+        'describes:', `  - capabilities/concept-${index % 5000}`, `  - concept-${(index * 7) % 5000}`,
+        'relation_notes:', `  capabilities/concept-${index % 5000}: "r"`, '---', '',
+        '## Summary', '', 'x', '', '## Facts', '', '## Decisions', '', '## Open questions', '', '## Not in sources', '',
+      ].join('\n'),
+    }));
+    const documents = [...concepts, ...pages.map((page) => ({ slug: page.slug }))];
+    type Twin = [string, (raw: string, options: { nodes?: never }) => { ok: boolean }, (entries: typeof documents) => never];
+    const twins = [
+      ['TS', validateTs, buildNodesTs],
+      ['MCP', validatePageMcp, buildNodesMcp],
+    ] as unknown as Twin[];
+    for (const [name, validate, build] of twins) {
+      const judge = (withNodes: boolean) => {
+        const nodes = withNodes ? build(documents) : undefined;
+        let failing = 0;
+        for (const page of pages) if (!validate(page.raw, { nodes }).ok) failing += 1;
+        return failing;
+      };
+      const best = (withNodes: boolean) => {
+        let fastest = Infinity;
+        for (let run = 0; run < 5; run += 1) {
+          const started = performance.now();
+          judge(withNodes);
+          fastest = Math.min(fastest, performance.now() - started);
+        }
+        return fastest;
+      };
+      expect(judge(true)).toBe(0);
+      judge(false);
+      const without = best(false);
+      const withNodes = best(true);
+      console.log(`[wiki-schema perf] ${name} describes: 20,000 pages ${without.toFixed(0)} ms, with node resolution ${withNodes.toFixed(0)} ms`);
+      expect(withNodes - without).toBeLessThan(1000);
     }
   });
 });

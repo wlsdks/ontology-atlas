@@ -35,7 +35,7 @@ import {
   vaultMcpServers,
   vaultSelfReadSlot,
 } from "@/features/acp-session";
-import { appendWikiLog, buildCompileBrief, deleteWikiFile, judgePageWrite, writeWikiFile } from "@/features/library";
+import { appendWikiLog, buildCompileBrief, deleteWikiFile, judgePageWrite, wikiNodeIndexOfDocs, writeWikiFile } from "@/features/library";
 import {
   TICK_MS,
   afterPass,
@@ -77,6 +77,8 @@ import { runHeadlessTurn } from "./headless-turn";
 interface PassData {
   sources: readonly VaultSourceFile[];
   docs: readonly VaultDoc[];
+  /** The concepts a page's `describes:` may name, built once per pass. */
+  concepts: ReturnType<typeof wikiNodeIndexOfDocs>;
   hashes: Map<string, string>;
   pageTexts: Map<string, string>;
   pages: PassPages;
@@ -237,6 +239,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
           vaultRoot: rootPath,
           currentText: (slug) => active.data.pages.current(`${slug}.md`),
           knownSources: active.data.knownSources,
+          nodes: active.data.concepts,
         });
         return page && !active.data.pages.conflict(page.path) ? page : null;
       },
@@ -337,7 +340,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const scan = await scanPassFolders(handle, (directory) => listTauriVaultLinks(rootPath, directory));
     const nodes = docs.filter((doc) => typeof doc.frontmatter.kind === "string").map((doc) => doc.path);
     const pageTexts = new Map(scan.pages.flatMap((page) => (page.text === null ? [] : [[page.path.slice(0, -3), page.text] as const])));
-    return { sources, docs, hashes, pageTexts, pages: createPassPages({ ...scan, complete: true, nodes }), knownSources: new Set(sources.map((source) => source.path)) };
+    return { sources, docs, concepts: wikiNodeIndexOfDocs(docs), hashes, pageTexts, pages: createPassPages({ ...scan, complete: true, nodes }), knownSources: new Set(sources.map((source) => source.path)) };
   }, [handle, manifestRef, rootPath]);
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
@@ -368,7 +371,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     let entry: RoundPassEntry;
     try {
       const data: PassData | null = round.kind === "ontology"
-        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), pages: createPassPages([]), knownSources: new Set<string>() }
+        ? { sources: [], docs: [], concepts: wikiNodeIndexOfDocs([]), hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), pages: createPassPages([]), knownSources: new Set<string>() }
         : await readPassData();
       if (!data) throw new Error("no-manifest");
       const fromService = new Set<string>();

@@ -53,6 +53,11 @@ test('a well-formed living document passes; every missing or wrong key is named'
     assert.deepEqual(checkDoc('docs/features/rounds.md', feature('decisions: [0f0e0d0c-aaaa-4bbb-8ccc-123456789abc]\n'), options), []);
     assert.deepEqual(keysOf(checkDoc('docs/features/rounds.md', feature('decisions: [ffffffff-0000-4000-8000-000000000000]\n'), options)), ['decisions']);
     assert.deepEqual(keysOf(checkDoc('docs/features/rounds.md', feature('status: superseded\n').replace('status: current\n', ''), options)), ['superseded_by']);
+    const specDoc = (body) => `---\ntitle: S\ndoc_type: spec\nstatus: draft\narea: library\ndate: 2026-11-19\ndecisions: []\n---\n# S\n${body}`;
+    assert.deepEqual(checkDoc('docs/specs/2026-11-19-s.md', specDoc('\n## Revisions\n\n- 2026-11-19: first draft.\n'), options), []);
+    // A spec records each change as a dated line, so a reader sees how the plan moved.
+    assert.deepEqual(keysOf(checkDoc('docs/specs/2026-11-19-s.md', specDoc(''), options)), ['revisions']);
+    assert.deepEqual(keysOf(checkDoc('docs/specs/2026-11-19-s.md', specDoc('\n## Revisions\n\n## Later\n- 2026-11-19: not a revision.\n'), options)), ['revisions']);
     const contract = '---\ntitle: C\ndoc_type: contract\nstatus: current\narea: library\nstores: x\ncontract_version: 1\nenforced_by: [missing/file.ts]\n---\n';
     assert.deepEqual(keysOf(checkDoc('docs/contracts/c.md', contract, options)), ['enforced_by']);
     const guide = '---\ntitle: G\ndoc_type: guide\nstatus: current\narea: cli\n---\n';

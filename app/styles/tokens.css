@@ -346,6 +346,10 @@
   --gateway-fx-dust: #ececf0;
   /* Custom cursor ring rest state ink — derived from existing ink tokens (new hue 0). */
   --gateway-fx-cursor-ring: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
+  /* The page pointer's dot glow and the ring wrapped round a control (`gateway.css`). */
+  --gateway-fx-cursor-glow: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+  --gateway-fx-cursor-wrap: color-mix(in srgb, var(--color-text-primary) 62%, transparent);
+  --gateway-fx-cursor-wrap-fill: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 
   /*
    * The hero's light is the map's own indigo, spilling from behind the app window that shows the

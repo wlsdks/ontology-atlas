@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { routing } from '@/i18n/routing';
-import { buildPageMetadata, type PageMetadataLocales } from './page-metadata';
+import { buildPageMetadata, fitMetaDescription, META_DESCRIPTION_MAX, type PageMetadataLocales } from './page-metadata';
 
 // Next replaces the whole top-level openGraph/twitter key when merging metadata, so every card
 // fact must be explicit in what the builder returns.
@@ -129,5 +129,67 @@ describe('buildPageMetadata — a four-locale registry', () => {
         .openGraph as { locale: string }).locale;
     expect(og('ja')).toBe('ja_JP');
     expect(og('zh')).toBe('zh_CN');
+  });
+});
+
+describe('buildPageMetadata — index signals', () => {
+  const base = { path: 'agents', title: 'T', description: 'D' };
+  type Signals = {
+    robots?: { index: boolean; follow: boolean };
+    alternates?: { canonical: string; languages?: Record<string, string> };
+    openGraph: { locale: string; alternateLocale?: string[] };
+  };
+  const signals = (input: Parameters<typeof buildPageMetadata>[0]) => buildPageMetadata(input) as unknown as Signals;
+
+  it('marks a noindex page noindex-follow and declares no canonical, hreflang or alternate og:locale', () => {
+    const meta = signals({ ...base, locale: 'ko', noindex: true });
+    expect(meta.robots).toEqual({ index: false, follow: true });
+    expect(meta.alternates).toBeUndefined();
+    expect(meta.openGraph.alternateLocale).toBeUndefined();
+    expect(meta.openGraph.locale).toBe('ko_KR');
+  });
+
+  it('names every other routed locale as an alternate og:locale on an indexable page', () => {
+    const meta = signals({ ...base, locale: 'ja' });
+    expect(meta.robots).toBeUndefined();
+    expect(meta.openGraph.alternateLocale?.sort()).toEqual(['en_US', 'ko_KR', 'zh_CN']);
+  });
+
+  it('points a locale without its own words at the content locale and declares no cluster', () => {
+    const meta = signals({ ...base, path: 'changelog', locale: 'zh', contentLocales: ['en'] });
+    expect(meta.alternates).toEqual({ canonical: expect.stringMatching(/\/en\/changelog$/) });
+    expect(meta.openGraph.alternateLocale).toBeUndefined();
+  });
+
+  it('keeps only the content locales and x-default in the content locale cluster', () => {
+    const meta = signals({ ...base, path: 'changelog', locale: 'en', contentLocales: ['en'] });
+    expect(meta.alternates?.canonical).toMatch(/\/en\/changelog$/);
+    expect(Object.keys(meta.alternates?.languages ?? {}).sort()).toEqual(['en', 'x-default']);
+    expect(meta.openGraph.alternateLocale).toBeUndefined();
+  });
+});
+
+describe('fitMetaDescription', () => {
+  it('keeps a description that fits and cuts a long one at a word, inside the limit', () => {
+    expect(fitMetaDescription('A short, complete description of the page.')).toBe('A short, complete description of the page.');
+    const long = 'word '.repeat(60);
+    const fitted = fitMetaDescription(long);
+    expect(fitted.length).toBeLessThanOrEqual(META_DESCRIPTION_MAX);
+    expect(fitted).toMatch(/word…$/);
+  });
+
+  it('cuts text without spaces by whole characters, never inside one', () => {
+    const fitted = fitMetaDescription('😀'.repeat(200));
+    expect(Array.from(fitted)).toHaveLength(META_DESCRIPTION_MAX);
+    expect(fitted.endsWith('😀…')).toBe(true);
+  });
+
+  it.each(['en', 'ko', 'ja', 'zh'])('finds every %s page description and the site default within 25-160 characters', async (locale) => {
+    const { default: metadata } = await import(`../../../../messages/${locale}/metadata.json`);
+    const all = [metadata.siteTagline, ...Object.values(metadata.descriptions), ...Object.values(metadata.guideDescriptions), ...Object.values(metadata.projectDescriptions)] as string[];
+    for (const text of all) {
+      expect(text.length, text).toBeGreaterThanOrEqual(25);
+      expect(text.length, text).toBeLessThanOrEqual(META_DESCRIPTION_MAX);
+    }
   });
 });

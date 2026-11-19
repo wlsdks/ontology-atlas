@@ -18,6 +18,7 @@ export async function generateMetadata({
     path: 'architecture',
     title: t('title'),
     description: t('explainer'),
+    noindex: true,
   });
 }
 

@@ -17,9 +17,10 @@ landing, and instruction integrity".
 
 Contributor prose is English. Han, kana and Hangul appear only as
 `display_<locale>` data, inside `cli/templates/vault-<locale>/**`, in the
-localized READMEs (`README.{ko,ja,zh}.md`), and in the labels of `README.md`'s
-language switcher links. The localized READMEs follow `README.md` section for
-section. The rule covers strings a program prints:
+localized READMEs (`README.{ko,ja,zh}.md`), in the guide's translations
+(`docs-i18n/guide/{ko,ja,zh}/`), and in the labels of `README.md`'s language
+switcher links. The localized READMEs follow `README.md` section for section,
+and a guide translation its `docs/guide/` chapter. The rule covers strings a program prints:
 `cli-output-language.contract.test.ts` holds `cli/src/**` at zero, and the
 matcher data in `mcp/src/vault/absorb.mjs` is the `display_ko` exception.
 `pnpm docs:language` ratchets the remaining scopes.

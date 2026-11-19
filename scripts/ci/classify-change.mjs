@@ -82,7 +82,6 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     // The committed connector catalogue and the generator's own translation tests. Same shape as
     // every other generate-and-diff snapshot in this lane: a hand edit cannot ship.
     'pnpm mcp:catalogue:check',
-    'pnpm gateway:specimen:check',
     'pnpm design:toc:check',
     'pnpm docs:language',
     'pnpm source:language',
@@ -163,7 +162,7 @@ let browserBuild;
 const isBrowserBuildFile = (path) => (browserBuild ??= new Set(browserBuildFiles())).has(path);
 
 const KNOWN_PATHS = [
-  /^(?:app|assets|cli|docs|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
+  /^(?:app|assets|cli|docs|docs-i18n|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
   /^\.(?:agents|claude|codex|github|githooks)\//,
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,

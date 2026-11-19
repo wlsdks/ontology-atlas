@@ -343,3 +343,8 @@ jobs:
 
       - name: Check Rust formatting
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
+
+      # Mounts FAT32 and exFAT disk images with `hdiutil`, which only macOS has, and proves a
+      # vault there is never answered from a stamp. The release's macOS bridge job runs it too.
+      - name: Vault index on FAT and exFAT volumes
+        run: cargo test --manifest-path src-tauri/Cargo.toml -p vault-index --test volumes

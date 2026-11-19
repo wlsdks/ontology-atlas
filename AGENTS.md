@@ -47,9 +47,9 @@ During a long turn, say in a line what you are doing every few tool calls.
 
 A fact the source can answer comes from a script: run or extend the `pnpm`
 command (README's command table) and read its output instead of re-deriving it.
-Write no plans, retrospectives, handoffs or notes into the repository or
-`~/scratch`; reasons go in commit bodies and pull requests, working files in the
-session scratchpad. Screenshots, recordings and image drafts are working
+Plans are `docs/specs/` specs with a dated `## Revisions` log. Write no other plans, retrospectives, handoffs or notes into the
+repository or `~/scratch`; reasons go in commit bodies and pull requests,
+working files in the session scratchpad. Screenshots, recordings and image drafts are working
 files: attach them to the pull request. Git keeps only media the product
 ships (`committed-media.contract.test.ts`). Skill design:
 `docs/engineering/agent-instructions.md`.
@@ -121,7 +121,8 @@ isolated style, lint, and fixtures without meaning changes skip the sync.
 Keep the owner document current: public behavior in `README.md` and
 `docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
 contracts in their READMEs. Authored prose is English; `display_ko`,
-`cli/templates/vault-ko/**` and `README.{ko,ja,zh}.md` are localized data.
+`cli/templates/vault-ko/**`, `README.{ko,ja,zh}.md` and `docs-i18n/guide/**`
+are localized data.
 Never edit frozen history (`docs/records/README.md`); never edit or stage
 generated `src/entities/docs-vault/data/` or `public/docs-vault/`, which
 `pnpm docs-vault:build` writes.

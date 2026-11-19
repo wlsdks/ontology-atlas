@@ -68,6 +68,7 @@ fn read_pathspecs_literally(command: &mut Command) {
 /// The root of every runner: base hardening, literal paths, no credential prompt.
 fn git_command() -> Command {
     let mut command = Command::new("git");
+    crate::no_console::hide_console(&mut command);
     command.args(BASE_HARDENING);
     read_pathspecs_literally(&mut command);
     silence_git_credential_prompts(&mut command);

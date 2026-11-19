@@ -11,8 +11,6 @@
  * namespaces their client modules ask for differ in either direction.
  */
 export const GATEWAY_MESSAGE_PATHS = [
-  'acpChat.permission',
-  'acpChat.status',
   'agentConnect',
   'agents.models',
   'download',
@@ -26,7 +24,6 @@ export const GATEWAY_MESSAGE_PATHS = [
   'moru',
   'nav',
   'navRail',
-  'ontologyChangeReview.headline',
   'topology.startSteps.analyze',
 ] as const;
 
