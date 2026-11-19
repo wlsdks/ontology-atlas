@@ -112,6 +112,7 @@ fn send_chat_with_policy(
     construction: bool,
 ) -> Result<ChatEcho, String> {
     let mut command = Command::new("curl");
+    crate::no_console::hide_console(&mut command);
     command.args(curl_argv_with_timeout(timeout));
     if construction {
         construction_transport_policy(&mut command, request)?;
