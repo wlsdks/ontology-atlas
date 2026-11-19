@@ -67,9 +67,9 @@ export function GatewayDocPage({
   entryNav = false,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
-  /* The body is the English source on every locale, so the page says so and the article carries `lang="en"` for screen readers. */
+  /* A body not yet in the reader's language says so, and the article carries its language for screen readers. */
   const locale = useLocale();
-  const bodyIsForeign = locale !== 'en';
+  const bodyIsForeign = document.language !== locale;
 
   const { body, omittedSections } = useMemo(() => {
     const raw = document.raw;
@@ -197,7 +197,7 @@ export function GatewayDocPage({
             /* `[&>*:first-child]:mt-0` so the first block sits exactly `mt-10` under the header on both pages. */
             <article
               data-testid="gateway-doc-body"
-              lang={bodyIsForeign ? 'en' : undefined}
+              lang={bodyIsForeign ? document.language : undefined}
               className="mt-10 w-full max-w-[var(--measure-prose)] [&>*:first-child]:mt-0"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
@@ -251,7 +251,7 @@ function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: 
 const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 
 /**
- * Resolves a prose link for this locale (one markdown copy serves all). Body links point only at
+ * Resolves a prose link for this locale (the bodies write links without one). Body links point only at
  * guide chapters, since a vault-less visitor sees the sample and vault links would open nothing;
  * vault documents go to GitHub (`tests/contract/routes/guide-inbody-links.contract.test.ts`).
  */

@@ -1,61 +1,69 @@
 ---
-title: Correcting Concepts and Relations on the Map
+title: "Editing concepts and relations"
 doc_type: guide
 status: current
-area: map
+area: product
 ---
 
-# Correcting Concepts and Relations on the Map
+# Editing concepts and relations
 
-Relations are written as a single line in the frontmatter at the top of `.md` files, but you don't need to input YAML directly. You can now edit them right next to the selected concept on the map without moving to a separate studio.
+You can change the ontology in several ways: edit a relation or a concept's text on the map, create a concept, or let a coding agent such as Claude Code or Codex propose changes for you to review. This chapter covers each, and what happens when the file on disk changed first. Every way ends in the same place: the Markdown files in your ontology folder. You can also always edit those files directly in your own editor.
 
-The old `/ontology/studio` URL still works. It reads `node`, `mode`, and `edit` values from existing bookmarks and maps them to the corresponding concept and editing state in `/topology`. However, it is not an independent destination for the left rail.
+There is no separate editor screen. The old Studio addresses (`/ontology/studio` and `/ontology/edit`) only redirect to the map with the same concept selected.
 
-## Editing a Single Relation
+## Edit a relation on the map
 
 1. Select a concept on the map.
-2. In the small info panel on the right, open "Edit" and choose "Edit relations".
-3. Choose the relation type and the target concept, then specify why they are connected.
-4. Verify the direction and endpoints using the dashed arrow that appears on the map.
-5. Press "Review change" and check the resulting frontmatter array and reason.
-6. Click "Confirm and write" to actually update the file.
+2. In the concept panel, press **Edit relations**. On a domain, open **Edit** and choose **Edit relations**.
+3. The panel becomes the relation editor, in the same place. Choose a **Relation type**: **Is a kind of**, **Depends on**, **Contains** or **Related to**.
+4. Choose the **Connected concept**. You can pick only concepts that already have a file in the folder, so the relation always points at something real.
+5. Fill in **Why this relation exists**. It is required for **Depends on** and recommended for the others.
+6. Check the dashed preview line that the map draws between the two concepts. It shows the direction before anything is written.
+7. Press **Review change**. You see only what will change in the frontmatter, including the reason.
+8. Press **Confirm and write** to write the file, or **Keep editing** to go back.
 
-If you open an existing relation, "Remove this relation" also goes through the same change preview screen. If you change the target, it replaces the old target and reason with the new ones in one step, leaving no trace of the previous values.
+To delete a relation, open it in the editor and choose **Remove this relation**. The deletion goes through the same review. If you change the target of an existing relation, the old target and its reason are replaced in one write.
 
-Only one relation is handled at a time. Putting all features from the old studio into the small info panel would obscure the map and make it complex again. To edit other relations, finish the current one before opening the next.
+The editor handles one relation at a time, so the map stays visible beside it. [Relations between concepts](/guide/relations) explains what each type means and which frontmatter key it writes.
 
-### Four Relations
+## Edit a concept's text
 
-| Screen Name | Graph Relation | Stored Key |
-|---|---|---|
-| Is a kind of (belongs to a broader category) | `is_a` | `broader:` |
-| Contains (holds it inside this concept) | `contains` | `contains:` |
-| Depends on (this concept needs it to work) | `depends_on` | `dependencies:` |
-| Related to (neither one needs the other) | `related_to` | `relates:` |
+Press **Details** in the concept panel to open the full view, then press **Edit body**. Write the definition, what the concept includes and excludes, and what is uncertain, then press **Save**. To change names in other languages (`display_<locale>`) or other frontmatter fields, edit the file itself.
 
-We do not use color alone to indicate type or direction. In the editor, relation names appear as text, and the map preview shows dashed lines with arrows. Once confirmed, these converge into solid lines. Collapsed targets briefly show only their node and name at their actual coordinates. Surrounding nodes and layout remain unchanged. During editing, the left INDEX collapses to free up map space; closing it restores the original expanded state. With motion reduction enabled, only the state changes without position movement or additional delay.
+## Create a concept
 
-## Creating New Concepts
+Open **Add concept** in one of three ways: right-click an empty part of the map, press **Create concept** on an empty map, or open **Edit** on a domain and choose **Create linked concept**.
 
-The map's "Add concept" receives the name, type, and domain but does not immediately create a file. Instead, it displays the proposed slug, UID, display name, domain, and author. You must click "Confirm and write" to generate the new `.md` file. Clicking "Keep editing" preserves the entered values.
+Enter the name in your screen's language (a second language is optional), choose the **Kind**, and optionally a **Domain**. **Create** does not write anything yet. It shows a review of the slug, the `uid`, the names, the domain and the author that will be written. **Confirm and save** creates the `.md` file. **Keep editing** returns to the form with your entries kept. [Choosing concepts](/guide/what-becomes-a-node) helps you decide the kind.
 
-## When Delegating to Agents
+## Let an agent propose changes
 
-In the app's ACP conversation, read-only tools like `list_concepts` and `get_concept` do not halt the conversation. Write tools such as `add_concept`, `add_relation`, and `patch_concept` are different. The agent converts the arguments it sent into proposals, displays them within the same conversation, and waits.
+### In the desktop app
 
-- "Allow once": Execute this single call and continue the same conversation.
-- "No thanks": Reject this call without modifying any files.
-- Write calls never offer "Allow this tool for the rest of this chat"; only other tools can.
+**Ask** in the concept panel opens the agent chat beside the map, with a question about that concept ready to send. The agent works through the Atlas MCP server.
 
-Read/write determination is not guessed by the screen. It aligns with the read indicators and auto-contracts provided by the MCP server's current `tools/list`. If the screen does not yet recognize a new tool, it defaults to write mode, prompting the user first.
+- Reading the ontology (`list_concepts`, `get_concept`, `find_path` and the other read tools) does not interrupt the chat.
+- Every write (`add_concept`, `add_relation`, `patch_concept` and the other write tools) pauses the chat on a card titled **Review the proposed change**. The card shows what will be created or changed and, for a relation, the reason.
+- **Allow once** runs that one write. **Deny** writes nothing. **Deny and edit** denies the write and drafts a correction request for you to send.
+- A batch of writes is shown item by item, and your answer applies to the whole batch.
+- A write tool never offers **Allow this tool for the rest of this chat**.
 
-## Conflicts and Canonical State
+If you set the chat's **Mode** to **Auto-approve**, file edits in this folder and new or changed concepts and relations go ahead without asking. Deletions, commits, shell commands and anything outside the folder still ask first. Auto-approve stays on for this folder until you turn it off. The **Allow list** in the privacy settings shows it as **Chat auto-approve**, with a **Revoke** button.
 
-Proposals are transient states not stored in a separate database or review file. The moment the frontmatter is written after confirmation, that markdown becomes the canonical version. If you open the editor and another person or agent modifies the same file first, an `expectedMtime` check prevents the second write. It does not silently overwrite new values.
+### From a terminal agent
 
-## Summary
+When Claude Code, Codex or Cursor uses the Atlas MCP server directly, the agent's own permission prompts decide what runs. Tools that rename, merge, delete or remove a relation preview by default and write only with `confirm: true`. Either way, the result is ordinary file changes. The map picks them up within seconds, a concept the agent created has `created_by: "agent:<name>"`, and the change is in `git diff` for you to review or revert.
 
-- The map and ACP are the primary workspaces.
-- Manual editing involves adding relations one by one around selected concepts.
-- Creation, relation editing, and ACP writes all display proposals before file writing.
-- `/ontology/studio` and `/ontology/edit` now only redirect to the map workspace.
+Writing a file is not the same as accepting its meaning. An agent can mark a concept `review_state: human_decides` when only a person should settle it. In the document view, **Mark as decided** clears that mark, and **Mark as checked** records that a person read the concept and the meaning is right. If the file changes after that, the concept panel says so.
+
+## When the file changed first
+
+Before the map writes a file, Atlas checks that the file has not changed since you opened it. If another editor, a teammate or an agent changed the same file in the meantime, nothing is overwritten:
+
+- The relation editor says "Could not write. Check whether the file changed, then try again."
+- A body edit keeps your text and tells you that the file was changed elsewhere first. Saving again replaces that version with your text.
+- MCP write tools accept `expected_mtime`. If it does not match, the write fails instead of overwriting.
+
+No hidden drafts or review queue sit behind these screens. A proposal exists only on screen until you confirm it. Once it is written, the Markdown file is the only version.
+
+Next: [Keep the map current as code changes](/guide/growing-vault).

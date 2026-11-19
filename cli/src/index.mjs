@@ -195,7 +195,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15: wraps the M
        --limit N --node-limit N --types A,B --json
   ontology-atlas topological-order [vault] Prerequisite-first dependency ordering
        --limit N --types A,B --include-isolated --json
-  ontology-atlas health [vault]               Graph integrity dashboard (6 checks, source paths compared)
+  ontology-atlas health [vault]               Graph integrity dashboard (source paths compared)
   ontology-atlas analysis [rootPath]          Dated findings record, compared with the previous run
        --json --component-types A,B           ${COLORS.dim}focused diagnosis tuning${COLORS.reset}
   ontology-atlas agent-brief [vault]          Claude Code/Codex handoff: readiness + first MCP calls
@@ -299,7 +299,7 @@ function printInitUsage(stream = stderr) {
       `  ontology-atlas init [folder]\n` +
       `  ontology-atlas init [folder] --quick-start\n` +
       `  ontology-atlas init [folder] --locale=ko\n\n` +
-      `Scaffold a local ontology vault. Default folder: ./vault\n\n` +
+      `Scaffold a local ontology vault. Default folder: ./atlas\n\n` +
       `${COLORS.bold}--quick-start${COLORS.reset}  no-prompt one-liner: scaffold + bootstrap from\n` +
       `  this repo + .mcp.json (already unconditional) + an absorb suggestion when\n` +
       `  CLAUDE.md/AGENTS.md exists (never auto-absorbed) + a compact next-steps block.\n`,
