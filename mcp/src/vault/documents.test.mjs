@@ -14,6 +14,7 @@ import fs, {
   writeFileSync,
 } from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -318,6 +319,42 @@ describe('a stamp that cannot show an edit (FAT/exFAT)', () => {
     assert.equal(fresh.frontmatter.title, 'BBBB');
     applyAllOrNothing(plan(fresh), { requireRevisions: true });
     assert.match(readFileSync(path, 'utf8'), /title: BBBB[\s\S]*Then BBBB/);
+  });
+});
+
+describe('listing order', () => {
+  /** find_path's reply with every directory listing in the order given; a fresh process each time. */
+  function findPathReply(root, reverse) {
+    const readModule = new URL('../tools/read.mjs', import.meta.url).href;
+    const script = `
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      if (${reverse}) {
+        const original = fs.readdirSync;
+        fs.readdirSync = (...args) => original(...args).reverse();
+        syncBuiltinESMExports();
+      }
+      const { findPathTool } = await import(${JSON.stringify(readModule)});
+      console.log(JSON.stringify(findPathTool({ from: 'capabilities/start', to: 'elements/end' })));
+    `;
+    return execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    });
+  }
+
+  it('gives find_path the same reply whatever order the directories are listed in', (t) => {
+    // Two equally short paths, start → via-a → end and start → via-b → end; the
+    // breadth-first search takes whichever neighbour the listing yields first.
+    const root = makeVault(t, {
+      'capabilities/start': nodeText('Start'),
+      'capabilities/via-a': nodeText('Via A').replace('kind: capability', 'kind: capability\ndepends_on: [capabilities/start, elements/end]'),
+      'capabilities/via-b': nodeText('Via B').replace('kind: capability', 'kind: capability\ndepends_on: [capabilities/start, elements/end]'),
+    });
+    mkdirSync(join(root, 'elements'));
+    writeFileSync(join(root, 'elements/end.md'), nodeText('End').replace('kind: capability', 'kind: element'));
+    const listed = findPathReply(root, false);
+    assert.equal(JSON.parse(listed).found, true);
+    assert.equal(findPathReply(root, true), listed);
   });
 });
 
