@@ -227,7 +227,9 @@ rest with the same code as before and writes those rows back behind itself
 stamp the lookup saw and was older than two seconds then, so no row pairs a
 value with a later version of its file. Another producer version, a missing,
 older, newer or damaged file, and the switch turned off all leave the build
-reading every file. Searching is one rule shared by indexing and queries: words of
+reading every file. Settings lists these fields beside the switch with the
+search words; Delete, turning the switch off and the folder sweep remove both
+files together. Searching is one rule shared by indexing and queries: words of
 alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
 become overlapping pairs, so a Korean term is found inside a word that carries
 a particle. The palette reads only the hit files to show their matching lines.
