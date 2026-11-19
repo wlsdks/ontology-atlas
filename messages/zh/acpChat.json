@@ -22,13 +22,24 @@
     "stopped": "已停止"
   },
   "firstRun": {
-    "title": "正在准备智能体",
-    "body": "首次运行需要下载该智能体（数百 MB），可能要几分钟。请保持应用打开。",
-    "progress": "已下载 {mb} MB"
+    "title": "正在下载智能体，只需这一次。",
+    "body": "可能需要几分钟。下载完成前请保持应用打开。",
+    "progress": "已下载 {mb} MB",
+    "waiting": "正在开始下载",
+    "barLabel": "智能体下载"
   },
   "starting": {
     "title": "正在连接智能体",
-    "body": "智能体正在这台电脑上启动，就绪后即可提问。"
+    "body": "智能体正在这台电脑上启动。现在就可以写下请求，智能体就绪后会立即发送。",
+    "stepsLabel": "接下来的步骤",
+    "step": {
+      "download": "下载智能体",
+      "connect": "连接智能体",
+      "send": "发送请求",
+      "sendWaiting": "智能体就绪后立即发送"
+    },
+    "takeBack": "编辑",
+    "takeBackLabel": "把这条请求放回输入框编辑，不会发送"
   },
   "connectStopped": {
     "title": "已停止连接",
@@ -176,7 +187,8 @@
   "history": "历史对话",
   "newChat": "新对话",
   "newChatWhenReady": "智能体连接后即可开始新对话",
-  "sendWhenReady": "智能体连接后即可发送",
+  "sendWhenReady": "智能体连接后立即发送",
+  "sendWhenStopped": "重新连接后即可发送",
   "untitled": "未命名对话",
   "model": "模型",
   "mode": "模式",
@@ -243,7 +255,12 @@
     "steps": "{count} 步",
     "plan": "任务 {done}/{total}",
     "done": "已完成",
-    "progressLabel": "代理工作进度"
+    "progressLabel": "代理工作进度",
+    "wrote": {
+      "both": "已写入 {concepts} 个概念 · {relations} 条关系",
+      "concepts": "已写入 {concepts} 个概念",
+      "relations": "已写入 {relations} 条关系"
+    }
   },
   "workGroup": "思考过程",
   "resize": "调整对话面板大小",

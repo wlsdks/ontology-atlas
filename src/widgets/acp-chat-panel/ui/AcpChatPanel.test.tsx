@@ -2808,6 +2808,106 @@ describe('first download: a starting indicator alone is not enough (2026-08-19)'
     }
   });
 
+  it('holds a request pressed while the agent starts, shows it, and sends it once when ready', async () => {
+    render(<AcpChatPanel runtimeId="claude-acp" runtimeLabel="Claude Code" vaultRoot="/vault" mcpServers={[{ name: 'atlas-vault' }]} />);
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    const prompts = () => bridge.sent.filter((m) => m.method === 'session/prompt');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Summarise the budget page' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    expect(within(screen.getByTestId('acp-starting-held')).getByText('Summarise the budget page')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    // A second press replaces the held request rather than queueing both.
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'List the payment concepts' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    expect(screen.getByTestId('acp-starting-held')).toHaveTextContent('List the payment concepts');
+    expect(prompts()).toHaveLength(0);
+
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() => expect(prompts()).toHaveLength(1));
+    expect((prompts()[0] as { params?: { prompt?: Array<{ text?: string }> } }).params?.prompt?.[0]?.text).toBe('List the payment concepts');
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    expect(prompts()).toHaveLength(1);
+  });
+
+  it('drops a held request when the runtime changes, putting it back in the box unsent', async () => {
+    const props = { runtimeLabel: 'Claude Code', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }] };
+    const view = render(<AcpChatPanel runtimeId="claude-acp" {...props} />);
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Summarise the budget page' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await screen.findByTestId('acp-starting-held');
+
+    view.rerender(<AcpChatPanel runtimeId="codex-acp" {...props} />);
+    expect(screen.queryByTestId('acp-starting-held')).toBeNull();
+    expect(screen.getByRole('textbox')).toHaveValue('Summarise the budget page');
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('puts a held request back in the box when the person stops the start', async () => {
+    render(<AcpChatPanel runtimeId="claude-acp" runtimeLabel="Claude Code" vaultRoot="/vault" mcpServers={[{ name: 'atlas-vault' }]} />);
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Summarise the budget page' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await screen.findByTestId('acp-starting-held');
+    fireEvent.click(screen.getByTestId('acp-chat-stop-connecting'));
+    expect(await screen.findByTestId('acp-connect-stopped')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('Summarise the budget page');
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('takes a held request back into the box, and an opening request shows while it waits', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        openingRequest={{ text: 'Build a first ontology for /repo.\nScope: everything', nonce: 9 }}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    expect(screen.getByTestId('acp-starting-opening')).toHaveTextContent('Build a first ontology for /repo.');
+    expect(screen.getByTestId('acp-starting-opening')).not.toHaveTextContent('Scope:');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Then check the map' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    fireEvent.click(await screen.findByTestId('acp-starting-take-back'));
+    expect(screen.queryByTestId('acp-starting-held')).toBeNull();
+    expect(screen.getByRole('textbox')).toHaveValue('Then check the map');
+  });
+
+  it('sends the opening request first and puts a held request back in the box instead of queueing it', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+        openingRequest={{ text: 'Build a first ontology for /repo.', nonce: 11 }}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Then check the map' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1' });
+    const prompts = () => bridge.sent.filter((m) => m.method === 'session/prompt') as Array<{ params?: { prompt?: Array<{ text?: string }> } }>;
+    await waitFor(() => expect(prompts()).toHaveLength(1));
+    expect(prompts()[0]?.params?.prompt?.[0]?.text).toBe('Build a first ontology for /repo.');
+    expect(screen.getByRole('textbox')).toHaveValue('Then check the map');
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    expect(prompts()).toHaveLength(1);
+  });
+
   it('the waiting indicator disappears when ready', async () => {
     await bootSession();
     expect(screen.queryByTestId('acp-starting')).toBeNull();

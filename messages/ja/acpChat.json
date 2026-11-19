@@ -22,13 +22,24 @@
     "stopped": "停止済み"
   },
   "firstRun": {
-    "title": "エージェントを準備しています",
-    "body": "初回はエージェント（数百MB）をダウンロードするため、数分かかることがあります。アプリを開いたままにしてください。",
-    "progress": "{mb}MBをダウンロード済み"
+    "title": "エージェントをダウンロードしています。初回だけです。",
+    "body": "数分かかることがあります。終わるまでアプリを開いたままにしてください。",
+    "progress": "{mb}MBをダウンロード済み",
+    "waiting": "ダウンロードを開始しています",
+    "barLabel": "エージェントのダウンロード"
   },
   "starting": {
     "title": "エージェントに接続中",
-    "body": "このコンピュータでエージェントを起動しています。準備ができたらすぐに質問できます。"
+    "body": "このコンピュータでエージェントを起動しています。依頼はいま書いておけば、準備ができしだい送信します。",
+    "stepsLabel": "このあとの流れ",
+    "step": {
+      "download": "エージェントをダウンロード",
+      "connect": "エージェントに接続",
+      "send": "依頼を送信",
+      "sendWaiting": "エージェントの準備ができしだい送信します"
+    },
+    "takeBack": "編集",
+    "takeBackLabel": "この依頼を入力欄に戻して編集します。送信はしません"
   },
   "connectStopped": {
     "title": "接続を停止しました",
@@ -176,7 +187,8 @@
   "history": "過去の会話",
   "newChat": "新しい会話",
   "newChatWhenReady": "エージェントに接続すると、新しい会話を始められます",
-  "sendWhenReady": "エージェントに接続すると送信できます",
+  "sendWhenReady": "エージェントに接続しだい送信します",
+  "sendWhenStopped": "もう一度接続すると送信できます",
   "untitled": "無題の会話",
   "model": "モデル",
   "mode": "モード",
@@ -243,7 +255,12 @@
     "steps": "{count}ステップ",
     "plan": "タスク{done}/{total}",
     "done": "完了しました",
-    "progressLabel": "エージェントの作業の進み具合"
+    "progressLabel": "エージェントの作業の進み具合",
+    "wrote": {
+      "both": "概念{concepts}件・関係{relations}件を書き込み",
+      "concepts": "概念{concepts}件を書き込み",
+      "relations": "関係{relations}件を書き込み"
+    }
   },
   "workGroup": "思考の過程",
   "resize": "会話パネルの幅を調整",

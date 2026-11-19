@@ -22,13 +22,24 @@
     "stopped": "Stopped"
   },
   "firstRun": {
-    "title": "Getting the agent ready",
-    "body": "The first run downloads the agent (a few hundred MB) and can take a few minutes. Please keep the app open.",
-    "progress": "{mb} MB downloaded so far"
+    "title": "Downloading the agent. This happens only once.",
+    "body": "It can take a few minutes. Keep the app open until it finishes.",
+    "progress": "{mb} MB downloaded so far",
+    "waiting": "Starting the download",
+    "barLabel": "Agent download"
   },
   "starting": {
     "title": "Connecting to the agent",
-    "body": "The agent is starting on this computer. You can ask as soon as it is ready."
+    "body": "The agent is starting on this computer. You can write your request now; it is sent as soon as the agent is ready.",
+    "stepsLabel": "What happens next",
+    "step": {
+      "download": "Download the agent",
+      "connect": "Connect to the agent",
+      "send": "Send your request",
+      "sendWaiting": "Sent as soon as the agent is ready"
+    },
+    "takeBack": "Edit",
+    "takeBackLabel": "Move this request back to the box to edit it; it is not sent"
   },
   "connectStopped": {
     "title": "Stopped connecting",
@@ -176,7 +187,8 @@
   "history": "Past chats",
   "newChat": "New chat",
   "newChatWhenReady": "You can start a new chat once the agent is connected",
-  "sendWhenReady": "You can send once the agent is connected",
+  "sendWhenReady": "Sent as soon as the agent is connected",
+  "sendWhenStopped": "Connect again to send",
   "untitled": "Untitled chat",
   "model": "Model",
   "mode": "Mode",
@@ -243,7 +255,12 @@
     "steps": "{count, plural, one {# step} other {# steps}}",
     "plan": "{done} of {total} tasks",
     "done": "Done",
-    "progressLabel": "Agent work progress"
+    "progressLabel": "Agent work progress",
+    "wrote": {
+      "both": "Wrote {concepts, plural, one {# concept} other {# concepts}} · {relations, plural, one {# relation} other {# relations}}",
+      "concepts": "Wrote {concepts, plural, one {# concept} other {# concepts}}",
+      "relations": "Wrote {relations, plural, one {# relation} other {# relations}}"
+    }
   },
   "workGroup": "Thought process",
   "resize": "Resize the chat panel",

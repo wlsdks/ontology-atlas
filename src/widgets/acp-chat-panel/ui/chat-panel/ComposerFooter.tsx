@@ -281,7 +281,7 @@ export function ComposerFooter({
         ) : null}
 
         <Tooltip
-          content={displayStatus === 'starting' || displayStatus === 'stopped' ? t('sendWhenReady') : t('send')}
+          content={displayStatus === 'starting' ? t('sendWhenReady') : displayStatus === 'stopped' ? t('sendWhenStopped') : t('send')}
           side="top"
         >
           <button
