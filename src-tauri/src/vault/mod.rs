@@ -12,7 +12,9 @@ pub(crate) mod write;
 #[cfg(test)]
 mod vault_scope_tests {
     use super::read::read_vault_text_file;
-    use super::scope::{canonical_root, resolve_existing_inside};
+    use super::scope::canonical_root;
+    #[cfg(unix)]
+    use super::scope::resolve_existing_inside;
     use super::walk::list_vault_directory;
     use super::write::{
         remove_vault_entry_blocking as remove_vault_entry,
@@ -31,7 +33,7 @@ mod vault_scope_tests {
         let vault = std::fs::canonicalize(base.join("vault")).unwrap();
         let home_path = home.to_string_lossy().to_string();
         let vault_path = vault.to_string_lossy().to_string();
-        let scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone()]);
+        let scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault));
 
         let refused = |result: Result<(), String>| {
             let err = result.unwrap_err();

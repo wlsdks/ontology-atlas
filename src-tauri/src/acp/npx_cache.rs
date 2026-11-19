@@ -205,7 +205,7 @@ pub(crate) fn launch_from_npx_cache(
         .to_string();
     Some(AcpLaunch {
         program,
-        args: launch.args[adapter_args..].to_vec(),
+        args: launch.args.get(adapter_args..)?.to_vec(),
         path_env,
     })
 }

@@ -164,7 +164,7 @@ fn a_late_inventory_is_discarded_when_selection_changes_mid_scan() {
         .is_empty());
     assert!(session
         .scan_with_hook(first, 100, |phase| match phase {
-            ScanPhase::DirectoryOpened(path) if path == PathBuf::from("docs") => {
+            ScanPhase::DirectoryOpened(path) if path == std::path::Path::new("docs") => {
                 session
                     .activate(
                         session.begin_selection().unwrap(),

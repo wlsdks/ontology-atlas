@@ -116,10 +116,10 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
         || trimmed.starts_with("git://");
     // A Windows drive path is a path too, or a first send to a local backup fails there.
     let bytes = trimmed.as_bytes();
-    let looks_drive_path = bytes.len() > 2
-        && bytes[0].is_ascii_alphabetic()
-        && bytes[1] == b':'
-        && (bytes[2] == b'\\' || bytes[2] == b'/');
+    let looks_drive_path = matches!(
+        bytes,
+        [drive, b':', b'\\' | b'/', ..] if drive.is_ascii_alphabetic()
+    );
     let looks_path = trimmed.starts_with('/') || trimmed.starts_with("file://") || looks_drive_path;
     if !(looks_scp || looks_url || looks_path) {
         return Err(coded("remote-url-unrecognized", ""));

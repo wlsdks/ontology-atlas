@@ -1,0 +1,7 @@
+# The version CI lints, tests and releases with. `stable` moved from 1.99.1 to 1.100.0 between two runs
+# on 2026-11-19 and a newer clippy adds lints, so a floating toolchain makes `-D warnings` red without
+# any change to this repository. Bump it deliberately, together with the `toolchain:` lines in
+# `.github/workflows`, which a contract keeps equal to this channel.
+[toolchain]
+channel = "1.100.0"
+components = ["clippy", "rustfmt"]

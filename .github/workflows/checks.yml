@@ -143,6 +143,12 @@ jobs:
         if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
 
+      # `licenses:check` and `notice:check` run `cargo metadata` side by side; without this step both
+      # auto-install the `rust-toolchain.toml` channel at once and one fails renaming the other's download.
+      - name: Install the pinned Rust toolchain
+        if: env.ACTIVE == 'true'
+        run: rustup toolchain install
+
       - name: Run planned type, lint, and documentation gates
         if: env.ACTIVE == 'true'
         env:

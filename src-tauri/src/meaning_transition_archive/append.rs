@@ -203,4 +203,5 @@ fn append_bundle_after_artifacts(
 }
 
 #[cfg(all(test, unix))]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 mod tests;

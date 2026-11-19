@@ -1,6 +1,8 @@
 //! Sweep and delete-all act on every index under the root, so these run in their own process,
 //! one at a time, where no other test's index can be caught by them.
 
+#![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
+
 mod common;
 
 use common::{write_corpus, TempVault};

@@ -172,7 +172,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
-          toolchain: stable
+          toolchain: 1.100.0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -228,7 +228,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
-          toolchain: stable
+          toolchain: 1.100.0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -298,7 +298,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
-          toolchain: stable
+          toolchain: 1.100.0
 
       # `bun build --compile` bakes the sidecar and embeds this runtime; the runner does not ship
       # bun. Toolchain installations are gathered at the top.
@@ -583,7 +583,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
-          toolchain: stable
+          toolchain: 1.100.0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { RUST_LINT_COMMAND } from '../check-rules/desktop.mjs';
 import { relatedMessagesCommand } from '../check-rules/i18n.mjs';
 import { rules as SECURITY_RULES } from '../check-rules/security.mjs';
 
@@ -942,6 +943,7 @@ describe('focused check suggestions', () => {
       'pnpm test:desktop:check',
       'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
+      RUST_LINT_COMMAND,
       'pnpm desktop:check',
       'pnpm test:contracts',
       // This set includes `src/views/docs-vault/**`, so the docs e2e comes with it.
@@ -977,6 +979,27 @@ describe('focused check suggestions', () => {
     for (const path of ['src-tauri/src/vault/write.rs', 'src-tauri/src/webview_verify/mod.rs']) {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:bridge'), path);
     }
+  });
+
+  it('names the Rust lint for Rust and Cargo changes, and for nothing else under src-tauri', () => {
+    for (const path of [
+      'src-tauri/src/lib.rs',
+      'src-tauri/src/git/briefing/tests.rs',
+      'src-tauri/build.rs',
+      'src-tauri/Cargo.toml',
+      'src-tauri/Cargo.lock',
+      'src-tauri/clippy.toml',
+      'rust-toolchain.toml',
+      'src-tauri/crates/vault-index/Cargo.toml',
+      'src-tauri/crates/vault-index/src/lib.rs',
+      'src-tauri/crates/vault-index/tests/index.rs',
+    ]) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(RUST_LINT_COMMAND), path);
+    }
+    for (const path of ['src-tauri/tauri.conf.json', 'src-tauri/capabilities/default.json', 'src/features/map/ui/Map.tsx']) {
+      assert.ok(!commandNames(suggestFocusedChecks([path])).includes(RUST_LINT_COMMAND), path);
+    }
+    assert.match(RUST_LINT_COMMAND, /cargo clippy .* -- -D warnings && cargo fmt .* --check$/);
   });
 
   it('points the Agents destination at the three e2e specs that drive it', () => {

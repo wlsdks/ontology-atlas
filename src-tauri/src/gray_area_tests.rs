@@ -176,7 +176,7 @@ fn a_picker_rejected_root_never_offers_source_recovery() {
     data["bindings"][0]["sourceId"] = json!(source_id);
     data["bindings"][0]["receipt"]["sourceId"] = json!(source_id);
     fs::write(sidecar, data.to_string()).unwrap();
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[f.vault.clone()]);
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
     assert_eq!(
         preview_gray_area_scope(
             f.vault.to_string_lossy().into_owned(),
@@ -194,7 +194,7 @@ fn source_recovery_preserves_the_content_grant_and_binding() {
     let path = f.vault.to_string_lossy().into_owned();
     let before = fs::read(f.vault.join(".ontology-atlas/project-sources.json")).unwrap();
     {
-        let _scope = crate::vault_grants::EnforcedScope::granting(&[f.vault.clone()]);
+        let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
         let error =
             preview_gray_area_scope(path.clone(), "project".into(), None, None).unwrap_err();
         assert_eq!(error["code"], "source-root-not-granted");
@@ -212,7 +212,7 @@ fn source_recovery_preserves_the_content_grant_and_binding() {
         );
     }
     {
-        let _scope = crate::vault_grants::EnforcedScope::granting(&[f.code.clone()]);
+        let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.code));
         assert_eq!(
             preview_gray_area_scope(path.clone(), "project".into(), None, None).unwrap_err(),
             json!("vault-root-not-granted")
@@ -261,7 +261,7 @@ fn source_recovery_preserves_the_content_grant_and_binding() {
 #[test]
 fn source_only_selection_recovers_preview_without_granting_code_writes() {
     let f = Fixture::new();
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[f.vault.clone()]);
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
     crate::vault_grants::grant_source_root(&f.code);
     assert!(preview_gray_area_scope(
         f.vault.to_string_lossy().into_owned(),

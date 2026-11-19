@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
@@ -27,12 +27,16 @@ pub(crate) struct Request {
 }
 impl Drop for Request {
     fn drop(&mut self) {
-        self.registry.0.lock().unwrap().requests.remove(&self.id);
+        self.registry.entries().requests.remove(&self.id);
     }
 }
 impl Registry {
+    /// A holder that panicked leaves bookkeeping that is still valid, so a poisoned lock is taken over.
+    fn entries(&self) -> MutexGuard<'_, Entries> {
+        self.0.lock().unwrap_or_else(|e| e.into_inner())
+    }
     fn prepare(&self, owner: &str, now: Instant) -> Result<String, String> {
-        let mut entries = self.0.lock().unwrap();
+        let mut entries = self.entries();
         // O(MAX_REQUESTS), including abandoned prepared tickets; active requests keep their slot.
         entries.requests.retain(|_, entry| {
             entry.receiver.is_none() || now.duration_since(entry.prepared) < PREPARE_LIFETIME
@@ -58,7 +62,7 @@ impl Registry {
         Ok(id)
     }
     pub(crate) fn claim(self: &Arc<Self>, owner: &str, id: &str) -> Result<Request, String> {
-        let mut entries = self.0.lock().unwrap();
+        let mut entries = self.entries();
         let entry = entries
             .requests
             .get_mut(id)
@@ -79,7 +83,7 @@ impl Registry {
         })
     }
     fn cancel(&self, owner: &str, id: &str) -> bool {
-        let mut entries = self.0.lock().unwrap();
+        let mut entries = self.entries();
         let Some(entry) = entries
             .requests
             .get_mut(id)
@@ -97,7 +101,7 @@ impl Registry {
         true
     }
     fn cancel_owner(&self, owner: Option<&str>) {
-        let mut entries = self.0.lock().unwrap();
+        let mut entries = self.entries();
         entries.requests.retain(|_, entry| {
             if owner.is_some_and(|owner| entry.owner != owner) {
                 return true;

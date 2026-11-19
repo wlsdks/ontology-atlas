@@ -13,6 +13,7 @@ pub(crate) fn bounded_output(
 
 /// `security add-generic-password` prints nothing either way, so only the exit status
 /// proves a write; a false yes would delete the working credential links.
+#[cfg(any(target_os = "macos", test))]
 pub(super) fn bounded_success(command: std::process::Command, limit: std::time::Duration) -> bool {
     crate::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES)
         .map(|(success, _)| success)
@@ -23,6 +24,7 @@ pub(super) fn bounded_success(command: std::process::Command, limit: std::time::
 pub(super) const LOGIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// A locked keychain waits on an unlock dialog, which must not eat session start.
+#[cfg(target_os = "macos")]
 pub(super) const KEYCHAIN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
 #[cfg(test)]

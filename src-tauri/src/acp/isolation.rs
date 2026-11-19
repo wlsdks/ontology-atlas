@@ -1,7 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use super::bounded_command::{bounded_output, KEYCHAIN_PROBE_TIMEOUT, LOGIN_PROBE_TIMEOUT};
-use super::credential_mirror::{claude_credentials_service, mirror_terminal_login};
+#[cfg(target_os = "macos")]
+use super::bounded_command::KEYCHAIN_PROBE_TIMEOUT;
+use super::bounded_command::{bounded_output, LOGIN_PROBE_TIMEOUT};
+#[cfg(target_os = "macos")]
+use super::credential_mirror::claude_credentials_service;
+use super::credential_mirror::mirror_terminal_login;
 use super::registry::chat_eligible;
 
 /// Only measured executors: guessed env vars or credential files silently break login.
@@ -211,6 +215,7 @@ pub(crate) fn shadow_credentials_present(config_dir: &Path) -> Option<bool> {
 }
 
 /// True only for an explicit `loggedIn: false`; a wrong "dead" would delete a working login.
+#[cfg(any(target_os = "macos", test))]
 fn claude_status_is_logged_out(stdout: &str) -> bool {
     let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout.trim()) else {
         return false;

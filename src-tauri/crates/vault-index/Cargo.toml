@@ -12,6 +12,9 @@ publish = false
 rusqlite = { version = "=0.43.0", default-features = false, features = ["bundled", "cache"] }
 sha2 = "=0.10.9"
 
+[lints]
+workspace = true
+
 [features]
 # Lets a release build (the benchmark) read OATLAS_INDEX_DIR; the app never enables it.
 index-dir-override = []

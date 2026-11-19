@@ -58,7 +58,7 @@ impl Fixture {
     }
 
     fn grant(&self) -> EnforcedScope {
-        let scope = EnforcedScope::granting(&[self.vault.clone()]);
+        let scope = EnforcedScope::granting(std::slice::from_ref(&self.vault));
         grant_source_root(&self.repo);
         scope
     }
@@ -285,7 +285,7 @@ fn refuses_a_vault_that_is_not_granted() {
 #[test]
 fn refuses_a_bound_root_that_is_not_granted() {
     let f = Fixture::new();
-    let _scope = EnforcedScope::granting(&[f.vault.clone()]);
+    let _scope = EnforcedScope::granting(std::slice::from_ref(&f.vault));
     f.put("AGENTS.md", SECRET);
     assert_eq!(f.read("AGENTS.md").unwrap_err(), "source-root-not-granted");
     assert_eq!(f.list("").unwrap_err(), "source-root-not-granted");

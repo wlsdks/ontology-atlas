@@ -24,6 +24,8 @@ impl EvidenceReader {
         let binary = crate::agent_setup::resolve_bundled_binary()?;
         let input_namespace = InputNamespace::new()?;
         let snapshot_file = snapshot_descriptor(&input_namespace.0, snapshot)?;
+        #[cfg(not(unix))]
+        let _ = &snapshot_file;
         let mut command = Command::new(&binary);
         command.current_dir(binary.parent().ok_or("reader_unavailable")?);
         command

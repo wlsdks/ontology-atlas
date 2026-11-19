@@ -51,6 +51,7 @@ on:
       - "scripts/desktop/stage-desktop-frontend.mjs"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
+      - "rust-toolchain.toml"
       - "tests/contract/release/windows-desktop-release.contract.test.ts"
   push:
     branches:
@@ -67,6 +68,7 @@ on:
       - "scripts/desktop/stage-desktop-frontend.mjs"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
+      - "rust-toolchain.toml"
       - "tests/contract/release/windows-desktop-release.contract.test.ts"
   workflow_dispatch:
 
@@ -157,7 +159,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
-          toolchain: stable
+          toolchain: 1.100.0
+          components: clippy, rustfmt
 
       # Almost all of this job's time is Rust compilation (measurement on 2026-08-02, step durations from the last successful run): of 720 seconds, **637 seconds (88%)** — 437 seconds for the release bundle +
       # 200 seconds for `cargo test`'s debug compilation. Even if we set all other steps to 0,
@@ -196,6 +199,16 @@ jobs:
 
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
+
+      # A panic in a sync Tauri command aborts the whole app, so `unwrap`, slice indexing and `panic!`
+      # outside tests are findings (`[workspace.lints.clippy]` in `src-tauri/Cargo.toml`) and `-D warnings`
+      # makes them fail this job. These are the cargo commands `pnpm checks:changed` names for Rust changes
+      # (`RUST_LINT_COMMAND`). What each OS lints: this job compiles the code that is `windows` or
+      # `not(unix)`; `lint-rust-macos` below compiles `unix` and macOS-only code; code gated on
+      # `target_os = "linux"` is compiled by neither, because the Linux runner would need GTK/WebKitGTK
+      # headers installed. Rustfmt is not per-OS, so it runs once, on macOS.
+      - name: Lint Rust with clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
 
       # The installer (9 of a PR run's 15 minutes) is built after merge, on the push to
       # `main`, and for release from the tag in `release-macos.yml`. A pull request stops at
@@ -273,3 +286,60 @@ jobs:
           path: release-upload
           if-no-files-found: error
           retention-days: 1
+
+  # The Windows job cannot see `cfg(unix)` (260 sites) or macOS-only code, and a macOS runner is free
+  # for this public repository. It builds the MCP sidecar first because every cargo call needs it
+  # (`tauri.conf.json` declares it as `externalBin`).
+  lint-rust-macos:
+    name: Lint Rust on macOS
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: macos-15
+    # budget: 300s
+    timeout-minutes: 7
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: 1.100.0
+          components: clippy, rustfmt
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled MCP server dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      - name: Build bundled MCP sidecar
+        run: pnpm mcp:build-binary
+
+      - name: Lint Rust with clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
