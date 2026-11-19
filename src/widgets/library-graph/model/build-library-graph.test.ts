@@ -206,6 +206,44 @@ describe("the library graph", () => {
     expect(buildLibraryGraph(input)).toEqual(buildLibraryGraph(input));
   });
 
+  it("draws a page's describes entries as about lines, resolved the way the wiki schema resolves them", () => {
+    const login = doc({ slug: "capabilities/login", title: "Login", frontmatter: { kind: "capability" } });
+    const signer = doc({ slug: "elements/jwt-signer", title: "JWT signer", frontmatter: { kind: "element", slug: "signer" } });
+    const hangul = doc({ slug: "capabilities/결제", title: "Payment", frontmatter: { kind: "capability" } });
+    const other = doc({ slug: "wiki/other" });
+    const readme = doc({ slug: "README", frontmatter: { kind: "vault-readme" } });
+    const tokens = doc({
+      slug: "wiki/tokens",
+      frontmatter: {
+        // Full slug, unique tail, `slug:` alias, NFD Hangul; then a missing slug, a wiki page and the README.
+        describes: ["capabilities/login", "jwt-signer", "signer", "capabilities/결제".normalize("NFD"), "capabilities/gone", "wiki/other", "README"],
+      },
+      linksOut: ["capabilities/login"],
+    });
+    const graph = buildLibraryGraph({
+      docs: [login, signer, hangul, other, readme, tokens],
+      wikiPages: [page("wiki/tokens"), page("wiki/other")],
+      sources: [],
+    });
+    const about = graph.edges.filter((edge) => edge.relation === "describes");
+    // The tail and the alias name one concept: one line, in the page's own order.
+    expect(about.map((edge) => edge.target)).toEqual(["concept:capabilities/login", "concept:elements/jwt-signer", "concept:capabilities/결제"]);
+    expect(about.every((edge) => edge.source === "page:wiki/tokens" && edge.certainty === "current")).toBe(true);
+    // The body also names Login; the pair keeps one line, the stronger one.
+    expect(graph.edges.filter((edge) => edge.relation === "mentions")).toEqual([]);
+    expect(graph.counts.concepts).toBe(3);
+  });
+
+  it("keeps a concept's body link to a page it is not described by, and drops it when it is", () => {
+    const login = doc({ slug: "capabilities/login", frontmatter: { kind: "capability" }, linksOut: ["wiki/a", "wiki/b"] });
+    const graph = buildLibraryGraph({
+      docs: [login, doc({ slug: "wiki/a", frontmatter: { describes: ["capabilities/login"] } }), doc({ slug: "wiki/b", frontmatter: { describes: [] } })],
+      wikiPages: [page("wiki/a"), page("wiki/b")],
+      sources: [],
+    });
+    expect(graph.edges.map((edge) => edge.id)).toEqual(["describes:wiki/a→capabilities/login", "mentions:capabilities/login→wiki/b"]);
+  });
+
   it("counts nothing, and refuses to invent nodes, for an empty folder", () => {
     const graph = buildLibraryGraph({ docs: [], wikiPages: [], sources: undefined });
     expect(graph.nodes).toHaveLength(0);

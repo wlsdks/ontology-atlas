@@ -1,4 +1,5 @@
 import { buildTopologyDeeplinkForDoc, type VaultDoc } from "@/entities/docs-vault";
+import { buildWikiNodeIndex } from "@/shared/lib/library/wiki-page-schema";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-text/locale-display-name";
 
 /**
@@ -11,19 +12,25 @@ import { resolveLocaleDisplayName } from "@/shared/lib/locale-text/locale-displa
  * |---|---|---|
  * | `source` | `manifest.sources` | every file, cited or not; an unattached dot is the fact that nobody wrote it up |
  * | `page` | wiki pages | one write-up |
- * | `concept` | a page's `[[slug]]` resolving to a `kind:` doc, or a `kind:` doc linking a page | the reach between write-up and ontology |
+ * | `concept` | a page's `describes:` entry or `[[slug]]` resolving to a `kind:` doc, or a `kind:` doc linking a page | the reach between write-up and ontology |
  *
  * | Edge | Read from | Means |
  * |---|---|---|
  * | `cites` | the page's `sources:` frontmatter | this write-up was made from that file |
+ * | `describes` | the page's `describes:` frontmatter, resolved as `validate_wiki` resolves it | this write-up is about that concept |
  * | `mentions` | page body wikilinks, and a concept's body `[[wiki/…]]` links | one names the other |
  *
- * An unresolved link (a `[[src:…]]` citation, a renamed-away target) is dropped here, once,
- * because a dot cannot tell a typo from a plan. Pure and deterministic, so the layout is
- * reproducible: O(sources + docs + pages + citations + links) with Map/Set lookups.
+ * One pair of marks carries one line: a page that is about a concept and also names it draws
+ * only `describes`, the stronger claim. An unresolved link (a `[[src:…]]` citation, a
+ * renamed-away target, a `describes:` entry naming no concept) is dropped here, once, because a
+ * dot cannot tell a typo from a plan. Pure and deterministic, so the layout is reproducible:
+ * O(sources + docs·depth + pages + citations + links) with Map/Set lookups, where depth is a
+ * slug's folder depth, walked once to resolve `describes:` tails.
  */
 
 export type LibraryGraphNodeKind = "source" | "page" | "concept";
+
+export type LibraryGraphRelation = "cites" | "describes" | "mentions";
 
 /** A source's state in the words of the list beside the canvas (`SourceCompileState`). */
 export type LibraryGraphSourceState =
@@ -56,11 +63,11 @@ export interface LibraryGraphEdge {
   /** The write-up, except a `mentions` edge read from a concept's body, which starts at the concept. */
   source: string;
   target: string;
-  relation: "cites" | "mentions";
+  relation: LibraryGraphRelation;
   /**
    * Whether this line may still be believed. A `cites` edge to a source the folder does not
    * vouch for (stale, checking, not compiled) is `unverified`, or the canvas contradicts the
-   * list beside it. A `mentions` edge is read from a body and is always `current`.
+   * list beside it. A `describes` or `mentions` edge resolved to a concept, so it is `current`.
    */
   certainty: "current" | "unverified";
 }
@@ -100,6 +107,12 @@ const conceptId = (slug: string): string => `concept:${slug}`;
 function isConcept(doc: VaultDoc): boolean {
   const kind = doc.frontmatter?.kind;
   return typeof kind === "string" && kind.trim() !== "";
+}
+
+/** A `describes:` list's entries; a scalar is `bad-describes` to the schema and draws nothing. */
+function describesOf(doc: VaultDoc | undefined): string[] {
+  const value = doc?.frontmatter?.describes;
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
 /** The last path segment, so `sources/quarter-plan.pdf` reads as `quarter-plan.pdf`. */
@@ -155,6 +168,29 @@ export function buildLibraryGraph({
     push({ id: pageId(page.slug), kind: "page", label: page.title, ref: page.slug, href: null });
   }
 
+  const pushConcept = (doc: VaultDoc): string => {
+    const id = conceptId(doc.slug);
+    push({ id, kind: "concept", label: conceptLabel(doc), ref: doc.slug, href: buildTopologyDeeplinkForDoc(doc) });
+    return id;
+  };
+  // Built only when some page says what it is about: most folders have no `describes:` yet.
+  let nodeIndex: ReturnType<typeof buildWikiNodeIndex> | null = null;
+  // The index answers in NFC; a slug read from disk may still be NFD, so the doc is found by NFC.
+  const byNfcSlug = new Map<string, VaultDoc>();
+  const resolveConcept = (entry: string): VaultDoc | null => {
+    if (!nodeIndex) {
+      for (const doc of docs) byNfcSlug.set(doc.slug.normalize("NFC"), doc);
+      nodeIndex = buildWikiNodeIndex(
+        docs.map((doc) => ({ slug: doc.slug, kind: doc.frontmatter?.kind, alias: doc.frontmatter?.slug })),
+      );
+    }
+    const resolved = nodeIndex.resolve(entry);
+    if (typeof resolved !== "object" || !resolved.node) return null;
+    return byNfcSlug.get(resolved.slug) ?? null;
+  };
+  /** `page|concept` pairs a `describes` line already joins, so no `mentions` line doubles it. */
+  const about = new Set<string>();
+
   for (const page of wikiPages) {
     const from = pageId(page.slug);
 
@@ -179,20 +215,25 @@ export function buildLibraryGraph({
       });
     }
 
-    // mentions: body wikilinks that land on a document carrying `kind:`.
+    // describes: in the page's own order, so the first entry leads (the island it joins).
     const doc = bySlug.get(page.slug);
+    for (const entry of describesOf(doc)) {
+      const concept = resolveConcept(entry);
+      if (!concept || pages.has(concept.slug)) continue;
+      const to = pushConcept(concept);
+      const pair = `${page.slug}|${concept.slug}`;
+      if (about.has(pair)) continue;
+      about.add(pair);
+      edges.push({ id: `describes:${page.slug}→${concept.slug}`, source: from, target: to, relation: "describes", certainty: "current" });
+    }
+
+    // mentions: body wikilinks that land on a document carrying `kind:`.
     for (const target of doc?.linksOut ?? []) {
       const linked = bySlug.get(target);
       // Concepts only: page→page lines would out-number both relations this picture is about.
       if (!linked || !isConcept(linked) || pages.has(target)) continue;
-      const to = conceptId(target);
-      push({
-        id: to,
-        kind: "concept",
-        label: conceptLabel(linked),
-        ref: target,
-        href: buildTopologyDeeplinkForDoc(linked),
-      });
+      const to = pushConcept(linked);
+      if (about.has(`${page.slug}|${target}`)) continue;
       const id = `mentions:${page.slug}→${target}`;
       if (drawn.has(id)) continue;
       drawn.add(id);
@@ -206,14 +247,8 @@ export function buildLibraryGraph({
     if (!isConcept(doc) || pages.has(doc.slug)) continue;
     for (const target of doc.linksOut) {
       if (!pages.has(target)) continue;
-      const from = conceptId(doc.slug);
-      push({
-        id: from,
-        kind: "concept",
-        label: conceptLabel(doc),
-        ref: doc.slug,
-        href: buildTopologyDeeplinkForDoc(doc),
-      });
+      const from = pushConcept(doc);
+      if (about.has(`${target}|${doc.slug}`)) continue;
       const id = `mentions:${doc.slug}→${target}`;
       if (drawn.has(id)) continue;
       drawn.add(id);
