@@ -3,11 +3,14 @@ import { execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { RACY_WINDOW_MS } from '../vault/documents.mjs';
+
+/** The server entry, by path: a module URL here would make the dead-code check follow it. */
+const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
 
 test('graph read requests load every vault document once and observe edits on the next request', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-query-vault-load-')));
@@ -519,7 +522,7 @@ test('the server reads the vault fresh once per write call, not once per load', 
       syncBuiltinESMExports();
     `)}`;
     const opens = () => Number(readFileSync(countFile, 'utf8'));
-    const child = spawn(process.execPath, ['--import', counter, fileURLToPath(new URL('../index.js', import.meta.url))], {
+    const child = spawn(process.execPath, ['--import', counter, SERVER], {
       env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
