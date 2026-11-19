@@ -20,6 +20,7 @@ import { dirname, extname, join } from 'node:path';
 
 import { cachedSurvey } from '../analyze/breadth-map.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
+import { areaLocator } from '../analyze/survey-areas.mjs';
 import { surveyEntry } from '../analyze/survey-paths.mjs';
 import { withoutSpans } from '../analyze/text.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
@@ -541,6 +542,25 @@ function listed(rows, render) {
   return `${shown.join(', ')}${more > 0 ? ` and ${more} more` : ''}`;
 }
 
+/** The areas of a survey listed by area that no node's `path:` falls in, largest first; O(nodes x path depth). */
+function unmappedAreas(docs, survey) {
+  if (!Array.isArray(survey?.areas)) return [];
+  const locate = areaLocator(survey.areas);
+  const mapped = new Set(docs.map(pathOf).filter(Boolean).map(locate));
+  return survey.areas.filter((area) => !mapped.has(area));
+}
+
+function areaLabel(area) {
+  if (area.rest) return `${area.members.length} smaller folders in ${repoText(area.path)} (${area.lines} lines)`;
+  return `${repoText(area.path)}${area.own ? ' (its own files)' : ''} (${area.files} files, ${area.lines} lines)`;
+}
+
+/** The call that opens an area: its own map, or for a folder's own files an outline of its main files. */
+function openAreaCall(repoRoot, area) {
+  if (area.own) return `analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: area.mainFiles.map((file) => ({ path: file.path, mode: 'outline' })) })})`;
+  return `analyze_repo_structure(${JSON.stringify({ rootPath: join(repoRoot, area.rest ? area.members[0] : area.path) })})`;
+}
+
 /** The read and patch that give each listed rule its exact cite. */
 function citeRepair(rows) {
   const readable = rows.filter((row) => row.path);
@@ -560,12 +580,16 @@ export function measureBuildDepth(docs, repo, reads) {
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
+  const unmapped = repo ? unmappedAreas(docs, repo.survey) : [];
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
     if (breadth.unplaced.length > 0) {
       parts.push(`Not placed: ${listed(breadth.unplaced, abilityLabel)}. Place each: add_concepts a capability for it, name it in the title or in code form (\`name\`) of the node that covers it (a family or group names its members), or exclude it in the project's ## Uncertainty with one line for it alone that cites its path:Lline or exact name and says why.`);
     }
+  }
+  if (unmapped.length > 0) {
+    parts.push(`Areas: no node's path: falls in ${unmapped.length} of the ${repo.survey.areas.length} areas the survey lists, largest first: ${listed(unmapped, areaLabel)}. Open the next: ${openAreaCall(repo.repoRoot, unmapped[0])}, then write its nodes before the one after.`);
   }
   if (depth && depth.unread.length > 0) {
     parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.${depth.served === 0 ? ' This server process has served no reads; a restarted server keeps none.' : ''} Not yet: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(depth.unread)}.`);
@@ -586,6 +610,7 @@ export function measureBuildDepth(docs, repo, reads) {
     rules,
     abilityEdges,
     roles,
+    unmappedAreas: unmapped,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,

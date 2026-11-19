@@ -30,7 +30,7 @@ import { readSurveyText, surveyEntry } from './survey-paths.mjs';
 const TOOLING = /(?:^|\/)(?:[\w-]*bench[\w-]*|examples?|demos?|samples?|fixtures?|testdata|mocks?|[\w-]*_mocks)\//i;
 const FAMILY_SIZE = 5;
 const MODULE_API_SIZE = 3;
-const ABILITY_LIMIT = 120;
+export const ABILITY_LIMIT = 120;
 const SCAN_BYTES = 256 * 1024;
 const DISPATCH_SUBJECT = /(?:^|\.)(?:command|cmd|action|op|operation|event|method|verb)$/i;
 const NOT_A_HANDLER = new Set([
@@ -351,7 +351,8 @@ export function fairShares(counts, limit) {
 /**
  * Every ability the survey lists, tooling left out, at most 120 rows shared
  * fairly between kinds, each with `evidence` as `path:Lline`. What a kind leaves
- * out is counted per kind, never dropped silently. An operator or documented row
+ * out is counted per kind, never dropped silently; `found` keeps every row for a
+ * survey that shares the rows another way. An operator or documented row
  * whose name an earlier row already answers to is the same ability found twice
  * (a `metrics` flag group beside a `Metrics` config section) and is dropped.
  *
@@ -409,5 +410,5 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
   const omittedByKind = Object.fromEntries([...counts]
     .map(([kind, count]) => [kind, count - shares.get(kind)])
     .filter(([, omitted]) => omitted > 0));
-  return { rows: listed, omitted: rows.length - listed.length, omittedByKind };
+  return { rows: listed, omitted: rows.length - listed.length, omittedByKind, found: rows };
 }
