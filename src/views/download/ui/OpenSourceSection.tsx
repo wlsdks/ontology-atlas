@@ -228,7 +228,7 @@ export function OpenSourceSection() {
       data-testid="gateway-source-section"
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24')}
     >
-      {/* The column decides the row, as in the loop section above. */}
+      {/* The column, not the window, decides the row. */}
       <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <div className="grid min-w-0 gap-x-16 gap-y-12 @min-[52rem]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="flex min-w-0 flex-col">

@@ -435,13 +435,13 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  it('walks decision → app window → the three moments → screens → the steps → the source → colophon', () => {
+  it('walks decision → app window → the build → screens → the steps → the source → colophon', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('gateway-hero-cta');
-    const loop = screen.getByTestId('gateway-loop-cards');
+    const build = screen.getByTestId('gateway-build-section');
     const steps = screen.getByTestId('gateway-start-steps');
     const source = screen.getByTestId('gateway-source-repository');
     const demo = screen.getByTestId('demo-stage');
@@ -452,8 +452,8 @@ describe('DownloadPage', () => {
     for (const [earlier, later] of [
       [heading, primaryCta],
       [primaryCta, demo],
-      [demo, loop],
-      [loop, architecture],
+      [demo, build],
+      [build, architecture],
       [architecture, library],
       [library, steps],
       [steps, source],

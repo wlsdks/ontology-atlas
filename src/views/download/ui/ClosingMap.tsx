@@ -6,278 +6,467 @@ import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pau
 import { cn } from '@/shared/lib/cn';
 import { FONT_WEIGHT } from '@/shared/ui/tokens/font-weight';
 
-import { crossesClusters, buildFilmScene, type FilmScene } from '../lib/film-scene';
-import { drawHitRing, drawKeyLight, easeInOut, easeOut, lerp, lightSprite } from '../lib/film-kit';
+import {
+  branchRoute,
+  bundledRelations,
+  bundleRoute,
+  pointAlong,
+  traceRoute,
+  type Point,
+  type Route,
+} from '../lib/closing-map';
+import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film-scene';
+import { easeInOut, easeOut, lerp } from '../lib/film-kit';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
 
-/** The whole drawing, from the hub's beat to the last name. */
-const DRAW_MS = 1200;
-/** Shares of the drawing: when the outermost mark starts, how long a mark and a line take. */
-const REACH_SPAN = 0.6;
-const MARK_SPAN = 0.22;
-const LINE_SPAN = 0.26;
-const NAME_LAG = 0.1;
-const NAME_SPAN = 0.2;
-const RISE_PX = 8;
-const LINE_ALPHA = 0.3;
-const KEY_LIGHT_ALPHA = 0.12;
+/** The draw-in, from the core's first light to the last strand. */
+const DRAW_MS = 1800;
+/** After the draw-in, signals travel the bundled relations: this many at once, each on its own beat. */
+const PULSES = 7;
+const PULSE_PERIOD_MS = 4200;
+const PULSE_TRAVEL_MS = 2800;
+const PULSE_TRAIL = 0.14;
+/** The hubs' slow breath, and how long the ambient layer takes to come in or return. */
+const BREATH_MS = 5200;
+const PRESENCE_MS = 900;
+const SPRITE = 256;
 
 interface Palette {
   ink: string;
   secondary: string;
+  tertiary: string;
   ground: string;
   indigo: string;
+  bright: string;
   amber: string;
   sans: string;
+  /** Rem-based type steps in CSS px, read once: canvas text cannot resolve `var()`. */
+  title: number;
+  bodyLg: number;
+  body: number;
 }
 
 function readPalette(): Palette {
   const root = getComputedStyle(document.documentElement);
   const v = (name: string) => root.getPropertyValue(name).trim();
+  const rem = parseFloat(root.fontSize) || 16;
+  const step = (name: string) => (parseFloat(v(name)) || 1) * rem;
   return {
     ink: v('--color-text-primary'),
     secondary: v('--color-text-secondary'),
+    tertiary: v('--color-text-tertiary'),
     ground: v('--color-canvas'),
-    indigo: v('--map-indigo-bright'),
+    indigo: v('--map-indigo'),
+    bright: v('--map-indigo-bright'),
     amber: v('--map-amber-hub'),
     sans: getComputedStyle(document.body).fontFamily,
+    title: step('--text-title'),
+    bodyLg: step('--text-body-lg'),
+    body: step('--text-body'),
   };
 }
 
-interface Point {
+/** A soft light: three nested falloffs stamped once, so its edge fades like light, not a cone. */
+function softSprite(color: string): HTMLCanvasElement {
+  const sprite = document.createElement('canvas');
+  sprite.width = SPRITE;
+  sprite.height = SPRITE;
+  const ctx = sprite.getContext('2d');
+  if (!ctx) return sprite;
+  const c = SPRITE / 2;
+  for (const [reach, alpha] of [
+    [1, 0.34],
+    [0.6, 0.4],
+    [0.28, 0.5],
+  ] as const) {
+    const g = ctx.createRadialGradient(c, c, 0, c, c, c * reach);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'transparent');
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, SPRITE, SPRITE);
+  }
+  return sprite;
+}
+
+interface Sprites {
+  amber: HTMLCanvasElement;
+  bright: HTMLCanvasElement;
+  ground: HTMLCanvasElement;
+}
+
+interface Label {
+  i: number;
   x: number;
   y: number;
-}
-
-interface Spot extends Point {
   align: CanvasTextAlign;
+  font: string;
+  color: string;
+  w: number;
+  h: number;
 }
 
-interface MapLayout {
-  text: number;
+interface Layout {
+  wide: boolean;
+  root: number;
   hub: Point;
+  /** The domains' mean distance from the core (vertical radius) and the map's x/y stretch. */
+  orbit: number;
+  squash: number;
   at: Point[];
   mark: number[];
-  /** When each mark starts to land, 0..1 of the drawing, outward from the hub. */
-  start: number[];
-  names: { i: number; spot: Spot }[];
+  /** 0..1 of the draw-in: when each mark lands, its branch having grown from its container. */
+  land: number[];
+  branches: { route: Route; tier: 1 | 2 | 3; from: number }[];
+  bundles: { route: Route; begin: number; crosses: boolean }[];
+  pools: { i: number; r: number }[];
+  labels: Label[];
 }
 
-function markRadius(kind: string): number {
-  return kind === 'project' ? 7 : kind === 'domain' ? 5.5 : kind === 'capability' ? 3.6 : 2.6;
+function markRadius(kind: string, degree: number): number {
+  if (kind === 'project') return 6.5;
+  if (kind === 'domain') return 5;
+  if (kind === 'capability') return Math.min(4.4, 1.9 + 0.42 * Math.sqrt(degree));
+  return 1.25;
 }
 
-/**
- * Where each name goes: under its mark if that space is free and inside the canvas, else above
- * or beside it. The film's own placement, kept small enough to copy.
- */
-function placeNames(
-  ctx: CanvasRenderingContext2D,
-  order: readonly number[],
-  at: readonly Point[],
-  mark: readonly number[],
-  text: number,
-  nameOf: (i: number) => string,
-  w: number,
-  h: number,
-): { i: number; spot: Spot }[] {
-  const taken: { x: number; y: number; w: number; h: number }[] = [];
-  const out: { i: number; spot: Spot }[] = [];
-  for (const i of order) {
-    const { x, y } = at[i]!;
-    const r = mark[i]!;
-    const bw = ctx.measureText(nameOf(i)).width;
-    const bh = text + 4;
-    const down = y + r + 6 + text / 2;
-    const up = y - r - 6 - text / 2;
-    const side = r + 8;
-    const options: Spot[] = [
-      { x, y: down, align: 'center' },
-      { x, y: up, align: 'center' },
-      { x: x + side, y, align: 'start' },
-      { x: x - side, y, align: 'end' },
-      { x: x + side, y: down, align: 'start' },
-      { x: x - side, y: down, align: 'end' },
-      { x: x + side, y: up, align: 'start' },
-      { x: x - side, y: up, align: 'end' },
-    ];
-    const boxOf = (o: Spot) => ({
-      x: o.align === 'center' ? o.x : o.align === 'start' ? o.x + bw / 2 : o.x - bw / 2,
-      y: o.y,
-      w: bw,
-      h: bh,
-    });
-    const cost = (o: Spot) => {
-      const b = boxOf(o);
-      const outside =
-        Math.max(0, 6 - (b.x - b.w / 2)) + Math.max(0, b.x + b.w / 2 - (w - 6)) +
-        Math.max(0, 4 - (b.y - b.h / 2)) + Math.max(0, b.y + b.h / 2 - (h - 4));
-      return (
-        outside * 1000 +
-        taken.reduce((sum, o2) => {
-          const ox = (o2.w + b.w + 8) / 2 - Math.abs(o2.x - b.x);
-          const oy = (o2.h + b.h + 4) / 2 - Math.abs(o2.y - b.y);
-          return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
-        }, 0)
-      );
-    };
-    let best = options[0]!;
-    let least = Infinity;
-    for (const o of options) {
-      const c = cost(o);
-      if (c < least) {
-        best = o;
-        least = c;
-      }
-      if (c === 0) break;
-    }
-    taken.push(boxOf(best));
-    out.push({ i, spot: best });
-  }
-  return out;
-}
-
-function layoutMap(ctx: CanvasRenderingContext2D, scene: FilmScene, palette: Palette, w: number, h: number): MapLayout {
-  const wide = w >= 420;
-  const text = wide ? 15 : 13;
+function layoutMap(ctx: CanvasRenderingContext2D, scene: FilmScene, palette: Palette, w: number, h: number): Layout {
+  const wide = w >= 520;
+  const shrink = wide ? 1 : 0.85;
   const hub = { x: w / 2, y: h / 2 };
-  /* Room on every side for a name under the outermost marks. */
-  const sx = w / 2 - (wide ? 40 : 24);
-  const sy = h / 2 - text - 18;
+  let sx = w / 2 - (wide ? 64 : 30);
+  let sy = h / 2 - (wide ? 44 : 30);
+  /* Kept near round: a flattened tree reads as a smear, a stretched one as a diagram. */
+  sx = Math.min(sx, sy * 1.28);
+  sy = Math.min(sy, sx);
   const at = scene.nodes.map((node) => ({ x: hub.x + node.x * sx, y: hub.y + node.y * sy }));
-  const mark = scene.nodes.map((node) => markRadius(node.kind) * (wide ? 1 : 0.85));
-  const start = scene.nodes.map((node) => Math.hypot(node.x, node.y) * REACH_SPAN);
+  const mark = scene.nodes.map((node) => markRadius(node.kind, node.degree) * shrink);
 
-  const root = scene.nodes.findIndex((node) => node.depth === 0);
-  const ring = scene.nodes
+  const rootIndex = scene.nodes.findIndex((node) => node.depth === 0);
+  const firstRing = scene.nodes
     .map((node, i) => ({ node, i }))
     .filter(({ node }) => node.depth === 1)
-    .sort((a, b) => b.node.degree - a.node.degree)
-    .slice(0, wide ? 7 : 4)
+    .sort((a, b) => Math.atan2(a.node.y, a.node.x) - Math.atan2(b.node.y, b.node.x))
     .map(({ i }) => i);
-  ctx.font = `${FONT_WEIGHT.strong} ${text}px ${palette.sans}`;
-  const names = placeNames(
-    ctx,
-    root < 0 ? ring : [root, ...ring],
-    at,
-    mark,
-    text,
-    (i) => scene.nodes[i]!.label,
-    w,
-    h,
-  );
-  return { text, hub, at, mark, start, names };
-}
-
-/** A line from `a` toward `b`, drawn to fraction `t`, bowed by `bow` of its length away from `hub`. */
-function traceLine(ctx: CanvasRenderingContext2D, a: Point, b: Point, t: number, bow: number, hub: Point) {
-  ctx.moveTo(a.x, a.y);
-  if (bow <= 0) {
-    ctx.lineTo(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
-    return;
+  const land = scene.nodes.map(() => 0);
+  const byDepth = scene.nodes.map((_, i) => i).sort((a, b) => scene.nodes[a]!.depth - scene.nodes[b]!.depth);
+  for (const i of byDepth) {
+    const node = scene.nodes[i]!;
+    if (node.depth === 0) land[i] = 0;
+    else if (node.depth === 1) land[i] = 0.12 + 0.05 * firstRing.indexOf(i);
+    else land[i] = land[node.parent]! + (node.depth === 2 ? 0.15 : 0.12) + node.seed * 0.08;
   }
-  const mx = (a.x + b.x) / 2;
-  const my = (a.y + b.y) / 2;
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
-  const ox = mx - hub.x;
-  const oy = my - hub.y;
-  const n = Math.hypot(ox, oy) || 1;
-  const c = { x: mx + (ox / n) * len * bow, y: my + (oy / n) * len * bow };
-  /* The first `t` of a quadratic curve is itself a quadratic curve. */
-  const c1 = { x: lerp(a.x, c.x, t), y: lerp(a.y, c.y, t) };
-  ctx.quadraticCurveTo(c1.x, c1.y, lerp(c1.x, lerp(c.x, b.x, t), t), lerp(c1.y, lerp(c.y, b.y, t), t));
+
+  const branches = scene.nodes.flatMap((node, i) =>
+    node.depth === 0 ? [] : [{ route: branchRoute(i, node.parent, at, hub, node.depth === 1 ? 0 : 0.42), tier: Math.min(3, node.depth) as 1 | 2 | 3, from: node.parent }],
+  );
+  const bundles = bundledRelations(scene).map(({ from, to, path, crosses }) => ({
+    route: bundleRoute(from, to, path.map((i) => at[i]!)),
+    begin: Math.min(0.68, Math.max(land[from]!, land[to]!) + 0.06),
+    crosses,
+  }));
+
+  const pools = firstRing.map((d) => {
+    let reach = 0;
+    scene.nodes.forEach((node, i) => {
+      if (node.cluster === d && i !== d) reach = Math.max(reach, Math.hypot(at[i]!.x - at[d]!.x, at[i]!.y - at[d]!.y));
+    });
+    return { i: d, r: Math.max(40, reach * 1.35) };
+  });
+
+  /* Names: the project and its domains, placed clear of each other and their marks. */
+  const nameSize = wide ? palette.title : palette.bodyLg;
+  const strong = `${FONT_WEIGHT.strong} ${nameSize}px ${palette.sans}`;
+  const quiet = `${FONT_WEIGHT.signature} ${palette.body}px ${palette.sans}`;
+  const hubs = rootIndex >= 0 ? [rootIndex, ...firstRing] : firstRing;
+  ctx.font = strong;
+  const requests = hubs.map((i) => {
+    const p = at[i]!;
+    const ox = p.x - hub.x;
+    const oy = p.y - hub.y;
+    const n = Math.hypot(ox, oy) || 1;
+    return {
+      x: p.x,
+      y: p.y,
+      r: mark[i]! + 6,
+      w: ctx.measureText(scene.nodes[i]!.label).width,
+      h: nameSize + 4,
+      out: n < 1 ? { x: 0, y: 1 } : { x: ox / n, y: oy / n },
+    };
+  });
+  const spots = placeLabels(requests, { gap: 8, bounds: { l: 6, t: 4, r: w - 6, b: h - 4 } });
+  const labels: Label[] = hubs.map((i, k) => ({
+    i,
+    x: at[i]!.x + spots[k]!.dx,
+    y: at[i]!.y + spots[k]!.dy,
+    align: spots[k]!.align as CanvasTextAlign,
+    font: strong,
+    color: palette.ink,
+    w: requests[k]!.w,
+    h: requests[k]!.h,
+  }));
+
+  /*
+   * On a wide map, one capability per domain is named, on the side away from its domain, so the
+   * two names never read as one phrase; the busiest whose name lands clear of every other wins.
+   */
+  if (wide) {
+    ctx.font = quiet;
+    const gap = 12;
+    const boxes = labels.map((l) => labelBox(l.x, l.y, l.w, l.h, l.align as 'start' | 'center' | 'end'));
+    const clear = (box: { l: number; t: number; r: number; b: number }) =>
+      box.l > 6 && box.r < w - 6 && box.t > 4 && box.b < h - 4 &&
+      boxes.every((o) => box.r + gap < o.l || box.l - gap > o.r || box.b + gap < o.t || box.t - gap > o.b) &&
+      hubs.every((i) => Math.max(box.l - at[i]!.x, 0, at[i]!.x - box.r) ** 2 + Math.max(box.t - at[i]!.y, 0, at[i]!.y - box.b) ** 2 > (mark[i]! + 10) ** 2);
+    for (const d of firstRing) {
+      const candidates = scene.nodes
+        .map((node, i) => ({ node, i }))
+        .filter(({ node }) => node.depth === 2 && node.cluster === d && node.kind === 'capability')
+        .sort((x, y) => y.node.degree - x.node.degree || x.node.id.localeCompare(y.node.id))
+        .slice(0, 4);
+      for (const { i } of candidates) {
+        const ox = at[i]!.x - at[d]!.x;
+        const oy = at[i]!.y - at[d]!.y;
+        const n = Math.hypot(ox, oy) || 1;
+        const dx = ox / n;
+        const dy = oy / n;
+        const align: CanvasTextAlign = dx > 0.4 ? 'start' : dx < -0.4 ? 'end' : 'center';
+        const lw = ctx.measureText(scene.nodes[i]!.label).width;
+        const lh = palette.body + 4;
+        const reach = mark[i]! + 8;
+        const x = at[i]!.x + dx * reach;
+        const y = at[i]!.y + dy * reach + (align === 'center' ? Math.sign(dy) * (lh / 2) : 0);
+        const box = labelBox(x, y, lw, lh, align as 'start' | 'center' | 'end');
+        if (!clear(box)) continue;
+        boxes.push(box);
+        labels.push({ i, x, y, align, font: quiet, color: palette.tertiary, w: lw, h: lh });
+        break;
+      }
+    }
+  }
+
+  const orbit = firstRing.length > 1 ? firstRing.reduce((sum, d) => sum + Math.hypot(scene.nodes[d]!.x, scene.nodes[d]!.y), 0) / firstRing.length * sy : 0;
+  return { wide, root: rootIndex, hub, orbit, squash: sx / sy, at, mark, land, branches, bundles, pools, labels };
 }
 
-/** One frame at progress `u` (0..1): marks land outward from the hub, each line grows from its nearer end. */
-function drawMap(
-  ctx: CanvasRenderingContext2D,
-  scene: FilmScene,
-  L: MapLayout,
-  palette: Palette,
-  light: HTMLCanvasElement,
-  w: number,
-  h: number,
-  u: number,
-) {
+/** One draw-in frame at progress `u` (0..1); at 1 it is the resting map. */
+function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: Palette, S: Sprites, scratch: Point, w: number, h: number, u: number) {
   ctx.clearRect(0, 0, w, h);
-  drawKeyLight(ctx, light, L.hub.x, L.hub.y, Math.min(w, h) * 0.5, KEY_LIGHT_ALPHA * easeOut(u / 0.5));
+  const root = L.root;
 
-  /* Finished lines share one path per colour; only lines still growing are stroked one by one. */
+  /* Light pools first: the core's warmth and each domain's region, added as light. */
+  ctx.globalCompositeOperation = 'lighter';
+  const core = easeOut(u / 0.3);
+  if (core > 0) {
+    const r = Math.min(w, h) * 0.34;
+    ctx.globalAlpha = 0.3 * core;
+    ctx.drawImage(S.amber, L.hub.x - r, L.hub.y - r, r * 2, r * 2);
+  }
+  for (let k = 0; k < L.pools.length; k += 1) {
+    const { i, r } = L.pools[k]!;
+    const a = easeOut((u - L.land[i]!) / 0.4);
+    if (a <= 0) continue;
+    ctx.globalAlpha = 0.3 * a;
+    ctx.drawImage(S.bright, L.at[i]!.x - r, L.at[i]!.y - r, r * 2, r * 2);
+  }
+
+  /* Bundled relations, each stroked alone so where they gather their light adds up. */
   ctx.lineWidth = 1;
-  ctx.globalAlpha = LINE_ALPHA;
-  for (const contains of [true, false]) {
-    ctx.strokeStyle = contains ? palette.ink : palette.indigo;
+  ctx.strokeStyle = P.bright;
+  for (let k = 0; k < L.bundles.length; k += 1) {
+    const { route, begin, crosses } = L.bundles[k]!;
+    const g = easeInOut((u - begin) / 0.3);
+    if (g <= 0) continue;
+    ctx.globalAlpha = crosses ? 0.13 : 0.1;
     ctx.beginPath();
-    for (const edge of scene.edges) {
-      if (edge.contains !== contains) continue;
-      const near = L.start[edge.from]! <= L.start[edge.to]! ? edge.from : edge.to;
-      const far = near === edge.from ? edge.to : edge.from;
-      const grow = easeInOut((u - L.start[near]!) / LINE_SPAN);
-      if (grow <= 0) continue;
-      traceLine(ctx, L.at[near]!, L.at[far]!, Math.min(1, grow), crossesClusters(scene, edge) ? 0.18 : 0, L.hub);
+    traceRoute(ctx, route, 0, g, scratch);
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  /* The domains' orbit, a faint ring that gives the map its depth and the core its centre. */
+  const orbit = easeInOut((u - 0.1) / 0.5);
+  if (orbit > 0 && L.orbit > 0) {
+    ctx.globalAlpha = 0.09;
+    ctx.strokeStyle = P.secondary;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(L.hub.x, L.hub.y, L.orbit * L.squash, L.orbit, 0, -Math.PI / 2, -Math.PI / 2 + orbit * Math.PI * 2);
+    ctx.stroke();
+  }
+
+  /*
+   * The tree: trunks in the core's amber, branches in indigo, twigs as faint ink. Trunks and
+   * branches carry a wide faint pass under the line, so they read as lit rather than ruled.
+   */
+  for (let pass = 0; pass < 5; pass += 1) {
+    const tier = pass < 2 ? 1 : pass < 4 ? 2 : 3;
+    const under = pass === 0 || pass === 2;
+    ctx.strokeStyle = tier === 1 ? P.amber : tier === 2 ? P.bright : P.secondary;
+    ctx.globalAlpha = under ? 0.08 : tier === 1 ? 0.55 : tier === 2 ? 0.46 : 0.15;
+    ctx.lineWidth = under ? (tier === 1 ? 5 : 3.5) : tier === 1 ? 1.4 : tier === 2 ? 1.1 : 0.8;
+    ctx.beginPath();
+    for (let k = 0; k < L.branches.length; k += 1) {
+      const b = L.branches[k]!;
+      if (b.tier !== tier) continue;
+      const start = L.land[b.from]! + 0.02;
+      const g = easeInOut((u - start) / Math.max(0.08, L.land[b.route.to]! - start));
+      if (g > 0) traceRoute(ctx, b.route, 0, g, scratch);
     }
     ctx.stroke();
   }
 
-  scene.nodes.forEach((node, i) => {
-    const a = easeOut((u - L.start[i]!) / MARK_SPAN);
-    if (a <= 0) return;
-    ctx.globalAlpha = a;
-    ctx.fillStyle = node.kind === 'project' ? palette.amber : palette.indigo;
-    ctx.beginPath();
-    ctx.arc(L.at[i]!.x, L.at[i]!.y, L.mark[i]! * lerp(0.4, 1, a), 0, Math.PI * 2);
-    ctx.fill();
-  });
+  /* Marks, deepest first so the hubs sit on top. */
+  for (let depth = 3; depth >= 0; depth -= 1) {
+    for (let i = 0; i < scene.nodes.length; i += 1) {
+      const node = scene.nodes[i]!;
+      if (Math.min(3, node.depth) !== depth) continue;
+      const a = easeOut((u - L.land[i]!) / 0.16);
+      if (a <= 0) continue;
+      const { x, y } = L.at[i]!;
+      const r = L.mark[i]! * lerp(0.35, 1, a);
+      if (node.kind === 'element') {
+        ctx.globalAlpha = 0.62 * a;
+        ctx.fillStyle = P.secondary;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
+      const project = i === root;
+      const hubMark = node.depth <= 1;
+      ctx.globalCompositeOperation = 'lighter';
+      const halo = project ? 52 : hubMark ? 38 : r * 5.5;
+      ctx.globalAlpha = (project ? 0.85 : hubMark ? 0.7 : 0.4) * a;
+      ctx.drawImage(project ? S.amber : S.bright, x - halo, y - halo, halo * 2, halo * 2);
+      ctx.globalCompositeOperation = 'source-over';
+      if (hubMark) {
+        ctx.globalAlpha = 0.42 * a;
+        ctx.strokeStyle = project ? P.amber : P.bright;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, r + (project ? 7 : 5), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = a;
+      ctx.fillStyle = project ? P.amber : P.bright;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      if (hubMark || node.degree >= 8) {
+        ctx.fillStyle = P.ink;
+        ctx.beginPath();
+        ctx.arc(x, y, r * (hubMark ? 0.42 : 0.38), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
 
-  drawHitRing(ctx, L.hub.x, L.hub.y, u * DRAW_MS, palette.amber, { from: 7 });
-
-  ctx.font = `${FONT_WEIGHT.strong} ${L.text}px ${palette.sans}`;
+  /* Names on a soft pool of the page's ground, so they read without an outline. */
   ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  for (const { i, spot } of L.names) {
-    const a = easeOut((u - L.start[i]! - NAME_LAG) / NAME_SPAN);
+  for (let k = 0; k < L.labels.length; k += 1) {
+    const label = L.labels[k]!;
+    const a = easeOut((u - L.land[label.i]! - 0.1) / 0.22);
     if (a <= 0) continue;
-    const y = spot.y + (1 - a) * RISE_PX;
+    const y = label.y + (1 - a) * 6;
+    const cx = label.align === 'center' ? label.x : label.align === 'start' ? label.x + label.w / 2 : label.x - label.w / 2;
+    ctx.globalAlpha = 0.92 * a;
+    ctx.drawImage(S.ground, cx - label.w * 0.9, y - label.h * 1.6, label.w * 1.8, label.h * 3.2);
     ctx.globalAlpha = a;
-    ctx.textAlign = spot.align;
-    ctx.strokeStyle = palette.ground;
-    ctx.lineWidth = 5;
-    ctx.strokeText(scene.nodes[i]!.label, spot.x, y);
-    ctx.fillStyle = scene.nodes[i]!.kind === 'project' ? palette.ink : palette.secondary;
-    ctx.fillText(scene.nodes[i]!.label, spot.x, y);
+    ctx.font = label.font;
+    ctx.textAlign = label.align;
+    ctx.fillStyle = label.color;
+    ctx.fillText(scene.nodes[label.i]!.label, label.x, y);
   }
   ctx.textAlign = 'start';
   ctx.globalAlpha = 1;
 }
 
 /**
- * The film's last wide frame beside the closing headline: this repository's real map, drawn once
- * outward from the project hub over 1.2s while the closing is in view, then at rest. Under reduced
- * motion, or with the page's motion paused, it is drawn whole at once. The headline says the
- * same thing in words, so the drawing is hidden from assistive technology.
+ * The living layer over the rested map: signals travel the bundled relations in their declared
+ * direction, and the hubs breathe. `presence` (0..1) fades the whole layer in and out.
+ */
+function drawSignals(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: Palette, S: Sprites, scratch: Point, w: number, h: number, clock: number, presence: number) {
+  ctx.clearRect(0, 0, w, h);
+  if (presence <= 0.002 || L.bundles.length === 0) return;
+  ctx.globalCompositeOperation = 'lighter';
+
+  for (let i = 0; i < scene.nodes.length; i += 1) {
+    const node = scene.nodes[i]!;
+    if (node.depth > 1) continue;
+    const breath = 0.5 + 0.5 * Math.sin((clock / BREATH_MS) * Math.PI * 2 + i * 1.7);
+    const r = node.depth === 0 ? 64 : 46;
+    ctx.globalAlpha = presence * 0.22 * breath;
+    ctx.drawImage(node.depth === 0 ? S.amber : S.bright, L.at[i]!.x - r, L.at[i]!.y - r, r * 2, r * 2);
+  }
+
+  ctx.strokeStyle = P.bright;
+  for (let k = 0; k < PULSES; k += 1) {
+    const local = clock / PULSE_PERIOD_MS + k / PULSES;
+    const cycle = Math.floor(local);
+    const f = ((local - cycle) * PULSE_PERIOD_MS) / PULSE_TRAVEL_MS;
+    if (f >= 1) continue;
+    const pick = L.bundles[((cycle * PULSES + k) * 7919 + k * 31) % L.bundles.length]!;
+    const t = easeInOut(f);
+    const fade = presence * Math.sin(Math.PI * f);
+    for (let s = 1; s <= 3; s += 1) {
+      ctx.globalAlpha = 0.3 * fade;
+      ctx.lineWidth = 0.9 + s * 0.5;
+      ctx.beginPath();
+      traceRoute(ctx, pick.route, Math.max(0, t - (PULSE_TRAIL * s) / 3), t, scratch);
+      ctx.stroke();
+    }
+    pointAlong(pick.route, t, scratch);
+    ctx.globalAlpha = fade;
+    ctx.drawImage(S.bright, scratch.x - 14, scratch.y - 14, 28, 28);
+    ctx.fillStyle = P.ink;
+    ctx.beginPath();
+    ctx.arc(scratch.x, scratch.y, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * The film's last wide frame beside the closing headline: this repository's real map. The core
+ * lights, the containment tree grows outward to every concept, and the remaining relations
+ * gather into bundles along it; then signals travel those bundles while the hubs breathe. The
+ * signal layer is a second, 1x canvas, so a living frame redraws only light, never the map.
+ * Under reduced motion the rested map is drawn once; with the page's motion paused the map rests
+ * and the signals stop. The headline says the same thing in words, so it is hidden from
+ * assistive technology.
  */
 export function ClosingMap({ graph, className }: { graph: StageGraph; className?: string }) {
   const scene = useMemo(() => buildFilmScene(graph), [graph]);
-  const canvas = useRef<HTMLCanvasElement>(null);
+  const mapCanvas = useRef<HTMLCanvasElement>(null);
+  const signalCanvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const el = canvas.current;
+    const el = mapCanvas.current;
+    const glowEl = signalCanvas.current;
     const ctx = el?.getContext('2d');
-    if (!el || !ctx || scene.nodes.length === 0) return;
+    const glow = glowEl?.getContext('2d');
+    if (!el || !glowEl || !ctx || !glow || scene.nodes.length === 0) return;
     const palette = readPalette();
-    const light = lightSprite(palette.amber);
+    const sprites: Sprites = { amber: softSprite(palette.amber), bright: softSprite(palette.bright), ground: softSprite(palette.ground) };
+    const scratch: Point = { x: 0, y: 0 };
     const still =
       (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) ||
-      typeof IntersectionObserver === 'undefined' ||
-      isMotionPaused();
-    let elapsed = still ? DRAW_MS : 0;
+      typeof IntersectionObserver === 'undefined';
+    let elapsed = still || isMotionPaused() ? DRAW_MS : 0;
+    let clock = 0;
+    let presence = 0;
     let w = 0;
     let h = 0;
-    let layout: MapLayout | null = null;
+    let layout: Layout | null = null;
 
-    const paint = () => {
-      if (layout && w > 0 && h > 0) drawMap(ctx, scene, layout, palette, light, w, h, elapsed / DRAW_MS);
+    const paintMap = () => {
+      if (layout && w > 0 && h > 0) drawMap(ctx, scene, layout, palette, sprites, scratch, w, h, elapsed / DRAW_MS);
+    };
+    const paintSignals = () => {
+      if (layout && w > 0 && h > 0) drawSignals(glow, scene, layout, palette, sprites, scratch, w, h, clock, presence);
     };
     const resize = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -286,44 +475,71 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
       el.width = Math.round(w * dpr);
       el.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      /* Soft light only, so one device pixel per CSS pixel is enough and costs a quarter. */
+      glowEl.width = Math.round(w);
+      glowEl.height = Math.round(h);
       layout = layoutMap(ctx, scene, palette, w, h);
-      paint();
+      paintMap();
+      paintSignals();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     resize();
-    if (still) return () => observer.disconnect();
+    if (still) {
+      paintMap();
+      return () => observer.disconnect();
+    }
 
-    let unregister = () => {};
-    const finish = () => {
+    let stopDraw = () => {};
+    const finishDraw = () => {
       elapsed = DRAW_MS;
-      paint();
-      unregister();
+      paintMap();
+      stopDraw();
     };
-    unregister = registerGatedFrameClient(
-      el,
-      ({ dtMs }) => {
-        elapsed = Math.min(DRAW_MS, elapsed + dtMs);
-        paint();
-        if (elapsed >= DRAW_MS) unregister();
+    if (elapsed < DRAW_MS) {
+      stopDraw = registerGatedFrameClient(
+        el,
+        ({ dtMs }) => {
+          elapsed = Math.min(DRAW_MS, elapsed + dtMs);
+          paintMap();
+          if (elapsed >= DRAW_MS) stopDraw();
+        },
+        undefined,
+        /* It finishes its draw-in and rests itself, so a still visitor never keeps a half-drawn map. */
+        { keepAwake: true },
+      );
+    }
+    /* Ambient: sleeps with the page's other loops, its light fading as the sleep factor falls. */
+    const stopSignals = registerGatedFrameClient(
+      glowEl,
+      ({ dtMs, factor }) => {
+        if (elapsed < DRAW_MS) return;
+        clock += dtMs * factor;
+        presence = Math.min(factor, presence + dtMs / PRESENCE_MS);
+        paintSignals();
       },
-      undefined,
-      /* It finishes its 1.2s and rests itself, so a still visitor never keeps a half-drawn map. */
-      { keepAwake: true },
+      (live) => {
+        if (!live) presence = 0;
+      },
     );
     const offPause = subscribeMotionPause(() => {
-      if (isMotionPaused()) finish();
+      if (!isMotionPaused()) return;
+      finishDraw();
+      presence = 0;
+      paintSignals();
     });
     return () => {
       observer.disconnect();
-      unregister();
+      stopDraw();
+      stopSignals();
       offPause();
     };
   }, [scene]);
 
   return (
     <div aria-hidden data-testid="gateway-closing-map" className={cn('relative min-w-0', className)}>
-      <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
+      <canvas ref={mapCanvas} className="absolute inset-0 h-full w-full" />
+      <canvas ref={signalCanvas} className="pointer-events-none absolute inset-0 h-full w-full" />
     </div>
   );
 }

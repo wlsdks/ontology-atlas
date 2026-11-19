@@ -30,12 +30,16 @@ const openAndBuild = () => {
   for (let beat = 0; beat <= AGENT_BEATS; beat += 1) act(() => vi.advanceTimersByTime(2000));
 };
 const rename = () => {
-  press('build-node-account');
+  press('build-node-login');
+  press('build-name-0');
+  press('build-node-coupon');
   press('build-name-0');
 };
 const link = () => {
+  press('build-node-refund');
   press('build-node-payment');
-  press('build-node-account');
+  press('build-node-alerts');
+  press('build-node-shipping');
 };
 
 afterEach(() => {
@@ -49,15 +53,20 @@ describe('BuildWithMoru', () => {
     expect(screen.getByTestId('build-node-cart')).toBeDisabled();
 
     openAndBuild();
-    expect(screen.getByTestId('build-node-account')).toHaveAccessibleName('authService concept, 2 files');
-    expect(screen.getByTestId('build-node-account')).toHaveAttribute('data-target');
+    expect(screen.getByTestId('build-node-login')).toHaveAccessibleName('authService concept, 2 files');
+    expect(screen.getByTestId('build-node-login')).toHaveAttribute('data-target');
+    expect(screen.getByTestId('build-node-refund')).toHaveAttribute('data-lone');
     rename();
-    expect(screen.getByTestId('build-node-account')).toHaveAccessibleName('Sign-in concept, 2 files');
-    expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-target');
+    expect(screen.getByTestId('build-node-login')).toHaveAccessibleName('Sign-in concept, 2 files');
+    expect(screen.getByTestId('build-node-refund')).toHaveAttribute('data-target');
 
     link();
+    expect(screen.getByTestId('build-node-refund')).not.toHaveAttribute('data-lone');
     press('build-commit-apply');
     expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-changed');
+    // A change reaches only what depends on it: Refunds, not the Cart and Sign-in that Payment depends on.
+    expect(screen.getByTestId('build-node-refund')).toHaveAttribute('data-touched');
+    for (const id of ['cart', 'login', 'payment']) expect(screen.getByTestId(`build-node-${id}`)).not.toHaveAttribute('data-touched');
     press('build-node-payment');
     expect(screen.getByTestId('build-inspect')).toHaveTextContent('charge-card.ts');
 
@@ -65,7 +74,7 @@ describe('BuildWithMoru', () => {
     const file = screen.getByTestId('build-file');
     expect(file).toHaveTextContent('payment.md');
     expect(file).toHaveTextContent('path: src/payment');
-    expect(file).toHaveTextContent('- capabilities/account');
+    expect(file).toHaveTextContent('- capabilities/login');
     expect(screen.getByTestId('build-try-browser')).toHaveAttribute('href', '/topology');
     expect(screen.getByTestId('build-result')).toHaveAttribute('data-stars', '3');
 
@@ -98,12 +107,12 @@ describe('BuildWithMoru', () => {
     press('build-node-cart');
     const first = screen.getByTestId('build-line');
     expect(line()).not.toBe(asked);
-    expect(line()).toContain('authService');
+    expect(line()).toContain('couponManager');
     press('build-node-payment');
     expect(screen.getByTestId('build-line')).not.toBe(first);
   });
 
-  it('draws the missing relation when a concept is dragged onto the one it links to', () => {
+  it('draws a missing relation when a concept is dragged onto the one it links to', () => {
     vi.useFakeTimers();
     HTMLElement.prototype.setPointerCapture = vi.fn();
     document.elementFromPoint = vi.fn(() => null);
@@ -116,7 +125,8 @@ describe('BuildWithMoru', () => {
     expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-picked');
     // The stage has no size here, so every concept sits at the origin the drag ends on.
     fireEvent.pointerUp(map, { pointerId: 1, clientX: 0, clientY: 0 });
-    expect(screen.getByTestId('build-commit-apply')).toBeInTheDocument();
+    expect(screen.getByTestId('build-node-refund')).not.toHaveAttribute('data-lone');
+    expect(screen.getByTestId('build-node-payment')).not.toHaveAttribute('data-picked');
   });
 
   it('counts one press of a double click on a concept that stays in place', () => {
@@ -134,14 +144,19 @@ describe('BuildWithMoru', () => {
     renderBuild();
     screen.getByTestId('build-open').focus();
     openAndBuild();
-    expect(screen.getByTestId('build-node-account')).toHaveFocus();
-    press('build-node-account');
+    expect(screen.getByTestId('build-node-coupon')).toHaveFocus();
+    press('build-node-coupon');
     expect(screen.getByTestId('build-name-0')).toHaveFocus();
     press('build-name-0');
-    expect(screen.getByTestId('build-node-payment')).toHaveFocus();
+    expect(screen.getByTestId('build-node-login')).toHaveFocus();
+    press('build-node-login');
+    press('build-name-0');
+    expect(screen.getByTestId('build-node-refund')).toHaveFocus();
+    press('build-node-refund');
     press('build-node-payment');
-    screen.getByTestId('build-node-account').focus();
-    press('build-node-account');
+    press('build-node-alerts');
+    screen.getByTestId('build-node-shipping').focus();
+    press('build-node-shipping');
     expect(screen.getByTestId('build-commit-apply')).toHaveFocus();
   });
 
