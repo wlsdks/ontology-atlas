@@ -212,7 +212,7 @@
     "switchToMyDataLabel": "Open ontology folder",
     "switchToMyDataAriaLabel": "Open your ontology folder and show its concepts on the map (⌘O)",
     "switchToMyDataTooltip": "Open ontology folder: the map shows its concepts (⌘O)",
-    "changeAnnouncement": "{count} concepts updated",
+    "changeAnnouncement": "{count, plural, one {# concept updated} other {# concepts updated}}",
     "close": "Close",
     "replayGrowthTooltip": "Replay how it was built",
     "shortcutsTooltip": "Keyboard shortcuts (?)",
