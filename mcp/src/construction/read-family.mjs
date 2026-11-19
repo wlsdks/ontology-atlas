@@ -12,6 +12,14 @@
  * while a member it lists is always one. A member counts as read when a range
  * this session served overlaps its own code: its declaration of the read
  * method, else the whole class or method.
+ *
+ * A declaration file and its implementation twin (`x.d.ts` beside `x.js`,
+ * `x.mjs`, `x.cjs` or `x.ts`; same folder, same class name) are one member,
+ * listed at the implementation; Python `.pyi` stubs are not product files, so
+ * the walk never counts them. Reading its code counts,
+ * and so does the read the line is written on, made on either twin; a range
+ * served from the declaration file alone does not, since it holds signatures,
+ * not what the member does.
  */
 
 import { posix } from 'node:path';
@@ -22,6 +30,37 @@ import { createFamilies } from '../evidence-search/type-family.mjs';
 
 // Members named in the line; the rest are counted.
 const SHOWN = 3;
+
+// A declaration file's stem, and the implementation files that may be its twin.
+const DECLARATION_FILES = [
+  [/\.d\.ts$/u, ['.js', '.mjs', '.cjs', '.ts', '.jsx', '.tsx']],
+  [/\.d\.mts$/u, ['.mjs', '.mts']],
+  [/\.d\.cts$/u, ['.cjs', '.cts']],
+];
+
+/** The implementation paths a declaration file may stand for, or null when `path` is no declaration file. */
+function implementationsOf(path) {
+  for (const [pattern, extensions] of DECLARATION_FILES) {
+    if (pattern.test(path)) return extensions.map((extension) => path.replace(pattern, extension));
+  }
+  return null;
+}
+
+/** Members with each declaration-file twin folded into its implementation, as `{ ...implementation, twins }`. */
+function withoutTwins(members) {
+  const byPlaceAndName = new Map(members.map((member) => [`${member.path}\0${member.name}`, member]));
+  const twinsOf = new Map();
+  const folded = new Set();
+  for (const member of members) {
+    const implementation = (implementationsOf(member.path) ?? [])
+      .map((path) => byPlaceAndName.get(`${path}\0${member.name}`))
+      .find(Boolean);
+    if (!implementation) continue;
+    folded.add(member);
+    twinsOf.set(implementation, [...(twinsOf.get(implementation) ?? []), member]);
+  }
+  return members.filter((member) => !folded.has(member)).map((member) => ({ ...member, twins: twinsOf.get(member) ?? [] }));
+}
 
 const byPlace = (a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : a.line - b.line);
 
@@ -44,13 +83,15 @@ export function noteReadFamilies(packet, { root, ignore = [], reads }) {
   for (const row of rows) {
     const family = families.familyOf(row.path, row.actualRange, row.symbol);
     if (!family) continue;
-    const members = [...family.members].sort(byPlace);
-    const read = members.filter((member) => {
-      const ranges = reads?.get(member.path) ?? [];
-      if (ranges.length === 0) return false;
+    const members = withoutTwins([...family.members].sort(byPlace));
+    if (members.length < 2) continue;
+    const overlaps = (member, ranges) => {
       const span = families.spanOf(member, family.method);
       return Boolean(span) && ranges.some((range) => range.startLine <= span.endLine && span.startLine <= range.endLine);
-    }).length;
+    };
+    // The read this line is written on, made on either twin.
+    const own = (member) => [member, ...member.twins].some((place) => place.path === row.path && overlaps(place, [row.actualRange]));
+    const read = members.filter((member) => own(member) || overlaps(member, reads?.get(member.path) ?? [])).length;
     const base = `\`${repoText(family.base.name, 80)}\` (${shown(family.base.path)}:L${family.base.line})`;
     const what = family.tie === 'go'
       ? `the Go types in or importing ${shown(posix.dirname(family.base.path))}/ whose methods match ${base}`

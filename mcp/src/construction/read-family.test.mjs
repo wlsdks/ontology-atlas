@@ -219,6 +219,35 @@ test('a regular expression holding a quote inside a template part does not turn 
   assert.doesNotMatch(row.family, /NewPlugin/);
 });
 
+test('a declaration file and its implementation twin are one member, read through either', () => {
+  const js = (name) => `import { Plugin } from './base.js';\n\nexport class ${name} extends Plugin {\n  apply(token) {\n    if (!token) throw new Error('no token');\n    return true;\n  }\n}\n`;
+  const dts = (name) => `import { Plugin } from './base.js';\n\nexport declare class ${name} extends Plugin {\n  apply(token: string): boolean;\n}\n`;
+  const base = { 'lib/base.js': 'export class Plugin {\n  apply(token) {\n    return true;\n  }\n}\n' };
+  const files = { ...base, 'lib/slack.js': js('Slack'), 'lib/slack.d.ts': dts('Slack'), 'lib/mail.mjs': js('Mail'), 'lib/mail.d.ts': dts('Mail') };
+  const fromJs = readIn(files, [{ path: 'lib/slack.js', symbol: 'Slack.apply' }]);
+  assert.equal(sizeOf(fromJs), 2);
+  assert.equal(readOf(fromJs), 1, 'a signature served from the other declaration file is no read of that member');
+  assert.doesNotMatch(fromJs.family, /\.d\.ts/);
+  const fromDts = readIn(files, [{ path: 'lib/slack.d.ts', symbol: 'Slack' }]);
+  assert.equal(sizeOf(fromDts), 2);
+  assert.equal(readOf(fromDts), 1, 'the read made on the declaration file reads its member');
+  assert.equal(sizeOf(readIn({ ...base, 'lib/slack.js': js('Slack'), 'lib/slack.d.ts': dts('Slack') }, [{ path: 'lib/slack.js', symbol: 'Slack.apply' }])), 0,
+    'one class and its declaration file are no family');
+  assert.equal(sizeOf(readIn({ ...base, 'lib/slack.js': js('Slack'), 'lib/mail.d.ts': dts('Mail') }, [{ path: 'lib/slack.js', symbol: 'Slack.apply' }])), 2,
+    'a declaration file with no implementation twin is a member of its own');
+  const two = `${dts('Slack')}\nexport declare class Teams extends Plugin {\n  apply(token: string): boolean;\n}\n`;
+  assert.equal(sizeOf(readIn({ ...base, 'lib/slack.js': js('Slack'), 'lib/slack.d.ts': two, 'lib/mail.js': js('Mail') }, [{ path: 'lib/slack.js', symbol: 'Slack.apply' }])), 3,
+    'a class the declaration file declares and its twin does not is a member of its own');
+  const pyFiles = {
+    'app/__init__.py': '', 'app/base.py': PY_BASE,
+    'app/slack.py': py('class Slack(Plugin):'), 'app/slack.pyi': 'from .base import Plugin\n\n\nclass Slack(Plugin):\n    def apply(self, token: str) -> bool: ...\n',
+    'app/mail.py': py('class Mail(Plugin):'),
+  };
+  const fromPy = readIn(pyFiles, [{ path: 'app/slack.py', symbol: 'Slack.apply' }]);
+  assert.equal(sizeOf(fromPy), 2, 'a .pyi stub is no second member');
+  assert.equal(readOf(fromPy), 1);
+});
+
 test('a bare module specifier names a package, never a local file of that name', () => {
   const emitter = 'export class EventEmitter {\n  apply(token: string) {\n    return true;\n  }\n}\n';
   const extending = (name, from) => ts(`export class ${name} extends EventEmitter {`, `import { EventEmitter } from '${from}';`);
