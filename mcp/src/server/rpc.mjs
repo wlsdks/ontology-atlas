@@ -45,10 +45,10 @@ function ok(result) {
     const { handoffPrompt, ...structure } = result;
     return { content: [{ type: 'text', text: handoffPrompt }], structuredContent: structure };
   }
-  // The breadth map is read as rows; the same object stays structured for a client.
-  if (result?.contract === 'breadthMap:v1' && typeof result.text === 'string') {
-    const { text, ...structure } = result;
-    return { content: [{ type: 'text', text }], structuredContent: structure };
+  // Hosts forward structuredContent in place of the text, so the rows the breadth
+  // map and source reads are written as travel alone.
+  if ((result?.contract === 'breadthMap:v1' || result?.delivery === 'source_only') && typeof result.text === 'string') {
+    return { content: [{ type: 'text', text: result.text }] };
   }
   const response = {
     content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
