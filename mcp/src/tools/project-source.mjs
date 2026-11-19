@@ -54,6 +54,7 @@ import {
 import { loadVaultDocs, readDoc } from '../vault/documents.mjs';
 import { VaultConflictError } from '../vault/atomic-writes.mjs';
 import { updateDoc } from '../vault/doc-writes.mjs';
+import { logWrite } from '../server/write-log.mjs';
 import {
   projectMeaningContext,
   projectSourceScope,
@@ -516,6 +517,8 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
   if (answersGiven && projectBody !== projectDoc.body) {
     const { filePath } = updateDoc(VAULT_ROOT, canonicalSlug, { body: projectBody, expectedMtime: expected_mtime });
     storedBody = readDoc(VAULT_ROOT, filePath).body;
+    // The body is now on disk whatever the receipt write does, so it is logged here.
+    logWrite('finalize_project_meaning', { projectSlug: canonicalSlug }, { bodyWritten: true });
   }
   if (remeasured) {
     persistBinding(

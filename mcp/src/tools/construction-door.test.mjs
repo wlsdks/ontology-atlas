@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +33,12 @@ function repository() {
 }
 
 /** Each call is a fresh server process; `calls` run in one process, so its reads count for its later calls. */
+function activityFor(root, tool) {
+  const log = join(root, 'atlas', '.ontology-atlas', 'activity.jsonl');
+  if (!existsSync(log)) return [];
+  return readFileSync(log, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)).filter((entry) => entry.tool === tool);
+}
+
 function server(root) {
   const vault = join(root, 'atlas');
   mkdirSync(vault, { recursive: true });
@@ -192,6 +198,7 @@ test('one finalize call with answers writes the section and measures a cited fil
   assert.ok(sources.bindings[0].receipt.witnesses.some((witness) => witness.path === 'README.md' && witness.supported));
   const receipts = JSON.parse(readFileSync(join(root, 'atlas', '.ontology-atlas', 'project-meaning.json'), 'utf8'));
   assert.equal(receipts.receipts[0].bodyDigest, finalized.bodyDigest);
+  assert.deepEqual(activityFor(root, 'finalize_project_meaning').map((entry) => entry.target), ['ledger'], 'the body finalize wrote leaves one activity line');
 });
 
 test('a finalize refusal names the answers row and the argument to change, and writes nothing', async (t) => {
@@ -227,6 +234,7 @@ test('a finalize refusal names the answers row and the argument to change, and w
   assert.match(unresolved.error, /Change answers\[4\]\.(paths or answers\[4\]\.evidence|evidence or answers\[4\]\.paths), or set its status "partial" with a gap\./);
   assert.doesNotMatch(unresolved.error, /connection_info|guide/);
   assert.equal(readFileSync(ledger, 'utf8'), before, 'a refused finalize leaves the body as it was');
+  assert.deepEqual(activityFor(root, 'finalize_project_meaning'), [], 'a refused finalize logs nothing');
 
   const noSection = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: mtime });
   assert.match(noSection.error, /Call finalize_project_meaning again with `answers`/);
