@@ -284,7 +284,7 @@ pub fn assert_consistent(vault: &TempVault, files: &[String]) {
         .unwrap();
     assert_eq!(rows.len(), files.len(), "one row per file");
     for (path, mtime_ns, size) in rows {
-        let stamp = vault_index::Stamp::of(&std::fs::metadata(vault.root.join(&path)).unwrap());
+        let stamp = vault_index::Stamp::of_regular_file(&vault.root.join(&path)).unwrap();
         assert_eq!((stamp.mtime_ns, stamp.size), (mtime_ns, size), "{path}");
     }
     for query in PROBE_QUERIES {
