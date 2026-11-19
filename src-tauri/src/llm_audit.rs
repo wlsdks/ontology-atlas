@@ -711,9 +711,7 @@ mod tests {
     /// then proves the refusal names tampering and nothing was written there.
     #[cfg(windows)]
     fn assert_link_refused(vault: &Path, outside: &Path) {
-        let message = reserve(vault, verify_draft())
-            .err()
-            .expect("a reparse point must be refused");
+        let message = reserve(vault, verify_draft()).expect_err("a reparse point must be refused");
         assert!(message.contains("audit-log-tampered"), "{message}");
         let sentinel = outside.join(AUDIT_FILE);
         assert_eq!(fs::read(&sentinel).unwrap(), b"outside-sentinel\n");
