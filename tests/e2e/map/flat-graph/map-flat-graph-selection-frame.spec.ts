@@ -7,6 +7,13 @@ import { elementsByContainer } from "./domain-star";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
 import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
+/**
+ * Headless Chromium on Linux hints web fonts and rounds each name to whole pixels, about 5% wider
+ * than macOS, Windows or the app draw it. These names are sized to the width a person sees, so the
+ * browser measures without hinting here.
+ */
+test.use({ launchOptions: { args: ["--font-render-hinting=none"] } });
+
 const DOMAINS = ["orders", "catalog", "payments", "shipping", "returns", "inventory"];
 const CAPABILITIES_PER_DOMAIN = 6;
 const ELEMENTS_PER_CAPABILITY = 3;
