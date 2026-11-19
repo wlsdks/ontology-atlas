@@ -193,6 +193,21 @@ test("a capability clicked on the map while another is selected frames and names
   expect(await page.evaluate(() => window.__atlasMap!.obstacleInsets()?.right ?? 0), "the detail panel is open before the retarget").toBeGreaterThan(0);
   const { dial, clickedZoom } = await selectOnMap(page, hub!);
   expect(dial.texts.some((t) => t.role === "element"), "the hub's lit picture names elements").toBe(true);
+  const probe = await page.evaluate((texts) => {
+    const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim();
+    const faces: string[] = [];
+    document.fonts.forEach((face) => { if (face.status !== "unloaded") faces.push(`${face.family}|${face.status}|${face.unicodeRange.slice(0, 24)}`); });
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    const widths = (font: string) => texts.map((t) => { ctx.font = font; return Math.round(ctx.measureText(t).width * 100) / 100; });
+    const sizes = [11, 12, 13];
+    return {
+      family,
+      faces,
+      product: Object.fromEntries(sizes.flatMap((px) => [400, 500, 600].map((w) => [`${w} ${px}`, widths(`${w} ${px}px ${family}`)]))),
+      fallback: Object.fromEntries(sizes.map((px) => [`400 ${px}`, widths(`400 ${px}px -apple-system, 'SF Pro Text', sans-serif`)])),
+    };
+  }, dial.texts.slice(0, 6).map((t) => t.text));
+  console.log("[font-probe]", JSON.stringify({ ...probe, drawn: dial.texts.slice(0, 6).map((t) => ({ role: t.role, text: t.text, w: Math.round((t.box.maxX - t.box.minX) * 100) / 100, h: Math.round((t.box.maxY - t.box.minY) * 100) / 100 })), zoom: dial.zoomRatio, clickedZoom, hub }));
   await expectFramed(page, hub!, dial, clickedZoom);
 });
 
