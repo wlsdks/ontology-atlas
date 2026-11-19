@@ -187,14 +187,14 @@ fn a_build_killed_mid_batch_twenty_times_equals_a_build_from_scratch() {
     let startup = started.elapsed();
     vault_index::delete(Some(&vault.root)).unwrap();
 
-    // Each kill lands after start-up and within a twentieth of the embedding time, so twenty of
+    // Each kill lands after start-up and within a fortieth of the embedding time, so twenty of
     // them stop the build part-way rather than let it finish.
     let embedding = full_build.saturating_sub(startup);
     let mut rng = Lcg::new(20_261_120);
     let mut killed_running = 0;
     for round in 0..20 {
         let mut child = bench(&vault, &kill_log).spawn().unwrap();
-        let kill_after = startup + embedding.mul_f64((rng.next() % 1000) as f64 / 20_000.0);
+        let kill_after = startup + embedding.mul_f64((rng.next() % 1000) as f64 / 40_000.0);
         std::thread::sleep(kill_after);
         if child.try_wait().unwrap().is_none() {
             killed_running += 1;
@@ -318,11 +318,14 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
         .all(|hit| hit.path != "c.md"));
 }
 
+/// What a hostile or broken model answers for a batch.
+type Answer = Box<dyn Fn(&[&str]) -> Vec<Vec<f32>>>;
+
 #[test]
 fn hostile_vectors_are_refused_and_nothing_from_the_batch_is_stored() {
     let vault = TempVault::new("vectors-hostile");
     write(&vault, "a.md", "# A\nalpha\n\n# B\nbeta\n\n# C\ngamma\n");
-    let answers: Vec<(Box<dyn Fn(&[&str]) -> Vec<Vec<f32>>>, Refusal)> = vec![
+    let answers: Vec<(Answer, Refusal)> = vec![
         (
             Box::new(|texts: &[&str]| {
                 let mut vectors: Vec<_> = texts.iter().map(|text| fake(text)).collect();

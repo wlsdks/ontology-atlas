@@ -155,31 +155,38 @@ pub struct Status {
     pub bytes: u64,
 }
 
-/// `None` while no store for `model` exists; never creates one. O(p · log n) for p passages.
+/// `None` while no store for `model` exists; never creates one. One pass over the passages, each
+/// looked up among the vectors: O(p · log n).
 pub fn status(root: &Path, model: &Model) -> Result<Option<Status>> {
     let Some((root, _, conn)) = reader(root, model)? else {
         return Ok(None);
     };
-    let count = |sql: &str| -> Result<u64> {
-        let value: Option<i64> = conn.query_row(sql, [], |row| row.get(0))?;
-        Ok(value
-            .and_then(|value| u64::try_from(value).ok())
-            .unwrap_or(0))
+    let counts = |sql: &str| -> Result<[u64; 3]> {
+        Ok(conn.query_row(sql, [], |row| {
+            let count = |index| -> rusqlite::Result<u64> {
+                let value: Option<i64> = row.get(index)?;
+                Ok(value
+                    .and_then(|value| u64::try_from(value).ok())
+                    .unwrap_or(0))
+            };
+            Ok([count(0)?, count(1)?, count(2)?])
+        })?)
     };
+    let [files, files_capped, passages_not_prepared] =
+        counts("SELECT count(*), sum(over_cap > 0), sum(over_cap) FROM files")?;
+    let [passages, ..] = counts("SELECT count(DISTINCT sha256), 0, 0 FROM passages")?;
+    let [missing, files_missing, _] = counts(
+        "SELECT count(DISTINCT p.sha256), count(DISTINCT CASE WHEN f.over_cap = 0 THEN f.id END), 0
+           FROM passages AS p JOIN files AS f ON f.id = p.file_id
+          WHERE NOT EXISTS (SELECT 1 FROM vectors AS v WHERE v.sha256 = p.sha256)",
+    )?;
     Ok(Some(Status {
-        files: count("SELECT count(*) FROM files")?,
-        files_ready: count(
-            "SELECT count(*) FROM files AS f WHERE f.over_cap = 0 AND NOT EXISTS (
-               SELECT 1 FROM passages AS p WHERE p.file_id = f.id
-                  AND NOT EXISTS (SELECT 1 FROM vectors AS v WHERE v.sha256 = p.sha256))",
-        )?,
-        files_capped: count("SELECT count(*) FROM files WHERE over_cap > 0")?,
-        passages: count("SELECT count(DISTINCT sha256) FROM passages")?,
-        passages_stored: count(
-            "SELECT count(*) FROM vectors AS v
-              WHERE EXISTS (SELECT 1 FROM passages AS p WHERE p.sha256 = v.sha256)",
-        )?,
-        passages_not_prepared: count("SELECT sum(over_cap) FROM files")?,
+        files,
+        files_ready: files.saturating_sub(files_capped + files_missing),
+        files_capped,
+        passages,
+        passages_stored: passages.saturating_sub(missing),
+        passages_not_prepared,
         bytes: vectors_bytes(&root)?,
     }))
 }

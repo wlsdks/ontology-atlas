@@ -299,8 +299,13 @@ fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
 }
 
 /// Opens a searcher, runs `options.queries` searches for 8 passages, then drops it, reporting the
-/// footprint above the process's own at each step.
+/// footprint above the process's own at each step. macOS keeps freed large blocks in the
+/// footprint unless `MallocLargeCache=0` is set, so "after drop" is read with it.
 fn vectors_search(root: &Path, files: &[String], options: &Options) {
+    // Timed first, so the baseline already holds SQLite's one-time state, as the app's does.
+    let status_started = Instant::now();
+    vectors::status(root, &options.model).expect("status");
+    let status_ms = status_started.elapsed().as_secs_f64() * 1000.0;
     let base = footprint();
     let started = Instant::now();
     let mut searcher = vectors::Searcher::open(root, &options.model)
@@ -324,9 +329,6 @@ fn vectors_search(root: &Path, files: &[String], options: &Options) {
     let dropped = footprint().map(|(now, _)| now);
     relieve_allocator();
     let relieved = footprint().map(|(now, _)| now);
-    let status_started = Instant::now();
-    vectors::status(root, &options.model).expect("status");
-    let status_ms = status_started.elapsed().as_secs_f64() * 1000.0;
     let changed_started = Instant::now();
     vectors::changed_files(root, &options.model, files).expect("changed");
     let changed_ms = changed_started.elapsed().as_secs_f64() * 1000.0;
