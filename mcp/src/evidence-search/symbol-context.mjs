@@ -256,7 +256,9 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     if (role === 'implementation' && deciding === 0) return;
     const score = deciding * 2 + bonus;
     if (score <= 0 || text.length === 0) return;
-    candidates.push({ role, path: file.path, symbol: qualified(file, symbol, startLine), startLine, endLine: cut, more: cut < endLine ? endLine : null, text, sha256: file.sha256, score, via, byName });
+    const candidate = { role, path: file.path, symbol: qualified(file, symbol, startLine), startLine, endLine: cut, more: cut < endLine ? endLine : null, text, sha256: file.sha256, score, via, byName };
+    candidates.push(candidate);
+    return candidate;
   };
   const self = { path, lines, declarations, sha256: open(path)?.sha256 };
 
@@ -325,6 +327,20 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
   const conditionNames = calledInConditions(lines.slice(declaration.line - 1, bodyEnd));
   const seen = new Set([`${path}\0${declaration.line}`, ...callees.map((callee) => `${callee.path}\0${callee.line}`)]);
   const expandable = [];
+  // A part is by name only when every path that reaches it has a by-name link: an exact
+  // arrival found later clears the mark on it and on what it passes through to.
+  const reached = new Map();
+  const reach = (key, weak, candidate) => {
+    const node = { weak, parts: candidate ? [candidate] : [], next: [] };
+    reached.set(key, node);
+    return node;
+  };
+  const strengthen = (node) => {
+    if (!node.weak) return;
+    node.weak = false;
+    for (const part of node.parts) part.byName = false;
+    for (const edge of node.next) if (!edge.byName) strengthen(edge.node);
+  };
   for (const callee of callees) {
     const file = callee.path === path ? self : open(callee.path);
     if (!file) continue;
@@ -332,12 +348,13 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     if (!target) continue;
     const end = declarationEnd(file.lines, file.declarations, target);
     const bonus = calleeBonus(callee.name, file.lines.slice(target.line - 1, Math.min(end, target.line + SYMBOL_CONTEXT_LIMITS.examinedLines - 1)), conditionNames);
+    const key = `${callee.path}\0${callee.line}`;
     if (callee.implementation) {
-      add('implementation', file, target.name, target.line, end, bonus, { byName: callee.byName });
+      reach(key, Boolean(callee.byName), add('implementation', file, target.name, target.line, end, bonus, { byName: callee.byName }));
       continue;
     }
-    add('callee', file, target.name, target.line, end, bonus, { byName: callee.byName });
-    expandable.push({ file, target, end, weak: Boolean(callee.byName) });
+    const node = reach(key, Boolean(callee.byName), add('callee', file, target.name, target.line, end, bonus, { byName: callee.byName }));
+    expandable.push({ file, target, end, node });
   }
 
   // One call deeper: what each direct callee calls, through an accessor too short to be a level.
@@ -345,28 +362,36 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
   // A body is examined as far as a read would serve it.
   const head = (target, end) => Math.min(end, target.line + SYMBOL_CONTEXT_LIMITS.examinedLines - 1);
   const resolve = (file, target, end) => calleesOf({ text: slice(file.lines, target.line, head(target, end)), file, declaration: target, rootPath, ignore, files, open });
-  for (const { file, target, end, weak } of expandable.slice(0, SYMBOL_CONTEXT_LIMITS.deeperSources)) {
+  for (const { file, target, end, node: source } of expandable.slice(0, SYMBOL_CONTEXT_LIMITS.deeperSources)) {
     const conditions = calledInConditions(file.lines.slice(target.line - 1, head(target, end)));
-    const queue = resolve(file, target, end).map((row) => ({ row, via: qualified(file, target.name, target.line), conditions, through: false, weak }));
+    const queue = resolve(file, target, end).map((row) => ({ row, via: qualified(file, target.name, target.line), conditions, through: false, parent: source }));
     while (queue.length > 0 && deeper < SYMBOL_CONTEXT_LIMITS.deeperCallees) {
-      const { row, via, conditions: branchedOn, through, weak: reachedWeakly } = queue.shift();
+      const { row, via, conditions: branchedOn, through, parent } = queue.shift();
       // A part reached through a by-name match is as weak as the weakest link above it.
-      const byName = reachedWeakly || Boolean(row.byName);
+      const byName = parent.weak || Boolean(row.byName);
       const key = `${row.path}\0${row.line}`;
+      const earlier = reached.get(key);
+      if (earlier) {
+        parent.next.push({ node: earlier, byName: Boolean(row.byName) });
+        if (!byName) strengthen(earlier);
+      }
       if (seen.has(key)) continue;
       seen.add(key);
       const inner = row.path === path ? self : open(row.path);
       const found = inner?.declarations.find((candidate) => candidate.line === row.line);
       if (!found) continue;
       deeper += 1;
+      const node = reach(key, byName);
+      parent.next.push({ node, byName: Boolean(row.byName) });
       const innerEnd = declarationEnd(inner.lines, inner.declarations, found);
       const innerLines = inner.lines.slice(found.line - 1, head(found, innerEnd));
       if (!through && !row.implementation && innerEnd - found.line + 1 <= SYMBOL_CONTEXT_LIMITS.accessorLines) {
         const innerConditions = calledInConditions(innerLines);
-        for (const next of resolve(inner, found, innerEnd)) queue.push({ row: next, via: qualified(inner, found.name, found.line), conditions: innerConditions, through: true, weak: byName });
+        for (const next of resolve(inner, found, innerEnd)) queue.push({ row: next, via: qualified(inner, found.name, found.line), conditions: innerConditions, through: true, parent: node });
       }
-      add(row.implementation ? 'implementation' : 'callee', inner, found.name, found.line, innerEnd,
+      const part = add(row.implementation ? 'implementation' : 'callee', inner, found.name, found.line, innerEnd,
         calleeBonus(row.name, innerLines, branchedOn) - 3, { via, cap: SYMBOL_CONTEXT_LIMITS.deeperDeciding, byName });
+      if (part) node.parts.push(part);
     }
   }
 
