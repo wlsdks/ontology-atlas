@@ -286,7 +286,10 @@ function exactlyNamed(line, row) {
 
 function abilityLabel(row) {
   const members = row.members ? `: ${row.members.slice(0, 4).map((name) => repoText(name, 80)).join(', ')}${row.members.length > 4 ? ', ...' : ''}` : '';
-  if (row.kind === 'family') return `the ${repoText(row.path)} family (${repoText(row.evidence ?? row.path)}${members})`;
+  if (row.kind === 'family') {
+    const named = row.name && row.name !== row.path ? `${repoText(row.name)} family in ${repoText(row.path)}` : `${repoText(row.path)} family`;
+    return `the ${named} (${repoText(row.evidence ?? row.path)}${members})`;
+  }
   const at = row.evidence ?? row.path;
   return `${repoText(row.name, 120)} (${row.kind}, ${repoText(at)}${row.symbol && row.symbol !== row.name ? ` ${repoText(row.symbol, 120)}` : ''}${members})`;
 }

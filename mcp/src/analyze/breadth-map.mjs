@@ -686,7 +686,7 @@ function renderBreadthMap(map) {
       const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
       const doc = row.doc ? ` (${t(row.doc)})` : '';
       lines.push(row.kind === 'family'
-        ? `family ${t(row.path)} ${t(row.evidence)}${members}`
+        ? `family ${row.name && row.name !== row.path ? `${t(row.name, 120)} in ` : ''}${t(row.path)} ${t(row.evidence)}${members}`
         : `${row.kind} ${t(row.name, 120)} ${t(row.evidence)}${symbol}${doc}${members}`);
     }
     if (map.abilitiesOmitted) {
