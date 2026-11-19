@@ -79,7 +79,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   // Reads without a proposal return the reads alone: the map was already sent once,
   // and repeating it on every outline call cost more than the outlines.
   if (sourceOnly || (sourceReads !== undefined && !reviewing)) {
-    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore });
+    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore, served: sessionReads(target) });
     recordSourceEvidence(target, sourceEvidence);
     noteFamilies(target, sourceEvidence, ignore);
     return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
@@ -97,7 +97,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   const sourceBefore = proposal == null ? undefined : inspectProjectSource(target).fingerprint;
   const sourceEvidence = sourceReads === undefined
     ? undefined
-    : readSourceEvidence(target, sourceReads, { ignore });
+    : readSourceEvidence(target, sourceReads, { ignore, served: sessionReads(target) });
   if (sourceEvidence) {
     recordSourceEvidence(target, sourceEvidence);
     noteFamilies(target, sourceEvidence, ignore);

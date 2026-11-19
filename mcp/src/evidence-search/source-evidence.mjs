@@ -378,6 +378,10 @@ function readOne(rootPath, selector, ignore, hooks) {
       open,
       files: hooks.files,
       budget: contextBudget(hooks, returnedBytes),
+      symbolEnd,
+      // Past the outline's ceiling a declaration it never listed may end this one sooner.
+      endTrusted: !outline.truncated || outline.declarations.some((candidate) => candidate.line > symbolEnd),
+      served: hooks.served ?? null,
     })
     : null;
   return {
@@ -472,7 +476,7 @@ function setSerializedBytes(packet) {
 export function readSourceEvidence(
   rootPath,
   selectors,
-  { ignore: extraIgnore = [], onBeforeOpen, onDescriptorRead } = {},
+  { ignore: extraIgnore = [], onBeforeOpen, onDescriptorRead, served: servedBefore = null } = {},
 ) {
   validateSourceReadSelectors(selectors);
   const ignore = new Set([...DEFAULT_IGNORE, ...extraIgnore]);
@@ -489,9 +493,18 @@ export function readSourceEvidence(
   // One walk of the repository serves every selector in this call.
   let walked = null;
   const files = () => (walked ??= productFiles(rootPath, extraIgnore));
+  // What this session and the earlier reads of this call served: deciding lines found
+  // there are named, not served again.
+  const servedRanges = new Map();
+  for (const [path, ranges] of servedBefore ?? []) if (Array.isArray(ranges)) servedRanges.set(path, [...ranges]);
+  const serve = (path, startLine, endLine) => {
+    if (!servedRanges.has(path)) servedRanges.set(path, []);
+    servedRanges.get(path).push({ startLine, endLine });
+  };
+  const served = (path, startLine, endLine) => covers(servedRanges.get(path), startLine, endLine);
   for (const [index, selector] of selectors.entries()) {
     let row = readOne(rootPath, selector, ignore, {
-      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open, files,
+      onBeforeOpen, onDescriptorRead, rootPath, ignore: extraIgnore, open, files, served,
       remainingBytes: SOURCE_READ_LIMITS.aggregateTextBytes - packet.totalReturnedBytes,
       readsLeft: selectors.slice(index).filter((candidate) => !isOutline(candidate)).length,
     });
@@ -509,10 +522,26 @@ export function readSourceEvidence(
     } else {
       packet.rows.push(row);
       packet.totalReturnedBytes = candidate.totalReturnedBytes;
+      if (row.status === 'read') {
+        serve(row.path, row.actualRange.startLine, row.actualRange.endLine);
+        for (const part of row.context ?? []) serve(part.path, part.startLine, part.endLine);
+      }
     }
   }
   setSerializedBytes(packet);
   return packet;
+}
+
+/** Whether `ranges` together hold every line from `startLine` to `endLine`. */
+function covers(ranges, startLine, endLine) {
+  if (!ranges || ranges.length === 0) return false;
+  let next = startLine;
+  for (const range of [...ranges].sort((a, b) => a.startLine - b.startLine)) {
+    if (range.startLine > next) return false;
+    if (range.endLine >= next) next = range.endLine + 1;
+    if (next > endLine) return true;
+  }
+  return false;
 }
 
 export function composeSourceDigest(repositoryFingerprint, sourceEvidence) {

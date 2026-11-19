@@ -16,6 +16,7 @@
 
 import { calleesOf, callsOnLine, enclosingClass } from './callees.mjs';
 import { callSitesOf } from './declaration-index.mjs';
+import { repoText } from '../analyze/repo-text.mjs';
 
 /**
  * 6 KiB holds the three to five deciding parts measured on the trial
@@ -42,7 +43,13 @@ export const SYMBOL_CONTEXT_LIMITS = Object.freeze({
   constantLines: 8,
   // Lines of a callee examined for its calls, conditions and refusals: what one read serves.
   examinedLines: 200,
+  // The deciding lines served in place of a pointer to them: a caller's guard the
+  // read would only name, or the conditions in the part of a long body it cut.
+  decidingLines: 40,
 });
+// A line this long is generated or minified: a cut body is not scanned past it,
+// since the outline may not see a declaration that starts on it.
+const SCANNED_LINE_CHARS = 1000;
 
 const CONDITION = /\b(?:if|elif|else|unless|switch|case|when|match|guard|while|raise|throw|except|catch|default)\b|\b(?:errors\.New|fmt\.Errorf)\(|\?\?|\|\||&&/u;
 /** A line that refuses: it throws, raises, panics or builds an error to return. */
@@ -243,8 +250,11 @@ function qualified(file, symbol, line) {
  * @param {{ name: string, path: string, line: number }[]} input.callees direct callees
  * @param {(path: string) => ({ lines: string[], declarations: object[], sha256: string } | null)} input.open
  * @param {number} input.budget bytes this read may add
+ * @param {number} [input.symbolEnd] the declaration's last line, past `bodyEnd` when the read was cut
+ * @param {boolean} [input.endTrusted] whether the outline saw every declaration up to `symbolEnd`
+ * @param {(path: string, startLine: number, endLine: number) => boolean} [input.served] whether this session already served those lines
  */
-export function symbolContext({ rootPath, ignore, path, lines, declarations, declaration, bodyEnd, callees, open, files, budget }) {
+export function symbolContext({ rootPath, ignore, path, lines, declarations, declaration, bodyEnd, callees, open, files, budget, symbolEnd = bodyEnd, endTrusted = true, served = null }) {
   const candidates = [];
   const bodyDecides = decidingCount(lines.slice(declaration.line - 1, bodyEnd)) > 0;
   const own = declaration.name.split('.').pop();
@@ -395,7 +405,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     }
   }
 
-  const order = { caller: 0, constructor: 1, owner: 2, callee: 3, implementation: 4, constant: 5 };
+  const order = { deciding: -1, caller: 0, constructor: 1, owner: 2, callee: 3, implementation: 4, constant: 5 };
   candidates.sort((a, b) => b.score - a.score || order[a.role] - order[b.role] || a.startLine - b.startLine);
   const taken = [{ path, startLine: declaration.line, endLine: bodyEnd }];
   const overlaps = (candidate) => taken.some((range) => range.path === candidate.path
@@ -408,7 +418,9 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
   const fileOf = (part) => (part.path === path ? self : open(part.path));
   const reserve = Math.min(budget >> 3, constantsUsed([bodyText, ...candidates.map((candidate) => ({ file: fileOf(candidate), text: candidate.text }))], taken)
     .reduce((sum, row) => sum + row.bytes, 0));
-  for (const candidate of candidates) {
+  // Each served part's rank and range, so the deciding lines can take the room of the lowest.
+  const held = new Map();
+  for (const [index, candidate] of candidates.entries()) {
     if (overlaps(candidate)) continue;
     const size = Buffer.byteLength(candidate.text, 'utf8');
     if (bytes + size > budget - reserve) {
@@ -417,7 +429,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     }
     bytes += size;
     taken.push(candidate);
-    parts.push({
+    const part = {
       role: candidate.role,
       path: candidate.path,
       symbol: candidate.symbol,
@@ -428,7 +440,9 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
       ...(candidate.via ? { via: candidate.via } : {}),
       ...(candidate.byName ? { byName: true } : {}),
       ...(candidate.more ? { next: { path: candidate.path, startLine: candidate.endLine + 1, maxLines: Math.min(200, candidate.more - candidate.endLine) } } : {}),
-    });
+    };
+    parts.push(part);
+    held.set(part, { rank: index, range: candidate });
   }
 
   // The named constants the body and the served parts use, in the file that uses them.
@@ -436,17 +450,99 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     const text = row.file.lines[row.line - 1] ?? '';
     if (!text || bytes + row.bytes > budget) continue;
     bytes += row.bytes;
-    taken.push({ path: row.file.path, startLine: row.line, endLine: row.line });
-    parts.push({ role: 'constant', path: row.file.path, symbol: row.name, startLine: row.line, endLine: row.line, cite: `${row.file.path}:L${row.line}-L${row.line}`, text });
+    const range = { path: row.file.path, startLine: row.line, endLine: row.line };
+    taken.push(range);
+    const part = { role: 'constant', path: row.file.path, symbol: row.name, startLine: row.line, endLine: row.line, cite: `${row.file.path}:L${row.line}-L${row.line}`, text };
+    parts.push(part);
+    held.set(part, { rank: candidates.length + parts.length, range });
   }
-  parts.sort((a, b) => order[a.role] - order[b.role] || a.path.localeCompare(b.path) || a.startLine - b.startLine);
+
+  const decidingOmitted = [];
+  // Serves the wanted lines (most wanted first, at most `decidingLines` with the gaps
+  // `runs` joins) as `deciding` parts. Room comes from the lowest-ranked parts first;
+  // what still does not fit is cut from the least wanted end; the budget never grows.
+  const inline = (file, symbol, wanted, why) => {
+    const free = [...new Set(wanted)].filter((line) => line >= 1 && line <= file.lines.length
+      && !taken.some((range) => range.path === file.path && line >= range.startLine && line <= range.endLine));
+    const shape = (count) => runs(free.slice(0, count).sort((a, b) => a - b));
+    const lineCount = (windows) => windows.reduce((sum, window) => sum + window.endLine - window.startLine + 1, 0);
+    const size = (windows) => windows.reduce((sum, window) => sum + Buffer.byteLength(slice(file.lines, window.startLine, window.endLine), 'utf8'), 0);
+    let count = free.length;
+    let windows = shape(count);
+    while (count > 0 && lineCount(windows) > SYMBOL_CONTEXT_LIMITS.decidingLines) windows = shape(--count);
+    if (windows.length === 0) return { parts: [], served: [], inContext: wanted.length > 0 };
+    if (served && windows.every((window) => served(file.path, window.startLine, window.endLine))) {
+      return { parts: [], served: windows.map((window) => `${file.path}:L${window.startLine}-L${window.endLine}`) };
+    }
+    while (bytes + size(windows) > budget) {
+      let lowest = null;
+      for (const [part, entry] of held) if (!lowest || entry.rank > held.get(lowest).rank) lowest = part;
+      if (!lowest) break;
+      const { range } = held.get(lowest);
+      held.delete(lowest);
+      parts.splice(parts.indexOf(lowest), 1);
+      taken.splice(taken.indexOf(range), 1);
+      bytes -= Buffer.byteLength(lowest.text, 'utf8');
+      omitted.push({ role: lowest.role, path: lowest.path, symbol: lowest.symbol, line: lowest.startLine });
+    }
+    while (count > 0 && bytes + size(windows) > budget) windows = shape(--count);
+    if (windows.length === 0) {
+      decidingOmitted.push({ role: 'deciding', path: file.path, symbol, line: free[0] });
+      return { parts: [], served: [] };
+    }
+    const added = windows.map((window) => {
+      const text = slice(file.lines, window.startLine, window.endLine);
+      bytes += Buffer.byteLength(text, 'utf8');
+      const range = { path: file.path, startLine: window.startLine, endLine: window.endLine };
+      taken.push(range);
+      const cite = `${file.path}:L${window.startLine}-L${window.endLine}`;
+      return { role: 'deciding', path: file.path, symbol, startLine: window.startLine, endLine: window.endLine, cite, label: repoText(`deciding lines of ${symbol} ${why}: ${cite}`, 240), text };
+    });
+    parts.push(...added);
+    return { parts: added, served: [] };
+  };
+
+  // The conditions in the part of a long body this read cut, each with the line it guards.
+  if (symbolEnd > bodyEnd && endTrusted) {
+    const wanted = new Set();
+    for (let line = bodyEnd + 1; line <= symbolEnd && wanted.size < SYMBOL_CONTEXT_LIMITS.decidingLines; line += 1) {
+      const text = lines[line - 1] ?? '';
+      if (text.length > SCANNED_LINE_CHARS) break;
+      if (!decidesLine(text)) continue;
+      wanted.add(line);
+      if (line < symbolEnd) wanted.add(line + 1);
+    }
+    inline(self, declaration.name, [...wanted], `past this read's cut at L${bodyEnd} (it runs to L${symbolEnd})`);
+  }
 
   let deciding = null;
   const callerShown = parts.some((part) => part.role === 'caller');
   if (!callerShown && callers.length > 0 && (!bodyDecides || callers.length > SYMBOL_CONTEXT_LIMITS.callers)) {
-    const named = callers.slice(0, 4).map((row) => `${row.name} (${row.path}:L${row.line})`).join(', ');
+    const named = callers.slice(0, 4).map((row) => `${repoText(row.name, 80)} (${repoText(row.path)}:L${row.line})`).join(', ');
     const first = callers[0];
-    deciding = `${bodyDecides ? 'This body decides part of it; when it runs at all' : 'This body holds no condition; the deciding condition'} is in its caller${callers.length > 1 ? 's' : ''} ${named}${total > callers.length ? ` and ${total - callers.length} more call sites` : ''}. Read it: {"path":"${first.path}","symbol":"${first.name}"}.`;
+    // The first caller's lines around its call: the call, the guard window before it,
+    // then the enclosing conditions above that, nearest first.
+    const row = callerRows[0];
+    const site = row.sites[0];
+    const start = row.caller.line;
+    const end = Math.max(site, Math.min(declarationEnd(row.file.lines, row.file.declarations, row.caller), site + 2));
+    const wanted = [];
+    for (let line = site; line <= end; line += 1) wanted.push(line);
+    for (let line = site - 1; line >= Math.max(start, site - SYMBOL_CONTEXT_LIMITS.guardWindow); line -= 1) wanted.push(line);
+    const siteIndent = indentAt(row.file.lines, site);
+    for (let line = site - SYMBOL_CONTEXT_LIMITS.guardWindow - 1; line > start && wanted.length < 2 * SYMBOL_CONTEXT_LIMITS.decidingLines; line -= 1) {
+      const text = row.file.lines[line - 1] ?? '';
+      if (indentAt(row.file.lines, line) < siteIndent && decidesLine(text)) wanted.push(line);
+    }
+    wanted.push(start);
+    const callerName = qualified(row.file, row.caller.name, row.caller.line);
+    const shown = inline(row.file, callerName, wanted, `around its call at L${site}`);
+    const where = `${bodyDecides ? 'This body decides part of it; when it runs at all' : 'This body holds no condition; the deciding condition'} is in its caller${callers.length > 1 ? 's' : ''} ${named}${total > callers.length ? ` and ${total - callers.length} more call sites` : ''}.`;
+    if (shown.parts.length > 0) deciding = `${where} The deciding lines of ${repoText(callerName, 80)} are in \`context\` with role "deciding": ${shown.parts.map((part) => repoText(part.cite)).join(', ')}.`;
+    else if (shown.inContext) deciding = `${where} Its deciding lines are already among the parts in \`context\`.`;
+    else if (shown.served.length > 0) deciding = `${where} Its deciding lines were served earlier in this session: ${shown.served.map((cite) => repoText(cite)).join(', ')}.`;
+    else deciding = `${where} Read it: ${JSON.stringify({ path: repoText(first.path), symbol: repoText(first.name, 80) })}.`;
   }
-  return { parts, bytes, omitted: omitted.slice(0, 6), callers: callers.slice(0, 6), callerSites: total, deciding };
+  parts.sort((a, b) => order[a.role] - order[b.role] || a.path.localeCompare(b.path) || a.startLine - b.startLine);
+  return { parts, bytes, omitted: [...decidingOmitted, ...omitted].slice(0, 6), callers: callers.slice(0, 6), callerSites: total, deciding };
 }

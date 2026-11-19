@@ -5,7 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
+import { recordSourceEvidence, sessionReads } from '../construction/session-reads.mjs';
 import { composeSourceDigest, readSourceEvidence } from './source-evidence.mjs';
+import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
+import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
 
 function fixture() {
   return mkdtempSync(join(tmpdir(), 'atlas-source-evidence-'));
@@ -440,7 +443,9 @@ test('a symbol read with no condition shows the guard in its caller, or names th
   const [wide] = readSourceEvidence(root, [{ path: 'queue.py', symbol: 'drain' }]).rows;
   assert.equal(wide.context.some((part) => part.role === 'caller'), false, 'four callers are too many to show');
   assert.match(wide.deciding, /This body holds no condition; the deciding condition is in its callers/);
-  assert.match(wide.deciding, /Read it: \{"path":"[^"]+","symbol":"[^"]+"\}/);
+  const served = wide.context.filter((part) => part.role === 'deciding');
+  assert.ok(served.length > 0, 'the first caller\'s lines come back instead of a pointer to them');
+  assert.match(wide.deciding, new RegExp(`role "deciding": ${served.map((part) => part.cite).join(', ')}\\.$`));
 });
 
 test('context comes only from files a read selector could name', () => {
@@ -968,4 +973,209 @@ test('a callee the body branches on, or one that refuses, ranks over a long one 
     const served = row.context.map((part) => part.symbol);
     assert.deepEqual(served, ['small'], `${name}: ${served.join(', ')} served, ${JSON.stringify(row.contextOmitted)} omitted`);
   }
+});
+
+/** A caller of `notify` whose deciding `if` sits 38 lines above the call, plus two short callers. */
+function decidingCallerRepo() {
+  const root = fixture();
+  writeFileSync(join(root, 'hub.py'), 'def notify(event):\n    event.send()\n');
+  writeFileSync(join(root, 'a_router.py'), [
+    'from hub import notify',
+    '',
+    'def dispatch(event, mode):',
+    '    if mode == "live":',
+    ...Array.from({ length: 36 }, (_, n) => `        stage_${n}(event)`),
+    '        notify(event)',
+    ...Array.from({ length: 40 }, (_, n) => `        after_${n}(event)`),
+    '',
+  ].join('\n'));
+  writeFileSync(join(root, 'b_jobs.py'), 'from hub import notify\n\ndef retry(event):\n    notify(event)\n');
+  writeFileSync(join(root, 'c_jobs.py'), 'from hub import notify\n\ndef replay(event):\n    notify(event)\n');
+  return root;
+}
+
+const decidingParts = (row) => (row.context ?? []).filter((part) => part.role === 'deciding');
+const lineCount = (parts) => parts.reduce((sum, part) => sum + part.endLine - part.startLine + 1, 0);
+
+test('a deciding note serves the caller\'s call, its guard window and the enclosing condition, first and labelled', () => {
+  const root = decidingCallerRepo();
+  const [row] = readSourceEvidence(root, [{ path: 'hub.py', symbol: 'notify' }]).rows;
+  const parts = decidingParts(row);
+  assert.deepEqual(parts.map((part) => part.cite), ['a_router.py:L3-L4', 'a_router.py:L29-L43']);
+  assert.equal(row.context[0].role, 'deciding');
+  assert.match(parts[0].text, /if mode == "live":/);
+  assert.match(parts[1].text, /^ {8}notify\(event\)$/m);
+  assert.match(parts[1].text, /after_1\(event\)/);
+  assert.equal(parts[1].label, 'deciding lines of dispatch around its call at L41: a_router.py:L29-L43');
+  assert.ok(lineCount(parts) <= SYMBOL_CONTEXT_LIMITS.decidingLines);
+  assert.match(row.deciding, /in `context` with role "deciding": a_router\.py:L3-L4, a_router\.py:L29-L43\.$/);
+  assert.doesNotMatch(row.deciding, /Read it/);
+});
+
+test('served deciding lines count as read, and are named rather than served again', () => {
+  const root = decidingCallerRepo();
+  const first = readSourceEvidence(root, [{ path: 'hub.py', symbol: 'notify' }]);
+  recordSourceEvidence(root, first);
+  const ranges = sessionReads(root).get('a_router.py') ?? [];
+  assert.ok(ranges.some((range) => range.role === 'deciding' && range.startLine === 29 && range.endLine === 43));
+
+  const [again] = readSourceEvidence(root, [{ path: 'hub.py', symbol: 'notify' }], { served: sessionReads(root) }).rows;
+  assert.deepEqual(decidingParts(again), []);
+  assert.match(again.deciding, /served earlier in this session: a_router\.py:L3-L4, a_router\.py:L29-L43\.$/);
+
+  // Lines served only in part are served again whole.
+  const gap = new Map([['a_router.py', [{ startLine: 3, endLine: 4 }, { startLine: 35, endLine: 43 }]]]);
+  const [partly] = readSourceEvidence(root, [{ path: 'hub.py', symbol: 'notify' }], { served: gap }).rows;
+  assert.deepEqual(decidingParts(partly).map((part) => part.cite), ['a_router.py:L3-L4', 'a_router.py:L29-L43']);
+
+  // Two reads of one call: the second finds the first's deciding lines served.
+  const [one, two] = readSourceEvidence(fixtureCopy(root), [{ path: 'hub.py', symbol: 'notify' }, { path: 'hub.py', symbol: 'notify' }]).rows;
+  assert.equal(decidingParts(one).length, 2);
+  assert.deepEqual(decidingParts(two), []);
+});
+
+function fixtureCopy(root) {
+  const copy = fixture();
+  for (const name of ['hub.py', 'a_router.py', 'b_jobs.py', 'c_jobs.py']) writeFileSync(join(copy, name), readFileSync(join(root, name)));
+  return copy;
+}
+
+/** A 200-line read of `long_task` cut short of the conditions further down its body. */
+function cutBodyText(remainder) {
+  return [
+    'def long_task(job):',
+    ...Array.from({ length: 205 }, (_, n) => `    step_${n}(job)`),
+    ...remainder,
+    '',
+    'def later(job):',
+    '    if job.late:',
+    '        raise RuntimeError("late")',
+    '',
+  ].join('\n');
+}
+// The guarded line decides nothing itself: it is served because the `if` above it is.
+const conditionPairs = (count) => Array.from({ length: count }, (_, n) => [`    if job.kind == "k${n}":`, `        return handle_k${n}(job)`]).flat();
+
+test('a cut symbol read serves the conditions in the part it cut, each with the line it guards', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'task.py'), cutBodyText(conditionPairs(50)));
+  const [row] = readSourceEvidence(root, [{ path: 'task.py', symbol: 'long_task' }]).rows;
+  assert.equal(row.actualRange.endLine, 200);
+  const parts = decidingParts(row);
+  assert.deepEqual(parts.map((part) => part.cite), ['task.py:L207-L246']);
+  assert.equal(lineCount(parts), SYMBOL_CONTEXT_LIMITS.decidingLines);
+  assert.match(parts[0].text, /^ {4}if job\.kind == "k0":\n {8}return handle_k0\(job\)\n/);
+  assert.equal(parts[0].label, 'deciding lines of long_task past this read\'s cut at L200 (it runs to L306): task.py:L207-L246');
+  assert.equal(row.next.startLine, 201, 'the read still names the rest of its own declaration');
+});
+
+test('a cut body is not scanned past a line too long for the outline to vouch for', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'task.py'), cutBodyText([`    note = "${'x'.repeat(1200)}"`, ...conditionPairs(3)]));
+  const [row] = readSourceEvidence(root, [{ path: 'task.py', symbol: 'long_task' }]).rows;
+  assert.deepEqual(decidingParts(row), []);
+});
+
+test('a cut body past the outline\'s declaration ceiling serves no lines another declaration may own', () => {
+  const root = fixture();
+  const tiny = Array.from({ length: OUTLINE_DECLARATION_LIMIT - 1 }, (_, n) => `def f${n}():\n    return ${n}\n`).join('\n');
+  const text = `${tiny}\n${cutBodyText([])}`;
+  assert.equal(outlineSource(text, 'task.py').truncated, true);
+  writeFileSync(join(root, 'task.py'), text);
+  const [row] = readSourceEvidence(root, [{ path: 'task.py', symbol: 'long_task' }]).rows;
+  assert.equal(row.status, 'read');
+  assert.deepEqual(decidingParts(row), [], '`later` is past the outline, so `long_task` may end before its condition');
+});
+
+/** `symbolContext` over one file, so a test can set the budget. */
+function contextOver(text, symbol, budget, bodyEnd) {
+  const root = fixture();
+  writeFileSync(join(root, 'svc.py'), text);
+  const lines = text.split(/(?<=\n)/u);
+  const { declarations } = outlineSource(text, 'svc.py');
+  const declaration = declarations.find((candidate) => candidate.name === symbol);
+  const helpers = declarations.filter((candidate) => /^h\d+$/u.test(candidate.name)).map((candidate) => ({ name: candidate.name, path: 'svc.py', line: candidate.line }));
+  const file = { path: 'svc.py', lines, declarations, sha256: 'x' };
+  return symbolContext({
+    rootPath: root, ignore: [], path: 'svc.py', lines, declarations, declaration, bodyEnd, callees: helpers,
+    open: (path) => (path === 'svc.py' ? file : null), budget, symbolEnd: helpers[0].line - 2,
+  });
+}
+
+function rankedHelpersText(remainder) {
+  // h0 holds the most conditions and so ranks first; h7 the fewest.
+  const helpers = Array.from({ length: 8 }, (_, k) => [
+    `def h${k}(job):`,
+    ...Array.from({ length: 36 - 4 * k }, (_, n) => `    if job.a${n}: job.b${n} = ${n}`),
+    '',
+  ].join('\n'));
+  return [
+    'def run(job):',
+    ...Array.from({ length: 8 }, (_, k) => `    h${k}(job)`),
+    ...Array.from({ length: 20 }, (_, n) => `    step_${n}(job)`),
+    ...remainder,
+    '',
+    ...helpers,
+  ].join('\n');
+}
+
+test('deciding lines take the room of the lowest-ranked parts, and the budget never grows', () => {
+  const budget = 4096;
+  const without = contextOver(rankedHelpersText(Array.from({ length: 40 }, (_, n) => `    tail_${n}(job)`)), 'run', budget, 29);
+  const kept = without.parts.map((part) => part.symbol);
+  assert.ok(kept.length >= 3 && without.bytes <= budget);
+
+  const withLines = contextOver(rankedHelpersText(conditionPairs(20)), 'run', budget, 29);
+  const served = withLines.parts.filter((part) => part.role === 'deciding');
+  assert.equal(lineCount(served), SYMBOL_CONTEXT_LIMITS.decidingLines);
+  const after = withLines.parts.filter((part) => part.role !== 'deciding').map((part) => part.symbol);
+  const dropped = kept.filter((symbol) => !after.includes(symbol));
+  assert.ok(dropped.length > 0, 'room was made');
+  assert.equal(withLines.parts[0].role, 'deciding', 'the deciding lines come first');
+  // What was dropped is what ranked last: every kept helper ranks above every dropped one.
+  assert.deepEqual(after, kept.slice(0, after.length));
+  for (const symbol of dropped) assert.ok(withLines.omitted.some((row) => row.symbol === symbol));
+  const bytes = withLines.parts.reduce((sum, part) => sum + Buffer.byteLength(part.text, 'utf8'), 0);
+  assert.equal(withLines.bytes, bytes);
+  assert.ok(bytes <= budget, `${bytes} bytes over a ${budget}-byte budget`);
+});
+
+test('deciding lines that do not fit even alone are cut from the least wanted end, then named as omitted', () => {
+  const text = rankedHelpersText(conditionPairs(20));
+  const small = contextOver(text, 'run', 300, 29);
+  assert.ok(small.bytes <= 300);
+  const served = small.parts.filter((part) => part.role === 'deciding');
+  assert.ok(served.length > 0 && lineCount(served) < SYMBOL_CONTEXT_LIMITS.decidingLines);
+  assert.match(served[0].text, /^ {4}if job\.kind == "k0":/);
+
+  const none = contextOver(text, 'run', 10, 29);
+  assert.deepEqual(none.parts, []);
+  assert.equal(none.omitted[0].role, 'deciding');
+  assert.equal(none.omitted[0].line, 30);
+});
+
+test('a deciding label escapes what the repository names', () => {
+  const root = fixture();
+  const odd = 'a\u202erouter.py';
+  writeFileSync(join(root, 'hub.py'), 'def notify(event):\n    event.send()\n');
+  writeFileSync(join(root, odd), 'from hub import notify\n\ndef dispatch(event):\n    notify(event)\n');
+  writeFileSync(join(root, 'b_jobs.py'), 'from hub import notify\n\ndef retry(event):\n    notify(event)\n');
+  writeFileSync(join(root, 'c_jobs.py'), 'from hub import notify\n\ndef replay(event):\n    notify(event)\n');
+  const [row] = readSourceEvidence(root, [{ path: 'hub.py', symbol: 'notify' }]).rows;
+  const part = decidingParts(row).find((candidate) => candidate.path === odd);
+  assert.ok(part, 'the caller in the oddly named file is served');
+  assert.ok(!part.label.includes('\u202e') && part.label.includes('\\u{202e}'));
+  assert.ok(!row.deciding.includes('\u202e'));
+});
+
+test('a deciding window never serves a line another part of the same response holds', () => {
+  const root = decidingCallerRepo();
+  // `notify` calls `dispatch`, which calls `notify`: the caller's lines are already a callee part.
+  writeFileSync(join(root, 'hub.py'), 'from a_router import dispatch\n\n\ndef notify(event):\n    dispatch(event, "live")\n');
+  const [row] = readSourceEvidence(root, [{ path: 'hub.py', symbol: 'notify' }]).rows;
+  const callee = row.context.find((part) => part.role === 'callee' && part.path === 'a_router.py');
+  assert.ok(callee, 'dispatch is served as a callee');
+  const lines = row.context.flatMap((part) => Array.from({ length: part.endLine - part.startLine + 1 }, (_, n) => `${part.path}:${part.startLine + n}`));
+  assert.equal(new Set(lines).size, lines.length, 'no line twice');
+  assert.match(row.deciding ?? '', /already among the parts in `context`|role "deciding"/);
 });

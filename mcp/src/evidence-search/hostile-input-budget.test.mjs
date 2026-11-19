@@ -507,3 +507,51 @@ describe('a family costs time linear in the types and interfaces that could join
     }
   });
 });
+
+/*
+ * The deciding lines a read serves are found by walking a caller up from its
+ * call and a cut body down from the cut. Each walk stops after 80 or 40 wanted
+ * lines; a walk that finds none crosses the file once.
+ */
+describe('serving deciding lines costs time linear in the caller or body it walks', () => {
+  const callers = (body) => ({
+    'hub.py': 'def notify(event):\n    event.send()\n',
+    'b.py': 'from hub import notify\n\ndef retry(event):\n    notify(event)\n',
+    'c.py': 'from hub import notify\n\ndef replay(event):\n    notify(event)\n',
+    'a.py': `from hub import notify\n\ndef dispatch(event):\n${body}\n        notify(event)\n`,
+  });
+  const cutBody = (body) => ({ 'task.py': `def long_task(job):\n${body}\n` });
+  const decidingOf = (row) => (row.context ?? []).filter((part) => part.role === 'deciding');
+  const lines = (parts) => parts.reduce((sum, part) => sum + part.endLine - part.startLine + 1, 0);
+
+  it('serves at most 40 lines from a 256 KiB caller or cut body of each hostile shape within the budget', (t) => {
+    const cases = [
+      ['caller of conditions above the call', callers(linesOf('    if event.kind == "x": event.y = 1').slice(0, FILE_BYTES - 200)), 'hub.py', 'notify', true],
+      ['caller with no condition above the call', callers(linesOf('        step(event)').slice(0, FILE_BYTES - 200)), 'hub.py', 'notify', true],
+      ['cut body of conditions', cutBody(linesOf('    if job.kind == "x": raise ValueError(job)').slice(0, FILE_BYTES - 40)), 'task.py', 'long_task', true],
+      ['cut body of no condition', cutBody(linesOf('    step(job)').slice(0, FILE_BYTES - 40)), 'task.py', 'long_task', false],
+      ['cut body of 992-character lines', cutBody(linesOf(`    step("${'x'.repeat(980)}")`).slice(0, FILE_BYTES - 40)), 'task.py', 'long_task', false],
+      ['cut body of 990-character conditions', cutBody(linesOf(`    if ${'a ?? '.repeat(195)}b: c = 1`).slice(0, FILE_BYTES - 40)), 'task.py', 'long_task', true],
+    ];
+    for (const [name, files, path, symbol, serves] of cases) {
+      const root = repoWith(files);
+      assertWithinBudget(t, name, () => {
+        const [row] = readSourceEvidence(root, [{ path, symbol }]).rows;
+        assert.equal(row.status, 'read', name);
+        assert.equal(decidingOf(row).length > 0, serves, `${name} reaches the walk it measures`);
+        assert.ok(lines(decidingOf(row)) <= 40, name);
+        assert.ok(row.returnedBytes - Buffer.byteLength(row.text) <= 6 * 1024, name);
+      });
+    }
+  });
+
+  it('doubling a cut body with no condition about doubles the time', (t) => {
+    const small = repoWith(cutBody(Array.from({ length: 4000 }, (_, n) => `    step_${n}(job)`).join('\n')));
+    const large = repoWith(cutBody(Array.from({ length: 8000 }, (_, n) => `    step_${n}(job)`).join('\n')));
+    const read = (root) => () => readSourceEvidence(root, [{ path: 'task.py', symbol: 'long_task' }]);
+    const smallMs = fastestRunMs(read(small));
+    const largeMs = fastestRunMs(read(large));
+    t.diagnostic(`${smallMs.toFixed(1)} ms -> ${largeMs.toFixed(1)} ms`);
+    assert.ok(largeMs < smallMs * 3 + 20, `doubled input took ${largeMs.toFixed(0)} ms against ${smallMs.toFixed(0)} ms`);
+  });
+});
