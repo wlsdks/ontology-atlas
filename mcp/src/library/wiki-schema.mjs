@@ -24,6 +24,13 @@ export function isWikiFurnitureSlug(slug) {
   const name = slug.slice(slug.lastIndexOf('/') + 1);
   return name.startsWith('_');
 }
+/**
+ * Folder findings true of a young, uncross-linked wiki rather than of a page: reported
+ * and counted, but they never decide whether a page fits the template. Here because the
+ * server and the Library both load this module; `wiki-report.mjs` re-exports it.
+ */
+export const WIKI_ADVISORY_CODES = Object.freeze(['orphan-page', 'shared-source-unlinked']);
+
 /** Vault folder holding the raw sources a page cites. */
 const WIKI_SOURCES_DIR = 'sources';
 
@@ -112,19 +119,27 @@ export const WIKI_SECTION_ORDER = Object.freeze([
  * editor, `src:` so it is not mistaken for a node link. Anchors: `p<n>`
  * page, `s<n>` sheet, `s<n>r<n>` sheet row, `r<n>` row, `h:<heading-slug>`
  * heading, `l<n>` line. An anchor is required: "somewhere in this document" is uncheckable.
+ * The path stops at `[`, `]`, `#` and a line break, so a match attempt from one `[[src:`
+ * never scans past the next `[`: the whole-body scan stays linear in the page's length.
  */
 const WIKI_CITATION_ANCHOR_PATTERN = 'p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*';
 export const WIKI_CITATION_PATTERN =
-  `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\]#]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
+  `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\][#\\n]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
 
 /** A fresh global regex. Global regexes carry `lastIndex`, so never share one. */
 function wikiCitationRegex() {
   return new RegExp(WIKI_CITATION_PATTERN, 'g');
 }
 
-/** Anything shaped like a citation, so a malformed one is reported instead of ignored. */
+/** A whole candidate that is a well-formed citation. Anchored, so no `lastIndex` to share. */
+const WHOLE_CITATION = new RegExp(`^${WIKI_CITATION_PATTERN}$`);
+
+/**
+ * Anything shaped like a citation, so a malformed one is reported instead of ignored.
+ * Its text stops at the next `[`, so a line of repeated `[[src:` is one scan, not one per opening.
+ */
 function citationCandidateRegex() {
-  return /\[\[src:([^\]]*)\]\]/g;
+  return /\[\[src:([^\][]*)\]\]/g;
 }
 
 /** Every well-formed citation in `text`, in order. */
@@ -194,9 +209,8 @@ function problem(code, message, line, detail) {
 }
 
 /** Level-2 headings in document order, with their line numbers. */
-function readSections(body, offset) {
+function readSections(lines, offset) {
   const out = [];
-  const lines = body.split('\n');
   let inFence = false;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -209,12 +223,11 @@ function readSections(body, offset) {
 }
 
 /** Bullet lines belonging to one section. */
-function sectionBullets(body, offset, sections, title) {
+function sectionBullets(lines, offset, sections, title) {
   const at = sections.findIndex((section) => section.title === title);
   if (at < 0) return [];
   const startLine = sections[at].line - offset;
   const endLine = at + 1 < sections.length ? sections[at + 1].line - offset - 1 : Infinity;
-  const lines = body.split('\n');
   const out = [];
   let inFence = false;
   for (let index = startLine; index < lines.length && index <= endLine; index += 1) {
@@ -234,18 +247,22 @@ function sectionBullets(body, offset, sections, title) {
 
 /**
  * Judges one wiki page. Pure and linear (one frontmatter parse, one pass per
- * section), with no filesystem reads.
+ * section, Set lookups per citation), with no filesystem reads.
  *
  * @param {string} raw the file's whole text
- * @param {{ knownSources?: Iterable<string> }} [options] vault-relative paths on
+ * @param {{ knownSources?: Iterable<string>, parsed?: { frontmatter: object, body: string } }} [options]
+ *   `parsed` is `parseFrontmatter(raw)` when the caller already holds it (the server's
+ *   document cache does); `knownSources` are vault-relative paths on
  *   disk. Given, a citation of a missing path is reported; omitted, citations are
- *   checked only against the page's `sources:`, never guessed.
+ *   checked only against the page's `sources:`, never guessed. Pass a Set when
+ *   judging many pages: any other iterable is copied into one per page.
  * @returns {{ ok: boolean, problems: Array<{ code: string, message: string, line?: number }> }}
  */
 export function validateWikiPage(raw, options = {}) {
   const text = String(raw ?? '');
   const problems = [];
-  const { frontmatter, body } = parseFrontmatter(text);
+  const { frontmatter, body } = options.parsed ?? parseFrontmatter(text);
+  const bodyLines = body.split('\n');
   // Body start line, so reported lines are lines in the real file.
   const frontmatterLines = text.startsWith('---')
     ? text.slice(0, text.length - body.length).split('\n').length - 1
@@ -294,7 +311,7 @@ export function validateWikiPage(raw, options = {}) {
     );
   }
 
-  const sections = readSections(body, frontmatterLines);
+  const sections = readSections(bodyLines, frontmatterLines);
   const found = sections.map((section) => section.title);
   const expected = [...WIKI_SECTION_ORDER];
   const foundExpected = found.filter((title) => expected.includes(title));
@@ -326,6 +343,7 @@ export function validateWikiPage(raw, options = {}) {
     : typeof frontmatter.sources === 'string' && frontmatter.sources.trim()
       ? [frontmatter.sources.trim()]
       : [];
+  const declared = new Set(declaredSources);
   const known = options.knownSources
     ? options.knownSources instanceof Set
       ? options.knownSources
@@ -353,7 +371,7 @@ export function validateWikiPage(raw, options = {}) {
       );
     } else {
       for (const path of listed) {
-        if (declaredSources.includes(path)) continue;
+        if (declared.has(path)) continue;
         problems.push(
           problem(
             'bad-truncation-record',
@@ -368,7 +386,7 @@ export function validateWikiPage(raw, options = {}) {
     }
   }
 
-  for (const bullet of sectionBullets(body, frontmatterLines, sections, 'Facts')) {
+  for (const bullet of sectionBullets(bodyLines, frontmatterLines, sections, 'Facts')) {
     if (extractWikiCitations(bullet.text).length === 0) {
       problems.push(
         problem(
@@ -385,7 +403,6 @@ export function validateWikiPage(raw, options = {}) {
 
   // A malformed citation is reported, or `[[src:plan.pdf]]` reads as prose and an
   // ungrounded claim passes the fact check.
-  const bodyLines = body.split('\n');
   let inFence = false;
   for (let index = 0; index < bodyLines.length; index += 1) {
     // Fenced text is quoted: a page may show a wrong citation to explain the syntax.
@@ -393,12 +410,12 @@ export function validateWikiPage(raw, options = {}) {
       inFence = !inFence;
       continue;
     }
-    if (inFence) continue;
+    if (inFence || !bodyLines[index].includes('[[src:')) continue;
     const candidates = citationCandidateRegex();
     let candidate;
     while ((candidate = candidates.exec(bodyLines[index])) !== null) {
       const whole = candidate[0];
-      if (new RegExp(`^${WIKI_CITATION_PATTERN}$`).test(whole)) continue;
+      if (WHOLE_CITATION.test(whole)) continue;
       problems.push(
         problem(
           'bad-citation',
@@ -415,7 +432,7 @@ export function validateWikiPage(raw, options = {}) {
   const seenMissing = new Set();
   for (const citation of extractWikiCitations(body)) {
     if (seenMissing.has(citation.path)) continue;
-    const undeclared = !declaredSources.includes(citation.path);
+    const undeclared = !declared.has(citation.path);
     const absent = known !== null && !known.has(citation.path);
     if (!undeclared && !absent) continue;
     seenMissing.add(citation.path);
@@ -438,9 +455,12 @@ export function validateWikiPage(raw, options = {}) {
 }
 
 
-/** `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link. */
+/**
+ * `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link.
+ * No part crosses a `[`, so each attempt ends at the next opening and a line scans once.
+ */
 function wikiPageLinkRegex() {
-  return /\[\[([^\]|#]+?)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+  return /\[\[([^\][|#]+)(?:#[^\][|]*)?(?:\|[^\][]*)?\]\]/g;
 }
 
 /**
@@ -477,7 +497,7 @@ function extractWikiPageLinks(body, offset) {
       inFence = !inFence;
       continue;
     }
-    if (inFence) continue;
+    if (inFence || !line.includes('[[')) continue;
     const regex = wikiPageLinkRegex();
     let match;
     while ((match = regex.exec(line)) !== null) {
@@ -505,26 +525,31 @@ function readDeclaredSources(frontmatter) {
  * Why these three: they are the folder faults (missing cross-references, unlinked
  * pages from one source) a script can decide while every single page validates.
  *
- * @param {Array<{ path: string, raw: string }>} pages every page, template excluded,
- *   each with a vault-relative `path` (`wiki/<slug>.md`)
+ * @param {Array<{ path: string, raw: string, parsed?: { frontmatter: object, body: string } }>} pages
+ *   every page, template excluded, each with a vault-relative `path` (`wiki/<slug>.md`);
+ *   `parsed`, when given, is `parseFrontmatter(raw)`
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  *   one entry per input page, in input order, `problems` possibly empty
  */
+/** Unlinked shared-source partners a page names before it counts the rest. */
+const WIKI_SHARED_PARTNER_LIMIT = 10;
+
 export function validateWikiFolder(pages) {
   const entries = (pages ?? []).map((page) => {
     const path = String(page.path ?? '');
     const slug = path.replace(/\.md$/, '');
     const text = String(page.raw ?? '');
-    const { frontmatter, body } = parseFrontmatter(text);
+    const { frontmatter, body } = page.parsed ?? parseFrontmatter(text);
     const frontmatterLines = text.startsWith('---')
       ? text.slice(0, text.length - body.length).split('\n').length - 1
       : 0;
+    const declared = readDeclaredSources(frontmatter);
     return {
       path,
       slug,
       links: extractWikiPageLinks(body, frontmatterLines),
-      sources: new Set(readDeclaredSources(frontmatter)),
-      primary: readDeclaredSources(frontmatter)[0] ?? null,
+      sources: new Set(declared),
+      primary: declared[0] ?? null,
       problems: [],
     };
   });
@@ -568,62 +593,95 @@ export function validateWikiFolder(pages) {
     }
   }
 
-  // O(P + Σ kₛ²), kₛ = pages listing s; pairs sorted (a, b) so partners keep input order.
+  // Two pages are partners when one's primary source (its first) is listed by the other.
+  // Each page names at most WIKI_SHARED_PARTNER_LIMIT unlinked partners in input order and
+  // counts the rest, so a folder of k pages written from one document costs O(k), not k².
+  // Cost: O(P + Σ sources + links), plus per page O((limit + linked partners) · its sources).
   const listedBy = new Map();
+  const primaryOf = new Map();
+  const primaryListing = new Map();
+  const pushTo = (map, key, index) => {
+    const list = map.get(key);
+    if (list) list.push(index);
+    else map.set(key, [index]);
+  };
+  const pairKey = (primary, listed) => `${primary}\u0000${listed}`;
   entries.forEach((entry, index) => {
+    for (const source of entry.sources) pushTo(listedBy, source, index);
+    if (entry.primary === null) return;
+    pushTo(primaryOf, entry.primary, index);
     for (const source of entry.sources) {
-      const list = listedBy.get(source);
-      if (list) list.push(index);
-      else listedBy.set(source, [index]);
+      const key = pairKey(entry.primary, source);
+      primaryListing.set(key, (primaryListing.get(key) ?? 0) + 1);
     }
   });
-  const pairKeys = new Set();
-  const pairs = [];
+  const isPartner = (page, other) =>
+    page !== other &&
+    ((page.primary !== null && other.sources.has(page.primary)) ||
+      (other.primary !== null && page.sources.has(other.primary)));
+
   entries.forEach((entry, index) => {
     if (entry.primary === null) return;
-    for (const other of listedBy.get(entry.primary) ?? []) {
-      if (other === index) continue;
-      const a = Math.min(index, other);
-      const b = Math.max(index, other);
-      const key = a * entries.length + b;
-      if (pairKeys.has(key)) continue;
-      pairKeys.add(key);
-      pairs.push([a, b]);
+    const linked = new Set(inbound.get(entry.slug));
+    for (const link of entry.links) if (bySlug.has(link.target)) linked.add(link.target);
+    let linkedPartners = 0;
+    for (const slug of linked) if (isPartner(entry, bySlug.get(slug))) linkedPartners += 1;
+    // Pages listing this one's primary, plus pages whose primary this one lists and that
+    // do not also list this one's primary (those are already counted).
+    let partners = listedBy.get(entry.primary).length - 1;
+    const lists = [listedBy.get(entry.primary)];
+    for (const source of entry.sources) {
+      if (source === entry.primary) continue;
+      const written = primaryOf.get(source) ?? [];
+      partners += written.length - (primaryListing.get(pairKey(source, entry.primary)) ?? 0);
+      if (written.length > 0) lists.push(written);
+    }
+    const unlinked = partners - linkedPartners;
+    if (unlinked === 0) return;
+    // Merge the ascending index lists to meet partners in input order.
+    const heads = lists.map(() => 0);
+    let previous = -1;
+    let named = 0;
+    while (named < WIKI_SHARED_PARTNER_LIMIT) {
+      let pick = -1;
+      for (let list = 0; list < lists.length; list += 1) {
+        const at = lists[list][heads[list]];
+        if (at !== undefined && (pick < 0 || at < lists[pick][heads[pick]])) pick = list;
+      }
+      if (pick < 0) break;
+      const other = lists[pick][heads[pick]];
+      heads[pick] += 1;
+      if (other === previous || other === index) continue;
+      previous = other;
+      const partner = entries[other];
+      if (linked.has(partner.slug)) continue;
+      // Only a page's primary source counts; sorted so every caller words it alike.
+      const shared = [...entry.sources]
+        .filter((source) => partner.sources.has(source) && (entry.primary === source || partner.primary === source))
+        .sort();
+      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
+      entry.problems.push(
+        problem(
+          'shared-source-unlinked',
+          `\`${partner.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+          undefined,
+          { key: 'shared-source-unlinked', values: { other: partner.path, sources: sourceList } },
+        ),
+      );
+      named += 1;
+    }
+    if (unlinked > named) {
+      const more = unlinked - named;
+      entry.problems.push(
+        problem(
+          'shared-source-unlinked',
+          `${more} more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.`,
+          undefined,
+          { key: 'shared-source-unlinked-more', values: { count: String(more) } },
+        ),
+      );
     }
   });
-  pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
-  for (const [a, b] of pairs) {
-    const first = entries[a];
-    const second = entries[b];
-    // Only a page's primary source (its first) counts; sorted so every caller words it alike.
-    const shared = [...first.sources]
-      .filter(
-        (source) =>
-          second.sources.has(source) && (first.primary === source || second.primary === source),
-      )
-      .sort();
-    if (shared.length === 0) continue;
-    const linked =
-      inbound.get(first.slug).has(second.slug) || inbound.get(second.slug).has(first.slug);
-    if (linked) continue;
-    const sourceList = shared.map((source) => `\`${source}\``).join(', ');
-    first.problems.push(
-      problem(
-        'shared-source-unlinked',
-        `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-        undefined,
-        { key: 'shared-source-unlinked', values: { other: second.path, sources: sourceList } },
-      ),
-    );
-    second.problems.push(
-      problem(
-        'shared-source-unlinked',
-        `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-        undefined,
-        { key: 'shared-source-unlinked', values: { other: first.path, sources: sourceList } },
-      ),
-    );
-  }
 
   return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));
 }

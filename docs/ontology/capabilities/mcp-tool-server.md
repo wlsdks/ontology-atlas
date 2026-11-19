@@ -22,6 +22,7 @@ Serves canonical read and write tools over JSON-RPC and reports the discovery in
 - Runtime proof of the bound vault/repository and the advertised names, count and hash.
 - The first-build survey: a breadth map of every product unit and the abilities to place, the floor under the map (entry points, dispatched operations, subcommands, flag groups, settings, workers, library exports and documented features, each with `path:Lline`); `sourceReads` outline a file, read lines, or read a declaration by symbol with the code that decides it, each part cited by path and lines.
 - Build depth: the server records the lines it serves; writes and `validate_vault` name unplaced abilities, unread capabilities, rules without read lines and abilities no ability edge touches, each with the next call; `finalize_project_meaning` refuses answered rows the map cannot back.
+- Paged whole-folder checks: `validate_vault` problem files and `validate_wiki` failing pages, each with the next call and a whole-folder summary.
 - Write-result warnings naming containment entries that reclassification or merging could not move.
 - Write results that carry each touched file's `mtime`, so the next guarded write needs no extra read; a relation write returns it only when the call itself was guarded by `expected_mtime`.
 

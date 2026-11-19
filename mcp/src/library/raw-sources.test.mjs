@@ -50,7 +50,7 @@ before(async () => {
       call(6, 'find_backlinks', { slug: 'domains/planning' }),
       call(7, 'get_concept', { slug: RAW_SOURCE_SLUG }),
       call(8, 'validate_vault'),
-      call(9, 'validate_wiki'),
+      call(9, 'validate_wiki', { paths: ['wiki/roadmap-notes.md'] }),
       call(10, 'read_source', { path: RAW_SOURCE_PATH }),
       call(11, 'add_concept', { slug: 'sources/Planning/next', kind: 'domain', title: 'Next' }),
       call(12, 'patch_concept', { slug: RAW_SOURCE_SLUG, frontmatter: { title: 'Changed' } }),

@@ -36,7 +36,10 @@ import { sessionReads } from '../construction/session-reads.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
+import { okResponseBytes } from '../server/rpc.mjs';
+import { repoText } from '../analyze/repo-text.mjs';
 import {
+  WIKI_ADVISORY_CODES,
   WIKI_DIR,
   isWikiFurnitureSlug,
   validateWikiFolder,
@@ -52,26 +55,107 @@ import { relative } from 'node:path';
 
 /**
  * Judges wiki pages against their own contract, which `validate_vault` cannot: a
- * wiki page carries no `kind:` by contract. The output is the shape
- * `ontology-atlas wiki-validate --json` prints.
+ * wiki page carries no `kind:` by contract. Page and problem objects are the ones
+ * `ontology-atlas wiki-validate --json` prints; the whole-folder answer is paged
+ * like `validate_vault`'s problems, because a folder of tens of thousands of pages
+ * would otherwise be one reply no agent can read.
+ *
+ * Cost per call: O(pages + bytes + links + citations) with Maps and Sets; pages that
+ * share a primary source name at most ten partners each. Failing pages keep the path
+ * order the pages were judged in, so ordering them is O(failing).
  */
-function validateWikiTool({ paths } = {}) {
+function validateWikiTool({ paths, offset, limit, afterPath } = {}) {
   if (paths !== undefined && !Array.isArray(paths)) {
     throw new Error('validate_wiki: `paths` must be an array of vault-relative page paths.');
   }
+  requireOptionalNonNegativeInteger(offset, 'offset');
+  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  const cursor = readWikiCursor(afterPath);
+  if (cursor && offset !== undefined) {
+    throw new Error('validate_wiki: `afterPath` resumes where the last reply stopped and `offset` counts from the start; pass one or the other.');
+  }
+  if (paths !== undefined && (offset !== undefined || limit !== undefined || cursor)) {
+    throw new Error('validate_wiki: `offset`, `limit` and `afterPath` page the whole folder; with `paths` every named page is returned, so pass one or the other.');
+  }
+  const judged = judgeWikiPages(paths);
+  if (paths !== undefined) {
+    return {
+      pageCount: judged.length,
+      failingCount: judged.filter((page) => !page.ok).length,
+      pages: judged.map((page) => shownPage(page)),
+    };
+  }
+  return pageWikiValidation(judged, {
+    offset: offset ?? 0,
+    cursor,
+    limit: limit ?? VALIDATION_PAGE_LIMIT,
+    textBudget: limit === undefined ? VALIDATION_PAGE_TEXT_BYTES : null,
+    callerArguments: limit === undefined ? {} : { limit },
+  });
+}
+
+function readWikiCursor(afterPath) {
+  if (afterPath === undefined) return null;
+  if (typeof afterPath !== 'string' || afterPath.length === 0) {
+    throw new Error('validate_wiki: `afterPath` is a page path, copied from the last reply\'s `nextCall`.');
+  }
+  return afterPath;
+}
+
+/** Problems shown per page; the rest are counted, so one page cannot fill a reply. */
+const WIKI_PAGE_PROBLEM_LIMIT = 20;
+/** Longest message shown; a longer one names repository text (a page or source path) at length. */
+const WIKI_MESSAGE_CHARS = 2000;
+
+/**
+ * A page as a reply shows it: `blocking` says whether any problem is more than advisory
+ * (the walk itself goes by path), at most `keep` problems with the rest counted, and each
+ * message escaped by `repoText`, since it quotes page and source names verbatim. Paths and
+ * `detail.values` stay exact: they are data a caller passes back, not prose.
+ */
+function shownPage(page, keep = WIKI_PAGE_PROBLEM_LIMIT) {
+  const shown = page.problems.slice(0, keep).map((entry) => ({ ...entry, message: repoText(entry.message, WIKI_MESSAGE_CHARS) }));
+  return {
+    path: page.path,
+    ok: page.ok,
+    blocking: page.problems.some((entry) => !isWikiAdvisoryCode(entry.code)),
+    problems: shown,
+    ...(page.problems.length > keep ? { problemsOmitted: page.problems.length - keep } : {}),
+  };
+}
+
+/**
+ * The last resort for a page whose single first problem is larger than a reply: its
+ * repository text (a list of shared source paths can run to megabytes) is cut, with
+ * the cut counted, so a walk always moves forward.
+ */
+function cutPageToOneProblem(page) {
+  const [first] = page.problems;
+  const cut = { code: first.code, message: repoText(first.message, 1000) };
+  if (first.line !== undefined) cut.line = first.line;
+  if (first.detail !== undefined) {
+    cut.detail = { key: first.detail.key };
+    if (first.detail.values) {
+      cut.detail.values = Object.fromEntries(Object.entries(first.detail.values)
+        .map(([key, value]) => [key, repoText(value, 200)]));
+    }
+  }
+  return { ...shownPage(page, 1), problems: [cut] };
+}
+
+function judgeWikiPages(paths) {
   const wikiPrefix = `${WIKI_DIR}/`;
   // Every raw source in the folder, so a citation naming a file nobody has is reported
   // rather than trusted. Listing only — no source is opened here or anywhere below.
-  const knownSources = listVaultSourcePaths();
+  // One Set for the whole folder: handed an array, every page would copy it.
+  const knownSources = new Set(listVaultSourcePaths());
   const docs = loadVaultDocs(VAULT_ROOT);
   const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+  const folderDocs = docs.filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug));
 
   const requested =
     paths === undefined
-      ? docs
-          .map((doc) => `${doc.slug}.md`)
-          .filter((path) => path.startsWith(wikiPrefix) && !isWikiFurnitureSlug(path))
-          .sort()
+      ? folderDocs.map((doc) => `${doc.slug}.md`).sort()
       : paths.map((path) => String(path));
 
   const pages = [];
@@ -100,16 +184,14 @@ function validateWikiTool({ paths } = {}) {
       });
       continue;
     }
-    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources });
+    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, parsed: doc });
     pages.push({ path, ok, problems });
   }
 
   // The folder half is judged over every page in the folder, whatever `paths` narrowed
   // the report to: whether somebody links to a page is a fact about the other pages,
   // and a page asked about alone would otherwise always read as an orphan.
-  const folderPages = docs
-    .filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug))
-    .map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '' }));
+  const folderPages = folderDocs.map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '', parsed: doc }));
   const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
   for (const page of pages) {
     const extra = folderByPath.get(page.path) ?? [];
@@ -118,12 +200,110 @@ function validateWikiTool({ paths } = {}) {
       page.ok = false;
     }
   }
+  return pages;
+}
 
-  return {
-    pageCount: pages.length,
-    failingCount: pages.filter((page) => !page.ok).length,
-    pages,
+const isWikiAdvisoryCode = (code) => WIKI_ADVISORY_CODES.includes(code);
+
+/**
+ * One page of failing wiki pages, in path order. OK pages are counted, never listed;
+ * each listed page says whether it is `blocking`, and the summary samples blocking pages
+ * first. The walk goes by path alone because a page's own state cannot move it: a repair
+ * elsewhere (a deleted page leaving another orphaned) changes blocking status, never a
+ * path. `nextCall` resumes after the last page shown (`afterPath`), so every page that
+ * fails for the whole walk is listed once; a page renamed during the walk appears under
+ * its new name only if that sorts after the cursor. Each page shows at most 20 problems.
+ * A page left at the default `limit` stops before the whole reply would pass 128 KiB,
+ * measured as the bytes `ok()` sends, and always holds at least one page, cut if a
+ * single page is larger than that.
+ */
+function pageWikiValidation(judged, { offset, cursor = null, limit, textBudget = null, callerArguments = {} }) {
+  // `judged` is in path order already.
+  const failing = judged.filter((page) => !page.ok);
+  const isBlocking = (page) => page.problems.some((entry) => !isWikiAdvisoryCode(entry.code));
+  const blockingList = failing.filter(isBlocking);
+  const blockingPages = blockingList.length;
+  const blockingFirst = [...blockingList, ...failing.filter((page) => !isBlocking(page))];
+  const byCodeMap = new Map();
+  for (const page of blockingFirst) {
+    const seen = new Set();
+    for (const entry of page.problems) {
+      if (seen.has(entry.code)) continue;
+      seen.add(entry.code);
+      let row = byCodeMap.get(entry.code);
+      if (!row) {
+        row = { severity: isWikiAdvisoryCode(entry.code) ? 'warning' : 'error', count: 0, files: [] };
+        byCodeMap.set(entry.code, row);
+      }
+      row.count += 1;
+      if (row.files.length < BY_CODE_FILE_SAMPLE) row.files.push(page.path);
+    }
+  }
+  const byCode = Object.fromEntries([...byCodeMap.keys()].sort().map((code) => {
+    const row = byCodeMap.get(code);
+    return [code, {
+      severity: row.severity,
+      count: row.count,
+      files: row.files,
+      ...(row.count > row.files.length ? { filesOmitted: row.count - row.files.length } : {}),
+    }];
+  }));
+
+  const total = failing.length;
+  let start = Math.min(offset, total);
+  if (cursor !== null) {
+    start = failing.findIndex((page) => page.path > cursor);
+    if (start < 0) start = total;
+  }
+  const window = failing.slice(start, start + limit);
+  const slice = window.map((page) => shownPage(page));
+  const build = (count, pages = slice.slice(0, count)) => {
+    const end = start + count;
+    const nextOffset = end < total ? end : null;
+    // A next page exists only after a page shown (`limit` ≥ 1), so `window[count - 1]` is set.
+    const nextArguments = nextOffset === null ? null : { afterPath: window[count - 1].path, ...callerArguments };
+    const stoppedForSize = count < slice.length || pages[0] !== slice[0];
+    // Prose only: no page name is spliced in, so nothing a file is called can shape it.
+    const hint = (count > 0
+      ? `Failing pages ${start + 1}-${end} of ${total}, by path`
+      : `No failing pages from position ${start}; the folder has ${total}`)
+      + (stoppedForSize ? '; the reply stopped short to stay within 128 KiB' : '')
+      + (nextArguments
+        ? '. Call nextCall.arguments next: it resumes after the last page shown, so every page failing for the whole walk is listed once. A page renamed during the walk appears under its new path only if that path sorts after the last page shown; run the walk again to be complete. The folder is clean only when failingCount is 0.'
+        : '.');
+    return {
+      pageCount: judged.length,
+      failingCount: total,
+      pagination: { offset: start, limit, total, returned: count, hasMore: nextOffset !== null, nextOffset },
+      ...(nextArguments ? { nextCall: { tool: 'validate_wiki', arguments: nextArguments } } : {}),
+      ...(start > 0 || nextOffset !== null ? { pagesHint: repoText(hint, 1000) } : {}),
+      summary: { blockingPages, advisoryOnlyPages: total - blockingPages, byCode },
+      pages,
+    };
   };
+  if (textBudget === null || slice.length === 0) return build(slice.length);
+  const fitsBudget = (reply) => okResponseBytes(reply) <= textBudget;
+  if (fitsBudget(build(slice.length))) return build(slice.length);
+  // The reply grows with every page it keeps, so the largest count that fits is
+  // found by bisection: O(log limit) serializations of at most one page of text.
+  let fits = 0;
+  let over = slice.length;
+  while (over - fits > 1) {
+    const middle = Math.floor((fits + over) / 2);
+    if (fitsBudget(build(middle))) fits = middle;
+    else over = middle;
+  }
+  if (fits > 0) return build(fits);
+  // Even one page is too large: keep as many of its problems as fit, else cut its first.
+  const first = window[0];
+  let kept = 0;
+  let tooMany = Math.min(first.problems.length, WIKI_PAGE_PROBLEM_LIMIT) + 1;
+  while (tooMany - kept > 1) {
+    const middle = Math.floor((kept + tooMany) / 2);
+    if (fitsBudget(build(1, [shownPage(first, middle)]))) kept = middle;
+    else tooMany = middle;
+  }
+  return build(1, [kept > 0 ? shownPage(first, kept) : cutPageToOneProblem(first)]);
 }
 
 const VALIDATION_PAGE_LIMIT = 100;
