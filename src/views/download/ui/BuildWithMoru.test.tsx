@@ -64,6 +64,9 @@ describe('BuildWithMoru', () => {
     expect(screen.getByTestId('build-node-refund')).not.toHaveAttribute('data-lone');
     press('build-commit-apply');
     expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-changed');
+    // A change reaches only what depends on it: Refunds, not the Cart and Sign-in that Payment depends on.
+    expect(screen.getByTestId('build-node-refund')).toHaveAttribute('data-touched');
+    for (const id of ['cart', 'login', 'payment']) expect(screen.getByTestId(`build-node-${id}`)).not.toHaveAttribute('data-touched');
     press('build-node-payment');
     expect(screen.getByTestId('build-inspect')).toHaveTextContent('charge-card.ts');
 

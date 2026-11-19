@@ -33,14 +33,14 @@ describe('the start steps show this repository’s own folder and concepts', () 
     expect(existsSync(path.join(ROOT, START_PATH, 'README.md'))).toBe(true);
   });
 
-  it('drafts concepts the vault holds, each inside the one above it, under the names the map gives them', () => {
+  it('proposes a domain the vault holds and two capabilities it contains, under the names the map gives them', () => {
     render(<StartSection graph={graph} />, { wrapper: IntlWrapper });
     const scene = screen.getByTestId('gateway-step-scene-1');
     const names = new Map(graph.nodes.map((node) => [node.id, node.label]));
     const contains = new Set(graph.edges.filter((edge) => edge.kind === 'contains').map((edge) => `${edge.source}>${edge.target}`));
-    START_DRAFT.forEach((id, depth) => {
+    START_DRAFT.forEach((id, index) => {
       expect(scene.textContent, id).toContain(names.get(id));
-      if (depth) expect(contains.has(`${START_DRAFT[depth - 1]}>${id}`), id).toBe(true);
+      if (index) expect(contains.has(`${START_DRAFT[0]}>${id}`), id).toBe(true);
     });
   });
 

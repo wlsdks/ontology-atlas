@@ -141,6 +141,12 @@ describe('fitMetaDescription', () => {
     expect(fitted).toMatch(/word…$/);
   });
 
+  it('cuts text without spaces by whole characters, never inside one', () => {
+    const fitted = fitMetaDescription('😀'.repeat(200));
+    expect(Array.from(fitted)).toHaveLength(META_DESCRIPTION_MAX);
+    expect(fitted.endsWith('😀…')).toBe(true);
+  });
+
   it.each(['en', 'ko', 'ja', 'zh'])('finds every %s page description and the site default within 25-160 characters', async (locale) => {
     const { default: metadata } = await import(`../../../../messages/${locale}/metadata.json`);
     const all = [metadata.siteTagline, ...Object.values(metadata.descriptions), ...Object.values(metadata.guideDescriptions)] as string[];

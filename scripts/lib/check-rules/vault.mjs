@@ -1,4 +1,4 @@
-/** The ontology vault: validation, audit, migration, meaning corpus, the gateway specimen, and section shape. */
+/** The ontology vault: validation, audit, migration, meaning corpus, and section shape. */
 
 export const rules = [
   {

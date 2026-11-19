@@ -124,7 +124,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations, []);
   });
 
-  it('suggests docs-vault, docs contract, dogfood status, and the gateway specimen for dogfood ontology docs', () => {
+  it('suggests docs-vault, docs contract and dogfood status for dogfood ontology docs', () => {
     const result = suggestFocusedChecks(['docs/ontology/capabilities/mcp-server.md']);
 
     assert.deepEqual(domainCommands(result), [

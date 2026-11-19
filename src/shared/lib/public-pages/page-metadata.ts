@@ -71,10 +71,11 @@ export const META_DESCRIPTION_MAX = 160;
 /** A description within `META_DESCRIPTION_MAX`, cut at the last word that fits, with an ellipsis. */
 export function fitMetaDescription(text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim();
-  if (flat.length <= META_DESCRIPTION_MAX) return flat;
-  const room = flat.slice(0, META_DESCRIPTION_MAX - 1);
+  const characters = Array.from(flat);
+  if (characters.length <= META_DESCRIPTION_MAX) return flat;
+  const room = characters.slice(0, META_DESCRIPTION_MAX - 1).join('');
   const space = room.lastIndexOf(' ');
-  return `${(space > META_DESCRIPTION_MAX / 2 ? room.slice(0, space) : room).replace(/[\s,;:.—-]+$/, '')}…`;
+  return `${(space > META_DESCRIPTION_MAX / 2 ? room.slice(0, space) : room).replace(/[\s,;:.—\-，。、；：]+$/u, '')}…`;
 }
 
 export function buildPageMetadata(

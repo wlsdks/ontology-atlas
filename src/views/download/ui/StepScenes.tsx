@@ -252,21 +252,21 @@ export function OpenFolderScene({ open }: { open: string }) {
   );
 }
 
-/** How far each drafted concept sits in from the one that contains it. */
-const DRAFT_INDENT = ['', 'ml-6', 'ml-12'] as const;
+/** The line from the domain down to each capability: the first from the domain's foot, the second from the first's middle. */
+const DRAFT_BRANCH = ['', '-top-1.5 h-[1.375rem]', '-top-[1.375rem] h-[2.375rem]'] as const;
 
-/** Step two: the first card's agent button, then the agent's first concepts, each inside the last. */
+/** Step two: the first card's agent button, then the agent's first proposal: a domain and two capabilities in it. */
 export function DraftScene({ ask, labelOf }: { ask: string; labelOf: (id: string) => string }) {
   return (
     <SceneFrame step={1}>
       <Press accent>{ask}</Press>
       <ul className="mt-4 flex min-w-0 flex-col gap-1.5">
-        {START_DRAFT.map((id, depth) => (
-          <li key={id} {...beat('drop', 360 + depth * DRAFT_STAGGER_MS)} className={cn('relative flex min-w-0', DRAFT_INDENT[depth])}>
-            {depth ? (
+        {START_DRAFT.map((id, index) => (
+          <li key={id} {...beat('drop', 360 + index * DRAFT_STAGGER_MS)} className={cn('relative flex min-w-0', index && 'ml-6')}>
+            {index ? (
               <span
                 aria-hidden
-                className="absolute -left-[0.5625rem] -top-1.5 h-[1.375rem] w-[0.5625rem] border-b border-l border-[color:var(--color-border-strong)]"
+                className={cn('absolute -left-[0.5625rem] w-[0.5625rem] border-b border-l border-[color:var(--color-border-strong)]', DRAFT_BRANCH[index])}
               />
             ) : null}
             <span className="flex h-8 min-w-0 items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">

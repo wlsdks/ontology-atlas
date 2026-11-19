@@ -95,7 +95,11 @@ export function BuildStage({
   useLayoutEffect(() => {
     const node = stage.current;
     if (!node) return;
-    const measure = () => setSize({ width: node.clientWidth, height: node.clientHeight });
+    // Unrounded, so the layout agrees with the container query at its 6/5 boundary.
+    const measure = () => {
+      const box = node.getBoundingClientRect();
+      setSize({ width: box.width, height: box.height });
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);

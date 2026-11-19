@@ -36,7 +36,7 @@
     },
     "step2": {
       "title": "Let your agent draft the map",
-      "body": "The first card offers to have your coding agent read the code and draft the map. It writes the broad areas first, then what sits inside each."
+      "body": "The first card offers to have your coding agent read the code and propose a first map, broad areas first. Only what you accept is written to the folder."
     },
     "step3": {
       "title": "Connect the agent you code with",
