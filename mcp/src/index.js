@@ -31,6 +31,7 @@ import {
 } from './server/rpc.mjs';
 import { VAULT_ROOT } from './server/runtime.mjs';
 import { normalizeToolArguments } from './server/validate.mjs';
+import { withVaultReadSnapshot } from './vault/documents.mjs';
 import { logWrite } from './server/write-log.mjs';
 import { absorbDocumentTool } from './tools/absorb.mjs';
 import {
@@ -102,7 +103,12 @@ import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
 
 
-server.setRequestHandler('tools/call', async (request) => {
+// A read tool sees one snapshot of the vault: its helpers share one stamp pass.
+server.setRequestHandler('tools/call', (request) => (
+  READ_TOOL_NAMES.has(request.params.name) ? withVaultReadSnapshot(() => callTool(request)) : callTool(request)
+));
+
+async function callTool(request) {
   const { name } = request.params;
   try {
     // Reject a known write tool even when the caller's cached tools/list still shows
@@ -224,7 +230,7 @@ server.setRequestHandler('tools/call', async (request) => {
   } catch (err) {
     return error(err);
   }
-});
+}
 
 
 const transport = new StdioServerTransport();

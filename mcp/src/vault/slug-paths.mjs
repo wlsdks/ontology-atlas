@@ -2,7 +2,13 @@ import { readdirSync, existsSync, realpathSync, statSync } from 'node:fs';
 import { basename, join, relative, dirname, resolve, sep } from 'node:path';
 import { VAULT_SOURCES_DIR, rawSourceSlugIssue, unwritableSlugIssue } from '../schema.mjs';
 
-/** Absolute paths of every `.md` in the vault except dotfiles, build folders and sources/. */
+/**
+ * Absolute paths of every `.md` in the vault except dotfiles, build folders and
+ * sources/, sorted by UTF-16 code unit. Directory listing order differs between
+ * filesystems and between Node and Bun, and every consumer (the document cache,
+ * BFS in find_path, list order) inherits this order, so it is fixed here once.
+ * O(F log F) for F files: at most about 20 ms at 50,000 (Bun; Node under 5 ms).
+ */
 export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
@@ -34,7 +40,7 @@ export function walkMd(rootPath) {
       }
     }
   }
-  return out;
+  return out.sort();
 }
 
 /**

@@ -460,6 +460,30 @@
       "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
       "consumer": "scripts/desktop/deploy-macos-app-local.mjs",
       "witness": "pkill"
+    },
+    {
+      "key": "frontend:runtime:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
+      "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
+      "consumer": "scripts/perf/perf-mcp-scale.mjs",
+      "witness": "vmmap"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
+      "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
+      "consumer": "scripts/perf/perf-mcp-scale.mjs",
+      "witness": "vmmap"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
+      "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
+      "consumer": "scripts/perf/perf-mcp-scale.mjs",
+      "witness": "vmmap"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/perf/perf-mcp-scale.mjs:vmmap",
+      "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
+      "consumer": "scripts/perf/perf-mcp-scale.mjs",
+      "witness": "vmmap"
     }
   ]
 }

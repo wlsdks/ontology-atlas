@@ -16,6 +16,7 @@ Walks the vault folder and performs the actual Markdown reads and writes, includ
 
 ## Includes
 - Directory walking and loading every document the rest of the system reads.
+- Keeping one parsed copy of each file for the server's lifetime and re-reading only files whose path, size, modification or change time, or inode moved; a file touched within 2 s of being read has its bytes compared again, and a write's fresh read that disagrees with the kept copy discards it.
 - Writing a node back to disk, and refusing the write when the file changed underneath the writer.
 - Handing prose findings back with the write itself, including a newly declared dependency that no file witnesses and a starter example still present once the vault has a real map.
 - Moving a referrer's entry into the list for a node's new kind when the node changes kind, and reporting the entries it could not move.
@@ -26,4 +27,5 @@ Walks the vault folder and performs the actual Markdown reads and writes, includ
 
 ## Uncertainty
 - `path:` names `mcp/src/vault/documents.mjs`, the read half every dependent imports. The writes (`writeDoc`, `patchFrontmatter`, `updateDoc`, `deleteDoc` in `mcp/src/vault/doc-writes.mjs`; `writeFileAtomically`, `applyAllOrNothing` in `mcp/src/vault/atomic-writes.mjs`), the gate (`runNodeEligibilityGate` in `mcp/src/vault/eligibility-gate.mjs`, which calls `dependencyWitnessFinding` and `starterExampleFinding`) and the kind-change rewriter (`redirectBacklinks` in `mcp/src/vault/backlink-rewrite.mjs`) are not drift-checked through this node. The split moved this code without changing it, and these files were not read end to end, so this role sentence may still understate what else they carry.
+- Read tools trust the kept copy's stamp: an edit that restores size, modification time, change time and inode (or, on FAT-family volumes, which have no change time, size and modification time) stays unseen by them until a write reads that file. Write tools trust no stamp and compare bytes, so no write decides from such a copy.
 - Whether this role should become several elements, one per file in `mcp/src/vault/`, was not decided.
