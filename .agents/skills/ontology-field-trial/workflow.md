@@ -92,7 +92,7 @@ edges and reports each as true, false or not stated by the cited lines.
 
 A builder completes a request that names its work and declines one that asks
 for the whole repository in a turn. After the build, resume the session id in
-`replay.json` with the flags the script gives its second turn and send the
+`<out>/replay.json` with the flags the script gives its second turn and send the
 text of one next step the app offers (`messages/en/acpChat.json`, `suggest.*`),
 naming up to eight slugs. Check that every named concept changed and that the
 new cites exist.

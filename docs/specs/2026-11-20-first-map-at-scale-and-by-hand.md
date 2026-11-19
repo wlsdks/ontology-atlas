@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 date: 2026-11-20
 decisions: []
-area: construction
+area: mcp
 ---
 
 # A first map that reaches the agent on large repositories, and building by hand in place
