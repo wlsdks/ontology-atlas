@@ -82,12 +82,25 @@ describe("useCompileBatch", () => {
     expect(other.result.current.returned).toBe(0);
   });
 
-  it("settles on finish when the turn never started", () => {
+  it("leaves the sources as they were when the turn never started", () => {
     const { result } = setup("/folder/failed");
     act(() => { result.current.begin(); });
     expect(result.current.inFlight.size).toBe(10);
     act(() => { result.current.finish(); });
     expect(result.current.inFlight.size).toBe(0);
+    expect(result.current.returned).toBe(0);
+    expect(paths(result.current.targets)).toEqual(paths(WAITING.slice(0, 10)));
+    expect(result.current.rest).toBe(27);
+  });
+
+  it("does not let finish undo a turn that ran", () => {
+    const key = "/folder/ran";
+    const { result, rerender } = setup(key);
+    act(() => { result.current.begin(); });
+    rerender({ sources: WAITING, folderKey: key, running: true });
+    act(() => { result.current.finish(); });
+    expect(result.current.inFlight.size).toBe(10);
+    rerender({ sources: WAITING, folderKey: key, running: false });
     expect(result.current.returned).toBe(10);
   });
 
