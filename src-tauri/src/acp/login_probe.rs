@@ -44,6 +44,7 @@ fn run_login_probe(runtime_id: &str, path: &Path, args: &[&str], child_path: &st
     use std::process::{Command, Stdio};
     let started = std::time::Instant::now();
     let mut command = Command::new(path);
+    crate::no_console::hide_console(&mut command);
     command
         .args(args)
         .stdin(Stdio::null())
