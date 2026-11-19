@@ -59,6 +59,9 @@ export function LibraryStatusStrip({
      * every source is written up.
      */
     parts.push(t("stage.statusChecking", { count: states.checkingCount }));
+  } else if (states.unreadableCount > 0) {
+    // A file that could not be opened is not covered, so the sequence is not finished either.
+    parts.push(t("stage.statusUnreadable", { count: states.unreadableCount }));
   } else if (model.wikiPages.length > 0) {
     // No step is next, nothing is being measured and pages exist, so the sequence is finished.
     parts.push(t("stage.statusReady"));
