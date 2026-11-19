@@ -92,7 +92,12 @@ export function parseFrontmatter(input) {
   const end = raw.indexOf('\n---', 3);
   if (end === -1) return { frontmatter: {}, body: raw };
   const block = raw.slice(4, end).trim();
-  const body = raw.slice(end + 4).replace(/^\r?\n/, '');
+  // The `^\r?\n` strip by index: a slice stays a view of the file text, where
+  // `.replace` copied every body (half the text a cached 50,000-file vault holds).
+  let bodyStart = end + 4;
+  if (raw.startsWith('\r\n', bodyStart)) bodyStart += 2;
+  else if (raw.startsWith('\n', bodyStart)) bodyStart += 1;
+  const body = raw.slice(bodyStart);
   const frontmatter = {};
   const diagnostics = [];
   const lines = block.split('\n');

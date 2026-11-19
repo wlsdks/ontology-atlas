@@ -345,12 +345,19 @@ export function compileOntology(loadedDocs, options = {}) {
   };
 }
 
+/**
+ * Copies a document's text so the artifact does not keep the whole file alive
+ * through a slice of it. A frozen document belongs to the vault document cache,
+ * which keeps that file text alive anyway while it is current, so copying it would
+ * only hold the text twice (about 140 MB of peak memory per compile at 50,000 files).
+ */
 function detachedDocument(doc) {
+  const shared = Object.isFrozen(doc);
   return {
     slug: doc?.slug,
     mtime: doc?.mtime,
-    frontmatter: detachText(doc?.frontmatter),
-    diagnostics: detachText(doc?.diagnostics),
+    frontmatter: shared ? doc.frontmatter : detachText(doc?.frontmatter),
+    diagnostics: shared ? doc.diagnostics : detachText(doc?.diagnostics),
   };
 }
 

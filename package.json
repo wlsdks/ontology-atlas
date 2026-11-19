@@ -179,6 +179,7 @@
     "perf:graph:scale": "node scripts/perf/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",
     "perf:mcp:memory": "node scripts/perf/perf-mcp-memory.mjs",
     "perf:mcp:memory:check": "node scripts/perf/perf-mcp-memory.mjs --check",
+    "perf:mcp:scale": "node scripts/perf/perf-mcp-scale.mjs",
     "ui:audit": "node scripts/design/ui-audit.mjs",
     "ui:look": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/design/ui-look.mjs",
     "test:ui:audit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/design/ui-audit.test.mjs scripts/design/ui-look.test.mjs",

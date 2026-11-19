@@ -20,12 +20,19 @@ human-approved. [Product purpose and limits](../README.md#why).
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
 runtime graph artifact without introducing a backend database. Compiler diagnostics use canonical ordering, so filesystem enumeration order does not change `graphHash`. Graphs compiled previously with noncanonical diagnostics may receive a corrected hash after this fix; vault files are not rewritten. The `canonicalizationActions` array follows source document enumeration order; that action order is not part of `graphHash`. During one MCP
-server session, repeated `query_ontology` calls reuse the compiled artifact
-while the vault document signature is unchanged, so agent run orders avoid
-recompiling the same graph over and over. Every lookup still loads current document
-bytes. The cache fingerprint uses SHA-256 over length-prefixed slug, modification
-time and lossless string content, preserving document order independence without
-confusing changed bytes at the same modification time.
+server session, the server keeps one parsed copy of each vault file. Every read
+tool call checks each file's path, size, modification and change time and inode,
+and re-reads only the files whose stamp moved; a file modified within 2 s of being
+read has its bytes compared again, so a same-size edit inside one timestamp tick
+is still seen. Edits made by an editor, Git or the app between calls show on the
+next call. `query_ontology` and `compile_ontology` reuse the compiled artifact
+while no file was added, removed or changed. A write tool trusts no stamp: it
+reads every file it decides from (the backlinks that refuse a delete or that a
+rename or merge rewrites) and compares bytes, and it reads its target from disk
+and refuses to overwrite a newer file. A write that finds bytes other than the
+kept copy discards that copy, under whatever spelling of the path it used, which
+is what reveals an edit on a FAT or exFAT volume that restored the file's size
+and modification time.
 
 Kind selection and relation meaning are not redefined in this tool manual. The
 single public contract is
