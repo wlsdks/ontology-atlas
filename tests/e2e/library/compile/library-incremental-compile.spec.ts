@@ -37,8 +37,8 @@ test("a current source write-up revises an outdated related page; approval updat
   await browser.getByRole("button", { name: /Open (?:a|my) folder/i }).click();
   await browser.getByTestId("app-nav-rail-item-library").click();
   await browser.getByTestId("library-workspace-sources").click();
-  /* The waiting line sits under the Compile press it is about; Escape returns the walk to the home. */
-  await browser.getByTestId("library-strip-compile").click();
+  /* The waiting line sits under the guide's Compile step; Escape returns the walk to the home. */
+  await browser.getByTestId("library-guide-open").click();
   await expect(browser.getByText("1 existing page needs rechecking", { exact: false }).first()).toBeVisible();
   await browser.keyboard.press("Escape");
   await browser.getByTestId("library-workspace-wiki").click();
@@ -59,10 +59,9 @@ test("a current source write-up revises an outdated related page; approval updat
   expect((await harness.snapshot(browser)).files[existingPath]).toBe(oldPage);
   await browser.getByTestId("library-local-compile-allow").click();
   await expect(browser.getByTestId("library-local-compile-written")).toBeVisible();
-  /* And the sentence is gone from the one surface that prints it: the local review holds
-     the pane, so the strip's clause — and with it the popover — is not drawn at all. */
+  /* And the sentence is gone: the local review holds the pane, so no popover prints it. */
   await expect(browser.getByText("1 existing page needs rechecking", { exact: false })).toHaveCount(0);
-  await expect(browser.getByTestId("library-strip-compile")).toHaveCount(0);
+  await expect(browser.getByTestId("library-guide-popover")).toHaveCount(0);
   const saved = await harness.snapshot(browser);
   const sourceResult = saved.calls.filter((entry) => entry.method === "llm_chat")
     .flatMap((entry) => JSON.parse(String((entry.params as { body: string }).body)).messages)

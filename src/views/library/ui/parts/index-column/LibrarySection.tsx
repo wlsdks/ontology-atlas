@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
+import { WorkGlyph } from '@/shared/motion/work-glyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
@@ -12,6 +13,7 @@ import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault"
 import { humanPageSlug } from "@/features/library";
 import { writerLabel } from "../../../lib/wiki/writer-label";
 import { cn } from "@/shared/lib/cn";
+import { progressInk } from "../progress/progress-inks";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
@@ -44,6 +46,7 @@ const LIBRARY_INDEX_HITS = 5000;
 const SOURCE_STATE_FOLDS_FROM = 12;
 /** The order the head counts states in: what to act on first, what is done last. */
 const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking", "unreadable"];
+const NO_SOURCES: ReadonlySet<string> = new Set();
 import type { LibraryUiModel } from "@/features/library";
 import { WIKI_SECTION_ORDER } from "@/shared/lib/library/wiki-page-schema";
 
@@ -175,6 +178,8 @@ export interface LibrarySectionProps {
    * writing.
    */
   compiling?: boolean;
+  /** Sources the Continue request in flight named; their rows show it running, then their check draws. */
+  runningSources?: ReadonlySet<string>;
   t: ReturnType<typeof useTranslations<"library">>;
 }
 
@@ -325,6 +330,7 @@ export function LibrarySection({
   segment,
   busy,
   compiling = false,
+  runningSources = NO_SOURCES,
   t,
 }: LibrarySectionProps) {
   /*
@@ -416,6 +422,11 @@ export function LibrarySection({
     for (const row of visibleSources) counts.set(row.state, (counts.get(row.state) ?? 0) + 1);
     return SOURCE_STATE_ORDER.filter((state) => counts.has(state)).map((state) => ({ state, count: counts.get(state)! }));
   }, [visibleSources]);
+  // At 100% the bar's first segment turns green; the "has a page" swatch follows it.
+  const allCompiled = useMemo(
+    () => model.sources.length > 0 && model.sources.every((row) => row.state === "compiled"),
+    [model.sources],
+  );
   const foldedState = (() => {
     if (visibleSources.length < SOURCE_STATE_FOLDS_FROM) return null;
     const candidates = stateCounts.filter(({ state }) => state !== "compiled" && state !== "checking");
@@ -424,16 +435,22 @@ export function LibrarySection({
     if (candidates.some((c) => c !== best && c.count === best.count)) return null;
     return best.count * 2 > visibleSources.length ? best.state : null;
   })();
-  const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
-  const sourceRoving = useRovingRows({ count: visibleSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
+  /* One state at a time, pressed in the head; it narrows what the search left, and the counts stay the search's. */
+  const [stateFilter, setStateFilter] = useState<LibrarySourceRow["state"] | null>(null);
+  const listedSources = useMemo(
+    () => (stateFilter ? visibleSources.filter((row) => row.state === stateFilter) : visibleSources),
+    [stateFilter, visibleSources],
+  );
+  const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: listedSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
+  const sourceRoving = useRovingRows({ count: listedSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
   const { onRowFocus: sourceRowFocus } = sourceRoving;
   useEffect(() => {
     if (!selectedSourcePath) return;
-    const index = visibleSources.findIndex((row) => row.path === selectedSourcePath);
+    const index = listedSources.findIndex((row) => row.path === selectedSourcePath);
     if (index < 0) return;
     scrollToSource(index);
     sourceRowFocus(index);
-  }, [scrollToSource, selectedSourcePath, sourceRowFocus, visibleSources]);
+  }, [listedSources, scrollToSource, selectedSourcePath, sourceRowFocus]);
   /* Memoised for the same reason, and because `LibraryShelf` derives its spines from this array. */
   const visiblePages = useMemo(
     () =>
@@ -639,33 +656,73 @@ export function LibrarySection({
         {hasSources ? (
           <>
             {stateCounts.length > 0 ? (
-              <p
+              /* Each count is a press that shows only its rows; the pressed one says so, and "Show all" undoes it. */
+              <div
+                role="group"
                 data-testid="library-source-states"
                 data-folded-state={foldedState ?? undefined}
                 aria-label={t("sources.statesAria")}
-                className={`pb-2 pt-1 text-caption text-[color:var(--color-text-quaternary)] ${INDEX_LIST_INSET}`}
+                className={`pb-2 pt-1 ${INDEX_LIST_INSET}`}
               >
                 <span className={`items-center ${INDEX_TEXT_LINE}`}>
                 <IndexGlyph />
-                <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                {stateCounts.map(({ state, count }) =>
-                  state === foldedState ? (
-                    <StateBadge
+                <span className="-ml-1 flex min-w-0 flex-wrap items-center gap-x-0.5 gap-y-0.5">
+                {stateCounts.map(({ state, count }) => {
+                  const label = t(`sources.state.${state}.label`);
+                  const pressed = stateFilter === state;
+                  // The swatch is the state's colour in the progress bar above, so the two read as one key.
+                  const swatch = (
+                    <span
+                      aria-hidden
+                      data-testid={`library-source-states-swatch-${state}`}
+                      className={cn(
+                        "inline-block size-1.5 flex-none rounded-full",
+                        state === "not-compiled" && "border border-[color:var(--color-border-strong)]",
+                      )}
+                      style={{ backgroundColor: progressInk(state, allCompiled) }}
+                    />
+                  );
+                  return (
+                    <button
                       key={state}
-                      tone={state === "stale" || state === "partial" ? "warning" : "neutral"}
-                      testId={`library-source-states-${state}`}
+                      type="button"
+                      data-testid={`library-source-states-${state}`}
+                      aria-pressed={pressed}
+                      title={t("sources.filterShow", { label })}
+                      onClick={() => setStateFilter(pressed ? null : state)}
+                      className={controlClass({
+                        shape: "segment",
+                        size: "xs",
+                        tone: "muted",
+                        hoverInk: "strong",
+                        hoverSurface: "lift",
+                        active: pressed,
+                        className: "tabular-nums",
+                      })}
                     >
-                      {t(`sources.state.${state}.label`)} · {count.toLocaleString()}
-                    </StateBadge>
-                  ) : (
-                    <span key={state} data-testid={`library-source-states-${state}`} className="tabular-nums">
-                      {t(`sources.state.${state}.label`)} {count.toLocaleString()}
-                    </span>
-                  ),
-                )}
+                      {state === foldedState ? (
+                        <StateBadge tone={state === "stale" || state === "partial" ? "warning" : "neutral"}>
+                          <span className="inline-flex items-center gap-1">{swatch}{label} · {count.toLocaleString()}</span>
+                        </StateBadge>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">{swatch}{label} {count.toLocaleString()}</span>
+                      )}
+                    </button>
+                  );
+                })}
+                {stateFilter ? (
+                  <button
+                    type="button"
+                    data-testid="library-source-states-all"
+                    onClick={() => setStateFilter(null)}
+                    className={controlClass({ shape: "segment", size: "xs", tone: "accent", hoverInk: "strong", hoverSurface: "lift", className: "tabular-nums" })}
+                  >
+                    {t("sources.filterAll", { count: visibleSources.length })}
+                  </button>
+                ) : null}
                 </span>
                 </span>
-              </p>
+              </div>
             ) : null}
             <ul
               ref={sourceListRef}
@@ -681,7 +738,7 @@ export function LibrarySection({
                  for the rest so the scroller's height is the whole list's. */
               style={sourceWindow.before || sourceWindow.after ? { paddingTop: sourceWindow.before, paddingBottom: sourceWindow.after } : undefined}
             >
-              {visibleSources.slice(sourceWindow.start, sourceWindow.end).map((row, offset) => {
+              {listedSources.slice(sourceWindow.start, sourceWindow.end).map((row, offset) => {
                 const rowIndex = sourceWindow.start + offset;
                 const active = row.path === selectedSourcePath;
                 const stateLabel = t(`sources.state.${row.state}.label`);
@@ -722,7 +779,13 @@ export function LibrarySection({
                           {row.format ? row.format.toUpperCase() : t("sources.noFormat")}
                         </span>
                       )}
-                      {row.state === "compiled" ? (
+                      {runningSources.has(row.path) ? (
+                        /* Named by the request in flight: it runs here, and its check draws when the page lands. */
+                        <span data-testid={`library-source-running-${row.state === "compiled" ? "done" : "running"}`} className="flex flex-none items-center">
+                          <WorkGlyph phase={row.state === "compiled" ? "done" : "running"} size={ICON_SIZE.sm} />
+                          <span className="sr-only">{stateLabel}</span>
+                        </span>
+                      ) : row.state === "compiled" ? (
                         /*
                          * A check, not a pill. The word is still announced — the glyph is
                          * `aria-hidden` and the label rides with it in `sr-only`, so a

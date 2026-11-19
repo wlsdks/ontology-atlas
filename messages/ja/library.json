@@ -972,9 +972,11 @@
     "point": "{date}：現在のソース{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
+    "axisToday": "今日",
     "continue": "{count, plural, =1 {最後のソースのWikiページを作成} other {次の#件のWikiページを作成}}",
     "batchRest": "この後に{count, number}件が待っています。",
     "batchReturned": "前回のリクエストのソース{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
+    "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
     "allDone": "すべてのソースにWikiページがあります"
   }
 }

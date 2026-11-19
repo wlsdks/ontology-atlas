@@ -49,7 +49,8 @@ export interface LocalCompileSession {
     phase: "active" | "complete";
     outcome: ToolCallRecord["outcome"] | null;
   } | null;
-  run: (brief: string) => Promise<void>;
+  /** `targets`: the source paths the brief names; without them the runner's own `targets`. */
+  run: (brief: string, targets?: readonly string[]) => Promise<void>;
   allow: () => Promise<void>;
   dismiss: () => void;
   stop: () => void;
@@ -84,15 +85,16 @@ async function hashReadBytes(bytes: ArrayBuffer): Promise<string | null> {
 }
 
 /** Waiting sources this route can open; a PDF is left out, and the shelf points it at a coding agent. */
+/** A source the local runner can open: a text format. */
+export function opensLocally(row: LibrarySourceRow): boolean {
+  return classifySourceFormat(row.format) === "readable";
+}
+
 export function selectLocalCompileTargets(
   sources: readonly LibrarySourceRow[],
 ): LibrarySourceRow[] {
-  return sources.filter(
-    (row) =>
-      // Part-read sources are work this route can do, not a format problem.
-      sourceNeedsCompile(row) &&
-      classifySourceFormat(row.format) === "readable",
-  );
+  // Part-read sources are work this route can do, not a format problem.
+  return sources.filter((row) => sourceNeedsCompile(row) && opensLocally(row));
 }
 
 export function useLocalCompile({
@@ -170,8 +172,10 @@ export function useLocalCompile({
   useEffect(() => () => stop(), [stop, vaultRoot, vaultSessionScope]);
 
   const run = useCallback(
-    async (brief: string) => {
+    async (brief: string, named?: readonly string[]) => {
       if (!vaultRoot || !endpoint) return;
+      // One list drives the brief, the system prompt and the review pages.
+      const turnTargets = named ? [...named] : targets;
       // Async completion may outlive a provider switch. The result belongs to the vault that
       // started it, so consumers can refuse to replay it into the newly selected vault.
       setOriginVaultScope(vaultSessionScope);
@@ -214,8 +218,8 @@ export function useLocalCompile({
             adapter: compileAdapter,
             tools: COMPILE_TOOLS,
             roundCap: COMPILE_ROUND_CAP,
-            system: buildCompileSystemPrompt({ model: endpoint.model, targets,
-              reviewPages: [...new Set(sources.filter((row) => targets.includes(row.path)).flatMap((row) => row.reviewPages ?? []))],
+            system: buildCompileSystemPrompt({ model: endpoint.model, targets: turnTargets,
+              reviewPages: [...new Set(sources.filter((row) => turnTargets.includes(row.path)).flatMap((row) => row.reviewPages ?? []))],
             }),
             model: endpoint.model,
             notices: COMPILE_NOTICES,

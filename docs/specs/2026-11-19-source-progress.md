@@ -91,13 +91,14 @@ The band is not a set of cards. At 1040 px and wider it is three cells in one ro
     - No wiki page is the track.
   - The percent is rounded down. A value above 0 and below 1 reads "under 1%". It reads 100% only when every source has a page.
 - **Chart cell**
-  - A cumulative step line over a soft fill, against a dashed ceiling at today's total, 72 px tall.
+  - A cumulative step line over a soft fill, against a dashed ceiling at today's total, 52 px tall and at most 26rem wide.
   - The y-axis is the share of today's sources.
   - The x-axis is local days from the first dated page to today. It switches to weeks past 90 days and to months past 120 weeks, and never shows more than 120 points.
   - A dot marks today when today has any.
   - The chart is one focusable element. Left and Right move between points and show `progress.point`.
-  - The date basis sits under the chart at `text-caption`.
-- **Action cell.** The Continue press as a filled primary button, with the rest line or the returned line under it.
+  - Under the chart at `text-caption`, the first point's date at the left and `progress.axisToday` at the right; the date basis is the caption's title and screen-reader text.
+- **Action cell.** The Continue press as a filled primary button, with the rest line or the returned line under it. It takes the width the chart leaves, so its lines wrap less.
+- **State line.** Each state count in the index carries a 6 px swatch in its bar colour.
 - **Narrower widths**
   - From 768 to 1039 px, the chart narrows to no less than 200 px.
   - Below 768 px, the chart is hidden, and the percent, bar and press share one row. The press may wrap.
@@ -129,8 +130,8 @@ The band is not a set of cards. At 1040 px and wider it is three cells in one ro
 | No sources and no pages | existing `emptyTitle` stage, no band | same |
 | Wiki pages but no sources | no band | same |
 | Checking | checking segment + `stage.read.coveredChecking`; hashed with `crypto.subtle` | native hashing in chunks of 256 |
-| 0% | `progress.first`; Continue disabled with `wiki.compileWebLimit` + Get the app | `progress.first` + `progress.continue` |
-| Partial | percent, bar, chart, filters; Continue disabled | all of it, plus Continue |
+| 0% | `progress.first`; `progress.webLine` + Get the app button | `progress.first` + `progress.continue` |
+| Partial | percent, bar, chart, filters; `progress.webLine` + Get the app button | all of it, plus Continue |
 | No agent on this Mac | not applicable | Continue disabled with `stage.blockedNoAgent` and the agent door |
 | Batch running | not applicable | running glyph + `progress.batchRest`; Stop in the dock |
 | Batch returned short | not applicable | `progress.batchReturned`; those rows go last |
@@ -158,10 +159,12 @@ All keys go in `messages/{en,ko,ja,zh}/library.json`. Keys already in the catalo
 | `progress.point` | {date}: {count, number} of today's {total, number} ({percent, number}%) |
 | `progress.dateBasis` | Each point uses the date its wiki page records. |
 | `progress.undated` | {count, plural, one {# has no date} other {# have no date}} |
+| `progress.axisToday` | Today |
 | `progress.continue` | {count, plural, =1 {Write a wiki page for the last source} other {Write wiki pages for the next #}} |
 | `progress.batchRest` | {count, number} more wait after these. |
 | `progress.batchReturned` | {count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}} |
 | `progress.allDone` | Every source has a wiki page |
+| `progress.webLine` | Only the app writes wiki pages. Reading works here. |
 | `sources.filterShow` | Show only sources marked "{label}" |
 | `sources.filterAll` | Show all {count, number} |
 | `sources.state.unreadable.label` | can't read |
@@ -194,7 +197,7 @@ All keys go in `messages/{en,ko,ja,zh}/library.json`. Keys already in the catalo
    - The local route sends 3.
    - Tests: `compile-brief.test.ts`, `use-compile-batch.test.ts`.
 6. **Filter.** Pressing "no wiki page 27" shows exactly those 27 rows, and "Show all 37" restores the list. This works with Hangul search text (`tests/e2e/library/library-source-progress.spec.ts`).
-7. **Web.** The same numbers show, and Continue is disabled with `wiki.compileWebLimit` and a Get the app link to `/download/`.
+7. **Web.** The same numbers show. In place of Continue, one `text-label` line (`progress.webLine`) and a Get the app button to `/download/`; no disabled press is drawn.
 8. **Motion.** In a per-frame recording, no frame interval exceeds 50 ms and no value jumps or restarts. Under reduced motion, only final values appear (`/ui-proof`).
 
 ## Risks
@@ -233,3 +236,4 @@ Order: A first; then B and C in parallel on A's model API; C merges last.
 ## Revisions
 
 - 2026-11-19: first draft. "Has a wiki page" is the counted state; reaching the map is left for the wiki–ontology link spec.
+- 2026-11-20: design review of #3649. Criterion 7 revised: on the web the band shows one `progress.webLine` line and a Get the app button instead of a disabled Continue that can never run. The chart is capped near 26rem and 52 px and captions its first date and today; state counts carry their bar colour. On a first open the sentence's count moves with the percent, and neither is drawn until the count starts, so "0%" never stands beside "26 of 60".

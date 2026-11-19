@@ -590,11 +590,13 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   `lastKnownPath` keeps the manifest's exact `document.path`
   (for example `capabilities/x.md`) for display only. A saved membership is neither
   an ontology kind nor an edge, and corrupt input is unavailable rather than empty.
-- The reader owns the pane; the Library graph mounts only inside the shared
-  viewport Dialog after an explicit Graph action. Its close path preserves
-  selection and scroll and restores the opener. The unselected landing lists
-  retained questions and their evidence state; an empty history keeps the existing
-  LibraryStage guidance. There is no permanent graph/reader split.
+- With nothing selected, Sources draws the Library graph in the pane
+  (`LibraryPage` mounts `src/widgets/library-graph/` directly), under the source
+  progress band (`src/views/library/ui/parts/progress/`) when the folder has a
+  source; Wiki draws the question desk. Opening a document replaces either and
+  gives it back on close. The band derives from the library model alone
+  (`deriveSourceProgress`), sends nothing, and its press starts the bounded
+  Compile request `useCompileBatch` names.
 - Filed answers retain citations with `unmeasured` source receipts. Passive
   hashing describes current files, not the bytes used by an older answer. App
   writes register with the vault session's existing one-shot self-write ledger,
