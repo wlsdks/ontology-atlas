@@ -73,9 +73,9 @@ fn generation_rejects_same_size_edits_and_replacement() {
     fs::remove_file(path).unwrap();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 struct Vault(PathBuf);
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 impl Vault {
     fn new() -> Self {
         static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -88,19 +88,20 @@ impl Vault {
         Self(fs::canonicalize(path).unwrap())
     }
     fn log(&self) -> PathBuf {
-        self.0.join(".ontology-atlas/llm-audit.jsonl")
+        // Joined part by part: a Windows verbatim path keeps `/` literally.
+        self.0.join(".ontology-atlas").join("llm-audit.jsonl")
     }
     fn root(&self) -> &str {
         self.0.to_str().unwrap()
     }
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 impl Drop for Vault {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.0);
     }
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn bounded_pulls_preserve_all_bytes_and_check_cursors() {
     let vault = Vault::new();
@@ -119,7 +120,17 @@ fn bounded_pulls_preserve_all_bytes_and_check_cursors() {
     assert!(session.pull(0).is_err());
     session.validate().unwrap();
 }
-#[cfg(unix)]
+/// Unix renames a directory with an open file inside; Windows may refuse while
+/// the reader holds the log, and then nothing changed for the reader to miss.
+#[cfg(any(unix, windows))]
+fn rename_unless_held(from: &std::path::Path, to: &std::path::Path) -> bool {
+    let renamed = fs::rename(from, to);
+    if cfg!(unix) {
+        renamed.as_ref().unwrap();
+    }
+    renamed.is_ok()
+}
+#[cfg(any(unix, windows))]
 #[test]
 fn changes_at_middle_and_eof_never_validate() {
     for action in [
@@ -147,15 +158,25 @@ fn changes_at_middle_and_eof_never_validate() {
             }
             "truncate" => fs::write(vault.log(), b"").unwrap(),
             "sidecar" => {
-                fs::rename(vault.0.join(".ontology-atlas"), vault.0.join("old-dir")).unwrap();
+                if !rename_unless_held(&vault.0.join(".ontology-atlas"), &vault.0.join("old-dir")) {
+                    session.validate().unwrap();
+                    continue;
+                }
                 fs::create_dir(vault.0.join(".ontology-atlas")).unwrap();
-                fs::rename(vault.0.join("old-dir/llm-audit.jsonl"), vault.log()).unwrap();
+                fs::rename(vault.0.join("old-dir").join("llm-audit.jsonl"), vault.log()).unwrap();
             }
             "root" => {
                 let moved = vault.0.with_extension("moved");
-                fs::rename(&vault.0, &moved).unwrap();
+                if !rename_unless_held(&vault.0, &moved) {
+                    session.validate().unwrap();
+                    continue;
+                }
                 fs::create_dir_all(vault.0.join(".ontology-atlas")).unwrap();
-                fs::rename(moved.join(".ontology-atlas/llm-audit.jsonl"), vault.log()).unwrap();
+                fs::rename(
+                    moved.join(".ontology-atlas").join("llm-audit.jsonl"),
+                    vault.log(),
+                )
+                .unwrap();
                 fs::remove_dir_all(moved).unwrap();
             }
             _ => unreachable!(),
@@ -163,7 +184,7 @@ fn changes_at_middle_and_eof_never_validate() {
         assert_eq!(session.validate().unwrap_err(), CHANGED, "{action}");
     }
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn only_confirmed_absence_is_empty_and_grant_revocation_invalidates() {
     let vault = Vault::new();
@@ -272,7 +293,7 @@ fn repeated_terminal_paths_close_descriptors_and_release_slots() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn missing_sources_revalidate_parent_identity_and_absence() {
     for mode in ["root", "sidecar", "created"] {
@@ -298,7 +319,7 @@ fn missing_sources_revalidate_parent_identity_and_absence() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn staged_responses_outlive_reader_slots_without_an_aggregate_transport_claim() {
     use tauri::ipc::{InvokeResponseBody, IpcResponse};
@@ -329,4 +350,60 @@ fn staged_responses_outlive_reader_slots_without_an_aggregate_transport_claim() 
         })
         .sum();
     assert_eq!(delivered, (MAX_READERS + 1) * MAX_CHUNK);
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_rejects_links_and_junctions_without_touching_external_data() {
+    let vault = Vault::new();
+    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    let outside = vault.0.join("outside");
+    fs::write(&outside, b"untouched").unwrap();
+    std::os::windows::fs::symlink_file(&outside, vault.log())
+        .expect("hosted Windows runners may create symlinks");
+    assert!(Session::open(vault.root()).is_err(), "symlinked log");
+    fs::remove_file(vault.log()).unwrap();
+    fs::hard_link(&outside, vault.log()).unwrap();
+    assert!(Session::open(vault.root()).is_err(), "hard-linked log");
+    fs::remove_file(vault.log()).unwrap();
+    assert_eq!(fs::read(&outside).unwrap(), b"untouched");
+
+    let elsewhere = vault.0.join("elsewhere");
+    fs::create_dir(&elsewhere).unwrap();
+    fs::write(elsewhere.join("llm-audit.jsonl"), b"untouched").unwrap();
+    fs::remove_dir(vault.0.join(".ontology-atlas")).unwrap();
+    let made = std::process::Command::new("cmd")
+        .args(["/C", "mklink", "/J"])
+        .arg(vault.0.join(".ontology-atlas"))
+        .arg(&elsewhere)
+        .output()
+        .unwrap();
+    assert!(made.status.success(), "{made:?}");
+    assert!(Session::open(vault.root()).is_err(), "junctioned sidecar");
+    fs::remove_dir(vault.0.join(".ontology-atlas")).unwrap();
+    std::os::windows::fs::symlink_dir(&elsewhere, vault.0.join(".ontology-atlas"))
+        .expect("hosted Windows runners may create symlinks");
+    assert!(Session::open(vault.root()).is_err(), "symlinked sidecar");
+    fs::remove_dir(vault.0.join(".ontology-atlas")).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_reads_while_the_writer_holds_the_log_with_its_sharing() {
+    use std::os::windows::fs::OpenOptionsExt;
+    use windows_sys::Win32::Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+    let vault = Vault::new();
+    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault.0));
+    fs::write(vault.log(), b"data").unwrap();
+    // The audit writer's open: no delete sharing, so the log cannot move under it.
+    let writer = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+        .open(vault.log())
+        .unwrap();
+    let mut session = Session::open(vault.root()).unwrap().unwrap();
+    assert_eq!(session.pull(0).unwrap(), b"data");
+    session.validate().unwrap();
+    drop(writer);
 }
