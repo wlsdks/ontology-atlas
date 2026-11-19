@@ -73,8 +73,10 @@ jobs:
       - name: Check sitemap, canonicals and titles in the export
         run: pnpm seo:check
       # Before the deploy replaces the live site: which pages' visible text this build changes.
+      # Never the deploy's blocker: a slow or failing live site only means nothing is submitted.
       - name: Find the pages this deploy changes
         id: changed
+        continue-on-error: true
         run: node scripts/web/indexnow.mjs changed --out=out >> "$GITHUB_OUTPUT"
       - name: Stage the newest published updater manifest
         run: pnpm desktop:stage-hosted-updater
@@ -110,7 +112,8 @@ jobs:
   indexnow:
     name: Tell IndexNow engines what changed
     needs: [build, deploy]
-    if: needs.build.outputs.changed_urls != '' && needs.build.outputs.changed_urls != '[]'
+    # Only the site that owns the key: a fork's Pages must not submit this domain's URLs.
+    if: github.repository == 'wlsdks/ontology-atlas' && needs.build.outputs.changed_urls != '' && needs.build.outputs.changed_urls != '[]'
     runs-on: ubuntu-latest
     # budget: 30s
     timeout-minutes: 2

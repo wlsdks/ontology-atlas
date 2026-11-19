@@ -31,7 +31,7 @@ export function downloadStructuredData(locale: string, description: string, nami
     '@type': 'SoftwareApplication',
     name: 'Ontology Atlas',
     alternateName: [...new Set(['ontology-atlas', naming.reading])].filter((name) => name !== 'Ontology Atlas'),
-    keywords: naming.keywords,
+    keywords: naming.keywords.split(/\s*[,，、]\s*/),
     applicationCategory: 'DeveloperApplication',
     operatingSystem: windows ? [RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS] : RELEASE_MIN_MACOS,
     description,

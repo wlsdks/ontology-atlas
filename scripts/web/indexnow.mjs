@@ -24,6 +24,8 @@ export const INDEXNOW_KEY = '39b8c5bebbe326f89097083d57514dcc';
 const ENDPOINT = 'https://api.indexnow.org/indexnow';
 const FETCH_TIMEOUT_MS = 15_000;
 const PARALLEL_FETCHES = 8;
+/** The whole comparison's ceiling, well inside the build job's budget; pages not reached are left out. */
+const DEADLINE_MS = 40_000;
 
 /** What a reader and a crawler's index see: title, description and body text, without scripts or markup. */
 export function visibleText(html) {
@@ -53,15 +55,16 @@ export function exportedFileOf(url, outDir) {
  * The sitemap pages whose visible text changed against the live site. A page the live site lacks
  * (404) is new and counts; one the live site could not answer is left out, never guessed.
  */
-export async function changedUrls({ outDir, fetchPage = fetch, log = console.error }) {
+export async function changedUrls({ outDir, fetchPage = fetch, log = console.error, deadlineMs = DEADLINE_MS }) {
   const urls = sitemapUrls(fs.readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8'));
   const verdicts = new Map();
+  const deadline = AbortSignal.timeout(deadlineMs);
   const check = async (url) => {
-    const file = exportedFileOf(url, outDir);
-    if (!fs.existsSync(file)) return;
-    const built = digest(visibleText(fs.readFileSync(file, 'utf8')));
     try {
-      const response = await fetchPage(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), redirect: 'follow' });
+      const file = exportedFileOf(url, outDir);
+      if (!fs.existsSync(file)) return;
+      const built = digest(visibleText(fs.readFileSync(file, 'utf8')));
+      const response = await fetchPage(url, { signal: AbortSignal.any([deadline, AbortSignal.timeout(FETCH_TIMEOUT_MS)]), redirect: 'follow' });
       if (response.status === 404) verdicts.set(url, true);
       else if (response.ok) verdicts.set(url, digest(visibleText(await response.text())) !== built);
       else log(`[indexnow] ${url}: live answered ${response.status}; left out`);
@@ -70,7 +73,7 @@ export async function changedUrls({ outDir, fetchPage = fetch, log = console.err
     }
   };
   // A few at a time, so the deploy's build job stays inside its budget without flooding the host.
-  for (let start = 0; start < urls.length; start += PARALLEL_FETCHES) {
+  for (let start = 0; start < urls.length && !deadline.aborted; start += PARALLEL_FETCHES) {
     await Promise.all(urls.slice(start, start + PARALLEL_FETCHES).map(check));
   }
   return urls.filter((url) => verdicts.get(url));
@@ -91,7 +94,8 @@ export async function submit({ urls, base, post = fetch, log = console.error }) 
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   const outcome = `${urls.length} URL(s): IndexNow answered ${response.status}`;
-  if (response.status !== 200 && response.status !== 202) log(`[indexnow] ${outcome}`);
+  // A refusal (a moved key, a rejected host) must show in the run, though it never fails the deploy.
+  if (response.status !== 200 && response.status !== 202) log(`::warning::[indexnow] ${outcome}`);
   return outcome;
 }
 

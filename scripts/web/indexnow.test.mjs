@@ -58,3 +58,21 @@ test('the submission names the host, the key and where the key lives, and nothin
   await submit({ urls: [], base: 'https://ontologyatlas.com', post: async () => ((posted = true), { status: 200 }) });
   assert.equal(posted, false);
 });
+
+test('stops comparing at the deadline and reports only the pages it finished', async () => {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'indexnow-'));
+  const urls = Array.from({ length: 20 }, (_, i) => `https://ontologyatlas.com/en/p${i}/`);
+  fs.writeFileSync(path.join(outDir, 'sitemap.xml'), urls.map((url) => `<url><loc>${url}</loc></url>`).join(''));
+  for (let i = 0; i < 20; i += 1) {
+    fs.mkdirSync(path.join(outDir, 'en', `p${i}`), { recursive: true });
+    fs.writeFileSync(path.join(outDir, 'en', `p${i}`, 'index.html'), page('New', 'b'));
+  }
+  let fetched = 0;
+  const fetchPage = (_url, { signal }) => {
+    fetched += 1;
+    return new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))));
+  };
+  const changed = await changedUrls({ outDir, fetchPage, log: () => {}, deadlineMs: 50 });
+  assert.deepEqual(changed, []);
+  assert.equal(fetched, 8, 'no batch starts after the deadline');
+});
