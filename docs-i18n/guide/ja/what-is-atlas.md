@@ -44,6 +44,7 @@ Atlasはその答えをコードのそばに置きます。
 ## 次に読む
 
 1. [オントロジーとは](/guide/what-is-an-ontology): マップの背後にある考え方を、一般論とコードベースの場合の両面から説明します。
-2. [はじめに](/guide/first-five-minutes): アプリをダウンロードするかブラウザで試し、オントロジーフォルダを開くか作成します。
-3. [MCPでコーディングエージェントを接続](/guide/connect-agent): Claude Code、Codex、CursorがMCP経由でマップを読めるようにします。
-4. [コードから最初のマップを作る](/guide/from-your-repo)。
+2. [Atlasとコードグラフ・Wiki・ノートアプリ・CLAUDE.mdの比較](/guide/atlas-compared): それらのツールが持たずAtlasが持つもの、そしてそれらのツールのほうが適している場面です。
+3. [はじめに](/guide/first-five-minutes): アプリをダウンロードするかブラウザで試し、オントロジーフォルダを開くか作成します。
+4. [MCPでコーディングエージェントを接続](/guide/connect-agent): Claude Code、Codex、CursorがMCP経由でマップを読めるようにします。
+5. [コードから最初のマップを作る](/guide/from-your-repo)。

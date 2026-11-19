@@ -85,6 +85,7 @@ relation_notes: { capabilities/payment-authorization: "只有在支付服务商�
 
 ## 接下来读什么
 
+- [Atlas 与代码图谱、Wiki、笔记应用和 CLAUDE.md 的比较](/guide/atlas-compared)：Atlas 与代码图谱、Wiki、笔记应用和图数据库有什么不同。
 - [快速上手](/guide/first-five-minutes)：打开或创建你自己的本体文件夹。
 - [选择概念](/guide/what-becomes-a-node)：怎样在领域、能力和元素之间做选择。
 - [关系](/guide/relations)：每种关系类型的详细说明。

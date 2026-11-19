@@ -15,6 +15,7 @@
   "guidePages": {
     "whatIsAtlas": "What is Ontology Atlas?",
     "whatIsAnOntology": "What is an ontology?",
+    "atlasCompared": "Atlas compared with code graphs, wikis, note apps and CLAUDE.md",
     "firstFiveMinutes": "Getting started",
     "readingTheMap": "Reading the map",
     "vaultStructure": "The ontology folder: Markdown files and their info block",

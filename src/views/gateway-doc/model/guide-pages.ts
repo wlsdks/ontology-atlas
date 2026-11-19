@@ -15,6 +15,7 @@ export interface GuidePage {
 export const GUIDE_PAGES: readonly GuidePage[] = [
   { slug: 'guide/what-is-atlas', segment: 'what-is-atlas', titleKey: 'whatIsAtlas' },
   { slug: 'guide/what-is-an-ontology', segment: 'what-is-an-ontology', titleKey: 'whatIsAnOntology' },
+  { slug: 'guide/atlas-compared', segment: 'atlas-compared', titleKey: 'atlasCompared' },
   { slug: 'guide/first-five-minutes', segment: 'first-five-minutes', titleKey: 'firstFiveMinutes' },
   { slug: 'guide/connect-agent', segment: 'connect-agent', titleKey: 'connectAgent' },
   { slug: 'guide/from-your-repo', segment: 'from-your-repo', titleKey: 'fromYourRepo' },

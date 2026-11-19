@@ -140,6 +140,9 @@ written anything yet.
 
 ## Read next
 
+- [Atlas compared with code graphs, wikis, note apps and
+  CLAUDE.md](/guide/atlas-compared): how Atlas differs from code graphs, wikis,
+  note apps and graph databases.
 - [Getting started](/guide/first-five-minutes): open or create your own
   ontology folder.
 - [Choosing concepts](/guide/what-becomes-a-node): how to choose between a

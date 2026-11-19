@@ -85,6 +85,7 @@ relation_notes: { capabilities/payment-authorization: "決済事業者が金額�
 
 ## 次に読む
 
+- [Atlasとコードグラフ・Wiki・ノートアプリ・CLAUDE.mdの比較](/guide/atlas-compared): Atlasがコードグラフ、Wiki、ノートアプリ、グラフデータベースとどう違うかを説明します。
 - [はじめに](/guide/first-five-minutes): 自分のオントロジーフォルダを開くか作成します。
 - [概念になるもの](/guide/what-becomes-a-node): ドメイン、ケイパビリティ、要素のどれにするかの選び方です。
 - [関係](/guide/relations): すべての関係の型を詳しく説明します。

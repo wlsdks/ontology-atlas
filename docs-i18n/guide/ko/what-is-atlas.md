@@ -81,8 +81,10 @@ Atlas는 이런 질문의 답을 코드 옆에 둬요.
 
 1. [온톨로지란?](/guide/what-is-an-ontology): 지도에 깔린 생각을 일반적인 뜻과
    코드베이스에서의 뜻으로 나눠 설명해요.
-2. [시작하기](/guide/first-five-minutes): 앱을 내려받거나 브라우저로 열어 본
+2. [코드 그래프·위키·노트 앱·CLAUDE.md와 Atlas 비교](/guide/atlas-compared):
+   그 도구들에 없고 Atlas에 있는 것, 그리고 그 도구들이 더 나은 경우.
+3. [시작하기](/guide/first-five-minutes): 앱을 내려받거나 브라우저로 열어 본
    다음, 온톨로지 폴더를 열거나 만들어요.
-3. [MCP로 코딩 에이전트 연결하기](/guide/connect-agent): Claude Code, Codex,
+4. [MCP로 코딩 에이전트 연결하기](/guide/connect-agent): Claude Code, Codex,
    Cursor가 MCP로 지도를 읽게 해요.
-4. [내 코드로 첫 지도 만들기](/guide/from-your-repo).
+5. [내 코드로 첫 지도 만들기](/guide/from-your-repo).
