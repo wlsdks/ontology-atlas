@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCompileBrief, selectCompileTargets } from "./compile-brief";
-import type { LibrarySourceRow } from "@/entities/docs-vault";
+import {
+  buildCompileBrief,
+  COMPILE_BATCH_SIZE,
+  COMPILE_BRIEF_PAGE_CAP,
+  selectCompileBatch,
+  selectCompileTargets,
+} from "./compile-brief";
+import type { LibrarySourceRow, LibraryWikiPage } from "@/entities/docs-vault";
 import {
   WIKI_PAGE_TEMPLATE,
   WIKI_REQUIRED_FIELDS,
@@ -111,7 +117,7 @@ describe("the base compilation rules reach both locales", () => {
         "Write ONE page for this source",
         "never fold it into an existing page",
         "do not drop a fact to make room",
-        "write no page for it and say so",
+        "never leave the source uncited",
         "on every page that carries either claim",
         "On both pages, every source the page now cites is listed in its `sources:`",
         "whichever document arrived first",
@@ -135,7 +141,7 @@ describe("the base compilation rules reach both locales", () => {
         "문서를 하나만, 원문 이름을 따서 쓰고",
         "기존 문서에 합치지 마",
         "자리를 만들려고 사실을 지우지도 마",
-        "문서를 만들지 말고 답에서 그렇다고 말해",
+        "이 원문을 인용 없이 남기지 마",
         "두 출처를 모두 인용해서",
         "옛 문서는 새 원문을 올려",
         "어느 문서가 먼저 들어왔든 같아",
@@ -403,4 +409,145 @@ describe("local execution stays within its reader and review boundary", () => {
     expect(brief).toContain("No reachable Wiki pages are available");
     expect(brief).not.toContain("Nothing is under `wiki/` yet");
   });
+});
+
+describe("Continue names a bounded batch (spec: What is sent)", () => {
+  // Criterion 5: 37 waiting sources among compiled ones, in list order.
+  const LIST: LibrarySourceRow[] = Array.from({ length: 46 }, (_, index) =>
+    row(`sources/doc-${String(index).padStart(2, "0")}.md`, index % 5 === 4 ? "compiled" : index % 7 === 3 ? "stale" : "not-compiled"),
+  );
+  const waiting = selectCompileTargets(LIST).map((target) => target.path);
+
+  it("names the first 10 waiting sources in list order and counts the rest", () => {
+    expect(waiting).toHaveLength(37);
+    const batch = selectCompileBatch(LIST);
+    expect(COMPILE_BATCH_SIZE).toBe(10);
+    expect(batch.targets.map((target) => target.path)).toEqual(waiting.slice(0, 10));
+    expect(batch.rest).toBe(27);
+  });
+
+  it("puts sources a request left without a page after every other waiting source", () => {
+    const returned = new Set([waiting[2], waiting[7]]);
+    const next = selectCompileBatch(LIST, { returned });
+    expect(next.targets.map((target) => target.path)).toEqual(
+      waiting.filter((path) => !returned.has(path)).slice(0, 10),
+    );
+    const all = selectCompileBatch(LIST, { returned, size: 37 });
+    expect(all.targets.slice(-2).map((target) => target.path)).toEqual([waiting[2], waiting[7]]);
+    expect(all.rest).toBe(0);
+  });
+
+  it("sends 3 on the local route", () => {
+    const brief = buildCompileBrief({
+      sources: selectCompileBatch(LIST, { size: 3 }).targets,
+      locale: "en",
+      execution: "local",
+      writerId: "model:gemma4:12b",
+      vaultRoot: VAULT_ROOT,
+    });
+    expect(brief.match(/^- sources\//gmu)).toHaveLength(3);
+  });
+
+  it("sends the 10 paths with their sha256 and no other source", () => {
+    const hashes = new Map(waiting.map((path, index) => [path, index.toString(16).padStart(64, "0")]));
+    const brief = buildCompileBrief({
+      sources: selectCompileBatch(LIST).targets,
+      hashes,
+      locale: "en",
+      writerId: "agent:claude",
+      vaultRoot: VAULT_ROOT,
+    });
+    for (const path of waiting.slice(0, 10)) expect(brief).toContain(`${path}: ${hashes.get(path)}`);
+    expect(brief).not.toContain(waiting[10]);
+  });
+});
+
+describe("the brief lists at most 200 existing pages", () => {
+  const NOW = new Date("2026-11-20T09:00:00Z");
+  const page = (slug: string, compiledAt: string | null, sourcePaths: string[] = []): LibraryWikiPage => ({
+    slug,
+    title: slug.replace(/^wiki\//, ""),
+    sourcePaths,
+    createdBy: "agent:claude",
+    compiledAt,
+  });
+  const target = row("sources/target.md", "not-compiled");
+  const listedSlugs = (brief: string) => [...brief.matchAll(/^- (wiki\/[^ ]+)\.md/gmu)].map((match) => match[1]);
+
+  it("lists pages citing the request first, then the newest, and counts the rest", () => {
+    const filler = Array.from({ length: 300 }, (_, index) =>
+      page(`wiki/filler-${index}`, new Date(Date.UTC(2026, 0, 1) + index * 3_600_000).toISOString()));
+    const pages = [
+      ...filler,
+      page("wiki/future", "2099-01-01"),
+      page("wiki/undated", null),
+      page("wiki/cites-target", "2020-01-01", ["sources/other.md", "sources/target.md"]),
+    ];
+    const brief = buildCompileBrief({ sources: [target], existingPages: pages, locale: "en", writerId: "agent:claude", vaultRoot: VAULT_ROOT, now: NOW });
+    const slugs = listedSlugs(brief);
+    expect(slugs).toHaveLength(COMPILE_BRIEF_PAGE_CAP);
+    expect(slugs[0]).toBe("wiki/cites-target");
+    expect(brief).toContain("- wiki/cites-target.md — cites-target — sources/target.md, sources/other.md");
+    expect(slugs.slice(1, 4)).toEqual(["wiki/filler-299", "wiki/filler-298", "wiki/filler-297"]);
+    expect(slugs).not.toContain("wiki/future");
+    expect(brief).toContain(`${pages.length - COMPILE_BRIEF_PAGE_CAP} more pages under \`wiki/\` are not listed here`);
+  });
+
+  it("keeps a page due for review in the list however old it is", () => {
+    const pages = [
+      ...Array.from({ length: 250 }, (_, index) => page(`wiki/new-${index}`, "2026-11-19")),
+      page("wiki/old-review", "2001-01-01"),
+    ];
+    const brief = buildCompileBrief({
+      sources: [{ ...row("sources/plan.md", "compiled"), reviewPages: ["wiki/old-review"] }],
+      existingPages: pages,
+      locale: "ko",
+      writerId: "agent:claude",
+      vaultRoot: VAULT_ROOT,
+      now: NOW,
+    });
+    expect(listedSlugs(brief)[0]).toBe("wiki/old-review");
+    expect(brief).toContain("목록에 없는 문서가 51개 더 있어");
+  });
+
+  it("stays at or under 64 KB with 50,000 pages on every route", () => {
+    const pages = Array.from({ length: 50_000 }, (_, index) =>
+      page(
+        `wiki/batch-${Math.floor(index / 500)}/분기-계획-검토-회의록-${index}`,
+        index % 9 === 0 ? null : new Date(Date.UTC(2025, 0, 1) + index * 600_000).toISOString(),
+        [`sources/batch-${Math.floor(index / 500)}/분기-계획-${index}.docx`, `sources/shared/공통-지침-${index % 40}.pdf`, "sources/shared/규정.pdf"],
+      ),
+    ).map((entry) => ({ ...entry, title: `2026년 3분기 사업 계획 검토 회의록과 후속 조치 항목 정리 ${entry.slug.length}`.repeat(3) }));
+    const sources = Array.from({ length: COMPILE_BATCH_SIZE }, (_, index) =>
+      row(`sources/batch-0/분기-계획-${index}.docx`, "not-compiled"));
+    const hashes = new Map(sources.map((source) => [source.path, "a".repeat(64)]));
+    for (const locale of ["en", "ko"]) {
+      for (const execution of ["acp", "local"] as const) {
+        const brief = buildCompileBrief({ sources, existingPages: pages, hashes, locale, execution, writerId: "agent:claude", vaultRoot: VAULT_ROOT, now: NOW });
+        expect(new TextEncoder().encode(brief).length).toBeLessThanOrEqual(64 * 1024);
+      }
+    }
+  });
+});
+
+describe("rule g cites a source that adds nothing new instead of skipping it", () => {
+  for (const locale of ["en", "ko"]) {
+    it(`${locale}: revises the page holding its facts and cites the source there`, () => {
+      const brief = buildCompileBrief({ sources: SOURCES, locale, writerId: "agent:claude", vaultRoot: VAULT_ROOT });
+      const ruleG = brief.split("\n").find((line) => line.startsWith("g. "))!;
+      expect(ruleG).toContain(locale === "ko" ? "원문 목록에 올리고" : "lists this source among its sources");
+      expect(ruleG).not.toContain(locale === "ko" ? "그렇다고 말해" : "say so in your reply");
+    });
+  }
+});
+
+describe("rule i links to any existing page, not only the listed ones", () => {
+  for (const locale of ["en", "ko"]) {
+    it(`${locale}: allows an unlisted page and still forbids an invented one`, () => {
+      const brief = buildCompileBrief({ sources: SOURCES, locale, writerId: "agent:claude", vaultRoot: VAULT_ROOT });
+      const ruleI = brief.split("\n").find((line) => line.startsWith("i. "))!;
+      expect(ruleI).toContain(locale === "ko" ? "목록에 없어도" : "listed above or not");
+      expect(ruleI).toContain(locale === "ko" ? "지어내지 마" : "never invent a target");
+    });
+  }
 });

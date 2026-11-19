@@ -81,19 +81,35 @@ export function selectCompileBatch(
   return { targets, rest: waiting - targets.length };
 }
 
+/**
+ * Rule g's last clause and rule i's targets. A source that adds nothing new still gets cited, or it
+ * would read "no wiki page" forever; a link may reach any existing page, because the brief lists
+ * at most `COMPILE_BRIEF_PAGE_CAP` of them. Both routes get the same words: who fills `sources`
+ * is rule b's business.
+ */
 function meaningRuleLines(locale: string): string[] {
-  return locale === "ko"
+  const ko = locale === "ko";
+  const findPages = ko
+    ? "위 목록에서, 목록이 잘렸으면 그 밖에서도."
+    : "in the list above, and beyond it when the list is cut short.";
+  const nothingNew = ko
+    ? "원문이 위키에 이미 있는 것 말고는 더할 게 없으면 새 문서를 만들지 마. 대신 그 사실을 이미 담은 문서를 고쳐서 이 원문을 그 문서의 원문 목록에 올리고, 그 사실 중 하나 이상에 이 원문도 인용해. 이건 다른 원문의 문서에 이 원문이 들어가는 유일한 경우이고, 이 원문을 인용 없이 남기지 마."
+    : "If a source adds nothing the wiki does not already hold, write no new page for it. Instead revise the page that already holds its facts so that page lists this source among its sources and cites it on at least one of those facts. This is the one case where a source joins a page written for another; never leave the source uncited.";
+  const linkTargets = ko
+    ? "목록에 없어도 있는 줄 아는 문서면 어디든 걸 수 있어. 없는 문서를 지어내지 마."
+    : `Link to any page under \`${WIKI_DIR}/\` you know exists, listed above or not; never invent a target.`;
+  return ko
     ? [
-        `g. 쓰기 전에 \`${WIKI_DIR}/\` 에 이미 있는 문서를 읽어. 이 원문에 대해 문서를 하나만, 원문 이름을 따서 쓰고, 같은 원문의 기존 문서는 그 자리에서 갱신해. 다른 원문의 기존 문서에 합치지 마. 문서 하나는 원문 하나가 말한 것이야. 새 원문이 기존 문서의 주제와 닿으면 두 문서를 양쪽으로 잇고, 어긋남은 규칙 h 로 적어. 문서 사이에 사실을 옮기지 말고, 자리를 만들려고 사실을 지우지도 마. 원문이 위키에 이미 있는 것 말고는 더할 게 없으면 문서를 만들지 말고 답에서 그렇다고 말해.`,
+        `g. 쓰기 전에 이 원문의 주제를 다루는 \`${WIKI_DIR}/\` 의 문서를 찾아 읽어: ${findPages} 이 원문에 대해 문서를 하나만, 원문 이름을 따서 쓰고, 같은 원문의 기존 문서는 그 자리에서 갱신해. 다른 원문의 기존 문서에 합치지 마. 문서 하나는 원문 하나가 말한 것이야. 새 원문이 기존 문서의 주제와 닿으면 두 문서를 양쪽으로 잇고, 어긋남은 규칙 h 로 적어. 문서 사이에 사실을 옮기지 말고, 자리를 만들려고 사실을 지우지도 마. ${nothingNew}`,
         `h. 먼저 두 주장의 적용 범위, 원문의 날짜와 승인·초안 상태, 정책·관측·개인 메모 중 어떤 역할인지 비교해. 같은 범위에서 승인된 새 정책이 이전 정책을 대체한다고 원문이 명시했다면, 새로 명시된 정책과 과거 값을 구분해서 둘 다 남겨. 명시된 정책 교체를 미해결 충돌로 남기지 마. 날짜가 더 늦거나 초안이라는 이유만으로 정책을 대체하지 마. 관측값은 그 자체로 정책을 바꾸지 않고, 범위가 다른 값도 그 이유만으로 충돌은 아니야. 실제 구현과 새 승인 여부는 별도 근거가 필요해. 아직 해결되지 않은 같은 범위의 어긋남은 어느 한쪽을 담고 있는 모든 문서의 \`## Open questions\` 에 두 출처를 모두 인용해서 적고, 어느 문서가 나중 것인지 말해. 양쪽 문서 모두, 그 문서가 인용하는 원문은 전부 그 문서의 \`sources:\` 와 \`source_hash:\` 에 있어야 해. 새 문서는 자기가 인용한 옛 원문을, 옛 문서는 새 원문을 올려. 어느 문서가 먼저 들어왔든 같아. 더 오래된 원문으로 쓴 문서도 자기 수치를 대체한 나중 수치를 인용과 함께 적어. 그 결정이 이미 다른 문서에 있어도 마찬가지야. 느낌이 아니라 점검 목록으로 해. 새 문서의 날짜·담당자·금액·개수·설정 하나하나마다 기존 문서에서 같은 항목을 찾아 다른 값을 적어. 옛 수치를 말없이 바꿔치기하지 마.`,
-        `i. 다른 문서가 다루는 주제를 언급하면 이어: \`[[${WIKI_DIR}/<슬러그>]]\` (\`.md\` 없이), 문서당 한 번, 처음 언급하는 자리에. 위 목록에 있는 문서에만 걸고, 없는 문서를 지어내지 마.`,
+        `i. 다른 문서가 다루는 주제를 언급하면 이어: \`[[${WIKI_DIR}/<슬러그>]]\` (\`.md\` 없이), 문서당 한 번, 처음 언급하는 자리에. ${linkTargets}`,
         'j. `wiki/answers/`의 저장된 답은 고치거나 지우지 마. 새 원문이 그 답에 영향을 줄 수 있으면 답의 경로와 근거를 보고해. 저장된 답은 사람이 별도로 갱신을 요청하고 이전 답과 비교한 뒤 새 버전으로 저장해.',
         'k. 새 자료를 읽은 뒤 고치는 문서마다 `## Open questions`와 `## Not in sources`의 기존 항목을 다시 확인해. 한 항목 중 새 근거로 답할 수 있게 된 부분만 해소하고, 답을 인용과 함께 Facts 또는 Decisions에 기록해. 필요하면 이전 공백이 해소됐다는 이력을 Open questions에 남겨. 답을 덧붙이면서 이제는 틀린 “없다/읽지 않았다” 문장도 현재 상태처럼 남기지 마. 아직 모르는 부분은 유지하고, 특정 원문 안에 없다는 말과 현재 폴더에 없다는 말을 구분해. 사람의 메모는 원문 그대로 개인 메모로 보존하고 사실·정책·승인으로 승격하지 마. Decisions에는 출처가 내린 결정을 기록하고, 네가 새 승인을 지시하지 마.',
       ]
     : [
-        `g. Before writing, read the pages already under \`${WIKI_DIR}/\`. Write ONE page for this source, named after it. Reuse its own existing page when updating the same source; never fold it into an existing page for a different source: a page is what one document said. Where the new source bears on a topic an existing page covers, link the two pages (both ways) and record what differs under rule h; do not move facts between pages, and do not drop a fact to make room. If a source adds nothing the wiki does not already hold, write no page for it and say so in your reply.`,
+        `g. Before writing, find and read the pages under \`${WIKI_DIR}/\` that cover this source's topic: ${findPages} Write ONE page for this source, named after it. Reuse its own existing page when updating the same source; never fold it into an existing page for a different source: a page is what one document said. Where the new source bears on a topic an existing page covers, link the two pages (both ways) and record what differs under rule h; do not move facts between pages, and do not drop a fact to make room. ${nothingNew}`,
         `h. First compare the claims' scope, source dates, source approval or draft status, and roles as policy, observation or personal note. When a source explicitly records an approved replacement of an earlier policy within the same scope, distinguish the newly stated policy from the historical value and keep both; do not leave the stated replacement itself undecided. A later date or a draft alone never establishes replacement. A configuration observation does not itself change policy, and different scopes are not a conflict merely because their values differ. Actual implementation and any new approval need separate evidence. Keep still-unresolved same-scope disagreements under \`## Open questions\` on every page that carries either claim, citing both sources, and say which document is later. On both pages, every source the page now cites is listed in its \`sources:\` and \`source_hash:\` — the new page lists the older source it quotes, and the older page lists the new one. This holds whichever document arrived first: a page written from an older document names the later figure that replaced its own, with its citation, even when the decision already sits on another page. Do it as a checklist, not an impression: for every date, owner, amount, count and setting on the new page, find the same item on the existing pages and record any value that differs. Never silently replace the older figure.`,
-        `i. When a page mentions a topic another page under \`${WIKI_DIR}/\` covers, link it: \`[[${WIKI_DIR}/<slug>]]\` (the path without \`.md\`), once per page, at the first mention. Link only to pages in the list above; never invent a target.`,
+        `i. When a page mentions a topic another page under \`${WIKI_DIR}/\` covers, link it: \`[[${WIKI_DIR}/<slug>]]\` (the path without \`.md\`), once per page, at the first mention. ${linkTargets}`,
         'j. Do not modify or delete retained answers under `wiki/answers/`. Report the answer path and evidence when a new original may affect it. A person refreshes a retained answer separately, compares it with the previous page, and saves a new revision.',
         'k. After reading new material, revisit existing `## Open questions` and `## Not in sources` entries on every page you update. Resolve only the parts the new evidence answers, recording the answer under Facts or Decisions with citations and, when useful, the resolved gap as history under Open questions. Do not merely append an answer while leaving an obsolete "absent/not read" statement as current. Preserve unanswered parts and distinguish absence from one original from absence in the current folder. Preserve human notes verbatim as personal notes; do not promote them into sourced facts, policy or approval. Decisions record what the sources decided, not new approval commands from you.',
       ];
@@ -155,21 +171,103 @@ function ruleLines(
   return [...common, ...meaningRuleLines(locale)];
 }
 
-function existingPageLines(pages: readonly LibraryWikiPage[], locale: string): string[] {
+/** Existing pages a brief lists at most: those citing the request's sources first, then the newest. */
+export const COMPILE_BRIEF_PAGE_CAP = 200;
+/**
+ * UTF-8 bytes the listed page lines may take. With the rules, template and ten sources, this keeps
+ * a brief under 64 KB whatever the titles hold; a page past it is counted, not listed.
+ */
+const PAGE_LIST_BYTE_BUDGET = 40_000;
+const PAGE_TITLE_CHARS = 80;
+const PAGE_CITES_SHOWN = 2;
+const EARLIEST_RECORDED = Date.UTC(2000, 0, 1);
+const ISO_DATE_PREFIX = /^\d{4}-\d{2}-\d{2}/;
+const utf8 = new TextEncoder();
+
+/** The instant a page records in `compiled_at`, or -1 when it has none worth believing. */
+function recordedInstant(value: string | null, now: number): number {
+  if (value === null || !ISO_DATE_PREFIX.test(value)) return -1;
+  const instant = Date.parse(value);
+  return Number.isNaN(instant) || instant > now || instant < EARLIEST_RECORDED ? -1 : instant;
+}
+
+interface BriefPage {
+  page: LibraryWikiPage;
+  line: string;
+}
+
+interface BriefPages {
+  listed: BriefPage[];
+  /** Pages under `wiki/` the brief does not list. */
+  omitted: number;
+}
+
+function pageLine(page: LibraryWikiPage, targets: ReadonlySet<string>): string {
+  const chars = [...page.title];
+  const title = chars.length > PAGE_TITLE_CHARS ? `${chars.slice(0, PAGE_TITLE_CHARS - 1).join("")}…` : page.title;
+  // The request's own sources first: they are why this page is listed.
+  const cites = [
+    ...page.sourcePaths.filter((path) => targets.has(path)),
+    ...page.sourcePaths.filter((path) => !targets.has(path)),
+  ];
+  const shown = cites.slice(0, PAGE_CITES_SHOWN).join(", ");
+  const more = cites.length > PAGE_CITES_SHOWN ? ` (+${cites.length - PAGE_CITES_SHOWN})` : "";
+  return `- ${page.slug}.md — ${title}${shown ? ` — ${shown}${more}` : ""}`;
+}
+
+/**
+ * At most `COMPILE_BRIEF_PAGE_CAP` pages: those citing a requested source or due for its review,
+ * then the newest by `compiled_at`, undated last. O(P log P) for the sort of P pages.
+ */
+function selectBriefPages(
+  pages: readonly LibraryWikiPage[],
+  targets: readonly LibrarySourceRow[],
+  now: number,
+): BriefPages {
+  const targetPaths = new Set(targets.map((row) => row.path));
+  const reviewSlugs = new Set(targets.flatMap((row) => row.reviewPages ?? []));
+  const citing: LibraryWikiPage[] = [];
+  const others: { page: LibraryWikiPage; at: number }[] = [];
+  for (const page of pages) {
+    if (reviewSlugs.has(page.slug) || page.sourcePaths.some((path) => targetPaths.has(path))) citing.push(page);
+    else others.push({ page, at: recordedInstant(page.compiledAt, now) });
+  }
+  others.sort((a, b) => b.at - a.at);
+  const listed: BriefPage[] = [];
+  let bytes = 0;
+  for (const page of [...citing, ...others.map((entry) => entry.page)]) {
+    if (listed.length >= COMPILE_BRIEF_PAGE_CAP) break;
+    const line = pageLine(page, targetPaths);
+    bytes += utf8.encode(line).length + 1;
+    if (bytes > PAGE_LIST_BYTE_BUDGET) break;
+    listed.push({ page, line });
+  }
+  return { listed, omitted: pages.length - listed.length };
+}
+
+function omittedPagesLine(omitted: number, locale: string, execution: "acp" | "local"): string[] {
+  if (omitted === 0) return [];
+  if (locale === "ko") {
+    return [execution === "local"
+      ? `\`${WIKI_DIR}/\` 에는 목록에 없는 문서가 ${omitted}개 더 있어. 도구 결과가 이름을 알려 준 문서만 정확한 주소로 읽어 (규칙 g, i).`
+      : `\`${WIKI_DIR}/\` 에는 목록에 없는 문서가 ${omitted}개 더 있어. 필요하면 폴더에서 찾아 읽어 (규칙 g, i).`];
+  }
+  return [execution === "local"
+    ? `${omitted} more pages under \`${WIKI_DIR}/\` are not listed here; open one only by the exact address a tool result names (rules g, i).`
+    : `${omitted} more pages under \`${WIKI_DIR}/\` are not listed here; look in the folder when a topic may already have one (rules g, i).`];
+}
+
+function existingPageLines(pages: readonly BriefPage[], locale: string): string[] {
   if (pages.length === 0) {
     return [locale === "ko" ? `\`${WIKI_DIR}/\` 에 아직 문서가 없어. 전부 새로 쓰는 거야.` : `Nothing is under \`${WIKI_DIR}/\` yet; every page is new.`];
   }
   const head = locale === "ko" ? `\`${WIKI_DIR}/\` 에 이미 있는 문서 (규칙 g):` : `Pages already under \`${WIKI_DIR}/\` (rule g):`;
-  const rows = pages.map((page) => {
-    const cites = page.sourcePaths.length > 0 ? ` — ${page.sourcePaths.join(", ")}` : "";
-    return `- ${page.slug}.md — ${page.title}${cites}`;
-  });
-  return [head, ...rows];
+  return [head, ...pages.map((entry) => entry.line)];
 }
 
-function localExistingPageLines(pages: readonly LibraryWikiPage[], locale: string): string[] {
+function localExistingPageLines(pages: readonly BriefPage[], locale: string): string[] {
   // Match the reader's safe inventoried addresses; this list does not grant write authority.
-  const reachablePages = pages.filter((page) => {
+  const reachablePages = pages.filter(({ page }) => {
     const slug = page.slug;
     return slug.startsWith(`${WIKI_DIR}/`) &&
       !/[\\#?\u0000-\u001f\u007f]/.test(slug) &&
@@ -204,10 +302,7 @@ function localExistingPageLines(pages: readonly LibraryWikiPage[], locale: strin
     "",
     head,
     note,
-    ...outOfReach.map((page) => {
-      const cites = page.sourcePaths.length > 0 ? ` — ${page.sourcePaths.join(", ")}` : "";
-      return `- ${page.slug}.md — ${page.title}${cites} (uninspected)`;
-    }),
+    ...outOfReach.map((entry) => `${entry.line} (uninspected)`),
   ];
 }
 
@@ -241,6 +336,7 @@ function buildLocalBrief({
       "2. `read_wiki_page` — 목록에서 읽을 수 있는 정확한 `wiki/...` 경로의 문서 하나를 열어. `nextCursor` 를 정확히 따라 `complete: true` 가 될 때까지 계속 읽고, 마지막 결과의 예측할 수 없는 `receipt` 를 보관해.",
       "3. `propose_wiki_page` — 도구 스키마에 선언된 typed 필드로 페이지 하나를 제안해. 이 도구는 쓰지 않고 사람에게 검토 카드를 보여 줘.",
       "`propose_wiki_page` 스키마가 선언한 필드만 사용해. 기존 페이지를 갱신할 때만 마지막 읽기의 final `receipt` 를 그대로 넣어. 없는 페이지는 새로 만드는 제안만 해.",
+      "Atlas 는 이번 실행에서 읽고 인용한 원문만 `sources` 에 넣어. 기존 페이지를 고칠 때는 그 페이지가 인용하는 원문도 먼저 읽어 (규칙 g).",
       `본문의 다섯 절은 항상 이 순서로 유지해: ${sections}. 빈 절도 남겨.`,
       "위 목록에서 읽을 수 있는 문서만 `read_wiki_page` 로 읽을 수 있어. 읽을 수 없는 참조는 내용을 읽지 않은 상태로 두고 사람에게 보고해.",
       "",
@@ -266,6 +362,7 @@ function buildLocalBrief({
     "2. `read_wiki_page` — open one reachable exact `wiki/...` page from the list. Follow its exact `nextCursor` until `complete: true`, and retain the unpredictable `receipt` from that final result.",
     "3. `propose_wiki_page` — propose one page through the typed fields declared by its tool schema. It writes nothing and shows the person a review card.",
     "Use only the fields declared by the `propose_wiki_page` tool schema. When revising an existing page, echo the final `receipt` from the complete read; a missing page is create-only.",
+    "Atlas lists in `sources` only the originals you read and cite in this run; before revising an existing page, read the originals it cites too (rule g).",
     `Keep all five body sections in this order: ${sections}. Keep an empty section.`,
     "Only the reachable Wiki entries above may be opened with `read_wiki_page`. Leave out-of-reach references uninspected and report a possible impact to the person.",
     "",
@@ -297,7 +394,11 @@ function composeCompileBrief({
         .map(([path, sha]) => `${path}: ${sha}`)
     : [];
   const paths = targets.map((row) => `- ${row.path}`).join("\n");
-  const existing = (execution === "local" ? localExistingPageLines : existingPageLines)(existingPages, locale).join("\n");
+  const { listed, omitted } = selectBriefPages(existingPages, targets, (now ?? new Date()).getTime());
+  const existing = [
+    ...(execution === "local" ? localExistingPageLines : existingPageLines)(listed, locale),
+    ...omittedPagesLine(omitted, locale, execution),
+  ].join("\n");
   const revisions = targets.flatMap((row) => (row.reviewPages ?? []).filter((slug) => !isRetainedAnswerPath(slug)).map((slug) => `- ${slug}.md ← ${row.path}`));
   const review = revisions.length === 0 ? [] : [
     locale === 'ko'
