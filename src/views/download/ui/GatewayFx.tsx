@@ -3,16 +3,16 @@
 import { useEffect, useRef } from 'react';
 
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { isMotionPaused } from '@/shared/motion/motion-pause';
+import { startGatewayPointer, type GatewayPointer } from '../lib/gateway-pointer';
+import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 
 /**
- * The gateway's light field, grain and cursor ring. Only inside `.gateway-fx-stage`, alpha capped
+ * The gateway's light field, grain and pointer. Only inside `.gateway-fx-stage`, alpha capped
  * by `--gateway-fx-*` tokens, still for the first second so the headline enters undisturbed, one
  * still frame under reduced motion (`tests/contract/motion/gateway-fx-reduced-motion.contract.test.ts`),
- * drawing only while the hero is in view.
- * The ring never hides the native cursor; it grows over
- * pressable targets. While a modal dialog is open over the page the field holds its frame and the
- * ring fades out, so nothing of the page draws over the dialog; both resume when it closes.
+ * drawing only while the hero is in view. The page's own pointer (`lib/gateway-pointer.ts`) runs
+ * only for a fine pointer with motion allowed and not paused. While a modal dialog is open the
+ * field holds its frame and the pointer steps aside; both resume when it closes.
  */
 
 /** The shared `Dialog` portals onto `body` and marks its panel `aria-modal`, so that is the signal. */
@@ -37,6 +37,8 @@ function watchModal(onChange: (open: boolean) => void): () => void {
 export function GatewayFx() {
   const fieldRef = useRef<HTMLCanvasElement | null>(null);
   const cursorRef = useRef<HTMLDivElement | null>(null);
+  const dotRef = useRef<HTMLDivElement | null>(null);
+  const pointerFxRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = fieldRef.current;
@@ -187,11 +189,8 @@ export function GatewayFx() {
 
     let startTimer = 0;
     let disposed = false;
-    let cursorTick: (() => void) | null = null;
-    let fxLoopLive = false;
     let unregisterFrame: (() => void) | null = null;
     let modalOpen = false;
-    let onModal: ((open: boolean) => void) | null = null;
 
     const onResize = (): void => {
       size();
@@ -216,79 +215,41 @@ export function GatewayFx() {
             ambient = Math.min(ambient + dtMs / 1500, 1);
             // The sleep factor scales speed, so idle decelerates to a stop without a phase jump.
             ampTime += dtMs * ambient * factor;
-            fxLoopLive = true;
             // 30fps for drift with a period of tens of seconds; only the cursor follows every frame.
             if (t - lastPaint >= 33) {
               lastPaint = t;
               draw(ampTime);
             }
-            cursorTick?.();
-          },
-          (live) => {
-            // Without the loop the ring attaches directly; a ring waiting on a stopped loop freezes.
-            if (!live) fxLoopLive = false;
           },
         );
       }, 1000);
     }
 
-    // translate3d only, so following the pointer never lays out the page.
+    // The stars it links to are the field's own dust, so a link always ends on a drawn star.
+    let pointer: GatewayPointer | null = null;
+    let stopPausing: (() => void) | null = null;
     const ringHost = cursorRef.current;
-    let cleanupCursor: (() => void) | null = null;
-    if (ringHost && typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) {
-      const ring = ringHost.firstElementChild as HTMLElement | null;
-      ringHost.classList.add('is-live');
-      let tx = innerWidth / 2;
-      let ty = innerHeight / 2;
-      let cx = tx;
-      let cy = ty;
-      // The companion is itself the picture: a filled ring over it would cover its face.
-      const HOT =
-        'a,button:not([data-moru-companion]),[role="button"],video,summary,input,select,textarea,label';
-      const put = (): void => {
-        ringHost.style.transform = `translate3d(${cx}px,${cy}px,0)`;
-      };
-      const onPointerMove = (e: PointerEvent): void => {
-        tx = e.clientX;
-        ty = e.clientY;
-        if (modalOpen) return;
-        // Without the loop it attaches instantly: a lagging cursor under reduced motion is a defect.
-        if (!fxLoopLive || reduced || isMotionPaused()) {
-          cx = tx;
-          cy = ty;
-          put();
+    const ring = ringHost?.firstElementChild as HTMLElement | null | undefined;
+    const dot = dotRef.current;
+    const pointerFx = pointerFxRef.current;
+    if (finePointer && !reduced && ringHost && ring && dot && pointerFx) {
+      const pointerInk = { line: mapLight, glow: linkLight, spark: dustInk };
+      const syncPointer = (): void => {
+        if (isMotionPaused()) {
+          pointer?.stop();
+          pointer = null;
+        } else if (!pointer) {
+          pointer = startGatewayPointer({ host: ringHost, ring, dot, canvas: pointerFx, stars: dust, ink: pointerInk });
+          pointer.setModal(modalOpen);
         }
-        const target = e.target as Element | null;
-        // A surface that draws its own pointer feedback, such as the build section's wire, keeps the ring off.
-        ringHost.classList.toggle('is-on', !target?.closest?.('[data-own-pointer]'));
-        ring?.classList.toggle('is-hot', Boolean(target?.closest?.(HOT)));
       };
-      cursorTick = () => {
-        cx += (tx - cx) * 0.3;
-        cy += (ty - cy) * 0.3;
-        put();
-      };
-      // Dropping `is-on` fades the ring through its own opacity transition (--motion-fast).
-      onModal = (open) => {
-        if (!open) return;
-        ringHost.classList.remove('is-on');
-        ring?.classList.remove('is-hot');
-      };
-      const onBlur = (): void => ringHost.classList.remove('is-on');
-      const onLeave = (): void => ringHost.classList.remove('is-on');
-      addEventListener('pointermove', onPointerMove, { passive: true });
-      addEventListener('blur', onBlur);
-      document.documentElement.addEventListener('mouseleave', onLeave);
-      cleanupCursor = () => {
-        removeEventListener('pointermove', onPointerMove);
-        removeEventListener('blur', onBlur);
-        document.documentElement.removeEventListener('mouseleave', onLeave);
-      };
+      syncPointer();
+      stopPausing = subscribeMotionPause(syncPointer);
     }
 
     const stopWatching = watchModal((open) => {
       modalOpen = open;
-      onModal?.(open);
+      pointer?.setModal(open);
     });
 
     return () => {
@@ -298,7 +259,8 @@ export function GatewayFx() {
       unregisterFrame?.();
       removeEventListener('resize', onResize);
       removeEventListener('pointermove', onHand);
-      cleanupCursor?.();
+      stopPausing?.();
+      pointer?.stop();
     };
   }, []);
 
@@ -306,9 +268,11 @@ export function GatewayFx() {
     <>
       <canvas ref={fieldRef} className="gateway-fx-field" aria-hidden="true" />
       <div className="gateway-fx-grain" aria-hidden="true" />
+      <canvas ref={pointerFxRef} className="gateway-pointer-fx" aria-hidden="true" />
       <div ref={cursorRef} className="gateway-cursor" aria-hidden="true">
-        <i />
+        <i data-state="rest" />
       </div>
+      <div ref={dotRef} className="gateway-cursor-dot" aria-hidden="true" />
     </>
   );
 }

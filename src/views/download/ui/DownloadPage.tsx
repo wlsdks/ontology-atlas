@@ -36,7 +36,6 @@ import { ScreensStage } from './ScreensStage';
 import { StartSection } from './StartSection';
 import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
-import { ProofNumbers } from './ProofNumbers';
 import { BuildWithMoru } from './BuildWithMoru';
 import { FilmSection } from './FilmSection';
 import { HarnessFilm } from './HarnessFilm';
@@ -105,7 +104,6 @@ export function DownloadPage() {
           winner={winner}
           handheld={visitorPlatform === 'handheld'}
         />
-        <ProofNumbers graph={graph} />
         <FilmSection graph={graph} />
         <BuildWithMoru handheld={visitorPlatform === 'handheld'} />
         <HarnessFilm />
