@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { zipFile } from '../../../tests/fixtures/source-passage-cases.mjs';
+import { authoredMarkdownLines } from '../analyze/authored-markdown.mjs';
 import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
@@ -18,6 +19,17 @@ import { measureUnreadClaims } from '../construction/unread-claims.mjs';
 const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
 const BUDGET_MS = 200;
+// Measured 2026-11-19: each Markdown case takes at most 16 ms; micromark 2.1.0
+// took 0.2 to 4.2 s on the first six. Unterminated instructions take 8 ms, and
+// 2.9 s when each one searches ahead for its terminator.
+const MARKDOWN_BUDGET_MS = 100;
+// Pages of tiny blocks cost markdown-it's own parse about 0.8 ms a KiB.
+// Measured 2026-11-19: 128 KiB of NUL headings takes 58 ms, and 770 ms when
+// each heading is searched for; 48 KiB of quotes each followed by a lazy line
+// takes 50 ms, and 1.7 s when each quote scans every lazy line after it; a
+// lazy paragraph 19 quotes deep takes 45 ms, and 1.6 s when each enclosing
+// quote's retry repeats the probes of the quotes inside it.
+const DENSE_BUDGET_MS = 300;
 const scratchRoots = [];
 
 after(() => {
@@ -38,21 +50,21 @@ function linesOf(line) {
   return Array.from({ length: Math.floor(FILE_BYTES / (line.length + 1)) }, () => line).join('\n');
 }
 
-function fastestRunMs(run) {
+function fastestRunMs(run, budgetMs) {
   let fastest = Infinity;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const started = performance.now();
     run();
     fastest = Math.min(fastest, performance.now() - started);
-    if (fastest < BUDGET_MS || fastest > BUDGET_MS * 10) break;
+    if (fastest < budgetMs || fastest > budgetMs * 10) break;
   }
   return fastest;
 }
 
-function assertWithinBudget(t, name, run) {
-  const elapsed = fastestRunMs(run);
+function assertWithinBudget(t, name, run, budgetMs = BUDGET_MS) {
+  const elapsed = fastestRunMs(run, budgetMs);
   t.diagnostic(`${name}: ${elapsed.toFixed(1)} ms`);
-  assert.ok(elapsed < BUDGET_MS, `${name} took ${elapsed.toFixed(0)} ms, over the ${BUDGET_MS} ms budget`);
+  assert.ok(elapsed < budgetMs, `${name} took ${elapsed.toFixed(0)} ms, over the ${budgetMs} ms budget`);
 }
 
 describe('hostile source text costs time linear in its size', () => {
@@ -103,6 +115,30 @@ describe('hostile source text costs time linear in its size', () => {
         resolveTargetPath: () => 'src/target.rs',
       }));
     }
+  });
+});
+
+describe('hostile Markdown costs the survey time linear in its size', () => {
+  it('reads the authored lines of each hostile Markdown shape within the budget', (t) => {
+    const cases = [
+      ['unclosed links', `${'[a]( '.repeat(399)}\n`.repeat(60)],
+      ['brackets nested 15,000 deep', `${'['.repeat(15_000)}a${']'.repeat(15_000)}`],
+      ['emphasis delimiters that never match', '*a_ '.repeat(8_000)],
+      ['block quotes nested 25,000 deep', `${'> '.repeat(25_000)}x`],
+      ['backtick runs of every length to 500', Array.from({ length: 500 }, (_, index) => `e${'`'.repeat(index + 1)}`).join('')],
+      ['10,000 link definitions then a reference', `${Array.from({ length: 10_000 }, (_, index) => `[${index}]: u\n`).join('')}[0]`],
+      ['headings holding NUL below a fence', `\`\`\`\nfence\n\`\`\`\n${'# a\0 <b>x</b>\n'.repeat(9_400)}`, DENSE_BUDGET_MS],
+      ['unterminated processing instructions', `x ${'<? '.repeat(21_800)}`],
+      ['quotes each followed by a lazy line', '> # h\nx\n'.repeat(6_000), DENSE_BUDGET_MS],
+      ['a lazy paragraph 19 quotes deep', `${'> '.repeat(19)}a\n${'b\n'.repeat(12_000)}`, DENSE_BUDGET_MS],
+    ];
+    for (const [name, text, budgetMs = MARKDOWN_BUDGET_MS] of cases) {
+      let lines = [];
+      assertWithinBudget(t, name, () => { lines = authoredMarkdownLines(text); }, budgetMs);
+      assert.equal(lines.length, text.split('\n').length, `${name} must keep one entry per line`);
+    }
+    const headings = authoredMarkdownLines(`\`\`\`\nfence\n\`\`\`\n## Usage\0 <b>x</b>\n`);
+    assert.equal(headings[3], '## Usage\0 x', 'a heading holding NUL is read from its own line');
   });
 });
 

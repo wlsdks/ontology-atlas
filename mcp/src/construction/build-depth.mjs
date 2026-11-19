@@ -339,7 +339,8 @@ function measureReads(docs, reads, repoRoot) {
   const capabilities = docs.filter((doc) => kindOf(doc) === 'capability' && pathOf(doc));
   const unread = capabilities
     .filter((doc) => !lineCites(doc.body, reads, repoRoot).some((cite) => servedLines(reads, cite) && citedLinesDecide(repoRoot, cite)))
-    .map((doc) => ({ slug: doc.slug, path: pathOf(doc), symbol: citedSymbol(doc, pathOf(doc)) }));
+    .map((doc) => ({ slug: doc.slug, path: pathOf(doc), symbol: citedSymbol(doc, pathOf(doc)) }))
+    .sort((left, right) => (left.slug < right.slug ? -1 : 1));
   return { capabilities: capabilities.length, read: capabilities.length - unread.length, unread, served: reads.size };
 }
 
