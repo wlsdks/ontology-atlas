@@ -664,21 +664,41 @@ mod tests {
         }
     }
 
+    /// `reserve` canonicalizes the vault first, so a junction above the log can only
+    /// appear after that, in a race. Opening through a path that still holds one
+    /// stands in for that moment: only the final-path check can tell.
     #[cfg(windows)]
     #[test]
-    fn windows_refuses_a_hard_linked_log_without_touching_its_target() {
-        let vault = temp_vault("win-hardlink");
-        let outside = temp_vault("win-hardlink-target").join("outside.jsonl");
-        fs::write(&outside, b"outside-sentinel\n").unwrap();
-        fs::create_dir_all(vault.join(SIDECAR_DIR)).unwrap();
-        fs::hard_link(&outside, audit_log_path(&vault)).unwrap();
+    fn windows_refuses_a_log_reached_through_an_ancestor_junction() {
+        let parent = fs::canonicalize(temp_vault("win-ancestor")).unwrap();
+        let real = parent.join("real");
+        fs::create_dir(&real).unwrap();
+        let through = parent.join("through");
+        let made = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(&through)
+            .arg(&real)
+            .output()
+            .unwrap();
+        assert!(made.status.success(), "{made:?}");
 
-        let result = reserve(&vault, verify_draft());
+        let message = open_audit_file(&through)
+            .map(|_| ())
+            .expect_err("a junction above the log must be refused");
+        assert!(message.contains("audit-log-tampered"), "{message}");
+        assert!(
+            message.contains("resolves outside"),
+            "the final-path check refuses it: {message}"
+        );
+        let leaked = fs::read(real.join(SIDECAR_DIR).join(AUDIT_FILE)).unwrap_or_default();
+        assert!(leaked.is_empty(), "no audit bytes may be written");
+        assert!(
+            open_audit_file(&real).is_ok(),
+            "the same folder by its real path opens"
+        );
 
-        assert!(result.is_err(), "a hard-linked log must be refused");
-        drop(result);
-        assert_eq!(fs::read(&outside).unwrap(), b"outside-sentinel\n");
-        fs::remove_dir_all(&vault).ok();
+        fs::remove_dir(&through).ok();
+        fs::remove_dir_all(&parent).ok();
     }
 
     #[cfg(windows)]
@@ -850,7 +870,7 @@ mod tests {
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn reserve_refuses_a_hard_linked_log_without_touching_its_target() {
         let vault = temp_vault("log-hardlink");
