@@ -1,87 +1,102 @@
 ---
-title: First Five Minutes
+title: "Getting started"
 doc_type: guide
 status: current
 area: product
 ---
 
-# First Five Minutes
+# Getting started
 
-Before deciding whether to install, watch it move first.
+This chapter takes you from nothing to your own ontology folder on the map, and
+then to the first task with a coding agent such as Claude Code or Codex. You can
+start in the desktop app or in the browser.
 
-## 0. What's on the First Screen
+## Choose the app or the browser
 
-The first screen is a **read-only sample map**. The map moves even before you select a folder. It is not an empty screen telling you to "put data in first."
+- **The app** is the full product. Download it from
+  [ontologyatlas.com](https://ontologyatlas.com/en/download/). The macOS build is
+  for Apple Silicon and is signed and notarized. The Windows x64 build is an
+  unsigned beta, so SmartScreen may warn before it runs.
+- **The browser version** needs no install. It opens a sample map at once, and in
+  Chrome or Edge it can also open a folder from your disk. Firefox and other
+  browsers without folder access show the sample and a link to the app.
 
-Choose one of the two samples.
+Some things work only in the app: remembering your folder between visits, Git
+history, the agent chat beside the map, model keys, and registering the MCP
+server with your coding agent in one click.
 
-| Sample | What it is |
-|---|---|
-| **Code for this app** | A map documenting how this tool describes itself. Many developer-facing names appear |
-| **E-commerce example** | Practice seeing how products, orders, members, shipping, and marketing connect |
+## Look at the sample map (browser)
 
-The first run card shows the count of concepts, relationships, and domains together. These numbers are **counted directly from the graph drawn on the current screen**, not taken from some pre-written value.
+Without a folder, the browser shows a sample marked **Sample for now**. Switch
+between two samples:
 
-## 1. Clicking the Map (2 minutes)
+- **Online store**: products, orders, members and delivery. Use it to learn how
+  to read the map with names everyone knows.
+- **This app's code**: the real ontology of the Ontology Atlas repository, built
+  and maintained by people and agents.
 
-Clicking the card's **"2-minute tour: how to read the map"** starts an eight-step guide. It covers that the map is a document, node size and shape, relationship legend, clicking directly, datasheets, INDEX, and the recent changes lens.
+The card shows the sample's size in concepts, relations and domains. Click a
+concept: the lines to what it depends on and what uses it light up, and a panel
+names them. [Reading the map](/guide/reading-the-map) explains the rest.
 
-You can skip it. You can restart anytime from the compass tile in the upper-right corner.
+## Open or create your ontology folder
 
-If you want to jump straight in without the guide, [How to Read the Map](/guide/reading-the-map) documents these details in text.
+### In the app
 
-## 2. Opening Your Folder
+With no folder open, the app shows four ways to start:
 
-Click **Open My Markdown Folder** and select a folder. The map updates with your data right there.
+- **Start from a code project**: choose your code folder. Atlas asks
+  **Create the ontology folder inside this code folder?** and shows the path.
+  Press **Create** and it makes an `atlas` folder there, leaving your code
+  alone. If a coding agent is ready in the app, it then reads the code and writes
+  a first map.
+- **Create in home folder**: creates a new folder under `Ontology Atlas` in your
+  home folder, with no picker.
+- **Open a folder**: pick an existing Markdown folder.
+- **Start in an empty folder**: pick an empty folder and Atlas adds starter
+  Markdown files and agent settings.
 
-Which folder to choose:
+The two "create" choices first ask **What will this folder hold?**: **A
+documents wiki**, **A map of your code**, or **Both**. You can add the other part
+later from Settings.
 
-- If the folder already contains Markdown documents, **that works.** Just pick any one.
-- It's fine if there is no `kind:` frontmatter. It will report the number of documents found and suggest **Create Map from My Documents**.
-- If there is nothing, start with **Create New Document Folder** to get the starting structure. Five starting nodes will be created.
+### In the browser
 
-Files with frontmatter become nodes immediately, while files without it remain just as documents.
+Press **Open a folder**. A short guide explains what happens, then offers
+**Choose existing folder** or **Start fresh with an empty folder**. After you
+pick, the browser asks you to allow access. That permission lets the page read
+the folder on your computer; nothing is uploaded.
 
-**It breaks nothing.** It does not move or rename files. It only reads the frontmatter. If you don't like it, just close the folder and you're done.
+### What Atlas does with the folder
 
-### When opening in a browser
+Any Markdown folder works. A file whose frontmatter has a `kind:` line becomes a
+concept on the map; other Markdown files stay ordinary documents. Opening a
+folder does not move or rename files.
+[The folder](/guide/vault-structure) describes the layout.
 
-It requires file system access permissions, so it works on **Chrome · Edge · Safari 18.2+ · Opera**. Firefox cannot open folders because it lacks this API. In that case, the screen will inform you and guide you to where to get the app.
+## Take the first step with a coding agent
 
-Opening the folder in Atlas does not upload it to an Atlas backend. If you later connect a coding agent, that agent may send prompts and context to its own provider.
+The map is most useful when your coding agent reads it before a task. In the
+app:
 
-## 3. Starting from the Codebase (for Developers)
+1. Open **Agents**, then the **MCP** tab.
+2. Press **Connect** for your agent. For Claude Code, Atlas writes `.mcp.json`
+   into the folder; for Codex, it writes `.codex/config.toml`. Cursor and
+   Antigravity are also listed.
+3. Quit and reopen that agent.
+4. Ask the agent about your next task, for example: "Before you change checkout,
+   read the Atlas concepts it touches and tell me what depends on it."
 
-Expand **For Developers** on the first run card to get a command to paste into your terminal.
-It creates a starter folder and previews repository candidates. In v1.6.0,
-`--quick-start` does not save repository-derived meaning: its bootstrap returns
-a review-only plan, with exit code 3 when approval is required.
+The agent starts the Atlas MCP server on your computer when it needs it. The
+server opens no network port. [Connect a coding agent](/guide/connect-agent)
+covers each agent, the browser case and troubleshooting.
 
-Follow [Starting from My Repository](/guide/from-your-repo) for setup, a copyable
-agent prompt, and the review and verification steps. Scanning writes no meaning;
-creating the starter folder writes scaffolding and agent configuration.
+If your folder has no concepts yet, let the agent draft them from your code:
+[Build the first map from your code](/guide/from-your-repo).
 
-## 4. What's the Difference Between the App and the Web?
+## Read next
 
-The macOS app is the home base for Vaults. There are things that the browser **cannot do by principle** that only the app can.
-
-| Capability | App | Web |
-|---|---|---|
-| Vault absolute path | ✓ | Handle only (no path) |
-| Remember folder on next visit | ✓ | Choose again |
-| Git history & snapshots | ✓ | Not available |
-| API key storage | OS Keychain | Not possible by principle |
-| Folder watching | OS watcher: updates automatically when saved (a few seconds) | Polling: 1.5–5s, only when tab is visible |
-| MCP server | Bundled with app | Requires source checkout |
-| Write agent config file | ✓ One click | Generates config text (save manually) |
-
-The last row is often misunderstood. **Agents also attach in the web version.** The only thing the web cannot do is save the config file for you
-([Connecting AI Agent](/guide/connect-agent)).
-
-## 5. What's Next?
-
-If you've reached here, the map is drawing your folder. There are two paths forward.
-
-- **If you want to read and judge alone** → [Vault Structure](/guide/vault-structure). See how a single frontmatter line becomes a node.
-- **If you want to delegate to an AI agent** → [Connecting AI Agent](/guide/connect-agent).
-  This is where the agent doesn't need to receive the same background explanation every session.
+- [What is an ontology?](/guide/what-is-an-ontology), if the word is new to you.
+- [Reading the map](/guide/reading-the-map).
+- [Data, privacy and safety](/guide/trust): what stays on your disk and what can
+  leave it.

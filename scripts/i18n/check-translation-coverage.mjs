@@ -90,6 +90,9 @@ export const ACCEPTED = {
       'termHints.apiKey.expansion': 'line 1 of a term hint is identical in every locale',
       'termHints.cli.expansion': 'line 1 of a term hint is identical in every locale',
     },
+    'keep-terms': {
+      'metadata.brandReading': 'the brand as this language reads it aloud, the name its searchers type',
+    },
   },
   ko: {
     residue: {
@@ -105,7 +108,6 @@ export const ACCEPTED = {
       'settings.projectForm.fields.tagsPlaceholder': 'an example tag list',
     },
     'keep-terms': {
-      'metadata.brandReading': 'the brand as this language reads it aloud, the name its searchers type',
       'agentConnect.manualIssueRelative': 'the Korean text writes the platform name in Hangul',
       'analysisWorkbench.relationNotesPrompt': 'the Korean prompt names the field without the word frontmatter',
       'docsVault.desktopWelcome.contractFilesBody': 'the Korean text names the command git diff in lowercase',

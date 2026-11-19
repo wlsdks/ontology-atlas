@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { GatewayDocPage, GUIDE_ENTRY_PAGE, readGatewayDocument } from '@/views/gateway-doc';
+import { GatewayDocPage, GUIDE_ENTRY_PAGE, readGuideDocument } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 export async function generateMetadata({
@@ -27,13 +27,14 @@ export async function generateMetadata({
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'gatewayNav' });
+  const document = readGuideDocument(GUIDE_ENTRY_PAGE, locale);
 
   return (
     <GatewayDocPage
-      document={readGatewayDocument(GUIDE_ENTRY_PAGE.slug)}
+      document={document}
       title={t(`guidePages.${GUIDE_ENTRY_PAGE.titleKey}`)}
       lead={t('guideLead')}
-      sourcePath={`docs/${GUIDE_ENTRY_PAGE.slug}.md`}
+      sourcePath={document.sourcePath}
       sidebar
       activeSegment={GUIDE_ENTRY_PAGE.segment}
     />

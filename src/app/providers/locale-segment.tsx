@@ -25,7 +25,7 @@ export async function localeLayoutMetadata(locale: string): Promise<Metadata> {
     },
     description: t('siteTagline'),
     // Words people type in this language; Google ignores the tag, Bing, Naver and Baidu read it.
-    keywords: t('keywords').split(', '),
+    keywords: t('keywords').split(/\s*[,，、]\s*/),
     // hreflang is a per-path fact, so each page sets it through `buildPageMetadata`.
   };
 }

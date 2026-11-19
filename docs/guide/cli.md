@@ -1,132 +1,139 @@
 ---
-title: CLI
+title: "The CLI and how it relates to MCP"
 doc_type: guide
 status: current
-area: cli
+area: product
 ---
 
-# CLI
+# The CLI and how it relates to MCP
 
-Your daily entry point. Run it from a source checkout.
+This chapter covers the Ontology Atlas command-line interface: how to run it,
+the commands people use day to day, and how it shares one engine with the MCP
+server that coding agents such as Claude Code and Codex call. Everything the
+CLI does works on the same Markdown ontology folder that the map shows.
+
+## Run it from a source checkout
+
+There is no npm package, so `npx` does not work. The CLI runs from a clone of
+the repository and needs Git, Node.js 24 and pnpm. Keep the clone outside the
+repository you want to describe:
 
 ```bash
-node cli/src/index.mjs --help
+git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
+cd ~/tools/ontology-atlas && pnpm install
+pnpm --dir mcp install --frozen-lockfile
 ```
 
-> This isn't published to a registry, so you can't run it with `npx`. The only live paths are the **app bundle** (the agent connection button writes the absolute path) and **source checkout**.
+Both install lines are needed, because the `mcp` folder has its own lockfile.
+Then run any command with `node`:
 
-## Three entry points, one vault
+```bash
+node ~/tools/ontology-atlas/cli/src/index.mjs --help
+```
 
-Knowing this before memorizing commands makes the rest easy.
+To type `atlas` instead, `install-shim` writes a one-line launcher to
+`~/.local/bin/atlas` that points at this clone. It prints the launcher before
+writing it, and `install-shim --uninstall` removes it.
 
-| Entry point | Who uses it |
+You do not need the CLI to connect an agent. The desktop app carries its own
+copy of the MCP server and writes the agent config for you (see
+[connect a coding agent](/guide/connect-agent)).
+
+## One engine, three ways in
+
+| Way in | Who uses it |
 |---|---|
-| CLI | Humans: from the terminal |
-| MCP | AI agents: Claude Code · Codex · Cursor |
-| UI | Humans: [Studio](/guide/studio) |
+| The map in the app or the website | People |
+| MCP tools | Coding agents |
+| CLI | People and scripts in a terminal |
 
-All three view the **same `.md` folder**. Commands that manipulate graphs are actually wrappers around the MCP server, so whether you call `blast-radius` from the terminal or an agent, you get the **same permissions and same answers**. That's why this chapter's table organizes by **"what to call in this situation"** rather than "what commands exist".
+The graph commands, such as `backlinks`, `blast-radius`, `rename` and `relate`,
+start the MCP server for one call and stop it again. A command in your terminal
+and the same tool called by an agent therefore give the same answer and follow
+the same write rules. If a large folder makes these commands time out, raise
+the wait with `OATLAS_CLI_MCP_TIMEOUT_MS`.
 
-## When to call what
+## Commands for starting
 
-### When starting
-
-| Situation | Command |
+| Task | Command |
 |---|---|
-| Create a vault in your repo | `init`: writes starter files and agent setup, not repository meaning |
-| Preview candidates from existing code | `bootstrap`: combines `analyze` + `infer-imports`; review-only, exit 3 when approval is required |
-| Preview what will be extracted | `analyze` · `infer-imports`: **zero side effects**, suggestions only |
-| Load your existing `.md` files | `import <path...>` |
-| Fold `CLAUDE.md` · `AGENTS.md` into nodes | `absorb <file...>` |
+| Create an ontology folder with starter files and agent configs | `init ./atlas` |
+| Fix the agent configs of an existing folder | `agent-setup ./atlas --write` |
+| Check that the MCP server starts and answers | `mcp-verify ./atlas` |
+| Preview concept candidates from a repository | `bootstrap . --vault ./atlas` |
+| Turn `CLAUDE.md` or `AGENTS.md` into concepts | `absorb CLAUDE.md --vault ./atlas` |
+| Bring in existing Markdown files | `import <path...> --vault ./atlas` |
 
-In v1.6.0, `analyze --apply` is a compatibility wrapper that writes nothing;
-`index --apply` delegates to the review-only bootstrap, and `infer-imports --apply`
-is disabled. `init --quick-start` writes scaffolding before returning the
-bootstrap review plan. Continue with a connected agent and approve exact small
-batches, or use the separate qualified bulk MCP lifecycle. Follow
-[Starting from My Repository](/guide/from-your-repo) for the complete walkthrough.
+`bootstrap`, `analyze`, `index` and `infer-imports` only preview. They write
+no concepts, and `bootstrap` exits with code 3 to say that approval is still
+needed. The concepts themselves come from an agent you review, as described in
+[build the first map from your code](/guide/from-your-repo).
 
-### While fixing code
+## Commands for looking things up
 
-| What you want to know | Command |
+These only read, so you can run them freely.
+
+| Question | Command |
 |---|---|
-| What was this concept again? | `node <slug>`: header, lineage, and incoming/outgoing relations on one screen |
-| Who uses this name? | `backlinks <slug>` |
-| What breaks if I fix this? | `blast-radius <slug>` |
-| How are these two connected? | `path <from> <to>` · `explain <from> <to>` |
-| Where does it reach from here? | `reachability <slug>` |
-| Show only nodes with these conditions | `query "kind=capability AND has(elements)"` |
-| Is something similar already there? | `similar "<title>"` |
+| What is this concept, and what connects to it? | `node <slug> ./atlas` |
+| What points at this concept? | `backlinks <slug> --vault ./atlas` |
+| What may be affected if this changes? | `blast-radius <slug> --vault ./atlas` |
+| How are these two concepts connected? | `path <from> <to> --vault ./atlas` |
+| Is there already something like this? | `similar "<title>" ./atlas` |
+| Which concepts match a condition? | `query "kind=capability AND has(elements)" --vault ./atlas` |
+| What does the whole folder look like? | `overview ./atlas` |
+| What should be fixed next? | `maintenance ./atlas` |
 
-All these lines are **read-only**. They change nothing, so call them freely.
+## Commands that write
 
-### Before writing something
-
-| What you want to do | Call first | Then |
+| Task | Command | Default |
 |---|---|---|
-| Connect a relation | `relation-check <from> <to> <type>` | `relate` (supports `--dry-run`) |
-| Rename something | `backlinks` · `blast-radius` | `rename` (dry-run by default) |
-| Merge two into one | `similar` | `merge` (dry-run by default) |
-| Delete something | `backlinks` | `delete` |
+| Add a concept | `add <kind> <slug> --title "..." --vault ./atlas` | Writes |
+| Add a relation | `relate <from> <to> <type> --why "..." --vault ./atlas` | Writes; `--dry-run` previews |
+| Remove a relation | `remove-relation <from> <to> <type>` | Writes; `--dry-run` previews |
+| Rename a concept and its references | `rename <old> <new> --vault ./atlas` | Preview; `--confirm` applies |
+| Merge two concepts | `merge <from> <into> --vault ./atlas` | Preview; `--confirm` applies |
+| Delete a concept | `delete <slug> --vault ./atlas` | Preview; refuses while references remain |
 
-**Write commands almost always have a corresponding read command.** The CLI is designed to check the blast radius before writing. Detailed procedures and actual outputs are in [After the folder grows](/guide/growing-vault).
+Run the matching read command before each write. `relation-check` checks a
+relation against the schema before `relate`, and `backlinks` shows what a
+rename or delete will touch.
 
-### Just before committing
+## Commands for checking
+
+| Question | Command |
+|---|---|
+| Is the Markdown valid, and do references resolve? | `validate ./atlas` |
+| Do cited source files still exist, and is the graph sound? | `health ./atlas` |
+| Which concepts does nothing point at? | `orphans ./atlas` |
+| Do dependencies form a loop? | `cycles ./atlas` |
+| Which concepts do my staged files touch? | `preflight ./atlas --staged` |
+
+`validate` reads only the ontology folder. `health` also compares cited paths
+with the code, so it catches a concept whose evidence a refactor deleted.
+`validate` exits with code 1 when it finds errors, so it fits in CI.
+`preflight` never blocks a commit.
+
+## Commands for agents and sharing
+
+| Task | Command |
+|---|---|
+| Hand a new agent session its starting context | `agent-brief ./atlas` |
+| See status and next actions on one screen | `workspace-brief ./atlas` |
+| Commit only the ontology folder, with a summary | `snapshot ./atlas` |
+| Export the graph | `export ./atlas --format jsonld` (or `graphml`, `json`) |
+
+`agent-brief` exits with code 1 while the folder still needs attention, for
+example right after `init`. The output is still complete. `snapshot` makes a
+local commit only; add `--push` to send it to the branch's existing upstream,
+and `--dry-run` to preview.
+
+Almost every command accepts `--json` for scripts. The full list, with every
+option, is in the help:
 
 ```bash
-node cli/src/index.mjs preflight --staged
+node ~/tools/ontology-atlas/cli/src/index.mjs --help
 ```
 
-Interprets staged files as vault nodes, summarizing what this commit touches. If nothing is touched, it passes silently. **It doesn't block.**
-
-To commit the vault separately, use `snapshot` (check with `--dry-run` first).
-
-### When you don't know what to do
-
-| What you want to ask | Command |
-|---|---|
-| What does this vault look like? | `overview` |
-| What needs maintenance today? | `maintenance` |
-| Where can it grow more? | `growth` |
-| What's the center? | `hubs`: PageRank · bridges · authority · hub rankings |
-| Current situation + next action on one screen | `workspace-brief` |
-
-### When you don't trust the vault
-
-| Doubt | Command |
-|---|---|
-| Is frontmatter broken? | `validate`: **does not check code paths** |
-| Did files cited as evidence disappear? | `health`: six checks, including code path verification |
-| Are there nodes no one points to? | `orphans` |
-| Do "leans on" relations form cycles? | `cycles` |
-| Is the graph split into islands? | `components` |
-| Is the agent connection config correct? | `mcp-verify` · `agent-setup` · `agent-files` |
-
-The difference between `validate` and `health` is often confusing. **`validate` checks only the documents,
-while `health` also checks the code referenced by those documents.** This is why you might see a situation where `validate` passes but `health` fails after refactoring has removed files.
-
-### When passing to an agent · When extracting out
-
-| What you want to do | Command |
-|---|---|
-| Pass context to a new session | `agent-brief` (formatted for pasting into `--prompt`) |
-| Compile definitively | `compile` (normalize relationship arrays with `--fix`) |
-| Export to another tool | `export --format jsonld\|graphml\|json` |
-
-`agent-brief` eliminates the need to rewrite context explanations every time you start a new conversation.
-It pairs with [Connecting an AI Agent](/guide/connect-agent).
-
-## Two things to know for convenience
-
-**`--json` is available on almost all commands.** Use it when chaining scripts or passing results to other
-tools.
-
-**If graph commands time out with a large vault**, increase the wait time for a single call with `OATLAS_CLI_MCP_TIMEOUT_MS`. Since graph commands start and stop an MCP server once, the first response may be slow when the vault is large.
-
-## Full list
-
-`--help` displays the current command inventory and options.
-
-```bash
-node cli/src/index.mjs --help
-```
+To keep the map current with these commands as the code changes, see
+[keep the map current as code changes](/guide/growing-vault).
