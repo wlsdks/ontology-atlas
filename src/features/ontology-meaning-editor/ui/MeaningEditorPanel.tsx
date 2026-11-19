@@ -399,7 +399,8 @@ export function MeaningEditorPanel({
               />
               {/* Each help line names the program that reads the value (tests/contract/controls/field-help-consumers.contract.test.ts). */}
               <p data-testid="meaning-editor-relation-help" className="text-label leading-label text-[color:var(--map-panel-text-tertiary)]">
-                {t(`relationHint.${draft.relation}`)} {t('relationHelp')}
+                <span className="block text-[color:var(--map-panel-text-secondary)]">{t(`relationHint.${draft.relation}`)}</span>
+                {t('relationHelp')}
               </p>
             </div>
             <div
