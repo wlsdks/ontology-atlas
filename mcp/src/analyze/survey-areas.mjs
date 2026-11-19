@@ -13,7 +13,7 @@ import { folderTree } from './source-units.mjs';
 /** Area rows one survey lists; at about 200 characters a row the section stays near 12 KB. */
 const AREA_ROW_LIMIT = 60;
 
-/** Library exports fill what product-facing rows leave. */
+/** How the code is built, shown only where an area has no product-facing row. */
 const BACKFILL_KINDS = new Set(['export', 'api']);
 
 function treeArea(node) {
@@ -108,11 +108,11 @@ export function areaLocator(areas) {
 }
 
 /**
- * At most `limit` rows: product-facing kinds first, then module APIs; within each,
- * every area, largest first, gets one row a round before any gets a second, so
- * no area is left out while another fills the list. A lone export says little
- * about a product, so one is shown only for an area that has no other row;
- * O(rows + limit x areas).
+ * At most `limit` rows. Product-facing kinds come first: every area, largest
+ * first, gets one row a round before any gets a second, so no area is left out
+ * while another fills the list. A module API or a lone export is how the code is
+ * built, not what the product does, so one is shown only for an area that has no
+ * other row, a module API before an export; O(rows + limit x areas).
  */
 export function abilitiesByArea(rows, areas, locate, limit) {
   const rank = new Map(areas.map((area, index) => [area, index]));
@@ -136,20 +136,20 @@ export function abilitiesByArea(rows, areas, locate, limit) {
     picked.push(row);
     shownAreas.add(key);
   };
-  for (const wanted of [(row) => !BACKFILL_KINDS.has(row.kind), (row) => row.kind === 'api']) {
-    const ordered = lanesOf(wanted);
-    for (let round = 0; picked.length < limit; round += 1) {
-      const open = ordered.filter(([, lane]) => lane.length > round);
-      if (open.length === 0) break;
-      for (const [key, lane] of open) {
-        if (picked.length === limit) break;
-        take(key, lane[round]);
-      }
+  const productFacing = lanesOf((row) => !BACKFILL_KINDS.has(row.kind));
+  for (let round = 0; picked.length < limit; round += 1) {
+    const open = productFacing.filter(([, lane]) => lane.length > round);
+    if (open.length === 0) break;
+    for (const [key, lane] of open) {
+      if (picked.length === limit) break;
+      take(key, lane[round]);
     }
   }
-  for (const [key, lane] of lanesOf((row) => row.kind === 'export')) {
-    if (picked.length === limit) break;
-    if (!shownAreas.has(key)) take(key, lane[0]);
+  for (const kind of ['api', 'export']) {
+    for (const [key, lane] of lanesOf((row) => row.kind === kind)) {
+      if (picked.length === limit) break;
+      if (!shownAreas.has(key)) take(key, lane[0]);
+    }
   }
   return picked;
 }

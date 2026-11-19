@@ -15,10 +15,11 @@ const OPERATION_KINDS = new Set(['class', 'function', 'method']);
 /** Package and barrel files hold no operation of their own. */
 const PACKAGE_FILE_STEMS = new Set(['__init__', 'index', 'mod', 'lib', 'main']);
 /**
- * A JVM file always declares the type it is named after, so the rule would turn
- * every package into a family; `jvm-abilities.mjs` names JVM families its own way.
+ * A JVM file always declares the type it is named after, and a view file the
+ * component it is named after, so the rule would turn every package and every
+ * component folder into a family; `jvm-abilities.mjs` names JVM families its own way.
  */
-const ONE_TYPE_PER_FILE_EXTENSIONS = new Set(['.java', '.kt', '.kts', '.scala', '.cs']);
+const ONE_TYPE_PER_FILE_EXTENSIONS = new Set(['.java', '.kt', '.kts', '.scala', '.cs', '.tsx', '.jsx', '.vue', '.svelte']);
 
 const stemOf = (path) => basename(path).replace(/\.[^.]+$/, '');
 

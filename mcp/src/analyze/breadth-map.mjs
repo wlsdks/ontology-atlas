@@ -692,7 +692,7 @@ function renderBreadthMap(map) {
     if (map.abilitiesOmitted) {
       const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
       lines.push(map.areas
-        ? `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: every area shows rows before any shows a second, and a lone export only where an area has no other row; an area's own map lists the rest.`
+        ? `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: every area shows rows before any shows a second, and a module API or lone export only where an area has no other row; an area's own map lists the rest.`
         : `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows and of the map's 30 KB; call analyze_repo_structure with rootPath set to one folder to list them.`);
     }
   }
