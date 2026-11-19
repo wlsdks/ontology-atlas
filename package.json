@@ -250,8 +250,6 @@
     "e2e": "playwright test",
     "design:toc": "node scripts/design/build-design-system-toc.mjs",
     "design:toc:check": "node scripts/design/build-design-system-toc.mjs --check",
-    "gateway:specimen": "node scripts/download/generate-evidence-specimen.mjs",
-    "gateway:specimen:check": "node scripts/download/generate-evidence-specimen.mjs --check",
     "gateway:capture": "node scripts/download/capture-gateway-screens.mjs",
     "gates:yield": "node scripts/ci/gate-yield.mjs",
     "integration:cli:architecture": "node scripts/ci/run-focused-node-test.mjs --test-name-pattern '^architecture --json' cli/src/integration.test.mjs",
