@@ -238,7 +238,7 @@ export function useTopologyKeyboard({
     },
     {
       // ⌘Z takes back the last change made by hand; inside a field the field's own undo answers.
-      combo: { key: "z", meta: true },
+      combo: { key: "z", meta: true, withoutShift: true },
       onFire: () => {
         if (shortcutsSuppressed) return;
         undoLastManualWrite();
