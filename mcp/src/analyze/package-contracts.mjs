@@ -308,9 +308,11 @@ export function extractCargoPackageContract(text) {
       section === 'features' &&
       assignmentValue.trimStart().startsWith('[')
     ) {
+      // A feature list is joined over at most 200 lines: an unclosed one never rescans the rest.
+      const lastLine = Math.min(lines.length - 1, lineIndex + TOML_ARRAY_LINES);
       while (
         !isBalancedTomlFragment(assignmentValue) &&
-        lineIndex + 1 < lines.length
+        lineIndex < lastLine
       ) {
         lineIndex += 1;
         assignmentValue += ` ${stripTomlComment(lines[lineIndex]).trim()}`;
@@ -419,6 +421,8 @@ export function extractCargoPackageContract(text) {
     ].join('\n'),
   };
 }
+
+const TOML_ARRAY_LINES = 200;
 
 function cargoPackageContractExcerpt(details, candidateFeatures, totalFeatures) {
   const visibleFeatures = [...candidateFeatures];

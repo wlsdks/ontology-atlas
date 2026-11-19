@@ -4,10 +4,9 @@ import {
   extractEntries,
   separateCategoryLines,
   normalizeHeadingKey,
-  readVaultDoc,
-  readVaultDocOmittedSections,
   trimToRecentSections,
 } from './vault-doc';
+import { readVaultDoc, readVaultDocOmittedSections } from './read-vault-doc';
 
 /** A hand-written copy would split the page a visitor sees from the document the repository reviews. */
 describe('gateway reading comes from vault documents', () => {

@@ -181,7 +181,7 @@ function DocsVaultContent({
       selectedSlug,
       setSelectedSlug,
       setAdvancedOpen,
-      vaultScopeSettled,
+      vaultScopeSettled: vaultScopeSettled && !vault.staticPending,
     });
   const tabs = useDocTabs({ address, vault, src, selectedSlug, setSelectedSlug });
   const { openDocTabs } = tabs;
@@ -255,8 +255,6 @@ function DocsVaultContent({
     collectionCounts,
     collectionPinnedSlugs,
     collectionRecentSlugs,
-    docsBodyIndex,
-    docsBodyIndexing,
     handleCollectionChange,
     handleSelect,
     handleCloseDocTab,
@@ -271,8 +269,6 @@ function DocsVaultContent({
     setSelectedSlug,
     setActiveTag,
     setSampleWelcomeDismissed,
-    paletteOpen,
-    getDocContent,
   });
   const handleSelectFromSidebar = useCallback(
     (slug: string) => {
@@ -371,7 +367,7 @@ function DocsVaultContent({
 
   // One neutral frame until source and restored manifest settle, so the static manifest
   // never paints as the installed app's data.
-  if (!vaultScopeSettled || legacyRedirectToLibrary) return <RouteLoadingFallback />;
+  if (!vaultScopeSettled || vault.staticPending || legacyRedirectToLibrary) return <RouteLoadingFallback />;
 
   return (
     <div className="flex h-full w-full">
@@ -657,8 +653,7 @@ function DocsVaultContent({
             onTagSelect={(tag) => setActiveTag(tag)}
             initialQuery={paletteQuery ?? ''}
             getDocHref={getDocHref}
-            bodyIndex={docsBodyIndex}
-            bodyIndexing={docsBodyIndexing}
+            getDocContent={getDocContent}
           />
         ) : null}
       </AnimatePresence>
@@ -717,8 +712,14 @@ export function DocsVaultPage({
   legacyEntry?: boolean;
 } = {}) {
   // Local-first core (`.claude/rules/local-first.md` §1): no auth gate before the vault picker.
+  // An address that names the dogfood sample waits for that sample, not the one stored as preferred.
+  const pinnedSample =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('sample') === 'dogfood'
+      ? 'dogfood'
+      : undefined;
   return (
-    <VaultSourceHydrationBoundary>
+    <VaultSourceHydrationBoundary sample={pinnedSample}>
       {/* Prerendered HTML carries this fallback; null would start as a black screen. */}
       <Suspense fallback={<RouteLoadingFallback />}>
         <DocsVaultContent

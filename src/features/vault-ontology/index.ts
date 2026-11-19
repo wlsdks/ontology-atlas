@@ -1,5 +1,6 @@
 
-export { useArrivingOntologyInsight, useOntologyInsight, useDogfoodInsight } from './model/use-ontology-insight';
+export { useArrivingOntologyInsight, useOntologyInsight } from './model/use-ontology-insight';
+export { useDogfoodInsight } from './model/use-dogfood-insight';
 export { useVaultHealth } from './model/use-vault-health';
 export { useVaultValidationSummary } from './model/use-vault-validation';
 export { useVaultDocDates, useVaultDocFileDates } from './model/use-vault-doc-freshness';

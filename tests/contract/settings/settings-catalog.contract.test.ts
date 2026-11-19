@@ -20,7 +20,7 @@ const EXPECTED_IDS = {
   footprint: ['footprint-strength', 'footprint-detail'],
   notify: ['work-in-progress', 'notifications', 'notification-kinds'],
   agents: ['wiki-write-mode', 'door-coding-tools', 'door-models', 'door-mcp'],
-  privacy: ['outbound', 'allowances', 'recent-folders'],
+  privacy: ['outbound', 'allowances', 'stored-here', 'recent-folders'],
   workspace: [
     'folder',
     'folder-path',

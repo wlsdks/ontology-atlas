@@ -2,18 +2,15 @@
 
 import { useMemo } from 'react';
 import { useDataSourceMode } from '@/entities/vault-session';
-import { useSampleSource } from '@/entities/vault-session';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
-import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
+import type { VaultManifest } from '@/entities/docs-vault';
 import {
   summarizeVaultValidation,
   type VaultValidationSummary,
 } from '@/shared/lib/vault-document/validate-vault-document';
 
 /** The settings sheet's `summarizeVaultValidation`, with `useVaultHealth`'s mode selection, so both screens agree. */
-const staticManifest = resolveStaticVaultSource('dogfood').manifest;
-const storefrontManifest = resolveStaticVaultSource('storefront').manifest;
-
 const summaryCache = new WeakMap<VaultManifest, VaultValidationSummary>();
 function manifestValidation(manifest: VaultManifest): VaultValidationSummary {
   const cached = summaryCache.get(manifest);
@@ -40,18 +37,14 @@ const EMPTY_SUMMARY: VaultValidationSummary = {
 
 export function useVaultValidationSummary(): VaultValidationSummary {
   const mode = useDataSourceMode();
-  const [sampleSource] = useSampleSource();
+  const { manifest: staticManifest } = useStaticVaultSource();
   const vault = useLocalVault();
 
   return useMemo(() => {
-    if (mode === 'static') {
-      return manifestValidation(
-        sampleSource === 'storefront' ? storefrontManifest : staticManifest,
-      );
-    }
+    if (mode === 'static') return manifestValidation(staticManifest);
     if (vault.status === 'loaded' && vault.manifest) {
       return manifestValidation(vault.manifest);
     }
     return EMPTY_SUMMARY;
-  }, [mode, sampleSource, vault.status, vault.manifest]);
+  }, [mode, staticManifest, vault.status, vault.manifest]);
 }

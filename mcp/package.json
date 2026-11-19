@@ -118,6 +118,8 @@
     "src/analyze/source-elements.mjs",
     "src/analyze/meaning-gate.mjs",
     "src/analyze/repo-structure.mjs",
+    "src/analyze/operator-abilities.mjs",
+    "src/analyze/documented-abilities.mjs",
     "src/meaning/meaning-assessment.mjs",
     "src/meaning/meaning-evaluation.mjs",
     "src/construction/construction-qualification.mjs",

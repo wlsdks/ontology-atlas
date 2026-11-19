@@ -168,12 +168,57 @@ bundle identifier, and DMG assets use the Ontology Atlas identity, while the
 repo, CLI binary, and MCP package remain under `ontology-atlas`, so product
 naming does not imply a backend, Firebase data dependency, or package rename.
 
-Atlas answers graph-database questions by computing the answer when asked. It
-never keeps a second copy of the data. `compile_ontology` reads the frontmatter
+Atlas answers graph-database questions by computing the answer in memory when
+asked. It keeps no second source of truth. The installed app's derived index
+(below) only spares re-reading files that have not changed and makes every
+document searchable. `compile_ontology` reads the frontmatter
 (the `key: value` block at the top of each `.md` file) and builds one graph file
 in memory — the same vault always produces byte-identical output, which is what
 "deterministic" means here. `query_ontology` runs its graph operations over that
 file, and write tools save confirmed changes back into the markdown.
+
+### Derived index (installed app)
+
+`src-tauri/crates/vault-index` keeps one SQLite file per vault, `search.sqlite`,
+under `<OS cache dir>/dev.jinan.ontology-atlas/vault-index/<hash of the
+canonical vault path>/`, opened only by the app. It is a full-text index of
+every Markdown file: paths, stamps, and each document's words with their
+positions, so a document's text can be pieced back together from it. Anyone
+who can read the user account's cache folder can read those words; Settings
+says so beside the switch. Every row carries the stamp of the file it came from (modified time, size, and
+change time on Unix) and is used only while that stamp still matches; a file
+modified within two seconds of its row is compared by SHA-256 instead. A
+derived index holds only what can be recomputed from vault files: no user state,
+edits, approvals or drafts. It lives in the OS cache directory, never in the
+vault or Git, is private to the user account, and never leaves the computer;
+with it off the app still opens and edits every vault. The crate never
+interprets frontmatter: parsing, the graph and validation stay in the
+TypeScript and MCP code that already own them, and graph queries stay in
+memory.
+
+The crate decides what it reads: only `.md` files under the canonical vault
+root, reached through real folders, never through a symlink or a component
+that starts with a dot. It deletes only folders that carry its marker file and
+hold nothing but index file names, and a release build ignores
+`OATLAS_INDEX_DIR`. A query is read up to 512 bytes and 16 terms. A folder's
+index is deleted when the folder is taken off the app's folder list, when the
+folder is gone, or after fourteen days unopened; Delete in Settings removes the
+open folder's index, or every folder's when none is open.
+
+The folder watcher, the slow poll and vault open each start a stamp pass on a
+background thread. A schema version that differs in either direction
+discards the index and rebuilds it; a damaged file is set aside and
+rebuilt while the session continues from the vault files. The file uses WAL,
+so the app and another process can read at the same time. Settings › Privacy ·
+data shows the size, deletes the index and can turn it off. The web playground
+has no index.
+
+A second file, `rows.sqlite`, holding per file and per producer the result a
+program computed from that file, is planned for reopening from cached rows; it
+does not exist yet. Searching is one rule shared by indexing and queries: words of
+alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
+become overlapping pairs, so a Korean term is found inside a word that carries
+a particle. The palette reads only the hit files to show their matching lines.
 
 Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
@@ -336,7 +381,9 @@ same file through all three parsers (web, MCP, scripts) and the schema is
 written in exactly one place, `mcp/src/schema.mjs`. Anything that has to pass
 between the two surfaces is written **inside the vault** as plain text —
 `.ontology-atlas/activity.jsonl` and `llm-audit.jsonl`. That is the rule this
-contract sets: *anything shared between surfaces lives in the vault folder.* If
+contract sets: *anything shared between surfaces lives in the vault folder.*
+The derived index is not shared state: it is a cache each program validates
+against the files for itself, and deleting it changes no answer. If
 two people (or an agent and a person) edit at once,
 `patch_concept(expected_mtime)` stops the second write from silently erasing the
 first.
@@ -688,6 +735,17 @@ filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed a
 2. `useDataSourceMode()` returns `'static'`.
 3. `useProjects()` derives projects from the paired manifest/content chosen by
    `useStaticVaultSource()` (Storefront or dogfood, both generated by `pnpm docs-vault:build`).
+   The pair is fetched with `import()` only on a screen that draws it: `VaultSourceHydrationBoundary`
+   suspends until it lands, so the page's own exported fallback is the single loading state, then
+   stays mounted when the other sample is chosen. Ambient readers (the rail's Projects door, the
+   closed palette and drawers) pass `demand: false` and start nothing, so `/`, `/download` and
+   `/guide` fetch no Storefront JSON. A chunk that fails is retried once, then
+   `useStaticVaultStatus()` says `failed` and the boundary offers a retry; it never reads as an
+   empty folder. The installed app fetches none of it (status `none`). Build-time code (sitemap,
+   route params, Open Graph cards) and `/download`'s hero data import the JSON statically instead.
+   `pnpm build` ends with `first-load-report` for `en`, `en/topology` and `en/download`; it fails on a
+   page that names no chunks, a missing chunk file, or a JSON literal over 50 KB outside
+   `en/download`. `pnpm build:first-load -- out <route>...` checks any other route by hand.
 4. Mutations are blocked with a toast pointing to the vault picker.
 
 This is what a vault-less web visitor sees before choosing a folder. The installed app never uses

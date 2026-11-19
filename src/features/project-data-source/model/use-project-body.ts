@@ -1,12 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
+import {
+  useDataSourceMode,
+  useLocalVault,
+  useStaticVaultSource,
+  useStaticVaultStatus,
+} from '@/entities/vault-session';
 import { extractProjectBody, findProjectVaultDoc, fetchServerDocContent } from '@/entities/docs-vault';
 
 export interface UseProjectBodyState {
   /** The real markdown body of project.md. Null when absent or not yet read. */
   body: string | null;
+  /** False until the body has been read (or found absent) for this slug, so an empty hint is not drawn too early. */
+  settled: boolean;
 }
 
 /** Lazy body loader for `/project/[slug]`: bundled content for static, `getFile()` for local. */
@@ -15,6 +22,8 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
   const vault = useLocalVault();
   // Manifest and content are taken as one stable pair from the resolver.
   const staticSource = useStaticVaultSource();
+  // The empty sample has no project document yet; that is not a finding, so nothing settles on it.
+  const sampleLoading = useStaticVaultStatus() === 'loading';
   const [resolved, setResolved] = useState<{ slug: string; body: string | null } | null>(
     null,
   );
@@ -32,6 +41,7 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
     }
 
     if (mode === 'static') {
+      if (sampleLoading) return;
       const doc = findProjectVaultDoc(staticSource.manifest, slug);
       if (!doc) {
         window.queueMicrotask(() => {
@@ -79,7 +89,8 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
     return () => {
       cancelled = true;
     };
-  }, [slug, mode, vault.manifest, vault.fileHandles, staticSource]);
+  }, [slug, mode, vault.manifest, vault.fileHandles, staticSource, sampleLoading]);
 
-  return { body: resolved && resolved.slug === slug ? resolved.body : null };
+  const current = resolved && resolved.slug === slug ? resolved : null;
+  return { body: current ? current.body : null, settled: slug === null || (current !== null && !(mode === 'static' && sampleLoading)) };
 }

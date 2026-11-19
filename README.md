@@ -145,6 +145,7 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brand:sprites` | Rebuild Moru sprites, 74 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
+| `pnpm build:first-load -- out en en/topology` | Per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; fails on a page naming no chunks, a missing chunk, or an oversize literal. `pnpm build` runs it for `en`, `en/topology` and `en/download`; `--allow-json=<route>` exempts a route |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
 | `pnpm checks:changed` | Which gates this change needs |
@@ -169,6 +170,7 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |
 | `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server releases memory across repeated calls; about a minute |
 | `pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b` | CPU of each MCP read's first and second call, and resident memory after 20 calls, on a generated vault (`a`: every page a node; `b`: a few thousand nodes among plain pages); `--server=<binary>` measures a compiled server; `--check` gates the compiled binary (`pnpm mcp:build-binary` output by default) at 600 ms and 1 GiB, then prints the source server's figures ungated |
+| `pnpm perf:vault-index -- --files=10000 --files=50000 --shape=key --shape=all --check` | The installed app's search index on generated vaults: build, reopen, one-file update, ranked search, size and peak memory against their limits; a few minutes |
 | `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Merge a pull request: on its own CI when its branch contains main and no train overlaps, otherwise on a train; and show the queue. While `main`'s full browser run is red it names the failing specs and still merges |

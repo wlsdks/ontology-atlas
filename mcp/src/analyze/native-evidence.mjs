@@ -23,7 +23,7 @@ import {
   RUST_SOURCE_MAX_BYTES,
   SOURCE_FOLDERS,
 } from './constants.mjs';
-import { humanize, slugify } from './text.mjs';
+import { forwardFinder, humanize, slugify } from './text.mjs';
 import {
   packageContractPathIssue,
   pathResolvesInsideRoot,
@@ -84,10 +84,17 @@ function isStaticAutotoolsRolePath(value) {
 function extractStaticAutotoolsMakefileTargets(contents) {
   const targets = new Set();
   const source = staticAutotoolsLines(contents).join('\n');
-  const pattern = /\bAC_CONFIG_FILES\s*\(\s*(?:\[([^\]]*)\]|([^)]*))\s*\)/g;
+  // Each call's argument is found in one forward pass: an unclosed one never rescans the file.
+  const find = forwardFinder(source);
+  const pattern = /\bAC_CONFIG_FILES\s*\(\s*/g;
   let match;
   while ((match = pattern.exec(source)) !== null) {
-    const candidates = (match[1] ?? match[2] ?? '').trim().split(/\s+/).filter(Boolean);
+    const start = match.index + match[0].length;
+    const quoted = source[start] === '[';
+    const end = find(quoted ? ']' : ')', quoted ? start + 1 : start);
+    if (end < 0 || (quoted && !/^\s*\)/.test(source.slice(end + 1, end + 1 + 200)))) continue;
+    pattern.lastIndex = end + 1;
+    const candidates = source.slice(quoted ? start + 1 : start, end).trim().split(/\s+/).filter(Boolean);
     if (
       candidates.length === 0 ||
       candidates.length > AUTOTOOLS_ROLE_TARGET_LIMIT ||
@@ -707,8 +714,12 @@ function consumeRustBlockComment(text, start) {
   return index;
 }
 
+const RUST_RAW_STRING = /(?:br|r)(#*)"/y;
+
 function consumeRustRawString(text, start) {
-  const match = text.slice(start).match(/^(?:br|r)(#*)"/);
+  if (text[start] !== 'r' && text[start] !== 'b') return null;
+  RUST_RAW_STRING.lastIndex = start;
+  const match = RUST_RAW_STRING.exec(text);
   if (!match) return null;
   const terminator = `"${match[1]}`;
   const end = text.indexOf(terminator, start + match[0].length);

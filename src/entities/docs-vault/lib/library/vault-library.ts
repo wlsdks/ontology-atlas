@@ -36,6 +36,9 @@ export interface LibraryWikiPage {
   sourcePaths: string[];
   createdBy: string | null;
   compiledAt: string | null;
+  /** The page's excerpt and tags, which the web's search matches beside the title. */
+  excerpt?: string;
+  tags?: string[];
 }
 
 export function isWikiPage(doc: VaultDoc): boolean {
@@ -88,6 +91,8 @@ export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
       typeof doc.frontmatter.compiled_at === 'string' && doc.frontmatter.compiled_at.trim()
         ? doc.frontmatter.compiled_at.trim()
         : null,
+    excerpt: doc.excerpt,
+    tags: doc.tags,
   }));
 }
 

@@ -74,7 +74,8 @@ function pythonImportedNames(value) {
     .replace(/^\(|\)$/g, '')
     .split(',')
     .map((item) => item.trim().split(/\s+as\s+/i)[0]?.trim())
-    .filter((item) => item && item !== '*');
+    // An imported name is an identifier; anything else is a list that never closed.
+    .filter((item) => item && /^[A-Za-z_]\w*$/.test(item));
 }
 
 function pythonLogicalLines(content) {
