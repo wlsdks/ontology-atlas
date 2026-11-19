@@ -4,6 +4,7 @@
 
 pub(crate) mod chat;
 pub(crate) mod curl;
+pub(crate) mod embed;
 mod http_output;
 mod local_endpoint;
 pub(crate) mod requests;

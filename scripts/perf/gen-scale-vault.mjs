@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Writes a deterministic generated vault for scale measurements.
-// Usage: node scripts/perf/gen-scale-vault.mjs <dir> <files> <all|key|library>
+// Usage: node scripts/perf/gen-scale-vault.mjs <dir> <files> <all|key|library|linked>
 //   all: every page is a node. key: a few thousand nodes over many plain documents.
 //   library: <files> sources under `sources/` and as many wiki pages citing them (see below).
+//   linked: the library shape plus <files>/10 concepts, with pages linked to them by `describes:`.
 // Bodies are one third English, one third Korean with particles attached to nouns, one third
 // mixed; one page in ten is four times longer; rare terms sit in 0.2 to 0.5 % of pages.
 
@@ -20,7 +21,7 @@ const MIX = KOREAN.mixed;
 
 /** Writes the vault and returns what it wrote. */
 export function generateScaleVault(dir, fileCount, shape) {
-  if (shape === 'library') return generateLibraryVault(dir, fileCount);
+  if (shape === 'library' || shape === 'linked') return generateLibraryVault(dir, fileCount, shape === 'linked');
   let seed = 987654321;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const pick = (list) => list[Math.floor(rnd() * list.length)];
@@ -143,7 +144,7 @@ const DAY_MS = 86_400_000;
  * are covered. One source in 25 has a Hangul name: odd ones are cited in NFD, even ones are
  * written to disk in NFD. Dates lean recent over 400 days.
  */
-function generateLibraryVault(dir, count) {
+function generateLibraryVault(dir, count, linked = false) {
   let seed = 123456789;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const pick = (list) => list[Math.floor(rnd() * list.length)];
@@ -177,6 +178,7 @@ ${Array.from({ length: 3 + (i % 5) }, sentence).join(' ')}
   }
 
   const quote = (value) => JSON.stringify(value);
+  const concepts = linked ? writeConcepts(dir, Math.max(1, Math.round(count / 10)), put) : [];
   let pages = 0;
   for (let i = 0; i < count; i++) {
     const slot = i % 20;
@@ -191,6 +193,7 @@ ${Array.from({ length: 3 + (i % 5) }, sentence).join(' ')}
       `sources: [${quote(source.cited)}]`,
       `source_hash: { ${quote(source.cited)}: ${quote(slot === 1 ? sha256(`older ${i}`) : source.hash)} }`,
       slot === 2 ? `sources_truncated: [${quote(source.cited)}]` : null,
+      ...(linked ? describesLines(i, concepts, quote) : []),
       'status: draft',
       `summary: ${quote(sentence())}`,
       '---',
@@ -207,13 +210,67 @@ ${Array.from({ length: 3 + (i % 5) }, sentence).join(' ')}
     put(`wiki/page-${i}.md`, lines.join('\n'));
     pages += 1;
   }
-  return { files: count + pages, sources: count, pages, nodes: 0, bytes };
+  return { files: count + pages + concepts.length, sources: count, pages, nodes: concepts.length, bytes };
+}
+
+/**
+ * `count` capabilities, as criterion 5 of the wiki-ontology-link spec builds them. One in 25 has a
+ * Hangul name: even ones are written to disk in NFD. One in 50 is filed under another name and
+ * reached by its `slug:`. Returns, per concept, the references a page may write for it.
+ */
+function writeConcepts(dir, count, put) {
+  mkdirSync(join(dir, 'capabilities'), { recursive: true });
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const hangul = i % 25 === 24;
+    const slug = `capabilities/${hangul ? `${KO[i % KO.length]}-${i}` : `concept-${i}`}`;
+    const file = i % 50 === 9 ? `capabilities/filed-as-${i}` : slug;
+    const onDisk = hangul && i % 2 === 0 ? file.normalize('NFD') : file;
+    put(`${onDisk}.md`, [
+      '---',
+      `slug: ${JSON.stringify(slug)}`,
+      'kind: capability',
+      `title: ${JSON.stringify(`Concept ${i} ${EN[(i * 3) % EN.length]}`)}`,
+      'created_by: "agent:bench"',
+      '---',
+      '',
+      `Concept ${i} is the ability the bench folder names ${EN[(i * 3) % EN.length]}.`,
+      '',
+    ].join('\n'));
+    // A Hangul concept on disk in NFC is written in NFD by the page, so both forms meet a resolver.
+    out.push(hangul && i % 2 === 1 ? slug.normalize('NFD') : slug);
+  }
+  return out;
+}
+
+/**
+ * The `describes:` lines of page `i`, about two links a page. By `Math.floor(i / 20) % 10`, across
+ * every compile state: 0 has no list, 1 writes `describes: []`, 2 names a concept that is gone, 3
+ * writes a concept's unique tail beside one missing slug, and the rest name two or three concepts.
+ */
+function describesLines(i, concepts, quote) {
+  const at = (n) => concepts[n % concepts.length];
+  const tail = (slug) => slug.slice(slug.indexOf('/') + 1);
+  const group = Math.floor(i / 20) % 10;
+  if (group === 0) return [];
+  if (group === 1) return ['describes: []'];
+  const targets = group === 2 ? [`capabilities/gone-${i}`]
+    // A concept filed under another name has no tail of its own name, so the tail skips it.
+    : group === 3 ? [tail(at(i % concepts.length % 50 === 9 ? i - 1 : i)), `capabilities/gone-${i}`]
+      : [at(i), at(i * 7 + 3), ...(group >= 8 ? [at(i * 13 + 5)] : [])];
+  const unique = [...new Set(targets)];
+  return [
+    'describes:',
+    ...unique.map((slug) => `  - ${quote(slug)}`),
+    'relation_notes:',
+    ...unique.map((slug) => `  ${quote(slug)}: ${quote('The Summary states what this concept does.')}`),
+  ];
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const [dir, files, shape = 'all'] = process.argv.slice(2);
-  if (!dir || !Number.isInteger(Number(files)) || !['all', 'key', 'library'].includes(shape)) {
-    console.error('usage: node scripts/perf/gen-scale-vault.mjs <dir> <files> <all|key|library>');
+  if (!dir || !Number.isInteger(Number(files)) || !['all', 'key', 'library', 'linked'].includes(shape)) {
+    console.error('usage: node scripts/perf/gen-scale-vault.mjs <dir> <files> <all|key|library|linked>');
     process.exit(2);
   }
   console.log(JSON.stringify({ dir, shape, ...generateScaleVault(dir, Number(files), shape) }));
