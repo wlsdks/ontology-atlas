@@ -190,20 +190,16 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
     await expect(page.getByTestId("library-compile")).toBeEnabled();
     await page.getByTestId("library-workspace-sources").click();
-    /* The needs-compile count is read under the strip's Compile press. */
-    await page.getByTestId("library-strip-compile").click();
-    await expect(page.getByTestId("library-needs-compile")).toContainText("4");
-    await page.keyboard.press("Escape");
+    /* The progress band's press names the four waiting sources and can run. */
+    const press = page.getByTestId("library-progress-continue");
+    await expect(press).toHaveText("Write wiki pages for the next 4");
+    await expect(press).toBeEnabled();
     /*
      * On the agent route the Compile press owes only the blocked reason; the provider-traffic sentence
      * has one home, measured in the next case.
      */
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
-    await page.getByTestId("library-strip-compile").click();
-    const popover = page.getByTestId("library-compile-popover");
-    await expect(popover).toBeVisible();
-    await expect(popover.getByTestId("library-compile-popover-run")).toBeVisible();
-    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("library-progress-blocked")).toHaveCount(0);
   });
 
   test("the provider disclosure has one home, and it is the index head's glyph", async ({
@@ -220,13 +216,10 @@ test.describe("Compile opens the agent dock", () => {
     await expect(inlineDisclosure).toHaveCount(0);
     await page.getByTestId("library-workspace-sources").click();
 
-    /* Neither popup the home's strip opens carries the transfer sentence. */
-    await page.getByTestId("library-strip-compile").click();
-    const compilePopover = page.getByTestId("library-compile-popover");
-    await expect(compilePopover).toBeVisible();
-    await expect(compilePopover.getByTestId("library-transfer")).toHaveCount(0);
+    /* Neither the progress band nor the popup the home's strip opens carries the transfer sentence. */
+    await expect(page.getByTestId("library-progress-continue")).toBeVisible();
+    await expect(page.getByTestId("library-progress").getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
-    await page.keyboard.press("Escape");
 
     await page.getByTestId("library-guide-open").click();
     const guide = page.getByTestId("library-guide-popover");

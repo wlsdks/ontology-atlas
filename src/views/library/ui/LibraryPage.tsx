@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isWikiPage } from "@/entities/docs-vault";
+import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
 import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
 import { useVaultConnectors } from "@/features/mcp-connectors";
@@ -66,6 +66,9 @@ import { LibraryEmptyFolderStage } from "./library-page/LibraryEmptyFolderStage"
 import { LibraryIndexColumn } from "./library-page/LibraryIndexColumn";
 import { LibraryDocumentColumn } from "./library-page/LibraryDocumentColumn";
 import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
+import { AgentDoor } from "./parts/agent/AgentDoor";
+import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
+import { useContinueBatch } from "./parts/progress/use-continue-batch";
 
 export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
@@ -243,14 +246,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: openPlanning });
   }, [openPlanning, t, toast]);
   useEffect(() => { clearLibraryImportRequest(); }, []);
-  const handleCompile = useCallback(() => {
+  const compileSources = useCallback((sources: readonly LibrarySourceRow[]) => {
     try {
       const localExecution = agent.route === 'local';
       agent.start(
         buildCompileBrief({
-          sources: localExecution
-            ? model.sources.filter((source) => agent.localCompile.targets.includes(source.path))
-            : model.sources,
+          sources,
           existingPages: model.wikiPages,
           locale,
           execution: localExecution ? 'local' : 'acp',
@@ -269,7 +270,18 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         "error",
       );
     }
-  }, [agent, locale, model.sources, model.wikiPages, nativeVaultRootPath, t, toast]);
+  }, [agent, locale, model.wikiPages, nativeVaultRootPath, t, toast]);
+  const handleCompile = useCallback(() => {
+    compileSources(agent.route === 'local'
+      ? model.sources.filter((source) => agent.localCompile.targets.includes(source.path))
+      : model.sources);
+  }, [agent.localCompile.targets, agent.route, compileSources, model.sources]);
+  const continueBatch = useContinueBatch({
+    sources: model.sources,
+    localTargets: agent.route === 'local' ? agent.localCompile.targets : null,
+    running: compileRunning || agent.localCompile.status === 'running',
+    send: compileSources,
+  });
 
   const turns = useLibraryTurns({
     t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
@@ -429,7 +441,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         mobileBrowseOpen={mobileBrowseOpen} setMobileBrowseOpen={setMobileBrowseOpen}
         mobileBrowseBackRef={mobileBrowseBackRef} browseFocusPendingRef={browseFocusPendingRef}
         searchHost={searchHost} setSearchHost={setSearchHost} setSourceCitation={setSourceCitation}
-        sourceCitation={sourceCitation} compileRunning={compileRunning} lintRunning={lintRunning}
+        sourceCitation={sourceCitation} compileRunning={compileRunning} runningSources={continueBatch.running}
+        lintRunning={lintRunning}
         reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
         openImport={openImport} handleCompile={handleCompile} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}
@@ -554,6 +567,19 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               data-testid="library-reader-landing"
               className="flex min-h-0 min-w-0 flex-1 flex-col"
             >
+              {model.sources.length > 0 ? (
+                <SourceProgressBand
+                  sources={model.sources}
+                  vaultScope={workVaultScope}
+                  batch={continueBatch}
+                  blocked={turns.compileBlocked
+                    ? { reason: turns.compileBlocked, door: graphCards.agentDoor ? <AgentDoor testId="library-progress-blocked-door" /> : null }
+                    : null}
+                  inApp={nativeVaultRootPath !== null}
+                  locale={locale}
+                  t={t}
+                />
+              ) : null}
               <LibraryGraph
                 docs={manifest?.docs ?? EMPTY_DOCS}
                 wikiPages={model.wikiPages}

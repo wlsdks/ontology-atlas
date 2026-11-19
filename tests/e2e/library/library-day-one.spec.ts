@@ -314,13 +314,13 @@ test.describe("the Library on its first day, with no agent", () => {
      * `library-spine.spec.ts` counts one per surface.
      */
     await expect(page.locator("[data-landing-blocked-reason]")).toHaveCount(0);
-    await page.getByTestId("library-strip-compile").click();
-    const popover = page.getByTestId("library-compile-popover");
-    const reason = popover.getByTestId("library-compile-popover-blocked");
+    const band = page.getByTestId("library-progress");
+    await expect(band.getByTestId("library-progress-continue")).toBeDisabled();
+    const reason = band.getByTestId("library-progress-blocked");
     await expect(reason).toHaveCount(1);
     await expect(reason).toContainText(/No verified coding agent/);
 
-    const door = popover.getByTestId("library-compile-popover-blocked-door");
+    const door = band.getByTestId("library-progress-blocked-door");
     await expect(door).toHaveCount(1);
     await captureSettled(page, "3-door-beside-the-reason.png");
 
