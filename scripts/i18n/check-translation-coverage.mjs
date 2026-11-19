@@ -90,6 +90,9 @@ export const ACCEPTED = {
       'termHints.apiKey.expansion': 'line 1 of a term hint is identical in every locale',
       'termHints.cli.expansion': 'line 1 of a term hint is identical in every locale',
     },
+    'keep-terms': {
+      'metadata.brandReading': 'the brand as this language reads it aloud, the name its searchers type',
+    },
   },
   ko: {
     residue: {
