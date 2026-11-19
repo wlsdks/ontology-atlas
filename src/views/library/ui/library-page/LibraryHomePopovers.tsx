@@ -154,7 +154,7 @@ export function LibraryHomePopovers({
           {batch.rest > 0 ? (
             <p
               data-testid="library-compile-batch-rest"
-              className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              className="text-caption leading-body text-[color:var(--color-text-tertiary)]"
             >
               {t("progress.batchRest", { count: batch.rest })}
             </p>
@@ -162,7 +162,7 @@ export function LibraryHomePopovers({
           {batch.returned > 0 ? (
             <p
               data-testid="library-compile-batch-returned"
-              className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              className="text-caption leading-body text-[color:var(--color-text-tertiary)]"
             >
               {t("progress.batchReturned", { count: batch.returned })}
             </p>
