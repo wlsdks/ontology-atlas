@@ -14,6 +14,9 @@ sha2 = "=0.10.9"
 # Row values are DEFLATE-compressed: the JSON a build derives is as large as the vault's text. The
 # app already links this exact version (png, through tray-icon and the updater), so it adds no crate.
 miniz_oxide = "=0.8.9"
+# NFC for passages, so text typed on macOS (NFD) hashes and embeds as text typed elsewhere. The app
+# already links this exact version with this feature (url, through idna), so it adds no crate.
+icu_normalizer = { version = "=2.2.0", default-features = false, features = ["compiled_data"] }
 
 [target.'cfg(unix)'.dependencies]
 # `statfs`, which names the file system a vault sits on; the app already links this version.

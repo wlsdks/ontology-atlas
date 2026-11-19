@@ -4914,6 +4914,7 @@ dependencies = [
 name = "vault-index"
 version = "0.1.0"
 dependencies = [
+ "icu_normalizer",
  "libc",
  "miniz_oxide",
  "rusqlite",

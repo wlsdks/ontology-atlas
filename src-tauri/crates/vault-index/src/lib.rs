@@ -8,10 +8,12 @@
 mod confine;
 mod lifecycle;
 mod location;
+mod passage;
 pub mod rows;
 mod search;
 mod segment;
 mod stamps;
+pub mod vectors;
 
 use lifecycle::{
     clear_meta, create_index_dir, is_damage, lock_writer, open_reader, open_writer,

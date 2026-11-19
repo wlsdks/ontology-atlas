@@ -115,6 +115,61 @@ fn a_folder_holding_only_rows_is_swept_like_one_holding_the_search_file() {
     );
 }
 
+#[test]
+fn a_folder_holding_only_vectors_is_swept_like_one_holding_the_search_file() {
+    let _alone = ALONE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let model = vault_index::vectors::Model {
+        name: "test-embedding".into(),
+        dimensions: 8,
+    };
+    let vectors_only = |name: &str, seed: u64| {
+        let vault = TempVault::new(name);
+        write_corpus(&vault.root, 10, seed);
+        let plan = vault_index::vectors::plan(&vault.root, &model, &vault.files()).unwrap();
+        vault_index::vectors::prepare(
+            plan,
+            &vault_index::vectors::PrepareProgress::default(),
+            |texts: &[&str]| {
+                Ok::<_, std::convert::Infallible>(
+                    texts
+                        .iter()
+                        .map(|text| (0..8).map(|i| (text.len() + i) as f32).collect())
+                        .collect(),
+                )
+            },
+        )
+        .unwrap();
+        assert!(!vault.index_file().exists(), "no search file, only vectors");
+        assert!(vault_index::vectors::vectors_bytes(&vault.root).unwrap() > 0);
+        vault
+    };
+    let unused = vectors_only("sweep-vectors-unused", 45);
+    let kept = vectors_only("sweep-vectors-kept", 46);
+    assert!(vault_index::stored_bytes(None).unwrap() > 0);
+    let conn = rusqlite::Connection::open(index_dir(&unused.root).unwrap().join("vectors.sqlite"))
+        .unwrap();
+    conn.execute("UPDATE meta SET value = '0' WHERE key = 'last_used_ms'", [])
+        .unwrap();
+    drop(conn);
+
+    vault_index::sweep_orphans().unwrap();
+    assert!(
+        !index_dir(&unused.root).unwrap().exists(),
+        "vectors not used for two weeks are deleted"
+    );
+    assert!(
+        index_dir(&kept.root).unwrap().exists(),
+        "recent vectors of a present folder stay"
+    );
+    delete(None).unwrap();
+    assert!(
+        !index_dir(&kept.root).unwrap().exists(),
+        "delete-all takes vectors too"
+    );
+}
+
 /// Folders a person or another program put beside the indexes, including one named like a key
 /// but without the marker, survive every delete and sweep.
 #[test]

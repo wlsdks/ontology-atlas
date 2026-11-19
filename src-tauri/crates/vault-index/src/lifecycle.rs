@@ -10,6 +10,7 @@ use std::time::{Duration, SystemTime};
 
 pub(crate) const SEARCH_FILE: &str = "search.sqlite";
 pub(crate) const ROWS_FILE: &str = "rows.sqlite";
+pub(crate) const VECTORS_FILE: &str = "vectors.sqlite";
 const LOCK_FILE: &str = "index.lock";
 /// Written into every folder this crate creates. Deletion touches only folders that carry it and
 /// hold nothing but the files below, so a mistaken index root never costs a person's own folder.
@@ -21,7 +22,7 @@ const SQLITE_SIDE_SUFFIXES: [&str; 2] = ["-wal", "-shm"];
 /// and are removed with the index.
 const OS_LITTER: [&str; 3] = [".DS_Store", "Thumbs.db", "desktop.ini"];
 /// Every name an index folder can hold.
-const INDEX_FILE_NAMES: [&str; 10] = [
+const INDEX_FILE_NAMES: [&str; 14] = [
     SEARCH_FILE,
     "search.sqlite-wal",
     "search.sqlite-shm",
@@ -30,6 +31,10 @@ const INDEX_FILE_NAMES: [&str; 10] = [
     "rows.sqlite-wal",
     "rows.sqlite-shm",
     "rows.sqlite.damaged",
+    VECTORS_FILE,
+    "vectors.sqlite-wal",
+    "vectors.sqlite-shm",
+    "vectors.sqlite.damaged",
     LOCK_FILE,
     MARKER_FILE,
 ];
@@ -51,6 +56,7 @@ pub(crate) const SEARCH: Store = Store {
     schema: SEARCH_SCHEMA,
     version: SCHEMA_VERSION,
 };
+const VECTORS_PAGE_BYTES: i64 = 16 * 1024;
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const WAL_SIZE_LIMIT_BYTES: i64 = 32 * 1024 * 1024;
 const WRITER_CACHE_KIB: i64 = 16 * 1024;
@@ -145,7 +151,9 @@ pub(crate) fn is_index_folder(dir: &Path) -> bool {
 pub(crate) fn holds_index(dir: &Path) -> bool {
     named_by_key(dir)
         && fs::symlink_metadata(dir.join(MARKER_FILE)).is_ok_and(|meta| meta.is_file())
-        && (search_path(dir).is_file() || dir.join(ROWS_FILE).is_file())
+        && [SEARCH_FILE, ROWS_FILE, VECTORS_FILE]
+            .iter()
+            .any(|file| dir.join(file).is_file())
 }
 
 /// Every folder under `root` for which `holds_index` is true.
@@ -358,6 +366,10 @@ fn create(dir: &Path, store: &Store, vault_path: &str) -> rusqlite::Result<Conne
     discard_file(dir, store.file).map_err(io_failure)?;
     create_private_file(&path).map_err(io_failure)?;
     let mut conn = Connection::open_with_flags(&path, open_flags())?;
+    if store.file == VECTORS_FILE {
+        // A vector row is about 1.1 KB: 4 KiB pages hold three and waste a fifth of the file.
+        conn.pragma_update(None, "page_size", VECTORS_PAGE_BYTES)?;
+    }
     configure(&conn)?;
     let tx = conn.transaction()?;
     tx.execute_batch(store.schema)?;
@@ -489,14 +501,19 @@ pub(crate) fn delete_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
     count_deletion(Some(dir));
     let search = search_path(dir);
     let rows = dir.join(ROWS_FILE);
+    let vectors = dir.join(VECTORS_FILE);
     let search_removed = remove_if_present(&search);
     let rows_removed = remove_if_present(&rows);
-    if search_removed.is_err() || rows_removed.is_err() {
+    let vectors_removed = remove_if_present(&vectors);
+    if search_removed.is_err() || rows_removed.is_err() || vectors_removed.is_err() {
         if let Err(error) = search_removed {
             empty_in_place(dir).map_err(|_| error)?;
         }
         if let Err(error) = rows_removed {
             empty_rows_in_place(&rows).map_err(|_| error)?;
+        }
+        if let Err(error) = vectors_removed {
+            empty_vectors_in_place(&vectors).map_err(|_| error)?;
         }
         return Ok(());
     }
@@ -530,6 +547,30 @@ fn empty_rows_in_place(path: &Path) -> rusqlite::Result<()> {
     conn.execute_batch("BEGIN IMMEDIATE; DELETE FROM rows; COMMIT; VACUUM;")
 }
 
+pub(crate) fn empty_vectors_in_place(path: &Path) -> rusqlite::Result<()> {
+    let conn = Connection::open_with_flags(path, open_flags())?;
+    conn.busy_timeout(BUSY_TIMEOUT)?;
+    conn.execute_batch(
+        "BEGIN IMMEDIATE; DELETE FROM passages; DELETE FROM files; DELETE FROM signs; DELETE FROM vectors; COMMIT; VACUUM;",
+    )
+}
+
+/// Removes `vectors.sqlite` while the folder's writer lock is held, and the folder too once no
+/// store is left in it. Where another process holds the file open, its tables are emptied.
+pub(crate) fn delete_vectors_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
+    let path = dir.join(VECTORS_FILE);
+    count_deletion(Some(&path));
+    if let Err(error) = remove_if_present(&path) {
+        return empty_vectors_in_place(&path).map_err(|_| error);
+    }
+    remove_side_files(&path)?;
+    remove_if_present(&with_suffix(&path, DAMAGED_SUFFIX))?;
+    if !holds_index(dir) && is_index_folder(dir) {
+        return delete_locked(dir, lock);
+    }
+    Ok(())
+}
+
 /// The index holds each document's words, so it should not outlive its use: a folder opened at
 /// least every two weeks keeps its index, and one left longer pays one rebuild (seconds, even at
 /// 50,000 files) when it is opened again.
@@ -552,13 +593,13 @@ pub(crate) fn sweep_orphans(root: &Path, now: SystemTime) -> usize {
 }
 
 /// Stale when the vault folder is gone or every index file says it was last used more than
-/// `UNUSED_AFTER` ago; a folder holding only `rows.sqlite` is judged by that file.
+/// `UNUSED_AFTER` ago; a folder holding only `rows.sqlite` or `vectors.sqlite` is judged by it.
 fn is_stale(dir: &Path, now: SystemTime) -> bool {
-    let recorded: Vec<(String, Option<String>)> = [search_path(dir), dir.join(ROWS_FILE)]
+    let recorded: Vec<(String, Option<String>)> = [SEARCH_FILE, ROWS_FILE, VECTORS_FILE]
         .iter()
-        .filter_map(|path| {
+        .filter_map(|file| {
             let conn = Connection::open_with_flags(
-                path,
+                dir.join(file),
                 OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
             )
             .ok()?;
