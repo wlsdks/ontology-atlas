@@ -18,7 +18,7 @@ const RISE_PX = 8;
 const ROW =
   'grid min-w-0 gap-x-12 gap-y-6 border-t border-[color:var(--color-divider)] py-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]';
 const QUESTION =
-  'min-w-0 text-display leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]';
+  'min-w-0 [text-wrap:balance] text-display leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]';
 
 /**
  * The two questions the sections above leave open, in the row grammar the page's lists use: the

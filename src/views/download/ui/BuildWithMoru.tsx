@@ -174,7 +174,7 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
               <span className="min-w-0 truncate @max-[19rem]:hidden text-label leading-label text-[color:var(--color-text-tertiary)]">{t('repo')}</span>
               {state.phase !== 'closed' ? <Clock startedAt={startedAt} stoppedAt={result?.seconds ?? null} /> : null}
               {state.phase !== 'closed' ? (
-                <Button data-testid="build-restart" variant="ghost" size="sm" className="shrink-0 gap-1.5" onClick={() => act({ type: 'restart' })}>
+                <Button data-testid="build-restart" variant="ghost" size="sm" className="atlas-touch-floor shrink-0 gap-1.5" onClick={() => act({ type: 'restart' })}>
                   <RotateCcw size={ICON_SIZE.sm} aria-hidden />
                   {t('actions.restart')}
                 </Button>
@@ -321,7 +321,7 @@ function Stars({ result, onRetry }: { result: { seconds: number; misses: number 
       </ul>
       <p className="mt-2.5 text-center font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">{t('result', result)}</p>
       {stars.some((star) => !star.earned) ? (
-        <Button data-testid="build-retry" variant="ghost" size="sm" className="mx-auto mt-2 flex gap-1.5" onClick={onRetry}>
+        <Button data-testid="build-retry" variant="ghost" size="sm" className="atlas-touch-floor mx-auto mt-2 flex gap-1.5" onClick={onRetry}>
           <RotateCcw size={ICON_SIZE.sm} aria-hidden />
           {t('actions.retry')}
         </Button>
@@ -379,27 +379,27 @@ function Actions({ state, handheld, act }: { state: BuildState; handheld: boolea
       if (state.renaming === null) return null;
       return (
         <>
-          <Button data-testid="build-name-0" variant="outline" className="w-full justify-between gap-2" onClick={(event) => isFirstPress(event) && act({ type: 'rename', option: 0 })}>
+          <Button data-testid="build-name-0" variant="outline" className="atlas-touch-floor w-full justify-between gap-2" onClick={(event) => isFirstPress(event) && act({ type: 'rename', option: 0 })}>
             <span className="shrink-0">{t(`names.${state.renaming}`)}</span>
             <span className="inline-flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
               <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-[color:var(--map-indigo-bright)]" />
               <span className="truncate">{t('suggested')}</span>
             </span>
           </Button>
-          <Button data-testid="build-name-1" variant="outline" className="w-full justify-start" onClick={(event) => isFirstPress(event) && act({ type: 'rename', option: 1 })}>
+          <Button data-testid="build-name-1" variant="outline" className="atlas-touch-floor w-full justify-start" onClick={(event) => isFirstPress(event) && act({ type: 'rename', option: 1 })}>
             {t(`altNames.${state.renaming}`)}
           </Button>
         </>
       );
     case 'commit':
       return (
-        <Button data-testid="build-commit-apply" variant="outline" className="w-full" onClick={() => act({ type: 'commit' })}>
+        <Button data-testid="build-commit-apply" variant="outline" className="atlas-touch-floor w-full" onClick={() => act({ type: 'commit' })}>
           {t('actions.commit')}
         </Button>
       );
     case 'inspect':
       return (
-        <Button data-testid="build-confirm" variant="outline" className="w-full" onClick={() => act({ type: 'confirm' })}>
+        <Button data-testid="build-confirm" variant="outline" className="atlas-touch-floor w-full" onClick={() => act({ type: 'confirm' })}>
           {t('actions.confirm')}
         </Button>
       );
@@ -407,7 +407,7 @@ function Actions({ state, handheld, act }: { state: BuildState; handheld: boolea
       return (
         <>
           {handheld ? null : (
-            <Link href="/topology" data-testid="build-try-browser" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
+            <Link href="/topology" data-testid="build-try-browser" className={cn(buttonVariants({ variant: 'outline' }), 'atlas-touch-floor w-full')}>
               {t('actions.tryBrowser')}
             </Link>
           )}
@@ -416,7 +416,7 @@ function Actions({ state, handheld, act }: { state: BuildState; handheld: boolea
             target="_blank"
             rel="noreferrer noopener"
             data-testid="build-github"
-            className={cn(buttonVariants({ variant: 'outline' }), 'w-full gap-2')}
+            className={cn(buttonVariants({ variant: 'outline' }), 'atlas-touch-floor w-full gap-2')}
           >
             <GithubMark />
             {tPage('githubCta')}

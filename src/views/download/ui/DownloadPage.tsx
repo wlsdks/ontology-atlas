@@ -63,8 +63,9 @@ const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
 
+/** On a touchscreen the chips grow to the 44px finger floor; they stack, so a wider hit box would overlap. */
 const HERO_CHIP =
-  'gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
+  'atlas-touch-floor gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
 
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
@@ -161,13 +162,13 @@ export function DownloadPage() {
                     <a
                       href={THIRD_PARTY_LICENSES_HREF}
                       data-testid="download-footer-third-party-licenses"
-                      className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' })}
+                      className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), 'touch-hit-expand')}
                     >
                       {tFooter('thirdPartyLicenses')}
                     </a>
                   </p>
                   <p className="font-mono">{tFooter('stack')}</p>
-                  <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="gap-1.5" />
+                  <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="touch-hit-expand gap-1.5" />
                 </div>
               </div>
             </footer>
