@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { useTranslations } from "next-intl";
 
 import { deriveSourceProgress, type LibrarySourceRow } from "@/entities/docs-vault";
-import { Link } from "@/i18n/navigation";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { WorkGlyph } from "@/shared/motion/work-glyph";
 import { Button } from "@/shared/ui";
-import { controlClass } from "@/shared/ui/control-class";
+import { GetAppLink } from "@/shared/ui/controls/get-app-link";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
+import { PROGRESS_COMPLETE_INK, PROGRESS_SEGMENTS as SEGMENTS } from "./progress-inks";
 import { SourceProgressChart } from "./SourceProgressChart";
 import { useBandMotion } from "./use-band-motion";
 
@@ -20,13 +20,6 @@ const counted = new Set<string>();
 const INTRO_WAIT_MS = 1200;
 /** Folders whose bar already carried the light at 100% this session. */
 const lit = new Set<string>();
-
-/** Segments in the bar's order, left to right: what has a page, what waits with one, what is not yet known. */
-const SEGMENTS = [
-  { states: ["compiled"], ink: "var(--color-indigo-accent)" },
-  { states: ["stale", "partial"], ink: "var(--color-status-warning)" },
-  { states: ["checking", "unreadable"], ink: "var(--color-indigo-a40)" },
-] as const;
 
 function subscribeToDay(onChange: () => void): () => void {
   const id = setInterval(onChange, 60_000);
@@ -70,8 +63,10 @@ export interface ContinueBlocked {
 
 /**
  * How many sources have a wiki page, since when, and the press that writes the next ones: one row
- * above the Sources home's graph, at most 112px tall. The percent, the bar and the chart count up on
- * a folder's first visit in a session; later changes move on from what is drawn.
+ * above the Sources home's graph, at most 112px tall. On a folder's first visit in a session the
+ * percent, the sentence's count, the bar and the chart count up together, so no frame shows one
+ * number beside another; until the count starts they are not drawn. Later changes move on from what
+ * is drawn.
  */
 export function SourceProgressBand({
   sources,
@@ -120,7 +115,9 @@ export function SourceProgressBand({
   const segmentRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const seamRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [lightOn, setLightOn] = useState(false);
-  const drawnText = useRef({ percent: "", today: "" });
+  const sentenceRef = useRef<HTMLParagraphElement | null>(null);
+  const drawnText = useRef({ percent: "", today: "", sentence: "" });
+  const [counting, setCounting] = useState(intro);
 
   const percentText = useCallback(
     (share: number) => {
@@ -129,6 +126,19 @@ export function SourceProgressBand({
       return t("progress.percent", { percent: complete ? drawn : Math.min(drawn, 99) });
     },
     [complete, t, underOnePercent],
+  );
+
+  // The sentence for a count of `shown` sources with a page; its kind follows the settled numbers.
+  const sentenceFor = useCallback(
+    (shown: number) =>
+      compiled === 0 && byState.checking === 0
+        ? t("progress.first")
+        : byState.checking > 0
+          ? t("stage.read.coveredChecking", { compiled: shown, total, checking: byState.checking })
+          : byState.unreadable > 0
+            ? t("stage.read.coveredUnreadable", { compiled: shown, total, unreadable: byState.unreadable })
+            : t("stage.read.coveredLine", { compiled: shown, total }),
+    [byState.checking, byState.unreadable, compiled, t, total],
   );
 
   const hold = !waited && byState.checking > 0;
@@ -152,6 +162,14 @@ export function SourceProgressBand({
       percentRef.current.textContent = nextPercent;
       drawnText.current.percent = nextPercent;
     }
+    if (counting) {
+      const nextSentence = settled ? sentenceFor(compiled) : sentenceFor(Math.min(compiled, Math.floor((drawn[0] ?? 0) * total + 1e-6)));
+      if (sentenceRef.current && drawnText.current.sentence !== nextSentence) {
+        sentenceRef.current.textContent = nextSentence;
+        drawnText.current.sentence = nextSentence;
+      }
+      if (settled) setCounting(false);
+    }
     const nextToday = t("progress.today", { count: Math.round(drawn[SEGMENTS.length] ?? 0) });
     if (todayRef.current && drawnText.current.today !== nextToday) {
       todayRef.current.textContent = nextToday;
@@ -163,14 +181,7 @@ export function SourceProgressBand({
     }
   });
 
-  const sentence =
-    compiled === 0 && byState.checking === 0
-      ? t("progress.first")
-      : byState.checking > 0
-        ? t("stage.read.coveredChecking", { compiled, total, checking: byState.checking })
-        : byState.unreadable > 0
-          ? t("stage.read.coveredUnreadable", { compiled, total, unreadable: byState.unreadable })
-          : t("stage.read.coveredLine", { compiled, total });
+  const sentence = sentenceFor(compiled);
   const finalPercent = underOnePercent ? t("progress.underOne") : t("progress.percent", { percent });
   const showChart = progress.series.length > 0 || progress.undated > 0;
   const running = batch.running.size > 0;
@@ -185,6 +196,10 @@ export function SourceProgressBand({
       className="flex flex-none items-center gap-x-6 gap-y-2 border-b border-[color:var(--color-border-soft)] px-5 py-2.5 max-md:flex-wrap sm:px-6 md:max-h-[112px] md:px-10"
     >
       <div className="flex min-w-0 flex-col gap-1 max-md:min-w-[10rem] max-md:flex-1 md:w-[clamp(13rem,26%,19rem)] md:flex-none">
+        <div
+          className="flex min-w-0 flex-col gap-1 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]"
+          style={started ? undefined : { opacity: 0 }}
+        >
         <p className="flex min-w-0 items-baseline gap-2">
           <span
             ref={percentRef}
@@ -205,9 +220,18 @@ export function SourceProgressBand({
             </span>
           ) : null}
         </p>
-        <p data-testid="library-progress-sentence" className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-secondary)]">
-          {sentence}
+        {/* While counting, the sentence is drawn with the percent; a new element takes over once it settles. */}
+        <p
+          key={counting ? "counting" : "settled"}
+          ref={counting ? sentenceRef : undefined}
+          aria-hidden={counting || undefined}
+          data-testid="library-progress-sentence"
+          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-secondary)]"
+        >
+          {counting ? <FirstText text={sentenceFor(0)} /> : sentence}
         </p>
+        {counting ? <span className="sr-only">{sentence}</span> : null}
+        </div>
         <span
           aria-hidden
           data-testid="library-progress-bar"
@@ -221,7 +245,7 @@ export function SourceProgressBand({
               }}
               className="motion-progress-segment absolute inset-0 origin-left"
               style={{
-                backgroundColor: i === 0 && complete ? "var(--color-status-success)" : segment.ink,
+                backgroundColor: i === 0 && complete ? PROGRESS_COMPLETE_INK : segment.ink,
                 transform: "scaleX(0)",
               }}
             />
@@ -249,19 +273,24 @@ export function SourceProgressBand({
       </div>
 
       {showChart ? (
-        <div className="min-w-[200px] flex-1 max-md:hidden">
+        <div className="min-w-[200px] flex-1 max-md:hidden md:max-w-[26rem]">
           <SourceProgressChart progress={progress} intro={intro} started={started} reduced={reduced} locale={locale} t={t} />
         </div>
-      ) : (
-        <div className="flex-1 max-md:hidden" />
-      )}
+      ) : null}
 
-      <div className="flex min-w-0 flex-col items-start gap-1 md:w-[clamp(14rem,24%,18rem)] md:flex-none">
+      <div className="flex min-w-0 flex-col items-start gap-1 md:min-w-[14rem] md:flex-1">
         {complete ? (
           <p data-testid="library-progress-done" className="flex items-center gap-1.5 text-label leading-body text-[color:var(--color-success-text-a94)]">
             <WorkGlyph phase="done" size={ICON_SIZE.sm} />
             {t("progress.allDone")}
           </p>
+        ) : blocked && !inApp ? (
+          <>
+            <p data-testid="library-progress-blocked" className="text-label leading-body text-[color:var(--color-text-secondary)]">
+              {t("progress.webLine")}
+            </p>
+            <GetAppLink data-testid="library-progress-get-app">{t("wiki.compileWebGetApp")}</GetAppLink>
+          </>
         ) : batch.next.length > 0 || running ? (
           <>
             <Button
@@ -277,16 +306,7 @@ export function SourceProgressBand({
             </Button>
             {blocked ? (
               <p id={blockedId} data-testid="library-progress-blocked" className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
-                {inApp ? blocked.reason : t("wiki.compileWebLimit")}{" "}
-                {inApp ? null : (
-                  <Link
-                    href="/download"
-                    data-testid="library-progress-get-app"
-                    className={controlClass({ shape: "link", size: "xs", tone: "accent", hoverInk: "strong", className: "touch-hit-expand" })}
-                  >
-                    {t("wiki.compileWebGetApp")}
-                  </Link>
-                )}
+                {blocked.reason}
               </p>
             ) : batch.returned > 0 && !running ? (
               <p data-testid="library-progress-returned" className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
@@ -297,7 +317,7 @@ export function SourceProgressBand({
                 {t("progress.batchRest", { count: batch.rest })}
               </p>
             ) : null}
-            {blocked?.door && inApp ? blocked.door : null}
+            {blocked?.door ?? null}
           </>
         ) : null}
       </div>

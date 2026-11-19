@@ -967,9 +967,11 @@
     "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
     "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
     "undated": "{count, number} 份没有日期",
+    "axisToday": "今天",
     "continue": "{count, plural, =1 {为最后一份来源生成 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
     "batchRest": "之后还有 {count, number} 份等待。",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
+    "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
     "allDone": "每份来源都有 Wiki 页面"
   }
 }

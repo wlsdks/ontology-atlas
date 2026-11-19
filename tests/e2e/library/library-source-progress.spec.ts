@@ -115,7 +115,7 @@ test.describe("source progress on the Sources home", () => {
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
   });
 
-  test("the band counts what has a page and, on the web, says why Continue cannot run", async ({ page }) => {
+  test("the band counts what has a page and, on the web, offers the app instead of Continue", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openSources(page);
     const band = page.getByTestId("library-progress");
@@ -128,10 +128,17 @@ test.describe("source progress on the Sources home", () => {
     // The chart's draw-in, the landing ring and the 100% light are never applied under reduced motion.
     await expect(page.locator(".motion-progress-reveal, .motion-progress-ripple, .motion-progress-light")).toHaveCount(0);
 
-    const press = band.getByTestId("library-progress-continue");
-    await expect(press).toHaveText("Write wiki pages for the next 10");
-    await expect(press).toBeDisabled();
-    await expect(band.getByTestId("library-progress-blocked")).toContainText("only the app can start");
+    // The chart names its two ends.
+    await expect(band.getByTestId("library-progress-first-date")).not.toBeEmpty();
+    await expect(band.getByTestId("library-progress-caption")).toContainText("Today");
+    // Each state in the line wears its colour in the bar.
+    const swatch = (state: string) => page.getByTestId(`library-source-states-swatch-${state}`).evaluate((node) => getComputedStyle(node).backgroundColor);
+    const segment = (index: number) => band.getByTestId("library-progress-bar").locator("span.motion-progress-segment").nth(index).evaluate((node) => getComputedStyle(node).backgroundColor);
+    expect(await swatch("compiled")).toBe(await segment(0));
+
+    // On the web nothing here can write: one line says so, and the one action is the app.
+    await expect(band.getByTestId("library-progress-continue")).toHaveCount(0);
+    await expect(band.getByTestId("library-progress-blocked")).toHaveText("Only the app writes wiki pages. Reading works here.");
     await expect(band.getByTestId("library-progress-get-app")).toHaveAttribute("href", /\/download\/?$/);
     // The press replaced the home strip's clause.
     await expect(page.getByTestId("library-strip-compile")).toHaveCount(0);

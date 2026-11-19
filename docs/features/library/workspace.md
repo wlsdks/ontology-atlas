@@ -155,13 +155,16 @@ in Wiki it is the question desk. When the folder has a source, the **progress ba
 tall: the percent of sources that have a wiki page, rounded down, with today's additions; the
 sentence it rests on; a 6px state bar (has a page in the accent, needs review and read in part
 in amber, checking and can't read neutral, no page the track); a cumulative step chart by the
-`compiled_at` each page records, whose Left and Right keys read each point; and the press that
-writes the next 10 waiting sources (3 on the local model), with how many wait after them or how
-many came back without a page. On the web the press is disabled with the reason and Get the app.
-The numbers count up on a folder's first visit in a session and later move on from what is
-drawn; at 100% the bar turns green and one light passes along it. Below `md` the chart steps
-aside. The index's state counts are presses that show only their rows, combined with the
-search; `Show all` undoes one. Under the band sits one `text-label` row — the canvas's own
+`compiled_at` each page records, at most 26rem wide and captioned with its first date and
+today, whose Left and Right keys read each point; and the press that writes the next 10 waiting
+sources (3 on the local model), with how many wait after them or how many came back without a
+page. On the web, where nothing can write, one line says only the app writes pages and a Get the
+app button stands in for the press. The percent and the sentence's count rise together on a
+folder's first visit in a session, drawn only once the count starts, and later move on from what
+is drawn; at 100% the bar turns green and one light passes along it. Below `md` the chart steps
+aside. The index's state counts carry their bar colour and are presses that show only their
+rows, combined with the search; `Show all` undoes one. A door that names its own sources (a
+source's Write wiki page, a stale page's refresh) sends exactly those. Under the band sits one `text-label` row — the canvas's own
 counts caption, then the step facts as pressable clauses (`N sources changed` lights that citation and its two ends
 without moving a mark; `N off-template` presses into the check report, whose one door with
 live state — a count, *running*, *unseen* — is the index's own row) — and then the doors

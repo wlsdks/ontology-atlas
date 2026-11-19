@@ -8,7 +8,7 @@ import { cn } from "@/shared/lib/cn";
 
 import { useBandMotion } from "./use-band-motion";
 
-const CHART_HEIGHT = 72;
+const CHART_HEIGHT = 52;
 /** Room above the ceiling and right of today's dot, so neither is cut by the box. */
 const INSET_TOP = 4;
 const INSET_RIGHT = 5;
@@ -138,10 +138,11 @@ export function SourceProgressChart({
     setCursor(Math.min(series.length - 1, Math.max(0, index)));
   };
 
-  const caption = [
-    pointText ?? t("progress.dateBasis"),
-    !pointText && progress.undated > 0 ? t("progress.undated", { count: progress.undated }) : null,
-  ].filter(Boolean).join(" · ");
+  // At rest the caption names the chart's two ends; a point under the cursor or the keys replaces it.
+  const firstDate = series[0] ? pointDate(series[0], progress.unit, locale) : null;
+  const basis = [t("progress.dateBasis"), progress.undated > 0 ? t("progress.undated", { count: progress.undated }) : null]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
@@ -159,7 +160,7 @@ export function SourceProgressChart({
         onPointerLeave={() => setCursor(null)}
         onBlur={() => setCursor(null)}
         className={cn(
-          "relative h-[72px] w-full rounded-micro focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
+          "relative h-[52px] w-full rounded-micro focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
           reveal && "motion-progress-reveal",
         )}
         style={revealed && !started ? { animationPlayState: "paused" } : undefined}
@@ -202,9 +203,18 @@ export function SourceProgressChart({
         id={pointId}
         aria-live="polite"
         data-testid="library-progress-caption"
-        className="min-w-0 truncate text-caption leading-caption tabular-nums text-[color:var(--color-text-tertiary)]"
+        title={basis}
+        className="flex min-w-0 justify-between gap-3 text-caption leading-caption tabular-nums text-[color:var(--color-text-tertiary)]"
       >
-        {caption}
+        {pointText ? (
+          <span className="min-w-0 truncate">{pointText}</span>
+        ) : (
+          <>
+            <span data-testid="library-progress-first-date" className="min-w-0 truncate">{firstDate}</span>
+            <span className="flex-none">{t("progress.axisToday")}</span>
+            <span className="sr-only">{basis}</span>
+          </>
+        )}
       </p>
     </div>
   );

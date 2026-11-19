@@ -13,6 +13,7 @@ import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault"
 import { humanPageSlug } from "@/features/library";
 import { writerLabel } from "../../../lib/wiki/writer-label";
 import { cn } from "@/shared/lib/cn";
+import { progressInk } from "../progress/progress-inks";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
@@ -421,6 +422,11 @@ export function LibrarySection({
     for (const row of visibleSources) counts.set(row.state, (counts.get(row.state) ?? 0) + 1);
     return SOURCE_STATE_ORDER.filter((state) => counts.has(state)).map((state) => ({ state, count: counts.get(state)! }));
   }, [visibleSources]);
+  // At 100% the bar's first segment turns green; the "has a page" swatch follows it.
+  const allCompiled = useMemo(
+    () => model.sources.length > 0 && model.sources.every((row) => row.state === "compiled"),
+    [model.sources],
+  );
   const foldedState = (() => {
     if (visibleSources.length < SOURCE_STATE_FOLDS_FROM) return null;
     const candidates = stateCounts.filter(({ state }) => state !== "compiled" && state !== "checking");
@@ -664,6 +670,18 @@ export function LibrarySection({
                 {stateCounts.map(({ state, count }) => {
                   const label = t(`sources.state.${state}.label`);
                   const pressed = stateFilter === state;
+                  // The swatch is the state's colour in the progress bar above, so the two read as one key.
+                  const swatch = (
+                    <span
+                      aria-hidden
+                      data-testid={`library-source-states-swatch-${state}`}
+                      className={cn(
+                        "inline-block size-1.5 flex-none rounded-full",
+                        state === "not-compiled" && "border border-[color:var(--color-border-strong)]",
+                      )}
+                      style={{ backgroundColor: progressInk(state, allCompiled) }}
+                    />
+                  );
                   return (
                     <button
                       key={state}
@@ -684,10 +702,10 @@ export function LibrarySection({
                     >
                       {state === foldedState ? (
                         <StateBadge tone={state === "stale" || state === "partial" ? "warning" : "neutral"}>
-                          {label} · {count.toLocaleString()}
+                          <span className="inline-flex items-center gap-1">{swatch}{label} · {count.toLocaleString()}</span>
                         </StateBadge>
                       ) : (
-                        <>{label} {count.toLocaleString()}</>
+                        <span className="inline-flex items-center gap-1">{swatch}{label} {count.toLocaleString()}</span>
                       )}
                     </button>
                   );
