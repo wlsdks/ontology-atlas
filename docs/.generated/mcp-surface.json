@@ -546,7 +546,6 @@
         "name": "validate_wiki",
         "mode": "read",
         "arguments": [
-          "afterBlocking",
           "afterPath",
           "limit",
           "offset",
