@@ -86,6 +86,16 @@ describe("CreateNodeForm", () => {
     expect(parent).toHaveValue("결제");
   });
 
+  it("keeps the field focused while an option is pressed, so WebKit's blur cannot close the list before the click", () => {
+    renderCard();
+    const parent = screen.getByTestId("create-node-parent");
+    fireEvent.change(parent, { target: { value: "결" } });
+    const option = screen.getAllByTestId("create-node-parent-option")[0];
+    expect(fireEvent.mouseDown(option)).toBe(false);
+    fireEvent.click(option);
+    expect(parent).toHaveValue("결제");
+  });
+
   it("names an existing concept of the same kind and opens it instead", () => {
     const props = renderCard();
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "환불 처리" } });

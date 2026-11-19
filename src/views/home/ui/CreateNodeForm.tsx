@@ -244,7 +244,8 @@ export function CreateNodeForm({
               data-testid="create-node-parent"
             />
             {parentQuery !== null ? (
-              <ul role="listbox" aria-label={t("parentLabel")} data-testid="create-node-parent-matches" className="flex flex-col gap-px">
+              // WebKit does not focus a pressed button, so the field's blur would close this list before the click lands.
+              <ul role="listbox" aria-label={t("parentLabel")} data-testid="create-node-parent-matches" className="flex flex-col gap-px" onMouseDown={(event) => event.preventDefault()}>
                 <li role="presentation">
                   <RowButton role="option" aria-selected={parent === ""} size="sm" onClick={() => chooseParent("")}>
                     <span className="text-[color:var(--map-panel-text-tertiary)]">{t("domainNone")}</span>
