@@ -1,14 +1,15 @@
 import type { RefObject, Dispatch, SetStateAction } from "react";
 import { useTranslations } from "next-intl";
+import { selectCompileBatch, type LibraryUiModel, type RetainedAnswerHead } from "@/features/library";
 import { controlClass } from "@/shared/ui/control-class";
 import { libraryWaitingLine } from "../../lib/compile/stage-steps";
+import type { CompileBatchState } from "../../lib/compile/use-compile-batch";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { AgentDoor } from "../parts/agent/AgentDoor";
 import { CompileBrainSelect } from "../parts/compile/CompileBrainSelect";
 import { LibraryStage } from "../parts/compile/LibraryStage";
 import { LibraryQuestions } from "../parts/questions/LibraryQuestions";
 import { LibraryHomePopover } from "../parts/LibraryHomePopover";
-import type { LibraryUiModel, RetainedAnswerHead } from "@/features/library";
 import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
 import type { useLibrarySources } from "./use-library-sources";
 import type { useLibraryHome } from "./use-library-home";
@@ -20,7 +21,7 @@ export function LibraryHomePopovers({
   t, nativeVaultRootPath, homeSurface, setHomeSurface, guideDoorRef, questionsDoorRef,
   compileClauseRef, overflowDoorRef, choose, busy, model, retainedAnswers, knownOriginalPaths,
   retainedAnswerSlugs, agent, closeHomeSurface, handleCompile, sources, home, turns, graphCards,
-  homeStrip,
+  homeStrip, compileBatch,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   nativeVaultRootPath: string | null;
@@ -44,12 +45,15 @@ export function LibraryHomePopovers({
   turns: ReturnType<typeof useLibraryTurns>;
   graphCards: ReturnType<typeof useLibraryGraphCards>;
   homeStrip: ReturnType<typeof libraryHomeStrip>;
+  /** What the next Continue press names (`useCompileBatch`); derived from the list when absent. */
+  compileBatch?: Pick<CompileBatchState, "targets" | "rest" | "returned">;
 }) {
   const { sourceImportFeedback, handleAddFiles, handleFindDocuments } = sources;
   const { closeGuide } = home;
   const { handleLint, compileBlocked, compileTransfer, agentOnlyReason } = turns;
   const { agentDoor } = graphCards;
   const { compileTarget, homeClauses, homeDoors } = homeStrip;
+  const batch = compileBatchView(compileBatch, model);
   return (
     <>
       <LibraryHomePopover
@@ -130,11 +134,45 @@ export function LibraryHomePopovers({
           >
             {libraryWaitingLine(model, t) ?? t("stage.blockedNothingWaiting")}
           </p>
+          {batch.paths.length > 0 ? (
+            <ol
+              data-testid="library-compile-batch"
+              aria-labelledby="library-compile-popover-run"
+              className="flex min-w-0 flex-col gap-0.5"
+            >
+              {batch.paths.map((path) => (
+                <li
+                  key={path}
+                  title={path}
+                  className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-secondary)]"
+                >
+                  {path.replace(/^sources\//, "")}
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          {batch.rest > 0 ? (
+            <p
+              data-testid="library-compile-batch-rest"
+              className="text-caption leading-body text-[color:var(--color-text-tertiary)]"
+            >
+              {t("progress.batchRest", { count: batch.rest })}
+            </p>
+          ) : null}
+          {batch.returned > 0 ? (
+            <p
+              data-testid="library-compile-batch-returned"
+              className="text-caption leading-body text-[color:var(--color-text-tertiary)]"
+            >
+              {t("progress.batchReturned", { count: batch.returned })}
+            </p>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => { setHomeSurface(null); handleCompile(); }}
               disabled={busy || compileBlocked !== null}
+              id="library-compile-popover-run"
               data-testid="library-compile-popover-run"
               aria-describedby={compileBlocked ? "library-compile-popover-blocked" : undefined}
               className={controlClass({
@@ -145,7 +183,10 @@ export function LibraryHomePopovers({
                 className: "gap-1.5",
               })}
             >
-              {t("wiki.compile")}
+              {/* One named source with more behind it is not "the last source". */}
+              {batch.paths.length > 1 || (batch.paths.length === 1 && batch.rest === 0)
+                ? t("progress.continue", { count: batch.paths.length })
+                : t("wiki.compile")}
             </button>
             {agent.brainChoosable ? (
               <CompileBrainSelect
@@ -212,4 +253,20 @@ export function LibraryHomePopovers({
       </LibraryHomePopover>
     </>
   );
+}
+
+/**
+ * The batch the press names: the session's batch, which on the local route holds only files that
+ * runner can open and is the list its brief and system prompt receive.
+ */
+function compileBatchView(
+  given: Pick<CompileBatchState, "targets" | "rest" | "returned"> | undefined,
+  model: LibraryUiModel,
+): { paths: readonly string[]; rest: number; returned: number } {
+  const batch = given ?? selectCompileBatch(model.sources);
+  return {
+    paths: batch.targets.map((row) => row.path),
+    rest: batch.rest,
+    returned: "returned" in batch ? batch.returned : 0,
+  };
 }

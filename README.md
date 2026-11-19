@@ -54,19 +54,19 @@ macOS (Apple Silicon) is signed and notarized and carries the MCP server inside 
 <table>
 <tr>
 <td width="50%"><img src="docs/assets/readme/neural.png" alt="Map, Neural view: the ontology drawn as a volume of lit clusters with one capability selected, and a panel naming what it depends on and what uses it" /><br /><b>Map · Neural</b> — the same concepts as a volume you can turn; select one to see what it depends on and what uses it.</td>
-<td width="50%"><img src="public/gateway/projects.en.png" alt="Projects: one project's description, its domains as bars sized by the concepts they hold, and the capabilities inside the selected domain" /><br /><b>Projects</b> — what a project is for, how it divides into domains, and what each domain holds.</td>
+<td width="50%"><img src="public/gateway/projects.en.webp" alt="Projects: one project's description, its domains as bars sized by the concepts they hold, and the capabilities inside the selected domain" /><br /><b>Projects</b> — what a project is for, how it divides into domains, and what each domain holds.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/library.en.png" alt="Library: wiki pages on the left with whether each still matches its source, a search box in the middle, and the sources to read first" /><br /><b>Library</b> — documents in, cited wiki pages out; find a passage, then check it in the source.</td>
-<td width="50%"><img src="public/gateway/planning.en.png" alt="Planning: Markdown files listed on the left, one document open on the right" /><br /><b>Planning</b> — write plans as Markdown in the open folder's <code>planning/</code>, in the app or the browser; the macOS app can also read another folder in place.</td>
+<td width="50%"><img src="public/gateway/library.en.webp" alt="Library: wiki pages on the left with whether each still matches its source, a search box in the middle, and the sources to read first" /><br /><b>Library</b> — documents in, cited wiki pages out; find a passage, then check it in the source.</td>
+<td width="50%"><img src="public/gateway/planning.en.webp" alt="Planning: Markdown files listed on the left, one document open on the right" /><br /><b>Planning</b> — write plans as Markdown in the open folder's <code>planning/</code>, in the app or the browser; the macOS app can also read another folder in place.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="Changes: one day of merged work with its count, the hours it was merged, and the changes grouped by scope" /><br /><b>Changes</b> — what was merged in a period, counted and grouped, with the pull requests, commits and files behind it.</td>
-<td width="50%"><img src="public/gateway/git.en.png" alt="Git: the commit history on the left, and the concept one commit changed with its relations on the right" /><br /><b>Git</b> — each commit by the concepts it changed; an edited document shows up here before you commit it.</td>
+<td width="50%"><img src="public/gateway/changes.en.webp" alt="Changes: one day of merged work with its count, the hours it was merged, and the changes grouped by scope" /><br /><b>Changes</b> — what was merged in a period, counted and grouped, with the pull requests, commits and files behind it.</td>
+<td width="50%"><img src="public/gateway/git.en.webp" alt="Git: the commit history on the left, and the concept one commit changed with its relations on the right" /><br /><b>Git</b> — each commit by the concepts it changed; an edited document shows up here before you commit it.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness: the files an agent reads, the rules that stop it before it acts and the checks that run afterwards, with one instruction file open" /><br /><b>Harness</b> — what an agent reads in your repository, what stops it before it acts, and what checks its work.</td>
-<td width="50%"><img src="public/gateway/automations.en.png" alt="Automations: one scheduled document check with its cadence and last result, and the history of its runs" /><br /><b>Automations</b> — scheduled checks, and what each run found.</td>
+<td width="50%"><img src="public/gateway/harness.en.webp" alt="Harness: the files an agent reads, the rules that stop it before it acts and the checks that run afterwards, with one instruction file open" /><br /><b>Harness</b> — what an agent reads in your repository, what stops it before it acts, and what checks its work.</td>
+<td width="50%"><img src="public/gateway/automations.en.webp" alt="Automations: one scheduled document check with its cadence and last result, and the history of its runs" /><br /><b>Automations</b> — scheduled checks, and what each run found.</td>
 </tr>
 </table>
 

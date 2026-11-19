@@ -31,7 +31,7 @@ import {
 } from "@/widgets/ontology-map";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
-import { useBodyLabelFont } from "../model/map-canvas/use-body-label-font";
+import { mapLabelText, useBodyLabelFont } from "../model/map-canvas/use-body-label-font";
 import { useFlatRingMemory } from "../model/map-canvas/use-flat-ring-memory";
 import { readHexRelief } from "@/shared/lib/preferences/appearance-preferences";
 import { readHexPlacement } from "../model/map-canvas/hex-board-placement-store";
@@ -158,7 +158,8 @@ export function TopologyMapRenderer({
   const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
   const dialEvidence = mapEvidence.availability === "reading" ? null : mapEvidence.states;
   const neuralLabels = useNeuralLabels(mapEvidence.availability === "measured");
-  const labelFont = useBodyLabelFont();
+  const labelText = useMemo(() => mapLabelText(ontologyMapGraph.nodes, dialLabels), [ontologyMapGraph.nodes, dialLabels]);
+  const labelFont = useBodyLabelFont(labelText);
   const dialLabelsInFont = useMemo(() => (labelFont.adopted && dialLabels ? { ...dialLabels } : dialLabels), [dialLabels, labelFont.adopted]);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const [flatLineKinds, setFlatLineKinds] = useState<number | null>(null);

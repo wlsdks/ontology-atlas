@@ -104,6 +104,47 @@
     animation-name: motionWorkHopEdge;
   }
 
+  /* Source progress band. The bar's segments are moved by script (`useBandMotion`); only the
+     change to success green at 100% is a transition. */
+  .motion-progress-segment {
+    transition: background-color var(--motion-settle) var(--motion-ease);
+  }
+
+  /* The chart's line draws left to right once, on a folder's first visit in a session. */
+  @keyframes motionProgressReveal {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  .motion-progress-reveal {
+    animation: motionProgressReveal var(--motion-choreography) var(--motion-ease) both;
+  }
+
+  /* One light along the bar when every source has a page; it runs once and leaves past the end. */
+  .motion-progress-light {
+    animation: motionWorkSweep var(--motion-choreography) var(--motion-ease) 1 both;
+  }
+
+  /* A ring leaves today's dot for each page that lands. Opacity and scale only. */
+  @keyframes motionProgressRipple {
+    from {
+      opacity: 0.9;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 0;
+      transform: scale(2.6);
+    }
+  }
+
+  .motion-progress-ripple {
+    animation: motionProgressRipple var(--motion-expressive) var(--motion-ease) both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .motion-work-spin,
     .motion-work-sweep {
@@ -126,6 +167,17 @@
     .motion-work-fill {
       transition-property: background-color, opacity !important;
       transition-duration: var(--motion-fast) !important;
+    }
+
+    .motion-progress-reveal {
+      animation: none !important;
+      clip-path: none !important;
+    }
+
+    .motion-progress-light,
+    .motion-progress-ripple {
+      animation: none !important;
+      display: none !important;
     }
   }
 }

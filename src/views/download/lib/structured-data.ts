@@ -34,7 +34,7 @@ export function downloadStructuredData(locale: string, description: string, nami
     inLanguage: locale,
     image: `${SITE_URL}/og/${locale}.png`,
     // What an answer engine can cite beside the claim: the app's own map, and the guide.
-    screenshot: `${SITE_URL}/gateway/projects.${locale === 'ko' ? 'ko' : 'en'}.png`,
+    screenshot: `${SITE_URL}/gateway/projects.${locale === 'ko' ? 'ko' : 'en'}.webp`,
     softwareHelp: { '@type': 'CreativeWork', url: `${SITE_URL}/${locale}/guide/` },
     sameAs: [GITHUB_REPO_URL],
     // The root layout declares the Organization once; this joins that node instead of restating it.

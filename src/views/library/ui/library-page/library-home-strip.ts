@@ -27,18 +27,7 @@ export function libraryHomeStrip({
   const compileTarget = selectCompileTargets(model.sources)[0] ?? null;
   const offTemplateCount = libraryOffTemplateCount(model.verdicts);
   const homeClauses: LibraryHomeStripClause[] = [];
-  if (compileTarget) {
-    homeClauses.push({
-      kind: "compile",
-      text: t("home.compileNext", { source: compileTarget.path.replace(/^sources\//, "") }),
-      onPress: () => {
-        setStaleLit(false);
-        setHomeSurface((current) => (current === "compile" ? null : "compile"));
-      },
-      testId: "library-strip-compile",
-      open: homeSurface === "compile",
-    });
-  }
+  // Writing the next pages is the progress band's press; the strip keeps what the band does not say.
   if (model.staleCount > 0) {
     homeClauses.push({
       kind: "stale",

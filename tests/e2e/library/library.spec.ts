@@ -227,10 +227,10 @@ test.describe("the Library destination", () => {
 
     /*
      * The count keeps two states apart: one source nobody wrote up and one whose page is behind its
-     * bytes. It is read under the strip's Compile press.
+     * bytes. It is read under the guide's Compile step.
      */
-    await page.getByTestId("library-strip-compile").click();
-    const footer = page.getByTestId("library-needs-compile");
+    await page.getByTestId("library-guide-open").click();
+    const footer = page.getByTestId("library-guide-popover");
     await expect(footer).toContainText("1 without a wiki page yet");
     await expect(footer).toContainText("1 source version needs review");
   });
@@ -249,8 +249,8 @@ test.describe("the Library destination", () => {
     await expect(row).not.toContainText("needs review");
 
     // The summary counts it as work Compile can still do, never folded into "not written up yet".
-    await page.getByTestId("library-strip-compile").click();
-    const footer = page.getByTestId("library-needs-compile");
+    await page.getByTestId("library-guide-open").click();
+    const footer = page.getByTestId("library-guide-popover");
     await expect(footer).toContainText("1 read only in part");
     await expect(footer).not.toContainText("without a wiki page yet");
   });
@@ -596,9 +596,9 @@ test.describe("the Library pane", () => {
       expect(hit, `${id} is occluded`).toBe(true);
     }
 
-    // One strip, and the step facts are on it — not in a second header row.
-    const strip = page.getByTestId("library-home-strip");
-    await expect(strip).toContainText("Write wiki page:");
+    // The next step is the progress band's door (on the web, Get the app), not a strip clause or a second header row.
+    await expect(page.getByTestId("library-progress-get-app")).toBeVisible();
+    await expect(page.getByTestId("library-home-strip")).not.toContainText("Write wiki page:");
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("library-needs-compile")).toHaveCount(0);
 

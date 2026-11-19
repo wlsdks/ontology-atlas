@@ -56,5 +56,5 @@ export function demoSources(clip: DemoClip, locale: string): { src: string; type
 }
 
 export function demoPoster(clip: DemoClip, locale: string): string {
-  return `/demo/${clip.basename}.${localeTag(locale)}-poster.png`;
+  return `/demo/${clip.basename}.${localeTag(locale)}-poster.webp`;
 }

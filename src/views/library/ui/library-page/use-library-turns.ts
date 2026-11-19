@@ -22,7 +22,6 @@ import {
   judgePageWrite,
   wikiNodeIndexOfDocs,
   parseLintCandidates,
-  selectCompileTargets,
   dropCandidatesWithNodes,
   wikiPagePathOf,
   planQuestionDeskReportFile,
@@ -428,7 +427,8 @@ export function useLibraryTurns({
             .map((doc) => [doc.slug, doc.mtime ?? 0] as const),
         );
       const before = stamp(latestDocsRef.current);
-      const sources = selectCompileTargets(model.sources).map((row) => row.path);
+      // The log names the sources this turn was sent, not every source still waiting.
+      const sources = opening?.sources ? [...opening.sources] : [];
       const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
       setTurnRunning(true);
       if (kind === "compile") setCompileRunning(true);
@@ -507,7 +507,7 @@ export function useLibraryTurns({
         }
       };
     },
-    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, latestSelectedRef, model.sources, onImportCompleted, receiveAnswerRefresh, setCompileRunning, setLibraryWorkActivity, setLintRunning, setReportUnseen, setTurnRunning, skipReaderFocusRef, workVaultScope],
+    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, latestSelectedRef, onImportCompleted, receiveAnswerRefresh, setCompileRunning, setLibraryWorkActivity, setLintRunning, setReportUnseen, setTurnRunning, skipReaderFocusRef, workVaultScope],
   );
 
   const hasOntology = useMemo(

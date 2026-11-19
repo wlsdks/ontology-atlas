@@ -54,19 +54,19 @@ macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서
 <table>
 <tr>
 <td width="50%"><img src="docs/assets/readme/neural.png" alt="지도의 뉴런 보기: 온톨로지를 입체로 그린 화면에서 역량 하나를 고르면, 그 역량이 기대는 것과 그 역량을 쓰는 것이 패널에 나와요" /><br /><b>지도 · 뉴런</b> — 같은 개념을 돌려 볼 수 있는 입체로 그려요. 하나를 고르면 무엇에 기대고 무엇이 그것을 쓰는지 보여요.</td>
-<td width="50%"><img src="public/gateway/projects.ko.png" alt="프로젝트: 프로젝트 설명, 담긴 개념 수만큼 긴 도메인 막대, 고른 도메인 안의 역량 목록" /><br /><b>프로젝트</b> — 프로젝트가 무엇을 위한 것인지, 어떤 도메인으로 나뉘는지, 도메인마다 무엇이 들어 있는지.</td>
+<td width="50%"><img src="public/gateway/projects.ko.webp" alt="프로젝트: 프로젝트 설명, 담긴 개념 수만큼 긴 도메인 막대, 고른 도메인 안의 역량 목록" /><br /><b>프로젝트</b> — 프로젝트가 무엇을 위한 것인지, 어떤 도메인으로 나뉘는지, 도메인마다 무엇이 들어 있는지.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/library.ko.png" alt="자료실: 왼쪽에 위키 문서와 원문 일치 여부, 가운데에 찾기 입력란, 그 아래 먼저 읽을 원문" /><br /><b>자료실</b> — 문서가 들어가면 출처가 달린 위키 문서가 나와요. 구절을 찾고 원문에서 확인해요.</td>
-<td width="50%"><img src="public/gateway/planning.ko.png" alt="기획: 왼쪽에 마크다운 파일 목록, 오른쪽에 열어 둔 문서" /><br /><b>기획</b> — 열어 둔 폴더 안 <code>planning/</code>에 계획을 마크다운으로 써요. 앱과 브라우저 모두에서 되고, macOS 앱에서는 다른 폴더를 그대로 읽을 수도 있어요.</td>
+<td width="50%"><img src="public/gateway/library.ko.webp" alt="자료실: 왼쪽에 위키 문서와 원문 일치 여부, 가운데에 찾기 입력란, 그 아래 먼저 읽을 원문" /><br /><b>자료실</b> — 문서가 들어가면 출처가 달린 위키 문서가 나와요. 구절을 찾고 원문에서 확인해요.</td>
+<td width="50%"><img src="public/gateway/planning.ko.webp" alt="기획: 왼쪽에 마크다운 파일 목록, 오른쪽에 열어 둔 문서" /><br /><b>기획</b> — 열어 둔 폴더 안 <code>planning/</code>에 계획을 마크다운으로 써요. 앱과 브라우저 모두에서 되고, macOS 앱에서는 다른 폴더를 그대로 읽을 수도 있어요.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/changes.ko.png" alt="변경: 하루 동안 머지된 변경 수, 머지된 시간대, 스코프별로 묶은 변경" /><br /><b>변경</b> — 기간 동안 무엇이 머지됐는지 세고 묶어서 보여 주고, 그 뒤의 풀 리퀘스트·커밋·파일로 이어져요.</td>
-<td width="50%"><img src="public/gateway/git.ko.png" alt="Git: 왼쪽에 커밋 기록, 오른쪽에 한 커밋이 바꾼 개념과 그 관계" /><br /><b>Git</b> — 커밋마다 어떤 개념이 바뀌었는지 보여요. 고친 문서는 커밋하기 전에 여기에 나타나요.</td>
+<td width="50%"><img src="public/gateway/changes.ko.webp" alt="변경: 하루 동안 머지된 변경 수, 머지된 시간대, 스코프별로 묶은 변경" /><br /><b>변경</b> — 기간 동안 무엇이 머지됐는지 세고 묶어서 보여 주고, 그 뒤의 풀 리퀘스트·커밋·파일로 이어져요.</td>
+<td width="50%"><img src="public/gateway/git.ko.webp" alt="Git: 왼쪽에 커밋 기록, 오른쪽에 한 커밋이 바꾼 개념과 그 관계" /><br /><b>Git</b> — 커밋마다 어떤 개념이 바뀌었는지 보여요. 고친 문서는 커밋하기 전에 여기에 나타나요.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.ko.png" alt="하네스: 에이전트가 읽는 파일, 실행 전에 막는 규칙, 끝난 뒤 검사하는 것, 그리고 열어 둔 지침 파일 하나" /><br /><b>하네스</b> — 에이전트가 이 저장소에서 읽는 것, 실행 전에 막히는 것, 끝나고 검사받는 것.</td>
-<td width="50%"><img src="public/gateway/automations.ko.png" alt="자동화: 예약한 문서 점검 하나의 주기와 마지막 결과, 그리고 실행 기록" /><br /><b>자동화</b> — 예약 점검과, 실행마다 무엇을 찾았는지.</td>
+<td width="50%"><img src="public/gateway/harness.ko.webp" alt="하네스: 에이전트가 읽는 파일, 실행 전에 막는 규칙, 끝난 뒤 검사하는 것, 그리고 열어 둔 지침 파일 하나" /><br /><b>하네스</b> — 에이전트가 이 저장소에서 읽는 것, 실행 전에 막히는 것, 끝나고 검사받는 것.</td>
+<td width="50%"><img src="public/gateway/automations.ko.webp" alt="자동화: 예약한 문서 점검 하나의 주기와 마지막 결과, 그리고 실행 기록" /><br /><b>자동화</b> — 예약 점검과, 실행마다 무엇을 찾았는지.</td>
 </tr>
 </table>
 

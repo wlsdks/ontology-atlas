@@ -338,37 +338,42 @@ describe("label type", () => {
     expect(tabularWidth("→1", "f", measure)).toBe(13);
   });
 
-  it("adopts the page's family only once every ladder weight has loaded, and keeps the system stack before", async () => {
+  it("adopts the page's family once the faces of its text have loaded, and keeps the system stack before", async () => {
     vi.resetModules();
-    const loaded = new Set<string>();
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));
+    const face = (unicodeRange: string) => {
+      const f = { family: "pretendard", unicodeRange, status: "unloaded" as FontFaceLoadStatus, load: async () => {
+        await gate;
+        f.status = "loaded";
+        return f;
+      } };
+      return f;
+    };
+    const latin = face("U+0-7F");
+    const hangul = face("U+AC00-D7A3");
     vi.stubGlobal("getComputedStyle", () => ({ getPropertyValue: (name: string) => (name === "--font-sans" ? " pretendard, sans-serif " : "") }));
     Object.defineProperty(document, "fonts", {
       configurable: true,
-      value: {
-        status: "loaded",
-        load: async (face: string) => {
-          await gate;
-          loaded.add(face);
-          return [];
-        },
-        check: (face: string) => loaded.has(face),
-      },
+      value: { status: "loaded", forEach: (each: (f: unknown) => void) => [latin, hangul].forEach(each), addEventListener: () => {} },
     });
     const labels = await import("./labels");
+    const adopted = labels.adoptBodyLabelFont("Atlas");
     expect(labels.labelFontFamily()).toMatch(/apple-system/);
     expect(labels.scaledLabelFont("domain", 1)).toMatch(/apple-system/);
     release();
-    expect(await labels.adoptBodyLabelFont()).toBe(true);
-    expect([...loaded].sort()).toEqual(["400 12px pretendard, sans-serif", "510 12px pretendard, sans-serif", "560 12px pretendard, sans-serif", "650 12px pretendard, sans-serif"]);
+    expect(await adopted).toBe(true);
+    expect([latin.status, hangul.status]).toEqual(["loaded", "unloaded"]);
     expect(labels.labelFontFamily()).toBe("pretendard, sans-serif");
+    expect(await labels.adoptBodyLabelFont("지도")).toBe(true);
+    expect(hangul.status).toBe("loaded");
   });
 
-  it("keeps the system stack when a weight never loads", async () => {
+  it("keeps the system stack when a face never loads", async () => {
     vi.resetModules();
     vi.stubGlobal("getComputedStyle", () => ({ getPropertyValue: () => "pretendard, sans-serif" }));
-    Object.defineProperty(document, "fonts", { configurable: true, value: { status: "loaded", load: async () => [], check: () => false } });
+    const broken = { family: "pretendard", unicodeRange: "U+0-10FFFF", status: "unloaded", load: () => Promise.reject(new Error("network")) };
+    Object.defineProperty(document, "fonts", { configurable: true, value: { status: "loaded", forEach: (each: (f: unknown) => void) => each(broken) } });
     const labels = await import("./labels");
     expect(await labels.adoptBodyLabelFont()).toBe(false);
     expect(labels.labelFontFamily()).toMatch(/apple-system/);

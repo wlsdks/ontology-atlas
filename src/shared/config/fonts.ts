@@ -2,10 +2,10 @@ import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 
 /**
- * The whole Pretendard file. English pages list it behind the Latin subsets
- * (`pretendard-latin-subsets.ts`), so they fetch its 2 MB only for a character no subset carries;
- * Korean pages draw from it alone (`app/styles/lang-cjk.css`). Not preloaded, so a page that never
- * needs it never downloads it.
+ * The whole Pretendard file, listed last behind the subsets (`pretendard-latin-subsets.ts`, and on
+ * Korean pages the upstream dynamic subsets in `app/styles/lang-cjk.css`), so a page fetches its
+ * 2 MB only for a character no subset carries, such as an accented Latin letter. Not preloaded, so
+ * a page that never needs it never downloads it.
  */
 export const pretendard = localFont({
   src: '../../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2',

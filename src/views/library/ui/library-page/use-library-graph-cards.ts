@@ -6,19 +6,20 @@ import { WIKI_CITATION_PATTERN } from "@/shared/lib/library/wiki-page-schema";
 import { sectionSlices } from "../../lib/wiki/section-slices";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import type { LibraryUiModel } from "@/features/library";
-import type { VaultDoc } from "@/entities/docs-vault";
+import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
 import type { useLibrarySources } from "./use-library-sources";
 import type { useLibraryTurns } from "./use-library-turns";
 
 export function useLibraryGraphCards({
-  localVault, nativeVaultRootPath, docs, model, agent, handleCompile, sources, turns,
+  localVault, nativeVaultRootPath, docs, model, agent, compileSources, sources, turns,
 }: {
   localVault: ReturnType<typeof useLocalVault>;
   nativeVaultRootPath: string | null;
   docs: VaultDoc[];
   model: LibraryUiModel;
   agent: ReturnType<typeof useLibraryAgent>;
-  handleCompile: () => void;
+  /** Sends exactly these sources: a stale page's refresh names the originals that changed. */
+  compileSources: (rows: readonly LibrarySourceRow[]) => void;
   sources: ReturnType<typeof useLibrarySources>;
   turns: ReturnType<typeof useLibraryTurns>;
 }) {
@@ -91,7 +92,12 @@ export function useLibraryGraphCards({
             ? {
                 onRequest:
                   compileBlocked === null && (agent.route === "agent" || agent.route === "local")
-                    ? handleCompile
+                    ? () => {
+                        const changed = new Set(
+                          originals.filter((original) => original.state === "stale").map((original) => original.path),
+                        );
+                        compileSources(model.sources.filter((row) => changed.has(row.path)));
+                      }
                     : null,
                 reason: compileBlocked ?? agentOnlyReason,
               }
@@ -104,7 +110,7 @@ export function useLibraryGraphCards({
       compileBlocked,
       conceptSlugs,
       docsBySlug,
-      handleCompile,
+      compileSources,
       handleOpenSource,
       localVault.sourceHandles,
       model.pageTexts,

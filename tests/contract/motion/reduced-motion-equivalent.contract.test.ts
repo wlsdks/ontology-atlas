@@ -35,6 +35,12 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",
   "motion-work-sweep":
     "Infinite travel shown only while a WorkProgress of unknown length runs. Reduced motion parks the bar left-anchored at a third of the track, claiming no scale; the consumer's label and count carry the fact.",
+  "motion-progress-reveal":
+    "The source progress chart drawing left to right on a folder's first visit or first page. Under reduced motion the chart never applies the class and is whole from the first frame; the percent and the sentence beside it carry the same numbers. library-source-progress.spec.ts checks the class is absent.",
+  "motion-progress-light":
+    "One light passing along the source progress bar when it reaches 100%. Under reduced motion it is never drawn; the bar turns green and the band says every source has a wiki page. library-source-progress.spec.ts checks the class is absent.",
+  "motion-progress-ripple":
+    "A ring leaving the chart's today dot as a page lands. Under reduced motion it is never drawn; the `+N today` count beside the chart says the same thing. library-source-progress.spec.ts checks the class is absent.",
   "motion-work-hop":
     "Infinite node-to-node signal shown only while a WorkTrail of unknown length runs, or on the one step in progress of a known plan. Reduced motion holds every such part evenly half lit, claiming no position; the consumer's label and count carry the fact.",
   "overlay-spring-surface":

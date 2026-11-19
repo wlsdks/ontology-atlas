@@ -4,10 +4,12 @@
  * close-up of the window per act. The download page needs no desktop bridge, so this runs in a
  * context of its own, on a fake clock, so the frame is the same on every machine.
  *
- *   public/gateway/harness-film.<locale>.png           the window, 1104×560 CSS pixels at 2x
- *   public/gateway/harness-film-phone-<n>.<locale>.png  act n's close-up, 480×360 CSS pixels at 2x
+ *   public/gateway/harness-film.<locale>.webp           the window, 1104×560 CSS pixels at 2x
+ *   public/gateway/harness-film-phone-<n>.<locale>.webp  act n's close-up, 480×360 CSS pixels at 2x
  */
 import path from "node:path";
+
+import { writeWebp } from "./webp.mjs";
 
 /** Film time after the chip's press (6300ms) and before the lift (6700ms). */
 const STILL_AT = 6550;
@@ -86,13 +88,13 @@ export async function captureHarnessFilm(browser, { baseUrl, locale, outDir }) {
     await runTo(shot.at);
     await atOneToOne(page, async () => {
       if (shot.at === STILL_AT) {
-        const windowFile = path.join(outDir, `harness-film.${locale}.png`);
-        await page.locator("[data-film-window]").screenshot({ path: windowFile });
+        const windowFile = path.join(outDir, `harness-film.${locale}.webp`);
+        await writeWebp(browser, await page.locator("[data-film-window]").screenshot(), windowFile);
         shots.push(windowFile);
       }
       const frame = await page.locator("[data-film-window]").boundingBox();
-      const file = path.join(outDir, `harness-film-phone-${shot.act}.${locale}.png`);
-      await page.screenshot({ path: file, clip: { x: frame.x + shot.x, y: frame.y + shot.y, ...PHONE } });
+      const file = path.join(outDir, `harness-film-phone-${shot.act}.${locale}.webp`);
+      await writeWebp(browser, await page.screenshot({ clip: { x: frame.x + shot.x, y: frame.y + shot.y, ...PHONE } }), file);
       shots.push(file);
     });
   }

@@ -167,7 +167,7 @@ export function useLibraryAgent(
   });
 
   const start = useCallback(
-    (text: string, kind: LibraryAgentOpeningRequest["kind"] = "compile") => {
+    (text: string, kind: LibraryAgentOpeningRequest["kind"] = "compile", sources?: readonly string[]) => {
       /*
        * One press, two engines. A verified coding agent still outranks the runner — it
        * opens formats Atlas cannot — so the dock keeps the press whenever one is ready,
@@ -176,13 +176,14 @@ export function useLibraryAgent(
        * catalogue reads files already in the vault and cannot reach a service.
        */
       if (route === "local" && kind === "compile") {
-        void localCompile.run(text);
+        void localCompile.run(text, sources);
         return;
       }
       setOpeningRequest((current) => ({
         kind,
         text,
         nonce: (current?.nonce ?? 0) + 1,
+        ...(sources ? { sources } : {}),
       }));
       setOpen(true);
     },
