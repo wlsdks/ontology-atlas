@@ -185,6 +185,8 @@ test('doubling a hostile file at most about doubles the time to read it', () => 
     'schedule calls': 'x.scheduleAtFixedRate(a, 1, 1, T); ',
     'nested type arguments': '<',
     'Kotlin functions': '@GetMapping("/a") fun a() = b\n',
+    'Kotlin unclosed type parameters': 'fun <',
+    'Kotlin unclosed receiver type arguments': 'fun a<',
   };
   const fileOf = (shape, bytes) => {
     if (shape === null) return `package p;\nimport jakarta.ws.rs.Path;\n@Path("a")\nclass A {\n${'a'.repeat(bytes)}\n}\n`;

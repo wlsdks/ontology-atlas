@@ -137,7 +137,8 @@ function topLevelOf(masked) {
 const PACKAGE = /^[ \t]*package[ \t]+([A-Za-z_$][\w$]*(?:[ \t]*\.[ \t]*[A-Za-z_$][\w$]*)*)/m;
 const IMPORT = /^[ \t]*import[ \t]+(static[ \t]+)?([A-Za-z_$][\w$]*(?:[ \t]*\.[ \t]*[A-Za-z_$][\w$]*)*)([ \t]*\.[ \t]*\*)?/gm;
 const TYPE_DECLARATION = /\b(?:class|interface|enum|record|object)[ \t\r\n]+([A-Za-z_$][\w$]*)/g;
-const KOTLIN_DECLARATION = /\b(?:fun[ \t]+(?:<[^>\n]*>[ \t]*)?|(?:val|var|typealias)[ \t]+)(?:[\w$]+(?:<[^>\n]*>)?\??\.)*([A-Za-z_$][\w$]*)/g;
+/** Type arguments are read up to 200 characters, so an unclosed `<` costs a bounded scan per declaration. */
+const KOTLIN_DECLARATION = /\b(?:fun[ \t]+(?:<[^>\n]{0,200}>[ \t]*)?|(?:val|var|typealias)[ \t]+)(?:[\w$]+(?:<[^>\n]{0,200}>)?\??\.)*([A-Za-z_$][\w$]*)/g;
 
 /**
  * The package and the imports of masked JVM source.

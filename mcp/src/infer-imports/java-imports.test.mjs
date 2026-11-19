@@ -128,6 +128,8 @@ test('doubling a hostile JVM file at most about doubles the time to read its imp
     ['Kotlin', 'fun a.b.c.d.e.'],
     ['Kotlin', 'val "${'],
     ['Kotlin', '/* /* '],
+    ['Kotlin', 'fun <'],
+    ['Kotlin', 'fun a<'],
   ];
   // A warm-up run, then the median of five, so one scheduling or collection pause on a busy machine decides nothing.
   const timed = (path, text) => {

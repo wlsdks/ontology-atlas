@@ -54,7 +54,8 @@ const SCHEDULE_CALL = /\.\s*(?:scheduleAtFixedRate|scheduleWithFixedDelay)\s*\(/
 const CLASS_HEAD = /\b(class|interface|enum|record|object)[ \t\r\n]+([A-Za-z_$][\w$]*)/g;
 const ANNOTATION = /@([A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*)/g;
 const JAVA_METHOD_NAME = /(?<![\w$])([A-Za-z_$][\w$]*)\s*\(/g;
-const KOTLIN_FUNCTION_NAME = /\bfun\s+(?:<[^>{}]*>\s*)?(?:[\w$]+(?:<[^>{}]*>)?\??\.)*([A-Za-z_$][\w$]*)\s*\(/g;
+/** Type arguments are read up to 200 characters, so an unclosed `<` costs a bounded scan per function. */
+const KOTLIN_FUNCTION_NAME = /\bfun\s+(?:<[^>{}]{0,200}>\s*)?(?:[\w$]+(?:<[^>{}]{0,200}>)?\??\.)*([A-Za-z_$][\w$]*)\s*\(/g;
 const JAVA_MAIN_PARAMETERS = /^main\s*\(\s*(?:final\s+)?String\s*(?:(?:\[\s*\]|\.\.\.)\s*[\w$]+|\s[\w$]+\s*\[\s*\])\s*\)/;
 const KOTLIN_MAIN = /\bfun\s+main\s*\(/g;
 /** A line that starts another Kotlin declaration ends a class head written without a body. */
