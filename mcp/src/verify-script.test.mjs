@@ -290,16 +290,19 @@ describe('live local first-contact probes', () => {
   });
 });
 
-function breadthMapFixture() {
-  return {
-    contract: 'breadthMap:v1',
-    rootPath: '/repo',
-    size: { productFiles: 1, productLines: 3, units: 1, outside: {} },
-    units: [{ path: 'src', files: 1, lines: 3, mainFiles: [{ path: 'src/index.ts', lines: 3 }], exports: ['main'], importedBy: 0, imports: [] }],
-    entryPoints: [{ path: 'src/index.ts', symbol: 'main', kind: 'library' }],
-    docs: { readme: null, pages: [] },
-    next: '1 product units, 3 lines in 1 files.',
-  };
+/** A breadth map as the server sends it: its text rows alone. */
+function breadthMapFixture(unitRow = 'src | 1 | 3 | index.ts (3) | main | 0 | -') {
+  return [
+    'Breadth map of /repo: 1 product units, 3 lines in 1 files.',
+    '',
+    'Units: path | files | lines | main files (relative to the unit, lines) | exports | imported by N units | imports',
+    unitRow,
+    '',
+    'Entry points: kind path symbol',
+    'library src/index.ts main',
+    '',
+    'Next: 1 product units, 3 lines in 1 files.',
+  ].join('\n');
 }
 
 function verifiedImportScanCoverage({ c = false } = {}) {
@@ -1986,142 +1989,6 @@ describe('verify.mjs first-contact gates', () => {
             maxDepth: { type: 'integer', minimum: 0, maximum: 10 },
             sourceOnly: { type: 'boolean' },
           },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['rootPath'],
-          oneOf: [
-            {
-              required: ['contract', 'size', 'units', 'entryPoints', 'docs', 'next'],
-              not: { anyOf: ['delivery', 'canWrite', 'sourceEvidence', 'project', 'framework', 'domains',
-                'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence',
-                'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'].map((key) => ({ required: [key] })) },
-            },
-            {
-              required: ['delivery', 'canWrite', 'sourceEvidence'],
-              not: { anyOf: ['project', 'framework', 'domains', 'capabilities', 'elements',
-                'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence',
-                'proposalValidation', 'suggestedRelations', 'skipped'].map((key) => ({ required: [key] })) },
-            },
-            {
-              required: ['framework', 'domains', 'capabilities', 'elements', 'meaningGate',
-                'extractionContract', 'semanticEvidence', 'configurationEvidence',
-                'proposalValidation', 'suggestedRelations', 'skipped'],
-              not: { anyOf: [{ required: ['delivery'] }, { required: ['canWrite'] }] },
-            },
-          ],
-          properties: {
-            rootPath: { type: 'string' },
-            delivery: { type: 'string', const: 'source_only' },
-            canWrite: { type: 'boolean', const: false },
-            sourceEvidence: { type: 'object' },
-            project: {
-              type: 'object',
-              required: ['slug', 'title'],
-              properties: {
-                slug: { type: 'string' },
-                title: { type: 'string' },
-              },
-              additionalProperties: false,
-            },
-            framework: { enum: ['fsd', 'next', 'generic'] },
-            configurationEvidence: {
-              type: 'object',
-              properties: {
-                contract: { enum: ['rustFeatureConfigurationEvidence:v1'] },
-                writePolicy: {
-                  type: 'object',
-                  required: ['automaticRelation', 'writeAllowed', 'humanApprovalRequired'],
-                  properties: {
-                    automaticRelation: { enum: [false] },
-                    writeAllowed: { enum: [false] },
-                    humanApprovalRequired: { enum: [true] },
-                  },
-                },
-              },
-            },
-            domains: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'title', 'evidence'],
-                properties: {
-                  slug: { type: 'string' },
-                  title: { type: 'string' },
-                  evidence: {
-                    type: 'object',
-                    required: ['source'],
-                    properties: { source: { type: 'string' } },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            capabilities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'title', 'evidence'],
-                properties: {
-                  slug: { type: 'string' },
-                  title: { type: 'string' },
-                  evidence: {
-                    type: 'object',
-                    required: ['source'],
-                    properties: { source: { type: 'string' } },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            elements: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'title', 'path', 'evidence'],
-                properties: {
-                  slug: { type: 'string' },
-                  title: { type: 'string' },
-                  path: { type: 'string' },
-                  evidence: {
-                    type: 'object',
-                    required: ['source'],
-                    properties: { source: { type: 'string' } },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            suggestedRelations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['from', 'to', 'type'],
-                properties: {
-                  from: { type: 'string' },
-                  to: { type: 'string' },
-                  type: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-            },
-            skipped: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['path', 'reason'],
-                properties: {
-                  path: { type: 'string' },
-                  reason: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-            },
-          },
-          additionalProperties: false,
         },
       },
       {
@@ -3973,70 +3840,10 @@ describe('verify.mjs first-contact gates', () => {
       })),
       'compile_ontology outputSchema summary drift',
     );
+    assert.equal(analyzeRepoTool.outputSchema, undefined);
     assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),
-        {
-          ...tools.find((tool) => tool.name === 'analyze_repo_structure'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties,
-              framework: { enum: ['fsd', 'generic'] },
-            },
-          },
-        },
-      ]),
-      'analyze_repo_structure outputSchema framework drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        outputSchema: {
-          ...analyzeRepoTool.outputSchema,
-          oneOf: analyzeRepoTool.outputSchema.oneOf.map((branch, index) => index === 2
-            ? { ...branch, required: branch.required.filter((field) => field !== 'meaningGate') }
-            : branch),
-        },
-      })),
-      'analyze_repo_structure outputSchema full branch drift',
-    );
-    for (const [property, value] of [['canWrite', true], ['delivery', 'full']]) {
-      const schema = structuredClone(analyzeRepoTool.outputSchema);
-      schema.properties[property].const = value;
-      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
-        'analyze_repo_structure outputSchema source-only discriminator drift');
-    }
-    for (const field of analyzeRepoTool.outputSchema.oneOf[1].not.anyOf.map((rule) => rule.required[0])) {
-      const schema = structuredClone(analyzeRepoTool.outputSchema);
-      schema.oneOf[1].not.anyOf = schema.oneOf[1].not.anyOf.filter((rule) => rule.required[0] !== field);
-      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
-        'analyze_repo_structure outputSchema source-only branch drift');
-    }
-    for (const field of ['delivery', 'canWrite', 'sourceEvidence']) {
-      const schema = structuredClone(analyzeRepoTool.outputSchema);
-      schema.oneOf[1].required = schema.oneOf[1].required.filter((key) => key !== field);
-      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
-        'analyze_repo_structure outputSchema source-only branch drift');
-    }
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),
-        {
-          ...tools.find((tool) => tool.name === 'analyze_repo_structure'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties,
-              project: {
-                ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties.project,
-                additionalProperties: true,
-              },
-            },
-          },
-        },
-      ]),
-      'analyze_repo_structure outputSchema project drift',
+      toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: { type: 'object' } })),
+      'analyze_repo_structure declares an outputSchema; its breadth map and source reads are text alone',
     );
     assert.equal(
       toolsListSchemaFailure(withAnalyzeRepoTool({
@@ -4069,69 +3876,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       })),
       'analyze_repo_structure rootPath schema guidance drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),
-        {
-          ...tools.find((tool) => tool.name === 'analyze_repo_structure'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties,
-              capabilities: {
-                ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties.capabilities,
-                items: {
-                  ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties.capabilities.items,
-                  required: ['slug', 'title'],
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'analyze_repo_structure outputSchema capabilities rows drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        outputSchema: {
-          ...analyzeRepoTool.outputSchema,
-          properties: {
-            ...analyzeRepoTool.outputSchema.properties,
-            elements: {
-              ...analyzeRepoTool.outputSchema.properties.elements,
-              items: {
-                ...analyzeRepoTool.outputSchema.properties.elements.items,
-                required: ['slug', 'title', 'evidence'],
-              },
-            },
-          },
-        },
-      })),
-      'analyze_repo_structure outputSchema elements rows drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        outputSchema: {
-          ...analyzeRepoTool.outputSchema,
-          properties: {
-            ...analyzeRepoTool.outputSchema.properties,
-            elements: {
-              ...analyzeRepoTool.outputSchema.properties.elements,
-              items: {
-                ...analyzeRepoTool.outputSchema.properties.elements.items,
-                properties: {
-                  ...analyzeRepoTool.outputSchema.properties.elements.items.properties,
-                  path: { type: 'number' },
-                },
-              },
-            },
-          },
-        },
-      })),
-      'analyze_repo_structure outputSchema elements path drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -9528,15 +9272,15 @@ Continue.`;
 
   it('fails malformed bootstrap and import-analysis read smoke payloads', () => {
     assert.equal(
-      analyzeRepoStructureFailure({ rootPath: '/repo', framework: 'generic' }),
-      'analyze_repo_structure response is not the breadth map: undefined',
+      analyzeRepoStructureFailure('Analysis of /repo: framework generic'),
+      'analyze_repo_structure response is not the breadth map: "Analysis of /repo: framework generic"',
     );
     assert.equal(
-      analyzeRepoStructureFailure({ ...breadthMapFixture(), domains: [] }),
+      analyzeRepoStructureFailure(breadthMapFixture().replace('\nEntry points', '\ndomains/core | Core\n\nEntry points')),
       'analyze_repo_structure survey carries domains; the breadth map names no node',
     );
     assert.equal(
-      analyzeRepoStructureFailure({ ...breadthMapFixture(), units: [{ path: 'src', files: 0, lines: 3, mainFiles: [], exports: [], importedBy: 0, imports: [] }] }),
+      analyzeRepoStructureFailure(breadthMapFixture('src | 0 | 3 | - | - | 0 | -')),
       'analyze_repo_structure response missing unit size: src',
     );
     assert.equal(

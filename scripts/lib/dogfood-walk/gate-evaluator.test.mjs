@@ -209,17 +209,11 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: compileActionMtimeSchemaDrifted }),
       ["tools/list: compile_ontology outputSchema canonicalizationActions drift"],
     );
-    const analyzeOutputSchemaDrifted = makeDogfoodToolsList();
-    analyzeOutputSchemaDrifted.tools.find((tool) => tool.name === "analyze_repo_structure").outputSchema.properties.framework.enum = ["fsd", "generic"];
+    const analyzeOutputSchemaDeclared = makeDogfoodToolsList();
+    analyzeOutputSchemaDeclared.tools.find((tool) => tool.name === "analyze_repo_structure").outputSchema = { type: "object" };
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: analyzeOutputSchemaDrifted }),
-      ["tools/list: analyze_repo_structure outputSchema framework drift"],
-    );
-    const analyzeProjectSchemaDrifted = makeDogfoodToolsList();
-    delete analyzeProjectSchemaDrifted.tools.find((tool) => tool.name === "analyze_repo_structure").outputSchema.properties.project.additionalProperties;
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: analyzeProjectSchemaDrifted }),
-      ["tools/list: analyze_repo_structure outputSchema project drift"],
+      evaluateDogfoodGate({ ...okShape, toolsList: analyzeOutputSchemaDeclared }),
+      ["tools/list: analyze_repo_structure declares an outputSchema; its breadth map and source reads are text alone"],
     );
     const inferOutputSchemaDrifted = makeDogfoodToolsList();
     inferOutputSchemaDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.edges.items.properties.kind.enum = ["static"];
@@ -1529,16 +1523,16 @@ describe("evaluateDogfoodGate", () => {
       ["query_concepts_limited structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, contract: undefined } }),
-      ["analyze_repo_structure response is not the breadth map: undefined"],
+      evaluateDogfoodGate({ ...okShape, analyzedRepo: { rawText: "Analysis of /repo" } }),
+      ['analyze_repo_structure response is not the breadth map: "Analysis of /repo"'],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, capabilities: [{ slug: "capabilities/auth", title: "Auth" }] } }),
+      evaluateDogfoodGate({ ...okShape, analyzedRepo: { rawText: okShape.analyzedRepo.rawText.replace("\n\nNext:", "\ncapabilities/auth | Auth\n\nNext:") } }),
       ["analyze_repo_structure survey carries capabilities; the breadth map names no node"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { ...okShape.analyzedRepo, next: "other" } }),
-      ['analyze_repo_structure structuredContent mismatch — $.next: parsed "1 product units, 3 lines in 1 files.", structuredContent "other"'],
+      evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { contract: "breadthMap:v1" } }),
+      ["analyze_repo_structure: structuredContent present; the breadth map travels as text alone"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, filesScanned: -1 } }),

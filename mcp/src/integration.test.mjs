@@ -234,8 +234,24 @@ function getCallText(responses, id) {
 
 function getCallParsed(responses, id) {
   const structured = getCallStructured(responses, id);
-  if (structured?.contract === "agentBriefCompact:v3" || structured?.contract === "breadthMap:v1") return structured;
+  if (structured?.contract === "agentBriefCompact:v3") return structured;
   return JSON.parse(getCallText(responses, id));
+}
+
+/** The breadth map and source-only reads arrive as one text block with no structuredContent. */
+function getCallTextAlone(responses, id) {
+  const text = getCallText(responses, id);
+  const { result } = responses.find((r) => r.id === id);
+  assert.equal(result.structuredContent, undefined, `response ${id} sends its rows as text alone`);
+  assert.equal(result.content.length, 1, `response ${id} is one text block`);
+  return text;
+}
+
+/** The unit paths a flat breadth map lists, one row each under its `Units:` header. */
+function unitPaths(text) {
+  const lines = text.split("\n");
+  const rows = lines.slice(lines.findIndex((line) => line.startsWith("Units: ")) + 1);
+  return rows.slice(0, rows.findIndex((line) => line === "")).map((line) => line.split(" | ")[0]);
 }
 
 function getCallStructured(responses, id) {
@@ -708,27 +724,7 @@ await test("tools/list — each single-item tool description cross-references it
       "analyze_repo_structure rootPath schema documents default root",
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
-    const sourceRowsSchema = analyzeRepo?.outputSchema?.properties?.sourceEvidence?.properties?.rows;
-    assert.equal(sourceRowsSchema?.minItems, 1);
-    assert.deepEqual(sourceRowsSchema?.items?.oneOf?.[0]?.required, [
-      "actualRange", "text", "citation", "fullFileSha256", "fileBytes",
-      "fileLines", "returnedBytes", "truncated", "fileComplete",
-    ]);
-    assert.deepEqual(sourceRowsSchema?.items?.oneOf?.[1]?.not?.anyOf, [
-      { required: ["text"] }, { required: ["citation"] },
-    ]);
-    assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ['rootPath']);
-    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[0]?.required, ['contract', 'size', 'units', 'entryPoints', 'docs', 'next']);
-    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[2]?.required, ['framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped']);
-    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[1]?.required, ['delivery', 'canWrite', 'sourceEvidence']);
-    assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
-    assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.framework?.enum, ["fsd", "next", "generic"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.required, ["slug", "title", "evidence"]);
-    assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
-    assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
+    assert.equal(analyzeRepo?.outputSchema, undefined, "the breadth map and source reads are text rows, so the tool declares no outputSchema");
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "elements", "relations", "competencyAnswers"]);
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.items?.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
@@ -765,69 +761,6 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "constructionLifecycle", "nextStep"]);
-    assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
-    const rustConfigurationSchema = analyzeRepo?.outputSchema?.properties?.configurationEvidence;
-    assert.deepEqual(rustConfigurationSchema?.properties?.contract?.enum, ["rustFeatureConfigurationEvidence:v1"]);
-    assert.deepEqual(rustConfigurationSchema?.properties?.status?.enum, ["not_present", "unsupported", "observed", "limited"]);
-    assert.deepEqual(rustConfigurationSchema?.properties?.writePolicy?.properties?.writeAllowed?.enum, [false]);
-    assert.deepEqual(rustConfigurationSchema?.properties?.packages?.items?.properties?.features?.items?.properties?.references?.items?.properties?.meaning?.enum, ["conditional_inclusion", "conditional_attribute"]);
-    assert.deepEqual(rustConfigurationSchema?.properties?.packages?.items?.properties?.features?.items?.properties?.references?.items?.properties?.polarity?.enum, ["positive", "negative", "compound", "unknown"]);
-    assert.equal(rustConfigurationSchema?.properties?.coverage?.properties?.predicateEvaluation?.enum?.[0], false);
-    assert.equal(rustConfigurationSchema?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.summary?.required, ["concepts", "relations", "findings", "errors", "warnings"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.required, ["concepts", "relations", "competencyAnswers"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.reviewPlan?.required, ["concepts", "relations", "competencyAnswers"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.required, [
-      "contract",
-      "qualificationStatus",
-      "writeEligibility",
-      "planDigest",
-      "sourceDigest",
-      "planRevision",
-      "firstBlockingPhase",
-      "phases",
-      "diagnostics",
-      "requiredGapIds",
-      "proposalCoverage",
-      "admission",
-      "nextAction",
-    ]);
-    assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.properties?.phases?.minItems, 8);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.properties?.relations?.items?.required, ["from", "to", "type", "why"]);
-    assert.ok(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.gates?.required?.includes("competencyWitnessesResolved"));
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.extractionContract?.properties?.competencyQuestions?.items?.required, ["id", "type", "question", "priority", "requiredWitnesses"]);
-    const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
-    assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "proposedBusinessOntology", "implementationEvidence", "reviewQuestions"]);
-    assert.equal(analyzeMeaningGate?.additionalProperties, false);
-    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence"]);
-    assert.equal(analyzeMeaningGate?.properties?.businessOntology?.properties?.domains?.items?.type, "string");
-    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.properties?.evidence?.items?.required, ["slug", "kind", "source"]);
-    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.properties?.evidence?.items?.properties?.kind?.enum, ["domain", "capability"]);
-    assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.elements?.items?.type, "string");
-    assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.additionalProperties, false);
-    assert.deepEqual(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.required, ["slug", "reason", "evidence"]);
-    assert.ok(
-      analyzeRepo?.outputSchema?.properties?.semanticEvidence?.items?.properties?.role?.enum?.includes("package-contract"),
-      "semantic evidence schema must admit the package-contract role emitted by analysis",
-    );
-    const reviewRequiredEvidenceSchema = analyzeRepo?.outputSchema?.properties
-      ?.semanticEvidence?.items?.properties?.reviewRequiredEvidence;
-    assert.equal(reviewRequiredEvidenceSchema?.maxItems, 4);
-    assert.deepEqual(reviewRequiredEvidenceSchema?.items?.required, [
-      "heading",
-      "startLine",
-      "endLine",
-      "excerpt",
-      "riskFlags",
-    ]);
-    assert.deepEqual(
-      reviewRequiredEvidenceSchema?.items?.properties?.riskFlags?.items?.enum,
-      ["future-state-claim", "negated-claim", "deprecated-state"],
-    );
-    assert.equal(reviewRequiredEvidenceSchema?.items?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.required, ["from", "to", "type"]);
-    assert.equal(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.additionalProperties, false);
     const inferImports = findTool("infer_imports");
     assert.equal(inferImports?.outputSchema?.type, "object");
     assert.equal(inferImports?.inputSchema?.properties?.sourceFolders?.maxItems, 50);
@@ -2417,12 +2350,10 @@ await test("analyze_repo_structure — the survey is a breadth map over MCP and 
       ...INIT_REQUESTS,
       callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
     ]);
-    const survey = getCallStructured(responses, 2);
-    assert.equal(survey.contract, "breadthMap:v1");
-    assert.match(getCallText(responses, 2), /^Breadth map of /);
-    assert.deepEqual(survey.units.map((unit) => unit.path), ["src/features"]);
-    assert.equal(survey.domains, undefined);
-    assert.equal(survey.proposalValidation, undefined);
+    const survey = getCallTextAlone(responses, 2);
+    assert.match(survey, /^Breadth map of /);
+    assert.deepEqual(unitPaths(survey), ["src/features"]);
+    assert.doesNotMatch(survey, /domains\/|capabilities\/|proposalValidation/, "the survey names no candidate node");
     const result = analyzeRepoStructure(repoRoot);
     assert.equal(result.framework, "fsd");
     assert.deepEqual(result.project, {
@@ -2462,7 +2393,7 @@ await test("analyze_repo_structure — authored Markdown alone supplies initial 
       ...INIT_REQUESTS,
       callTool(2, 'analyze_repo_structure', { rootPath: repoRoot }),
     ]);
-    const purpose = getCallStructured(responses, 2).docs.readme.purpose;
+    const purpose = getCallTextAlone(responses, 2).split("\n").find((line) => line.startsWith("README.md: "));
     assert.match(purpose, /Operators preserve audit evidence/);
     assert.doesNotMatch(purpose, /Hidden claim|Indented claim|Quoted claim/);
     const result = analyzeRepoStructure(repoRoot);
@@ -2503,26 +2434,22 @@ await test("analyze_repo_structure — truncated document evidence recovers its 
         rootPath: repoRoot, sourceOnly: true, sourceReads: [evidence.excerptInfo.nextSourceRead],
       }),
     ]);
-    const recovered = getCallStructured((await read()).responses, 2);
-    assert.equal(recovered.canWrite, false);
-    assert.equal(recovered.delivery, 'source_only');
-    assert.equal(recovered.sourceEvidence.rows[0].text, `${paragraph}\r\n`);
-    assert.equal(recovered.sourceEvidence.rows[0].requestComplete, true);
-    assert.equal(recovered.sourceEvidence.rows[0].next, null);
-    assert.match(recovered.sourceEvidence.rows[0].citation, /^source:README\.md#L3-L3@sha256:[a-f0-9]{64}$/);
+    const recovered = getCallTextAlone((await read()).responses, 2);
+    assert.match(recovered, /^Source reads in .*: 1 read, 0 outlined, 0 not returned\. .*nothing was written/);
+    assert.ok(recovered.includes(`\n\`\`\`\n${paragraph}\r\n\`\`\``), 'the paragraph exactly as it is in the file');
+    assert.match(recovered, /^cite README\.md:L3-L3 pinned source:README\.md#L3-L3@sha256:[a-f0-9]{64}$/m);
+    assert.doesNotMatch(recovered, /^(Cut|Next lines):/m, 'the read is complete');
     writeFileSync(readme, original.replace('human approval', 'new authorization'));
-    const changed = getCallStructured((await read()).responses, 2);
-    assert.equal(changed.canWrite, false);
-    assert.equal(changed.sourceEvidence.rows[0].reason, 'hash_mismatch');
-    assert.equal(changed.sourceEvidence.rows[0].text, undefined);
-    assert.equal(changed.sourceEvidence.rows[0].citation, undefined);
+    const changed = getCallTextAlone((await read()).responses, 2);
+    assert.match(changed, /: 0 read, 0 outlined, 1 not returned\. .*nothing was written/);
+    assert.match(changed, /^== refused README\.md: hash_mismatch$/m);
+    assert.doesNotMatch(changed, /pinned|```|Operators release/);
     rmSync(readme);
     writeFileSync(join(repoRoot, 'other.md'), original);
     symlinkSync(join(repoRoot, 'other.md'), readme);
-    const unsafe = getCallStructured((await read()).responses, 2);
-    assert.equal(unsafe.sourceEvidence.rows[0].reason, 'symlink_path');
-    assert.equal(unsafe.sourceEvidence.rows[0].text, undefined);
-    assert.equal(unsafe.sourceEvidence.rows[0].citation, undefined);
+    const unsafe = getCallTextAlone((await read()).responses, 2);
+    assert.match(unsafe, /^== refused README\.md: symlink_path$/m);
+    assert.doesNotMatch(unsafe, /pinned|```|Operators release/);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -2541,28 +2468,16 @@ await test("analyze_repo_structure — reads answer source-only and never repeat
       callTool(4, 'analyze_repo_structure', { sourceOnly: false, sourceReads: reads }),
       callTool(6, 'analyze_repo_structure', {}),
     ], 1500, { OATLAS_READ_ONLY: '1' });
-    const compact = getCallParsed(responses, 3);
-    const map = getCallStructured(responses, 6);
-    assert.deepEqual(Object.keys(compact).sort(), ['rootPath', 'delivery', 'canWrite', 'sourceEvidence'].sort());
-    assert.equal(compact.delivery, 'source_only');
-    assert.equal(compact.canWrite, false);
-    assert.deepEqual(getCallParsed(responses, 2), compact);
-    assert.deepEqual(getCallParsed(responses, 4), compact);
-    const schema = responses.find((row) => row.id === 5).result.tools
-      .find((tool) => tool.name === 'analyze_repo_structure').outputSchema;
-    const validation = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
-      import { readFileSync } from 'node:fs';
-      import { AjvJsonSchemaValidator } from '@modelcontextprotocol/server/validators/ajv';
-      const { schema, values } = JSON.parse(readFileSync(0, 'utf8'));
-      const validate = new AjvJsonSchemaValidator().getValidator(schema);
-      process.stdout.write(JSON.stringify(values.map(validate)));
-    `], { cwd: resolve(__dirname, '..'), encoding: 'utf8', input: JSON.stringify({ schema,
-      values: [map, compact, { ...map, delivery: 'source_only', canWrite: false },
-        { ...compact, canWrite: true }, { ...compact, writePlan: {} }, { ...map, domains: [] }],
-    }) }));
-    assert.equal(validation[0].valid, true, validation[0].errorMessage);
-    assert.equal(validation[1].valid, true, validation[1].errorMessage);
-    assert.deepEqual(validation.slice(2).map((result) => result.valid), [false, false, false, false]);
+    const compact = getCallTextAlone(responses, 3);
+    const map = getCallTextAlone(responses, 6);
+    assert.match(compact, /^Source reads in .*: 1 read, 0 outlined, 0 not returned\. .*nothing was written/);
+    assert.match(compact, /^== read index\.ts L1-L1 of 1 lines$/m);
+    assert.doesNotMatch(compact, /Breadth map|^Units: |writePlan|canWrite/m, 'the reads never repeat the map or offer a write');
+    assert.equal(getCallTextAlone(responses, 2), compact);
+    assert.equal(getCallTextAlone(responses, 4), compact);
+    assert.match(map, /^Breadth map of /);
+    assert.equal(responses.find((row) => row.id === 5).result.tools
+      .find((tool) => tool.name === 'analyze_repo_structure').outputSchema, undefined);
     assert.equal(loadVaultDocs(root).length, 0);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
@@ -2606,17 +2521,14 @@ await test("analyze_repo_structure — source-only retains refusal and continuat
       callTool(3, 'analyze_repo_structure', { sourceOnly: true,
         sourceReads: [{ path: 'index.ts', mode: 'outline' }] }),
     ], 1500, { OATLAS_READ_ONLY: '1' });
-    const packet = getCallParsed(responses, 2).sourceEvidence;
-    assert.equal(packet.repositoryComplete, false);
-    for (const row of packet.rows) {
-      assert.equal(row.status, 'refused');
-      assert.equal(row.text, undefined);
-      assert.equal(row.citation, undefined);
-    }
-    const outline = getCallParsed(responses, 3).sourceEvidence.rows[0];
-    assert.equal(outline.status, 'outlined');
-    assert.equal(outline.text, undefined);
-    assert.equal(outline.citation, undefined);
+    const packet = getCallTextAlone(responses, 2);
+    assert.match(packet, /: 0 read, 0 outlined, 4 not returned\. /);
+    for (const read of reads) assert.match(packet, new RegExp(`^== refused ${read.path.replace(/\./g, '\\.')}: [a-z_]+$`, 'm'), read.path);
+    assert.doesNotMatch(packet, /pinned|```|SECRET/, 'a refusal carries no text and no citation');
+    const outline = getCallTextAlone(responses, 3);
+    assert.match(outline, /: 0 read, 1 outlined, 0 not returned\. /);
+    assert.match(outline, /^== outline index\.ts \(/m);
+    assert.doesNotMatch(outline, /pinned|```/, 'an outline carries no source text and no citation');
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -2637,17 +2549,12 @@ await test("analyze_repo_structure — round-trips bounded sourceReads through M
         ],
       }),
     ]);
-    const result = getCallParsed(responses, 2);
-    assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.sourceEvidence.rows[0].text, "const allow = true;\r\n");
-    assert.match(result.sourceEvidence.rows[0].citation, /^source:src\/policy\.ts#L1-L1@sha256:[a-f0-9]{64}$/);
-    assert.deepEqual(
-      { status: result.sourceEvidence.rows[1].status, reason: result.sourceEvidence.rows[1].reason },
-      { status: "refused", reason: "not_found" },
-    );
-    assert.equal("text" in result.sourceEvidence.rows[1], false);
-    assert.equal("citation" in result.sourceEvidence.rows[1], false);
-    assert.equal(result.delivery, "source_only");
+    const result = getCallTextAlone(responses, 2);
+    assert.match(result, /^Source reads in .*: 1 read, 0 outlined, 1 not returned\. /);
+    assert.ok(result.includes("\n```\nconst allow = true;\r\n```\n"), "the line exactly as it is in the file");
+    assert.match(result, /^cite src\/policy\.ts:L1-L1 pinned source:src\/policy\.ts#L1-L1@sha256:[a-f0-9]{64}$/m);
+    assert.match(result, /^== refused src\/missing\.ts: not_found$/m);
+    assert.equal(result.split("pinned ").length, 2, "only the read row carries a citation");
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -3566,7 +3473,7 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
       callTool(3, "infer_imports", { rootPath: repoRoot }),
       callTool(4, "index_project", { rootPath: repoRoot }),
     ]);
-    assert.equal(getCallStructured(responses, 2).contract, "breadthMap:v1");
+    assert.match(getCallTextAlone(responses, 2), /^Breadth map of /);
     const analyze = analyzeRepoStructure(repoRoot);
     const imports = getCallParsed(responses, 3);
     const index = getCallParsed(responses, 4);
@@ -3941,7 +3848,7 @@ await test("index_project — Python package and import boundaries reach the pub
     const imports = getCallParsed(responses, 4);
 
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(getCallStructured(responses, 3).contract, "breadthMap:v1");
+    assert.match(getCallTextAlone(responses, 3), /^Breadth map of /);
     assert.deepEqual(getCallStructured(responses, 4), imports);
     assert.deepEqual(result.analyze.project, {
       slug: "protocol-client",

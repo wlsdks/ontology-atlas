@@ -17,19 +17,18 @@ export function verifyImportAnalysis(responses) {
     return false;
   }
   try {
-    // The breadth map is read as rows; its object travels as structuredContent.
-    const text = analyzeRepoStructureRes.result.content?.[0]?.text || '';
-    const parsed = analyzeRepoStructureRes.result.structuredContent;
-    const failure = analyzeRepoStructureFailure(parsed);
+    // The breadth map travels as its text rows alone: one block, no structuredContent.
+    const { content = [], structuredContent } = analyzeRepoStructureRes.result;
+    if (structuredContent !== undefined || content.length !== 1) {
+      log('fail', 'analyze_repo_structure breadth map must be one text block with no structuredContent');
+      return false;
+    }
+    const failure = analyzeRepoStructureFailure(content[0]?.text);
     if (failure) {
       log('fail', failure);
       return false;
     }
-    if (!text.startsWith('Breadth map of ')) {
-      log('fail', 'analyze_repo_structure text is not the rendered breadth map');
-      return false;
-    }
-    log('ok', `analyze_repo_structure: ${formatCount(parsed.size.units, 'product unit')}, ${formatCount(parsed.size.productLines, 'line')}, ${formatCount(parsed.entryPoints.length, 'entry point')}`);
+    log('ok', `analyze_repo_structure: ${/: (\d+ product units, .*? files)/.exec(content[0].text)[1]}`);
   } catch (err) {
     log('fail', `failed to parse analyze_repo_structure response: ${err.message}`);
     return false;
