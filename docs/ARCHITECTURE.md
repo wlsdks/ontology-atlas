@@ -186,7 +186,8 @@ every Markdown file: paths, stamps, and each document's words with their
 positions, so a document's text can be pieced back together from it. Anyone
 who can read the user account's cache folder can read those words; Settings
 says so beside the switch. Every row carries the stamp of the file it came from (modified time, size, and
-change time on Unix) and is used only while that stamp still matches; a file
+change time: Unix `ctime`, NTFS and ReFS `ChangeTime`) and is used only while
+that stamp still matches; a file
 modified within two seconds of its row is compared by SHA-256 instead. A
 derived index holds only what can be recomputed from vault files: no user state,
 edits, approvals or drafts. It lives in the OS cache directory, never in the
@@ -215,9 +216,16 @@ has no index.
 
 Beside it, `rows.sqlite` holds per file and per producer what a program
 computed from that file, so a reopen reads and derives only the files that
-changed. The app's producer (`app-entry/<n>+<release>`) keeps what
-`buildMdEntry` derives: parsed frontmatter, diagnostics, title, headings,
-excerpt and link text, never the body, as DEFLATE-compressed JSON. On open the
+changed. The app's producer keeps what `buildMdEntry` derives: parsed
+frontmatter, diagnostics, title, headings, excerpt, link text and, for each
+page a document links to, the short passage (up to 120 characters each side)
+around its first link there, which the backlinks show; the rest of the body is
+not kept. Values are DEFLATE-compressed JSON. The producer's name,
+`app-entry/<hash>`, is a hash of `build-local-manifest.ts`, every module it
+loads and the versions of the packages they import, made at build time
+(`scripts/lib/row-producer.mjs`), so a build whose parser or derive code
+changed never reads an older build's rows; the dev server has no name and keeps
+no rows. On open the
 full build sends its walked Markdown paths in read order
 (`vault_index_rows_get`); Rust stats each file and hands back a value only while
 the file's stamp equals the row's and the file was modified more than two
@@ -225,7 +233,13 @@ seconds before that version was first seen. The build reads and derives the
 rest with the same code as before and writes those rows back behind itself
 (`vault_index_rows_put`), where each is refused unless its file still has the
 stamp the lookup saw and was older than two seconds then, so no row pairs a
-value with a later version of its file. Another producer version, a missing,
+value with a later version of its file. A volume that keeps no change time
+(FAT, exFAT) gets no rows at all, since there a same-size rewrite whose
+modified time was put back would look unchanged. A batch takes the writer lock
+the search build and Delete take, and carries how many deletions of that
+folder (or of every folder) the app had made when its lookup ran; after a
+Delete or switch-off it writes nothing and never recreates the folder. Another
+producer version, a missing,
 older, newer or damaged file, and the switch turned off all leave the build
 reading every file. Settings lists these fields beside the switch with the
 search words; Delete, turning the switch off and the folder sweep remove both

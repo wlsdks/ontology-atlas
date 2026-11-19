@@ -67,7 +67,7 @@ afterEach(() => {
 
 describe('a full build with the derived index rows', () => {
   vault = new MemoryVault({
-    'a.md': '---\ntitle: A\n---\nSee [[c]].\n',
+    'a.md': '---\ntitle: A\n---\nSee [[c]] first.\n\nMuch later, [[c]] again and [[b]].\n',
     'b.md': '---\ntitle: B\nweight: Infinity\n---\nbody\n',
     'c.md': '---\ntitle: C\ndomains: [a]\n---\n# Heading\n',
   });
@@ -99,6 +99,8 @@ describe('a full build with the derived index rows', () => {
     expect(kept.get('a.md')?.token).toBe('token-a.md');
 
     const stored = JSON.parse(kept.get('a.md')!.value);
+    // Only each target's first passage reaches the manifest, so only that one is kept.
+    expect(stored.linkContexts.map((link: { target: string }) => link.target)).toEqual(['c', 'b']);
     const misfiled = JSON.parse(kept.get('c.md')!.value);
     misfiled.doc.path = 'elsewhere.md';
     tauri.reads = [];
@@ -127,5 +129,8 @@ describe('a full build with the derived index rows', () => {
     await manifestJson();
     const last = tauri.puts.at(-1)!.split('\n');
     expect(last.slice(2, 6)).toEqual(['3', 'a.md', 'b.md', 'c.md']);
+    // Rows are kept under the name of the code that made them, which the build derives itself.
+    expect(process.env.NEXT_PUBLIC_ROW_PRODUCER).toMatch(/^[0-9a-f]{16}$/);
+    expect(last[1]).toBe(`app-entry/${process.env.NEXT_PUBLIC_ROW_PRODUCER}`);
   });
 });

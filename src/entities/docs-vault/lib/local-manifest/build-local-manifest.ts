@@ -737,11 +737,12 @@ async function stampedEntry(entry: WalkEntry, stamps: VaultStampIndex | null): P
 }
 
 /**
- * The derived index's name for what `buildMdEntry` computes. Raise the number whenever its output
- * changes; the release version alone already drops every row when the app updates.
+ * The derived index's name for what `buildMdEntry` computes: a hash of this module and everything
+ * it loads, made at build time (scripts/lib/row-producer.mjs), so a build whose derive code changed
+ * never reads an older build's rows. A build without one (the dev server) keeps no rows.
  */
-const APP_ENTRY_ROWS_VERSION = 1;
-export const APP_ENTRY_ROWS = `app-entry/${APP_ENTRY_ROWS_VERSION}+${process.env.NEXT_PUBLIC_RELEASE_VERSION ?? 'dev'}`;
+const ROW_PRODUCER = process.env.NEXT_PUBLIC_ROW_PRODUCER;
+export const APP_ENTRY_ROWS = ROW_PRODUCER ? `app-entry/${ROW_PRODUCER}` : null;
 /** Paths per lookup: the node folders come back first, so the first partial paint stays early. */
 const ROWS_LOOKUP_CHUNK = 2048;
 const ROWS_LOOKUP_AHEAD = 2;
@@ -783,6 +784,16 @@ function storedMdEntry(
   };
 }
 
+/**
+ * Only a document's first link to each target reaches the manifest (`backlinkContribution`), so a
+ * stored row keeps that one passage and no other.
+ */
+function firstLinkPerTarget(contexts: readonly LinkContext[] | undefined): LinkContext[] | undefined {
+  if (!contexts) return undefined;
+  const seen = new Set<string>();
+  return contexts.filter((context) => !seen.has(context.target) && Boolean(seen.add(context.target)));
+}
+
 interface RowSource {
   /** Entries from stored rows, aligned with `indices`; `undefined` where the file must be read. */
   take(indices: readonly number[]): Promise<Array<BuiltVaultEntry | undefined>>;
@@ -797,6 +808,7 @@ interface RowSource {
  * writes new rows behind the build in batches. Any failure only means more files are read.
  */
 function createRowSource(
+  namespace: string,
   rootPath: string,
   files: readonly WalkEntry[],
   tiers: readonly number[],
@@ -824,7 +836,7 @@ function createRowSource(
     const pending = lookups[number];
     if (pending) return pending;
     const chunk = chunks[number];
-    const started = getVaultRows(rootPath, APP_ENTRY_ROWS, chunk.map((index) => files[index].relativePath)).then(
+    const started = getVaultRows(rootPath, namespace, chunk.map((index) => files[index].relativePath)).then(
       (answer) => {
         if (!answer) {
           answeredAll = false;
@@ -851,7 +863,7 @@ function createRowSource(
   };
   let batch: VaultRowWrite[] = [];
   const write = (rows: VaultRowWrite[], retain: readonly string[] | null) => {
-    rowWrites = rowWrites.then(() => putVaultRows(rootPath, APP_ENTRY_ROWS, rows, retain)).catch(() => undefined);
+    rowWrites = rowWrites.then(() => putVaultRows(rootPath, namespace, rows, retain)).catch(() => undefined);
   };
   return {
     async take(indices) {
@@ -877,7 +889,7 @@ function createRowSource(
         path: entry.relativePath,
         token,
         lastModified: entry.lastModified,
-        value: JSON.stringify({ doc: entry.doc, linkContexts: entry.linkContexts }),
+        value: JSON.stringify({ doc: entry.doc, linkContexts: firstLinkPerTarget(entry.linkContexts) }),
       });
       if (batch.length >= ROWS_WRITE_BATCH) {
         write(batch, null);
@@ -910,7 +922,7 @@ async function collectEntries(
     : null;
   const readMarkdown = createMarkdownReader(nativeRoot);
   const tiers = files.map(readTier);
-  const rows = nativeRoot ? createRowSource(nativeRoot, files, tiers, internMetadata) : null;
+  const rows = nativeRoot && APP_ENTRY_ROWS ? createRowSource(APP_ENTRY_ROWS, nativeRoot, files, tiers, internMetadata) : null;
   const results: Array<BuiltVaultEntry | undefined> = new Array(files.length);
   const total = files.filter((entry) => entry.kind === 'md').length;
   let read = 0;

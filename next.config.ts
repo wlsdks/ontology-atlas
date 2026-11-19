@@ -3,6 +3,7 @@ import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 import { watchMessages } from './scripts/i18n/build-messages.mjs';
+import { rowProducerHash } from './scripts/lib/row-producer.mjs';
 
 import packageJson from './package.json' with { type: 'json' };
 
@@ -65,5 +66,8 @@ export default function config(phase: string): NextConfig {
   if (phase === PHASE_DEVELOPMENT_SERVER && !scope.atlasMessagesWatcher) {
     scope.atlasMessagesWatcher = watchMessages();
   }
-  return withNextIntl(nextConfig);
+  // Names the code behind the app's cached rows (scripts/lib/row-producer.mjs). The dev server
+  // reloads that code without restarting, so it gets no name and keeps no rows.
+  const env = phase === PHASE_DEVELOPMENT_SERVER ? nextConfig.env : { ...nextConfig.env, NEXT_PUBLIC_ROW_PRODUCER: rowProducerHash() };
+  return withNextIntl({ ...nextConfig, env });
 }
