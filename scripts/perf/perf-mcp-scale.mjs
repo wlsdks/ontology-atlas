@@ -6,8 +6,9 @@
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
 //   --check: at 50,000 files and both flows unless given, gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
 //     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or, on macOS, the physical
-//     footprint after 20 calls exceeds --max-footprint-mb (512) or its peak --max-peak-footprint-mb
-//     (1024). The footprint is what Activity Monitor shows and what the user pays. RSS is printed,
+//     footprint after 20 calls exceeds --max-footprint-mb (175) or its peak --max-peak-footprint-mb
+//     (430): the most measured on either flow, about 15% added, so a regression of a few dozen
+//     MB fails. The footprint is what Activity Monitor shows and what the user pays. RSS is printed,
 //     never gated: on macOS it keeps counting freed pages the allocator holds for reuse, and
 //     elsewhere the footprint is not read, so memory is not gated there. The source server is
 //     measured after it and printed, not gated.
@@ -39,8 +40,8 @@ const server = explicitServer ? resolve(explicitServer) : check ? builtBinary() 
 const isScript = (path) => /\.(?:c|m)?js$/.test(path);
 const baseDir = resolve(flag('dir', join(tmpdir(), 'atlas-mcp-scale')));
 const maxCpuMs = Number(flag('max-cpu-ms', '600'));
-const maxFootprintMb = Number(flag('max-footprint-mb', '512'));
-const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '1024'));
+const maxFootprintMb = Number(flag('max-footprint-mb', '175'));
+const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '430'));
 const TOTAL_CALLS = 20;
 const SHAPES = { a: 'all', b: 'key' };
 const tool = flag('tool', null);
@@ -156,6 +157,8 @@ const READS = [
   ['find_backlinks', { slug: 'elements/el-15' }],
   ['find_path', { from: 'capabilities/cap-5', to: 'domains/dom-1' }],
   ['compile_ontology', { summary: true }],
+  // The one read that scores file text, which the server reads back from disk.
+  ['find_evidence', { title: 'relation boundary meaning' }],
 ];
 
 async function openFlow(serverPath, flow) {

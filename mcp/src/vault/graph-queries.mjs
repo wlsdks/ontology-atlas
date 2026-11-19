@@ -1,6 +1,7 @@
 import { nodeUidIssue } from '../schema.mjs';
 
-import { docTitle, loadVaultDocs } from './documents.mjs';
+import { isIndexedLinkNeedle, linkKeysHold } from './doc-shape.mjs';
+import { cachedDocShape, docTitle, loadVaultDocs } from './documents.mjs';
 import { collectNeighborRefs, relationNoteFor } from './relation-refs.mjs';
 
 function assertBoundedNonNegativeInteger(value, name, { max }) {
@@ -195,13 +196,14 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
         if (!matchedKeys.includes(key)) matchedKeys.push(key);
       }
     }
+    // The cache indexed each body's link targets while it held the text; a needle
+    // the index cannot answer for exactly reads the body.
+    const shape = cachedDocShape(doc);
     const bodyHit = [...bodyNeedles].some(
       (needle) =>
-        doc.body.includes(`[[${needle}]]`) ||
-        doc.body.includes(`[[${needle}#`) ||
-        doc.body.includes(`[[${needle}|`) ||
-        doc.body.includes(`(${needle}.md`) ||
-        doc.body.includes(`/${needle}.md`),
+        shape && isIndexedLinkNeedle(needle)
+          ? linkKeysHold(shape.links, needle)
+          : bodyLinksTo(doc.body, needle),
     );
     if (matchedKeys.length === 0 && !bodyHit) continue;
     const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
@@ -219,6 +221,14 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
     });
   }
   return matches;
+}
+
+function bodyLinksTo(body, needle) {
+  return body.includes(`[[${needle}]]`) ||
+    body.includes(`[[${needle}#`) ||
+    body.includes(`[[${needle}|`) ||
+    body.includes(`(${needle}.md`) ||
+    body.includes(`/${needle}.md`);
 }
 
 /**
