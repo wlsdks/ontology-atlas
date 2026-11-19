@@ -73,8 +73,18 @@ function NotFoundBody() {
     </Button>
   );
 
-  // The prerendered answer is "English, web", so the canvas waits a frame instead.
-  if (!answered) return <TerminalStatePending testId="not-found-pending" />;
+  // The prerendered answer is "English, web", so the canvas waits a frame instead. A reader
+  // without scripts, a crawler among them, still gets the English destinations.
+  if (!answered) {
+    return (
+      <>
+        <TerminalStatePending testId="not-found-pending" />
+        <noscript>
+          <WebDestinations />
+        </noscript>
+      </>
+    );
+  }
 
   return (
     <TerminalState
