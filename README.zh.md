@@ -30,8 +30,10 @@
 
 - **智能体带着上下文开工。** Claude Code、Codex、Cursor 和 Antigravity 通过 MCP 读取任务涉及的概念、代码路径、依赖关系和待解决的问题。
 - **记录归你所有。** `atlas/` 文件夹里每个概念一个 Markdown 文件，像代码一样用 Git 做版本管理和评审。
-- **什么是真的由你决定。** 智能体的提议在你接受之前，始终只是提议。
+- **什么是真的由你决定。** 智能体做的每处修改都是一份 Markdown diff，你可以保留、修正或撤销；在应用内的对话中，每次写入都会先等你同意。
 - **不知道的，就说不知道。** 地图上的连线只是声明过的关系，并不能证明运行时的影响；缺少证据时显示为未知，而不是安全。
+
+它和代码图谱、Wiki、Obsidian、`CLAUDE.md` 有什么不同？见 [Atlas 对比](https://ontologyatlas.com/zh/guide/atlas-compared/)，其中也写明了哪些场景更适合用那些工具。
 
 ## 快速开始
 
@@ -78,7 +80,44 @@ your-repo/
     └── wiki/              据这些文档撰写的页面，每条事实都有出处
 ```
 
-frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `uid` 永不改变，`slug` 是它当前的地址，`path` 指向它所描述的代码。地图、文档、资料库和 Git 界面读取的都是这些文件。
+frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。概念分为 **项目**、**领域**（长期承担的职责）、**能力**（系统能做的事）和 **要素**（两个及以上能力共用的部件）。它的 `uid` 永不改变，`slug` 是它当前的地址，`path` 指向它所描述的代码。下面这个文件节选自本仓库自己的地图 [`docs/ontology/`](docs/ontology/capabilities/vault-graph-query.md)：
+
+```markdown
+---
+uid: 7c451ebd-9cd0-41a9-bc37-044affac786a
+slug: capabilities/vault-graph-query
+kind: capability
+title: Vault graph query
+domain: domains/meaning-layer
+path: mcp/src/tools/graph.mjs
+dependencies: [elements/graph-compiler, elements/graph-engine, elements/vault-file-store]
+---
+
+## Definition
+Compiles the folder of Markdown files into one typed graph and answers
+structural questions over it, so a person or agent can ask what a node touches
+without opening every file.
+
+## Excludes
+- Writing anything back to the vault.
+
+## Uncertainty
+- The engine is roughly 6,400 lines and was not read beyond its header.
+```
+
+地图、文档、资料库和 Git 界面读取的都是这些文件，智能体读取的也是同一批文件。MCP 服务器共有 40 个工具（24 个读取、16 个写入），智能体最常问的问题由这些工具回答：
+
+| 任务前后智能体会问 | 工具 |
+|---|---|
+| 这部分是做什么的，不负责什么？ | `get_concept` |
+| 改名或删除之前，有哪些地方指向它？ | `find_backlinks` |
+| 这两个概念是怎么连起来的？ | `find_path` |
+| 这次改动可能影响什么？ | `query_ontology` 的 `impact` |
+| 这件事写在哪里？ | `find_evidence` |
+| 记录刚刚新建或修改的内容 | `add_concepts`、`add_relations`、`patch_concept` |
+| 文件夹是否仍然一致？ | `validate_vault` |
+
+以只读方式注册服务器时，只会提供 24 个读取工具（[MCP 参考](mcp/README.md#read-only-registration-oatlas_read_only)）。
 
 你的智能体通过两种方式接触这个文件夹：
 
@@ -106,7 +145,7 @@ Atlas 还处在早期。我们的基准测试尚未显示使用 Atlas 能得到�
 
 ## 文档
 
-[认识 Atlas](docs/guide/what-is-atlas.md) · [最初五分钟](docs/guide/first-five-minutes.md) · [什么会成为概念](docs/guide/what-becomes-a-node.md) · [关系](docs/guide/relations.md) · [规范](docs/ONTOLOGY-ATLAS-SPEC.md) · [功能](docs/FEATURES.md) · [CLI](cli/README.md) · [架构](docs/ARCHITECTURE.md)
+[认识 Atlas](docs/guide/what-is-atlas.md) · [Atlas 对比](docs/guide/atlas-compared.md) · [最初五分钟](docs/guide/first-five-minutes.md) · [从代码构建第一张地图](docs/guide/from-your-repo.md) · [什么会成为概念](docs/guide/what-becomes-a-node.md) · [关系](docs/guide/relations.md) · [规范](docs/ONTOLOGY-ATLAS-SPEC.md) · [功能](docs/FEATURES.md) · [CLI](cli/README.md) · [架构](docs/ARCHITECTURE.md)
 
 ## 参与贡献
 
@@ -118,7 +157,7 @@ pnpm dev
 pnpm checks:changed -- --run
 ```
 
-如何选择检查、推送前检查与 CI、合并以及各通道的时间预算，见[开发检查](docs/DEVELOPMENT-CHECKS.md)。仓库命令表见英文 README 的 [Contributing](README.md#contributing)。
+如何选择检查、推送前检查与 CI、合并、各通道的时间预算以及全部仓库命令，见[开发检查](docs/DEVELOPMENT-CHECKS.md)。
 
 ## Moru
 

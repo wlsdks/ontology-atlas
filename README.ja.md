@@ -30,8 +30,10 @@
 
 - **エージェントは文脈を持って作業を始められます。** Claude Code、Codex、Cursor、Antigravity が MCP 経由で、タスクに関わる概念、コードパス、依存関係、未解決の問いを読み取ります。
 - **記録はあなたのものです。** `atlas/` フォルダに概念ごとに 1 つの Markdown ファイルがあり、コードと同じように Git でバージョン管理とレビューを行います。
-- **何が正しいかはあなたが決めます。** エージェントの提案は、あなたが受け入れるまで提案のままです。
+- **何が正しいかはあなたが決めます。** エージェントによる変更はすべて Markdown の diff として残り、そのまま残すか、直すか、元に戻すかを選べます。アプリ内のチャットでは、書き込みのたびにあなたの許可を待ちます。
 - **分からないことは分からないと示します。** マップ上の線は宣言された関係であり、実行時の影響の証拠ではありません。根拠がなければ「安全」ではなく「不明」と表示されます。
+
+コードグラフ、Wiki、Obsidian、`CLAUDE.md` とは何が違うのか。[Atlas との比較](https://ontologyatlas.com/ja/guide/atlas-compared/)にまとめ、相手のツールのほうが向いている場面も書いています。
 
 ## クイックスタート
 
@@ -78,7 +80,44 @@ your-repo/
     └── wiki/              それらから書いたページ。すべての事実に出典つき
 ```
 
-frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つです。`uid` は変わらず、`slug` は現在のアドレスで、`path` はその概念が説明するコードを指します。マップ、文書、資料室、Git の各画面は、すべてこれらのファイルを読んで表示します。
+frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つです。概念は **プロジェクト**、**ドメイン**（長く続く責務）、**ケイパビリティ**（システムができること）、**要素**（2 つ以上のケイパビリティが共有する部品）のいずれかです。`uid` は変わらず、`slug` は現在のアドレスで、`path` はその概念が説明するコードを指します。次の例は、このリポジトリ自身のマップ [`docs/ontology/`](docs/ontology/capabilities/vault-graph-query.md) にあるファイルを短くしたものです。
+
+```markdown
+---
+uid: 7c451ebd-9cd0-41a9-bc37-044affac786a
+slug: capabilities/vault-graph-query
+kind: capability
+title: Vault graph query
+domain: domains/meaning-layer
+path: mcp/src/tools/graph.mjs
+dependencies: [elements/graph-compiler, elements/graph-engine, elements/vault-file-store]
+---
+
+## Definition
+Compiles the folder of Markdown files into one typed graph and answers
+structural questions over it, so a person or agent can ask what a node touches
+without opening every file.
+
+## Excludes
+- Writing anything back to the vault.
+
+## Uncertainty
+- The engine is roughly 6,400 lines and was not read beyond its header.
+```
+
+マップ、文書、資料室、Git の各画面はこれらのファイルを読み、エージェントも同じファイルを読みます。MCP サーバーのツールは 40 個（読み取り 24、書き込み 16）で、エージェントがよく尋ねる問いには次のツールが答えます。
+
+| タスクの前後にエージェントが尋ねること | ツール |
+|---|---|
+| この部分は何のためにあり、何を扱わないのか | `get_concept` |
+| 名前を変えたり削除したりする前に、何がここを指しているか | `find_backlinks` |
+| この 2 つの概念はどうつながっているか | `find_path` |
+| この変更は何に影響しうるか | `query_ontology` の `impact` |
+| これはどこに書かれているか | `find_evidence` |
+| いま作った・変えたものを記録する | `add_concepts`、`add_relations`、`patch_concept` |
+| フォルダはまだ整合しているか | `validate_vault` |
+
+サーバーを読み取り専用で登録すると、読み取りツール 24 個だけが公開されます（[MCP リファレンス](mcp/README.md#read-only-registration-oatlas_read_only)）。
 
 エージェントがフォルダに届く道は 2 つあります。
 
@@ -106,7 +145,7 @@ Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas
 
 ## ドキュメント
 
-[Atlasとは](docs/guide/what-is-atlas.md) · [最初の5分](docs/guide/first-five-minutes.md) · [概念になるもの](docs/guide/what-becomes-a-node.md) · [つながり](docs/guide/relations.md) · [仕様](docs/ONTOLOGY-ATLAS-SPEC.md) · [機能](docs/FEATURES.md) · [CLI](cli/README.md) · [アーキテクチャ](docs/ARCHITECTURE.md)
+[Atlasとは](docs/guide/what-is-atlas.md) · [Atlas との比較](docs/guide/atlas-compared.md) · [最初の5分](docs/guide/first-five-minutes.md) · [コードから最初のマップを作る](docs/guide/from-your-repo.md) · [概念になるもの](docs/guide/what-becomes-a-node.md) · [つながり](docs/guide/relations.md) · [仕様](docs/ONTOLOGY-ATLAS-SPEC.md) · [機能](docs/FEATURES.md) · [CLI](cli/README.md) · [アーキテクチャ](docs/ARCHITECTURE.md)
 
 ## コントリビュート
 
@@ -118,7 +157,7 @@ pnpm dev
 pnpm checks:changed -- --run
 ```
 
-検査の選び方、プッシュ前の検査と CI、マージ、レーンの予算は[開発チェック](docs/DEVELOPMENT-CHECKS.md)にまとまっています。リポジトリのコマンド表は、英語版 README の [Contributing](README.md#contributing) にあります。
+検査の選び方、プッシュ前の検査と CI、マージ、レーンの予算、リポジトリのコマンド一覧は[開発チェック](docs/DEVELOPMENT-CHECKS.md)にまとまっています。
 
 ## Moru
 
