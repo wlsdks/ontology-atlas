@@ -74,3 +74,21 @@ describe('Pretendard Latin subsets', () => {
     expect([...fontPoints].filter((c) => latinPoints.has(c) && !covered.has(c))).toEqual([]);
   });
 });
+
+describe('Pretendard on Korean pages', () => {
+  const stylesheet = readFileSync(UPSTREAM, 'utf8');
+  const families = new Set([...stylesheet.matchAll(/font-family: '([^']+)'/g)].map(([, family]) => family));
+  const korean = /:root:lang\(ko\) \{\s*--font-sans: ([^;]+);/.exec(readFileSync(path.join(ROOT, 'app/styles/lang-cjk.css'), 'utf8'));
+
+  it('loads every upstream subset as one family, from the stylesheet the layout imports', () => {
+    expect(readFileSync(path.join(ROOT, 'app/layout.tsx'), 'utf8')).toContain(
+      "import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';",
+    );
+    expect([...families]).toHaveLength(1);
+    expect(upstream).toHaveLength([...stylesheet.matchAll(/@font-face/g)].length);
+  });
+
+  it('lists that family after the Latin subsets and before the whole file', () => {
+    expect(korean?.[1]).toBe(`var(--font-pretendard-latin), "${[...families][0]}", var(--font-pretendard), system-ui, sans-serif`);
+  });
+});
