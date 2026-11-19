@@ -25,7 +25,7 @@ const GLIDE_MAX_MS = 640;
  */
 const TARGETS: readonly { selector: string; offset: number }[] = [
   { selector: '[data-testid="gateway-film"], [data-testid="gateway-harness"]', offset: 0 },
-  { selector: '#how, #screens, #start, #source, #faq, [data-testid="gateway-closing"]', offset: 96 },
+  { selector: '#build, #screens, #start, #source, #faq, [data-testid="gateway-closing"]', offset: 96 },
 ];
 
 const SCROLL_KEYS = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ']);
