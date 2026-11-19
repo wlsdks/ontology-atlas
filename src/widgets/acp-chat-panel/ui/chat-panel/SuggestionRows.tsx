@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import {
   BookOpen,
+  FileCode,
   FolderGit2,
   Link2,
   ListChecks,
@@ -23,6 +24,7 @@ import type { ChatT } from './types';
 const KIND_GLYPH: Record<ChatSuggestion['kind'], LucideIcon> = {
   connectSource: FolderGit2,
   build: MapGlyph,
+  readRules: FileCode,
   dependencies: Workflow,
   standAlone: Link2,
   rename: PenLine,
