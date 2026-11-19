@@ -14,6 +14,7 @@
   "status": {
     "idle": "꺼짐",
     "starting": "연결 중",
+    "downloading": "내려받는 중",
     "ready": "준비됨",
     "thinking": "생각 중",
     "awaiting": "승인 대기 중",

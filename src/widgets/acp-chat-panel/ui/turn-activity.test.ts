@@ -99,6 +99,18 @@ describe('turnActivity', () => {
     expect(turnActivity(events, 0, 'atlas-vault', true).written).toEqual({ concepts: 3, relations: 1 });
   });
 
+  it('counts a concept once when the turn writes it again', () => {
+    const events: AcpEvent[] = [
+      user,
+      tool('t1', 'mcp__atlas-vault__add_concepts', 'other', 'completed', undefined, mcpText({
+        concepts: [{ slug: 'capabilities/a', ok: true, changed: true }, { slug: 'capabilities/b', ok: true, changed: true }],
+      })),
+      tool('t2', 'mcp__atlas-vault__patch_concept', 'other', 'completed', undefined, { ok: true, slug: 'capabilities/a', changed: true }),
+      tool('t3', 'mcp__atlas-vault__patch_concept', 'other', 'completed', undefined, { ok: true, slug: 'capabilities/a', changed: true }),
+    ];
+    expect(turnActivity(events, 0, 'atlas-vault', true).written).toEqual({ concepts: 2, relations: 0 });
+  });
+
   it('counts nothing for a write still open or one whose answer was too large to keep', () => {
     const events: AcpEvent[] = [
       user,

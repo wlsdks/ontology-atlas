@@ -14,6 +14,7 @@
   "status": {
     "idle": "未启用",
     "starting": "连接中",
+    "downloading": "下载中",
     "ready": "就绪",
     "thinking": "思考中",
     "awaiting": "等待批准",

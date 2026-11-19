@@ -14,6 +14,7 @@
   "status": {
     "idle": "Off",
     "starting": "Connecting",
+    "downloading": "Downloading",
     "ready": "Ready",
     "thinking": "Thinking",
     "awaiting": "Waiting for approval",

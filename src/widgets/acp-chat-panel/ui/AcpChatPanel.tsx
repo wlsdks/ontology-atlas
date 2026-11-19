@@ -709,6 +709,7 @@ export function AcpChatPanelBody({
           busy={busy}
           connecting={connecting}
           footerStatus={footerStatus}
+          downloading={download !== null}
           displayStatus={displayStatus}
           turnSilent={turnSilent}
           turnElapsedLabel={turnElapsedLabel}

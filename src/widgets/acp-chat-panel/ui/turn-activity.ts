@@ -16,7 +16,7 @@ export interface TurnActivity {
   target: string | null;
   /** Tool calls this turn has opened so far. */
   steps: number;
-  /** Concepts and relations this turn's finished vault writes report as written. */
+  /** Distinct concepts and relations this turn's finished vault writes report as written. */
   written: TurnWrites;
 }
 
@@ -94,21 +94,34 @@ function vaultWriteResult(raw: unknown, depth = 0): Record<string, unknown> | nu
 
 const wroteRow = (row: unknown) => asRecord(row)?.ok === true && asRecord(row)?.changed === true;
 
-/** Rows a finished write reports as written: a batch counts its written rows, a single call itself. */
-function writtenRows(result: Record<string, unknown>): number {
-  const rows = Array.isArray(result.concepts) ? result.concepts : Array.isArray(result.relations) ? result.relations : null;
-  if (rows) return rows.filter(wroteRow).length;
-  return wroteRow(result) ? 1 : 0;
+/** What a written row names, so a concept patched five times counts as one concept. */
+function rowIdentity(row: Record<string, unknown>, fallback: string): string {
+  if (typeof row.slug === 'string') return row.slug;
+  if (typeof row.from === 'string' && typeof row.to === 'string') return `${row.from} ${String(row.type)} ${row.to}`;
+  return fallback;
 }
 
-function addWrites(written: TurnWrites, event: ToolEvent): TurnWrites {
-  if (event.status !== 'completed') return written;
+/** Identities of the rows a finished write reports as written: a batch's written rows, or the single call. */
+function writtenIdentities(result: Record<string, unknown>, callId: string): string[] {
+  const rows = Array.isArray(result.concepts) ? result.concepts : Array.isArray(result.relations) ? result.relations : [result];
+  return rows.flatMap((row, index) => {
+    const record = asRecord(row);
+    return record && wroteRow(record) ? [rowIdentity(record, `${callId}#${index}`)] : [];
+  });
+}
+
+interface WrittenSets {
+  concepts: Set<string>;
+  relations: Set<string>;
+}
+
+function collectWrites(written: WrittenSets, event: ToolEvent, callId: string): void {
+  if (event.status !== 'completed') return;
   const name = parseAtlasToolCall(event.title, event.rawInput)?.name;
-  const target = name && CONCEPT_WRITE_TOOLS.has(name) ? 'concepts' : name && RELATION_WRITE_TOOLS.has(name) ? 'relations' : null;
-  if (!target) return written;
+  const target = name && CONCEPT_WRITE_TOOLS.has(name) ? written.concepts : name && RELATION_WRITE_TOOLS.has(name) ? written.relations : null;
+  if (!target) return;
   const result = vaultWriteResult(event.rawOutput);
-  const rows = result ? writtenRows(result) : 0;
-  return rows > 0 ? { ...written, [target]: written[target] + rows } : written;
+  if (result) for (const identity of writtenIdentities(result, callId)) target.add(identity);
 }
 
 function kindOf(event: ToolEvent, label: ToolLabel): TurnActivityKind {
@@ -128,7 +141,7 @@ export function turnActivity(
   textArriving: boolean,
 ): TurnActivity {
   let steps = 0;
-  let written: TurnWrites = { concepts: 0, relations: 0 };
+  const writtenSets: WrittenSets = { concepts: new Set(), relations: new Set() };
   let open: ToolEvent | null = null;
   let last: AcpEvent | null = null;
   for (let index = lastUserEventIndex + 1; index < events.length; index += 1) {
@@ -136,9 +149,10 @@ export function turnActivity(
     last = event;
     if (event.kind !== 'tool') continue;
     steps += 1;
-    written = addWrites(written, event);
+    collectWrites(writtenSets, event, String(index));
     if (!SETTLED.has(event.status)) open = event;
   }
+  const written: TurnWrites = { concepts: writtenSets.concepts.size, relations: writtenSets.relations.size };
   if (open) {
     const title = canonicalToolTitle(open.title, open.rawInput);
     const label = withKindFallback(toolLabel(title, vaultServerName), title, vaultServerName, open.toolKind);

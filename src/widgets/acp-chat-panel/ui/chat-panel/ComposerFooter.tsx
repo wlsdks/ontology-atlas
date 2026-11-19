@@ -129,6 +129,8 @@ interface ComposerFooterProps {
   busy: boolean;
   connecting: boolean;
   footerStatus: FooterStatus;
+  /** A first-run download is running, so "starting" reads as downloading. */
+  downloading: boolean;
   displayStatus: FooterStatus;
   turnSilent: boolean;
   turnElapsedLabel: string | null;
@@ -155,6 +157,7 @@ export function ComposerFooter({
   busy,
   connecting,
   footerStatus,
+  downloading,
   displayStatus,
   turnSilent,
   turnElapsedLabel,
@@ -231,7 +234,7 @@ export function ComposerFooter({
             data-testid="acp-status-words"
             className={cn('min-w-0 truncate', workingShimmer(composerStatusLive(footerStatus, turnSilent)))}
           >
-            {t(`status.${footerStatus}`)}
+            {t(downloading && footerStatus === 'starting' ? 'status.downloading' : `status.${footerStatus}`)}
             {turnElapsedLabel ? <> <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span></> : null}
           </span>
         </span>
