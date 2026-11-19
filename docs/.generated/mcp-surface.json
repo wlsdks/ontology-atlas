@@ -152,6 +152,7 @@
         "name": "finalize_project_meaning",
         "mode": "write",
         "arguments": [
+          "answers",
           "expected_mtime",
           "projectSlug"
         ],
