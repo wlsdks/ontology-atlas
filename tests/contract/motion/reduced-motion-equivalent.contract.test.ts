@@ -75,7 +75,11 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "build-quest-mark":
     "A one-shot pop of a mission's tick on the download page, declared only inside no-preference. Under reduced motion the tick is simply there.",
   "build-hint-at":
-    "The tutorial hand that shows where to press, or drags the missing line, after a still moment on the download page; declared only inside no-preference, not displayed otherwise, and resumed only by useInViewMotion. Under reduced motion the concept to press keeps its still ring and Moru's line names it.",
+    "The tutorial hand that shows where to press after a still moment on the download page; declared only inside no-preference, not displayed otherwise, and resumed only by useInViewMotion. Under reduced motion the concept to press keeps its still ring and Moru's line names it.",
+  "build-scan":
+    "One band of light crossing the download page's build stage while the sample agent reads the repository, declared only inside no-preference. Under reduced motion the concepts simply appear and Moru's line says the files are being read.",
+  "build-log-row":
+    "The newest row of the sample agent's tool calls rising into place on the download page, declared only inside no-preference. Under reduced motion the row is simply there.",
   "build-hint-ripple":
     "The ring under the tutorial hand's press on the download page, part of the same hint and as absent under reduced motion.",
   "build-node-ring":

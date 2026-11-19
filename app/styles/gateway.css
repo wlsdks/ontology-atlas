@@ -995,7 +995,7 @@
 
 .build-map {
   container-type: size;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -1010,6 +1010,29 @@
 @container (min-width: 40rem) {
   .build-map {
     aspect-ratio: 16 / 10;
+  }
+}
+
+/* Pieces on the stage grow with it, so a wide stage is not a phone's map left small in its middle. */
+.build-zoom {
+  zoom: 0.9;
+}
+
+@container (min-width: 30rem) {
+  .build-zoom {
+    zoom: 1;
+  }
+}
+
+@container (min-width: 52rem) {
+  .build-zoom {
+    zoom: 1.12;
+  }
+}
+
+@container (min-width: 64rem) {
+  .build-zoom {
+    zoom: 1.24;
   }
 }
 
@@ -1055,14 +1078,16 @@
 
 /* A concept's dot, not its whole label, sits on its point: 12px of padding plus half the dot. */
 .build-node-anchor {
-  --build-dot: 20px;
+  --build-dot: 18px;
   translate: -50% calc(-12px - var(--build-dot) / 2);
 }
 
-@container (min-width: 40rem) {
-  .build-node-anchor {
-    --build-dot: 26px;
-  }
+.build-node-anchor[data-kind='domain'] {
+  --build-dot: 24px;
+}
+
+.build-node-anchor[data-kind='project'] {
+  --build-dot: 30px;
 }
 
 .build-node-mark,
@@ -1087,15 +1112,77 @@
   cursor: grab;
 }
 
-/* The folder. */
-.build-at:has(> .build-folder) {
+/* The mission card, gone once the first map is asked for. */
+.build-mission-at {
   opacity: 0;
   scale: 0.9;
 }
 
-.build-at[data-shown]:has(> .build-folder) {
+.build-mission-at[data-shown] {
   opacity: 1;
   scale: 1;
+}
+
+/* A cluster's light pool, lit as the agent writes it. */
+.build-pool-at {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.build-pool-at[data-shown] {
+  opacity: 1;
+}
+
+.build-pool {
+  left: -18cqmin;
+  top: -18cqmin;
+  width: 36cqmin;
+  height: 36cqmin;
+  background: radial-gradient(circle, var(--color-indigo-a14) 0%, transparent 68%);
+}
+
+/* The agent reading the repository: a band of light that crosses the stage once. */
+.build-scan {
+  width: 30%;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--color-indigo-a14), transparent);
+  translate: -100% 0;
+}
+
+/* Atlas's count of what to fix, pinned to the stage's top edge while it is read. */
+.build-found {
+  z-index: 1;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-amber-source-a30);
+  background: var(--color-panel);
+  opacity: 0;
+  transition: opacity var(--motion-slow) var(--motion-ease);
+}
+
+.build-found[data-shown] {
+  opacity: 1;
+}
+
+.build-found-dot {
+  background: var(--color-status-warning);
+}
+
+/* The agent's tool calls, the newest brightest. */
+.build-log-row {
+  color: var(--color-text-tertiary);
+}
+
+.build-log-row[data-latest] {
+  color: var(--color-text-primary);
+}
+
+.build-log-tool {
+  color: var(--map-indigo-bright);
+}
+
+.build-log-row[data-atlas] .build-log-tool {
+  color: var(--color-status-warning);
 }
 
 .build-folder-icon {
@@ -1181,6 +1268,7 @@
 
 /* Concepts. */
 .build-node-at {
+  --delay: calc(var(--motion-stagger) * 3 * var(--order, 0));
   opacity: 0;
   scale: 0.4;
   pointer-events: none;
@@ -1244,6 +1332,35 @@
   border-color: var(--map-recent-change);
 }
 
+/* The project is the map's amber hub; a domain holds a cluster and is drawn a step larger. */
+.build-node[data-kind='project'] .build-node-dot {
+  border-color: var(--map-amber-hub);
+  background: radial-gradient(circle, var(--map-amber-hub) 0 38%, var(--map-node-fill-project) 44%);
+}
+
+.build-node[data-kind='project'] .build-node-glow {
+  background: radial-gradient(circle, var(--map-amber-hub) 0%, transparent 70%);
+}
+
+.build-node[data-kind='domain'] .build-node-dot {
+  border-width: 3px;
+  background: radial-gradient(circle, var(--map-indigo-bright) 0 30%, var(--map-node-fill-domain) 36%);
+}
+
+.build-node[data-kind='capability'] .build-node-name {
+  color: var(--color-text-secondary);
+}
+
+/* A concept Atlas counted as standing alone: a dashed amber edge until a line reaches it. */
+.build-node[data-lone] .build-node-dot {
+  border-style: dashed;
+  border-color: var(--color-status-warning);
+}
+
+.build-node[data-lone] .build-node-glow {
+  background: radial-gradient(circle, var(--color-status-warning) 0%, transparent 70%);
+}
+
 /* Without the pulse (reduced motion), the concept to tap keeps one still halo. */
 .build-node[data-target] .build-node-ring,
 .build-node[data-changed] .build-node-ring {
@@ -1253,6 +1370,20 @@
 
 .build-node[data-checked] .build-node-ring {
   opacity: 0;
+}
+
+/* The lines from a cluster's domain to its concepts, quieter than the relations. */
+.build-tree {
+  stroke: var(--map-indigo-bright);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.32;
+  transition: stroke-dashoffset var(--motion-expressive) var(--motion-ease) calc(var(--motion-base) * 1);
+}
+
+.build-tree[data-drawn] {
+  stroke-dashoffset: 0;
 }
 
 /* Relations draw from their first concept to their second. */
@@ -1360,7 +1491,7 @@
 }
 
 /* A name that reads like code is the one Atlas counts to fix. */
-.build-node-name[data-code-name] {
+.build-node .build-node-name[data-code-name] {
   color: var(--color-status-warning);
 }
 
@@ -1642,6 +1773,14 @@
     animation-play-state: running;
   }
 
+  .build-scan[data-shown] {
+    animation: buildScan calc(var(--motion-base) * 7) var(--motion-ease) both;
+  }
+
+  .build-log-row[data-latest] {
+    animation: buildLineIn var(--motion-slow) var(--motion-ease) both;
+  }
+
   .build-pickup {
     display: block;
     animation: buildPickup var(--motion-choreography) var(--motion-ease) var(--burst-delay) both;
@@ -1707,6 +1846,13 @@
   15% { opacity: 1; scale: 1; }
   75% { opacity: 1; scale: 0.9; }
   100% { opacity: 0; scale: 0.5; }
+}
+
+@keyframes buildScan {
+  0% { opacity: 0; translate: -100% 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; translate: 100cqw 0; }
 }
 
 @keyframes buildHintTap {

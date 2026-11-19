@@ -154,11 +154,11 @@
   "build": {
     "eyebrow": "动手试试",
     "title": "和 Moru 一起做地图",
-    "sub": "用一个示例仓库，大约一分钟：Claude Code 写出第一张地图，你修正 Atlas 找到的地方，再看一次提交改了什么。",
+    "sub": "一个示例仓库，一分钟多一点。Claude Code 读完仓库写出第一张地图，你修改 Atlas 找到的地方，再看看一次提交改了什么。",
     "repo": "示例仓库",
     "mission": {
       "eyebrow": "1 分钟任务",
-      "title": "完成网店仓库的地图"
+      "title": "完成一个商店应用的地图"
     },
     "files": "{count} 个文件",
     "stepCount": "{step}/6",
@@ -171,29 +171,31 @@
       "done": "完成"
     },
     "quests": {
-      "open": "打开文件夹",
-      "build": "Claude Code 写出第一张地图",
-      "rename": "改掉像代码的名字",
+      "open": "生成第一张地图",
+      "build": "Claude Code 写地图",
+      "rename": "修改像代码的名字",
       "link": "连上孤立的概念",
       "change": "找出提交改了哪个概念",
       "done": "完成地图"
     },
     "moru": {
-      "closed": "这是一个小网店的仓库。点开始后，Claude Code 会写出第一张地图，我们再修正 Atlas 找到的地方。能拿到三颗星吗？",
-      "building": "Claude Code 正在读 {count} 个文件，写下概念和关系。",
-      "rename": "第一张地图出来了！Atlas 找到了要改的地方。先点像代码一样的 {name}。",
-      "renaming": "换成人们平时说的词吧。叫它什么好？",
-      "renameHint": "名字是人话，第一次看地图的人也能马上看懂。",
-      "linkStart": "{to} 是孤立的。{from} {reason}。从 {from} 连到 {to}。",
-      "linkEnd": "很好。现在点 {to}，把线连上。",
-      "miss": "不是这个。请点发光的 {name}。",
-      "commit": "两处都改好了！现在 Claude Code 改了代码并提交了。在地图上看看吧？",
-      "impact": "改动的文件在 {name} 里。点一下发光的 {name}。",
-      "inspect": "这里一眼就能看到改了什么，以及它连着哪些概念。",
+      "closed": "一个小商店应用。按下按钮，Claude Code 会读取仓库并写出第一张地图，然后我们修改 Atlas 找到的地方。能拿到三颗星吗？",
+      "building": "Claude Code 正在读取 {count} 个文件，写下概念和关系。看地图长出来吧！",
+      "rename": "第一张地图出来了！Atlas 找到了要改的地方。先点像代码一样的名字 {first} 和 {second}。",
+      "renameLast": "还剩一个！也点一下黄色的 {name}。",
+      "renaming": "把 {name} 改成人们常说的词吧，叫什么好？",
+      "renameHint": "用人话起的名字，第一次看地图的人也能马上读懂。",
+      "linkStart": "现在 {first} 和 {second} 是孤立的。先点孤立的概念，再点它该连上的概念。",
+      "linkLast": "还剩一个！把孤立的 {name} 也连上。",
+      "linkEnd": "很好！{from} {reason}。现在点 {to} 连上线。",
+      "miss": "哎呀，不是那个。请点发光的概念（{name}）。",
+      "commit": "全改好了！现在 Claude Code 改了代码并提交了。在地图上看看吧？",
+      "impact": "改动的文件在 {name} 里，并沿着你刚连的线传到了 {linked}。点发光的 {name}。",
+      "inspect": "改了什么、连着哪些概念，一眼就能看到。",
       "done": "完成！这张地图以 Markdown 文件留在仓库里，你和智能体一起读它。"
     },
     "actions": {
-      "start": "开始",
+      "start": "生成第一张地图",
       "commit": "在地图上查看",
       "confirm": "知道了",
       "restart": "重新开始",
@@ -202,14 +204,27 @@
     },
     "suggested": "Moru 推荐",
     "names": {
+      "shop": "商店",
+      "shopping": "购物",
+      "catalog": "商品目录",
+      "search": "搜索",
       "cart": "购物车",
+      "orders": "订单",
       "payment": "支付",
-      "account": "登录"
+      "shipping": "配送",
+      "coupon": "优惠券",
+      "members": "会员",
+      "login": "登录",
+      "profile": "个人资料",
+      "refund": "退款",
+      "alerts": "通知"
     },
-    "altName": "账户",
     "relations": {
+      "findsItems": "查找商品",
       "readsTotal": "读取总额",
-      "needsLogin": "需要登录"
+      "needsLogin": "需要登录",
+      "handlesRefunds": "处理退款",
+      "sendsUpdates": "发送配送消息"
     },
     "commitAuthor": "Claude Code 提交了",
     "commitMessage": "fix(payment): 卡支付金额取整",
@@ -233,9 +248,19 @@
       "relation": "+1 关系",
       "changed": "有改动"
     },
-    "honesty": "这是用示例仓库展示的体验。实际使用时，Claude Code 或 Codex 也是通过 MCP 读取文件、写下概念和关系，Atlas 会数出像代码的名字和孤立的概念。改的时候可以自己动手，也可以交给智能体。",
+    "honesty": "这是用示例仓库展示的体验。实际使用时，在应用里按下“生成第一张地图”，Claude Code 或 Codex 会通过 MCP 读取仓库并写下概念和关系，Atlas 会数出像代码的名字和孤立的概念。你可以自己改，也可以交给智能体。",
     "stageLabel": "和 Moru 一起做的示例地图",
-    "nodeLabel": "{name} 概念，{count} 个文件"
+    "nodeLabel": "{name} 概念，{count} 个文件",
+    "altNames": {
+      "login": "账户",
+      "coupon": "折扣"
+    },
+    "found": "Atlas 找到 · 像代码的名字 {names} 个 · 孤立的概念 {lone} 个",
+    "log": {
+      "read": "src/ 中的 {count} 个文件",
+      "cluster": "{name} 等 {count} 个",
+      "relations": "{count} 条关系"
+    }
   },
   "harnessFilm": {
     "label": "Harness 标签页：你仓库里的代理配置",
