@@ -158,6 +158,7 @@ jobs:
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
         with:
           toolchain: stable
+          components: clippy, rustfmt
 
       # Almost all of this job's time is Rust compilation (measurement on 2026-08-02, step durations from the last successful run): of 720 seconds, **637 seconds (88%)** — 437 seconds for the release bundle +
       # 200 seconds for `cargo test`'s debug compilation. Even if we set all other steps to 0,
@@ -196,6 +197,17 @@ jobs:
 
       - name: Native bridge tests on Windows
         run: pnpm test:desktop:bridge
+
+      # A panic in a sync Tauri command aborts the whole app, so `unwrap`, slice indexing and `panic!`
+      # outside tests are findings (`[workspace.lints.clippy]` in `src-tauri/Cargo.toml`) and `-D warnings`
+      # makes them fail this job. The commands are the ones `pnpm checks:changed` names for Rust changes
+      # (`RUST_LINT_COMMAND`), so a local run and this job judge the same thing. The Windows-only `cfg`
+      # code is compiled, and so linted, only here and on the Windows runner of the release.
+      - name: Lint Rust with clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
 
       # The installer (9 of a PR run's 15 minutes) is built after merge, on the push to
       # `main`, and for release from the tag in `release-macos.yml`. A pull request stops at

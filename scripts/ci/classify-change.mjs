@@ -16,6 +16,7 @@ import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
 import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
+import { RUST_LINT_COMMAND } from '../lib/check-rules/desktop.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -240,7 +241,15 @@ function isBrowserInput(path) {
   return matchesAny(path, BROWSER_INPUTS);
 }
 
+/**
+ * Commands that need a Tauri toolchain, which no Linux lane has (no GTK/WebKitGTK headers, so
+ * `glib-sys` fails). The Windows beta job (`windows-beta-check.yml`, triggered by `src-tauri/**`)
+ * runs the Rust lint, so a plan that leaves it out of every lane is routing, not a skipped gate.
+ */
+export const NATIVE_TOOLCHAIN_COMMANDS = Object.freeze([RUST_LINT_COMMAND]);
+
 function commandLane(command) {
+  if (NATIVE_TOOLCHAIN_COMMANDS.includes(command)) return 'native';
   if (command.startsWith(PLAYWRIGHT_PREFIX)) return 'e2e';
   if (
     command === 'pnpm knip' ||

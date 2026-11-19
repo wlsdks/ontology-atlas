@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { suggestFocusedChecks } from '../lib/ci/focused-check-suggestions.mjs';
+import { RUST_LINT_COMMAND } from '../lib/check-rules/desktop.mjs';
 import { commandsForLane } from './run-ci-lane.mjs';
 import {
   CORE_CONTRACT_DIRECTORIES,
@@ -16,6 +17,7 @@ import {
   decodePlan,
   encodePlan,
   FULL_LANE_COMMANDS,
+  NATIVE_TOOLCHAIN_COMMANDS,
   unitUsesAllShards,
   isRelatedSweep,
   reuseReviewedMainPlan,
@@ -271,6 +273,50 @@ test('dedicated static and web jobs own their exact specs without suite duplicat
   const webPlan = buildImpactPlan({ files: ['src-tauri/src/lib.rs'] });
   assert.equal(webPlan.lanes.e2e.webSurface, true);
   assert.equal(webPlan.lanes.e2e.mode, 'skip');
+});
+
+/*
+ * A Tauri sync command that panics takes the app down, so the Rust lint (clippy with unwrap, slice
+ * indexing and panic as findings, plus rustfmt) must run whenever Rust changes. Only the Windows
+ * beta job has a Tauri toolchain, so the planner must name the command for the change yet keep it
+ * out of every Linux lane, and that workflow must run the same commands on the same paths.
+ */
+test('the Rust lint is suggested for Rust changes, left out of every Linux lane, and run by the Windows beta job', () => {
+  const changes = [
+    'src-tauri/src/vault/write.rs',
+    'src-tauri/crates/vault-index/src/lib.rs',
+    'src-tauri/Cargo.toml',
+    'src-tauri/clippy.toml',
+  ];
+  for (const path of changes) {
+    const named = suggestFocusedChecks([path]).commands.map((row) => row.command);
+    assert.ok(named.includes(RUST_LINT_COMMAND), `${path} must name the Rust lint`);
+    const plan = buildImpactPlan({ files: [path] });
+    for (const lane of ['gates', 'unit', 'mcp']) {
+      for (const command of commandsForLane({ lane, plan, base: 'abc123', platform: 'linux' })) {
+        assert.notEqual(command, RUST_LINT_COMMAND, `${path} would run the Rust lint on the ${lane} lane`);
+      }
+    }
+  }
+  assert.deepEqual(NATIVE_TOOLCHAIN_COMMANDS, [RUST_LINT_COMMAND]);
+  assert.ok(
+    !suggestFocusedChecks(['src/features/ontology-change-review/ui/OntologyChangeReview.tsx']).commands.some(
+      (row) => row.command === RUST_LINT_COMMAND,
+    ),
+    'a web change does not ask for the Rust lint',
+  );
+
+  const workflow = readFileSync(new URL('../../.github/workflows/windows-beta-check.yml', import.meta.url), 'utf8');
+  const [clippy, format] = RUST_LINT_COMMAND.split(' && ').slice(1);
+  for (const command of [clippy, format]) {
+    assert.ok(workflow.includes(`run: ${command}`), `windows-beta-check.yml must run: ${command}`);
+  }
+  assert.match(workflow, /components: clippy, rustfmt/);
+  assert.equal(workflow.match(/- "src-tauri\/\*\*"/g)?.length, 2, 'pull_request and push both trigger on src-tauri/**');
+  assert.ok(
+    workflow.indexOf('run: pnpm mcp:build-binary') < workflow.indexOf(`run: ${clippy}`),
+    'the sidecar is built before the first cargo call',
+  );
 });
 
 test('generated documentation bundles do not masquerade as runtime changes', () => {

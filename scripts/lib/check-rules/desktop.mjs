@@ -1,5 +1,15 @@
 /** The macOS app: readiness, ACP registry, performance budgets, runtime split, and the native vault bridge. */
 
+/**
+ * A panic in a Tauri sync command runs on the main thread and aborts the app, so `unwrap`, slice
+ * indexing and `panic!` in non-test Rust are findings (`[workspace.lints.clippy]` in
+ * `src-tauri/Cargo.toml`). The sidecar is built first for the same reason as `test:desktop:bridge`.
+ * The Windows beta job runs the same two cargo commands; the Linux gates runner cannot compile the
+ * crate, so the CI planner keeps this command out of its lanes.
+ */
+export const RUST_LINT_COMMAND =
+  'pnpm mcp:build-binary && cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings && cargo fmt --manifest-path src-tauri/Cargo.toml --all --check';
+
 export const rules = [
   {
     order: 310,
@@ -65,6 +75,17 @@ export const rules = [
       /^src\/shared\/lib\/vault-folder\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src-tauri\/src\/(?:lib\.rs|(?:acp_runtime|acp_session|app_shell|project_source|vault|webview_verify)\/[^/]+\.rs)$/,
       /^src-tauri\/Cargo\.(?:toml|lock)$/,
+    ],
+  },
+  {
+    order: 375,
+    command: RUST_LINT_COMMAND,
+    reason: 'Rust source or Cargo manifest changed — a panic in a Tauri command aborts the app',
+    matches: [
+      /^src-tauri\/(?:src|crates)\/.+\.rs$/,
+      /^src-tauri\/build\.rs$/,
+      /^src-tauri\/(?:Cargo\.(?:toml|lock)|clippy\.toml)$/,
+      /^src-tauri\/crates\/[^/]+\/(?:Cargo\.toml|tests\/.+\.rs)$/,
     ],
   },
   {
