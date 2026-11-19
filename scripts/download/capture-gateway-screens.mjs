@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Captures the app screens the gateway's screens stage shows, once per locale
- * (`public/gateway/<screen>.<locale>.png`, Korean and English in one run).
+ * (`public/gateway/<screen>.<locale>.webp`, Korean and English in one run).
  *
  * Why a script and not a hand-taken screenshot: these screens only exist inside the desktop app
  * (a native folder root, Git, a project source), and the gateway promises that each picture is a
@@ -15,7 +15,7 @@
  *   (`sources/` + `wiki/`, with real SHA-256 hashes and one deliberately stale page), the
  *   project-source binding, and one saved automation with a finished round.
  *
- * Nothing is written to disk except the PNGs. Every path the app sees is under the fake root
+ * Nothing is written to disk except the pictures. Every path the app sees is under the fake root
  * `/work/ontology-atlas`, so no private path of the machine that shot them reaches a picture.
  *
  * The pictures are 1336×860 CSS pixels at device scale 2 (2672×1720), dark, and in the page's
@@ -43,6 +43,7 @@ import { chromium } from "@playwright/test";
 import { captureHarnessFilm } from "./harness-film-still.mjs";
 import { MAP_SCREEN, NEURAL_SCREEN } from "./map-screen.mjs";
 import { readPlanningFile, walkPlanningFolder } from "./planning-inventory.mjs";
+import { writeWebp } from "./webp.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const FAKE_SOURCE_ROOT = "/work/ontology-atlas";
@@ -771,7 +772,7 @@ async function installRuntime(context, bridge) {
   });
 }
 
-/** Both sets, in one run: the gateway serves `<file>.<locale>.png` to each page. */
+/** Both sets, in one run: the gateway serves `<file>.<locale>.webp` to each page. */
 const LOCALES = args.locales ? args.locales.split(",") : ["ko", "en"];
 const BROWSER_LOCALE = { ko: "ko-KR", en: "en-US" };
 
@@ -823,8 +824,9 @@ async function main() {
       await screen.prepare(page);
       // The pointer rests off the picture so no hover state is captured.
       await page.mouse.move(viewport.width - 2, viewport.height - 2);
-      const file = screen.out ? path.join(REPO, screen.out) : path.join(OUT_DIR, `${screen.name}.${locale}.png`);
-      await page.screenshot({ path: file });
+      const file = screen.out ? path.join(REPO, screen.out) : path.join(OUT_DIR, `${screen.name}.${locale}.webp`);
+      if (screen.out) await page.screenshot({ path: file });
+      else await writeWebp(browser, await page.screenshot(), file);
       console.log(`captured ${path.relative(REPO, file)}`);
     }
     await context.close();
