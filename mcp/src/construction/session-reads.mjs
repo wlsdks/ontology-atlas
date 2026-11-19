@@ -11,6 +11,11 @@
  * and the path the server cited under that folder still names the file. Each
  * range keeps a hash of the lines it served; once the file's size, mtime or ctime
  * moves, the ranges are re-hashed and any whose lines changed no longer count.
+ *
+ * A symbol read also keeps what the server listed for it beyond what it served:
+ * its callees, the parts the budget left out, and the rest of a declaration the
+ * read was cut inside. A check asks this record what a node's evidence left
+ * unserved, so it does not depend on how the node words what it did not read.
  */
 
 import { createHash } from 'node:crypto';
@@ -20,6 +25,38 @@ import { isAbsolute, join, relative, sep } from 'node:path';
 const FILES = new Map();
 const FILE_LIMIT = 20_000;
 const RANGES_PER_FILE = 256;
+// Parts one symbol read lists at most: the omitted parts and the rests of cut parts.
+const LISTED_PER_READ = 32;
+// Roles whose omitted part is code the read depends on; a caller or the class header is not.
+const LISTED_ROLES = new Set(['callee', 'implementation', 'constructor']);
+const relativePath = (path) => typeof path === 'string' && path !== '' && !isAbsolute(path) && !path.split('/').includes('..');
+const lineNumber = (line) => Number.isSafeInteger(line) && line > 0;
+
+/**
+ * What a symbol read listed without serving it, as `{ name, path, line, next? }`:
+ * a part that decides something and that the budget left out, and where the
+ * declaration or a part it was cut inside goes on. A callee the server examined
+ * and found to hold no condition is not served and not owed: it decides nothing.
+ */
+function listedBy(row) {
+  const listed = [];
+  const push = (item) => {
+    if (listed.length < LISTED_PER_READ && typeof item.name === 'string' && item.name && relativePath(item.path) && lineNumber(item.line)) listed.push(item);
+  };
+  for (const part of Array.isArray(row.contextOmitted) ? row.contextOmitted : []) {
+    if (LISTED_ROLES.has(part?.role)) push({ name: part.symbol, path: part.path, line: part.line });
+  }
+  const rest = (path, symbol, next) => {
+    if (next && lineNumber(next.startLine) && lineNumber(next.maxLines)) {
+      push({ name: symbol, path, line: next.startLine, next: { path, startLine: next.startLine, maxLines: next.maxLines } });
+    }
+  };
+  rest(row.path, row.symbol, row.next);
+  for (const part of Array.isArray(row.context) ? row.context : []) {
+    if (LISTED_ROLES.has(part?.role) && !part.byName) rest(part.path, part.symbol, part.next);
+  }
+  return listed;
+}
 const HASHED_BYTES = 2 * 1024 * 1024;
 
 function realRoot(rootPath) {
@@ -69,18 +106,30 @@ export function recordSourceEvidence(rootPath, packet) {
     if (!entry || entry.stamp !== stamp) entry = { stamp, ranges: [], roots: new Set() };
     FILES.delete(abs);
     entry.roots.add(root);
-    if (entry.ranges.length < RANGES_PER_FILE) entry.ranges.push({ ...range, sha256: hashLines(lines, range) });
+    const same = entry.ranges.find((held) => held.startLine === range.startLine && held.endLine === range.endLine
+      && held.symbol === range.symbol && held.role === range.role && held.read === range.read);
+    // The same read again lists what the code holds now.
+    if (same && range.listed) same.listed = range.listed;
+    if (!same) {
+      // A served range is always recorded: past the cap the oldest part another read served goes first, then the oldest read.
+      if (entry.ranges.length >= RANGES_PER_FILE) {
+        const part = entry.ranges.findIndex((held) => held.role);
+        entry.ranges.splice(part >= 0 ? part : 0, 1);
+      }
+      entry.ranges.push({ ...range, sha256: hashLines(lines, range) });
+    }
     FILES.set(abs, entry);
     if (FILES.size > FILE_LIMIT) FILES.delete(FILES.keys().next().value);
   };
   for (const row of packet.rows) {
+    if (row?.status === 'refused') noteRefusal(root, row);
     if (row?.status !== 'read' || !row.actualRange || typeof row.path !== 'string') continue;
     // Which symbol read served a range: the parts one read returned are the roles its capability passes through.
     const read = row.symbol ? `${row.path}:L${row.actualRange.startLine}-L${row.actualRange.endLine}` : null;
     add(row.path, {
       startLine: row.actualRange.startLine,
       endLine: row.actualRange.endLine,
-      ...(row.symbol ? { symbol: row.symbol, read } : {}),
+      ...(row.symbol ? { symbol: row.symbol, read, listed: listedBy(row) } : {}),
     });
     // The context a symbol read returned was served too: a caller's guard, a constructor, a callee.
     for (const part of Array.isArray(row.context) ? row.context : []) {
@@ -88,6 +137,48 @@ export function recordSourceEvidence(rootPath, packet) {
       add(part.path, { startLine: part.startLine, endLine: part.endLine, symbol: part.symbol, role: part.role, ...(read ? { read } : {}), ...(part.byName ? { byName: true } : {}) });
     }
   }
+}
+
+/*
+ * The reads this server refused for a reason that lasts while the file
+ * is unchanged (an encoding, a size, a binary file, a path it never opens), so
+ * a check that asks for the read can accept the server's own reason instead.
+ * A budget or a file changing mid-read is not lasting: that read can be retried.
+ */
+const REFUSED = new Map();
+const PASSING_REASONS = new Set(['file_changed', 'hash_mismatch', 'aggregate_text_budget', 'serialized_budget', 'range_beyond_eof']);
+const REFUSED_PER_FILE = 64;
+
+/** A file's size, mtime and inode, or 'missing': a refusal holds while this is unchanged. */
+function refusalStamp(abs) {
+  try {
+    const stat = statSync(abs);
+    return `${stat.size}:${stat.mtimeMs}:${stat.ino}`;
+  } catch {
+    return 'missing';
+  }
+}
+
+/** A refused read by what it asked for: its symbol, or `L<start>` for lines from there. */
+function refusalKey(row) {
+  if (typeof row.symbol === 'string' && row.symbol) return row.symbol;
+  return row.mode !== 'outline' && lineNumber(row.requestedRange?.startLine) ? `L${row.requestedRange.startLine}` : null;
+}
+
+function noteRefusal(root, row) {
+  const { path, reason } = row;
+  const symbol = refusalKey(row);
+  if (!symbol || typeof path !== 'string' || !path || typeof reason !== 'string' || PASSING_REASONS.has(reason)) return;
+  const key = `${root}\0${path}`;
+  const stamp = isAbsolute(path) || path.split('/').includes('..') ? 'outside' : refusalStamp(join(root, ...path.split('/')));
+  let entry = REFUSED.get(key);
+  if (!entry || entry.stamp !== stamp) entry = { root, path, stamp, symbols: new Map() };
+  REFUSED.delete(key);
+  entry.symbols.delete(symbol);
+  entry.symbols.set(symbol, reason);
+  if (entry.symbols.size > REFUSED_PER_FILE) entry.symbols.delete(entry.symbols.keys().next().value);
+  REFUSED.set(key, entry);
+  if (REFUSED.size > FILE_LIMIT) REFUSED.delete(REFUSED.keys().next().value);
 }
 
 /** The entry's ranges whose lines are unchanged; re-hashes only when the file's stamp moved. */
@@ -133,6 +224,14 @@ export function sessionReads(rootPath) {
     if (reads.has(alias)) cited.delete(alias);
     else reads.set(alias, reads.get(path));
   }
+  // path -> symbol, or `L<start>` for a line read -> the reason it was refused, while the file is unchanged.
+  const refused = new Map();
+  Object.defineProperty(reads, 'refused', { value: refused, enumerable: false });
+  for (const entry of REFUSED.values()) {
+    if (entry.root !== root) continue;
+    const stamp = entry.stamp === 'outside' ? 'outside' : refusalStamp(join(root, ...entry.path.split('/')));
+    if (stamp === entry.stamp) refused.set(entry.path, entry.symbols);
+  }
   return reads;
 }
 
@@ -141,40 +240,8 @@ export function readPath(reads, path) {
   return reads?.cited?.get(path) ?? path;
 }
 
-/*
- * The symbols a node said were not read, as this process saw them: a line
- * deleted later still owes its read, so taking the sentence out is not reading
- * the code. Keyed by real root, at most OWED_PER_ROOT each, oldest out first.
- */
-const OWED = new Map();
-const OWED_PER_ROOT = 256;
-const OWED_ROOTS = 64;
-
-/** Remembers each `{ path, line, name, symbol }` declaration a node named as unread. */
-export function noteOwedReads(rootPath, rows) {
-  const root = realRoot(rootPath);
-  if (!root || rows.length === 0) return;
-  let held = OWED.get(root);
-  if (!held) {
-    if (OWED.size >= OWED_ROOTS) OWED.delete(OWED.keys().next().value);
-    OWED.set(root, (held = new Map()));
-  }
-  for (const row of rows) {
-    const key = `${row.path}\0${row.line}`;
-    held.delete(key);
-    held.set(key, { path: row.path, line: row.line, name: row.name, symbol: row.symbol });
-    if (held.size > OWED_PER_ROOT) held.delete(held.keys().next().value);
-  }
-}
-
-/** The declarations nodes in this repository have named as unread this session. */
-export function owedReads(rootPath) {
-  const root = realRoot(rootPath);
-  return root ? [...(OWED.get(root)?.values() ?? [])] : [];
-}
-
 /** Forgets every recorded read; tests only. */
 export function resetSessionReads() {
   FILES.clear();
-  OWED.clear();
+  REFUSED.clear();
 }

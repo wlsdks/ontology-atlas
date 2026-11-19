@@ -13,3 +13,13 @@ export function repoText(value, max = 160) {
   const chars = [...escaped];
   return chars.length > max ? `${chars.slice(0, max).join('')}...(+${chars.length - max} chars)` : escaped;
 }
+
+/**
+ * `value` as JSON on one line that parses back to the same value: JSON already
+ * escapes control characters; format characters and line separators are
+ * escaped too, so a call printed for the agent to make cannot hide or break a line.
+ */
+export function oneLineJson(value) {
+  return JSON.stringify(value).replace(/[\p{Cf}\u2028\u2029]/gu, (char) => Array.from({ length: char.length },
+    (_, at) => `\\u${char.charCodeAt(at).toString(16).padStart(4, '0')}`).join(''));
+}
