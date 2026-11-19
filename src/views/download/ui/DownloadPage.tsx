@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Download } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -357,6 +357,28 @@ const TEST_IDS = {
   },
 } as const;
 
+/**
+ * The browser map is the download page's second way in and its heaviest route, so it is fetched
+ * once a visitor points at, focuses or touches a way to it, not as soon as the link is on screen.
+ */
+function MapLink({ className, children, 'data-testid': testId }: { className: string; children: ReactNode; 'data-testid': string }) {
+  const [intent, setIntent] = useState(false);
+  const want = () => setIntent(true);
+  return (
+    <Link
+      href="/topology"
+      prefetch={intent ? null : false}
+      onPointerEnter={want}
+      onFocus={want}
+      onTouchStart={want}
+      data-testid={testId}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** Below `sm` the actions stack at the column's width, one thumb-sized target per row. */
 const ACTIONS_STACK = 'max-sm:w-full max-sm:flex-col max-sm:items-stretch';
 
@@ -433,13 +455,12 @@ function DownloadActions({
         </>
       ) : (
         <>
-          <Link
-            href="/topology"
+          <MapLink
             data-testid={id.cta}
             className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
           >
             {t('webCta')}
-          </Link>
+          </MapLink>
           {/* With no file to offer (a phone, or nothing published), the source is the other way in. */}
           <a
             href={GITHUB_REPO_URL}
@@ -454,8 +475,7 @@ function DownloadActions({
         </>
       )}
       {fileWins && scope === 'hero' ? (
-        <Link
-          href="/topology"
+        <MapLink
           data-testid="gateway-hero-web-cta"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'lg' }),
@@ -464,7 +484,7 @@ function DownloadActions({
           )}
         >
           {t('heroPlaygroundCta')}
-        </Link>
+        </MapLink>
       ) : null}
     </div>
   );
