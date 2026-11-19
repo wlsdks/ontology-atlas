@@ -87,8 +87,11 @@ function spiralStep(r: number): number {
  */
 class ClearanceTree {
   private size = 1;
-  /** Single precision halves the memory; a bound is rounded up, so it stays an upper bound. */
-  private max = new Float32Array(2).fill(Infinity);
+  /**
+   * Double precision: a single-precision bound rounded up to stay an upper bound can land on the
+   * radius it was refused for, and the point is then asked forever.
+   */
+  private max = new Float64Array(2).fill(Infinity);
 
   constructor(points: number) {
     this.grow(points);
@@ -105,8 +108,7 @@ class ClearanceTree {
   /** Lowers point `i`'s bound; a bound only ever falls, since placed islands never move. */
   lower(i: number, bound: number): void {
     let node = i + this.size;
-    const stored = Math.fround(bound);
-    this.max[node] = stored < bound ? Math.fround(bound + Math.abs(bound) * 2 ** -23) : stored;
+    this.max[node] = bound;
     for (node >>= 1; node >= 1; node >>= 1) this.max[node] = Math.max(this.max[node * 2], this.max[node * 2 + 1]);
   }
 
@@ -114,7 +116,7 @@ class ClearanceTree {
     let size = this.size;
     while (size < points) size *= 2;
     if (size === this.size && this.max.length === size * 2) return;
-    const next = new Float32Array(size * 2).fill(Infinity);
+    const next = new Float64Array(size * 2).fill(Infinity);
     next.set(this.max.subarray(this.size, this.size * 2), size);
     for (let node = size - 1; node >= 1; node -= 1) next[node] = Math.max(next[node * 2], next[node * 2 + 1]);
     this.size = size;
