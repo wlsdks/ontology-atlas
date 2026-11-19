@@ -181,6 +181,7 @@ where
         tools: None,
         payload_sha256: llm_audit::sha256_hex(payload),
         embed: None,
+        download: None,
     };
     // No transmission if recording fails.
     let reservation = llm_audit::reserve(vault_dir, draft)

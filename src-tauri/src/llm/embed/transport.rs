@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub(super) struct Request<'a> {
     pub url: &'a str,
@@ -18,17 +18,27 @@ pub(super) struct Request<'a> {
     pub pin: Option<&'a str>,
 }
 
+/// Bounds on a streamed answer: all bytes, the longest silence, the whole time.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct StreamLimits {
+    pub max_bytes: u64,
+    pub idle: Duration,
+    pub total: Duration,
+}
+
 pub(super) trait Transport: Send + Sync {
     /// Status and body; a body over 4 MiB is an error, not a truncation.
     fn send(&self, request: &Request<'_>) -> Result<(u16, String), EmbedError>;
-    /// Hands each body line to `on_line` until the stream ends or `cancel` turns
-    /// true; returns the status.
+    /// Hands each body line to `on_line` until the stream ends, `on_line` returns
+    /// false (then `None`), `cancel` turns true or a limit is passed; returns the
+    /// status.
     fn stream(
         &self,
         request: &Request<'_>,
+        limits: &StreamLimits,
         cancel: &AtomicBool,
-        on_line: &mut dyn FnMut(&str),
-    ) -> Result<u16, EmbedError>;
+        on_line: &mut dyn FnMut(&str) -> bool,
+    ) -> Result<Option<u16>, EmbedError>;
 }
 
 pub(super) struct CurlTransport;
@@ -61,8 +71,17 @@ fn curl_error(message: String) -> EmbedError {
 
 /// A pull reports progress many times a second; no single line is longer.
 const MAX_STREAM_LINE_BYTES: u64 = 64 * 1024;
-/// A pull that delivers nothing for this long has stalled.
-const STREAM_STALL_SECONDS: &str = "120";
+
+/// A console program spawned from a windowed app opens a console window per call.
+pub(super) fn no_console_window(command: &mut Command) -> &mut Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+}
 
 struct KillOnDrop(Child);
 
@@ -87,16 +106,18 @@ impl Transport for CurlTransport {
     fn stream(
         &self,
         request: &Request<'_>,
+        limits: &StreamLimits,
         cancel: &AtomicBool,
-        on_line: &mut dyn FnMut(&str),
-    ) -> Result<u16, EmbedError> {
+        on_line: &mut dyn FnMut(&str) -> bool,
+    ) -> Result<Option<u16>, EmbedError> {
         use std::io::Write;
         let mut config = curl_config(request);
         config.push_str("speed-limit = 1\n");
-        config.push_str(&format!("speed-time = {STREAM_STALL_SECONDS}\n"));
+        config.push_str(&format!("speed-time = {}\n", limits.idle.as_secs().max(1)));
+        config.push_str(&format!("max-time = {}\n", limits.total.as_secs().max(1)));
         config.push_str(&format!("connect-timeout = {}\n", request.timeout));
         let mut child = KillOnDrop(
-            Command::new("curl")
+            no_console_window(&mut Command::new("curl"))
                 .args([
                     "--disable",
                     "--silent",
@@ -138,16 +159,19 @@ impl Transport for CurlTransport {
             text
         });
         let (lines_tx, lines_rx) = mpsc::channel::<Result<String, EmbedError>>();
+        let max_bytes = limits.max_bytes;
         std::thread::spawn(move || {
             let mut reader = BufReader::new(stdout);
+            let mut seen: u64 = 0;
             loop {
                 let mut line = Vec::new();
                 let read = (&mut reader)
                     .take(MAX_STREAM_LINE_BYTES + 1)
                     .read_until(b'\n', &mut line);
+                seen = seen.saturating_add(line.len() as u64);
                 match read {
                     Ok(0) => return,
-                    Ok(_) if line.len() as u64 > MAX_STREAM_LINE_BYTES => {
+                    Ok(_) if line.len() as u64 > MAX_STREAM_LINE_BYTES || seen > max_bytes => {
                         let _ = lines_tx.send(Err(EmbedError::ResponseTooLarge));
                         return;
                     }
@@ -168,15 +192,23 @@ impl Transport for CurlTransport {
         // The last non-empty line is curl's `--write-out` status; hold each line
         // back by one so it is never handed to `on_line`.
         let mut held: Option<String> = None;
+        let started = Instant::now();
+        let mut heard = Instant::now();
         loop {
             if cancel.load(Ordering::Relaxed) {
                 return Err(EmbedError::Cancelled);
             }
+            if heard.elapsed() > limits.idle || started.elapsed() > limits.total {
+                return Err(EmbedError::TimedOut);
+            }
             match lines_rx.recv_timeout(Duration::from_millis(100)) {
-                Ok(Ok(line)) if line.is_empty() => {}
+                Ok(Ok(line)) if line.is_empty() => heard = Instant::now(),
                 Ok(Ok(line)) => {
+                    heard = Instant::now();
                     if let Some(previous) = held.replace(line) {
-                        on_line(&previous);
+                        if !on_line(&previous) {
+                            return Ok(None);
+                        }
                     }
                 }
                 Ok(Err(error)) => return Err(error),
@@ -197,6 +229,7 @@ impl Transport for CurlTransport {
         }
         held.as_deref()
             .and_then(|line| line.parse::<u16>().ok())
+            .map(Some)
             .ok_or_else(|| EmbedError::Request("no-status".into()))
     }
 }

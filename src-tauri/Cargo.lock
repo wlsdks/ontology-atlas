@@ -2705,6 +2705,7 @@ dependencies = [
  "tokio",
  "uuid",
  "vault-index",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

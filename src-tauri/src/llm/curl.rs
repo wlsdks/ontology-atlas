@@ -73,6 +73,13 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
 
 pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
+    // A console program spawned from a windowed app opens a window per call.
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
     command.args(argv);
     let output = http_output::capture(command, config.as_bytes()).map_err(|err| match err {
         http_output::CaptureError::Request(err) => coded("request-failed", err),

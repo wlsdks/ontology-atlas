@@ -23,9 +23,9 @@ use sha2::{Digest, Sha256};
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
-use std::time::Instant;
-use transport::{CurlTransport, Request, Transport};
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
+use transport::{CurlTransport, Request, StreamLimits, Transport};
 
 pub(crate) use audit::RunEnd;
 pub(crate) use ollama::PullProgress;
@@ -43,18 +43,30 @@ pub(crate) const PULLABLE_MODELS: [&str; 2] = ["bge-m3", "qwen3-embedding:0.6b"]
 const MAX_MODEL_CHARS: usize = 200;
 
 /// curl's `--max-time` values: a batch may wait for a cold model load, a query is
-/// a person waiting, a probe only asks whether something answers.
+/// a person waiting, a probe only asks whether something answers. The waits bound
+/// how long a line waits for the audit log another send holds.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Timeouts {
     pub batch: &'static str,
     pub query: &'static str,
     pub probe: &'static str,
+    /// Outlasts a query's 10 s hold, so a closing line is not lost to it.
+    pub line_wait: Duration,
+    pub query_line_wait: Duration,
+    pub pull: StreamLimits,
 }
 
 pub(crate) const TIMEOUTS: Timeouts = Timeouts {
     batch: "120",
     query: "10",
     probe: "5",
+    line_wait: Duration::from_secs(15),
+    query_line_wait: Duration::from_secs(2),
+    pull: StreamLimits {
+        max_bytes: 32 * 1024 * 1024,
+        idle: Duration::from_secs(120),
+        total: Duration::from_secs(3 * 60 * 60),
+    },
 };
 
 /// The screen branches on `code()`; `Display` is the crate's `code: detail` form.
@@ -66,6 +78,8 @@ pub(crate) enum EmbedError {
     ResolvesElsewhere,
     AuditBlocked(String),
     ModelInvalid,
+    /// The runner would forward the text to another host (an Ollama cloud model).
+    ModelRemote,
     ModelNotAllowed(String),
     BatchEmpty,
     BatchTooLarge,
@@ -90,6 +104,7 @@ impl EmbedError {
             Self::ResolvesElsewhere => "embed-resolves-elsewhere",
             Self::AuditBlocked(_) => "embed-audit-blocked",
             Self::ModelInvalid => "embed-model-invalid",
+            Self::ModelRemote => "embed-model-remote",
             Self::ModelNotAllowed(_) => "embed-model-not-allowed",
             Self::BatchEmpty => "embed-batch-empty",
             Self::BatchTooLarge => "embed-batch-too-large",
@@ -141,6 +156,8 @@ pub(crate) struct LocalRunner {
     dimensions: Option<usize>,
     transport: Arc<dyn Transport>,
     timeouts: Timeouts,
+    /// Set once `/api/show` showed no remote marker for this model.
+    checked_local: OnceLock<()>,
 }
 
 /// Builds from different folders still send one batch at a time; a query does
@@ -172,6 +189,7 @@ impl LocalRunner {
             dimensions: None,
             transport,
             timeouts,
+            checked_local: OnceLock::new(),
         })
     }
 
@@ -195,6 +213,7 @@ impl LocalRunner {
         vault_dir: &Path,
         plan: BuildPlan,
     ) -> Result<BuildRun<'_>, EmbedError> {
+        self.ensure_local_model()?;
         let run = audit::write_start(vault_dir, self, plan)?;
         Ok(BuildRun {
             runner: self,
@@ -216,6 +235,7 @@ impl LocalRunner {
         question: &str,
     ) -> Result<Vec<f32>, EmbedError> {
         check_passages(&[question])?;
+        self.ensure_local_model()?;
         let body = self.request_body(&[question]);
         let reservation = audit::reserve_query(vault_dir, self, question, &body)?;
         let started = Instant::now();
@@ -234,14 +254,26 @@ impl LocalRunner {
         ollama::embedding_models(self)
     }
 
-    /// Asks the runner to download an allow-listed model; sends no folder content.
+    /// Asks the runner to download an allow-listed model. It sends no folder
+    /// content, and a `model-download` line opens and closes it.
     pub(crate) fn pull(
         &self,
+        vault_dir: &Path,
         model: &str,
         cancel: &AtomicBool,
         on_progress: &mut dyn FnMut(&PullProgress),
     ) -> Result<(), EmbedError> {
-        ollama::pull(self, model, cancel, on_progress)
+        ollama::pull(self, vault_dir, model, cancel, on_progress)
+    }
+
+    /// Ollama forwards a cloud model's input to its own servers, so a model the
+    /// runner marks as remote is refused before any passage is sent.
+    fn ensure_local_model(&self) -> Result<(), EmbedError> {
+        if self.checked_local.get().is_none() {
+            ollama::refuse_remote_model(self)?;
+            let _ = self.checked_local.set(());
+        }
+        Ok(())
     }
 
     fn request_body(&self, passages: &[&str]) -> String {
@@ -375,7 +407,10 @@ impl BuildRun<'_> {
 impl Drop for BuildRun<'_> {
     fn drop(&mut self) {
         if !self.closed {
-            let _ = self.close(RunEnd::Stopped);
+            if let Err(error) = self.close(RunEnd::Stopped) {
+                // Drop cannot return it; the app log keeps the run that has no close.
+                log::error!("embed-build run {} has no closing line: {error}", self.run);
+            }
         }
     }
 }
@@ -470,6 +505,9 @@ fn validate_model(model: &str) -> Result<&str, EmbedError> {
             .any(|ch| ch.is_whitespace() || ch.is_control())
     {
         return Err(EmbedError::ModelInvalid);
+    }
+    if ollama::is_cloud_name(model) {
+        return Err(EmbedError::ModelRemote);
     }
     Ok(model)
 }

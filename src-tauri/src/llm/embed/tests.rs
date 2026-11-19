@@ -1,7 +1,7 @@
 use super::loopback::Resolve;
 use super::ollama::{is_embedding_only_name, PullTracker};
 use super::response::parse_embeddings;
-use super::transport::{curl_config, CurlTransport, Request, Transport};
+use super::transport::{curl_config, CurlTransport, Request, StreamLimits, Transport};
 use super::*;
 use std::io::{self, Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
@@ -13,6 +13,13 @@ const FAST: Timeouts = Timeouts {
     batch: "2",
     query: "1",
     probe: "1",
+    line_wait: Duration::from_millis(1_500),
+    query_line_wait: Duration::from_millis(200),
+    pull: StreamLimits {
+        max_bytes: 64 * 1024,
+        idle: Duration::from_secs(1),
+        total: Duration::from_secs(4),
+    },
 };
 
 fn loopback_resolver(_: &str, _: u16) -> io::Result<Vec<IpAddr>> {
@@ -22,19 +29,33 @@ fn loopback_resolver(_: &str, _: u16) -> io::Result<Vec<IpAddr>> {
 type Answer = dyn Fn(&Request<'_>) -> Result<(u16, String), EmbedError> + Send + Sync;
 
 /// Records every send and answers from a closure; the closure can look at the
-/// audit log at the moment of sending.
+/// audit log at the moment of sending. `/api/show` is answered and counted apart,
+/// as a local model unless the test says otherwise.
 struct Fake {
     calls: AtomicUsize,
+    shows: AtomicUsize,
     answer: Box<Answer>,
+    show: String,
 }
+
+const LOCAL_SHOW: &str = r#"{"details":{"family":"bert","parameter_size":"566.70M"}}"#;
 
 impl Fake {
     fn new(
         answer: impl Fn(&Request<'_>) -> Result<(u16, String), EmbedError> + Send + Sync + 'static,
     ) -> Arc<Self> {
+        Self::showing(LOCAL_SHOW, answer)
+    }
+
+    fn showing(
+        show: &str,
+        answer: impl Fn(&Request<'_>) -> Result<(u16, String), EmbedError> + Send + Sync + 'static,
+    ) -> Arc<Self> {
         Arc::new(Self {
             calls: AtomicUsize::new(0),
+            shows: AtomicUsize::new(0),
             answer: Box::new(answer),
+            show: show.to_string(),
         })
     }
 
@@ -45,6 +66,10 @@ impl Fake {
 
 impl Transport for Fake {
     fn send(&self, request: &Request<'_>) -> Result<(u16, String), EmbedError> {
+        if request.url.ends_with("/api/show") {
+            self.shows.fetch_add(1, Ordering::SeqCst);
+            return Ok((200, self.show.clone()));
+        }
         self.calls.fetch_add(1, Ordering::SeqCst);
         (self.answer)(request)
     }
@@ -52,9 +77,10 @@ impl Transport for Fake {
     fn stream(
         &self,
         _: &Request<'_>,
+        _: &StreamLimits,
         _: &AtomicBool,
-        _: &mut dyn FnMut(&str),
-    ) -> Result<u16, EmbedError> {
+        _: &mut dyn FnMut(&str) -> bool,
+    ) -> Result<Option<u16>, EmbedError> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         Err(EmbedError::Request("fake".into()))
     }
@@ -92,7 +118,7 @@ fn temp_vault(tag: &str) -> PathBuf {
     dir
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn audit_lines(vault: &Path) -> Vec<serde_json::Value> {
     std::fs::read_to_string(crate::llm_audit::audit_log_path(vault))
         .unwrap_or_default()
@@ -502,6 +528,7 @@ fn pull_progress_is_summed_over_layers_and_never_goes_back() {
 fn only_allow_listed_models_may_be_pulled() {
     let fake = Fake::new(|_| Ok((200, String::new())));
     let runner = fake_runner("http://127.0.0.1:11434", &fake).unwrap();
+    let vault = temp_vault("pull-allow");
     let cancel = AtomicBool::new(false);
     for model in [
         "embeddinggemma",
@@ -511,54 +538,92 @@ fn only_allow_listed_models_may_be_pulled() {
         "",
     ] {
         assert!(matches!(
-            runner.pull(model, &cancel, &mut |_| {}),
+            runner.pull(&vault, model, &cancel, &mut |_| {}),
             Err(EmbedError::ModelNotAllowed(_))
         ));
     }
     assert_eq!(fake.calls(), 0);
+    assert!(!crate::llm_audit::audit_log_path(&vault).exists());
+    std::fs::remove_dir_all(&vault).ok();
 }
 
+fn progress_lines(lines: &[&str]) -> Reply {
+    http("200 OK", "", format!("{}\n", lines.join("\n")).as_bytes())
+}
+
+#[cfg(any(unix, windows))]
 #[test]
-fn a_pull_streams_progress_and_ends_on_success() {
-    let stub = Stub::start(|| {
-        let body = [
+fn a_pull_streams_progress_between_its_two_download_lines() {
+    let vault = temp_vault("pull-ok");
+    let vault_in = vault.clone();
+    let lines_at_request = Arc::new(Mutex::new(None));
+    let seen_lines = lines_at_request.clone();
+    let stub = Stub::start(move || {
+        *seen_lines.lock().unwrap() = Some(audit_lines(&vault_in));
+        progress_lines(&[
             r#"{"status":"pulling manifest"}"#,
             r#"{"status":"pulling x","digest":"sha256:x","total":200,"completed":100}"#,
             r#"{"status":"pulling x","digest":"sha256:x","total":200,"completed":200}"#,
             r#"{"status":"success"}"#,
-        ]
-        .join("\n");
-        http("200 OK", "", format!("{body}\n").as_bytes())
+        ])
     });
     let mut seen = Vec::new();
     curl_runner(&stub.base())
-        .pull("bge-m3", &AtomicBool::new(false), &mut |p| {
+        .pull(&vault, "bge-m3", &AtomicBool::new(false), &mut |p| {
             seen.push(p.percent)
         })
         .unwrap();
     assert_eq!(seen, vec![0, 50, 100, 100]);
-    let heads = stub.heads.lock().unwrap();
-    assert!(heads.first().unwrap().starts_with("POST /api/pull "));
+    assert!(stub.heads.lock().unwrap()[0].starts_with("POST /api/pull "));
+
+    let before = lines_at_request.lock().unwrap().clone().unwrap();
+    assert_eq!(
+        before.len(),
+        1,
+        "the start line is on disk before the request"
+    );
+    assert_eq!(before[0]["purpose"], "model-download");
+    assert_eq!(before[0]["download"]["phase"], "start");
+    let lines = audit_lines(&vault);
+    assert_eq!(lines.len(), 2);
+    let close = &lines[1];
+    assert_eq!(close["download"]["run"], lines[0]["download"]["run"]);
+    assert_eq!(close["download"]["source"], "ollama-pull");
+    assert_eq!(close["download"]["revision"], "sha256:x");
+    assert_eq!(close["download"]["bytes"], 200);
+    assert_eq!(close["download"]["ended"], "complete");
+    assert_eq!(close["model"], "bge-m3");
+    assert_eq!(close["scope"]["vaultChars"], 0);
+    assert_eq!(close["outcome"], "ok");
+    std::fs::remove_dir_all(&vault).ok();
 }
 
+#[cfg(any(unix, windows))]
 #[test]
-fn a_pull_error_line_is_reported() {
+fn a_pull_error_line_is_reported_and_closed_as_failed() {
+    let vault = temp_vault("pull-error");
     let stub = Stub::start(|| {
-        http(
-            "200 OK",
-            "",
-            b"{\"status\":\"pulling manifest\"}\n{\"error\":\"no space left on device\"}\n",
-        )
+        progress_lines(&[
+            r#"{"status":"pulling manifest"}"#,
+            r#"{"error":"no space left on device"}"#,
+        ])
     });
-    let outcome = curl_runner(&stub.base()).pull("bge-m3", &AtomicBool::new(false), &mut |_| {});
+    let outcome =
+        curl_runner(&stub.base()).pull(&vault, "bge-m3", &AtomicBool::new(false), &mut |_| {});
     assert_eq!(
         outcome,
         Err(EmbedError::PullFailed("no space left on device".into()))
     );
+    let lines = audit_lines(&vault);
+    assert_eq!(lines[1]["download"]["ended"], "failed");
+    assert_eq!(lines[1]["outcome"], "error");
+    std::fs::remove_dir_all(&vault).ok();
 }
 
+#[cfg(any(unix, windows))]
 #[test]
 fn a_pull_stops_when_cancelled() {
+    let vault = temp_vault("pull-cancel");
     let stub = Stub::start(|| {
         Reply::Trickle(vec![
             r#"{"status":"pulling x","digest":"sha256:x","total":100,"completed":1}"#.into(),
@@ -567,11 +632,61 @@ fn a_pull_stops_when_cancelled() {
     });
     let cancel = AtomicBool::new(false);
     let started = Instant::now();
-    let outcome = curl_runner(&stub.base()).pull("bge-m3", &cancel, &mut |_| {
+    let outcome = curl_runner(&stub.base()).pull(&vault, "bge-m3", &cancel, &mut |_| {
         cancel.store(true, Ordering::Relaxed)
     });
     assert_eq!(outcome, Err(EmbedError::Cancelled));
     assert!(started.elapsed() < Duration::from_secs(3));
+    assert_eq!(audit_lines(&vault)[1]["download"]["ended"], "stopped");
+    std::fs::remove_dir_all(&vault).ok();
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn a_pull_stream_is_cut_at_its_byte_and_silence_limits() {
+    let vault = temp_vault("pull-limits");
+    let line = r#"{"status":"pulling x","digest":"sha256:x","total":100,"completed":1}"#;
+    let flood = Stub::start(move || progress_lines(&vec![line; 2_000]));
+    assert_eq!(
+        curl_runner(&flood.base()).pull(&vault, "bge-m3", &AtomicBool::new(false), &mut |_| {}),
+        Err(EmbedError::ResponseTooLarge)
+    );
+    let silent = Stub::start(|| Reply::Trickle(vec![line.into()]));
+    let started = Instant::now();
+    assert_eq!(
+        curl_runner(&silent.base()).pull(&vault, "bge-m3", &AtomicBool::new(false), &mut |_| {}),
+        Err(EmbedError::TimedOut)
+    );
+    assert!(started.elapsed() < Duration::from_secs(4));
+    std::fs::remove_dir_all(&vault).ok();
+}
+
+#[test]
+fn pull_progress_stays_linear_and_bounded_over_eighty_thousand_digests() {
+    let lines: Vec<String> = (0..80_000)
+        .map(|i| {
+            format!(r#"{{"status":"pulling","digest":"sha256:{i}","total":10,"completed":5}}"#)
+        })
+        .collect();
+    let mut tracker = PullTracker::default();
+    let started = Instant::now();
+    for line in &lines {
+        tracker.read(line);
+    }
+    let elapsed = started.elapsed();
+    assert!(elapsed < Duration::from_millis(100), "{elapsed:?}");
+    assert_eq!(tracker.error.as_deref(), Some("too-many-layers"));
+
+    let mut repeated = PullTracker::default();
+    let started = Instant::now();
+    for i in 0..80_000u64 {
+        repeated.read(&format!(
+            r#"{{"status":"pulling","digest":"sha256:{}","total":80000,"completed":{i}}}"#,
+            i % 3
+        ));
+    }
+    assert!(started.elapsed() < Duration::from_secs(2));
+    assert!(repeated.error.is_none());
 }
 
 #[test]
@@ -612,7 +727,7 @@ fn plan(passages: usize, chars: usize) -> BuildPlan {
     }
 }
 
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 #[test]
 fn without_a_supported_audit_log_nothing_is_sent() {
     let fake = Fake::new(|request| Ok((200, embeddings_json(request_input_count(request), 4))));
@@ -630,7 +745,7 @@ fn without_a_supported_audit_log_nothing_is_sent() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn a_run_writes_its_start_line_before_the_first_request_and_closes_after() {
     let vault = temp_vault("run");
@@ -681,7 +796,7 @@ fn a_run_writes_its_start_line_before_the_first_request_and_closes_after() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn the_runner_serves_through_the_embedder_trait() {
     let vault = temp_vault("trait");
@@ -701,7 +816,7 @@ fn the_runner_serves_through_the_embedder_trait() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn a_dropped_run_closes_as_stopped() {
     let vault = temp_vault("drop");
@@ -718,7 +833,7 @@ fn a_dropped_run_closes_as_stopped() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn a_bad_answer_inside_a_run_returns_no_vectors() {
     let vault = temp_vault("bad");
@@ -746,7 +861,7 @@ fn a_bad_answer_inside_a_run_returns_no_vectors() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn a_run_refuses_to_send_more_than_it_announced_or_an_oversized_batch() {
     let vault = temp_vault("plan");
@@ -768,7 +883,7 @@ fn a_run_refuses_to_send_more_than_it_announced_or_an_oversized_batch() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn each_query_writes_one_line_holding_the_question_before_it_sends() {
     let vault = temp_vault("query");
@@ -796,7 +911,7 @@ fn each_query_writes_one_line_holding_the_question_before_it_sends() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn a_failed_query_is_still_one_closed_line() {
     let vault = temp_vault("query-down");
@@ -854,7 +969,7 @@ fn an_unwritable_audit_folder_means_nothing_is_sent() {
     std::fs::remove_dir_all(&vault).ok();
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn a_batch_reaches_a_real_runner_over_curl() {
     let stub = Stub::start(|| http("200 OK", "", embeddings_json(2, 3).as_bytes()));
@@ -864,7 +979,8 @@ fn a_batch_reaches_a_real_runner_over_curl() {
     assert_eq!(run.embed_batch(&["one", "two"]).unwrap().len(), 2);
     run.finish(RunEnd::Complete).unwrap();
     let heads = stub.heads.lock().unwrap();
-    assert!(heads.first().unwrap().starts_with("POST /v1/embeddings "));
+    assert!(heads[0].starts_with("POST /api/show "));
+    assert!(heads[1].starts_with("POST /v1/embeddings "));
     std::fs::remove_dir_all(&vault).ok();
 }
 
@@ -895,4 +1011,264 @@ fn every_error_code_is_kebab_case() {
         assert!(code.chars().all(|ch| ch.is_ascii_lowercase() || ch == '-'));
         assert!(error.to_string().starts_with(code));
     }
+}
+
+// --- Ollama cloud models forward the input to another host. ---
+
+#[test]
+fn a_cloud_model_name_is_refused_before_any_request() {
+    let fake = Fake::new(|_| Ok((200, embeddings_json(1, 4))));
+    for name in [
+        "x:cloud",
+        "gpt-oss:120b-cloud",
+        "Embed-Cloud:latest",
+        "team/cloud",
+    ] {
+        let runner = LocalRunner::connect_with(
+            "http://127.0.0.1:11434",
+            name,
+            &loopback_resolver,
+            fake.clone(),
+            FAST,
+        );
+        assert!(matches!(runner, Err(EmbedError::ModelRemote)), "{name}");
+    }
+    assert!(LocalRunner::connect_with(
+        "http://127.0.0.1:11434",
+        "cloudberry-embed",
+        &loopback_resolver,
+        fake.clone(),
+        FAST
+    )
+    .is_ok());
+    assert_eq!(fake.calls(), 0);
+}
+
+#[test]
+fn the_model_list_leaves_out_cloud_and_remote_models() {
+    let fake = Fake::new(|_| {
+        Ok((
+            200,
+            r#"{"models":[
+                {"name":"x:cloud","capabilities":["embedding"]},
+                {"name":"y-embed:latest","remote_host":"https://ollama.com:443","capabilities":["embedding"]},
+                {"name":"z-embed:latest","details":{"remote_model":"z"},"capabilities":["embedding"]},
+                {"name":"bge-m3:latest","remote_host":"","capabilities":["embedding"]}
+            ]}"#
+            .into(),
+        ))
+    });
+    let runner = fake_runner("http://127.0.0.1:11434", &fake).unwrap();
+    assert_eq!(runner.embedding_models().unwrap(), vec!["bge-m3:latest"]);
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn a_model_the_runner_shows_as_remote_is_refused_with_nothing_sent() {
+    let vault = temp_vault("remote-show");
+    for show in [
+        r#"{"remote_host":"https://ollama.com:443","remote_model":"bge-m3"}"#,
+        r#"{"details":{"remote_host":"https://ollama.com"}}"#,
+        r#"{"remote_model":"bge-m3"}"#,
+    ] {
+        let fake = Fake::showing(show, |_| Ok((200, embeddings_json(1, 4))));
+        let runner = fake_runner("http://127.0.0.1:11434", &fake).unwrap();
+        assert!(matches!(
+            runner.start_build(&vault, plan(1, 3)),
+            Err(EmbedError::ModelRemote)
+        ));
+        assert_eq!(
+            runner.embed_query(&vault, "question"),
+            Err(EmbedError::ModelRemote)
+        );
+        assert_eq!(fake.calls(), 0, "{show}");
+    }
+    assert!(audit_lines(&vault).is_empty());
+    std::fs::remove_dir_all(&vault).ok();
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn a_runner_that_is_not_ollama_is_checked_once_and_used() {
+    let vault = temp_vault("not-ollama");
+    let fake = Fake::new(|request| Ok((200, embeddings_json(request_input_count(request), 4))));
+    let runner = fake_runner("http://127.0.0.1:1234/v1", &fake).unwrap();
+    runner.embed_query(&vault, "one").unwrap();
+    runner.embed_query(&vault, "two").unwrap();
+    assert_eq!(fake.shows.load(Ordering::SeqCst), 1);
+    std::fs::remove_dir_all(&vault).ok();
+}
+
+// --- A closing line waits out a query that holds the log. ---
+
+#[cfg(any(unix, windows))]
+fn hold_the_log(vault: &Path, for_how_long: Duration) -> JoinHandle<()> {
+    let held = crate::llm_audit::reserve(
+        vault,
+        crate::llm_audit::AuditDraft {
+            v: 1,
+            at: crate::llm_audit::now_iso(),
+            provider: "local".into(),
+            host: "127.0.0.1:11434".into(),
+            model: Some("bge-m3".into()),
+            purpose: "embed-query".into(),
+            question: Some("held".into()),
+            scope: crate::llm_audit::AuditScope {
+                nodes: vec![],
+                prompt_chars: 4,
+                vault_chars: 0,
+            },
+            tools: None,
+            payload_sha256: crate::llm_audit::sha256_hex(""),
+            embed: None,
+            download: None,
+        },
+    )
+    .unwrap();
+    std::thread::spawn(move || {
+        std::thread::sleep(for_how_long);
+        crate::llm_audit::finalize(
+            held,
+            &crate::llm_audit::AuditOutcome {
+                outcome: "ok".into(),
+                http_status: Some(200),
+                response_chars: 1,
+                duration_ms: 1,
+            },
+        )
+        .unwrap();
+    })
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn a_closing_line_waits_for_a_query_that_holds_the_log() {
+    let vault = temp_vault("close-wait");
+    let fake = Fake::new(|request| Ok((200, embeddings_json(request_input_count(request), 4))));
+    let runner = fake_runner("http://127.0.0.1:11434", &fake).unwrap();
+    let mut run = runner.start_build(&vault, plan(1, 3)).unwrap();
+    run.embed_batch(&["one"]).unwrap();
+    let holder = hold_the_log(&vault, Duration::from_millis(400));
+    run.finish(RunEnd::Complete).unwrap();
+    holder.join().unwrap();
+    let phases: Vec<_> = audit_lines(&vault)
+        .iter()
+        .map(|line| {
+            line["embed"]["phase"]
+                .as_str()
+                .unwrap_or("query")
+                .to_string()
+        })
+        .collect();
+    assert_eq!(phases, ["start", "query", "close"]);
+    std::fs::remove_dir_all(&vault).ok();
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn a_closing_line_that_cannot_be_written_is_reported_not_dropped() {
+    let vault = temp_vault("close-lost");
+    let fake = Fake::new(|request| Ok((200, embeddings_json(request_input_count(request), 4))));
+    let runner = LocalRunner::connect_with(
+        "http://127.0.0.1:11434",
+        "bge-m3",
+        &loopback_resolver,
+        fake.clone(),
+        Timeouts {
+            line_wait: Duration::from_millis(100),
+            ..FAST
+        },
+    )
+    .unwrap();
+    let mut run = runner.start_build(&vault, plan(1, 3)).unwrap();
+    run.embed_batch(&["one"]).unwrap();
+    let holder = hold_the_log(&vault, Duration::from_millis(800));
+    let closed = run.finish(RunEnd::Complete);
+    holder.join().unwrap();
+    assert!(
+        matches!(&closed, Err(EmbedError::AuditBlocked(detail)) if detail.starts_with("audit-log-busy")),
+        "{closed:?}"
+    );
+    std::fs::remove_dir_all(&vault).ok();
+}
+
+// --- The lines this module writes are the lines the Settings screen reads. ---
+
+#[cfg(any(unix, windows))]
+#[test]
+fn the_embed_and_download_lines_match_the_shared_reader_fixture() {
+    fn stable(mut line: serde_json::Value) -> serde_json::Value {
+        line["at"] = "2026-11-19T09:00:00.000Z".into();
+        if line.get("durationMs").is_some() {
+            line["durationMs"] = 1.into();
+        }
+        for key in ["embed", "download"] {
+            if line.get(key).is_some() {
+                line[key]["run"] = "00000000-0000-4000-8000-000000000000".into();
+            }
+        }
+        line
+    }
+    let vault = temp_vault("fixture");
+    let fake = Fake::new(|request| Ok((200, embeddings_json(request_input_count(request), 4))));
+    let runner = fake_runner("http://127.0.0.1:11434", &fake).unwrap();
+    let mut run = runner
+        .start_build(
+            &vault,
+            BuildPlan {
+                files: 1,
+                passages: 2,
+                chars: 10,
+            },
+        )
+        .unwrap();
+    run.embed_batch(&["alpha", "bravo"]).unwrap();
+    run.finish(RunEnd::Complete).unwrap();
+    runner
+        .embed_query(&vault, "결제 재시도는 어디서 정하나요?")
+        .unwrap();
+    let pull = Stub::start(|| {
+        progress_lines(&[
+            r#"{"status":"pulling x","digest":"sha256:daec91ffb5dd0c27411bd71f29932917c49cf529a641d0168496c3a501e3062c","total":1157671200,"completed":1157671200}"#,
+            r#"{"status":"success"}"#,
+        ])
+    });
+    let puller = LocalRunner::connect_with(
+        "http://127.0.0.1:11434",
+        "bge-m3",
+        &loopback_resolver,
+        Arc::new(CurlTransport),
+        FAST,
+    )
+    .unwrap();
+    let pull_base = pull.base();
+    let pulling = LocalRunner {
+        endpoint: loopback::local_endpoint(&pull_base, &loopback_resolver).unwrap(),
+        ..puller
+    };
+    pulling
+        .pull(&vault, "bge-m3", &AtomicBool::new(false), &mut |_| {})
+        .unwrap();
+
+    let written: Vec<_> = audit_lines(&vault).into_iter().map(stable).collect();
+    let fixture: Vec<serde_json::Value> =
+        include_str!("../../../../tests/fixtures/llm-audit-log.sample.jsonl")
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(|line| serde_json::from_str(line).unwrap())
+            .filter(|line: &serde_json::Value| {
+                line["purpose"]
+                    .as_str()
+                    .is_some_and(|p| p.starts_with("embed-") || p == "model-download")
+            })
+            .collect();
+    let mut expected = fixture;
+    // The pull stub listens on a random port; the fixture names the default one.
+    for line in written.iter().zip(expected.iter_mut()) {
+        if line.0["purpose"] == "model-download" {
+            line.1["host"] = line.0["host"].clone();
+        }
+    }
+    assert_eq!(written, expected);
+    std::fs::remove_dir_all(&vault).ok();
 }

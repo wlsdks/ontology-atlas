@@ -10,7 +10,7 @@ use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex, MutexGuard};
-#[cfg(any(unix, test))]
+#[cfg(any(unix, windows, test))]
 use std::time::Duration;
 
 use crate::errors::coded;
@@ -68,6 +68,29 @@ pub struct AuditDraft {
     /// Absent on every line but an embedding run's two lines.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embed: Option<AuditEmbedRun>,
+    /// Absent on every line but a model download's two lines.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download: Option<AuditDownload>,
+}
+
+/// A model download sends a model name, never folder content; one line opens it
+/// before the request and a second with the same `run` closes it.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditDownload {
+    pub run: String,
+    /// `start` or `close`.
+    pub phase: String,
+    /// `ollama-pull` (the runner fetches from its own registry) or `hugging-face`.
+    pub source: String,
+    /// The pinned commit, or the largest layer digest Ollama reported.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bytes: Option<u64>,
+    /// `complete`, `stopped` or `failed`; absent on the start line.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ended: Option<String>,
 }
 
 /// An embedding run sends thousands of requests, so one line opens it before the
@@ -178,9 +201,9 @@ impl Drop for ReservedPath {
 
 /// A busy `flock` may be our own child between `fork` and `exec` holding an inherited copy, so it
 /// is retried within a fixed budget, then fails closed.
-#[cfg(any(unix, test))]
+#[cfg(any(unix, windows, test))]
 const AUDIT_LOCK_RETRY_PAUSE: Duration = Duration::from_micros(250);
-#[cfg(any(unix, test))]
+#[cfg(any(unix, windows, test))]
 const AUDIT_LOCK_RETRIES: u32 = 52;
 
 /// Lets the positive control prove the overlap really happened.
@@ -318,15 +341,21 @@ fn open_audit_file(canonical_vault: &Path) -> Result<(PathBuf, fs::File), String
     Ok((audit_log_path(canonical_vault), file))
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
+mod windows;
+
+#[cfg(windows)]
+use windows::open_audit_file;
+
+#[cfg(not(any(unix, windows)))]
 fn open_audit_file(_canonical_vault: &Path) -> Result<(PathBuf, fs::File), String> {
-    // Windows reparse-point races are not closed yet, so this fails closed rather
-    // than sending without a record.
+    // A platform with neither the `openat` walk nor the Windows handle checks fails
+    // closed rather than sending without a record.
     Err(coded("audit-log-unsupported", ""))
 }
 
 fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
-    #[cfg(not(unix))]
+    #[cfg(not(any(unix, windows)))]
     let _ = file;
     let path_metadata =
         fs::symlink_metadata(path).map_err(|err| coded("audit-log-tampered", err))?;
@@ -356,6 +385,8 @@ fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
             ));
         }
     }
+    #[cfg(windows)]
+    windows::verify_handle(path, file)?;
     Ok(())
 }
 
@@ -490,6 +521,7 @@ mod tests {
             tools: None,
             payload_sha256: sha256_hex(""),
             embed: None,
+            download: None,
         }
     }
 
@@ -500,7 +532,7 @@ mod tests {
         assert!(!line.contains("\"tools\""), "{line}");
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn an_agent_line_records_which_tools_rode_along() {
         let vault = temp_vault("tools");
@@ -544,7 +576,7 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn reserved_line_is_on_disk_before_anything_is_sent() {
         let vault = temp_vault("reserve");
@@ -557,7 +589,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn finalize_replaces_only_the_reserved_line_and_keeps_history() {
         let vault = temp_vault("finalize");
@@ -608,7 +640,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    #[cfg(not(unix))]
+    #[cfg(not(any(unix, windows)))]
     #[test]
     fn unsupported_native_platforms_fail_before_creating_or_sending_anything() {
         let vault = temp_vault("unsupported-platform");
@@ -619,6 +651,94 @@ mod tests {
             !vault.join(SIDECAR_DIR).exists(),
             "an unverified platform must not create the audit path"
         );
+        fs::remove_dir_all(&vault).ok();
+    }
+
+    #[cfg(windows)]
+    fn ok_outcome() -> AuditOutcome {
+        AuditOutcome {
+            outcome: "ok".into(),
+            http_status: Some(200),
+            response_chars: 1,
+            duration_ms: 1,
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_refuses_a_hard_linked_log_without_touching_its_target() {
+        let vault = temp_vault("win-hardlink");
+        let outside = temp_vault("win-hardlink-target").join("outside.jsonl");
+        fs::write(&outside, b"outside-sentinel\n").unwrap();
+        fs::create_dir_all(vault.join(SIDECAR_DIR)).unwrap();
+        fs::hard_link(&outside, audit_log_path(&vault)).unwrap();
+
+        let result = reserve(&vault, verify_draft());
+
+        assert!(result.is_err(), "a hard-linked log must be refused");
+        drop(result);
+        assert_eq!(fs::read(&outside).unwrap(), b"outside-sentinel\n");
+        fs::remove_dir_all(&vault).ok();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_refuses_a_junctioned_sidecar_without_writing_through_it() {
+        let vault = temp_vault("win-junction");
+        let outside = temp_vault("win-junction-target");
+        let made = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(vault.join(SIDECAR_DIR))
+            .arg(&outside)
+            .output()
+            .unwrap();
+        assert!(made.status.success(), "{made:?}");
+
+        let result = reserve(&vault, verify_draft());
+
+        assert!(result.is_err(), "a junction must be refused");
+        let leaked = fs::read(outside.join(AUDIT_FILE)).unwrap_or_default();
+        assert!(
+            leaked.is_empty(),
+            "no audit bytes may land outside the vault"
+        );
+        fs::remove_dir(vault.join(SIDECAR_DIR)).ok();
+        fs::remove_dir_all(&vault).ok();
+        fs::remove_dir_all(&outside).ok();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_keeps_the_held_log_in_place_or_refuses_to_finalize() {
+        let vault = temp_vault("win-swap");
+        let reservation = reserve(&vault, verify_draft()).unwrap();
+        let renamed_log = fs::rename(audit_log_path(&vault), vault.join("moved.jsonl"));
+        assert!(renamed_log.is_err(), "the held log must not be renamable");
+        let moved_sidecar = fs::rename(vault.join(SIDECAR_DIR), vault.join("moved-sidecar"));
+
+        let result = finalize(reservation, &ok_outcome());
+
+        if moved_sidecar.is_ok() {
+            assert!(
+                result.is_err(),
+                "a moved log must not be finalized as if in place"
+            );
+        } else {
+            result.unwrap();
+        }
+        fs::remove_dir_all(&vault).ok();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_reading_the_log_is_not_blocked_by_a_held_reservation() {
+        let vault = temp_vault("win-read");
+        let first = reserve(&vault, verify_draft()).unwrap();
+        finalize(first, &ok_outcome()).unwrap();
+        let held = reserve(&vault, verify_draft()).unwrap();
+        let read = fs::read_to_string(audit_log_path(&vault)).unwrap();
+        assert_eq!(read.lines().count(), 2);
+        finalize(held, &ok_outcome()).unwrap();
         fs::remove_dir_all(&vault).ok();
     }
 
@@ -995,7 +1115,7 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn a_second_reservation_fails_closed_until_the_first_is_finalized() {
         let vault = temp_vault("concurrent-reservations");
@@ -1034,7 +1154,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn finalize_preserves_the_file_when_the_reserved_tail_changed() {
         let vault = temp_vault("tail-changed");
@@ -1066,7 +1186,7 @@ mod tests {
         assert_eq!(after, before, "a failure must preserve existing bytes");
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn finalize_preserves_an_unexpected_appended_tail() {
         let vault = temp_vault("tail-appended");
@@ -1095,7 +1215,7 @@ mod tests {
         assert_eq!(after, before, "a failure must preserve existing bytes");
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn writer_matches_the_shared_reader_fixture() {
         // Writer and reader (`llm-audit-log.ts`) share this fixture; update the TS
