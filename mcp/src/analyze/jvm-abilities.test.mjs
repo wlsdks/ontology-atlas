@@ -192,13 +192,14 @@ test('doubling a hostile file at most about doubles the time to read it', () => 
     if (shape === null) return `package p;\nimport jakarta.ws.rs.Path;\n@Path("a")\nclass A {\n${'a'.repeat(bytes)}\n}\n`;
     return `package p;\nimport jakarta.ws.rs.*;\n@Path("a")\npublic class Resource extends Base {\n${shape.repeat(Math.floor(bytes / shape.length))}`;
   };
-  // Both sizes are timed in turn, seven times after a warm-up, and the fastest of each is compared:
-  // a busy machine only adds time, and a burst that slows one size slows the other beside it.
+  // Processor time, not wall clock: on a busy machine a run longer than a scheduler slice waits its
+  // turn and a shorter one does not, which reads as a worse-than-linear curve. Fastest of seven each.
   const timedPair = (path, small, large) => {
     const once = (text) => {
-      const started = performance.now();
+      const started = process.cpuUsage();
       abilities({ [path]: text });
-      return performance.now() - started;
+      const spent = process.cpuUsage(started);
+      return (spent.user + spent.system) / 1000;
     };
     once(small);
     once(large);

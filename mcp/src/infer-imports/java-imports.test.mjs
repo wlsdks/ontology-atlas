@@ -131,13 +131,14 @@ test('doubling a hostile JVM file at most about doubles the time to read its imp
     ['Kotlin', 'fun <'],
     ['Kotlin', 'fun a<'],
   ];
-  // Both sizes are timed in turn, seven times after a warm-up, and the fastest of each is compared:
-  // a busy machine only adds time, and a burst that slows one size slows the other beside it.
+  // Processor time, not wall clock: on a busy machine a run longer than a scheduler slice waits its
+  // turn and a shorter one does not, which reads as a worse-than-linear curve. Fastest of seven each.
   const timedPair = (path, small, large) => {
     const once = (text) => {
-      const started = performance.now();
+      const started = process.cpuUsage();
       parseJvmSource(text, path);
-      return performance.now() - started;
+      const spent = process.cpuUsage(started);
+      return (spent.user + spent.system) / 1000;
     };
     once(small);
     once(large);
