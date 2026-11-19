@@ -15,6 +15,11 @@ sha2 = "=0.10.9"
 # app already links this exact version (png, through tray-icon and the updater), so it adds no crate.
 miniz_oxide = "=0.8.9"
 
+[target.'cfg(windows)'.dependencies]
+# NTFS change time (`FILE_BASIC_INFO.ChangeTime`), which moves when a tool puts back a file's
+# modified time; the app already links this version.
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
+
 [lints]
 workspace = true
 

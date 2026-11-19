@@ -88,10 +88,9 @@ fn still_describes_disk(root: &Path, candidate: &Candidate) -> bool {
     let Some(path) = confine::resolve(root, &candidate.hit.path) else {
         return false;
     };
-    let Ok(metadata) = std::fs::symlink_metadata(&path) else {
+    let Some(stamp) = Stamp::of_regular_file(&path) else {
         return false;
     };
-    let stamp = Stamp::of(&metadata);
     if stamp != candidate.stamp {
         return false;
     }
@@ -155,7 +154,7 @@ mod tests {
     fn a_hit_is_kept_only_while_its_row_still_describes_the_file() {
         let vault = Vault::new("describes");
         std::fs::write(vault.0.join("a.md"), "alpha").unwrap();
-        let stamp = Stamp::of(&std::fs::symlink_metadata(vault.0.join("a.md")).unwrap());
+        let stamp = Stamp::of_regular_file(&vault.0.join("a.md")).unwrap();
         let right = file_sha(&vault.0, "a.md").unwrap().to_vec();
         let wrong = vec![0u8; 32];
         let settled = stamp.mtime_ns + RACY_WINDOW_NS + 1;

@@ -453,11 +453,40 @@ pub(crate) fn folder_bytes(dir: &Path) -> u64 {
         .sum()
 }
 
+/// How often this process deleted each index folder, and every folder at once (the empty path).
+/// A row batch carries the count its lookup saw and writes nothing once it moved, so a Delete or
+/// switch-off is not undone by a batch in flight, even one for a vault that had no index yet.
+static DELETIONS: std::sync::Mutex<Vec<(PathBuf, i64)>> = std::sync::Mutex::new(Vec::new());
+
+pub(crate) fn deletions(dir: &Path) -> i64 {
+    let deleted = DELETIONS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    deleted
+        .iter()
+        .filter(|(folder, _)| folder == dir || folder.as_os_str().is_empty())
+        .map(|(_, count)| *count)
+        .sum()
+}
+
+/// Counts a deletion of `dir`, or of every folder when `None`.
+pub(crate) fn count_deletion(dir: Option<&Path>) {
+    let dir = dir.unwrap_or(Path::new(""));
+    let mut deleted = DELETIONS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    match deleted.iter_mut().find(|(folder, _)| folder == dir) {
+        Some((_, count)) => *count += 1,
+        None => deleted.push((dir.to_path_buf(), 1)),
+    }
+}
+
 /// Deletes an index folder (`is_index_folder`) file by file while holding its writer lock, so no
 /// build is between commits. Where another process still holds the index open (Windows refuses to
 /// delete it), the tables are emptied in place and the folder stays. The lock file goes while the
 /// lock is held, so a writer waiting on it locks afresh (`lock_writer`).
 pub(crate) fn delete_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
+    count_deletion(Some(dir));
     let search = search_path(dir);
     let rows = dir.join(ROWS_FILE);
     let search_removed = remove_if_present(&search);
@@ -522,24 +551,31 @@ pub(crate) fn sweep_orphans(root: &Path, now: SystemTime) -> usize {
     removed
 }
 
+/// Stale when the vault folder is gone or every index file says it was last used more than
+/// `UNUSED_AFTER` ago; a folder holding only `rows.sqlite` is judged by that file.
 fn is_stale(dir: &Path, now: SystemTime) -> bool {
-    let recorded = Connection::open_with_flags(
-        search_path(dir),
-        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-    )
-    .and_then(|conn| {
-        Ok((
-            read_meta(&conn, META_VAULT_PATH)?,
-            read_meta(&conn, META_LAST_USED_MS)?,
-        ))
-    });
-    let Ok((Some(vault), last_used)) = recorded else {
+    let recorded: Vec<(String, Option<String>)> = [search_path(dir), dir.join(ROWS_FILE)]
+        .iter()
+        .filter_map(|path| {
+            let conn = Connection::open_with_flags(
+                path,
+                OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+            )
+            .ok()?;
+            let vault = read_meta(&conn, META_VAULT_PATH).ok()??;
+            Some((vault, read_meta(&conn, META_LAST_USED_MS).ok()?))
+        })
+        .collect();
+    let Some((vault, _)) = recorded.first() else {
         return false;
     };
     let vault_gone =
-        fs::symlink_metadata(&vault).is_err_and(|error| error.kind() == io::ErrorKind::NotFound);
+        fs::symlink_metadata(vault).is_err_and(|error| error.kind() == io::ErrorKind::NotFound);
+    let last_used = recorded
+        .iter()
+        .filter_map(|(_, used)| used.as_deref()?.parse::<u64>().ok())
+        .max();
     let unused_for = last_used
-        .and_then(|ms| ms.parse::<u64>().ok())
         .map(|ms| SystemTime::UNIX_EPOCH + Duration::from_millis(ms))
         .and_then(|used| now.duration_since(used).ok());
     vault_gone || unused_for.is_some_and(|age| age > UNUSED_AFTER)

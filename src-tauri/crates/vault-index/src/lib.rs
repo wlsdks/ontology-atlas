@@ -473,7 +473,7 @@ fn prepare(root: &Path, work: &Work, slot: usize) -> Prepared {
     let Some((mut file, metadata)) = confine::open(root, work.path) else {
         return Prepared::Gone { slot };
     };
-    let stamp = Stamp::of(&metadata);
+    let stamp = Stamp::of_open(&file, &metadata);
     let mut text = Vec::with_capacity(
         usize::try_from(metadata.len())
             .unwrap_or(0)
@@ -701,6 +701,11 @@ pub fn set_aside_damaged(root: &Path) -> Result<()> {
 /// running build finishes its commit first. A folder that holds files the index never writes is
 /// left in place and reported as an error, never as deleted.
 pub fn delete(root: Option<&Path>) -> Result<()> {
+    // Counted even where no folder exists yet, so a first row batch still in flight writes nothing.
+    match root {
+        Some(root) => lifecycle::count_deletion(Some(&dir_for(root)?)),
+        None => lifecycle::count_deletion(None),
+    }
     let folders = match root {
         Some(root) => vec![dir_for(root)?],
         None => {
@@ -797,7 +802,7 @@ mod tests {
         let vault = std::fs::canonicalize(&vault).unwrap();
         std::fs::write(vault.join("a.md"), "지도").unwrap();
         std::fs::write(vault.join("b.md"), "map").unwrap();
-        let stamp_of = |name: &str| Stamp::of(&std::fs::metadata(vault.join(name)).unwrap());
+        let stamp_of = |name: &str| Stamp::of_regular_file(&vault.join(name)).unwrap();
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(include_str!("../sql/search.sql"))
             .unwrap();

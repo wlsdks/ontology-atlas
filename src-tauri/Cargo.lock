@@ -4916,6 +4916,7 @@ dependencies = [
  "miniz_oxide",
  "rusqlite",
  "sha2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

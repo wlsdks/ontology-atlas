@@ -10,10 +10,10 @@
 //! seconds of the row's `read_at_ns` is not used at all.
 
 use crate::lifecycle::{
-    create_index_dir, is_damage, open_store_reader, open_store_writer, set_aside_file, Store,
-    ROWS_FILE,
+    create_index_dir, delete_locked, deletions, is_damage, lock_writer, open_store_reader,
+    open_store_writer, set_aside_file, write_meta, Store, META_LAST_USED_MS, ROWS_FILE,
 };
-use crate::stamps::{is_racy, now_ns};
+use crate::stamps::{change_time_is_kept, is_racy, now_ns};
 use crate::{canonical_vault_root, index_dir, stat_all, Error, Result, Stamp};
 use miniz_oxide::deflate::compress_to_vec;
 use miniz_oxide::inflate::decompress_to_vec_with_limit;
@@ -65,13 +65,16 @@ fn producer_of(namespace: &str) -> Result<&str> {
 struct Seen {
     stamp: Stamp,
     at_ns: i64,
+    /// How many index deletions this process had made when the version was seen; a `put` after a
+    /// later Delete or switch-off writes nothing.
+    deletions: i64,
 }
 
 impl Seen {
     fn token(self) -> String {
         format!(
-            "{}:{}:{}:{}",
-            self.stamp.mtime_ns, self.stamp.size, self.stamp.ctime_ns, self.at_ns
+            "{}:{}:{}:{}:{}",
+            self.stamp.mtime_ns, self.stamp.size, self.stamp.ctime_ns, self.at_ns, self.deletions
         )
     }
 
@@ -84,9 +87,17 @@ impl Seen {
                 ctime_ns: parts.next()??,
             },
             at_ns: parts.next()??,
+            deletions: parts.next()??,
         };
         parts.next().is_none().then_some(seen)
     }
+}
+
+fn unix_ms() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_millis())
+        .unwrap_or(0)
 }
 
 /// Milliseconds as the app's file reads report them: whole milliseconds since 1970, rounded down.
@@ -204,6 +215,10 @@ fn look_up<A: Answers>(
     let root = canonical_vault_root(root)?;
     producer_of(namespace)?;
     let seen_at = now_ns();
+    let deletions = deletions(&index_dir(&root)?);
+    // Without a change time a same-size rewrite whose modified time was put back looks unchanged,
+    // so such a volume (FAT, exFAT) gets no rows at all.
+    let kept = change_time_is_kept(&root);
     let stamps = stat_all(&root, paths);
     let conn = match open_store_reader(&index_dir(&root)?, &ROWS) {
         Ok(conn) => conn,
@@ -211,12 +226,26 @@ fn look_up<A: Answers>(
         Err(error) => return Err(error.into()),
     };
     if let Some(conn) = &conn {
-        match answer(Some(conn), namespace, paths, &stamps, seen_at, answers) {
+        match answer(
+            Some(conn),
+            namespace,
+            paths,
+            &stamps,
+            (seen_at, deletions, kept),
+            answers,
+        ) {
             Err(error) if is_damage(&error) => restart(answers),
             answered => return Ok(answered?),
         }
     }
-    Ok(answer(None, namespace, paths, &stamps, seen_at, answers)?)
+    Ok(answer(
+        None,
+        namespace,
+        paths,
+        &stamps,
+        (seen_at, deletions, kept),
+        answers,
+    )?)
 }
 
 fn answer<A: Answers>(
@@ -224,7 +253,7 @@ fn answer<A: Answers>(
     namespace: &str,
     paths: &[String],
     stamps: &[Option<Stamp>],
-    seen_at: i64,
+    (seen_at, deletions, kept): (i64, i64, bool),
     answers: &mut A,
 ) -> rusqlite::Result<Counts> {
     let mut counts = Counts::default();
@@ -235,7 +264,7 @@ fn answer<A: Answers>(
         None => None,
     };
     for (index, (path, stamp)) in paths.iter().zip(stamps).enumerate() {
-        let Some(stamp) = stamp else {
+        let Some(stamp) = stamp.filter(|stamp| kept && stamp.ctime_ns != 0) else {
             answers.miss(index, "");
             continue;
         };
@@ -249,7 +278,7 @@ fn answer<A: Answers>(
                     ctime_ns: row.get(2)?,
                 };
                 let read_at_ns: i64 = row.get(3)?;
-                if stored == *stamp && !is_racy(stamp.mtime_ns, read_at_ns) {
+                if stored == stamp && !is_racy(stamp.mtime_ns, read_at_ns) {
                     let packed = row.get_ref(4)?.as_bytes()?;
                     if let Ok(value) = decompress_to_vec_with_limit(packed, VALUE_MAX_BYTES) {
                         if is_value(&value) {
@@ -261,8 +290,9 @@ fn answer<A: Answers>(
             }
         }
         let seen = Seen {
-            stamp: *stamp,
+            stamp,
             at_ns: seen_at,
+            deletions,
         };
         answers.miss(index, &seen.token());
     }
@@ -323,6 +353,7 @@ pub struct PutReport {
 /// Whether `row` describes the file version now on disk, seen long enough after its last write.
 fn trusted(row: &NewRow, seen: Seen, now: Option<Stamp>) -> bool {
     now == Some(seen.stamp)
+        && seen.stamp.ctime_ns != 0
         && !is_racy(seen.stamp.mtime_ns, seen.at_ns)
         && row.last_modified_ms == whole_ms(seen.stamp.mtime_ns)
         && is_value(row.value.as_bytes())
@@ -357,8 +388,32 @@ pub fn put(
     if accepted.is_empty() && retain.is_none() {
         return Ok(report);
     }
+    // Every version was seen by one lookup; a Delete or switch-off since then refuses the batch.
     let dir = index_dir(&root)?;
+    let current = deletions(&dir);
+    let seen_before_a_delete =
+        |accepted: &[(&NewRow, Seen)]| accepted.iter().any(|(_, seen)| seen.deletions != current);
+    let refused = PutReport {
+        skipped: rows.len(),
+        ..PutReport::default()
+    };
+    if seen_before_a_delete(&accepted) {
+        return Ok(refused);
+    }
     create_index_dir(&dir)?;
+    // The writer lock the search build and Delete take, so a batch is never between a delete's
+    // file removals; a folder deleted while this waited is not recreated.
+    let lock = match lock_writer(&dir) {
+        Ok(lock) => lock,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(refused),
+        Err(error) => return Err(error.into()),
+    };
+    if deletions(&dir) != current {
+        // A delete ran between the check above and the lock, and this put made the folder again:
+        // leave it as the delete left it.
+        delete_locked(&dir, lock)?;
+        return Ok(refused);
+    }
     let vault_path = root.to_string_lossy();
     let written = match write(&dir, &vault_path, namespace, &accepted, retain) {
         Err(Error::Sql(error)) if is_damage(&error) => {
@@ -367,6 +422,7 @@ pub fn put(
         }
         written => written?,
     };
+    drop(lock);
     report.written = written.0;
     report.removed = written.1;
     Ok(report)
@@ -423,6 +479,8 @@ fn write(
             ])?;
         }
     }
+    // A folder whose vault is not opened for two weeks is swept on this, as on the search file's.
+    write_meta(&tx, META_LAST_USED_MS, &unix_ms().to_string())?;
     tx.commit()?;
     Ok((accepted.len(), removed))
 }
@@ -535,9 +593,10 @@ mod tests {
                 ctime_ns: -5,
             },
             at_ns: 1_795_081_900_000_000_000,
+            deletions: 2,
         };
         assert_eq!(Seen::parse(&seen.token()), Some(seen));
-        for broken in ["", "1:2:3", "1:2:3:4:5", "a:2:3:4", "1:2:3:"] {
+        for broken in ["", "1:2:3:4", "1:2:3:4:5:6", "a:2:3:4:5", "1:2:3:4:"] {
             assert_eq!(Seen::parse(broken), None, "{broken}");
         }
     }

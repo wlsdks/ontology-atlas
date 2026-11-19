@@ -296,9 +296,8 @@ fn an_external_edit_delete_or_rename_while_open_is_seen_on_the_next_open() {
     let mut changed = Vec::new();
 
     // An in-place save that keeps the size and restores the modified time: only the change
-    // time moves (Unix). Windows has none, so there this case is the documented blind spot.
-    let same = files[0].clone();
-    let same = &same;
+    // time moves (Unix ctime, NTFS ChangeTime).
+    let same = &files[0];
     let text = std::fs::read_to_string(root.join(same)).unwrap();
     let before = std::fs::metadata(root.join(same))
         .unwrap()
@@ -311,9 +310,7 @@ fn an_external_edit_delete_or_rename_while_open_is_seen_on_the_next_open() {
         .unwrap()
         .set_modified(before)
         .unwrap();
-    if cfg!(unix) {
-        changed.push(same.clone());
-    }
+    changed.push(same.clone());
 
     // An in-place save, and a save by writing a new file and renaming it over the old one.
     let edited = &files[1];
@@ -369,14 +366,8 @@ fn an_external_edit_delete_or_rename_while_open_is_seen_on_the_next_open() {
             "a renamed file was served from its old row: {path}"
         );
     }
-    let mut opened = open(&root, NS, &files).values;
-    let mut expected = from_files(&root, &files);
-    if !cfg!(unix) {
-        // The blind spot above: the row is still served, and only that file may differ.
-        opened.remove(same);
-        expected.remove(same);
-    }
-    assert_eq!(opened, expected);
+    let opened = open(&root, NS, &files);
+    assert_eq!(opened.values, from_files(&root, &files));
 }
 
 #[test]
@@ -412,7 +403,7 @@ fn a_file_written_within_two_seconds_of_being_seen_is_never_kept() {
         1
     );
     assert_eq!(open(&root, NS, &files).from_rows, 1);
-    let stamp = Stamp::of(&std::fs::metadata(root.join("fresh.md")).unwrap());
+    let stamp = Stamp::of_regular_file(&root.join("fresh.md")).unwrap();
     Connection::open(rows_file(&root))
         .unwrap()
         .execute(
@@ -453,4 +444,44 @@ fn a_lookup_never_creates_the_rows_file_and_delete_removes_it() {
     vault_index::delete(Some(&vault.root)).unwrap();
     assert!(!index_dir(&vault.root).unwrap().exists());
     assert_eq!(open_and_keep(&vault.root, NS, &files), 0);
+}
+
+#[test]
+fn a_delete_during_a_row_batch_leaves_no_rows_behind() {
+    let vault = TempVault::new("rows-delete-race");
+    let root = vault.root.clone();
+    let files = write_corpus(&root, 3000, 17);
+    backdate_all(&root, &files);
+
+    // A batch whose lookup came before a Delete writes nothing and makes no folder.
+    let seen = open(&root, NS, &files);
+    vault_index::delete(Some(&root)).unwrap();
+    let report = rows::put(&root, NS, &seen.misses, None).unwrap();
+    assert_eq!(report.written, 0);
+    assert!(!index_dir(&root).unwrap().exists(), "the delete stays done");
+
+    // A batch and a Delete racing: whichever takes the writer lock first, nothing is left.
+    for round in 0..6u64 {
+        let seen = open(&root, NS, &files);
+        let batch = {
+            let root = root.clone();
+            std::thread::spawn(move || rows::put(&root, NS, &seen.misses, None).unwrap())
+        };
+        std::thread::sleep(Duration::from_millis(round * 15));
+        vault_index::delete(Some(&root)).unwrap();
+        batch.join().unwrap();
+        assert!(
+            !index_dir(&root).unwrap().exists(),
+            "round {round}: a batch never outlives the Delete"
+        );
+        assert_eq!(open(&root, NS, &files).from_rows, 0, "round {round}");
+    }
+
+    // A lookup after the Delete starts over normally.
+    let fresh = open(&root, NS, &files);
+    assert_eq!(
+        rows::put(&root, NS, &fresh.misses, None).unwrap().written,
+        files.len()
+    );
+    assert_eq!(open(&root, NS, &files).from_rows, files.len());
 }

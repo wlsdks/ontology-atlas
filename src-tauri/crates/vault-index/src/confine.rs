@@ -69,7 +69,7 @@ impl<'a> Folders<'a> {
         if !admits_name(relative) || !self.folders_are_real(relative) {
             return None;
         }
-        regular_file(&self.root.join(relative)).map(|meta| Stamp::of(&meta))
+        Stamp::of_regular_file(&self.root.join(relative))
     }
 }
 
