@@ -3,9 +3,10 @@ import type { LibraryModel, SourceCompileState } from './vault-library';
 /**
  * How many sources have a wiki page, and since when. A source counts only when it is `compiled`;
  * `checking` and `unreadable` stay in the total and never count. Dates are the `compiled_at` each
- * citing page records, never Git, so the web and the app draw the same line.
+ * citing page records, never Git, so the web and the app draw the same line; the library model
+ * keeps one day number per source (`compiledDay`), and this reads it.
  *
- * Cost: O(S + C) for S sources and C covering citations, plus O(P) for P ≤ 120 series points.
+ * Cost: O(S) for S sources, two passes and no per-source allocation, plus O(P) for P ≤ 120 points.
  */
 
 const DAY_MS = 86_400_000;
@@ -60,8 +61,6 @@ export interface SourceProgressClock {
   offsetMinutes?: (epochMs: number) => number;
 }
 
-const NO_DATES: readonly { compiledAt: string | null }[] = [];
-
 const STATES: readonly SourceCompileState[] = [
   'not-compiled',
   'compiled',
@@ -97,9 +96,17 @@ function isoDay(day: number): string {
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(?:(Z)|([+-])(\d{2}):?(\d{2})))?$/;
 
 /**
- * The local day a recorded `compiled_at` falls on, or null when it is not a date. A bare
- * `YYYY-MM-DD` is the day as written; a timestamp is placed by its instant.
+ * The local day index a recorded `compiled_at` falls on, or null when it is not an ISO date or
+ * falls before 2000. A bare `YYYY-MM-DD` is the day as written; a timestamp is placed by its instant.
  */
+export function recordedLocalDay(
+  value: string,
+  offsetMinutes: (epochMs: number) => number = runtimeOffset,
+): number | null {
+  const day = recordedDay(value, offsetMinutes);
+  return day === null || day < MIN_DAY ? null : day;
+}
+
 function recordedDay(
   value: string,
   offsetMinutes: (epochMs: number) => number,
@@ -179,37 +186,17 @@ export function deriveSourceProgress(
   const offsetMinutes = clock.offsetMinutes ?? runtimeOffset;
   const today = localDay(clock.now, offsetMinutes);
   const byState = Object.fromEntries(STATES.map((state) => [state, 0])) as Record<SourceCompileState, number>;
-  // Pages written in one run share one `compiled_at`, so each distinct string is parsed once.
-  const parsed = new Map<string, number | null>();
-  const dayOf = (value: string): number | null => {
-    let day = parsed.get(value);
-    if (day === undefined) {
-      day = recordedDay(value, offsetMinutes);
-      // A day after today or before 2000 is not believed (`compiled_at` is copied by agents).
-      if (day !== null && (day > today || day < MIN_DAY)) day = null;
-      parsed.set(value, day);
-    }
-    return day;
-  };
+  // A day after today is not believed: `compiled_at` is copied by agents.
+  const datedDay = (day: number | undefined): number => (day === undefined || day < 0 || day > today ? -1 : day);
 
-  const dated: number[] = [];
   let undated = 0;
   let first = Infinity;
   for (const row of model.sources) {
     byState[row.state] += 1;
     if (row.state !== 'compiled') continue;
-    let earliest = Infinity;
-    for (const citation of row.coveredBy ?? NO_DATES) {
-      if (citation.compiledAt === null) continue;
-      const day = dayOf(citation.compiledAt);
-      if (day !== null && day < earliest) earliest = day;
-    }
-    if (earliest === Infinity) {
-      undated += 1;
-      continue;
-    }
-    dated.push(earliest);
-    if (earliest < first) first = earliest;
+    const day = datedDay(row.compiledDay);
+    if (day < 0) undated += 1;
+    else if (day < first) first = day;
   }
 
   const total = model.sources.length;
@@ -219,12 +206,15 @@ export function deriveSourceProgress(
   let unit: SourceProgressUnit = 'day';
   let step = 1;
   const series: SourceProgressPoint[] = [];
-  if (dated.length > 0) {
+  if (first !== Infinity) {
     const buckets = chooseBuckets(first, today);
     unit = buckets.unit;
     step = buckets.step;
     const added = new Array<number>(buckets.count).fill(0);
-    for (const day of dated) {
+    for (const row of model.sources) {
+      if (row.state !== 'compiled') continue;
+      const day = datedDay(row.compiledDay);
+      if (day < 0) continue;
       added[buckets.of(day)] += 1;
       if (day === today) todayCount += 1;
     }

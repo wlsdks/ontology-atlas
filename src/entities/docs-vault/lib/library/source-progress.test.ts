@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { VaultDoc, VaultSourceFile } from '../../model/types';
-import { deriveSourceProgress, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
+import { deriveSourceProgress, recordedLocalDay, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
 import { buildLibraryModel, type LibrarySourceRow, type SourceCompileState } from './vault-library';
 
 /** 2026-11-19 21:00 in Seoul; a fixed offset keeps local days independent of the machine. */
@@ -55,7 +55,9 @@ function fixture() {
   const hashes = new Map(sources
     .filter(({ path }) => path !== 'sources/checking.md' && path !== 'sources/unreadable.md')
     .map(({ path }) => [path, HASH('a')] as const));
-  return buildLibraryModel({ sources, docs, hashes, unreadable: new Set(['sources/unreadable.md']) });
+  return buildLibraryModel({
+    sources, docs, hashes, unreadable: new Set(['sources/unreadable.md']), offsetMinutes: SEOUL.offsetMinutes,
+  });
 }
 
 function row(state: SourceCompileState, compiledAt: string | null = null, index = 0): LibrarySourceRow {
@@ -63,9 +65,9 @@ function row(state: SourceCompileState, compiledAt: string | null = null, index 
     ...source(`sources/r${index}.md`),
     state,
     citedBy: [],
-    coveredBy: state === 'compiled'
-      ? [{ wikiSlug: `wiki/r${index}`, sourcePath: `sources/r${index}.md`, sourceHash: HASH('a'), truncated: false, compiledAt }]
-      : [],
+    compiledDay: state === 'compiled' && compiledAt !== null
+      ? recordedLocalDay(compiledAt, SEOUL.offsetMinutes) ?? -1
+      : -1,
   };
 }
 
@@ -133,13 +135,16 @@ describe('the percent never claims more than the folder holds', () => {
 });
 
 describe('each source is dated once, by the earliest date it can be believed', () => {
+  /** One source covered by one page per date, built the way the screen builds it. */
   function dated(...dates: Array<string | null>): LibrarySourceRow {
-    return {
-      ...row('compiled'),
-      coveredBy: dates.map((compiledAt, index) => ({
-        wikiSlug: `wiki/p${index}`, sourcePath: 'sources/r0.md', sourceHash: HASH('a'), truncated: false, compiledAt,
-      })),
-    };
+    const path = 'sources/r0.md';
+    const model = buildLibraryModel({
+      sources: [source(path)],
+      docs: dates.map((compiledAt, index) => cites(`wiki/p${index}`, path, compiledAt)),
+      hashes: new Map([[path, HASH('a')]]),
+      offsetMinutes: SEOUL.offsetMinutes,
+    });
+    return model.sources[0];
   }
 
   it('takes the earliest valid date across covering pages and ignores ones before 2000', () => {
@@ -179,9 +184,10 @@ describe('each source is dated once, by the earliest date it can be believed', (
   });
 
   it('places a timestamp on the local day of the injected zone', () => {
-    const late = dated('2026-11-18T20:00:00Z');
-    expect(deriveSourceProgress({ sources: [late] }, SEOUL).today).toBe(1);
-    expect(deriveSourceProgress({ sources: [late] }, { ...SEOUL, offsetMinutes: () => -300 }).today).toBe(0);
+    const late = '2026-11-18T20:00:00Z';
+    expect(recordedLocalDay(late, SEOUL.offsetMinutes)).toBe(Date.UTC(2026, 10, 19) / 86_400_000);
+    expect(recordedLocalDay(late, () => -300)).toBe(Date.UTC(2026, 10, 18) / 86_400_000);
+    expect(deriveSourceProgress({ sources: [dated(late)] }, SEOUL).today).toBe(1);
   });
 });
 

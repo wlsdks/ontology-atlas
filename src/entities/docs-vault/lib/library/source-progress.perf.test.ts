@@ -18,6 +18,10 @@ const DAY = 86_400_000;
  * 400 days, as agent runs write them.
  */
 function folder() {
+  return buildLibraryModel(folderInput());
+}
+
+function folderInput() {
   const sources: VaultSourceFile[] = [];
   const docs: VaultDoc[] = [];
   const hashes = new Map<string, string>();
@@ -37,7 +41,7 @@ function folder() {
       },
     });
   }
-  return buildLibraryModel({ sources, docs, hashes });
+  return { sources, docs, hashes, offsetMinutes: () => 540 };
 }
 
 describe('source progress at 50,000 sources and 50,000 pages', () => {
@@ -63,7 +67,7 @@ describe('source progress at 50,000 sources and 50,000 pages', () => {
     expect(median).toBeLessThanOrEqual(50);
   });
 
-  it('reports what the covering citations add to the library model', () => {
+  it('keeps the library model within 4 MB of what it held before source progress', () => {
     setFlagsFromString('--expose-gc');
     const gc = runInNewContext('gc') as () => void;
     const heap = () => {
@@ -71,22 +75,22 @@ describe('source progress at 50,000 sources and 50,000 pages', () => {
       gc();
       return process.memoryUsage().heapUsed;
     };
-    const empty = heap();
-    let held = folder();
-    const whole = heap() - empty;
-    const covered = held.sources.filter((row) => (row.coveredBy?.length ?? 0) > 0).length;
-    // Clearing the field in place keeps each row's shape, so the drop is only what `coveredBy` keeps.
-    for (const row of held.sources) row.coveredBy = undefined;
-    const added = whole - (heap() - empty);
-    expect(held.sources).toHaveLength(COUNT);
-    held = null as never;
+    const input = folderInput();
+    buildLibraryModel(input);
+    const before = heap();
+    let model: ReturnType<typeof buildLibraryModel> | null = buildLibraryModel(input);
+    const held = heap() - before;
+    const dated = model.sources.filter((row) => (row.compiledDay ?? -1) >= 0).length;
+    model = null;
     console.log(
-      `[perf] library model, ${COUNT} sources and pages — ${(whole / 1e6).toFixed(1)} MB retained with its inputs, ${(added / 1e6).toFixed(2)} MB of it covering citations (${covered} compiled rows, ${(added / covered).toFixed(0)} B each)`,
+      `[perf] library model, ${COUNT} sources and pages — ${(held / 1e6).toFixed(2)} MB retained beyond its inputs, ${dated} rows dated`,
     );
+    expect(model).toBeNull();
     /*
-     * Relative in one run: the citations are one small object per compiled row, a fraction of the model
-     * that holds the rows, the derived pages and both pairing maps, and the docs it is built from.
+     * Product budget: the spec's 4 MB over the model before this feature. Measured 2026-11-19 on Node
+     * 24 with this folder: 33.4 MB on main, 42.4 MB when each row kept its covering citations, and
+     * 34.6 MB with one day number per row (about 24 B a row, the floor for one more field).
      */
-    expect(added).toBeLessThan(whole / 4);
+    expect(held).toBeLessThanOrEqual(33.4e6 + 4 * 1024 * 1024);
   });
 });

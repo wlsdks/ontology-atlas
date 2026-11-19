@@ -437,20 +437,22 @@ describe('a cited file that cannot be opened', () => {
   });
 });
 
-describe('a compiled source names the pages that cover it and when they were written', () => {
-  it('lists only matching pages read whole, each with its compiled_at', () => {
+describe('a compiled source keeps one day: the earliest page that covers it', () => {
+  it('reads only matching pages read whole, and keeps no day for a row that is not compiled', () => {
     const model = buildLibraryModel({
       docs: [
         ...DOCS,
-        wiki('wiki/excerpt', { sources: ['sources/plan.pdf'], source_hash: { 'sources/plan.pdf': PLAN_HASH }, sources_truncated: ['sources/plan.pdf'] }),
+        wiki('wiki/excerpt', {
+          sources: ['sources/plan.pdf'], source_hash: { 'sources/plan.pdf': PLAN_HASH },
+          sources_truncated: ['sources/plan.pdf'], compiled_at: '2026-08-01',
+        }),
       ],
       sources: SOURCES,
       hashes: new Map([['sources/plan.pdf', PLAN_HASH]]),
+      offsetMinutes: () => 0,
     });
-    expect(model.sources[0].coveredBy).toEqual([{
-      wikiSlug: 'wiki/quarter-plan', sourcePath: 'sources/plan.pdf', sourceHash: PLAN_HASH,
-      truncated: false, compiledAt: '2026-09-05T10:00:00Z',
-    }]);
-    expect(model.sources[1].coveredBy).toEqual([]);
+    // `wiki/older-take` (2026-09-01) is behind and `wiki/excerpt` read part, so 2026-09-05 is the day.
+    expect(model.sources[0].compiledDay).toBe(Date.UTC(2026, 8, 5) / 86_400_000);
+    expect(model.sources[1].compiledDay).toBe(-1);
   });
 });
