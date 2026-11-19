@@ -129,19 +129,21 @@ test('doubling a hostile JVM file at most about doubles the time to read its imp
     ['Kotlin', 'val "${'],
     ['Kotlin', '/* /* '],
   ];
+  // A warm-up run, then the median of five, so one scheduling or collection pause on a busy machine decides nothing.
   const timed = (path, text) => {
-    const runs = [0, 1, 2].map(() => {
+    parseJvmSource(text, path);
+    const runs = [0, 1, 2, 3, 4].map(() => {
       const started = performance.now();
       parseJvmSource(text, path);
       return performance.now() - started;
     });
-    return runs.sort((a, b) => a - b)[1];
+    return runs.sort((a, b) => a - b)[2];
   };
   for (const [language, unit] of shapes) {
     const path = language === 'Kotlin' ? 'A.kt' : 'A.java';
     const text = (bytes) => `package p;\n${unit.repeat(Math.floor(bytes / unit.length))}`;
-    const single = timed(path, text(128 * 1024));
-    const double = timed(path, text(256 * 1024));
-    assert.ok(double < 3 * single + 30, `${language} ${JSON.stringify(unit)}: ${single.toFixed(0)} ms at 128 KB, ${double.toFixed(0)} ms at 256 KB`);
+    const single = timed(path, text(256 * 1024));
+    const double = timed(path, text(512 * 1024));
+    assert.ok(double < 3 * single + 50, `${language} ${JSON.stringify(unit)}: ${single.toFixed(0)} ms at 256 KB, ${double.toFixed(0)} ms at 512 KB`);
   }
 });

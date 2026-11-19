@@ -28,42 +28,45 @@ const MODULE_DEPTH = 2;
  */
 export function maskJvmSource(text, { kotlin = false } = {}) {
   const source = String(text ?? '');
-  const parts = [];
-  const blank = (from, to) => parts.push(blankText(source.slice(from, to)));
+  const codes = codeUnits(source);
   const special = /\/[/*]|"""|["']/g;
-  let copied = 0;
   for (let match = special.exec(source); match; match = special.exec(source)) {
     const start = match.index;
     const opener = match[0];
-    parts.push(source.slice(copied, start));
     let end;
     if (opener === '//') {
-      end = source.indexOf('\n', start);
-      if (end < 0) end = source.length;
-      blank(start, end);
+      end = lineEnd(source, start);
+      blankRange(codes, start, end);
     } else if (opener === '/*') {
       end = blockCommentEnd(source, start, kotlin);
-      blank(start, end);
+      blankRange(codes, start, end);
     } else {
       const close = opener === '"""'
         ? source.indexOf('"""', start + 3)
         : literalClose(source, start, opener, kotlin);
       // An unclosed text block runs to the end; an unclosed one-line literal to its line's end.
       const contentEnd = close >= 0 ? close : opener === '"""' ? source.length : lineEnd(source, start);
-      parts.push(opener);
-      blank(start + opener.length, contentEnd);
-      if (close >= 0) parts.push(opener);
+      blankRange(codes, start + opener.length, contentEnd);
       end = close >= 0 ? close + opener.length : contentEnd;
     }
-    copied = end;
     special.lastIndex = end;
   }
-  parts.push(source.slice(copied));
-  return parts.join('');
+  return textOf(codes);
 }
 
-function blankText(text) {
-  return text.replace(/[^\n]/g, ' ');
+function codeUnits(text) {
+  const codes = new Uint16Array(text.length);
+  for (let index = 0; index < text.length; index += 1) codes[index] = text.charCodeAt(index);
+  return codes;
+}
+
+function textOf(codes) {
+  return Buffer.from(codes.buffer, codes.byteOffset, codes.byteLength).toString('utf16le');
+}
+
+/** Spaces over `codes` from `from` to `to`, newlines kept. */
+function blankRange(codes, from, to) {
+  for (let index = from; index < to; index += 1) if (codes[index] !== 10) codes[index] = 32;
 }
 
 function lineEnd(source, start) {
@@ -114,27 +117,21 @@ function literalClose(source, start, quote, kotlin) {
  * the heads of top-level declarations, at their original offsets.
  */
 function topLevelOf(masked) {
-  const parts = [];
+  const codes = codeUnits(masked);
   let depth = 0;
-  let copied = 0;
-  for (let index = 0; index < masked.length; index += 1) {
-    const character = masked[index];
-    const opening = character === '{' || character === '(';
-    if (!opening && character !== '}' && character !== ')') continue;
-    const between = masked.slice(copied, index);
-    parts.push(depth === 0 ? between : blankText(between));
-    if (opening) {
-      parts.push(depth === 0 ? character : ' ');
+  for (let index = 0; index < codes.length; index += 1) {
+    const code = codes[index];
+    if (code === 123 || code === 40) {
+      if (depth > 0) codes[index] = 32;
       depth += 1;
-    } else {
+    } else if (code === 125 || code === 41) {
       depth = Math.max(0, depth - 1);
-      parts.push(depth === 0 ? character : ' ');
+      if (depth > 0) codes[index] = 32;
+    } else if (depth > 0 && code !== 10) {
+      codes[index] = 32;
     }
-    copied = index + 1;
   }
-  const rest = masked.slice(copied);
-  parts.push(depth === 0 ? rest : blankText(rest));
-  return parts.join('');
+  return textOf(codes);
 }
 
 const PACKAGE = /^[ \t]*package[ \t]+([A-Za-z_$][\w$]*(?:[ \t]*\.[ \t]*[A-Za-z_$][\w$]*)*)/m;

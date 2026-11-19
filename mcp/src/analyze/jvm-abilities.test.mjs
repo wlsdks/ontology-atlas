@@ -190,19 +190,21 @@ test('doubling a hostile file at most about doubles the time to read it', () => 
     if (shape === null) return `package p;\nimport jakarta.ws.rs.Path;\n@Path("a")\nclass A {\n${'a'.repeat(bytes)}\n}\n`;
     return `package p;\nimport jakarta.ws.rs.*;\n@Path("a")\npublic class Resource extends Base {\n${shape.repeat(Math.floor(bytes / shape.length))}`;
   };
+  // A warm-up run, then the median of five, so one scheduling or collection pause on a busy machine decides nothing.
   const timed = (path, text) => {
-    const runs = [0, 1, 2].map(() => {
+    abilities({ [path]: text });
+    const runs = [0, 1, 2, 3, 4].map(() => {
       const started = performance.now();
       abilities({ [path]: text });
       return performance.now() - started;
     });
-    return runs.sort((a, b) => a - b)[1];
+    return runs.sort((a, b) => a - b)[2];
   };
   for (const [name, shape] of Object.entries(shapes)) {
     const path = name.startsWith('Kotlin') ? 'src/main/kotlin/p/A.kt' : 'src/main/java/p/A.java';
-    const single = timed(path, fileOf(shape, 64 * 1024));
-    const double = timed(path, fileOf(shape, 128 * 1024));
-    assert.ok(double < 3 * single + 30, `${name}: ${single.toFixed(0)} ms at 64 KB, ${double.toFixed(0)} ms at 128 KB`);
+    const single = timed(path, fileOf(shape, 128 * 1024));
+    const double = timed(path, fileOf(shape, 256 * 1024));
+    assert.ok(double < 3 * single + 50, `${name}: ${single.toFixed(0)} ms at 128 KB, ${double.toFixed(0)} ms at 256 KB`);
   }
 });
 
