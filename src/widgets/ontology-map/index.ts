@@ -16,6 +16,7 @@ export { capabilityTierRead } from './dial/placement';
 export { adoptBodyLabelFont, bodyLabelFontAdopted, bodyLabelFontSettled } from './render/labels';
 export type { FlatDialState, FlatRingMemoryStore } from './ui/loop/topology-loop-contract';
 export { FLAT_LINE_BITS } from './flat-graph/attention';
+export { readFlatGraphTokens } from './flat-graph/tokens';
 export type { OntologyMapNode, OntologyMapEdge, } from './ui/OntologyMap';
 export { OntologyMapDetailPanel } from './ui/OntologyMapDetailPanel';
 export type { ConceptReview } from './ui/detail-panel/types';

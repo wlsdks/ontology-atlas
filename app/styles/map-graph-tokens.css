@@ -109,6 +109,9 @@
     --map-graph-line-dot-px: 1.2;
     --map-graph-line-dot-gap-px: 4;
     --map-graph-line-double-gap-px: 2.6;
+    /* The download page's film draws these marks larger than the overview, and sinks unrelated clusters less while lit. */
+    --map-graph-film-growth: 1.37;
+    --map-graph-film-sink: 0.3;
 
     --map-graph-project: #9aa2ff;
     --map-graph-disc-fill: #0b0c12;

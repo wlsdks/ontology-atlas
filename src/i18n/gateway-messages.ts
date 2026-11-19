@@ -21,6 +21,7 @@ export const GATEWAY_MESSAGE_PATHS = [
   'harness',
   'kinds',
   'locale',
+  'mapDial',
   'moru',
   'nav',
   'navRail',
