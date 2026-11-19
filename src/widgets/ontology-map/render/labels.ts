@@ -8,6 +8,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { smoothstep } from "../model/visibility/altitude";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { lerpColorHex } from "./grid";
+import { loadProductGlyphs } from "./product-glyphs";
 
 export interface LabelDrawState {
   kind: "project" | "domain" | "capability" | "element";
@@ -91,7 +92,6 @@ const LABEL_FONT_WEIGHT: Record<LabelDrawState["kind"], number> = {
 };
 
 const FALLBACK_LABEL_FAMILY = "-apple-system, 'SF Pro Text', sans-serif";
-const LADDER_WEIGHTS = [400, FONT_WEIGHT.signature, FONT_WEIGHT.emphasis, FONT_WEIGHT.strong];
 let labelFamily: string | null = null;
 let adopting: Promise<boolean> | null = null;
 
@@ -101,37 +101,48 @@ export function productFontFamily(): string | null {
   return getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() || null;
 }
 
-/** The family canvas names are drawn in: the product family once every ladder weight has loaded. */
+/** The family canvas names are drawn in: the product family once the faces of its names have loaded. */
 export function labelFontFamily(): string {
   if (labelFamily === null && adopting === null) void adoptBodyLabelFont();
   return labelFamily ?? FALLBACK_LABEL_FAMILY;
 }
 
-async function adopt(): Promise<boolean> {
+/**
+ * Loads the faces `text` draws from (`product-glyphs.ts`) rather than the whole family, so a Korean
+ * map fetches the Hangul subsets of its names, not the 2 MB file. A width measured before a face
+ * arrived is stale, so the cache empties whenever one does, including a face a later draw fetched.
+ */
+async function adopt(text: string): Promise<boolean> {
   if (typeof document === "undefined" || !document.fonts) return false;
   const family = productFontFamily();
   if (family === null) return false;
-  const faces = LADDER_WEIGHTS.map((weight) => `${weight} 12px ${family}`);
-  try {
-    await Promise.all(faces.map((face) => document.fonts.load(face)));
-  } catch {
-    return false;
-  }
-  if (!faces.every((face) => document.fonts.check(face))) return false;
+  if (!(await loadProductGlyphs(family, ` ${text}`))) return false;
   labelFamily = family;
   widthCache.clear();
+  document.fonts.addEventListener?.("loadingdone", () => widthCache.clear());
   return true;
 }
 
 let adoptionSettled = false;
 
-/** Resolves true once the product family became the label family, so the caller can repaint once. */
-export function adoptBodyLabelFont(): Promise<boolean> {
-  adopting ??= adopt().then((adopted) => {
-    adoptionSettled = true;
-    return adopted;
+/**
+ * Resolves true once the product family became the label family, so the caller can repaint once.
+ * `text` is what the caller will draw; a later call loads the faces of its new characters.
+ */
+export function adoptBodyLabelFont(text = ""): Promise<boolean> {
+  if (adopting === null) {
+    adopting = adopt(text).then((adopted) => {
+      adoptionSettled = true;
+      return adopted;
+    });
+    return adopting;
+  }
+  if (text === "") return adopting;
+  return adopting.then(async (adopted) => {
+    if (!adopted || labelFamily === null) return adopted;
+    await loadProductGlyphs(labelFamily, text);
+    return true;
   });
-  return adopting;
 }
 
 /** Whether adoption has finished, adopted or not: from then no later label face can change a layout. */

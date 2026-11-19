@@ -74,12 +74,6 @@
       "witness": "from 'jsonc-parser'"
     },
     {
-      "key": "frontend:runtime:dependencies:package.json:pretendard",
-      "reason": "Pretendard is read directly as a raster-build asset rather than imported by the module graph.",
-      "consumer": "scripts/brand/build-brand-raster.mjs",
-      "witness": "node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2"
-    },
-    {
       "key": "frontend:runtime:devDependencies:package.json:tailwindcss",
       "reason": "Tailwind CSS is retained as the direct compiler dependency for the PostCSS adapter.",
       "consumer": "postcss.config.mjs",
