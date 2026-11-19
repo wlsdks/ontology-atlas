@@ -131,15 +131,15 @@ test('doubling a hostile JVM file at most about doubles the time to read its imp
     ['Kotlin', 'fun <'],
     ['Kotlin', 'fun a<'],
   ];
-  // A warm-up run, then the median of five, so one scheduling or collection pause on a busy machine decides nothing.
+  // A warm-up run, then the fastest of seven: a busy machine only ever adds time, so the fastest run is the code's own.
   const timed = (path, text) => {
     parseJvmSource(text, path);
-    const runs = [0, 1, 2, 3, 4].map(() => {
+    const runs = [0, 1, 2, 3, 4, 5, 6].map(() => {
       const started = performance.now();
       parseJvmSource(text, path);
       return performance.now() - started;
     });
-    return runs.sort((a, b) => a - b)[2];
+    return Math.min(...runs);
   };
   for (const [language, unit] of shapes) {
     const path = language === 'Kotlin' ? 'A.kt' : 'A.java';
