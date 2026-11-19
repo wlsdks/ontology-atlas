@@ -350,14 +350,14 @@ export function createVaultDocCache(rootPath, io = {}) {
       for (const [filePath, entry] of entries) {
         if (entry.pass !== pass) remove(filePath, entry);
       }
-      generation += 1;
     }
     docSetVersions.set(docs, `${cacheId}:${generation}`);
     return docs;
   }
 
-  // The version moves with each stored entry, not at the end of a pass: a pass that
-  // throws halfway must not leave replaced entries under the old version.
+  // The version moves with every entry stored or removed, not at the end of a pass: a
+  // pass that throws halfway must not leave replaced entries under the old version, and
+  // a dropped entry whose file is then deleted is never seen again to move it.
   function store(filePath, fresh) {
     const doc = deepFreeze(docFromSnapshot(rootPath, filePath, fresh.snapshot));
     const entry = { stamp: fresh.stamp, readAt: fresh.readAt, doc, pass };
@@ -379,6 +379,7 @@ export function createVaultDocCache(rootPath, io = {}) {
 
   function remove(filePath, entry) {
     entries.delete(filePath);
+    generation += 1;
     const identity = identityOf(entry.stamp);
     if (pathByIdentity.get(identity) === filePath) pathByIdentity.delete(identity);
   }
@@ -389,8 +390,7 @@ export function createVaultDocCache(rootPath, io = {}) {
    * keep no ctime; a tool can restore mtime), a write path's fresh read is the
    * only witness, and without this the stale parse would outlive every retry.
    * The entry is found by `filePath` as spelled, else by the file's device and inode
-   * (from `stats`, or a stat of `filePath`). The version need not move here: the next
-   * load reads the dropped file again, and storing it moves the version.
+   * (from `stats`, or a stat of `filePath`).
    */
   function forget(filePath, raw, stats) {
     let key = entries.has(filePath) ? filePath : undefined;

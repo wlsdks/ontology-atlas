@@ -21,6 +21,8 @@ import { join } from 'node:path';
 
 import { applyAllOrNothing, VaultConflictError, writeFileAtomically } from './atomic-writes.mjs';
 import { patchFrontmatter } from './doc-writes.mjs';
+import { createCompiledOntologyCache } from '../server/compiled-cache.mjs';
+import { compileOntology } from '../ontology-compiler.mjs';
 import {
   createVaultDocCache,
   loadVaultDocs,
@@ -369,6 +371,23 @@ describe('a stamp that cannot show an edit (FAT/exFAT)', () => {
       assert.ok((await served(root)).every((doc) => !doc.raw.includes('AAAA')));
     });
   }
+
+  it('a refused write then a delete leaves no version that still holds the file', (t) => {
+    const root = makeVault(t, {
+      'capabilities/x': nodeText('X'),
+      'capabilities/keep': nodeText('Keep'),
+      'capabilities/other': nodeText('Other'),
+    });
+    const path = join(root, 'capabilities/x.md');
+    const graph = createCompiledOntologyCache({ loadDocs: () => loadVaultDocs(root), compile: compileOntology });
+    const planned = loadVaultDocs(root).find((doc) => doc.slug === 'capabilities/x');
+    assert.equal(graph.get({ summary: true }).nodeCount, 3);
+    appendFileSync(path, '\nA person added this line.\n');
+    assert.throws(() => patchFrontmatter(root, 'capabilities/x', { title: 'X by agent' }, { expectedMtime: planned.mtime }));
+    unlinkSync(path);
+    assert.equal(loadVaultDocs(root).length, 2);
+    assert.equal(graph.get({ summary: true }).nodeCount, 2, 'the compiled graph must not keep the deleted file');
+  });
 
   it('forget finds the entry by device and inode when the path is spelled differently', (t) => {
     const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
