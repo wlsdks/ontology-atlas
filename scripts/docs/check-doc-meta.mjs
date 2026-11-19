@@ -102,6 +102,12 @@ function asList(value) {
   return value === undefined || value === null || value === '' ? [] : [value];
 }
 
+/** A spec's versions are its dated `## Revisions` lines; the number itself comes from Git. */
+function hasRevisionLog(raw) {
+  const section = raw.split(/^## Revisions[ \t]*$/m)[1];
+  return section !== undefined && /^- \d{4}-\d{2}-\d{2}: \S/m.test(section.split(/^## /m)[0]);
+}
+
 /** Problems in one document's frontmatter, as `{ file, key, message }`. */
 export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(root), guideRegistry = '' } = {}) {
   const problems = [];
@@ -155,6 +161,9 @@ export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(r
     if (text.length < 8 || !decisions.some((name) => name.includes(text))) {
       report('decisions', `${text} names no fragment under docs/records/decisions/`);
     }
+  }
+  if (docType === 'spec' && !hasRevisionLog(raw)) {
+    report('revisions', 'a spec ends with a `## Revisions` list, one `- YYYY-MM-DD: what changed and why` line per change');
   }
   if (frontmatter.status === 'superseded' && !frontmatter.superseded_by) report('superseded_by', 'is required when status is superseded');
   for (const key of ['superseded_by', 'supersedes']) {
