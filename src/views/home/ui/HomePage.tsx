@@ -280,10 +280,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // Accepts both the sample and a real folder settling (`use-auto-start-ready.ts`).
   const topologyAuthoring = useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences });
   const {
-    canCreateNode, createNodeOpen, bootstrapOpen, nodeEditTarget, agentActivityStatus, agentFocusNodeId,
-    closeCreateNode, setBootstrapOpen, bootstrapPlan, runBootstrap, createNodePanelRef,
-    handleCreateNodePanelKeyDown, createNode, createNodeDomainOptions, createNodeProposal,
-    createNodeConfirming, setCreateNodeProposal, confirmCreateNode
+    bootstrapOpen, nodeEditTarget, agentActivityStatus, agentFocusNodeId,
+    closeCreateNode, setBootstrapOpen, bootstrapPlan, runBootstrap
   } = topologyAuthoring;
   const combinedFitToken = fitViewToken;
   // Static export cannot vary page metadata, so the selected context reaches the tab title here.
@@ -365,7 +363,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     analysisMode, createNodeIntent, ontologySearchOpen, shortcutsOpen, setOntologySearchOpen,
     setShortcutsOpen, setDocsDrawerOpen, setRouteState, topologyAuthoring, topologyCanvasFocus
   });
-  const { createNodePending, createNodeDefaultKind, createNodeSeedDomain } = topologyCreateIntent;
+  const { createNodePending } = topologyCreateIntent;
   // The parser preserves unknown keys, so this needs no schema change.
   const authoredSignificance = useMemo(() => {
     const value = nodeEditTarget?.frontmatter?.significance;
@@ -611,13 +609,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             <TopologyBlockingOverlays
               t={t} bootstrapOpen={bootstrapOpen} bootstrapPlan={bootstrapPlan}
               closeBootstrap={() => setBootstrapOpen(false)} runBootstrap={runBootstrap}
-              canCreateNode={canCreateNode} createNodeOpen={createNodeOpen}
-              closeCreateNode={closeCreateNode} createNodePanelRef={createNodePanelRef}
-              onCreateNodePanelKeyDown={handleCreateNodePanelKeyDown} createNode={createNode}
-              createNodeDomainOptions={createNodeDomainOptions} createNodeDefaultKind={createNodeDefaultKind}
-              createNodeSeedDomain={createNodeSeedDomain} activeLocale={activeLocale}
-              createNodeProposal={createNodeProposal} createNodeConfirming={createNodeConfirming}
-              clearCreateNodeProposal={() => setCreateNodeProposal(null)} confirmCreateNode={confirmCreateNode}
+              closeCreateNode={closeCreateNode}
               createNodePending={Boolean(createNodePending)} openDocsDrawer={() => setDocsDrawerOpen(true)}
             />
             {/* INDEX stays beside the selected-node datasheet, as the approved spec shows. */}

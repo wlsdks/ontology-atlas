@@ -141,24 +141,14 @@
   },
   "createNode": {
     "heading": "添加概念",
-    "titlePlaceholder": "概念标题",
     "kind": "类型",
-    "domain": "领域",
-    "domainQuestion": "要放进哪个领域？（可选）",
     "domainNone": "无领域",
-    "domainHelper": "领域用来归组相关的能力。",
     "create": "创建",
     "cancel": "取消",
-    "reviewHeading": "检查改动",
-    "reviewBack": "继续编辑",
-    "reviewConfirm": "确认并保存",
-    "reviewConfirming": "正在保存…",
     "kindProject": "项目",
     "kindDomain": "领域",
     "kindCapability": "能力",
     "kindElement": "元素",
-    "toastSaved": "已创建 {slug}",
-    "toastSavedAction": "在地图上查看",
     "toastExists": "已存在相同 slug 的概念。",
     "toastError": "无法创建概念。",
     "unavailableHeading": "请先打开本体文件夹",
@@ -166,8 +156,19 @@
     "unavailableAction": "打开本体文件夹",
     "primaryNamePlaceholder": "概念名称（英文）",
     "secondaryNamePlaceholder": "韩文名称（可选）",
-    "localeNamesHint": "上方字段是当前界面语言（英文）的名称。补充韩文名称后，韩文界面也能读到它。",
-    "primaryLocaleRequired": "需要先填写英文名称才能保存：当前界面是英文，留空会让地图和列表显示原始标题。"
+    "primaryLocaleRequired": "需要先填写英文名称才能保存：当前界面是英文，留空会让地图和列表显示原始标题。",
+    "kindMeaningProject": "这个文件夹描述的产品或系统：它为谁、为了做什么而存在。",
+    "kindMeaningDomain": "像支付或登录这样长期存在的职责范围，把其中的能力归在一起。",
+    "kindMeaningCapability": "人或其他系统能察觉到的、产品能做的事，例如：处理退款。",
+    "kindMeaningElement": "让某项能力运作、职责明确的一部分代码，例如：令牌签名器。",
+    "parentLabel": "放入的领域",
+    "parentNoMatch": "没有这个名字的领域。",
+    "descriptionLabel": "一句话说明（可选）",
+    "similarExists": "已有同类型的“{name}”。",
+    "openSimilar": "打开它",
+    "createAnyway": "仍然创建",
+    "keysHint": "按 Enter 创建。⌘/Ctrl+Enter 创建后保持此卡片打开，方便继续添加。",
+    "toastCreated": "已创建“{name}”"
   },
   "explanationEdit": {
     "saved": "说明已保存",
@@ -231,10 +232,8 @@
     "bodyNoProjectsPicker": "自己创建一个，或让编码智能体读取代码一次性填好。",
     "bodyNoDeps": "在地图上创建一条关系，这里就会出现连线。",
     "crossViewHint": "你创建的内容也会显示在本体文档中。",
-    "ctaCreateNode": "创建概念",
+    "ctaCreateNode": "添加概念",
     "ctaTree": "浏览概念",
-    "ctaBuilder": "在地图上创建",
-    "ctaBuilderNoDeps": "创建关系",
     "ctaOpenVaultDownload": "获取应用",
     "ctaOpenVaultPicker": "打开本体文件夹",
     "kickerDocsFound": "本体文件夹 · {count} 篇文档",
@@ -279,7 +278,14 @@
     "tidyHeading": "需要处理",
     "plainHint": "元素已隐藏：点击地图上的概念即可显示它的元素",
     "openedInsideLabel": "已打开所选文件夹中的本体文件夹。",
-    "openedInsideDismiss": "关闭此提示"
+    "openedInsideDismiss": "关闭此提示",
+    "createConcept": "添加概念",
+    "addDomain": "添加领域",
+    "addDomainField": "新领域名称",
+    "addCapability": "添加能力",
+    "addCapabilityField": "新能力名称",
+    "addElement": "添加元素",
+    "addElementField": "新元素名称"
   },
   "deeplinkNotFound": "未找到概念：{query}",
   "businessFlowRequest": "仅使用 Atlas MCP 的读取工具来说明这份本体的业务流程。不要调用 shell、文件、源码、网页或其他工具。\n\n严格返回六个 ### 标题，每个标题下写一段：\n1) 这个产品为何存在。\n2) 各领域分别负责什么。\n3) 主要能力如何构成业务流程。\n4) 这些能力如何体现在元素或路径中。\n5) 哪些已声明的依赖可以说明影响范围，哪些仍然未知。\n6) 必须保留哪些部分、可见缺口、过时或未验证的限制。\n\n规则：\n- 先查看项目地图，选一条从语义到实现的代表性链路；不要罗列每个概念。\n- 最多用 get_concept(body: full) 或 get_concepts(body: full) 读取 12 个概念。\n- 每段都要写出本轮已读完整正文的完整概念 slug。\n- 仅当当前本体中确实存在时，才写出 from → type → to 形式的关系。\n- 始终保留“部分”“可见缺口”“未知”这些限定。\n- 某个能力的排除项只约束该能力，不要扩大到整个项目。\n- 如果本体无法回答，就说明原因，不要用其他知识填补空缺。",
@@ -453,5 +459,19 @@
       "cta": "用我的文档生成地图"
     },
     "next": "下一步"
+  },
+  "manualWrite": {
+    "undo": "撤销",
+    "undone": "已撤销，文件恢复原样。",
+    "undoChanged": "未撤销：那次更改之后，磁盘上的文件已被修改。",
+    "undoNotLatest": "只能撤销最近的一次更改。",
+    "undoFailed": "无法撤销，文件没有变化。"
+  },
+  "conceptEdit": {
+    "renamed": "已重命名：“{from}” → “{to}”",
+    "described": "已保存“{name}”的说明",
+    "deleted": "已删除“{name}”",
+    "deleteConflict": "未删除：磁盘上的文件先被修改了。请检查更改后重试。",
+    "deleteFailed": "无法删除文件，请重试。"
   }
 }

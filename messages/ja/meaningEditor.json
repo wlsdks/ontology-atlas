@@ -1,14 +1,12 @@
 {
   "ariaLabel": "{name}のつながりを編集",
-  "editBody": "マップに表示するつながりを1つ選んでください。",
-  "reviewBody": "Markdownに書き込む前に、変わる部分だけを確認してください。",
+  "editBody": "この概念が書いたつながりと、ほかの概念がこの概念に向けて書いたつながりです。",
   "relation": "つながりの種類",
   "relationHelp": "これはMarkdownの種類付きの1行になります。このフォルダ内のどの文書にも対応しない行は、フォルダの検証で報告されます。警告は出ますが、書き込みは止まりません。",
   "target": "つなぐ概念",
   "targetHelp": "選べるのはこのフォルダにすでにある文書だけなので、行は必ず解決されます。この概念を変えると何に及ぶかを調べるとき、影響クエリがたどるのは「{relations}」の行だけです。",
   "why": "このつながりがある理由",
   "whyHint": "理由が分かっていれば書いておくと、次の人が行の意味を推測せずに済みます。",
-  "whyRequiredHint": "依存には、相手に頼る理由が必要です。",
   "relationName": {
     "isA": "上位概念",
     "dependsOn": "依存",
@@ -21,15 +19,45 @@
     "contains": "この概念の中に持つ",
     "relates": "互いに必要としない"
   },
-  "relationOption": "{name}（{hint}）",
-  "review": "変更を確認",
-  "remove": "このつながりを削除",
-  "back": "編集に戻る",
-  "apply": "確定して書き込む",
+  "remove": "削除",
+  "apply": "つながりを保存",
   "saving": "書き込み中…",
-  "saved": "つながりをMarkdownに書き込みました。",
   "cancel": "キャンセル",
   "close": "つながりエディタを閉じる",
   "saveError": "書き込めませんでした。ファイルが変更されていないか確認して、もう一度お試しください。",
-  "noChanges": "変更はありません。先につながりまたはその理由を更新してください。"
+  "noChanges": "変更はありません。先につながりまたはその理由を更新してください。",
+  "listHeading": "つながり",
+  "listEmpty": "まだつながりはありません。",
+  "outgoing": {
+    "dependsOn": "依存先：{name}",
+    "relates": "関連：{name}",
+    "contains": "包含：{name}",
+    "isA": "上位概念：{name}"
+  },
+  "incoming": {
+    "dependsOn": "この概念に依存：{name}",
+    "relates": "この概念と関連：{name}",
+    "contains": "この概念を包含：{name}",
+    "isA": "この概念の下位：{name}"
+  },
+  "edit": "編集",
+  "add": "つながりを追加",
+  "searchPlaceholder": "名前で検索",
+  "targetNoMatch": "このつながりを結べる概念に、その名前はありません。",
+  "targetWhere": "{kind} · {domain}",
+  "kindName": {
+    "project": "プロジェクト",
+    "domain": "ドメイン",
+    "capability": "ケイパビリティ",
+    "element": "要素"
+  },
+  "whyRequired": "依存する理由",
+  "whyDependsHint": "{target}が変わると{source}で何が壊れるかを書いてください。",
+  "thatOne": "つなぐ概念",
+  "keysHint": "Enterで保存します。",
+  "written": {
+    "added": "つながりを追加しました：{source} → {target}",
+    "changed": "つながりを変更しました：{source} → {target}",
+    "removed": "つながりを削除しました：{source} → {target}"
+  }
 }

@@ -9,19 +9,24 @@ import {
   useState,
 } from "react";
 import {
+  AlignLeft,
   CircleHelp,
   Copy,
   FileText,
   GitBranch,
   Orbit,
+  PencilLine,
   Plus,
   ScanSearch,
+  Trash2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
-import { Surface, SummaryFreshnessRow } from "@/shared/ui";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
+import { Button, Surface, SummaryFreshnessRow, Textarea } from "@/shared/ui";
+import { Input } from "@/shared/ui/fields/input";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
 import { IdentityZone } from "./detail-panel/IdentityZone";
@@ -69,6 +74,9 @@ export function OntologyMapDetailPanel({
   onCopyHandoff,
   onEditRelations,
   onCreateLinked,
+  onRename,
+  onSaveDescription,
+  deleteConcept,
   onAskAgent,
   meaningReview,
   discoveryAction,
@@ -92,6 +100,8 @@ export function OntologyMapDetailPanel({
 }: OntologyMapDetailPanelProps) {
   const tPanel = useTranslations("conceptPanel");
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
+  const tEdit = useTranslations("conceptPanel.edit");
+  const [editMode, setEditMode] = useState<ConceptEditMode | null>(null);
   const isProject = kind === "project";
   const isDocument = kind === "document";
   const showProjectSource = isProject && projectSource !== null;
@@ -209,6 +219,15 @@ export function OntologyMapDetailPanel({
           },
         ]
       : []),
+    ...(onRename
+      ? [{ label: tEdit("rename"), icon: <PencilLine size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-rename", onSelect: () => setEditMode("rename") }]
+      : []),
+    ...(onSaveDescription
+      ? [{ label: tEdit("describe"), icon: <AlignLeft size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-describe", onSelect: () => setEditMode("describe") }]
+      : []),
+    ...(deleteConcept
+      ? [{ label: tEdit("delete"), icon: <Trash2 size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-delete", onSelect: () => setEditMode("delete") }]
+      : []),
   ];
   const moreActions: DetailActionItem[] = [
     ...(meaningReview
@@ -307,7 +326,27 @@ export function OntologyMapDetailPanel({
             onHoverConnection={onHoverConnection}
             onClose={onClose}
             closeButtonRef={closeButtonRef}
+            titleEditor={
+              editMode === "rename" && onRename ? (
+                <InPlaceEditor
+                  multiline={false}
+                  label={tEdit("renameLabel")}
+                  initial={title}
+                  testId="map-detail-panel-rename"
+                  onSave={onRename}
+                  onDone={() => setEditMode(null)}
+                />
+              ) : undefined
+            }
           />
+          {editMode === "delete" && deleteConcept ? (
+            <DeleteConfirm
+              title={title}
+              referrers={deleteConcept.referrers}
+              onDelete={deleteConcept.onDelete}
+              onDone={() => setEditMode(null)}
+            />
+          ) : null}
 
           <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
 
@@ -433,7 +472,18 @@ export function OntologyMapDetailPanel({
                 </div>
               </div>
             ) : null}
-            <MeaningZone definition={definition} />
+            {editMode === "describe" && onSaveDescription ? (
+              <InPlaceEditor
+                multiline
+                label={tEdit("describeLabel")}
+                initial={definition ?? ""}
+                testId="map-detail-panel-describe"
+                onSave={onSaveDescription}
+                onDone={() => setEditMode(null)}
+              />
+            ) : (
+              <MeaningZone definition={definition} />
+            )}
           </div>
 
           <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
@@ -480,5 +530,149 @@ export function OntologyMapDetailPanel({
         />
       </div>
     </Surface>
+  );
+}
+
+type ConceptEditMode = "rename" | "describe" | "delete";
+
+/** One field that saves on Enter and leaves on Escape; the panel stays where it is. */
+function InPlaceEditor({
+  multiline,
+  label,
+  initial,
+  testId,
+  onSave,
+  onDone,
+}: {
+  multiline: boolean;
+  label: string;
+  initial: string;
+  testId: string;
+  onSave: (value: string) => Promise<void>;
+  onDone: () => void;
+}) {
+  const t = useTranslations("conceptPanel.edit");
+  const [value, setValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (saving || (!multiline && !value.trim())) return;
+    setSaving(true);
+    try {
+      await onSave(value);
+      onDone();
+    } catch {
+      setSaving(false);
+    }
+  };
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      onDone();
+      return;
+    }
+    if (event.key === "Enter" && !event.shiftKey && !isImeComposing(event)) {
+      event.preventDefault();
+      void save();
+    }
+  };
+  const fieldProps = {
+    label,
+    className: "w-full",
+    value,
+    autoFocus: true,
+    disabled: saving,
+    onFocus: (event: { currentTarget: HTMLInputElement | HTMLTextAreaElement }) => event.currentTarget.select(),
+    onKeyDown: handleKeyDown,
+    "data-testid": testId,
+  };
+  return (
+    <div data-testid={`${testId}-editor`} className="flex flex-col gap-2 px-[var(--map-panel-pad)] pb-3">
+      {multiline ? (
+        <Textarea {...fieldProps} rows={3} autoGrow maxRows={8} onChange={(event) => setValue(event.target.value)} />
+      ) : (
+        <Input {...fieldProps} autoComplete="off" onChange={(event) => setValue(event.target.value)} />
+      )}
+      <div className="flex items-center gap-2">
+        <span className="mr-auto text-label text-[color:var(--map-panel-text-quaternary)]">{t("keysHint")}</span>
+        <Button variant="ghost" size="sm" onClick={onDone} disabled={saving}>
+          {t("cancel")}
+        </Button>
+        <Button variant="primary" size="sm" onClick={() => void save()} disabled={saving} data-testid={`${testId}-save`}>
+          {t("save")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Names what still points here before the file goes; the toast's Undo brings it back. */
+function DeleteConfirm({
+  title,
+  referrers,
+  onDelete,
+  onDone,
+}: {
+  title: string;
+  referrers: readonly { slug: string; title: string }[];
+  onDelete: () => Promise<void>;
+  onDone: () => void;
+}) {
+  const t = useTranslations("conceptPanel.edit");
+  const [deleting, setDeleting] = useState(false);
+  const shown = referrers.slice(0, 5);
+  const confirm = async () => {
+    setDeleting(true);
+    try {
+      await onDelete();
+    } catch {
+      setDeleting(false);
+    }
+  };
+  return (
+    <div
+      role="alertdialog"
+      aria-label={t("deleteTitle", { title })}
+      data-testid="map-detail-panel-delete-confirm"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        onDone();
+      }}
+      className="mx-[var(--map-panel-pad)] mb-3 flex flex-col gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--map-panel-divider)] p-3"
+    >
+      <p className="text-body font-[var(--font-weight-strong)] text-[color:var(--map-panel-text-primary)]">{t("deleteTitle", { title })}</p>
+      <p className="text-label leading-label text-[color:var(--map-panel-text-tertiary)]">
+        {referrers.length > 0 ? t("deleteReferrers", { count: referrers.length }) : t("deleteNoReferrers")}
+      </p>
+      {shown.length > 0 ? (
+        <ul data-testid="map-detail-panel-delete-referrers" className="flex flex-col gap-0.5 text-label text-[color:var(--map-panel-text-secondary)]">
+          {shown.map((referrer) => (
+            <li key={referrer.slug} className="truncate">
+              {referrer.title}
+            </li>
+          ))}
+          {referrers.length > shown.length ? (
+            <li className="text-[color:var(--map-panel-text-quaternary)]">{t("deleteMore", { count: referrers.length - shown.length })}</li>
+          ) : null}
+        </ul>
+      ) : null}
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onDone} disabled={deleting} autoFocus>
+          {t("cancel")}
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => void confirm()}
+          disabled={deleting}
+          data-confirm-step
+          data-testid="map-detail-panel-delete-confirm-button"
+        >
+          {t("deleteConfirm")}
+        </Button>
+      </div>
+    </div>
   );
 }

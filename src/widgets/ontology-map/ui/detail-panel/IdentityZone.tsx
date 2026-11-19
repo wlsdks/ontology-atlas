@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { CloseButton } from "@/shared/ui";
@@ -26,6 +27,7 @@ export function IdentityZone({
   onHoverConnection,
   onClose,
   closeButtonRef,
+  titleEditor,
 }: {
   nodeId: string;
   title: string;
@@ -39,6 +41,8 @@ export function IdentityZone({
   onHoverConnection: OntologyMapDetailPanelProps["onHoverConnection"];
   onClose: OntologyMapDetailPanelProps["onClose"];
   closeButtonRef: OntologyMapDetailPanelProps["closeButtonRef"];
+  /** Stands where the name is while it is being renamed. */
+  titleEditor?: ReactNode;
 }) {
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
   const changedLabel = powered && updatedAtLabel ? updatedAtLabel : null;
@@ -92,7 +96,9 @@ export function IdentityZone({
           className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
         />
       </div>
+      {titleEditor ? <div className="-mx-[var(--map-panel-pad)] mt-2">{titleEditor}</div> : null}
       <h2
+        hidden={Boolean(titleEditor)}
         title={title}
         className="mt-1 min-w-0 text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]"
       >

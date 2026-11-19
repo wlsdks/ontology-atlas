@@ -1,11 +1,9 @@
 "use client";
 
 import { CloseButton, controlClass } from "@/shared/ui";
-import type { ComponentProps, KeyboardEvent, RefObject } from "react";
-import { CreateNodeForm } from "./CreateNodeForm";
+import type { ComponentProps } from "react";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 
-const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 interface TopologyBlockingOverlaysProps {
@@ -14,28 +12,13 @@ interface TopologyBlockingOverlaysProps {
   bootstrapPlan: ComponentProps<typeof OntologyBootstrapForm>["plan"] | null;
   closeBootstrap: () => void;
   runBootstrap: ComponentProps<typeof OntologyBootstrapForm>["onConfirm"];
-  canCreateNode: boolean;
-  createNodeOpen: boolean;
   closeCreateNode: () => void;
-  createNodePanelRef: RefObject<HTMLDivElement | null>;
-  onCreateNodePanelKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
-  createNode: ComponentProps<typeof CreateNodeForm>["onCreate"];
-  createNodeDomainOptions: ComponentProps<typeof CreateNodeForm>["domainOptions"];
-  createNodeDefaultKind: ComponentProps<typeof CreateNodeForm>["defaultKind"];
-  createNodeSeedDomain: string;
-  activeLocale: string;
-  createNodeProposal: {
-    changeSet: NonNullable<ComponentProps<typeof CreateNodeForm>["review"]>["changeSet"];
-  } | null;
-  createNodeConfirming: boolean;
-  clearCreateNodeProposal: () => void;
-  confirmCreateNode: () => void;
   createNodePending: boolean;
   openDocsDrawer: () => void;
 }
 
 export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
-  const { t, createNodePanelRef, onCreateNodePanelKeyDown } = props;
+  const { t } = props;
   return (
     <>
       {props.bootstrapOpen && props.bootstrapPlan ? (
@@ -80,65 +63,6 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
               confirmAddToMap: (count) => t("bootstrap.confirmAddToMap", { count }),
               cancel: t("bootstrap.cancel"), errorPrefix: t("bootstrap.errorPrefix")
             }} />
-          </div>
-        </>
-      ) : null}
-      {props.canCreateNode && props.createNodeOpen ? (
-        <>
-          <button
-            type="button"
-            aria-label={t("createNode.cancel")}
-            className="absolute inset-0 z-[var(--z-map-scrim)] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
-            data-interactive-overlay="true"
-            data-testid="topology-create-node-backdrop"
-            data-backdrop-contract="blocks-map-and-closes-composer"
-            data-backdrop-surface-token="--topology-blocking-backdrop-surface"
-            onClick={props.closeCreateNode}
-          />
-          <div
-            ref={createNodePanelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
-            tabIndex={-1}
-            onKeyDown={onCreateNodePanelKeyDown}
-            className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[min(var(--dialog-w-md),calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto"
-            data-testid="topology-create-node-panel"
-            data-attention-role="blocking-composer"
-            data-placement-contract="centered-blocking-edit"
-            data-surface-role="blocking-edit-surface"
-            data-elevation-contract="solid-panel-over-dimmed-map"
-            data-size-contract="bounded-centered-composer"
-            data-top-token="--topology-blocking-composer-top"
-            data-width-token="--dialog-w-md"
-            data-max-height-token="--topology-blocking-composer-max-height"
-          >
-            <CreateNodeForm
-              onCreate={props.createNode}
-              onCancel={props.closeCreateNode}
-              domainOptions={props.createNodeDomainOptions}
-              labels={{
-                headingId: CREATE_NODE_DIALOG_TITLE_ID, heading: t("createNode.heading"),
-                titlePlaceholder: t("createNode.titlePlaceholder"), kind: t("createNode.kind"),
-                domain: t("createNode.domain"), domainQuestion: t("createNode.domainQuestion"),
-                domainNone: t("createNode.domainNone"), domainHelper: t("createNode.domainHelper"),
-                create: t("createNode.create"), cancel: t("createNode.cancel"),
-                reviewHeading: t("createNode.reviewHeading"), reviewBack: t("createNode.reviewBack"),
-                reviewConfirm: t("createNode.reviewConfirm"), reviewConfirming: t("createNode.reviewConfirming"),
-                kindLabels: { project: t("createNode.kindProject"), domain: t("createNode.kindDomain"), capability: t("createNode.kindCapability"), element: t("createNode.kindElement") },
-                primaryNamePlaceholder: t("createNode.primaryNamePlaceholder"),
-                secondaryNamePlaceholder: t("createNode.secondaryNamePlaceholder"),
-                localeNamesHint: t("createNode.localeNamesHint"),
-                primaryLocaleRequired: t("createNode.primaryLocaleRequired")
-              }}
-              defaultKind={props.createNodeDefaultKind}
-              defaultDomain={props.createNodeSeedDomain}
-              localeNames={{ primaryLocale: props.activeLocale, secondaryLocale: props.activeLocale === "en" ? "ko" : "en" }}
-              review={props.createNodeProposal ? {
-                changeSet: props.createNodeProposal.changeSet, confirming: props.createNodeConfirming,
-                onBack: props.clearCreateNodeProposal, onConfirm: props.confirmCreateNode
-              } : null}
-            />
           </div>
         </>
       ) : null}

@@ -46,11 +46,7 @@ describe("TopologyEmptyState", () => {
     expect(
       screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
     ).toBeInTheDocument();
-    expect(screen.getByText(EMPTY.ctaBuilder).closest("a")).toHaveAttribute(
-      "href",
-      expect.stringContaining("/topology/?workbench=create"),
-    );
-    expect(screen.getAllByRole("link")).toHaveLength(2);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
   /*
@@ -88,10 +84,6 @@ describe("TopologyEmptyState", () => {
 
     expect(panel).toHaveTextContent("지도 · 개념 1개 · 관계 0개");
     expect(panel).toHaveTextContent(EMPTY.bodyNoDeps);
-    expect(screen.getByText("관계 만들기").closest("a")).toHaveAttribute(
-      "href",
-      expect.stringContaining("/topology/?workbench=create"),
-    );
   });
 
   // Capability decides: a browser that can open a folder gets picker copy, not an app-install
@@ -148,7 +140,11 @@ describe("TopologyEmptyState", () => {
 
   it('gives every recovery action the same width', () => {
     /* Actions are one equal-width vertical set, not width-by-copy wrapping. */
-    renderEmpty(0);
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TopologyEmptyState conceptCount={0} canCreateNode onCreateNode={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
     const actions = [...screen.queryAllByRole("link"), ...screen.queryAllByRole("button")];
     expect(actions.length).toBeGreaterThan(1);
     for (const action of actions) {
@@ -170,7 +166,7 @@ describe("TopologyEmptyState", () => {
     expect(screen.queryByTestId("empty-create-node")).not.toBeInTheDocument();
   });
 
-  it('shows the create-concept primary CTA and calls onCreateNode when canCreateNode', () => {
+  it('offers one create door, the create card, when a folder is open', () => {
     const onCreateNode = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -178,7 +174,8 @@ describe("TopologyEmptyState", () => {
       </NextIntlClientProvider>,
     );
     const btn = screen.getByTestId("empty-create-node");
-    expect(btn).toHaveTextContent("개념 만들기");
+    expect(btn).toHaveTextContent(EMPTY.ctaCreateNode);
+    expect(document.querySelectorAll('a[href*="workbench=create"]')).toHaveLength(0);
     btn.click();
     expect(onCreateNode).toHaveBeenCalledTimes(1);
   });

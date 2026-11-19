@@ -141,24 +141,14 @@
   },
   "createNode": {
     "heading": "概念を追加",
-    "titlePlaceholder": "概念のタイトル",
     "kind": "種類",
-    "domain": "ドメイン",
-    "domainQuestion": "どのドメインに入れますか？（任意）",
     "domainNone": "ドメインなし",
-    "domainHelper": "ドメインは関連するケイパビリティをまとめる単位です。",
     "create": "作成",
     "cancel": "キャンセル",
-    "reviewHeading": "変更内容を確認",
-    "reviewBack": "編集に戻る",
-    "reviewConfirm": "確認して保存",
-    "reviewConfirming": "保存中…",
     "kindProject": "プロジェクト",
     "kindDomain": "ドメイン",
     "kindCapability": "ケイパビリティ",
     "kindElement": "要素",
-    "toastSaved": "{slug}を作成しました",
-    "toastSavedAction": "マップで見る",
     "toastExists": "同じslugの概念がすでにあります。",
     "toastError": "概念を作成できませんでした。",
     "unavailableHeading": "先にオントロジーフォルダを開いてください",
@@ -166,8 +156,19 @@
     "unavailableAction": "オントロジーフォルダを開く",
     "primaryNamePlaceholder": "概念名（日本語）",
     "secondaryNamePlaceholder": "英語名（任意）",
-    "localeNamesHint": "上の欄は、現在の画面言語（日本語）での名前です。英語名も入力すると、英語の画面でも読めます。",
-    "primaryLocaleRequired": "保存するには日本語名の入力が必要です。画面が日本語のため、空のままだとマップや一覧に元のタイトルがそのまま表示されます。"
+    "primaryLocaleRequired": "保存するには日本語名の入力が必要です。画面が日本語のため、空のままだとマップや一覧に元のタイトルがそのまま表示されます。",
+    "kindMeaningProject": "このフォルダーが説明する製品やシステムです。何のために、誰のためにあるかを表します。",
+    "kindMeaningDomain": "決済やログインのように長く続く責任の範囲です。中のケイパビリティをまとめます。",
+    "kindMeaningCapability": "人や別のシステムから見える、製品ができることです。例：返金を処理する。",
+    "kindMeaningElement": "ケイパビリティを動かす、役割のはっきりしたコードの部分です。例：トークン署名器。",
+    "parentLabel": "入れるドメイン",
+    "parentNoMatch": "その名前のドメインはありません。",
+    "descriptionLabel": "一文の説明（任意）",
+    "similarExists": "同じ種類の「{name}」がすでにあります。",
+    "openSimilar": "開く",
+    "createAnyway": "それでも作成",
+    "keysHint": "Enterで作成します。⌘/Ctrl+Enterは作成して、次のためにこのカードを開いたままにします。",
+    "toastCreated": "「{name}」を作成しました"
   },
   "explanationEdit": {
     "saved": "説明を保存しました",
@@ -231,10 +232,8 @@
     "bodyNoProjectsPicker": "自分で1つ作るか、コーディングエージェントにコードを読ませて一度に埋められます。",
     "bodyNoDeps": "マップで関係を1つ作ると、ここに線が表示されます。",
     "crossViewHint": "作ったものはオントロジーの文書にも表示されます。",
-    "ctaCreateNode": "概念を作成",
+    "ctaCreateNode": "概念を追加",
     "ctaTree": "概念を閲覧",
-    "ctaBuilder": "マップで作成",
-    "ctaBuilderNoDeps": "つながりを作成",
     "ctaOpenVaultDownload": "アプリを入手",
     "ctaOpenVaultPicker": "オントロジーフォルダを開く",
     "kickerDocsFound": "オントロジーフォルダ · 文書{count}件",
@@ -279,7 +278,14 @@
     "tidyHeading": "要確認",
     "plainHint": "要素は非表示です。マップで概念をクリックすると、その要素が表示されます",
     "openedInsideLabel": "選んだフォルダの中にあるオントロジーフォルダを開きました。",
-    "openedInsideDismiss": "この通知を閉じる"
+    "openedInsideDismiss": "この通知を閉じる",
+    "createConcept": "概念を追加",
+    "addDomain": "ドメインを追加",
+    "addDomainField": "新しいドメイン名",
+    "addCapability": "ケイパビリティを追加",
+    "addCapabilityField": "新しいケイパビリティ名",
+    "addElement": "要素を追加",
+    "addElementField": "新しい要素名"
   },
   "deeplinkNotFound": "概念が見つかりません：{query}",
   "businessFlowRequest": "Atlas MCPの読み取りツールだけを使って、このオントロジーの業務フローを説明してください。シェル、ファイル、ソース、Web、その他のツールは一切呼び出さないでください。\n\n###見出しをちょうど6つ、各見出しに1段落ずつ返してください。\n1) このプロダクトが存在する理由。\n2) どのドメインがどの責務を担うか。\n3) 主なケイパビリティがどのように業務フローを成すか。\n4) それらのケイパビリティが要素やパスにどう現れるか。\n5) 宣言された依存のうち、影響を説明するものと、まだ不明な点。\n6) 部分的、可視のギャップ、古い、未検証といった限界のうち、残すべきもの。\n\nルール：\n- まずプロジェクトマップを確認し、意味から実装までの代表的な連鎖を一つ選ぶこと。すべての概念を列挙しないこと。\n- get_concept(body: full)またはget_concepts(body: full)で読む概念は最大12件までにすること。\n- どの段落も、今回のターンで本文全体を読んだ概念の正確な完全スラッグを挙げること。\n- from -type-> toのつながりは、現在のオントロジーに存在する場合にのみ書くこと。\n- 部分的、可視のギャップ、不明という但し書きを最後まで保つこと。\n- ケイパビリティのexcludesはそのケイパビリティだけの境界であり、プロジェクト全体に広げないこと。\n- オントロジーで答えられないときは、ほかの知識で埋めず、その理由を述べること。",
@@ -453,5 +459,19 @@
       "cta": "文書からマップを作成"
     },
     "next": "次へ"
+  },
+  "manualWrite": {
+    "undo": "元に戻す",
+    "undone": "元に戻しました。ファイルは前の状態です。",
+    "undoChanged": "元に戻していません。その後ディスク上でファイルが変わりました。",
+    "undoNotLatest": "元に戻せるのは最新の変更だけです。",
+    "undoFailed": "元に戻せませんでした。ファイルは変わっていません。"
+  },
+  "conceptEdit": {
+    "renamed": "名前を変更しました：「{from}」→「{to}」",
+    "described": "「{name}」の説明を保存しました",
+    "deleted": "「{name}」を削除しました",
+    "deleteConflict": "削除していません。先にディスク上でファイルが変わりました。変更を確認してからやり直してください。",
+    "deleteFailed": "ファイルを削除できませんでした。もう一度お試しください。"
   }
 }

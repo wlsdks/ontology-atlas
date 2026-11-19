@@ -33,7 +33,6 @@ const LEDGER: Record<string, number> = {
   "widgets:project-drawer->public-quick-actions": 1,
   "features:acp-session->vault-ontology": 1,
   "features:first-run-starter->docs-vault-local": 2,
-  "features:ontology-meaning-editor->ontology-change-review": 1,
   "features:project-edit->taxonomy": 1,
   "features:project-quick-edit->project-data-source": 2,
   "entities:docs-vault->knowledge-graph": 1,

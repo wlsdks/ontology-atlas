@@ -1,292 +1,301 @@
 "use client";
 
-import { useState } from "react";
-import { fieldClass } from '@/shared/ui/control-class';
+import { type KeyboardEvent, type Ref, useId, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
-import { Plus, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, Select, Surface, controlClass } from "@/shared/ui";
-import { OntologyChangeReview } from "@/features/ontology-change-review";
-import type { OntologyChangeSet } from "@/entities/knowledge-graph";
-
-/**
- * Creates a node from the map; reports title, kind and optional domain through `onCreate`.
- * The vault write lives in the HomePage glue.
- */
+import { findSimilarNodeByTitle, type SimilarNodeCandidate } from "@/shared/lib/search-match/similar-node-title";
+import { Button, CloseButton, RowButton, SimilarNodeWarning } from "@/shared/ui";
+import { fieldLabel } from "@/shared/ui/control-class";
+import { Input } from "@/shared/ui/fields/input";
+import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
+import { KINDS_WITH_PARENT } from "../model/authoring/create-defaults";
 
 export type CreateNodeKind = "project" | "domain" | "capability" | "element";
 
-export interface CreateNodeFormLabels {
-  headingId?: string;
-  heading: string;
-  titlePlaceholder: string;
-  kind: string;
-  /** aria label for the domain picker. */
-  domain: string;
-  /** The picker's visible question, in plain words. */
-  domainQuestion: string;
-  domainNone: string;
-  /** For a non-developer. */
-  domainHelper: string;
-  create: string;
-  cancel: string;
-  reviewHeading: string;
-  reviewBack: string;
-  reviewConfirm: string;
-  reviewConfirming: string;
-  kindLabels: Record<CreateNodeKind, string>;
-  /** Used only when `localeNames` is passed. */
-  primaryNamePlaceholder: string;
-  secondaryNamePlaceholder: string;
-  localeNamesHint: string;
-  primaryLocaleRequired: string;
+export interface CreateNodeInput {
+  title: string;
+  kind: CreateNodeKind;
+  /** The domain document's address (`domains/billing`), for a capability or element. */
+  domain?: string;
+  /** `{ ko, en }` becomes `display_ko` / `display_en`. */
+  localeLabels?: Record<string, string>;
+  /** The body's first sentence. */
+  description?: string;
 }
 
 // Ordered by containment; `vaultFolderForKind` supports every kind here.
 const KINDS: readonly CreateNodeKind[] = ["project", "domain", "capability", "element"];
+const KIND_LABEL_KEY: Record<CreateNodeKind, string> = {
+  project: "kindProject",
+  domain: "kindDomain",
+  capability: "kindCapability",
+  element: "kindElement",
+};
+const KIND_MEANING_KEY: Record<CreateNodeKind, string> = {
+  project: "kindMeaningProject",
+  domain: "kindMeaningDomain",
+  capability: "kindMeaningCapability",
+  element: "kindMeaningElement",
+};
+/** Enough matches to pick from without the card growing past the map's panel height. */
+const PARENT_MATCHES_SHOWN = 5;
 
+/**
+ * The create card: it stands at the map's right inset like the concept panel, blocks nothing, and
+ * writes on Enter. Cmd/Ctrl+Enter writes and keeps the kind and place for the next concept.
+ */
 export function CreateNodeForm({
+  defaultKind,
+  defaultParent,
+  parentOptions,
+  existingConcepts,
+  primaryLocale,
+  secondaryLocale,
   onCreate,
-  onCancel,
-  localeNames,
-  labels,
-  defaultKind = "capability",
-  defaultDomain = "",
-  domainOptions = [],
-  review = null,
+  onOpenExisting,
+  onClose,
+  rootRef,
 }: {
-  onCreate: (input: {
-    title: string;
-    kind: CreateNodeKind;
-    domain?: string;
-    /** `{ ko, en }` becomes `display_ko` / `display_en`. */
-    localeLabels?: Record<string, string>;
-  }) => boolean | void | Promise<boolean | void>;
-  onCancel?: () => void;
-  labels: CreateNodeFormLabels;
-  review?: {
-    changeSet: OntologyChangeSet;
-    confirming: boolean;
-    onBack: () => void;
-    onConfirm: () => void | Promise<void>;
-  } | null;
-  defaultKind?: CreateNodeKind;
-  /** Preselected when opened from a domain node, so the person is not asked what they just clicked. */
-  defaultDomain?: string;
-  /**
-   * value = the domain document's address, label = display name, so nobody types a slug.
-   * An empty list leaves only "no domain", as in a fresh vault.
-   */
-  domainOptions?: readonly { value: string; label: string }[];
-  /**
-   * The screen language (`primaryLocale`) is required, or the raw title shows on the person's own
-   * screen. Omit for the single-name form.
-   */
-  localeNames?: {
-    primaryLocale: string;
-    secondaryLocale: string;
-  };
+  defaultKind: CreateNodeKind;
+  defaultParent: string;
+  /** value = the domain's document address, label = its display name. */
+  parentOptions: readonly { value: string; label: string }[];
+  /** `slug` is the map id the warning opens. */
+  existingConcepts: readonly SimilarNodeCandidate[];
+  /** The screen language; its name is required so the person's own screen never shows a raw title. */
+  primaryLocale: string;
+  secondaryLocale: string;
+  onCreate: (input: CreateNodeInput, options: { keepOpen: boolean }) => Promise<boolean>;
+  onOpenExisting: (id: string) => void;
+  onClose: () => void;
+  rootRef?: Ref<HTMLElement>;
 }) {
+  const t = useTranslations("topology.createNode");
+  const headingId = useId();
+  const kindId = useId();
+  const titleRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<CreateNodeKind>(defaultKind);
-  const [domain, setDomain] = useState(defaultDomain);
+  const [parent, setParent] = useState(defaultParent);
+  const [parentQuery, setParentQuery] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
   const [secondaryName, setSecondaryName] = useState("");
   const [creating, setCreating] = useState(false);
 
   const primaryEmpty = title.trim().length === 0;
-  // Inline, not a modal, so the rule is learned without breaking the typing.
-  const secondaryOnly = Boolean(localeNames) && primaryEmpty && secondaryName.trim().length > 0;
+  const secondaryOnly = primaryEmpty && secondaryName.trim().length > 0;
   const canCreate = !primaryEmpty && !creating;
+  const hasParent = KINDS_WITH_PARENT.has(kind);
+  const parentLabel = parentOptions.find((option) => option.value === parent)?.label ?? "";
+  const similar = useMemo(
+    () => findSimilarNodeByTitle(title, kind, existingConcepts),
+    [existingConcepts, kind, title],
+  );
+  const parentMatches = useMemo(() => {
+    if (parentQuery === null) return [];
+    const needle = parentQuery.trim().toLocaleLowerCase();
+    return parentOptions
+      .filter((option) => !needle || option.label.toLocaleLowerCase().includes(needle))
+      .slice(0, PARENT_MATCHES_SHOWN);
+  }, [parentOptions, parentQuery]);
 
-  const submit = async () => {
+  const submit = async (keepOpen: boolean) => {
     if (!canCreate) return;
     setCreating(true);
     try {
-      const localeLabels = localeNames
-        ? {
-            [localeNames.primaryLocale]: title.trim(),
-            ...(secondaryName.trim()
-              ? { [localeNames.secondaryLocale]: secondaryName.trim() }
-              : {}),
-          }
-        : undefined;
-      const shouldReset = await onCreate({
-        title: title.trim(),
-        kind,
-        domain: domain.trim() || undefined,
-        localeLabels,
-      });
-      if (shouldReset !== false) {
+      const created = await onCreate(
+        {
+          title: title.trim(),
+          kind,
+          domain: hasParent && parent ? parent : undefined,
+          localeLabels: {
+            [primaryLocale]: title.trim(),
+            ...(secondaryName.trim() ? { [secondaryLocale]: secondaryName.trim() } : {}),
+          },
+          description: description.trim() || undefined,
+        },
+        { keepOpen },
+      );
+      if (created && keepOpen) {
         setTitle("");
-        setDomain("");
+        setDescription("");
         setSecondaryName("");
+        titleRef.current?.focus();
       }
     } finally {
       setCreating(false);
     }
   };
 
+  const chooseParent = (value: string) => {
+    setParent(value);
+    setParentQuery(null);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (parentQuery !== null) setParentQuery(null);
+      else onClose();
+      return;
+    }
+    if (event.key !== "Enter" || isImeComposing(event)) return;
+    const target = event.target as HTMLElement;
+    if (target.tagName !== "INPUT") return;
+    event.preventDefault();
+    if (parentQuery !== null && target.dataset.testid === "create-node-parent") {
+      chooseParent(parentMatches[0]?.value ?? parent);
+      return;
+    }
+    void submit(event.metaKey || event.ctrlKey);
+  };
+
   return (
     <section
-      aria-label={review ? labels.reviewHeading : labels.heading}
+      ref={rootRef}
+      aria-labelledby={headingId}
       data-testid="create-node-form"
-      data-surface-role="blocking-edit-surface"
-      data-elevation-contract="solid-panel-over-dimmed-map"
-      data-surface-token="--topology-blocking-composer-surface"
-      data-border-token="--topology-blocking-composer-border"
-      data-shadow-token="--topology-blocking-composer-shadow"
-      className="rounded-card border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-5 py-4 shadow-[var(--topology-blocking-composer-shadow)]"
+      data-surface-role="beside-map-composer"
+      data-create-kind={kind}
+      onKeyDown={handleKeyDown}
+      className="flex max-h-[var(--map-panel-max-height)] w-full flex-col overflow-y-auto rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] shadow-[var(--map-panel-shadow)]"
     >
-      <div className="flex items-center justify-between gap-2">
-        <p
-          id={labels.headingId}
-          className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]"
+      <header className="flex items-center gap-2 px-[var(--map-panel-pad)] pb-2 pt-3">
+        <h2
+          id={headingId}
+          className="min-w-0 flex-1 text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--map-panel-text-primary)]"
         >
-          {review ? labels.reviewHeading : labels.heading}
-        </p>
-        {onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label={labels.cancel}
-            data-testid="create-node-cancel"
-            className={controlClass({
-              shape: "icon",
-              size: "sm",
-              tone: "muted",
-              className:
-                "hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
-            })}
-          >
-            <X size={ICON_SIZE.sm} aria-hidden />
-          </button>
-        ) : null}
-      </div>
-      <div className="grid">
-      <Surface open={!review} className="col-start-1 row-start-1">
-      <div className="mt-3.5 flex flex-col gap-3.5">
-        <input
-          type="text"
-          value={title}
-          autoFocus
-          disabled={creating}
-          placeholder={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !isImeComposing(e)) void submit();
-          }}
-          aria-label={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
-          data-testid="create-node-title"
-          className={fieldClass({ size: "lg" })}
-        />
-        {localeNames ? (
-          <>
-            {/* Above is the screen language (required); this is the other (optional). */}
-            <input
-              type="text"
-              value={secondaryName}
-              disabled={creating}
-              placeholder={labels.secondaryNamePlaceholder}
-              onChange={(e) => setSecondaryName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !isImeComposing(e)) void submit();
-              }}
-              aria-label={labels.secondaryNamePlaceholder}
-              data-testid="create-node-title-secondary"
-              className={fieldClass({ size: "lg" })}
-            />
-            {secondaryOnly ? (
-              <p
-                role="alert"
-                data-testid="create-node-primary-required"
-                className="text-label leading-prose text-[color:var(--color-status-warning)]"
-              >
-                {labels.primaryLocaleRequired}
-              </p>
-            ) : (
-              <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
-                {labels.localeNamesHint}
-              </p>
-            )}
-          </>
-        ) : null}
-        <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-            {labels.kind}
-          </span>
-          <Select
-            size="lg"
-            value={kind}
-            disabled={creating}
-            onChange={(v) => setKind(v as CreateNodeKind)}
-            ariaLabel={labels.kind}
-            data-testid="create-node-kind"
-            options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
-          />
-        </label>
-        {/* Values are domain document addresses (`domains/agent-access`); `canonicalizeDomainRef`
-           keeps them on save. */}
+          {t("heading")}
+        </h2>
+        <CloseButton label={t("cancel")} onClick={onClose} data-testid="create-node-cancel" />
+      </header>
+      <div className="flex flex-col gap-3 px-[var(--map-panel-pad)] pb-4">
         <div className="flex flex-col gap-1.5">
-          <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-            {labels.domainQuestion}
-          </span>
-          <Select
-            size="lg"
-            value={domain}
+          <Input
+            ref={titleRef}
+            label={t("primaryNamePlaceholder")}
+            className="w-full"
+            value={title}
+            autoFocus
+            autoComplete="off"
             disabled={creating}
-            onChange={(v) => setDomain(v)}
-            ariaLabel={labels.domain}
-            data-testid="create-node-domain"
-            options={[
-              { value: "", label: labels.domainNone },
-              ...domainOptions.map((o) => ({ value: o.value, label: o.label })),
-            ]}
+            onChange={(event) => setTitle(event.target.value)}
+            error={secondaryOnly ? t("primaryLocaleRequired") : undefined}
+            data-testid="create-node-title"
           />
-          <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
-            {labels.domainHelper}
+          {similar ? (
+            <SimilarNodeWarning
+              message={t("similarExists", { name: similar.title })}
+              openLabel={t("openSimilar")}
+              createAnywayLabel={t("createAnyway")}
+              onOpen={() => onOpenExisting(similar.slug)}
+              onCreateAnyway={() => void submit(false)}
+            />
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span id={kindId} className={fieldLabel()}>
+            {t("kind")}
+          </span>
+          <SegmentedControl
+            labelledBy={kindId}
+            variant="chips"
+            size="md"
+            fill
+            value={kind}
+            onChange={setKind}
+            testId="create-node-kind"
+            options={KINDS.map((value) => ({
+              value,
+              testId: `create-node-kind-${value}`,
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <OntologyMapKindGlyph kind={value} size={11} />
+                  {t(KIND_LABEL_KEY[value])}
+                </span>
+              ),
+            }))}
+          />
+          <p data-testid="create-node-kind-meaning" className="text-label leading-prose text-[color:var(--map-panel-text-tertiary)]">
+            {t(KIND_MEANING_KEY[kind])}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={!canCreate}
-          data-testid="create-node-submit"
-          className={controlClass({ shape: "pill", tone: "accent", className: "h-[var(--control-h-lg)] justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body-lg font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
-        >
-          <Plus size={ICON_SIZE.sm} aria-hidden />
-          {labels.create}
-        </button>
-      </div>
-      </Surface>
-      <Surface open={Boolean(review)} className="col-start-1 row-start-1">
-        {review ? (
-          <div className="mt-3.5 grid gap-4">
-            <OntologyChangeReview
-              changeSet={review.changeSet}
-              testId="create-node-change-review"
+        {hasParent ? (
+          <div
+            className="flex flex-col gap-1"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setParentQuery(null);
+            }}
+          >
+            <Input
+              label={t("parentLabel")}
+              className="w-full"
+              value={parentQuery ?? parentLabel}
+              placeholder={t("domainNone")}
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={parentQuery !== null}
+              aria-autocomplete="list"
+              disabled={creating}
+              onFocus={(event) => event.currentTarget.select()}
+              onChange={(event) => setParentQuery(event.target.value)}
+              data-testid="create-node-parent"
             />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                autoFocus
-                disabled={review.confirming}
-                onClick={review.onBack}
-              >
-                {labels.reviewBack}
-              </Button>
-              <Button
-                variant="primary"
-                data-testid="create-node-confirm"
-                disabled={review.confirming}
-                onClick={() => void review.onConfirm()}
-              >
-                {review.confirming ? labels.reviewConfirming : labels.reviewConfirm}
-              </Button>
-            </div>
+            {parentQuery !== null ? (
+              <ul role="listbox" aria-label={t("parentLabel")} data-testid="create-node-parent-matches" className="flex flex-col gap-px">
+                <li role="presentation">
+                  <RowButton role="option" aria-selected={parent === ""} size="sm" onClick={() => chooseParent("")}>
+                    <span className="text-[color:var(--map-panel-text-tertiary)]">{t("domainNone")}</span>
+                  </RowButton>
+                </li>
+                {parentMatches.map((option) => (
+                  <li key={option.value} role="presentation">
+                    <RowButton
+                      role="option"
+                      aria-selected={parent === option.value}
+                      size="sm"
+                      onClick={() => chooseParent(option.value)}
+                      data-testid="create-node-parent-option"
+                    >
+                      <OntologyMapKindGlyph kind="domain" size={11} />
+                      <span className="min-w-0 truncate">{option.label}</span>
+                    </RowButton>
+                  </li>
+                ))}
+                {parentMatches.length === 0 ? (
+                  <li className="px-2 py-1 text-label text-[color:var(--map-panel-text-quaternary)]">{t("parentNoMatch")}</li>
+                ) : null}
+              </ul>
+            ) : null}
           </div>
         ) : null}
-      </Surface>
+        <Input
+          label={t("descriptionLabel")}
+          className="w-full"
+          value={description}
+          autoComplete="off"
+          disabled={creating}
+          onChange={(event) => setDescription(event.target.value)}
+          data-testid="create-node-description"
+        />
+        <Input
+          label={t("secondaryNamePlaceholder")}
+          className="w-full"
+          value={secondaryName}
+          autoComplete="off"
+          disabled={creating}
+          onChange={(event) => setSecondaryName(event.target.value)}
+          data-testid="create-node-title-secondary"
+        />
       </div>
+      <footer className="sticky bottom-0 flex items-center gap-3 border-t border-[color:var(--map-panel-divider)] bg-[color:var(--map-panel-surface)] px-[var(--map-panel-pad)] py-3">
+        <p className="min-w-0 flex-1 text-label leading-label text-[color:var(--map-panel-text-quaternary)]">{t("keysHint")}</p>
+        <Button variant="primary" disabled={!canCreate} onClick={() => void submit(false)} data-testid="create-node-submit">
+          {t("create")}
+        </Button>
+      </footer>
     </section>
   );
 }
