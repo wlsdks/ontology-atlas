@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     # budget: 120s
     timeout-minutes: 3
+    outputs:
+      changed_urls: ${{ steps.changed.outputs.urls }}
     steps:
       # fetch-depth: 0 is required — `pnpm build` regenerates the document
       # manifest via `docs-vault:build` and reads the "last changed date" per document
@@ -70,6 +72,10 @@ jobs:
           NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
       - name: Check sitemap, canonicals and titles in the export
         run: pnpm seo:check
+      # Before the deploy replaces the live site: which pages' visible text this build changes.
+      - name: Find the pages this deploy changes
+        id: changed
+        run: node scripts/web/indexnow.mjs changed --out=out >> "$GITHUB_OUTPUT"
       - name: Stage the newest published updater manifest
         run: pnpm desktop:stage-hosted-updater
         env:
@@ -98,6 +104,27 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  # Bing (and ChatGPT search, which reads it), Naver, Yandex and Seznam recrawl the changed pages
+  # within minutes; Google ignores IndexNow and reads the sitemap.
+  indexnow:
+    name: Tell IndexNow engines what changed
+    needs: [build, deploy]
+    if: needs.build.outputs.changed_urls != '' && needs.build.outputs.changed_urls != '[]'
+    runs-on: ubuntu-latest
+    # budget: 30s
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          sparse-checkout: scripts/web
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Submit the changed pages
+        run: node scripts/web/indexnow.mjs submit --base="$PAGES_BASE_URL" --urls="$CHANGED_URLS"
+        env:
+          CHANGED_URLS: ${{ needs.build.outputs.changed_urls }}
 
   verify-hosted:
     name: Verify hosted download surface

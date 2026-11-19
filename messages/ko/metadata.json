@@ -2,6 +2,8 @@
   "siteName": "Ontology Atlas",
   "siteTagline": "사람과 코딩 에이전트가 함께 쓰는 코드베이스의 의미",
   "homeTitle": "Ontology Atlas: 코딩 에이전트를 위한 코드베이스 온톨로지 (MCP)",
+  "brandReading": "온톨로지 아틀라스",
+  "keywords": "온톨로지, 코드베이스 온톨로지, 지식 그래프, MCP, Claude Code, Codex, 코딩 에이전트, 소프트웨어 아키텍처",
   "pages": {
     "topology": "지도",
     "docs": "온톨로지 · 자료실",

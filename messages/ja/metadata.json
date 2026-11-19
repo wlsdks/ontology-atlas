@@ -2,6 +2,8 @@
   "siteName": "Ontology Atlas",
   "siteTagline": "人とコーディングエージェントで共有する、コードベースの意味",
   "homeTitle": "Ontology Atlas: コーディングエージェント向けのコードベースオントロジー(MCP)",
+  "brandReading": "オントロジー・アトラス",
+  "keywords": "オントロジー, ナレッジグラフ, コードベース, MCP, Claude Code, Codex, コーディングエージェント, ソフトウェアアーキテクチャ",
   "pages": {
     "topology": "マップ",
     "docs": "オントロジー・資料室",

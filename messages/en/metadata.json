@@ -2,6 +2,8 @@
   "siteName": "Ontology Atlas",
   "siteTagline": "Shared codebase meaning for people and coding agents",
   "homeTitle": "Ontology Atlas: codebase ontology for coding agents (MCP)",
+  "brandReading": "Ontology Atlas",
+  "keywords": "ontology, codebase ontology, code knowledge graph, MCP server, Claude Code, Codex, coding agents, software architecture",
   "pages": {
     "topology": "Map",
     "docs": "Ontology · Library",

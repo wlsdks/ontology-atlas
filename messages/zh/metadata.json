@@ -1,7 +1,9 @@
 {
   "siteName": "Ontology Atlas",
-  "siteTagline": "人和编码智能体共享的代码库语义，保存在你自己电脑上的 Markdown 文件夹里",
-  "homeTitle": "Ontology Atlas: 面向编码智能体的代码库本体 (MCP)",
+  "siteTagline": "人和编码智能体共享的代码库知识图谱，以 Markdown 保存在你自己的电脑上",
+  "homeTitle": "Ontology Atlas: 面向编码智能体的代码库本体与知识图谱 (MCP)",
+  "brandReading": "Ontology Atlas",
+  "keywords": "本体, 知识图谱, 代码知识图谱, 代码库, MCP, Claude Code, Codex, 编码智能体, 软件架构",
   "pages": {
     "topology": "地图",
     "docs": "本体 · 资料库",
@@ -12,8 +14,8 @@
     "changelog": "更新日志"
   },
   "descriptions": {
-    "home": "编码智能体改动代码时，也能持续理解你的系统。共享任务上下文，查看已记录的语义和依据，并在本地 Markdown 文件夹中决定保留什么。",
-    "download": "下载 Ontology Atlas，与智能体共享代码库上下文，并查看已记录的语义、依据和未知项。macOS 应用已签名，Windows 测试版未签名，没有 Atlas 后端。",
+    "home": "用代码知识图谱持续理解编码智能体改动的系统：共享任务上下文，查看已记录的语义和依据，并在本地 Markdown 文件夹中决定保留什么。",
+    "download": "下载 Ontology Atlas，用代码知识图谱与智能体共享代码库上下文，查看已记录的语义、依据和未知项。macOS 应用已签名，Windows 测试版未签名，没有 Atlas 后端。",
     "topology": "把项目的领域、能力、要素及其依赖画成一张地图。每个文件顶部的信息块就是地图，文件保留在你自己的磁盘上。",
     "docs": "直接阅读和编辑 Markdown 文件夹。改动文件顶部的信息块，地图随之更新。",
     "projects": "这张地图上的所有项目和枢纽，以及各自包含的领域和能力。",

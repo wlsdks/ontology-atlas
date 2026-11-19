@@ -15,7 +15,8 @@ const SITE_PUBLISHER = {
  * URL and size appear only once published: a false claim here is indexed and penalised.
  * Price 0 is a fact: MIT, with no payment surface.
  */
-export function downloadStructuredData(locale: string, description: string) {
+/** `naming` is the brand as this locale reads it and the words its searchers use. */
+export function downloadStructuredData(locale: string, description: string, naming: { reading: string; keywords: string }) {
   const published = MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;
   const primary =
     MACOS_RELEASE.assets.find((asset) => asset.arch === 'aarch64') ?? MACOS_RELEASE.assets[0];
@@ -29,6 +30,8 @@ export function downloadStructuredData(locale: string, description: string) {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Ontology Atlas',
+    alternateName: [...new Set(['ontology-atlas', naming.reading])].filter((name) => name !== 'Ontology Atlas'),
+    keywords: naming.keywords,
     applicationCategory: 'DeveloperApplication',
     operatingSystem: windows ? [RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS] : RELEASE_MIN_MACOS,
     description,
