@@ -195,7 +195,8 @@ async function measureModel(options, model, sample) {
   const queryMs = [];
   for (let i = 0; i < options.queries; i += 1) {
     const at = performance.now();
-    await embed([`배송 지연 예측 ${i} what changed in release ${i}?`]);
+    // A question-sized text: the opening words of a sampled passage.
+    await embed([sample[(i * 37) % sample.length].slice(0, 80)]);
     queryMs.push(performance.now() - at);
   }
   const ps = await fetch(`${options.ollama}/api/ps`).then((response) => response.json()).catch(() => ({ models: [] }));
