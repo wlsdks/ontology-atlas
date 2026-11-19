@@ -14,7 +14,7 @@ export interface BuildState {
   links: number;
   /** The concept tapped first while linking. */
   pick: BuildConceptId | null;
-  /** Counts taps that did not fit, so the same miss twice still replays its nudge. */
+  /** Counts taps that did not fit; the line keys on it, so a second miss in a row replays. */
   misses: number;
 }
 
@@ -34,6 +34,13 @@ export const INITIAL_BUILD: BuildState = {
   pick: null,
   misses: 0,
 };
+
+/** The concept that glows for the next tap, or null when no tap is asked for. */
+export function targetConcept(state: BuildState): BuildConceptId | null {
+  const relation = linkingRelation(state);
+  if (relation) return state.pick === null ? relation.from : relation.to;
+  return state.phase === 'impact' ? BUILD_CHANGE.concept : null;
+}
 
 /** The concept the person is naming now, or null outside naming. */
 export function namingIndex(state: BuildState): number | null {
@@ -90,9 +97,8 @@ export function buildReducer(state: BuildState, action: BuildAction): BuildState
 }
 
 function tap(state: BuildState, concept: BuildConceptId): BuildState {
-  if (state.phase === 'impact' || state.phase === 'inspect') {
-    if (concept !== BUILD_CHANGE.concept) return { ...state, misses: state.misses + 1 };
-    return { ...state, phase: state.phase === 'impact' ? 'inspect' : 'impact' };
+  if (state.phase === 'impact') {
+    return concept === BUILD_CHANGE.concept ? { ...state, phase: 'inspect' } : { ...state, misses: state.misses + 1 };
   }
   const relation = linkingRelation(state);
   if (!relation) return state;

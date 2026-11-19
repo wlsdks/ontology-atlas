@@ -172,18 +172,18 @@
       "namingHint": "Name it the way people talk about it, and the map reads at a glance.",
       "linkStart": "{from} connects to {to} ({reason}). Tap {from} first.",
       "linkEnd": "Good. Now tap {to} to draw the line.",
-      "miss": "Not that one. Tap the concept that glows.",
-      "commit": "The map is ready! Now an agent has changed the code and committed. Shall we apply it?",
+      "miss": "Not that one. Tap {name}, the one that glows.",
+      "commit": "The map is ready! Now an agent has changed the code and committed. Shall we see it on the map?",
       "impact": "The changed file lives in {name}. Tap the glowing {name} concept.",
-      "inspect": "Here you see what changed and which concepts it touches.",
+      "inspect": "Here you see what changed and which concepts it is linked to.",
       "done": "Done! This map stays in your repository as Markdown files, and you and your agents read it together."
     },
     "actions": {
       "open": "Open folder",
-      "commit": "Apply the commit",
+      "commit": "See it on the map",
       "confirm": "Got it",
       "restart": "Start over",
-      "tryOwn": "Try it on my folder"
+      "tryBrowser": "Try it in the browser"
     },
     "suggested": "Moru’s pick",
     "folderName": "{folder} folder",
@@ -201,7 +201,7 @@
     "inspect": {
       "changedFile": "Changed file",
       "linked": "Linked concepts",
-      "note": "An agent that reads this concept learns about the change before its next task."
+      "note": "The map marks this concept as changed, so you know to recheck what it says."
     },
     "doneSummary": "{concepts} concepts · {relations} relations · 1 change checked",
     "honesty": "A guided sample. In real use Claude Code or Codex reads your files over MCP and writes the concepts and relations, and you can rename anything at any time.",

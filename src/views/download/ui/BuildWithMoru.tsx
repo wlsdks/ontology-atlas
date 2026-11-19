@@ -13,11 +13,11 @@ import { Button, buttonVariants } from '@/shared/ui/controls/button';
 import { GithubMark } from '@/shared/ui/marks/github-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { buildReducer, INITIAL_BUILD, linkingRelation, namingIndex, stepOf, type BuildAction, type BuildPhase, type BuildState } from '../lib/build-play';
+import { buildReducer, INITIAL_BUILD, linkingRelation, namingIndex, stepOf, targetConcept, type BuildAction, type BuildPhase, type BuildState } from '../lib/build-play';
 import { useInViewMotion } from '../lib/use-in-view-motion';
 import { BUILD_CHANGE, BUILD_CONCEPTS, BUILD_FILES, BUILD_RELATIONS, BUILD_REPO, fileNameOf, filesOf, type BuildConceptId } from '../model/build-cast';
 import { BuildMoru, preloadBuildRows, type BuildGesture, type BuildLoop } from './BuildMoru';
-import { BuildStage } from './BuildStage';
+import { BuildStage, isFirstPress } from './BuildStage';
 import { SectionIntro } from './SectionIntro';
 
 const SECTION = cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24');
@@ -45,17 +45,20 @@ function gestureFor(before: BuildState, after: BuildState): BuildGesture | null 
 }
 
 /**
- * "Build a map with Moru": a guided sample of what Atlas does, played in the page alone. Nothing
- * is read from the visitor's disk and nothing leaves the page; the closing line says so.
+ * "Build a map with Moru": a guided sample of what Atlas does, played in the page alone: nothing
+ * is read from the visitor's disk and nothing leaves the page.
  */
 export function BuildWithMoru({ handheld }: { handheld: boolean }) {
   const t = useTranslations('download.build');
   const [state, dispatch] = useReducer(buildReducer, INITIAL_BUILD);
   const [gesture, setGesture] = useState<{ motion: BuildGesture; at: number } | null>(null);
   const [missed, setMissed] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const [watch, motion] = useInViewMotion();
   const reduced = usePrefersReducedMotion();
   const preloaded = useRef(false);
+  const section = useRef<HTMLElement>(null);
+  const followFocus = useRef(false);
 
   useEffect(() => {
     if (motion !== 'running' || preloaded.current) return;
@@ -69,11 +72,31 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
     return () => window.clearTimeout(timer);
   }, [state.phase, reduced]);
 
+  // A pressed control that leaves (Open folder, a disabled concept, Got it) would drop focus to the
+  // page; it moves to the concept to tap or the step's first choice instead.
+  useEffect(() => {
+    const root = section.current;
+    if (!followFocus.current || !root) return;
+    const held = document.activeElement;
+    const kept = held instanceof HTMLElement && root.contains(held) && !held.matches(':disabled');
+    const movedAway = held instanceof HTMLElement && held !== document.body && !root.contains(held);
+    if (kept || movedAway) {
+      followFocus.current = false;
+      return;
+    }
+    const next = root.querySelector<HTMLElement>('[data-target]:not(:disabled), [data-testid="build-actions"] :is(button, a)');
+    if (!next) return;
+    followFocus.current = false;
+    next.focus();
+  }, [state]);
+
   const act = (action: BuildAction) => {
+    followFocus.current = section.current?.contains(document.activeElement) ?? false;
     const after = buildReducer(state, action);
     const earned = gestureFor(state, after);
     if (earned) setGesture({ motion: earned, at: performance.now() });
     setMissed(after.misses > state.misses);
+    setPressed(true);
     dispatch(action);
   };
 
@@ -86,11 +109,12 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
   const step = stepOf(state.phase);
   const naming = namingIndex(state);
   const relation = linkingRelation(state);
-  const line = missed ? t('moru.miss') : lineFor(state, naming, relation, nameOf, t);
+  const missedTarget = targetConcept(state);
+  const line = missed && missedTarget ? t('moru.miss', { name: nameOf(missedTarget) }) : lineFor(state, naming, relation, nameOf, t);
   const play = motion === undefined ? (reduced ? 'still' : 'paused') : motion;
 
   return (
-    <section id="build" data-testid="gateway-build-section" className={SECTION}>
+    <section ref={section} id="build" data-testid="gateway-build-section" data-build-pressed={pressed || undefined} className={SECTION}>
       <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />
 
@@ -129,9 +153,12 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
             </ol>
 
             <div className="build-bubble relative rounded-card px-4 py-3.5">
-              <p aria-live="polite" data-testid="build-line" key={line} className="build-line text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
-                {line}
-              </p>
+              {/* The live region stays put; only the line inside it is replaced, so each one is announced. */}
+              <div aria-live="polite">
+                <p data-testid="build-line" key={`${line}:${state.misses}`} className="build-line text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
+                  {line}
+                </p>
+              </div>
               {state.phase === 'naming' ? (
                 <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('moru.namingHint')}</p>
               ) : null}
@@ -187,14 +214,14 @@ function Actions({ state, naming, handheld, act }: { state: BuildState; naming: 
       const concept = BUILD_CONCEPTS[naming];
       return (
         <>
-          <Button data-testid="build-name-0" variant="outline" className="w-full justify-between gap-2" onClick={() => act({ type: 'name', option: 0 })}>
+          <Button data-testid="build-name-0" variant="outline" className="w-full justify-between gap-2" onClick={(event) => isFirstPress(event) && act({ type: 'name', option: 0 })}>
             <span className="shrink-0">{t(`names.${concept.id}`)}</span>
             <span className="inline-flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
               <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-[color:var(--map-indigo-bright)]" />
               <span className="truncate">{t('suggested')}</span>
             </span>
           </Button>
-          <Button data-testid="build-name-1" variant="outline" className="w-full justify-start font-mono" onClick={() => act({ type: 'name', option: 1 })}>
+          <Button data-testid="build-name-1" variant="outline" className="w-full justify-start font-mono" onClick={(event) => isFirstPress(event) && act({ type: 'name', option: 1 })}>
             {t('folderName', { folder: concept.folder })}
           </Button>
         </>
@@ -216,8 +243,8 @@ function Actions({ state, naming, handheld, act }: { state: BuildState; naming: 
       return (
         <>
           {handheld ? null : (
-            <Link href="/topology" data-testid="build-try-own" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
-              {t('actions.tryOwn')}
+            <Link href="/topology" data-testid="build-try-browser" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
+              {t('actions.tryBrowser')}
             </Link>
           )}
           <a
@@ -269,8 +296,9 @@ function FileCard({ nameOf }: { nameOf: (concept: BuildConceptId) => string }) {
     [null, '---'],
     ['title', nameOf(BUILD_CHANGE.concept)],
     ['kind', 'capability'],
+    ['path', BUILD_CONCEPTS.find((concept) => concept.id === BUILD_CHANGE.concept)!.folder],
     ['dependencies', ''],
-    ...depends.map((slug): [string | null, string] => [null, `  - ${slug}`]),
+    ...depends.map((slug): [string | null, string] => [null, `  - capabilities/${slug}`]),
     [null, '---'],
   ];
   return (

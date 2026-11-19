@@ -1135,8 +1135,8 @@
 
 .build-node-glow {
   inset: -22px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--map-indigo-bright) 34%, transparent) 0%, transparent 70%);
-  opacity: 0.7;
+  background: radial-gradient(circle, var(--map-indigo-bright) 0%, transparent 70%);
+  opacity: 0.24;
   transition: opacity var(--motion-settle) var(--motion-ease);
 }
 
@@ -1152,7 +1152,7 @@
 
 .build-node[data-picked] .build-node-glow,
 .build-node[data-target] .build-node-glow {
-  opacity: 1;
+  opacity: 0.34;
 }
 
 .build-node[data-changed] .build-node-dot {
@@ -1161,8 +1161,8 @@
 }
 
 .build-node[data-changed] .build-node-glow {
-  opacity: 1;
-  background: radial-gradient(circle, color-mix(in srgb, var(--map-recent-change) 38%, transparent) 0%, transparent 70%);
+  opacity: 0.38;
+  background: radial-gradient(circle, var(--map-recent-change) 0%, transparent 70%);
 }
 
 .build-node[data-changed] .build-node-ring {
@@ -1195,6 +1195,11 @@
 
 .build-edge[data-drawn] {
   stroke-dashoffset: 0;
+}
+
+/* WebKit paints a round cap on a dash of zero length; an undrawn line has none. */
+.build-edge:not([data-drawn]) {
+  stroke-linecap: butt;
 }
 
 .build-edge[data-hot] {
@@ -1275,25 +1280,9 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  /* Moru's words, the cards and a pose swap still arrive, as a fade without travel. */
-  .build-line,
-  .build-details,
-  .build-moru-layer {
-    animation-name: panelCrossfadeIn !important;
-    animation-duration: var(--motion-fast) !important;
-    animation-delay: 0ms !important;
-  }
-
-  .build-detail {
-    translate: none;
-    transition-duration: var(--motion-fast) !important;
-  }
-}
-
 /* The panel: steps, Moru's line, Moru and the step's choices. */
 .build-step-bar {
-  background: var(--color-overlay-3);
+  background-color: var(--color-overlay-3);
   transition: background-color var(--motion-slow) var(--motion-ease);
 }
 
@@ -1302,7 +1291,7 @@
 }
 
 .build-step[data-step='done'] .build-step-bar {
-  background: var(--map-indigo-bright);
+  background-color: var(--map-indigo-bright);
 }
 
 .build-step[data-step='now'] {
@@ -1310,7 +1299,7 @@
 }
 
 .build-step[data-step='now'] .build-step-bar {
-  background: linear-gradient(90deg, var(--map-indigo-bright), var(--color-text-primary));
+  background-color: var(--color-text-primary);
 }
 
 .build-bubble {
@@ -1332,8 +1321,17 @@
   background: var(--color-panel);
 }
 
+/* Transitions, not keyframes: a layer that leaves mid-fade starts from the opacity it shows. */
 .build-moru-layer {
   transition: opacity var(--motion-base) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    .build-moru-layer {
+      opacity: 0;
+    }
+  }
 }
 
 .build-moru-layer[data-build-moru-layer='out'] {
@@ -1347,10 +1345,6 @@
 @media (prefers-reduced-motion: no-preference) {
   .build-line {
     animation: buildLineIn var(--motion-slow) var(--motion-ease) both;
-  }
-
-  .build-moru-layer[data-build-moru-layer='in'] {
-    animation: buildMoruIn var(--motion-base) var(--motion-ease) both;
   }
 
   .build-carry-at[data-carry='landed'] {
@@ -1378,10 +1372,6 @@
   to { opacity: 1; translate: 0 0; }
 }
 
-@keyframes buildMoruIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 @keyframes buildEmote {
   0% { opacity: 0; translate: 0 6px; scale: 0.6; }

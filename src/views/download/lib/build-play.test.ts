@@ -39,6 +39,7 @@ describe('build with Moru', () => {
     expect(play([{ type: 'tap', concept: 'cart' }], lit)).toMatchObject({ phase: 'impact', misses: 1 });
     const inspecting = play([{ type: 'tap', concept: BUILD_CHANGE.concept }], lit);
     expect(inspecting.phase).toBe('inspect');
+    expect(play([{ type: 'tap', concept: 'cart' }, { type: 'tap', concept: BUILD_CHANGE.concept }], inspecting)).toBe(inspecting);
     const done = play([{ type: 'confirm' }], inspecting);
     expect(done.phase).toBe('done');
     expect(stepOf(done.phase)).toBe(4);

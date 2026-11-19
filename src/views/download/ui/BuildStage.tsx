@@ -1,12 +1,12 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { Folder, FolderOpen, GitCommitHorizontal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { linkingRelation, namingIndex, type BuildState } from '../lib/build-play';
+import { linkingRelation, namingIndex, targetConcept, type BuildState } from '../lib/build-play';
 import {
   BUILD_CHANGE,
   BUILD_CONCEPTS,
@@ -21,6 +21,9 @@ import {
 /** Files of the concept being named stack this far apart, in percent of the stage height. */
 const STACK_STEP = 12;
 const FOLDER_AT = { x: 50, y: 48 };
+
+/** A double click on a control that stays in place would answer twice; only its first press counts. */
+export const isFirstPress = (event: MouseEvent<HTMLElement>) => event.detail <= 1;
 
 const at = (point: { x: number; y: number }, extra?: CSSProperties) => ({ '--x': point.x, '--y': point.y, ...extra }) as CSSProperties;
 
@@ -62,10 +65,7 @@ export function BuildStage({
   const point = (id: BuildConceptId) => BUILD_CONCEPTS.find((concept) => concept.id === id)!.at;
   const px = (p: { x: number; y: number }) => ({ x: (p.x / 100) * size.width, y: (p.y / 100) * size.height });
 
-  const target = (id: BuildConceptId) => {
-    if (relation) return state.pick === null ? id === relation.from : id === relation.to;
-    return phase === 'impact' && id === BUILD_CHANGE.concept;
-  };
+  const target = targetConcept(state);
 
   return (
     <div
@@ -100,7 +100,7 @@ export function BuildStage({
         </svg>
 
         {/* The folder, closed until it is opened, then left behind as its files fly out. */}
-        <div className="build-at" data-shown={!opened || undefined} style={at(FOLDER_AT)}>
+        <div className="build-at" data-shown={!opened || undefined} inert={opened} style={at(FOLDER_AT)}>
           <div className="build-center build-folder flex flex-col items-center gap-2 text-center">
             <span className="build-folder-icon relative grid size-16 place-items-center rounded-card">
               {opened ? <FolderOpen size={ICON_SIZE.lg} aria-hidden className="size-8" /> : <Folder size={ICON_SIZE.lg} aria-hidden className="size-8" />}
@@ -129,6 +129,7 @@ export function BuildStage({
               key={file.path}
               className="build-at build-file-at"
               data-file={presence}
+              inert={presence === 'gone'}
               style={at(place, { '--delay': `calc(var(--motion-stagger) * ${opened && !grouped ? order : slot})` } as CSSProperties)}
             >
               <span className="build-center build-file inline-flex items-center gap-1.5 whitespace-nowrap rounded-chip px-2.5 py-1 font-mono text-label leading-label @min-[40rem]:px-3 @min-[40rem]:py-1.5 @min-[40rem]:text-body @min-[40rem]:leading-body">
@@ -167,22 +168,21 @@ export function BuildStage({
         {BUILD_CONCEPTS.map((concept, order) => {
           const named = state.names[order] !== null;
           const name = named ? nameOf(concept.id) : '';
-          const tappable = named && (relation !== null || phase === 'impact' || phase === 'inspect');
+          const tappable = named && (relation !== null || phase === 'impact');
           const changed = committed && concept.id === BUILD_CHANGE.concept;
           return (
-            <div key={concept.id} className="build-at build-node-at" data-shown={named || undefined} style={at(concept.at)}>
+            <div key={concept.id} className="build-at build-node-at" data-shown={named || undefined} inert={!named} style={at(concept.at)}>
               <button
                 type="button"
                 data-testid={`build-node-${concept.id}`}
-                data-target={(named && target(concept.id)) || undefined}
+                data-target={(named && target === concept.id) || undefined}
                 data-picked={state.pick === concept.id || undefined}
                 data-changed={changed || undefined}
                 data-checked={(phase === 'done' && changed) || undefined}
                 disabled={!tappable}
-                tabIndex={named ? undefined : -1}
                 aria-label={named ? t('nodeLabel', { name, count: filesOf(concept.id).length }) : undefined}
                 aria-pressed={relation ? state.pick === concept.id : undefined}
-                onClick={() => onTap(concept.id)}
+                onClick={(event) => isFirstPress(event) && onTap(concept.id)}
                 className="build-node-anchor build-node group relative flex flex-col items-center gap-2 rounded-card px-3 pb-1.5 pt-3 outline-offset-2 disabled:cursor-default"
               >
                 <span aria-hidden className="build-node-mark relative grid place-items-center">
@@ -203,6 +203,7 @@ export function BuildStage({
         <div
           data-testid="build-commit"
           data-shown={commitShown || undefined}
+          inert={!commitShown}
           className="build-commit absolute right-3 top-3 flex max-w-[calc(100%-1.5rem)] items-start gap-2.5 rounded-card px-3 py-2.5"
         >
           <GitCommitHorizontal size={ICON_SIZE.md} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--map-recent-change)]" />

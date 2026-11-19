@@ -153,7 +153,7 @@
   },
   "build": {
     "eyebrow": "动手试试",
-    "title": "和 Moru 一起画地图",
+    "title": "和 Moru 一起做地图",
     "sub": "用一个示例仓库，大约一分钟：打开文件夹，给文件做的事起名，把概念连起来，再找出一次提交改了什么。",
     "repo": "示例仓库",
     "files": "{count} 个文件",
@@ -166,24 +166,24 @@
       "done": "完成"
     },
     "moru": {
-      "closed": "这是一个小网店的仓库。一起画张地图吧？先打开文件夹。",
+      "closed": "这是一个小网店的仓库。一起做张地图吧？先打开文件夹。",
       "reading": "正在读 {count} 个文件，把做同一件事的放在一起。",
       "naming": "这 {count} 个文件做的是同一件事。在地图上叫它什么好？",
       "namingHint": "用人们平时说的词命名，地图一眼就能看懂。",
       "linkStart": "{from} 和 {to} 相连（{reason}）。请先点 {from}。",
       "linkEnd": "很好。现在点 {to}，把线连上。",
-      "miss": "不是这个。请点发光的概念。",
-      "commit": "地图画好了！现在智能体改了代码并提交了。要应用吗？",
+      "miss": "不是这个。请点发光的 {name}。",
+      "commit": "地图做好了！现在智能体改了代码并提交了。在地图上看看吧？",
       "impact": "改动的文件在 {name} 里。点一下发光的 {name}。",
       "inspect": "这里一眼就能看到改了什么，以及它连着哪些概念。",
       "done": "完成！这张地图以 Markdown 文件留在仓库里，你和智能体一起读它。"
     },
     "actions": {
       "open": "打开文件夹",
-      "commit": "应用这次提交",
+      "commit": "在地图上查看",
       "confirm": "知道了",
       "restart": "重新开始",
-      "tryOwn": "用我的文件夹试试"
+      "tryBrowser": "在浏览器中试用"
     },
     "suggested": "Moru 推荐",
     "folderName": "{folder} 文件夹",
@@ -201,11 +201,11 @@
     "inspect": {
       "changedFile": "改动的文件",
       "linked": "相连的概念",
-      "note": "读取这个概念的智能体会在下一次任务前先知道这个变化。"
+      "note": "地图会给这个概念打上改动标记，让你知道该重新确认它写的内容。"
     },
     "doneSummary": "{concepts} 个概念 · {relations} 个关系 · 已确认 1 处变化",
     "honesty": "这是用示例仓库展示的体验。实际使用时，Claude Code 或 Codex 通过 MCP 读取文件并写下概念和关系，名字随时可以自己改。",
-    "stageLabel": "和 Moru 一起画的示例地图",
+    "stageLabel": "和 Moru 一起做的示例地图",
     "nodeLabel": "{name} 概念，{count} 个文件"
   },
   "harnessFilm": {
