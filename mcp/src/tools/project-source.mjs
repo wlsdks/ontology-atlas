@@ -307,33 +307,36 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
 }
 
 /**
- * Whether the stored source receipt measured every source claim the project now
- * makes, against the current graph. A claim added since (a competency Evidence file
- * no `path:` names) or a moved graph leaves the evidence unmeasured.
+ * Whether the stored source receipt measured every path the project now claims,
+ * against the current graph, as the witness inventory counts it: a path is measured
+ * when a witness for one of its claims was. A path cited since (a competency
+ * Evidence file no `path:` names) or a moved graph leaves evidence unmeasured.
  */
 function receiptMeasuresEveryClaim(receipt, graphHash, claims) {
   if (receipt.graphHash !== graphHash) return false;
-  const measured = new Set(receipt.witnesses.map((witness) => `${witness.nodeSlug}\0${witness.path}`));
-  return claims.every((claim) => measured.has(`${claim.nodeSlug}\0${claim.path}`));
+  const claimKeys = new Set(claims.map((claim) => `${claim.nodeSlug}\0${claim.path}`));
+  const measuredPaths = new Set(receipt.witnesses
+    .filter((witness) => claimKeys.has(`${witness.nodeSlug}\0${witness.path}`))
+    .map((witness) => witness.path));
+  return claims.every((claim) => measuredPaths.has(claim.path));
 }
 
 /**
  * Re-measures the folder this project is already bound to, as
- * `connect_project_source({confirm:true})` without `rootPath` does. It never chooses
- * or infers a folder: a project with no single binding is refused.
+ * `connect_project_source({confirm:true})` without `rootPath` does; it never chooses
+ * or infers a folder. A failure is returned, not thrown: the stored receipt may
+ * still resolve every answered row.
  */
 function remeasureBoundSource(projectSlug, graphHash, scopedDocs) {
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
   const bound = sidecar.status === 'ok'
     ? sidecar.bindings.filter((binding) => binding.projectSlug === projectSlug)
     : [];
-  if (bound.length !== 1) {
-    throw new Error(`finalize_project_meaning blocked: "${projectSlug}" has no single connected source folder. Call connect_project_source({projectSlug:"${projectSlug}", confirm:true}) first.`);
-  }
+  if (bound.length !== 1) return { failure: `"${projectSlug}" has no single connected source folder` };
   try {
-    return measureSource({ projectSlug, graphHash, rootPath: bound[0].rootPath, scopedDocs });
+    return { measured: measureSource({ projectSlug, graphHash, rootPath: bound[0].rootPath, scopedDocs }) };
   } catch (error) {
-    throw new Error(`finalize_project_meaning could not measure the connected source folder: ${error instanceof Error ? error.message : String(error)}`);
+    return { failure: `the connected source folder could not be measured (${error instanceof Error ? error.message : String(error)})` };
   }
 }
 
@@ -361,13 +364,15 @@ function unresolvedFields(problems) {
 
 /**
  * One refusal for every answered row whose witnesses do not resolve: the row, each
- * reason, and the argument to change, so one corrected call succeeds. The source
- * was measured for this call, so an unresolved file is one the folder lacks.
+ * reason, and the argument to change, so one corrected call succeeds. Unless the
+ * measurement failed, the source was measured for this call, so an unresolved file
+ * is one the folder lacks.
  */
-function competencyRefusal(rows, answerIndexes) {
+function competencyRefusal(rows, answerIndexes, measurementFailure) {
   const lines = rows.map(({ id, problems }) => {
-    const reasons = problems
-      .map((problem) => problem.replace(/ is not a measured source witness/g, ' is not a file in the connected source folder'))
+    const reasons = (measurementFailure
+      ? problems
+      : problems.map((problem) => problem.replace(/ is not a measured source witness/g, ' is not a file in the connected source folder')))
       .join('; ');
     if (!answerIndexes) return `- ${id}: ${reasons}. Repair that row, or pass \`answers\` and finalize rewrites the section.`;
     const row = `answers[${answerIndexes.get(id)}]`;
@@ -376,6 +381,7 @@ function competencyRefusal(rows, answerIndexes) {
   });
   return [
     `finalize_project_meaning blocked: ${rows.length} answered row(s) cite witnesses that do not resolve. Nothing was written.`,
+    ...(measurementFailure ? [`Newly cited files were not measured: ${measurementFailure}. Call connect_project_source with the folder's rootPath and confirm: true.`] : []),
     ...lines,
   ].join('\n');
 }
@@ -461,9 +467,14 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
 
   const claims = deriveProjectSourceWitnessesFromDocs({ projectSlug: canonicalSlug, docs: context.docs });
   let remeasured = null;
+  let measurementFailure = null;
   let { inventoryResult } = context;
   if (!receiptMeasuresEveryClaim(context.projectSource.receipt, context.graphHash, claims)) {
-    remeasured = remeasureBoundSource(canonicalSlug, context.graphHash, context.docs);
+    const measurement = remeasureBoundSource(canonicalSlug, context.graphHash, context.docs);
+    remeasured = measurement.measured ?? null;
+    measurementFailure = measurement.failure ?? null;
+  }
+  if (remeasured) {
     inventoryResult = buildProjectMeaningInventory({
       projectSlug: canonicalSlug,
       graphHash: context.graphHash,
@@ -490,7 +501,7 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
     },
   });
   if (unresolvedRows.length > 0) {
-    throw new Error(competencyRefusal(unresolvedRows, answerIndexes));
+    throw new Error(competencyRefusal(unresolvedRows, answerIndexes, measurementFailure));
   }
   // An `answered` the map contradicts: most entry files never read this session,
   // units or entry points no node places, or almost no dependency recorded.
