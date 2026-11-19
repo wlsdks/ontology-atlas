@@ -2,6 +2,8 @@
   "siteName": "Ontology Atlas",
   "siteTagline": "Shared codebase meaning for people and coding agents",
   "homeTitle": "Ontology Atlas: codebase ontology for coding agents (MCP)",
+  "brandReading": "Ontology Atlas",
+  "keywords": "ontology, codebase ontology, code knowledge graph, MCP server, Claude Code, Codex, coding agents, software architecture",
   "pages": {
     "topology": "Map",
     "docs": "Ontology · Library",
@@ -18,23 +20,31 @@
     "docs": "Read and edit the markdown folder directly. Change the info block at the top of a file and the map follows.",
     "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
     "guide": "Start with a Markdown folder, connect your coding agent, and learn how to inspect recorded meaning, evidence, and unknowns in Ontology Atlas.",
-    "changelog": "Ontology Atlas changelog: user-visible changes, newest first.",
+    "changelog": "Ontology Atlas release notes: what changed in the desktop app, the map, the MCP server and the CLI, release by release with dates, newest first.",
     "library": "Gather sources, write wiki pages from them, and ask questions that cite their passages, all inside your local Markdown folder.",
     "agents": "See the coding agents on this computer and connect them to Ontology Atlas over MCP.",
     "automations": "Schedule ontology reviews and document checks that run on your computer and leave proposals for you to review.",
     "git": "Review your folder's Git history, read each change as a document, and restore a single file."
   },
+  "projectTitles": {
+    "ontologyAtlas": "How Ontology Atlas is built: its own ontology"
+  },
+  "projectDescriptions": {
+    "ontologyAtlas": "Ontology Atlas described by its own ontology: the domains it is made of, the capabilities each one owns, and how they depend on each other."
+  },
   "guideDescriptions": {
-    "firstFiveMinutes": "Watch Ontology Atlas move before you install: the first screen is a read-only sample map that shows what a Markdown folder turns into.",
-    "readingTheMap": "Read the Ontology Atlas map: how concepts and relations are drawn, why sizes and counts differ, and how a click focuses a concept and its neighbours.",
-    "vaultStructure": "Your ontology is a plain Markdown folder. Learn the fields in the info block at the top of each file that turn it into a graph.",
-    "whatBecomesANode": "Decide what becomes a concept: when something is a domain, a capability or an element, and why one file is not one concept.",
-    "relations": "How relations between concepts work in Ontology Atlas: one line in the info block at the top of a Markdown file, not a row in a database.",
-    "studio": "Edit concepts and relations right beside the selected concept on the map, without writing YAML by hand.",
-    "fromYourRepo": "Start an ontology from what you already have: your code, its folder structure, and CLAUDE.md or AGENTS.md, extracted with your coding agent.",
-    "connectAgent": "Connect a coding agent to Ontology Atlas over MCP in one click: Atlas writes the agent's configuration with the real absolute path.",
-    "growingVault": "Keep a growing folder healthy: find duplicates, see what a rename breaks, and know what to fix when people and agents add concepts every day.",
-    "cli": "The Ontology Atlas CLI is the daily entry point from a source checkout: check, snapshot and inspect a folder from the terminal.",
-    "trust": "What Ontology Atlas does not do: no backend, account or telemetry, and your files stay on your disk."
+    "whatIsAnOntology": "What an ontology is: concepts, kinds, relations and agreed meaning, how it differs from a taxonomy, schema or knowledge graph, and one for a codebase.",
+    "atlasCompared": "How Ontology Atlas compares with code graphs, repository wikis, Obsidian and Notion, CLAUDE.md and AGENTS.md, and graph databases, and when to use each.",
+    "firstFiveMinutes": "Getting started with Ontology Atlas: download the app or try the browser, open or create an ontology folder, and connect Claude Code or Codex.",
+    "readingTheMap": "Reading the Ontology Atlas map: domains, capabilities and elements, relation lines, the concept panel, and stale or unknown code evidence.",
+    "vaultStructure": "The Atlas ontology folder: one Markdown file per concept, the fields in the info block at its top (uid, slug, kind, title, display names, relations) and layout.",
+    "whatBecomesANode": "How to choose concepts for a codebase ontology: when something is a domain, capability, element or document, and the one-sentence test.",
+    "relations": "Typed relations in an Atlas ontology: depends on, related, broader, containment; how to write them in a file's info block and query them with MCP and the CLI.",
+    "studio": "Editing an Atlas ontology: change relations and concepts on the map, review agent-proposed edits from Claude Code or Codex, and handle file conflicts.",
+    "fromYourRepo": "Build a first codebase ontology from your repository: a coding agent reads the code over MCP, proposes concepts and relations, and you approve before saving.",
+    "connectAgent": "Connect Claude Code, Codex, Cursor or Antigravity to your codebase ontology over MCP, check the connection, and see what the agent can read and write.",
+    "growingVault": "Keep your codebase ontology current as code changes: sync after edits, rename with backlinks, catch stale evidence, avoid duplicates, and commit with Git.",
+    "cli": "The Ontology Atlas CLI: run it from source, look up and edit concepts, check health, and see how it shares one engine with the MCP server agents use.",
+    "trust": "Data, privacy and safety in Ontology Atlas: what stays on your disk, what can leave it and when, MCP agents, and signed macOS and unsigned Windows builds."
   }
 }

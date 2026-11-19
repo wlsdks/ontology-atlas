@@ -1,10 +1,16 @@
 import { strict as assert } from 'node:assert';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+
+import { RACY_WINDOW_MS } from '../vault/documents.mjs';
+
+/** The server entry, by path: a module URL here would make the dead-code check follow it. */
+const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
 
 test('graph read requests load every vault document once and observe edits on the next request', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-query-vault-load-')));
@@ -482,5 +488,86 @@ test('indexed UID batches preserve primary priority and merged-identity ambiguit
     assert.equal(result.concepts[4].missingUid, uid(4));
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('the server reads the vault fresh once per write call, not once per load', async () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-write-scope-')));
+  const files = 40;
+  try {
+    mkdirSync(join(root, 'capabilities'));
+    for (let index = 0; index < files; index += 1) {
+      const path = join(root, `capabilities/c${index}.md`);
+      writeFileSync(path, `---\nuid: ${randomUUID()}\nkind: capability\ntitle: C${index}\n---\n\nThe C${index} capability.\n`);
+      utimesSync(path, 1, 1);
+    }
+    // Past the racy window (the change time cannot be set back), so a stamp pass
+    // reads none of them.
+    await new Promise((resolve) => { setTimeout(resolve, RACY_WINDOW_MS + 100); });
+    // Counts every `.md` the server process opens, kept current in a file beside the vault.
+    const countFile = `${root}.opens`;
+    const counter = `data:text/javascript,${encodeURIComponent(`
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      let opens = 0;
+      const original = fs.openSync;
+      const write = fs.writeFileSync;
+      fs.openSync = function (path, ...args) {
+        if (typeof path === 'string' && path.endsWith('.md')) {
+          opens += 1;
+          write(${JSON.stringify(countFile)}, String(opens));
+        }
+        return original.call(this, path, ...args);
+      };
+      syncBuiltinESMExports();
+    `)}`;
+    const opens = () => Number(readFileSync(countFile, 'utf8'));
+    const child = spawn(process.execPath, ['--import', counter, SERVER], {
+      env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const waiters = new Map();
+    let pending = '';
+    child.stdout.on('data', (chunk) => {
+      pending += chunk;
+      for (let nl = pending.indexOf('\n'); nl >= 0; nl = pending.indexOf('\n')) {
+        const line = pending.slice(0, nl);
+        pending = pending.slice(nl + 1);
+        if (line.trim()) {
+          const message = JSON.parse(line);
+          waiters.get(message.id)?.(message);
+        }
+      }
+    });
+    let nextId = 1;
+    const rpc = (method, params) => new Promise((resolve) => {
+      const id = nextId;
+      nextId += 1;
+      waiters.set(id, resolve);
+      child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+    });
+    await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0' } });
+    const read = await rpc('tools/call', { name: 'get_concept', arguments: { slug: 'capabilities/c1' } });
+    assert.ok(!read.result?.isError, JSON.stringify(read).slice(0, 300));
+    const patch = async (slug) => {
+      const reply = await rpc('tools/call', { name: 'patch_concept', arguments: { slug, frontmatter: { title: `${slug} patched` } } });
+      assert.ok(!reply.result?.isError, JSON.stringify(reply).slice(0, 300));
+    };
+    // The first write also reads each body once for the facts its maintenance plan
+    // asks for; the second shows what a write costs on its own.
+    await patch('capabilities/c2');
+    const before = opens();
+    // patch_concept loads the vault at least three times (UID check, recompile, plan).
+    await patch('capabilities/c3');
+    const during = opens() - before;
+    const exited = new Promise((resolve) => child.on('exit', resolve));
+    child.stdin.end();
+    await exited;
+    // One fresh pass and a handful of single files; a fresh pass per load would be
+    // at least three times the vault.
+    assert.ok(during >= files && during < 2 * files, `${during} opens for a vault of ${files} files`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(`${root}.opens`, { force: true });
   }
 });

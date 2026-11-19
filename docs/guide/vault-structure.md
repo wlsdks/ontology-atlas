@@ -1,124 +1,102 @@
 ---
-title: Vault Structure
+title: "The ontology folder: Markdown files and their info block"
 doc_type: guide
 status: current
-area: ontology-model
+area: product
 ---
 
-# Vault Structure
+# The ontology folder: Markdown files and their info block
 
-A vault is simply a Markdown folder. The only special part is the frontmatter at the top of each file.
+An Atlas ontology is a folder of plain Markdown files. Each concept is one `.md` file. The info block at the top of the file, its YAML frontmatter, says what the concept is and how it connects to other concepts. There is no database behind it: the files are the ontology. Below are the file format, the fields Atlas reads, and where the files go.
+
+## One concept, one file
 
 ```markdown
 ---
-uid: 01890f3e-7b5d-4c0a-8f14-123456789abc
+uid: 7ec556ec-768d-40c3-8147-19db4287a338
+slug: capabilities/token-issue
 kind: capability
-slug: token-issue
-title: Token Issuance
-domain: auth
+title: Token issuance
+display_en: Token issuance
+domain: domains/auth
+elements: [elements/jwt-signer]
+path: src/auth/issue-token.ts
+dependencies: [capabilities/session-store]
+relation_notes: { capabilities/session-store: "A token is only issued after the session is written." }
 ---
 
-# Token Issuance
+Issues a revocable session token after a successful sign-in.
 
-Issues a session token to users who have successfully logged in.
+## Includes
+- Signing and returning the token.
+
+## Excludes
+- Checking the password, which belongs to credential verification.
 ```
 
-## uid and slug: Permanent Identity and Current Address
+The frontmatter is the graph: kind, name, parent and relations. The body is the meaning that a person or an agent reads: a definition, what the concept includes and excludes, the evidence, and what is still uncertain.
 
-Every node has both identifiers.
+## The fields
 
-| Field | Meaning | Can it be changed? | Primary Use |
-|---|---|---|---|
-| `uid` | Permanent identity of the node itself | **No** | MCP precise lookup, handoff, source, export URN |
-| `slug` | Human-readable current address | Yes, via rename | File path, relationship values, URL, CLI graph commands |
-| `title` | Name displayed to humans | Yes | Display, search, description |
+| Field | What it holds |
+|---|---|
+| `uid` | The permanent identity, a lowercase UUIDv4. It never changes. |
+| `slug` | The current readable address, such as `capabilities/token-issue`. Relations point at slugs. It can be renamed. |
+| `kind` | One of `project`, `domain`, `capability`, `element`, `document`. See [Choosing concepts](/guide/what-becomes-a-node). |
+| `title` | The canonical name. Search and matching use it in every language. |
+| `display_<locale>` | The name shown on a screen in that language, for example `display_en`, `display_ko`. |
+| `display` | An optional short name for labels when `title` is long. |
+| `description` | An optional one-line summary. |
+| `domain` | The parent domain of a capability or element. Expected; a missing one is a warning. |
+| `path` | For a capability or element, the one file or folder that a newcomer should open first. |
+| Relation keys | `domains`, `capabilities`, `elements`, `dependencies`, `relates`, `broader`, `contains`, `describes`. See [Relations](/guide/relations). |
+| `relation_notes` | One sentence per relation saying why it holds, keyed by the target's slug. |
+| `created_by` | Who created the file: `human`, or `agent:` followed by the agent's name. |
+| `review_state` | Optional. `human_decides` marks a concept only a person may settle; `confirmed` records that a person checked the meaning. |
 
-`uid` is a **lowercase UUIDv4** issued only once when the writer creates a node.
-It is not calculated from slug, title, or file path, nor is it reused for new nodes
-copied from existing ones. `rename` and `reclassify` preserve the UID. `merge` preserves
-the UID of the surviving node and records the absorbed UID in `merged_uids`, ensuring
-lookups by the old UID still point to the same node.
+`uid`, `slug`, `kind` and `title` are required on every concept. A missing `domain` on a capability or element is a warning, not an error, so an unfinished folder still opens.
 
-```markdown
-uid: 21890f3e-7b5d-4c0a-8f14-123456789abc
-merged_uids:
-  - 01890f3e-7b5d-4c0a-8f14-123456789abc
-slug: token-issue
-```
+### Identity: uid and slug
 
-`merged_uids` is history specific to `merge_concepts`. Do not issue it manually or fix it via general patch. `validate` blocks UID duplicates, invalid formats, and self-referential survival UIDs as hard errors.
+Whatever creates a concept (the app, the MCP server or the CLI) generates its `uid` once. You do not choose it. Renaming a concept changes its `slug` and rewrites every relation that points to it, but keeps the `uid`. Merging two concepts keeps the surviving concept's `uid` and records the other one in `merged_uids`, so an old `uid` still leads to the right concept. Do not write `merged_uids` by hand.
 
-This specification follows [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html), which defines random UUIDv4, and
-[W3C JSON-LD 1.1](https://www.w3.org/TR/json-ld11/#node-identifiers), which requires JSON-LD node identifiers to be IRIs. When exporting, `urn:uuid:<uid>` is used, so changing the slug does not change the external identity.
+Use the slug when you write relations and links, because it is what people read in the file. Use the `uid` when a tool or a handoff note must point at the same concept even after a rename.
 
-### Converting an Existing Vault Without UIDs to v2
+### Names in several languages
 
-It does not modify files upon reading. From the Ontology Atlas source checkout root,
-first preview the changes.
+The map, lists and panels show `display_<locale>` for the screen's language when it exists, and fall back to the canonical name otherwise. `title` stays the same in every language, so search and matching do not depend on translation. If your team reads the map in two languages, fill in both names. When one is missing, the screen shows the other language's name instead.
 
-```bash
-pnpm vault:migrate 2026-08-02-add-node-uids --vault /path/to/vault
-```
+## Where the files go
 
-After reviewing, apply them by adding `--write` to the same command. If there are uncommitted
-Markdown files in git, conversion will be rejected, so you must commit or stash first. Valid existing
-UIDs are preserved, but invalid or duplicate primary/merged UIDs fail before writing the first file.
+Keep the ontology folder inside the repository it describes. Then a code change and the matching change in meaning can be reviewed in the same pull request. The Atlas repository keeps its own ontology in `docs/ontology/`.
 
-## kind: What the file is
-
-`kind` defines what the file is. It becomes more specific as you go down.
-
-| kind | Meaning | Example |
-|---|---|---|
-| `project` | Top-level artifact | `auth-platform` |
-| `domain` | Group of features | `auth`, `billing` |
-| `capability` | A single consistent behavior | `token-issue` |
-| `element` | Distinct implementation role realizing a capability | `jwt-signer` |
-| `document` | Descriptive document bound to the graph | This guide |
-
-## Relationships
-
-People and tools read relationships with names like `contains`, `depends_on`, `broader`.
-The canonical storage key for `depends_on` in Markdown frontmatter
-is `dependencies:`.
-
-```markdown
----
-uid: 11890f3e-7b5d-4c0a-8f14-123456789abc
-kind: capability
-slug: token-issue
-title: Token Issuance
-domain: auth
-dependencies: [jwt-signer, session-store]
----
-```
-
-**Project membership is not specified separately.** It is determined automatically by traversing the `contains` chain.
-Writing only `domain: auth` automatically links to the project above it.
-Relationship values can use slugs instead of UIDs, allowing people to read the graph just by opening the file. The rename tool atomically updates these relationship values as well.
-
-## Names in Two Languages
-
-Using `display_ko` / `display_en` renders the name appropriate for the screen language on maps and lists. `title` serves as the source of truth for search/matching and should not be changed.
-
-**Fill in all languages used by the vault.** If only one side is filled, the original text will be exposed to users of the other language.
-
-## Where to Place It
-
-Typically, you place it within the repository you are managing. This way, code and meaning are committed together and reviewed simultaneously.
-
-```
+```text
 your-repo/
 ├── src/
-└── docs/ontology/     ← Vault
-    ├── project.md
-    ├── domains/
-    ├── capabilities/
-    └── elements/
+└── docs/ontology/
+    ├── project.md          the project (kind: project)
+    ├── domains/            one file per domain
+    ├── capabilities/       one file per capability
+    ├── elements/           one file per element
+    ├── sources/            raw source files, never concepts
+    └── .ontology-atlas/    files the app keeps beside the ontology
 ```
 
-This repository does the same. It documents itself in `docs/ontology/`, and those files are used to build this product.
+Projects and documents sit at the root of the folder. Domains, capabilities and elements each have their own folder. By convention the file path matches the slug, but the `slug:` in the frontmatter is the address Atlas trusts. Under a kind folder, a slug must be flat: `elements/jwt-signer`, never `elements/src/auth/jwt-signer`. The code location belongs in `path`.
 
-## The Vault is Files
+Files under `sources/` are raw material, such as documents a wiki page cites, and are never read as concepts. `.ontology-atlas/` holds files the app writes beside your ontology, such as review results and the link to your code folder. When Atlas first writes that link, it also adds a `.gitignore` there so that the folder stays out of Git.
 
-The frontmatter is the vault. There is no separate approval process or sync button. Editing a file updates the graph directly. Even if an agent writes it, it appears as a `git diff`, and you can manually correct it if needed.
+To start a folder from the command line, in a checkout of the Atlas source:
+
+```bash
+node cli/src/index.mjs init docs/ontology
+node cli/src/index.mjs validate docs/ontology
+```
+
+`validate` reports broken references, unknown kinds and malformed identities. Most findings are warnings that do not stop your work; a duplicate `uid` is an error. [The CLI](/guide/cli) lists the other commands.
+
+## The files are the truth
+
+Atlas always reads the ontology from the files. Edit a file in your editor, through the CLI or through an agent, and the map picks up the change within seconds. There is no sync button and no hidden state. Every change, including one an agent makes, shows up in `git diff`, where you can review, keep or revert it.
+
+Next: [Choosing concepts](/guide/what-becomes-a-node).

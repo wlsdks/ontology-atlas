@@ -6,9 +6,6 @@
  * release-facts.test.ts catches drift.
  */
 
-/** Tools in `server/tool-definitions/`, which the web bundle cannot import; the test catches drift. */
-export const MCP_TOOL_COUNT = 40;
-
 /* For tools without Next's build env; never a version string, since a plausible wrong one goes unchecked. */
 export const RELEASE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? 'unknown';
 export const RELEASE_MIN_MACOS = "macOS 12";

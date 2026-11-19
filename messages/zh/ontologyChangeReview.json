@@ -61,7 +61,7 @@
     "domain": "领域",
     "domains": "所属领域",
     "capabilities": "包含的能力",
-    "elements": "包含的要素",
+    "elements": "包含的元素",
     "dependencies": "所依赖的内容",
     "depends_on": "所依赖的内容",
     "relates": "相关的内容",

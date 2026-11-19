@@ -1,4 +1,10 @@
-import { WIKI_DIR, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
+import {
+  WIKI_DIR,
+  buildWikiNodeIndex,
+  validateWikiPage,
+  type WikiNodeEntry,
+  type WikiNodeIndex,
+} from "@/shared/lib/library/wiki-page-schema";
 
 import type { WikiTemplateProblem } from "./describe-wiki-problem";
 
@@ -14,6 +20,8 @@ export interface PageWriteVerdict {
   /** Findings with `detail`, so the card can say them in the reader's language. */
   problems: ReadonlyArray<WikiTemplateProblem>;
   text: string;
+  /** The page as it is now, `null` for a new page or one this judgement could not read. */
+  before: string | null;
 }
 
 /** The three facts of a permission request this judgement reads; the card owns the rest. */
@@ -31,6 +39,20 @@ export interface JudgePageWriteInput {
   currentText: (slug: string) => string | null;
   /** Every raw source path in the folder, so a citation naming a missing file is reported. */
   knownSources: Iterable<string>;
+  /**
+   * Every document in the folder (`wikiNodeIndexOfDocs`), so a `describes:` entry naming no concept
+   * is reported. Required: a write judged without it would let a broken link through.
+   */
+  nodes: WikiNodeIndex;
+}
+
+/** The index `nodes` takes, from the folder's documents; build it once per folder, not per write. */
+export function wikiNodeIndexOfDocs(
+  docs: Iterable<{ slug: string; frontmatter: Record<string, unknown> }>,
+): WikiNodeIndex {
+  const entries: WikiNodeEntry[] = [];
+  for (const doc of docs) entries.push({ slug: doc.slug, kind: doc.frontmatter.kind, alias: doc.frontmatter.slug });
+  return buildWikiNodeIndex(entries);
 }
 
 function text(value: unknown): string | null {
@@ -71,13 +93,15 @@ export function judgePageWrite({
   vaultRoot,
   currentText,
   knownSources,
+  nodes,
 }: JudgePageWriteInput): PageWriteVerdict | null {
   if (request.toolKind === "read") return null;
   const path = wikiPagePathOf(request.filePath, vaultRoot);
   if (!path) return null;
   const slug = path.replace(/\.md$/, "");
-  const proposed = proposedPageText(request.rawInput, currentText(slug));
+  const before = currentText(slug);
+  const proposed = proposedPageText(request.rawInput, before);
   if (proposed === null) return null;
-  const { ok, problems } = validateWikiPage(proposed, { knownSources });
-  return { path, ok, problems, text: proposed };
+  const { ok, problems } = validateWikiPage(proposed, { knownSources, nodes });
+  return { path, ok, problems, text: proposed, before };
 }
