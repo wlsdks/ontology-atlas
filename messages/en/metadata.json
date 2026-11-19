@@ -20,7 +20,7 @@
     "docs": "Read and edit the markdown folder directly. Change the info block at the top of a file and the map follows.",
     "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
     "guide": "Start with a Markdown folder, connect your coding agent, and learn how to inspect recorded meaning, evidence, and unknowns in Ontology Atlas.",
-    "changelog": "Ontology Atlas changelog: user-visible changes, newest first.",
+    "changelog": "Ontology Atlas release notes: what changed in the desktop app, the map, the MCP server and the CLI, release by release with dates, newest first.",
     "library": "Gather sources, write wiki pages from them, and ask questions that cite their passages, all inside your local Markdown folder.",
     "agents": "See the coding agents on this computer and connect them to Ontology Atlas over MCP.",
     "automations": "Schedule ontology reviews and document checks that run on your computer and leave proposals for you to review.",
