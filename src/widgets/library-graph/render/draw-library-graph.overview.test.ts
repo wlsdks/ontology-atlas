@@ -83,9 +83,11 @@ it("rebuilds paths for changed geometry or relation evidence", () => {
   expect(RecordedPath.created).toBe(9);
 });
 
-it("uses the ordinary paint path while marks are arriving", () => {
+it("keeps the cached paths while marks fade in, since the quiet overview draws every mark at full ink", () => {
   vi.stubGlobal("Path2D", RecordedPath);
-  const { ctx, frame } = fixture();
+  const { ctx, frame, fills } = fixture();
   drawLibraryGraph(ctx as unknown as CanvasRenderingContext2D, { ...frame, opacity: new Map([["s", 0.5]]) });
-  expect(RecordedPath.created).toBe(0);
+  drawLibraryGraph(ctx as unknown as CanvasRenderingContext2D, { ...frame, opacity: new Map([["s", 0.9]]) });
+  expect(RecordedPath.created).toBe(3);
+  expect(fills.filter((fill) => fill.path).map((fill) => fill.ink)).toEqual(["source", "page", "stale", "source", "page", "stale"]);
 });

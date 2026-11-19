@@ -17,6 +17,8 @@ Runs an external coding agent inside the app over a shared agent protocol, with 
 
 ## Includes
 - Starting, driving and stopping a session with a locally installed agent runtime.
+- A first-run runtime download shown as its own stage with a moving bar, the person's opening request held and sent when the download ends.
+- A working turn that says how many concepts and relations it has written so far, and after a build offers reading a named batch of capabilities from the code as the next step.
 - The vault handed in automatically as a server, the per-runtime permission gate, and the classification that decides which requests are writes.
 - Capturing what the session did so it can be reviewed afterwards.
 
@@ -27,3 +29,4 @@ Runs an external coding agent inside the app over a shared agent protocol, with 
 
 ## Uncertainty
 - Read from the feature's thirty modules by name and from four of them in detail. Its main hook is roughly 1,500 lines and was not read. Its measurements of runtime behaviour date from August 2026 and were not reproduced; no session was started in this scan. This capability was raised as an open placement question at the start of this map and is recorded here because the code makes it an agent interface, not a workbench screen.
+- The download and working stages were seen 2026-11-20 in Chromium with a stubbed session; a real first-run download in the installed app was not watched.

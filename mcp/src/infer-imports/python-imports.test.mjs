@@ -1,9 +1,56 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import fs, { mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
 import { inferImports } from '../infer-imports.mjs';
 import { withRepo } from './repo-fixture.mjs';
+
+const PATH_QUESTIONS = ['existsSync', 'lstatSync', 'statSync', 'realpathSync'];
+
+/** How many times `run` asks the disk about a path. */
+function pathQuestionsAsked(run) {
+  const original = Object.fromEntries(PATH_QUESTIONS.map((name) => [name, fs[name]]));
+  let asked = 0;
+  for (const name of PATH_QUESTIONS) {
+    fs[name] = (...args) => {
+      asked += 1;
+      return original[name](...args);
+    };
+  }
+  syncBuiltinESMExports();
+  try {
+    run();
+  } finally {
+    Object.assign(fs, original);
+    syncBuiltinESMExports();
+  }
+  return asked;
+}
+
+test('a module imported from many files is resolved once per pass', () => {
+  const repoWith = (importers) => withRepo((r) => {
+    mkdirSync(join(r, 'pkg'), { recursive: true });
+    writeFileSync(join(r, 'pkg', '__init__.py'), '');
+    for (let index = 0; index < importers; index += 1) {
+      writeFileSync(join(r, 'pkg', `view_${index}.py`), 'from vendor.client import Session, Retry\nimport requests\n');
+    }
+  });
+  const few = repoWith(5);
+  const many = repoWith(45);
+  try {
+    const askedForFew = pathQuestionsAsked(() => inferImports(few));
+    const askedForMany = pathQuestionsAsked(() => inferImports(many));
+    // Each added file costs its walk entry and its size check; its imports are already answered.
+    assert.ok(
+      askedForMany - askedForFew <= 40 * 2,
+      `40 more importers asked ${askedForMany - askedForFew} more path questions`,
+    );
+  } finally {
+    rmSync(few, { recursive: true, force: true });
+    rmSync(many, { recursive: true, force: true });
+  }
+});
 
 test('root Python package imports resolve to internal file and flat element dependency evidence', () => {
   const root = withRepo((r) => {

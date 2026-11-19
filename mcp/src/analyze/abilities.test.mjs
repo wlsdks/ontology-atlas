@@ -6,6 +6,15 @@ import test from 'node:test';
 
 import { buildBreadthMap } from './breadth-map.mjs';
 
+/**
+ * Processor time this process has used, in ms. The budgets below are read on it, not on the wall
+ * clock: with every core taken, a run waits its turn and the wall clock counts the waiting.
+ */
+function cpuMs() {
+  const used = process.cpuUsage();
+  return (used.user + used.system) / 1000;
+}
+
 function repository(files) {
   const root = mkdtempSync(join(tmpdir(), 'atlas-abilities-'));
   for (const [path, text] of Object.entries(files)) {
@@ -275,15 +284,15 @@ test('a hostile line costs every detector under 100 ms', async () => {
     for (const [index, line] of hostile(n).entries()) {
       for (const [path, prelude] of Object.entries(preludes)) {
         const text = `${prelude}${line}\n${'\n'.repeat(n === near ? 2000 : 0)}`;
-        const started = performance.now();
+        const started = cpuMs();
         operatorAbilities([{ path }], () => text);
-        const operatorMs = performance.now() - started;
+        const operatorMs = cpuMs() - started;
         assert.ok(operatorMs < 100, `operator detectors on hostile line ${index} (${n} chars) in ${path}: ${operatorMs.toFixed(0)} ms`);
       }
       const page = `${line}\n`;
-      const started = performance.now();
+      const started = cpuMs();
       documentedAbilities(() => page, { readme: 'README.md', pages: ['docs/a.md'] }, [{ path: 'telemetry/telemetry.go' }], null);
-      const documentedMs = performance.now() - started;
+      const documentedMs = cpuMs() - started;
       assert.ok(documentedMs < 100, `heading detector on hostile line ${index} (${n} chars): ${documentedMs.toFixed(0)} ms`);
     }
   }
@@ -293,9 +302,9 @@ test('a long file costs every detector one pass, not one pass per line', async (
   const { operatorAbilities } = await import('./operator-abilities.mjs');
   const body = Array.from({ length: 10_000 }, (_, index) => `const value${index} = compute(${index}); // ${'x'.repeat(10)}`).join('\n');
   for (const path of ['a.ts', 'a.py', 'a.go', 'a.rs']) {
-    const started = performance.now();
+    const started = cpuMs();
     operatorAbilities([{ path }], () => body);
-    const ms = performance.now() - started;
+    const ms = cpuMs() - started;
     assert.ok(ms < 100, `${path} of 10,000 lines: ${ms.toFixed(0)} ms`);
   }
 });
@@ -476,9 +485,9 @@ test('surveys over every hostile shape and a megabyte of random code take under 
   // Twenty library files of 100 KB each: a rescan per line costs minutes there, one pass a few hundred ms.
   const roots = [{ ...hostileFiles(250 * 1024), 'src/random.ts': randomCode(1024 * 1024) }, ...hostileLibraries(100 * 1024)].map(repository);
   t.after(() => { for (const root of roots) rmSync(root, { recursive: true, force: true }); });
-  const started = performance.now();
+  const started = cpuMs();
   for (const root of roots) assert.ok(buildBreadthMap(root).text.length > 0);
-  const ms = performance.now() - started;
+  const ms = cpuMs() - started;
   assert.ok(ms < 2000, `the surveys took ${ms.toFixed(0)} ms`);
 });
 
@@ -488,9 +497,9 @@ test('doubling every file at most doubles the survey time', (t) => {
     t.after(() => { for (const root of roots) rmSync(root, { recursive: true, force: true }); });
     for (const root of roots) buildBreadthMap(root);
     const runs = [0, 1, 2].map(() => {
-      const started = performance.now();
+      const started = cpuMs();
       for (const root of roots) buildBreadthMap(root);
-      return performance.now() - started;
+      return cpuMs() - started;
     });
     return runs.sort((a, b) => a - b)[1];
   };

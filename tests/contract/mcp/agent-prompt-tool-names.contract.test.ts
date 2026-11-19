@@ -30,7 +30,7 @@ const MCP_SCHEMAS = join(process.cwd(), "mcp", "src", "server", "tool-schemas");
 const MCP_SCHEMA_FILES = readdirSync(MCP_SCHEMAS)
   .filter((file) => file.endsWith(".mjs"))
   .map((file) => join(MCP_SCHEMAS, file));
-/** Names and descriptions live in the tool definitions; the response field names live in the schemas they are built from. */
+/** Names and descriptions live in the tool definitions and the schemas they are built from. */
 const MCP_SURFACE_FILES = [
   join(process.cwd(), "mcp", "src", "server", "registry.mjs"),
   ...MCP_DEFINITION_FILES,
@@ -127,17 +127,18 @@ describe("copied instructions name only what exists", () => {
 
   /**
    * A prompt that names the write tools must name the fields that authorize them, taken from the
-   * server's required output schema, since acceptance binds to a generated plan digest.
+   * answer the server builds, since acceptance binds to a generated plan digest.
    */
   it("a prompt that calls a write tool also names the field that permits that write", () => {
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
     const namesWriteTools = /add_concepts?|add_relations?/.test(prompt);
     expect(namesWriteTools).toBe(true);
 
-    const source = MCP_SURFACE_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
+    // The survey declares no output schema, so the fields are read where the answer is built.
+    const source = readFileSync(join(process.cwd(), "mcp", "src", "analyze", "repo-structure.mjs"), "utf8");
     for (const field of ["canWrite", "writePlan", "nextStep"]) {
       expect(
-        source.includes(`${field}:`),
+        source.includes(`proposalValidation.${field} =`),
         `${field} must still be part of the server's response for this prompt to name it`,
       ).toBe(true);
       expect(

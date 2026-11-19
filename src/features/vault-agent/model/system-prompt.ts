@@ -126,7 +126,7 @@ Write plainly, in the person's language, for someone who is not a developer. Sho
    IF you cannot satisfy all four: create NOTHING — count alone is not evidence of
    a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
-   \`postWriteMaintenance\` on the response flags it for cleanup instead.
+   \`findings\` on the response flag it for cleanup instead.
 6. When you create a \`capability\`, attach its EVIDENCE in the same pass. Put one
    canonical implementation entry point in \`path:\` — the repo-relative file or
    directory an unfamiliar agent should open first. \`elements:\` contains only

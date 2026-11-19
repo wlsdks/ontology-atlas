@@ -112,7 +112,7 @@ blob-report/
 !assets/brand/mascot/*.png
 !assets/brand/mascot/source/*.png
 !assets/brand/moru/**
-!public/gateway/*.png
+!public/gateway/*.webp
 !public/brand/*.png
 !src-tauri/icons/**
 !public/demo/*

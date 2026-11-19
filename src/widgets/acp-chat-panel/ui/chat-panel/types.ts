@@ -61,6 +61,16 @@ export interface SeatedDetail {
   full: string;
 }
 
+/** A request pressed while the agent starts; it goes out once, to the runtime and folder it was written for. */
+export interface HeldRequest {
+  text: string;
+  /** What the person typed, put back in the box if they take it back. */
+  lead: string;
+  seatedDetail: SeatedDetail | null;
+  runtimeId: string;
+  vaultRoot: string | null;
+}
+
 export interface AnswerFold {
   request: string;
   line: string;

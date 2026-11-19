@@ -30,6 +30,14 @@ export const SOURCE_EXT = new Set([
 ]);
 
 /**
+ * Java and Kotlin files yield file edges only: module grouping, drift
+ * reconciliation and `listSourceFiles` keep to `SOURCE_EXT`.
+ */
+export const JVM_SOURCE_EXTENSIONS = new Set(['.java', '.kt']);
+
+export const IMPORT_SCAN_EXTENSIONS = new Set([...SOURCE_EXT, ...JVM_SOURCE_EXTENSIONS]);
+
+/**
  * Source files (absolute paths) through the import walker and ignore set, so
  * callers such as validate_vault's reconcile skip node_modules, .git, dist and
  * dotfiles and stay bounded.
@@ -44,7 +52,7 @@ export function listSourceFiles(rootPath, maxFiles = 4000) {
   return out;
 }
 
-export function walk(dir, ignore, out, maxFiles) {
+export function walk(dir, ignore, out, maxFiles, extensions = SOURCE_EXT) {
   if (out.length >= maxFiles) return;
   let entries;
   try {
@@ -66,13 +74,13 @@ export function walk(dir, ignore, out, maxFiles) {
       continue;
     }
     if (st.isDirectory()) {
-      walk(p, ignore, out, maxFiles);
+      walk(p, ignore, out, maxFiles, extensions);
       if (out.length >= maxFiles) return;
     } else if (st.isFile()) {
       const dot = name.lastIndexOf('.');
       if (dot < 0) continue;
       const ext = name.slice(dot);
-      if (SOURCE_EXT.has(ext)) {
+      if (extensions.has(ext)) {
         out.push(p);
         if (out.length >= maxFiles) return;
       }

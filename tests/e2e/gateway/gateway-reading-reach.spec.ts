@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { waitForAnimationsDone } from "../settle";
+import { waitForGatewayDrawn } from "../visual-ready";
 
-/** The page has loaded and its reveals have finished: the painted test reads opacity. */
+/** The gateway is drawn and its reveals have finished: the painted test reads opacity. */
 async function settled(page: import("@playwright/test").Page) {
   await page.waitForLoadState("load");
+  await waitForGatewayDrawn(page);
   await waitForAnimationsDone(page.locator("body"));
 }
 

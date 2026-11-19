@@ -162,7 +162,7 @@ let browserBuild;
 const isBrowserBuildFile = (path) => (browserBuild ??= new Set(browserBuildFiles())).has(path);
 
 const KNOWN_PATHS = [
-  /^(?:app|assets|cli|docs|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
+  /^(?:app|assets|cli|docs|docs-i18n|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
   /^\.(?:agents|claude|codex|github|githooks)\//,
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,

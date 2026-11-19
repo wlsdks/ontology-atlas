@@ -31,7 +31,7 @@ import {
 } from './server/rpc.mjs';
 import { VAULT_ROOT } from './server/runtime.mjs';
 import { normalizeToolArguments } from './server/validate.mjs';
-import { withVaultReadSnapshot } from './vault/documents.mjs';
+import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents.mjs';
 import { logWrite } from './server/write-log.mjs';
 import { absorbDocumentTool } from './tools/absorb.mjs';
 import {
@@ -103,9 +103,12 @@ import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
 
 
-// A read tool sees one snapshot of the vault: its helpers share one stamp pass.
+// A read tool sees one snapshot of the vault: its helpers share one stamp pass. Any
+// other call reads every file fresh once, on its first load, and stamp-checks after.
 server.setRequestHandler('tools/call', (request) => (
-  READ_TOOL_NAMES.has(request.params.name) ? withVaultReadSnapshot(() => callTool(request)) : callTool(request)
+  READ_TOOL_NAMES.has(request.params.name)
+    ? withVaultReadSnapshot(() => callTool(request))
+    : withVaultWriteSnapshot(() => callTool(request))
 ));
 
 async function callTool(request) {
@@ -163,8 +166,7 @@ async function callTool(request) {
       case 'find_evidence':
         return ok(findEvidence(args));
       case 'finalize_project_meaning':
-        // The receipt is the whole durable write; an activity line after it would be a
-        // second, non-atomic mutation.
+        // The handler logs the body it writes; the receipt itself gets no activity line.
         return ok(finalizeProjectMeaningTool(args));
       case 'connect_project_source':
         return ok(logWrite(name, args, connectProjectSourceTool(args)));

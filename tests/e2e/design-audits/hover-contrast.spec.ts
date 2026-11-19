@@ -1,4 +1,4 @@
-import { waitForDocumentPaint, waitForFiniteAnimations } from '../visual-ready';
+import { waitForDocumentPaint, waitForFiniteAnimations, waitForGatewayDrawn } from '../visual-ready';
 import { expect, test, type ElementHandle, type Page } from "@playwright/test";
 
 import { judgeText } from "../../../scripts/lib/design/contrast.mjs";
@@ -195,6 +195,7 @@ for (const route of HOVER_ROUTES) {
       ).toBeVisible();
     }
     await page.waitForSelector("main", { timeout: 20_000 });
+    if (route === "/ko/") await waitForGatewayDrawn(page);
     await waitForDocumentPaint(page);
     const { offenders, compared, colorChanged, mainCompared } = await auditRoute(page);
     console.info(JSON.stringify({ route, compared, colorChanged, mainCompared }));
@@ -225,6 +226,7 @@ test("the instrument does not spin idle: it has something to compare and catches
   await page.setViewportSize(VIEWPORT);
   await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
   await page.waitForSelector("main", { timeout: 20_000 });
+  await waitForGatewayDrawn(page);
   await waitForDocumentPaint(page);
 
   const { colorChanged } = await auditRoute(page);

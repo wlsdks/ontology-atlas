@@ -7,12 +7,13 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readdirSync } from 'node:fs';
+import { readdirSync, realpathSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
 
 import { inferImports } from '../infer-imports.mjs';
-import { abilitiesOf, fairShares } from './abilities.mjs';
+import { ABILITY_LIMIT, abilitiesOf, fairShares } from './abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
+import { abilitiesByArea, areaLocator, surveyAreas } from './survey-areas.mjs';
 import { repoText as t } from './repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
 import { withoutSpans } from './text.mjs';
@@ -378,7 +379,8 @@ function formatCount(value) {
 }
 
 /**
- * The default `analyze_repo_structure` response.
+ * The default `analyze_repo_structure` response: one flat map of every unit when
+ * it fits, else the map by area.
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], vaultRoot?: string }} [options]
@@ -456,72 +458,144 @@ export function buildBreadthMap(rootPath, { ignore = [], vaultRoot, collection: 
     },
     next,
   };
-  return fit ? fitBreadthMap(map) : map;
+  return fit ? fitBreadthMap(map, collection, abilities.found) : map;
 }
 
 /**
- * The rendered map's ceiling without its abilities: a few hundred files fit whole; a
- * larger repository keeps its largest units. The abilities section (at most 120
- * rows) comes on top, so a longer floor never pushes units out of the map, and the
+ * The flat map's ceiling without its abilities: a few hundred files fit whole; a
+ * larger repository is mapped by area. The abilities section (at most 120 rows)
+ * comes on top, so a longer floor never pushes units out of the map, and the
  * whole map stays within its own ceiling.
  */
 const BREADTH_TEXT_BUDGET = 24 * 1024;
 const MAP_TEXT_LIMIT = 30 * 1024;
+/**
+ * The characters any `analyze_repo_structure` response forwards at most: hosts
+ * rejected a 56,806-character survey and accepted 43,935 characters.
+ */
+export const SURVEY_RESPONSE_CHARS = 40_000;
 /** Members a family or group shows before the rest are counted. */
 const MEMBERS_SHOWN = 16;
+/** An area's path is the rootPath that opens it, so it is cut only where a root path would be. */
+const AREA_PATH_CHARS = 400;
 
 /** The bytes a map takes against the budget: everything but its abilities section. */
 function budgetBytes(map) {
   return Buffer.byteLength(renderBreadthMap({ ...map, abilities: [], abilitiesOmitted: undefined }), 'utf8');
 }
 
-/**
- * A repository too large for one map keeps every unit's path and size only for the
- * largest units that fit, and says how to ask for the rest: one folder at a time.
- */
-function fitBreadthMap(map) {
-  if (budgetBytes(map) <= BREADTH_TEXT_BUDGET) return capAbilities(map);
-  const largest = [...map.units]
-    .sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path))
-    .map((unit) => ({
-      path: unit.path,
-      files: unit.files,
-      lines: unit.lines,
-      mainFiles: unit.mainFiles.slice(0, 1),
-      exports: unit.exports.slice(0, 3),
-      importedBy: unit.importedBy,
-      imports: [],
-    }));
-  const slim = (count) => {
-    const kept = largest.slice(0, count);
-    const rest = largest.slice(count);
-    const restLines = rest.reduce((sum, unit) => sum + unit.lines, 0);
-    return {
-      ...map,
-      units: kept.sort((a, b) => a.path.localeCompare(b.path)),
-      unitsOmitted: { units: rest.length, lines: restLines },
-      next: `This repository is larger than one map: the ${count} largest of ${largest.length} units are listed without imports; ${rest.length} smaller units holding ${formatCount(restLines)} lines are not. Call analyze_repo_structure with rootPath set to one folder for its full map. ${map.next}`,
-    };
-  };
-  let low = 0;
-  let high = largest.length;
-  while (low < high) {
-    const middle = Math.ceil((low + high) / 2);
-    if (budgetBytes(slim(middle)) <= BREADTH_TEXT_BUDGET) low = middle;
-    else high = middle - 1;
+function fitBreadthMap(map, collection, found) {
+  if (budgetBytes(map) <= BREADTH_TEXT_BUDGET) {
+    return capAbilities(map, {
+      fits: (candidate) => Buffer.byteLength(renderBreadthMap(candidate), 'utf8') <= MAP_TEXT_LIMIT,
+      keep: keepFairShares,
+    });
   }
-  return capAbilities(slim(low));
+  return capAbilities(areaMap(map, collection, found), {
+    fits: (candidate) => renderBreadthMap(candidate).length <= SURVEY_RESPONSE_CHARS,
+    keep: keepFirst,
+  });
 }
 
 /**
- * The map with its text, the abilities section cut to fit the whole map's
- * ceiling: a group shows fewer members first (16, then 8, 4, 2, 1, none), each
- * cut counted in `membersOmitted`; a map still too long then keeps fewer rows,
- * shared fairly between kinds, the rows left out added to `abilitiesOmitted`.
- * The returned rows are the ones the text shows.
+ * A repository too large for one flat map, listed by area (`survey-areas.mjs`):
+ * every area with its size, main files and the ability rows it holds, and the
+ * rows shared between areas. `Next` maps it one area at a time.
  */
-function capAbilities(map) {
-  const fits = (candidate) => Buffer.byteLength(renderBreadthMap(candidate), 'utf8') <= MAP_TEXT_LIMIT;
+function areaMap(map, collection, found) {
+  const product = collection.files.filter((file) => file.class === 'product' && file.lines > 0);
+  const areas = surveyAreas(product);
+  const locate = areaLocator(areas);
+  const filesOf = new Map(areas.map((area) => [area, []]));
+  for (const file of product) filesOf.get(locate(file.path))?.push(file);
+  const held = new Map();
+  for (const row of found) {
+    const area = locate(row.path);
+    held.set(area, (held.get(area) ?? 0) + 1);
+  }
+  const rows = areas.map((area) => ({
+    path: area.path,
+    files: area.files,
+    lines: area.lines,
+    ...(area.own ? { own: true } : {}),
+    ...(area.rest ? { rest: true, members: area.members } : {}),
+    mainFiles: area.rest ? [] : mainFilesOf({ path: area.path, scope: area.own ? 'files' : 'tree', files: filesOf.get(area) })
+      .map((file) => ({ path: file.path, lines: file.lines })),
+    abilities: held.get(area) ?? 0,
+  }));
+  const listed = abilitiesByArea(found, areas, locate, ABILITY_LIMIT);
+  const byArea = {
+    ...map,
+    areas: rows,
+    ...omittedRows(found, listed),
+    abilities: listed,
+    next: areaNext(map, rows),
+  };
+  delete byArea.units;
+  return byArea;
+}
+
+/** The rows `found` holds and `listed` does not, counted per kind. */
+function omittedRows(found, listed) {
+  const shown = new Set(listed);
+  const byKind = {};
+  for (const row of found) if (!shown.has(row)) byKind[row.kind] = (byKind[row.kind] ?? 0) + 1;
+  const omitted = found.length - shown.size;
+  return omitted > 0 ? { abilitiesOmitted: omitted, abilitiesOmittedByKind: byKind } : { abilitiesOmitted: undefined, abilitiesOmittedByKind: undefined };
+}
+
+function areaNext(map, areas) {
+  const { size } = map;
+  const opened = areas.find((area) => !area.own && !area.rest);
+  const open = opened ? `analyze_repo_structure(${JSON.stringify({ rootPath: join(map.rootPath, opened.path) })})` : null;
+  return `This repository is larger than one map, so it is listed as ${areas.length} areas: ${formatCount(size.productLines)} lines in ${formatCount(size.productFiles)} files. ` +
+    'This run puts the whole product on the map and reads the main ability of every domain; reading the rest is a later request. ' +
+    '1. From this response alone, name the domains (a lasting responsibility; several areas usually share one) and write the project and every domain with add_concepts; each domain says which areas it holds. ' +
+    '2. Read by symbol the operation that decides the main ability of each domain (sourceReads {path, symbol}, three or four per call, sourceOnly true; outline a file first when you do not know its symbols). ' +
+    (open ? `Open an area when the rows below do not show what a domain holds, like ${open}: its map lists its units, entry points and every ability it holds, with paths relative to that folder, so write each node's path: from the repository root (${t(opened.path, AREA_PATH_CHARS)}/...). ` : '') +
+    '3. Write every domain\'s capabilities: one per thing a user, an operator or another system gets, a family as one capability naming its members and how many of them were read. ' +
+    'A capability whose code was not read states no rule and says so under ## Uncertainty. ' +
+    'Every ability row below ends up as a capability, named in the node that covers it, or on one line of the project\'s ## Uncertainty that says why it is left out; the rows are a floor shared between areas, not all of them. ' +
+    'Every write and validate_vault names the areas that no node\'s path: falls in and no domain names by its path: list those in the project\'s ## Uncertainty as unopened, and end by telling the person how many capabilities are still unread, which they can ask for next.';
+}
+
+/** The first `count` rows, in the order the areas shared them. */
+function keepFirst(rows, count, map) {
+  const kept = rows.slice(0, count);
+  const cut = rows.slice(count);
+  const byKind = { ...(map.abilitiesOmittedByKind ?? {}) };
+  for (const row of cut) byKind[row.kind] = (byKind[row.kind] ?? 0) + 1;
+  const omitted = (map.abilitiesOmitted ?? 0) + cut.length;
+  return { kept, ...(omitted > 0 ? { abilitiesOmitted: omitted, abilitiesOmittedByKind: byKind } : {}) };
+}
+
+/** `count` rows shared fairly between kinds. */
+function keepFairShares(rows, count, map) {
+  const counts = new Map();
+  for (const row of rows) counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
+  const shares = fairShares(counts, count);
+  const taken = new Map();
+  const kept = rows.filter((row) => {
+    if ((taken.get(row.kind) ?? 0) >= shares.get(row.kind)) return false;
+    taken.set(row.kind, (taken.get(row.kind) ?? 0) + 1);
+    return true;
+  });
+  const byKind = { ...(map.abilitiesOmittedByKind ?? {}) };
+  for (const [kind, total] of counts) {
+    if (total > shares.get(kind)) byKind[kind] = (byKind[kind] ?? 0) + total - shares.get(kind);
+  }
+  const omitted = (map.abilitiesOmitted ?? 0) + rows.length - kept.length;
+  return { kept, ...(omitted > 0 ? { abilitiesOmitted: omitted, abilitiesOmittedByKind: byKind } : {}) };
+}
+
+/**
+ * The map with its text, the abilities section cut to fit the map's ceiling: a
+ * group shows fewer members first (16, then 8, 4, 2, 1, none), each cut counted
+ * in `membersOmitted`; a map still too long then keeps fewer rows (`keep` says
+ * which), the rows left out added to `abilitiesOmitted`. The returned rows are
+ * the ones the text shows.
+ */
+function capAbilities(map, { fits, keep }) {
   const shown = (rows, limit) => rows.map((row) => {
     if (!row.members || row.members.length <= limit) return row;
     return { ...row, members: row.members.slice(0, limit), membersOmitted: (row.membersOmitted ?? 0) + row.members.length - limit };
@@ -533,31 +607,19 @@ function capAbilities(map) {
     if (fits(capped)) return { ...capped, text: renderBreadthMap(capped) };
   }
   const memberless = capped.abilities;
-  const keep = (count) => {
-    const counts = new Map();
-    for (const row of memberless) counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
-    const shares = fairShares(counts, count);
-    const taken = new Map();
-    const kept = memberless.filter((row) => {
-      if ((taken.get(row.kind) ?? 0) >= shares.get(row.kind)) return false;
-      taken.set(row.kind, (taken.get(row.kind) ?? 0) + 1);
-      return true;
-    });
-    const byKind = { ...(map.abilitiesOmittedByKind ?? {}) };
-    for (const [kind, total] of counts) {
-      if (total > shares.get(kind)) byKind[kind] = (byKind[kind] ?? 0) + total - shares.get(kind);
-    }
-    const omitted = (map.abilitiesOmitted ?? 0) + memberless.length - kept.length;
-    return { ...map, abilities: kept, ...(omitted > 0 ? { abilitiesOmitted: omitted, abilitiesOmittedByKind: byKind } : {}) };
+  const kept = (count) => {
+    const { kept: abilities, ...omitted } = keep(memberless, count, map);
+    return { ...map, abilities, ...omitted };
   };
+  // Binary search on the row count: O(log rows) renders.
   let low = 0;
   let high = memberless.length;
   while (low < high) {
     const middle = Math.ceil((low + high) / 2);
-    if (fits(keep(middle))) low = middle;
+    if (fits(kept(middle))) low = middle;
     else high = middle - 1;
   }
-  const fitted = keep(low);
+  const fitted = kept(low);
   return { ...fitted, text: renderBreadthMap(fitted) };
 }
 
@@ -565,10 +627,31 @@ function fileWithin(unitPath, path) {
   return unitPath !== '.' && path.startsWith(`${unitPath}/`) ? path.slice(unitPath.length + 1) : path;
 }
 
+function mainFilesText(row) {
+  return row.mainFiles
+    .map((file) => (file.path === row.path ? `(${file.lines})` : `${t(fileWithin(row.path, file.path))} (${file.lines})`))
+    .join(', ');
+}
+
+function areaLines(map) {
+  const lines = ['', 'Areas, largest first: path | files | lines | main files (relative to the area, lines) | abilities it holds'];
+  for (const area of map.areas) {
+    const path = t(area.path, AREA_PATH_CHARS);
+    if (area.rest) {
+      const names = area.members.slice(0, 40).map((member) => t(fileWithin(area.path, member), AREA_PATH_CHARS)).join(', ');
+      lines.push(`+${area.members.length} smaller folders in ${path} | ${formatCount(area.files)} | ${formatCount(area.lines)} | ${names}${area.members.length > 40 ? ` +${area.members.length - 40}` : ''} | ${area.abilities}`);
+      continue;
+    }
+    lines.push(`${path}${area.own ? ' (its own files, not its folders)' : ''} | ${formatCount(area.files)} | ${formatCount(area.lines)} | ${mainFilesText(area) || '-'} | ${area.abilities}`);
+  }
+  return lines;
+}
+
 /**
  * The same map as plain rows, which is what the agent reads: one line per unit
- * instead of an indented object per field keeps a 400-file repository near 12 KB.
- * Main files are written relative to their unit; join them to the unit path.
+ * (or per area) instead of an indented object per field keeps a 400-file
+ * repository near 12 KB. Main files are written relative to their unit or area;
+ * join them to its path.
  */
 function renderBreadthMap(map) {
   const { size } = map;
@@ -581,13 +664,13 @@ function renderBreadthMap(map) {
   if (map.docs.readme) {
     lines.push(`${t(map.docs.readme.path)}: ${t(map.docs.readme.purpose, 700) || '(no prose paragraph)'}`);
   }
-  lines.push('', 'Units: path | files | lines | main files (relative to the unit, lines) | exports | imported by N units | imports');
-  for (const unit of map.units) {
-    const main = unit.mainFiles
-      .map((file) => (file.path === unit.path ? `(${file.lines})` : `${t(fileWithin(unit.path, file.path))} (${file.lines})`))
-      .join(', ');
-    const imports = unit.imports.map((path) => t(path)).join(', ') + (unit.importsOmitted ? ` +${unit.importsOmitted}` : '');
-    lines.push(`${t(unit.path)} | ${unit.files} | ${formatCount(unit.lines)} | ${main} | ${unit.exports.map((name) => t(name, 80)).join(', ') || '-'} | ${unit.importedBy} | ${imports || '-'}`);
+  if (map.areas) lines.push(...areaLines(map));
+  else {
+    lines.push('', 'Units: path | files | lines | main files (relative to the unit, lines) | exports | imported by N units | imports');
+    for (const unit of map.units) {
+      const imports = unit.imports.map((path) => t(path)).join(', ') + (unit.importsOmitted ? ` +${unit.importsOmitted}` : '');
+      lines.push(`${t(unit.path)} | ${unit.files} | ${formatCount(unit.lines)} | ${mainFilesText(unit)} | ${unit.exports.map((name) => t(name, 80)).join(', ') || '-'} | ${unit.importedBy} | ${imports || '-'}`);
+    }
   }
   if (map.entryPoints.length > 0) {
     lines.push('', 'Entry points: kind path symbol');
@@ -603,12 +686,14 @@ function renderBreadthMap(map) {
       const symbol = row.symbol && row.symbol !== row.name ? ` ${t(row.symbol, 120)}` : '';
       const doc = row.doc ? ` (${t(row.doc)})` : '';
       lines.push(row.kind === 'family'
-        ? `family ${t(row.path)} ${t(row.evidence)}${members}`
+        ? `family ${row.name && row.name !== row.path ? `${t(row.name, 120)} in ` : ''}${t(row.path)} ${t(row.evidence)}${members}`
         : `${row.kind} ${t(row.name, 120)} ${t(row.evidence)}${symbol}${doc}${members}`);
     }
     if (map.abilitiesOmitted) {
       const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
-      lines.push(`+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows and of the map's 30 KB; call analyze_repo_structure with rootPath set to one folder to list them.`);
+      lines.push(map.areas
+        ? `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: every area shows rows before any shows a second, and a module API or lone export only where an area has no other row; an area's own map lists the rest.`
+        : `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows and of the map's 30 KB; call analyze_repo_structure with rootPath set to one folder to list them.`);
     }
   }
   if (map.docs.pages.length > 0) {
@@ -622,25 +707,33 @@ function renderBreadthMap(map) {
 
 const SURVEYS = new Map();
 
+function canonicalRoot(rootPath) {
+  try {
+    return realpathSync(rootPath);
+  } catch {
+    return rootPath;
+  }
+}
+
 /**
- * The breadth map and its unit collection for a repository, rebuilt only when a
- * source file was added, removed or changed since the last call. Writes and
- * validation measure placement against it on every call; the full map costs
- * seconds on a large repository, the file walk under a tenth of that.
+ * The breadth map and its unit collection for a repository: the map the first
+ * call built, until a source file is added, removed or changed. The survey call,
+ * every write and validate_vault share it; the map costs seconds on a large
+ * repository, the file walk under a tenth of that.
  *
  * @param {string} rootPath absolute repository root
- * @param {{ vaultRoot?: string }} [options]
+ * @param {{ vaultRoot?: string, ignore?: string[] }} [options]
  * @returns {{ collection: ReturnType<typeof collectSourceUnits>, survey: ReturnType<typeof buildBreadthMap> }}
  */
-export function cachedSurvey(rootPath, { vaultRoot } = {}) {
-  const collection = collectSourceUnits(rootPath, { vaultRoot });
+export function cachedSurvey(rootPath, { vaultRoot, ignore = [] } = {}) {
+  const collection = collectSourceUnits(rootPath, { ignore, vaultRoot });
   const fingerprint = createHash('sha256');
   for (const file of collection.files) fingerprint.update(`${file.path}\0${file.size}\0${file.mtimeMs}\n`);
-  const key = `${rootPath}\0${vaultRoot ?? ''}`;
+  const key = [canonicalRoot(rootPath), vaultRoot ?? '', ...ignore].join('\0');
   const digest = fingerprint.digest('hex');
   const cached = SURVEYS.get(key);
   if (cached && cached.digest === digest) return { collection, survey: cached.survey };
-  const survey = buildBreadthMap(rootPath, { vaultRoot, collection, fit: false });
+  const survey = buildBreadthMap(rootPath, { vaultRoot, ignore, collection });
   if (SURVEYS.size > 8) SURVEYS.clear();
   SURVEYS.set(key, { digest, survey });
   return { collection, survey };

@@ -227,15 +227,16 @@ export function OntologyTreeMap({
     if (arrivalKey != null && (reducedMotion || arrivedByMorph)) grownKeys.add(arrivalKey);
   }, [reducedMotion, arrivedByMorph, arrivalKey]);
 
+  const labelText = useMemo(() => nodes.map((node) => node.label).join(" "), [nodes]);
   useEffect(() => {
     let live = true;
-    void adoptBodyLabelFont().then((adopted) => {
+    void adoptBodyLabelFont(labelText).then((adopted) => {
       if (live && adopted) setFontFamily(labelFontFamily());
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [labelText]);
 
   useEffect(() => {
     const query = window.matchMedia?.(`(resolution: ${dpr}dppx)`);

@@ -49,6 +49,8 @@ import {
   type HexTextBox,
 } from "../render/hex-board";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
+import { productFontFamily } from "../render/labels";
+import { loadProductGlyphs, productGlyphsLoaded } from "../render/product-glyphs";
 
 export interface HexBoardLabels {
   staleOnly: (count: number) => string;
@@ -131,25 +133,26 @@ function measureText(text: string, role: HexTextRole): number {
 }
 
 /**
- * The board's text measure, as a new function once the product face it measures in has loaded
- * (see `hexFonts`). Until then the names are measured in the system stack behind it; the new
- * identity re-measures the names floor and repaints, so the band is decided in the face drawn.
+ * The board's text measure, as a new function once the product faces its text draws from have
+ * loaded (see `hexFonts`, `product-glyphs.ts`). Until then the names are measured in the system
+ * stack behind it; the new identity re-measures the names floor and repaints, so the band is
+ * decided in the face drawn. A text with new characters loads their faces the same way.
  */
-function useHexMeasure(): HexMeasure {
-  const [ready, setReady] = useState(() => typeof document === "undefined" || !document.fonts || document.fonts.check(hexFonts().capability));
+function useHexMeasure(text: string): HexMeasure {
+  const [loaded, setLoaded] = useState(0);
   useEffect(() => {
-    if (ready || typeof document === "undefined" || !document.fonts) return;
+    const family = productFontFamily();
+    if (family === null || typeof document === "undefined" || !document.fonts || productGlyphsLoaded(family, ` ${text}`)) return;
     let live = true;
     const done = () => {
-      if (live) setReady(true);
+      if (live) setLoaded((count) => count + 1);
     };
-    const fonts = hexFonts();
-    void Promise.all([fonts.capability, fonts.capabilityStrong, fonts.domain, fonts.plate].map((font) => document.fonts.load(font))).then(done, done);
+    void loadProductGlyphs(family, ` ${text}`).then(done, done);
     return () => {
       live = false;
     };
-  }, [ready]);
-  return useMemo<HexMeasure>(() => (ready ? (text, role) => measureText(text, role) : measureText), [ready]);
+  }, [text]);
+  return useMemo<HexMeasure>(() => (loaded > 0 ? (text, role) => measureText(text, role) : measureText), [loaded]);
 }
 
 /** A route keeps this far (CSS px) from the free map's edges and from every piece of chrome. */
@@ -324,7 +327,11 @@ export function OntologyHexBoardMap({
    * Names are drawn from the smallest cell size at which every name fits its face. A title
    * tile's counts are not part of that floor: they join the name when there is room.
    */
-  const measure = useHexMeasure();
+  const boardText = useMemo(
+    () => [...nodes.map((n) => n.label), ...[...domainMeta.values()].flatMap((m) => [m.meta, m.stale ?? ""]), ...plateSub.values()].join(" "),
+    [nodes, domainMeta, plateSub],
+  );
+  const measure = useHexMeasure(boardText);
   const namesFrom = useMemo(() => (layout ? (minNamesRadius(layout, measure) ?? HEX_BAND_NAMES) : HEX_BAND_NAMES), [layout, measure]);
   /** Which names set that floor (they would spill one pixel below it) — for measurement. */
   const namesDrivers = useMemo(() => {

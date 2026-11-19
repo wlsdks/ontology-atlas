@@ -972,9 +972,11 @@
     "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
     "dateBasis": "Each point uses the date its wiki page records.",
     "undated": "{count, plural, one {# has no date} other {# have no date}}",
+    "axisToday": "Today",
     "continue": "{count, plural, =1 {Write a wiki page for the last source} other {Write wiki pages for the next #}}",
     "batchRest": "{count, number} more wait after these.",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
+    "webLine": "Only the app writes wiki pages. Reading works here.",
     "allDone": "Every source has a wiki page"
   }
 }

@@ -23,6 +23,24 @@ termination, without replaying a partial protocol queue. Explicit stop clears
 the listeners and retained startup events, so late callbacks cannot resume the
 conversation.
 
+While the agent starts, the conversation's centre says what happens next.
+A first-run download is its own stage: the title says the agent is being
+downloaded and that this happens once, a bar sweeps without a percentage
+(Rust reports only the megabytes on disk), the megabytes received sit under
+it, and one sentence asks to keep the app open. Three steps follow with the
+current one marked: download (only while one runs), connect, send. A request
+waiting for the session is listed under the send step: an opening request a
+button started, or one the person pressed Send or Enter on while the agent was
+starting. A pressed request is held, one at a time (a second press replaces
+it), and sent once when the session is ready; **Edit** puts it back in the
+box. It is never sent to an agent or folder it was not written for: a runtime
+or folder change, Stop, a failed start or an opening request taking the first
+turn puts it back in the box unsent. A seated suggestion still needs a press.
+While a turn runs, the work stage's count line says what the turn has written
+(concepts and relations its finished Atlas writes report as written; deletions
+and removals are not counted) in place of the call count, beside the reported
+plan; the turn's elapsed time stays in the composer's status words.
+
 - **List** — Tools actually verified on this device are shown first, others are collapsed.
 - **Connection check** — Re-evaluate eight steps (does tool exist · can it launch · does it ask outside folder · is downloaded item intact · app-side settings · credential link · old login records · login). **Fixable things are fixed right there.** For unfixable ones, write what the human needs to do.
   CLI and Keychain probes drain stdout while the command runs, accept at most

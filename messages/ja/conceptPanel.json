@@ -1,3 +1,18 @@
 {
-  "reasonsMissing": "理由が書かれていない関係{count, number}件"
+  "reasonsMissing": "理由が書かれていない関係{count, number}件",
+  "edit": {
+    "rename": "名前を変更",
+    "renameLabel": "名前",
+    "describe": "説明を編集",
+    "describeLabel": "一段落の説明",
+    "keysHint": "Enterで保存します。Escでそのままにします。",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "deleteTitle": "「{title}」を削除しますか？",
+    "deleteReferrers": "{count, plural, other {まだ#件の文書がここを指しています。その行は何も指さなくなります。}}",
+    "deleteNoReferrers": "ここを指す文書はほかにありません。",
+    "deleteMore": "ほか{count}件",
+    "deleteConfirm": "削除"
+  }
 }

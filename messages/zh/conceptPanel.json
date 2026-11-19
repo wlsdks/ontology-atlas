@@ -1,3 +1,18 @@
 {
-  "reasonsMissing": "{count, number} 条关系没有写理由"
+  "reasonsMissing": "{count, number} 条关系没有写理由",
+  "edit": {
+    "rename": "重命名",
+    "renameLabel": "名称",
+    "describe": "编辑说明",
+    "describeLabel": "一段话说明",
+    "keysHint": "按 Enter 保存，按 Esc 保持原样。",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "deleteTitle": "删除“{title}”？",
+    "deleteReferrers": "{count, plural, other {仍有 # 个文档指向这里，那些行将不再指向任何内容。}}",
+    "deleteNoReferrers": "没有其他文档指向这里。",
+    "deleteMore": "还有 {count} 个",
+    "deleteConfirm": "删除"
+  }
 }

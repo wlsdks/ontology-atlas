@@ -209,17 +209,11 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: compileActionMtimeSchemaDrifted }),
       ["tools/list: compile_ontology outputSchema canonicalizationActions drift"],
     );
-    const analyzeOutputSchemaDrifted = makeDogfoodToolsList();
-    analyzeOutputSchemaDrifted.tools.find((tool) => tool.name === "analyze_repo_structure").outputSchema.properties.framework.enum = ["fsd", "generic"];
+    const analyzeOutputSchemaDeclared = makeDogfoodToolsList();
+    analyzeOutputSchemaDeclared.tools.find((tool) => tool.name === "analyze_repo_structure").outputSchema = { type: "object" };
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: analyzeOutputSchemaDrifted }),
-      ["tools/list: analyze_repo_structure outputSchema framework drift"],
-    );
-    const analyzeProjectSchemaDrifted = makeDogfoodToolsList();
-    delete analyzeProjectSchemaDrifted.tools.find((tool) => tool.name === "analyze_repo_structure").outputSchema.properties.project.additionalProperties;
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, toolsList: analyzeProjectSchemaDrifted }),
-      ["tools/list: analyze_repo_structure outputSchema project drift"],
+      evaluateDogfoodGate({ ...okShape, toolsList: analyzeOutputSchemaDeclared }),
+      ["tools/list: analyze_repo_structure declares an outputSchema; its breadth map and source reads are text alone"],
     );
     const inferOutputSchemaDrifted = makeDogfoodToolsList();
     inferOutputSchemaDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.edges.items.properties.kind.enum = ["static"];
@@ -356,11 +350,24 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: add_relations description missing structured value repair guidance"],
     );
     const writeNextReviewGuidanceDrifted = makeDogfoodToolsList();
-    writeNextReviewGuidanceDrifted.tools.find((tool) => tool.name === "add_concept").description =
+    writeNextReviewGuidanceDrifted.tools.find((tool) => tool.name === "rename_concept").description =
       "Write tool returns postWriteMaintenance with byPhase bySeverity byKind queue buckets, action score, executable proposedAction, and nextExecutableAction current-page pointers.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: writeNextReviewGuidanceDrifted }),
-      ["tools/list: add_concept description missing maintenance next action pointer guidance"],
+      ["tools/list: rename_concept description missing maintenance next action pointer guidance"],
+    );
+    const buildWriteFindingsGuidanceDrifted = makeDogfoodToolsList();
+    buildWriteFindingsGuidanceDrifted.tools.find((tool) => tool.name === "add_concept").description =
+      "Create a node and return its slug and mtime.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: buildWriteFindingsGuidanceDrifted }),
+      ["tools/list: add_concept description missing findings guidance"],
+    );
+    const buildWriteMaintenanceLeaked = makeDogfoodToolsList();
+    buildWriteMaintenanceLeaked.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance = { type: "object" };
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: buildWriteMaintenanceLeaked }),
+      ["tools/list: patch_concept outputSchema still carries postWriteMaintenance"],
     );
     const addConceptOutputSchemaDrifted = makeDogfoodToolsList();
     addConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "add_concept").outputSchema.properties.warnings.items.type = "number";
@@ -387,56 +394,56 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: patch_concept outputSchema required drift"],
     );
     const postWriteSummarySchemaDrifted = makeDogfoodToolsList();
-    delete postWriteSummarySchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.summary.properties.remainingActions.minimum;
+    delete postWriteSummarySchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.summary.properties.remainingActions.minimum;
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteSummarySchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance summary drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance summary drift"],
     );
     const postWriteRequiredSchemaDrifted = makeDogfoodToolsList();
-    postWriteRequiredSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.required =
+    postWriteRequiredSchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.required =
       ["operation", "sideEffect", "graphHash", "summary", "filters", "cursor", "actions"];
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteRequiredSchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance required drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance required drift"],
     );
     const postWriteCursorSchemaDrifted = makeDogfoodToolsList();
-    postWriteCursorSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.cursor.properties.hasMore.type = "string";
+    postWriteCursorSchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.cursor.properties.hasMore.type = "string";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteCursorSchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance cursor drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance cursor drift"],
     );
     const postWriteActionsSchemaDrifted = makeDogfoodToolsList();
-    postWriteActionsSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.executable.type = "string";
+    postWriteActionsSchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.executable.type = "string";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteActionsSchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance actions drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance actions drift"],
     );
     const postWriteProposedActionSchemaDrifted = makeDogfoodToolsList();
-    postWriteProposedActionSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.proposedAction.required =
+    postWriteProposedActionSchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.proposedAction.required =
       ["tool"];
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteProposedActionSchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance actions drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance actions drift"],
     );
     const postWriteProposedActionToolEnumDrifted = makeDogfoodToolsList();
-    postWriteProposedActionToolEnumDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.proposedAction.properties.tool.enum =
+    postWriteProposedActionToolEnumDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.proposedAction.properties.tool.enum =
       ["add_concept", "add_relation"];
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteProposedActionToolEnumDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance actions drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance actions drift"],
     );
     const postWriteNextExecutableSchemaDrifted = makeDogfoodToolsList();
-    postWriteNextExecutableSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.nextExecutableAction.required =
+    postWriteNextExecutableSchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.nextExecutableAction.required =
       ["id"];
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteNextExecutableSchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance nextExecutableAction drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance nextExecutableAction drift"],
     );
     const postWriteNextActionSchemaDrifted = makeDogfoodToolsList();
-    postWriteNextActionSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.nextReviewAction.type = "object";
+    postWriteNextActionSchemaDrifted.tools.find((tool) => tool.name === "delete_concept").outputSchema.properties.postWriteMaintenance.properties.nextReviewAction.type = "object";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteNextActionSchemaDrifted }),
-      ["tools/list: patch_concept outputSchema postWriteMaintenance nextReviewAction drift"],
+      ["tools/list: delete_concept outputSchema postWriteMaintenance nextReviewAction drift"],
     );
     const renameConceptOutputSchemaDrifted = makeDogfoodToolsList();
     renameConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "rename_concept").outputSchema.properties.backlinkUpdates.type = "array";
@@ -1034,7 +1041,7 @@ describe("evaluateDogfoodGate", () => {
             ...okShape.strictAddRelation.result,
             structuredContent: {
               ...okShape.strictAddRelation.result.structuredContent,
-              postWriteMaintenance: { summary: {} },
+              findings: [],
             },
           },
         },
@@ -1529,16 +1536,16 @@ describe("evaluateDogfoodGate", () => {
       ["query_concepts_limited structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, contract: undefined } }),
-      ["analyze_repo_structure response is not the breadth map: undefined"],
+      evaluateDogfoodGate({ ...okShape, analyzedRepo: { rawText: "Analysis of /repo" } }),
+      ['analyze_repo_structure response is not the breadth map: "Analysis of /repo"'],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, capabilities: [{ slug: "capabilities/auth", title: "Auth" }] } }),
+      evaluateDogfoodGate({ ...okShape, analyzedRepo: { rawText: okShape.analyzedRepo.rawText.replace("\n\nNext:", "\ncapabilities/auth | Auth\n\nNext:") } }),
       ["analyze_repo_structure survey carries capabilities; the breadth map names no node"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { ...okShape.analyzedRepo, next: "other" } }),
-      ['analyze_repo_structure structuredContent mismatch — $.next: parsed "1 product units, 3 lines in 1 files.", structuredContent "other"'],
+      evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { contract: "breadthMap:v1" } }),
+      ["analyze_repo_structure: structuredContent present; the breadth map travels as text alone"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, filesScanned: -1 } }),

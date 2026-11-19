@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -10,7 +10,16 @@ import { GUIDE_PAGES } from '@/views/gateway-doc/model/guide-pages';
  */
 
 const ROOT = process.cwd();
-const GUIDE_DIR = join(ROOT, 'docs/guide');
+/** The English vault chapters and each reader language's translation of them. */
+const GUIDE_DIRS = ['docs/guide', 'docs-i18n/guide/ko', 'docs-i18n/guide/ja', 'docs-i18n/guide/zh'];
+
+function guideBodies(): Array<{ file: string; body: string }> {
+  return GUIDE_DIRS.filter((dir) => existsSync(join(ROOT, dir))).flatMap((dir) =>
+    readdirSync(join(ROOT, dir))
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => ({ file: `${dir}/${name}`, body: readFileSync(join(ROOT, dir, name), 'utf8') })),
+  );
+}
 /** The workbench routes and the gateway routes; a route group adds no URL segment. */
 const APP_LOCALE_DIRS = [join(ROOT, 'app/[locale]'), join(ROOT, 'app/(gateway)/[locale]')];
 
@@ -32,13 +41,7 @@ function appRoutes(): Set<string> {
 
 /** Internal absolute-path links in the markdown body — the `](/…)` form only. */
 function inBodyInternalLinks(): Array<{ file: string; href: string }> {
-  const out: Array<{ file: string; href: string }> = [];
-  for (const name of readdirSync(GUIDE_DIR)) {
-    if (!name.endsWith('.md')) continue;
-    const body = readFileSync(join(GUIDE_DIR, name), 'utf8');
-    for (const m of body.matchAll(/\]\((\/[^)\s]*)\)/g)) out.push({ file: `docs/guide/${name}`, href: m[1] });
-  }
-  return out;
+  return guideBodies().flatMap(({ file, body }) => [...body.matchAll(/\]\((\/[^)\s]*)\)/g)].map((m) => ({ file, href: m[1] })));
 }
 
 /**
@@ -46,13 +49,7 @@ function inBodyInternalLinks(): Array<{ file: string; href: string }> {
  * silently render chapter 1 instead of a 404.
  */
 function inBodyAllLinks(): Array<{ file: string; href: string }> {
-  const out: Array<{ file: string; href: string }> = [];
-  for (const name of readdirSync(GUIDE_DIR)) {
-    if (!name.endsWith('.md')) continue;
-    const body = readFileSync(join(GUIDE_DIR, name), 'utf8');
-    for (const m of body.matchAll(/\]\(([^)\s]+)\)/g)) out.push({ file: `docs/guide/${name}`, href: m[1] });
-  }
-  return out;
+  return guideBodies().flatMap(({ file, body }) => [...body.matchAll(/\]\(([^)\s]+)\)/g)].map((m) => ({ file, href: m[1] })));
 }
 
 /** Strips query, hash, and trailing slash, leaving the route path. */

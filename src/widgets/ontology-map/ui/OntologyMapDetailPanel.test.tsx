@@ -107,6 +107,9 @@ function renderPanel(
     suppressPrimaryAction?: boolean;
     onEditRelations?: () => void;
     onCreateLinked?: () => void;
+    onRename?: OntologyMapDetailPanelProps["onRename"];
+    onSaveDescription?: OntologyMapDetailPanelProps["onSaveDescription"];
+    deleteConcept?: OntologyMapDetailPanelProps["deleteConcept"];
     onEnterRealm?: () => void;
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
@@ -168,6 +171,9 @@ function panelElement(
       suppressPrimaryAction={overrides.suppressPrimaryAction}
       onEditRelations={overrides.onEditRelations}
       onCreateLinked={overrides.onCreateLinked}
+      onRename={overrides.onRename}
+      onSaveDescription={overrides.onSaveDescription}
+      deleteConcept={overrides.deleteConcept}
       onClose={() => {}}
       onEnterRealm={overrides.onEnterRealm}
       onOpenFullDetail={onOpenFullDetail}
@@ -1191,5 +1197,52 @@ describe("OntologyMapDetailPanel: the channel from row hover out to the map", ()
     unmount();
     expect(onHoverConnection).toHaveBeenLastCalledWith(null);
     expect(onHoverEvidence).toHaveBeenLastCalledWith(null);
+  });
+});
+
+describe("OntologyMapDetailPanel — changing the concept in place", () => {
+  const edit = enMessages.conceptPanel.edit;
+  const openEditMenuItem = (testId: string) => {
+    fireEvent.click(screen.getByTestId("map-detail-panel-edit-menu-trigger"));
+    fireEvent.click(screen.getByTestId(testId));
+  };
+
+  it("renames in the name's place and saves on Enter", async () => {
+    const onRename = vi.fn().mockResolvedValue(undefined);
+    renderPanel(undefined, { onEditRelations: vi.fn(), onRename });
+    openEditMenuItem("map-detail-panel-action-rename");
+    const field = screen.getByTestId("map-detail-panel-rename");
+    expect(field).toHaveValue("Views");
+    fireEvent.change(field, { target: { value: "Screens" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    await waitFor(() => expect(onRename).toHaveBeenCalledWith("Screens"));
+    await waitFor(() => expect(screen.queryByTestId("map-detail-panel-rename")).not.toBeInTheDocument());
+  });
+
+  it("edits the description in one step and leaves it untouched on Escape", async () => {
+    const onSaveDescription = vi.fn().mockResolvedValue(undefined);
+    renderPanel(undefined, { onEditRelations: vi.fn(), onSaveDescription });
+    openEditMenuItem("map-detail-panel-action-describe");
+    const field = screen.getByTestId("map-detail-panel-describe");
+    expect(field).toHaveValue("Views draw what the vault holds.");
+    fireEvent.keyDown(field, { key: "Escape" });
+    expect(onSaveDescription).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("map-detail-panel-describe")).not.toBeInTheDocument();
+  });
+
+  it("names what still points here before deleting", async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    renderPanel(undefined, {
+      onEditRelations: vi.fn(),
+      deleteConcept: { referrers: [{ slug: "capabilities/map", title: "Map" }], onDelete },
+    });
+    openEditMenuItem("map-detail-panel-action-delete");
+    const confirm = screen.getByTestId("map-detail-panel-delete-confirm");
+    expect(confirm).toHaveTextContent("One document still points here.");
+    expect(screen.getByTestId("map-detail-panel-delete-referrers")).toHaveTextContent("Map");
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("map-detail-panel-delete-confirm-button"));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+    expect(edit.deleteConfirm).toBe("Delete");
   });
 });

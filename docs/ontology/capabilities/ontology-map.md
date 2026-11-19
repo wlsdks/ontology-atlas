@@ -18,6 +18,7 @@ Lets a person explore the compiled ontology through geometric maps or a named me
 ## Includes
 - Domain structure browses recorded direct contains and child-side belongs_to relations with named children and a reversible breadcrumb. Shared parents, missing levels, cycles, and concepts outside project paths remain discoverable; it never infers membership from dependencies.
 - Layout, selection, hover detail, edge inspection, and a context menu for writing in place.
+- Building by hand beside the map: a create card (the `N` key, or the concept list's add rows), a relation editor that finds its target by search, and rename, describe and delete in the detail panel. Each write lands at once and a toast offers Undo.
 - The detail panel and edge panel that show what a node or relation says and what proves it.
 - Framing the overview on what is actually drawn, centred in the free space between the INDEX panel and the tool rail, and clearing a relation or cluster card the moment the pointer leaves the canvas.
 
@@ -30,3 +31,4 @@ Lets a person explore the compiled ontology through geometric maps or a named me
 - Read from the folder layout under `src/widgets/ontology-map/` and the repository's note that the renderer is custom canvas-2D with Graphology supplying layout only. Nothing was rendered during this scan, so the interactions above are named from file names rather than seen.
 - Checked 2026-09-26 on bundles #1874 and #1883: the overview's drawn centre sat 0 px from the free-area centre at 1040, 1280, 1512 and 1920 wide (it had been 64 to 113 px right), measured in Chromium with the `?e2e=1` probe and in the installed app.
 - Re-read 2026-11-16 where the Neural view changed: it packs each cluster of concepts as a volume at seven depth levels, and `src/widgets/ontology-map/neural-gl/neural-gl.ts` paints that frame with three.js where WebGL2 runs on hardware, while canvas 2D draws the same frame everywhere else. The other views stay canvas 2D. Seen in Chromium only; the installed app was not checked.
+- Building by hand was exercised 2026-11-20 in Chromium through the browser folder path (`tests/e2e/map/build-by-hand.spec.ts`); the installed app was not checked.

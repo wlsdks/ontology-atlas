@@ -75,6 +75,7 @@ describe('useToast follow-up action contract', () => {
     expect(sonnerToast.success).toHaveBeenCalledWith('만들었어요', {
       id: 'success:만들었어요',
       action: { label: '지도에서 보기', onClick },
+      duration: 10_000,
     });
     // Not called on show: the person must get the chance to press it.
     expect(onClick).not.toHaveBeenCalled();
@@ -89,6 +90,7 @@ describe('useToast follow-up action contract', () => {
     expect(sonnerToast.success).toHaveBeenCalledWith('새 문서를 만들었습니다', {
       id: '["success","새 문서를 만들었습니다","결제 정산 정책.md"]',
       action: { label: '되돌리기', onClick },
+      duration: 10_000,
       description: '결제 정산 정책.md',
     });
     expect(onClick).not.toHaveBeenCalled();
@@ -113,6 +115,7 @@ describe('useToast follow-up action contract', () => {
     expect(sonnerToast.error).toHaveBeenCalledWith('멎었어요', {
       id: 'error:멎었어요',
       action: { label: '다시', onClick },
+      duration: 10_000,
     });
   });
 });

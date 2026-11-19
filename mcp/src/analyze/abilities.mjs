@@ -11,6 +11,9 @@
  * - what a library exports, resolved through the import that re-exports it and
  *   through public subpackages; five or more exports declared one per file in one
  *   folder are one family row, and three or more from one module are one API row;
+ * - folders whose files each declare the operation the file is named after, which
+ *   an application registers in a schema or router and no package file re-exports
+ *   (`sibling-families.mjs`);
  * - features the README and docs headings name that the code names too
  *   (`documented-abilities.mjs`).
  * Every row carries the file and line it was found at. Benchmarks, examples,
@@ -23,14 +26,16 @@ import { basename, dirname, extname, posix } from 'node:path';
 
 import { declarationIndex } from '../evidence-search/declaration-index.mjs';
 import { documentedAbilities } from './documented-abilities.mjs';
+import { jvmAbilities } from './jvm-abilities.mjs';
 import { boundedLines, nameKey, operatorAbilities } from './operator-abilities.mjs';
+import { siblingFamilies } from './sibling-families.mjs';
 import { readSurveyText, surveyEntry } from './survey-paths.mjs';
 
 /** A folder of benchmarks, examples, demos, samples, mocks or fixtures (a folder name, never a file name). */
 const TOOLING = /(?:^|\/)(?:[\w-]*bench[\w-]*|examples?|demos?|samples?|fixtures?|testdata|mocks?|[\w-]*_mocks)\//i;
 const FAMILY_SIZE = 5;
 const MODULE_API_SIZE = 3;
-const ABILITY_LIMIT = 120;
+export const ABILITY_LIMIT = 120;
 const SCAN_BYTES = 256 * 1024;
 const DISPATCH_SUBJECT = /(?:^|\.)(?:command|cmd|action|op|operation|event|method|verb)$/i;
 const NOT_A_HANDLER = new Set([
@@ -351,7 +356,8 @@ export function fairShares(counts, limit) {
 /**
  * Every ability the survey lists, tooling left out, at most 120 rows shared
  * fairly between kinds, each with `evidence` as `path:Lline`. What a kind leaves
- * out is counted per kind, never dropped silently. An operator or documented row
+ * out is counted per kind, never dropped silently; `found` keeps every row for a
+ * survey that shares the rows another way. An operator or documented row
  * whose name an earlier row already answers to is the same ability found twice
  * (a `metrics` flag group beside a `Metrics` config section) and is dropped.
  *
@@ -391,11 +397,14 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
     }
     push(entryAbility(rootPath, entry));
   }
+  // After the export surface, so a folder a package file already re-exports stays one row.
+  for (const row of siblingFamilies(product, declarations(), FAMILY_SIZE)) push(row);
   for (const file of product) {
     for (const row of dispatchedOperations(file.path, readText(rootPath, file.path))) push(row);
   }
   const operator = operatorAbilities(product, (path) => readText(rootPath, path));
   for (const row of [...operator.subcommands, ...operator.flags, ...operator.settings, ...operator.workers]) push(row, { merge: true });
+  for (const row of jvmAbilities(product, (path) => readText(rootPath, path))) push(row, { merge: row.kind === 'worker' });
   const documented = documentedAbilities((path, limit) => readText(rootPath, path, limit), documents, product, declarations());
   for (const row of documented) push(row, { merge: true });
   const shares = fairShares(counts, ABILITY_LIMIT);
@@ -409,5 +418,5 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
   const omittedByKind = Object.fromEntries([...counts]
     .map(([kind, count]) => [kind, count - shares.get(kind)])
     .filter(([, omitted]) => omitted > 0));
-  return { rows: listed, omitted: rows.length - listed.length, omittedByKind };
+  return { rows: listed, omitted: rows.length - listed.length, omittedByKind, found: rows };
 }

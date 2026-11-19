@@ -121,7 +121,8 @@ isolated style, lint, and fixtures without meaning changes skip the sync.
 Keep the owner document current: public behavior in `README.md` and
 `docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
 contracts in their READMEs. Authored prose is English; `display_ko`,
-`cli/templates/vault-ko/**` and `README.{ko,ja,zh}.md` are localized data.
+`cli/templates/vault-ko/**`, `README.{ko,ja,zh}.md` and `docs-i18n/guide/**`
+are localized data.
 Never edit frozen history (`docs/records/README.md`); never edit or stage
 generated `src/entities/docs-vault/data/` or `public/docs-vault/`, which
 `pnpm docs-vault:build` writes.

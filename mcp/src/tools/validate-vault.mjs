@@ -24,7 +24,6 @@ import {
   rawSourceKindIssues,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
-  validateVaultDocument,
 } from '../validate.mjs';
 import {
   dependencyWitnessFinding,
@@ -33,11 +32,13 @@ import {
 } from '../meaning/meaning-findings.mjs';
 import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
+import { validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
+import { foldRepeatedGuidance } from './validate-page-fold.mjs';
 import {
   WIKI_ADVISORY_CODES,
   WIKI_DIR,
@@ -90,7 +91,7 @@ function validateWikiTool({ paths, offset, limit, afterPath } = {}) {
     offset: offset ?? 0,
     cursor,
     limit: limit ?? VALIDATION_PAGE_LIMIT,
-    textBudget: limit === undefined ? VALIDATION_PAGE_TEXT_BYTES : null,
+    textBudget: limit === undefined ? WIKI_VALIDATION_PAGE_TEXT_BYTES : null,
     callerArguments: limit === undefined ? {} : { limit },
   });
 }
@@ -198,7 +199,14 @@ function judgeWikiPages(paths) {
   // The folder half is judged over every page in the folder, whatever `paths` narrowed
   // the report to: whether somebody links to a page is a fact about the other pages,
   // and a page asked about alone would otherwise always read as an orphan.
-  const folderPages = folderDocs.map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '', parsed: doc }));
+  // `raw` is read as each page is judged, so the folder's text is never held at once.
+  const folderPages = folderDocs.map((doc) => ({
+    path: `${doc.slug}.md`,
+    get raw() {
+      return doc.raw || '';
+    },
+    parsed: doc,
+  }));
   const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
   for (const page of pages) {
     const extra = folderByPath.get(page.path) ?? [];
@@ -314,7 +322,9 @@ function pageWikiValidation(judged, { offset, cursor = null, limit, textBudget =
 }
 
 const VALIDATION_PAGE_LIMIT = 100;
-const VALIDATION_PAGE_TEXT_BYTES = 128 * 1024;
+const WIKI_VALIDATION_PAGE_TEXT_BYTES = 128 * 1024;
+/** A host stops forwarding a tool answer near 56,000 characters; 43,935 was delivered. */
+const VALIDATION_PAGE_TEXT_BYTES = 40_000;
 const BRIEF_PROBLEM_LIMIT = 20;
 const BY_CODE_FILE_SAMPLE = 20;
 
@@ -349,7 +359,7 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, callerA
     ...(entry.files.length > BY_CODE_FILE_SAMPLE ? { filesOmitted: entry.files.length - BY_CODE_FILE_SAMPLE } : {}),
   }]));
   const frame = { ...report, problems: [], summary: { ...report.summary, byCode } };
-  let problems = report.problems.slice(start, start + limit);
+  let problems = foldRepeatedGuidance(report.problems.slice(start, start + limit));
   let stoppedForSize = false;
   if (textBudget !== null) {
     let room = textBudget - prettyBytes(frame) - PAGE_HINT_AND_ENVELOPE_BYTES;
@@ -374,7 +384,7 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, callerA
             (problems.length > 0
               ? `Problem files ${start + 1}-${end} of ${total}, files with errors first and then by slug`
               : `No problem files from offset ${start}; the vault has ${total}`)
-            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within 128 KiB of text` : '')
+            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within 40,000 characters` : '')
             + (nextOffset !== null ? `. The next page: validate_vault(${JSON.stringify(nextArguments)}).` : '.'),
         }
       : {}),
@@ -400,7 +410,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
     // where the file sits, and only this caller knows it.
-    const result = validateVaultDocument(doc.raw || '', { slug: doc.slug, parsed: doc });
+    const result = validateLoadedVaultDocument(doc, { slug: doc.slug });
     docIssues.set(doc.slug, result.issues || []);
   }
   for (const [slug, danglingIssues] of groupDanglingIssuesBySlug(docs)) {
@@ -655,12 +665,15 @@ function findDependencyWitnessIssues(docs, repoRoot) {
  * only node of its kind.
  */
 function findStarterExampleIssues(docs) {
+  // `body` is read only for a starter the vault has outgrown, not for every document.
   return starterExampleFindings(
     docs.map((doc) => ({
       slug: doc.slug,
       kind: doc?.frontmatter?.kind,
       title: doc?.frontmatter?.title,
-      body: doc?.body,
+      get body() {
+        return doc?.body;
+      },
     })),
   ).map((finding) => ({
     slug: finding.slug,

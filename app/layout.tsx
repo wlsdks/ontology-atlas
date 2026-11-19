@@ -1,13 +1,16 @@
 import type { Metadata, Viewport } from 'next';
 import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { SITE_URL } from '@/shared/config';
-import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
+import { SITE_NAME, siteEntityGraph } from '@/shared/config/site-entity';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
 import { jetbrainsMono, pretendard, pretendardLatinStack } from '@/shared/config/fonts';
 import { LOCALE_META } from '@/i18n/locales';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
 import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
+// Pretendard's 92 dynamic subsets as one family, `Pretendard Variable`, for Korean pages
+// (`app/styles/lang-cjk.css`); a face is fetched only when a page renders one of its characters.
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,7 +23,7 @@ export const metadata: Metadata = {
   title: 'Ontology Atlas',
   description: 'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
   keywords: ['Ontology Atlas', 'ontology-atlas', 'codebase ontology', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
-  authors: [{ name: 'ontology-atlas contributors' }],
+  authors: [{ name: SITE_NAME, url: `${SITE_URL}/` }],
   /**
    * Search Console ownership verification — **the value comes from an environment variable.**
    *
@@ -101,25 +104,7 @@ export default function RootLayout({
             installed app nobody is watching a console, so without this a panel that dies in an
             async callback leaves no trace at all. No-op in a browser. */}
         <WebviewErrorReporter />
-        <JsonLd
-          data={{
-            '@context': 'https://schema.org',
-            '@type': 'WebSite',
-            name: 'Ontology Atlas',
-            alternateName: 'ontology-atlas',
-            url: `${SITE_URL}/`,
-            description:
-              'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
-            inLanguage: Object.values(LOCALE_META).map((meta) => meta.htmlLang),
-            publisher: {
-              '@type': 'Organization',
-              name: 'ontology-atlas contributors',
-              url: SITE_URL,
-              sameAs: [GITHUB_REPO_URL],
-              founder: { '@type': 'Person', url: MAKER_LINKEDIN_URL, sameAs: [MAKER_LINKEDIN_URL] },
-            },
-          }}
-        />
+        <JsonLd data={siteEntityGraph(Object.values(LOCALE_META).map((meta) => meta.htmlLang))} />
         {/* The root error boundary replaces the locale layout, so its copy (about 0.6 KB, both
             locales) is handed down from here as props. A client import of the message files
             shipped all 836 KB of them in every page's JavaScript. */}

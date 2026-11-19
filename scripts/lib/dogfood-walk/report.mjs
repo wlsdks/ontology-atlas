@@ -308,14 +308,12 @@ export async function runDogfoodWalk() {
 
   // 7c. analyze_repo_structure
   header(`analyze_repo_structure(breadth map)`);
-  // The map's text is a rendering of its structuredContent, so the object is the result.
+  // The breadth map travels as its text rows alone, so the result is that text.
   const analyzedRepoStructured = getRpcResult(responses, 57)?.structuredContent ?? null;
-  const analyzedRepo = analyzedRepoStructured?.contract === "breadthMap:v1" ? analyzedRepoStructured : getResult(responses, 57);
+  const analyzedRepo = getResult(responses, 57);
   if (analyzedRepo) {
-    console.log(`  structuredContent: ${structuredContentStatus(analyzedRepo, analyzedRepoStructured)}`);
-    console.log(
-      `  units ${analyzedRepo.size?.units ?? "n/a"} · lines ${analyzedRepo.size?.productLines ?? "n/a"} · entry points ${analyzedRepo.entryPoints?.length ?? "n/a"}`,
-    );
+    console.log(`  structuredContent: ${analyzedRepoStructured ? "present, expected none" : "none, text alone"}`);
+    console.log(`  ${analyzedRepo.rawText?.split("\n")[0] ?? "not the breadth map"}`);
   }
 
   // 7d. infer_imports
@@ -1147,7 +1145,6 @@ export async function runDogfoodWalk() {
     ["find_orphans", orph, orphStructured],
     ["query_concepts", queryConcepts, queryConceptsStructured],
     ["query_concepts_limited", queryConceptsLimited, queryConceptsLimitedStructured],
-    ["analyze_repo_structure", analyzedRepo, analyzedRepoStructured],
     ["infer_imports", inferredImports, inferredImportsStructured],
     ["validate_vault", validation, validationStructured],
     ["compile_ontology", compiled, compiledStructured],
@@ -1328,7 +1325,7 @@ export async function runDogfoodWalk() {
   console.log(`  get_concepts: ${(batch?.concepts || []).filter((row) => row?.ok === true).length} ok · ${(batch?.concepts || []).filter((row) => row?.ok === false).length} partial`);
   console.log(`  query_concepts: ${queryConcepts ? `${queryConcepts.matches?.length ?? 0} matches · limited ${queryConcepts.limited === true}` : "n/a"}`);
   console.log(`  query_concepts_limited: ${queryConceptsLimited ? `${queryConceptsLimited.matches?.length ?? 0} matches · total ${queryConceptsLimited.total ?? "n/a"} · limited ${queryConceptsLimited.limited === true}` : "n/a"}`);
-  console.log(`  analyze_repo_structure: ${analyzedRepo ? `${analyzedRepo.size?.units ?? 0} units · ${analyzedRepo.entryPoints?.length ?? 0} entry points` : "n/a"}`);
+  console.log(`  analyze_repo_structure: ${/: (\d+ product units, .*? files)/.exec(analyzedRepo?.rawText ?? "")?.[1] ?? "n/a"}`);
   console.log(`  infer_imports: ${inferredImports ? `${inferredImports.filesScanned ?? 0} files · ${inferredImports.moduleEdges?.length ?? 0} module edges · ${importModuleEdgeKindSummary(inferredImports.moduleEdges, 2)}` : "n/a"}`);
   console.log(
     `  validate_vault: ${validation ? formatCount(validation.summary?.problemFiles ?? 0, "problem file") : "n/a"}`,

@@ -186,6 +186,8 @@ const SECTIONS: ShortcutSection[] = [
       { keys: ["0"], labelKey: "keyFit" },
       { keys: [k("rightClick")], labelKey: "rightClickContext" },
       { keys: ["D"], labelKey: "toggleDocsDrawer" },
+      { keys: ["N"], labelKey: "addConcept" },
+      { keys: ["⌘", "Z"], labelKey: "undoHandChange" },
     ],
   },
   {

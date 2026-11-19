@@ -4,7 +4,8 @@
  * guard that keeps them inside the vault's own repository.
  */
 
-import { buildBreadthMap } from '../analyze/breadth-map.mjs';
+import { cachedSurvey } from '../analyze/breadth-map.mjs';
+import { fitSourceReads, renderSourceReads } from '../analyze/source-reads-text.mjs';
 import { noteReadFamilies } from '../construction/read-family.mjs';
 import { recordSourceEvidence, sessionReads } from '../construction/session-reads.mjs';
 import { analyzeRepoStructure } from '../analyze/repo-structure.mjs';
@@ -51,12 +52,38 @@ import {
 } from 'node:path';
 
 /** Each symbol read that belongs to a family gets one line saying how many members the analysed folder holds and how many this session read. */
-function noteFamilies(target, sourceEvidence, ignore) {
+function noteFamilies(target, sourceEvidence, ignore, reads = sessionReads(target)) {
   try {
-    noteReadFamilies(sourceEvidence, { root: target, ignore: ignore ?? [], reads: sessionReads(target) });
+    noteReadFamilies(sourceEvidence, { root: target, ignore: ignore ?? [], reads });
   } catch {
     // The line is a fact beside the read; a folder that cannot be walked leaves the read as it is.
   }
+}
+
+/** This session's reads with a packet's own ranges added, the ranges recording it adds. */
+function readsWith(target, sourceEvidence) {
+  const reads = new Map(sessionReads(target));
+  for (const row of sourceEvidence.rows) {
+    if (row.status !== 'read') continue;
+    for (const range of [{ path: row.path, ...row.actualRange }, ...(row.context ?? [])]) {
+      reads.set(range.path, [...(reads.get(range.path) ?? []), range]);
+    }
+  }
+  return reads;
+}
+
+/**
+ * Reads alone, as text: the family lines are written first so the text that is
+ * fitted to the response bound is the text sent, and only the rows sent are
+ * recorded as read.
+ */
+function sourceOnlyAnswer(target, sourceReads, ignore) {
+  const read = readSourceEvidence(target, sourceReads, { ignore, sentAsText: true });
+  noteFamilies(target, read, ignore, readsWith(target, read));
+  const sourceEvidence = fitSourceReads(target, read);
+  recordSourceEvidence(target, sourceEvidence);
+  const answer = { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
+  return { ...answer, text: renderSourceReads(answer) };
 }
 
 function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification, view } = {}) {
@@ -78,15 +105,11 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   const reviewing = proposal != null || qualification != null;
   // Reads without a proposal return the reads alone: the map was already sent once,
   // and repeating it on every outline call cost more than the outlines.
-  if (sourceOnly || (sourceReads !== undefined && !reviewing)) {
-    const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore });
-    recordSourceEvidence(target, sourceEvidence);
-    noteFamilies(target, sourceEvidence, ignore);
-    return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
-  }
-  // The CLI readers ask for the structural analysis by name; an agent gets the map.
+  if (sourceOnly || (sourceReads !== undefined && !reviewing)) return sourceOnlyAnswer(target, sourceReads, ignore);
+  // The CLI readers ask for the structural analysis by name; an agent gets the map
+  // that writes and validate_vault then measure against.
   if (!reviewing && view !== 'analysis') {
-    return buildBreadthMap(target, { ignore, vaultRoot: VAULT_ROOT });
+    return cachedSurvey(target, { ignore, vaultRoot: VAULT_ROOT }).survey;
   }
   if (sourceReads !== undefined && (proposal != null || qualification != null)) {
     const missingHash = sourceReads.findIndex((row) => row?.expectedSha256 === undefined);
