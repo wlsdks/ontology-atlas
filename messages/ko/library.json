@@ -368,6 +368,10 @@
       "shared-source-unlinked": {
         "what": "{other}도 같은 원문({sources})을 쓰는데 두 문서가 서로를 가리키지 않아요.",
         "do": "한쪽에서 다른 쪽을 연결하세요."
+      },
+      "shared-source-unlinked-more": {
+        "what": "같은 원문으로 쓴 문서가 {count, number}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
+        "do": "같은 원문으로 쓴 문서끼리 서로 연결하세요."
       }
     }
   },

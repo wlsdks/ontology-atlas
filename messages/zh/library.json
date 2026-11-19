@@ -368,6 +368,10 @@
       "shared-source-unlinked": {
         "what": "{other} 也根据同一份来源（{sources}）撰写，但两个页面互不指向。",
         "do": "让其中一个链接到另一个。"
+      },
+      "shared-source-unlinked-more": {
+        "what": "另有 {count, number} 个页面根据同一份来源撰写，它们与此页面互不指向。",
+        "do": "把根据同一份来源撰写的页面互相链接起来。"
       }
     }
   },
