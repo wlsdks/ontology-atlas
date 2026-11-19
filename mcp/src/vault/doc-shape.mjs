@@ -26,7 +26,7 @@ export function bodyStartOf(raw, body) {
 }
 
 /** The longest link target the index answers for; a longer needle reads the body. */
-export const LINK_KEY_MAX_CHARS = 512;
+const LINK_KEY_MAX_CHARS = 512;
 
 /** Characters a link target the index answers for cannot hold: each ends or delimits a link form. */
 const LINK_NEEDLE_STOP = /[\]#|(\n]/;
