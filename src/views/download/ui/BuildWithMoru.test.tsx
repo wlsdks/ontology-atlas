@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../messages/en.json';
+import { AGENT_BEATS } from '../lib/build-play';
 import { BuildWithMoru } from './BuildWithMoru';
 
 vi.mock('@/i18n/navigation', () => ({
@@ -23,15 +24,18 @@ function renderBuild(handheld = false) {
 
 const line = () => screen.getByTestId('build-line').textContent ?? '';
 const press = (id: string) => fireEvent.click(screen.getByTestId(id), { detail: 1 });
-const openAndRead = () => {
+/** Opens the folder and lets the agent write the whole first map. */
+const openAndBuild = () => {
   press('build-open');
-  act(() => vi.runOnlyPendingTimers());
+  for (let beat = 0; beat <= AGENT_BEATS; beat += 1) act(() => vi.advanceTimersByTime(2000));
 };
-const nameAll = () => {
-  for (let i = 0; i < 3; i += 1) press('build-name-0');
+const rename = () => {
+  press('build-node-account');
+  press('build-name-0');
 };
-const linkAll = () => {
-  for (const id of ['payment', 'cart', 'payment', 'account']) press(`build-node-${id}`);
+const link = () => {
+  press('build-node-payment');
+  press('build-node-account');
 };
 
 afterEach(() => {
@@ -39,72 +43,103 @@ afterEach(() => {
 });
 
 describe('BuildWithMoru', () => {
-  it('walks a visitor from the closed folder to the finished map and its Markdown file', () => {
+  it('walks a visitor from the map the agent writes through both fixes and the commit to the Markdown file', () => {
     vi.useFakeTimers();
     renderBuild();
     expect(screen.getByTestId('build-node-cart')).toBeDisabled();
 
-    openAndRead();
-    press('build-name-0');
-    press('build-name-1');
-    press('build-name-0');
-    expect(screen.getByTestId('build-node-payment')).toHaveAccessibleName('src/payment folder concept, 3 files');
+    openAndBuild();
+    expect(screen.getByTestId('build-node-account')).toHaveAccessibleName('authService concept, 2 files');
+    expect(screen.getByTestId('build-node-account')).toHaveAttribute('data-target');
+    rename();
+    expect(screen.getByTestId('build-node-account')).toHaveAccessibleName('Sign-in concept, 2 files');
     expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-target');
 
-    linkAll();
+    link();
     press('build-commit-apply');
     expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-changed');
     press('build-node-payment');
     expect(screen.getByTestId('build-inspect')).toHaveTextContent('charge-card.ts');
-    expect(screen.getByTestId('build-node-cart')).toBeDisabled();
 
     press('build-confirm');
     const file = screen.getByTestId('build-file');
     expect(file).toHaveTextContent('payment.md');
-    expect(file).toHaveTextContent('title: src/payment folder');
     expect(file).toHaveTextContent('path: src/payment');
-    expect(file).toHaveTextContent('- capabilities/cart');
+    expect(file).toHaveTextContent('- capabilities/account');
     expect(screen.getByTestId('build-try-browser')).toHaveAttribute('href', '/topology');
+    expect(screen.getByTestId('build-result')).toHaveAttribute('data-stars', '3');
 
     press('build-restart');
     expect(screen.getByTestId('build-open')).toBeInTheDocument();
     expect(screen.getByTestId('build-node-payment')).toBeDisabled();
   });
 
+  it('runs a fresh clock when a finished visitor tries again for three stars', () => {
+    vi.useFakeTimers();
+    renderBuild();
+    openAndBuild();
+    press('build-node-cart');
+    rename();
+    link();
+    press('build-commit-apply');
+    press('build-node-payment');
+    press('build-confirm');
+    expect(screen.getByTestId('build-clock')).toHaveAttribute('data-stopped');
+    press('build-retry');
+    press('build-open');
+    expect(screen.getByTestId('build-clock')).not.toHaveAttribute('data-stopped');
+  });
+
   it('names the concept to tap after a wrong tap, and says it again after a second one', () => {
     vi.useFakeTimers();
     renderBuild();
-    openAndRead();
-    nameAll();
+    openAndBuild();
     const asked = line();
     press('build-node-cart');
     const first = screen.getByTestId('build-line');
     expect(line()).not.toBe(asked);
-    expect(line()).toContain('Payment');
-    press('build-node-account');
+    expect(line()).toContain('authService');
+    press('build-node-payment');
     expect(screen.getByTestId('build-line')).not.toBe(first);
   });
 
-  it('counts one press of a double click on a choice that stays in place', () => {
+  it('draws the missing relation when a concept is dragged onto the one it links to', () => {
+    vi.useFakeTimers();
+    HTMLElement.prototype.setPointerCapture = vi.fn();
+    document.elementFromPoint = vi.fn(() => null);
+    renderBuild();
+    openAndBuild();
+    rename();
+    const map = screen.getByTestId('build-stage').firstElementChild!;
+    fireEvent.pointerDown(screen.getByTestId('build-node-payment'), { pointerId: 1, button: 0, clientX: 200, clientY: 200 });
+    fireEvent.pointerMove(map, { pointerId: 1, clientX: 120, clientY: 120 });
+    expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-picked');
+    // The stage has no size here, so every concept sits at the origin the drag ends on.
+    fireEvent.pointerUp(map, { pointerId: 1, clientX: 0, clientY: 0 });
+    expect(screen.getByTestId('build-commit-apply')).toBeInTheDocument();
+  });
+
+  it('counts one press of a double click on a concept that stays in place', () => {
     vi.useFakeTimers();
     renderBuild();
-    openAndRead();
-    fireEvent.click(screen.getByTestId('build-name-0'), { detail: 1 });
-    fireEvent.click(screen.getByTestId('build-name-0'), { detail: 2 });
-    expect(screen.getByTestId('build-node-cart')).toHaveAccessibleName(/^Cart/);
-    expect(screen.getByTestId('build-name-0')).toHaveTextContent('Payment');
+    openAndBuild();
+    rename();
+    fireEvent.click(screen.getByTestId('build-node-payment'), { detail: 1 });
+    fireEvent.click(screen.getByTestId('build-node-payment'), { detail: 2 });
+    expect(screen.getByTestId('build-node-payment')).toHaveAttribute('data-picked');
   });
 
   it('keeps keyboard focus in the section when the pressed control leaves', () => {
     vi.useFakeTimers();
     renderBuild();
     screen.getByTestId('build-open').focus();
-    openAndRead();
+    openAndBuild();
+    expect(screen.getByTestId('build-node-account')).toHaveFocus();
+    press('build-node-account');
     expect(screen.getByTestId('build-name-0')).toHaveFocus();
-
-    nameAll();
+    press('build-name-0');
     expect(screen.getByTestId('build-node-payment')).toHaveFocus();
-    for (const id of ['payment', 'cart', 'payment']) press(`build-node-${id}`);
+    press('build-node-payment');
     screen.getByTestId('build-node-account').focus();
     press('build-node-account');
     expect(screen.getByTestId('build-commit-apply')).toHaveFocus();
@@ -113,9 +148,9 @@ describe('BuildWithMoru', () => {
   it('ends a phone visit on the source instead of a browser map it cannot open', () => {
     vi.useFakeTimers();
     renderBuild(true);
-    openAndRead();
-    nameAll();
-    linkAll();
+    openAndBuild();
+    rename();
+    link();
     press('build-commit-apply');
     press('build-node-payment');
     press('build-confirm');
