@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { importsOf, reachesAnySpec, specReaches } from './import-bindings.mjs';
+import { buildSurvey } from './declaration-survey.mjs';
+import { importsOf } from './import-bindings.mjs';
 
 const file = (path, text) => ({ path, lines: text.split('\n').map((line) => `${line}\n`) });
+// Whether a spec resolves to `path` in a repository holding that file.
+const specReaches = (spec, path) => Boolean(spec) && buildSurvey([path], new Map()).modulePaths(spec).includes(path);
+const reachesAnySpec = (bindings, path) => bindings.specs.some((spec) => specReaches(spec, path));
 const reaches = (bindings, name, path) => (bindings.names.get(name) ?? []).some((binding) => specReaches(binding.spec, path));
 
 test('a JavaScript import names the module it resolves to, by path, alias and segment', () => {

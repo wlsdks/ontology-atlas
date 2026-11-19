@@ -467,7 +467,8 @@ function measureRoles(docs, reads, repoRoot) {
     if (reads.cited?.has(path)) continue;
     for (const range of ranges) {
       const users = range.read ? usersOf.get(range.read) : null;
-      if (!users || !ROLE_PARTS.has(range.role) || typeof range.symbol !== 'string') continue;
+      // A part found by name alone (its import names no file here) is weaker evidence, not a shared role.
+      if (!users || !ROLE_PARTS.has(range.role) || range.byName || typeof range.symbol !== 'string') continue;
       if (entries.has(`${path}\0${range.symbol.split('.').pop()}`)
         || own.some((cite) => cite.path === path && cite.startLine <= range.endLine && cite.endLine >= range.startLine)) continue;
       const name = roleName(range.symbol);

@@ -156,6 +156,7 @@
     "src/evidence-search/callees.mjs",
     "src/evidence-search/import-bindings.mjs",
     "src/evidence-search/declaration-index.mjs",
+    "src/evidence-search/declaration-survey.mjs",
     "src/evidence-search/evidence-rank.mjs",
     "src/git/git-tools.mjs",
     "src/git/stale-parent.mjs",

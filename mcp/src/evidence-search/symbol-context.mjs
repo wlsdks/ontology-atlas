@@ -248,7 +248,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
   const candidates = [];
   const bodyDecides = decidingCount(lines.slice(declaration.line - 1, bodyEnd)) > 0;
   const own = declaration.name.split('.').pop();
-  const add = (role, file, symbol, startLine, endLine, bonus = 0, { via = null, cap = Infinity } = {}) => {
+  const add = (role, file, symbol, startLine, endLine, bonus = 0, { via = null, cap = Infinity, byName = false } = {}) => {
     const cut = Math.min(endLine, startLine + SYMBOL_CONTEXT_LIMITS.partLines - 1);
     const text = slice(file.lines, startLine, cut);
     const deciding = Math.min(cap, decidingCount(file.lines.slice(startLine - 1, cut)));
@@ -256,7 +256,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     if (role === 'implementation' && deciding === 0) return;
     const score = deciding * 2 + bonus;
     if (score <= 0 || text.length === 0) return;
-    candidates.push({ role, path: file.path, symbol: qualified(file, symbol, startLine), startLine, endLine: cut, more: cut < endLine ? endLine : null, text, sha256: file.sha256, score, via });
+    candidates.push({ role, path: file.path, symbol: qualified(file, symbol, startLine), startLine, endLine: cut, more: cut < endLine ? endLine : null, text, sha256: file.sha256, score, via, byName });
   };
   const self = { path, lines, declarations, sha256: open(path)?.sha256 };
 
@@ -333,10 +333,10 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
     const end = declarationEnd(file.lines, file.declarations, target);
     const bonus = calleeBonus(callee.name, file.lines.slice(target.line - 1, Math.min(end, target.line + SYMBOL_CONTEXT_LIMITS.examinedLines - 1)), conditionNames);
     if (callee.implementation) {
-      add('implementation', file, target.name, target.line, end, bonus);
+      add('implementation', file, target.name, target.line, end, bonus, { byName: callee.byName });
       continue;
     }
-    add('callee', file, target.name, target.line, end, bonus);
+    add('callee', file, target.name, target.line, end, bonus, { byName: callee.byName });
     expandable.push({ file, target, end });
   }
 
@@ -364,7 +364,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
         for (const next of resolve(inner, found, innerEnd)) queue.push({ row: next, via: qualified(inner, found.name, found.line), conditions: innerConditions, through: true });
       }
       add(row.implementation ? 'implementation' : 'callee', inner, found.name, found.line, innerEnd,
-        calleeBonus(row.name, innerLines, branchedOn) - 3, { via, cap: SYMBOL_CONTEXT_LIMITS.deeperDeciding });
+        calleeBonus(row.name, innerLines, branchedOn) - 3, { via, cap: SYMBOL_CONTEXT_LIMITS.deeperDeciding, byName: row.byName });
     }
   }
 
@@ -399,6 +399,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
       cite: `${candidate.path}:L${candidate.startLine}-L${candidate.endLine}`,
       text: candidate.text,
       ...(candidate.via ? { via: candidate.via } : {}),
+      ...(candidate.byName ? { byName: true } : {}),
       ...(candidate.more ? { next: { path: candidate.path, startLine: candidate.endLine + 1, maxLines: Math.min(200, candidate.more - candidate.endLine) } } : {}),
     });
   }

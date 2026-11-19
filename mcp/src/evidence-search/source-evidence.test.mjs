@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -672,19 +672,77 @@ test('a call is followed only to a declaration the file reaches, in its own lang
   ]);
 });
 
-test('a name declared in more than 64 places is not followed, even when imported', () => {
+/*
+ * An imported name was once found by searching every declaration of it, under
+ * a cap of 64: 64 unrelated `save` methods pushed the imported one out, and
+ * its role with it. The import names a module; the name is looked up in that
+ * module's files only, so declarations elsewhere never compete.
+ */
+test('an imported name is found in the module its import names, past any number of same-named declarations', () => {
   const root = fixture();
   mkdirSync(join(root, 'src'));
-  writeFileSync(join(root, 'src', 'entry.ts'), "import { save } from './store';\nexport function entry(x) {\n  if (x) return save(x);\n  return 0;\n}\n");
+  writeFileSync(join(root, 'src', 'entry.ts'), "import { save } from './store';\nimport { load } from '@/missing/loader';\nexport function entry(x) {\n  if (x) return save(load(x));\n  return 0;\n}\n");
   writeFileSync(join(root, 'src', 'store.ts'), 'export function save(x) {\n  if (!x) throw new Error("empty");\n  return x;\n}\n');
-  const [few] = readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
-  assert.deepEqual(few.callees.map((callee) => callee.path), ['src/store.ts']);
-  const many = fixture();
-  mkdirSync(join(many, 'src'));
-  for (const name of ['entry.ts', 'store.ts']) writeFileSync(join(many, 'src', name), readFileSync(join(root, 'src', name)));
-  for (let at = 0; at < 64; at += 1) writeFileSync(join(many, 'src', `other${at}.ts`), 'export function save(x) {\n  return x;\n}\n');
-  const [common] = readSourceEvidence(many, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
-  assert.deepEqual(common.callees, []);
+  writeFileSync(join(root, 'src', 'forms.ts'), Array.from({ length: 64 }, (_, at) => `export class Form${at} {\n  save(x) {\n    return ${at};\n  }\n}\n`).join(''));
+  writeFileSync(join(root, 'src', 'loaders.ts'), 'export function load(x) {\n  if (!x) throw new Error("none");\n  return x;\n}\n');
+  const [row] = readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
+  assert.deepEqual(row.callees, [
+    { name: 'save', path: 'src/store.ts', line: 1 },
+    { name: 'load', path: 'src/loaders.ts', line: 1, byName: true },
+  ], 'an import naming no file here is followed by name alone, and says so');
+  assert.equal(row.context.find((part) => part.symbol === 'load')?.byName, true);
+
+  // By name alone, the declarations counted are all of them, in any language: two Python ones are within the cap.
+  mkdirSync(join(root, 'py'));
+  const python = (count) => {
+    for (let at = 0; at < count; at += 1) writeFileSync(join(root, 'py', `l${at}.py`), 'def load(x):\n    return x\n');
+  };
+  python(2);
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows[0].callees.map((callee) => callee.path), ['src/store.ts', 'src/loaders.ts']);
+  python(63);
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows[0].callees.map((callee) => callee.path), ['src/store.ts', 'src/loaders.ts'], 'sixty-four declarations are within the cap');
+  python(64);
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows[0].callees.map((callee) => callee.path), ['src/store.ts'], 'by name alone, a name declared in more than 64 places is not followed');
+
+  writeFileSync(join(root, 'src', 'text.ts'), 'export function trim(x) {\n  if (!x) throw new Error("none");\n  return x;\n}\n');
+  writeFileSync(join(root, 'src', 'entry.ts'), "import { trim } from 'text-kit';\nexport function entry(x) {\n  if (x) return trim(x);\n  return 0;\n}\n");
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows[0].callees, [], 'an outside package is never followed by name');
+});
+
+test('a body read short and reached again whole is resolved again from its whole text', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'flow.ts'), [
+    'export function entry(x) {',
+    '  return big(x);',
+    '}',
+    'export function big(x) {',
+    '  const y = x + 1;',
+    '  const z = y + 1;',
+    '  if (z > 1) return late(z);',
+    '  return 0;',
+    '}',
+    'export function late(x) {',
+    '  if (x > 1) return 1;',
+    '  if (x < 0) return 2;',
+    '  return 0;',
+    '}',
+    '',
+  ].join('\n'));
+  const packet = readSourceEvidence(root, [{ path: 'flow.ts', symbol: 'big', maxLines: 2 }, { path: 'flow.ts', symbol: 'entry' }]);
+  assert.deepEqual(packet.rows[0].callees, [], 'the two lines read call nothing');
+  assert.ok(packet.rows[1].context.some((part) => part.symbol === 'late' && part.via === 'big'), packet.rows[1].context.map((part) => part.symbol).join(', '));
+});
+
+test('a package import naming more than eight files names no one module', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'entry.py'), 'import utils\n\n\ndef entry(x):\n    if x:\n        return utils.clean(x)\n    return 0\n');
+  for (let at = 0; at < 9; at += 1) {
+    mkdirSync(join(root, `p${at}`));
+    writeFileSync(join(root, `p${at}`, 'utils.py'), at === 0 ? 'def clean(x):\n    return x\n' : 'def other(x):\n    return x\n');
+  }
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'entry.py', symbol: 'entry' }]).rows[0].callees, []);
+  rmSync(join(root, 'p8'), { recursive: true });
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'entry.py', symbol: 'entry' }]).rows[0].callees.map((callee) => callee.path), ['p0/utils.py'], 'eight are still one module\'s candidates');
 });
 
 test('a Go call reaches its own package and the packages it imports, nothing else', () => {

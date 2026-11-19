@@ -36,7 +36,7 @@ function stripExtension(path) {
 }
 
 /** The module paths a file answers to: `a/b.ts`, and `a` for `a/index.ts` or `a/__init__.py`. */
-function stemsOf(path) {
+export function stemsOf(path) {
   const stem = stripExtension(path);
   const stems = [stem];
   if (['index', '__init__', 'mod'].includes(posix.basename(stem))) stems.push(posix.dirname(stem));
@@ -44,55 +44,19 @@ function stemsOf(path) {
   return stems;
 }
 
-/**
- * Whether `spec` (one import of a file) names the module at `path`:
- * - `exact`: a relative import resolved against the importing file;
- * - `tail`: the trailing segments of a package import (`@/shared/x`, `pkg.mod`, `crate::a::b`);
- * - `go`: a Go import path, which ends with the package's folder.
- */
-export function specReaches(spec, path) {
-  if (!spec) return false;
-  if (spec.go) {
-    const folder = posix.dirname(path);
-    return folder !== '.' && (spec.go === folder || spec.go.endsWith(`/${folder}`));
-  }
-  const stems = stemsOf(path);
-  if (spec.exact) return stems.includes(spec.exact);
-  return Boolean(spec.tail) && stems.some((stem) => stem === spec.tail || stem.endsWith(`/${spec.tail}`));
-}
-
 /** Every suffix of `path` that starts at a segment: `a/b/c`, `b/c`, `c`. */
-function segmentSuffixes(path) {
+export function segmentSuffixes(path) {
   const suffixes = [path];
   for (let at = path.indexOf('/'); at >= 0; at = path.indexOf('/', at + 1)) suffixes.push(path.slice(at + 1));
   return suffixes;
-}
-
-/**
- * Whether any module a file imports is the one at `path`. The specs are held
- * in sets, so each check is a few lookups, never a scan of every import.
- */
-export function reachesAnySpec(bindings, path) {
-  if (!bindings.reach) {
-    const reach = { exact: new Set(), tail: new Set(), go: new Set() };
-    for (const spec of bindings.specs) {
-      if (spec.go) for (const suffix of segmentSuffixes(spec.go)) reach.go.add(suffix);
-      else if (spec.exact) reach.exact.add(spec.exact);
-      else if (spec.tail) reach.tail.add(spec.tail);
-    }
-    bindings.reach = reach;
-  }
-  const { exact, tail, go } = bindings.reach;
-  const folder = posix.dirname(path);
-  if (folder !== '.' && go.has(folder)) return true;
-  return stemsOf(path).some((stem) => exact.has(stem) || segmentSuffixes(stem).some((suffix) => tail.has(suffix)));
 }
 
 /** The module one level below `spec`: `from a import b` may bring in the module `a/b`. */
 export function childSpec(spec, name) {
   if (!spec || spec.go) return null;
   if (spec.exact) return { exact: posix.join(spec.exact, name) };
-  return spec.tail ? { tail: `${spec.tail}/${name}` } : { tail: name };
+  const internal = spec.internal ? { internal: true } : {};
+  return spec.tail ? { tail: `${spec.tail}/${name}`, ...internal } : { tail: name, ...internal };
 }
 
 function jsSpec(file, raw) {
@@ -100,8 +64,10 @@ function jsSpec(file, raw) {
   if (!spec || spec.length > SPEC_CHARS) return null;
   if (spec.startsWith('.')) return { exact: stripExtension(posix.normalize(posix.join(posix.dirname(file.path), spec))).replace(/\/index$/u, '') };
   const parts = spec.split('/').filter(Boolean);
-  if (parts[0] && /^[@~#]/u.test(parts[0]) && (parts[0].length === 1 || parts.length > 1)) parts.shift();
-  return parts.length > 0 ? { tail: stripExtension(parts.join('/')) } : null;
+  // `@/x`, `~/x` and `#x` are the project's own path aliases; `@scope/pkg` drops its scope.
+  const alias = parts[0] && /^[@~#]/u.test(parts[0]) && (parts[0].length === 1 || parts.length > 1);
+  if (alias) parts.shift();
+  return parts.length > 0 ? { tail: stripExtension(parts.join('/')), ...(alias && spec[1] === '/' ? { internal: true } : {}) } : null;
 }
 
 function pySpec(file, dots, dotted) {
@@ -115,7 +81,8 @@ function pySpec(file, dots, dotted) {
 
 function rsSpec(segments) {
   const parts = segments.filter((part) => part && !['crate', 'self', 'super'].includes(part));
-  return parts.length > 0 ? { tail: parts.join('/') } : null;
+  if (parts.length === 0) return null;
+  return { tail: parts.join('/'), ...(['crate', 'self', 'super'].includes(segments[0]) ? { internal: true } : {}) };
 }
 
 /** Whitespace runs as one space, first, so no later pattern scans a run once per position. */
@@ -123,8 +90,9 @@ function spaced(text) {
   return text.replace(/\s+/gu, ' ').trim();
 }
 
-function specKey(spec) {
-  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}`;
+/** One string per module a spec names; a package-internal tail (`@/x`, `crate::x`) is its own key. */
+export function specKey(spec) {
+  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}\0${spec.internal ? 1 : 0}`;
 }
 
 /** The one copy of `spec` this file holds, or null past the cap or for no spec. */
@@ -309,7 +277,7 @@ const BINDINGS = new WeakMap();
  */
 export function importsOf(file) {
   if (BINDINGS.has(file)) return BINDINGS.get(file);
-  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [], reach: null };
+  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [] };
   const lines = file.lines.map((line) => (line.length > LINE_CHARS ? line : line.replace(/\r?\n$/u, '')));
   const language = languageOf(file.path);
   if (language === 'js') readJs(file, lines, bindings);

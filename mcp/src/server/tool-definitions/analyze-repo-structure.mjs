@@ -453,7 +453,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   type: 'array', maxItems: 12,
                   items: {
                     type: 'object',
-                    properties: { name: NON_BLANK_STRING_SCHEMA, path: NON_BLANK_STRING_SCHEMA, line: { type: 'integer', minimum: 1 }, implementation: { type: 'boolean', enum: [true] } },
+                    properties: { name: NON_BLANK_STRING_SCHEMA, path: NON_BLANK_STRING_SCHEMA, line: { type: 'integer', minimum: 1 }, implementation: { type: 'boolean', enum: [true] }, byName: { type: 'boolean', enum: [true], description: 'Found by name alone: its import names no file this project holds, so it is weaker evidence and no shared role.' } },
                     required: ['name', 'path', 'line'], additionalProperties: false,
                   },
                 },
@@ -471,6 +471,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                       cite: NON_BLANK_STRING_SCHEMA,
                       text: { type: 'string' },
                       via: NON_BLANK_STRING_SCHEMA,
+                      byName: { type: 'boolean', enum: [true] },
                       next: {
                         type: 'object',
                         properties: { path: NON_BLANK_STRING_SCHEMA, startLine: { type: 'integer', minimum: 1 }, maxLines: { type: 'integer', minimum: 1 } },

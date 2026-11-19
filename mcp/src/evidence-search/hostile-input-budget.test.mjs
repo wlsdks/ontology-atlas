@@ -232,6 +232,47 @@ describe('the import rule costs time and memory linear in the imports', () => {
   });
 });
 
+/*
+ * Each `alias.name(` once searched every declaration of `name` across every
+ * module the alias could name: 30 names in 64 files and 1,000 aliases took
+ * 6.2 s a read. A module is resolved to its files once per walk, a name is
+ * looked up in those files only, and a body is resolved once per call.
+ */
+describe('module-qualified calls cost one lookup each', () => {
+  const repo = ({ places, names, aliases, bodies, bytes }) => {
+    const files = { 'package.json': '{"name":"x"}', 'src/m.ts': 'export const nothing = 1;\n' };
+    const declared = Array.from({ length: names }, (_, n) => `export function n${n}(v: number) {\n  return v ? 1 : 0;\n}\n`).join('');
+    for (let at = 0; at < places; at += 1) files[`src/d/f${at}.ts`] = declared;
+    let imports = Array.from({ length: aliases }, (_, a) => `import * as a${a} from './m';\n`).join('');
+    const list = Array.from({ length: aliases }, (_, a) => `a${a}`).join(', ').replace(/(.{1800}?), /gu, '$1,\n  ');
+    for (let p = 0; p < 4; p += 1) imports += `import {\n  ${list}\n} from './p${p}';\n`;
+    let calls = '';
+    let line = '  ';
+    for (let n = 0; n < names && calls.length < bytes; n += 1) {
+      for (let a = 0; a < aliases && calls.length < bytes; a += 1) {
+        const call = `a${a}.n${n}(v);`;
+        if (line.length + call.length > 1900) {
+          calls += `${line}\n`;
+          line = '  ';
+        }
+        line += call;
+      }
+    }
+    calls += `${line}\n`;
+    for (let b = 0; b < bodies; b += 1) files[`src/c${b}.ts`] = `${imports}export function c${b}(v: number) {\n  if (v > ${b}) return 0;\n${calls}  return 1;\n}\n`;
+    files['src/entry.ts'] = `${Array.from({ length: bodies }, (_, b) => `import { c${b} } from './c${b}';\n`).join('')}export function entry(v: number) {\n${Array.from({ length: bodies }, (_, b) => `  if (v > ${b}) return c${b}(v);\n`).join('')}  return 0;\n}\n`;
+    return repoWith(files);
+  };
+
+  it('reads a body of 1,000 module aliases, each also imported by name from four missing modules, sixteen times within the budget', (t) => {
+    const root = repo({ places: 64, names: 30, aliases: 1000, bodies: 2, bytes: 64 * 1024 });
+    assertWithinBudget(t, 'sixteen reads of two 64 KB bodies of qualified calls', () => {
+      const packet = readSourceEvidence(root, Array.from({ length: 16 }, () => ({ path: 'src/entry.ts', symbol: 'entry' })));
+      assert.equal(packet.rows[0].status, 'read');
+    });
+  });
+});
+
 describe('hostile document sources cost time linear in their size', () => {
   const workbook = { name: 'xl/workbook.xml', text: '<sheet name="a" r:id="r1"/>' };
   const zipped = (...entries) => Buffer.from(zipFile(entries));

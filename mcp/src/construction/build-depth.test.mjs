@@ -678,3 +678,30 @@ test('a role is used by a capability that cites only the part its own read serve
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('64 same-named declarations do not hide an imported role, and a callee found by name alone is no role', () => {
+  const run = (spec, decoys = 64) => {
+    resetSessionReads();
+    const entry = (name) => `import { checkQuota } from '${spec}';\nexport function ${name}(x: number) {\n  if (!checkQuota(x)) return 0;\n  return x;\n}\n`;
+    const root = repository({
+      'package.json': '{"name":"tool"}',
+      'src/quota.ts': "export function checkQuota(x: number) {\n  if (x > 3) throw new Error('over quota');\n  return x;\n}\n",
+      'src/upload.ts': entry('upload'),
+      'src/share.ts': entry('share'),
+      'src/legacy/forms.ts': Array.from({ length: decoys }, (_, at) => `export class Form${at} {\n  checkQuota() {\n    return ${at};\n  }\n}\n`).join(''),
+    });
+    try {
+      const packet = readSourceEvidence(root, [{ path: 'src/upload.ts', symbol: 'upload' }, { path: 'src/share.ts', symbol: 'share' }]);
+      recordSourceEvidence(root, packet);
+      const capability = (row) => doc(`capabilities/${row.symbol}`, { path: row.path }, `Does it. \`${row.path}\` \`${row.symbol}\`.\n\nRefuses past the quota (${row.cite}).\n\n## Uncertainty\n- None.\n`);
+      const depth = measureBuildDepth([doc('tool', {}, 'Tool.\n\n## Uncertainty\n- None.\n'), ...packet.rows.map(capability)], null, sessionReads(root));
+      return { callees: packet.rows[0].callees, roles: depth.roles.unplaced.map((row) => row.name) };
+    } finally {
+      resetSessionReads();
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+  assert.deepEqual(run('./quota'), { callees: [{ name: 'checkQuota', path: 'src/quota.ts', line: 1 }], roles: ['checkQuota'] });
+  assert.deepEqual(run('@/missing/quota', 0), { callees: [{ name: 'checkQuota', path: 'src/quota.ts', line: 1, byName: true }], roles: [] },
+    'found by name alone, the callee is served but is no shared role');
+});

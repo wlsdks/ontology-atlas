@@ -14,13 +14,16 @@
  *   declared in its package; `pkg.Check(` names an imported module or package;
  * - any other `x.check(` (`map.get(`, `items.includes(`) is a method of a value
  *   whose type the text does not name, and is not followed.
- * A name declared in more places than these allow is left out: following it
- * would be a guess. A line over `LINE_CHARS` characters is generated or
- * minified and is not scanned for calls.
+ * An import is resolved to its module's files and the name looked up there
+ * (`declaration-survey.mjs`), so a read costs O(imports + calls) after one
+ * indexing pass. Only an internal import naming no file here is followed by
+ * name alone, capped and marked `byName`. A name declared in more places than
+ * these allow is left out: following it would be a guess. A line over
+ * `LINE_CHARS` characters is generated or minified and is not scanned.
  */
 
-import { declarationIndex } from './declaration-index.mjs';
-import { childSpec, importsOf, languageOf, reachesAnySpec, specReaches } from './import-bindings.mjs';
+import { surveyOf } from './declaration-survey.mjs';
+import { childSpec, importsOf, languageOf } from './import-bindings.mjs';
 
 const CALLEE_LIMITS = Object.freeze({
   callees: 12,
@@ -30,7 +33,7 @@ const CALLEE_LIMITS = Object.freeze({
   bases: 4,
   // Characters of a call's qualifier (`this.git.options.`) examined.
   qualifier: 120,
-  // Declarations of one name examined; more is a common name, not one function.
+  // Declarations of a name followed by name alone; more is a common name, not one function.
   declarations: 64,
 });
 
@@ -179,7 +182,7 @@ function basesOf(file, owner) {
  * The owner's own method `name`, or the nearest class it extends that declares
  * it. A class name declared in more than two places is not followed.
  */
-function inheritedMember({ file, owner, name, open, index, reaches }) {
+function inheritedMember({ file, owner, name, open, classes }) {
   let current = { file, owner };
   const visited = new Set();
   for (let level = 0; level <= CALLEE_LIMITS.bases && current; level += 1) {
@@ -195,7 +198,7 @@ function inheritedMember({ file, owner, name, open, index, reaches }) {
       current = { file: current.file, owner: local };
       continue;
     }
-    const rows = (index().get(base) ?? []).filter((row) => row.kind === 'class' && reaches(current.file, base, row.path));
+    const rows = classes(current.file, base);
     if (rows.length !== 1) return null;
     const baseFile = open(rows[0].path);
     const baseOwner = baseFile?.declarations.find((candidate) => candidate.line === rows[0].line);
@@ -218,30 +221,50 @@ function inheritedMember({ file, owner, name, open, index, reaches }) {
  * @param {() => object[]} [input.files] one walk shared across a call
  * @param {(path: string) => object | null} [input.open] another file, under the read policy
  */
-export function calleesOf({ text, file, declaration, rootPath, ignore = [], files, open = () => null }) {
+export function calleesOf(input) {
+  const { text, file, declaration, rootPath, ignore = [], files } = input;
+  if (!rootPath) return resolveCallees(input, null);
+  // One body is resolved once per walk: a call that reads it again, or reaches it again one call deeper, reuses it.
+  const survey = surveyOf(rootPath, { ignore, files });
+  const key = `${file.path}\0${declaration.line}`;
+  const held = survey.callees.get(key);
+  if (held?.text === text) return held.callees.map((row) => ({ ...row }));
+  const callees = resolveCallees(input, survey);
+  survey.callees.set(key, { text, callees });
+  return callees.map((row) => ({ ...row }));
+}
+
+function resolveCallees({ text, file, declaration, rootPath, open = () => null }, surveyed) {
   const own = declaration.name.split('.').pop();
   const goReceiver = GO_RECEIVER.exec(String(declaration.signature ?? file.lines[declaration.line - 1] ?? '').trim());
   const ownType = declaration.name.includes('.') ? declaration.name.split('.')[0] : null;
   const selfNames = new Set(goReceiver ? [goReceiver[1]] : SELF_NAMES);
   const owner = goReceiver ? null : enclosingClass(file, declaration);
-  const language = languageOf(file.path);
   const imports = importsOf(file);
-  let built = null;
-  const index = () => (built ??= rootPath ? declarationIndex(rootPath, { ignore, files: files?.() }) : new Map());
-  // A name declared in more places than this is a common word: it is not followed.
-  const lookup = (name) => {
-    const rows = [...(index().get(name) ?? []), ...(index().get(`*.${name}`) ?? [])];
-    return rows.length > CALLEE_LIMITS.declarations ? [] : rows;
+  const survey = () => surveyed;
+  const sameLanguage = (from) => (row) => languageOf(row.path) === languageOf(from.path);
+  // A Go file's package: the other files of its folder.
+  const packageRows = (from, key) => (languageOf(from.path) === 'go'
+    ? survey().rowsAmong(survey().folder(from.path), key).filter((row) => row.path !== from.path && sameLanguage(from)(row))
+    : []);
+  /**
+   * The declarations a bare `name` reaches through `from`'s imports: in the
+   * module each binding names. Only when no binding's module names a file of
+   * this project is the name looked up everywhere, capped, and marked `byName`.
+   */
+  const importedRows = (from, name) => {
+    const bindings = importsOf(from).names.get(name) ?? [];
+    const rows = bindings.flatMap((binding) => survey().rowsIn(binding.spec, binding.imported ?? name)).filter(sameLanguage(from));
+    if (rows.length > 0 || !bindings.some((binding) => (binding.spec.exact || binding.spec.internal) && survey().modulePaths(binding.spec).length === 0)) {
+      return { rows, byName: false };
+    }
+    const everywhere = survey().everywhere(bindings[0].imported ?? name);
+    return { rows: everywhere.length > CALLEE_LIMITS.declarations ? [] : everywhere.filter(sameLanguage(from)), byName: true };
   };
-  const samePackage = (path) => language === 'go' && folderOf(path) === folderOf(file.path);
-  // Whether `from` can reach a declaration in `path`: the same file, its Go package, or a module it imports.
-  const reachesModule = (from, path) => path === from.path || (languageOf(path) === languageOf(from.path)
-    && ((languageOf(from.path) === 'go' && folderOf(path) === folderOf(from.path))
-      || reachesAnySpec(importsOf(from), path)));
-  // Whether `from` brings `name` declared in `path` into scope: imported by that name, or declared beside it.
-  const reachesName = (from, name, path) => path === from.path || (languageOf(path) === languageOf(from.path)
-    && ((languageOf(from.path) === 'go' && folderOf(path) === folderOf(from.path))
-      || (importsOf(from).names.get(name) ?? []).some((binding) => specReaches(binding.spec, path))));
+  const classes = (from, base) => {
+    const found = [...importedRows(from, base).rows, ...packageRows(from, base)];
+    return found.filter((row) => row.kind === 'class');
+  };
   const ownDeclaration = (path, line) => path === file.path && line === declaration.line;
   const inOwner = (path, line) => path === file.path && owner && line > owner.line
     && line <= declarationEnd(file.lines, file.declarations, owner);
@@ -263,13 +286,16 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
     if (via === 'own') {
       if (name === own) continue;
       if (goReceiver && ownType) {
-        const rows = (index().get(`${ownType}.${name}`) ?? file.declarations.filter((candidate) => candidate.name === `${ownType}.${name}`).map((candidate) => ({ path: file.path, line: candidate.line })))
-          .filter((row) => row.path === file.path || samePackage(row.path));
+        const key = `${ownType}.${name}`;
+        const rows = [
+          ...file.declarations.filter((candidate) => candidate.name === key).map((candidate) => ({ path: file.path, line: candidate.line })),
+          ...(rootPath ? packageRows(file, key) : []),
+        ];
         if (rows.length === 1) push({ name, path: rows[0].path, line: rows[0].line });
         continue;
       }
       if (owner) {
-        const found = inheritedMember({ file, owner, name, open, index, reaches: (from, base, path) => reachesName(from, base, path) });
+        const found = inheritedMember({ file, owner, name, open, classes: rootPath ? classes : () => [] });
         if (found) {
           push({ name, ...found });
           continue;
@@ -277,8 +303,12 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
       }
     }
     if (via === 'field') {
+      // A field's type is unnamed: its method is one declared in this file, its Go package, or a module the file imports.
       const local = file.declarations.filter((candidate) => isCode(candidate) && declares(candidate, name)).map((candidate) => ({ path: file.path, line: candidate.line, kind: candidate.kind, name: candidate.name }));
-      const elsewhere = rootPath ? lookup(name).filter((row) => row.path !== file.path && reachesModule(file, row.path)) : [];
+      const elsewhere = rootPath
+        ? [...survey().rowsAmong(survey().importedPaths(file, imports), name), ...survey().rowsAmong(survey().importedPaths(file, imports), `*.${name}`),
+          ...packageRows(file, name), ...packageRows(file, `*.${name}`)].filter((row) => row.path !== file.path)
+        : [];
       const rows = unique([...local, ...elsewhere].filter((row) => row.kind === 'method' && !ownDeclaration(row.path, row.line)
         && !inOwner(row.path, row.line) && !(ownType && row.name === `${ownType}.${name}`)));
       if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line });
@@ -290,11 +320,10 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
     if (via === 'qualified') {
       // `pkg.Check(` or `ns.check(`: the module that name was imported as, and nothing else.
       if (!rootPath) continue;
-      const imported = imports.modules.get(chain);
-      const specs = [imported, ...(imports.names.get(chain) ?? []).flatMap((binding) => [binding.spec, childSpec(binding.spec, binding.imported)])].filter(Boolean);
-      if (specs.length === 0) continue;
-      const rows = unique(lookup(name).filter((row) => languageOf(row.path) === language && row.path !== file.path
-        && specs.some((spec) => specReaches(spec, row.path))));
+      if (!imports.modules.has(chain) && !imports.names.has(chain)) continue;
+      const paths = survey().pathsFor(file, chain, () => [imports.modules.get(chain), ...(imports.names.get(chain) ?? [])
+        .flatMap((binding) => [binding.spec, childSpec(binding.spec, binding.imported)])].filter(Boolean));
+      const rows = unique([...survey().rowsAmong(paths, name), ...survey().rowsAmong(paths, `*.${name}`)]);
       if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line });
       continue;
     }
@@ -305,13 +334,9 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
       continue;
     }
     if (!rootPath) continue;
-    const bindings = imports.names.get(name) ?? [];
-    const imported = bindings.length > 0
-      ? lookup(bindings[0].imported ?? name).filter((row) => row.path !== file.path && languageOf(row.path) === language
-        && bindings.some((binding) => specReaches(binding.spec, row.path)))
-      : lookup(name).filter((row) => row.path !== file.path && samePackage(row.path));
-    const rows = unique(imported);
-    if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line });
+    const { rows: found, byName } = imports.names.has(name) ? importedRows(file, name) : { rows: packageRows(file, name), byName: false };
+    const rows = unique(found.filter((row) => row.path !== file.path));
+    if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line, ...(byName ? { byName: true } : {}) });
   }
   return callees;
 }

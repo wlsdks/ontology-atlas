@@ -85,7 +85,7 @@ export function recordSourceEvidence(rootPath, packet) {
     // The context a symbol read returned was served too: a caller's guard, a constructor, a callee.
     for (const part of Array.isArray(row.context) ? row.context : []) {
       if (typeof part?.path !== 'string' || !Number.isSafeInteger(part.startLine) || !Number.isSafeInteger(part.endLine)) continue;
-      add(part.path, { startLine: part.startLine, endLine: part.endLine, symbol: part.symbol, role: part.role, ...(read ? { read } : {}) });
+      add(part.path, { startLine: part.startLine, endLine: part.endLine, symbol: part.symbol, role: part.role, ...(read ? { read } : {}), ...(part.byName ? { byName: true } : {}) });
     }
   }
 }
