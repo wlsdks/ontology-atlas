@@ -34,7 +34,7 @@ pnpm desktop:doctor                       # Tauri CLI, Cargo, rustc, Xcode CLT, 
 pnpm desktop:check                        # static-export and Tauri scaffold contract
 pnpm build && pnpm desktop:smoke          # packaged out/ payload: routes, assets, offline docs
 pnpm test:desktop:runtime
-pnpm test:desktop:bridge                  # vault shim vs Tauri commands + Rust path guard
+pnpm test:desktop:bridge                  # vault shim vs Tauri commands + Rust path guard + manifest from rows = from files
 pnpm desktop:dev                          # run the shell against a real vault
 pnpm desktop:build                        # unsigned local .app and .dmg
 pnpm desktop:verify-app

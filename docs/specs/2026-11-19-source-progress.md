@@ -229,3 +229,7 @@ All keys go in `messages/{en,ko,ja,zh}/library.json`. Keys already in the catalo
   - Use `/ui-build`, then `/ui-proof` for criterion 8, plus a reviewer design verdict.
 
 Order: A first; then B and C in parallel on A's model API; C merges last.
+
+## Revisions
+
+- 2026-11-19: first draft. "Has a wiki page" is the counted state; reaching the map is left for the wiki–ontology link spec.

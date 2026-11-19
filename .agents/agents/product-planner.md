@@ -49,6 +49,10 @@ An empty section is a single line, `None — <reason>`. Keep the spec near 250
 lines with no more than eight acceptance criteria; anything larger is two
 slices.
 
+The spec is committed. When it changes after the draft, including an owner
+decision, edit it and add a dated line to `## Revisions`; a reversal of its core
+is a new spec that names the old one in `supersedes`.
+
 - Flow: numbered "When the person …, Atlas …" steps, including one where the
   agent is wrong or evidence is missing.
 - States: each row carries a web cell and a macOS app cell, with a row for
