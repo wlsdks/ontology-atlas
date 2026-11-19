@@ -108,31 +108,48 @@ export function areaLocator(areas) {
 }
 
 /**
- * At most `limit` rows: product-facing kinds first, then exports. Within each,
+ * At most `limit` rows: product-facing kinds first, then module APIs; within each,
  * every area, largest first, gets one row a round before any gets a second, so
- * no area is left out while another fills the list; O(rows + limit x areas).
+ * no area is left out while another fills the list. A lone export says little
+ * about a product, so one is shown only for an area that has no other row;
+ * O(rows + limit x areas).
  */
 export function abilitiesByArea(rows, areas, locate, limit) {
   const rank = new Map(areas.map((area, index) => [area, index]));
-  const picked = [];
-  for (const backfill of [false, true]) {
+  const laneKey = (row) => {
+    const area = locate(row.path);
+    return area ? rank.get(area) : areas.length;
+  };
+  const lanesOf = (wanted) => {
     const lanes = new Map();
     for (const row of rows) {
-      if (BACKFILL_KINDS.has(row.kind) !== backfill) continue;
-      const area = locate(row.path);
-      const key = area ? rank.get(area) : areas.length;
+      if (!wanted(row)) continue;
+      const key = laneKey(row);
       if (!lanes.has(key)) lanes.set(key, []);
       lanes.get(key).push(row);
     }
-    const ordered = [...lanes.entries()].sort((a, b) => a[0] - b[0]).map(([, lane]) => lane);
+    return [...lanes.entries()].sort((a, b) => a[0] - b[0]);
+  };
+  const picked = [];
+  const shownAreas = new Set();
+  const take = (key, row) => {
+    picked.push(row);
+    shownAreas.add(key);
+  };
+  for (const wanted of [(row) => !BACKFILL_KINDS.has(row.kind), (row) => row.kind === 'api']) {
+    const ordered = lanesOf(wanted);
     for (let round = 0; picked.length < limit; round += 1) {
-      const open = ordered.filter((lane) => lane.length > round);
+      const open = ordered.filter(([, lane]) => lane.length > round);
       if (open.length === 0) break;
-      for (const lane of open) {
+      for (const [key, lane] of open) {
         if (picked.length === limit) break;
-        picked.push(lane[round]);
+        take(key, lane[round]);
       }
     }
+  }
+  for (const [key, lane] of lanesOf((row) => row.kind === 'export')) {
+    if (picked.length === limit) break;
+    if (!shownAreas.has(key)) take(key, lane[0]);
   }
   return picked;
 }

@@ -549,15 +549,15 @@ function areaNext(map, areas) {
   const opened = areas.find((area) => !area.own && !area.rest);
   const open = opened ? `analyze_repo_structure(${JSON.stringify({ rootPath: join(map.rootPath, opened.path) })})` : null;
   return `This repository is larger than one map, so it is listed as ${areas.length} areas: ${formatCount(size.productLines)} lines in ${formatCount(size.productFiles)} files. ` +
-    'Map it one area at a time, largest first. ' +
-    (open ? `${open} lists that area's units, entry points and every ability it holds; its paths are relative to that folder, so write each node's path: from the repository root (${t(opened.path, AREA_PATH_CHARS)}/...). ` : '') +
-    'In each area, outline the main files (sourceReads mode "outline", up to 16 per call, sourceOnly true), ' +
-    'place every ability its map lists (a capability, its name in the title or in code form (`name`) of the node that covers it, ' +
-    'or one line in the project\'s ## Uncertainty that cites its path:Lline or exact name and says why it is excluded), ' +
-    'read each capability by symbol (sourceReads {path, symbol}, three or four per call), and write that area\'s nodes ' +
-    'with add_concepts and add_relations before opening the next. ' +
-    'The abilities listed here are a floor shared between areas, not all of them. ' +
-    'Every write and validate_vault names the areas no node\'s path: falls in yet, with the call that opens the next.';
+    'Put the whole product on the map before any part of it in depth. ' +
+    '1. From this response alone, name the domains (a lasting responsibility; several areas usually share one) and write the project and every domain now with add_concepts; each domain says which areas it holds. ' +
+    '2. Then one domain at a time, largest first: ' +
+    (open ? `open its areas, up to three calls in one message, like ${open}. An area's map lists its units, entry points and every ability it holds; its paths are relative to that folder, so write each node's path: from the repository root (${t(opened.path, AREA_PATH_CHARS)}/...). ` : 'open its areas, up to three calls in one message. ') +
+    'Outline the area\'s main files (sourceReads mode "outline", up to 16 per call, sourceOnly true), read the operation that decides each ability by symbol (sourceReads {path, symbol}, three or four per call), ' +
+    'and write that domain\'s capabilities in one add_concepts call: one capability per thing a user, an operator or another system gets, a family as one capability naming its members and how many of them were read. ' +
+    '3. A domain you cannot open still gets its capabilities from the rows below, each saying it was listed and not read. ' +
+    'Every ability row below ends up as a capability, named in the node that covers it, or on one line of the project\'s ## Uncertainty that says why it is left out; the rows are a floor shared between areas, not all of them. ' +
+    'Every write and validate_vault names the areas no node\'s path: falls in yet, with the call that opens the next: open it, or name it in the project\'s ## Uncertainty as unopened.';
 }
 
 /** The first `count` rows, in the order the areas shared them. */
@@ -693,7 +693,7 @@ function renderBreadthMap(map) {
     if (map.abilitiesOmitted) {
       const byKind = Object.entries(map.abilitiesOmittedByKind ?? {}).map(([kind, count]) => `${kind} ${count}`).join(', ');
       lines.push(map.areas
-        ? `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: every area shows rows before any shows a second, product-facing kinds before exports; an area's own map lists the rest.`
+        ? `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: every area shows rows before any shows a second, and a lone export only where an area has no other row; an area's own map lists the rest.`
         : `+${map.abilitiesOmitted} more not listed${byKind ? ` (${byKind})` : ''}: each kind keeps an equal share of 120 rows and of the map's 30 KB; call analyze_repo_structure with rootPath set to one folder to list them.`);
     }
   }
