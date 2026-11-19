@@ -178,13 +178,20 @@ fn a_child_killed_during_a_row_batch_leaves_the_next_open_equal_to_a_build_from_
             backdate(&vault.root, path, Duration::from_secs(30 + round));
         }
     };
-    // One batch runs to its end first, timed from the moment the killed ones start their clock.
-    edit_half(100, &mut rng);
-    let calibration = open(&vault.root, NS, &files).misses;
-    let mut child = spawn_put(&put_body(&vault.root, NS, &calibration));
-    let started = Instant::now();
-    assert!(child.wait().unwrap().success());
-    let batch = started.elapsed();
+    // Three batches run to their end first, timed from the moment the killed ones start their
+    // clock. The shortest is the batch length: one slowed by the other tests running beside it
+    // would put most kill points after the batches that follow had already finished.
+    let batch = (0..3u64)
+        .map(|at| {
+            edit_half(100 + at, &mut rng);
+            let calibration = open(&vault.root, NS, &files).misses;
+            let mut child = spawn_put(&put_body(&vault.root, NS, &calibration));
+            let started = Instant::now();
+            assert!(child.wait().unwrap().success());
+            started.elapsed()
+        })
+        .min()
+        .unwrap();
 
     let mut interrupted = 0;
     for round in 0..20u64 {

@@ -727,10 +727,9 @@ pub fn delete(root: Option<&Path>) -> Result<()> {
         if !folder.exists() {
             continue;
         }
-        if !lifecycle::is_index_folder(folder) {
-            if lifecycle::holds_index(folder) {
-                kept.push(folder.display().to_string());
-            }
+        // A writer between statements can hold a file SQLite makes and removes again (a
+        // `-journal`), so a folder holding index data is judged again once its lock is held.
+        if !lifecycle::is_index_folder(folder) && !lifecycle::holds_index(folder) {
             continue;
         }
         let lock = match lock_writer(folder) {
@@ -738,6 +737,10 @@ pub fn delete(root: Option<&Path>) -> Result<()> {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
             Err(error) => return Err(error.into()),
         };
+        if !lifecycle::is_index_folder(folder) {
+            kept.push(folder.display().to_string());
+            continue;
+        }
         lifecycle::delete_locked(folder, lock)?;
     }
     if root.is_none() {
