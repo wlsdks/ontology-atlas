@@ -9,6 +9,8 @@ interface Combo {
   meta?: boolean;
   /** Whether Shift is required. Leave false for `?`, whose key is already the Shift result. */
   shift?: boolean;
+  /** Whether Shift must be up, for a key whose Shift form means something else (⌘Z undo, ⌘⇧Z redo). */
+  withoutShift?: boolean;
 }
 
 export interface TypingShortcut {
@@ -78,6 +80,7 @@ export function useTypingShortcuts(shortcuts: TypingShortcut[]) {
         const metaDown = event.metaKey || event.ctrlKey;
         if (metaRequired !== metaDown) continue;
         if (combo.shift && !event.shiftKey) continue;
+        if (combo.withoutShift && event.shiftKey) continue;
         if (!comboMatches(event, combo)) continue;
         event.preventDefault();
         onFire();

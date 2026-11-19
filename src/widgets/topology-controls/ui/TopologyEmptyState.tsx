@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
+import { FolderOpen, Map as MapIcon, Network, Plus } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui';
 import { MapStartStage } from './MapStartStage';
@@ -10,9 +10,7 @@ import { MapStartStage } from './MapStartStage';
 /**
  * Topology empty-state — explains whether the current vault lacks project
  * roots or visible relations, then offers state-specific recovery: bootstrap
- * found docs, create a node, expand the Topology INDEX, open Workshop, or
- * choose a vault. The old tree/Builder surfaces are compatibility routes only;
- * visible actions land in the current Topology/Workshop workflow.
+ * found docs, open the create card, browse the concepts, or choose a vault.
  */
 export function TopologyEmptyState({
   conceptCount,
@@ -120,10 +118,11 @@ export function TopologyEmptyState({
               {t('ctaStartFromDocs')}
             </button>
           ) : null}
+          {/* The one create door; without an open folder, opening the folder above is the door. */}
           {canCreateNode && onCreateNode ? (
             <button
               type="button"
-              onClick={onCreateNode}
+              onClick={() => onCreateNode()}
               data-testid="empty-create-node"
               className={hasDocsToBootstrap ? SECONDARY : PRIMARY}
             >
@@ -141,10 +140,6 @@ export function TopologyEmptyState({
               {t('ctaTree')}
             </Link>
           )}
-          <Link href="/topology/?workbench=create" className={SECONDARY}>
-            <GitBranch size={ICON_SIZE.md} aria-hidden="true" />
-            {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}
-          </Link>
           {hasDocsToBootstrap ? null : (
             <Link
               href={showPickerPath ? '/docs/?intent=local' : '/download/'}

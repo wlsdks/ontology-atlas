@@ -16,8 +16,8 @@ const ROOT = process.cwd();
 const SCRIPTS = join(ROOT, '.claude', 'skills', 'ontology-field-trial', 'scripts');
 const SKILL = join(ROOT, '.claude', 'skills', 'ontology-field-trial', 'SKILL.md');
 
-const SHELL_SCRIPTS = ['acp-replay.sh', 'sealed-reader.sh'];
-const ALL_ASSETS = [...SHELL_SCRIPTS, 'scan-findings.mjs', 'sealed-questions.template.md'];
+const SHELL_SCRIPTS = ['acp-replay.sh'];
+const ALL_ASSETS = [...SHELL_SCRIPTS, 'scan-findings.mjs'];
 
 const read = (name: string) => readFileSync(join(SCRIPTS, name), 'utf8');
 

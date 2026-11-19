@@ -450,14 +450,14 @@ export function strictAddRelationFailure(response) {
   if (
     'changed' in (response.result || {}) ||
     'alreadyExists' in (response.result || {}) ||
-    'postWriteMaintenance' in (response.result || {})
+    'findings' in (response.result || {})
   ) {
     return 'strict add_relation response included write metadata';
   }
   if (
     'changed' in (response.result?.structuredContent || {}) ||
     'alreadyExists' in (response.result?.structuredContent || {}) ||
-    'postWriteMaintenance' in (response.result?.structuredContent || {})
+    'findings' in (response.result?.structuredContent || {})
   ) {
     return 'strict add_relation structuredContent included write metadata';
   }

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOntologyRelationEditPlan,
   buildOntologyRelationRemovalPlan,
+  eligibleRelationTargets,
+  relationFrontmatterKey,
 } from './ontology-relation-edit';
 
 describe('contextual relation edit plan', () => {
@@ -212,5 +214,97 @@ describe('an emptied relation key is deleted, not written empty', () => {
     });
 
     expect(plan.updates).toEqual({ relates: ['capabilities/c'] });
+  });
+});
+
+/** The hand editor writes what `add_relation` writes for the same relation between the same kinds. */
+describe('the key a relation is written under', () => {
+  it.each([
+    ['dependsOn', 'domain', 'domain', 'dependencies'],
+    ['dependsOn', 'element', 'capability', 'dependencies'],
+    ['relates', 'capability', 'element', 'relates'],
+    ['isA', 'capability', 'capability', 'broader'],
+    ['contains', 'project', 'domain', 'domains'],
+    ['contains', 'domain', 'capability', 'capabilities'],
+    ['contains', 'capability', 'element', 'elements'],
+    ['contains', 'element', 'element', 'contains'],
+  ] as const)('%s from a %s to a %s is %s', (relation, sourceKind, targetKind, key) => {
+    expect(relationFrontmatterKey(relation, sourceKind, targetKind)).toBe(key);
+  });
+
+  it('writes containment under the typed list and keeps the scaffold list when it empties', () => {
+    const added = buildOntologyRelationEditPlan({
+      sourceSlug: 'domains/billing',
+      targetSlug: 'capabilities/refund',
+      targetKind: 'capability',
+      fromRelation: null,
+      toRelation: 'contains',
+      why: '',
+      frontmatter: { kind: 'domain', capabilities: ['capabilities/payment'] },
+    });
+    expect(added.updates).toEqual({ capabilities: ['capabilities/payment', 'capabilities/refund'] });
+
+    const removed = buildOntologyRelationRemovalPlan({
+      sourceSlug: 'domains/billing',
+      targetSlug: 'capabilities/refund',
+      targetKind: 'capability',
+      relation: 'contains',
+      frontmatter: { kind: 'domain', capabilities: ['capabilities/refund'] },
+    });
+    expect(removed.updates).toEqual({ capabilities: [] });
+  });
+
+  it('folds a depends_on list into dependencies only when that relation is written', () => {
+    const plan = buildOntologyRelationEditPlan({
+      sourceSlug: 'capabilities/checkout',
+      targetSlug: 'capabilities/auth',
+      targetKind: 'capability',
+      fromRelation: null,
+      toRelation: 'dependsOn',
+      why: 'Checkout stops when sign-in changes its session.',
+      frontmatter: { kind: 'capability', depends_on: ['capabilities/tax'], relates: ['capabilities/x'] },
+    });
+    expect(plan.updates).toEqual({
+      dependencies: ['capabilities/auth', 'capabilities/tax'],
+      depends_on: null,
+      relation_notes: { 'capabilities/auth': 'Checkout stops when sign-in changes its session.' },
+    });
+  });
+
+  it('removes a relation stored under the depends_on spelling', () => {
+    const plan = buildOntologyRelationRemovalPlan({
+      sourceSlug: 'capabilities/checkout',
+      targetSlug: 'capabilities/tax',
+      relation: 'dependsOn',
+      frontmatter: { kind: 'capability', depends_on: ['capabilities/tax'] },
+    });
+    expect(plan.updates).toEqual({ depends_on: null });
+  });
+});
+
+describe('eligible relation targets', () => {
+  const candidates = [
+    { id: 'domain:billing', slug: 'domains/billing', kind: 'domain', names: ['청구', 'Billing'] },
+    { id: 'capability:refund', slug: 'capabilities/refund', kind: 'capability', names: ['환불', 'Refund'] },
+    { id: 'capability:pay', slug: 'capabilities/pay', kind: 'capability', names: ['결제', 'Payment'] },
+    { id: 'element:ledger', slug: 'elements/ledger', kind: 'element', names: ['원장', 'Ledger'] },
+  ];
+  const source = { id: 'capability:pay', kind: 'capability' };
+
+  it('finds a target by its name in either language and never the source itself', () => {
+    expect(eligibleRelationTargets(source, candidates, 'dependsOn', 'refund').map((c) => c.id)).toEqual([
+      'capability:refund',
+    ]);
+    expect(eligibleRelationTargets(source, candidates, 'dependsOn', '환불').map((c) => c.id)).toEqual([
+      'capability:refund',
+    ]);
+    expect(eligibleRelationTargets(source, candidates, 'dependsOn', '').map((c) => c.id)).not.toContain(
+      'capability:pay',
+    );
+  });
+
+  it('offers only kinds the relation type can join', () => {
+    expect(eligibleRelationTargets(source, candidates, 'contains', '').map((c) => c.id)).toEqual(['element:ledger']);
+    expect(eligibleRelationTargets(source, candidates, 'isA', '').map((c) => c.id)).toEqual(['capability:refund']);
   });
 });

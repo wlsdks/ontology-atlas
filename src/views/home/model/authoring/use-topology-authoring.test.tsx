@@ -49,7 +49,10 @@ function node(overrides: Partial<KnowledgeGraphNode>): KnowledgeGraphNode {
   } as KnowledgeGraphNode;
 }
 
-function renderAuthoring(saveDoc: (...args: unknown[]) => Promise<void>) {
+function renderAuthoring(
+  saveDoc: (...args: unknown[]) => Promise<void>,
+  createDoc: (...args: unknown[]) => Promise<void> = vi.fn(async () => {}),
+) {
   const toast = { show: vi.fn(), dismiss: vi.fn() };
   const fileHandle = {
     getFile: async () => ({ text: async () => RAW, lastModified: 1000 }),
@@ -81,6 +84,7 @@ function renderAuthoring(saveDoc: (...args: unknown[]) => Promise<void>) {
       tMeaningEditor: ((key: string) => key) as never,
       relationVocabulary: (() => "") as never,
       relationRegister: "plain" as never,
+      activeLocale: "en",
     },
     topologyVaultReadModel: {
       selectedOntologyNode: doctor,
@@ -88,6 +92,7 @@ function renderAuthoring(saveDoc: (...args: unknown[]) => Promise<void>) {
         manifest,
         fileHandles: new Map([["capabilities/doctor", fileHandle]]),
         saveDoc,
+        createDoc,
         status: "loaded",
         agentActivityStatus: null,
       } as never,
@@ -96,6 +101,7 @@ function renderAuthoring(saveDoc: (...args: unknown[]) => Promise<void>) {
       recentChanges: { recentNodeIds: new Set<string>() } as never,
       docFreshnessIndex: new Map(),
       updatedAgoNowMs: 0,
+      vaultIdentity: "local:fixture" as const,
     },
   };
   const hook = renderHook(() => useTopologyAuthoring(options));
@@ -143,11 +149,16 @@ describe("useTopologyAuthoring — the domain a new concept is filed under (D10)
     ]);
   });
 
-  it("stamps a concept created on screen as written by a person", async () => {
-    const { result } = renderAuthoring(vi.fn());
+  it("writes a concept created on screen at once, stamped as written by a person", async () => {
+    const createDoc = vi.fn(async () => {});
+    const { result } = renderAuthoring(vi.fn(), createDoc);
     await act(async () => {
-      await result.current.createNode({ title: "Billing", kind: "capability" });
+      await result.current.createNode({ title: "Billing", kind: "capability", description: "Charges customers." });
     });
-    expect(result.current.createNodeProposal?.markdown).toContain("created_by: human");
+    expect(createDoc).toHaveBeenCalledTimes(1);
+    const [slug, markdown] = createDoc.mock.calls[0] as unknown as [string, string];
+    expect(slug).toBe("capabilities/billing");
+    expect(markdown).toContain("created_by: human");
+    expect(markdown.trimEnd().endsWith("# Billing\n\nCharges customers.")).toBe(true);
   });
 });

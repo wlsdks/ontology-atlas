@@ -4,6 +4,14 @@ interface FactDoc {
   slug: string;
   title?: string;
   frontmatter: Record<string, unknown>;
+  /** Measured from the body when the manifest was built; absent where it was not measured. */
+  citesReadLines?: boolean;
+}
+
+/** A capability whose body cites no read lines, with the domain it belongs to (`''` for none). */
+export interface UnreadCapability {
+  slug: string;
+  domain: string;
 }
 
 const NAMED_KINDS = new Set(['domain', 'capability', 'element']);
@@ -32,6 +40,22 @@ export function capabilitiesWithoutDependency(docs: readonly FactDoc[]): string[
     .filter((doc) => !hasRefs(doc.frontmatter.depends_on) && !hasRefs(doc.frontmatter.elements))
     .map(canonicalSlug)
     .sort();
+}
+
+/**
+ * Capabilities whose body cites no read lines, out of the capabilities whose body was measured;
+ * an unmeasured one counts in neither.
+ */
+export function capabilitiesWithoutReadRule(docs: readonly FactDoc[]): { unread: UnreadCapability[]; measured: number } {
+  const measuredDocs = docs.filter((doc) => kindOf(doc) === 'capability' && typeof doc.citesReadLines === 'boolean');
+  const unread = measuredDocs
+    .filter((doc) => doc.citesReadLines === false)
+    .map((doc) => ({
+      slug: canonicalSlug(doc),
+      domain: typeof doc.frontmatter.domain === 'string' ? doc.frontmatter.domain.trim() : '',
+    }))
+    .sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
+  return { unread, measured: measuredDocs.length };
 }
 
 const CODE_EXTENSION = /\.(m?[jt]sx?|py|rb|go|rs|java|kt|swift|c|cc|cpp|h|hpp|css|scss|json|ya?ml|toml|sh)$/i;

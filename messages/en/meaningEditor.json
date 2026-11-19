@@ -1,14 +1,12 @@
 {
   "ariaLabel": "Edit {name} relations",
-  "editBody": "Choose one relation to see on the map.",
-  "reviewBody": "Review only what will change before writing Markdown.",
+  "editBody": "Relations this concept declares, and those other concepts declare toward it.",
   "relation": "Relation type",
-  "relationHelp": "This becomes one typed line in the Markdown. Folder validation reports a line whose target no document here answers to: it warns, it does not block the write.",
+  "relationHelp": "Saved as one line in the Markdown. Folder validation warns if its target goes missing; it never blocks a write.",
   "target": "Connected concept",
-  "targetHelp": "Only documents already in this folder can be picked, so the line always resolves. An impact query follows only “{relations}” lines when it answers what a change to this concept reaches.",
+  "targetHelp": "Only concepts already in this folder can be picked. An impact query follows “{relations}” lines only.",
   "why": "Why this relation exists",
   "whyHint": "Add the reason when you know it so the next person does not have to infer the line.",
-  "whyRequiredHint": "A dependency needs a reason for relying on the target.",
   "relationName": {
     "isA": "Is a kind of",
     "dependsOn": "Depends on",
@@ -21,15 +19,45 @@
     "contains": "holds it inside this concept",
     "relates": "neither one needs the other"
   },
-  "relationOption": "{name} ({hint})",
-  "review": "Review change",
-  "remove": "Remove this relation",
-  "back": "Keep editing",
-  "apply": "Confirm and write",
+  "remove": "Remove",
+  "apply": "Save relation",
   "saving": "Writing…",
-  "saved": "Relation written to Markdown.",
   "cancel": "Cancel",
   "close": "Close relation editor",
   "saveError": "Could not write. Check whether the file changed, then try again.",
-  "noChanges": "Nothing changed. Update the relation or its reason first."
+  "noChanges": "Nothing changed. Update the relation or its reason first.",
+  "listHeading": "Relations",
+  "listEmpty": "No relations yet.",
+  "outgoing": {
+    "dependsOn": "Depends on {name}",
+    "relates": "Related to {name}",
+    "contains": "Contains {name}",
+    "isA": "A kind of {name}"
+  },
+  "incoming": {
+    "dependsOn": "{name} depends on this",
+    "relates": "{name} is related to this",
+    "contains": "{name} contains this",
+    "isA": "{name} is a kind of this"
+  },
+  "edit": "Edit",
+  "add": "Add a relation",
+  "searchPlaceholder": "Search by name",
+  "targetNoMatch": "No concept with that name can take this relation.",
+  "targetWhere": "{kind} · {domain}",
+  "kindName": {
+    "project": "Project",
+    "domain": "Domain",
+    "capability": "Capability",
+    "element": "Element"
+  },
+  "whyRequired": "Why it depends on it",
+  "whyDependsHint": "What breaks in {source} when {target} changes?",
+  "thatOne": "that one",
+  "keysHint": "Enter saves.",
+  "written": {
+    "added": "Relation added: {source} → {target}",
+    "changed": "Relation changed: {source} → {target}",
+    "removed": "Relation removed: {source} → {target}"
+  }
 }

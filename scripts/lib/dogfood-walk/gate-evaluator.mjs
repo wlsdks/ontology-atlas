@@ -338,7 +338,8 @@ export function evaluateDogfoodGate({
   recordResult(failures, "find_orphans", orph);
   recordResult(failures, "query_concepts", queryConcepts);
   recordResult(failures, "query_concepts_limited", queryConceptsLimited);
-  recordResult(failures, "analyze_repo_structure", analyzedRepo);
+  // The breadth map is text, so `rawText` is its result rather than a parse failure.
+  if (analyzedRepo?.rawText === undefined) recordResult(failures, "analyze_repo_structure", analyzedRepo);
   recordResult(failures, "infer_imports", inferredImports);
   recordResult(failures, "validate_vault", validation);
   recordResult(failures, "workspace_brief", brief);
@@ -562,9 +563,9 @@ export function evaluateDogfoodGate({
     }
   }
   if (analyzedRepo) {
-    const analyzedRepoFailure = analyzeRepoStructureFailure(analyzedRepo);
+    const analyzedRepoFailure = analyzeRepoStructureFailure(analyzedRepo.rawText);
     if (analyzedRepoFailure) failures.push(analyzedRepoFailure);
-    else recordStructuredContentFailure(failures, "analyze_repo_structure", analyzedRepo, analyzedRepoStructured);
+    else if (analyzedRepoStructured) failures.push("analyze_repo_structure: structuredContent present; the breadth map travels as text alone");
   }
   if (inferredImports) {
     const inferredImportsFailure = inferImportsFailure(inferredImports);

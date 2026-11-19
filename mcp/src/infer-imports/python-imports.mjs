@@ -1,6 +1,5 @@
 import { readdirSync, lstatSync, existsSync } from './confined-source-fs.mjs';
 import { join, dirname, relative } from 'node:path';
-import { pathResolvesInsideRoot } from './path-confinement.mjs';
 import { isIgnoredPath } from './source-files.mjs';
 import { sourceRoleOf } from './source-role.mjs';
 
@@ -40,6 +39,9 @@ export function parsePythonImports(content) {
     if (typeCheckingIndent !== null && logicalLine.indent <= typeCheckingIndent) {
       typeCheckingIndent = null;
     }
+    // Every statement below starts with `if`, `from` or `import`.
+    const first = line.charCodeAt(0);
+    if (first !== 105 && first !== 102) continue;
     if (/^if\s+\(?(?:typing\.)?TYPE_CHECKING\)?\s*:/.test(line)) {
       typeCheckingIndent = logicalLine.indent;
       continue;
@@ -83,35 +85,42 @@ function pythonLogicalLines(content) {
   let buffer = '';
   let bufferIndent = 0;
   let parenthesisDepth = 0;
-  let tripleQuote = null;
+  const strings = { tripleQuote: null };
   for (const rawLine of content.split(/\r?\n/)) {
-    const code = stripPythonStringsAndComment(rawLine, {
-      get tripleQuote() { return tripleQuote; },
-      set tripleQuote(value) { tripleQuote = value; },
-    });
+    const code = stripPythonStringsAndComment(rawLine, strings);
     const continued = /\\\s*$/.test(code);
-    const fragment = code.replace(/\\\s*$/, '').trim();
+    const fragment = (continued ? code.replace(/\\\s*$/, '') : code).trim();
     if (fragment) {
       if (!buffer) bufferIndent = rawLine.match(/^[\t ]*/)?.[0].length ?? 0;
       buffer = buffer ? `${buffer} ${fragment}` : fragment;
     }
-    parenthesisDepth += [...code].reduce(
-      (depth, character) =>
-        character === '(' ? depth + 1 : character === ')' ? depth - 1 : depth,
-      0,
-    );
-    if (!tripleQuote && parenthesisDepth <= 0 && !continued) {
+    parenthesisDepth += parenthesisDelta(code);
+    if (!strings.tripleQuote && parenthesisDepth <= 0 && !continued) {
       if (buffer) lines.push({ text: buffer, indent: bufferIndent });
       buffer = '';
       bufferIndent = 0;
       parenthesisDepth = 0;
     }
   }
-  if (!tripleQuote && buffer) lines.push({ text: buffer, indent: bufferIndent });
+  if (!strings.tripleQuote && buffer) lines.push({ text: buffer, indent: bufferIndent });
   return lines;
 }
 
+function parenthesisDelta(code) {
+  let delta = 0;
+  for (let index = 0; index < code.length; index += 1) {
+    const character = code.charCodeAt(index);
+    if (character === 40) delta += 1;
+    else if (character === 41) delta -= 1;
+  }
+  return delta;
+}
+
+/** A line with no quote and no comment, outside a triple-quoted string, is code as written. */
+const PLAIN_CODE_LINE = /^[^"'#]*$/;
+
 function stripPythonStringsAndComment(line, state) {
+  if (!state.tripleQuote && PLAIN_CODE_LINE.test(line)) return line;
   let result = '';
   let quote = null;
   let escaped = false;
@@ -148,6 +157,46 @@ function stripPythonStringsAndComment(line, state) {
   return result;
 }
 
+/**
+ * The file a dotted module names, searched in the root and then in each source
+ * folder's first segment: `a.b` is `a/b.py`, else `a/b/__init__.py`, a regular
+ * file whose real location is inside the root. One resolver serves one pass, so
+ * each distinct module is resolved once and each probe goes through `facts`.
+ *
+ * @param {string} rootPath
+ * @param {string[]} sourceFolders
+ * @param {ReturnType<import('./path-confinement.mjs').createPathFacts>} facts
+ * @returns {(spec: string) => string|null} the root-relative file, or null
+ */
+export function createPythonModuleResolver(rootPath, sourceFolders, facts) {
+  const sourceRoots = new Set(
+    sourceFolders
+      .map((folder) => folder.split(/[\\/]/).filter(Boolean)[0])
+      .filter(Boolean),
+  );
+  const searchRoots = [rootPath, ...[...sourceRoots].map((folder) => join(rootPath, folder))];
+  const resolved = new Map();
+  return (spec) => {
+    if (!spec || spec.startsWith('.')) return null;
+    let target = resolved.get(spec);
+    if (target !== undefined) return target;
+    target = null;
+    const parts = spec.split('.');
+    for (const searchRoot of searchRoots) {
+      const base = join(searchRoot, ...parts);
+      const file = `${base}.py`;
+      const packageEntry = join(base, '__init__.py');
+      const found = facts.isOwnFile(file) ? file : facts.isOwnFile(packageEntry) ? packageEntry : null;
+      if (found) {
+        target = relative(rootPath, found);
+        break;
+      }
+    }
+    resolved.set(spec, target);
+    return target;
+  };
+}
+
 export function classifyPythonImport(
   pythonImport,
   file,
@@ -156,9 +205,10 @@ export function classifyPythonImport(
   external,
   unresolved,
   ignore,
-  sourceFolders,
+  resolvePythonModule,
   pythonEdgeKeys,
 ) {
+  const from = relative(rootPath, file);
   const moduleSpec = resolvePythonRelativeModule(
     pythonImport.module,
     file,
@@ -166,27 +216,22 @@ export function classifyPythonImport(
   );
   if (!moduleSpec) {
     unresolved.push({
-      from: relative(rootPath, file),
+      from,
       spec: pythonImport.module,
       reason: 'relative-not-found',
     });
     return;
   }
-  const baseTarget = resolvePythonModule(moduleSpec, rootPath, sourceFolders);
+  const baseTarget = resolvePythonModule(moduleSpec);
   const targets = pythonImport.names.length > 0
     ? pythonImport.names
-        .map(
-          (name) =>
-            resolvePythonModule(`${moduleSpec}.${name}`, rootPath, sourceFolders) ?? baseTarget,
-        )
+        .map((name) => resolvePythonModule(`${moduleSpec}.${name}`) ?? baseTarget)
         .filter(Boolean)
     : baseTarget
       ? [baseTarget]
       : [];
   if (targets.length > 0) {
-    const from = relative(rootPath, file);
-    for (const target of targets) {
-      const targetPath = relative(rootPath, target);
+    for (const targetPath of targets) {
       if (isIgnoredPath(targetPath, ignore)) continue;
       // Hash membership keeps Python edge deduplication O(E) across the scan.
       const key = `${from}\0${targetPath}`;
@@ -204,14 +249,14 @@ export function classifyPythonImport(
     return;
   }
   const topLevel = moduleSpec.split('.')[0];
-  if (resolvePythonModule(topLevel, rootPath, sourceFolders)) {
+  if (resolvePythonModule(topLevel)) {
     unresolved.push({
-      from: relative(rootPath, file),
+      from,
       spec: pythonImport.module,
       reason: 'alias-not-found',
     });
   } else {
-    external.push({ from: relative(rootPath, file), spec: pythonImport.module });
+    external.push({ from, spec: pythonImport.module });
   }
 }
 
@@ -223,33 +268,4 @@ function resolvePythonRelativeModule(spec, file, rootPath) {
   const keep = fromParts.length - Math.max(0, leadingDots - 1);
   if (keep < 0) return null;
   return [...fromParts.slice(0, keep), ...suffix.split('.').filter(Boolean)].join('.');
-}
-
-function resolvePythonModule(spec, rootPath, sourceFolders = []) {
-  if (!spec || spec.startsWith('.')) return null;
-  const sourceRoots = new Set(
-    sourceFolders
-      .map((folder) => folder.split(/[\\/]/).filter(Boolean)[0])
-      .filter(Boolean),
-  );
-  for (const searchRoot of [rootPath, ...[...sourceRoots].map((folder) => join(rootPath, folder))]) {
-    const base = join(searchRoot, ...spec.split('.'));
-    const file = `${base}.py`;
-    if (
-      existsSync(file) &&
-      !lstatSync(file).isSymbolicLink() &&
-      lstatSync(file).isFile() &&
-      pathResolvesInsideRoot(rootPath, file)
-    ) return file;
-    const packageEntry = join(base, '__init__.py');
-    if (
-      existsSync(packageEntry) &&
-      !lstatSync(packageEntry).isSymbolicLink() &&
-      lstatSync(packageEntry).isFile() &&
-      pathResolvesInsideRoot(rootPath, packageEntry)
-    ) {
-      return packageEntry;
-    }
-  }
-  return null;
 }

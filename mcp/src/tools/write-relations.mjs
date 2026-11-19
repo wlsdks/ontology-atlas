@@ -20,7 +20,7 @@ import { slugToPath } from '../vault/slug-paths.mjs';
 import { readDoc } from '../vault/documents.mjs';
 import { VaultConflictError } from '../vault/atomic-writes.mjs';
 import { patchFrontmatter } from '../vault/doc-writes.mjs';
-import { compactPostWriteMaintenance } from './maintenance.mjs';
+import { compactPostWriteMaintenance, findingsOnWrittenNodes } from './maintenance.mjs';
 import {
   RELATION_KEY,
   RELATION_TYPES,
@@ -135,11 +135,8 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
       from: canonicalFrom,
       to: canonicalTo,
       type,
-      key,
       ...guardedMtime(expected_mtime, expected_mtime, fileMtime(canonicalFrom)),
-      ...(options.includePostWriteMaintenance === false
-        ? {}
-        : { postWriteMaintenance: compactPostWriteMaintenance() }),
+      ...relationFindings(canonicalFrom, options),
     };
   }
   const existing = relationRefsFor(doc, key);
@@ -177,13 +174,16 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
     from: canonicalFrom,
     to: canonicalTo,
     type,
-    key,
     ...guardedMtime(expected_mtime, expected_mtime, fileMtime(canonicalFrom)),
     ...(notice ? { notice } : {}),
-    ...(options.includePostWriteMaintenance === false
-      ? {}
-      : { postWriteMaintenance: compactPostWriteMaintenance() }),
+    ...relationFindings(canonicalFrom, options),
   };
+}
+
+function relationFindings(from, options) {
+  if (options.asBatchRow === true) return {};
+  const findings = findingsOnWrittenNodes([from]);
+  return findings.length > 0 ? { findings } : {};
 }
 
 function removeRelation({ from, to, type: requestedType, confirm = false, expected_mtime }) {
@@ -352,7 +352,7 @@ function addRelationsBatch({ relations }) {
         'why',
         'expected_mtime',
       ]);
-      return addRelation(spec, { includePostWriteMaintenance: false });
+      return addRelation(spec, { asBatchRow: true });
     } catch (err) {
       const rawMessage = err && err.message ? err.message : String(err);
       const rowLabel = `relations[${index}]`;
@@ -380,12 +380,12 @@ function addRelationsBatch({ relations }) {
     if (!proven) continue;
     try { mtimes[from] = fileMtime(from); } catch { /* removed meanwhile */ }
   }
+  const written = [...new Set(results.filter((row) => row.ok && row.changed !== false).map((row) => row.from))];
+  const findings = written.length > 0 ? findingsOnWrittenNodes(written) : [];
   return {
     relations: results,
     ...(Object.keys(mtimes).length > 0 ? { mtimes } : {}),
-    postWriteMaintenance: results.some((row) => row.ok && row.changed !== false)
-      ? compactPostWriteMaintenance()
-      : undefined,
+    ...(findings.length > 0 ? { findings } : {}),
   };
 }
 

@@ -1,14 +1,12 @@
 {
   "ariaLabel": "{name} 관계 편집",
-  "editBody": "지도에서 볼 관계 하나를 골라요.",
-  "reviewBody": "Markdown에 쓰기 전 변화만 확인해요.",
+  "editBody": "이 개념이 적어 둔 관계와, 다른 개념이 이 개념을 향해 적어 둔 관계예요.",
   "relation": "관계 종류",
-  "relationHelp": "이 값은 마크다운에 관계 한 줄로 적혀요. 폴더 검사는 대상 문서가 이 폴더에 없는 줄을 알려 주기만 하고, 저장을 막지는 않아요.",
+  "relationHelp": "마크다운에 한 줄로 저장돼요. 대상이 사라지면 폴더 검사가 알려 주고, 저장은 막지 않아요.",
   "target": "이어질 개념",
-  "targetHelp": "이 폴더에 이미 있는 문서만 고를 수 있어 줄이 항상 이어져요. 영향 조회는 ‘{relations}’ 줄만 따라가며 이 개념의 변경이 어디까지 닿는지 답해요.",
+  "targetHelp": "이 폴더에 있는 개념만 고를 수 있어요. 영향 조회는 ‘{relations}’ 관계만 따라가요.",
   "why": "이 관계의 이유",
   "whyHint": "알고 있다면 적어 두세요. 다음 사람이 선을 해석하지 않아도 돼요.",
-  "whyRequiredHint": "의존 관계는 왜 필요한지 적어야 해요.",
   "relationName": {
     "isA": "상위 개념",
     "dependsOn": "의존함",
@@ -21,15 +19,45 @@
     "contains": "이 개념 안에 둠",
     "relates": "서로 필요하지는 않음"
   },
-  "relationOption": "{name} ({hint})",
-  "review": "변경안 보기",
-  "remove": "이 관계 끊기",
-  "back": "다시 고치기",
-  "apply": "확인하고 쓰기",
+  "remove": "끊기",
+  "apply": "관계 저장",
   "saving": "쓰는 중…",
-  "saved": "관계를 마크다운에 썼어요.",
   "cancel": "취소",
   "close": "관계 편집 닫기",
   "saveError": "쓰지 못했어요. 파일이 바뀌었는지 확인하고 다시 시도하세요.",
-  "noChanges": "변경할 내용이 없어요. 관계나 이유를 고쳐 주세요."
+  "noChanges": "변경할 내용이 없어요. 관계나 이유를 고쳐 주세요.",
+  "listHeading": "관계",
+  "listEmpty": "아직 관계가 없어요.",
+  "outgoing": {
+    "dependsOn": "의존: {name}",
+    "relates": "관련: {name}",
+    "contains": "포함: {name}",
+    "isA": "상위 개념: {name}"
+  },
+  "incoming": {
+    "dependsOn": "이 개념에 의존: {name}",
+    "relates": "이 개념과 관련: {name}",
+    "contains": "이 개념을 포함: {name}",
+    "isA": "이 개념의 하위 개념: {name}"
+  },
+  "edit": "편집",
+  "add": "관계 추가",
+  "searchPlaceholder": "이름으로 찾기",
+  "targetNoMatch": "이 관계를 맺을 수 있는 개념 중에 그 이름은 없어요.",
+  "targetWhere": "{kind} · {domain}",
+  "kindName": {
+    "project": "프로젝트",
+    "domain": "도메인",
+    "capability": "역량",
+    "element": "요소"
+  },
+  "whyRequired": "의존하는 이유",
+  "whyDependsHint": "{target} 쪽이 바뀌면 {source}에서 무엇이 깨지는지 적어 주세요.",
+  "thatOne": "연결할 개념",
+  "keysHint": "Enter로 저장해요.",
+  "written": {
+    "added": "관계를 추가했어요: {source} → {target}",
+    "changed": "관계를 바꿨어요: {source} → {target}",
+    "removed": "관계를 끊었어요: {source} → {target}"
+  }
 }

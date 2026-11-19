@@ -28,7 +28,7 @@ interface TopologyIndexSlotProps {
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "handleIndexTabExpandFromAgent">;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntimes">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "unboundProjectSource" | "projectSourceReadiness">;
-  topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "agentAttributedRecentNodeId" | "bootstrapPlan" | "setBootstrapOpen">;
+  topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "agentAttributedRecentNodeId" | "bootstrapPlan" | "setBootstrapOpen" | "addConceptInGroup">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "setAudiencePlain" | "kindCountsTitle">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleExitRealm" | "handleEnterRealm" | "handleIndexCollapse">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect">;
@@ -77,7 +77,7 @@ export function TopologyIndexSlot({
   const { handleSelect } = topologyNavigationActions;
   const { handleExitRealm, handleEnterRealm, handleIndexCollapse } = topologyRouteControls;
   const { t, audiencePlain, setAudiencePlain, kindCountsTitle } = topologyPreferences;
-  const { canCreateNode, agentAttributedRecentNodeId, bootstrapPlan, setBootstrapOpen } = topologyAuthoring;
+  const { canCreateNode, agentAttributedRecentNodeId, bootstrapPlan, setBootstrapOpen, addConceptInGroup } = topologyAuthoring;
   const { unboundProjectSource, projectSourceReadiness } = topologySourceReadiness;
   const { acpRuntimes } = acpRuntimeController;
   const { handleIndexTabExpandFromAgent } = topologyAgentOrchestration;
@@ -185,6 +185,8 @@ export function TopologyIndexSlot({
                   // Gates the hint explaining the missing element rows.
                   plainMode={audiencePlain}
                   vaultLoaded={canCreateNode}
+                  onCreateConcept={canCreateNode ? () => setRouteState((current) => ({ ...current, createNodeIntent: true })) : undefined}
+                  onAddInGroup={canCreateNode ? addConceptInGroup : undefined}
                   domainCensus={indexDomainCensus}
                   // The ids the lens filters on, plus the badge target.
                   recentChanges={{
@@ -272,6 +274,12 @@ export function TopologyIndexSlot({
                     openedInsideDismiss: t("index.openedInsideDismiss"),
                     // The panel gates it to plain mode.
                     plainHint: t("index.plainHint"),
+                    createConcept: t("index.createConcept"),
+                    add: {
+                      domain: { action: t("index.addDomain"), field: t("index.addDomainField") },
+                      capability: { action: t("index.addCapability"), field: t("index.addCapabilityField") },
+                      element: { action: t("index.addElement"), field: t("index.addElementField") },
+                    },
                   }}
                 />
               )}

@@ -37,9 +37,12 @@ routes: [/topology]
   **More** and a quiet **Details**. The panel covers the map's agent tile, so
   **Ask** is the one press from a concept to the agent: it opens the dock on
   Conversation with a first question seated, and sending stays manual. A menu
-  holding one action is that action, named by it: a capability, element or
-  project shows **Edit relations** itself, while a domain, which can also
-  create a linked concept, keeps the **Edit** menu. **More** starts with
+  holding one action is that action, named by it. In an open folder the
+  **Edit** menu holds **Edit relations**, **Rename**, **Edit description** and
+  **Delete** (a domain also **Add a concept inside**); rename and description
+  edit in place and save on `Enter`, delete first names what still points here,
+  and each write's toast offers **Undo** (`meaning-editor.md`). On the sample a
+  capability, element or project shows **Edit relations** alone. **More** starts with
   **Ontology review**, then **Copy prompt**, then explore overlooked areas, the
   document and the realm. A project whose code check is current shows
   **Copy prompt** beside that status only on the web; beside an agent the

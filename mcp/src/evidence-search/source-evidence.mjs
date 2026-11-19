@@ -11,6 +11,7 @@ import {
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
+import { repoText } from '../analyze/repo-text.mjs';
 import { calleesOf } from './callees.mjs';
 import { productFiles } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
@@ -248,10 +249,19 @@ function completeLines(text) {
   return text.match(/.*?(?:\r\n|\n|\r|$)/gs).filter((line) => line.length > 0);
 }
 
+/** A declaration as the text answer sends it: `L115 def name(...)`. */
+export function outlineLine(declaration) {
+  const signature = String(declaration.signature ?? '').trim();
+  return signature.includes(declaration.name)
+    ? `L${declaration.line} ${repoText(signature, 240)}`
+    : `L${declaration.line} ${declaration.kind} ${repoText(declaration.name, 120)}${signature ? ` ${repoText(signature, 240)}` : ''}`;
+}
+
 /**
  * One outline row: declarations with line numbers so the next read names an
  * exact range. No source text and no citation, since names are no evidence of
  * behaviour; `truncated` when `outlineBytes` or the declaration ceiling cut it.
+ * A declaration costs the bytes of the line that is sent for it.
  */
 function outlineOne(selector, bytes, text, fileLines, fullFileSha256) {
   const outline = outlineSource(text, selector.path);
@@ -259,7 +269,7 @@ function outlineOne(selector, bytes, text, fileLines, fullFileSha256) {
   let returnedBytes = 0;
   let truncated = outline.truncated;
   for (const declaration of outline.declarations) {
-    const declarationBytes = Buffer.byteLength(JSON.stringify(declaration), 'utf8') + 1;
+    const declarationBytes = Buffer.byteLength(outlineLine(declaration), 'utf8') + 1;
     if (returnedBytes + declarationBytes > SOURCE_READ_LIMITS.outlineBytes) {
       truncated = true;
       break;
@@ -469,10 +479,16 @@ function setSerializedBytes(packet) {
   }
 }
 
+/**
+ * The rows `selectors` ask for. A packet sent as JSON is held to the aggregate
+ * and serialized budgets; one sent as text (`sentAsText`) is bounded by the
+ * caller on the characters it sends, so outlines draw on no shared budget and
+ * the JSON size is not counted.
+ */
 export function readSourceEvidence(
   rootPath,
   selectors,
-  { ignore: extraIgnore = [], onBeforeOpen, onDescriptorRead } = {},
+  { ignore: extraIgnore = [], onBeforeOpen, onDescriptorRead, sentAsText = false } = {},
 ) {
   validateSourceReadSelectors(selectors);
   const ignore = new Set([...DEFAULT_IGNORE, ...extraIgnore]);
@@ -486,6 +502,7 @@ export function readSourceEvidence(
     serializedBytes: 0,
   };
   const open = contextOpener(rootPath, ignore, {});
+  const drawsOnAggregate = (row) => row.status === 'read' || (row.status === 'outlined' && !sentAsText);
   // One walk of the repository serves every selector in this call.
   let walked = null;
   const files = () => (walked ??= productFiles(rootPath, extraIgnore));
@@ -495,14 +512,13 @@ export function readSourceEvidence(
       remainingBytes: SOURCE_READ_LIMITS.aggregateTextBytes - packet.totalReturnedBytes,
       readsLeft: selectors.slice(index).filter((candidate) => !isOutline(candidate)).length,
     });
-    const delivered = row.status === 'read' || row.status === 'outlined';
-    if (delivered && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
+    if (drawsOnAggregate(row) && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
       row = { ...refuse(selector, 'aggregate_text_budget'), status: 'omitted' };
     }
     const candidate = { ...packet, rows: [...packet.rows, row] };
-    if (row.status === 'read' || row.status === 'outlined') candidate.totalReturnedBytes += row.returnedBytes;
+    if (drawsOnAggregate(row)) candidate.totalReturnedBytes += row.returnedBytes;
     candidate.serializedBytes = 0;
-    setSerializedBytes(candidate);
+    if (!sentAsText) setSerializedBytes(candidate);
     if (candidate.serializedBytes > SOURCE_READ_LIMITS.packetBytes) {
       row = { ...refuse(selector, 'serialized_budget'), status: 'omitted' };
       packet.rows.push(row);

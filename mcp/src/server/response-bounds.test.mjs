@@ -226,6 +226,13 @@ test('ok() sends the JSON text the MCP spec asks for and the structuredContent a
   assert.equal(response.structuredContent, result);
 });
 
+test('ok() sends the breadth map and source-only reads as their text alone, since hosts forward structuredContent instead', () => {
+  const map = { contract: 'breadthMap:v1', rootPath: '/repo', units: [{ path: 'src' }], text: 'Breadth map of /repo' };
+  const reads = { rootPath: '/repo', delivery: 'source_only', canWrite: false, sourceEvidence: { rows: [] }, text: 'Source reads in /repo' };
+  assert.deepEqual(ok(map), { content: [{ type: 'text', text: 'Breadth map of /repo' }] });
+  assert.deepEqual(ok(reads), { content: [{ type: 'text', text: 'Source reads in /repo' }] });
+});
+
 test('read_source answers match its outputSchema whether or not they are cut', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-read-source-schema-')));
   try {

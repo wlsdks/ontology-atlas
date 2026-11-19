@@ -1,7 +1,7 @@
 import { act, createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import type { TurnActivityKind } from '../turn-activity';
+import type { TurnActivity, TurnActivityKind } from '../turn-activity';
 import { WORK_PLAYLIST } from './moru-playlist';
 import { TurnWorkStage, type TurnWork } from './TurnWorkStage';
 import type { ChatT } from './types';
@@ -27,11 +27,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const t = ((key: string) => key) as unknown as ChatT;
-const work = (kind: TurnActivityKind, turnId = 'turn-1'): TurnWork => ({
+const t = ((key: string, values?: Record<string, unknown>) => (values ? `${key}:${JSON.stringify(values)}` : key)) as unknown as ChatT;
+const work = (kind: TurnActivityKind, turnId = 'turn-1', activity: Partial<TurnActivity> = {}): TurnWork => ({
   turnId,
   phase: 'working',
-  activity: { kind, label: null, target: null, steps: 0 },
+  activity: { kind, label: null, target: null, steps: 0, written: { concepts: 0, relations: 0 }, ...activity },
   plan: null,
 });
 const mark = () => screen.getByTestId('brand-waiting-mark');
@@ -86,4 +86,15 @@ it('holds one still pose under reduced motion, whatever the mark reports', () =>
   expect(clip()).toBe('think');
   expect(mark()).toHaveAttribute('data-waiting-motion', 'still');
   expect(screen.getByTestId('acp-turn-work-now')).toHaveTextContent('work.thinking');
+});
+
+it('says what the turn has written once it has written something, and only then', () => {
+  const { rerender } = render(<TurnWorkStage t={t} work={work('writing', 'turn-1', { steps: 3 })} />);
+  const count = () => screen.getByTestId('acp-turn-work-count');
+  expect(count()).toHaveTextContent('work.steps:{"count":3}');
+  expect(count()).not.toHaveTextContent('work.wrote');
+  rerender(<TurnWorkStage t={t} work={work('writing', 'turn-1', { steps: 5, written: { concepts: 12, relations: 9 } })} />);
+  expect(count()).toHaveTextContent('work.wrote.both:{"concepts":12,"relations":9}');
+  rerender(<TurnWorkStage t={t} work={work('writing', 'turn-1', { steps: 6, written: { concepts: 0, relations: 2 } })} />);
+  expect(count()).toHaveTextContent('work.wrote.relations:{"relations":2}');
 });

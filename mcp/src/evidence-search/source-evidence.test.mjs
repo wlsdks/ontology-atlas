@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { composeSourceDigest, readSourceEvidence } from './source-evidence.mjs';
+import { composeSourceDigest, outlineLine, readSourceEvidence } from './source-evidence.mjs';
 
 function fixture() {
   return mkdtempSync(join(tmpdir(), 'atlas-source-evidence-'));
@@ -291,7 +291,8 @@ test('an outline stays inside the byte budget and says when it was cut', () => {
   assert.equal(row.truncated, true);
   assert.equal(row.requestComplete, false);
   assert.ok(row.returnedBytes <= 16 * 1024);
-  assert.ok(row.declarationCount < 400);
+  assert.equal(row.returnedBytes, row.declarations.reduce((sum, declaration) => sum + Buffer.byteLength(outlineLine(declaration)) + 1, 0), 'the bytes are those of the lines sent');
+  assert.ok(row.declarationCount < 900);
   assert.equal(row.declarations[0].name, 'function_number_0');
 });
 
