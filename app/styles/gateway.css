@@ -965,3 +965,439 @@
     transform: none;
   }
 }
+
+/*
+ * Build a map with Moru (`BuildWithMoru`). The stage is a size container, so every piece is placed
+ * in percent of it (`--x`, `--y`) and moves by `translate` alone. Each move is one transition per
+ * input; the only loops are a target's ring and the changed concept's ring, paused unless the
+ * frame is in view (`data-build-motion`).
+ */
+.build-frame {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  box-shadow: var(--gateway-window-shadow);
+}
+
+.build-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0 12% auto 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--gateway-window-edge), transparent);
+}
+
+.build-bar {
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.build-map {
+  container-type: size;
+  aspect-ratio: 1 / 1;
+}
+
+.build-stage {
+  background:
+    radial-gradient(60% 50% at 50% 0%, var(--gateway-hero-light-wing) 0%, transparent 100%),
+    radial-gradient(circle at center, var(--color-overlay-3) 1px, transparent 1.5px) 0 0 / 22px 22px,
+    var(--color-canvas);
+}
+
+@container (min-width: 40rem) {
+  .build-map {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+.build-panel {
+  border-top: 1px solid var(--color-border-soft);
+}
+
+@container (min-width: 60rem) {
+  .build-panel {
+    border-top: 0;
+    border-left: 1px solid var(--color-border-soft);
+  }
+}
+
+.build-at {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  translate: calc(var(--x) * 1cqw) calc(var(--y) * 1cqh);
+  transition:
+    translate var(--motion-expressive) var(--motion-ease) var(--delay, 0ms),
+    opacity var(--motion-slow) var(--motion-ease) var(--delay, 0ms),
+    scale var(--motion-slow) var(--motion-ease-place) var(--delay, 0ms);
+}
+
+.build-center,
+.build-node-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max-content;
+  translate: -50% -50%;
+}
+
+/* A concept's dot, not its whole label, sits on its point: 12px of padding plus half the dot. */
+.build-node-anchor {
+  --build-dot: 20px;
+  translate: -50% calc(-12px - var(--build-dot) / 2);
+}
+
+@container (min-width: 40rem) {
+  .build-node-anchor {
+    --build-dot: 26px;
+  }
+}
+
+.build-node-mark,
+.build-node-dot {
+  width: var(--build-dot);
+  height: var(--build-dot);
+}
+
+/* The folder. */
+.build-at:has(> .build-folder) {
+  opacity: 0;
+  scale: 0.9;
+}
+
+.build-at[data-shown]:has(> .build-folder) {
+  opacity: 1;
+  scale: 1;
+}
+
+.build-folder-icon {
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
+  background: radial-gradient(circle at 50% 30%, var(--color-indigo-a14), transparent 70%), var(--color-overlay-1);
+}
+
+/* Files: in the folder, loose once read, stacked by their concept, then absorbed by its name. */
+.build-file {
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+}
+
+.build-file-dot {
+  background: var(--map-indigo-bright);
+}
+
+.build-file-at[data-file='gone'] {
+  opacity: 0;
+  scale: 0.5;
+}
+
+.build-file-at[data-file='waiting'] {
+  opacity: 0.38;
+}
+
+.build-file-at[data-file='live'] .build-file {
+  color: var(--color-text-primary);
+  border-color: var(--gateway-window-edge);
+}
+
+/* Concepts. */
+.build-node-at {
+  opacity: 0;
+  scale: 0.4;
+  pointer-events: none;
+}
+
+.build-node-at[data-shown] {
+  opacity: 1;
+  scale: 1;
+  pointer-events: auto;
+}
+
+.build-node {
+  color: var(--color-text-primary);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+}
+
+.build-node:not(:disabled):hover .build-node-name {
+  color: var(--color-text-primary);
+}
+
+.build-node-dot {
+  border: 2px solid var(--map-indigo-bright);
+  background: radial-gradient(circle, var(--map-indigo-bright) 0 35%, var(--map-node-fill-capability) 40%);
+  transition: border-color var(--motion-settle) var(--motion-ease), scale var(--motion-settle) var(--motion-ease-place);
+}
+
+.build-node-glow {
+  inset: -22px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--map-indigo-bright) 34%, transparent) 0%, transparent 70%);
+  opacity: 0.7;
+  transition: opacity var(--motion-settle) var(--motion-ease);
+}
+
+.build-node-ring {
+  border: 2px solid var(--map-indigo-bright);
+  opacity: 0;
+}
+
+.build-node[data-picked] .build-node-dot {
+  scale: 1.25;
+  border-color: var(--color-text-primary);
+}
+
+.build-node[data-picked] .build-node-glow,
+.build-node[data-target] .build-node-glow {
+  opacity: 1;
+}
+
+.build-node[data-changed] .build-node-dot {
+  border-color: var(--map-recent-change);
+  background: radial-gradient(circle, var(--map-recent-change) 0 35%, var(--map-node-fill-capability) 40%);
+}
+
+.build-node[data-changed] .build-node-glow {
+  opacity: 1;
+  background: radial-gradient(circle, color-mix(in srgb, var(--map-recent-change) 38%, transparent) 0%, transparent 70%);
+}
+
+.build-node[data-changed] .build-node-ring {
+  border-color: var(--map-recent-change);
+}
+
+/* Without the pulse (reduced motion), the concept to tap keeps one still halo. */
+.build-node[data-target] .build-node-ring,
+.build-node[data-changed] .build-node-ring {
+  opacity: 0.6;
+  scale: 1.7;
+}
+
+.build-node[data-checked] .build-node-ring {
+  opacity: 0;
+}
+
+/* Relations draw from their first concept to their second. */
+.build-edge {
+  stroke: var(--map-indigo-bright);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.85;
+  transition:
+    stroke-dashoffset var(--motion-choreography) var(--motion-ease),
+    stroke var(--motion-settle) var(--motion-ease);
+}
+
+.build-edge[data-drawn] {
+  stroke-dashoffset: 0;
+}
+
+.build-edge[data-hot] {
+  stroke: var(--map-recent-change);
+}
+
+.build-edge-label-at {
+  opacity: 0;
+  transition-delay: calc(var(--motion-choreography) * 0.6);
+}
+
+.build-edge-label-at[data-shown] {
+  opacity: 1;
+}
+
+.build-edge-label {
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-canvas);
+}
+
+/* The commit and the file it carries into the concept that holds it. */
+.build-commit {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  opacity: 0;
+  translate: 0 -8px;
+  transition:
+    opacity var(--motion-slow) var(--motion-ease),
+    translate var(--motion-slow) var(--motion-ease);
+}
+
+.build-commit[data-shown] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.build-carry {
+  color: var(--map-recent-change);
+  border: 1px solid var(--map-recent-change);
+  background: var(--color-canvas);
+}
+
+.build-carry-at {
+  opacity: 0;
+}
+
+.build-carry-at[data-carry='landed'] {
+  transition: translate var(--motion-choreography) var(--motion-ease);
+}
+
+/* The changed concept and, after it, the file it is: one cell, cross-faded. */
+.build-file-card {
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-canvas);
+}
+
+.build-code-key {
+  color: var(--map-indigo-bright);
+}
+
+.build-detail {
+  opacity: 0;
+  translate: 0 8px;
+  transition:
+    opacity var(--motion-slow) var(--motion-ease),
+    translate var(--motion-slow) var(--motion-ease);
+}
+
+.build-detail[data-open] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .build-details {
+    animation: buildLineIn var(--motion-slow) var(--motion-ease) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Moru's words, the cards and a pose swap still arrive, as a fade without travel. */
+  .build-line,
+  .build-details,
+  .build-moru-layer {
+    animation-name: panelCrossfadeIn !important;
+    animation-duration: var(--motion-fast) !important;
+    animation-delay: 0ms !important;
+  }
+
+  .build-detail {
+    translate: none;
+    transition-duration: var(--motion-fast) !important;
+  }
+}
+
+/* The panel: steps, Moru's line, Moru and the step's choices. */
+.build-step-bar {
+  background: var(--color-overlay-3);
+  transition: background-color var(--motion-slow) var(--motion-ease);
+}
+
+.build-step {
+  color: var(--color-text-tertiary);
+}
+
+.build-step[data-step='done'] .build-step-bar {
+  background: var(--map-indigo-bright);
+}
+
+.build-step[data-step='now'] {
+  color: var(--color-text-primary);
+}
+
+.build-step[data-step='now'] .build-step-bar {
+  background: linear-gradient(90deg, var(--map-indigo-bright), var(--color-text-primary));
+}
+
+.build-bubble {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-overlay-1);
+}
+
+/* The tail points down at Moru. */
+.build-bubble::after {
+  content: '';
+  position: absolute;
+  left: 2.75rem;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  rotate: 45deg;
+  border-right: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+}
+
+.build-moru-layer {
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+
+.build-moru-layer[data-build-moru-layer='out'] {
+  opacity: 0;
+}
+
+.build-moru-emote {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .build-line {
+    animation: buildLineIn var(--motion-slow) var(--motion-ease) both;
+  }
+
+  .build-moru-layer[data-build-moru-layer='in'] {
+    animation: buildMoruIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .build-carry-at[data-carry='landed'] {
+    animation: buildCarry var(--motion-choreography) var(--motion-ease) both;
+  }
+
+  .build-moru-emote {
+    animation: buildEmote var(--motion-choreography) var(--motion-ease) both;
+  }
+
+  .build-node[data-target] .build-node-ring,
+  .build-node[data-changed] .build-node-ring {
+    animation: buildRing calc(var(--motion-base) * 9) var(--motion-ease) infinite;
+    animation-play-state: paused;
+  }
+
+  [data-build-motion='running'] .build-node[data-target] .build-node-ring,
+  [data-build-motion='running'] .build-node[data-changed] .build-node-ring {
+    animation-play-state: running;
+  }
+}
+
+@keyframes buildLineIn {
+  from { opacity: 0; translate: 0 4px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes buildMoruIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes buildEmote {
+  0% { opacity: 0; translate: 0 6px; scale: 0.6; }
+  20% { opacity: 1; translate: 0 0; scale: 1; }
+  75% { opacity: 1; translate: 0 -18px; }
+  100% { opacity: 0; translate: 0 -26px; }
+}
+
+@keyframes buildCarry {
+  0% { opacity: 0; scale: 0.8; }
+  15% { opacity: 1; scale: 1; }
+  75% { opacity: 1; scale: 0.9; }
+  100% { opacity: 0; scale: 0.5; }
+}
+
+@keyframes buildRing {
+  0% { opacity: 0.85; scale: 1; }
+  100% { opacity: 0; scale: 2.6; }
+}

@@ -151,6 +151,63 @@
       }
     }
   },
+  "build": {
+    "eyebrow": "직접 해 보기",
+    "title": "모루와 지도를 만들어 보세요",
+    "sub": "예시 저장소 하나로 1분이면 돼요. 폴더를 열고, 파일이 하는 일에 이름을 붙이고, 개념을 잇고, 커밋이 무엇을 바꿨는지 찾아요.",
+    "repo": "예시 저장소",
+    "files": "파일 {count}개",
+    "stepCount": "{step}/5",
+    "steps": {
+      "open": "열기",
+      "name": "이름",
+      "link": "잇기",
+      "change": "변화",
+      "done": "완성"
+    },
+    "moru": {
+      "closed": "작은 쇼핑몰 저장소예요. 같이 지도를 만들어 볼까요? 폴더부터 열어요.",
+      "reading": "파일 {count}개를 읽고 있어요. 같은 일을 하는 파일끼리 모아 볼게요.",
+      "naming": "이 파일 {count}개는 같은 일을 해요. 지도에서 뭐라고 부를까요?",
+      "namingHint": "사람이 부르는 말로 이름을 붙이면 지도가 바로 읽혀요.",
+      "linkStart": "{from} 개념이 {to} 개념과 이어져요({reason}). {from} 개념부터 눌러 주세요.",
+      "linkEnd": "좋아요. 이제 {to} 개념을 눌러 선을 이어 주세요.",
+      "miss": "앗, 그 개념이 아니에요. 빛나는 개념을 눌러 주세요.",
+      "commit": "지도가 생겼어요! 이제 에이전트가 코드를 고치고 커밋했어요. 반영해 볼까요?",
+      "impact": "바뀐 파일이 {name} 개념 안에 있어요. 빛나는 {name} 개념을 눌러 보세요.",
+      "inspect": "무엇이 바뀌었고 어떤 개념과 이어져 있는지 한눈에 보여요.",
+      "done": "완성! 이 지도는 마크다운 파일로 저장소에 남아서 나와 에이전트가 같이 읽어요."
+    },
+    "actions": {
+      "open": "폴더 열기",
+      "commit": "커밋 반영하기",
+      "confirm": "확인했어요",
+      "restart": "처음부터 다시",
+      "tryOwn": "내 폴더로 해 보기"
+    },
+    "suggested": "모루 추천",
+    "folderName": "{folder} 폴더",
+    "names": {
+      "cart": "장바구니",
+      "payment": "결제",
+      "account": "로그인"
+    },
+    "relations": {
+      "readsTotal": "합계를 읽어요",
+      "needsLogin": "로그인이 필요해요"
+    },
+    "commitAuthor": "Claude Code가 커밋했어요",
+    "commitMessage": "fix(payment): 카드 결제 금액 반올림",
+    "inspect": {
+      "changedFile": "바뀐 파일",
+      "linked": "이어진 개념",
+      "note": "이 개념을 읽는 에이전트는 다음 작업 전에 이 변화를 먼저 알게 돼요."
+    },
+    "doneSummary": "개념 {concepts}개 · 관계 {relations}개 · 확인한 변화 1곳",
+    "honesty": "예시 저장소로 보여 드리는 체험이에요. 실제로는 Claude Code나 Codex가 MCP로 파일을 읽어 개념과 관계를 적고, 이름은 언제든 내가 고쳐요.",
+    "stageLabel": "모루와 만드는 예시 지도",
+    "nodeLabel": "{name} 개념, 파일 {count}개"
+  },
   "harnessFilm": {
     "label": "하네스 탭: 내 저장소의 에이전트 설정",
     "example": "예시 저장소",
