@@ -34,8 +34,11 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 
 - **에이전트가 맥락을 갖고 시작해요.** Claude Code, Codex, Cursor, Antigravity가 MCP로 작업에 걸린 개념, 코드 경로, 의존 관계, 아직 풀리지 않은 질문을 읽어요.
 - **기록은 내가 가져요.** `atlas/` 폴더에 개념마다 마크다운 파일 하나가 있고, 코드처럼 Git으로 버전을 관리하고 리뷰해요.
-- **무엇이 사실인지는 내가 정해요.** 에이전트의 제안은 내가 받아들이기 전까지 제안으로 남아요.
+- **무엇이 사실인지는 내가 정해요.** 에이전트가 고친 내용은 모두 마크다운 diff로 남아서, 그대로 두거나 고치거나 되돌릴 수 있어요. 앱 안 대화에서는 쓰기마다 내 허락을 기다려요.
 - **모르는 것은 모른다고 해요.** 지도의 선은 선언된 관계일 뿐, 실행 시 영향의 증거가 아니에요. 근거가 없으면 안전이 아니라 미확인으로 보여요.
+
+코드 그래프, 위키, Obsidian, `CLAUDE.md`와는 무엇이 다를까요? [Atlas 비교](https://ontologyatlas.com/ko/guide/atlas-compared/)에
+정리했고, 그쪽 도구가 더 나은 경우도 적어 뒀어요.
 
 ## 빠른 시작
 
@@ -82,9 +85,51 @@ your-repo/
     └── wiki/              그 문서로 쓴 페이지, 모든 사실에 출처 표시
 ```
 
-frontmatter에 `kind:`가 있는 마크다운 파일 하나가 개념 하나예요. `uid`는 바뀌지 않고,
-`slug`는 지금의 주소이며, `path`는 그 개념이 설명하는 코드를 가리켜요. 지도, 문서,
-자료실, Git 화면이 모두 이 파일을 읽어요.
+frontmatter에 `kind:`가 있는 마크다운 파일 하나가 개념 하나예요. 개념은 **프로젝트**,
+**도메인**(오래 유지되는 책임), **역량**(시스템이 하는 일), **요소**(둘 이상의 역량이 함께
+쓰는 부품) 중 하나예요. `uid`는 바뀌지 않고, `slug`는 지금의 주소이며, `path`는 그 개념이
+설명하는 코드를 가리켜요. 아래는 이 저장소의 지도
+[`docs/ontology/`](docs/ontology/capabilities/vault-graph-query.md)에 있는 파일을 줄인 거예요.
+
+```markdown
+---
+uid: 7c451ebd-9cd0-41a9-bc37-044affac786a
+slug: capabilities/vault-graph-query
+kind: capability
+title: Vault graph query
+domain: domains/meaning-layer
+path: mcp/src/tools/graph.mjs
+dependencies: [elements/graph-compiler, elements/graph-engine, elements/vault-file-store]
+---
+
+## Definition
+Compiles the folder of Markdown files into one typed graph and answers
+structural questions over it, so a person or agent can ask what a node touches
+without opening every file.
+
+## Excludes
+- Writing anything back to the vault.
+
+## Uncertainty
+- The engine is roughly 6,400 lines and was not read beyond its header.
+```
+
+지도, 문서, 자료실, Git 화면이 모두 이 파일을 읽고, 에이전트도 같은 파일을 읽어요. MCP
+서버의 도구는 40개(읽기 24개, 쓰기 16개)이고, 에이전트가 가장 자주 묻는 질문에는 이
+도구들이 답해요.
+
+| 작업 전후에 에이전트가 묻는 것 | 도구 |
+|---|---|
+| 이 부분은 무엇을 위한 것이고, 무엇을 맡지 않나? | `get_concept` |
+| 이름을 바꾸거나 지우기 전에, 무엇이 이걸 가리키나? | `find_backlinks` |
+| 이 두 개념은 어떻게 이어져 있나? | `find_path` |
+| 이 변경이 무엇에 영향을 줄 수 있나? | `query_ontology`의 `impact` |
+| 이 내용은 어디에 적혀 있나? | `find_evidence` |
+| 방금 만들거나 바꾼 것을 기록하기 | `add_concepts`, `add_relations`, `patch_concept` |
+| 폴더가 아직 일관된가? | `validate_vault` |
+
+서버를 읽기 전용으로 등록하면 읽기 도구 24개만 보여요. 방법은
+[MCP 레퍼런스](mcp/README.md#read-only-registration-oatlas_read_only)에 있어요.
 
 에이전트가 폴더에 닿는 길은 둘이에요.
 
@@ -114,7 +159,7 @@ Atlas는 아직 초기 단계예요. 우리 벤치마크에서는 Atlas를 썼�
 
 ## 문서
 
-[Atlas란?](docs/guide/what-is-atlas.md) · [첫 5분](docs/guide/first-five-minutes.md) · [무엇이 개념이 되나](docs/guide/what-becomes-a-node.md) · [관계](docs/guide/relations.md) · [명세](docs/ONTOLOGY-ATLAS-SPEC.md) · [기능](docs/FEATURES.md) · [CLI](cli/README.md) · [아키텍처](docs/ARCHITECTURE.md)
+[Atlas란?](docs/guide/what-is-atlas.md) · [Atlas 비교](docs/guide/atlas-compared.md) · [첫 5분](docs/guide/first-five-minutes.md) · [내 코드로 첫 지도 만들기](docs/guide/from-your-repo.md) · [무엇이 개념이 되나](docs/guide/what-becomes-a-node.md) · [관계](docs/guide/relations.md) · [명세](docs/ONTOLOGY-ATLAS-SPEC.md) · [기능](docs/FEATURES.md) · [CLI](cli/README.md) · [아키텍처](docs/ARCHITECTURE.md)
 
 ## 기여하기
 
@@ -127,8 +172,8 @@ pnpm dev
 pnpm checks:changed -- --run
 ```
 
-검사 고르기, 푸시 전 검사와 CI, 머지, 레인 예산은 [개발 검사](docs/DEVELOPMENT-CHECKS.md)에 있어요.
-저장소 명령 표는 영어 README의 [Contributing](README.md#contributing)에 있어요.
+검사 고르기, 푸시 전 검사와 CI, 머지, 레인 예산, 저장소 명령 전체는
+[개발 검사](docs/DEVELOPMENT-CHECKS.md)에 있어요.
 
 ## Moru
 
