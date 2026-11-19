@@ -407,6 +407,8 @@ function placeIslandName(
   frame: LibraryGraphFrame,
   placed: BoxGrid<{ x: number; y: number; width: number; height: number }>,
   islands: BoxGrid<LibraryGraphIsland>,
+  /** Set when the canvas edge refused a seat. */
+  clip: { edge: boolean },
 ): { x: number; y: number; width: number; height: number } | null {
   const halfW = island.band ? island.band.width / 2 : island.r;
   const halfH = island.band ? island.band.height / 2 : island.r;
@@ -419,12 +421,19 @@ function placeIslandName(
   ];
   let fallback: { seat: (typeof seats)[number]; cover: number } | null = null;
   for (const seat of seats) {
-    if (seat.x < 2 || seat.x + seat.width > frame.width - 2 || seat.y < 2 || seat.y + seat.height > frame.height - 2) continue;
+    if (seat.x < 2 || seat.x + seat.width > frame.width - 2 || seat.y < 2 || seat.y + seat.height > frame.height - 2) {
+      clip.edge = true;
+      continue;
+    }
     if (placed.some(seat, Math.max(NAME_GAP_X, NAME_GAP_Y), (other) => overlaps(seat, other))) continue;
+    // A seat stops counting once it can no longer win: past the reach a name may take, or no better than the seat in hand.
+    const limit = Math.min(ISLAND_NAME_REACH_MAX_PX, fallback ? fallback.cover : Infinity);
     let cover = 0;
-    islands.each(seat, ISLAND_SHORE_PX, (other) => {
+    const lost = islands.some(seat, ISLAND_SHORE_PX, (other) => {
       if (other.id !== island.id) cover += islandCover(seat, other);
+      return cover > limit || (fallback !== null && cover >= fallback.cover);
     });
+    if (lost) continue;
     if (cover === 0) return seat;
     if (!fallback || cover < fallback.cover) fallback = { seat, cover };
   }
@@ -436,9 +445,10 @@ function placeIslandName(
  * a seat: testing every island at every seat was O(k²) a frame, seconds at five thousand.
  */
 class BoxGrid<T extends { x: number; y: number }> {
-  private readonly cells = new Map<number, T[]>();
+  private readonly items: T[] = [];
+  private readonly cells = new Map<number, number[]>();
   private stamp = 0;
-  private readonly seen = new Map<T, number>();
+  private seen = new Uint32Array(64);
 
   private readonly cell: number;
   private readonly extent: (item: T) => { left: number; top: number; right: number; bottom: number };
@@ -449,12 +459,26 @@ class BoxGrid<T extends { x: number; y: number }> {
   }
 
   add(item: T): void {
+    const index = this.items.length;
+    this.items.push(item);
+    if (index >= this.seen.length) {
+      const grown = new Uint32Array(this.seen.length * 2);
+      grown.set(this.seen);
+      this.seen = grown;
+    }
     const { left, top, right, bottom } = this.extent(item);
-    this.span(left, top, right, bottom, (key) => {
-      const held = this.cells.get(key);
-      if (held) held.push(item);
-      else this.cells.set(key, [item]);
-    });
+    const x0 = Math.floor(left / this.cell);
+    const x1 = Math.floor(right / this.cell);
+    const y0 = Math.floor(top / this.cell);
+    const y1 = Math.floor(bottom / this.cell);
+    for (let cx = x0; cx <= x1; cx += 1) {
+      for (let cy = y0; cy <= y1; cy += 1) {
+        const key = (cx + 0x8000) * 0x10000 + (cy + 0x8000);
+        const held = this.cells.get(key);
+        if (held) held.push(index);
+        else this.cells.set(key, [index]);
+      }
+    }
   }
 
   /** Every item whose extent meets the box grown by `margin`, each once. */
@@ -466,45 +490,45 @@ class BoxGrid<T extends { x: number; y: number }> {
   }
 
   some(box: { x: number; y: number; width: number; height: number }, margin: number, test: (item: T) => boolean): boolean {
-    const stamp = ++this.stamp;
-    let found = false;
-    this.span(box.x - margin, box.y - margin, box.x + box.width + margin, box.y + box.height + margin, (key) => {
-      if (found) return;
-      for (const item of this.cells.get(key) ?? []) {
-        if (this.seen.get(item) === stamp) continue;
-        this.seen.set(item, stamp);
-        if (test(item)) {
-          found = true;
-          return;
+    this.stamp += 1;
+    const stamp = this.stamp;
+    const x0 = Math.floor((box.x - margin) / this.cell);
+    const x1 = Math.floor((box.x + box.width + margin) / this.cell);
+    const y0 = Math.floor((box.y - margin) / this.cell);
+    const y1 = Math.floor((box.y + box.height + margin) / this.cell);
+    for (let cx = x0; cx <= x1; cx += 1) {
+      for (let cy = y0; cy <= y1; cy += 1) {
+        const held = this.cells.get((cx + 0x8000) * 0x10000 + (cy + 0x8000));
+        if (!held) continue;
+        for (const index of held) {
+          if (this.seen[index] === stamp) continue;
+          this.seen[index] = stamp;
+          if (test(this.items[index])) return true;
         }
       }
-    });
-    return found;
-  }
-
-  private span(left: number, top: number, right: number, bottom: number, visit: (key: number) => void): void {
-    const x0 = Math.floor(left / this.cell);
-    const x1 = Math.floor(right / this.cell);
-    const y0 = Math.floor(top / this.cell);
-    const y1 = Math.floor(bottom / this.cell);
-    for (let cx = x0; cx <= x1; cx += 1) for (let cy = y0; cy <= y1; cy += 1) visit((cx + 0x8000) * 0x10000 + (cy + 0x8000));
+    }
+    return false;
   }
 }
 
 /** The screen cell the name pass buckets islands and names on, in CSS px. */
-const NAME_GRID_PX = 96;
+const NAME_GRID_PX = 48;
 
-/** Name widths by text, since the font is one step: thousands of `measureText` a frame were a third of it. */
-const islandNameWidths = new Map<string, number>();
-function islandNameWidth(ctx: CanvasRenderingContext2D, font: string, text: string): number {
-  const key = `${font}\u0000${text}`;
-  let width = islandNameWidths.get(key);
-  if (width === undefined) {
-    if (islandNameWidths.size > 20_000) islandNameWidths.clear();
-    width = ctx.measureText(text).width;
-    islandNameWidths.set(key, width);
-  }
-  return width;
+/**
+ * Each island's name and its width, kept while label, count, locale and font hold: formatting
+ * a count and measuring its text for thousands of islands a frame were most of the name pass.
+ */
+const islandNames = new Map<string, { label: string; count: number; locale: string | undefined; font: string; text: string; width: number }>();
+function islandName(ctx: CanvasRenderingContext2D, font: string, island: LibraryGraphIsland, locale: string | undefined): { text: string; width: number } {
+  // A topic counts pages; Unread counts files. Locale-grouped like every other count on screen.
+  const count = island.kind === "unread" ? island.sources : island.pages;
+  const held = islandNames.get(island.id);
+  if (held && held.label === island.label && held.count === count && held.locale === locale && held.font === font) return held;
+  if (islandNames.size > 20_000) islandNames.clear();
+  const text = `${island.label} · ${count.toLocaleString(locale)}`;
+  const name = { label: island.label, count, locale, font, text, width: ctx.measureText(text).width };
+  islandNames.set(island.id, name);
+  return name;
 }
 
 /** How far a box reaches into an island's body with its shore, in px; 0 when it does not touch. */
@@ -529,51 +553,137 @@ function islandCover(
   return Math.max(0, island.r + reach - distance);
 }
 
+type NameBox = { x: number; y: number; width: number; height: number };
+
+/** Where each island's name sat at the last full seating, relative to the island, and where the island stood. */
+interface NameSeating {
+  key: string;
+  seats: Map<string, { x: number; y: number; r: number; seat: { dx: number; dy: number; inside: boolean } | null; edge: boolean }>;
+  /** Ids in drawing order: largest first, then islands seated since. */
+  order: string[];
+  sinceFull: number;
+}
+
+/** The last seating per canvas. */
+const nameSeatings = new WeakMap<CanvasRenderingContext2D, NameSeating>();
+/** Islands that moved apart by less than this since the seating keep their seats: a pan or a hover moves none. */
+const SEAT_DRIFT_PX = 1;
+/** While islands move apart, names are seated afresh every this many frames and follow their islands between. */
+const RESEAT_EVERY_FRAMES = 3;
+
 /**
  * The islands' names, painted after the marks so a name inside an island stands on its
  * dots rather than under them. Largest first, so the biggest topics keep their names when
  * two would cross.
+ *
+ * Seating costs O(k) grid queries; a frame whose islands only moved together (a pan, a hover)
+ * reuses the last seating at O(k) lookups and seats only islands that came into view.
  */
 function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, ink: LibraryGraphInk): void {
-  const placed = new BoxGrid<{ x: number; y: number; width: number; height: number }>(NAME_GRID_PX, (box) => ({
-    left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height,
-  }));
   const extentOf = (island: LibraryGraphIsland) => {
     const halfW = (island.band ? island.band.width / 2 : island.r) + ISLAND_SHORE_PX;
     const halfH = (island.band ? island.band.height / 2 : island.r) + ISLAND_SHORE_PX;
     return { left: island.x - halfW, top: island.y - halfH, right: island.x + halfW, bottom: island.y + halfH };
   };
-  const bodies = new BoxGrid<LibraryGraphIsland>(NAME_GRID_PX, extentOf);
-  const named: LibraryGraphIsland[] = [];
-  for (const island of frame.islands ?? []) {
+  const all = frame.islands ?? [];
+  const visible: LibraryGraphIsland[] = [];
+  for (const island of all) {
     const { left, top, right, bottom } = extentOf(island);
     // Off the canvas an island can neither carry a name nor be covered by one.
     if (right < 0 || bottom < 0 || left > frame.width || top > frame.height) continue;
-    bodies.add(island);
-    named.push(island);
+    visible.push(island);
   }
-  named.sort((a, b) => b.r - a.r);
-  const dim = frame.dim ?? 0;
   const font = `${ink.labelPx}px ${ink.fontFamily}`;
   ctx.font = font;
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "center";
   const lineHeight = Math.round(ink.labelPx * 1.35);
-  for (const island of named) {
-    // A topic counts pages; Unread counts files. Locale-grouped like every other count on screen.
-    const count = island.kind === "unread" ? island.sources : island.pages;
-    const text = `${island.label} · ${count.toLocaleString(frame.locale)}`;
-    const width = islandNameWidth(ctx, font, text);
+  const key = `${frame.width}|${frame.height}|${font}|${frame.locale ?? ""}|${all.length}|${all[0]?.id ?? ""}|${all.at(-1)?.id ?? ""}`;
+  let seating = nameSeatings.get(ctx);
+  let shift: { x: number; y: number } | null = null;
+  if (seating && seating.key === key) {
+    let drift = 0;
+    for (const island of visible) {
+      const held = seating.seats.get(island.id);
+      if (!held) continue;
+      // A zoom changes every size: the seats no longer fit.
+      if (Math.abs(held.r - island.r) > 0.5) {
+        drift = Infinity;
+        break;
+      }
+      shift ??= { x: island.x - held.x, y: island.y - held.y };
+      drift = Math.max(drift, Math.abs(island.x - held.x - shift.x), Math.abs(island.y - held.y - shift.y));
+    }
+    shift ??= { x: 0, y: 0 };
+    seating.sinceFull += 1;
+    if (drift > SEAT_DRIFT_PX && (drift === Infinity || seating.sinceFull >= RESEAT_EVERY_FRAMES)) shift = null;
+  }
+  const placed = new BoxGrid<NameBox>(NAME_GRID_PX, (box) => ({
+    left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height,
+  }));
+  let bodies: BoxGrid<LibraryGraphIsland> | null = null;
+  const bodiesGrid = () => {
+    if (!bodies) {
+      bodies = new BoxGrid<LibraryGraphIsland>(NAME_GRID_PX, extentOf);
+      for (const island of visible) bodies.add(island);
+    }
+    return bodies;
+  };
+  const drawn: Array<{ island: LibraryGraphIsland; box: NameBox; inside: boolean; text: string }> = [];
+  const inCanvas = (box: NameBox) => box.x >= 2 && box.x + box.width <= frame.width - 2 && box.y >= 2 && box.y + box.height <= frame.height - 2;
+  const seat = (island: LibraryGraphIsland, into: NameSeating, at: { x: number; y: number }) => {
+    const { text, width } = islandName(ctx, font, island, frame.locale);
     const across = island.band ? island.band.width : island.r * 2;
     // Inside when name and plate fit across the body; the plate adds 4px each side.
     const inside = across >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 8);
+    const clip = { edge: false };
     const box = inside
       ? { x: island.x - width / 2, y: island.y - lineHeight / 2, width, height: lineHeight }
-      : placeIslandName(island, width, lineHeight, frame, placed, bodies);
-    if (!box) continue;
-    if (box.x < 2 || box.x + box.width > frame.width - 2 || box.y < 2 || box.y + box.height > frame.height - 2) continue;
-    if (placed.some(box, Math.max(NAME_GAP_X, NAME_GAP_Y), (other) => overlaps(box, other))) continue;
+      : placeIslandName(island, width, lineHeight, frame, placed, bodiesGrid(), clip);
+    const free = box !== null && inCanvas(box) && !placed.some(box, Math.max(NAME_GAP_X, NAME_GAP_Y), (other) => overlaps(box, other));
+    into.seats.set(island.id, {
+      x: at.x, y: at.y, r: island.r,
+      seat: free ? { dx: box.x - island.x, dy: box.y - island.y, inside } : null,
+      // A name the canvas edge refused may fit once the island comes further in.
+      edge: clip.edge || (box !== null && !inCanvas(box)),
+    });
+    if (!free) return;
     placed.add(box);
+    drawn.push({ island, box, inside, text });
+  };
+  if (seating && shift) {
+    const byId = new Map(visible.map((island) => [island.id, island]));
+    for (const id of seating.order) {
+      const island = byId.get(id);
+      const held = seating.seats.get(id);
+      if (!island || !held?.seat) continue;
+      const { text, width } = islandName(ctx, font, island, frame.locale);
+      const box = { x: island.x + held.seat.dx, y: island.y + held.seat.dy, width, height: lineHeight };
+      if (!inCanvas(box)) continue;
+      placed.add(box);
+      drawn.push({ island, box, inside: held.seat.inside, text });
+    }
+    // Islands that came into view, or whose name the edge refused, are seated among the names in place.
+    const fresh = visible.filter((island) => {
+      const held = seating!.seats.get(island.id);
+      return !held || (!held.seat && held.edge);
+    });
+    fresh.sort((a, b) => b.r - a.r);
+    for (const island of fresh) {
+      if (!seating.seats.has(island.id)) seating.order.push(island.id);
+      seat(island, seating, { x: island.x - shift.x, y: island.y - shift.y });
+    }
+  } else {
+    seating = { key, seats: new Map(), order: [], sinceFull: 0 };
+    nameSeatings.set(ctx, seating);
+    const named = [...visible].sort((a, b) => b.r - a.r);
+    for (const island of named) {
+      seating.order.push(island.id);
+      seat(island, seating, island);
+    }
+  }
+  const dim = frame.dim ?? 0;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  for (const { island, box, inside, text } of drawn) {
     frame.islandReport?.push(island.id);
     // A ground plate under every name, so it reads off the ground, not the dots.
     const presence = (1 - dim * 0.5) * easeMotion(island.arrival ?? 1);
@@ -604,11 +714,12 @@ export function hitTestLibraryGraph(
   let best: LibraryGraphNode | null = null;
   let bestDistance = Infinity;
   for (const node of frame.nodes) {
-    const centre = frame.positions.get(node.id);
-    if (!centre) continue;
+    // Size first: on the overview most dots are too small to press, and a position is projected on demand.
     const radius = radiusOf(frame, node);
     // A zero radius is a concept standing for its island on the overview; the island takes the press.
     if (radius <= 0 || radius < minRadius) continue;
+    const centre = frame.positions.get(node.id);
+    if (!centre) continue;
     const dx = point.x - centre.x;
     const dy = point.y - centre.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -785,15 +896,15 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   const active = frame.hoveredId ?? frame.focusedId;
   const flow = frame.flow ?? null;
   for (const edge of frame.edges) {
-    const from = nodeCentre(frame, edge.source);
-    const to = nodeCentre(frame, edge.target);
-    if (!from || !to) continue;
     const touchesSelection =
       frame.selectedId !== null && (edge.source === frame.selectedId || edge.target === frame.selectedId);
     // Pointing at a dot asks about its links, which answer well above the 3:1 floor.
     const touchesActive = active !== null && (edge.source === active || edge.target === active);
     // The overview draws no line at rest, or ten thousand citations become a grey field.
     if (frame.focusEdgesOnly && !touchesSelection && !touchesActive && !(focus?.has(edge.source) && focus?.has(edge.target))) continue;
+    const from = nodeCentre(frame, edge.source);
+    const to = nodeCentre(frame, edge.target);
+    if (!from || !to) continue;
     /*
      * An open card's citations drift; a just-written page's run one pass. The path is
      * stroked page→file, so a rising `lineDashOffset` moves the ink toward the page.
@@ -966,8 +1077,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   if (frame.layout === "islands") for (const edge of frame.edges) if (edge.certainty === "unverified") stalePages.add(edge.source);
   /*
    * The resting overview paints one path per ink (files, fresh pages, stale pages): the
-   * per-mark loop cost 20 ms a frame at 11,240 marks. Any hover, selection, dim or arrival
-   * falls back to that loop.
+   * per-mark loop cost 20 ms a frame at 11,240 marks. Any hover, selection or dim falls back
+   * to that loop.
    */
   const quietOverview =
     frame.layout === "islands" &&
@@ -976,7 +1087,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     frame.hoveredId === null &&
     frame.focusedId === null &&
     (flow === null || (flow.arrived.size === 0 && flow.edges.size === 0));
-  if (quietOverview && frame.overview && (opacity?.size ?? 0) === 0 && typeof Path2D !== "undefined") {
+  // Both quiet paths draw every mark at full ink, so a fade-in's opacities take the cached one too.
+  if (quietOverview && frame.overview && typeof Path2D !== "undefined") {
     const paths = cachedOverviewPaths(frame, stalePages);
     const { view } = frame.overview;
     ctx.save();

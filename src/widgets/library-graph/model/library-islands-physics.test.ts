@@ -107,4 +107,14 @@ describe("island physics", () => {
     expect(awake).toContain(field.bodies[12 * 40 + 21].id);
     expect(awake.length).toBeLessThan(10);
   });
+
+  it("stands a map of more than a thousand islands at home at once, and moves it for real under a hand", () => {
+    const field = tightField(50, 25, 3);
+    expect(isIslandFieldMoving(field)).toBe(false);
+    for (const body of field.bodies) expect([body.x, body.y]).toEqual([body.home.x, body.home.y]);
+    const middle = field.bodies[12 * 50 + 25];
+    pinIsland(field, middle.id, { x: middle.x + 8, y: middle.y });
+    stepIslandField(field, Infinity);
+    expect(field.bodies[12 * 50 + 26].x).toBeGreaterThan(field.bodies[12 * 50 + 26].home.x);
+  });
 });

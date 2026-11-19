@@ -12,6 +12,8 @@ import type { LayoutPoint } from "./library-graph-layout";
  * home sleeps until an awake body touches it. The gap two bodies keep is the layout's own
  * (`gap`): a large folder's map, scaled to fit the canvas, stands tighter than
  * {@link BODY_GAP}, and a fixed gap there pushed every neighbour forever and never rested.
+ * Each collision pass stops after {@link STEP_BUDGET_MS} and the next resumes where it
+ * stopped. Above {@link TRAVEL_MAX_ISLANDS} islands a map stands at home at once, O(k).
  */
 
 export interface IslandBody {
@@ -40,6 +42,11 @@ export interface IslandField {
   asleep: Uint8Array;
   /** The body a collision pass cut short by its budget stopped at; the next pass starts there. */
   resumeAt: number;
+  /**
+   * Whether the field skips the journey and stands at home at once: a field of more than
+   * {@link TRAVEL_MAX_ISLANDS} islands, until a hand first holds one.
+   */
+  instant: boolean;
 }
 
 /**
@@ -64,6 +71,12 @@ const SNAP_DISTANCE = 0.5;
 const ARRIVAL_START = 0.9;
 /** While a hand holds one body, the others' spring is this much of itself: they yield rather than fight. */
 const YIELD_WHILE_HELD = 0.25;
+/**
+ * Above this many islands a map neither arrives nor springs to a relaid home: it stands at
+ * once. Every travelling frame repaints every mark; at 499 islands (10,500 marks) that held
+ * 60 fps, at 1,999 (42,000 marks) it cost 50 ms a frame, so the line sits between them.
+ */
+const TRAVEL_MAX_ISLANDS = 1000;
 /** A settle never runs longer than this many steps. */
 const SETTLE_MAX_STEPS = 600;
 /**
@@ -147,9 +160,10 @@ export function createIslandField(
   centre: LayoutPoint,
   options: { arriving: boolean },
 ): IslandField {
+  const instant = islands.length > TRAVEL_MAX_ISLANDS;
   const bodies: IslandBody[] = islands.map((island) => {
     const home = { x: island.x, y: island.y };
-    const start = options.arriving
+    const start = options.arriving && !instant
       ? { x: centre.x + (home.x - centre.x) * ARRIVAL_START, y: centre.y + (home.y - centre.y) * ARRIVAL_START }
       : home;
     return { id: island.id, x: start.x, y: start.y, vx: 0, vy: 0, r: island.r, home, pinned: null, journey: Math.hypot(home.x - start.x, home.y - start.y) };
@@ -157,10 +171,11 @@ export function createIslandField(
   return {
     bodies,
     index: new Map(bodies.map((body, i) => [body.id, i])),
-    moving: options.arriving && bodies.length > 0,
+    moving: options.arriving && !instant && bodies.length > 0,
     gap: homeGap(bodies),
     asleep: new Uint8Array(bodies.length),
     resumeAt: 0,
+    instant,
   };
 }
 
@@ -172,6 +187,8 @@ export function pinIsland(field: IslandField, id: string, at: LayoutPoint): void
   body.vx = 0;
   body.vy = 0;
   field.asleep[i] = 0;
+  // Under a hand the field moves for real, whatever its size: only the held island's neighbours wake.
+  field.instant = false;
   field.moving = true;
 }
 
@@ -243,6 +260,19 @@ function separate(a: IslandBody, b: IslandBody, gap: number, into: "velocity" | 
  */
 export function stepIslandField(field: IslandField, budgetMs: number = STEP_BUDGET_MS): boolean {
   const { bodies, asleep, gap } = field;
+  if (field.instant) {
+    // A large map stands where it belongs at once: a relaid one does not spring there.
+    bodies.forEach((body, i) => {
+      body.x = body.home.x;
+      body.y = body.home.y;
+      body.vx = 0;
+      body.vy = 0;
+      body.journey = 0;
+      asleep[i] = 1;
+    });
+    field.moving = false;
+    return false;
+  }
   // A held body goes where the hand is, and is a wall to everyone else.
   for (const body of bodies) {
     if (!body.pinned) continue;
