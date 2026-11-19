@@ -179,14 +179,20 @@ fn identity(vault_path: &str, project: &str) -> Result<Identity, String> {
         (metadata.dev(), metadata.ino())
     };
     #[cfg(not(unix))]
-    let object = (0, 0);
+    let object = {
+        let _ = metadata;
+        (0, 0)
+    };
     #[cfg(unix)]
     let vault_object = {
         use std::os::unix::fs::MetadataExt;
         (vault_metadata.dev(), vault_metadata.ino())
     };
     #[cfg(not(unix))]
-    let vault_object = (0, 0);
+    let vault_object = {
+        let _ = vault_metadata;
+        (0, 0)
+    };
     Ok(Identity {
         scope: SourceScope::Bound {
             vault,
@@ -220,7 +226,10 @@ fn picked_identity(source_path: &str) -> Result<Identity, String> {
         (metadata.dev(), metadata.ino())
     };
     #[cfg(not(unix))]
-    let object = (0, 0);
+    let object = {
+        let _ = metadata;
+        (0, 0)
+    };
     Ok(Identity {
         scope: SourceScope::Picked,
         root,

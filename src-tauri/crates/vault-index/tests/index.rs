@@ -410,6 +410,7 @@ fn only_markdown_inside_the_vault_is_indexed_whatever_the_listing_says() {
     std::fs::write(vault.root.join(".hidden/note.md"), "quillwort hidden").unwrap();
     std::fs::write(vault.root.join(".dot.md"), "quillwort dot").unwrap();
     std::fs::write(vault.root.join("notes.txt"), "quillwort text").unwrap();
+    #[cfg_attr(not(unix), allow(unused_mut))]
     let mut listed = vec![
         "inside.md".to_string(),
         "../outside/secret.md".to_string(),

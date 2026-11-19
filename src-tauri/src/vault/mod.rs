@@ -12,7 +12,9 @@ pub(crate) mod write;
 #[cfg(test)]
 mod vault_scope_tests {
     use super::read::read_vault_text_file;
-    use super::scope::{canonical_root, resolve_existing_inside};
+    use super::scope::canonical_root;
+    #[cfg(unix)]
+    use super::scope::resolve_existing_inside;
     use super::walk::list_vault_directory;
     use super::write::{
         remove_vault_entry_blocking as remove_vault_entry,

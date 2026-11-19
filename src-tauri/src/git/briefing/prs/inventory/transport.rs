@@ -183,7 +183,10 @@ pub(super) fn identity_until(
         (metadata.dev(), metadata.ino())
     };
     #[cfg(not(unix))]
-    let object = (0, 0);
+    let object = {
+        let _ = metadata;
+        (0, 0)
+    };
     Ok(Identity {
         scope: SourceScope::Picked,
         root,

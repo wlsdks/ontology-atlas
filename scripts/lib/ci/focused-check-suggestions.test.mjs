@@ -989,6 +989,7 @@ describe('focused check suggestions', () => {
       'src-tauri/Cargo.toml',
       'src-tauri/Cargo.lock',
       'src-tauri/clippy.toml',
+      'rust-toolchain.toml',
       'src-tauri/crates/vault-index/Cargo.toml',
       'src-tauri/crates/vault-index/src/lib.rs',
       'src-tauri/crates/vault-index/tests/index.rs',

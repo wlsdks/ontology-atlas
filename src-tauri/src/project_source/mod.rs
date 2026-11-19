@@ -301,9 +301,6 @@ fn is_vault_path(relative: &str, excluded: Option<&str>) -> bool {
     })
 }
 
-/// One absolute path as forward-slash text: the `\\?\` verbatim prefix dropped, the
-/// drive letter lower-cased, no trailing separator, so a Windows path and its
-/// canonical form compare equal.
 /// The path of one porcelain status row: what follows the two status letters and the space.
 fn status_path(row: &[u8]) -> Option<String> {
     row.get(3..)
@@ -311,6 +308,9 @@ fn status_path(row: &[u8]) -> Option<String> {
         .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
 }
 
+/// One absolute path as forward-slash text: the `\\?\` verbatim prefix dropped, the
+/// drive letter lower-cased, no trailing separator, so a Windows path and its
+/// canonical form compare equal.
 fn comparable_path(path: &str) -> String {
     let unified = path.replace('\\', "/");
     let unverbatim = unified

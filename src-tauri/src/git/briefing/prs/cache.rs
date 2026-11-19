@@ -1,9 +1,14 @@
 use super::*;
+#[cfg(unix)]
 use serde::{Deserialize, Deserializer};
+#[cfg(unix)]
 use tauri::Manager;
 
+#[cfg(unix)]
 const STORE_BYTES: usize = 16 * 1024 * 1024;
+#[cfg(unix)]
 const ENTRY_BYTES: usize = 512 * 1024;
+#[cfg(unix)]
 const STORE_COUNT: usize = 400;
 
 #[derive(Default, Serialize)]
@@ -35,6 +40,7 @@ pub struct SavedPulls {
     pub omitted: usize,
     pub ignored: usize,
 }
+#[cfg(unix)]
 #[derive(Serialize, Deserialize)]
 struct Entry {
     scope: String,
@@ -42,6 +48,7 @@ struct Entry {
     merge: String,
     description: PullDescription,
 }
+#[cfg(unix)]
 #[derive(Serialize, Deserialize)]
 struct Envelope {
     version: u8,
@@ -49,6 +56,7 @@ struct Envelope {
     #[serde(deserialize_with = "bounded_entries")]
     entries: Vec<Entry>,
 }
+#[cfg(unix)]
 fn bounded_entries<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<Entry>, D::Error> {
     struct Entries;
     impl<'de> serde::de::Visitor<'de> for Entries {
@@ -75,6 +83,7 @@ fn bounded_entries<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<Ent
     }
     deserializer.deserialize_seq(Entries)
 }
+#[cfg(unix)]
 fn generation() -> String {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     format!(
@@ -87,6 +96,7 @@ fn generation() -> String {
         NEXT.fetch_add(1, Ordering::Relaxed)
     )
 }
+#[cfg(unix)]
 fn scope(identity: &Identity, repository: &str) -> String {
     let mut digest = Sha256::new();
     digest.update(identity.root.as_os_str().as_encoded_bytes());
@@ -98,6 +108,7 @@ fn scope(identity: &Identity, repository: &str) -> String {
     ));
     format!("{:x}", digest.finalize())
 }
+#[cfg(unix)]
 fn valid(entry: &Entry) -> bool {
     let pr = &entry.description;
     entry.scope.len() == 64
@@ -146,6 +157,19 @@ pub(super) fn ticket(_: &tauri::AppHandle) -> Result<(PathBuf, String), String> 
     Err("unsupported".into())
 }
 
+#[cfg(not(unix))]
+pub(super) fn save(
+    _: &Result<(PathBuf, String), String>,
+    _: &Identity,
+    _: &PullDescriptions,
+    _: &[BriefingCommit],
+    _: &AtomicBool,
+    _: bool,
+) -> SaveReport {
+    SaveReport::unavailable()
+}
+
+#[cfg(unix)]
 pub(super) fn save(
     ticket: &Result<(PathBuf, String), String>,
     identity: &Identity,
@@ -154,7 +178,6 @@ pub(super) fn save(
     cancelled: &AtomicBool,
     preserve_previous: bool,
 ) -> SaveReport {
-    #[cfg(unix)]
     if let Ok((path, generation)) = ticket {
         if cancelled.load(Ordering::Relaxed)
             || (result.failure.is_some() && (preserve_previous || result.descriptions.is_empty()))
@@ -220,7 +243,10 @@ pub fn git_briefing_saved_pull_descriptions(
         .and_then(|path| Store::open(&path)?.read())
         .map(|envelope| restore(envelope, &before, &repository, &commits));
     #[cfg(not(unix))]
-    let result: Result<SavedPulls, String> = Err("unsupported".into());
+    let result: Result<SavedPulls, String> = {
+        let _ = (&app, &commits);
+        Err("unsupported".into())
+    };
     if picked_identity(&source_path).ok().as_ref() != Some(&before)
         || !repositories(&before.root)?.contains(&repository)
     {
@@ -238,6 +264,7 @@ pub fn git_briefing_saved_pull_descriptions(
         ignored: 0,
     }))
 }
+#[cfg(unix)]
 fn restore(
     envelope: Envelope,
     identity: &Identity,
@@ -319,6 +346,7 @@ pub fn git_briefing_clear_saved_pulls(app: tauri::AppHandle) -> Result<(), Strin
     }
     #[cfg(not(unix))]
     {
+        let _ = app;
         Err("unsupported".into())
     }
 }

@@ -1,4 +1,5 @@
 use super::*;
+#[cfg(not(windows))]
 use crate::acp::detection::detect_runtimes;
 use crate::acp::test_support::{empty_dirs, probe_with};
 use std::collections::HashSet;

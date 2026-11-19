@@ -28,6 +28,7 @@ pub struct PullDescription {
     #[serde(default)]
     pub copy_kind: String,
     #[serde(skip)]
+    #[cfg(unix)]
     pub(super) merge_commit: String,
 }
 #[derive(Serialize)]
@@ -389,6 +390,7 @@ pub(super) fn collect(
                     Sha256::digest(format!("{title}\0{body}\0{updated_at}"))
                 ),
                 integration: commit.hash.clone(),
+                #[cfg(unix)]
                 merge_commit: merge.into(),
                 copy_kind: "fresh".into(),
             });

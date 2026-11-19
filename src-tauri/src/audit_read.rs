@@ -8,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(any(unix, test))]
 const MAX_READERS: usize = 4;
 const MAX_CHUNK: usize = 1024 * 1024;
 const IDLE: Duration = Duration::from_secs(30);
@@ -217,8 +218,10 @@ impl Slot {
 }
 #[derive(Default)]
 struct Slots {
+    #[cfg(any(unix, test))]
     next: u64,
     entries: HashMap<String, Slot>,
+    #[cfg(unix)]
     sweeping: bool,
 }
 #[derive(Default)]
@@ -276,6 +279,7 @@ impl Registry {
             }
         });
     }
+    #[cfg(any(unix, test))]
     fn prepare(self: &Arc<Self>, owner: &str, now: Instant) -> Result<String, String> {
         self.expire(now);
         let mut slots = self.slots();
@@ -328,6 +332,7 @@ fn registry() -> &'static Arc<Registry> {
     static REGISTRY: OnceLock<Arc<Registry>> = OnceLock::new();
     REGISTRY.get_or_init(|| Arc::new(Registry::default()))
 }
+#[cfg(unix)]
 fn start_sweeper(registry: Arc<Registry>) {
     {
         let mut slots = registry.slots();

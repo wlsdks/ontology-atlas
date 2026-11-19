@@ -30,15 +30,17 @@ pub(crate) fn run(
 }
 
 async fn capture(
-    mut command: Command,
+    command: Command,
     limit: Duration,
     max_bytes: u64,
 ) -> Result<(bool, String), CaptureError> {
     #[cfg(unix)]
-    {
+    let command = {
         use std::os::unix::process::CommandExt;
+        let mut command = command;
         command.process_group(0);
-    }
+        command
+    };
     let mut child = tokio::process::Command::from(command)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

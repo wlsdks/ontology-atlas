@@ -185,20 +185,32 @@ pub(crate) struct SnapshotEntry {
     pub children: Option<Vec<String>>,
 }
 #[derive(Clone, Copy)]
+#[cfg_attr(not(unix), derive(Default))]
 struct SourceLimits {
+    #[cfg(unix)]
     entries: usize,
+    #[cfg(unix)]
     depth: usize,
+    #[cfg(unix)]
     file_bytes: u64,
+    #[cfg(unix)]
     text_bytes: usize,
+    #[cfg(unix)]
     capture_text: bool,
 }
+#[cfg(unix)]
 impl Default for SourceLimits {
     fn default() -> Self {
         Self {
+            #[cfg(unix)]
             entries: 12000,
+            #[cfg(unix)]
             depth: 12,
+            #[cfg(unix)]
             file_bytes: 512 * 1024,
+            #[cfg(unix)]
             text_bytes: 32 * 1024 * 1024,
+            #[cfg(unix)]
             capture_text: true,
         }
     }
@@ -210,10 +222,15 @@ pub(crate) struct SourceObservation {
     pub ignored_names: Vec<String>,
     pub entries: Vec<SnapshotEntry>,
     pub excluded: Vec<String>,
+    #[cfg(unix)]
     text_bytes: usize,
+    #[cfg(unix)]
     scanned_entries: usize,
+    #[cfg(unix)]
     code_roots: Vec<String>,
+    #[cfg(unix)]
     excluded_roots: Vec<PathBuf>,
+    #[cfg(unix)]
     limits: SourceLimits,
 }
 impl SourceObservation {
@@ -225,15 +242,20 @@ impl SourceObservation {
             ignored_names: vec!["target".into()],
             entries: Vec::new(),
             excluded: Vec::new(),
+            #[cfg(unix)]
             text_bytes: 0,
+            #[cfg(unix)]
             scanned_entries: 0,
+            #[cfg(unix)]
             code_roots: Vec::new(),
+            #[cfg(unix)]
             excluded_roots: Vec::new(),
+            #[cfg(unix)]
             limits: SourceLimits::default(),
         }
     }
 }
-#[cfg(test)]
+#[cfg(all(test, unix))]
 pub(crate) fn observe_source(root: &Path) -> Result<SourceObservation, String> {
     observe_scoped_source(root, &[".".into()])
 }
@@ -243,6 +265,17 @@ pub(crate) fn observe_scoped_source(
 ) -> Result<SourceObservation, String> {
     observe_with_exclusions(root, code_roots, Vec::new(), true, SourceLimits::default())
 }
+#[cfg(not(unix))]
+fn observe_with_exclusions(
+    _: &Path,
+    _: &[String],
+    _: Vec<PathBuf>,
+    _: bool,
+    _: SourceLimits,
+) -> Result<SourceObservation, String> {
+    Err("unsupported_platform".into())
+}
+#[cfg(unix)]
 fn observe_with_exclusions(
     root: &Path,
     code_roots: &[String],
@@ -263,13 +296,8 @@ fn observe_with_exclusions(
         excluded_roots,
         limits,
     };
-    #[cfg(unix)]
-    {
-        let handle = crate::agent_setup::open_absolute_directory_no_follow(root)?;
-        capture_directory(&handle, Path::new(""), 0, &mut result)?;
-    }
-    #[cfg(not(unix))]
-    return Err("unsupported_platform".into());
+    let handle = crate::agent_setup::open_absolute_directory_no_follow(root)?;
+    capture_directory(&handle, Path::new(""), 0, &mut result)?;
     result.entries.sort_by(|a, b| a.path.cmp(&b.path));
     result.files.sort();
     result.excluded.sort();
@@ -306,14 +334,20 @@ pub(crate) fn observe_construction_source(
         excluded.into_iter().collect(),
         false,
         SourceLimits {
+            #[cfg(unix)]
             entries: 500,
+            #[cfg(unix)]
             depth: 8,
+            #[cfg(unix)]
             file_bytes: 256 * 1024,
+            #[cfg(unix)]
             text_bytes: 0,
+            #[cfg(unix)]
             capture_text: false,
         },
     )
 }
+#[cfg(unix)]
 fn text_input(path: &Path, code_roots: &[String]) -> bool {
     let file = path.to_string_lossy();
     (matches!(

@@ -4,8 +4,8 @@
  * A panic in a Tauri sync command runs on the main thread and aborts the app, so `unwrap`, slice
  * indexing and `panic!` in non-test Rust are findings (`[workspace.lints.clippy]` in
  * `src-tauri/Cargo.toml`). The sidecar is built first for the same reason as `test:desktop:bridge`.
- * The Windows beta job runs the same two cargo commands; the Linux gates runner cannot compile the
- * crate, so the CI planner keeps this command out of its lanes.
+ * `windows-beta-check.yml` runs the clippy command on Windows and both commands on macOS; the Linux
+ * gates runner cannot compile the crate, so the CI planner keeps this command out of its lanes.
  */
 export const RUST_LINT_COMMAND =
   'pnpm mcp:build-binary && cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings && cargo fmt --manifest-path src-tauri/Cargo.toml --all --check';
@@ -85,6 +85,7 @@ export const rules = [
       /^src-tauri\/(?:src|crates)\/.+\.rs$/,
       /^src-tauri\/build\.rs$/,
       /^src-tauri\/(?:Cargo\.(?:toml|lock)|clippy\.toml)$/,
+      /^rust-toolchain\.toml$/,
       /^src-tauri\/crates\/[^/]+\/(?:Cargo\.toml|tests\/.+\.rs)$/,
     ],
   },

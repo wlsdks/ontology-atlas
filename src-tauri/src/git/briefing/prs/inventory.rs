@@ -107,7 +107,7 @@ static NEXT_SCAN: AtomicU64 = AtomicU64::new(1);
 
 fn save_scan(scan: Scan) -> Result<String, String> {
     let id = NEXT_SCAN
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
             value.checked_add(1)
         })
         .map_err(|_| "unavailable")?

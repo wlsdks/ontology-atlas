@@ -55,6 +55,7 @@ fn line_too_long(max_bytes: usize) -> std::io::Error {
 /// Generous because adapters may send a whole file in one line.
 pub(crate) const MAX_LINE_BYTES: usize = 16 * 1024 * 1024;
 
+#[cfg(unix)]
 const GRACEFUL_EXIT_WAIT: std::time::Duration = std::time::Duration::from_millis(1_000);
 
 #[cfg(unix)]
