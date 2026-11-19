@@ -314,3 +314,8 @@ All slices are owned by Opus. S4 and S5 wait for #3607 to merge, because they ex
 | S8 | Acceptance: installed-app walk on a scratch HOME, AC1 on the owner's wiki, AC4 at 10k and 50k, Windows CI | no product files; evidence attached to the PR | 1 d | every AC reported, with limits | — |
 
 Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, and S6's UI can start against a bridge stub alongside it. Then S5, S7 and S8.
+
+## Revisions
+
+- 2026-11-19: first draft. Loopback Ollama runner, vectors in the derived index, no dedicated MCP server, no sqlite-vec.
+- 2026-11-19: owner decisions. A built-in model downloads on one press after a consent dialog. It is the most compressed bge-m3 file that keeps fp32 quality, uses 1–2 GB of memory while preparing, and ships with MIT attribution and the paper citation.
