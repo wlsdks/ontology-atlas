@@ -253,7 +253,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
     if (visitedDirectories.has(realDirectory)) return;
     visitedDirectories.add(realDirectory);
     ancestors.add(realDirectory);
-    for (const entry of readdirSync(dir)) {
+    for (const entry of readdirSync(dir).sort()) {
       if (walkBudgetReached(dir)) return;
       entriesSeen += 1;
       const path = join(dir, entry);

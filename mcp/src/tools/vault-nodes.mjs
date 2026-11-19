@@ -416,7 +416,7 @@ function listVaultSourcePaths() {
       else if (entry.isFile()) out.push(relative);
     }
   }
-  return out;
+  return out.sort();
 }
 
 function isPathLikeGraphRef(ref) {
