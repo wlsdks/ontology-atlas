@@ -1,14 +1,9 @@
 import { SITE_URL } from '@/shared/config';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { SITE_ORGANIZATION_REF } from '@/shared/config/site-entity';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';
 import { MACOS_RELEASE, windowsAsset } from './release-state';
 
-const SITE_PUBLISHER = {
-  '@type': 'Organization',
-  name: 'ontology-atlas contributors',
-  url: SITE_URL,
-  sameAs: [GITHUB_REPO_URL],
-};
 
 /**
  * The app's `SoftwareApplication` schema (the root `WebSite` one describes the site). Version,
@@ -42,8 +37,9 @@ export function downloadStructuredData(locale: string, description: string, nami
     screenshot: `${SITE_URL}/gateway/projects.${locale === 'ko' ? 'ko' : 'en'}.png`,
     softwareHelp: { '@type': 'CreativeWork', url: `${SITE_URL}/${locale}/guide/` },
     sameAs: [GITHUB_REPO_URL],
-    author: SITE_PUBLISHER,
-    publisher: SITE_PUBLISHER,
+    // The root layout declares the Organization once; this joins that node instead of restating it.
+    author: SITE_ORGANIZATION_REF,
+    publisher: SITE_ORGANIZATION_REF,
     license: 'https://opensource.org/licenses/MIT',
     isAccessibleForFree: true,
     offers: {

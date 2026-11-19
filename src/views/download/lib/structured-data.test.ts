@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { SITE_URL } from '@/shared/config';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { SITE_ORGANIZATION_ID } from '@/shared/config/site-entity';
 
 import { MACOS_RELEASE, windowsAsset } from './release-state';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';
@@ -30,10 +31,11 @@ describe('downloadStructuredData', () => {
     );
   });
 
-  it('ties the app and its publisher to the repository the page links to', () => {
+  it('ties the app to the repository and to the one site Organization by id', () => {
     const data = downloadStructuredData('en', 'Description', NAMING_EN);
     expect(data.sameAs).toContain(GITHUB_REPO_URL);
-    expect(data.publisher.sameAs).toContain(GITHUB_REPO_URL);
+    expect(data.publisher).toEqual({ '@id': SITE_ORGANIZATION_ID });
+    expect(data.author).toEqual({ '@id': SITE_ORGANIZATION_ID });
   });
 });
 

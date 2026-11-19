@@ -6,6 +6,7 @@ import { isAppLocale, LOCALE_META } from '@/i18n/locales';
 import { getTranslations } from 'next-intl/server';
 import { ProjectDetailPage, projectBreadcrumb } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
+import { SITE_ORGANIZATION_REF } from '@/shared/config/site-entity';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { JsonLd, RouteLoadingFallback } from '@/shared/ui';
 
@@ -113,10 +114,7 @@ export default async function Page({
   // Must equal the metadata canonical, or search engines get two answers.
     url: absoluteUrl(`/${locale}/project/${slug}/`),
     inLanguage,
-    author: {
-      '@type': 'Organization',
-      name: 'ontology-atlas',
-    },
+    author: SITE_ORGANIZATION_REF,
     keywords: Array.from(
       new Set(
         [
