@@ -465,6 +465,7 @@
     "undone": "Undone. The file is back as it was.",
     "undoChanged": "Not undone: the file changed on disk after that change.",
     "undoNotLatest": "Only the most recent change can be undone.",
+    "undoOtherFolder": "Not undone: that change was made in another folder.",
     "undoFailed": "Could not undo. The file is unchanged."
   },
   "conceptEdit": {

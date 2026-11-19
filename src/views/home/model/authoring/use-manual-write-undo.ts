@@ -24,10 +24,23 @@ interface ManualWriteRequest {
  * (`useVaultDocWrites`), so its toast can offer Undo. Browser and app handles answer the same
  * `getFile()`, so both read and restore the same way.
  */
-export function useManualWriteUndo({ vault, toast, t }: { vault: Vault; toast: ReturnType<typeof useToast>; t: Translate }) {
+export function useManualWriteUndo({
+  vault,
+  folder,
+  toast,
+  t,
+}: {
+  vault: Vault;
+  /** The open folder's identity (`vaultIdentity`). */
+  folder: string | null;
+  toast: ReturnType<typeof useToast>;
+  t: Translate;
+}) {
   const vaultRef = useRef(vault);
+  const folderRef = useRef(folder);
   useEffect(() => {
     vaultRef.current = vault;
+    folderRef.current = folder;
   });
   const lastWriteRef = useRef<ManualWrite | null>(null);
   const writeCountRef = useRef(0);
@@ -47,6 +60,10 @@ export function useManualWriteUndo({ vault, toast, t }: { vault: Vault; toast: R
       const write = lastWriteRef.current;
       if (!write || write.id !== id) {
         toast.show(t("manualWrite.undoNotLatest"), "info");
+        return;
+      }
+      if (write.folder !== folderRef.current) {
+        toast.show(t("manualWrite.undoOtherFolder"), "info");
         return;
       }
       const step = planUndo(write, await readText(write.slug));
@@ -77,11 +94,19 @@ export function useManualWriteUndo({ vault, toast, t }: { vault: Vault; toast: R
       const after = written !== undefined ? written : handle ? await (await handle.getFile()).text() : null;
       writeCountRef.current += 1;
       const id = writeCountRef.current;
-      lastWriteRef.current = { id, slug, before, after };
+      lastWriteRef.current = { id, folder: folderRef.current, slug, before, after };
       toast.show(message, "success", { label: t("manualWrite.undo"), onClick: () => void undo(id) });
     },
     [t, toast, undo],
   );
 
-  return { runManualWrite } as const;
+  /** Undoes the most recent manual write, for the keyboard; answers whether there was one. */
+  const undoLastManualWrite = useCallback(() => {
+    const write = lastWriteRef.current;
+    if (!write) return false;
+    void undo(write.id);
+    return true;
+  }, [undo]);
+
+  return { runManualWrite, undoLastManualWrite } as const;
 }

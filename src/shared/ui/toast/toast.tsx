@@ -65,6 +65,9 @@ export type ToastAnchor = 'bottom-center' | 'bottom-right';
 
 const DEFAULT_ANCHOR: ToastAnchor = 'bottom-center';
 
+/** A toast that offers an action stays long enough to read it and reach the button. */
+const ACTION_TOAST_STAY_MS = 10_000;
+
 const ToastAnchorContext = createContext<((anchor: ToastAnchor | null) => void) | null>(null);
 
 /**
@@ -240,7 +243,9 @@ export function useToast(): ToastApi {
       publishToastLane();
       const options = {
         id,
-        ...(action ? { action: { label: action.label, onClick: action.onClick } } : {}),
+        ...(action
+          ? { action: { label: action.label, onClick: action.onClick }, duration: ACTION_TOAST_STAY_MS }
+          : {}),
         ...(metadata?.description ? { description: metadata.description } : {}),
       };
       switch (tone) {

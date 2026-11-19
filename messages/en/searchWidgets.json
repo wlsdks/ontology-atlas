@@ -126,6 +126,8 @@
       "openSearchPalette": "Open the search palette",
       "openSettings": "Open settings",
       "toggleDocsDrawer": "Open or close the quick document preview (with edit access)",
+      "addConcept": "Add a concept",
+      "undoHandChange": "Undo the last change made by hand",
       "showShortcuts": "Show or hide keyboard shortcuts",
       "stepCloseOverlays": "Close open panels one step at a time",
       "clickSelect": "Select a concept",

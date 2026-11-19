@@ -81,8 +81,10 @@ permission card (below).
   (`src/views/home/model/authoring/use-manual-write-undo.ts`). Undo restores the
   file's bytes from before the write (a created file is removed, a deleted one
   comes back), only for the most recent write, and refuses in one sentence when
-  the file changed on disk since. It reads and writes through the same handles
-  in the browser and the app.
+  the file changed on disk since. The toast stays ten seconds; after it is gone
+  `⌘Z` on the map (outside a text field) takes the same write back, and the
+  shortcut sheet lists it. Undo writes nothing once another folder is open. It
+  reads and writes through the same handles in the browser and the app.
 
 ### Agent writes
 

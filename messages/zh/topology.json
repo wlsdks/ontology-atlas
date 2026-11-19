@@ -465,6 +465,7 @@
     "undone": "已撤销，文件恢复原样。",
     "undoChanged": "未撤销：那次更改之后，磁盘上的文件已被修改。",
     "undoNotLatest": "只能撤销最近的一次更改。",
+    "undoOtherFolder": "未撤销：该更改是在另一个文件夹中做的。",
     "undoFailed": "无法撤销，文件没有变化。"
   },
   "conceptEdit": {

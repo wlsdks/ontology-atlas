@@ -59,6 +59,7 @@ interface Options {
     | "setBootstrapOpen"
     | "acpTurnActivityFrame"
     | "canCreateNode"
+    | "undoLastManualWrite"
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "ontologyMapGraph" | "canvasSelectedSlug" | "resolvedRealmSlug">;
@@ -72,7 +73,7 @@ export function useTopologyKeyboard({
 }: Options) {
   const { canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose } = topologyNavigationActions;
-  const { setSelectedEdge, closeCreateNode, selectedEdge, createNodeOpen, bootstrapOpen, setBootstrapOpen, acpTurnActivityFrame, canCreateNode } = topologyAuthoring;
+  const { setSelectedEdge, closeCreateNode, selectedEdge, createNodeOpen, bootstrapOpen, setBootstrapOpen, acpTurnActivityFrame, canCreateNode, undoLastManualWrite } = topologyAuthoring;
   const {
     contextMenuNode, fullDetailOpen, selectedRelationActive, closeContextMenu, setFullDetailSlug,
     setSelectedRelationActive, setNodePopoverDismissed
@@ -233,6 +234,14 @@ export function useTopologyKeyboard({
       onFire: () => {
         if (shortcutsSuppressed || !canCreateNode) return;
         setRouteState((current) => ({ ...current, createNodeIntent: true }));
+      },
+    },
+    {
+      // ⌘Z takes back the last change made by hand; inside a field the field's own undo answers.
+      combo: { key: "z", meta: true },
+      onFire: () => {
+        if (shortcutsSuppressed) return;
+        undoLastManualWrite();
       },
     },
     {

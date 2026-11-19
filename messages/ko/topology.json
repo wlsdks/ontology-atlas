@@ -465,6 +465,7 @@
     "undone": "되돌렸어요. 파일이 이전 그대로예요.",
     "undoChanged": "되돌리지 않았어요. 그 뒤에 디스크에서 파일이 바뀌었어요.",
     "undoNotLatest": "가장 최근 변경만 되돌릴 수 있어요.",
+    "undoOtherFolder": "되돌리지 않았어요. 다른 폴더에서 한 변경이에요.",
     "undoFailed": "되돌리지 못했어요. 파일은 그대로예요."
   },
   "conceptEdit": {

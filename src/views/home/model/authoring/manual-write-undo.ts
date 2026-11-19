@@ -4,6 +4,8 @@
  */
 export interface ManualWrite {
   id: number;
+  /** The folder the write was made in; Undo never writes into another one. */
+  folder: string | null;
   slug: string;
   before: string | null;
   after: string | null;

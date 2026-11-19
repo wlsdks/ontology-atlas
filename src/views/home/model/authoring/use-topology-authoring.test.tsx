@@ -101,6 +101,7 @@ function renderAuthoring(
       recentChanges: { recentNodeIds: new Set<string>() } as never,
       docFreshnessIndex: new Map(),
       updatedAgoNowMs: 0,
+      vaultIdentity: "local:fixture" as const,
     },
   };
   const hook = renderHook(() => useTopologyAuthoring(options));

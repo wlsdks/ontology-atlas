@@ -39,12 +39,13 @@ interface Options {
     | "recentChanges"
     | "docFreshnessIndex"
     | "updatedAgoNowMs"
+    | "vaultIdentity"
   >;
 }
 export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences }: Options) {
-  const { selectedOntologyNode, vault, ontologyInsight, setNeedsVaultReason, recentChanges, docFreshnessIndex, updatedAgoNowMs } = topologyVaultReadModel;
+  const { selectedOntologyNode, vault, ontologyInsight, setNeedsVaultReason, recentChanges, docFreshnessIndex, updatedAgoNowMs, vaultIdentity } = topologyVaultReadModel;
   const { tMeaningEditor, t, relationVocabulary, relationRegister, activeLocale } = topologyPreferences;
-  const { runManualWrite } = useManualWriteUndo({ vault, toast, t });
+  const { runManualWrite, undoLastManualWrite } = useManualWriteUndo({ vault, folder: vaultIdentity, toast, t });
 
   const nodeEditTarget = useMemo(
     () =>
@@ -569,7 +570,7 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     saveNodeExplanation, meaningEditorState, meaningEditorSource, edgePanelOpen, setHoverEdge,
     setMeaningEditorState, setSelectedEdge, closeCreateNode, selectedEdge, setBootstrapOpen, bootstrapPlan,
     runBootstrap, createNode, createNodeDomainOptions, createNodeExistingConcepts, createSelection,
-    runManualWrite, addConceptInGroup, renameConcept, saveConceptDescription, deleteReferrers, deleteConcept,
+    runManualWrite, undoLastManualWrite, addConceptInGroup, renameConcept, saveConceptDescription, deleteReferrers, deleteConcept,
     agentAttributedRecentNodeId, agentConnect, mapRevealToken, handleHoverEdge, mapRelationPreview,
     handleHoverCluster, openMeaningEditor, heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview,
     applyMeaningEditor, closeMeaningEditor, meaningEditorRelations, removeIncomingRelation, hoverEdgeCardModel, clusterHoverCardModel, heldEdgePanelModel,

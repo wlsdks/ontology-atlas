@@ -148,7 +148,9 @@ test('a person builds a small ontology by hand on the map, and takes changes bac
   await openEditMenuItem(page, 'map-detail-panel-action-delete');
   await page.getByTestId('map-detail-panel-delete-confirm-button').click();
   await expect.poll(() => readFile(page, 'capabilities/refunds.md'), { timeout: 15_000 }).toBeNull();
-  await undoLatest(page);
+  // The keyboard takes the delete back too, so Undo outlives its toast.
+  await expect(page.getByText('Deleted “Refunds”')).toBeVisible({ timeout: 15_000 });
+  await page.keyboard.press('ControlOrMeta+z');
   await expect.poll(() => readFile(page, 'capabilities/refunds.md'), { timeout: 15_000 }).toBe(beforeRename);
   await expect(page.getByTestId('topology-index-tree')).toContainText('Refunds', { timeout: 15_000 });
 });
