@@ -82,6 +82,44 @@ describe("islands layout", () => {
     expect(layout.islands[0].band!.width).toBeGreaterThan(layout.islands[0].band!.height);
   });
 
+  it("puts a page on the island of the first concept it is about, before any concept it names", () => {
+    const folder = graph({ pages: ["one"], concepts: ["alpha", "beta", "zeta"], mentions: [["one", "alpha"]] });
+    folder.edges.push(
+      { id: "d0", source: "page:one", target: "concept:zeta", relation: "describes", certainty: "current" },
+      { id: "d1", source: "page:one", target: "concept:beta", relation: "describes", certainty: "current" },
+    );
+    const layout = islandsLayout(folder, WORLD, LABELS);
+    expect(layout.islands.map((island) => [island.id, island.pages])).toEqual([["concept:zeta", ["page:one"]]]);
+  });
+
+  it("stands a concept that leads no island amid the pages about it, not at the map's centre", () => {
+    const folder = graph({ pages: ["one", "two", "three"], concepts: ["alpha", "beta", "gamma"], mentions: [["one", "alpha"], ["two", "beta"]] });
+    folder.edges.push(
+      { id: "d0", source: "page:one", target: "concept:gamma", relation: "describes", certainty: "current" },
+      { id: "d1", source: "page:one", target: "concept:alpha", relation: "describes", certainty: "current" },
+    );
+    const layout = islandsLayout(folder, WORLD, LABELS);
+    // Page one leads with gamma, so alpha has no island and stands where page one is.
+    expect(layout.islands.some((island) => island.conceptId === "concept:alpha")).toBe(false);
+    expect(layout.positions.get("concept:alpha")).toEqual(layout.positions.get("page:one"));
+  });
+
+  it("packs thousands of islands with none overlapping another", () => {
+    const pages = Array.from({ length: 3000 }, (_, i) => `p${i}`);
+    const concepts = Array.from({ length: 1500 }, (_, i) => `c${i}`);
+    // Sizes from one page to dozens, the skew a folder's popular concepts have.
+    const mentions = pages.map((p, i): [string, string] => [p, concepts[Math.floor((((i * 7919) % 3000) / 3000) ** 2 * 1500)]]);
+    const layout = islandsLayout(graph({ pages, concepts, mentions }), WORLD, LABELS);
+    const discs = layout.islands.filter((island) => !island.band);
+    expect(discs.length).toBeGreaterThan(500);
+    const sorted = [...discs].sort((a, b) => a.x - a.r - (b.x - b.r));
+    for (let i = 0; i < sorted.length; i += 1) {
+      for (let j = i + 1; j < sorted.length && sorted[j].x - sorted[j].r <= sorted[i].x + sorted[i].r; j += 1) {
+        expect(Math.hypot(sorted[i].x - sorted[j].x, sorted[i].y - sorted[j].y)).toBeGreaterThanOrEqual(sorted[i].r + sorted[j].r - 1e-6);
+      }
+    }
+  });
+
   it("groups by wiki sub-folder when a page names no concept", () => {
     const layout = islandsLayout(graph({ pages: ["wiki/payments/fees", "wiki/payments/tiers", "wiki/notes"] }), WORLD, LABELS);
     expect(layout.islands.map((island) => [island.id, island.pages.length]).sort()).toEqual([["folder:payments", 2], ["unsorted", 1]]);

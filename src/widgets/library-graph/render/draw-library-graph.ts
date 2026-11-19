@@ -1,6 +1,11 @@
 import { LibraryLabelCoverage } from "./library-label-coverage";
 import { LibraryLabelMarkIndex } from "./library-label-mark-index";
-import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
+import type {
+  LibraryGraphEdge,
+  LibraryGraphNode,
+  LibraryGraphNodeKind,
+  LibraryGraphRelation,
+} from "../model/build-library-graph";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { LibraryPositionLookup } from "../model/library-graph-view";
 import type { LibraryGraphInk } from "./library-graph-ink";
@@ -18,6 +23,7 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * | Edge | Mark |
  * |---|---|
  * | cites, hash still matching | solid, 1.5px |
+ * | describes | solid, 1px: plain, what the page is about |
  * | mentions | dashed, 1px |
  * | either, unverified | broken once at its midpoint, with an amber dot in the break |
  *
@@ -229,12 +235,16 @@ function labelFontPx(ink: LibraryGraphInk, kind: LibraryGraphNodeKind): number {
 }
 /** A citation, the heavier relation and the widest line, which the label halo is stated against. */
 export const CITES_WIDTH = 1.5;
-/** A mention: the page names the file, nothing says it was written from it. */
-const MENTIONS_WIDTH = 1;
+/**
+ * A mention or an "about" link: the page names the concept, or says it is about it. The two
+ * share a width and differ by dash, so solid alone says "about"; both end on a ring, never a
+ * square, so neither reads as a citation.
+ */
+const CONCEPT_LINE_WIDTH = 1;
 
 /** Fixed line weight, which keeps the 5.23:1 contrast those widths were measured at true everywhere. */
-function libraryEdgeWidth(relation: "cites" | "mentions"): number {
-  return relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
+function libraryEdgeWidth(relation: LibraryGraphRelation): number {
+  return relation === "cites" ? CITES_WIDTH : CONCEPT_LINE_WIDTH;
 }
 /** The least a shortened name may be, on screen, to still be a name: about six glyphs. */
 const STANDING_LABEL_MIN_PX = 48;
