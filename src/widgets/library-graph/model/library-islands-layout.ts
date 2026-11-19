@@ -23,7 +23,7 @@ const ISLAND_PAGE_GRAIN_MIN = 0.85;
 const ISLAND_PAGE_GRAIN_MAX = 1.25;
 /** Breath between dots, and between islands, in world units. */
 const DOT_GAP = 1.2;
-const ISLAND_GAP = 10;
+export const ISLAND_GAP = 10;
 /** The rim an island keeps clear outside its last dot. */
 const ISLAND_MARGIN = 3;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));

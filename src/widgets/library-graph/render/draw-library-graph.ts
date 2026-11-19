@@ -511,6 +511,18 @@ class BoxGrid<T extends { x: number; y: number }> {
   }
 }
 
+/** Pages with a stale citation, per edge list: the overview asks every frame, the edges change only with the folder. */
+const stalePageSets = new WeakMap<readonly LibraryGraphEdge[], Set<string>>();
+function stalePagesOf(edges: readonly LibraryGraphEdge[]): Set<string> {
+  let pages = stalePageSets.get(edges);
+  if (!pages) {
+    pages = new Set();
+    for (const edge of edges) if (edge.certainty === "unverified") pages.add(edge.source);
+    stalePageSets.set(edges, pages);
+  }
+  return pages;
+}
+
 /** The screen cell the name pass buckets islands and names on, in CSS px. */
 const NAME_GRID_PX = 48;
 
@@ -568,8 +580,10 @@ interface NameSeating {
 const nameSeatings = new WeakMap<CanvasRenderingContext2D, NameSeating>();
 /** Islands that moved apart by less than this since the seating keep their seats: a pan or a hover moves none. */
 const SEAT_DRIFT_PX = 1;
-/** While islands move apart, names are seated afresh every this many frames and follow their islands between. */
+/** While many islands move apart, names are seated afresh every this many frames and follow their islands between. */
 const RESEAT_EVERY_FRAMES = 3;
+/** Up to this share of the islands in view may move (a hand carrying one shoves its neighbours) and only theirs are seated again. */
+const RESEAT_FEW_SHARE = 0.1;
 
 /**
  * The islands' names, painted after the marks so a name inside an island stands on its
@@ -577,7 +591,8 @@ const RESEAT_EVERY_FRAMES = 3;
  * two would cross.
  *
  * Seating costs O(k) grid queries; a frame whose islands only moved together (a pan, a hover)
- * reuses the last seating at O(k) lookups and seats only islands that came into view.
+ * reuses the last seating at O(k log k) (the median shift) and seats only islands that came
+ * into view, moved on their own, or now stand under a kept name.
  */
 function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, ink: LibraryGraphInk): void {
   const extentOf = (island: LibraryGraphIsland) => {
@@ -599,22 +614,37 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
   const key = `${frame.width}|${frame.height}|${font}|${frame.locale ?? ""}|${all.length}|${all[0]?.id ?? ""}|${all.at(-1)?.id ?? ""}`;
   let seating = nameSeatings.get(ctx);
   let shift: { x: number; y: number } | null = null;
+  /** Islands that moved apart from the rest since their seat was taken. */
+  const movers = new Set<string>();
   if (seating && seating.key === key) {
-    let drift = 0;
+    let zoomed = false;
+    const dx: number[] = [];
+    const dy: number[] = [];
     for (const island of visible) {
       const held = seating.seats.get(island.id);
       if (!held) continue;
       // A zoom changes every size: the seats no longer fit.
       if (Math.abs(held.r - island.r) > 0.5) {
-        drift = Infinity;
+        zoomed = true;
         break;
       }
-      shift ??= { x: island.x - held.x, y: island.y - held.y };
-      drift = Math.max(drift, Math.abs(island.x - held.x - shift.x), Math.abs(island.y - held.y - shift.y));
+      dx.push(island.x - held.x);
+      dy.push(island.y - held.y);
     }
-    shift ??= { x: 0, y: 0 };
+    // The map's own shift is the median one, so an island a hand carries does not count as the map.
+    const median = (values: number[]) => (values.length === 0 ? 0 : Float64Array.from(values).sort()[values.length >> 1]);
+    shift = { x: median(dx), y: median(dy) };
+    if (!zoomed) {
+      for (const island of visible) {
+        const held = seating.seats.get(island.id);
+        if (held && (Math.abs(island.x - held.x - shift.x) > SEAT_DRIFT_PX || Math.abs(island.y - held.y - shift.y) > SEAT_DRIFT_PX)) movers.add(island.id);
+      }
+    }
     seating.sinceFull += 1;
-    if (drift > SEAT_DRIFT_PX && (drift === Infinity || seating.sinceFull >= RESEAT_EVERY_FRAMES)) shift = null;
+    const many = movers.size > Math.max(16, visible.length * RESEAT_FEW_SHARE);
+    if (zoomed || (many && seating.sinceFull >= RESEAT_EVERY_FRAMES)) shift = null;
+    // Many moving: names follow their islands until the next full seating.
+    else if (many) movers.clear();
   }
   const placed = new BoxGrid<NameBox>(NAME_GRID_PX, (box) => ({
     left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height,
@@ -651,20 +681,30 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
   };
   if (seating && shift) {
     const byId = new Map(visible.map((island) => [island.id, island]));
+    const moved = visible.filter((island) => movers.has(island.id));
+    // A kept name a moving island now stands under is seated again too.
+    const under = (box: NameBox) => moved.some((island) => {
+      const { left, top, right, bottom } = extentOf(island);
+      return box.x < right && box.x + box.width > left && box.y < bottom && box.y + box.height > top;
+    });
     for (const id of seating.order) {
       const island = byId.get(id);
       const held = seating.seats.get(id);
-      if (!island || !held?.seat) continue;
+      if (!island || !held?.seat || movers.has(id)) continue;
       const { text, width } = islandName(ctx, font, island, frame.locale);
       const box = { x: island.x + held.seat.dx, y: island.y + held.seat.dy, width, height: lineHeight };
+      if (moved.length > 0 && under(box)) {
+        movers.add(id);
+        continue;
+      }
       if (!inCanvas(box)) continue;
       placed.add(box);
       drawn.push({ island, box, inside: held.seat.inside, text });
     }
-    // Islands that came into view, or whose name the edge refused, are seated among the names in place.
+    // Islands that came into view, moved on their own, or whose name the edge refused, are seated among the names in place.
     const fresh = visible.filter((island) => {
       const held = seating!.seats.get(island.id);
-      return !held || (!held.seat && held.edge);
+      return !held || movers.has(island.id) || (!held.seat && held.edge);
     });
     fresh.sort((a, b) => b.r - a.r);
     for (const island of fresh) {
@@ -895,7 +935,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   ctx.lineCap = "butt";
   const active = frame.hoveredId ?? frame.focusedId;
   const flow = frame.flow ?? null;
-  for (const edge of frame.edges) {
+  // The quiet overview draws no line at all: nothing selected, pointed at or focused.
+  const noLine = frame.focusEdgesOnly === true && frame.selectedId === null && active === null && (focus?.size ?? 0) === 0;
+  for (const edge of noLine ? [] : frame.edges) {
     const touchesSelection =
       frame.selectedId !== null && (edge.source === frame.selectedId || edge.target === frame.selectedId);
     // Pointing at a dot asks about its links, which answer well above the 3:1 floor.
@@ -1073,8 +1115,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   }
 
   // On the overview no line carries the break, so a stale page itself is drawn amber.
-  const stalePages = new Set<string>();
-  if (frame.layout === "islands") for (const edge of frame.edges) if (edge.certainty === "unverified") stalePages.add(edge.source);
+  const stalePages = frame.layout === "islands" ? stalePagesOf(frame.edges) : new Set<string>();
   /*
    * The resting overview paints one path per ink (files, fresh pages, stale pages): the
    * per-mark loop cost 20 ms a frame at 11,240 marks. Any hover, selection or dim falls back

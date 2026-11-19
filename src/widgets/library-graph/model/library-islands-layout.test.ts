@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph } from "./build-library-graph";
-import { ISLAND_PAGE_RADIUS, ISLAND_SOURCE_RADIUS, islandsLayout } from "./library-islands-layout";
+import { ISLAND_GAP, ISLAND_PAGE_RADIUS, ISLAND_SOURCE_RADIUS, islandsLayout } from "./library-islands-layout";
 
 function graph(input: { sources?: string[]; pages?: string[]; concepts?: string[]; cites?: Array<[string, string]>; mentions?: Array<[string, string]> }): LibraryGraph {
   const nodes = [
@@ -104,20 +104,26 @@ describe("islands layout", () => {
     expect(layout.positions.get("concept:alpha")).toEqual(layout.positions.get("page:one"));
   });
 
-  it("packs thousands of islands with none overlapping another", () => {
+  it("packs thousands of islands with the island gap between every two", () => {
     const pages = Array.from({ length: 3000 }, (_, i) => `p${i}`);
     const concepts = Array.from({ length: 1500 }, (_, i) => `c${i}`);
     // Sizes from one page to dozens, the skew a folder's popular concepts have.
     const mentions = pages.map((p, i): [string, string] => [p, concepts[Math.floor((((i * 7919) % 3000) / 3000) ** 2 * 1500)]]);
-    const layout = islandsLayout(graph({ pages, concepts, mentions }), WORLD, LABELS);
+    // One file read by the first page: its dot's radius tells the scale the picture was fitted at.
+    const layout = islandsLayout(graph({ sources: ["read.md"], pages, concepts, mentions, cites: [["p0", "read.md"]] }), WORLD, LABELS);
+    const scale = layout.radii.get("source:read.md")! / ISLAND_SOURCE_RADIUS;
+    const gap = ISLAND_GAP * scale;
     const discs = layout.islands.filter((island) => !island.band);
     expect(discs.length).toBeGreaterThan(500);
     const sorted = [...discs].sort((a, b) => a.x - a.r - (b.x - b.r));
+    let pairs = 0;
     for (let i = 0; i < sorted.length; i += 1) {
-      for (let j = i + 1; j < sorted.length && sorted[j].x - sorted[j].r <= sorted[i].x + sorted[i].r; j += 1) {
-        expect(Math.hypot(sorted[i].x - sorted[j].x, sorted[i].y - sorted[j].y)).toBeGreaterThanOrEqual(sorted[i].r + sorted[j].r - 1e-6);
+      for (let j = i + 1; j < sorted.length && sorted[j].x - sorted[j].r <= sorted[i].x + sorted[i].r + gap; j += 1) {
+        pairs += 1;
+        expect(Math.hypot(sorted[i].x - sorted[j].x, sorted[i].y - sorted[j].y)).toBeGreaterThanOrEqual(sorted[i].r + sorted[j].r + gap - 1e-6);
       }
     }
+    expect(pairs).toBeGreaterThan(discs.length);
   });
 
   it("groups by wiki sub-folder when a page names no concept", () => {
