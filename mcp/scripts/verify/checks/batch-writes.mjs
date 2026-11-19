@@ -24,11 +24,13 @@ export function batchRowIsolationFailure(response, key, label) {
   if (!Array.isArray(rows) || rows.length !== expectedRows) {
     return `${label} row-isolation response missing ${expectedRows} result rows`;
   }
-  if (Object.prototype.hasOwnProperty.call(parsed, 'postWriteMaintenance')) {
-    return `${label} row-isolation response unexpectedly included postWriteMaintenance`;
+  const writeSummary = ['findings', 'coverage', 'postWriteMaintenance']
+    .find((keyName) => Object.prototype.hasOwnProperty.call(parsed, keyName));
+  if (writeSummary) {
+    return `${label} row-isolation response unexpectedly included ${writeSummary}`;
   }
   const [nonObjectRow, unknownFieldRow, thirdRow, fourthRow, fifthRow] = rows;
-  const writeMetadataKeys = ['changed', 'alreadyExists', 'postWriteMaintenance'];
+  const writeMetadataKeys = ['changed', 'alreadyExists', 'mtime', 'findings'];
   for (const [index, row] of rows.entries()) {
     if (row?.ok !== false) continue;
     const present = writeMetadataKeys.filter((keyName) => Object.prototype.hasOwnProperty.call(row || {}, keyName));

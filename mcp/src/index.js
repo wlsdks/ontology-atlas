@@ -163,8 +163,7 @@ async function callTool(request) {
       case 'find_evidence':
         return ok(findEvidence(args));
       case 'finalize_project_meaning':
-        // The receipt is the whole durable write; an activity line after it would be a
-        // second, non-atomic mutation.
+        // The handler logs the body it writes; the receipt itself gets no activity line.
         return ok(finalizeProjectMeaningTool(args));
       case 'connect_project_source':
         return ok(logWrite(name, args, connectProjectSourceTool(args)));
