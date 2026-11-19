@@ -362,12 +362,22 @@ const TEST_IDS = {
  * The browser map is the download page's second way in and its heaviest route, so it is fetched
  * once a visitor points at, focuses or touches a way to it, not as soon as the link is on screen.
  */
-function MapLink({ className, children, 'data-testid': testId }: { className: string; children: ReactNode; 'data-testid': string }) {
+function MapLink({
+  href,
+  className,
+  children,
+  'data-testid': testId,
+}: {
+  href: '/topology';
+  className: string;
+  children: ReactNode;
+  'data-testid': string;
+}) {
   const [intent, setIntent] = useState(false);
   const want = () => setIntent(true);
   return (
     <Link
-      href="/topology"
+      href={href}
       prefetch={intent ? null : false}
       onPointerEnter={want}
       onFocus={want}
@@ -457,6 +467,7 @@ function DownloadActions({
       ) : (
         <>
           <MapLink
+            href="/topology"
             data-testid={id.cta}
             className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
           >
@@ -477,6 +488,7 @@ function DownloadActions({
       )}
       {fileWins && scope === 'hero' ? (
         <MapLink
+          href="/topology"
           data-testid="gateway-hero-web-cta"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'lg' }),
