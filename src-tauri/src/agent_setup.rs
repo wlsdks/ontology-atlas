@@ -564,7 +564,7 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
         )));
     }
 
-    let mut child = Command::new(&binary)
+    let mut child = crate::no_console::hide_console(&mut Command::new(&binary))
         .env("OATLAS_VAULT", &vault)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

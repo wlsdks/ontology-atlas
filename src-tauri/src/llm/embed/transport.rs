@@ -72,17 +72,6 @@ fn curl_error(message: String) -> EmbedError {
 /// A pull reports progress many times a second; no single line is longer.
 const MAX_STREAM_LINE_BYTES: u64 = 64 * 1024;
 
-/// A console program spawned from a windowed app opens a console window per call.
-pub(super) fn no_console_window(command: &mut Command) -> &mut Command {
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
-    command
-}
-
 struct KillOnDrop(Child);
 
 impl Drop for KillOnDrop {
@@ -117,7 +106,7 @@ impl Transport for CurlTransport {
         config.push_str(&format!("max-time = {}\n", limits.total.as_secs().max(1)));
         config.push_str(&format!("connect-timeout = {}\n", request.timeout));
         let mut child = KillOnDrop(
-            no_console_window(&mut Command::new("curl"))
+            crate::no_console::hide_console(&mut Command::new("curl"))
                 .args([
                     "--disable",
                     "--silent",

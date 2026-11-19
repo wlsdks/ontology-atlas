@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[cfg(any(unix, test))]
+#[cfg(any(unix, windows, test))]
 const MAX_READERS: usize = 4;
 const MAX_CHUNK: usize = 1024 * 1024;
 const IDLE: Duration = Duration::from_secs(30);
@@ -25,8 +25,37 @@ struct Stamp {
     ino: u64,
     changed: (i64, i64),
 }
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+use windows::{entry_at, entry_of, Entry};
+
+#[cfg(not(windows))]
+type Entry = fs::Metadata;
+#[cfg(not(windows))]
+fn entry_at(path: &std::path::Path, follow: bool) -> std::io::Result<Entry> {
+    if follow {
+        fs::metadata(path)
+    } else {
+        fs::symlink_metadata(path)
+    }
+}
+#[cfg(not(windows))]
+fn entry_of(file: &fs::File) -> std::io::Result<Entry> {
+    file.metadata()
+}
+/// A real directory: never a link or junction to one.
+#[cfg(not(windows))]
+fn is_plain_dir(entry: &Entry) -> bool {
+    entry.is_dir()
+}
+#[cfg(windows)]
+fn is_plain_dir(entry: &Entry) -> bool {
+    entry.meta.is_dir() && !entry.reparse
+}
+
 #[cfg(unix)]
-fn stamp(meta: &fs::Metadata) -> Result<Stamp, String> {
+fn stamp(meta: &Entry) -> Result<Stamp, String> {
     use std::os::unix::fs::MetadataExt;
     if !meta.is_file() || meta.nlink() != 1 {
         return Err(FAILED.into());
@@ -39,21 +68,38 @@ fn stamp(meta: &fs::Metadata) -> Result<Stamp, String> {
         changed: (meta.ctime(), meta.ctime_nsec()),
     })
 }
-#[cfg(not(unix))]
-fn stamp(_: &fs::Metadata) -> Result<Stamp, String> {
+#[cfg(windows)]
+fn stamp(entry: &Entry) -> Result<Stamp, String> {
+    if !entry.meta.is_file() || entry.reparse || entry.links != 1 {
+        return Err(FAILED.into());
+    }
+    Ok(Stamp {
+        len: entry.meta.len(),
+        modified: entry.meta.modified().map_err(|_| FAILED)?,
+        dev: entry.volume,
+        ino: entry.index,
+        changed: (entry.changed, entry.usn),
+    })
+}
+#[cfg(not(any(unix, windows)))]
+fn stamp(_: &Entry) -> Result<Stamp, String> {
     Err(FAILED.into())
 }
 
 #[cfg(unix)]
-fn identity(meta: &fs::Metadata) -> (u64, u64) {
+fn identity(meta: &Entry) -> (u64, u64) {
     use std::os::unix::fs::MetadataExt;
     (meta.dev(), meta.ino())
 }
-#[cfg(not(unix))]
-fn identity(_: &fs::Metadata) -> (u64, u64) {
+#[cfg(windows)]
+fn identity(entry: &Entry) -> (u64, u64) {
+    (entry.volume, entry.index)
+}
+#[cfg(not(any(unix, windows)))]
+fn identity(_: &Entry) -> (u64, u64) {
     (0, 0)
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn validate_absence(
     root: &std::path::Path,
     root_id: (u64, u64),
@@ -62,8 +108,8 @@ fn validate_absence(
     let check_root = || {
         let canonical =
             super::canonical_root(root.to_str().ok_or(CHANGED)?).map_err(|_| CHANGED)?;
-        let meta = fs::symlink_metadata(root).map_err(|_| CHANGED)?;
-        if canonical != root || !meta.is_dir() || identity(&meta) != root_id {
+        let meta = entry_at(root, false).map_err(|_| CHANGED)?;
+        if canonical != root || !is_plain_dir(&meta) || identity(&meta) != root_id {
             return Err(CHANGED.to_string());
         }
         Ok(())
@@ -71,22 +117,22 @@ fn validate_absence(
     check_root()?;
     let side = root.join(".ontology-atlas");
     let absent = if let Some(expected) = side_id {
-        let meta = fs::symlink_metadata(&side).map_err(|_| CHANGED)?;
-        if !meta.is_dir() || identity(&meta) != expected {
+        let meta = entry_at(&side, false).map_err(|_| CHANGED)?;
+        if !is_plain_dir(&meta) || identity(&meta) != expected {
             return Err(CHANGED.into());
         }
         side.join("llm-audit.jsonl")
     } else {
         side.clone()
     };
-    match fs::symlink_metadata(absent) {
+    match entry_at(&absent, false) {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
         _ => return Err(CHANGED.into()),
     }
 
     if let Some(expected) = side_id {
-        let meta = fs::symlink_metadata(side).map_err(|_| CHANGED)?;
-        if !meta.is_dir() || identity(&meta) != expected {
+        let meta = entry_at(&side, false).map_err(|_| CHANGED)?;
+        if !is_plain_dir(&meta) || identity(&meta) != expected {
             return Err(CHANGED.into());
         }
     }
@@ -110,7 +156,7 @@ impl Session {
         {
             use std::os::fd::{AsRawFd, FromRawFd};
             let root_fd = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
-            let root_id = identity(&root_fd.metadata().map_err(|_| FAILED)?);
+            let root_id = identity(&entry_of(&root_fd).map_err(|_| FAILED)?);
             let side_fd = unsafe {
                 libc::openat(
                     root_fd.as_raw_fd(),
@@ -128,7 +174,7 @@ impl Session {
                 };
             }
             let side = unsafe { fs::File::from_raw_fd(side_fd) };
-            let side_id = identity(&side.metadata().map_err(|_| FAILED)?);
+            let side_id = identity(&entry_of(&side).map_err(|_| FAILED)?);
             let fd = unsafe {
                 libc::openat(
                     side.as_raw_fd(),
@@ -146,41 +192,82 @@ impl Session {
                 };
             }
             let file = unsafe { fs::File::from_raw_fd(fd) };
-            let initial = stamp(&file.metadata().map_err(|_| FAILED)?)?;
-            let session = Self {
-                root,
-                root_id,
-                side_id,
-                file,
-                initial,
-                cursor: 0,
-            };
-            session.validate()?;
-            Ok(Some(session))
+            Self::admit(root, root_id, side_id, file)
         }
-        #[cfg(not(unix))]
+        #[cfg(windows)]
+        {
+            let not_found = |error: &std::io::Error| error.kind() == std::io::ErrorKind::NotFound;
+            let root_entry = entry_at(&root, false).map_err(|_| FAILED)?;
+            if !is_plain_dir(&root_entry) {
+                return Err(FAILED.into());
+            }
+            let root_id = identity(&root_entry);
+            let side = root.join(".ontology-atlas");
+            let side_entry = match entry_at(&side, false) {
+                Err(error) if not_found(&error) => {
+                    before_absence();
+                    validate_absence(&root, root_id, None)?;
+                    return Ok(None);
+                }
+                other => other.map_err(|_| FAILED)?,
+            };
+            if !is_plain_dir(&side_entry) {
+                return Err(FAILED.into());
+            }
+            let side_id = identity(&side_entry);
+            let file = match windows::open_log(&side.join("llm-audit.jsonl")) {
+                Err(error) if not_found(&error) => {
+                    before_absence();
+                    validate_absence(&root, root_id, Some(side_id))?;
+                    return Ok(None);
+                }
+                other => other.map_err(|_| FAILED)?,
+            };
+            Self::admit(root, root_id, side_id, file)
+        }
+        #[cfg(not(any(unix, windows)))]
         {
             let _ = (root, before_absence);
             Err(FAILED.into())
         }
+    }
+    /// The opened log becomes a session only if its path still leads to it.
+    #[cfg(any(unix, windows))]
+    fn admit(
+        root: PathBuf,
+        root_id: (u64, u64),
+        side_id: (u64, u64),
+        file: fs::File,
+    ) -> Result<Option<Self>, String> {
+        let initial = stamp(&entry_of(&file).map_err(|_| FAILED)?)?;
+        let session = Self {
+            root,
+            root_id,
+            side_id,
+            file,
+            initial,
+            cursor: 0,
+        };
+        session.validate()?;
+        Ok(Some(session))
     }
     fn validate(&self) -> Result<(), String> {
         let root = super::canonical_root(self.root.to_str().ok_or(FAILED)?).map_err(|_| CHANGED)?;
         if root != self.root {
             return Err(CHANGED.into());
         }
-        if identity(&fs::metadata(&root).map_err(|_| CHANGED)?) != self.root_id {
+        if identity(&entry_at(&root, true).map_err(|_| CHANGED)?) != self.root_id {
             return Err(CHANGED.into());
         }
         let side = self.root.join(".ontology-atlas");
-        let side_meta = fs::symlink_metadata(&side).map_err(|_| CHANGED)?;
-        if !side_meta.is_dir() || identity(&side_meta) != self.side_id {
+        let side_meta = entry_at(&side, false).map_err(|_| CHANGED)?;
+        if !is_plain_dir(&side_meta) || identity(&side_meta) != self.side_id {
             return Err(CHANGED.into());
         }
         let path = side.join("llm-audit.jsonl");
-        let metadata = fs::symlink_metadata(path).map_err(|_| CHANGED)?;
+        let metadata = entry_at(&path, false).map_err(|_| CHANGED)?;
         if stamp(&metadata).map_err(|_| CHANGED)? != self.initial
-            || stamp(&self.file.metadata().map_err(|_| CHANGED)?)? != self.initial
+            || stamp(&entry_of(&self.file).map_err(|_| CHANGED)?)? != self.initial
         {
             return Err(CHANGED.into());
         }
@@ -218,10 +305,10 @@ impl Slot {
 }
 #[derive(Default)]
 struct Slots {
-    #[cfg(any(unix, test))]
+    #[cfg(any(unix, windows, test))]
     next: u64,
     entries: HashMap<String, Slot>,
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     sweeping: bool,
 }
 #[derive(Default)]
@@ -279,7 +366,7 @@ impl Registry {
             }
         });
     }
-    #[cfg(any(unix, test))]
+    #[cfg(any(unix, windows, test))]
     fn prepare(self: &Arc<Self>, owner: &str, now: Instant) -> Result<String, String> {
         self.expire(now);
         let mut slots = self.slots();
@@ -332,7 +419,7 @@ fn registry() -> &'static Arc<Registry> {
     static REGISTRY: OnceLock<Arc<Registry>> = OnceLock::new();
     REGISTRY.get_or_init(|| Arc::new(Registry::default()))
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 fn start_sweeper(registry: Arc<Registry>) {
     {
         let mut slots = registry.slots();
@@ -361,12 +448,12 @@ pub struct Begin {
 }
 #[tauri::command(async)]
 pub fn audit_read_prepare(window: tauri::WebviewWindow) -> Result<Option<String>, String> {
-    #[cfg(not(unix))]
+    #[cfg(not(any(unix, windows)))]
     {
         let _ = window;
         Ok(None)
     }
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     {
         let id = registry().prepare(window.label(), Instant::now())?;
         start_sweeper(registry().clone());
