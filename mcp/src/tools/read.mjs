@@ -509,7 +509,7 @@ function connectionInfoTool({ guide } = {}) {
 
 function findBacklinksTool({ slug }) {
   requireNonBlankString(slug, 'slug');
-  const matches = findBacklinks(VAULT_ROOT, slug);
+  const matches = findBacklinks(VAULT_ROOT, slug).sort((left, right) => (left.slug < right.slug ? -1 : 1));
   return { target: slug, total: matches.length, matches };
 }
 
@@ -663,7 +663,8 @@ function summarizePathNode(doc, slug) {
 }
 
 function listKindsTool() {
-  return listKinds(VAULT_ROOT);
+  const result = listKinds(VAULT_ROOT);
+  return { ...result, byKind: Object.fromEntries(Object.entries(result.byKind).sort(([left], [right]) => (left < right ? -1 : 1))) };
 }
 
 function findOrphansTool({ kind, excludeKinds } = {}) {
