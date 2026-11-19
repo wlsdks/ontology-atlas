@@ -296,7 +296,7 @@ export function BuildStage({
                 <Star key={index} size={ICON_SIZE.lg} />
               ))}
             </span>
-            <Button data-testid="build-open" variant="outline" className="build-start mt-1 gap-2 px-6" onClick={onStart}>
+            <Button data-testid="build-open" variant="outline" className="atlas-touch-floor build-start mt-1 gap-2 px-6" onClick={onStart}>
               <Sparkles size={ICON_SIZE.sm} aria-hidden />
               {t('actions.start')}
             </Button>

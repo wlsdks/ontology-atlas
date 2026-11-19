@@ -4,8 +4,8 @@ import { moruFrame } from './moru-frame';
 import { companionChoices, type CompanionGesture } from './moru-companion-choices';
 
 /** A local, finite response to touch; it never projects agent or folder status. */
-export function companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, variation, reducedMotion, intent }: {
-  image: HTMLImageElement; reactionImage: HTMLImageElement; body: HTMLButtonElement; bounds: HTMLElement;
+export function companionPlayer({ image, reactionImage, reactionSrc, body, bubble, bounds, animations, context, variation, reducedMotion, intent }: {
+  image: HTMLImageElement; reactionImage: HTMLImageElement; reactionSrc: string; body: HTMLButtonElement; bounds: HTMLElement;
   bubble: HTMLSpanElement; animations: Animation[]; context: CompanionContext; variation: number; reducedMotion: boolean;
   intent: () => { paused: boolean; held: boolean };
 }) {
@@ -130,16 +130,24 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
       showEmotion(id, false);
     } else { requested = id; update(); }
   };
-  // WebKit can postpone decoding a hidden strip until its first use. Keep the
-  // ambient image visible until the replacement is ready, including still feedback.
-  if (!reactionReady) void reactionImage.decode().then(() => {
-    if (disposed) return;
-    reactionReady = true;
-    if (requested) { const id = requested; requested = null; respond(id); }
-  }, () => {
-    if (disposed) return;
-    decodeFailed = true; requested = null; update();
-  });
+  // The reaction strip (430 KB) is shown only after a press, and most visitors never
+  // press: it is fetched on attention (pointer or focus) or at the first press.
+  let fetched = false;
+  const fetchReactions = () => {
+    if (fetched || disposed) return;
+    fetched = true;
+    if (!reactionImage.getAttribute('src')) reactionImage.src = reactionSrc;
+    // WebKit can postpone decoding a hidden strip until its first use. Keep the
+    // ambient image visible until the replacement is ready, including still feedback.
+    if (!reactionReady) void reactionImage.decode().then(() => {
+      if (disposed) return;
+      reactionReady = true;
+      if (requested) { const id = requested; requested = null; respond(id); }
+    }, () => {
+      if (disposed) return;
+      decodeFailed = true; requested = null; update();
+    });
+  };
   const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => {
     visible = entry?.isIntersecting === true; update();
   });
@@ -154,8 +162,10 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
 
   return {
     update,
+    warm: fetchReactions,
     react() {
       if (disposed || decodeFailed || reaction || requested) return;
+      fetchReactions();
       const id = nextGesture();
       if (!reactionReady) { requested = id; return; }
       respond(id);
