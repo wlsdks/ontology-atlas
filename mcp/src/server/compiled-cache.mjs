@@ -10,20 +10,31 @@ const VIEW_KEYS = ['includeIndexes', 'summary', 'nodesLimit', 'nodesOffset', 'ed
 const MAX_VIEWS = 4;
 
 /**
- * Below this many documents a compile's garbage is a few megabytes and the
- * collector's own schedule is soon enough.
+ * A compile's garbage follows its node count. Measured under Bun 1.4.4, a compile
+ * of 1,000 / 10,000 / 50,000 nodes leaves 11 / 96 / 435 MB that one full collection
+ * returns in 1.5 / 7 / 31 ms, so below 5,000 nodes the collector's own schedule is
+ * soon enough.
  */
-const COLLECT_AFTER_DOCS = 2000;
+const COLLECT_AFTER_NODES = 5000;
 
 /**
- * A compile of 50,000 files allocates about 450 MB that is garbage once the
- * artifact exists. Bun leaves it resident until its next full collection, so the
- * server kept about 1 GB after the first compile; one synchronous collection
- * (about 30 ms at that size, beside a 500 ms compile) returns it. Only a miss
- * pays it. Node has no collector hook without a flag; its own collection runs.
+ * Bun leaves a large compile's garbage in the physical footprint until its next
+ * full collection; one synchronous collection returns it. Only a miss on a graph
+ * of {@link COLLECT_AFTER_NODES} or more pays it. Node has no collector hook
+ * without a flag; its own collection runs.
  */
 function collectAfterCompile() {
   globalThis.Bun?.gc(true);
+}
+
+/** Whether `docs` hold `count` nodes (documents with a `kind`): O(F) at most, on a miss only. */
+function nodeCountAtLeast(docs, count) {
+  let nodes = 0;
+  for (const doc of docs) {
+    const kind = doc?.frontmatter?.kind;
+    if (typeof kind === 'string' && kind.trim() !== '' && ++nodes >= count) return true;
+  }
+  return false;
 }
 
 function viewOf(options) {
@@ -77,7 +88,7 @@ export function createCompiledOntologyCache({
     }
     misses += 1;
     const artifact = compile(docs, view);
-    if (docs.length >= COLLECT_AFTER_DOCS) collectGarbage();
+    if (nodeCountAtLeast(docs, COLLECT_AFTER_NODES)) collectGarbage();
     if (version === undefined) return { artifact, docs };
     if (version !== cachedVersion) {
       views.clear();
