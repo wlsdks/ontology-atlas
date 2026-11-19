@@ -17,7 +17,8 @@ describe('llm-audit.jsonl contract (Rust writer to web reader)', () => {
   const entries = parseLlmAuditLog(raw);
 
   it('the screen reads the completion line the writer wrote as the same fact', () => {
-    expect(entries).toHaveLength(5);
+    // Ten lines; each long run's start line folds into its closing line.
+    expect(entries).toHaveLength(8);
     expect(entries[0]).toEqual({
       v: 1,
       at: '2026-07-26T09:12:33.120Z',
@@ -36,6 +37,8 @@ describe('llm-audit.jsonl contract (Rust writer to web reader)', () => {
       httpStatus: 200,
       responseChars: 42,
       durationMs: 640,
+      embed: null,
+      download: null,
     });
   });
 
@@ -79,6 +82,39 @@ describe('llm-audit.jsonl contract (Rust writer to web reader)', () => {
     expect(entries[3].host).toBe('generativelanguage.googleapis.com');
     expect(entries[3].outcome).toBe('denied');
     expect(entries[3].httpStatus).toBe(400);
+  });
+
+  it('a search-by-meaning run reads as one closed transfer with what it sent', () => {
+    const run = entries.find((entry) => entry.purpose === 'embed-build');
+    expect(run?.embed).toMatchObject({ phase: 'close', passagesSent: 2, charsSent: 10, ended: 'complete' });
+    expect(run?.outcome).toBe('ok');
+    expect(entries.filter((entry) => entry.purpose === 'embed-build')).toHaveLength(1);
+  });
+
+  it('a search press reads as the question that left, and nothing from the folder', () => {
+    const query = entries.find((entry) => entry.purpose === 'embed-query');
+    expect(query?.question).toBe('결제 재시도는 어디서 정하나요?');
+    expect(query?.scope.vaultChars).toBe(0);
+    expect(query?.embed).toBeNull();
+  });
+
+  it('a model download reads as its model, revision and bytes, with no folder content', () => {
+    const download = entries.find((entry) => entry.purpose === 'model-download');
+    expect(download?.model).toBe('bge-m3');
+    expect(download?.download).toMatchObject({
+      phase: 'close',
+      source: 'ollama-pull',
+      bytes: 1157671200,
+      ended: 'complete',
+    });
+    expect(download?.download?.revision).toMatch(/^sha256:/);
+    expect(download?.scope.vaultChars).toBe(0);
+  });
+
+  it('a start line with no closing line in view reads as not finished, not as a result', () => {
+    const start = raw.split('\n').find((line) => line.includes('"phase":"start"'));
+    const [entry] = parseLlmAuditLog(start ?? '');
+    expect(entry.outcome).toBe('open');
   });
 
   it('no line of the fixture carries a response body', () => {
