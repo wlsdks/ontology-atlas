@@ -170,7 +170,7 @@ fn directory_entry_names(directory: &fs::File) -> Result<Vec<String>, String> {
                     "meaning transition history contains a non-UTF-8 member".to_string()
                 })?;
             if name != "." && name != ".." {
-                if names.len() >= MAX_HISTORY_MEMBERS + 1 {
+                if names.len() > MAX_HISTORY_MEMBERS {
                     return Err(
                         "meaning transition history exceeds the supported member budget".into(),
                     );
@@ -258,4 +258,5 @@ fn read_history_member(
 }
 
 #[cfg(all(test, unix))]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 mod tests;

@@ -139,6 +139,7 @@ fn normal_parts(path: &Path) -> Result<Vec<&OsStr>, String> {
     Ok(out)
 }
 
+#[cfg(test)]
 pub(crate) fn resolve_image(document: &Path, target: &Path) -> Result<PathBuf, String> {
     normal_parts(document)?;
     if !document
@@ -233,7 +234,7 @@ impl PlanningRoot {
                 index + 1 < parts.len() || last_is_directory,
             )?;
             let metadata = next.metadata().map_err(io_failure)?;
-            if identity(&metadata) != expected[index] {
+            if expected.get(index) != Some(&identity(&metadata)) {
                 return Err("entry-replaced".into());
             }
             if index + 1 == parts.len()

@@ -74,10 +74,13 @@ fn selected_scope(
     let mut scope = HashSet::new();
     for uid in uids {
         let matches: Vec<_> = nodes.iter().filter(|n| string(n, "uid") == uid).collect();
-        if matches.len() != 1 || !contained.contains(string(matches[0], "slug")) {
+        let [node] = matches.as_slice() else {
+            return Err("scope_invalid".into());
+        };
+        if !contained.contains(string(node, "slug")) {
             return Err("scope_invalid".into());
         }
-        scope.insert(string(matches[0], "slug").to_string());
+        scope.insert(string(node, "slug").to_string());
     }
     let mut groups: HashSet<String> = nodes
         .iter()
@@ -429,9 +432,11 @@ pub fn preview_gray_area_scope(
 
 #[cfg(all(test, unix))]
 #[path = "gray_area_tests.rs"]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 mod unix_tests;
 
 #[cfg(all(test, not(unix)))]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 mod unsupported_platform_tests {
     use super::*;
     use std::fs;

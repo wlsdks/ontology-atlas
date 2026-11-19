@@ -356,10 +356,9 @@ mod tests {
 
 #[cfg(test)]
 mod atomic_write_tests {
-    use super::{
-        ensure_vault_directory_after_validation, write_text_atomically,
-        write_vault_text_file_after_validation,
-    };
+    use super::write_text_atomically;
+    #[cfg(unix)]
+    use super::{ensure_vault_directory_after_validation, write_vault_text_file_after_validation};
 
     #[cfg(unix)]
     #[test]

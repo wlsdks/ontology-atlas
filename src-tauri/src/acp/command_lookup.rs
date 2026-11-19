@@ -38,9 +38,7 @@ fn nvm_bin_dirs(home: &Path, probe: &FsProbe<'_>) -> Vec<PathBuf> {
         if let Some(at) = found.iter().position(|(parts, name, _)| {
             name == &default
                 || name.trim_start_matches('v') == default.trim_start_matches('v')
-                || wanted
-                    .as_ref()
-                    .is_some_and(|w| parts.len() >= w.len() && parts[..w.len()] == w[..])
+                || wanted.as_ref().is_some_and(|w| parts.starts_with(w))
         }) {
             let chosen = found.remove(at);
             found.insert(0, chosen);

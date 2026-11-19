@@ -23,12 +23,14 @@ fn main() {
         eprintln!("this build ignores OATLAS_INDEX_DIR; build with --features index-dir-override");
         std::process::exit(2);
     }
-    let root = canonical_vault_root(Path::new(&args[2])).expect("vault folder");
+    let command = args.get(1).map_or("", String::as_str);
+    let vault = args.get(2).map_or("", String::as_str);
+    let root = canonical_vault_root(Path::new(vault)).expect("vault folder");
     let started = Instant::now();
     let files = walk::markdown_files(&root);
     let walk_ms = started.elapsed().as_secs_f64() * 1000.0;
     let progress = Progress::default();
-    match args[1].as_str() {
+    match command {
         "build" | "reopen" => {
             let report = sync(&root, &files, &progress, Check::IfInterrupted).expect("sync");
             println!(
@@ -42,7 +44,11 @@ fn main() {
             );
         }
         "update" => {
-            let target = root.join(&files[files.len() / 2]);
+            let target = root.join(
+                files
+                    .get(files.len() / 2)
+                    .expect("a vault with a Markdown file"),
+            );
             let mut text = std::fs::read_to_string(&target).expect("target file");
             text.push_str("\n갱신된 문단 benchmarkupdate\n");
             std::fs::write(&target, text).expect("write target");
@@ -60,7 +66,7 @@ fn main() {
         }
         "search" => {
             let searcher = Searcher::open(&root).expect("open").expect("index exists");
-            let queries = &args[3..];
+            let queries = args.get(3..).unwrap_or_default();
             let mut samples = Vec::new();
             let mut medians = Vec::new();
             for query in queries {
@@ -72,7 +78,7 @@ fn main() {
                     })
                     .collect();
                 runs.sort_by(f64::total_cmp);
-                medians.push(runs[runs.len() / 2]);
+                medians.push(percentile(&mut runs, 0.5));
                 samples.extend(runs);
             }
             println!(
@@ -85,13 +91,17 @@ fn main() {
             );
         }
         "read-loop" => {
-            let reads: usize = args[3].parse().expect("read count");
+            let reads: usize = args
+                .get(3)
+                .and_then(|count| count.parse().ok())
+                .expect("read count");
+            let query = args.get(4).expect("query");
             let mut errors = 0;
             let mut done = 0;
             while done < reads {
                 match Searcher::open(&root) {
                     Ok(Some(searcher)) => {
-                        if searcher.search(&args[4], 20).is_err() {
+                        if searcher.search(query, 20).is_err() {
                             errors += 1;
                         }
                         done += 1;
@@ -124,6 +134,10 @@ fn main() {
 /// Nearest-rank percentile.
 fn percentile(values: &mut [f64], share: f64) -> f64 {
     values.sort_by(f64::total_cmp);
-    let rank = ((values.len() as f64 * share).ceil() as usize).clamp(1, values.len());
-    values[rank - 1]
+    let rank = ((values.len() as f64 * share).ceil() as usize).max(1);
+    values
+        .get(rank - 1)
+        .or(values.last())
+        .copied()
+        .unwrap_or(0.0)
 }

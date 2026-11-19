@@ -37,7 +37,8 @@ pub(crate) struct Inventory {
 }
 #[derive(Clone, Debug)]
 pub(crate) enum ScanPhase {
-    DirectoryOpened(PathBuf),
+    // Only a test hook reads the path.
+    DirectoryOpened(#[cfg_attr(not(test), allow(dead_code))] PathBuf),
 }
 struct Dir(*mut libc::DIR);
 impl Drop for Dir {
@@ -190,10 +191,7 @@ impl<F: FnMut(ScanPhase)> Walker<'_, F> {
                     }
                 };
                 let meta = child.metadata().map_err(|_| "entry-unavailable")?;
-                if !meta.is_dir()
-                    || meta.dev() != stat.st_dev as u64
-                    || meta.ino() != stat.st_ino as u64
-                {
+                if !meta.is_dir() || meta.dev() != stat.st_dev as u64 || meta.ino() != stat.st_ino {
                     return Err("entry-changed".into());
                 }
                 let mut child_chain = chain.to_vec();
@@ -219,9 +217,7 @@ impl<F: FnMut(ScanPhase)> Walker<'_, F> {
                     }
                 };
                 let meta = child.metadata().map_err(|_| "entry-unavailable")?;
-                if !meta.is_file()
-                    || meta.dev() != stat.st_dev as u64
-                    || meta.ino() != stat.st_ino as u64
+                if !meta.is_file() || meta.dev() != stat.st_dev as u64 || meta.ino() != stat.st_ino
                 {
                     return Err("entry-changed".into());
                 }

@@ -66,20 +66,6 @@ impl PlanningPanelDelegate {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn validation_error_uses_the_supplied_localized_recovery_message() {
-        let message = "The folder changed. Choose it again.";
-        assert_eq!(
-            super::selection_error(message)
-                .localizedDescription()
-                .to_string(),
-            message
-        );
-    }
-}
-
 pub(super) fn choose_folder(error_message: &str) -> Result<Option<(PathBuf, File)>, String> {
     let mtm = MainThreadMarker::new().ok_or("picker-main-thread-required")?;
     let panel = NSOpenPanel::openPanel(mtm);
@@ -118,4 +104,18 @@ pub(super) fn choose_folder(error_message: &str) -> Result<Option<(PathBuf, File
         .borrow_mut()
         .finish(true, path.as_deref());
     result
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn validation_error_uses_the_supplied_localized_recovery_message() {
+        let message = "The folder changed. Choose it again.";
+        assert_eq!(
+            super::selection_error(message)
+                .localizedDescription()
+                .to_string(),
+            message
+        );
+    }
 }

@@ -180,10 +180,10 @@ fn single_git_config(repo_root: &Path, key: &str) -> Result<String, String> {
     let out = run_git(repo_root, &["config", "--get-all", key])?;
     let mut lines = out.stdout.lines();
     let value = lines.next().filter(|line| !line.is_empty());
-    if !out.success || value.is_none() || lines.next().is_some() {
-        return Err(coded("push-state-changed", ""));
+    match value {
+        Some(value) if out.success && lines.next().is_none() => Ok(value.to_string()),
+        _ => Err(coded("push-state-changed", "")),
     }
-    Ok(value.unwrap().to_string())
 }
 
 #[derive(Debug, Serialize)]

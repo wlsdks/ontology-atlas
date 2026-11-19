@@ -1,6 +1,8 @@
 //! The launch sweep and Delete against live builds, litter and unreadable indexes. They act on
 //! every index under the root, so they run in their own process, one at a time.
 
+#![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
+
 mod common;
 
 use common::{write_corpus, TempVault};

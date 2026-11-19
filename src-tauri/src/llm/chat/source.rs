@@ -106,8 +106,9 @@ fn capacity(audit: &Path, base_url: &str, model: &str) -> Result<SourceModelCapa
     let base = endpoint(base_url)?;
     let request = json!({"model":model}).to_string();
     let show = metadata(audit, &base, "show", Some(&request))?;
-    let supported = show["model_info"]
-        .as_object()
+    let supported = show
+        .get("model_info")
+        .and_then(Value::as_object)
         .and_then(|info| {
             info.iter()
                 .filter(|(key, _)| key.ends_with(".context_length"))
@@ -115,21 +116,24 @@ fn capacity(audit: &Path, base_url: &str, model: &str) -> Result<SourceModelCapa
                 .min()
         })
         .ok_or("model-limit")?;
-    let configured = show["parameters"].as_str().and_then(|parameters| {
-        parameters.lines().find_map(|line| {
-            let mut parts = line.split_whitespace();
-            if parts.next()? != "num_ctx" {
-                return None;
-            }
-            parts.next()?.parse::<u64>().ok()
-        })
-    });
+    let configured = show
+        .get("parameters")
+        .and_then(Value::as_str)
+        .and_then(|parameters| {
+            parameters.lines().find_map(|line| {
+                let mut parts = line.split_whitespace();
+                if parts.next()? != "num_ctx" {
+                    return None;
+                }
+                parts.next()?.parse::<u64>().ok()
+            })
+        });
     let configured = match configured {
         Some(value) => value,
         None => {
             let ps = metadata(audit, &base, "ps", None)?;
-            ps["models"]
-                .as_array()
+            ps.get("models")
+                .and_then(Value::as_array)
                 .and_then(|models| {
                     models
                         .iter()
@@ -190,8 +194,9 @@ fn request_body(packet: &str, model: &str, locale: &str, limit: usize) -> Result
         ""
     };
     let value: Value = serde_json::from_str(packet).map_err(|_| "invalid-packet")?;
-    let sources = value["sources"]
-        .as_array()
+    let sources = value
+        .get("sources")
+        .and_then(Value::as_array)
         .filter(|sources| !sources.is_empty() && sources.len() <= 240)
         .ok_or("invalid-packet")?;
     let mut ids = std::collections::HashSet::new();
@@ -211,6 +216,8 @@ fn request_body(packet: &str, model: &str, locale: &str, limit: usize) -> Result
     }
     Ok(json!({"model":model,"stream":false,"temperature":0,"max_tokens":OUTPUT_TOKENS,"reasoning_effort":"none","response_format":{"type":"json_schema","json_schema":{"name":"git_briefing","strict":true,"schema":serde_json::from_str::<Value>(RESPONSE_SCHEMA).map_err(|_| "invalid-packet")?}},"messages":[{"role":"system","content":format!("{PROMPT} Every reason, check and limit must use the same claim object as change, never a string. JSON schema: {RESPONSE_SCHEMA}. All natural-language titles and claim text MUST be in {language}, regardless of the source language. Translate source wording. Keep JSON property names, numerical values and evidence IDs unchanged.{writing_rule}")},{"role":"user","content":packet}]}).to_string())
 }
+// Each argument is a named field of the command the WebView sends, so they cannot be bundled.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn source_briefing_chat(
     app: tauri::AppHandle,

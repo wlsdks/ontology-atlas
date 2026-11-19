@@ -183,7 +183,10 @@ pub(super) fn identity_until(
         (metadata.dev(), metadata.ino())
     };
     #[cfg(not(unix))]
-    let object = (0, 0);
+    let object = {
+        let _ = metadata;
+        (0, 0)
+    };
     Ok(Identity {
         scope: SourceScope::Picked,
         root,
@@ -377,12 +380,15 @@ pub(super) fn parse_response(
         .windows(marker.len())
         .rposition(|part| part == marker)
         .ok_or(PageError::Unavailable)?;
-    let tail = &metadata[split + marker.len()..];
+    let tail = metadata
+        .get(split + marker.len()..)
+        .ok_or(PageError::Unavailable)?;
     let http = tail
         .windows(b"\nATLAS_HTTP\t".len())
         .position(|part| part == b"\nATLAS_HTTP\t")
         .ok_or(PageError::Unavailable)?;
-    let link = std::str::from_utf8(&tail[..http]).map_err(|_| PageError::Unavailable)?;
+    let link = std::str::from_utf8(tail.get(..http).ok_or(PageError::Unavailable)?)
+        .map_err(|_| PageError::Unavailable)?;
     if link.len() > LINK_BYTES || link.contains(['\n', '\r', '\t']) {
         return Err(PageError::Unavailable);
     }
@@ -391,7 +397,7 @@ pub(super) fn parse_response(
     }
     let mut framed = Vec::with_capacity(body.len() + tail.len() - http);
     framed.extend_from_slice(body);
-    framed.extend_from_slice(&tail[http..]);
+    framed.extend_from_slice(tail.get(http..).ok_or(PageError::Unavailable)?);
     match response::parse(&framed, max, success, chrono::Utc::now().timestamp()) {
         Ok((value, size)) => Ok(Page {
             value,

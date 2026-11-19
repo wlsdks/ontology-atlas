@@ -1,4 +1,6 @@
+#[cfg(unix)]
 use super::*;
+#[cfg(unix)]
 use crate::acp::test_support::scratch;
 
 #[cfg(unix)]

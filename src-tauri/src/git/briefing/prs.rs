@@ -1,5 +1,6 @@
 use super::*;
 use serde_json::Value;
+use std::collections::hash_map::Entry;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -27,6 +28,7 @@ pub struct PullDescription {
     #[serde(default)]
     pub copy_kind: String,
     #[serde(skip)]
+    #[cfg(unix)]
     pub(super) merge_commit: String,
 }
 #[derive(Serialize)]
@@ -200,7 +202,9 @@ fn fetch(path: &str, limit: usize, cancelled: &AtomicBool) -> Result<(Value, usi
     let (send, receive) = std::sync::mpsc::sync_channel(1);
     std::thread::spawn(move || {
         let mut bytes = Vec::new();
-        let result = stdout.take((max + response::TRAILER_LIMIT + 1) as u64).read_to_end(&mut bytes);
+        let result = stdout
+            .take((max + response::TRAILER_LIMIT + 1) as u64)
+            .read_to_end(&mut bytes);
         let _ = send.send(result.map(|_| bytes));
     });
     let started = std::time::Instant::now();
@@ -250,14 +254,15 @@ pub(super) fn collect(
             return result;
         }
     };
-    let public = repo["private"] == false
-        && repo["full_name"]
-            .as_str()
+    let public = repo.get("private").and_then(Value::as_bool) == Some(false)
+        && repo
+            .get("full_name")
+            .and_then(Value::as_str)
             .is_some_and(|name| name.eq_ignore_ascii_case(repository));
     if !public {
         result.status = "unavailable".into();
         result.unchecked = commits.len();
-            result.unchecked_commits = commits.iter().map(|commit| commit.hash.clone()).collect();
+        result.unchecked_commits = commits.iter().map(|commit| commit.hash.clone()).collect();
         return result;
     }
     let mut requests = 1;
@@ -309,7 +314,10 @@ pub(super) fn collect(
             checked = false;
         }
         for number in numbers {
-            if result.failure.is_some() { checked = false; break; }
+            if result.failure.is_some() {
+                checked = false;
+                break;
+            }
             if cancelled.load(Ordering::Relaxed) {
                 result.status = "cancelled".into();
                 return result;
@@ -325,29 +333,38 @@ pub(super) fn collect(
                 checked = false;
                 break;
             }
-            if !cache.contains_key(&number) {
-                requests += 1;
-                match get(
-                    &format!("{repository}/pulls/{number}"),
-                    PR_BYTES.saturating_sub(bytes),
-                ) {
-                    Ok((value, size)) => {
-                        bytes += size;
-                        cache.insert(number, value);
-                    }
-                    Err(error) => {
-                        result.failure = error.failure();
-                        checked = false;
-                        continue;
+            let pr: &Value = match cache.entry(number) {
+                Entry::Occupied(known) => known.into_mut(),
+                Entry::Vacant(slot) => {
+                    requests += 1;
+                    match get(
+                        &format!("{repository}/pulls/{number}"),
+                        PR_BYTES.saturating_sub(bytes),
+                    ) {
+                        Ok((value, size)) => {
+                            bytes += size;
+                            slot.insert(value)
+                        }
+                        Err(error) => {
+                            result.failure = error.failure();
+                            checked = false;
+                            continue;
+                        }
                     }
                 }
-            }
-            let pr = &cache[&number];
-            let same = pr["base"]["repo"]["full_name"]
-                .as_str()
+            };
+            let same = pr
+                .pointer("/base/repo/full_name")
+                .and_then(Value::as_str)
                 .is_some_and(|name| name.eq_ignore_ascii_case(repository));
-            let merge = pr["merge_commit_sha"].as_str().unwrap_or("");
-            if !same || pr["merged"] != true || !introduced(root, merge, &commit.hash) {
+            let merge = pr
+                .get("merge_commit_sha")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            if !same
+                || pr.get("merged").and_then(Value::as_bool) != Some(true)
+                || !introduced(root, merge, &commit.hash)
+            {
                 unlinked.insert(number);
                 continue;
             }
@@ -373,6 +390,7 @@ pub(super) fn collect(
                     Sha256::digest(format!("{title}\0{body}\0{updated_at}"))
                 ),
                 integration: commit.hash.clone(),
+                #[cfg(unix)]
                 merge_commit: merge.into(),
                 copy_kind: "fresh".into(),
             });
@@ -388,6 +406,8 @@ pub(super) fn collect(
     }
     result
 }
+// Each argument is a named field of the command the WebView sends, so they cannot be bundled.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn git_briefing_pull_descriptions(
     window: tauri::WebviewWindow,
@@ -411,7 +431,9 @@ pub async fn git_briefing_pull_descriptions(
             return Err("unavailable".into());
         }
         let ticket = cache::ticket(&app);
-        if worker_cancelled.load(Ordering::Acquire) { return Err("cancelled".into()); }
+        if worker_cancelled.load(Ordering::Acquire) {
+            return Err("cancelled".into());
+        }
         let mut result = collect(
             &before.root,
             &repository,
@@ -422,8 +444,17 @@ pub async fn git_briefing_pull_descriptions(
         if picked_identity(&source_path).ok().as_ref() != Some(&before) {
             return Err("stale".into());
         }
-        if !repositories(&before.root)?.contains(&repository) { return Err("stale".into()); }
-        result.saved = Some(cache::save(&ticket, &before, &result, &commits, &worker_cancelled, preserve_previous));
+        if !repositories(&before.root)?.contains(&repository) {
+            return Err("stale".into());
+        }
+        result.saved = Some(cache::save(
+            &ticket,
+            &before,
+            &result,
+            &commits,
+            &worker_cancelled,
+            preserve_previous,
+        ));
         Ok(result)
     });
     match futures_util::future::select(Box::pin(worker), Box::pin(&mut owned.receiver)).await {
@@ -443,22 +474,51 @@ mod tests {
     use super::*;
     #[test]
     fn rate_limit_stops_further_network_calls_and_marks_unchecked_commits() {
-        let commits: Vec<_> = ["a", "b"].iter().map(|hash| BriefingCommit {
-            hash: hash.repeat(40), subject: "Merge #1".into(), message: "Merge #1".into(),
-            message_complete: true, committed_at: "2026-10-26T00:00:00Z".into(), paths: vec![],
-        }).collect();
+        let commits: Vec<_> = ["a", "b"]
+            .iter()
+            .map(|hash| BriefingCommit {
+                hash: hash.repeat(40),
+                subject: "Merge #1".into(),
+                message: "Merge #1".into(),
+                message_complete: true,
+                committed_at: "2026-10-26T00:00:00Z".into(),
+                paths: vec![],
+            })
+            .collect();
         for fail_at in [1, 2, 3] {
             let mut calls = 0;
-            let result = collect(Path::new("."), "owner/repo", &commits, |_, _| {
-                calls += 1;
-                if calls == fail_at { return Err(FetchError::RateLimited(Some("2026-10-26T00:01:00Z".into()))); }
-                Ok((if calls == 1 { serde_json::json!({"private":false,"full_name":"owner/repo"}) } else { serde_json::json!([{ "number": 1 }]) }, 32))
-            }, &AtomicBool::new(false));
+            let result = collect(
+                Path::new("."),
+                "owner/repo",
+                &commits,
+                |_, _| {
+                    calls += 1;
+                    if calls == fail_at {
+                        return Err(FetchError::RateLimited(Some("2026-10-26T00:01:00Z".into())));
+                    }
+                    Ok((
+                        if calls == 1 {
+                            serde_json::json!({"private":false,"full_name":"owner/repo"})
+                        } else {
+                            serde_json::json!([{ "number": 1 }])
+                        },
+                        32,
+                    ))
+                },
+                &AtomicBool::new(false),
+            );
             assert_eq!(calls, fail_at);
             assert_eq!(result.unchecked_commits.len(), commits.len());
             assert_eq!(result.unchecked, commits.len());
             assert_eq!(result.failure.unwrap().kind, "rate-limited");
-            assert_eq!(result.status, if fail_at == 1 { "unavailable" } else { "partial" });
+            assert_eq!(
+                result.status,
+                if fail_at == 1 {
+                    "unavailable"
+                } else {
+                    "partial"
+                }
+            );
         }
     }
     #[test]

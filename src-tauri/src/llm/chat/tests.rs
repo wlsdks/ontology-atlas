@@ -1,6 +1,7 @@
 #[cfg(unix)]
 mod cancellation;
 mod construction_probe;
+#[cfg(unix)]
 use super::request::ANTHROPIC_CHAT_URL;
 use super::*;
 use crate::llm::tests::temp_vault;

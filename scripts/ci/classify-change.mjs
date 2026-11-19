@@ -16,6 +16,7 @@ import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
 import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
+import { RUST_LINT_COMMAND } from '../lib/check-rules/desktop.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -167,7 +168,7 @@ const KNOWN_PATHS = [
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,
   /^LICENSE$/,
-  /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|postcss\.config\.mjs|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,
+  /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|pnpm-workspace\.yaml|postcss\.config\.mjs|rust-toolchain\.toml|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,
   // A third-party directory reads this at the repository root and nothing here builds from it,
   // so it is known and drives no lane. `glama.json` names who may maintain the Glama listing.
   /^glama\.json$/,
@@ -240,7 +241,16 @@ function isBrowserInput(path) {
   return matchesAny(path, BROWSER_INPUTS);
 }
 
+/**
+ * Commands that need a Tauri toolchain, which no Linux lane has (no GTK/WebKitGTK headers, so
+ * `glib-sys` fails). `windows-beta-check.yml` (triggered by `src-tauri/**` and `rust-toolchain.toml`)
+ * lints Rust on Windows and on macOS, so a plan that leaves it out of every lane is routing, not a
+ * skipped gate.
+ */
+export const NATIVE_TOOLCHAIN_COMMANDS = Object.freeze([RUST_LINT_COMMAND]);
+
 function commandLane(command) {
+  if (NATIVE_TOOLCHAIN_COMMANDS.includes(command)) return 'native';
   if (command.startsWith(PLAYWRIGHT_PREFIX)) return 'e2e';
   if (
     command === 'pnpm knip' ||
