@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Search } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
-import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
+import { GatewayNav } from '@/widgets/gateway-chrome';
+import { controlClass } from '@/shared/ui/control-class';
 import { Button, buttonVariants } from '@/shared/ui/controls/button';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
@@ -106,7 +107,40 @@ function NotFoundBody() {
           </>
         )
       }
-      footer={desktop ? null : <GatewayReadingLinks className="justify-center" />}
+      footer={desktop ? null : <WebDestinations />}
     />
+  );
+}
+
+/**
+ * Where a lost web visitor most likely meant to go, at every width: the download page and the
+ * guide, in the URL's locale. The changelog joins below `sm`, where the chrome folds it. The app
+ * draws none of this: it must not offer its own download.
+ */
+function WebDestinations() {
+  const tNav = useTranslations('gatewayNav');
+  const tDownload = useTranslations('download');
+  const items = [
+    { href: '/download', label: tDownload('downloadSectionLabel'), testId: 'not-found-download', narrowOnly: false },
+    { href: '/guide', label: tNav('guide'), testId: 'not-found-guide', narrowOnly: false },
+    { href: '/changelog', label: tNav('changelog'), testId: 'not-found-changelog', narrowOnly: true },
+  ] as const;
+  return (
+    <nav data-testid="not-found-destinations" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          data-testid={item.testId}
+          className={controlClass({
+            shape: 'link',
+            tone: 'secondary',
+            className: cn('touch-hit-expand', item.narrowOnly && 'sm:hidden'),
+          })}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
