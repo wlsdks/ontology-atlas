@@ -353,9 +353,9 @@
         "what": "{path} is cited but it is not among the sources this page uses.",
         "do": "Add it to the list of sources, or fix the citation."
       },
-      "describes-needs-approval": {
-        "what": "This page says it speaks for a concept (describes), and that is a claim about the map a person has to confirm.",
-        "do": "Read it and set the status to reviewed, or remove that line."
+      "describes-target-missing": {
+        "what": "This page says it is about {target}, and this folder has no concept by that name.",
+        "do": "Remove that name from the page, or link the page again from Sources."
       },
       "dangling-wikilink": {
         "what": "The link at {where} points at {target}, and there is no such page in this folder.",
@@ -650,7 +650,7 @@
     "rule": {
       "kind-present": "This page is marked for the map",
       "missing-field": "A required line is missing",
-      "describes-needs-approval": "Nobody has confirmed this claim",
+      "describes-target-missing": "A linked concept is not here",
       "section-order": "Sections are missing or misordered",
       "bad-truncation-record": "The read-so-far record disagrees",
       "uncited-fact": "No source backs this up",

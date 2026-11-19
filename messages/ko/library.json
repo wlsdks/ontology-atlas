@@ -353,9 +353,9 @@
         "what": "근거로 {path}, 이 문서가 쓰는 원문 목록에 없어요.",
         "do": "원문 목록에 더하거나, 근거를 고치세요."
       },
-      "describes-needs-approval": {
-        "what": "이 글이 어떤 개념을 대신 말한다고 적혀 있어요(describes). 지도에 대한 주장이라 사람이 확인해야 해요.",
-        "do": "읽어 보고 맞으면 검토됨으로 바꾸고, 아니면 그 줄을 지우세요."
+      "describes-target-missing": {
+        "what": "이 문서는 {target}을 다룬다고 적혀 있는데, 이 폴더에 그 이름의 개념이 없어요.",
+        "do": "문서에서 그 이름을 지우거나, 원문 탭에서 문서를 다시 이으세요."
       },
       "dangling-wikilink": {
         "what": "{where}에서 {target} 문서로 연결했는데 이 폴더에 그 문서가 없어요.",
@@ -650,7 +650,7 @@
     "rule": {
       "kind-present": "지도 표시가 붙어 있어요",
       "missing-field": "정보칸에 빠진 줄이 있어요",
-      "describes-needs-approval": "확인이 필요한 주장이 있어요",
+      "describes-target-missing": "이어진 개념이 여기 없어요",
       "section-order": "구획이 빠졌거나 순서가 달라요",
       "bad-truncation-record": "읽은 범위 기록이 맞지 않아요",
       "uncited-fact": "근거 없이 적은 사실이 있어요",

@@ -353,9 +353,9 @@
         "what": "引用了 {path}，但它不在此页面使用的来源列表中。",
         "do": "把它加入来源列表，或修正引用。"
       },
-      "describes-needs-approval": {
-        "what": "此页面声称代表某个概念（describes），这是关于地图的论断，需要由人确认。",
-        "do": "阅读后把状态设为已复核，或删除那一行。"
+      "describes-target-missing": {
+        "what": "此页面写明它描述 {target}，但此文件夹中没有这个名称的概念。",
+        "do": "从页面中删除该名称，或在\"来源\"中重新连接此页面。"
       },
       "dangling-wikilink": {
         "what": "{where} 处的链接指向 {target}，但此文件夹中没有这个页面。",
@@ -650,7 +650,7 @@
     "rule": {
       "kind-present": "此页面被标记会出现在地图上",
       "missing-field": "缺少必需的一行",
-      "describes-needs-approval": "这条论断还没有人确认",
+      "describes-target-missing": "链接的概念不在这里",
       "section-order": "章节缺失或顺序错误",
       "bad-truncation-record": "已读范围的记录不一致",
       "uncited-fact": "有没有依据的内容",

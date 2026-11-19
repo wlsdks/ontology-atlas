@@ -52,6 +52,24 @@ const BODY = [
   '- The budget figure people quote in meetings is not in this document.',
 ].join('\n');
 
+/**
+ * Every document of the folder the `describes:` rows judge against, as `buildWikiNodeIndex` takes
+ * them: concepts, a `slug:` alias, an NFC Hangul slug, a tail two concepts share, a tail a concept
+ * shares with a wiki page, wiki pages and the vault README.
+ */
+export const WIKI_PAGE_NODES = [
+  { slug: 'capabilities/login', kind: 'capability' },
+  { slug: 'capabilities/session-token-issue', kind: 'capability' },
+  { slug: 'elements/jwt-signer', kind: 'element', alias: 'signer' },
+  { slug: 'capabilities/결제', kind: 'capability' },
+  { slug: 'capabilities/checkout', kind: 'capability' },
+  { slug: 'elements/checkout', kind: 'element' },
+  { slug: 'capabilities/refunds', kind: 'capability' },
+  { slug: 'wiki/refunds' },
+  { slug: 'wiki/plan' },
+  { slug: 'README', kind: 'vault-readme' },
+];
+
 export const WIKI_PAGE_CASES = [
   {
     name: 'a complete page fits the contract',
@@ -249,22 +267,119 @@ export const WIKI_PAGE_CASES = [
     expectedCodes: ['bad-truncation-record'],
   },
   {
-    name: 'describes on a draft is an unapproved claim about the graph',
+    name: 'describes on a draft is not checked when the caller passes no node list',
     input: page(
-      FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - capabilities/mcp-server'),
-      BODY,
-    ),
-    expectedOk: false,
-    expectedCodes: ['describes-needs-approval'],
-  },
-  {
-    name: 'describes on a reviewed page is allowed',
-    input: page(
-      FRONTMATTER.replace('status: draft', 'status: reviewed\ndescribes:\n  - capabilities/mcp-server'),
+      FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - capabilities/gone'),
       BODY,
     ),
     expectedOk: true,
     expectedCodes: [],
+  },
+  {
+    name: 'a draft page names the concepts it is about, each with a reason',
+    nodes: WIKI_PAGE_NODES,
+    input: page(
+      FRONTMATTER.replace(
+        'status: draft',
+        [
+          'status: draft',
+          'describes:',
+          '  - capabilities/session-token-issue',
+          '  - elements/jwt-signer',
+          'relation_notes:',
+          '  capabilities/session-token-issue: "Facts 1-2 state when a token is issued."',
+          '  elements/jwt-signer: "Fact 2 names the signer."',
+        ].join('\n'),
+      ),
+      BODY,
+    ),
+    expectedOk: true,
+    expectedCodes: [],
+  },
+  {
+    name: 'an empty describes records that a writer checked and found no concept',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes: []'), BODY),
+    expectedOk: true,
+    expectedCodes: [],
+  },
+  {
+    name: 'a page without describes is not asked for one',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER, BODY),
+    expectedOk: true,
+    expectedCodes: [],
+  },
+  {
+    name: 'a full slug, a unique tail and a slug: alias each name one concept',
+    nodes: WIKI_PAGE_NODES,
+    input: page(
+      FRONTMATTER.replace(
+        'status: draft',
+        'status: draft\ndescribes:\n  - capabilities/login\n  - session-token-issue\n  - signer',
+      ),
+      BODY,
+    ),
+    expectedOk: true,
+    expectedCodes: [],
+  },
+  {
+    name: 'a Hangul slug typed in NFD names the concept stored in NFC',
+    nodes: WIKI_PAGE_NODES,
+    input: page(
+      FRONTMATTER.replace('status: draft', `status: draft\ndescribes:\n  - ${'capabilities/결제'.normalize('NFD')}`),
+      BODY,
+    ),
+    expectedOk: true,
+    expectedCodes: [],
+  },
+  {
+    name: 'a slug no document has names no concept',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - capabilities/gone'), BODY),
+    expectedOk: false,
+    expectedCodes: ['describes-target-missing'],
+  },
+  {
+    name: 'a tail two concepts share names neither',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - checkout'), BODY),
+    expectedOk: false,
+    expectedCodes: ['describes-target-missing'],
+  },
+  {
+    name: 'a tail a concept shares with a wiki page is ambiguous, as find_backlinks reads it',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - refunds'), BODY),
+    expectedOk: false,
+    expectedCodes: ['describes-target-missing'],
+  },
+  {
+    name: 'a wiki page is not a concept',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - wiki/plan'), BODY),
+    expectedOk: false,
+    expectedCodes: ['describes-target-missing'],
+  },
+  {
+    name: 'the vault README is not a concept',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:\n  - README'), BODY),
+    expectedOk: false,
+    expectedCodes: ['describes-target-missing'],
+  },
+  {
+    name: 'each entry that names no concept is reported once, the good ones not at all',
+    nodes: WIKI_PAGE_NODES,
+    input: page(
+      FRONTMATTER.replace(
+        'status: draft',
+        'status: draft\ndescribes:\n  - capabilities/login\n  - capabilities/gone\n  - capabilities/gone\n  - wiki/plan',
+      ),
+      BODY,
+    ),
+    expectedOk: false,
+    expectedCodes: ['describes-target-missing', 'describes-target-missing'],
   },
   {
     name: 'an empty file fails on everything the contract asks for',

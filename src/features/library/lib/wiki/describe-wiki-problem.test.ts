@@ -172,7 +172,7 @@ describe("the catalogue covers every finding the validator writes", () => {
     "bad-truncation-record-path",
     "citation-target-missing-folder",
     "citation-target-missing-sources",
-    "describes-needs-approval",
+    "describes-target-missing",
     "dangling-wikilink",
     "orphan-page",
     "shared-source-unlinked",

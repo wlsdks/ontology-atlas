@@ -41,6 +41,7 @@ import { repoText } from '../analyze/repo-text.mjs';
 import {
   WIKI_ADVISORY_CODES,
   WIKI_DIR,
+  buildWikiNodeIndex,
   isWikiFurnitureSlug,
   validateWikiFolder,
   validateWikiPage,
@@ -60,7 +61,7 @@ import { relative } from 'node:path';
  * like `validate_vault`'s problems, because a folder of tens of thousands of pages
  * would otherwise be one reply no agent can read.
  *
- * Cost per call: O(pages + bytes + links + citations) with Maps and Sets; pages that
+ * Cost per call: O(pages + bytes + links + citations + `describes:` entries) with Maps and Sets; pages that
  * share a primary source name at most ten partners each. Failing pages keep the path
  * order the pages were judged in, so ordering them is O(failing).
  */
@@ -151,6 +152,12 @@ function judgeWikiPages(paths) {
   const knownSources = new Set(listVaultSourcePaths());
   const docs = loadVaultDocs(VAULT_ROOT);
   const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+  // Every document once, so each `describes:` entry resolves in O(1) as find_backlinks resolves it.
+  const nodes = buildWikiNodeIndex(docs.map((doc) => ({
+    slug: doc.slug,
+    kind: doc.frontmatter?.kind,
+    alias: doc.frontmatter?.slug,
+  })));
   const folderDocs = docs.filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug));
 
   const requested =
@@ -184,7 +191,7 @@ function judgeWikiPages(paths) {
       });
       continue;
     }
-    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, parsed: doc });
+    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, nodes, parsed: doc });
     pages.push({ path, ok, problems });
   }
 

@@ -353,9 +353,9 @@
         "what": "{path}が引用されていますが、このページが使うソースの一覧にありません。",
         "do": "ソースの一覧に追加するか、引用を直してください。"
       },
-      "describes-needs-approval": {
-        "what": "このページは概念の代弁をする（describes）としていますが、これはマップについての主張で、人の確認が必要です。",
-        "do": "内容を読んでステータスをレビュー済みにするか、その行を削除してください。"
+      "describes-target-missing": {
+        "what": "このページは{target}を扱うと書かれていますが、このフォルダにその名前の概念はありません。",
+        "do": "ページからその名前を削除するか、ソースからページをつなぎ直してください。"
       },
       "dangling-wikilink": {
         "what": "{where}のリンクは{target}を指していますが、このフォルダにそのページはありません。",
@@ -650,7 +650,7 @@
     "rule": {
       "kind-present": "このページはマップ用の印がついています",
       "missing-field": "必須の行がありません",
-      "describes-needs-approval": "この主張はまだ誰も確認していません",
+      "describes-target-missing": "つながった概念がここにありません",
       "section-order": "セクションが足りないか、順序が違います",
       "bad-truncation-record": "読み込み範囲の記録が一致しません",
       "uncited-fact": "根拠のない記述があります",

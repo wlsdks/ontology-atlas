@@ -1,8 +1,11 @@
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { runJsonRpcProcess } from "../../../scripts/lib/mcp-test-rpc.mjs";
+import { parseFrontmatter } from "../parser.mjs";
 import { findBacklinks } from "./graph-queries.mjs";
 import { redirectBacklinks } from "./backlink-rewrite.mjs";
 
@@ -513,6 +516,170 @@ test("without targetKind a same-slug call stays a no-op, and a rename keeps the 
   assert.deepEqual(redirectBacklinks(root, "capabilities/a", "capabilities/a"), { updates: [], totalUpdated: 0, plan: [] });
   redirectBacklinks(root, "capabilities/a", "capabilities/b");
   assert.match(readMd(root, "domains/d"), /capabilities: \[capabilities\/b\]\n/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+/*
+ * Wiki pages name the concepts they are about in `describes:` with a note per slug in
+ * `relation_notes`. A rename or merge made through Atlas must leave none of them broken, and a
+ * delete must say which pages it leaves broken: the falsifier of
+ * docs/records/decisions/2026-11-19-wiki-page-describes-at-any-status-afd11e09-c68a-465a-83fa-d8abd8cabdfc.md.
+ * These drive the real tools, so the server's own loader and write path are what is measured.
+ */
+const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), "..", "index.js");
+
+async function testAsync(name, fn) {
+  try {
+    await fn();
+    passed += 1;
+    console.log(`  ✓ ${name}`);
+  } catch (err) {
+    failed += 1;
+    console.error(`  ✗ ${name}`);
+    console.error(`    ${err.message}`);
+  }
+}
+
+async function callTools(vault, calls) {
+  const { responses } = await runJsonRpcProcess({
+    command: process.execPath,
+    args: [SERVER_ENTRY],
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: vault },
+    requests: [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "wiki-links", version: "1" } },
+      },
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      ...calls.map(([name, args], index) => ({
+        jsonrpc: "2.0",
+        id: index + 2,
+        method: "tools/call",
+        params: { name, arguments: args },
+      })),
+    ],
+    timeoutMs: 20_000,
+  });
+  return calls.map((_, index) => {
+    const result = responses.find((response) => response.id === index + 2)?.result;
+    if (result?.isError) throw new Error(String(result?.content?.[0]?.text ?? "tool error"));
+    return JSON.parse(String(result?.content?.[0]?.text ?? "null"));
+  });
+}
+
+const WIKI_PAGES = ["wiki/login-flow", "wiki/session-rules", "wiki/sign-in-history"];
+
+function wikiPage(title, describes, notes) {
+  return [
+    "---",
+    `title: ${title}`,
+    "created_by: agent:claude",
+    "compiled_at: 2026-11-19T00:00:00Z",
+    "sources: []",
+    "source_hash: {}",
+    "status: draft",
+    `summary: What ${title} says about signing in.`,
+    "describes:",
+    ...describes.map((slug) => `  - ${slug}`),
+    "relation_notes:",
+    ...Object.entries(notes).map(([slug, note]) => `  ${slug}: "${note}"`),
+    "---",
+    "",
+    "## Summary",
+    "",
+    "How a person signs in.",
+    "",
+    "## Facts",
+    "",
+    "## Decisions",
+    "",
+    "## Open questions",
+    "",
+    "## Not in sources",
+    "",
+    "- Nothing here is grounded yet.",
+    "",
+  ].join("\n");
+}
+
+/** Three pages describing capabilities/login with notes: by full slug, by tail, and beside the merge survivor. */
+function wikiLinkVault() {
+  const root = makeVault();
+  writeMd(root, "README", "---\nkind: vault-readme\ntitle: README\nuid: 00000000-0000-4000-8000-000000000001\n---\n");
+  writeMd(root, "project", "---\nkind: project\ntitle: Shop\nuid: 00000000-0000-4000-8000-000000000002\n---\nThe shop.\n");
+  writeMd(root, "capabilities/login", "---\nkind: capability\ntitle: Login\nuid: 00000000-0000-4000-8000-000000000003\n---\nA person signs in.\n");
+  writeMd(root, "capabilities/sign-in", "---\nkind: capability\ntitle: Sign in\nuid: 00000000-0000-4000-8000-000000000004\n---\nA person signs in.\n");
+  writeMd(root, WIKI_PAGES[0], wikiPage("Login flow", ["capabilities/login"], { "capabilities/login": "Its Summary is the login flow." }));
+  writeMd(root, WIKI_PAGES[1], wikiPage("Session rules", ["login"], { login: "It states when a login session ends." }));
+  writeMd(
+    root,
+    WIKI_PAGES[2],
+    wikiPage("Sign-in history", ["capabilities/login", "capabilities/sign-in"], {
+      "capabilities/login": "It records the old login.",
+      "capabilities/sign-in": "It records the new sign-in.",
+    }),
+  );
+  return root;
+}
+
+function frontmatterOf(root, slug) {
+  return parseFrontmatter(readMd(root, slug)).frontmatter;
+}
+
+const brokenPages = (report) =>
+  report.pages.filter((page) => page.problems.some((problem) => problem.code === "describes-target-missing")).map((page) => page.path);
+
+const validatePages = ["validate_wiki", { paths: WIKI_PAGES.map((slug) => `${slug}.md`) }];
+
+console.log("wiki page links to concepts");
+
+await testAsync("validate_wiki finds every page's links resolved before any change", async () => {
+  const root = wikiLinkVault();
+  const [report] = await callTools(root, [validatePages]);
+  assert.deepEqual(brokenPages(report), []);
+  rmSync(root, { recursive: true, force: true });
+});
+
+await testAsync("rename_concept rewrites every page's describes entry and note key, leaving 0 broken links", async () => {
+  const root = wikiLinkVault();
+  const [, report] = await callTools(root, [
+    ["rename_concept", { oldSlug: "capabilities/login", newSlug: "capabilities/log-in", confirm: true }],
+    validatePages,
+  ]);
+  assert.deepEqual(brokenPages(report), []);
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[0]).describes, ["capabilities/log-in"]);
+  assert.deepEqual(Object.keys(frontmatterOf(root, WIKI_PAGES[0]).relation_notes), ["capabilities/log-in"]);
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[1]).describes, ["log-in"]);
+  assert.deepEqual(Object.keys(frontmatterOf(root, WIKI_PAGES[1]).relation_notes), ["log-in"]);
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[2]).describes, ["capabilities/log-in", "capabilities/sign-in"]);
+  assert.equal(frontmatterOf(root, WIKI_PAGES[2]).relation_notes["capabilities/log-in"], "It records the old login.");
+  rmSync(root, { recursive: true, force: true });
+});
+
+await testAsync("merge_concepts points every page at the survivor with no duplicate entry", async () => {
+  const root = wikiLinkVault();
+  const [, report] = await callTools(root, [
+    ["merge_concepts", { fromSlug: "capabilities/login", intoSlug: "capabilities/sign-in", confirm: true }],
+    validatePages,
+  ]);
+  assert.deepEqual(brokenPages(report), []);
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[0]).describes, ["capabilities/sign-in"]);
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[1]).describes, ["sign-in"]);
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[2]).describes, ["capabilities/sign-in"]);
+  // The survivor's own note is kept rather than overwritten by the absorbed one.
+  assert.deepEqual(frontmatterOf(root, WIKI_PAGES[2]).relation_notes, { "capabilities/sign-in": "It records the new sign-in." });
+  rmSync(root, { recursive: true, force: true });
+});
+
+await testAsync("delete_concept's dry run lists every page, and a forced delete leaves each reporting describes-target-missing", async () => {
+  const root = wikiLinkVault();
+  const [preview] = await callTools(root, [["delete_concept", { slug: "capabilities/login" }]]);
+  assert.deepEqual(preview.backlinks.map((link) => link.slug).sort(), [...WIKI_PAGES].sort());
+  assert.ok(preview.backlinks.every((link) => link.isNode === false));
+  const [, report] = await callTools(root, [["delete_concept", { slug: "capabilities/login", confirm: true, force: true }], validatePages]);
+  assert.deepEqual(brokenPages(report).sort(), WIKI_PAGES.map((slug) => `${slug}.md`).sort());
   rmSync(root, { recursive: true, force: true });
 });
 

@@ -1,6 +1,9 @@
 // Parity with MCP `redirectBacklinks`: frontmatter relations to a renamed node are rewritten.
 import { describe, expect, it } from 'vitest';
 
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { WIKI_PAGE_TEMPLATE, buildWikiNodeIndex, validateWikiPage } from '@/shared/lib/library/wiki-page-schema';
+
 import {
   computeRenameRefContext,
   planKindChangeReferrers,
@@ -371,5 +374,59 @@ describe('planKindChangeReferrers — what a kind change will do, read from the 
         kept: [],
       },
     ]);
+  });
+});
+
+/**
+ * The app's rename reaches wiki pages too: a page's `describes:` entries and `relation_notes` keys
+ * follow the concept, so no page is left naming a concept the folder no longer has.
+ */
+describe('a rename made in the app leaves no wiki page link broken', () => {
+  const page = (describes: string[], notes: Record<string, string>) =>
+    WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/plan.pdf').replace(
+      'status: draft',
+      [
+        'status: draft',
+        'describes:',
+        ...describes.map((slug) => `  - ${slug}`),
+        'relation_notes:',
+        ...Object.entries(notes).map(([slug, note]) => `  ${slug}: "${note}"`),
+      ].join('\n'),
+    );
+  const pages: Record<string, string> = {
+    'wiki/login-flow': page(['capabilities/login'], { 'capabilities/login': 'Its Summary is the login flow.' }),
+    'wiki/session-rules': page(['login'], { login: 'It states when a login session ends.' }),
+    'wiki/sign-in-history': page(['capabilities/login', 'elements/token'], {
+      'capabilities/login': 'It records the old login.',
+      'elements/token': 'It names the token.',
+    }),
+  };
+  const concepts = (slugs: string[]) => slugs.map((slug) => ({ slug, kind: 'capability' }));
+
+  it('rewrites every entry and note key, and the pages then name only concepts that exist', () => {
+    const before = ['capabilities/login', 'elements/token'];
+    const after = ['capabilities/log-in', 'elements/token'];
+    const { canRewriteTail } = computeRenameRefContext([...before, ...Object.keys(pages)], 'capabilities/login');
+    const nodesBefore = buildWikiNodeIndex([...concepts(before), ...Object.keys(pages).map((slug) => ({ slug }))]);
+    const nodesAfter = buildWikiNodeIndex([...concepts(after), ...Object.keys(pages).map((slug) => ({ slug }))]);
+    let broken = 0;
+    for (const [slug, raw] of Object.entries(pages)) {
+      expect(validateWikiPage(raw, { nodes: nodesBefore }).problems).toEqual([]);
+      // Unrewritten, the page would break: the check is not vacuous.
+      expect(validateWikiPage(raw, { nodes: nodesAfter }).problems.map((p) => p.code)).toContain('describes-target-missing');
+      const next = rewriteRenamedDocRefs(raw, {
+        oldSlug: 'capabilities/login',
+        newSlug: 'capabilities/log-in',
+        referrerSlug: slug,
+        canRewriteTail,
+      });
+      broken += validateWikiPage(next, { nodes: nodesAfter }).problems.filter((p) => p.code === 'describes-target-missing').length;
+      const { frontmatter } = parseFrontmatter(next);
+      for (const key of Object.keys(frontmatter.relation_notes as Record<string, string>)) {
+        expect((frontmatter.describes as string[]).includes(key), `${slug} note ${key}`).toBe(true);
+      }
+      expect(next).not.toMatch(/(^|[\s/])login[:\n]/);
+    }
+    expect(broken).toBe(0);
   });
 });
