@@ -446,21 +446,6 @@ function perfPlan({ paths, existingPaths, deletedPaths, full }) {
   return { mode: relevant ? 'affected' : 'skip' };
 }
 
-/**
- * Drops a focused wrapper (`run-focused-node-test.mjs --test-name-pattern … <file>`) when another
- * planned script runs that whole file: every case the wrapper selects already runs there.
- */
-export function withoutSubsetsOfWholeFiles(commands, scripts) {
-  const body = (command) => scripts[/^pnpm ([a-z][a-z0-9:-]*)$/.exec(command)?.[1]] ?? '';
-  const wholeFiles = new Set(commands
-    .map((command) => /^node --test (\S+\.test\.mjs)$/.exec(body(command))?.[1])
-    .filter(Boolean));
-  return commands.filter((command) => {
-    const focused = /^node scripts\/ci\/run-focused-node-test\.mjs --test-name-pattern "[^"]*" (\S+\.test\.mjs)$/.exec(body(command));
-    return !focused || !wholeFiles.has(focused[1]);
-  });
-}
-
 function mcpPlan({ suggestions, full }) {
   if (full) {
     return { mode: 'full', commands: [...FULL_LANE_COMMANDS.mcp] };
@@ -473,8 +458,6 @@ function mcpPlan({ suggestions, full }) {
   if (commands.includes('pnpm test:mcp:unit')) {
     commands = commands.filter((command) => !/^pnpm exec node --test mcp\/src\//.test(command));
   }
-  const scripts = existsSync('package.json') ? JSON.parse(readFileSync('package.json', 'utf8')).scripts ?? {} : {};
-  commands = withoutSubsetsOfWholeFiles(commands, scripts);
   return { mode: commands.length > 0 ? 'focused' : 'skip', commands };
 }
 

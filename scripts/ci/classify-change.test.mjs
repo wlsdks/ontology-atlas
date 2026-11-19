@@ -13,7 +13,6 @@ import {
   ratchetContractFiles,
   browserBuildFiles,
   buildImpactPlan,
-  withoutSubsetsOfWholeFiles,
   decide,
   decodePlan,
   encodePlan,
@@ -206,20 +205,6 @@ test('MCP is skipped when untouched and focused by handler family when touched',
     'pnpm integration:mcp:write',
   ]);
   assert.ok(!plan.lanes.mcp.commands.includes('pnpm integration:mcp'));
-});
-
-test('a focused MCP wrapper is dropped only when another planned script runs its whole file', () => {
-  const scripts = {
-    'integration:cli': 'node --test cli/src/integration.test.mjs',
-    'integration:cli:mcp-verify': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "mcp-verify" cli/src/integration.test.mjs',
-    'integration:mcp:write': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "^(add_concepts|patch_concept)" mcp/src/integration.test.mjs',
-  };
-  const planned = ['pnpm integration:cli:mcp-verify', 'pnpm integration:mcp:write', 'pnpm docs:surface:check'];
-  assert.deepEqual(withoutSubsetsOfWholeFiles(planned, scripts), planned);
-  assert.deepEqual(
-    withoutSubsetsOfWholeFiles(['pnpm integration:cli', ...planned], scripts),
-    ['pnpm integration:cli', 'pnpm integration:mcp:write', 'pnpm docs:surface:check'],
-  );
 });
 
 test('MCP dependency changes promote only the MCP boundary to its exhaustive lane', () => {
