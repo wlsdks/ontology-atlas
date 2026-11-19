@@ -13,7 +13,7 @@ use crate::lifecycle::{
     create_index_dir, delete_locked, deletions, is_damage, lock_writer, open_store_reader,
     open_store_writer, set_aside_file, write_meta, Store, META_LAST_USED_MS, ROWS_FILE,
 };
-use crate::stamps::{change_time_is_kept, is_racy, now_ns};
+use crate::stamps::{is_racy, now_ns, stamps_are_trusted};
 use crate::{canonical_vault_root, index_dir, stat_all, Error, Result, Stamp};
 use miniz_oxide::deflate::compress_to_vec;
 use miniz_oxide::inflate::decompress_to_vec_with_limit;
@@ -218,7 +218,7 @@ fn look_up<A: Answers>(
     let deletions = deletions(&index_dir(&root)?);
     // Without a change time a same-size rewrite whose modified time was put back looks unchanged,
     // so such a volume (FAT, exFAT) gets no rows at all.
-    let kept = change_time_is_kept(&root);
+    let volume_trusted = stamps_are_trusted(&root);
     let stamps = stat_all(&root, paths);
     let conn = match open_store_reader(&index_dir(&root)?, &ROWS) {
         Ok(conn) => conn,
@@ -231,7 +231,7 @@ fn look_up<A: Answers>(
             namespace,
             paths,
             &stamps,
-            (seen_at, deletions, kept),
+            (seen_at, deletions, volume_trusted),
             answers,
         ) {
             Err(error) if is_damage(&error) => restart(answers),
@@ -243,7 +243,7 @@ fn look_up<A: Answers>(
         namespace,
         paths,
         &stamps,
-        (seen_at, deletions, kept),
+        (seen_at, deletions, volume_trusted),
         answers,
     )?)
 }
@@ -253,7 +253,7 @@ fn answer<A: Answers>(
     namespace: &str,
     paths: &[String],
     stamps: &[Option<Stamp>],
-    (seen_at, deletions, kept): (i64, i64, bool),
+    (seen_at, deletions, volume_trusted): (i64, i64, bool),
     answers: &mut A,
 ) -> rusqlite::Result<Counts> {
     let mut counts = Counts::default();
@@ -264,7 +264,7 @@ fn answer<A: Answers>(
         None => None,
     };
     for (index, (path, stamp)) in paths.iter().zip(stamps).enumerate() {
-        let Some(stamp) = stamp.filter(|stamp| kept && stamp.ctime_ns != 0) else {
+        let Some(stamp) = stamp.filter(|stamp| volume_trusted && stamp.ctime_ns != 0) else {
             answers.miss(index, "");
             continue;
         };

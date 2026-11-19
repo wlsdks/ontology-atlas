@@ -6,8 +6,8 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Modified time and size, plus change time, which also moves when a tool restores the modified
-/// time after rewriting a file: Unix `ctime`, NTFS and ReFS `ChangeTime`. `ctime_ns` is 0 where the
-/// file system keeps no change time (FAT, exFAT); `change_time_is_kept` says so per vault.
+/// time after rewriting a file: Unix `ctime`, NTFS and ReFS `ChangeTime`. Only some file systems
+/// keep a change time worth the name; `stamps_are_trusted` says per vault whether this one does.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Stamp {
     pub mtime_ns: i64,
@@ -56,13 +56,6 @@ fn regular_file_stamp(path: &Path) -> Option<Stamp> {
         .then(|| Stamp::with_change_time(&metadata, change_time_ns(&metadata)))
 }
 
-/// Whether every file under `root` carries a change time, without which a same-size rewrite whose
-/// modified time was put back looks unchanged.
-#[cfg(unix)]
-pub(crate) fn change_time_is_kept(_root: &Path) -> bool {
-    true
-}
-
 #[cfg(windows)]
 fn change_time_of_open(file: &File, _metadata: &Metadata) -> i64 {
     windows::change_time(file)
@@ -77,10 +70,98 @@ fn regular_file_stamp(path: &Path) -> Option<Stamp> {
         .then(|| Stamp::with_change_time(&metadata, windows::change_time(&file)))
 }
 
+/// Whether a file's stamp can stand for its content on the volume holding `root`: only on file
+/// systems known to move the change time on every write. FAT and exFAT keep none (macOS reports
+/// the modified time in its place, so putting the modified time back puts the "change time" back
+/// too), and a network or unknown file system answers with whatever the server or driver keeps.
+/// Everywhere else nothing may be skipped on its stamp alone.
+pub(crate) fn stamps_are_trusted(root: &Path) -> bool {
+    volume::trusted(root)
+}
+
+/// File systems named as macOS `statfs` (`f_fstypename`) and Windows `GetVolumeInformation` name
+/// them, whose change time moves on every write.
+#[cfg_attr(target_os = "linux", allow(dead_code))]
+pub(crate) fn trusted_by_name(name: &str) -> bool {
+    ["apfs", "hfs", "ntfs", "refs"]
+        .iter()
+        .any(|trusted| name.eq_ignore_ascii_case(trusted))
+}
+
+/// Linux `statfs` magic numbers (`f_type`) of file systems whose change time moves on every write:
+/// ext2/3/4, btrfs, xfs, and tmpfs (kept by the kernel itself).
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) fn trusted_by_magic(magic: i64) -> bool {
+    const EXT4: i64 = 0xEF53;
+    const BTRFS: i64 = 0x9123_683E;
+    const XFS: i64 = 0x5846_5342;
+    const TMPFS: i64 = 0x0102_1994;
+    matches!(magic, EXT4 | BTRFS | XFS | TMPFS)
+}
+
+#[cfg(target_os = "macos")]
+mod volume {
+    use std::os::unix::ffi::OsStrExt;
+    use std::path::Path;
+
+    pub(super) fn trusted(root: &Path) -> bool {
+        let Ok(path) = std::ffi::CString::new(root.as_os_str().as_bytes()) else {
+            return false;
+        };
+        // SAFETY: `statfs` is plain data, for which all zero bytes is a valid value.
+        let mut info: libc::statfs = unsafe { std::mem::zeroed() };
+        // SAFETY: `path` is NUL-terminated and outlives the call, and `info` is the statfs buffer
+        // the call fills.
+        if unsafe { libc::statfs(path.as_ptr(), &mut info) } != 0 {
+            return false;
+        }
+        let name: Vec<u8> = info
+            .f_fstypename
+            .iter()
+            .take_while(|&&unit| unit != 0)
+            .map(|&unit| unit as u8)
+            .collect();
+        super::trusted_by_name(&String::from_utf8_lossy(&name))
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod volume {
+    use std::os::unix::ffi::OsStrExt;
+    use std::path::Path;
+
+    pub(super) fn trusted(root: &Path) -> bool {
+        let Ok(path) = std::ffi::CString::new(root.as_os_str().as_bytes()) else {
+            return false;
+        };
+        // SAFETY: `statfs` is plain data, for which all zero bytes is a valid value.
+        let mut info: libc::statfs = unsafe { std::mem::zeroed() };
+        // SAFETY: `path` is NUL-terminated and outlives the call, and `info` is the statfs buffer
+        // the call fills.
+        if unsafe { libc::statfs(path.as_ptr(), &mut info) } != 0 {
+            return false;
+        }
+        // `f_type`'s width differs between targets.
+        #[allow(clippy::unnecessary_cast)]
+        let magic = info.f_type as i64;
+        super::trusted_by_magic(magic)
+    }
+}
+
 #[cfg(windows)]
-pub(crate) fn change_time_is_kept(root: &Path) -> bool {
-    windows::file_system_name(root)
-        .is_some_and(|name| name.eq_ignore_ascii_case("NTFS") || name.eq_ignore_ascii_case("ReFS"))
+mod volume {
+    use std::path::Path;
+
+    pub(super) fn trusted(root: &Path) -> bool {
+        super::windows::file_system_name(root).is_some_and(|name| super::trusted_by_name(&name))
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
+mod volume {
+    pub(super) fn trusted(_root: &std::path::Path) -> bool {
+        false
+    }
 }
 
 #[cfg(windows)]
@@ -188,6 +269,38 @@ pub(crate) fn sha256(hasher: Sha256) -> Sha {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_file_systems_that_move_the_change_time_on_every_write_are_trusted() {
+        for name in ["apfs", "hfs", "NTFS", "ReFS"] {
+            assert!(trusted_by_name(name), "{name}");
+        }
+        for name in [
+            "msdos", "exfat", "FAT32", "FAT", "exFAT", "smbfs", "nfs", "webdav", "afpfs", "", "zfs",
+        ] {
+            assert!(!trusted_by_name(name), "{name}");
+        }
+        for magic in [0xEF53, 0x9123_683E, 0x5846_5342, 0x0102_1994] {
+            assert!(trusted_by_magic(magic), "{magic:#x}");
+        }
+        // vfat, exfat, nfs, cifs, smb2, fuse, overlayfs.
+        for magic in [
+            0x4d44,
+            0x2011_BAB0,
+            0x6969,
+            0xFF53_4D42,
+            0xFE53_4D42,
+            0x6573_5546,
+            0x794C_7630,
+        ] {
+            assert!(!trusted_by_magic(magic), "{magic:#x}");
+        }
+    }
+
+    #[test]
+    fn the_test_folder_volume_is_trusted() {
+        assert!(stamps_are_trusted(&std::env::temp_dir()));
+    }
 
     #[test]
     fn a_row_is_racy_until_two_seconds_separate_the_edit_from_the_read() {

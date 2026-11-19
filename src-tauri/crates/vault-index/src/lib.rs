@@ -19,7 +19,7 @@ use lifecycle::{
 };
 use rusqlite::{params, Connection};
 use sha2::{Digest, Sha256};
-use stamps::{is_racy, now_ns, sha256, Sha};
+use stamps::{is_racy, now_ns, sha256, stamps_are_trusted, Sha};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -271,8 +271,11 @@ struct Plan<'a> {
     removed: Vec<i64>,
 }
 
-/// Stats every listed file in parallel and compares it with its row. O(n) stats and lookups.
+/// Stats every listed file in parallel and compares it with its row. O(n) stats and lookups. On a
+/// volume whose stamps are not trusted, a file whose stamp matches is still read and compared by
+/// hash, so the index never keeps an older version's words.
 fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result<Plan<'a>> {
+    let trusted = stamps_are_trusted(root);
     let mut rows = load_rows(conn)?;
     let stamps = stat_all(root, files);
     let mut plan = Plan {
@@ -293,7 +296,9 @@ fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result
         };
         plan.listed += 1;
         match row {
-            Some(row) if row.stamp == stamp && !is_racy(stamp.mtime_ns, row.read_at_ns) => {
+            Some(row)
+                if trusted && row.stamp == stamp && !is_racy(stamp.mtime_ns, row.read_at_ns) =>
+            {
                 plan.unchanged += 1
             }
             Some(row) if row.stamp == stamp => plan.work.push(Work {

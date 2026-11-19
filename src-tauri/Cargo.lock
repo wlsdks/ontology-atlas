@@ -4913,6 +4913,7 @@ dependencies = [
 name = "vault-index"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "miniz_oxide",
  "rusqlite",
  "sha2",
