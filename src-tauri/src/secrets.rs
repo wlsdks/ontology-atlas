@@ -30,9 +30,8 @@ fn entry(provider: &str) -> Result<Entry, String> {
 }
 
 fn tail4(secret: &str) -> String {
-    let chars: Vec<char> = secret.chars().collect();
-    let start = chars.len().saturating_sub(4);
-    chars[start..].iter().collect()
+    let skip = secret.chars().count().saturating_sub(4);
+    secret.chars().skip(skip).collect()
 }
 
 #[derive(Debug, Serialize)]
@@ -233,11 +232,8 @@ mod tests {
                 *offset += line.len();
                 Some((start, line))
             })
-            .filter_map(|(start, line)| {
-                line.trim_start()
-                    .starts_with("#[tauri::command")
-                    .then(|| source[start..].split_once('{').unwrap().0)
-            })
+            .filter(|(_, line)| line.trim_start().starts_with("#[tauri::command"))
+            .map(|(start, _)| source[start..].split_once('{').unwrap().0)
             .collect();
         for signature in &signatures {
             let compact: String = signature.chars().filter(|c| !c.is_whitespace()).collect();

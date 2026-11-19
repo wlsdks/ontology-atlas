@@ -272,9 +272,19 @@ pub fn secret_verify(
 }
 
 #[tauri::command(async)]
-pub fn source_model_verify(app: tauri::AppHandle, base_url: String) -> Result<LlmVerifyResult, String> {
+pub fn source_model_verify(
+    app: tauri::AppHandle,
+    base_url: String,
+) -> Result<LlmVerifyResult, String> {
     let audit_dir = super::source_audit_dir(&app)?;
-    verify_with(LOCAL_PROVIDER, &audit_dir, &Target::Address { base_url: &base_url }, send_via_curl)
+    verify_with(
+        LOCAL_PROVIDER,
+        &audit_dir,
+        &Target::Address {
+            base_url: &base_url,
+        },
+        send_via_curl,
+    )
 }
 
 #[cfg(test)]

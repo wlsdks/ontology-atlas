@@ -220,8 +220,10 @@ fn dirty_paths(root: &Path, paths: &[Wanted]) -> Result<HashSet<String>, String>
             continue;
         }
         dirty.insert(record[3..].to_string());
-        if record.as_bytes()[..2]
+        if record
+            .as_bytes()
             .iter()
+            .take(2)
             .any(|c| matches!(c, b'R' | b'C'))
         {
             if let Some(previous) = records.next() {
@@ -276,17 +278,17 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
                 .ok()
                 .map(|_| value.to_string());
         } else if !line.is_empty() {
-            for (i, path) in paths.iter().enumerate() {
-                if dates[i].is_none() && matches_path(&path.resolved, line) {
-                    dates[i] = time.clone();
+            for (path, date) in paths.iter().zip(dates.iter_mut()) {
+                if date.is_none() && matches_path(&path.resolved, line) {
+                    *date = time.clone();
                 }
             }
         }
     }
     Ok(paths
         .iter()
-        .enumerate()
-        .map(|(i, path)| {
+        .zip(&dates)
+        .map(|(path, date)| {
             let dirty = before
                 .iter()
                 .chain(after.iter())
@@ -298,7 +300,7 @@ fn walk(root: &Path, paths: &[Wanted]) -> Result<Vec<BoundPathChange>, String> {
                 last_changed_at: if !path.exists || dirty || path.is_dir {
                     None
                 } else {
-                    dates[i].clone()
+                    date.clone()
                 },
                 dirty,
             }

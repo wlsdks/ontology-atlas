@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 
 pub mod walk;
 

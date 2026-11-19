@@ -110,7 +110,7 @@ fn replacing_opened_directory_with_outside_symlink_discards_inventory() {
         .files
         .is_empty());
     assert!(scan_with_hook(&grant, 100, |phase| match phase {
-        ScanPhase::DirectoryOpened(path) if path == PathBuf::from("specs") => {
+        ScanPhase::DirectoryOpened(path) if path == std::path::Path::new("specs") => {
             fs::rename(f.root.join("specs"), f.root.join("specs-old")).unwrap();
             symlink(&f.outside, f.root.join("specs")).unwrap();
         }

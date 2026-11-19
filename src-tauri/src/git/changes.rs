@@ -239,7 +239,7 @@ pub(super) fn format_snapshot_summary(changes: &[ChangeEntry]) -> String {
     };
 
     let slugs: Vec<&str> = changes.iter().map(|c| c.slug.as_str()).collect();
-    let shown = &slugs[..slugs.len().min(3)];
+    let shown = slugs.get(..slugs.len().min(3)).unwrap_or_default();
     let overflow = slugs.len() - shown.len();
     if shown.is_empty() {
         headline

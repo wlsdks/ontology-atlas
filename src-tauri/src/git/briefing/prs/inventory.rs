@@ -9,6 +9,15 @@ use transport::{fetch, identity_until, next_page, page_path, repositories_until,
 use transport::{parse_response, public_curl};
 
 const PAGE_SIZES: [usize; 5] = [20, 10, 5, 2, 1];
+
+/// The page size for a step of the shrinking ladder; past the last step it stays at the smallest.
+fn page_size(index: usize) -> usize {
+    PAGE_SIZES
+        .get(index)
+        .or(PAGE_SIZES.last())
+        .copied()
+        .unwrap_or(1)
+}
 const PAGES_PER_ACTION: usize = 5;
 const ACTION_BYTES: usize = 2 * 1024 * 1024;
 const SESSION_BYTES: usize = 16 * 1024 * 1024;
@@ -98,7 +107,7 @@ static NEXT_SCAN: AtomicU64 = AtomicU64::new(1);
 
 fn save_scan(scan: Scan) -> Result<String, String> {
     let id = NEXT_SCAN
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
             value.checked_add(1)
         })
         .map_err(|_| "unavailable")?
@@ -116,6 +125,8 @@ fn save_scan(scan: Scan) -> Result<String, String> {
     Ok(id)
 }
 
+// One more than clippy likes: every argument is part of the key a stored scan must match to be resumed.
+#[allow(clippy::too_many_arguments)]
 fn take_scan(
     id: &str,
     owner: &str,
@@ -184,7 +195,7 @@ fn result(scan: &Scan) -> PublicPullInventory {
         cursor: None,
         can_continue: false,
         retry_smaller: false,
-        page_size: PAGE_SIZES[scan.size_index],
+        page_size: page_size(scan.size_index),
         moving_list_uncertain: true,
         ordering_uncertain: scan.ordering_uncertain,
         retry_at: None,
@@ -205,10 +216,11 @@ fn pull(
         .and_then(Value::as_u64)
         .filter(|n| *n > 0)
         .ok_or(())?;
-    if !record["base"]["repo"]["full_name"]
-        .as_str()
+    if !record
+        .pointer("/base/repo/full_name")
+        .and_then(Value::as_str)
         .is_some_and(|name| name.eq_ignore_ascii_case(repository))
-        || record["base"]["repo"]["id"].as_u64() != Some(repository_id)
+        || record.pointer("/base/repo/id").and_then(Value::as_u64) != Some(repository_id)
     {
         return Err(());
     }
@@ -306,16 +318,23 @@ fn collect_until(
     };
     used += meta.bytes;
     out.parsed_json_body_bytes = used;
-    if meta.value["private"] != false
-        || !meta.value["full_name"]
-            .as_str()
+    if meta.value.get("private").and_then(Value::as_bool) != Some(false)
+        || !meta
+            .value
+            .get("full_name")
+            .and_then(Value::as_str)
             .is_some_and(|name| name.eq_ignore_ascii_case(&scan.repository))
     {
         out.status = "unavailable";
         out.reason = Some("unavailable");
         return out;
     }
-    let Some(repository_id) = meta.value["id"].as_u64().filter(|id| *id > 0) else {
+    let Some(repository_id) = meta
+        .value
+        .get("id")
+        .and_then(Value::as_u64)
+        .filter(|id| *id > 0)
+    else {
         out.status = "unavailable";
         out.reason = Some("repository-id-unknown");
         return out;
@@ -343,7 +362,7 @@ fn collect_until(
             out.can_continue = true;
             break;
         }
-        let size = PAGE_SIZES[scan.size_index];
+        let size = page_size(scan.size_index);
         let path = page_path(&scan.repository, size, scan.page);
         out.attempted_requests += 1;
         let response = match get(&path, ACTION_BYTES - used, deadline) {
@@ -552,6 +571,8 @@ pub fn git_briefing_public_repositories(
     Ok(remotes)
 }
 
+// Each argument is a named field of the command the WebView sends, so they cannot be bundled.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn git_briefing_public_inventory(
     window: tauri::WebviewWindow,

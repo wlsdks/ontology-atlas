@@ -51,7 +51,7 @@ pub(crate) fn read_library_collections(root_path: String) -> Result<Option<Strin
             return Ok(None);
         };
         let file_name = std::ffi::CString::new(FILE_NAME).map_err(|error| error.to_string())?;
-        return agent_setup::read_entry_text(&parent, &file_name);
+        agent_setup::read_entry_text(&parent, &file_name)
     }
     #[cfg(not(unix))]
     {
@@ -105,10 +105,10 @@ fn write_library_collections_blocking(
             });
         }
         agent_setup::write_entry_atomically(&parent, &file_name, &content, 0o600)?;
-        return Ok(LibraryCollectionsWriteResult {
+        Ok(LibraryCollectionsWriteResult {
             written: true,
             current_content: Some(content),
-        });
+        })
     }
 
     #[cfg(not(unix))]

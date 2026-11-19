@@ -9,6 +9,16 @@ license = "MIT"
 [workspace]
 members = ["crates/vault-index"]
 
+# A panic in a sync Tauri command runs on the main thread and takes the app down, so non-test code
+# reports an error instead. `clippy.toml` lets tests keep using these.
+[workspace.lints.clippy]
+unwrap_used = "warn"
+indexing_slicing = "warn"
+panic = "warn"
+
+[lints]
+workspace = true
+
 [lib]
 name = "ontology_atlas_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]

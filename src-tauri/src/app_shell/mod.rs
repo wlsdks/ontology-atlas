@@ -67,6 +67,7 @@ pub(crate) fn is_openable_url(url: &str) -> bool {
         && !url.chars().any(|c| c.is_whitespace())
 }
 
+#[cfg(any(target_os = "macos", test))]
 pub(crate) fn reveal_in_finder_command(dir: &Path) -> Command {
     let mut command = Command::new("open");
     command.arg("-a").arg("Finder").arg(dir);

@@ -449,10 +449,11 @@ fn index_work(
             let next = &next;
             scope.spawn(move || loop {
                 let slot = next.fetch_add(1, Ordering::Relaxed);
-                if slot >= work.len() || progress.cancelled() {
+                let Some(item) = work.get(slot) else { break };
+                if progress.cancelled() {
                     break;
                 }
-                if sender.send(prepare(root, &work[slot], slot)).is_err() {
+                if sender.send(prepare(root, item, slot)).is_err() {
                     break;
                 }
             });
@@ -516,10 +517,25 @@ fn read_hashing(
             Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
             Err(error) => return Err(error),
         };
-        hasher.update(&buffer[..read]);
+        let Some(chunk) = buffer.get(..read) else {
+            return Err(std::io::Error::other(
+                "a read returned more bytes than the buffer holds",
+            ));
+        };
+        hasher.update(chunk);
         let room = TEXT_CAP_BYTES.saturating_sub(text.len()).min(read);
-        text.extend_from_slice(&buffer[..room]);
+        text.extend_from_slice(chunk.get(..room).unwrap_or(chunk));
     }
+}
+
+/// A prepared slot always indexes `work`; a stray one is reported as a corrupt pipeline.
+fn work_item<'w, 'a>(work: &'w [Work<'a>], slot: usize) -> Result<&'w Work<'a>> {
+    work.get(slot).ok_or_else(|| {
+        Error::Io(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "a prepared file has no work item",
+        ))
+    })
 }
 
 fn write_prepared(
@@ -557,7 +573,8 @@ fn write_prepared(
                         body,
                         name,
                     } => {
-                        let id = match work[slot].row_id {
+                        let item = work_item(work, slot)?;
+                        let id = match item.row_id {
                             Some(id) => {
                                 delete_terms.execute([id])?;
                                 update_file.execute(params![
@@ -572,7 +589,7 @@ fn write_prepared(
                             }
                             None => {
                                 insert_file.execute(params![
-                                    work[slot].path,
+                                    item.path,
                                     stamp.mtime_ns,
                                     stamp.size,
                                     stamp.ctime_ns,
@@ -586,13 +603,13 @@ fn write_prepared(
                         counts.indexed += 1;
                     }
                     Prepared::Unchanged { slot, read_at_ns } => {
-                        if let Some(id) = work[slot].row_id {
+                        if let Some(id) = work_item(work, slot)?.row_id {
                             touch_file.execute(params![id, read_at_ns])?;
                         }
                         counts.verified += 1;
                     }
                     Prepared::Gone { slot } => {
-                        if let Some(id) = work[slot].row_id {
+                        if let Some(id) = work_item(work, slot)?.row_id {
                             delete_terms.execute([id])?;
                             delete_file.execute([id])?;
                             counts.removed += 1;

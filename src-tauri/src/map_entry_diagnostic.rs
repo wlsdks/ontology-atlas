@@ -5,6 +5,7 @@ use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Runtime, Webview};
 
 const ENABLE_ENV: &str = "ONTOLOGY_ATLAS_DIAGNOSE_MAP_ENTRY";
+#[cfg(target_os = "macos")]
 const DEFAULT_PACING_ENV: &str = "ONTOLOGY_ATLAS_DIAGNOSE_MAP_ENTRY_DEFAULT_PACING";
 const MAIN_WEBVIEW_LABEL: &str = "main";
 const PREFIX: &str = "[ontology-atlas-map-entry-diagnostic]";
@@ -24,6 +25,7 @@ fn enabled_value(value: Option<std::ffi::OsString>) -> bool {
     value.as_deref() == Some(std::ffi::OsStr::new("1"))
 }
 
+#[cfg(any(target_os = "macos", test))]
 fn default_pacing_value(
     diagnostic: Option<std::ffi::OsString>,
     default_pacing: Option<std::ffi::OsString>,
@@ -35,6 +37,7 @@ pub(crate) fn enabled_from_env() -> bool {
     enabled_value(std::env::var_os(ENABLE_ENV))
 }
 
+#[cfg(target_os = "macos")]
 pub(crate) fn default_pacing_from_env() -> bool {
     default_pacing_value(
         std::env::var_os(ENABLE_ENV),
@@ -42,6 +45,7 @@ pub(crate) fn default_pacing_from_env() -> bool {
     )
 }
 
+#[cfg(any(target_os = "macos", test))]
 fn pacing_label(default_pacing: bool) -> &'static str {
     if default_pacing {
         "wk-default"
@@ -50,6 +54,7 @@ fn pacing_label(default_pacing: bool) -> &'static str {
     }
 }
 
+#[cfg(target_os = "macos")]
 pub(crate) fn write_pacing_metadata(default_pacing: bool) {
     if enabled_from_env() {
         super::write_verify_line(format!("{PREFIX} pacing={}", pacing_label(default_pacing)));
