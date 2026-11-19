@@ -22,13 +22,24 @@
     "stopped": "중지됨"
   },
   "firstRun": {
-    "title": "에이전트를 준비하고 있어요",
-    "body": "처음 한 번은 에이전트를 내려받아요(수백 MB). 몇 분 걸릴 수 있어요. 그동안 앱을 끄지 말아 주세요.",
-    "progress": "지금까지 {mb} MB 받았어요"
+    "title": "에이전트를 내려받고 있어요. 처음 한 번만 해요.",
+    "body": "몇 분 걸릴 수 있어요. 끝날 때까지 앱을 끄지 말아 주세요.",
+    "progress": "지금까지 {mb} MB 받았어요",
+    "waiting": "내려받기를 시작하는 중",
+    "barLabel": "에이전트 내려받기"
   },
   "starting": {
     "title": "에이전트에 연결하는 중이에요",
-    "body": "이 컴퓨터에서 에이전트를 시작하고 있어요. 준비되면 바로 물어볼 수 있어요."
+    "body": "이 컴퓨터에서 에이전트를 시작하고 있어요. 요청을 지금 써 두면 준비되는 대로 보내요.",
+    "stepsLabel": "이어서 일어나는 일",
+    "step": {
+      "download": "에이전트 내려받기",
+      "connect": "에이전트에 연결하기",
+      "send": "요청 보내기",
+      "sendWaiting": "에이전트가 준비되는 대로 보내요"
+    },
+    "takeBack": "고치기",
+    "takeBackLabel": "이 요청을 입력창으로 돌려놓고 고쳐요. 보내지 않아요"
   },
   "connectStopped": {
     "title": "연결을 멈췄어요",
@@ -176,7 +187,8 @@
   "history": "지난 대화",
   "newChat": "새 대화",
   "newChatWhenReady": "에이전트가 연결되면 새 대화를 열 수 있어요",
-  "sendWhenReady": "에이전트가 연결되면 보낼 수 있어요",
+  "sendWhenReady": "에이전트가 연결되는 대로 보내요",
+  "sendWhenStopped": "다시 연결하면 보낼 수 있어요",
   "untitled": "제목 없는 대화",
   "model": "모델",
   "mode": "작업 방식",
@@ -243,7 +255,12 @@
     "steps": "{count}단계",
     "plan": "할 일 {done}/{total}",
     "done": "끝났어요",
-    "progressLabel": "에이전트 작업 진행"
+    "progressLabel": "에이전트 작업 진행",
+    "wrote": {
+      "both": "개념 {concepts}개 · 관계 {relations}개 씀",
+      "concepts": "개념 {concepts}개 씀",
+      "relations": "관계 {relations}개 씀"
+    }
   },
   "workGroup": "생각 과정",
   "resize": "대화 칸 너비 조절",

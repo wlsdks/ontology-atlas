@@ -27,7 +27,7 @@ import { TranscriptPane } from './chat-panel/TranscriptPane';
 import { TranscriptRows } from './chat-panel/TranscriptRows';
 import { TurnWorkStage, type TurnWork } from './chat-panel/TurnWorkStage';
 import { ConnectStoppedState, EmptyState, StartingState } from './chat-panel/TranscriptStates';
-import type { AcpChatPanelProps } from './chat-panel/types';
+import type { AcpChatPanelProps, HeldRequest } from './chat-panel/types';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/use-composer-menus';
 import { useComposerSizing } from './chat-panel/use-composer-sizing';
 import { useOpeningRequest } from './chat-panel/use-opening-request';
@@ -223,24 +223,6 @@ export function AcpChatPanelBody({
   const mirrorRef = useRef<HTMLTextAreaElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
 
-  const { restartedOpeningNonceRef, openingNonce } = useOpeningRequest({
-    openingRequest,
-    openingScopeMismatch,
-    runtimeId,
-    vaultRoot,
-    liveOpeningRequest,
-    status,
-    pending,
-    send,
-    sendInvestigation,
-    switchSession,
-    connectStoppedRef,
-    markConnectStopped,
-    setHistoryOpen,
-    onOpeningRequestSent,
-    onOpeningRequestRejected,
-  });
-
   const { seatedDetail, setSeatedDetail, seatedRequestWaiting } = usePrefillSeating({
     prefillRequest,
     restoredDraft,
@@ -292,6 +274,51 @@ export function AcpChatPanelBody({
     onPresentationVisibilityChange?.(false);
     void send(text);
   }, [latestUserEventId, onPresentationVisibilityChange, send]);
+
+  const connecting = status === 'starting' && !connectStopped;
+  const [heldRequest, setHeldRequest] = useState<HeldRequest | null>(null);
+  const returnHeldToComposer = useCallback((held: HeldRequest) => {
+    setHeldRequest(null);
+    setDraft((current) => (current.trim() ? `${held.lead}\n\n${current}` : held.lead));
+    setSeatedDetail((current) => current ?? held.seatedDetail);
+  }, [setSeatedDetail]);
+  // Held only for the agent and folder it was written to, and only while that agent is on its way.
+  const heldStillMeant = heldRequest !== null
+    && heldRequest.runtimeId === runtimeId
+    && heldRequest.vaultRoot === vaultRoot
+    && !connectStopped
+    && (status === 'starting' || status === 'idle' || status === 'ready');
+  if (heldRequest && !heldStillMeant) returnHeldToComposer(heldRequest);
+  const sendHeldRequest = useCallback((held: HeldRequest) => {
+    setHeldRequest(null);
+    setNextStepsDismissed(false);
+    sendAsPerson(held.text);
+  }, [sendAsPerson]);
+  const returnHeld = useCallback(() => {
+    if (heldRequest) returnHeldToComposer(heldRequest);
+  }, [heldRequest, returnHeldToComposer]);
+
+  const { restartedOpeningNonceRef, openingNonce, openingWaiting } = useOpeningRequest({
+    openingRequest,
+    openingScopeMismatch,
+    runtimeId,
+    vaultRoot,
+    liveOpeningRequest,
+    status,
+    pending,
+    send,
+    sendInvestigation,
+    switchSession,
+    connectStoppedRef,
+    markConnectStopped,
+    setHistoryOpen,
+    onOpeningRequestSent,
+    onOpeningRequestRejected,
+    heldRequest,
+    sendHeldRequest,
+    onOpeningTakesTurn: returnHeld,
+  });
+
   const chooseSuggestion = (suggestion: ChatSuggestion, allowAppAction: boolean) => {
     if (allowAppAction && onSuggestionAction?.(suggestion)) return;
     const request = t(`suggest.${suggestion.kind}.prompt`, suggestion.params);
@@ -336,15 +363,19 @@ export function AcpChatPanelBody({
 
   const submit = useCallback(() => {
     const lead = draft.trim();
-    if (!lead || status !== 'ready') return;
+    if (!lead || (status !== 'ready' && !connecting)) return;
     const text = seatedDetail
       ? (lead === seatedDetail.lead ? seatedDetail.full : `${lead}\n\n${seatedDetail.detail}`)
       : lead;
     setDraft('');
     setSeatedDetail(null);
+    if (status !== 'ready') {
+      setHeldRequest({ text, lead, seatedDetail, runtimeId, vaultRoot });
+      return;
+    }
     setNextStepsDismissed(false);
     sendAsPerson(text);
-  }, [draft, seatedDetail, sendAsPerson, setSeatedDetail, status]);
+  }, [connecting, draft, runtimeId, seatedDetail, sendAsPerson, setSeatedDetail, status, vaultRoot]);
 
   const toolPicker = (runtimes.length > 0 ? runtimes : [{ id: runtimeId, label: runtimeLabel }]).flatMap((r) =>
     r.id === runtimeId && choices.models.length > 0
@@ -353,7 +384,6 @@ export function AcpChatPanelBody({
   );
   const toolIsPicker = canChooseAnotherTool || toolPicker.length > 1;
   const busy = status === 'thinking';
-  const connecting = status === 'starting' && !connectStopped;
   const sessionButtonStandDown = busy || connecting ? 'hidden @min-[296px]/composer:inline-flex' : undefined;
   const toolPickerValue =
     choices.models.length > 0 ? (choices.currentModelId ? `model:${choices.currentModelId}` : '') : `runtime:${runtimeId}`;
@@ -478,7 +508,18 @@ export function AcpChatPanelBody({
         }}
       >
         {connecting ? (
-          <StartingState t={t} download={download} suggestions={suggestions} seatedRequestWaiting={seatedRequestWaiting} />
+          <StartingState
+            t={t}
+            download={download}
+            suggestions={suggestions}
+            seatedRequestWaiting={seatedRequestWaiting}
+            openingLead={openingWaiting && openingRequest ? splitAppRequest(openingRequest.text).lead : null}
+            heldLead={heldRequest?.lead ?? null}
+            onTakeBack={() => {
+              returnHeld();
+              requestComposerFocus();
+            }}
+          />
         ) : null}
         {connectStopped ? (
           <ConnectStoppedState
@@ -697,7 +738,7 @@ export function AcpChatPanelBody({
             void stop();
             requestComposerFocus();
           }}
-          sendDisabled={!canSend || busy || draft.trim().length === 0}
+          sendDisabled={(!canSend && !connecting) || busy || draft.trim().length === 0}
           onSend={submit}
         />
 

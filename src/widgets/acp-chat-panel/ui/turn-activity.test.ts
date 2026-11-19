@@ -5,18 +5,21 @@ import type { AcpEvent } from '@/features/acp-session';
 import { turnActivity } from './turn-activity';
 
 const user: AcpEvent = { kind: 'user', id: 'u1', text: 'Fill the code locations' };
-const tool = (id: string, title: string, toolKind: string, status: string, rawInput?: unknown): AcpEvent => ({
+const tool = (id: string, title: string, toolKind: string, status: string, rawInput?: unknown, rawOutput?: unknown): AcpEvent => ({
   kind: 'tool',
   id,
   title,
   toolKind,
   status,
   rawInput,
+  rawOutput,
 });
+const mcpText = (result: unknown) => [{ type: 'text', text: JSON.stringify(result) }];
+const NOTHING_WRITTEN = { concepts: 0, relations: 0 };
 
 describe('turnActivity', () => {
   it('reads a turn with nothing reported yet as thinking, with no steps', () => {
-    expect(turnActivity([user], 0, 'atlas-vault', true)).toEqual({ kind: 'thinking', label: null, target: null, steps: 0 });
+    expect(turnActivity([user], 0, 'atlas-vault', true)).toEqual({ kind: 'thinking', label: null, target: null, steps: 0, written: NOTHING_WRITTEN });
   });
 
   it('names the open call and its target, and counts every call the turn opened', () => {
@@ -66,11 +69,42 @@ describe('turnActivity', () => {
       tool('t1', 'Grep', 'search', 'completed'),
       { kind: 'agent', id: 'a1', text: 'Here is what I found.' },
     ];
-    expect(turnActivity(events, 2, 'atlas-vault', true)).toEqual({ kind: 'answering', label: null, target: null, steps: 1 });
+    expect(turnActivity(events, 2, 'atlas-vault', true)).toEqual({ kind: 'answering', label: null, target: null, steps: 1, written: NOTHING_WRITTEN });
   });
 
   it('goes back to thinking when the agent said something and then went quiet', () => {
     const events: AcpEvent[] = [user, { kind: 'agent', id: 'a1', text: 'I will read the map first.' }];
     expect(turnActivity(events, 0, 'atlas-vault', false).kind).toBe('thinking');
+  });
+
+  it('counts the concepts and relations finished writes report as written, and only those rows', () => {
+    const events: AcpEvent[] = [
+      user,
+      tool('t1', 'mcp__atlas-vault__add_concepts', 'other', 'completed', undefined, mcpText({
+        concepts: [
+          { slug: 'capabilities/a', ok: true, changed: true },
+          { slug: 'capabilities/b', ok: true, changed: true },
+          { slug: 'capabilities/c', ok: false, error: 'already exists' },
+        ],
+      })),
+      tool('t2', 'mcp__atlas-vault__patch_concept', 'other', 'completed', undefined, { ok: true, slug: 'domains/map', changed: true }),
+      tool('t3', 'mcp.atlas-vault.add_relations', 'execute', 'completed',
+        { server: 'atlas-vault', tool: 'add_relations', arguments: { relations: [] } },
+        { result: { content: mcpText({ relations: [{ ok: true, changed: true }, { ok: true, changed: false, alreadyExists: true }] }) } }),
+      tool('t4', 'mcp__atlas-vault__add_relation', 'other', 'failed', undefined, mcpText({ ok: true, changed: true })),
+      tool('t5', 'mcp__atlas-vault__delete_concept', 'other', 'completed', undefined, { ok: true, changed: true }),
+      tool('t6', 'mcp__other__add_concept', 'other', 'completed', undefined, { ok: true, changed: true }),
+      tool('t7', 'mcp__atlas-vault__add_concept', 'other', 'completed', undefined, { isError: true, content: mcpText({ ok: true, changed: true }) }),
+    ];
+    expect(turnActivity(events, 0, 'atlas-vault', true).written).toEqual({ concepts: 3, relations: 1 });
+  });
+
+  it('counts nothing for a write still open or one whose answer was too large to keep', () => {
+    const events: AcpEvent[] = [
+      user,
+      tool('t1', 'mcp__atlas-vault__add_concept', 'other', 'in_progress', undefined, { ok: true, changed: true }),
+      tool('t2', 'mcp__atlas-vault__add_concepts', 'other', 'completed', undefined, { preview: 'tool-output', chars: 70_000, hash: 'h' }),
+    ];
+    expect(turnActivity(events, 0, 'atlas-vault', true).written).toEqual(NOTHING_WRITTEN);
   });
 });
