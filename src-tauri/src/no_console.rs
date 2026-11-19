@@ -45,6 +45,57 @@ mod tests {
         name == "tests.rs" || name.ends_with("_tests.rs") || name == "test_support.rs"
     }
 
+    /// The program argument of the `Command::new(` call that starts at `from`,
+    /// up to its matching parenthesis.
+    fn program_argument(line: &str, from: usize) -> &str {
+        let open = from + "Command::new(".len();
+        let mut depth = 1;
+        for (offset, ch) in line[open..].char_indices() {
+            match ch {
+                '(' => depth += 1,
+                ')' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return line[open..open + offset].trim();
+                    }
+                }
+                _ => {}
+            }
+        }
+        line[open..].trim()
+    }
+
+    /// 1-based lines of production code whose `Command::new` runs a program that
+    /// can open a Windows console and is not followed by `hide_console`.
+    fn unhidden_lines(source: &str) -> Vec<usize> {
+        let all: Vec<&str> = source.lines().collect();
+        // Production code ends where an inline test module begins.
+        let end = all
+            .windows(2)
+            .position(|pair| {
+                pair[0].trim() == "#[cfg(test)]"
+                    && pair[1].trim_start().starts_with("mod ")
+                    && pair[1].trim_end().ends_with('{')
+            })
+            .unwrap_or(all.len());
+        let lines = &all[..end];
+        let mut found = Vec::new();
+        for (at, line) in lines.iter().enumerate() {
+            let spawns_a_console = line
+                .match_indices("Command::new(")
+                .any(|(from, _)| !NOT_A_WINDOWS_CONSOLE.contains(&program_argument(line, from)));
+            let window = (at + WINDOW).min(lines.len());
+            if spawns_a_console
+                && !lines[at..window]
+                    .iter()
+                    .any(|l| l.contains("hide_console("))
+            {
+                found.push(at + 1);
+            }
+        }
+        found
+    }
+
     fn unhidden_spawns(dir: &Path, found: &mut Vec<String>) {
         for entry in std::fs::read_dir(dir).unwrap() {
             let path = entry.unwrap().path();
@@ -56,31 +107,25 @@ mod tests {
                 continue;
             }
             let source = std::fs::read_to_string(&path).unwrap();
-            let all: Vec<&str> = source.lines().collect();
-            // Production code ends where an inline test module begins.
-            let end = all
-                .windows(2)
-                .position(|pair| {
-                    pair[0].trim() == "#[cfg(test)]"
-                        && pair[1].trim_start().starts_with("mod ")
-                        && pair[1].trim_end().ends_with('{')
-                })
-                .unwrap_or(all.len());
-            let lines = &all[..end];
-            for (at, line) in lines.iter().enumerate() {
-                let Some(start) = line.find("Command::new(") else {
-                    continue;
-                };
-                let rest = &line[start..];
-                if NOT_A_WINDOWS_CONSOLE.iter().any(|name| rest.contains(name)) {
-                    continue;
-                }
-                let end = (at + WINDOW).min(lines.len());
-                if !lines[at..end].iter().any(|l| l.contains("hide_console(")) {
-                    found.push(format!("{}:{}", path.display(), at + 1));
-                }
+            for line in unhidden_lines(&source) {
+                found.push(format!("{}:{line}", path.display()));
             }
         }
+    }
+
+    #[test]
+    fn only_the_program_argument_decides_an_exemption() {
+        // The helper only counts below a spawn, so the hidden one comes first.
+        let fixture = [
+            r#"let mut e = Command::new("node");"#,
+            r#"crate::no_console::hide_console(&mut e);"#,
+            r#"let a = Command::new("git").args(["config", "open"]);"#,
+            r#"let b = Command::new(program_for("security"));"#,
+            r#"let c = Command::new("open").arg(path);"#,
+            r#"let d = Command::new("/usr/bin/tar").args(["-x", "curl"]);"#,
+        ]
+        .join("\n");
+        assert_eq!(unhidden_lines(&fixture), vec![3, 4]);
     }
 
     #[test]
