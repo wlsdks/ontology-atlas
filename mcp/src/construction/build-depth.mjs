@@ -545,12 +545,31 @@ function listed(rows, render) {
   return `${shown.join(', ')}${more > 0 ? ` and ${more} more` : ''}`;
 }
 
-/** The areas of a survey listed by area that no node's `path:` falls in, largest first; O(nodes x path depth). */
+/** Whether `text` names `path` as a whole path, not as part of a longer path, file or word; O(text). */
+function namesPath(text, path) {
+  for (let at = text.indexOf(path); at !== -1; at = text.indexOf(path, at + 1)) {
+    const before = text[at - 1] ?? ' ';
+    const after = text[at + path.length] ?? ' ';
+    const extension = after === '.' && /\w/.test(text[at + path.length + 1] ?? '');
+    if (!/[\w/.-]/.test(before) && !/[\w/-]/.test(after) && !extension) return true;
+  }
+  return false;
+}
+
+/**
+ * The areas of a survey listed by area that are neither placed (a node's
+ * `path:` falls in it) nor named (a domain's body or the project's
+ * `## Uncertainty` writes its path), largest first; O(areas x that text).
+ */
 function unmappedAreas(docs, survey) {
   if (!Array.isArray(survey?.areas)) return [];
   const locate = areaLocator(survey.areas);
-  const mapped = new Set(docs.map(pathOf).filter(Boolean).map(locate));
-  return survey.areas.filter((area) => !mapped.has(area));
+  const placed = new Set(docs.map(pathOf).filter(Boolean).map(locate));
+  const naming = docs
+    .map((doc) => (kindOf(doc) === 'domain' ? String(doc.body ?? '') : kindOf(doc) === 'project' ? sectionOf(doc.body, 'Uncertainty') : ''))
+    .join('\n');
+  const named = (area) => (area.rest ? area.members.every((member) => namesPath(naming, member)) : namesPath(naming, area.path));
+  return survey.areas.filter((area) => !placed.has(area) && !named(area));
 }
 
 function areaLabel(area) {
@@ -592,7 +611,7 @@ export function measureBuildDepth(docs, repo, reads) {
     }
   }
   if (unmapped.length > 0) {
-    parts.push(`Areas: no node's path: falls in ${unmapped.length} of the ${repo.survey.areas.length} areas the survey lists, largest first: ${listed(unmapped, areaLabel)}. Open the next: ${openAreaCall(repo.repoRoot, unmapped[0])}, then write its nodes before the one after.`);
+    parts.push(`Areas: ${unmapped.length} of the ${repo.survey.areas.length} areas the survey lists are in no node's path: and named by no domain or the project's ## Uncertainty, largest first: ${listed(unmapped, areaLabel)}. Open the next: ${openAreaCall(repo.repoRoot, unmapped[0])}, then write its nodes, or write its path in the domain that holds it or as unopened in the project's ## Uncertainty.`);
   }
   if (depth && depth.unread.length > 0) {
     parts.push(`Depth: ${depth.read} of ${depth.capabilities} capabilities cite lines this session read that hold a condition.${depth.served === 0 ? ' This server process has served no reads; a restarted server keeps none.' : ''} Not yet: ${listed(depth.unread, (row) => `${row.slug} (${row.path})`)}. Read next, then cite the lines that decide each; a symbol read returns the guards, defaults and callees that decide it: ${readCall(depth.unread)}.`);

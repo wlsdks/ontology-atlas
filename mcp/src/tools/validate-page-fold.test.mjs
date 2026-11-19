@@ -27,3 +27,21 @@ test('a one-sentence message is left whole', () => {
   const page = foldRepeatedGuidance([{ slug: 'a', issues: [short] }, { slug: 'b', issues: [short] }]);
   assert.deepEqual(page[1].issues[0], short);
 });
+
+test('a message whose guidance names a fact of its own node is left whole', () => {
+  const unread = (slug, file) => ({
+    code: 'rule-without-read-lines',
+    severity: 'warning',
+    message: `"${slug}" states a rule and cites no lines this session read, so nothing backs it. Read \`${file}\` with sourceReads, then cite the lines.`,
+  });
+  const page = foldRepeatedGuidance([
+    { slug: 'capabilities/a', issues: [unread('capabilities/a', 'src/a.py')] },
+    { slug: 'capabilities/b', issues: [unread('capabilities/b', 'src/b.py')] },
+    { slug: 'capabilities/c', issues: [unread('capabilities/c', 'src/a.py')] },
+  ]);
+  assert.equal(page[1].issues[0].message, unread('capabilities/b', 'src/b.py').message);
+  assert.equal(
+    page[2].issues[0].message,
+    '"capabilities/c" states a rule and cites no lines this session read, so nothing backs it. Repair as the first rule-without-read-lines on this page says.',
+  );
+});

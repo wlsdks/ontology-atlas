@@ -74,7 +74,7 @@ The manual surface was inventoried the same day: 13 entry points across three pl
 
 - Drag-to-connect on the canvas.
 - A build orchestrated by the app across several agent sessions.
-- Trimming `validate_vault` and vault loading, which two open pull requests change. One message is shortened here because it repeats per edge: the unwitnessed dependency warning, from about 1,000 characters to about 400.
+- Trimming vault loading and what `validate_vault` checks, which other pull requests change. Three things about its answer are in scope because the host rejected or the builder paid for them: the unwitnessed dependency warning shortened from about 1,000 characters to about 400, a page bounded at 40,000 characters, and a repair guidance identical to an earlier one on the page stated once.
 
 ## Acceptance
 
@@ -89,3 +89,4 @@ The manual surface was inventoried the same day: 13 entry points across three pl
 - 2026-11-20: decision 4a added. Two builds whose guidance asked for one long turn (about 50 calls) were cut short by the builder itself, which wrote that it used about a quarter of the plan; a second request naming eight capabilities was completed in 13 calls and 75 s with every rule cited. The first build is therefore bounded and the depth is a repeatable next step.
 - 2026-11-20: decisions 4, 7 and 9 narrowed from measurements. View folders made 44 family rows on the TypeScript client and module APIs 26 rows on the Python platform, all counted as abilities not placed. Six JVM families in one package shared one name. Every build lost one to three finalize calls to the mtime guard and to witness lists the description never named.
 - 2026-11-20: a reopened folder kept the camera framing of the bundled example (half size at 1280 by 1080, domain titles overlapping); the fix and `tests/e2e/map/first-map-fit.spec.ts` ride this work because a first build ends on that screen.
+- 2026-11-20: the `validate_vault` page bound (40,000 characters) and the guidance fold moved into scope. A Java build's validate answer was 34,638 characters and one above 56,000 never reaches the builder. Review showed a fold of every later row dropped a row's own file to read, so only guidance identical to the first row's is folded.

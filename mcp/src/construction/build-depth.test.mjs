@@ -94,11 +94,21 @@ test('a survey listed by area names the areas no node path falls in, largest fir
   const placed = (path) => doc('capabilities/x', { path });
   const first = measureBuildDepth([doc('project', {}), placed('shop/api/product/types.py')], repo, null);
   assert.deepEqual(first.unmappedAreas.map((area) => area.path), ['shop', 'shop/order', 'shop']);
-  assert.match(first.line, /Areas: no node's path: falls in 3 of the 4 areas the survey lists, largest first: shop \(its own files\) \(2 files, 500 lines\), shop\/order \(5 files, 300 lines\), 2 smaller folders in shop \(50 lines\)\./);
+  assert.match(first.line, /Areas: 3 of the 4 areas the survey lists are in no node's path: and named by no domain or the project's ## Uncertainty, largest first: shop \(its own files\) \(2 files, 500 lines\), shop\/order \(5 files, 300 lines\), 2 smaller folders in shop \(50 lines\)\./);
   assert.ok(first.line.includes(`Open the next: analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: [{ path: 'shop/settings.py', mode: 'outline' }] })})`), 'a folder\'s own files open as an outline of its main files');
   const next = measureBuildDepth([placed('shop/api/x.py'), placed('shop/settings.py'), placed('shop/seo/meta.py')], repo, null);
   assert.deepEqual(next.unmappedAreas.map((area) => area.path), ['shop/order'], 'a path in a folder the rest row names maps that row');
   assert.ok(next.line.includes(`Open the next: analyze_repo_structure(${JSON.stringify({ rootPath: join('/repo', 'shop/order') })})`));
+  const named = measureBuildDepth([
+    placed('shop/api/x.py'),
+    doc('domains/orders', {}, 'Orders.\n\n## Includes\nAreas shop/order and shop/menu.\n'),
+    doc('project', {}, 'A shop.\n\n## Uncertainty\n- Unopened: shop/seo. The settings in shop/settings.py were not read.\n'),
+  ], repo, null);
+  assert.deepEqual(
+    named.unmappedAreas.map((area) => `${area.path}${area.own ? ' own' : ''}`),
+    ['shop own'],
+    'a domain or the project\'s Uncertainty names an area by its path; a file or a longer path under it does not name the folder',
+  );
 });
 
 test('a plugin is named by its package folder as well as its class', (t) => {
