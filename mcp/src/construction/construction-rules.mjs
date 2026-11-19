@@ -394,8 +394,12 @@ export function dependencyUnjudgedMessage({ slug, target, unreadPaths, maxBytes 
   return `"${slug}" declares a dependency on "${target}", but ${unreadPaths.map((path) => `\`${path}\``).join(' and ')} ${unreadPaths.length > 1 ? 'are' : 'is'} larger than ${maxBytes / 1024 / 1024} MiB, so no witness was looked for there and the edge is not judged. Cite a smaller file in \`path:\`, or name the file that imports the target in this relation's \`why\`.`;
 }
 
+/** Repeats once per edge in one validate answer, so it stays near 400 characters. */
 export function dependencyUnwitnessedMessage({ slug, sourcePath, target, targetPath, witnessName }) {
-  return `"${slug}" declares a dependency on "${target}", and \`${sourcePath}\` never imports \`${targetPath}\` (no import, require, use or include names \`${witnessName}\`). Nothing is blocked; a missing import is not proof of independence. To witness it, name in this edge's note a repository-relative file that does import \`${targetPath}\` (for a call through another module, that module): replace_relation({from:"${slug}", oldTo:"${target}", oldType:"depends_on", newTo:"${target}", newType:"depends_on", why:"<file> imports <symbol> — what the source does with it", confirm:true}). A dependency no file imports (a runtime lookup, a config key) stays listed here, which is the record that it is unwitnessed. If the edge came from look-alike names, remove it: remove_relation({from:"${slug}", to:"${target}", type:"depends_on", confirm:true}).`;
+  return `"${slug}" depends on "${target}", and \`${sourcePath}\` never imports \`${targetPath}\` (nothing there names \`${witnessName}\`). ` +
+    'Nothing is blocked: a missing import is not proof of independence (a record, an event or configuration needs none), and the edge stays listed here as unwitnessed. ' +
+    'If a file does import it, name that repository-relative file in the edge\'s why with replace_relation (same from, to and type, confirm:true); ' +
+    'remove_relation only an edge that came from look-alike names.';
 }
 
 /**
