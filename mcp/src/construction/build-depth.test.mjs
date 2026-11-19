@@ -679,6 +679,85 @@ test('a role is used by a capability that cites only the part its own read serve
   }
 });
 
+/*
+ * A part a read serves one call deeper is only as sure as the chain above it:
+ * reached through a callee found by name alone, it is no shared role either,
+ * however exactly its own import resolves.
+ */
+test('a part reached through a callee found by name alone is no shared role, one call deeper or through an accessor', () => {
+  const run = (spec) => {
+    resetSessionReads();
+    const entry = (name) => `import { checkQuota } from '${spec}';\nexport function ${name}(x: number) {\n  if (!checkQuota(x)) return 0;\n  return x;\n}\n`;
+    const root = repository({
+      'package.json': '{"name":"tool"}',
+      'src/quota.ts': "import { quotaOf } from './plan';\nimport { ceilingFor } from './ceiling';\nexport function checkQuota(x: number) {\n  if (x > quotaOf(x)) throw new Error('over quota');\n  if (x > ceilingFor(x)) throw new Error('over ceiling');\n  return x;\n}\n",
+      'src/plan.ts': "import { limitFor } from './limits';\nexport function quotaOf(x: number) {\n  return limitFor(x);\n}\n",
+      'src/limits.ts': "export function limitFor(x: number) {\n  if (x > 100) return 3;\n  if (x < 0) throw new Error('negative');\n  return 5;\n}\n",
+      'src/ceiling.ts': "export function ceilingFor(x: number) {\n  if (x > 50) return 9;\n  if (x < 0) throw new Error('negative');\n  return 7;\n}\n",
+      'src/upload.ts': entry('upload'),
+      'src/share.ts': entry('share'),
+    });
+    try {
+      const packet = readSourceEvidence(root, [{ path: 'src/upload.ts', symbol: 'upload' }, { path: 'src/share.ts', symbol: 'share' }]);
+      recordSourceEvidence(root, packet);
+      const capability = (row) => doc(`capabilities/${row.symbol}`, { path: row.path }, `Does it. \`${row.path}\` \`${row.symbol}\`.\n\nRefuses past the quota (${row.cite}).\n\n## Uncertainty\n- None.\n`);
+      const depth = measureBuildDepth([doc('tool', {}, 'Tool.\n\n## Uncertainty\n- None.\n'), ...packet.rows.map(capability)], null, sessionReads(root));
+      const parts = packet.rows[0].context.filter((part) => part.role === 'callee').map((part) => `${part.symbol}${part.byName ? ' by name' : ''}`).sort();
+      return { parts, roles: depth.roles.unplaced.map((row) => row.name).sort() };
+    } finally {
+      resetSessionReads();
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+  assert.deepEqual(run('./quota'), { parts: ['ceilingFor', 'checkQuota', 'limitFor', 'quotaOf'], roles: ['ceilingFor', 'checkQuota', 'limitFor', 'quotaOf'] });
+  assert.deepEqual(run('@/missing/quota'), { parts: ['ceilingFor by name', 'checkQuota by name', 'limitFor by name', 'quotaOf by name'], roles: [] },
+    'everything below a by-name callee is by name');
+});
+
+/*
+ * The mark is set by every path, not by the first: a part one exact chain
+ * reaches is a shared role whatever order the callees are read in, and a
+ * by-name link anywhere below an exact callee marks what it reaches.
+ */
+test('a part is by name only when every chain that reaches it has a by-name link', () => {
+  const limits = "export function limitFor(x: number) {\n  if (x > 100) return 3;\n  if (x < 0) throw new Error('negative');\n  return 5;\n}\n";
+  const check = (name, spec, callee = 'limitFor') => `import { ${callee} } from '${spec}';\nexport function ${name}(x: number) {\n  if (x > ${callee}(x)) throw new Error('${name}: over');\n  if (x < 0) throw new Error('${name}: negative');\n  return x;\n}\n`;
+  const run = (calls, files) => {
+    resetSessionReads();
+    const imports = calls.map(([name, spec]) => `import { ${name} } from '${spec}';`).join('\n');
+    const entry = (name) => `${imports}\nexport function ${name}(x: number) {\n${calls.map(([callee]) => `  if (!${callee}(x)) return 0;`).join('\n')}\n  return x;\n}\n`;
+    const root = repository({ 'package.json': '{"name":"tool"}', 'src/limits.ts': limits, ...files, 'src/upload.ts': entry('upload'), 'src/share.ts': entry('share') });
+    try {
+      const packet = readSourceEvidence(root, [{ path: 'src/upload.ts', symbol: 'upload' }, { path: 'src/share.ts', symbol: 'share' }]);
+      recordSourceEvidence(root, packet);
+      const capability = (row) => doc(`capabilities/${row.symbol}`, { path: row.path }, `Does it. \`${row.path}\` \`${row.symbol}\`.\n\nRefuses past the quota (${row.cite}).\n\n## Uncertainty\n- None.\n`);
+      const depth = measureBuildDepth([doc('tool', {}, 'Tool.\n\n## Uncertainty\n- None.\n'), ...packet.rows.map(capability)], null, sessionReads(root));
+      const parts = packet.rows[0].context.filter((part) => part.role === 'callee').map((part) => `${part.symbol}${part.byName ? ' by name' : ''}`).sort();
+      return { parts, roles: depth.roles.unplaced.map((row) => row.name).sort() };
+    } finally {
+      resetSessionReads();
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+  const both = { 'src/a.ts': check('checkA', './limits'), 'src/b.ts': check('checkB', './limits') };
+  const exact = { parts: ['checkA by name', 'checkB', 'limitFor'], roles: ['checkB', 'limitFor'] };
+  assert.deepEqual(run([['checkA', '@/missing/a'], ['checkB', './b']], both), exact, 'by name first, then exactly');
+  assert.deepEqual(run([['checkB', './b'], ['checkA', '@/missing/a']], both), exact, 'exactly first, then by name');
+  assert.deepEqual(run([['checkQuota', './quota']], { 'src/quota.ts': check('checkQuota', '@/missing/limits') }),
+    { parts: ['checkQuota', 'limitFor by name'], roles: ['checkQuota'] }, 'an exact callee whose own callee is found by name');
+  assert.deepEqual(run([['checkQuota', './quota']], {
+    'src/quota.ts': check('checkQuota', '@/missing/plan', 'quotaOf'),
+    'src/plan.ts': "import { limitFor } from './limits';\nexport function quotaOf(x: number) {\n  return limitFor(x);\n}\n",
+  }), { parts: ['checkQuota', 'limitFor by name', 'quotaOf by name'], roles: ['checkQuota'] }, 'an exact import below a by-name accessor');
+  const rescued = (aSpec) => ({ 'src/a.ts': check('checkA', aSpec), 'src/b.ts': check('checkB', './a', 'checkA'), 'src/c.ts': check('checkC', './limits') });
+  assert.deepEqual(run([['checkA', '@/missing/a'], ['checkB', './b']], rescued('./limits')).parts, ['checkA', 'checkB', 'limitFor'],
+    'a by-name callee reached exactly below another callee clears the mark on what it reaches exactly');
+  assert.deepEqual(run([['checkC', '@/missing/c'], ['checkA', '@/missing/a'], ['checkB', './b']], rescued('./limits')).parts, ['checkA', 'checkB', 'checkC by name', 'limitFor'],
+    'and on a part it reached after another by-name callee had');
+  assert.deepEqual(run([['checkA', '@/missing/a'], ['checkB', './b']], rescued('@/missing/limits')).parts, ['checkA', 'checkB', 'limitFor by name'],
+    'a part it reaches by name stays by name');
+});
+
 test('64 same-named declarations do not hide an imported role, and a callee found by name alone is no role', () => {
   const run = (spec, decoys = 64) => {
     resetSessionReads();
