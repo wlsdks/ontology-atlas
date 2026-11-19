@@ -707,6 +707,73 @@ mod tests {
         fs::remove_dir_all(&outside).ok();
     }
 
+    /// Reserves against a vault whose log or sidecar is a link into `outside`,
+    /// then proves the refusal names tampering and nothing was written there.
+    #[cfg(windows)]
+    fn assert_link_refused(vault: &Path, outside: &Path) {
+        let message = reserve(vault, verify_draft())
+            .err()
+            .expect("a reparse point must be refused");
+        assert!(message.contains("audit-log-tampered"), "{message}");
+        let sentinel = outside.join(AUDIT_FILE);
+        assert_eq!(fs::read(&sentinel).unwrap(), b"outside-sentinel\n");
+    }
+
+    #[cfg(windows)]
+    fn outside_with_sentinel(tag: &str) -> PathBuf {
+        let outside = temp_vault(tag);
+        fs::write(outside.join(AUDIT_FILE), b"outside-sentinel\n").unwrap();
+        outside
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_refuses_a_symlinked_log_without_touching_its_target() {
+        let vault = temp_vault("win-log-symlink");
+        let outside = outside_with_sentinel("win-log-symlink-target");
+        fs::create_dir_all(vault.join(SIDECAR_DIR)).unwrap();
+        std::os::windows::fs::symlink_file(outside.join(AUDIT_FILE), audit_log_path(&vault))
+            .expect("hosted Windows runners may create symlinks");
+
+        assert_link_refused(&vault, &outside);
+        fs::remove_dir_all(&vault).ok();
+        fs::remove_dir_all(&outside).ok();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_refuses_a_junction_in_place_of_the_log() {
+        let vault = temp_vault("win-log-junction");
+        let outside = outside_with_sentinel("win-log-junction-target");
+        fs::create_dir_all(vault.join(SIDECAR_DIR)).unwrap();
+        let made = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(audit_log_path(&vault))
+            .arg(&outside)
+            .output()
+            .unwrap();
+        assert!(made.status.success(), "{made:?}");
+
+        assert_link_refused(&vault, &outside);
+        fs::remove_dir(audit_log_path(&vault)).ok();
+        fs::remove_dir_all(&vault).ok();
+        fs::remove_dir_all(&outside).ok();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_refuses_a_symlinked_sidecar_without_touching_its_target() {
+        let vault = temp_vault("win-sidecar-symlink");
+        let outside = outside_with_sentinel("win-sidecar-symlink-target");
+        std::os::windows::fs::symlink_dir(&outside, vault.join(SIDECAR_DIR))
+            .expect("hosted Windows runners may create symlinks");
+
+        assert_link_refused(&vault, &outside);
+        fs::remove_dir(vault.join(SIDECAR_DIR)).ok();
+        fs::remove_dir_all(&vault).ok();
+        fs::remove_dir_all(&outside).ok();
+    }
+
     #[cfg(windows)]
     #[test]
     fn windows_keeps_the_held_log_in_place_or_refuses_to_finalize() {
