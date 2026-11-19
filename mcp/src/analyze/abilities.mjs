@@ -11,6 +11,9 @@
  * - what a library exports, resolved through the import that re-exports it and
  *   through public subpackages; five or more exports declared one per file in one
  *   folder are one family row, and three or more from one module are one API row;
+ * - folders whose files each declare the operation the file is named after, which
+ *   an application registers in a schema or router and no package file re-exports
+ *   (`sibling-families.mjs`);
  * - features the README and docs headings name that the code names too
  *   (`documented-abilities.mjs`).
  * Every row carries the file and line it was found at. Benchmarks, examples,
@@ -24,6 +27,7 @@ import { basename, dirname, extname, posix } from 'node:path';
 import { declarationIndex } from '../evidence-search/declaration-index.mjs';
 import { documentedAbilities } from './documented-abilities.mjs';
 import { boundedLines, nameKey, operatorAbilities } from './operator-abilities.mjs';
+import { siblingFamilies } from './sibling-families.mjs';
 import { readSurveyText, surveyEntry } from './survey-paths.mjs';
 
 /** A folder of benchmarks, examples, demos, samples, mocks or fixtures (a folder name, never a file name). */
@@ -392,6 +396,8 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
     }
     push(entryAbility(rootPath, entry));
   }
+  // After the export surface, so a folder a package file already re-exports stays one row.
+  for (const row of siblingFamilies(product, declarations(), FAMILY_SIZE)) push(row);
   for (const file of product) {
     for (const row of dispatchedOperations(file.path, readText(rootPath, file.path))) push(row);
   }
