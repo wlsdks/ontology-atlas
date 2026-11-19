@@ -172,28 +172,49 @@ const GRAPH_ARRAY_KEYS = [
  * @returns {{ ok: boolean, issues: Array<{code: string, severity: 'error'|'warning', message: string}> }}
  */
 export function validateVaultDocument(raw, options = {}) {
-  const issues = [];
   // The parser's normalization: a BOM-prefixed or CRLF file must not skip every
   // check while the graph reads the same bytes as a live node.
   raw = String(raw).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   const startsWithDelim = raw.startsWith('---');
   const closingIndex = startsWithDelim ? raw.indexOf('\n---', 3) : -1;
 
-  if (startsWithDelim && closingIndex === -1) {
-    issues.push({
-      code: 'unclosed-frontmatter',
-      severity: 'error',
-      message:
-        'frontmatter opens with `---` but never closes: this file is not read as a node.',
-    });
-    return { ok: false, issues };
-  }
-
-  if (!startsWithDelim) {
-    return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
-  }
+  if (startsWithDelim && closingIndex === -1) return unclosedFrontmatterReport();
+  if (!startsWithDelim) return unframedDocumentReport();
 
   const { frontmatter, body = '', diagnostics = [] } = options.parsed ?? parseFrontmatter(raw);
+  return validateFramedVaultDocument({ frontmatter, diagnostics }, options, (input) =>
+    bodyMeaningFindings({ ...input, body }),
+  );
+}
+
+/** The report for a file whose `---` fence never closes. */
+export function unclosedFrontmatterReport() {
+  return {
+    ok: false,
+    issues: [
+      {
+        code: 'unclosed-frontmatter',
+        severity: 'error',
+        message:
+          'frontmatter opens with `---` but never closes: this file is not read as a node.',
+      },
+    ],
+  };
+}
+
+/** The report for a file with no frontmatter fence: plain Markdown, nothing to check. */
+export function unframedDocumentReport() {
+  return { ok: true, issues: [] };
+}
+
+/**
+ * {@link validateVaultDocument} past the fence check, for a caller that already
+ * knows the fence closes. `bodyFindings({ kind, slug, title })` answers
+ * `bodyMeaningFindings` for this document's body, so a caller holding a cached
+ * verdict instead of the body passes that.
+ */
+export function validateFramedVaultDocument({ frontmatter, diagnostics = [] }, options, bodyFindings) {
+  const issues = [];
   pushFrontmatterDiagnostics(diagnostics, issues);
   const keys = Object.keys(frontmatter);
 
@@ -250,7 +271,7 @@ export function validateVaultDocument(raw, options = {}) {
 
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
   pushSwallowedRelationNoteIssues(frontmatter, issues);
-  pushMeaningIssues({ frontmatter, body, slug: resolveDocumentSlug(frontmatter, options), issues });
+  pushMeaningIssues({ frontmatter, bodyFindings, slug: resolveDocumentSlug(frontmatter, options), issues });
 
   return {
     ok: !issues.some((i) => i.severity === 'error'),
@@ -278,11 +299,11 @@ function resolveDocumentSlug(frontmatter, options) {
  * need a repository root or every other node, so they run as whole-vault passes
  * in validate_vault and the CLI.
  */
-function pushMeaningIssues({ frontmatter, body, slug, issues }) {
+function pushMeaningIssues({ frontmatter, bodyFindings, slug, issues }) {
   const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';
   if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return;
   const title = typeof frontmatter?.title === 'string' ? frontmatter.title : '';
-  for (const finding of bodyMeaningFindings({ kind, slug, title, body })) {
+  for (const finding of bodyFindings({ kind, slug, title })) {
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
   }
   pushSlugOutsideKindFolderIssue({ kind, slug, issues });

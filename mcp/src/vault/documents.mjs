@@ -3,8 +3,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { closeSync, fstatSync, openSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parseFrontmatter } from '../parser.mjs';
+import { detachText, parseFrontmatter } from '../parser.mjs';
 
+import { contentHash, textHash } from './content-hash.mjs';
+import { bodyLinkKeys, bodyStartOf, evidenceSignature, rawShapeOf } from './doc-shape.mjs';
 import { pathToSlug, walkMd } from './slug-paths.mjs';
 
 function sameFileSnapshot(left, right) {
@@ -16,6 +18,16 @@ function sameFileSnapshot(left, right) {
 }
 
 /** Reads bytes and metadata together from one open file, and confirms the current path is still that file. */
+/**
+ * A cached document's bytes read back for its body: one read, no stamps. The hash
+ * the caller compares proves them the bytes the parse came from, so a read torn by a
+ * concurrent write fails that comparison instead of passing as the file.
+ */
+function readBack(filePath) {
+  const bytes = readFileSync(filePath);
+  return { raw: bytes.toString('utf8'), hash: contentHash(bytes) };
+}
+
 function readStableFileSnapshot(filePath) {
   let lastError = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -23,13 +35,13 @@ function readStableFileSnapshot(filePath) {
     try {
       descriptor = openSync(filePath, 'r');
       const before = fstatSync(descriptor);
-      const raw = readFileSync(descriptor, 'utf-8');
+      const bytes = readFileSync(descriptor);
       const after = fstatSync(descriptor);
       closeSync(descriptor);
       descriptor = null;
       const currentPath = statSync(filePath);
       if (sameFileSnapshot(before, after) && sameFileSnapshot(after, currentPath)) {
-        return { raw, stats: after };
+        return { raw: bytes.toString('utf8'), stats: after, hash: contentHash(bytes) };
       }
     } catch (error) {
       lastError = error;
@@ -170,8 +182,175 @@ function docFromSnapshot(rootPath, filePath, snapshot) {
 export function readDoc(rootPath, filePath) {
   const snapshot = readStableFileSnapshot(filePath);
   const doc = docFromSnapshot(rootPath, filePath, snapshot);
-  forgetCachedFile(filePath, doc.raw, snapshot.stats);
+  forgetCachedFile(filePath, { hash: snapshot.hash }, snapshot.stats);
   return doc;
+}
+
+/**
+ * Raised when a cached document's text is read again and the file no longer holds
+ * the bytes its parse came from. The cache entry is dropped first, so the next
+ * call parses the file as it is. A write treats it as any other conflict.
+ */
+export class VaultDocChangedError extends Error {
+  constructor(slug, expectedMtime, currentMtime) {
+    super(
+      `Vault conflict: "${slug}" changed on disk while this call was reading it, so its cached parse no longer matches the file. ` +
+        `expectedMtime=${expectedMtime} currentMtime=${currentMtime}. ` +
+        'Call again to read it as it is now.',
+    );
+    this.name = 'VaultDocChangedError';
+    this.code = 'VAULT_CONFLICT';
+    this.slug = slug;
+    this.expectedMtime = expectedMtime;
+    this.currentMtime = currentMtime;
+  }
+}
+
+/**
+ * Bodies read back for cached documents, most recent last, held up to a byte
+ * budget so a repeated search does not reopen the same files. Measured at 50,000
+ * files: one find_evidence call reads well under this; a call that needs every
+ * body reads the rest from disk without growing the cache.
+ */
+export const BODY_CACHE_MAX_BYTES = 32 * 1024 * 1024;
+
+/**
+ * Text one load pass hands out with the documents it read, so the call that made
+ * the pass does not open those files again; past this, a body is read on demand.
+ * Bounds a cold 50,000-file pass to this much text instead of the whole vault.
+ */
+export const PASS_TEXT_MAX_BYTES = 8 * 1024 * 1024;
+
+/** Bytes a text costs at most: two per UTF-16 code unit. */
+function textBytes(text) {
+  return text.raw.length * 2;
+}
+
+/** Keyed by a file version's source (see `CachedVaultDoc`), shared by every document of that version. */
+const recentTexts = new Map();
+let recentTextBytes = 0;
+
+function rememberText(source, text) {
+  const bytes = textBytes(text);
+  if (bytes > BODY_CACHE_MAX_BYTES) return;
+  const previous = recentTexts.get(source);
+  if (previous) {
+    recentTextBytes -= textBytes(previous);
+    recentTexts.delete(source);
+  }
+  recentTexts.set(source, text);
+  recentTextBytes += bytes;
+  for (const [oldest, oldText] of recentTexts) {
+    if (recentTextBytes <= BODY_CACHE_MAX_BYTES) break;
+    recentTexts.delete(oldest);
+    recentTextBytes -= textBytes(oldText);
+  }
+}
+
+function recalledText(source) {
+  const text = recentTexts.get(source);
+  if (!text) return undefined;
+  recentTexts.delete(source);
+  recentTexts.set(source, text);
+  return text;
+}
+
+/** For tests: what the body cache holds now. */
+export function bodyCacheStats() {
+  return { entries: recentTexts.size, bytes: recentTextBytes, maxBytes: BODY_CACHE_MAX_BYTES };
+}
+
+/**
+ * One parsed file as the cache holds it: its slug, a frontmatter copied out of the
+ * file text (so no slice keeps the text alive), its mtime, and what was computed
+ * from the text while it was in hand (`doc-shape.mjs`). `body` and `raw` are read
+ * from the file again on demand and must hash to the bytes this parse came from;
+ * recent ones are kept up to {@link BODY_CACHE_MAX_BYTES}, so a call that reads a
+ * body twice opens its file once. A load pass may hand out a twin that carries the
+ * text it just read; the twin shares the source, so what is memoized per file
+ * version (`doc-facts.mjs`) is shared too.
+ */
+class CachedVaultDoc {
+  #source;
+  #text;
+
+  constructor(source, slug, frontmatter, mtime, diagnostics, text = null) {
+    this.#source = source;
+    this.#text = text;
+    this.slug = slug;
+    this.frontmatter = frontmatter;
+    this.mtime = mtime;
+    if (diagnostics?.length) this.diagnostics = diagnostics;
+  }
+
+  get body() {
+    return (this.#text ?? cachedDocText(this, this.#source)).body;
+  }
+
+  get raw() {
+    return (this.#text ?? cachedDocText(this, this.#source)).raw;
+  }
+
+  withText(text) {
+    return Object.freeze(new CachedVaultDoc(this.#source, this.slug, this.frontmatter, this.mtime, this.diagnostics, text));
+  }
+
+  static sourceOf(doc) {
+    return doc !== null && typeof doc === 'object' && #source in doc ? doc.#source : null;
+  }
+
+  static textOf(doc) {
+    return doc.#text;
+  }
+}
+
+function cachedDocText(doc, source, remember) {
+  let text = recalledText(source);
+  if (text) return text;
+  let snapshot = null;
+  try {
+    snapshot = source.read();
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  if (!snapshot || (snapshot.hash ?? textHash(snapshot.raw)) !== source.hash) {
+    source.forget();
+    throw new VaultDocChangedError(doc.slug, doc.mtime, snapshot?.stats?.mtimeMs ?? null);
+  }
+  noteTextRead(snapshot.raw.length);
+  const { raw } = snapshot;
+  text = { raw, body: source.bodyStart >= 0 ? raw.slice(source.bodyStart) : parseFrontmatter(raw).body };
+  if (remember) rememberText(source, text);
+  return text;
+}
+
+/**
+ * A document's `{ raw, body }`: a cached document's text as `body` and `raw` read
+ * it, a plain one (a fresh read, a test fixture) from its own fields.
+ * `remember: false` leaves a text read from disk out of the body cache, for a
+ * caller that reads many bodies once each.
+ */
+export function readVaultDocText(doc, { remember = true } = {}) {
+  const source = CachedVaultDoc.sourceOf(doc);
+  if (!source) return { raw: doc?.raw ?? '', body: doc?.body ?? '' };
+  return CachedVaultDoc.textOf(doc) ?? cachedDocText(doc, source, remember);
+}
+
+/**
+ * The object every document of one file version shares, or null for a document
+ * the cache did not produce: what per-version answers are keyed by.
+ */
+export function cachedDocVersionKey(doc) {
+  return CachedVaultDoc.sourceOf(doc);
+}
+
+/**
+ * What the cache computed from a document's text at load (`rawShape`, `bodyStart`,
+ * `links`, `evidence`; see `doc-shape.mjs`), or null for a document it did not
+ * produce.
+ */
+export function cachedDocShape(doc) {
+  return CachedVaultDoc.sourceOf(doc);
 }
 
 /**
@@ -186,14 +365,8 @@ export const RACY_WINDOW_MS = 2000;
 /** One server serves one vault; a second slot covers a test or tool that alternates. */
 const MAX_CACHED_VAULTS = 2;
 
-function stampOf(stats) {
-  return {
-    dev: stats.dev,
-    ino: stats.ino,
-    size: stats.size,
-    mtimeMs: stats.mtimeMs,
-    ctimeMs: stats.ctimeMs,
-  };
+function expectedHash(expected) {
+  return typeof expected === 'string' ? textHash(expected) : expected?.hash;
 }
 
 function statOrNull(filePath) {
@@ -201,13 +374,13 @@ function statOrNull(filePath) {
 }
 
 /**
- * One file however its path is spelled: a slug resolves to NFC (composed Hangul) or to the
- * case the agent typed, while the walk returns the name as stored (NFD on many
- * macOS volumes, any case on a case-insensitive one).
+ * Whether arrays are frozen with the objects that hold them. V8 freezes an array in
+ * place; JavaScriptCore (bun, the shipped server) moves each frozen array into a
+ * sparse map, measured at 8 MB for the 47,700 frontmatter arrays of a 50,000-file
+ * vault. The guard below exists to catch a caller that edits a shared array, and the
+ * test suite runs under Node, so under bun arrays stay unfrozen and objects frozen.
  */
-function identityOf(stats) {
-  return `${stats.dev}:${stats.ino}`;
-}
+const FREEZE_ARRAYS = !globalThis.Bun;
 
 /**
  * Cached documents are shared by every caller until their file changes, so a caller
@@ -216,6 +389,10 @@ function identityOf(stats) {
  */
 function deepFreeze(value) {
   if (value === null || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  if (Array.isArray(value) && !FREEZE_ARRAYS) {
+    for (const item of value) deepFreeze(item);
+    return value;
+  }
   Object.freeze(value);
   for (const key of Object.keys(value)) deepFreeze(value[key]);
   return value;
@@ -236,6 +413,108 @@ export function vaultDocsVersion(docs) {
 let nextCacheId = 1;
 
 /**
+ * Frontmatter strings this short are shared within one load pass: kinds, domains,
+ * relation targets and tags repeat across thousands of files, and one copy each
+ * measured 8 MB of heap and 23 MB of footprint less at 50,000 files.
+ */
+const SHARED_TEXT_MAX_CHARS = 64;
+
+/** A copy of `text` that shares no memory with its file, shared with an equal short copy made earlier in this pass. */
+function sharedText(text, shared) {
+  if (text.length > SHARED_TEXT_MAX_CHARS) return detachText(text);
+  const held = shared.get(text);
+  if (held !== undefined) return held;
+  const copy = detachText(text);
+  shared.set(copy, copy);
+  return copy;
+}
+
+/** `detachText(value)`, sharing short strings through `shared`. */
+function copyFrontmatter(value, shared) {
+  if (typeof value === 'string') return sharedText(value, shared);
+  if (Array.isArray(value)) return value.map((item) => copyFrontmatter(item, shared));
+  if (value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copyFrontmatter(item, shared)]));
+  }
+  return value;
+}
+
+/**
+ * A pass's text is garbage as soon as each file is parsed, but bun's collector, left
+ * to itself, lets a 50,000-file pass's worth pile up and keeps the allocator's pages
+ * under it for many calls. So, under bun only (Node exposes no collector):
+ * - every {@link COLLECT_EVERY_CHARS} characters read, the reader asks for a
+ *   collection that runs alongside it (`Bun.gc(false)`); a full, synchronous one
+ *   there measured no lower;
+ * - every {@link COLLECT_AFTER_CHARS} characters read, a full collection runs once
+ *   the call's synchronous work is done.
+ * Measured on the compiled server at 50,000 files over the perf gate's 20 calls:
+ * footprint after them 146 MB (flow a) and 85 MB (flow b) against 201 and 95 MB
+ * with neither, peaks 397 and 204 MB against 427 and 247 MB; without the second,
+ * 154 and 144 MB, peaks 499 and 213 MB.
+ */
+const COLLECT_EVERY_CHARS = 4 * 1024 * 1024;
+const COLLECT_AFTER_CHARS = 16 * 1024 * 1024;
+let collectionScheduled = false;
+
+let charsSinceStep = 0;
+let charsSinceFull = 0;
+
+/** Counts text read from vault files, by a load pass or a body read back, and collects as above. */
+function noteTextRead(chars) {
+  if (!globalThis.Bun) return;
+  charsSinceStep += chars;
+  charsSinceFull += chars;
+  if (charsSinceStep >= COLLECT_EVERY_CHARS) {
+    charsSinceStep = 0;
+    globalThis.Bun.gc(false);
+  }
+  if (charsSinceFull >= COLLECT_AFTER_CHARS && !collectionScheduled) {
+    charsSinceFull = 0;
+    collectionScheduled = true;
+    setTimeout(() => {
+      collectionScheduled = false;
+      globalThis.Bun.gc(true);
+    }, 0).unref?.();
+  }
+}
+
+/**
+ * One file version in the cache: its stamp (device, inode, size, mtime, ctime), when
+ * it was read, the SHA-1 of its bytes, what was computed from its text, and its
+ * document. Also the key every per-version answer is kept under (`doc-facts.mjs`).
+ * One object per file: the cache's bookkeeping is a measured part of what a
+ * 50,000-file vault holds.
+ */
+class CacheEntry {
+  constructor(io, path, stats, readAt, hash, facts) {
+    this.io = io;
+    this.path = path;
+    this.dev = stats.dev;
+    this.ino = stats.ino;
+    this.size = stats.size;
+    this.mtimeMs = stats.mtimeMs;
+    this.ctimeMs = stats.ctimeMs;
+    this.readAt = readAt;
+    this.hash = hash;
+    this.rawShape = facts.rawShape;
+    this.bodyStart = facts.bodyStart;
+    this.links = facts.links;
+    this.evidence = facts.evidence;
+    this.pass = 0;
+    this.doc = null;
+  }
+
+  read() {
+    return this.io.readSnapshot(this.path);
+  }
+
+  forget() {
+    this.io.forget(this.path);
+  }
+}
+
+/**
  * Per-file parse cache for one vault, inside this process.
  *
  * `load()` walks the folder and stats each file once (one stamp pass); only a file
@@ -245,16 +524,17 @@ let nextCacheId = 1;
  * `load({ fresh: true })` reads every file and compares bytes instead, trusting no
  * stamp; unchanged files keep their parsed doc, so it refreshes the cache too.
  *
- * Data structure: a `Map` from absolute path to `{ stamp, readAt, doc, pass }`, and
- * a `Map` from device and inode to that path so a fresh read under another spelling
- * finds its entry in O(1).
+ * Data structure: a `Map` from absolute path to its {@link CacheEntry}, and a `Map`
+ * from device to a `Map` from inode to that path, so a fresh read under another
+ * spelling finds its entry in O(1).
  * Cost per stamp pass: O(F) readdir and stat for F files, plus O(bytes of changed or
  * racy files) to read and parse; a fresh pass is O(bytes of the vault). Deleted files
- * are swept in O(F) only when the count says some entry was not visited. Memory: one
- * parsed copy of the vault, replacing the fresh copy each call used to allocate.
+ * are swept in O(F) only when the count says some entry was not visited. Memory: each
+ * file's frontmatter copied out of its text, a SHA-1 of its bytes and what
+ * `doc-shape.mjs` computes; no file text stays (see `CachedVaultDoc`).
  *
  * @param {string} rootPath
- * @param {{ walk?: (root: string) => string[], stat?: (path: string) => import('node:fs').Stats | null, readSnapshot?: (path: string) => { raw: string, stats: import('node:fs').Stats }, now?: () => number }} [io]
+ * @param {{ walk?: (root: string) => string[], stat?: (path: string) => import('node:fs').Stats | null, readSnapshot?: (path: string) => { raw: string, stats: import('node:fs').Stats, hash?: string }, now?: () => number }} [io]
  *   Injection points for tests that must fake a stamp the filesystem cannot produce on demand.
  */
 export function createVaultDocCache(rootPath, io = {}) {
@@ -264,16 +544,22 @@ export function createVaultDocCache(rootPath, io = {}) {
   const now = io.now ?? Date.now;
   const cacheId = nextCacheId;
   nextCacheId += 1;
-  /** @type {Map<string, { stamp: ReturnType<typeof stampOf>, readAt: number, doc: object, pass: number }>} */
+  /** @type {Map<string, CacheEntry>} */
   const entries = new Map();
-  /** @type {Map<string, string>} device and inode → path in `entries` */
+  /**
+   * One file however its path is spelled: a slug resolves to NFC (composed Hangul) or
+   * to the case the agent typed, while the walk returns the name as stored (NFD on
+   * many macOS volumes, any case on a case-insensitive one).
+   * @type {Map<number, Map<number, string>>} device → inode → path in `entries`
+   */
   const pathByIdentity = new Map();
+  const entryIo = { readSnapshot: io.readSnapshot ?? readBack, forget: (filePath) => forget(filePath) };
   let generation = 0;
   let pass = 0;
   let reads = 0;
 
   function isRacy(entry) {
-    return Math.max(entry.stamp.mtimeMs, entry.stamp.ctimeMs) > entry.readAt - RACY_WINDOW_MS;
+    return Math.max(entry.mtimeMs, entry.ctimeMs) > entry.readAt - RACY_WINDOW_MS;
   }
 
   function readEntry(filePath) {
@@ -287,19 +573,31 @@ export function createVaultDocCache(rootPath, io = {}) {
       throw error;
     }
     reads += 1;
-    return { stamp: stampOf(snapshot.stats), readAt, snapshot };
+    noteTextRead(snapshot.raw.length);
+    return { stats: snapshot.stats, readAt, snapshot, hash: snapshot.hash ?? textHash(snapshot.raw) };
   }
 
   /**
-   * @param {{ fresh?: boolean }} [options]
+   * `keepTextBytes`: how much of the text this pass reads it hands out with the
+   * documents (see {@link PASS_TEXT_MAX_BYTES}); the cache itself keeps none.
+   * @param {{ fresh?: boolean, keepTextBytes?: number }} [options]
    * @returns {VaultDoc[]}
    */
-  function load({ fresh: readEveryFile = false } = {}) {
+  function load({ fresh: readEveryFile = false, keepTextBytes = 0 } = {}) {
     pass += 1;
     const files = walk(rootPath);
     /** @type {VaultDoc[]} */
     const docs = [];
     let visited = 0;
+    let keptBytes = 0;
+    /** Short frontmatter strings this pass copied, shared by every file that repeats one. */
+    const shared = new Map();
+    const handOut = (doc, raw, body) => {
+      const bytes = raw.length * 2;
+      if (keptBytes + bytes > keepTextBytes) return doc;
+      keptBytes += bytes;
+      return doc.withText({ raw, body: body ?? parseFrontmatter(raw).body });
+    };
     for (const filePath of files) {
       if (readEveryFile) {
         const fresh = readEntry(filePath);
@@ -307,12 +605,12 @@ export function createVaultDocCache(rootPath, io = {}) {
         const entry = entries.get(filePath);
         // Equal bytes alone are not enough: the doc carries `mtime`, which agents pass
         // back as `expected_mtime` and the graph reports as `maxMtime`.
-        if (entry && entry.doc.raw === fresh.snapshot.raw && sameFileSnapshot(entry.stamp, fresh.stamp)) {
+        if (entry && entry.hash === fresh.hash && sameFileSnapshot(entry, fresh.stats)) {
           entry.readAt = fresh.readAt;
           entry.pass = pass;
-          docs.push(entry.doc);
+          docs.push(handOut(entry.doc, fresh.snapshot.raw));
         } else {
-          docs.push(store(filePath, fresh));
+          docs.push(store(filePath, fresh, handOut, shared));
         }
         visited += 1;
         continue;
@@ -320,7 +618,7 @@ export function createVaultDocCache(rootPath, io = {}) {
       const current = stat(filePath);
       if (!current || !current.isFile()) continue;
       const entry = entries.get(filePath);
-      if (entry && sameFileSnapshot(entry.stamp, current)) {
+      if (entry && sameFileSnapshot(entry, current)) {
         if (!isRacy(entry)) {
           entry.pass = pass;
           visited += 1;
@@ -329,7 +627,7 @@ export function createVaultDocCache(rootPath, io = {}) {
         }
         const fresh = readEntry(filePath);
         if (!fresh) continue;
-        if (fresh.snapshot.raw === entry.doc.raw && sameFileSnapshot(fresh.stamp, entry.stamp)) {
+        if (fresh.hash === entry.hash && sameFileSnapshot(fresh.stats, entry)) {
           // Equal bytes: keep the parsed doc and restart the racy clock from this read.
           entry.readAt = fresh.readAt;
           entry.pass = pass;
@@ -337,13 +635,13 @@ export function createVaultDocCache(rootPath, io = {}) {
           docs.push(entry.doc);
           continue;
         }
-        docs.push(store(filePath, fresh));
+        docs.push(store(filePath, fresh, handOut, shared));
         visited += 1;
         continue;
       }
       const fresh = readEntry(filePath);
       if (!fresh) continue;
-      docs.push(store(filePath, fresh));
+      docs.push(store(filePath, fresh, handOut, shared));
       visited += 1;
     }
     if (visited !== entries.size) {
@@ -358,48 +656,70 @@ export function createVaultDocCache(rootPath, io = {}) {
   // The version moves with every entry stored or removed, not at the end of a pass: a
   // pass that throws halfway must not leave replaced entries under the old version, and
   // a dropped entry whose file is then deleted is never seen again to move it.
-  function store(filePath, fresh) {
-    const doc = deepFreeze(docFromSnapshot(rootPath, filePath, fresh.snapshot));
-    const entry = { stamp: fresh.stamp, readAt: fresh.readAt, doc, pass };
-    index(filePath, entries.get(filePath), fresh.stamp);
+  // Everything taken from the text is copied or computed here, while the text is in
+  // hand, so the text itself can be let go.
+  function store(filePath, fresh, handOut, shared) {
+    const { raw } = fresh.snapshot;
+    const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
+    const entry = new CacheEntry(entryIo, filePath, fresh.stats, fresh.readAt, fresh.hash, {
+      rawShape: rawShapeOf(raw),
+      bodyStart: bodyStartOf(raw, body),
+      links: bodyLinkKeys(body),
+      evidence: evidenceSignature(body),
+    });
+    entry.pass = pass;
+    entry.doc = deepFreeze(new CachedVaultDoc(
+      entry,
+      sharedText(pathToSlug(rootPath, filePath), shared),
+      copyFrontmatter(frontmatter, shared),
+      fresh.stats.mtimeMs,
+      diagnostics?.length ? detachText(diagnostics) : undefined,
+    ));
+    const previous = entries.get(filePath);
+    if (previous) unindex(filePath, previous);
+    index(filePath, entry);
     entries.set(filePath, entry);
     generation += 1;
-    return doc;
+    return handOut(entry.doc, raw, body);
   }
 
-  /** Points the identity index at `filePath` for `stamp`, and gives `entry` that stamp. */
-  function index(filePath, entry, stamp) {
-    if (entry) {
-      const previous = identityOf(entry.stamp);
-      if (pathByIdentity.get(previous) === filePath) pathByIdentity.delete(previous);
-      entry.stamp = stamp;
+  function index(filePath, entry) {
+    let byInode = pathByIdentity.get(entry.dev);
+    if (!byInode) {
+      byInode = new Map();
+      pathByIdentity.set(entry.dev, byInode);
     }
-    pathByIdentity.set(identityOf(stamp), filePath);
+    byInode.set(entry.ino, filePath);
+  }
+
+  function unindex(filePath, entry) {
+    const byInode = pathByIdentity.get(entry.dev);
+    if (byInode?.get(entry.ino) === filePath) byInode.delete(entry.ino);
   }
 
   function remove(filePath, entry) {
     entries.delete(filePath);
     generation += 1;
-    const identity = identityOf(entry.stamp);
-    if (pathByIdentity.get(identity) === filePath) pathByIdentity.delete(identity);
+    unindex(filePath, entry);
   }
 
   /**
-   * Drops the entry for `filePath` unless its bytes equal `raw` (any bytes when
-   * `raw` is omitted). On a filesystem whose stamp cannot show an edit (FAT/exFAT
-   * keep no ctime; a tool can restore mtime), a write path's fresh read is the
-   * only witness, and without this the stale parse would outlive every retry.
+   * Drops the entry for `filePath` unless its bytes equal `expected`: the text a
+   * fresh read found, or `{ hash }` of its bytes (any bytes when omitted). On a
+   * filesystem whose stamp cannot show an edit (FAT/exFAT keep no ctime; a tool can
+   * restore mtime), a write path's fresh read is the only witness, and without this
+   * the stale parse would outlive every retry.
    * The entry is found by `filePath` as spelled, else by the file's device and inode
    * (from `stats`, or a stat of `filePath`).
    */
-  function forget(filePath, raw, stats) {
+  function forget(filePath, expected, stats) {
     let key = entries.has(filePath) ? filePath : undefined;
     if (key === undefined) {
       const current = stats ?? stat(filePath);
-      if (current) key = pathByIdentity.get(identityOf(current));
+      if (current) key = pathByIdentity.get(current.dev)?.get(current.ino);
     }
     const entry = key === undefined ? undefined : entries.get(key);
-    if (!entry || (raw !== undefined && entry.doc.raw === raw)) return false;
+    if (!entry || (expected !== undefined && entry.hash === expectedHash(expected))) return false;
     remove(key, entry);
     return true;
   }
@@ -430,14 +750,15 @@ function vaultCacheFor(rootPath) {
 }
 
 /**
- * Tells every cached vault that a fresh read of `filePath` found `raw` (or, with
- * `raw` omitted, bytes other than a cached doc expected), so a differing entry is
- * read again on the next load. O(number of cached vaults), at most two.
+ * Tells every cached vault that a fresh read of `filePath` found `expected` (its
+ * text, or `{ hash }` of its bytes; omitted, bytes other than a cached doc
+ * expected), so a differing entry is read again on the next load.
+ * O(number of cached vaults), at most two.
  */
-export function forgetCachedFile(filePath, raw, stats) {
+export function forgetCachedFile(filePath, expected, stats) {
   const key = resolve(filePath);
   let forgotten = false;
-  for (const cache of vaultCaches.values()) forgotten = cache.forget(key, raw, stats) || forgotten;
+  for (const cache of vaultCaches.values()) forgotten = cache.forget(key, expected, stats) || forgotten;
   return forgotten;
 }
 
@@ -456,7 +777,10 @@ export async function withVaultReadSnapshot(fn) {
   try {
     return await readSnapshotScope.run(scope, fn);
   } finally {
+    // Work the call left scheduled may still hold the scope; the text it kept must
+    // not outlive the call through it.
     scope.open = false;
+    scope.docsByRoot.clear();
   }
 }
 
@@ -479,11 +803,11 @@ function copyWithVersion(docs) {
  */
 export function loadVaultDocs(rootPath) {
   const scope = readSnapshotScope.getStore();
-  if (!scope?.open) return vaultCacheFor(rootPath).load({ fresh: true });
+  if (!scope?.open) return vaultCacheFor(rootPath).load({ fresh: true, keepTextBytes: PASS_TEXT_MAX_BYTES });
   const key = resolve(rootPath);
   let docs = scope.docsByRoot.get(key);
   if (!docs) {
-    docs = vaultCacheFor(rootPath).load();
+    docs = vaultCacheFor(rootPath).load({ keepTextBytes: PASS_TEXT_MAX_BYTES });
     scope.docsByRoot.set(key, docs);
   }
   return copyWithVersion(docs);
