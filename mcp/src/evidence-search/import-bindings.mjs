@@ -5,13 +5,17 @@
  * anywhere, in any language, and following them reads code no caller runs.
  *
  * Each statement is read from lines of at most `LINE_CHARS` characters and at
- * most `STATEMENT_LINES` lines, so a hostile file costs one pass.
+ * most `STATEMENT_LINES` lines, so a hostile file costs one pass. A statement
+ * or name cut at a cap marks the file's bindings `incomplete`. The family count
+ * reads with `{ family: true }`: statements of up to `FAMILY_STATEMENT_LINES`
+ * lines, and a JavaScript specifier kept apart by how it was written.
  */
 
 import { posix } from 'node:path';
 
 const LINE_CHARS = 2000;
 const STATEMENT_LINES = 40;
+const FAMILY_STATEMENT_LINES = 400;
 const SPEC_CHARS = 300;
 // Modules and names one file brings in that are kept; a file importing more is generated.
 const SPECS = 256;
@@ -56,7 +60,8 @@ export function childSpec(spec, name) {
   if (!spec || spec.go) return null;
   if (spec.exact) return { exact: posix.join(spec.exact, name) };
   const internal = spec.internal ? { internal: true } : {};
-  return spec.tail ? { tail: `${spec.tail}/${name}`, ...internal } : { tail: name, ...internal };
+  const raw = typeof spec.raw === 'string' ? { raw: `${spec.raw}/${name}` } : {};
+  return spec.tail ? { tail: `${spec.tail}/${name}`, ...internal, ...raw } : { tail: name, ...internal, ...raw };
 }
 
 function jsSpec(file, raw) {
@@ -67,7 +72,8 @@ function jsSpec(file, raw) {
   // `@/x`, `~/x` and `#x` are the project's own path aliases; `@scope/pkg` drops its scope.
   const alias = parts[0] && /^[@~#]/u.test(parts[0]) && (parts[0].length === 1 || parts.length > 1);
   if (alias) parts.shift();
-  return parts.length > 0 ? { tail: stripExtension(parts.join('/')), ...(alias && spec[1] === '/' ? { internal: true } : {}) } : null;
+  // `raw` keeps the written specifier: a bare one names a package, never a file of that name.
+  return parts.length > 0 ? { tail: stripExtension(parts.join('/')), raw: spec, ...(alias && spec[1] === '/' ? { internal: true } : {}) } : null;
 }
 
 function pySpec(file, dots, dotted) {
@@ -98,10 +104,13 @@ export function specKey(spec) {
 /** The one copy of `spec` this file holds, or null past the cap or for no spec. */
 function addSpec(bindings, spec) {
   if (!spec) return null;
-  const key = specKey(spec);
+  const key = bindings.family && typeof spec.raw === 'string' ? `${specKey(spec)}\0${spec.raw}` : specKey(spec);
   const held = bindings.byKey.get(key);
   if (held) return held;
-  if (bindings.byKey.size >= SPECS) return null;
+  if (bindings.byKey.size >= SPECS) {
+    bindings.incomplete = true;
+    return null;
+  }
   bindings.byKey.set(key, spec);
   return spec;
 }
@@ -113,24 +122,31 @@ function addModule(bindings, local, spec) {
 function addName(bindings, local, spec, imported = local) {
   if (!spec || !/^[A-Za-z_$][\w$]*$/u.test(local)) return;
   const held = bindings.names.get(local);
-  if (!held && bindings.names.size >= NAMES) return;
   const rows = held ?? [];
-  if (rows.length >= BINDINGS_PER_NAME || rows.some((row) => row.spec === spec && row.imported === imported)) return;
+  if (rows.some((row) => row.spec === spec && row.imported === imported)) return;
+  if ((!held && bindings.names.size >= NAMES) || rows.length >= BINDINGS_PER_NAME) {
+    bindings.incomplete = true;
+    return;
+  }
   rows.push({ spec, imported });
   bindings.names.set(local, rows);
 }
 
 /** The statement starting at `index`, joined over its continuation lines until `done` holds for one. */
-function statement(lines, index, done) {
+function statement(lines, index, done, limit = STATEMENT_LINES) {
   let text = '';
   let at = index;
-  for (; at < lines.length && at < index + STATEMENT_LINES; at += 1) {
+  let ended = false;
+  for (; at < lines.length && at < index + limit; at += 1) {
     const line = lines[at];
     if (line.length > LINE_CHARS) break;
     text += `${line} `;
-    if (done(line, at === index)) break;
+    if (done(line, at === index)) {
+      ended = true;
+      break;
+    }
   }
-  return { text, last: Math.min(at, lines.length - 1) };
+  return { text, last: Math.min(at, lines.length - 1), cut: !ended && at < lines.length };
 }
 
 const JS_FROM = /\bfrom\s*['"]([^'"\n]{1,300})['"]/u;
@@ -159,11 +175,15 @@ function jsClause(bindings, spec, clause) {
 function readJs(file, lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (line.length > LINE_CHARS) continue;
+    if (line.length > LINE_CHARS) {
+      if (/^\s*(?:import|export)\b/u.test(line.slice(0, 64))) bindings.incomplete = true;
+      continue;
+    }
     const trimmed = line.trimStart();
     if (/^(?:import\s|import\{|export\s*(?:type\s*)?[{*])/u.test(trimmed)) {
-      const { text, last } = statement(lines, index, (held, first) => JS_FROM.test(held) || (first && /^import\s*['"]/u.test(held.trimStart())) || /;\s*$/u.test(held));
+      const { text, last, cut } = statement(lines, index, (held, first) => JS_FROM.test(held) || (first && /^import\s*['"]/u.test(held.trimStart())) || /;\s*$/u.test(held), bindings.statementLines);
       index = last;
+      if (cut) bindings.incomplete = true;
       const from = JS_FROM.exec(text);
       if (!from) continue;
       const spec = addSpec(bindings, jsSpec(file, from[1]));
@@ -183,15 +203,19 @@ function readJs(file, lines, bindings) {
 function readPython(file, lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (line.length > LINE_CHARS) continue;
+    if (line.length > LINE_CHARS) {
+      if (/^\s*(?:from|import)\b/u.test(line.slice(0, 64))) bindings.incomplete = true;
+      continue;
+    }
     const trimmed = line.trim();
     // The module part starts with a word, so the dots and it never trade characters.
     const from = /^from\s+(\.*)(\w[\w.]*)?\s+import\s+(.*)$/u.exec(trimmed);
     if (from) {
       let names = from[3];
       if (names.startsWith('(') && !names.includes(')')) {
-        const { text, last } = statement(lines, index + 1, (held) => held.includes(')'));
+        const { text, last, cut } = statement(lines, index + 1, (held) => held.includes(')'), bindings.statementLines);
         index = last;
+        if (cut) bindings.incomplete = true;
         names += ` ${text}`;
       }
       const spec = addSpec(bindings, pySpec(file, from[1].length, from[2] ?? ''));
@@ -243,8 +267,9 @@ function readRust(lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     if (line.length > LINE_CHARS || !RUST_USE.test(line)) continue;
-    const { text, last } = statement(lines, index, (held) => held.includes(';'));
+    const { text, last, cut } = statement(lines, index, (held) => held.includes(';'), bindings.statementLines);
     index = last;
+    if (cut) bindings.incomplete = true;
     const path = spaced(text.replace(RUST_USE, '').split(';')[0]).replace(/ ?:: ?/gu, '::');
     const open = path.indexOf('{');
     const head = open < 0 ? path : path.slice(0, open);
@@ -267,6 +292,7 @@ function readRust(lines, bindings) {
 }
 
 const BINDINGS = new WeakMap();
+const FAMILY_BINDINGS = new WeakMap();
 
 /**
  * The names and modules a file imports: `names` local name -> [{ spec, imported }],
@@ -274,10 +300,15 @@ const BINDINGS = new WeakMap();
  * every spec it imports.
  *
  * @param {{ path: string, lines: string[] }} file
+ * @param {{ family?: boolean }} [options] read as the family count does
  */
-export function importsOf(file) {
-  if (BINDINGS.has(file)) return BINDINGS.get(file);
-  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [] };
+export function importsOf(file, { family = false } = {}) {
+  const cache = family ? FAMILY_BINDINGS : BINDINGS;
+  if (cache.has(file)) return cache.get(file);
+  const bindings = {
+    names: new Map(), modules: new Map(), byKey: new Map(), specs: [], incomplete: false,
+    family, statementLines: family ? FAMILY_STATEMENT_LINES : STATEMENT_LINES,
+  };
   const lines = file.lines.map((line) => (line.length > LINE_CHARS ? line : line.replace(/\r?\n$/u, '')));
   const language = languageOf(file.path);
   if (language === 'js') readJs(file, lines, bindings);
@@ -285,6 +316,6 @@ export function importsOf(file) {
   else if (language === 'go') readGo(lines, bindings);
   else if (language === 'rs') readRust(lines, bindings);
   bindings.specs = [...bindings.byKey.values()];
-  BINDINGS.set(file, bindings);
+  cache.set(file, bindings);
   return bindings;
 }

@@ -5,7 +5,8 @@
  */
 
 import { buildBreadthMap } from '../analyze/breadth-map.mjs';
-import { recordSourceEvidence } from '../construction/session-reads.mjs';
+import { noteReadFamilies } from '../construction/read-family.mjs';
+import { recordSourceEvidence, sessionReads } from '../construction/session-reads.mjs';
 import { analyzeRepoStructure } from '../analyze/repo-structure.mjs';
 import {
   buildArchitectureBrief,
@@ -49,6 +50,15 @@ import {
   sep,
 } from 'node:path';
 
+/** Each symbol read that belongs to a family gets one line saying how many members the analysed folder holds and how many this session read. */
+function noteFamilies(target, sourceEvidence, ignore) {
+  try {
+    noteReadFamilies(sourceEvidence, { root: target, ignore: ignore ?? [], reads: sessionReads(target) });
+  } catch {
+    // The line is a fact beside the read; a folder that cannot be walked leaves the read as it is.
+  }
+}
+
 function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification, view } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   if (view !== undefined && view !== 'breadth' && view !== 'analysis') {
@@ -71,6 +81,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   if (sourceOnly || (sourceReads !== undefined && !reviewing)) {
     const sourceEvidence = readSourceEvidence(target, sourceReads, { ignore });
     recordSourceEvidence(target, sourceEvidence);
+    noteFamilies(target, sourceEvidence, ignore);
     return { rootPath: target, delivery: 'source_only', canWrite: false, sourceEvidence };
   }
   // The CLI readers ask for the structural analysis by name; an agent gets the map.
@@ -87,7 +98,10 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sou
   const sourceEvidence = sourceReads === undefined
     ? undefined
     : readSourceEvidence(target, sourceReads, { ignore });
-  if (sourceEvidence) recordSourceEvidence(target, sourceEvidence);
+  if (sourceEvidence) {
+    recordSourceEvidence(target, sourceEvidence);
+    noteFamilies(target, sourceEvidence, ignore);
+  }
   const sourceDigest = proposal == null
     ? undefined
     : composeSourceDigest(sourceBefore, sourceEvidence);

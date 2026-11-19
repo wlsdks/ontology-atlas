@@ -1,4 +1,4 @@
-import { ELEMENT_NAMING_RULE_BATCH_EN, ELEMENT_NAMING_RULE_EN } from '../../construction/construction-rules.mjs';
+import { ELEMENT_NAMING_RULE_BATCH_EN, ELEMENT_NAMING_RULE_EN, FAMILY_SCOPE_RULE_EN } from '../../construction/construction-rules.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../tool-schemas/array-limits.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
@@ -89,7 +89,7 @@ export const ADD_CONCEPTS_TOOL = {
     'still land. A row whose normalized title matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` — `patch_concept` the earlier node instead of forking the same concept (duplicates are the #1 growing-vault failure mode). '
     + '`concepts[]` order in the response matches the input. Cap = 50 per ' +
     'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
-    'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.' + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
+    'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.' + ' ' + FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
   inputSchema: {
     type: 'object',
     properties: {
@@ -189,7 +189,7 @@ export const PATCH_CONCEPT_TOOL = {
     '`expected_mtime` (from the previous get_concept response) to detect ' +
     'concurrent external edits — throws VaultConflictError if the file has ' +
     'changed on disk since you read it. Changed writes return ' +
-    POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately continue graph cleanup.',
+    POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately continue graph cleanup. ' + FAMILY_SCOPE_RULE_EN,
   inputSchema: {
     type: 'object',
     properties: {
