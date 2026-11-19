@@ -15,8 +15,12 @@ const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
 const BUDGET_MS = 200;
 // Measured 2026-11-19: each Markdown case takes at most 16 ms; micromark 2.1.0
-// took 0.2 to 4.2 s on the same inputs.
+// took 0.2 to 4.2 s on the first six. Unterminated instructions take 8 ms, and
+// 2.9 s when each one searches ahead for its terminator.
 const MARKDOWN_BUDGET_MS = 100;
+// Measured 2026-11-19: 128 KiB of NUL headings takes 58 ms, most of it
+// markdown-it's own parse, and 770 ms when each heading is searched for.
+const HEADING_BUDGET_MS = 300;
 const scratchRoots = [];
 
 after(() => {
@@ -114,12 +118,16 @@ describe('hostile Markdown costs the survey time linear in its size', () => {
       ['block quotes nested 25,000 deep', `${'> '.repeat(25_000)}x`],
       ['backtick runs of every length to 500', Array.from({ length: 500 }, (_, index) => `e${'`'.repeat(index + 1)}`).join('')],
       ['10,000 link definitions then a reference', `${Array.from({ length: 10_000 }, (_, index) => `[${index}]: u\n`).join('')}[0]`],
+      ['headings holding NUL below a fence', `\`\`\`\nfence\n\`\`\`\n${'# a\0 <b>x</b>\n'.repeat(9_400)}`, HEADING_BUDGET_MS],
+      ['unterminated processing instructions', `x ${'<? '.repeat(21_800)}`],
     ];
-    for (const [name, text] of cases) {
+    for (const [name, text, budgetMs = MARKDOWN_BUDGET_MS] of cases) {
       let lines = [];
-      assertWithinBudget(t, name, () => { lines = authoredMarkdownLines(text); }, MARKDOWN_BUDGET_MS);
+      assertWithinBudget(t, name, () => { lines = authoredMarkdownLines(text); }, budgetMs);
       assert.equal(lines.length, text.split('\n').length, `${name} must keep one entry per line`);
     }
+    const headings = authoredMarkdownLines(`\`\`\`\nfence\n\`\`\`\n## Usage\0 <b>x</b>\n`);
+    assert.equal(headings[3], '## Usage\0 x', 'a heading holding NUL is read from its own line');
   });
 });
 
