@@ -168,8 +168,9 @@ function docFromSnapshot(rootPath, filePath, snapshot) {
 /** @typedef {ReturnType<typeof docFromSnapshot>} VaultDoc */
 
 export function readDoc(rootPath, filePath) {
-  const doc = docFromSnapshot(rootPath, filePath, readStableFileSnapshot(filePath));
-  forgetCachedFile(filePath, doc.raw);
+  const snapshot = readStableFileSnapshot(filePath);
+  const doc = docFromSnapshot(rootPath, filePath, snapshot);
+  forgetCachedFile(filePath, doc.raw, snapshot.stats);
   return doc;
 }
 
@@ -197,6 +198,15 @@ function stampOf(stats) {
 
 function statOrNull(filePath) {
   return statSync(filePath, { throwIfNoEntry: false }) ?? null;
+}
+
+/**
+ * One file however its path is spelled: a slug resolves to NFC (`결제`) or to the
+ * case the agent typed, while the walk returns the name as stored (NFD on many
+ * macOS volumes, any case on a case-insensitive one).
+ */
+function identityOf(stats) {
+  return `${stats.dev}:${stats.ino}`;
 }
 
 /**
@@ -228,16 +238,20 @@ let nextCacheId = 1;
 /**
  * Per-file parse cache for one vault, inside this process.
  *
- * Every `load()` walks the folder and stats each file once (one stamp pass); only a
- * file whose stamp moved, or whose stamp is racy, is read and parsed again. Nothing
- * is trusted across processes or from a watcher: an editor, Git or the app changing a
+ * `load()` walks the folder and stats each file once (one stamp pass); only a file
+ * whose stamp moved, or whose stamp is racy, is read and parsed again. Nothing is
+ * trusted across processes or from a watcher: an editor, Git or the app changing a
  * file between two calls moves its stamp, and the next pass sees it.
+ * `load({ fresh: true })` reads every file and compares bytes instead, trusting no
+ * stamp; unchanged files keep their parsed doc, so it refreshes the cache too.
  *
- * Data structure: a `Map` from absolute path to `{ stamp, readAt, doc, pass }`.
- * Cost per call: O(F) readdir and stat for F files, plus O(bytes of changed or racy
- * files) to read and parse; deleted files are swept in O(F) only when the count says
- * some entry was not visited. Memory: one parsed copy of the vault, replacing the
- * fresh copy each call used to allocate.
+ * Data structure: a `Map` from absolute path to `{ stamp, readAt, doc, pass }`, and
+ * a `Map` from device and inode to that path so a fresh read under another spelling
+ * finds its entry in O(1).
+ * Cost per stamp pass: O(F) readdir and stat for F files, plus O(bytes of changed or
+ * racy files) to read and parse; a fresh pass is O(bytes of the vault). Deleted files
+ * are swept in O(F) only when the count says some entry was not visited. Memory: one
+ * parsed copy of the vault, replacing the fresh copy each call used to allocate.
  *
  * @param {string} rootPath
  * @param {{ walk?: (root: string) => string[], stat?: (path: string) => import('node:fs').Stats | null, readSnapshot?: (path: string) => { raw: string, stats: import('node:fs').Stats }, now?: () => number }} [io]
@@ -252,6 +266,8 @@ export function createVaultDocCache(rootPath, io = {}) {
   nextCacheId += 1;
   /** @type {Map<string, { stamp: ReturnType<typeof stampOf>, readAt: number, doc: object, pass: number }>} */
   const entries = new Map();
+  /** @type {Map<string, string>} device and inode → path in `entries` */
+  const pathByIdentity = new Map();
   let generation = 0;
   let pass = 0;
   let reads = 0;
@@ -274,14 +290,33 @@ export function createVaultDocCache(rootPath, io = {}) {
     return { stamp: stampOf(snapshot.stats), readAt, snapshot };
   }
 
-  /** @returns {VaultDoc[]} */
-  function load() {
+  /**
+   * @param {{ fresh?: boolean }} [options]
+   * @returns {VaultDoc[]}
+   */
+  function load({ fresh: readEveryFile = false } = {}) {
     pass += 1;
     const files = walk(rootPath);
     /** @type {VaultDoc[]} */
     const docs = [];
     let visited = 0;
     for (const filePath of files) {
+      if (readEveryFile) {
+        const fresh = readEntry(filePath);
+        if (!fresh) continue;
+        const entry = entries.get(filePath);
+        // Equal bytes alone are not enough: the doc carries `mtime`, which agents pass
+        // back as `expected_mtime` and the graph reports as `maxMtime`.
+        if (entry && entry.doc.raw === fresh.snapshot.raw && sameFileSnapshot(entry.stamp, fresh.stamp)) {
+          entry.readAt = fresh.readAt;
+          entry.pass = pass;
+          docs.push(entry.doc);
+        } else {
+          docs.push(store(filePath, fresh));
+        }
+        visited += 1;
+        continue;
+      }
       const current = stat(filePath);
       if (!current || !current.isFile()) continue;
       const entry = entries.get(filePath);
@@ -313,7 +348,7 @@ export function createVaultDocCache(rootPath, io = {}) {
     }
     if (visited !== entries.size) {
       for (const [filePath, entry] of entries) {
-        if (entry.pass !== pass) entries.delete(filePath);
+        if (entry.pass !== pass) remove(filePath, entry);
       }
       generation += 1;
     }
@@ -325,9 +360,27 @@ export function createVaultDocCache(rootPath, io = {}) {
   // throws halfway must not leave replaced entries under the old version.
   function store(filePath, fresh) {
     const doc = deepFreeze(docFromSnapshot(rootPath, filePath, fresh.snapshot));
-    entries.set(filePath, { stamp: fresh.stamp, readAt: fresh.readAt, doc, pass });
+    const entry = { stamp: fresh.stamp, readAt: fresh.readAt, doc, pass };
+    index(filePath, entries.get(filePath), fresh.stamp);
+    entries.set(filePath, entry);
     generation += 1;
     return doc;
+  }
+
+  /** Points the identity index at `filePath` for `stamp`, and gives `entry` that stamp. */
+  function index(filePath, entry, stamp) {
+    if (entry) {
+      const previous = identityOf(entry.stamp);
+      if (pathByIdentity.get(previous) === filePath) pathByIdentity.delete(previous);
+      entry.stamp = stamp;
+    }
+    pathByIdentity.set(identityOf(stamp), filePath);
+  }
+
+  function remove(filePath, entry) {
+    entries.delete(filePath);
+    const identity = identityOf(entry.stamp);
+    if (pathByIdentity.get(identity) === filePath) pathByIdentity.delete(identity);
   }
 
   /**
@@ -335,12 +388,19 @@ export function createVaultDocCache(rootPath, io = {}) {
    * `raw` is omitted). On a filesystem whose stamp cannot show an edit (FAT/exFAT
    * keep no ctime; a tool can restore mtime), a write path's fresh read is the
    * only witness, and without this the stale parse would outlive every retry.
+   * The entry is found by `filePath` as spelled, else by the file's device and inode
+   * (from `stats`, or a stat of `filePath`). The version need not move here: the next
+   * load reads the dropped file again, and storing it moves the version.
    */
-  function forget(filePath, raw) {
-    const entry = entries.get(filePath);
+  function forget(filePath, raw, stats) {
+    let key = entries.has(filePath) ? filePath : undefined;
+    if (key === undefined) {
+      const current = stats ?? stat(filePath);
+      if (current) key = pathByIdentity.get(identityOf(current));
+    }
+    const entry = key === undefined ? undefined : entries.get(key);
     if (!entry || (raw !== undefined && entry.doc.raw === raw)) return false;
-    entries.delete(filePath);
-    generation += 1;
+    remove(key, entry);
     return true;
   }
 
@@ -374,10 +434,10 @@ function vaultCacheFor(rootPath) {
  * `raw` omitted, bytes other than a cached doc expected), so a differing entry is
  * read again on the next load. O(number of cached vaults), at most two.
  */
-export function forgetCachedFile(filePath, raw) {
+export function forgetCachedFile(filePath, raw, stats) {
   const key = resolve(filePath);
   let forgotten = false;
-  for (const cache of vaultCaches.values()) forgotten = cache.forget(key, raw) || forgotten;
+  for (const cache of vaultCaches.values()) forgotten = cache.forget(key, raw, stats) || forgotten;
   return forgotten;
 }
 
@@ -407,16 +467,19 @@ function copyWithVersion(docs) {
 }
 
 /**
- * Every doc in the vault, in walk order; the caller filters. Each call runs one stamp
- * pass and re-reads only files that changed (see {@link createVaultDocCache}), or,
- * inside {@link withVaultReadSnapshot}, reuses that call's pass. The array is new per
- * call; the docs in it are shared and frozen. A write must still read its target
- * with {@link readDoc}.
+ * Every doc in the vault, in path order; the caller filters. Outside a read scope
+ * every file is read and its bytes compared (see {@link createVaultDocCache}):
+ * write tools decide whether to delete, rename or merge from what other files say,
+ * and a stamp that cannot show an edit (FAT/exFAT keep no ctime) must not let a
+ * stale parse make that decision. Inside {@link withVaultReadSnapshot}, which the
+ * server opens only for read-only tools, the call runs one stamp pass and shares it.
+ * The array is new per call; the docs in it are shared and frozen. A write must
+ * still read its target with {@link readDoc}.
  * @returns {VaultDoc[]}
  */
 export function loadVaultDocs(rootPath) {
   const scope = readSnapshotScope.getStore();
-  if (!scope?.open) return vaultCacheFor(rootPath).load();
+  if (!scope?.open) return vaultCacheFor(rootPath).load({ fresh: true });
   const key = resolve(rootPath);
   let docs = scope.docsByRoot.get(key);
   if (!docs) {

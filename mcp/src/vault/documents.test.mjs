@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs, {
   appendFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -289,36 +290,161 @@ function freezeStampOf(t, path) {
   t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
 }
 
+/** What a read-only tool sees: the server runs those inside a read scope. */
+const served = (root) => withVaultReadSnapshot(async () => loadVaultDocs(root));
+
 describe('a stamp that cannot show an edit (FAT/exFAT)', () => {
-  it('stays stale only until a write path reads the file fresh', (t) => {
+  it('a read tool sees the stale parse only until a write path reads the file fresh', async (t) => {
     const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
     const path = join(root, 'capabilities/a.md');
     freezeStampOf(t, path);
-    const before = loadVaultDocs(root);
+    await served(root);
     writeFileSync(path, readFileSync(path, 'utf8').replace('AAAA', 'BBBB'));
-    assert.equal(titles(loadVaultDocs(root))['capabilities/a'], 'AAAA', 'the simulated volume hides the edit');
+    assert.equal(titles(await served(root))['capabilities/a'], 'AAAA', 'the simulated volume hides the edit');
     assert.equal(readDoc(root, path).frontmatter.title, 'BBBB');
-    const after = loadVaultDocs(root);
-    assert.equal(titles(after)['capabilities/a'], 'BBBB');
-    assert.notEqual(vaultDocsVersion(after), vaultDocsVersion(before));
+    assert.equal(titles(await served(root))['capabilities/a'], 'BBBB');
     patchFrontmatter(root, 'capabilities/a', { title: 'CCCC' });
     assert.equal(readDoc(root, path).frontmatter.title, 'CCCC');
   });
 
-  it('a refused plan drops the stale parse, so the retry plans from the file', (t) => {
+  it('outside a read tool every load compares bytes, so a write decides from the file', async (t) => {
     const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
     const path = join(root, 'capabilities/a.md');
     freezeStampOf(t, path);
-    loadVaultDocs(root);
+    const before = await served(root);
+    writeFileSync(path, readFileSync(path, 'utf8').replace('AAAA', 'BBBB'));
+    const fresh = loadVaultDocs(root);
+    assert.equal(titles(fresh)['capabilities/a'], 'BBBB');
+    assert.notEqual(vaultDocsVersion(fresh), vaultDocsVersion(before));
+    assert.equal(titles(await served(root))['capabilities/a'], 'BBBB', 'the fresh pass also repairs the cache');
+  });
+
+  it('a fresh pass hands out the new mtime when only the time moved', (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
+    const path = join(root, 'capabilities/a.md');
+    utimesSync(path, WHOLE_SECOND, WHOLE_SECOND);
+    const before = loadVaultDocs(root);
+    utimesSync(path, WHOLE_SECOND + 60, WHOLE_SECOND + 60);
+    const after = loadVaultDocs(root);
+    assert.equal(after[0].mtime, (WHOLE_SECOND + 60) * 1000, 'expected_mtime must match the file');
+    assert.notEqual(vaultDocsVersion(after), vaultDocsVersion(before));
+  });
+
+  it('a refused plan drops the stale parse, so the retry plans from the file', async (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
+    const path = join(root, 'capabilities/a.md');
+    freezeStampOf(t, path);
+    await served(root);
     writeFileSync(path, readFileSync(path, 'utf8').replaceAll('AAAA', 'BBBB'));
     const plan = (doc) => [{ op: 'write', path, content: doc.raw.replace('The ', 'Then '), expectedMtime: doc.mtime, expectedRaw: doc.raw }];
-    const stale = loadVaultDocs(root).find((doc) => doc.slug === 'capabilities/a');
+    const stale = (await served(root)).find((doc) => doc.slug === 'capabilities/a');
     assert.equal(stale.frontmatter.title, 'AAAA');
     assert.throws(() => applyAllOrNothing(plan(stale), { requireRevisions: true }), /changed on disk/);
-    const fresh = loadVaultDocs(root).find((doc) => doc.slug === 'capabilities/a');
+    const fresh = (await served(root)).find((doc) => doc.slug === 'capabilities/a');
     assert.equal(fresh.frontmatter.title, 'BBBB');
     applyAllOrNothing(plan(fresh), { requireRevisions: true });
     assert.match(readFileSync(path, 'utf8'), /title: BBBB[\s\S]*Then BBBB/);
+  });
+
+  // A slug resolves to NFC and to the case the agent typed; the walk returns the
+  // name as stored. Only volumes that resolve both spellings to one file apply.
+  for (const [label, stored, typed] of [
+    ['an NFD Hangul name', '결제'.normalize('NFD'), '결제'],
+    ['a name in another case', 'case', 'CASE'],
+  ]) {
+    it(`a fresh read through ${label} drops the entry the walk stored`, async (t) => {
+      const root = makeVault(t);
+      const path = join(root, 'capabilities', `${stored}.md`);
+      writeFileSync(path, nodeText('AAAA'));
+      const typedPath = join(root, 'capabilities', `${typed}.md`);
+      if (!existsSync(typedPath) || statSync(typedPath).ino !== statSync(path).ino) {
+        t.skip('this volume keeps the two spellings apart');
+        return;
+      }
+      freezeStampOf(t, path);
+      await served(root);
+      writeFileSync(path, readFileSync(path, 'utf8').replaceAll('AAAA', 'BBBB'));
+      assert.equal((await served(root)).find((doc) => doc.raw.includes('AAAA'))?.frontmatter.title, 'AAAA');
+      assert.equal(readDoc(root, typedPath).frontmatter.title, 'BBBB');
+      assert.ok((await served(root)).every((doc) => !doc.raw.includes('AAAA')));
+    });
+  }
+
+  it('forget finds the entry by device and inode when the path is spelled differently', (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('AAAA') });
+    const path = join(root, 'capabilities/a.md');
+    const cache = createVaultDocCache(root, { now: later });
+    cache.load();
+    const readsBefore = cache.stats().reads;
+    assert.equal(cache.forget(join(root, 'Capabilities/A-other-spelling.md'), 'other bytes', statSync(path)), true);
+    cache.load();
+    assert.equal(cache.stats().reads, readsBefore + 1, 'the dropped file is read again');
+    assert.equal(cache.forget(path, readFileSync(path, 'utf8')), false, 'equal bytes keep the entry');
+  });
+});
+
+describe('a write decides from other files as they are on disk', () => {
+  /**
+   * Plants `depends_on: [capabilities/target]` in another node with a same-size
+   * edit the volume's stamp cannot show, after a read tool has cached the vault,
+   * then runs one lifecycle tool in a fresh process and reports what it did.
+   */
+  function plantedBacklinkRun(t, call) {
+    const root = makeVault(t);
+    const pad = 'note: xxxxxxxxxxxxxxxxxxxxxxxxxxx\n';
+    const relation = 'depends_on: [capabilities/target]\n';
+    assert.equal(pad.length, relation.length);
+    const withExtra = (title, extra) => nodeText(title).replace('kind: capability\n', `kind: capability\n${extra}`);
+    writeFileSync(join(root, 'capabilities/target.md'), nodeText('Target'));
+    writeFileSync(join(root, 'capabilities/into.md'), nodeText('Into'));
+    writeFileSync(join(root, 'capabilities/referrer.md'), withExtra('Referrer', pad));
+    const modules = Object.fromEntries(['./documents.mjs', './graph-queries.mjs', '../tools/lifecycle.mjs']
+      .map((path) => [path, new URL(path, import.meta.url).href]));
+    const script = `
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      const root = process.env.OATLAS_VAULT;
+      const referrer = root + '/capabilities/referrer.md';
+      const first = fs.statSync(referrer);
+      const frozen = Object.assign(Object.create(Object.getPrototypeOf(first)), first, { mtimeMs: 1e12, ctimeMs: 1e12 });
+      const same = (stats) => stats && stats.ino === first.ino && stats.dev === first.dev;
+      for (const name of ['statSync', 'fstatSync']) {
+        const original = fs[name];
+        fs[name] = (...args) => { const stats = original(...args); return same(stats) ? frozen : stats; };
+      }
+      syncBuiltinESMExports();
+      const { withVaultReadSnapshot } = await import(${JSON.stringify(modules['./documents.mjs'])});
+      const { findBacklinks } = await import(${JSON.stringify(modules['./graph-queries.mjs'])});
+      const lifecycle = await import(${JSON.stringify(modules['../tools/lifecycle.mjs'])});
+      const primed = await withVaultReadSnapshot(async () => findBacklinks(root, 'capabilities/target').length);
+      fs.writeFileSync(referrer, fs.readFileSync(referrer, 'utf8').replace(${JSON.stringify(pad)}, ${JSON.stringify(relation)}));
+      let outcome;
+      try { lifecycle.${call}; outcome = 'done'; } catch (error) { outcome = 'refused: ' + error.message.split('\\n')[0]; }
+      console.log(JSON.stringify({ primed, outcome, referrer: fs.readFileSync(referrer, 'utf8'),
+        targetExists: fs.existsSync(root + '/capabilities/target.md') }));
+    `;
+    return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+  }
+
+  it('delete_concept refuses a target another file now references', (t) => {
+    const run = plantedBacklinkRun(t, "deleteConcept({ slug: 'capabilities/target', confirm: true })");
+    assert.equal(run.primed, 0);
+    assert.match(run.outcome, /^refused/);
+    assert.equal(run.targetExists, true);
+  });
+
+  it('rename_concept rewrites a reference another file just gained', (t) => {
+    const run = plantedBacklinkRun(t, "renameConcept({ oldSlug: 'capabilities/target', newSlug: 'capabilities/renamed', confirm: true })");
+    assert.equal(run.outcome, 'done');
+    assert.match(run.referrer, /depends_on: \[capabilities\/renamed\]/);
+  });
+
+  it('merge_concepts rewrites a reference another file just gained', (t) => {
+    const run = plantedBacklinkRun(t, "mergeConcepts({ fromSlug: 'capabilities/target', intoSlug: 'capabilities/into', confirm: true })");
+    assert.equal(run.outcome, 'done');
+    assert.match(run.referrer, /depends_on: \[capabilities\/into\]/);
   });
 });
 
