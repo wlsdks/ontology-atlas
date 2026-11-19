@@ -41,118 +41,44 @@ async function openRelationEditorFromDetail(page: import('@playwright/test').Pag
   await detailPanel.getByTestId('map-detail-panel-action-edit').click();
 }
 
-async function chooseOption(
-  page: import('@playwright/test').Page,
-  triggerTestId: string,
-  optionName: string,
-) {
-  await page.getByTestId(triggerTestId).click();
-  await page.getByRole('option', { name: optionName }).click();
+async function chooseRelatedTaxReport(page: import('@playwright/test').Page) {
+  await page.getByTestId('meaning-editor-relation-relates').click();
+  const target = page.getByTestId('meaning-editor-target');
+  await target.click();
+  await target.fill('세금');
+  await page.getByTestId('meaning-editor-target-option').filter({ hasText: '세금 신고 자료' }).click();
 }
 
-test('map relation editor previews, reviews, and writes one relation without leaving the map', async ({ page }) => {
+test('map relation editor previews one relation and writes it at once without leaving the map', async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   await mountFixture(page);
   await openCheckoutEditor(page);
-  await chooseOption(page, 'meaning-editor-relation', '관련됨 (서로 필요하지는 않음)');
-  await chooseOption(page, 'meaning-editor-target', '세금 신고 자료');
-  await page.getByTestId('meaning-editor-why').fill('결제 승인과 세금 신고의 의미 경계를 함께 검토한다.');
+  await chooseRelatedTaxReport(page);
+  const why = page.getByTestId('meaning-editor-why');
+  await why.fill('결제 승인과 세금 신고의 의미 경계를 함께 검토한다.');
   await expect(page.getByTestId('ontology-map')).toHaveAttribute(
     'data-preview-edge',
     'capability:checkout>capability:tax-report:related_to',
   );
   await expect(page.getByTestId('ontology-map')).toHaveAttribute('data-preview-phase', 'draft');
 
-  await page.getByTestId('meaning-editor-review').click();
-  const review = page.getByTestId('meaning-editor-change-review');
-  await expect(review).toBeVisible();
-  await expect(review).toContainText('capabilities/checkout');
-  await expect(review).toContainText('capabilities/tax-report');
-  await expect(review).toContainText('related_to');
+  const panelFit = await page.getByTestId('meaning-editor-panel').evaluate((panel) => ({
+    width: panel.getBoundingClientRect().width,
+    overflow: panel.scrollWidth - panel.clientWidth,
+  }));
+  expect(panelFit.width).toBeCloseTo(352, 0);
+  expect(panelFit.overflow).toBeLessThanOrEqual(1);
 
-  const reviewFit = await review.evaluate((element) => {
-    const panel = element.closest<HTMLElement>('[data-testid="meaning-editor-panel"]');
-    const rows = [...element.querySelectorAll<HTMLElement>('[data-testid="ontology-change-review-field-row"]')];
-    const keys = [...element.querySelectorAll<HTMLElement>('[data-testid="ontology-change-review-field-key"]')];
-    return {
-      panelWidth: panel?.getBoundingClientRect().width ?? 0,
-      panelOverflow: panel ? panel.scrollWidth - panel.clientWidth : Number.POSITIVE_INFINITY,
-      reviewOverflow: element.scrollWidth - element.clientWidth,
-      rowCount: rows.length,
-      rowOverflows: rows.map((row) => row.scrollWidth - row.clientWidth),
-      keyWidths: keys.map((key) => key.getBoundingClientRect().width),
-      keyWrap: keys.map((key) => {
-        const style = getComputedStyle(key);
-        return { overflowWrap: style.overflowWrap, wordBreak: style.wordBreak };
-      }),
-    };
-  });
-  expect(reviewFit.panelWidth).toBeCloseTo(352, 0);
-  expect(reviewFit.rowCount, 'review fixture must render changed frontmatter fields').toBeGreaterThan(0);
-  expect(reviewFit.panelOverflow).toBeLessThanOrEqual(1);
-  expect(reviewFit.reviewOverflow).toBeLessThanOrEqual(1);
-  expect(reviewFit.rowOverflows.every((overflow) => overflow <= 1)).toBe(true);
-  expect(reviewFit.keyWidths.every((width) => Math.abs(width - 96) <= 1)).toBe(true);
-  expect(
-    reviewFit.keyWrap.every(
-      ({ overflowWrap, wordBreak }) => overflowWrap === 'break-word' && wordBreak !== 'break-all',
-    ),
-  ).toBe(true);
-
-  /*
-   * Every label starts at the same x, every value starts at the same x,
-   * and neither column is mostly empty.
-   */
-  const relationFit = await review.evaluate((element) => {
-    const list = element.querySelector<HTMLElement>('dl');
-    if (!list) return null;
-    const labels = [...list.querySelectorAll<HTMLElement>('dt')];
-    const values = [...list.querySelectorAll<HTMLElement>('dd')];
-    const box = (el: HTMLElement) => el.getBoundingClientRect();
-    return {
-      labelCount: labels.length,
-      labelLefts: labels.map((el) => Math.round(box(el).left)),
-      valueLefts: values.map((el) => Math.round(box(el).left)),
-      /*
-       * ⚠️ **The text, not the cell.** A grid item fills its column, so `dt.getBoundingClientRect()`
-       * returns the column width whatever the label says — comparing the two measures a thing
-       * against itself. A probe caught exactly that: restoring the hardcoded 4.5rem left this
-       * check green. A Range around the text node measures what is actually drawn.
-       */
-      widestLabelText: Math.max(
-        ...labels.map((el) => {
-          const range = document.createRange();
-          range.selectNodeContents(el);
-          return Math.round(range.getBoundingClientRect().width);
-        }),
-      ),
-      columnWidth: labels.length ? Math.round(box(labels[0]).width) : 0,
-    };
-  });
-  /*
-   * ⚠️ Not `if (relationFit)`. A silent skip would let this whole measurement disappear the day the
-   * markup changes, and a gate that can vanish without saying so is not a gate.
-   */
-  expect(relationFit, 'the review must render a relation detail list to measure').not.toBeNull();
-  {
-    expect(relationFit!.labelCount, 'relation detail must render its labels').toBeGreaterThan(1);
-    expect(new Set(relationFit!.labelLefts).size, 'labels share one column').toBe(1);
-    expect(new Set(relationFit!.valueLefts).size, 'values share one column').toBe(1);
-    /*
-     * The column is sized by its widest label, so the slack inside it is the difference between
-     * the labels themselves — never the 50px of dead space a hardcoded 4.5rem left behind.
-     */
-    expect(relationFit!.columnWidth - relationFit!.widestLabelText).toBeLessThanOrEqual(1);
-  }
-
-  await page.getByTestId('meaning-editor-apply').click();
-  await expect(page.getByTestId('ontology-map')).toHaveAttribute(
-    'data-preview-phase',
-    'committing',
+  await why.press('Enter');
+  const written = page.getByTestId('meaning-editor-relation-row').filter({ hasText: '세금 신고 자료' });
+  await expect(written, 'the written relation is listed once the folder rereads it').toHaveAttribute(
+    'data-relation',
+    'relates',
+    { timeout: 30_000 },
   );
-  await expect(page.getByTestId('meaning-editor-panel')).toHaveCount(0, { timeout: 30_000 });
-  await expect(page).not.toHaveURL(/workbench=edit/);
+  await expect(page.getByRole('button', { name: '되돌리기' })).toBeVisible();
+  await expect(page.getByTestId('meaning-editor-panel')).toBeVisible();
   await expect(page.getByTestId('ontology-map')).not.toHaveAttribute('data-preview-edge');
 });
 
@@ -171,8 +97,7 @@ test('contextual editor stays inside the responsive workbench and every control 
   await expect(page.getByTestId('map-detail-panel')).toBeVisible({ timeout: 15_000 });
   await openRelationEditorFromDetail(page);
   await expect(page.getByTestId('meaning-editor-panel')).toBeVisible({ timeout: 15_000 });
-  await chooseOption(page, 'meaning-editor-relation', '관련됨 (서로 필요하지는 않음)');
-  await chooseOption(page, 'meaning-editor-target', '세금 신고 자료');
+  await chooseRelatedTaxReport(page);
   const revealedByPreview = await page.evaluate(() =>
     window.__atlasMap?.nodes(),
   ).then((nodes) => nodes?.find((node) => node.id === 'capability:tax-report'));

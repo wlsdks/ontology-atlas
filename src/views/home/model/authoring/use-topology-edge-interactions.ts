@@ -42,7 +42,9 @@ export function useTopologyEdgeInteractions({ insight, selectedNode, createNodeO
     const ago = declaredIso ? computeUpdatedAgo(declaredIso, updatedAgoNowMs) : null;
     const meaningRelation = meaningEditRelationForEdgeType(selectedEdge.relationType);
     const authoredByFrom = edgeAuthoredByFromNode(selectedEdge.declaredBySlug, from.evidenceIds[0]);
-    const contextualEditTarget = meaningRelation && authoredByFrom ? resolveTopologyNodeEditTarget(from, manifest?.docs ?? []) : null;
+    // A line written in the other end's document is edited there, not refused.
+    const declaring = authoredByFrom ? from : edgeAuthoredByFromNode(selectedEdge.declaredBySlug, to.evidenceIds[0]) ? to : null;
+    const contextualEditTarget = meaningRelation && declaring ? resolveTopologyNodeEditTarget(declaring, manifest?.docs ?? []) : null;
     return {
       sentence: t(`edgeSentence.${sentenceKey}`, edgeSentenceValues(sentenceKey, fromDisplay, toDisplay)),
       typeLabel: relationVocabulary(selectedEdge.relationType, relationRegister),
@@ -52,6 +54,7 @@ export function useTopologyEdgeInteractions({ insight, selectedNode, createNodeO
       meaningEditHref: meaningRelation && authoredByFrom ? buildTopologyMeaningEditorEdgeHref(from.id, to.id, meaningRelation) : null,
       meaningRelation,
       contextualEditable: contextualEditTarget !== null,
+      declaringId: contextualEditTarget && declaring ? declaring.id : null,
       why: edgeRecord?.label?.trim() || null,
     };
   }, [selectedEdge, insight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister, manifest]);

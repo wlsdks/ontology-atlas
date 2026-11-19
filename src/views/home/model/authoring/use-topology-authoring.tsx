@@ -2,14 +2,13 @@ import type { useTopologyPreferences } from "../use-topology-preferences";
 import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model";
 
 import { buildNewNodeDoc } from "@/entities/docs-vault";
-import { type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyRelationEditPlan, parseOntologyMeaningEditParam } from "@/entities/knowledge-graph";
+import { buildOntologyRelationRemovalPlan, edgeAuthoredByFromNode, type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyRelationEditPlan, parseOntologyMeaningEditParam } from "@/entities/knowledge-graph";
 import { useAgentServer, VaultConflictError } from "@/entities/vault-session";
 import type { AcpTurnActivity } from "@/features/acp-session";
-import { type MeaningEditorPreview } from "@/features/ontology-meaning-editor";
+import { type MeaningEditorPreview, type MeaningEditorRelationRow, type MeaningEditorWrite } from "@/features/ontology-meaning-editor";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/vault-document/replace-vault-body";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
-import { MOTION } from "@/shared/motion";
 import { useToast } from "@/shared/ui";
 import { type AcpOntologyRelationPreview } from "@/widgets/acp-chat-panel";
 import { type IndexAddConcept } from "@/widgets/topology-index-panel";
@@ -29,7 +28,7 @@ interface Options {
   meaningEditorIntent: boolean;
   meaningEditParam: string | null;
   toast: ReturnType<typeof useToast>;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "reducedMotion" | "tMeaningEditor" | "t" | "relationVocabulary" | "relationRegister" | "activeLocale">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "tMeaningEditor" | "t" | "relationVocabulary" | "relationRegister" | "activeLocale">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
     | "selectedOntologyNode"
@@ -43,7 +42,8 @@ interface Options {
 }
 export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences }: Options) {
   const { selectedOntologyNode, vault, ontologyInsight, setNeedsVaultReason, recentChanges, docFreshnessIndex, updatedAgoNowMs } = topologyVaultReadModel;
-  const { reducedMotion, tMeaningEditor, t, relationVocabulary, relationRegister, activeLocale } = topologyPreferences;
+  const { tMeaningEditor, t, relationVocabulary, relationRegister, activeLocale } = topologyPreferences;
+  const { runManualWrite } = useManualWriteUndo({ vault, toast, t });
 
   const nodeEditTarget = useMemo(
     () =>
@@ -83,19 +83,59 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       frontmatter: nodeEditTarget.frontmatter,
     };
   }, [nodeEditTarget, selectedOntologyNode]);
-  const meaningEditorCandidates = useMemo(
-    () =>
-      (ontologyInsight?.nodes ?? [])
-        .filter((node) => ["project", "domain", "capability", "element"].includes(node.kind))
-        .map((node) => ({
-          id: node.id,
-          slug: resolveNodeVaultRef(node),
-          title: node.display ?? node.title,
-          kind: node.kind,
-        }))
-        .sort((a, b) => a.title.localeCompare(b.title)),
-    [ontologyInsight],
-  );
+  const meaningEditorCandidates = useMemo(() => {
+    const nodes = ontologyInsight?.nodes ?? [];
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    // The domain a node sits in, read from containment edges: an element through its capability.
+    const container = new Map<string, string>();
+    for (const edge of ontologyInsight?.edges ?? []) {
+      if (edge.type === "contains" && !container.has(edge.to)) container.set(edge.to, edge.from);
+    }
+    const domainTitleOf = (id: string): string | null => {
+      let current = container.get(id);
+      for (let hop = 0; current && hop < 3; hop += 1) {
+        const node = byId.get(current);
+        if (node?.kind === "domain") return node.display ?? node.title;
+        current = container.get(current);
+      }
+      return null;
+    };
+    return nodes
+      .filter((node) => ["project", "domain", "capability", "element"].includes(node.kind))
+      .map((node) => ({
+        id: node.id,
+        slug: resolveNodeVaultRef(node),
+        title: node.display ?? node.title,
+        kind: node.kind,
+        names: [node.title, ...Object.values(node.displayLocales ?? {})],
+        domainTitle: node.kind === "capability" || node.kind === "element" ? domainTitleOf(node.id) : null,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [ontologyInsight]);
+  /** The relations the editor lists: those the open document declares, and those other documents declare toward it. */
+  const meaningEditorRelations = useMemo<MeaningEditorRelationRow[]>(() => {
+    if (!meaningEditorSource || !ontologyInsight) return [];
+    const byId = new Map(ontologyInsight.nodes.map((node) => [node.id, node]));
+    const rows: MeaningEditorRelationRow[] = [];
+    for (const edge of ontologyInsight.edges) {
+      const relation = meaningEditRelationForEdgeType(edge.type);
+      if (!relation) continue;
+      const outgoing = edge.from === meaningEditorSource.id;
+      if (!outgoing && edge.to !== meaningEditorSource.id) continue;
+      const declarer = byId.get(edge.from);
+      if (!declarer || !edgeAuthoredByFromNode(edge.evidenceIds[0], declarer.evidenceIds[0])) continue;
+      const other = byId.get(outgoing ? edge.to : edge.from);
+      if (!other) continue;
+      rows.push({
+        relation,
+        direction: outgoing ? "out" : "in",
+        otherId: other.id,
+        otherTitle: other.display ?? other.title,
+        why: edge.label?.trim() || null,
+      });
+    }
+    return rows;
+  }, [meaningEditorSource, ontologyInsight]);
   const openMeaningEditor = useCallback(
     ({
       sourceId,
@@ -173,26 +213,50 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       cancelled = true;
     };
   }, [meaningEditParam, meaningEditorIntent, meaningEditorSource, ontologyInsight, selectedOntologyNode, vault.status, closeMeaningEditor, setNeedsVaultReason]);
+  /** Every relation write lands at once and answers with a toast that offers Undo. */
   const applyMeaningEditor = useCallback(
-    async (plan: OntologyRelationEditPlan) => {
-      if (!nodeEditTarget || !meaningEditorState) throw new Error("missing edit target");
+    async (plan: OntologyRelationEditPlan, what: MeaningEditorWrite, targetTitle: string) => {
+      if (!nodeEditTarget || !meaningEditorSource) throw new Error("missing edit target");
       try {
-        if (!reducedMotion) {
-          await new Promise<void>((resolve) => {
-            window.setTimeout(resolve, MOTION.settle.duration * 1000);
-          });
-        }
-        await vault.updateFrontmatter(nodeEditTarget.vaultSlug, plan.updates, {
-          expectedMtime: nodeEditTarget.mtime,
+        await runManualWrite({
+          slug: nodeEditTarget.vaultSlug,
+          write: () => vault.updateFrontmatter(nodeEditTarget.vaultSlug, plan.updates, { expectedMtime: nodeEditTarget.mtime }),
+          message: tMeaningEditor(`written.${what}`, { source: meaningEditorSource.title, target: targetTitle }),
         });
-        toast.show(tMeaningEditor("saved"), "success");
-        closeMeaningEditor();
+        setMeaningPreview(null);
+        setRouteState((current) => ({ ...current, meaningEditParam: null }));
       } catch (error) {
         toast.show(tMeaningEditor("saveError"), "error");
         throw error;
       }
     },
-    [closeMeaningEditor, meaningEditorState, nodeEditTarget, reducedMotion, tMeaningEditor, toast, vault],
+    [meaningEditorSource, nodeEditTarget, runManualWrite, setRouteState, tMeaningEditor, toast, vault],
+  );
+  /** An incoming relation lives in the other document, so its removal writes that document. */
+  const removeIncomingRelation = useCallback(
+    async (row: MeaningEditorRelationRow) => {
+      const other = ontologyInsight?.nodes.find((node) => node.id === row.otherId);
+      const target = other ? resolveTopologyNodeEditTarget(other, vault.manifest?.docs ?? []) : null;
+      if (!target || !meaningEditorSource || !selectedOntologyNode) throw new Error("missing edit target");
+      const plan = buildOntologyRelationRemovalPlan({
+        sourceSlug: target.vaultSlug,
+        targetSlug: resolveNodeVaultRef(selectedOntologyNode),
+        targetKind: selectedOntologyNode.kind,
+        relation: row.relation,
+        frontmatter: target.frontmatter,
+      });
+      try {
+        await runManualWrite({
+          slug: target.vaultSlug,
+          write: () => vault.updateFrontmatter(target.vaultSlug, plan.updates, { expectedMtime: target.mtime }),
+          message: tMeaningEditor("written.removed", { source: row.otherTitle, target: meaningEditorSource.title }),
+        });
+      } catch (error) {
+        toast.show(tMeaningEditor("saveError"), "error");
+        throw error;
+      }
+    },
+    [meaningEditorSource, ontologyInsight, runManualWrite, selectedOntologyNode, tMeaningEditor, toast, vault],
   );
   // The fresh heartbeat's declared target, drawn on the map. Fresh only (`hasFreshHeartbeat`),
   // since a stale focus misleads; no slug, match or fresh heartbeat draws nothing.
@@ -265,7 +329,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       );
     },
   });
-  const { runManualWrite } = useManualWriteUndo({ vault, toast, t });
   /**
    * Writes the new concept at once. Only the on-screen create controls reach this path, so it
    * stamps `created_by: human`. Returns whether the file was written.
@@ -420,7 +483,7 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     runManualWrite, addConceptInGroup,
     agentAttributedRecentNodeId, agentConnect, mapRevealToken, handleHoverEdge, mapRelationPreview,
     handleHoverCluster, openMeaningEditor, heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview,
-    applyMeaningEditor, closeMeaningEditor, hoverEdgeCardModel, clusterHoverCardModel, heldEdgePanelModel,
+    applyMeaningEditor, closeMeaningEditor, meaningEditorRelations, removeIncomingRelation, hoverEdgeCardModel, clusterHoverCardModel, heldEdgePanelModel,
     edgePanelModel, setAcpRelationPreview
   } as const;
 }

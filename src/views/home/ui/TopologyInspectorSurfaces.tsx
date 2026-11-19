@@ -110,6 +110,8 @@ interface TopologyInspectorSurfacesProps {
     | "setMeaningPreview"
     | "applyMeaningEditor"
     | "closeMeaningEditor"
+    | "meaningEditorRelations"
+    | "removeIncomingRelation"
     | "hoverEdgeCardModel"
     | "selectedEdge"
     | "clusterHoverCardModel"
@@ -141,7 +143,7 @@ export function TopologyInspectorSurfaces({
   const {
     createNodeOpen, nodeEditTarget, setMeaningEditorState, meaningEditorSource, openMeaningEditor, canCreateNode,
     heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview, applyMeaningEditor,
-    closeMeaningEditor, hoverEdgeCardModel, selectedEdge, clusterHoverCardModel, heldEdgePanelModel,
+    closeMeaningEditor, meaningEditorRelations, removeIncomingRelation, hoverEdgeCardModel, selectedEdge, clusterHoverCardModel, heldEdgePanelModel,
     edgePanelOpen, setSelectedEdge, createNode, closeCreateNode, createNodeDomainOptions, createNodeExistingConcepts
   } = topologyAuthoring;
   const { handleSelectImpactMode } = topologyKeyboard;
@@ -426,11 +428,16 @@ export function TopologyInspectorSurfaces({
               open={meaningEditorOpen}
               source={meaningEditorSource}
               candidates={meaningEditorCandidates}
+              relations={meaningEditorRelations}
               initialRelation={heldMeaningEditorState.initialRelation}
               initialTargetId={heldMeaningEditorState.initialTargetId}
               initialWhy={heldMeaningEditorState.initialWhy}
               onPreview={setMeaningPreview}
               onApply={applyMeaningEditor}
+              onEditIncoming={(row) =>
+                openMeaningEditor({ sourceId: row.otherId, relation: row.relation, targetId: meaningEditorSource.id })
+              }
+              onRemoveIncoming={removeIncomingRelation}
               onClose={closeMeaningEditor}
               onExited={() => {
                 if (!panelOpen) setNodePanelMounted(false);
@@ -487,12 +494,17 @@ export function TopologyInspectorSurfaces({
           onEditRelation={
             heldEdgePanelModel.meaningRelation
               ? () => {
-                if (heldEdgePanelModel.contextualEditable) {
+                if (heldEdgePanelModel.contextualEditable && heldEdgePanelModel.declaringId === heldEdgePanelModel.fromId) {
                   openMeaningEditor({
                     sourceId: heldEdgePanelModel.fromId,
                     relation: heldEdgePanelModel.meaningRelation!,
                     targetId: heldEdgePanelModel.toId,
                   });
+                } else if (heldEdgePanelModel.contextualEditable && heldEdgePanelModel.declaringId) {
+                  // Declared by the other end's document: open that document's relations.
+                  openMeaningEditor({ sourceId: heldEdgePanelModel.declaringId });
+                } else if (canCreateNode) {
+                  openMeaningEditor({ sourceId: heldEdgePanelModel.fromId });
                 } else {
                   setNeedsVaultReason("editNeedsVault");
                 }
