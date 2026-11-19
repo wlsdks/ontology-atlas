@@ -10,8 +10,7 @@ import {
   repositorySurvey,
 } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
-import { familyClaimRefusal } from '../construction/family-claims.mjs';
-import { unservedPartsRefusal } from '../construction/unserved-parts.mjs';
+import { unreadClaimRefusal } from '../construction/unread-claims.mjs';
 import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
@@ -381,8 +380,8 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
   const grounded = REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null;
   const depth = measureBuildDepth(allDocs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
   const depthRefusals = competencyDepthRefusals(competency.questions, depth);
-  // Parts a cited read listed and nothing served, and sentences that speak for members their cites do not cover, are refused whatever the rows say.
-  const unreadRefusal = [unservedPartsRefusal(depth.unserved), familyClaimRefusal(depth.families)].filter(Boolean).join('\n\n') || null;
+  // A symbol a node says was not read, declared here, is refused whatever the rows say.
+  const unreadRefusal = unreadClaimRefusal(depth.unread);
   if (depthRefusals.length > 0) {
     throw new Error([
       `finalize_project_meaning blocked: ${depthRefusals.length} answered competency row(s) claim more than the map holds.`,

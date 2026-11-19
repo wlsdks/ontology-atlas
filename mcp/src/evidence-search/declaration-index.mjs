@@ -212,24 +212,6 @@ export function declarationsNamed(rootPath, names, { ignore = [], files } = {}) 
   return found;
 }
 
-/**
- * path -> [{ name, line, kind }] for the given repository paths only, from the
- * same cached per-file declarations; a path that is no product file is absent.
- *
- * @param {string} rootPath absolute repository root
- * @param {Iterable<string>} paths
- * @param {{ ignore?: string[], files?: object[] }} [options]
- */
-export function declarationsIn(rootPath, paths, { ignore = [], files } = {}) {
-  const wanted = new Set(paths);
-  const found = new Map();
-  if (wanted.size === 0) return found;
-  for (const file of files ?? productFiles(rootPath, ignore)) {
-    if (wanted.has(file.path)) found.set(file.path, factsOf(file).declarations);
-  }
-  return found;
-}
-
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

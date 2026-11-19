@@ -152,18 +152,15 @@ test('a build on an empty vault inside its repository reaches finalize without e
  * finalized, and a reader asking about `x` got "not read". Every competency row
  * here is partial, so only the unread symbol can refuse.
  */
-test('finalize refuses a part a cited read listed and never served, until it is read, however the node is worded', async (t) => {
+test('finalize refuses a symbol a node says was not read until it is read and the node says what or why', async (t) => {
   const root = repository();
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const rule = Array.from({ length: 68 }, (_, at) => `  if (amount > ${at + 1}) amount -= 1;\n`).join('');
-  writeFileSync(join(root, 'src', 'fees.mjs'), `export function applyFee(amount) {\n${rule}  return amount;\n}\n`);
-  writeFileSync(join(root, 'src', 'charge.mjs'), "import { applyFee } from './fees.mjs';\nexport function charge(amount) {\n  if (amount <= 0) return 0;\n  return applyFee(amount);\n}\n");
-  writeFileSync(join(root, 'src', 'legacy.mjs'), 'export function charge(amount) {\n  return amount;\n}\n');
+  writeFileSync(join(root, 'src', 'fees.mjs'), 'export function applyFee(amount) {\n  if (amount > 100) return amount * 0.9;\n  return amount;\n}\n');
   const call = server(root);
-  const capability = (uncertainty, rule = 'Charges an amount and refuses nothing at or below zero') => `${rule} (src/charge.mjs:L3-L4).\n\n## Includes\n- Charging.\n\n## Excludes\n- Refunds.\n\n## Uncertainty\n${uncertainty}\n`;
+  const capability = (uncertainty) => `Charges an amount (src/charge.mjs:L2).\n\n## Includes\n- Charging.\n\n## Excludes\n- Refunds.\n\n## Uncertainty\n${uncertainty}\n`;
   const created = await call('add_concepts', { concepts: [
     { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
-    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, path: 'src/charge.mjs', body: capability('- None.') },
+    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, path: 'src/charge.mjs', body: capability('- `applyFee` was not read.') },
   ] });
   const mtime = Object.fromEntries(created.concepts.map((row) => [row.slug, row.mtime]));
   await call('add_relation', { from: 'ledger', to: 'capabilities/charge', type: 'capabilities', why: 'Charging is the ledger\'s ability.' });
@@ -175,24 +172,17 @@ test('finalize refuses a part a cited read listed and never served, until it is 
     expected_mtime: project.mtime,
     body: `Ledger charges customers.\n\n${renderProjectCompetencyMarkdown(Object.fromEntries(['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => [id, gap(id)])))}`,
   });
-  const finalize = ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime }];
-  const readCharge = ['analyze_repo_structure', { sourceOnly: true, sourceReads: [{ path: 'src/charge.mjs', symbol: 'charge' }] }];
 
-  const [, refused] = await call.session([readCharge, finalize]);
-  assert.match(refused.error ?? '', /finalize_project_meaning blocked: 1 part the server listed for the lines 1 node cites was never served/);
-  assert.match(refused.error, /Said complete: capabilities\/charge says nothing is missing/);
-  const named = JSON.parse(/analyze_repo_structure\((\{.*?\})\)/.exec(refused.error)[1]);
-  assert.deepEqual(named.sourceReads, [{ path: 'src/fees.mjs', startLine: 61, maxLines: 11 }]);
+  const refused = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime });
+  assert.match(refused.error ?? '', /finalize_project_meaning blocked: 1 symbol the vault says was not read is in this repository/);
+  const call_ = /analyze_repo_structure\((\{.*?\})\)/.exec(refused.error);
+  assert.deepEqual(JSON.parse(call_[1]).sourceReads, [{ path: 'src/fees.mjs', symbol: 'applyFee' }]);
 
-  const reworded = await call('patch_concept', { slug: 'capabilities/charge', expected_mtime: mtime['capabilities/charge'], body: capability('- The rest of the fee rule was not read.', 'Every charge refuses nothing at or below zero') });
-  const [, still] = await call.session([readCharge, finalize]);
-  assert.match(still.error ?? '', /1 part the server listed for the lines 1 node cites was never served/, 'rewording gains nothing');
+  const [, stillSaid] = await call.session([['analyze_repo_structure', JSON.parse(call_[1])], ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime }]]);
+  assert.match(stillSaid.error ?? '', /Read, still said unread: applyFee \(src\/fees\.mjs:L1, said unread in capabilities\/charge\)/);
 
-  const [, , general] = await call.session([readCharge, ['analyze_repo_structure', named], finalize]);
-  assert.match(general.error ?? '', /finalize_project_meaning blocked: 1 cited sentence generalises over members the cites do not cover\./);
-  assert.match(general.error, /no every, each, all or both before "charge", and no they, these or those as its subject\), or write "1 of 2" checked/);
-  await call('patch_concept', { slug: 'capabilities/charge', expected_mtime: reworded.mtime, body: capability('- The rest of the fee rule was not read.', 'Every charge refuses nothing at or below zero, 1 of 2 checked') });
-  const [, , finalized] = await call.session([readCharge, ['analyze_repo_structure', named], finalize]);
+  await call('patch_concept', { slug: 'capabilities/charge', expected_mtime: mtime['capabilities/charge'], body: capability('- `applyFee` still cannot be read in full because the fee table loads at run time.') });
+  const [, finalized] = await call.session([['analyze_repo_structure', JSON.parse(call_[1])], ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: patched.mtime }]]);
   assert.equal(finalized.error, undefined, finalized.error);
   assert.equal(finalized.ok, true);
 });

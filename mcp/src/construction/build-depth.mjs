@@ -19,14 +19,13 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 
 import { cachedSurvey } from '../analyze/breadth-map.mjs';
-import { oneLineJson, repoText } from '../analyze/repo-text.mjs';
+import { repoText } from '../analyze/repo-text.mjs';
 import { surveyEntry } from '../analyze/survey-paths.mjs';
 import { withoutSpans } from '../analyze/text.mjs';
 import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
 import { decidesLine } from '../evidence-search/symbol-context.mjs';
 import { readPath } from './session-reads.mjs';
-import { familyClaimLines, measureFamilyClaims } from './family-claims.mjs';
-import { measureUnservedParts, unservedPartsLines } from './unserved-parts.mjs';
+import { measureUnreadClaims, unreadClaimParts } from './unread-claims.mjs';
 
 /** Wording a node uses for a subject it only outlined; read under `## Uncertainty` alone. */
 const OUTLINED_ONLY = /\b(?:outlined only|only outlined|outline only|outlined,? (?:but )?(?:the )?(?:body |bodies )?(?:not read|unread)|bod(?:y|ies) (?:was |were |is |are )?(?:not read|unread)|unread|not opened)\b/i;
@@ -294,7 +293,7 @@ function abilityLabel(row) {
 
 /** Every row, none cut: finalize names each ability it holds the map to. */
 function listedAll(rows, render) {
-  return rows.map((row) => repoText(render(row), 400)).join('; ');
+  return rows.map(render).join('; ');
 }
 
 /**
@@ -323,7 +322,7 @@ function readCall(unread) {
     seen.add(key);
     selectors.push(symbol ? { path, symbol } : { path, startLine: 1, maxLines: 200 });
   }
-  return `analyze_repo_structure(${oneLineJson({ sourceOnly: true, sourceReads: selectors })})`;
+  return `analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: selectors })})`;
 }
 
 /**
@@ -538,8 +537,7 @@ function measureAbilityEdges(docs) {
 }
 
 function listed(rows, render) {
-  // A slug or path comes from the vault or the repository: printed as one escaped line each.
-  const shown = rows.slice(0, LISTED).map((row) => repoText(render(row), 400));
+  const shown = rows.slice(0, LISTED).map(render);
   const more = rows.length - shown.length;
   return `${shown.join(', ')}${more > 0 ? ` and ${more} more` : ''}`;
 }
@@ -563,9 +561,7 @@ export function measureBuildDepth(docs, repo, reads) {
   const rules = measureRules(docs, reads, repo?.repoRoot ?? null);
   const abilityEdges = measureAbilityEdges(docs);
   const roles = measureRoles(docs, reads, repo?.repoRoot ?? null);
-  const citesOf = (text) => lineCites(text, reads, repo?.repoRoot ?? null);
-  const unserved = measureUnservedParts(docs, reads, citesOf);
-  const families = measureFamilyClaims(docs, repo, citesOf);
+  const unread = measureUnreadClaims(docs, repo, reads);
   const parts = [];
   if (breadth && breadth.abilities > 0) {
     parts.push(`Breadth, of ${breadth.abilities} abilities the survey lists: ${breadth.node} with their own node, ${breadth.named} named inside a capability or element, ${breadth.excluded} excluded with a reason, ${breadth.unplaced.length} not placed.`);
@@ -583,7 +579,7 @@ export function measureBuildDepth(docs, repo, reads) {
   if (repo && roles && roles.unplaced.length > 0) {
     parts.push(`Roles: ${roles.unplaced.length} of the ${roles.candidates} implementation roles that two or more capabilities' reads pass through have no element: ${listedAll(roles.unplaced, roleLabel)}. Next: ${ROLE_REPAIR}.`);
   }
-  parts.push(...unservedPartsLines(unserved), ...familyClaimLines(families));
+  parts.push(...unreadClaimParts(unread));
   if (repo && capabilities.length > 1 && abilityEdges.alone.length > 0) {
     parts.push(`Abilities: ${abilityEdges.edges} depends_on edges run from one capability to another; none touch ${listed(abilityEdges.alone, (slug) => slug)}. For each, ask which other ability must have run, be configured or be present first, and add_relations that edge with a why citing the read lines that show it.`);
   }
@@ -593,8 +589,7 @@ export function measureBuildDepth(docs, repo, reads) {
     rules,
     abilityEdges,
     roles,
-    unserved,
-    families,
+    unread,
     capabilities: capabilities.length,
     dependsOn,
     line: parts.length > 0 ? parts.join(' ') : null,
@@ -637,11 +632,11 @@ function relationNoteFindings(docs, reads) {
       const type = typeOf.get(ref);
       const selectors = unread.map((node) => pathOf(node)).filter(Boolean)
         .map((path) => ({ path, symbol: citedSymbol(unread.find((node) => pathOf(node) === path), path) }));
-      const rewrite = `replace_relation(${oneLineJson({ from: doc.slug, oldTo: target.slug, oldType: type, newTo: target.slug, newType: type, why: '<what the read shows>', confirm: true })})`;
+      const rewrite = `replace_relation(${JSON.stringify({ from: doc.slug, oldTo: target.slug, oldType: type, newTo: target.slug, newType: type, why: '<what the read shows>', confirm: true })})`;
       findings.push({
         slug: doc.slug,
         code: 'relation-note-on-unread',
-        message: `The why on ${repoText(doc.slug)} -> ${repoText(target.slug)} says how they work together, but ${unread.map((node) => repoText(node.slug)).join(' and ')} ${reads && reads.size > 0 ? `${unread.length > 1 ? 'were' : 'was'} never read this session` : 'says it was not read'}. Repair in two calls: ${selectors.length > 0 ? readCall(selectors) : 'read the entry with analyze_repo_structure sourceReads'}, then ${rewrite}, and patch_concept any ## Uncertainty line that said it was not read. Without the read, make the same replace_relation call with a why that says only what the outline shows.`,
+        message: `The why on ${doc.slug} -> ${target.slug} says how they work together, but ${unread.map((node) => node.slug).join(' and ')} ${reads && reads.size > 0 ? `${unread.length > 1 ? 'were' : 'was'} never read this session` : 'says it was not read'}. Repair in two calls: ${selectors.length > 0 ? readCall(selectors) : 'read the entry with analyze_repo_structure sourceReads'}, then ${rewrite}, and patch_concept any ## Uncertainty line that said it was not read. Without the read, make the same replace_relation call with a why that says only what the outline shows.`,
       });
     }
   }
@@ -723,18 +718,18 @@ function entryPathFindings(docs, repoRoot, collection) {
     findings.push({
       slug: doc.slug,
       code: 'path-without-code',
-      message: `path: ${repoText(path)} holds no code (only comments, a docstring, imports or re-exports), so "where does this live" lands on nothing. Point path at the file the ability starts in${nearby.length > 0 ? `, such as ${nearby.map((path) => repoText(path)).join(', ')}` : ''}, with patch_concept.`,
+      message: `path: ${path} holds no code (only comments, a docstring, imports or re-exports), so "where does this live" lands on nothing. Point path at the file the ability starts in${nearby.length > 0 ? `, such as ${nearby.join(', ')}` : ''}, with patch_concept.`,
     });
   }
   for (const [path, slugs] of byPath) {
     if (slugs.length <= SHARED_PATH_LIMIT) continue;
     const nearby = collection ? nearbyFiles(collection, path) : [];
-    const listed = slugs.slice(0, 6).map((slug) => repoText(slug)).join(', ') + (slugs.length > 6 ? ` and ${slugs.length - 6} more` : '');
+    const listed = slugs.slice(0, 6).join(', ') + (slugs.length > 6 ? ` and ${slugs.length - 6} more` : '');
     for (const slug of slugs) {
       findings.push({
         slug,
         code: 'path-shared',
-        message: `${slugs.length} nodes share path: ${repoText(path)} (${listed}), so a drift check cannot tell them apart. Give each node the more specific file its ability enters through${nearby.length > 0 ? ` (for example ${nearby.map((path) => repoText(path)).join(', ')})` : ''} with patch_concept, and keep one element for this file's role.`,
+        message: `${slugs.length} nodes share path: ${path} (${listed}), so a drift check cannot tell them apart. Give each node the more specific file its ability enters through${nearby.length > 0 ? ` (for example ${nearby.join(', ')})` : ''} with patch_concept, and keep one element for this file's role.`,
       });
     }
   }
@@ -745,7 +740,7 @@ function ruleCiteFindings(docs, reads, repoRoot) {
   return measureRules(docs, reads, repoRoot).uncited.map((row) => ({
     slug: row.slug,
     code: 'rule-without-read-lines',
-    message: `${repoText(row.slug)} states a rule but cites no ${reads ? 'read ' : ''}lines that hold its condition${row.cited ? ' (its cites name lines that were not served or hold no condition)' : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
+    message: `${row.slug} states a rule but cites no ${reads ? 'read ' : ''}lines that hold its condition${row.cited ? ' (its cites name lines that were not served or hold no condition)' : ''}. A reader cannot check it, and a rule taken from a body without its guard or default can be backwards. Repair: ${citeRepair([row])}.`,
   }));
 }
 

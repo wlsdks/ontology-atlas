@@ -12,10 +12,9 @@ import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
 import { importsOf } from './import-bindings.mjs';
 import { readSourceEvidence } from './source-evidence.mjs';
-import { measureFamilyClaims } from '../construction/family-claims.mjs';
 import { repositorySurvey } from '../construction/build-depth.mjs';
-import { recordSourceEvidence, resetSessionReads, sessionReads } from '../construction/session-reads.mjs';
-import { measureUnservedParts } from '../construction/unserved-parts.mjs';
+import { resetSessionReads } from '../construction/session-reads.mjs';
+import { measureUnreadClaims } from '../construction/unread-claims.mjs';
 
 const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
@@ -314,46 +313,33 @@ describe('module-qualified calls cost one lookup each', () => {
 });
 
 /*
- * The unserved-part and family-sentence checks read every body line of a vault
- * on each write and at finalize: one pass a line, lines past 2,000 characters
- * skipped, at most 256 cited files and 128 names looked up, and one probe of the
- * cached declarations per file.
+ * The unread-claim floor reads every body line of a vault on each write and at
+ * finalize: one pass a line, lines past 2,000 characters skipped, at most 128
+ * names looked up, and one probe of the cached declarations per file.
  */
-describe('the unserved-part and family-sentence checks cost time linear in the vault\'s text', () => {
+describe('the unread-claim floor costs time linear in the vault\'s text', () => {
   // 128 lines of 2,000 characters: the 256 KiB the source cases use.
-  const vaultOf = (line, count = 128) => [{ slug: 'capabilities/x', frontmatter: { kind: 'capability', path: 'src/x.ts' }, body: `X.\n\n${`${line}\n`.repeat(count)}\n## Uncertainty\n${`${line}\n`.repeat(count)}` }];
-  const fill = (unit, tail = '') => `${unit.repeat(Math.floor((1990 - tail.length) / unit.length))}${tail}`;
-  const citesOf = (text) => [...String(text).matchAll(/([\w./-]{1,300}\.ts):L(\d{1,6})-L(\d{1,6})/g)].map((match) => ({ path: match[1], startLine: Number(match[2]), endLine: Number(match[3]) }));
+  const vaultOf = (line, count = 128) => [{ slug: 'capabilities/x', frontmatter: { kind: 'capability', path: 'src/x.ts' }, body: `X.\n\n## Uncertainty\n${`${line}\n`.repeat(count)}` }];
+  const fill = (unit, tail = ' not read') => `${unit.repeat(Math.floor((1990 - tail.length) / unit.length))}${tail}`;
 
-  it('measures 256 KiB of body lines of each hostile shape within the budget', (t) => {
-    const declared = Array.from({ length: 2000 }, (_, at) => `export function f${at}(v: number) {\n  if (v) return 1;\n  return v;\n}\n`).join('');
-    const files = { 'package.json': '{"name":"x"}', 'src/x.ts': declared };
-    // One method name declared 5,000 times under one family root.
-    for (let at = 0; at < 50; at += 1) files[`src/family/m${at}.ts`] = Array.from({ length: 100 }, (_, k) => `export class C${at}x${k} {\n  apply(v: number) {\n    if (v) return 1;\n  }\n}\n`).join('');
-    const root = repoWith(files);
+  it('measures 256 KiB of claim lines of each hostile shape within the budget', (t) => {
+    const declared = Array.from({ length: 2000 }, (_, at) => `export function f${at}(v: number) {\n  return v;\n}\n`).join('');
+    const root = repoWith({ 'package.json': '{"name":"x"}', 'src/x.ts': declared, 'src/same.ts': 'export function same() {\n  return 1;\n}\n'.repeat(5000) });
     const repo = repositorySurvey(root, join(root, 'atlas'));
-    // A read of src/x.ts that lists 32 parts, recorded 256 times over.
-    resetSessionReads();
-    for (let at = 0; at < 256; at += 1) {
-      recordSourceEvidence(root, { rows: [{ status: 'read', path: 'src/x.ts', symbol: `f${at}`, actualRange: { startLine: at * 4 + 1, endLine: at * 4 + 4 },
-        contextOmitted: Array.from({ length: 40 }, (_, k) => ({ role: 'callee', path: 'src/x.ts', symbol: `f${k + 300}`, line: (k + 300) * 4 + 1 })) }] });
-    }
-    const reads = sessionReads(root);
     const cases = [
-      ['a sentence of cites of every listed read', vaultOf(fill('src/x.ts:L1-L1024. '))],
-      ['"every" before a cite of a 5,000-member family', vaultOf(fill('Every one acts (src/family/m1.ts:L2-L3). '))],
-      ['a run of "1 of 1"', vaultOf(fill('1 of 1 ', 'every (src/family/m1.ts:L2-L3).'))],
-      ['a run of sentence ends', vaultOf(fill('. '))],
-      ['a cite token run', vaultOf(fill('a.ts:L1'))],
-      ['a heading followed by 100 KB of spaces', vaultOf(`## ${' '.repeat(100 * 1024)}x`, 3)],
-      ['a fence opener followed by 100 KB of spaces', vaultOf(`\`\`\`${' '.repeat(100 * 1024)}x`, 3)],
-      ['4,000 nodes citing the listed read', Array.from({ length: 4000 }, (_, at) => ({ slug: `elements/e${at}`, frontmatter: { kind: 'element' }, body: `Every one acts (src/x.ts:L${(at % 256) * 4 + 1}-L${(at % 256) * 4 + 2}).\n\n## Uncertainty\n- None.\n` }))],
+      ['code spans of names declared once each', vaultOf(fill('`f1` ', ' were not read')).concat(Array.from({ length: 4000 }, (_, at) => ({ slug: `elements/e${at}`, frontmatter: { kind: 'element' }, body: `E.\n\n## Uncertainty\n- \`f${at % 2000}\` and \`g${at}\` not read.\n` })))],
+      ['a run of backticks', vaultOf(fill('`'))],
+      ['a dotted chain', vaultOf(fill('a.'))],
+      ['"not" repeated before "read"', vaultOf(fill('not ', 'read'))],
+      ['a path of slashes', vaultOf(fill('a/'))],
+      ['a run of dots and colons after a slash', vaultOf(`x/${fill('.:')}`)],
+      ['"other than" repeated', vaultOf(fill('other than `f1` '))],
+      ['a cited line number run', vaultOf(fill(':1-1'))],
+      ['a name declared 5,000 times', vaultOf('- `same` was not read.', 2000)],
     ];
     for (const [name, docs] of cases) {
-      assertWithinBudget(t, name, () => {
-        measureUnservedParts(docs, reads, citesOf);
-        measureFamilyClaims(docs, repo, citesOf);
-      });
+      resetSessionReads();
+      assertWithinBudget(t, name, () => measureUnreadClaims(docs, repo, new Map()));
     }
     resetSessionReads();
   });
