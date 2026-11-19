@@ -10,18 +10,16 @@
  * rows by page, line, code) so two screens enumerate one folder identically.
  */
 
+import { WIKI_ADVISORY_CODES } from './wiki-schema.mjs';
+
+export { WIKI_ADVISORY_CODES };
+
 /** Findings about the folder's shape rather than one page's text (meanings in `wiki-schema.mjs`). */
 export const WIKI_FOLDER_CODES = Object.freeze([
   'dangling-wikilink',
   'orphan-page',
   'shared-source-unlinked',
 ]);
-
-/**
- * Folder findings true of a young, uncross-linked wiki rather than of a page:
- * reported and counted, but they never decide whether a page fits the template.
- */
-export const WIKI_ADVISORY_CODES = Object.freeze(['orphan-page', 'shared-source-unlinked']);
 
 const FOLDER = new Set(WIKI_FOLDER_CODES);
 const ADVISORY = new Set(WIKI_ADVISORY_CODES);

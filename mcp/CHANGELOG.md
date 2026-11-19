@@ -5,14 +5,18 @@
 ### Changed — `validate_wiki` pages the whole folder (2026-11-19)
 
 - Without `paths`, `validate_wiki` now returns failing pages only, one page at a time,
-  as `validate_vault` does: `offset` (default 0) and `limit` (default 100, max 500),
-  pages with a blocking problem first and then by path, a default page that stops before
-  the reply passes 128 KiB, `pagination`, `nextCall`, and a `summary` (`blockingPages`,
-  `advisoryOnlyPages`, `byCode` with at most 20 files each) over the whole folder.
-  Fitting pages are counted in `pageCount`, not listed. With `paths`, every named page
+  as `validate_vault` does: `limit` (default 100, max 500), pages with a blocking problem
+  first and then by path, at most 20 problems per page (`problemsOmitted` counts the
+  rest), a default page that stops before the reply passes 128 KiB and always holds one
+  page, `pagination`, a `nextCall` that resumes after the last page shown (`afterPath`,
+  `afterBlocking`) so repairs between calls skip nothing, and a `summary`
+  (`blockingPages`, `advisoryOnlyPages`, `byCode` with at most 20 files each) over the
+  whole folder. Fitting pages are counted in `pageCount`, not listed. With `paths`, every named page
   is still listed with its `ok`. On a 50,000-file vault the reply went from 228 MB to
   124.5 KiB. `ontology-atlas wiki-validate --json` still prints every page.
 - The `outputSchema` now declares the `detail` each problem already carried.
+- Fixed: repeated unclosed `[[`, `[[src:` and `[[src:sources/` openings made a page
+  check quadratic (a 320 KB page took 4 s); each match now stops at the next `[`.
 
 ### Changed — first contact carries the card, not the manual (2026-11-18)
 

@@ -78,7 +78,7 @@ function wikiVault({ fit = 0, orphans = 0, broken = 0, facts = 1 } = {}) {
 }
 
 /** Module URLs the server-shaped process loads, as `response-bounds.test.mjs` passes them. */
-const modules = Object.fromEntries(['tools/validate-vault.mjs', 'server/rpc.mjs', 'library/wiki-report.mjs']
+const modules = Object.fromEntries(['tools/validate-vault.mjs', 'server/rpc.mjs']
   .map((file) => [file, new URL(`../${file}`, import.meta.url).href]));
 
 /** Runs `body` in a server-shaped process for `root`, where `validateWikiTool` and `ok` are in scope. */
@@ -128,7 +128,8 @@ test('following nextCall visits every failing page once, blocking first, and nev
   assert.deepEqual(paths.slice(0, 41), [...paths.slice(0, 41)].sort());
   assert.deepEqual(paths.slice(41), [...paths.slice(41)].sort(), 'then by path');
   assert.deepEqual(replies[0].pagination, { offset: 0, limit: 100, total: 101, returned: 100, hasMore: true, nextOffset: 100 });
-  assert.deepEqual(replies[0].nextCall, { tool: 'validate_wiki', arguments: { offset: 100 } });
+  // The 100th page shown is an advisory-only orphan (41 blocking, then 59 orphans).
+  assert.deepEqual(replies[0].nextCall, { tool: 'validate_wiki', arguments: { afterPath: 'wiki/a-0058.md', afterBlocking: false } });
   assert.deepEqual(replies[1].pagination, { offset: 100, limit: 100, total: 101, returned: 1, hasMore: false, nextOffset: null });
   assert.equal(replies[1].nextCall, undefined);
   const summary = replies[0].summary;
@@ -157,7 +158,7 @@ test('limit 500 pages 501 failing pages into 500 and 1, and an offset past the e
     console.log(JSON.stringify({ replies: follow({ limit: 500 }), past: validateWikiTool({ offset: 900 }) }));
   `);
   assert.deepEqual(replies.map((reply) => reply.pagination.returned), [500, 1]);
-  assert.deepEqual(replies[0].nextCall, { tool: 'validate_wiki', arguments: { offset: 500, limit: 500 } });
+  assert.deepEqual(replies[0].nextCall, { tool: 'validate_wiki', arguments: { afterPath: 'wiki/a-0499.md', afterBlocking: false, limit: 500 } });
   assert.equal(new Set(listed(replies)).size, 501);
   assert.deepEqual(past.pagination, { offset: 501, limit: 100, total: 501, returned: 0, hasMore: false, nextOffset: null });
   assert.deepEqual(past.pages, []);
@@ -178,7 +179,7 @@ test('a default reply stops before 128 KiB, and the next calls still reach every
   assert.ok(replies[0].pagination.returned > 0);
   assert.ok(sizes.every((bytes) => bytes <= BUDGET), `every reply ≤ 128 KiB (${sizes.join(', ')})`);
   assert.equal(sizes[0], okResponseBytes(replies[0]), 'the budget measures what ok() sends');
-  assert.match(replies[0].pagesHint, /stopped before 100 pages to stay within 128 KiB/);
+  assert.match(replies[0].pagesHint, /stopped short to stay within 128 KiB/);
   assert.equal(replies[0].pagination.nextOffset, replies[0].pagination.returned, 'the next offset is where this reply stopped');
   const paths = listed(replies);
   assert.equal(paths.length, 40);
@@ -217,29 +218,123 @@ test('named paths list every named page, fitting or not, and refuse offset and l
   assertConforms(named);
 });
 
-test('the summary calls exactly the Library\'s advisory codes warnings, and every other folder code an error', () => {
+
+/** Writes `wiki/<name>.md` into `root` as one more page. */
+const addPage = (root, name, text) => writeFileSync(join(root, `wiki/${name}.md`), text);
+
+const replyBytes = 'replies.map((reply) => Buffer.byteLength(JSON.stringify(ok(reply)), "utf8"))';
+
+test('a path holding a line break is listed as the folder names it and still matches the schema', () => {
   const root = wikiVault({ fit: 3 });
-  // Two pages written from one source that do not link each other, and one dangling link.
-  for (const name of ['s-one', 's-two']) {
-    writeFileSync(join(root, `wiki/${name}.md`), fitPage(name, ['wiki/m-0000', 'wiki/missing-page'])
-      .replace('sources: []', 'sources: [sources/shared.md]'));
-  }
-  let reply;
-  let library;
+  addPage(root, 'a\nb', fitPage('broken', ['wiki/m-0000'], 1));
   try {
-    // The Library's lists are read in the server-shaped process too: that module's
-    // consumers are the app's, and the MCP server never loads it.
-    ({ reply, library } = inServer(root, `
-      const { WIKI_ADVISORY_CODES, WIKI_FOLDER_CODES } = await import(${JSON.stringify(modules['library/wiki-report.mjs'])});
-      console.log(JSON.stringify({ reply: validateWikiTool({}), library: { WIKI_ADVISORY_CODES, WIKI_FOLDER_CODES } }));
-    `));
+    const { reply, named } = inServer(root, `
+      const reply = validateWikiTool({});
+      console.log(JSON.stringify({ reply, named: validateWikiTool({ paths: reply.pages.map((page) => page.path) }) }));
+    `);
+    assert.deepEqual(reply.pages.map((page) => page.path), ['wiki/a\nb.md']);
+    assert.deepEqual(reply.summary.byCode['uncited-fact'].files, ['wiki/a\nb.md']);
+    assert.equal(named.pages[0].ok, false, 'the listed path round-trips into `paths`');
+    assertConforms(reply);
+    assertConforms(named);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
-  const severities = Object.fromEntries(Object.entries(reply.summary.byCode).map(([code, entry]) => [code, entry.severity]));
-  assert.deepEqual(Object.keys(severities).sort(), [...library.WIKI_FOLDER_CODES].sort(), 'the fixture raises every folder code');
-  for (const code of library.WIKI_FOLDER_CODES) {
-    assert.equal(severities[code], library.WIKI_ADVISORY_CODES.includes(code) ? 'warning' : 'error', code);
+});
+
+test('a page shows at most 20 problems and counts the rest, in both shapes', () => {
+  const { reply, named } = withVault({ fit: 3, broken: 1, facts: 300 }, `
+    console.log(JSON.stringify({ reply: validateWikiTool({}), named: validateWikiTool({ paths: ['wiki/z-0000.md'] }) }));
+  `);
+  for (const answer of [reply, named]) {
+    assert.equal(answer.pages[0].problems.length, 20);
+    assert.equal(answer.pages[0].problemsOmitted, 280);
+    assertConforms(answer);
   }
-  assertConforms(reply);
+  assert.equal(reply.summary.byCode['uncited-fact'].count, 1);
+});
+
+test('pages that share one source page under 128 KiB each and are all reached', () => {
+  const root = wikiVault({ fit: 3 });
+  const cluster = Array.from({ length: 200 }, (_, index) => `c-${pad(index)}`);
+  // Each page links the ring, the first ring page links none of them: 199 unlinked partners each.
+  for (const name of cluster) addPage(root, name, fitPage(name, ['wiki/m-0000']).replace('sources: []', 'sources: [sources/handbook.pdf]'));
+  try {
+    const { replies, sizes } = inServer(root, `
+      const replies = follow({});
+      console.log(JSON.stringify({ replies, sizes: ${replyBytes} }));
+    `);
+    assert.ok(sizes.every((bytes) => bytes <= BUDGET), `every reply ≤ 128 KiB (largest ${Math.max(...sizes)})`);
+    const paths = listed(replies);
+    assert.equal(new Set(paths).size, 200);
+    assert.equal(paths.length, 200);
+    assert.ok(replies.every((reply) => reply.pages.every((page) => page.problems.length <= 20)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a single page larger than a reply is cut to fit, so the walk never stalls', () => {
+  const root = wikiVault({ fit: 3 });
+  // Two pages whose primary source is a 150,000-character path: the one finding that
+  // names it is larger than a whole reply on its own.
+  const source = `sources/${'a'.repeat(150_000)}.pdf`;
+  for (const name of ['g-one', 'g-two']) {
+    addPage(root, name, fitPage(name, ['wiki/m-0000']).replace('sources: []', `sources: [${source}]`));
+  }
+  // A hub links both, so that oversized finding is each page's only problem.
+  addPage(root, 'h-hub', fitPage('hub', ['wiki/g-one', 'wiki/g-two']));
+  addPage(root, 'z-small', fitPage('small', ['wiki/m-0000'], 1));
+  try {
+    const { replies, sizes } = inServer(root, `
+      const replies = follow({});
+      console.log(JSON.stringify({ replies, sizes: ${replyBytes} }));
+    `);
+    assert.ok(sizes.every((bytes) => bytes <= BUDGET), `every reply ≤ 128 KiB (${sizes.join(', ')})`);
+    assert.ok(replies.every((reply) => reply.pagination.returned >= 1), 'no reply comes back empty while pages remain');
+    assert.deepEqual(listed(replies), ['wiki/z-small.md', 'wiki/g-one.md', 'wiki/g-two.md', 'wiki/h-hub.md']);
+    const cut = replies.find((reply) => reply.pages[0].path === 'wiki/g-one.md').pages[0].problems[0];
+    assert.match(cut.message, /\.\.\.\(\+\d+ chars\)$/, 'the cut is counted');
+    for (const reply of replies) assertConforms(reply);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('repairing each reply\'s pages before following nextCall still reaches every failing page', () => {
+  const root = wikiVault({ fit: 3, broken: 300 });
+  const tool = modules['tools/validate-vault.mjs'];
+  try {
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
+      import { writeFileSync } from 'node:fs';
+      const { validateWikiTool } = await import(${JSON.stringify(tool)});
+      const fixed = ${JSON.stringify(fitPage('fixed', ['wiki/m-0000']))};
+      const seen = [];
+      let reply = validateWikiTool({});
+      for (let guard = 0; guard < 20; guard += 1) {
+        seen.push(...reply.pages.map((page) => page.path));
+        for (const page of reply.pages) writeFileSync(${JSON.stringify(root)} + '/' + page.path, fixed);
+        if (!reply.nextCall) break;
+        reply = validateWikiTool(reply.nextCall.arguments);
+      }
+      console.log(JSON.stringify({ seen, after: validateWikiTool({}).failingCount }));
+    `], { encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root } }));
+    assert.equal(result.seen.length, 300);
+    assert.equal(new Set(result.seen).size, 300, 'no page is skipped or repeated as earlier pages leave the list');
+    assert.equal(result.after, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('afterPath and offset are one or the other, and afterPath needs afterBlocking', () => {
+  const { refusals } = withVault({ fit: 3, orphans: 2 }, `
+    const refusals = [];
+    for (const args of [{ afterPath: 'wiki/a-0000.md', afterBlocking: false, offset: 1 }, { afterPath: 'wiki/a-0000.md' }]) {
+      try { validateWikiTool(args); refusals.push(null); } catch (error) { refusals.push(error.message); }
+    }
+    console.log(JSON.stringify({ refusals }));
+  `);
+  assert.match(refusals[0], /one or the other/);
+  assert.match(refusals[1], /come together/);
 });

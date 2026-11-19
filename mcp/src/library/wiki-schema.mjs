@@ -24,6 +24,13 @@ export function isWikiFurnitureSlug(slug) {
   const name = slug.slice(slug.lastIndexOf('/') + 1);
   return name.startsWith('_');
 }
+/**
+ * Folder findings true of a young, uncross-linked wiki rather than of a page: reported
+ * and counted, but they never decide whether a page fits the template. Here because the
+ * server and the Library both load this module; `wiki-report.mjs` re-exports it.
+ */
+export const WIKI_ADVISORY_CODES = Object.freeze(['orphan-page', 'shared-source-unlinked']);
+
 /** Vault folder holding the raw sources a page cites. */
 const WIKI_SOURCES_DIR = 'sources';
 
@@ -112,10 +119,12 @@ export const WIKI_SECTION_ORDER = Object.freeze([
  * editor, `src:` so it is not mistaken for a node link. Anchors: `p<n>`
  * page, `s<n>` sheet, `s<n>r<n>` sheet row, `r<n>` row, `h:<heading-slug>`
  * heading, `l<n>` line. An anchor is required: "somewhere in this document" is uncheckable.
+ * The path stops at `[`, `]`, `#` and a line break, so a match attempt from one `[[src:`
+ * never scans past the next `[`: the whole-body scan stays linear in the page's length.
  */
 const WIKI_CITATION_ANCHOR_PATTERN = 'p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*';
 export const WIKI_CITATION_PATTERN =
-  `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\]#]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
+  `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\][#\\n]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
 
 /** A fresh global regex. Global regexes carry `lastIndex`, so never share one. */
 function wikiCitationRegex() {
@@ -125,9 +134,12 @@ function wikiCitationRegex() {
 /** A whole candidate that is a well-formed citation. Anchored, so no `lastIndex` to share. */
 const WHOLE_CITATION = new RegExp(`^${WIKI_CITATION_PATTERN}$`);
 
-/** Anything shaped like a citation, so a malformed one is reported instead of ignored. */
+/**
+ * Anything shaped like a citation, so a malformed one is reported instead of ignored.
+ * Its text stops at the next `[`, so a line of repeated `[[src:` is one scan, not one per opening.
+ */
 function citationCandidateRegex() {
-  return /\[\[src:([^\]]*)\]\]/g;
+  return /\[\[src:([^\][]*)\]\]/g;
 }
 
 /** Every well-formed citation in `text`, in order. */
@@ -443,9 +455,12 @@ export function validateWikiPage(raw, options = {}) {
 }
 
 
-/** `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link. */
+/**
+ * `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link.
+ * No part crosses a `[`, so each attempt ends at the next opening and a line scans once.
+ */
 function wikiPageLinkRegex() {
-  return /\[\[([^\]|#]+?)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+  return /\[\[([^\][|#]+)(?:#[^\][|]*)?(?:\|[^\][]*)?\]\]/g;
 }
 
 /**

@@ -124,7 +124,8 @@ export const WIKI_SECTION_ORDER = [
  */
 export const WIKI_CITATION_ANCHOR_PATTERN =
   'p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*';
-export const WIKI_CITATION_PATTERN = `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\]#]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
+// The path stops at `[`, `]`, `#` and a line break, so the scan stays linear (twin of the MCP pattern).
+export const WIKI_CITATION_PATTERN = `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\][#\\n]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
 
 /** A fresh global regex. Global regexes carry `lastIndex`, so never share one. */
 function wikiCitationRegex(): RegExp {
@@ -238,7 +239,7 @@ function problem(
 }
 
 function citationCandidateRegex(): RegExp {
-  return /\[\[src:([^\]]*)\]\]/g;
+  return /\[\[src:([^\][]*)\]\]/g;
 }
 
 function readSections(body: string, offset: number): Array<{ title: string; line: number }> {
@@ -501,7 +502,7 @@ export function validateWikiPage(
 
 /** `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link. */
 function wikiPageLinkRegex(): RegExp {
-  return /\[\[([^\]|#]+?)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+  return /\[\[([^\][|#]+)(?:#[^\][|]*)?(?:\|[^\][]*)?\]\]/g;
 }
 
 /**
