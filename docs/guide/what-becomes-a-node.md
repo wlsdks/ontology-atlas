@@ -7,7 +7,7 @@ area: product
 
 # Choosing concepts: domain, capability, element
 
-Building a codebase ontology means deciding what becomes a concept and which kind it gets. This chapter gives the tests Atlas uses for each kind, explains why one source file is not one concept, and gives the one-sentence test for a parent with many children. Your coding agent (Claude Code, Codex, Cursor) reads the same rules through the MCP server before it writes, so concepts made by people and by agents follow one shape.
+Building a codebase ontology means deciding what becomes a concept and which kind it gets. Here you find the test Atlas uses for each kind, why one source file is not one concept, and the one-sentence test for a parent with many children. Your coding agent (Claude Code, Codex, Cursor) reads the same rules through the MCP server before it writes, so concepts made by people and by agents share one shape.
 
 ## Choose a kind by its job
 
@@ -21,45 +21,45 @@ Choose a kind by what the concept does in the model, not by its size, folder or 
 | `element` | Does it name a distinct implementation role that carries a capability, with evidence someone can open? | "JWT signer" with `path: src/auth/jwt-signer.ts`. | `src/auth/jwt-signer.ts` as the name. |
 | `document` | Is the thing itself a text whose value is explaining or deciding something about another concept? | "ADR: local-first persistence." | A service filed as a document because it has a README. |
 
-Read the table top to bottom: what is delivered, where responsibilities split, what the system can do, and how it does it.
+Read the table from top to bottom: what is delivered, where responsibilities split, what the system can do, and how it does it.
 
-A folder, package, team, route, class name or README heading is a clue, not a concept. It becomes a domain or capability only when you can write a definition that is not circular and say what it includes and excludes. A verb in a name does not make a capability, and a noun does not make an element.
+A folder, package, team, route, class name or README heading is a clue, not a concept. It becomes a domain or a capability only when you can write a definition that is not circular, and say what it includes and excludes. A verb in a name does not make something a capability, and a noun does not make it an element.
 
 The full tests, with what each kind includes and excludes, are in the [Atlas specification](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 
 ## One file is not one concept
 
-The most common mistake is to open a directory and make one element per file. The result looks like an ontology but is a directory listing copied into the graph. This repository once had a capability with 92 elements that matched an `ls` of one folder.
+The most common mistake is to open a folder and make one element per file. The result looks like an ontology, but it is a folder listing copied into the graph. The Atlas repository once had a capability with 92 elements that matched the `ls` output of one folder.
 
 A path is evidence of a concept, not the concept.
 
 - Name an element after its role: `jwt-signer`, `session-store`.
 - Put the location in `path:`.
-- If a title looks like `src/lib/auth/jwt.ts` or ends in a source extension, it is evidence. The MCP server warns when it sees one.
-- Keep slugs flat under the kind folder: `elements/jwt-signer`, not `elements/src/lib/auth/jwt`. A path-shaped slug is refused when a concept is written, because two files with the same name would quietly become one concept.
+- A title that looks like `src/lib/auth/jwt.ts`, or ends in a source file extension, is evidence, not a name. The MCP server warns when it sees one.
+- Keep slugs flat under the kind folder: `elements/jwt-signer`, not `elements/src/lib/auth/jwt`. A slug shaped like a path is refused when the concept is written, because two files with the same name would silently become one concept.
 
-Several files can share one role. If you cannot say in a sentence how two files differ in role, they are one element, or no element at all and just the `path` of a capability.
+Several files can share one role. If you cannot say in one sentence how two files differ in role, they are one element. Or they are no element at all, just the `path` of a capability.
 
 ## Many children is not a defect
 
-There is no limit on how many children a concept may have. A wide parent whose children each earn their place is correct, and a cap is easy to satisfy without understanding: split the pile into "Group A" and "Group B" and the number looks fine while nothing is clearer.
+There is no limit on how many children a concept may have. A wide parent is correct when each child earns its place. A cap, on the other hand, is easy to satisfy without understanding anything: split the pile into "Group A" and "Group B", and the count looks fine while nothing is clearer.
 
-A count is only a reason to ask a question. While the folder is young, the starting points are about 8 capabilities under a domain and about 6 elements under a capability. Once the folder has ten or more parents of a kind, Atlas compares against your folder's own distribution instead.
+A count is only a reason to ask a question. While the folder is young, the starting thresholds are about 8 capabilities under a domain and about 6 elements under a capability. Once the folder has ten or more parents of a kind, Atlas compares against your folder's own distribution instead.
 
 ### The one-sentence test
 
-When a parent crosses that point, ask one question for each child:
+When a parent passes that point, ask one question for each child:
 
 > Can you write one sentence, not circular, that says why this child cannot be swapped with its siblings?
 
 - If you can, leave it as it is, even with thirty siblings.
 - If you cannot, do not add a new concept. Improve the body of the existing sibling instead.
 
-Shared name prefixes are a hint of where to look, not the test.
+Shared name prefixes hint at where to look. They are not the test.
 
 ### When three or more children fail
 
-If three or more children fail the test, a level is missing. Add one concept between the parent and those children, but only when all of these hold:
+If three or more children fail the test, a level is missing. Add one concept between the parent and those children, but only when all of the following hold:
 
 1. It is named after a behavior the children share. "Other" or "Part 2" is not a name.
 2. You can state that behavior in one sentence.
@@ -70,7 +70,7 @@ If any of these fails, create nothing.
 
 ## Give every capability evidence
 
-When you create a capability, give it something to open in the same step: one implementation entry point in `path:`, or at least one element in `elements:`. A capability with neither is a claim nobody can check. It is still written, but it stays in the cleanup queue (`maintenance_plan`, or `node cli/src/index.mjs maintenance`) as `capability_without_evidence` until it points at something.
+When you create a capability, give it something to open in the same step: one implementation entry point in `path:`, or at least one element in `elements:`. A capability with neither is a claim nobody can check. It is still written, but it stays in the cleanup queue as `capability_without_evidence` until it points at something. You can see that queue with `query_ontology` and `maintenance_plan`, or with `node cli/src/index.mjs maintenance`.
 
 ```markdown
 ---
@@ -88,6 +88,6 @@ elements: [elements/jwt-signer]
 
 ## The rules report, they do not block
 
-These checks do not refuse a write. A concept that skips them is saved, and the response carries a warning or a row in the cleanup queue. Blocking would teach agents to work around the tool. The one exception is the path-shaped slug: it breaks identity, not meaning, and it is cheapest to fix when the concept is created.
+These checks do not refuse a write. A concept that fails them is still saved, and the response carries a warning, or the concept gets a row in the cleanup queue. Blocking would teach agents to work around the tool. The one exception is the slug shaped like a path: it breaks identity, not meaning, and it is cheapest to fix when the concept is created.
 
-Next: [Relations](/guide/relations) connects the concepts you have chosen.
+Next: [Relations between concepts](/guide/relations) connects the concepts you have chosen.

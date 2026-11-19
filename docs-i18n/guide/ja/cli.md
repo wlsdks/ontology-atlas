@@ -1,10 +1,10 @@
 # CLIとMCPの関係
 
-この章では、Ontology Atlasのコマンドラインインターフェースについて説明します。実行方法、日常的に使うコマンド、そしてClaude CodeやCodexなどのコーディングエージェントが呼び出すMCPサーバと1つのエンジンを共有している仕組みです。CLIの操作はすべて、マップに表示されるのと同じMarkdownのオントロジーフォルダに対して行われます。
+この章では、Ontology Atlasのコマンドラインインターフェース（CLI）を説明します。実行方法、日常的に使うコマンド、そしてClaude CodeやCodexなどのコーディングエージェントが呼び出すMCPサーバと、1つのエンジンを共有している仕組みです。CLIの操作はすべて、マップに表示されるのと同じMarkdownのオントロジーフォルダに対して行われます。
 
 ## ソースのチェックアウトから実行する
 
-npmパッケージはないので、`npx`は使えません。CLIはリポジトリのクローンから実行し、Git、Node.js 24、pnpmが必要です。クローンは、記述したいリポジトリの外に置いてください。
+npmパッケージはないので、`npx`は使えません。CLIはリポジトリをクローンして実行します。Git、Node.js 24、pnpmが必要です。クローンは、オントロジーを作る対象のリポジトリの外に置いてください。
 
 ```bash
 git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
@@ -18,7 +18,7 @@ pnpm --dir mcp install --frozen-lockfile
 node ~/tools/ontology-atlas/cli/src/index.mjs --help
 ```
 
-代わりに`atlas`と打てるようにしたい場合は、`install-shim`が、このクローンを指す1行のランチャーを`~/.local/bin/atlas`に書き込みます。書き込む前にランチャーの内容を表示し、`install-shim --uninstall`で削除できます。
+代わりに`atlas`と打つだけで使いたい場合は、`install-shim`を実行すると、このクローンを指す1行の起動スクリプトが`~/.local/bin/atlas`に書き込まれます。書き込む前にその内容が表示され、`install-shim --uninstall`で削除できます。
 
 エージェントを接続するだけならCLIは必要ありません。デスクトップアプリはMCPサーバのコピーを内蔵していて、エージェントの設定も書き込んでくれます（[MCPでコーディングエージェントを接続](/guide/connect-agent)を参照）。
 
@@ -30,7 +30,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 | MCPツール | コーディングエージェント |
 | CLI | ターミナルを使う人とスクリプト |
 
-`backlinks`、`blast-radius`、`rename`、`relate`などのグラフ系コマンドは、1回の呼び出しのためにMCPサーバを起動し、終わると停止します。そのため、ターミナルで実行したコマンドと、エージェントが呼び出した同じツールは、同じ答えを返し、同じ書き込みルールに従います。フォルダが大きくてこれらのコマンドがタイムアウトする場合は、`OATLAS_CLI_MCP_TIMEOUT_MS`で待ち時間を延ばしてください。
+`backlinks`、`blast-radius`、`rename`、`relate`などのグラフ系コマンドは、1回の呼び出しのためにMCPサーバを起動し、終わると停止します。そのため、ターミナルで実行したコマンドとエージェントが呼び出した同じツールは、同じ答えを返し、同じ書き込みルールに従います。フォルダが大きくてこれらのコマンドがタイムアウトする場合は、`OATLAS_CLI_MCP_TIMEOUT_MS`で待ち時間を延ばしてください。
 
 ## 始めるためのコマンド
 
@@ -94,7 +94,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs --help
 | オントロジーフォルダだけを要約付きでコミットする | `snapshot ./atlas` |
 | グラフをエクスポートする | `export ./atlas --format jsonld`（または`graphml`、`json`） |
 
-`agent-brief`は、`init`の直後など、フォルダにまだ手当てが必要な間は終了コード1で終わります。それでも出力は完全です。`snapshot`はローカルでコミットするだけです。`--push`を付けるとブランチの既存のupstreamに送り、`--dry-run`を付けるとプレビューします。
+`agent-brief`は、`init`の直後など、フォルダにまだ対応すべき点が残っている間は終了コード1で終わります。それでも出力は完全です。`snapshot`はローカルでコミットするだけです。`--push`を付けるとブランチの既存のupstreamに送り、`--dry-run`を付けるとプレビューします。
 
 ほぼすべてのコマンドが、スクリプト向けに`--json`を受け付けます。すべてのオプションを含む完全な一覧はヘルプにあります。
 
