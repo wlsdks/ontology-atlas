@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vault';
+import { bundledProjectSlugs, deriveBundledProjects, deriveIndexedProjects } from '@/entities/docs-vault';
 import { isAppLocale, LOCALE_META } from '@/i18n/locales';
 import { getTranslations } from 'next-intl/server';
 import { ProjectDetailPage, projectBreadcrumb } from '@/views/project-detail';
@@ -12,6 +12,23 @@ import { JsonLd, RouteLoadingFallback } from '@/shared/ui';
 
 interface Params {
   slug: string;
+}
+
+/**
+ * Projects with their own localized title and description (`metadata.projectTitles`,
+ * `metadata.projectDescriptions`). Any other project's name and description come from its vault
+ * document, in the language it was written in.
+ */
+const LOCALIZED_PROJECT_COPY: Readonly<Record<string, 'ontologyAtlas'>> = {
+  'ontology-atlas': 'ontologyAtlas',
+};
+
+async function projectCopy(locale: string, project: { slug: string; name: string; description?: string }) {
+  const key = LOCALIZED_PROJECT_COPY[project.slug];
+  const fallback = project.description || `${project.name} — Ontology Atlas`;
+  if (!key) return { title: project.name, description: fallback };
+  const t = await getTranslations({ locale, namespace: 'metadata' });
+  return { title: t(`projectTitles.${key}`), description: t(`projectDescriptions.${key}`) };
 }
 
 /**
@@ -40,15 +57,15 @@ export async function generateMetadata({
     };
   }
 
-  const title = project.name;
-  const description = project.description || `${project.name} — ontology-atlas`;
+  const { title, description } = await projectCopy(locale, project);
   // The canonical must carry the locale prefix or it names a URL that 404s. `buildPageMetadata`
-  // assembles locale, hreflang and x-default.
+  // assembles locale, hreflang and x-default. A demo sample's project is noindex and unlisted.
   const base = buildPageMetadata({
     locale,
     path: `project/${slug}`,
     title,
     description,
+    noindex: !deriveIndexedProjects().some((indexed) => indexed.slug === slug),
     // opengraph-image.tsx beside this file generates the per-slug card; the
     // builder must not put an `images` key anywhere the spreads below carry.
     hasFileConventionImage: true,
@@ -74,7 +91,6 @@ export async function generateMetadata({
     keywords,
     openGraph: {
       ...base.openGraph,
-      siteName: 'ontology-atlas',
       // A project detail page is writing about one subject, not an introduction to the site.
       type: 'article',
       // og:image is injected automatically by `opengraph-image.tsx` in the same directory, which
@@ -105,12 +121,13 @@ export default async function Page({
   // CreativeWork structured data — lets Google's rich snippets recognize the project's name,
   // description, author, and keywords. CreativeWork is more general than SoftwareApplication (a
   // portfolio entry is not necessarily runnable software).
+  const copy = await projectCopy(locale, project);
   const inLanguage = isAppLocale(locale) ? LOCALE_META[locale].intlTag : LOCALE_META.en.intlTag;
   const creativeWorkLd = {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
     name: project.name,
-    description: project.description || `${project.name} — ontology-atlas`,
+    description: copy.description,
   // Must equal the metadata canonical, or search engines get two answers.
     url: absoluteUrl(`/${locale}/project/${slug}/`),
     inLanguage,

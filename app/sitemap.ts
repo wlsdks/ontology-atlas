@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import type { MetadataRoute } from 'next';
-import { deriveBundledProjects } from '@/entities/docs-vault';
+import { deriveIndexedProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
 import { LOCALE_META } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
@@ -66,10 +66,10 @@ const hreflangOf = (locale: string): string =>
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /**
-   * The project list must come from the same source as route generation, `bundledProjectSlugs()`, or
-   * built pages go missing from the sitemap.
+   * The project list comes from the same source as route generation, `bundledProjectSlugs()`, less
+   * the demo samples, whose pages are noindex (`app/[locale]/project/[slug]/page.tsx`).
    */
-  const projects = deriveBundledProjects();
+  const projects = deriveIndexedProjects();
   const entries: MetadataRoute.Sitemap = [];
   const modified = new Map(
     routing.locales.flatMap((locale) =>

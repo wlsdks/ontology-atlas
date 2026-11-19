@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { deriveBundledProjects } from '@/entities/docs-vault';
+import { deriveBundledProjects, deriveIndexedProjects } from '@/entities/docs-vault';
 import { routing } from '@/i18n/routing';
 import { SITE_URL } from '@/shared/config';
 import { CHANGELOG_CONTENT_LOCALES, GUIDE_ENTRY_PAGE, GUIDE_PAGES } from '@/views/gateway-doc';
@@ -60,7 +60,7 @@ describe('public sitemap', () => {
           (path) => `${SITE_URL}/${locale}/${path ? `${path}/` : ''}`,
         ),
         ...(CHANGELOG_CONTENT_LOCALES.includes(locale) ? [`${SITE_URL}/${locale}/changelog/`] : []),
-        ...deriveBundledProjects().map(
+        ...deriveIndexedProjects().map(
           (project) => `${SITE_URL}/${locale}/project/${project.slug}/`,
         ),
       ])
@@ -74,6 +74,13 @@ describe('public sitemap', () => {
       expect(actual).not.toContain(`${SITE_URL}/${locale}/ontology/studio/`);
       expect(actual).not.toContain(`${SITE_URL}/${locale}/ontology/edit/`);
     }
+  });
+
+  it('lists the real project and leaves the fictional storefront demo out', async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(deriveBundledProjects().map((project) => project.slug)).toContain('storefront');
+    expect(urls).toContain(`${SITE_URL}/en/project/ontology-atlas/`);
+    expect(urls.some((url) => url.includes('/project/storefront/'))).toBe(false);
   });
 
   it('dates a static page by the last commit to its words, never by the build', async () => {

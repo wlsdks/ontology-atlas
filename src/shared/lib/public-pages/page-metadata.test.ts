@@ -186,7 +186,7 @@ describe('fitMetaDescription', () => {
 
   it.each(['en', 'ko', 'ja', 'zh'])('finds every %s page description and the site default within 25-160 characters', async (locale) => {
     const { default: metadata } = await import(`../../../../messages/${locale}/metadata.json`);
-    const all = [metadata.siteTagline, ...Object.values(metadata.descriptions), ...Object.values(metadata.guideDescriptions)] as string[];
+    const all = [metadata.siteTagline, ...Object.values(metadata.descriptions), ...Object.values(metadata.guideDescriptions), ...Object.values(metadata.projectDescriptions)] as string[];
     for (const text of all) {
       expect(text.length, text).toBeGreaterThanOrEqual(25);
       expect(text.length, text).toBeLessThanOrEqual(META_DESCRIPTION_MAX);

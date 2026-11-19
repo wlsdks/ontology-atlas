@@ -82,7 +82,7 @@ export {
 export { createSummaryStalenessScan, daysBehind, SUMMARY_KINDS } from './lib/summary-freshness';
 export type { SummaryStaleness } from './lib/summary-freshness';
 export { deriveProjectsFromVault } from './lib/projects/derive-projects-from-vault';
-export { deriveBundledProjects, bundledProjectSlugs } from './lib/bundled-vault/bundled-projects';
+export { deriveBundledProjects, deriveIndexedProjects, bundledProjectSlugs } from './lib/bundled-vault/bundled-projects';
 export {
   findProjectVaultDoc,
   findProjectDocInList,
