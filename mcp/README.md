@@ -20,19 +20,24 @@ human-approved. [Product purpose and limits](../README.md#why).
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
 runtime graph artifact without introducing a backend database. Compiler diagnostics use canonical ordering, so filesystem enumeration order does not change `graphHash`. Graphs compiled previously with noncanonical diagnostics may receive a corrected hash after this fix; vault files are not rewritten. The `canonicalizationActions` array follows source document enumeration order; that action order is not part of `graphHash`. During one MCP
-server session, the server keeps one parsed copy of each vault file. Every read
-tool call checks each file's path, size, modification and change time and inode,
-and re-reads only the files whose stamp moved; a file modified within 2 s of being
-read has its bytes compared again, so a same-size edit inside one timestamp tick
-is still seen. Edits made by an editor, Git or the app between calls show on the
-next call. `query_ontology` and `compile_ontology` reuse the compiled artifact
-while no file was added, removed or changed. A write tool trusts no stamp: it
-reads every file it decides from (the backlinks that refuse a delete or that a
-rename or merge rewrites) and compares bytes, and it reads its target from disk
-and refuses to overwrite a newer file. A write that finds bytes other than the
-kept copy discards that copy, under whatever spelling of the path it used, which
-is what reveals an edit on a FAT or exFAT volume that restored the file's size
-and modification time.
+server session, the server keeps each vault file's parsed frontmatter, what it
+computed from the text (the frontmatter fence's shape and the body's link
+targets) and the SHA-1 of its bytes, not the text itself: a body is read from
+disk again when a tool needs it, must still hash to the bytes that were parsed,
+and the most recent ones are kept up to 32 MB. Every read tool call checks each
+file's path, size, modification and change time and inode, and re-reads only the
+files whose stamp moved; a file modified within 2 s of being read has its hash
+compared again, so a same-size edit inside one timestamp tick is still seen.
+Edits made by an editor, Git or the app between calls show on the next call; a
+file that changes while a call is reading its body fails that call with
+`VAULT_CONFLICT`, and calling again reads it as it is. `query_ontology` and
+`compile_ontology` reuse the compiled artifact while no file was added, removed
+or changed. A write tool trusts no stamp: it reads every file it decides from
+(the backlinks that refuse a delete or that a rename or merge rewrites) and
+compares hashes, and it reads its target from disk and refuses to overwrite a
+newer file. A write that finds bytes other than the kept parse discards it, under
+whatever spelling of the path it used, which is what reveals an edit on a FAT or
+exFAT volume that restored the file's size and modification time.
 
 Kind selection and relation meaning are not redefined in this tool manual. The
 single public contract is
@@ -423,7 +428,8 @@ bot, an external tool that only needs to *read* the graph — add
 In read-only mode the server advertises **only the 24 read tools** in
 `tools/list` (the 16 write tools — `add_concept`, `add_concepts`,
 `add_relation`, `add_relations`, `patch_concept`, `rename_concept`,
-`merge_concepts`, `delete_concept`, `absorb_document`, `git_snapshot`,
+`merge_concepts`, `delete_concept`, `reclassify_concept`, `remove_relation`,
+`replace_relation`, `absorb_document`, `git_snapshot`,
 `finalize_project_meaning`, `connect_project_source`, and
 `disconnect_project_source` — disappear), and any
 direct call to a write tool is rejected even if the client cached an older

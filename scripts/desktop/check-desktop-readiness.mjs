@@ -80,6 +80,8 @@ const corepackPrepare = new RegExp(`corepack prepare ${pinnedPnpm.replace(/[.*+?
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
+// The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
+const siteEntity = readText("src/shared/config/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
@@ -1502,7 +1504,8 @@ if (
   // Official Pages now serves at a custom-domain root. Keep the manifest helper so
   // forks that still deploy beneath a base path do not regress (#617).
   rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
-  rootLayout.includes("alternateName: 'ontology-atlas'") &&
+  rootLayout.includes("siteEntityGraph(") &&
+  siteEntity.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&
   webManifest.short_name === "Ontology Atlas" &&
   enMessages.metadata.siteName === "Ontology Atlas" &&

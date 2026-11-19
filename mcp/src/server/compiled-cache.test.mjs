@@ -66,7 +66,7 @@ describe('createCompiledOntologyCache', () => {
     assert.equal(cache.get({ summary: true }).raw, 'v2', 'a view compiled for v1 must not answer for v2');
   });
 
-  it('collects garbage after a compile of many nodes, never on a hit or a graph of few', () => {
+  it('collects garbage before and after a compile of many nodes, never on a hit or a graph of few', () => {
     let collections = 0;
     const collectGarbage = () => { collections += 1; };
     const large = Array.from({ length: 5000 }, (_, index) => ({ slug: `capabilities/n${index}`, frontmatter: { kind: 'capability' } }));
@@ -75,11 +75,11 @@ describe('createCompiledOntologyCache', () => {
     const cache = createCompiledOntologyCache({ loadDocs, compile: () => ({}), versionOf: (docs) => versions.get(docs), collectGarbage });
     cache.get();
     cache.get();
-    assert.equal(collections, 1);
+    assert.equal(collections, 2);
     const plain = large.map(({ slug }, index) => (index === 0 ? { slug, frontmatter: { kind: 'capability' } } : { slug }));
     const fewNodes = createCompiledOntologyCache({ loadDocs: () => plain, compile: () => ({}), collectGarbage });
     fewNodes.get();
-    assert.equal(collections, 1);
+    assert.equal(collections, 2);
   });
 
   it('can be cleared after explicit write paths', () => {

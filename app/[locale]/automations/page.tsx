@@ -19,6 +19,7 @@ export async function generateMetadata({
     path: 'automations',
     title: t('title'),
     description: tMeta('descriptions.automations'),
+    noindex: true,
   });
 }
 

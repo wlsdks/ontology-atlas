@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { GatewayDocPage, readGatewayDocument } from '@/views/gateway-doc';
+import { CHANGELOG_CONTENT_LOCALES, GatewayDocPage, readGatewayDocument } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 export async function generateMetadata({
@@ -15,6 +15,7 @@ export async function generateMetadata({
     path: 'changelog',
     title: t('pages.changelog'),
     description: t('descriptions.changelog'),
+    contentLocales: CHANGELOG_CONTENT_LOCALES,
   });
 }
 

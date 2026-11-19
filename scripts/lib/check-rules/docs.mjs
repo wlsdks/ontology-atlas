@@ -77,7 +77,13 @@ export const rules = [
     order: 245,
     command: 'pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts',
     reason: 'guide links are rendered outside the repository and must retain their destinations',
-    matches: [/^docs\/guide\/.*\.md$/],
+    matches: [/^docs\/guide\/.*\.md$/, /^docs-i18n\/guide\/.*\.md$/],
+  },
+  {
+    order: 246,
+    command: 'pnpm exec vitest run tests/contract/routes/gateway-routes.contract.test.ts',
+    reason: 'every guide chapter needs its Korean, Japanese and Chinese body with the same sections',
+    matches: [/^docs\/guide\/[^/]+\.md$/, /^docs-i18n\/guide\/.*\.md$/],
   },
   {
     order: 250,
@@ -142,6 +148,7 @@ export const rules = [
     matches: [
       /^docs\/ontology\/.*\.md$/,
       /^docs\/guide\/.*\.md$/,
+      /^docs-i18n\/guide\/.*\.md$/,
       /^docs\/CHANGELOG\.md$/,
       /^samples\/storefront\/.*\.md$/,
     ],

@@ -24,7 +24,6 @@ import {
   rawSourceKindIssues,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
-  validateVaultDocument,
 } from '../validate.mjs';
 import {
   dependencyWitnessFinding,
@@ -33,6 +32,7 @@ import {
 } from '../meaning/meaning-findings.mjs';
 import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
+import { validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
@@ -199,7 +199,14 @@ function judgeWikiPages(paths) {
   // The folder half is judged over every page in the folder, whatever `paths` narrowed
   // the report to: whether somebody links to a page is a fact about the other pages,
   // and a page asked about alone would otherwise always read as an orphan.
-  const folderPages = folderDocs.map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '', parsed: doc }));
+  // `raw` is read as each page is judged, so the folder's text is never held at once.
+  const folderPages = folderDocs.map((doc) => ({
+    path: `${doc.slug}.md`,
+    get raw() {
+      return doc.raw || '';
+    },
+    parsed: doc,
+  }));
   const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
   for (const page of pages) {
     const extra = folderByPath.get(page.path) ?? [];
@@ -403,7 +410,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
     // where the file sits, and only this caller knows it.
-    const result = validateVaultDocument(doc.raw || '', { slug: doc.slug, parsed: doc });
+    const result = validateLoadedVaultDocument(doc, { slug: doc.slug });
     docIssues.set(doc.slug, result.issues || []);
   }
   for (const [slug, danglingIssues] of groupDanglingIssuesBySlug(docs)) {
@@ -658,12 +665,15 @@ function findDependencyWitnessIssues(docs, repoRoot) {
  * only node of its kind.
  */
 function findStarterExampleIssues(docs) {
+  // `body` is read only for a starter the vault has outgrown, not for every document.
   return starterExampleFindings(
     docs.map((doc) => ({
       slug: doc.slug,
       kind: doc?.frontmatter?.kind,
       title: doc?.frontmatter?.title,
-      body: doc?.body,
+      get body() {
+        return doc?.body;
+      },
     })),
   ).map((finding) => ({
     slug: finding.slug,

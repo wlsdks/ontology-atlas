@@ -18,6 +18,7 @@ export async function generateMetadata({
     path: 'agents',
     title: t('title'),
     description: tMeta('descriptions.agents'),
+    noindex: true,
   });
 }
 

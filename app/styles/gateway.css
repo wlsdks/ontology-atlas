@@ -885,6 +885,8 @@ html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='t
 .build-map {
   container-type: size;
   aspect-ratio: 4 / 5;
+  /* Never taller than the window under the header and the stage's bar, so the game is played whole. */
+  max-height: calc(100svh - 4rem - 2.75rem - 2rem);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -924,10 +926,10 @@ html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='t
   }
 }
 
-/* Beside the panel the map is at least as tall as the panel's tallest step, so the frame keeps one height. */
+/* Beside the panel the map is as tall as the panel's tallest step where the window has the room. */
 @container build (min-width: 60rem) {
   .build-map {
-    min-height: 38.5rem;
+    min-height: min(38.5rem, calc(100svh - 4rem - 2.75rem - 2rem));
   }
 }
 
@@ -939,6 +941,9 @@ html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='t
   .build-panel {
     border-top: 0;
     border-left: 1px solid var(--color-border-soft);
+    /* The board sets the frame's one height; on a short window a long step scrolls inside the panel. */
+    contain: size;
+    overflow-y: auto;
   }
 }
 
