@@ -355,7 +355,11 @@
       },
       "describes-target-missing": {
         "what": "이 문서는 {target}을 다룬다고 적혀 있는데, 이 폴더에 그 이름의 개념이 없어요.",
-        "do": "문서에서 그 이름을 지우거나, 원문 탭에서 문서를 다시 이으세요."
+        "do": "문서에서 그 이름을 지우거나, 이 폴더에 있는 개념의 슬러그로 바꾸세요."
+      },
+      "bad-describes": {
+        "what": "이 문서가 다루는 개념을 적는 줄(describes)이 목록이 아니어서, 어디서도 연결로 읽지 않고 이름을 바꿀 때도 따라가지 못해요.",
+        "do": "개념마다 슬러그를 목록 항목으로 적고, 맞는 개념이 없으면 빈 목록을 적으세요."
       },
       "dangling-wikilink": {
         "what": "{where}에서 {target} 문서로 연결했는데 이 폴더에 그 문서가 없어요.",
@@ -651,6 +655,7 @@
       "kind-present": "지도 표시가 붙어 있어요",
       "missing-field": "정보칸에 빠진 줄이 있어요",
       "describes-target-missing": "이어진 개념이 여기 없어요",
+      "bad-describes": "개념 목록이 목록 형식이 아니에요",
       "section-order": "구획이 빠졌거나 순서가 달라요",
       "bad-truncation-record": "읽은 범위 기록이 맞지 않아요",
       "uncited-fact": "근거 없이 적은 사실이 있어요",
@@ -855,7 +860,7 @@
       "undoneReason": {
         "notDraft": "status: draft로 남지 않았어요. 예약 작업은 초안만 써요.",
         "duplicateKey": "파일 맨 위 정보칸(frontmatter)에 {key}: 항목이 두 번 있어 읽는 쪽마다 다르게 읽을 수 있었어요.",
-        "forbiddenKey": "{key}: 항목이 있었어요. 이 항목은 사람만 넣을 수 있어요.",
+        "forbiddenKey": "{key}: 항목을 넣거나 바꾸거나 지웠어요. 예약 작업은 이 항목을 처음 그대로 둬야 해요.",
         "noFrontmatter": "파일 맨 위 정보칸(frontmatter)이 없어 초안으로 읽을 수 없었어요.",
         "unreadable": "Atlas가 다시 읽어 확인하지 못했어요."
       },

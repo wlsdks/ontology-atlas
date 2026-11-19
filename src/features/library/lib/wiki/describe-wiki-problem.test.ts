@@ -173,6 +173,7 @@ describe("the catalogue covers every finding the validator writes", () => {
     "citation-target-missing-folder",
     "citation-target-missing-sources",
     "describes-target-missing",
+    "bad-describes",
     "dangling-wikilink",
     "orphan-page",
     "shared-source-unlinked",

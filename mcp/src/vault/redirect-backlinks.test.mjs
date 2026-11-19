@@ -570,6 +570,8 @@ async function callTools(vault, calls) {
 }
 
 const WIKI_PAGES = ["wiki/login-flow", "wiki/session-rules", "wiki/sign-in-history"];
+const HANGUL = "capabilities/로그인";
+const HANGUL_PAGE = "wiki/hangul-login";
 
 function wikiPage(title, describes, notes) {
   return [
@@ -621,6 +623,9 @@ function wikiLinkVault() {
       "capabilities/sign-in": "It records the new sign-in.",
     }),
   );
+  // A Hangul concept named from a page in NFD, as macOS hands over text pasted from a file name.
+  writeMd(root, HANGUL, "---\nkind: capability\ntitle: 로그인\nuid: 00000000-0000-4000-8000-000000000005\n---\n로그인.\n");
+  writeMd(root, HANGUL_PAGE, wikiPage("Hangul login", [HANGUL.normalize("NFD")], { [HANGUL.normalize("NFD")]: "It is about signing in." }));
   return root;
 }
 
@@ -631,7 +636,7 @@ function frontmatterOf(root, slug) {
 const brokenPages = (report) =>
   report.pages.filter((page) => page.problems.some((problem) => problem.code === "describes-target-missing")).map((page) => page.path);
 
-const validatePages = ["validate_wiki", { paths: WIKI_PAGES.map((slug) => `${slug}.md`) }];
+const validatePages = ["validate_wiki", { paths: [...WIKI_PAGES, HANGUL_PAGE].map((slug) => `${slug}.md`) }];
 
 console.log("wiki page links to concepts");
 
@@ -680,6 +685,38 @@ await testAsync("delete_concept's dry run lists every page, and a forced delete 
   assert.ok(preview.backlinks.every((link) => link.isNode === false));
   const [, report] = await callTools(root, [["delete_concept", { slug: "capabilities/login", confirm: true, force: true }], validatePages]);
   assert.deepEqual(brokenPages(report).sort(), WIKI_PAGES.map((slug) => `${slug}.md`).sort());
+  rmSync(root, { recursive: true, force: true });
+});
+
+await testAsync("an NFD Hangul describes entry follows rename_concept, and its note key with it", async () => {
+  const root = wikiLinkVault();
+  const [, report] = await callTools(root, [
+    ["rename_concept", { oldSlug: HANGUL, newSlug: "capabilities/로그온", confirm: true }],
+    validatePages,
+  ]);
+  assert.deepEqual(brokenPages(report), []);
+  assert.deepEqual(frontmatterOf(root, HANGUL_PAGE).describes, ["capabilities/로그온"]);
+  assert.deepEqual(Object.keys(frontmatterOf(root, HANGUL_PAGE).relation_notes), ["capabilities/로그온"]);
+  rmSync(root, { recursive: true, force: true });
+});
+
+await testAsync("an NFD Hangul describes entry follows merge_concepts to the survivor", async () => {
+  const root = wikiLinkVault();
+  const [, report] = await callTools(root, [
+    ["merge_concepts", { fromSlug: HANGUL, intoSlug: "capabilities/sign-in", confirm: true }],
+    validatePages,
+  ]);
+  assert.deepEqual(brokenPages(report), []);
+  assert.deepEqual(frontmatterOf(root, HANGUL_PAGE).describes, ["capabilities/sign-in"]);
+  rmSync(root, { recursive: true, force: true });
+});
+
+await testAsync("delete_concept's dry run lists a page naming the concept in NFD, and a forced delete breaks it", async () => {
+  const root = wikiLinkVault();
+  const [preview] = await callTools(root, [["delete_concept", { slug: HANGUL }]]);
+  assert.deepEqual(preview.backlinks.map((link) => link.slug), [HANGUL_PAGE]);
+  const [, report] = await callTools(root, [["delete_concept", { slug: HANGUL, confirm: true, force: true }], validatePages]);
+  assert.deepEqual(brokenPages(report), [`${HANGUL_PAGE}.md`]);
   rmSync(root, { recursive: true, force: true });
 });
 

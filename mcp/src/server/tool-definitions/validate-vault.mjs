@@ -306,12 +306,12 @@ export const VALIDATE_WIKI_TOOL = {
     'A wiki page is **not** an ontology node — it carries no `kind:` by contract, which is what keeps it out ' +
     'of the graph — so `validate_vault` says nothing about whether one fits its own shape. This is that answer. ' +
     'Problem codes: kind-present, missing-field:<key>, section-order, uncited-fact, bad-citation, ' +
-    'bad-truncation-record, citation-target-missing, describes-target-missing; folder codes dangling-wikilink, ' +
+    'bad-truncation-record, citation-target-missing, bad-describes, describes-target-missing; folder codes dangling-wikilink, ' +
     'and the advisory orphan-page and shared-source-unlinked. ' +
     'The optional `describes:` lists the slugs of the `kind:` nodes a page is about, at any `status`, with one ' +
     'sentence each under `relation_notes:`; `describes-target-missing` names an entry that resolves (full slug, ' +
     '`slug:` alias or unique tail, as `find_backlinks` resolves) to no `kind:` node: a missing or ambiguous name, ' +
-    'a wiki page or the vault README. `describes: []` records that no concept fits. ' +
+    'a wiki page or the vault README; `bad-describes` names a `describes:` that is not a list. `describes: []` records that no concept fits. ' +
     'The optional `sources_truncated:` key lists which paths in `sources:` the run read only part of; ' +
     'it is what lets a reader tell a document written up whole from one written up in part. ' +
     'Without `paths`, returns `{ pageCount, failingCount, pagination, nextCall?, summary: { blockingPages, advisoryOnlyPages, byCode }, pages: [{path, ok, blocking, problems: [{code, message, line?, detail?}], problemsOmitted?}] }`: ' +

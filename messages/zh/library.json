@@ -355,7 +355,11 @@
       },
       "describes-target-missing": {
         "what": "此页面写明它描述 {target}，但此文件夹中没有这个名称的概念。",
-        "do": "从页面中删除该名称，或在\"来源\"中重新连接此页面。"
+        "do": "从页面中删除该名称，或将其替换为此文件夹中某个概念的 slug。"
+      },
+      "bad-describes": {
+        "what": "记录此页面所描述概念的那一行（describes）不是列表，因此不会被当作链接读取，重命名时也无法跟随。",
+        "do": "把每个概念的 slug 写成列表项；没有匹配的概念时写一个空列表。"
       },
       "dangling-wikilink": {
         "what": "{where} 处的链接指向 {target}，但此文件夹中没有这个页面。",
@@ -651,6 +655,7 @@
       "kind-present": "此页面被标记会出现在地图上",
       "missing-field": "缺少必需的一行",
       "describes-target-missing": "链接的概念不在这里",
+      "bad-describes": "概念列表不是列表",
       "section-order": "章节缺失或顺序错误",
       "bad-truncation-record": "已读范围的记录不一致",
       "uncited-fact": "有没有依据的内容",
@@ -855,7 +860,7 @@
       "undoneReason": {
         "notDraft": "它不是 status: draft，而计划只能写草稿。",
         "duplicateKey": "页面顶部的信息块有两行 {key}:，读取方可能得出不同结论。",
-        "forbiddenKey": "它带有一行 {key}:，这只能由人添加。",
+        "forbiddenKey": "它添加、修改或删除了 {key}: 这一行，而计划必须让这一行保持原样。",
         "noFrontmatter": "它顶部没有信息块，因此无法作为草稿读取。",
         "unreadable": "Atlas 无法回读它来检查。"
       },

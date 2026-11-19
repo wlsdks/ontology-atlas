@@ -27,7 +27,7 @@ describe('what reads as a round draft', () => {
     expect(roundDraftProblem('# Plan\n')).toEqual({ reason: 'no-frontmatter' });
   });
 
-  it('refuses a key written twice, in any case or indentation, and the keys only a person may add', () => {
+  it('refuses a key written twice, in any case or indentation, and a kind: line', () => {
     expect(roundDraftProblem(withLine('status: reviewed'))).toEqual({ reason: 'duplicate-key', key: 'status' });
     expect(roundDraftProblem(withLine('  status: draft'))).toEqual({ reason: 'duplicate-key', key: 'status' });
     expect(roundDraftProblem(withLine('Status: reviewed'))).toEqual({ reason: 'duplicate-key', key: 'status' });

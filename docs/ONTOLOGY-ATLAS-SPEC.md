@@ -683,9 +683,10 @@ injection." Implementations MUST NOT claim or imply the stronger meaning.
 ## 8. Versioning and compatibility policy
 
 - **This spec is v2.1-rc.** v2.1 lifts the `reviewed`-only rule on a wiki
-  page's `describes:` and adds the page code `describes-target-missing` (§11.4).
-  A v2.0 wiki page passes unless a `describes:` entry names no `kind:` node in
-  its folder; `describes-needs-approval` is retired.
+  page's `describes:` and adds the page codes `describes-target-missing` and
+  `bad-describes` (§11.4). A v2.0 wiki page passes unless its `describes:` is
+  not a list or an entry names no `kind:` node in its folder;
+  `describes-needs-approval` is retired.
 - **v2.0-rc** deliberately requires immutable lowercase
   UUIDv4 `uid` on every `kind:` node, including `vault-readme`. Rename and
   reclassify preserve it; merge records absorbed identity in `merged_uids`.
@@ -889,6 +890,7 @@ NOT**.
 | `bad-citation` | text shaped like a citation the syntax cannot resolve |
 | `bad-truncation-record` | `sources_truncated:` is not a list of paths, or names a path not in `sources:` |
 | `citation-target-missing` | a cited path is not in `sources:`, or not in the folder |
+| `bad-describes` | `describes:` is present but not a list |
 | `describes-target-missing` | a `describes:` entry names no `kind:` node in the folder |
 
 A `describes:` entry resolves as `find_backlinks` resolves a reference, after

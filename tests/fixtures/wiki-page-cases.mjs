@@ -369,6 +369,19 @@ export const WIKI_PAGE_CASES = [
     expectedCodes: ['describes-target-missing'],
   },
   {
+    name: 'a lone describes value is not a list, so no reader takes it as a link',
+    nodes: WIKI_PAGE_NODES,
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes: capabilities/login'), BODY),
+    expectedOk: false,
+    expectedCodes: ['bad-describes'],
+  },
+  {
+    name: 'a describes that is not a list is reported without a node list too',
+    input: page(FRONTMATTER.replace('status: draft', 'status: draft\ndescribes:'), BODY),
+    expectedOk: false,
+    expectedCodes: ['bad-describes'],
+  },
+  {
     name: 'each entry that names no concept is reported once, the good ones not at all',
     nodes: WIKI_PAGE_NODES,
     input: page(

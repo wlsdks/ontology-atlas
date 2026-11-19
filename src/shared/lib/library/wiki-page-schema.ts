@@ -202,6 +202,7 @@ type WikiProblemCode =
   | 'bad-truncation-record'
   | 'citation-target-missing'
   | 'describes-target-missing'
+  | 'bad-describes'
   | 'dangling-wikilink'
   | 'orphan-page'
   | 'shared-source-unlinked';
@@ -321,9 +322,7 @@ function wikiNodeIndexOf(nodes: WikiNodeIndex | Iterable<WikiNodeEntry>): WikiNo
 }
 
 function readDescribes(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === 'string');
-  if (typeof value === 'string' && value.trim()) return [value];
-  return [];
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
 }
 
 function describesProblems(value: unknown, index: WikiNodeIndex): WikiProblem[] {
@@ -446,6 +445,20 @@ export function validateWikiPage(
     }
   }
 
+  // Every graph reader takes `describes:` only as a list, and a rename refuses to rewrite a lone
+  // value, so one would read as a link here and block every rename of the concept it names.
+  if (Object.prototype.hasOwnProperty.call(frontmatter, 'describes') && !Array.isArray(frontmatter.describes)) {
+    problems.push(
+      problem(
+        'bad-describes',
+        '`describes:` is not a list. Write each concept\'s slug as a list item (`describes:` then ' +
+          '`  - capabilities/<name>`), or `describes: []` when no concept fits. A single value is ' +
+          'not read as a link, and a rename cannot rewrite it.',
+        undefined,
+        { key: 'bad-describes' },
+      ),
+    );
+  }
   if (options.nodes !== undefined && options.nodes !== null) {
     problems.push(...describesProblems(frontmatter.describes, wikiNodeIndexOf(options.nodes)));
   }
