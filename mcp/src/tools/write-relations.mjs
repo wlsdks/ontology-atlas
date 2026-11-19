@@ -37,6 +37,7 @@ import {
   readDocIfPresent,
   requireNodeNotReservedForHuman,
   resolveExistingVaultSlug,
+  universalQuoter,
 } from './vault-nodes.mjs';
 
 /**
@@ -81,6 +82,8 @@ function fileMtime(slug) {
 function guardedMtime(expectedMtime, readMtime, currentMtime) {
   return typeof expectedMtime === 'number' && expectedMtime === readMtime ? { mtime: currentMtime } : {};
 }
+
+const quoted = (warnings) => (warnings.length > 0 ? { warnings } : {});
 
 function addRelation({ from, to, type: requestedType, why, expected_mtime }, options = {}) {
   requireNonBlankString(from, 'from');
@@ -180,6 +183,7 @@ function addRelation({ from, to, type: requestedType, why, expected_mtime }, opt
     key,
     ...guardedMtime(expected_mtime, expected_mtime, fileMtime(canonicalFrom)),
     ...(notice ? { notice } : {}),
+    ...quoted((options.quoter ?? universalQuoter()).quote(why)),
     ...(options.includePostWriteMaintenance === false
       ? {}
       : { postWriteMaintenance: compactPostWriteMaintenance() }),
@@ -336,6 +340,7 @@ function addRelationsBatch({ relations }) {
       `Too many relations: ${relations.length}. Max 50 per call — split into multiple add_relations batches.`
     );
   }
+  const quoter = universalQuoter();
   const results = relations.map((spec, index) => {
     let from = '';
     let to = '';
@@ -352,7 +357,7 @@ function addRelationsBatch({ relations }) {
         'why',
         'expected_mtime',
       ]);
-      return addRelation(spec, { includePostWriteMaintenance: false });
+      return addRelation(spec, { includePostWriteMaintenance: false, quoter });
     } catch (err) {
       const rawMessage = err && err.message ? err.message : String(err);
       const rowLabel = `relations[${index}]`;

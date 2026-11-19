@@ -11,6 +11,7 @@ import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
 import { noteReadFamilies } from '../construction/read-family.mjs';
+import { createUniversalQuoter, UNIVERSAL_LIMITS } from '../construction/universal-quotes.mjs';
 import { blankLiterals } from './code-text.mjs';
 import { declarationIndex } from './declaration-index.mjs';
 import { importsOf } from './import-bindings.mjs';
@@ -498,6 +499,70 @@ describe('a family costs time linear in the types and interfaces that could join
       ['names for the base against 8 such files', aliasRepo(30, 8), aliasRepo(60, 8)],
       ...lexerShapes(50_000).map(([name, small], at) => [`blanking ${name}`, small, lexerShapes(100_000)[at][1]]),
       ['Go files of interfaces between blank runs', blankRuns(1), blankRuns(2)],
+    ];
+    for (const [name, small, large] of pairs) {
+      const smallMs = fastestRunMs(small);
+      const largeMs = fastestRunMs(large);
+      t.diagnostic(`${name}: ${smallMs.toFixed(1)} ms -> ${largeMs.toFixed(1)} ms`);
+      assert.ok(largeMs < smallMs * 3 + 30, `${name}: doubled input took ${largeMs.toFixed(0)} ms against ${smallMs.toFixed(0)} ms`);
+    }
+  });
+});
+
+describe('a partial serve and a family quote-back cost time linear in what they read', () => {
+  // A range that stops inside a declaration finds it in one backward pass over the outline.
+  const rangeIn = (declarations, body = 1) => {
+    const lines = Array.from({ length: declarations }, (_, at) => `function f${at}(a) {\n${'  a += 1;\n'.repeat(body - 1)}  return a;\n}`);
+    const middle = Math.floor(declarations / 2) * (body + 2) + 1;
+    const root = repoWith({ 'package.json': '{"name":"x"}', 'src/many.ts': `${lines.join('\n')}\n` });
+    return () => readSourceEvidence(root, [{ path: 'src/many.ts', startLine: middle, maxLines: 2 }]);
+  };
+  // Every line one indent deeper: each declaration encloses every later one.
+  const staircase = (depth) => {
+    const lines = Array.from({ length: depth }, (_, at) => `${' '.repeat(at)}function s${at}() {`);
+    const root = repoWith({ 'package.json': '{"name":"x"}', 'src/stairs.ts': `${lines.join('\n')}\n` });
+    return () => readSourceEvidence(root, [{ path: 'src/stairs.ts', startLine: depth - 2, maxLines: 1 }]);
+  };
+  const classes = (count) => {
+    const files = { 'package.json': '{"name":"x"}', 'src/base.ts': 'export interface Plugin {\n  apply(v: number): number;\n}\n' };
+    for (let at = 0; at < count; at += 1) files[`src/p${at}.ts`] = `import { Plugin } from './base';\nexport class P${at} implements Plugin {\n  apply(v: number) {\n    return v;\n  }\n}\n`;
+    return repoWith(files);
+  };
+  const quoteRoot = classes(40);
+  const quote = (text) => () => createUniversalQuoter({ root: quoteRoot, reads: new Map() }).quote(text, { body: true });
+  const sentences = (count) => Array.from({ length: count }, (_, at) => `Every plugin number ${at} applies the value (src/p${at % 40}.ts:L3-L5).`).join('\n');
+  const cites = `Every plugin applies (${Array.from({ length: 120 }, (_, at) => `src/p${at % 40}.ts:L3`).join(', ')}).`;
+
+  it('stays within the budget', (t) => {
+    assert.match(rangeIn(300, 40)().rows[0].continues, /^f150 continues to line 6342 /, 'the range is read, inside a declaration');
+    assert.equal(rangeIn(6_000)().rows[0].continues, undefined, 'past the outline cap the end is not claimed');
+    assert.match(staircase(390)().rows[0].continues, /^s387 continues to line 390/);
+    assert.ok(cites.length < UNIVERSAL_LIMITS.lineChars);
+    assert.equal(quote(cites)().length, 1, 'the cites line is read');
+    assert.equal(quote(sentences(10))().length, 10, 'each sentence is quoted');
+    assertWithinBudget(t, 'a range inside one of 6,000 declarations', rangeIn(6_000), 1000);
+    assertWithinBudget(t, 'a range inside one of 300 declarations of 40 lines', rangeIn(300, 40), 1000);
+    assertWithinBudget(t, 'a range at the foot of a 390-step staircase', staircase(390), 1000);
+    assertWithinBudget(t, '20,000 universal sentences in one body', quote(sentences(20_000)), 1000);
+    assertWithinBudget(t, 'one sentence with 120 cites', quote(cites), 1000);
+    assertWithinBudget(t, '2,000 lines just past the line cap', quote(Array.from({ length: 2_000 }, () => `Every plugin ${'x'.repeat(UNIVERSAL_LIMITS.lineChars)}`).join('\n')), 1000);
+  });
+
+  it('checks at most the sentence cap per write, and skips a line past the line cap', () => {
+    const quoter = createUniversalQuoter({ root: quoteRoot, reads: new Map() });
+    const filler = Array.from({ length: UNIVERSAL_LIMITS.sentences }, (_, at) => `Every ticket ${at} is closed.`).join(' ');
+    assert.deepEqual(quoter.quote(`${filler} Every plugin applies the value (src/p1.ts:L3-L5).`), [], 'past the cap nothing more is checked');
+    const fresh = createUniversalQuoter({ root: quoteRoot, reads: new Map() });
+    assert.deepEqual(fresh.quote(`Every plugin applies the value (src/p1.ts:L3-L5). ${'x'.repeat(UNIVERSAL_LIMITS.lineChars)}`), []);
+    assert.equal(fresh.quote('Every plugin applies the value (src/p1.ts:L3-L5).').length, 1);
+  });
+
+  it('doubling the declarations, the staircase or the sentences about doubles the time', (t) => {
+    const pairs = [
+      ['declarations around a range', rangeIn(3_000), rangeIn(6_000)],
+      ['lines around a range', rangeIn(150, 40), rangeIn(300, 40)],
+      ['staircase steps', staircase(195), staircase(390)],
+      ['universal sentences', quote(sentences(10_000)), quote(sentences(20_000))],
     ];
     for (const [name, small, large] of pairs) {
       const smallMs = fastestRunMs(small);

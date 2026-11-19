@@ -221,6 +221,7 @@ export const PATCH_CONCEPT_TOOL = {
       filePath: { type: 'string' },
       changed: { type: 'boolean' },
       mtime: { type: 'number', minimum: 0 },
+      warnings: { type: 'array', items: { type: 'string' } },
       postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
     },
     required: ['ok', 'slug', 'filePath', 'changed', 'postWriteMaintenance'],

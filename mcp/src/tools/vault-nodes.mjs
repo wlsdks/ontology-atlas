@@ -27,8 +27,11 @@ import {
 import { server } from '../server/instance.mjs';
 import {
   REPO_ROOT,
+  REPO_ROOT_IS_GROUNDED,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
+import { sessionReads } from '../construction/session-reads.mjs';
+import { createUniversalQuoter } from '../construction/universal-quotes.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas/array-limits.mjs';
 import {
   requireNonBlankString,
@@ -642,3 +645,8 @@ export {
   resolveExistingVaultUid,
   missingSlugMessage,
 };
+
+/** One write call's quoter for sentences that speak for a whole family (`universal-quotes`). */
+export function universalQuoter() {
+  return createUniversalQuoter({ root: REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null, reads: REPO_ROOT_IS_GROUNDED ? sessionReads(REPO_ROOT) : new Map() });
+}

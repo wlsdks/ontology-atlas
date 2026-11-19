@@ -79,26 +79,44 @@ export function noteReadFamilies(packet, { root, ignore = [], reads }) {
   if (rows.length === 0 || !root) return packet;
   const walk = productWalk(root, ignore);
   const families = createFamilies(root, walk.files, { truncated: walk.truncated });
-  const shown = (path) => repoText(path);
   for (const row of rows) {
     const family = families.familyOf(row.path, row.actualRange, row.symbol);
     if (!family) continue;
-    const members = withoutTwins([...family.members].sort(byPlace));
-    if (members.length < 2) continue;
-    const overlaps = (member, ranges) => {
-      const span = families.spanOf(member, family.method);
-      return Boolean(span) && ranges.some((range) => range.startLine <= span.endLine && span.startLine <= range.endLine);
-    };
-    // The read this line is written on, made on either twin.
-    const own = (member) => [member, ...member.twins].some((place) => place.path === row.path && overlaps(place, [row.actualRange]));
-    const read = members.filter((member) => own(member) || overlaps(member, reads?.get(member.path) ?? [])).length;
-    const base = `\`${repoText(family.base.name, 80)}\` (${shown(family.base.path)}:L${family.base.line})`;
-    const what = family.tie === 'go'
-      ? `the Go types in or importing ${shown(posix.dirname(family.base.path))}/ whose methods match ${base}`
-      : `the classes whose header names ${base}`;
-    const named = members.slice(0, SHOWN).map((member) => `${repoText(member.name, 80)} ${shown(member.path)}:L${member.line}`).join(', ');
-    const more = members.length > SHOWN ? ` and ${members.length - SHOWN} more` : '';
-    row.family = `This family has at least ${members.length} members found in this folder: ${what} (${named}${more}). You read ${read} of them; a sentence about the family says "${read} of at least ${members.length} read" or speaks only for the member${read === 1 ? '' : 's'} read, never "every" unless all were read, and what the others do is an Uncertainty line.`;
+    const count = familyCount(families, family, reads, row);
+    if (!count) continue;
+    const { members, read } = count;
+    row.family = `This family has at least ${members.length} members found in this folder: ${familyWhat(family, members)}. You read ${read} of them; a sentence about the family says "${read} of at least ${members.length} read" or speaks only for the member${read === 1 ? '' : 's'} read, never "every" unless all were read, and what the others do is an Uncertainty line.`;
   }
   return packet;
+}
+
+/**
+ * A family's members, declaration twins folded, and how many this session has
+ * read; null when fewer than two remain.
+ *
+ * @param {object} families `createFamilies` of the folder
+ * @param {object} family a family `familyOf` or `familyNamed` returned
+ * @param {Map<string, object[]>} [reads] ranges this session served
+ * @param {{ path: string, actualRange: object }} [row] the read the count is written on, if any
+ */
+export function familyCount(families, family, reads, row = null) {
+  const members = withoutTwins([...family.members].sort(byPlace));
+  if (members.length < 2) return null;
+  const hit = (span, ranges) => ranges.some((range) => range.startLine <= span.endLine && span.startLine <= range.endLine);
+  const readIn = (member, rangesOf) => families.spansOf(member, family.method).some((span) => hit(span, rangesOf(span.path)));
+  // The read this line is written on, made on either twin.
+  const own = (member) => Boolean(row) && [member, ...member.twins].some((place) => readIn(place, (path) => (path === row.path ? [row.actualRange] : [])));
+  const read = members.filter((member) => own(member) || readIn(member, (path) => reads?.get(path) ?? [])).length;
+  return { members, read };
+}
+
+/** What ties the family and a few members with their lines, as plain text. */
+export function familyWhat(family, members) {
+  const base = `\`${repoText(family.base.name, 80)}\` (${repoText(family.base.path)}:L${family.base.line})`;
+  const what = family.tie === 'go'
+    ? `the Go types in or importing ${repoText(posix.dirname(family.base.path))}/ whose methods match ${base}`
+    : `the classes whose header names ${base}`;
+  const named = members.slice(0, SHOWN).map((member) => `${repoText(member.name, 80)} ${repoText(member.path)}:L${member.line}`).join(', ');
+  const more = members.length > SHOWN ? ` and ${members.length - SHOWN} more` : '';
+  return `${what} (${named}${more})`;
 }

@@ -12,6 +12,33 @@ import {
   SEMANTIC_EVIDENCE_ROW_SCHEMA,
 } from '../tool-schemas/repository-evidence.mjs';
 
+// The read that returns what a partial serve left out: one bounded line range, repeating the call's folder and ignores.
+const NEXT_READ_CALL_SCHEMA = {
+  type: 'object',
+  properties: {
+    tool: { type: 'string', enum: ['analyze_repo_structure'] },
+    arguments: {
+      type: 'object',
+      properties: {
+        rootPath: NON_BLANK_STRING_SCHEMA,
+        ignore: { type: 'array', items: { type: 'string' } },
+        sourceOnly: { type: 'boolean', enum: [true] },
+        sourceReads: {
+          type: 'array', minItems: 1, maxItems: 1,
+          items: {
+            type: 'object',
+            properties: { path: NON_BLANK_STRING_SCHEMA, startLine: { type: 'integer', minimum: 1 }, maxLines: { type: 'integer', minimum: 1, maximum: 200 }, expectedSha256: { type: 'string', pattern: '^[a-f0-9]{64}$' } },
+            required: ['path', 'startLine', 'maxLines'], additionalProperties: false,
+          },
+        },
+      },
+      required: ['sourceOnly', 'sourceReads'], additionalProperties: false,
+    },
+  },
+  required: ['tool', 'arguments'], additionalProperties: false,
+};
+const CONTINUES_SCHEMA = { ...NON_BLANK_STRING_SCHEMA, description: 'Where the declaration this read or part was cut from ends and which of its lines are unread; nextCall returns them.' };
+
 export const ANALYZE_REPO_STRUCTURE_TOOL = {
   name: 'analyze_repo_structure',
   description:
@@ -34,7 +61,8 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
     "returns one declaration's lines with `context`: the code that decides it, ranked by its conditions and " +
     'defaults within 6 KiB: the guard around each call in up to two callers, the owner\'s constructor or header ' +
     '(defaults, the resolver a field holds), and the bodies of direct callees. Each part carries `cite` ' +
-    '(`path:L12-L30`) to put in the body beside the rule it shows. `deciding` says when the condition is in a ' +
+    '(`path:L12-L30`) to put in the body beside the rule it shows. A read or part cut from a longer declaration carries `continues` ' +
+    '(where it ends, which lines are unread) and `nextCall`, the exact call that returns them; make it before writing about what the declaration does. `deciding` says when the condition is in a ' +
     'caller it did not return, with the read to make; `contextOmitted` names parts past the budget. ' +
     '`startLine`/`maxLines` returns exact lines. Up to 16 selectors per call; three or four symbol reads fit ' +
     'whole in one call\'s 32 KiB. Without a proposal the response holds the reads alone; set `sourceOnly: true` ' +
@@ -477,6 +505,8 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                         properties: { path: NON_BLANK_STRING_SCHEMA, startLine: { type: 'integer', minimum: 1 }, maxLines: { type: 'integer', minimum: 1 } },
                         required: ['path', 'startLine', 'maxLines'], additionalProperties: false,
                       },
+                      continues: CONTINUES_SCHEMA,
+                      nextCall: NEXT_READ_CALL_SCHEMA,
                     },
                     required: ['role', 'path', 'symbol', 'startLine', 'endLine', 'cite', 'text'], additionalProperties: false,
                   },
@@ -498,6 +528,9 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   },
                 },
                 deciding: NON_BLANK_STRING_SCHEMA,
+                decidingNextCall: NEXT_READ_CALL_SCHEMA,
+                continues: CONTINUES_SCHEMA,
+                nextCall: NEXT_READ_CALL_SCHEMA,
                 family: NON_BLANK_STRING_SCHEMA,
                 mode: { type: 'string', enum: ['outline'] },
                 sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },

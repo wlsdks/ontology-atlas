@@ -36,6 +36,8 @@ import { childSpec, importsOf, languageOf } from './import-bindings.mjs';
 
 const TYPE_KINDS = new Set(['class', 'interface', 'struct', 'type', 'enum', 'trait']);
 const CLASS_LANGUAGES = new Set(['js', 'py', 'rs']);
+// A cited range is matched against at most this many declarations it holds.
+const CITED_DECLARATIONS = 64;
 const MAX_FILE_BYTES = 256 * 1024;
 const FAMILY_LIMITS = Object.freeze({
   candidates: 512,
@@ -688,6 +690,38 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     return { members: sets[0], base: { path: face.path, line: face.declaration.line, name: face.declaration.name }, method, tie: 'go' };
   }
 
+  /** The family a class or a Go interface of two or more methods is the base of, or null. */
+  function baseFamily(path, declaration) {
+    const language = languageOf(path);
+    const base = { path, line: declaration.line, name: declaration.name, kind: declaration.kind };
+    if (CLASS_LANGUAGES.has(language) && (declaration.kind === 'class' || declaration.kind === 'interface')) {
+      const members = classMembers(base, language);
+      return members && members.length >= 2 ? { members, base, method: null, tie: 'class' } : null;
+    }
+    if (language === 'go' && declaration.kind === 'interface' && declaration.methods?.length >= 2) {
+      const face = goFaces.get(`${posix.dirname(path)}\0${declaration.name}`);
+      const members = face ? goMembers(face, null) : null;
+      return members && members.length >= 2 ? { members, base, method: null, tie: 'go' } : null;
+    }
+    return null;
+  }
+
+  let lowerNames = null;
+  /** Class and interface declarations by lower-case name, and by the name an `I` prefix stands before (`IPlugin` under `plugin`). */
+  function baseNames() {
+    if (lowerNames) return lowerNames;
+    lowerNames = new Map();
+    for (const [name, rows] of index) {
+      for (const row of rows) {
+        if (row.kind !== 'class' && row.kind !== 'interface') continue;
+        const keys = new Set([name.toLowerCase()]);
+        if (/^I[A-Z]/u.test(name)) keys.add(name.slice(1).toLowerCase());
+        for (const key of keys) add(lowerNames, key, row);
+      }
+    }
+    return lowerNames;
+  }
+
   const structures = new Map();
   /**
    * One pass over a file's declarations, by indentation the way
@@ -748,6 +782,67 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
         ?? declarations.find((candidate) => candidate.name === symbol && candidate.line >= range.startLine && candidate.line <= range.endLine);
       if (!declaration || walkTruncated) return null;
       return classFamily(path, declaration) ?? goFamily(path, declaration);
+    },
+    /**
+     * The family a cited range belongs to: of a declaration the range starts in or
+     * holds, as a member, or as the class or interface the family is tied to.
+     * Null when the range touches no family or more than one.
+     *
+     * @param {string} path repository-relative path the range cites
+     * @param {{ startLine: number, endLine: number }} range
+     */
+    familyAt(path, range) {
+      if (walkTruncated) return null;
+      const structure = structureOf(path);
+      if (!structure) return null;
+      const declarations = [...(byPath.get(path) ?? [])].sort((a, b) => a.line - b.line);
+      const touched = [];
+      let enclosing = null;
+      for (const declaration of declarations) {
+        if (declaration.line > range.endLine || touched.length >= CITED_DECLARATIONS) break;
+        if (declaration.line >= range.startLine) touched.push(declaration);
+        else if ((structure.endOf.get(declaration) ?? 0) >= range.startLine) enclosing = declaration;
+      }
+      if (enclosing) touched.unshift(enclosing);
+      const found = new Map();
+      for (const declaration of touched) {
+        for (const candidate of [declaration, structure.ownerOf.get(declaration)]) {
+          if (!candidate) continue;
+          const family = classFamily(path, candidate) ?? goFamily(path, candidate) ?? baseFamily(path, candidate);
+          if (family) found.set(`${family.base.path}\0${family.base.line}`, family);
+        }
+      }
+      return found.size === 1 ? [...found.values()][0] : null;
+    },
+    /**
+     * The family tied to the one class or interface a word names, compared
+     * without case (`transform` names `Transform`; `plugin` also names an
+     * interface `IPlugin`). Null when no declaration or several answer to it.
+     *
+     * @param {string} word
+     */
+    familyNamed(word) {
+      if (walkTruncated) return null;
+      const key = String(word).toLowerCase();
+      const rows = baseNames().get(key) ?? [];
+      if (rows.length !== 1) return null;
+      const [row] = rows;
+      const declaration = (byPath.get(row.path) ?? []).find((candidate) => candidate.line === row.line);
+      return declaration ? baseFamily(row.path, declaration) : null;
+    },
+    /** Every span a member's code covers for a read to count: `spanOf`, or each method of a Go type counted from its interface. */
+    spansOf(member, method) {
+      if (member.key && !method) {
+        const spans = [];
+        for (const [, row] of goMethods.get(member.key) ?? []) {
+          const own = structureOf(row.path)?.atLine.get(row.line);
+          if (own) spans.push({ path: row.path, startLine: own.line, endLine: structureOf(row.path).endOf.get(own) });
+        }
+        const type = this.spanOf(member, null);
+        return type ? [{ path: member.path, ...type }, ...spans] : spans;
+      }
+      const span = this.spanOf(member, method);
+      return span ? [{ path: member.path, ...span }] : [];
     },
     /** The lines a member's own code spans: its own declaration of the read method, else the whole class or method. */
     spanOf(member, method) {
