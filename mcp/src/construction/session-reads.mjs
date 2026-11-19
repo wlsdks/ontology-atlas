@@ -141,40 +141,7 @@ export function readPath(reads, path) {
   return reads?.cited?.get(path) ?? path;
 }
 
-/*
- * The symbols a node said were not read, as this process saw them: a line
- * deleted later still owes its read, so taking the sentence out is not reading
- * the code. Keyed by real root, at most OWED_PER_ROOT each, oldest out first.
- */
-const OWED = new Map();
-const OWED_PER_ROOT = 256;
-const OWED_ROOTS = 64;
-
-/** Remembers each `{ path, line, name, symbol }` declaration a node named as unread. */
-export function noteOwedReads(rootPath, rows) {
-  const root = realRoot(rootPath);
-  if (!root || rows.length === 0) return;
-  let held = OWED.get(root);
-  if (!held) {
-    if (OWED.size >= OWED_ROOTS) OWED.delete(OWED.keys().next().value);
-    OWED.set(root, (held = new Map()));
-  }
-  for (const row of rows) {
-    const key = `${row.path}\0${row.line}`;
-    held.delete(key);
-    held.set(key, { path: row.path, line: row.line, name: row.name, symbol: row.symbol });
-    if (held.size > OWED_PER_ROOT) held.delete(held.keys().next().value);
-  }
-}
-
-/** The declarations nodes in this repository have named as unread this session. */
-export function owedReads(rootPath) {
-  const root = realRoot(rootPath);
-  return root ? [...(OWED.get(root)?.values() ?? [])] : [];
-}
-
 /** Forgets every recorded read; tests only. */
 export function resetSessionReads() {
   FILES.clear();
-  OWED.clear();
 }

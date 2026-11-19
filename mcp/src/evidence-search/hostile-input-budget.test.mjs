@@ -12,9 +12,6 @@ import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
 import { importsOf } from './import-bindings.mjs';
 import { readSourceEvidence } from './source-evidence.mjs';
-import { repositorySurvey } from '../construction/build-depth.mjs';
-import { resetSessionReads } from '../construction/session-reads.mjs';
-import { measureUnreadClaims } from '../construction/unread-claims.mjs';
 
 const FILE_BYTES = 256 * 1024;
 // Cases take at most 5 ms each; the budget leaves wide headroom.
@@ -309,39 +306,6 @@ describe('module-qualified calls cost one lookup each', () => {
       const packet = readSourceEvidence(root, Array.from({ length: 16 }, () => ({ path: 'src/entry.ts', symbol: 'entry' })));
       assert.equal(packet.rows[0].status, 'read');
     });
-  });
-});
-
-/*
- * The unread-claim floor reads every body line of a vault on each write and at
- * finalize: one pass a line, lines past 2,000 characters skipped, at most 128
- * names looked up, and one probe of the cached declarations per file.
- */
-describe('the unread-claim floor costs time linear in the vault\'s text', () => {
-  // 128 lines of 2,000 characters: the 256 KiB the source cases use.
-  const vaultOf = (line, count = 128) => [{ slug: 'capabilities/x', frontmatter: { kind: 'capability', path: 'src/x.ts' }, body: `X.\n\n## Uncertainty\n${`${line}\n`.repeat(count)}` }];
-  const fill = (unit, tail = ' not read') => `${unit.repeat(Math.floor((1990 - tail.length) / unit.length))}${tail}`;
-
-  it('measures 256 KiB of claim lines of each hostile shape within the budget', (t) => {
-    const declared = Array.from({ length: 2000 }, (_, at) => `export function f${at}(v: number) {\n  return v;\n}\n`).join('');
-    const root = repoWith({ 'package.json': '{"name":"x"}', 'src/x.ts': declared, 'src/same.ts': 'export function same() {\n  return 1;\n}\n'.repeat(5000) });
-    const repo = repositorySurvey(root, join(root, 'atlas'));
-    const cases = [
-      ['code spans of names declared once each', vaultOf(fill('`f1` ', ' were not read')).concat(Array.from({ length: 4000 }, (_, at) => ({ slug: `elements/e${at}`, frontmatter: { kind: 'element' }, body: `E.\n\n## Uncertainty\n- \`f${at % 2000}\` and \`g${at}\` not read.\n` })))],
-      ['a run of backticks', vaultOf(fill('`'))],
-      ['a dotted chain', vaultOf(fill('a.'))],
-      ['"not" repeated before "read"', vaultOf(fill('not ', 'read'))],
-      ['a path of slashes', vaultOf(fill('a/'))],
-      ['a run of dots and colons after a slash', vaultOf(`x/${fill('.:')}`)],
-      ['"other than" repeated', vaultOf(fill('other than `f1` '))],
-      ['a cited line number run', vaultOf(fill(':1-1'))],
-      ['a name declared 5,000 times', vaultOf('- `same` was not read.', 2000)],
-    ];
-    for (const [name, docs] of cases) {
-      resetSessionReads();
-      assertWithinBudget(t, name, () => measureUnreadClaims(docs, repo, new Map()));
-    }
-    resetSessionReads();
   });
 });
 

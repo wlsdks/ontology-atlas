@@ -169,49 +169,6 @@ export function declarationIndex(rootPath, { ignore = [], files } = {}) {
   return index;
 }
 
-// A `type` alias owns no methods, and one declared inside a method body must not take them over.
-const OWNER_KINDS = new Set(['class', 'interface', 'struct', 'enum', 'object', 'trait']);
-
-/**
- * name -> [{ path, line, kind, name, owner? }] for the given names only, over
- * the same cached per-file declarations: a file whose identifier filter rules
- * out every name is skipped, and no index of the rest is built. A
- * `Receiver.method` declaration answers to its full name and to its bare
- * method name; a method declared under its bare name carries `owner`, the
- * type declared last before it.
- *
- * @param {string} rootPath absolute repository root
- * @param {Iterable<string>} names
- * @param {{ ignore?: string[], files?: object[] }} [options]
- */
-export function declarationsNamed(rootPath, names, { ignore = [], files } = {}) {
-  const wanted = new Set(names);
-  const found = new Map();
-  if (wanted.size === 0) return found;
-  // Each name is hashed once; a file costs one filter probe per name.
-  const hashed = [...new Set([...wanted].map((name) => name.split('.').pop()))]
-    .filter((name) => /^[A-Za-z_$][\w$]*$/.test(name)).map(hashes);
-  const named = (facts) => hashed.some(([a, b]) => positions(a, b, facts.names.length * 8)
-    .every((bit) => (facts.names[bit >> 3] & (1 << (bit & 7))) !== 0));
-  for (const file of files ?? productFiles(rootPath, ignore)) {
-    const facts = factsOf(file);
-    if (!named(facts)) continue;
-    let owner = null;
-    for (const { name, line, kind } of facts.declarations) {
-      if (OWNER_KINDS.has(kind)) owner = name;
-      const keys = name.includes('.') ? [name, name.split('.').pop()] : [name];
-      for (const key of keys) {
-        if (!wanted.has(key)) continue;
-        const row = { path: file.path, line, kind, name, ...(kind === 'method' && owner && !name.includes('.') ? { owner } : {}) };
-        const rows = found.get(key);
-        if (rows) rows.push(row);
-        else found.set(key, [row]);
-      }
-    }
-  }
-  return found;
-}
-
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
