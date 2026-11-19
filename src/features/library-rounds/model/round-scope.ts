@@ -34,7 +34,17 @@ export interface ScopeInput {
   vaultServerName: string;
   /** `'read' | 'write' | null` for the vault server's own tools; `null` when it is not one. */
   atlasToolMode: (toolName: string | null, serverName: string) => 'read' | 'write' | null;
-  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; text: string } | null;
+  /**
+   * The page as the write would leave it, its problems, and `before`, the page as the pass knows it
+   * (`null` for a new page), against which its links to concepts must be unchanged.
+   */
+  judgeWrite: (request: ScopeRequest) => {
+    path: string;
+    ok: boolean;
+    text: string;
+    before?: string | null;
+    problems?: ReadonlyArray<{ code: string }>;
+  } | null;
   node?: (relative: string) => boolean;
   unsafe?: (relative: string) => boolean;
 }
@@ -132,7 +142,10 @@ export function judgeRoundScope({
       return { decision: 'reject', reason: relative };
     }
     const verdict = judgeWrite(request);
-    return verdict?.ok && roundDraftProblem(verdict.text) === null
+    // A link the round carries unchanged is the page writer's, so a concept that has since gone
+    // does not stop the round revising the page; `roundDraftProblem` refuses any changed link.
+    const fits = verdict !== null && (verdict.ok || ((verdict.problems?.length ?? 0) > 0 && verdict.problems!.every((entry) => entry.code === 'describes-target-missing')));
+    return verdict && fits && roundDraftProblem(verdict.text, verdict.before ?? null) === null
       ? { decision: 'allow', note: `write ${relative}`, wrote: { path: relative, text: verdict.text } }
       : { decision: 'reject', reason: relative };
   }
