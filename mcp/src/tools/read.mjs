@@ -63,7 +63,7 @@ import {
   relationNoteFor,
 } from '../vault/relation-refs.mjs';
 import { slugToPath } from '../vault/slug-paths.mjs';
-import { docBodyMayContain, loadedDocIsEmpty, validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
+import { docBodyIncluder, loadedDocIsEmpty, validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
 import {
   FULL_BODY_MAX_CHARS,
   GET_CONCEPTS_FULL_BODY_MAX,
@@ -368,6 +368,7 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
   requireOptionalBoolean(nodesOnly, 'nodesOnly');
   const docs = loadVaultDocs(VAULT_ROOT);
   const needle = String(title).toLowerCase().trim();
+  const bodyIncludes = docBodyIncluder(needle);
   const scored = [];
   for (const doc of docs) {
     const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '');
@@ -377,15 +378,11 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
     // Relevance score: title > frontmatter ref > body + title token overlap; score > 0
     // exactly when a substring matched. The body counts only when title and
     // frontmatter did not match, and is read only when its fingerprint allows the
-    // needle (`docBodyMayContain`), so a call opens the few files that can match.
+    // needle and no earlier call answered it (`docBodyIncluder`).
     let { score, matchedIn } = scoreEvidence(title, { title: docTitle, frontmatterHaystack, body: '' });
     if (score <= 0) {
-      if (!docBodyMayContain(doc, needle)) continue;
-      ({ score, matchedIn } = scoreEvidence(title, {
-        title: docTitle,
-        frontmatterHaystack,
-        body: readVaultDocText(doc).body,
-      }));
+      if (!bodyIncludes(doc)) continue;
+      ({ score, matchedIn } = scoreEvidence(title, { title: docTitle, frontmatterHaystack, bodyIncludes: true }));
     }
     if (score <= 0) continue;
     // The row states whether it is a node, because an absent `kind` key vanishes from

@@ -11,13 +11,13 @@ import { extractUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
 import { parseFrontmatter } from '../parser.mjs';
 import { validateVaultDocument } from '../validate.mjs';
 import {
-  docBodyMayContain,
+  docBodyIncluder,
   docBodyMeaningFindings,
   docUncertaintyReads,
   loadedDocIsEmpty,
   validateLoadedVaultDocument,
 } from './doc-facts.mjs';
-import { bodyLinkKeys, isIndexedLinkNeedle, linkKeysHold } from './doc-shape.mjs';
+import { LINKS_UNINDEXED, bodyLinkKeys, evidenceSignature, linkIndexAnswers, linkKeysHold, signatureMayContain } from './doc-shape.mjs';
 import {
   BODY_CACHE_MAX_BYTES,
   bodyCacheStats,
@@ -135,7 +135,7 @@ describe('answers the cache keeps per document', () => {
     let indexed = 0;
     for (const needle of needles) {
       const expected = bodyLinksTo(LINK_BODY, needle);
-      if (isIndexedLinkNeedle(needle)) {
+      if (linkIndexAnswers(keys, needle)) {
         indexed += 1;
         assert.equal(linkKeysHold(keys, needle), expected, JSON.stringify(needle));
       }
@@ -160,11 +160,27 @@ describe('answers the cache keeps per document', () => {
     for (const doc of docs) {
       const lowered = readVaultDocText(doc).body.toLowerCase();
       for (let from = 0; from + 3 <= lowered.length; from += 5) {
-        assert.equal(docBodyMayContain(doc, lowered.slice(from, from + 3 + (from % 11))), true, doc.slug);
+        assert.equal(signatureMayContain(cachedDocShape(doc).evidence, lowered.slice(from, from + 3 + (from % 11))), true, doc.slug);
       }
-      if (!docBodyMayContain(doc, 'zqxjv-never-written')) ruledOut += 1;
+      if (!signatureMayContain(cachedDocShape(doc).evidence, 'zqxjv-never-written')) ruledOut += 1;
     }
     assert.ok(ruledOut >= docs.length - 2, `the fingerprint ruled out ${ruledOut} of ${docs.length}`);
+  });
+
+  it('answers whether a body includes a needle as reading it does, and reads it once per needle', (t) => {
+    const root = makeVault(t, FILES);
+    const docs = textlessDocs(root);
+    const needles = ['link', 'elements/a', 'the', 'zqxjv-never-written', 'body.', '한글'];
+    const expected = needles.map((needle) => docs.map((doc) => readVaultDocText(doc).body.toLowerCase().includes(needle)));
+    const before = bodyCacheStats();
+    needles.forEach((needle, index) => {
+      assert.deepEqual(docs.map(docBodyIncluder(needle)), expected[index], needle);
+    });
+    // The bodies read for these answers stayed out of the body cache.
+    assert.deepEqual(bodyCacheStats(), before);
+    // Asking a kept needle again reads no file: removing them all cannot change it.
+    for (const doc of docs) rmSync(join(root, `${doc.slug}.md`));
+    assert.deepEqual(docs.map(docBodyIncluder('body.')), expected[4]);
   });
 });
 
@@ -267,5 +283,40 @@ describe('memory stays bounded on hostile input', () => {
     const two = perFile(2_000);
     assert.ok(one < 2_048, `a 2.3 KB Korean file holds ${one.toFixed(0)} bytes`);
     assert.ok(two < one * 1.3, `per file: ${one.toFixed(0)} bytes at 1,000 files, ${two.toFixed(0)} at 2,000`);
+  });
+});
+
+describe('time stays linear on hostile text', () => {
+  // Each of these took about a second for 1 MB before the link walks were bounded.
+  const HOSTILE = { 'repeated /a.md': '/a.md', 'repeated [': '[', 'repeated [[x#': '[[x#', 'repeated (a/b/c.md': '(a/b/c.md' };
+
+  /** The best of three timings of indexing `body`, so a busy machine slows both sides alike. */
+  const indexMs = (body) => Math.min(...[0, 1, 2].map(() => {
+    const started = performance.now();
+    bodyLinkKeys(body);
+    evidenceSignature(body);
+    return performance.now() - started;
+  }));
+
+  for (const [name, unit] of Object.entries(HOSTILE)) {
+    it(`a 1 MB body of ${name} indexes about as fast as plain text`, () => {
+      const plain = indexMs('plain text without any link. '.repeat(Math.ceil(MB / 29)));
+      const hostile = indexMs(unit.repeat(Math.ceil(MB / unit.length)));
+      // Before the bound the hostile bodies cost 45 to 1,000 times plain text.
+      assert.ok(hostile < plain * 5 + 20, `${hostile.toFixed(0)} ms against ${plain.toFixed(0)} ms for plain text`);
+    });
+  }
+
+  it('a body past its link budget is read for every needle, and still answers', (t) => {
+    const hostile = `See (elements/target.md) and [[elements/other]].\n${'/a.md'.repeat(200_000)}\n`;
+    assert.equal(bodyLinkKeys(hostile), LINKS_UNINDEXED);
+    const root = makeVault(t, {
+      'elements/target.md': node('element', 'Target', 'Target body.\n'),
+      'elements/other.md': node('element', 'Other', 'Other body.\n'),
+      'elements/hostile.md': node('element', 'Hostile', hostile),
+    });
+    textlessDocs(root);
+    assert.deepEqual(findBacklinks(root, 'elements/target').map((row) => row.slug), ['elements/hostile']);
+    assert.deepEqual(findBacklinks(root, 'elements/other').map((row) => row.slug), ['elements/hostile']);
   });
 });
