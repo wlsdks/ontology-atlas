@@ -31,6 +31,12 @@ changing what those pages show or how they are built.
   line each: the release, then the title cut with an ellipsis (the full title
   on hover); the date is read in the entry itself. It says how many older
   sections it folded; the full history stays in the repository.
+- **See when a chapter last changed.** An "Updated <date>" line under the
+  title gives the last commit to the body the reader's locale renders, in that
+  locale's date format. The same date is the chapter's `dateModified` in its
+  `TechArticle` JSON-LD (with `datePublished` from the English chapter's first
+  commit) and `article:modified_time`; a `BreadcrumbList` names Guide, then the
+  chapter (`src/views/gateway-doc/lib/guide-chapter-meta.ts`).
 - **Read at book size.** Guide and changelog body text is `--text-reading`
   (16px) at `--leading-prose`, under a `--text-hero` page title. At 1920 a
   guide line ran 97 characters at the median and 105 at most (2026-10-15),
