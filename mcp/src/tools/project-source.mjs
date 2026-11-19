@@ -10,13 +10,15 @@ import {
   repositorySurvey,
 } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
-import { COMPETENCY_SECTION_HINT_EN } from '../construction/construction-card.mjs';
+import { COMPETENCY_ANSWERS_HINT_EN } from '../construction/construction-card.mjs';
 import {
   MEANING_COMPETENCY_CONTRACT,
   MEANING_COMPETENCY_EVALUATOR,
   unresolvedCompetencyRows,
 } from '../meaning/meaning-assessment.mjs';
 import { queryCompiledOntology } from '../ontology-engine.mjs';
+import { renderCompetencyAnswers, withCompetencySection } from '../project-meaning/competency-answers.mjs';
+import { buildProjectMeaningInventory } from '../project-meaning/project-meaning-inventory.mjs';
 import {
   finalizeProjectMeaningReceipt,
   parseProjectCompetencyMarkdown,
@@ -28,6 +30,7 @@ import { inspectProjectSource } from '../project-source/project-source-inspectio
 import {
   PROJECT_SOURCE_STATE_RELATIVE_PATH,
   buildProjectSourceReceipt,
+  pinnedCitationVerifier,
   readProjectSourceBindings,
   readProjectSourceView,
   removeProjectSourceBindings,
@@ -48,15 +51,16 @@ import {
   requireOptionalNonBlankString,
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { loadVaultDocs, readDoc } from '../vault/documents.mjs';
 import { VaultConflictError } from '../vault/atomic-writes.mjs';
+import { updateDoc } from '../vault/doc-writes.mjs';
 import {
   projectMeaningContext,
   projectSourceScope,
 } from './graph.mjs';
 import { attachVaultValidation } from './maintenance.mjs';
 import { validateVaultReport } from './validate-vault.mjs';
-import { resolveExistingVaultSlug } from './vault-nodes.mjs';
+import { requireNodeNotReservedForHuman, resolveExistingVaultSlug } from './vault-nodes.mjs';
 import { isAbsolute } from 'node:path';
 
 const PROJECT_SOURCE_CONNECT_CONTRACT = 'projectSourceConnect:v1';
@@ -64,16 +68,43 @@ const PROJECT_SOURCE_CONNECT_CONTRACT = 'projectSourceConnect:v1';
 const PROJECT_SOURCE_DISCONNECT_CONTRACT = 'projectSourceDisconnect:v1';
 
 /**
- * One refusal for every answered row that does not resolve, each reason naming the
- * witness, so the next patch repairs all of them at once.
+ * Probes one folder with the app's bounded probe and mints the receipt for the
+ * project's declared source claims; the caller decides whether to persist it.
  */
-function competencyRefusal(rows) {
-  const lines = rows.map(({ id, problems }) => `- ${id}: ${problems.join('; ')}.`);
-  return [
-    `finalize_project_meaning blocked: ${rows.length} answered competency row(s) cite witnesses that do not resolve.`,
-    ...lines,
-    'A measured source witness is a repository file that a concept\'s `path:` or this section names and that connect_project_source found; after adding a path, call connect_project_source again. An `Evidence` value may also be a pinned `source:<path>#L<start>-L<end>@sha256:<hash>` citation whose file still has that hash. Otherwise mark the row partial with a `- Gap:` line.',
-  ].join('\n');
+function measureSource({ projectSlug, graphHash, rootPath, scopedDocs }) {
+  const probe = inspectProjectSource(rootPath, { excludePath: VAULT_ROOT });
+  const measuredAt = new Date().toISOString();
+  const receipt = buildProjectSourceReceipt({
+    projectSlug,
+    graphHash,
+    probe,
+    witnesses: deriveProjectSourceWitnessesFromDocs({ projectSlug, docs: scopedDocs }),
+    measuredAt,
+  });
+  const binding = {
+    projectSlug,
+    sourceId: probe.sourceId,
+    rootPath: probe.rootPath,
+    kind: probe.kind,
+    boundAt: measuredAt,
+  };
+  return { probe, receipt, binding };
+}
+
+function persistBinding(written, toolName) {
+  if (written.status === 'blocked_unsafe_path') {
+    throw new Error(
+      `${toolName} blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. repair: true cannot bypass a symlink or junction boundary.`,
+    );
+  }
+  if (written.status === 'blocked_malformed') {
+    throw new Error(
+      `${toolName} blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Re-run connect_project_source with repair: true to discard and rewrite it.`,
+    );
+  }
+  if (written.status !== 'written') {
+    throw new Error(`${toolName} could not persist the binding (${written.status}).`);
+  }
 }
 
 function resolveProjectNodeSlug(projectSlug, allDocs) {
@@ -109,8 +140,6 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
       `connect_project_source blocked: the project scope for "${canonicalSlug}" is incomplete, so no receipt could detect later ontology drift. Repair the project containment first (query_ontology({operation:"project_scope", project:"${canonicalSlug}"})).`,
     );
   }
-  const witnesses = deriveProjectSourceWitnessesFromDocs({ projectSlug: canonicalSlug, docs });
-
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
   if (sidecar.status === 'malformed' && repair !== true) {
     throw new Error(
@@ -142,23 +171,15 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
     inference = { ...inference, candidates };
   }
 
-  let probe;
+  let measured;
   try {
-    probe = inspectProjectSource(selectedRoot, { excludePath: VAULT_ROOT });
+    measured = measureSource({ projectSlug: canonicalSlug, graphHash, rootPath: selectedRoot, scopedDocs: docs });
   } catch (err) {
     throw new Error(
       `connect_project_source could not measure "${selectedRoot}": ${err instanceof Error ? err.message : String(err)}`,
     );
   }
-
-  const measuredAt = new Date().toISOString();
-  const receipt = buildProjectSourceReceipt({
-    projectSlug: canonicalSlug,
-    graphHash,
-    probe,
-    witnesses,
-    measuredAt,
-  });
+  const { probe, receipt, binding } = measured;
   if (inference) {
     inference = inferProjectSourceProposal({
       vaultRootPath: VAULT_ROOT,
@@ -167,13 +188,6 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
     });
   }
 
-  const binding = {
-    projectSlug: canonicalSlug,
-    sourceId: probe.sourceId,
-    rootPath: probe.rootPath,
-    kind: probe.kind,
-    boundAt: measuredAt,
-  };
   const bindingView = {
     rootPath: probe.rootPath,
     kind: probe.kind,
@@ -203,22 +217,10 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
     };
   }
 
-  const written = writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true });
-  if (written.status === 'blocked_unsafe_path') {
-    throw new Error(
-      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is behind an unsafe sidecar path. repair: true cannot bypass a symlink or junction boundary.`,
-    );
-  }
-  if (written.status === 'blocked_malformed') {
-    throw new Error(
-      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Re-run with repair: true to discard and rewrite it.`,
-    );
-  }
-  if (written.status !== 'written') {
-    throw new Error(
-      `connect_project_source could not persist the binding (${written.status}).`,
-    );
-  }
+  persistBinding(
+    writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true }),
+    'connect_project_source',
+  );
   const projectSource = readProjectSourceView(VAULT_ROOT, canonicalSlug, graphHash);
   return {
     ok: true,
@@ -304,11 +306,114 @@ function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
   };
 }
 
-function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
+/**
+ * Whether the stored source receipt measured every path the project now claims,
+ * against the current graph, as the witness inventory counts it: a path is measured
+ * when a witness for one of its claims was. A path cited since (a competency
+ * Evidence file no `path:` names) or a moved graph leaves evidence unmeasured.
+ */
+function receiptMeasuresEveryClaim(receipt, graphHash, claims) {
+  if (receipt.graphHash !== graphHash) return false;
+  const claimKeys = new Set(claims.map((claim) => `${claim.nodeSlug}\0${claim.path}`));
+  const measuredPaths = new Set(receipt.witnesses
+    .filter((witness) => claimKeys.has(`${witness.nodeSlug}\0${witness.path}`))
+    .map((witness) => witness.path));
+  return claims.every((claim) => measuredPaths.has(claim.path));
+}
+
+/**
+ * Re-measures the folder this project is already bound to, as
+ * `connect_project_source({confirm:true})` without `rootPath` does; it never chooses
+ * or infers a folder. A failure is returned, not thrown: the stored receipt may
+ * still resolve every answered row.
+ */
+function remeasureBoundSource(projectSlug, graphHash, scopedDocs) {
+  const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  const bound = sidecar.status === 'ok'
+    ? sidecar.bindings.filter((binding) => binding.projectSlug === projectSlug)
+    : [];
+  if (bound.length !== 1) return { failure: `"${projectSlug}" has no single connected source folder` };
+  try {
+    return { measured: measureSource({ projectSlug, graphHash, rootPath: bound[0].rootPath, scopedDocs }) };
+  } catch (error) {
+    return { failure: `the connected source folder could not be measured (${error instanceof Error ? error.message : String(error)})` };
+  }
+}
+
+const UNRESOLVED_FIELD = [
+  [/^no `- (Concepts|Relations|Evidence|Paths):` row/, (match) => match[1].toLowerCase()],
+  [/^concept /, () => 'concepts'],
+  [/relation/, () => 'relations'],
+  [/^evidence /, () => 'evidence'],
+  [/^path /, () => 'paths'],
+];
+
+function unresolvedFields(problems) {
+  const fields = new Set();
+  for (const problem of problems) {
+    for (const [pattern, field] of UNRESOLVED_FIELD) {
+      const match = pattern.exec(problem);
+      if (match) {
+        fields.add(field(match));
+        break;
+      }
+    }
+  }
+  return [...fields];
+}
+
+/**
+ * One refusal for every answered row whose witnesses do not resolve: the row, each
+ * reason, and the argument to change, so one corrected call succeeds. Unless the
+ * measurement failed, the source was measured for this call, so an unresolved file
+ * is one the folder lacks.
+ */
+function competencyRefusal(rows, answerIndexes, measurementFailure) {
+  const lines = rows.map(({ id, problems }) => {
+    const reasons = (measurementFailure
+      ? problems
+      : problems.map((problem) => problem.replace(/ is not a measured source witness/g, ' is not a file in the connected source folder')))
+      .join('; ');
+    if (!answerIndexes) return `- ${id}: ${reasons}. Repair that row, or pass \`answers\` and finalize rewrites the section.`;
+    const row = `answers[${answerIndexes.get(id)}]`;
+    const fields = unresolvedFields(problems).map((field) => `${row}.${field}`);
+    return `- ${row} ${id}: ${reasons}. Change ${fields.join(' or ') || row}, or set its status "partial" with a gap.`;
+  });
+  return [
+    `finalize_project_meaning blocked: ${rows.length} answered row(s) cite witnesses that do not resolve. Nothing was written.`,
+    ...(measurementFailure ? [`Newly cited files were not measured: ${measurementFailure}. Call connect_project_source with the folder's rootPath and confirm: true.`] : []),
+    ...lines,
+  ].join('\n');
+}
+
+function depthRefusal(depthRefusals, answersGiven) {
+  const fallback = answersGiven
+    ? 'Make the call each row names and finalize again, or set that row\'s status "partial" with a gap.'
+    : 'Make the call each row names and finalize again; marking a row partial is the fallback when the map cannot be repaired.';
+  return [
+    `finalize_project_meaning blocked: ${depthRefusals.length} answered row(s) claim more than the map holds. Nothing was written.`,
+    ...depthRefusals,
+    fallback,
+  ].join('\n');
+}
+
+function parsedCompetency(body, answersGiven) {
+  try {
+    return parseProjectCompetencyMarkdown(body);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (answersGiven) throw new Error(`finalize_project_meaning could not render \`answers\`: ${reason}`);
+    throw new Error(`${reason}. ${COMPETENCY_ANSWERS_HINT_EN}`);
+  }
+}
+
+function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {}) {
   requireOptionalNonBlankString(projectSlug, 'projectSlug');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
   if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
   if (typeof expected_mtime !== 'number') throw new Error('expected_mtime is required.');
+  const answersGiven = answers !== undefined;
+  const section = answersGiven ? renderCompetencyAnswers(answers) : null;
 
   const allDocs = loadVaultDocs(VAULT_ROOT);
   const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs);
@@ -324,6 +429,7 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
   if (projectDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(canonicalSlug, expected_mtime, projectDoc.mtime);
   }
+  if (answersGiven) requireNodeNotReservedForHuman(projectDoc, 'finalize_project_meaning');
 
   const validation = validateVaultReport({}, allDocs);
   if (validation.summary.errorFiles > 0) {
@@ -332,6 +438,12 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     );
   }
 
+  // The section is evidence text, not graph structure: the compiled artifact and the
+  // project graph hash stay those of the files on disk.
+  const projectBody = answersGiven ? withCompetencySection(projectDoc.body, section) : projectDoc.body;
+  const docs = answersGiven
+    ? allDocs.map((doc) => (doc === projectDoc ? { ...doc, body: projectBody } : doc))
+    : allDocs;
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ docs: allDocs });
   const brief = attachVaultValidation(
     queryCompiledOntology(artifact, {
@@ -342,60 +454,88 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     allDocs,
     validation,
   );
-  const context = projectMeaningContext(artifact, canonicalSlug, brief.readiness?.status, null, allDocs);
+  const context = projectMeaningContext(artifact, canonicalSlug, brief.readiness?.status, null, docs);
   if (!context.graphHash || context.inventoryResult.status !== 'ready') {
     throw new Error(
       `finalize_project_meaning blocked: current project witness inventory is unavailable (${context.inventoryResult.reason ?? 'unknown'}).`,
     );
   }
-  const sourceReceipt = context.projectSource.receipt;
-  if (!sourceReceipt) {
-    throw new Error('finalize_project_meaning blocked: a valid project source receipt is required first.');
+  if (!context.projectSource.receipt) {
+    throw new Error(`finalize_project_meaning blocked: a valid project source receipt is required first. Call connect_project_source({projectSlug:"${canonicalSlug}", confirm:true}).`);
+  }
+  const competency = parsedCompetency(projectBody, answersGiven);
+
+  const claims = deriveProjectSourceWitnessesFromDocs({ projectSlug: canonicalSlug, docs: context.docs });
+  let remeasured = null;
+  let measurementFailure = null;
+  let { inventoryResult } = context;
+  if (!receiptMeasuresEveryClaim(context.projectSource.receipt, context.graphHash, claims)) {
+    const measurement = remeasureBoundSource(canonicalSlug, context.graphHash, context.docs);
+    remeasured = measurement.measured ?? null;
+    measurementFailure = measurement.failure ?? null;
+  }
+  if (remeasured) {
+    inventoryResult = buildProjectMeaningInventory({
+      projectSlug: canonicalSlug,
+      graphHash: context.graphHash,
+      projectScope: context.scope,
+      artifactEdges: artifact?.edges,
+      scopedDocs: context.docs,
+      projectSource: { receipt: remeasured.receipt },
+      verifyCitation: pinnedCitationVerifier(VAULT_ROOT, canonicalSlug),
+    });
+    if (inventoryResult.status !== 'ready') {
+      throw new Error(`finalize_project_meaning blocked: the measured witness inventory is unavailable (${inventoryResult.reason}).`);
+    }
   }
 
-  // The parser accepts one exact shape, so say the layout here and point at the guide
-  // that carries it in full: a host may have truncated the `instructions`.
-  let competency;
-  try {
-    competency = parseProjectCompetencyMarkdown(context.projectDoc.body);
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`${reason} ${COMPETENCY_SECTION_HINT_EN}`);
-  }
-  const competencyInput = {
-    contract: MEANING_COMPETENCY_CONTRACT,
-    receiptVersion: 1,
-    evaluator: MEANING_COMPETENCY_EVALUATOR,
-    graphHash: context.graphHash,
-    inventory: context.inventoryResult.inventory,
-    questions: competency.questions,
-  };
-  const unresolvedRows = unresolvedCompetencyRows({ competency: competencyInput });
+  const answerIndexes = answersGiven ? new Map(answers.map((row, index) => [row.id, index])) : null;
+  const unresolvedRows = unresolvedCompetencyRows({
+    competency: {
+      contract: MEANING_COMPETENCY_CONTRACT,
+      receiptVersion: 1,
+      evaluator: MEANING_COMPETENCY_EVALUATOR,
+      graphHash: context.graphHash,
+      inventory: inventoryResult.inventory,
+      questions: competency.questions,
+    },
+  });
   if (unresolvedRows.length > 0) {
-    throw new Error(competencyRefusal(unresolvedRows));
+    throw new Error(competencyRefusal(unresolvedRows, answerIndexes, measurementFailure));
   }
   // An `answered` the map contradicts: most entry files never read this session,
   // units or entry points no node places, or almost no dependency recorded.
   const grounded = REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null;
-  const depth = measureBuildDepth(allDocs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
+  const depth = measureBuildDepth(docs, repositorySurvey(grounded, VAULT_ROOT), grounded ? sessionReads(grounded) : null);
   const depthRefusals = competencyDepthRefusals(competency.questions, depth);
   if (depthRefusals.length > 0) {
-    throw new Error([
-      `finalize_project_meaning blocked: ${depthRefusals.length} answered competency row(s) claim more than the map holds.`,
-      ...depthRefusals,
-      'Make the next call each row names, then call finalize_project_meaning again; marking a row partial is the fallback when the map cannot be repaired.',
-    ].join('\n'));
+    throw new Error(depthRefusal(depthRefusals, answersGiven));
   }
 
+  let storedBody = projectBody;
+  if (answersGiven && projectBody !== projectDoc.body) {
+    const { filePath } = updateDoc(VAULT_ROOT, canonicalSlug, { body: projectBody, expectedMtime: expected_mtime });
+    storedBody = readDoc(VAULT_ROOT, filePath).body;
+  }
+  if (remeasured) {
+    persistBinding(
+      writeProjectSourceBinding(VAULT_ROOT, { ...remeasured.binding, receipt: remeasured.receipt }),
+      'finalize_project_meaning',
+    );
+  }
+  const sourceReceipt = remeasured?.receipt ?? context.projectSource.receipt;
   const receipt = finalizeProjectMeaningReceipt({
     vaultRoot: VAULT_ROOT,
     projectSlug: canonicalSlug,
-    projectBody: context.projectDoc.body,
+    projectBody: storedBody,
     graphHash: context.graphHash,
     sourceFingerprint: sourceReceipt.sourceFingerprint,
     measuredAt: new Date().toISOString(),
   });
-  const meaningAssessment = readProjectMeaningAssessment(context.assessmentInput);
+  const assessmentInput = remeasured
+    ? projectMeaningContext(artifact, canonicalSlug, brief.readiness?.status, null, loadVaultDocs(VAULT_ROOT)).assessmentInput
+    : { ...context.assessmentInput, projectBody: storedBody };
+  const meaningAssessment = readProjectMeaningAssessment(assessmentInput);
   return {
     ok: true,
     changed: true,

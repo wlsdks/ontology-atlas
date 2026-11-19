@@ -4,11 +4,16 @@ import {
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
 } from '../tool-schemas/field-primitives.mjs';
-import {
-  POST_WRITE_MAINTENANCE_GUIDANCE,
-  POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-} from '../tool-schemas/post-write-maintenance.mjs';
 import { LOCALE_LABELS_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
+
+export const WRITE_FINDINGS_GUIDANCE =
+  '`findings`: one plain line per maintenance item on the nodes this call wrote, each with the call that settles it (absent when there is none; the whole queue is `query_ontology({operation:"maintenance_plan"})`)';
+
+export const WRITE_FINDINGS_SCHEMA = {
+  type: 'array',
+  items: { type: 'string' },
+  description: 'One line per maintenance item on the nodes this call wrote, with the call that settles it; at most five, then a count line.',
+};
 
 export const ADD_CONCEPT_TOOL = {
   name: 'add_concept',
@@ -22,7 +27,7 @@ export const ADD_CONCEPT_TOOL = {
     '`warnings` in the response, not as an error. ' +
     'If another node already has the same title, a near-duplicate `warning` is ' +
     'included too — prefer patch_concept on the existing node over forking a duplicate. ' +
-    'Successful writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately see graph cleanup / relation suggestions after the new node lands. ' +
+    'Successful writes return `slug`, `mtime` (the next `expected_mtime`) and ' + WRITE_FINDINGS_GUIDANCE + '. ' +
     '**For bulk creation (e.g. bootstrap flow with 5+ nodes) use `add_concepts({concepts: [...]})` (batch, max 50, partial result) — saves K-1 round-trips.**' + ' ' + ELEMENT_NAMING_RULE_EN,
   inputSchema: {
     type: 'object',
@@ -67,13 +72,12 @@ export const ADD_CONCEPT_TOOL = {
     properties: {
       ok: { type: 'boolean' },
       slug: { type: 'string' },
-      filePath: { type: 'string' },
       changed: { type: 'boolean' },
       mtime: { type: 'number', minimum: 0 },
       warnings: { type: 'array', items: { type: 'string' } },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      findings: WRITE_FINDINGS_SCHEMA,
     },
-    required: ['ok', 'slug', 'filePath', 'changed'],
+    required: ['ok', 'slug', 'changed', 'mtime'],
     additionalProperties: false,
   },
 };
@@ -89,7 +93,7 @@ export const ADD_CONCEPTS_TOOL = {
     'still land. A row whose normalized title matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` — `patch_concept` the earlier node instead of forking the same concept (duplicates are the #1 growing-vault failure mode). '
     + '`concepts[]` order in the response matches the input. Cap = 50 per ' +
     'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
-    'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.' + ' ' + FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
+    'need all-or-nothing semantics use single `add_concept` calls. A written row is `{ok, slug, changed, mtime, warnings?}`. Invalid-only batches return no row-level write metadata, no `findings` and no `coverage`. When at least one row changes the vault, the response includes ' + WRITE_FINDINGS_GUIDANCE + ', and `coverage`.' + ' ' + FAMILY_SCOPE_RULE_EN + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
   inputSchema: {
     type: 'object',
     properties: {
@@ -132,7 +136,6 @@ export const ADD_CONCEPTS_TOOL = {
           properties: {
             slug: { type: 'string' },
             ok: { type: 'boolean' },
-            filePath: { type: 'string' },
             changed: { type: 'boolean' },
             mtime: { type: 'number', minimum: 0 },
             warnings: { type: 'array', items: { type: 'string' } },
@@ -168,7 +171,7 @@ export const ADD_CONCEPTS_TOOL = {
           additionalProperties: false,
         },
       },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      findings: WRITE_FINDINGS_SCHEMA,
       coverage: {
         type: 'string',
         description: 'One line: of the abilities the survey lists (entry points, dispatched operations, library exports, families), how many have their own node, are named inside a capability or element or are excluded with a reason, and each unplaced ability by name; the capabilities that cite no lines this server process read holding a condition, with the exact analyze_repo_structure call that reads them; the capabilities stating a rule without citing read lines that hold its condition, with the read and patch; and the capabilities no ability-to-ability depends_on touches. Absent when the repository root is not grounded or has no product source.',
@@ -188,8 +191,8 @@ export const PATCH_CONCEPT_TOOL = {
     'Body is fully replaced when provided, otherwise preserved. Pass ' +
     '`expected_mtime` (from the previous get_concept response) to detect ' +
     'concurrent external edits — throws VaultConflictError if the file has ' +
-    'changed on disk since you read it. Changed writes return ' +
-    POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately continue graph cleanup. ' + FAMILY_SCOPE_RULE_EN,
+    'changed on disk since you read it. Changed writes return `slug`, `mtime` (the next `expected_mtime`) and ' +
+    WRITE_FINDINGS_GUIDANCE + '. ' + FAMILY_SCOPE_RULE_EN,
   inputSchema: {
     type: 'object',
     properties: {
@@ -218,12 +221,13 @@ export const PATCH_CONCEPT_TOOL = {
     properties: {
       ok: { type: 'boolean' },
       slug: { type: 'string' },
-      filePath: { type: 'string' },
       changed: { type: 'boolean' },
       mtime: { type: 'number', minimum: 0 },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      mintedUid: { type: 'string' },
+      notice: { type: 'string' },
+      findings: WRITE_FINDINGS_SCHEMA,
     },
-    required: ['ok', 'slug', 'filePath', 'changed', 'postWriteMaintenance'],
+    required: ['ok', 'slug', 'changed', 'mtime'],
     additionalProperties: false,
   },
 };

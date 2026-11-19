@@ -1,4 +1,7 @@
+import { MEANING_COMPETENCY_QUESTIONS } from '../../meaning/meaning-assessment.mjs';
+import { COMPETENCY_ROW_WITNESSES_MAX } from '../../project-meaning/competency-answers.mjs';
 import {
+  NON_BLANK_MULTILINE_TEXT_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
 } from '../tool-schemas/field-primitives.mjs';
@@ -11,24 +14,69 @@ import {
   PROJECT_SOURCE_VIEW_SCHEMA,
 } from '../tool-schemas/project-source-shapes.mjs';
 
+const COMPETENCY_QUESTION_LIST = MEANING_COMPETENCY_QUESTIONS
+  .map(({ id, question }) => `\`${id}\`: ${question}`)
+  .join(' ');
+
 export const FINALIZE_PROJECT_MEANING_TOOL = {
   name: 'finalize_project_meaning',
   description:
-    'Finalize the current project competency Markdown after concept/relation writes, vault validation, and a complete project compile. ' +
-    'The server derives the current body digest, project graph hash, source fingerprint, and witness inventory itself; callers cannot submit or restamp those values. ' +
-    'This writes only a small provenance receipt to `.ontology-atlas/project-meaning.json`. It never stores raw answers, witness text, absolute source roots, or remote coordinates. ' +
-    '`ok: true` means the receipt was written, not that source currentness is verified; read `meaningAssessment` or a fresh `agent_brief` for the fail-closed categorical result.',
+    'Finalize the project\'s competency answers after concept/relation writes, `validate_vault` and `connect_project_source`. ' +
+    'Pass `answers` and the server writes the project body\'s `## Competency answers` section from them (replacing one that exists), then finalizes, in one call; without `answers` it finalizes the section already in the body. ' +
+    'Each evidence file or path an answer names inside the folder this project is connected to is measured in the same call; a project with no connected folder is refused. ' +
+    'A refusal names each row, the reason and the argument to change, and writes nothing. ' +
+    'The server derives the body digest, project graph hash, source fingerprint and witness inventory itself, and writes a small provenance receipt to `.ontology-atlas/project-meaning.json` that holds no answer text, absolute source root or remote coordinate. ' +
+    '`ok: true` means the receipt was written, not that source currentness is verified; read `meaningAssessment` for the fail-closed categorical result.',
   inputSchema: {
     type: 'object',
     properties: {
       projectSlug: nonBlankStringSchema(
-        'Exact project node slug (or an unambiguous vault alias) whose current Competency answers section should be finalized.',
+        'Exact project node slug (or an unambiguous vault alias) to finalize.',
       ),
       expected_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'Required conflict guard. Pass the project node mtime from get_concept; any intervening human or agent edit blocks finalization.',
+          'Required conflict guard: the project node mtime from its last write or get_concept; any intervening human or agent edit blocks finalization.',
+      },
+      answers: {
+        type: 'array',
+        minItems: MEANING_COMPETENCY_QUESTIONS.length,
+        maxItems: MEANING_COMPETENCY_QUESTIONS.length,
+        description:
+          `One row per fixed question: ${COMPETENCY_QUESTION_LIST} ` +
+          '`answered` needs witnesses that back the whole answer; `partial` or `visible-gap` needs `gap`, one line naming what is missing. ' +
+          'More: connection_info({guide:"competency"}).',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', enum: MEANING_COMPETENCY_QUESTIONS.map(({ id }) => id) },
+            status: { type: 'string', enum: ['answered', 'partial', 'visible-gap'] },
+            answer: { ...NON_BLANK_MULTILINE_TEXT_SCHEMA, description: 'Plain sentences; no heading and no "- Label:" line.' },
+            concepts: { type: 'array', maxItems: COMPETENCY_ROW_WITNESSES_MAX, items: NON_BLANK_STRING_SCHEMA, description: 'Slugs inside this project.' },
+            relations: {
+              type: 'array',
+              maxItems: COMPETENCY_ROW_WITNESSES_MAX,
+              items: {
+                type: 'object',
+                properties: { from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA, type: NON_BLANK_STRING_SCHEMA },
+                required: ['from', 'to', 'type'],
+                additionalProperties: false,
+              },
+              description: 'Declared relations by their stored key: `domains`, `capabilities`, `elements`, `depends_on`.',
+            },
+            evidence: {
+              type: 'array',
+              maxItems: COMPETENCY_ROW_WITNESSES_MAX,
+              items: NON_BLANK_STRING_SCHEMA,
+              description: 'Repository-relative files or folders, such as `README.md`, or a pinned `source:<path>#L<a>-L<b>@sha256:<64 hex>`.',
+            },
+            paths: { type: 'array', maxItems: COMPETENCY_ROW_WITNESSES_MAX, items: NON_BLANK_STRING_SCHEMA, description: 'Repository-relative files or folders.' },
+            gap: nonBlankStringSchema('What is missing, in one line; required unless status is answered.'),
+          },
+          required: ['id', 'status', 'answer'],
+          additionalProperties: false,
+        },
       },
     },
     required: ['projectSlug', 'expected_mtime'],

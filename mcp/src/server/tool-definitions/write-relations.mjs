@@ -6,11 +6,9 @@ import {
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
 } from '../tool-schemas/destructive-preview.mjs';
-import {
-  POST_WRITE_MAINTENANCE_GUIDANCE,
-  POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-} from '../tool-schemas/post-write-maintenance.mjs';
+import { POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA } from '../tool-schemas/post-write-maintenance.mjs';
 import { ADD_RELATION_TYPE_SCHEMA, RELATION_RESULT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
+import { WRITE_FINDINGS_GUIDANCE, WRITE_FINDINGS_SCHEMA } from './write-concepts.mjs';
 
 export const ADD_RELATION_TOOL = {
   name: 'add_relation',
@@ -21,8 +19,8 @@ export const ADD_RELATION_TOOL = {
     'A new `depends_on` relation requires a nonblank `why`; an already-existing edge remains an idempotent read even if legacy data has no rationale. **R11**: optional ' +
     '`expected_mtime` — pass the source-side `mtime` from a prior get_concept or from this tool\'s last result ' +
     'so concurrent external edits throw VaultConflictError. The result carries `mtime` only when the call passed a matching `expected_mtime`: an unguarded relation write never read the body, so its mtime cannot guard a later body write. `contains` between kinds a typed key fits (project→domain, project/domain→capability, project/domain/capability→element) is written as that typed key and the result says so in `notice`. ' +
-    'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields in `structuredContent`, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. ' +
-    'Changed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately see graph cleanup / relation suggestions after the edge lands. ' +
+    'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields in `structuredContent`, with no `changed`, `alreadyExists`, or `findings` write metadata. ' +
+    'Changed writes return ' + WRITE_FINDINGS_GUIDANCE + '. ' +
     '**For multiple already-approved semantic edges use `add_relations({relations: [...]})` (batch, idempotent, max 50). `infer_imports.moduleEdges` require exact-evidence review, a semantic rationale, and human approval first.**',
   inputSchema: {
     type: 'object',
@@ -56,12 +54,11 @@ export const ADD_RELATION_TOOL = {
       from: { type: 'string' },
       to: { type: 'string' },
       type: { type: 'string' },
-      key: { type: 'string' },
       changed: { type: 'boolean' },
       alreadyExists: { type: 'boolean' },
       mtime: { type: 'number', minimum: 0 },
       notice: { type: 'string' },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      findings: WRITE_FINDINGS_SCHEMA,
     },
     required: ['ok', 'from', 'to', 'type'],
     additionalProperties: false,
@@ -78,7 +75,7 @@ export const ADD_RELATIONS_TOOL = {
     '`relations[]` order in the response matches the input; `mtimes` maps each changed source slug whose first changed row passed `expected_mtime` to its mtime after the last row, ready as the next `expected_mtime`; a source no row guarded has no entry. Cap = 50 per call. ' +
     'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
     'Tip: when several rows share one `from`, pass `expected_mtime` on its first row only — ' +
-    'the first row mutates that file so a later row would see a stale mtime. Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+    'the first row mutates that file so a later row would see a stale mtime. Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `findings`. When at least one row changes the vault, the response includes ' + WRITE_FINDINGS_GUIDANCE + '.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -118,7 +115,6 @@ export const ADD_RELATIONS_TOOL = {
             from: { type: 'string' },
             to: { type: 'string' },
             type: { type: 'string' },
-            key: { type: 'string' },
             changed: { type: 'boolean' },
             alreadyExists: { type: 'boolean' },
             mtime: { type: 'number', minimum: 0 },
@@ -156,7 +152,7 @@ export const ADD_RELATIONS_TOOL = {
         },
       },
       mtimes: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
-      postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      findings: WRITE_FINDINGS_SCHEMA,
     },
     required: ['relations'],
     additionalProperties: false,
