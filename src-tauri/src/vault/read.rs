@@ -138,7 +138,7 @@ fn read_text_tail(path: &Path, max_lines: usize, max_bytes: u64) -> std::io::Res
         lines.remove(0);
     }
     let keep = lines.len().saturating_sub(max_lines);
-    Ok(lines[keep..].join("\n"))
+    Ok(lines.get(keep..).unwrap_or_default().join("\n"))
 }
 
 /// A u64 LE mtime, then raw bytes: a serde `Vec<u8>` is one JSON number per byte.

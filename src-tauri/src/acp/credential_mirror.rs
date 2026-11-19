@@ -1,22 +1,32 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(target_os = "macos")]
+use std::path::PathBuf;
 
+#[cfg(target_os = "macos")]
 use super::bounded_command::{bounded_output, bounded_success, KEYCHAIN_PROBE_TIMEOUT};
 
 /// `Claude Code-credentials-<first 8 hex of sha256(config dir)>`; tests pin two measured values.
+#[cfg(any(target_os = "macos", test))]
 pub(super) fn claude_credentials_service(config_dir: &Path) -> String {
     use sha2::{Digest, Sha256};
     let digest = Sha256::digest(config_dir.to_string_lossy().as_bytes());
-    format!("Claude Code-credentials-{}", &hex_lower(&digest)[..8])
+    format!(
+        "Claude Code-credentials-{}",
+        hex_lower(&digest).chars().take(8).collect::<String>()
+    )
 }
 
+#[cfg(any(target_os = "macos", test))]
 fn hex_lower(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// The terminal's login item when no `CLAUDE_CONFIG_DIR` is set.
+#[cfg(any(target_os = "macos", test))]
 const DEFAULT_CLAUDE_CREDENTIALS_SERVICE: &str = "Claude Code-credentials";
 
 /// Not a precedence list; `choose_terminal_credential` decides.
+#[cfg(any(target_os = "macos", test))]
 fn terminal_login_services(home: &Path) -> Vec<String> {
     vec![
         DEFAULT_CLAUDE_CREDENTIALS_SERVICE.to_string(),
@@ -26,6 +36,7 @@ fn terminal_login_services(home: &Path) -> Vec<String> {
 
 /// Compared by digest and write time, never by handling the secret again.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(any(target_os = "macos", test))]
 struct CredentialCarrier {
     /// Never the secret.
     pub(crate) label: String,
@@ -39,6 +50,7 @@ struct CredentialCarrier {
 /// Agreeing carriers name the login; disagreeing ones are decided by the newest
 /// write (the terminal rewrites the one it uses); anything else is `None` and nothing
 /// is installed. Stamps must share one clock (UTC), and `claude auth status` cannot arbitrate.
+#[cfg(any(target_os = "macos", test))]
 fn choose_terminal_credential(carriers: &[CredentialCarrier]) -> Option<usize> {
     let first = carriers.first()?;
     if carriers
@@ -66,12 +78,14 @@ fn choose_terminal_credential(carriers: &[CredentialCarrier]) -> Option<usize> {
 }
 
 /// The digest is the only form of the secret compared, logged or kept.
+#[cfg(any(target_os = "macos", test))]
 fn credential_digest(secret: &str) -> String {
     use sha2::{Digest, Sha256};
     hex_lower(&Sha256::digest(secret.as_bytes()))
 }
 
 /// The sortable part is the leading digit run in the last quoted field.
+#[cfg(any(target_os = "macos", test))]
 fn parse_keychain_written(attributes: &str) -> Option<String> {
     let line = attributes.lines().find(|line| line.contains("\"mdat\""))?;
     let quoted = line.rsplit('"').nth(1)?;
@@ -80,24 +94,28 @@ fn parse_keychain_written(attributes: &str) -> Option<String> {
 }
 
 /// The account decides which of several same-service items Claude Code reads.
+#[cfg(any(target_os = "macos", test))]
 fn parse_keychain_account(attributes: &str) -> Option<String> {
     let line = attributes.lines().find(|line| line.contains("\"acct\""))?;
     let account = line.rsplit('"').nth(1)?.trim();
     (!account.is_empty()).then(|| account.to_string())
 }
 
+#[cfg(target_os = "macos")]
 fn file_written(path: &Path) -> Option<String> {
     let modified = std::fs::metadata(path).ok()?.modified().ok()?;
     let stamp: chrono::DateTime<chrono::Utc> = modified.into();
     Some(stamp.format("%Y%m%d%H%M%S").to_string())
 }
 
+#[cfg(any(target_os = "macos", test))]
 fn profile_fetched_at(account: Option<&serde_json::Value>) -> Option<i64> {
     account?.get("profileFetchedAt")?.as_i64()
 }
 
 /// The account name is a cache refreshed separately on each side, so the terminal's
 /// copy travels only when it is not the staler (`profileFetchedAt`).
+#[cfg(any(target_os = "macos", test))]
 fn merge_oauth_account(
     app_document: Option<serde_json::Value>,
     terminal_document: &serde_json::Value,
@@ -174,8 +192,9 @@ pub(super) fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
             }
         }
 
-        if let Some(chosen) = choose_terminal_credential(&carriers) {
-            let carrier = &carriers[chosen];
+        let chosen = choose_terminal_credential(&carriers)
+            .and_then(|at| Some((carriers.get(at)?, secrets.get(at)?)));
+        if let Some((carrier, chosen_secret)) = chosen {
             let account = mirror_account(&carriers, home);
             // Skip when identical so a locked keychain is not prompted. Reads are
             // account-qualified, or `security` answers with whichever item it reaches first.
@@ -203,7 +222,7 @@ pub(super) fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
                     "-a",
                     &account,
                     "-w",
-                    &secrets[chosen],
+                    chosen_secret,
                 ]);
                 // Only the exit status proves the write; a false yes would take down the symlink below.
                 if bounded_success(write, KEYCHAIN_PROBE_TIMEOUT) {
@@ -261,10 +280,12 @@ pub(super) fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
 }
 
 /// Kept only to clear the unread legacy copy.
+#[cfg(any(target_os = "macos", test))]
 const LEGACY_MIRROR_ACCOUNT: &str = "claude";
 
 /// Claude Code reads the account it writes, the login name; copy it from the
 /// carriers, falling back to the home folder name.
+#[cfg(any(target_os = "macos", test))]
 fn mirror_account(carriers: &[CredentialCarrier], home: &Path) -> String {
     carriers
         .iter()

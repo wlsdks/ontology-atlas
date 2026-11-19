@@ -23,8 +23,8 @@ fn entry() -> Result<Entry, String> {
 }
 
 fn tail4(secret: &str) -> String {
-    let chars: Vec<char> = secret.chars().collect();
-    chars[chars.len().saturating_sub(4)..].iter().collect()
+    let skip = secret.chars().count().saturating_sub(4);
+    secret.chars().skip(skip).collect()
 }
 
 #[derive(Serialize)]
@@ -99,6 +99,11 @@ fn jev_secret_clear_blocking() -> Result<JevSecretStatus, String> {
     })
 }
 
+/// `value[key]` without the panicking `Index` form: a missing key reads as `null`.
+fn at<'a>(value: &'a Value, key: &str) -> &'a Value {
+    value.get(key).unwrap_or(&Value::Null)
+}
+
 fn validate_payload(payload: &str) -> Result<(usize, usize), String> {
     if payload.len() > 16_384 {
         return Err(coded("jev-payload-invalid", "request exceeds 16 KiB"));
@@ -108,10 +113,10 @@ fn validate_payload(payload: &str) -> Result<(usize, usize), String> {
     let obj = request
         .as_object()
         .ok_or_else(|| coded("jev-payload-invalid", "not an object"))?;
-    if obj.len() != 3 || request["model"] != MODEL {
+    if obj.len() != 3 || at(&request, "model") != MODEL {
         return Err(coded("jev-payload-invalid", "unexpected request fields"));
     }
-    let state = request["state"]
+    let state = at(&request, "state")
         .as_object()
         .ok_or_else(|| coded("jev-payload-invalid", "missing state"))?;
     if state.len() != 2 {
@@ -132,18 +137,19 @@ fn validate_payload(payload: &str) -> Result<(usize, usize), String> {
     {
         return Err(coded("jev-payload-invalid", "claim or evidence length"));
     }
-    let questions = request["questions"]
+    let questions = at(&request, "questions")
         .as_object()
         .ok_or_else(|| coded("jev-payload-invalid", "missing questions"))?;
     if questions.len() != 1 || !questions.contains_key("claim_judgment") {
         return Err(coded("jev-payload-invalid", "unexpected questions"));
     }
-    let q = &questions["claim_judgment"];
+    let q = questions.get("claim_judgment").unwrap_or(&Value::Null);
     if q["type"] != "choice"
         || q["instructions"] != "Given only the evidence, how does it relate to the claim?"
-        || q["criteria"]["supported"] != "The evidence directly supports the claim."
-        || q["criteria"]["contradicted"] != "The evidence directly conflicts with the claim."
-        || q["criteria"]["insufficient"] != "The evidence cannot settle the claim."
+        || at(at(q, "criteria"), "supported") != "The evidence directly supports the claim."
+        || at(at(q, "criteria"), "contradicted")
+            != "The evidence directly conflicts with the claim."
+        || at(at(q, "criteria"), "insufficient") != "The evidence cannot settle the claim."
         || q["criteria"].as_object().is_none_or(|c| c.len() != 3)
         || q.as_object().is_none_or(|q| q.len() != 3)
     {
@@ -165,7 +171,7 @@ pub struct JevJudgment {
 fn parse_answer(body: &str, logged_at: String) -> Result<JevJudgment, String> {
     let value: Value =
         serde_json::from_str(body).map_err(|_| coded("jev-response-invalid", "invalid JSON"))?;
-    let answer = &value["answers"]["claim_judgment"];
+    let answer = at(at(&value, "answers"), "claim_judgment");
     let choice = answer["choice"]
         .as_str()
         .filter(|v| matches!(*v, "supported" | "contradicted" | "insufficient"))
@@ -190,7 +196,7 @@ fn parse_answer(body: &str, logged_at: String) -> Result<JevJudgment, String> {
     {
         return Err(coded("jev-response-invalid", "invalid distribution"));
     }
-    let response_model = value["model"]
+    let response_model = at(&value, "model")
         .as_str()
         .filter(|s| !s.is_empty())
         .ok_or_else(|| coded("jev-response-invalid", "missing model"))?;

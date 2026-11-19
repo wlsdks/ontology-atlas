@@ -219,6 +219,8 @@ where
 }
 
 /// Only within a turn where the user pressed [Send]; no vault path, no send.
+// Each argument is a named field of the command the WebView sends, so they cannot be bundled.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command(async)]
 pub async fn llm_chat(
     window: tauri::WebviewWindow,

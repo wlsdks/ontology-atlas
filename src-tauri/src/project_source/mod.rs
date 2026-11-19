@@ -102,7 +102,9 @@ fn hash_source_file(
         let bytes = target.as_bytes();
         let remaining = SOURCE_INVENTORY_MAX_HASH_BYTES.saturating_sub(inventory.hashed_bytes);
         let copied = remaining.min(bytes.len() as u64) as usize;
-        inventory.hasher.update(&bytes[..copied]);
+        inventory
+            .hasher
+            .update(bytes.get(..copied).unwrap_or_default());
         inventory.hashed_bytes += copied as u64;
         if copied < bytes.len() {
             inventory.truncated = true;
@@ -299,6 +301,13 @@ fn is_vault_path(relative: &str, excluded: Option<&str>) -> bool {
     })
 }
 
+/// The path of one porcelain status row: what follows the two status letters and the space.
+fn status_path(row: &[u8]) -> Option<String> {
+    row.get(3..)
+        .filter(|path| !path.is_empty())
+        .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+}
+
 /// One absolute path as forward-slash text: the `\\?\` verbatim prefix dropped, the
 /// drive letter lower-cased, no trailing separator, so a Windows path and its
 /// canonical form compare equal.
@@ -310,8 +319,10 @@ fn comparable_path(path: &str) -> String {
         .or_else(|| unified.strip_prefix("//?/").map(str::to_string))
         .unwrap_or(unified);
     let mut chars: Vec<char> = unverbatim.chars().collect();
-    if chars.len() >= 2 && chars[1] == ':' && chars[0].is_ascii_alphabetic() {
-        chars[0] = chars[0].to_ascii_lowercase();
+    if let [drive, ':', ..] = chars.as_mut_slice() {
+        if drive.is_ascii_alphabetic() {
+            *drive = drive.to_ascii_lowercase();
+        }
     }
     let mut out: String = chars.into_iter().collect();
     while out.len() > 1 && out.ends_with('/') && !out.ends_with(":/") {
@@ -361,7 +372,9 @@ pub(crate) fn filter_vault_status(status: &[u8], excluded: Option<&str>) -> Vec<
     let mut kept: Vec<&str> = Vec::new();
     let mut index = 0;
     while index < tokens.len() {
-        let entry = tokens[index];
+        let Some(&entry) = tokens.get(index) else {
+            break;
+        };
         let renamed = entry.starts_with('R') || entry.starts_with('C');
         let source = if renamed {
             tokens.get(index + 1).copied()
@@ -430,11 +443,7 @@ fn git_continuity_observation(
         .split(|byte| *byte == 0)
         .filter(|row| !row.is_empty())
         .filter(|row| {
-            let relative = if row.len() > 3 {
-                String::from_utf8_lossy(&row[3..]).replace('\\', "/")
-            } else {
-                String::new()
-            };
+            let relative = status_path(row).unwrap_or_default();
             !continuity_excluded(&relative, target, archive_prefix)
         })
         .map(|row| row.to_vec())
@@ -443,9 +452,7 @@ fn git_continuity_observation(
 
     let dirty_paths: std::collections::HashSet<String> = visible_status
         .iter()
-        .filter_map(|row| {
-            (row.len() > 3).then(|| String::from_utf8_lossy(&row[3..]).replace('\\', "/"))
-        })
+        .filter_map(|row| status_path(row))
         .collect();
     let mut inventory = SourceInventory {
         hasher: Sha256::new(),
@@ -533,11 +540,7 @@ pub(crate) fn inspect_project_source_continuity(
         .split(|byte| *byte == 0)
         .filter(|row| !row.is_empty())
         .any(|row| {
-            let relative = if row.len() > 3 {
-                String::from_utf8_lossy(&row[3..]).replace('\\', "/")
-            } else {
-                String::new()
-            };
+            let relative = status_path(row).unwrap_or_default();
             !continuity_excluded(
                 &relative,
                 relative_target.as_deref(),

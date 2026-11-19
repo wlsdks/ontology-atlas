@@ -101,7 +101,7 @@ fn wrong_shared_source_grant_changes_existing_source_access_positive_control() {
 #[test]
 fn separately_granted_vault_retains_but_does_not_expand_its_authority() {
     let f = Fixture::new();
-    let _scope = EnforcedScope::granting(&[f.root.clone()]);
+    let _scope = EnforcedScope::granting(std::slice::from_ref(&f.root));
     assert!(read_vault_text_file(f.path(), "plan.md".into()).is_ok());
     let session = PlanningSession::default();
     f.grant(&session);

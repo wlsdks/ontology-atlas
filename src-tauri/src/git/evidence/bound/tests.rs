@@ -50,6 +50,7 @@ impl Fixture {
             "receipt":{"projectSlug":"fixture","sourceId":id,"sourceKind":"git"}
         }]}).to_string());
     }
+    #[cfg(unix)]
     fn measure(&self) -> BoundEvidenceDates {
         measure(
             self.vault.to_str().unwrap(),

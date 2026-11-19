@@ -19,7 +19,9 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
             return Ok(if out.is_empty() { None } else { Some(out) });
         }
         let newline = available.iter().position(|b| *b == b'\n');
-        let content = &available[..newline.unwrap_or(available.len())];
+        let content = available
+            .get(..newline.unwrap_or(available.len()))
+            .unwrap_or(available);
         if !oversized && out.len() + content.len() > max_bytes {
             oversized = true;
             out = Vec::new();
@@ -53,6 +55,7 @@ fn line_too_long(max_bytes: usize) -> std::io::Error {
 /// Generous because adapters may send a whole file in one line.
 pub(crate) const MAX_LINE_BYTES: usize = 16 * 1024 * 1024;
 
+#[cfg(unix)]
 const GRACEFUL_EXIT_WAIT: std::time::Duration = std::time::Duration::from_millis(1_000);
 
 #[cfg(unix)]

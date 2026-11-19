@@ -229,7 +229,7 @@ fn discovery_refuses_a_source_root_the_vault_gate_forbids() {
     fs::write(bundle.join("plan.pdf"), b"%PDF-1.7\n").unwrap();
     let bundle = fs::canonicalize(&bundle).unwrap();
 
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[bundle.clone()]);
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&bundle));
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: bundle.to_string_lossy().to_string(),

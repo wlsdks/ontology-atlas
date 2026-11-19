@@ -110,7 +110,10 @@ fn later_page_failure_returns_prior_originals_and_resumes_at_the_failed_page() {
             if path == "owner/repo" {
                 Ok(metadata(123))
             } else if path.ends_with("page=1") {
-                Ok(page(json!([record(1, "2004-01-01T00:00:00Z", "first")]), &link(123, 2, 20)))
+                Ok(page(
+                    json!([record(1, "2004-01-01T00:00:00Z", "first")]),
+                    &link(123, 2, 20),
+                ))
             } else {
                 Err(PageError::Unavailable)
             }
@@ -120,7 +123,10 @@ fn later_page_failure_returns_prior_originals_and_resumes_at_the_failed_page() {
     assert_eq!(first.status, "partial");
     assert_eq!(first.reason, Some("unavailable"));
     assert!(first.can_continue);
-    assert_eq!(first.versions.iter().map(|v| v.number).collect::<Vec<_>>(), [1]);
+    assert_eq!(
+        first.versions.iter().map(|v| v.number).collect::<Vec<_>>(),
+        [1]
+    );
     assert_eq!(state.page, 2);
     let next = collect(
         &mut state,
@@ -129,14 +135,20 @@ fn later_page_failure_returns_prior_originals_and_resumes_at_the_failed_page() {
                 Ok(metadata(123))
             } else {
                 assert!(path.ends_with("page=2"));
-                Ok(page(json!([record(2, "2003-12-01T00:00:00Z", "second")]), ""))
+                Ok(page(
+                    json!([record(2, "2003-12-01T00:00:00Z", "second")]),
+                    "",
+                ))
             }
         },
         &AtomicBool::new(false),
     );
     assert_eq!(next.status, "observed");
     assert_eq!(next.observed_distinct, 2);
-    assert_eq!(next.versions.iter().map(|v| v.number).collect::<Vec<_>>(), [2]);
+    assert_eq!(
+        next.versions.iter().map(|v| v.number).collect::<Vec<_>>(),
+        [2]
+    );
 }
 
 #[test]

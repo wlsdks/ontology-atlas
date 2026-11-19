@@ -10,6 +10,7 @@ use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex, MutexGuard};
+#[cfg(any(unix, test))]
 use std::time::Duration;
 
 use crate::errors::coded;
@@ -20,7 +21,9 @@ const AUDIT_FILE: &str = "llm-audit.jsonl";
 /// NUL-terminated twins for `openat`/`mkdirat`, so no `CString::new(..).expect(..)`
 /// exists: a panic unwinding through an Objective-C frame aborts the process. `names_stay_in_step`
 /// pins each literal to its `&str` twin.
+#[cfg(any(unix, test))]
 const SIDECAR_DIR_C: &std::ffi::CStr = c".ontology-atlas";
+#[cfg(any(unix, test))]
 const AUDIT_FILE_C: &std::ffi::CStr = c"llm-audit.jsonl";
 
 /// What left the vault and how much; connection checks are all 0.
@@ -153,16 +156,18 @@ impl Drop for ReservedPath {
 
 /// A busy `flock` may be our own child between `fork` and `exec` holding an inherited copy, so it
 /// is retried within a fixed budget, then fails closed.
+#[cfg(any(unix, test))]
 const AUDIT_LOCK_RETRY_PAUSE: Duration = Duration::from_micros(250);
+#[cfg(any(unix, test))]
 const AUDIT_LOCK_RETRIES: u32 = 52;
 
 /// Lets the positive control prove the overlap really happened.
-#[cfg(test)]
+#[cfg(all(test, unix))]
 static ABSORBED_INHERITED_BUSY: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 
 /// Serializes the two tests that can move the counter.
-#[cfg(test)]
+#[cfg(all(test, unix))]
 static CONTENDING_TESTS: Mutex<()> = Mutex::new(());
 
 /// The identity both the registry and the `openat` walk key on.
@@ -299,6 +304,8 @@ fn open_audit_file(_canonical_vault: &Path) -> Result<(PathBuf, fs::File), Strin
 }
 
 fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
+    #[cfg(not(unix))]
+    let _ = file;
     let path_metadata =
         fs::symlink_metadata(path).map_err(|err| coded("audit-log-tampered", err))?;
     if path_metadata.file_type().is_symlink() || !path_metadata.is_file() {

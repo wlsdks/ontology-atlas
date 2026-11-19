@@ -40,4 +40,5 @@ pub(crate) fn read_meaning_transition_artifact_text(
 }
 
 #[cfg(all(test, unix))]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 mod tests;
