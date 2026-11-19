@@ -41,11 +41,12 @@
 }
 
 /*
- * Korean pages draw from the whole Pretendard file, as before the Latin subsets: every Korean
- * page needs that file for its Hangul anyway, so drawing its Latin from the subsets as well would
- * only add requests.
+ * Korean pages draw Latin from the same subsets as every other locale and the rest, Hangul
+ * included, from `Pretendard Variable`: the upstream dynamic subsets (`app/layout.tsx`), each face
+ * limited by `unicode-range`, so a page fetches only the subsets its characters fall in. The whole
+ * file stays last for the accented Latin and symbols no subset carries.
  */
 :root:lang(ko) {
-  --font-sans: var(--font-pretendard), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), var(--font-pretendard), ui-monospace, monospace;
+  --font-sans: var(--font-pretendard-latin), "Pretendard Variable", var(--font-pretendard), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), var(--font-pretendard-latin), "Pretendard Variable", var(--font-pretendard), ui-monospace, monospace;
 }

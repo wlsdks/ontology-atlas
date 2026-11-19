@@ -8,6 +8,9 @@ import { LOCALE_META } from '@/i18n/locales';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
 import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
+// Pretendard's 92 dynamic subsets as one family, `Pretendard Variable`, for Korean pages
+// (`app/styles/lang-cjk.css`); a face is fetched only when a page renders one of its characters.
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './globals.css';
 
 export const metadata: Metadata = {
