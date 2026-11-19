@@ -300,7 +300,7 @@ export function MeaningEditorPanel({
         data-testid="meaning-editor-panel"
         data-meaning-editor-step={draft ? 'edit' : 'list'}
         onKeyDown={handleKeyDown}
-        className="flex max-h-[var(--map-panel-max-height)] w-full flex-col overflow-y-auto rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] shadow-[var(--map-panel-shadow)]"
+        className="flex max-h-[var(--map-panel-max-height)] w-full scroll-pb-20 flex-col overflow-y-auto rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] shadow-[var(--map-panel-shadow)]"
       >
         <header className="flex items-start gap-2 px-[var(--map-panel-pad)] pb-3 pt-[15px]">
           <span className="mt-0.5 text-[color:var(--color-indigo-accent)]">

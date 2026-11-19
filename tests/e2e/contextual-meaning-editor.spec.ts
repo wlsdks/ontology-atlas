@@ -124,7 +124,9 @@ test('contextual editor stays inside the responsive workbench and every control 
       const tabbar = document.querySelector<HTMLElement>('nav[data-tabbar="primary"]');
       const tabRect = tabbar?.getClientRects().length ? tabbar.getBoundingClientRect() : null;
       const controls = [...panel.querySelectorAll<HTMLElement>('button:not(:disabled), [role="combobox"]:not([aria-disabled="true"]), textarea:not(:disabled)')];
+      // The relation list scrolls inside the panel, so a control counts once it is scrolled to.
       const blocked = controls.flatMap((control) => {
+        control.scrollIntoView({ block: 'nearest' });
         const r = control.getBoundingClientRect();
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return hit && (hit === control || control.contains(hit))
