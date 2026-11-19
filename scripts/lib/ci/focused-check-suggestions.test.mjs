@@ -348,6 +348,19 @@ describe('focused check suggestions', () => {
       'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:guide-examples',
       'pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts',
+      'pnpm exec vitest run tests/contract/routes/gateway-routes.contract.test.ts',
+      'pnpm test:run tests/contract/copy/em-dash-ratchet.contract.test.ts',
+    ]);
+  });
+
+  it('runs the chapter, link and copy contracts when only a translated guide chapter changes', () => {
+    const result = suggestFocusedChecks(['docs-i18n/guide/ko/relations.md']);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm docs:language',
+      'pnpm docs:links',
+      'pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts',
+      'pnpm exec vitest run tests/contract/routes/gateway-routes.contract.test.ts',
       'pnpm test:run tests/contract/copy/em-dash-ratchet.contract.test.ts',
     ]);
   });
