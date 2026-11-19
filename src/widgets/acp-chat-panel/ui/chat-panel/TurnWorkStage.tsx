@@ -9,7 +9,7 @@ import { WorkTrail } from '@/shared/motion/work-trail';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
 
-import type { TurnActivity } from '../turn-activity';
+import type { TurnActivity, TurnWrites } from '../turn-activity';
 import { workingShimmer } from '../working-ink';
 import { celebrationClip, stageClip } from './moru-playlist';
 import type { ChatT, SessionState } from './types';
@@ -35,8 +35,17 @@ const sameWork = (a: TurnWork, b: TurnWork) =>
   && a.activity.label?.text === b.activity.label?.text
   && a.activity.target === b.activity.target
   && a.activity.steps === b.activity.steps
+  && a.activity.written.concepts === b.activity.written.concepts
+  && a.activity.written.relations === b.activity.written.relations
   && a.plan?.done === b.plan?.done
   && a.plan?.total === b.plan?.total;
+
+function writtenLine(t: ChatT, { concepts, relations }: TurnWrites): string | null {
+  if (concepts > 0 && relations > 0) return t('work.wrote.both', { concepts, relations });
+  if (concepts > 0) return t('work.wrote.concepts', { concepts });
+  if (relations > 0) return t('work.wrote.relations', { relations });
+  return null;
+}
 
 /**
  * The current turn's work, on screen from the send on in a band above the composer, outside the
@@ -93,9 +102,10 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
           ? t(`toolKind.${label.text}`)
           : label.text
       : t(activity.kind === 'answering' ? 'work.answering' : 'work.thinking');
+  // What the turn wrote outranks how many calls it made; the line holds one of them beside the plan.
   const counts = [
+    writtenLine(t, activity.written) ?? (activity.steps > 0 ? t('work.steps', { count: activity.steps }) : null),
     plan ? t('work.plan', { done: plan.done, total: plan.total }) : null,
-    activity.steps > 0 ? t('work.steps', { count: activity.steps }) : null,
   ].filter((part) => part !== null);
 
   return (
@@ -135,7 +145,7 @@ export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) 
           </div>
           <span
             data-testid="acp-turn-work-count"
-            className="h-[var(--leading-label)] text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]"
+            className="h-[var(--leading-label)] max-w-full truncate text-label leading-label tabular-nums text-[color:var(--color-text-secondary)]"
           >
             {counts.join(' · ')}
           </span>

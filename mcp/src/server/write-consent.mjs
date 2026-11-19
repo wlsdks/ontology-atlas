@@ -72,8 +72,13 @@ export function describeWrite(toolName, args) {
       return 'Disconnect a source folder from this vault';
     case 'git_snapshot':
       return 'Commit the vault';
-    case 'finalize_project_meaning':
-      return 'Write the project meaning receipt';
+    case 'finalize_project_meaning': {
+      const project = named('projectSlug') ? text('projectSlug') : 'the project';
+      const receipt = `re-measure the source folder connected to ${project} and write its project meaning receipt`;
+      return Array.isArray(a.answers)
+        ? `Write the competency answers section of ${project}, ${receipt}`
+        : `${receipt[0].toUpperCase()}${receipt.slice(1)}`;
+    }
     case 'index_project':
       return 'Write an index of the connected source';
     default:

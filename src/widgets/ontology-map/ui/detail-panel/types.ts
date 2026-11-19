@@ -123,6 +123,12 @@ export interface OntologyMapDetailPanelProps {
    * "Create New Following This" — creates a new node attached to this concept. If absent, the
    * corresponding row in the edit menu is not drawn (do not draw a door where there is none).
    */
+  /** Renames in place; omitted where the folder cannot be written. */
+  onRename?: (name: string) => Promise<void>;
+  /** Saves the one-paragraph description in place. */
+  onSaveDescription?: (text: string) => Promise<void>;
+  /** Deletes after a confirmation naming what still points here. */
+  deleteConcept?: { referrers: readonly { slug: string; title: string }[]; onDelete: () => Promise<void> };
   onCreateLinked?: () => void;
   /**
    * S7 Seam — "Verbally Instruct Agent". The sentence is not constructed here:

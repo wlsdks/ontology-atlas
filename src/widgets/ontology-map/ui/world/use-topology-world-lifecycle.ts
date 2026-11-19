@@ -229,22 +229,30 @@ export function useTopologyWorldLifecycle({
     }
   }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, domeRuntimeRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
 
-  const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
+  /** Aims the camera at `world`'s overview unless a gesture or the dome owns it; `still` lands it this frame, otherwise its spring carries it there. */
+  const aimOverview = useCallback((world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
     const { width, height } = viewportRef.current;
-    if (!userDrivenCameraRef.current && !domeRuntimeRef.current?.active && width > 0 && height > 0) {
-      const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
-      const measuredTokens = overviewFitTokens(cameraTokens(tokens));
-      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
-      cameraTargetRef.current = target;
-      overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
-      if (still) {
-        cameraRef.current = {
-          x: { value: target.tx, velocity: 0 },
-          y: { value: target.ty, velocity: 0 },
-          scale: { value: target.tscale, velocity: 0 },
-        };
-      }
+    if (userDrivenCameraRef.current || domeRuntimeRef.current?.active || width <= 0 || height <= 0) return;
+    const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const measuredTokens = overviewFitTokens(cameraTokens(tokens));
+    const dialFit = dialOverviewFit(world);
+    const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialFit);
+    cameraTargetRef.current = target;
+    overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, dialFit);
+    if (still) {
+      cameraRef.current = {
+        x: { value: target.tx, velocity: 0 },
+        y: { value: target.ty, velocity: 0 },
+        scale: { value: target.tscale, velocity: 0 },
+      };
     }
+  }, [cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, domeRuntimeRef, expandedParentsRef, overviewFitRef, overviewScaleRef, userDrivenCameraRef, viewportRef]);
+
+  /** Concepts replaced the fitted ones while no source was named; the source named next is theirs and owes them the opening fit. */
+  const unnamedConceptsRef = useRef(false);
+
+  const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
+    aimOverview(world, tokens, still);
     if (still || isTierAssembling(world)) return;
     const springs = new Map<string, HomeSpringState>();
     for (const node of world.nodes) {
@@ -301,6 +309,7 @@ export function useTopologyWorldLifecycle({
     const previousWorld = worldRef.current;
     worldRef.current = world;
     let armAssembly = prevNodeIdsRef.current.size === 0 && dataSourceKey === null;
+    let conceptsReplaced = false;
     {
       const prevIds = prevNodeIdsRef.current;
       const appear = appearRef.current;
@@ -313,8 +322,10 @@ export function useTopologyWorldLifecycle({
         } else {
           appear.set(n.id, 0);
           bornNodeIdsRef.current.add(n.id);
+          conceptsReplaced = true;
         }
       }
+      if (!isFirstBuild && nextIds.size !== prevIds.size) conceptsReplaced = true;
       for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
       for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
       prevNodeIdsRef.current = nextIds;
@@ -350,6 +361,8 @@ export function useTopologyWorldLifecycle({
       armAssembly = true;
       if (!userDrivenCameraRef.current) hasInitializedRef.current = false;
     }
+    if (dataSourceKey !== null || !hasInitializedRef.current) unnamedConceptsRef.current = false;
+    else if (conceptsReplaced) unnamedConceptsRef.current = true;
     const grew = arriving || arrivingRef.current || glidingFromArrival;
     arrivingRef.current = arriving;
     arrivalGlideRef.current = grew;
@@ -371,6 +384,21 @@ export function useTopologyWorldLifecycle({
         return () => clearTimeout(simTask);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- Only graph and placement inputs rebuild the world; commands and progress have separate effects.
     }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
+    // A reopened folder's concepts can reach the map before its key; the key then claims the fit the
+    // rebuild would have made, and the camera glides there from the frames already drawn.
+    useEffect(() => {
+        if (dataSourceKey === null || !unnamedConceptsRef.current) return;
+        unnamedConceptsRef.current = false;
+        if (dataSourceKey === fittedDataSourceKeyRef.current) return;
+        fittedDataSourceKeyRef.current = dataSourceKey;
+        pendingFlatCameraRef.current = null;
+        const world = worldRef.current;
+        const tokens = readOntologyMapTokensOrNull();
+        if (!world || !tokens) return;
+        aimOverview(world, tokens, false);
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+        lastActiveMsRef.current = performance.now();
+    }, [aimOverview, cameraAngularFreqRef, dataSourceKey, fittedDataSourceKeyRef, lastActiveMsRef, pendingFlatCameraRef, worldRef]);
     useEffect(() => {
         const dial = worldRef.current?.dial;
         if (!dial || placementStateRef.current === "settled")

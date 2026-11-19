@@ -7,11 +7,11 @@ import {
   type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { ChevronLeft, Search, X } from "lucide-react";
+import { ChevronLeft, Plus, Search, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { Link } from "@/i18n/navigation";
-import { controlClass } from "@/shared/ui";
+import { controlClass, IconButton } from "@/shared/ui";
 import { TabBar } from "@/shared/ui/controls/tab-bar";
 import {
   filterTreeByNodeIds,
@@ -30,7 +30,8 @@ import {
   nextRovingId,
   resolveActiveRowId,
 } from "../lib/roving-tabindex";
-import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
+import type { IndexAddConcept } from "./TopologyIndexAddRow";
+import { type IndexAddLabels, TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
 
 /** INDEX lenses — 「All」 (all) and 「Recently Changed」 (recently changed). */
@@ -106,6 +107,10 @@ interface TopologyIndexPanelLabels {
   openedInsideDismiss: string;
   /** A quiet hint that element rows are absent in plain mode; renders only with `plainMode`. */
   plainHint?: string;
+  /** The header's create control; required with `onCreateConcept`. */
+  createConcept?: string;
+  /** The add rows' words; required with `onAddInGroup`. */
+  add?: IndexAddLabels;
 }
 
 export interface TopologyIndexPanelProps {
@@ -179,6 +184,10 @@ export interface TopologyIndexPanelProps {
    */
   sourceName?: string | null;
   sourceLoadProgress?: { read: number; total: number } | null;
+  /** Opens the create card; omitted where the folder cannot be written. */
+  onCreateConcept?: () => void;
+  /** Creates a concept from an open group's add row; omitted where the folder cannot be written. */
+  onAddInGroup?: IndexAddConcept;
 }
 
 /**
@@ -219,6 +228,8 @@ export function TopologyIndexPanel({
   onWindowChange,
   plainMode = false,
   vaultLoaded = true,
+  onCreateConcept,
+  onAddInGroup,
 }: TopologyIndexPanelProps) {
   /*
    * Window chips take only the behaviour from the hook; their settled dimensions and panel-scoped
@@ -416,6 +427,7 @@ export function TopologyIndexPanel({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >
+      <div className="-mx-2 mb-3 flex items-center gap-1 max-md:pr-12">
       <button
         type="button"
         onClick={onCollapse}
@@ -423,7 +435,7 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className={controlClass({ shape: "row", className: "group -mx-2 mb-3 w-auto gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+        className={controlClass({ shape: "row", className: "group min-w-0 flex-1 gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
       >
         <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-primary)]">
           {labels.label}
@@ -437,6 +449,18 @@ export function TopologyIndexPanel({
           <ChevronLeft size={ICON_SIZE.sm} aria-hidden="true" />
         </span>
       </button>
+      {onCreateConcept && labels.createConcept ? (
+        <IconButton
+          label={labels.createConcept}
+          size="lg"
+          hoverInk="strong"
+          onClick={onCreateConcept}
+          data-testid="topology-index-create"
+        >
+          <Plus size={ICON_SIZE.sm} aria-hidden="true" />
+        </IconButton>
+      ) : null}
+      </div>
       {sourceName && sourceLoadProgress ? (
         <p
           data-testid="topology-index-source"
@@ -608,6 +632,8 @@ export function TopologyIndexPanel({
                   projectCount={projectCount}
                   query={trimmedQuery || undefined}
                   labels={labels}
+                  onAddInGroup={isFiltering || lensActive ? undefined : onAddInGroup}
+                  addLabels={labels.add}
                 />
               </div>
             ))}

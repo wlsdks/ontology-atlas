@@ -29,6 +29,11 @@ export interface VaultDoc {
    * rule was unavailable at build, so nothing was measured; never read it as clean.
    */
   meaningFindings?: string[] | null;
+  /**
+   * Whether a capability's body cites read lines (`path:L12`); kept instead of the body. Absent:
+   * not a capability, or a manifest built without it (the bundled one), so nothing was measured.
+   */
+  citesReadLines?: boolean;
   wordCount: number;
   updatedAt: string;
   /** Commits touching this document, carried across moves; bundled manifest only. */

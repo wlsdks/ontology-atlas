@@ -126,6 +126,8 @@
       "openSearchPalette": "打开搜索面板",
       "openSettings": "打开设置",
       "toggleDocsDrawer": "打开或关闭文档快速预览（可编辑）",
+      "addConcept": "添加概念",
+      "undoHandChange": "撤销最近一次手动更改",
       "showShortcuts": "显示或隐藏键盘快捷键",
       "stepCloseOverlays": "逐层关闭打开的面板",
       "clickSelect": "选择概念",

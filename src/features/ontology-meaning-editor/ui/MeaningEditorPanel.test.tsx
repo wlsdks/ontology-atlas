@@ -1,217 +1,139 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { createTranslator, NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { applyFrontmatterUpdates } from '@/entities/docs-vault';
-import { IMPACT_EDIT_RELATIONS } from '@/entities/knowledge-graph';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 import enMessages from '../../../../messages/en.json';
 import koMessages from '../../../../messages/ko.json';
 import { MeaningEditorPanel } from './MeaningEditorPanel';
 
+const COPY = enMessages.meaningEditor;
+
+const CANDIDATES = [
+  { id: 'capability:mcp-server', slug: 'capabilities/mcp-server', title: 'MCP Server', kind: 'capability', names: ['MCP Server', 'MCP 서버'], domainTitle: 'Agent access' },
+  { id: 'element:token-signer', slug: 'elements/token-signer', title: 'Token signer', kind: 'element', names: ['Token signer', '토큰 서명기'], domainTitle: 'Agent access' },
+  { id: 'domain:billing', slug: 'domains/billing', title: 'Billing', kind: 'domain', names: ['Billing'] },
+];
+
+function renderPanel(overrides: Partial<ComponentProps<typeof MeaningEditorPanel>> = {}, locale: 'en' | 'ko' = 'en') {
+  const props: ComponentProps<typeof MeaningEditorPanel> = {
+    open: true,
+    source: {
+      id: 'capability:contextual-editing',
+      slug: 'capabilities/contextual-editing',
+      title: 'Contextual editing',
+      kind: 'capability',
+      frontmatter: { kind: 'capability' },
+    },
+    candidates: CANDIDATES,
+    relations: [],
+    onPreview: vi.fn(),
+    onApply: vi.fn().mockResolvedValue(undefined),
+    onEditIncoming: vi.fn(),
+    onRemoveIncoming: vi.fn().mockResolvedValue(undefined),
+    onClose: vi.fn(),
+    ...overrides,
+  };
+  render(
+    <NextIntlClientProvider locale={locale} messages={locale === 'en' ? enMessages : koMessages}>
+      <MeaningEditorPanel {...props} />
+    </NextIntlClientProvider>,
+  );
+  return props;
+}
+
+function pickTarget(query: string) {
+  const field = screen.getByTestId('meaning-editor-target');
+  fireEvent.focus(field);
+  fireEvent.change(field, { target: { value: query } });
+  fireEvent.click(screen.getAllByTestId('meaning-editor-target-option')[0]!);
+}
+
 describe('MeaningEditorPanel', () => {
-  it('shows the change for one relation first and calls apply only after approval', async () => {
-    const onApply = vi.fn().mockResolvedValue(undefined);
-    render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <MeaningEditorPanel
-          open
-          source={{
-            id: 'capability:contextual-editing',
-            slug: 'capabilities/contextual-editing',
-            title: 'Contextual Meaning Editing',
-            kind: 'capability',
-            frontmatter: { relates: ['capabilities/mcp-server'] },
-          }}
-          candidates={[
-            {
-              id: 'capability:mcp-server',
-              slug: 'capabilities/mcp-server',
-              title: 'MCP Server',
-              kind: 'capability',
-            },
-          ]}
-          initialRelation="relates"
-          initialTargetId="capability:mcp-server"
-          initialWhy="도구 요청이 이 서버를 지난다."
-          onPreview={vi.fn()}
-          onApply={onApply}
-          onClose={vi.fn()}
-        />
-      </NextIntlClientProvider>,
-    );
-
-    expect(onApply).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('meaning-editor-review'));
-    expect(screen.getByTestId('meaning-editor-change-review')).toBeInTheDocument();
-    expect(onApply).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByTestId('meaning-editor-apply'));
-    await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
-    expect(onApply.mock.calls[0]?.[0].changeSet.relation).toMatchObject({
-      from: 'capabilities/contextual-editing',
-      type: 'related_to',
-      to: 'capabilities/mcp-server',
+  it('writes a dependency at once on Enter, and only with its reason', async () => {
+    const props = renderPanel();
+    pickTarget('mcp');
+    const why = screen.getByTestId('meaning-editor-why');
+    expect(screen.getByTestId('meaning-editor-apply')).toBeDisabled();
+    expect(screen.getByText('What breaks in Contextual editing when MCP Server changes?')).toBeInTheDocument();
+    fireEvent.change(why, { target: { value: 'Tool calls pass through the server.' } });
+    fireEvent.keyDown(why, { key: 'Enter' });
+    await waitFor(() => expect(props.onApply).toHaveBeenCalledTimes(1));
+    const [plan, what, targetTitle] = vi.mocked(props.onApply).mock.calls[0]!;
+    expect([what, targetTitle]).toEqual(['added', 'MCP Server']);
+    expect(plan.updates).toMatchObject({
+      dependencies: ['capabilities/mcp-server'],
+      relation_notes: { 'capabilities/mcp-server': 'Tool calls pass through the server.' },
     });
   });
 
-  it('applies removing an existing relation only after its change preview', async () => {
-    const onApply = vi.fn().mockResolvedValue(undefined);
-    render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <MeaningEditorPanel
-          open
-          source={{
-            id: 'capability:contextual-editing',
-            slug: 'capabilities/contextual-editing',
-            title: 'Contextual Meaning Editing',
-            kind: 'capability',
-            frontmatter: { dependencies: ['capabilities/mcp-server'] },
-          }}
-          candidates={[
-            {
-              id: 'capability:mcp-server',
-              slug: 'capabilities/mcp-server',
-              title: 'MCP Server',
-              kind: 'capability',
-            },
-          ]}
-          initialRelation="dependsOn"
-          initialTargetId="capability:mcp-server"
-          onPreview={vi.fn()}
-          onApply={onApply}
-          onClose={vi.fn()}
-        />
-      </NextIntlClientProvider>,
-    );
-
-    fireEvent.click(screen.getByTestId('meaning-editor-remove'));
-    expect(screen.getByTestId('meaning-editor-change-review')).toBeInTheDocument();
-    expect(onApply).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('meaning-editor-apply'));
-    await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
-    expect(onApply.mock.calls[0]?.[0].changeSet.operation).toBe('remove');
+  it('finds a target by its name in either language and says its kind and domain', () => {
+    renderPanel();
+    const field = screen.getByTestId('meaning-editor-target');
+    fireEvent.focus(field);
+    fireEvent.change(field, { target: { value: '서명' } });
+    const options = screen.getAllByTestId('meaning-editor-target-option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveTextContent('Token signer');
+    expect(options[0]).toHaveTextContent('Element · Agent access');
   });
 
-  it('describes each select with the help line that names what reads it', () => {
-    render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
-        <MeaningEditorPanel
-          open
-          source={{
-            id: 'capability:contextual-editing',
-            slug: 'capabilities/contextual-editing',
-            title: 'Contextual Meaning Editing',
-            kind: 'capability',
-            frontmatter: {},
-          }}
-          candidates={[
-            { id: 'capability:mcp-server', slug: 'capabilities/mcp-server', title: 'MCP Server', kind: 'capability' },
-          ]}
-          onPreview={vi.fn()}
-          onApply={vi.fn()}
-          onClose={vi.fn()}
-        />
-      </NextIntlClientProvider>,
-    );
-
-    const { meaningEditor } = enMessages;
-    const t = createTranslator({ locale: 'en', messages: enMessages, namespace: 'meaningEditor' });
-    const impactNames = IMPACT_EDIT_RELATIONS.map((relation) => meaningEditor.relationName[relation]);
-    expect(screen.getByRole('combobox', { name: meaningEditor.relation }))
-      .toHaveAccessibleDescription(meaningEditor.relationHelp);
-    expect(screen.getByRole('combobox', { name: meaningEditor.target })).toHaveAccessibleDescription(
-      t('targetHelp', { relations: new Intl.ListFormat('en', { type: 'conjunction' }).format(impactNames) }),
-    );
+  it('offers only the targets a relation allows for the kind', () => {
+    renderPanel();
+    fireEvent.click(screen.getByTestId('meaning-editor-relation-contains'));
+    const field = screen.getByTestId('meaning-editor-target');
+    fireEvent.focus(field);
+    fireEvent.change(field, { target: { value: '' } });
+    expect(screen.getAllByTestId('meaning-editor-target-option').map((option) => option.textContent)).toEqual([
+      expect.stringContaining('Token signer'),
+    ]);
   });
 
-  it('explains why instead of showing an empty review when nothing changed', () => {
-    render(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <MeaningEditorPanel
-          open
-          source={{
-            id: 'capability:contextual-editing',
-            slug: 'capabilities/contextual-editing',
-            title: 'Contextual Meaning Editing',
-            kind: 'capability',
-            frontmatter: { relates: ['capabilities/mcp-server'] },
-          }}
-          candidates={[
-            {
-              id: 'capability:mcp-server',
-              slug: 'capabilities/mcp-server',
-              title: 'MCP Server',
-              kind: 'capability',
-            },
-          ]}
-          initialRelation="relates"
-          initialTargetId="capability:mcp-server"
-          onPreview={vi.fn()}
-          onApply={vi.fn()}
-          onClose={vi.fn()}
-        />
-      </NextIntlClientProvider>,
-    );
-
-    fireEvent.click(screen.getByTestId('meaning-editor-review'));
-    expect(screen.queryByTestId('meaning-editor-change-review')).not.toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('변경할 내용이 없어요');
+  it('lists declared and incoming relations in plain words, each with edit and remove', async () => {
+    const props = renderPanel({
+      relations: [
+        { relation: 'dependsOn', direction: 'out', otherId: 'capability:mcp-server', otherTitle: 'MCP Server', why: 'Tool calls pass through it.' },
+        { relation: 'contains', direction: 'in', otherId: 'domain:billing', otherTitle: 'Billing', why: null },
+      ],
+    });
+    const rows = screen.getAllByTestId('meaning-editor-relation-row');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Depends on MCP Server'),
+      expect.stringContaining('Billing contains this'),
+    ]);
+    fireEvent.click(screen.getAllByTestId('meaning-editor-row-edit')[1]!);
+    expect(props.onEditIncoming).toHaveBeenCalledWith(expect.objectContaining({ otherId: 'domain:billing' }));
+    fireEvent.click(screen.getAllByTestId('meaning-editor-remove')[1]!);
+    await waitFor(() => expect(props.onRemoveIncoming).toHaveBeenCalledTimes(1));
   });
 
-  it('returns to the first step with buttons enabled when reopened after a write', async () => {
-    // A reopen reuses the mounted instance, which must not come back frozen in its busy state.
-    const onApply = vi.fn().mockResolvedValue(undefined);
-    const props = {
+  it('keeps the help lines that name what reads each value', () => {
+    renderPanel({}, 'ko');
+    expect(screen.getByTestId('meaning-editor-relation-help')).toHaveTextContent(koMessages.meaningEditor.relationHelp);
+    expect(screen.getByTestId('meaning-editor-target-help')).toBeInTheDocument();
+  });
+
+  it('says so instead of writing when nothing changed', async () => {
+    const props = renderPanel({
       source: {
         id: 'capability:contextual-editing',
         slug: 'capabilities/contextual-editing',
-        title: 'Contextual Meaning Editing',
+        title: 'Contextual editing',
         kind: 'capability',
-        frontmatter: { relates: ['capabilities/mcp-server'] },
+        frontmatter: { kind: 'capability', relates: ['capabilities/mcp-server'] },
       },
-      candidates: [
-        {
-          id: 'capability:mcp-server',
-          slug: 'capabilities/mcp-server',
-          title: 'MCP Server',
-          kind: 'capability',
-        },
-      ],
-      initialRelation: 'relates' as const,
-      initialTargetId: 'capability:mcp-server',
-      initialWhy: '도구 요청이 이 서버를 지난다.',
-      onPreview: vi.fn(),
-      onApply,
-      onClose: vi.fn(),
-    };
-    const view = (open: boolean) => (
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <MeaningEditorPanel open={open} {...props} />
-      </NextIntlClientProvider>
-    );
-
-    const { rerender } = render(view(true));
-    fireEvent.click(screen.getByTestId('meaning-editor-review'));
+      relations: [{ relation: 'relates', direction: 'out', otherId: 'capability:mcp-server', otherTitle: 'MCP Server', why: null }],
+    });
+    fireEvent.click(screen.getAllByTestId('meaning-editor-row-edit')[0]!);
     fireEvent.click(screen.getByTestId('meaning-editor-apply'));
-    await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
-
-    // The caller closes; the instance stays mounted for its exit animation.
-    rerender(view(false));
-    rerender(view(true));
-
-    await waitFor(() =>
-      expect(screen.getByTestId('meaning-editor-panel')).toHaveAttribute(
-        'data-meaning-editor-step',
-        'edit',
-      ),
-    );
-    expect(screen.getByTestId('meaning-editor-review')).not.toBeDisabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(COPY.noChanges);
+    expect(props.onApply).not.toHaveBeenCalled();
   });
 });
 
-/** Removing the last relation of a key leaves no empty key in the file. */
 describe('removing the last relation of a key writes no empty key', () => {
   const WIKI_PAGES = [
     '---',
@@ -248,16 +170,16 @@ describe('removing the last relation of a key writes no empty key', () => {
             frontmatter: parseFrontmatter(raw).frontmatter,
           }}
           candidates={[target]}
-          initialRelation={relation}
-          initialTargetId={target.id}
+          relations={[{ relation, direction: 'out', otherId: target.id, otherTitle: target.title, why: null }]}
           onPreview={vi.fn()}
           onApply={onApply}
+          onEditIncoming={vi.fn()}
+          onRemoveIncoming={vi.fn()}
           onClose={vi.fn()}
         />
       </NextIntlClientProvider>,
     );
     fireEvent.click(screen.getByTestId('meaning-editor-remove'));
-    fireEvent.click(screen.getByTestId('meaning-editor-apply'));
     await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
     return applyFrontmatterUpdates(raw, onApply.mock.calls[0]?.[0].updates);
   }
@@ -293,41 +215,5 @@ describe('removing the last relation of a key writes no empty key', () => {
     expect(written).not.toMatch(/^relation_notes:/m);
     // The kind's own scaffold list is not a relation this edit touched.
     expect(written).toMatch(/^elements: \[\]$/m);
-  });
-
-  it('says in the review that nothing is left, instead of printing `[]`', () => {
-    render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
-        <MeaningEditorPanel
-          open
-          source={{
-            id: 'capability:wiki-pages',
-            slug: 'capabilities/wiki-pages',
-            title: 'Wiki pages',
-            kind: 'capability',
-            frontmatter: { relates: ['capabilities/library-workspace'] },
-          }}
-          candidates={[
-            {
-              id: 'capability:library-workspace',
-              slug: 'capabilities/library-workspace',
-              title: 'Library workspace',
-              kind: 'capability',
-            },
-          ]}
-          initialRelation="relates"
-          initialTargetId="capability:library-workspace"
-          onPreview={vi.fn()}
-          onApply={vi.fn()}
-          onClose={vi.fn()}
-        />
-      </NextIntlClientProvider>,
-    );
-    fireEvent.click(screen.getByTestId('meaning-editor-remove'));
-
-    const value = screen.getByTestId('ontology-change-review-field-value');
-    expect(value).toHaveTextContent('capabilities/library-workspace');
-    expect(value).toHaveTextContent(enMessages.ontologyChangeReview.valueEmptyList);
-    expect(value.textContent).not.toContain('[]');
   });
 });

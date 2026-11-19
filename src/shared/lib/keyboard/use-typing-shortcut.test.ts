@@ -35,6 +35,17 @@ describe('useTypingShortcuts', () => {
     expect(onFire).toHaveBeenCalledTimes(1);
   });
 
+  it('leaves the Shift form alone when the combo asks for Shift up', () => {
+    const onFire = vi.fn();
+    renderHook(() => useTypingShortcuts([{ combo: { key: 'z', meta: true, withoutShift: true }, onFire }]));
+
+    press({ key: 'Z', code: 'KeyZ', metaKey: true, shiftKey: true });
+    expect(onFire).not.toHaveBeenCalled();
+
+    press({ key: 'z', code: 'KeyZ', metaKey: true });
+    expect(onFire).toHaveBeenCalledTimes(1);
+  });
+
   it('still fires on the plain Latin character', () => {
     const onFire = vi.fn();
     renderHook(() => useTypingShortcuts([{ combo: { key: 'd' }, onFire }]));

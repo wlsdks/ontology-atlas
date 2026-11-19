@@ -13,6 +13,7 @@ routes: [/topology]
 |---|---|
 | `⌘K` (Shift optional) | Unified ontology-node + project search |
 | `D` | Toggle source drawer (the map only) |
+| `N` | Open the create card, its place prefilled from the selection (an open folder only) |
 | `?` | Toggle shortcut sheet |
 | `⌘O` | Open a local Markdown folder from the static sample |
 | `Esc` | Close the highest-priority open layer or addressed map state |

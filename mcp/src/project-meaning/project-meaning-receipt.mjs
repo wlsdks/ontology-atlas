@@ -32,7 +32,7 @@ const RECEIPT_KEYS = Object.freeze([
 ]);
 const STATE_KEYS = Object.freeze(['receipts', 'version']);
 
-function safeVaultSlug(value, maxLength = 300) {
+export function safeVaultSlug(value, maxLength = 300) {
   if (
     typeof value !== 'string'
     || value.length === 0

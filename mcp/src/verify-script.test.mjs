@@ -290,16 +290,19 @@ describe('live local first-contact probes', () => {
   });
 });
 
-function breadthMapFixture() {
-  return {
-    contract: 'breadthMap:v1',
-    rootPath: '/repo',
-    size: { productFiles: 1, productLines: 3, units: 1, outside: {} },
-    units: [{ path: 'src', files: 1, lines: 3, mainFiles: [{ path: 'src/index.ts', lines: 3 }], exports: ['main'], importedBy: 0, imports: [] }],
-    entryPoints: [{ path: 'src/index.ts', symbol: 'main', kind: 'library' }],
-    docs: { readme: null, pages: [] },
-    next: '1 product units, 3 lines in 1 files.',
-  };
+/** A breadth map as the server sends it: its text rows alone. */
+function breadthMapFixture(unitRow = 'src | 1 | 3 | index.ts (3) | main | 0 | -') {
+  return [
+    'Breadth map of /repo: 1 product units, 3 lines in 1 files.',
+    '',
+    'Units: path | files | lines | main files (relative to the unit, lines) | exports | imported by N units | imports',
+    unitRow,
+    '',
+    'Entry points: kind path symbol',
+    'library src/index.ts main',
+    '',
+    'Next: 1 product units, 3 lines in 1 files.',
+  ].join('\n');
 }
 
 function verifiedImportScanCoverage({ c = false } = {}) {
@@ -604,6 +607,8 @@ describe('verify.mjs first-contact gates', () => {
   it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {
     const postWriteDescription =
       'postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers';
+    const buildWriteDescription = '`findings`: one line per finding on the nodes this call wrote';
+    const findingsSchema = { type: 'array', items: { type: 'string' } };
     const compactProposedActionTools = ['add_concept', 'add_relation', 'patch_concept'];
     const maintenanceSummaryRequired = [
       'totalActions',
@@ -1218,7 +1223,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concept',
         description:
-          `Changed writes return ${postWriteDescription}.`,
+          `Changed writes return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['slug', 'kind', 'title'],
@@ -1226,14 +1231,14 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'slug', 'filePath', 'changed'],
+          required: ['ok', 'slug', 'changed', 'mtime'],
           properties: {
             ok: { type: 'boolean' },
             slug: { type: 'string' },
-            filePath: { type: 'string' },
             changed: { type: 'boolean' },
+            mtime: { type: 'number', minimum: 0 },
             warnings: { type: 'array', items: { type: 'string' } },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1241,7 +1246,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concepts',
         description:
-          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`, and changed batches return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`. Invalid-only batches return no row-level write metadata, no \`findings\` and no \`coverage\`, and changed batches return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['concepts'],
@@ -1259,8 +1264,8 @@ describe('verify.mjs first-contact gates', () => {
                 properties: {
                   slug: { type: 'string' },
                   ok: { type: 'boolean' },
-                  filePath: { type: 'string' },
                   changed: { type: 'boolean' },
+                  mtime: { type: 'number', minimum: 0 },
                   warnings: { type: 'array', items: { type: 'string' } },
                   error: { type: 'string' },
                   errorCode: { type: 'string' },
@@ -1293,7 +1298,8 @@ describe('verify.mjs first-contact gates', () => {
                 additionalProperties: false,
               },
             },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            findings: findingsSchema,
+            coverage: { type: 'string' },
           },
           additionalProperties: false,
         },
@@ -1301,7 +1307,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_relations',
         description:
-          `Batch writes isolate non-object row shape, unknown type with closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\`, and unknown row fields as ok:false rows with relations[n] labels and structured \`rowName\`, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints, \`allowedFields\`, \`receivedFields\`, and Received fields. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`, and changed batches return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape, unknown type with closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\`, and unknown row fields as ok:false rows with relations[n] labels and structured \`rowName\`, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints, \`allowedFields\`, \`receivedFields\`, and Received fields. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`findings\`, and changed batches return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['relations'],
@@ -1336,7 +1342,6 @@ describe('verify.mjs first-contact gates', () => {
                   to: { type: 'string' },
                   type: { type: 'string' },
                   alreadyExists: { type: 'boolean' },
-                  key: { type: 'string' },
                   changed: { type: 'boolean' },
                   error: { type: 'string' },
                   errorCode: { type: 'string' },
@@ -1369,7 +1374,8 @@ describe('verify.mjs first-contact gates', () => {
                 additionalProperties: false,
               },
             },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            mtimes: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1377,7 +1383,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_relation',
         description:
-          `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`postWriteMaintenance\` write metadata. Changed writes return ${postWriteDescription}.`,
+          `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`findings\` write metadata. Changed writes return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1399,10 +1405,9 @@ describe('verify.mjs first-contact gates', () => {
             from: { type: 'string' },
             to: { type: 'string' },
             type: { type: 'string' },
-            key: { type: 'string' },
             changed: { type: 'boolean' },
             alreadyExists: { type: 'boolean' },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1410,20 +1415,20 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'patch_concept',
         description:
-          `Changed writes return ${postWriteDescription}.`,
+          `Changed writes return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: { expected_mtime: { type: 'number', minimum: 0 } },
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'slug', 'filePath', 'changed', 'postWriteMaintenance'],
+          required: ['ok', 'slug', 'changed', 'mtime'],
           properties: {
             ok: { type: 'boolean' },
             slug: { type: 'string' },
-            filePath: { type: 'string' },
             changed: { type: 'boolean' },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            mtime: { type: 'number', minimum: 0 },
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1986,142 +1991,6 @@ describe('verify.mjs first-contact gates', () => {
             maxDepth: { type: 'integer', minimum: 0, maximum: 10 },
             sourceOnly: { type: 'boolean' },
           },
-        },
-        outputSchema: {
-          type: 'object',
-          required: ['rootPath'],
-          oneOf: [
-            {
-              required: ['contract', 'size', 'units', 'entryPoints', 'docs', 'next'],
-              not: { anyOf: ['delivery', 'canWrite', 'sourceEvidence', 'project', 'framework', 'domains',
-                'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence',
-                'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'].map((key) => ({ required: [key] })) },
-            },
-            {
-              required: ['delivery', 'canWrite', 'sourceEvidence'],
-              not: { anyOf: ['project', 'framework', 'domains', 'capabilities', 'elements',
-                'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence',
-                'proposalValidation', 'suggestedRelations', 'skipped'].map((key) => ({ required: [key] })) },
-            },
-            {
-              required: ['framework', 'domains', 'capabilities', 'elements', 'meaningGate',
-                'extractionContract', 'semanticEvidence', 'configurationEvidence',
-                'proposalValidation', 'suggestedRelations', 'skipped'],
-              not: { anyOf: [{ required: ['delivery'] }, { required: ['canWrite'] }] },
-            },
-          ],
-          properties: {
-            rootPath: { type: 'string' },
-            delivery: { type: 'string', const: 'source_only' },
-            canWrite: { type: 'boolean', const: false },
-            sourceEvidence: { type: 'object' },
-            project: {
-              type: 'object',
-              required: ['slug', 'title'],
-              properties: {
-                slug: { type: 'string' },
-                title: { type: 'string' },
-              },
-              additionalProperties: false,
-            },
-            framework: { enum: ['fsd', 'next', 'generic'] },
-            configurationEvidence: {
-              type: 'object',
-              properties: {
-                contract: { enum: ['rustFeatureConfigurationEvidence:v1'] },
-                writePolicy: {
-                  type: 'object',
-                  required: ['automaticRelation', 'writeAllowed', 'humanApprovalRequired'],
-                  properties: {
-                    automaticRelation: { enum: [false] },
-                    writeAllowed: { enum: [false] },
-                    humanApprovalRequired: { enum: [true] },
-                  },
-                },
-              },
-            },
-            domains: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'title', 'evidence'],
-                properties: {
-                  slug: { type: 'string' },
-                  title: { type: 'string' },
-                  evidence: {
-                    type: 'object',
-                    required: ['source'],
-                    properties: { source: { type: 'string' } },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            capabilities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'title', 'evidence'],
-                properties: {
-                  slug: { type: 'string' },
-                  title: { type: 'string' },
-                  evidence: {
-                    type: 'object',
-                    required: ['source'],
-                    properties: { source: { type: 'string' } },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            elements: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'title', 'path', 'evidence'],
-                properties: {
-                  slug: { type: 'string' },
-                  title: { type: 'string' },
-                  path: { type: 'string' },
-                  evidence: {
-                    type: 'object',
-                    required: ['source'],
-                    properties: { source: { type: 'string' } },
-                    additionalProperties: false,
-                  },
-                },
-                additionalProperties: false,
-              },
-            },
-            suggestedRelations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['from', 'to', 'type'],
-                properties: {
-                  from: { type: 'string' },
-                  to: { type: 'string' },
-                  type: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-            },
-            skipped: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['path', 'reason'],
-                properties: {
-                  path: { type: 'string' },
-                  reason: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-            },
-          },
-          additionalProperties: false,
         },
       },
       {
@@ -3086,73 +2955,36 @@ describe('verify.mjs first-contact gates', () => {
       })),
       'finalize_project_meaning meaningAssessment categorical/privacy contract drift',
     );
+    const withTool = (name, change) => tools.map((tool) => (tool.name === name && tool.outputSchema ? change(tool) : tool));
+    const withOutputProperty = (tool, propertyName, schema) => ({
+      ...tool,
+      outputSchema: { ...tool.outputSchema, properties: { ...tool.outputSchema.properties, [propertyName]: schema } },
+    });
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_concept' && tool.outputSchema
-          ? { ...tool, description: 'Successful writes return postWriteMaintenance with current-page nextExecutableAction / nextReviewAction pointers.' }
-          : tool
-      ))),
-      'add_concept description missing maintenance action score guidance',
+      toolsListSchemaFailure(withTool('add_concept', (tool) => ({ ...tool, description: 'Changed writes return the slug and mtime.' }))),
+      'add_concept description missing findings guidance',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_concept' && tool.outputSchema
-          ? {
-              ...tool,
-              description: 'Successful writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
-              outputSchema: {
-                ...tool.outputSchema,
-                properties: {
-                  ...tool.outputSchema.properties,
-                  postWriteMaintenance: { type: 'object' },
-                },
-              },
-            }
-          : tool
-      ))),
-      'add_concept outputSchema postWriteMaintenance required drift',
+      toolsListSchemaFailure(withTool('patch_concept', (tool) => withOutputProperty(tool, 'findings', { type: 'object' }))),
+      'patch_concept outputSchema findings drift',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'patch_concept'
-          ? { ...tool, description: 'Changed writes return postWriteMaintenance with score and proposedAction.' }
-          : tool
-      ))),
-      'patch_concept description missing maintenance next action pointer guidance',
+      toolsListSchemaFailure(withTool('add_concept', (tool) => withOutputProperty(tool, 'postWriteMaintenance', { type: 'object' }))),
+      'add_concept outputSchema still carries postWriteMaintenance',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'patch_concept'
-          ? {
-              ...tool,
-              description: 'Changed writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
-              outputSchema: {
-                ...tool.outputSchema,
-                properties: {
-                  ...tool.outputSchema.properties,
-                  postWriteMaintenance: { type: 'object' },
-                },
-              },
-            }
-          : tool
-      ))),
-      'patch_concept outputSchema postWriteMaintenance required drift',
+      toolsListSchemaFailure(withTool('add_relation', (tool) => withOutputProperty(tool, 'key', { type: 'string' }))),
+      'add_relation outputSchema still carries key',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_relation'
-          ? { ...tool, description: 'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. Changed writes return postWriteMaintenance with score and current-page nextExecutableAction / nextReviewAction pointers.' }
-          : tool
-      ))),
-      'add_relation description missing executable maintenance proposedAction guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_relation'
-          ? { ...tool, description: 'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. Changed writes return postWriteMaintenance with score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.' }
-          : tool
-      ))),
-      'add_relation description missing maintenance bucket guidance',
+      toolsListSchemaFailure(withTool('add_concepts', (tool) => {
+        const rows = tool.outputSchema.properties.concepts;
+        return withOutputProperty(tool, 'concepts', {
+          ...rows,
+          items: { ...rows.items, properties: { ...rows.items.properties, filePath: { type: 'string' } } },
+        });
+      })),
+      'add_concepts outputSchema row still carries filePath',
     );
     assert.equal(
       toolsListSchemaFailure([{ name: 'list_concepts', inputSchema: { properties: {} } }]),
@@ -3973,70 +3805,10 @@ describe('verify.mjs first-contact gates', () => {
       })),
       'compile_ontology outputSchema summary drift',
     );
+    assert.equal(analyzeRepoTool.outputSchema, undefined);
     assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),
-        {
-          ...tools.find((tool) => tool.name === 'analyze_repo_structure'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties,
-              framework: { enum: ['fsd', 'generic'] },
-            },
-          },
-        },
-      ]),
-      'analyze_repo_structure outputSchema framework drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        outputSchema: {
-          ...analyzeRepoTool.outputSchema,
-          oneOf: analyzeRepoTool.outputSchema.oneOf.map((branch, index) => index === 2
-            ? { ...branch, required: branch.required.filter((field) => field !== 'meaningGate') }
-            : branch),
-        },
-      })),
-      'analyze_repo_structure outputSchema full branch drift',
-    );
-    for (const [property, value] of [['canWrite', true], ['delivery', 'full']]) {
-      const schema = structuredClone(analyzeRepoTool.outputSchema);
-      schema.properties[property].const = value;
-      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
-        'analyze_repo_structure outputSchema source-only discriminator drift');
-    }
-    for (const field of analyzeRepoTool.outputSchema.oneOf[1].not.anyOf.map((rule) => rule.required[0])) {
-      const schema = structuredClone(analyzeRepoTool.outputSchema);
-      schema.oneOf[1].not.anyOf = schema.oneOf[1].not.anyOf.filter((rule) => rule.required[0] !== field);
-      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
-        'analyze_repo_structure outputSchema source-only branch drift');
-    }
-    for (const field of ['delivery', 'canWrite', 'sourceEvidence']) {
-      const schema = structuredClone(analyzeRepoTool.outputSchema);
-      schema.oneOf[1].required = schema.oneOf[1].required.filter((key) => key !== field);
-      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
-        'analyze_repo_structure outputSchema source-only branch drift');
-    }
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),
-        {
-          ...tools.find((tool) => tool.name === 'analyze_repo_structure'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties,
-              project: {
-                ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties.project,
-                additionalProperties: true,
-              },
-            },
-          },
-        },
-      ]),
-      'analyze_repo_structure outputSchema project drift',
+      toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: { type: 'object' } })),
+      'analyze_repo_structure declares an outputSchema; its breadth map and source reads are text alone',
     );
     assert.equal(
       toolsListSchemaFailure(withAnalyzeRepoTool({
@@ -4069,69 +3841,6 @@ describe('verify.mjs first-contact gates', () => {
         },
       })),
       'analyze_repo_structure rootPath schema guidance drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),
-        {
-          ...tools.find((tool) => tool.name === 'analyze_repo_structure'),
-          outputSchema: {
-            ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema,
-            properties: {
-              ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties,
-              capabilities: {
-                ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties.capabilities,
-                items: {
-                  ...tools.find((tool) => tool.name === 'analyze_repo_structure').outputSchema.properties.capabilities.items,
-                  required: ['slug', 'title'],
-                },
-              },
-            },
-          },
-        },
-      ]),
-      'analyze_repo_structure outputSchema capabilities rows drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        outputSchema: {
-          ...analyzeRepoTool.outputSchema,
-          properties: {
-            ...analyzeRepoTool.outputSchema.properties,
-            elements: {
-              ...analyzeRepoTool.outputSchema.properties.elements,
-              items: {
-                ...analyzeRepoTool.outputSchema.properties.elements.items,
-                required: ['slug', 'title', 'evidence'],
-              },
-            },
-          },
-        },
-      })),
-      'analyze_repo_structure outputSchema elements rows drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure(withAnalyzeRepoTool({
-        ...analyzeRepoTool,
-        outputSchema: {
-          ...analyzeRepoTool.outputSchema,
-          properties: {
-            ...analyzeRepoTool.outputSchema.properties,
-            elements: {
-              ...analyzeRepoTool.outputSchema.properties.elements,
-              items: {
-                ...analyzeRepoTool.outputSchema.properties.elements.items,
-                properties: {
-                  ...analyzeRepoTool.outputSchema.properties.elements.items.properties,
-                  path: { type: 'number' },
-                },
-              },
-            },
-          },
-        },
-      })),
-      'analyze_repo_structure outputSchema elements path drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -6779,16 +6488,16 @@ describe('verify.mjs first-contact gates', () => {
           content: [{
             text: JSON.stringify({
               concepts: conceptRows,
-              postWriteMaintenance: {},
+              findings: [],
             }),
           }],
           structuredContent: {
             concepts: conceptRows,
-            postWriteMaintenance: {},
+            findings: [],
           },
         },
       }, 'concepts', 'add_concepts'),
-      'add_concepts row-isolation response unexpectedly included postWriteMaintenance',
+      'add_concepts row-isolation response unexpectedly included findings',
     );
     assert.equal(
       batchRowIsolationFailure({
@@ -7849,7 +7558,7 @@ describe('verify.mjs first-contact gates', () => {
       strictAddRelationFailure({
         result: {
           isError: true,
-          structuredContent: { postWriteMaintenance: { summary: { totalActions: 0 } } },
+          structuredContent: { findings: [] },
           content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' }],
         },
       }),
@@ -9528,15 +9237,15 @@ Continue.`;
 
   it('fails malformed bootstrap and import-analysis read smoke payloads', () => {
     assert.equal(
-      analyzeRepoStructureFailure({ rootPath: '/repo', framework: 'generic' }),
-      'analyze_repo_structure response is not the breadth map: undefined',
+      analyzeRepoStructureFailure('Analysis of /repo: framework generic'),
+      'analyze_repo_structure response is not the breadth map: "Analysis of /repo: framework generic"',
     );
     assert.equal(
-      analyzeRepoStructureFailure({ ...breadthMapFixture(), domains: [] }),
+      analyzeRepoStructureFailure(breadthMapFixture().replace('\nEntry points', '\ndomains/core | Core\n\nEntry points')),
       'analyze_repo_structure survey carries domains; the breadth map names no node',
     );
     assert.equal(
-      analyzeRepoStructureFailure({ ...breadthMapFixture(), units: [{ path: 'src', files: 0, lines: 3, mainFiles: [], exports: [], importedBy: 0, imports: [] }] }),
+      analyzeRepoStructureFailure(breadthMapFixture('src | 0 | 3 | - | - | 0 | -')),
       'analyze_repo_structure response missing unit size: src',
     );
     assert.equal(

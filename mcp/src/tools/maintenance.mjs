@@ -1,7 +1,8 @@
 /**
  * What gets attached to a result rather than asked for: the vault validation
- * every read carries, the compact post-write maintenance queue, and the summary
- * freshness a maintenance plan is judged against.
+ * every read carries, the findings a build write returns on the nodes it touched,
+ * the compact post-write maintenance queue the other writes return, and the
+ * summary freshness a maintenance plan is judged against.
  */
 
 import { loadOntologyAtlasIgnore } from '../vault/ontology-atlas-ignore.mjs';
@@ -104,7 +105,7 @@ function attachVaultValidation(result, args = {}, loadedDocs = null, report = va
   return result;
 }
 
-function compactPostWriteMaintenance(limit = 5) {
+function maintenancePlanAfterWrite(limit) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
@@ -116,7 +117,7 @@ function compactPostWriteMaintenance(limit = 5) {
   // action so an agent planning work sees it without running a second tool. Reading
   // history is bounded to summary nodes and degrades to silence outside a repo.
   const freshness = buildSummaryFreshness(maintenanceDocs);
-  const result = queryCompiledOntology(artifact, {
+  return queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
   }, {
@@ -127,6 +128,69 @@ function compactPostWriteMaintenance(limit = 5) {
     // but childless one.
     sourceDocs: maintenanceDocs,
   });
+}
+
+/** Candidates each maintenance check scans before the plan is narrowed to the written nodes. */
+const FINDING_SCAN_LIMIT = 100;
+/** Further subjects a grouped finding line names before it counts the rest. */
+const FINDING_SUBJECTS_MAX = 8;
+
+/**
+ * Review prompts that judge a settled map (a wide parent, an empty domain, a node
+ * nothing contains yet): in the middle of a build they name work the next batch does.
+ */
+const SETTLED_MAP_REVIEW_KINDS = new Set([
+  'empty_domain',
+  'fold_bulk_siblings',
+  'rejudge_summary_membership',
+  'retire_starter_example',
+  'retire_unearned_node',
+  'unassigned_node',
+]);
+
+function actionSlugs(action) {
+  const nodes = Array.isArray(action.nodes) ? action.nodes : Object.values(action.nodes ?? {});
+  return [action.node?.slug, ...nodes.map((node) => node?.slug), ...(action.cycle?.nodes ?? [])];
+}
+
+function actionSubject(action) {
+  const args = action.proposedAction?.args ?? {};
+  return args.slug ?? args.to ?? action.node?.slug ?? action.id;
+}
+
+function findingLine(action) {
+  const cycle = Array.isArray(action.cycle?.nodes) ? ` ${action.cycle.nodes.join(' -> ')}.` : '';
+  const next = action.executable
+    ? ` Next: ${action.proposedAction.tool}(${JSON.stringify(action.proposedAction.args)})`
+    : '';
+  return `${action.reason}${cycle}${next}`;
+}
+
+function groupedFindingLine([first, ...rest]) {
+  if (rest.length === 0) return findingLine(first);
+  const subjects = rest.slice(0, FINDING_SUBJECTS_MAX).map(actionSubject).join(', ');
+  const unnamed = rest.length - FINDING_SUBJECTS_MAX;
+  return `${findingLine(first)} Same for ${rest.length} more: ${subjects}${unnamed > 0 ? ` and ${unnamed} others` : ''}.`;
+}
+
+/**
+ * What the maintenance plan says about the nodes a build write just touched: one
+ * plain line per kind, with the call that settles it. The vault's whole queue stays
+ * with `validate_vault` and `query_ontology({operation:"maintenance_plan"})`.
+ */
+function findingsOnWrittenNodes(writtenSlugs) {
+  const written = new Set(writtenSlugs);
+  const byKind = new Map();
+  for (const action of maintenancePlanAfterWrite(FINDING_SCAN_LIMIT).actions) {
+    if (SETTLED_MAP_REVIEW_KINDS.has(action.kind)) continue;
+    if (!actionSlugs(action).some((slug) => written.has(slug))) continue;
+    byKind.set(action.kind, [...(byKind.get(action.kind) ?? []), action]);
+  }
+  return [...byKind.values()].map(groupedFindingLine);
+}
+
+function compactPostWriteMaintenance(limit = 5) {
+  const result = maintenancePlanAfterWrite(limit);
   return {
     operation: result.operation,
     sideEffect: result.sideEffect,
@@ -187,4 +251,5 @@ function compactMaintenanceNodes(nodesValue) {
 export {
   attachVaultValidation,
   compactPostWriteMaintenance,
+  findingsOnWrittenNodes,
 };

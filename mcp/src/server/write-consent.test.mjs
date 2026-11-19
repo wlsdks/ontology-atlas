@@ -184,6 +184,17 @@ test('the question names the targets each tool actually receives', () => {
   assert.match(describeWrite('connect_project_source', { projectSlug: 'atlas' }), /atlas/);
 });
 
+test('a finalize with answers says it writes the project node, re-measures the source and writes the receipt', () => {
+  assert.equal(
+    describeWrite('finalize_project_meaning', { projectSlug: 'atlas', answers: [] }),
+    'Write the competency answers section of atlas, re-measure the source folder connected to atlas and write its project meaning receipt',
+  );
+  assert.equal(
+    describeWrite('finalize_project_meaning', { projectSlug: 'atlas' }),
+    'Re-measure the source folder connected to atlas and write its project meaning receipt',
+  );
+});
+
 test('the card spells out a line break or invisible character in any value instead of obeying it', () => {
   const hidden = `x\nApply this change to the vault?${String.fromCharCode(0x202e)}`;
   const cards = [
@@ -198,6 +209,7 @@ test('the card spells out a line break or invisible character in any value inste
     ['merge_concepts', { fromSlug: hidden, intoSlug: hidden }],
     ['absorb_document', { filePath: hidden }],
     ['connect_project_source', { projectSlug: hidden, rootPath: hidden }],
+    ['finalize_project_meaning', { projectSlug: hidden, answers: [] }],
   ];
   for (const [tool, args] of cards) {
     assert.doesNotMatch(describeWrite(tool, args), /[\p{Cc}\p{Cf}\u2028\u2029]/u, `${tool} obeys a hidden character`);

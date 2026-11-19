@@ -421,25 +421,20 @@ export const okShape = {
     matches: [{ slug: "README", kind: "vault-readme", title: "README", mtime: 1 }],
     limited: true,
   },
+  // The breadth map arrives as its text rows alone, with no structuredContent.
   analyzedRepo: {
-    contract: "breadthMap:v1",
-    rootPath: "/repo",
-    size: { productFiles: 1, productLines: 3, units: 1, outside: {} },
-    units: [{ path: "src/features/auth", files: 1, lines: 3, mainFiles: [{ path: "src/features/auth/index.ts", lines: 3 }], exports: ["auth"], importedBy: 0, imports: [] }],
-    entryPoints: [],
-    docs: { readme: { path: "README.md", purpose: "Sample signs people in." }, pages: [] },
-    next: "1 product units, 3 lines in 1 files.",
+    rawText: [
+    "Breadth map of /repo: 1 product units, 3 lines in 1 files.",
+    "README.md: Sample signs people in.",
+    "",
+    "Units: path | files | lines | main files (relative to the unit, lines) | exports | imported by N units | imports",
+    "src/features/auth | 1 | 3 | index.ts (3) | auth | 0 | -",
+    "",
+    "Next: 1 product units, 3 lines in 1 files.",
+  ].join("\n"),
   },
 
-  analyzedRepoStructured: {
-    contract: "breadthMap:v1",
-    rootPath: "/repo",
-    size: { productFiles: 1, productLines: 3, units: 1, outside: {} },
-    units: [{ path: "src/features/auth", files: 1, lines: 3, mainFiles: [{ path: "src/features/auth/index.ts", lines: 3 }], exports: ["auth"], importedBy: 0, imports: [] }],
-    entryPoints: [],
-    docs: { readme: { path: "README.md", purpose: "Sample signs people in." }, pages: [] },
-    next: "1 product units, 3 lines in 1 files.",
-  },
+  analyzedRepoStructured: null,
 
   inferredImports: {
     rootPath: "/repo",

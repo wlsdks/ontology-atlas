@@ -52,6 +52,10 @@ function summarizeWrite(name, args, result) {
     }
     case 'patch_concept':
       return { target: args.slug, summary: `patch_concept ${args.slug}` };
+    case 'finalize_project_meaning':
+      return result?.bodyWritten
+        ? { target: args.projectSlug, summary: `finalize_project_meaning ${args.projectSlug} competency answers` }
+        : null;
     case 'connect_project_source':
       return result?.changed
         ? { target: result.projectSlug, summary: `connect_project_source ${result.mode} ${result.binding?.kind ?? ''}`.trim() }

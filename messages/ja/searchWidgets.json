@@ -126,6 +126,8 @@
       "openSearchPalette": "検索パレットを開く",
       "openSettings": "設定を開く",
       "toggleDocsDrawer": "文書のクイックプレビューを開閉（編集権限あり）",
+      "addConcept": "概念を追加",
+      "undoHandChange": "手で行った最後の変更を元に戻す",
       "showShortcuts": "キーボードショートカットを表示または非表示",
       "stepCloseOverlays": "開いているパネルを1つずつ閉じる",
       "clickSelect": "概念を選択",

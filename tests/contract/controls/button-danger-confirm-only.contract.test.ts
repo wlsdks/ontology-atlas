@@ -16,6 +16,10 @@ const CONFIRM_ROWS: Record<string, { uses: number; row: string }> = {
     uses: 1,
     row: "Delete a document — the alert dialog opened by the page's delete door or the palette, beside Cancel.",
   },
+  "src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx": {
+    uses: 1,
+    row: "Delete a concept — the confirmation the panel's Edit menu opens, naming what points here, beside Cancel.",
+  },
 };
 
 const ROOT = process.cwd();

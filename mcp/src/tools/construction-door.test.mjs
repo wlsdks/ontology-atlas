@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +32,16 @@ function repository() {
   return root;
 }
 
+/** The breadth map and source-only reads arrive as their text rows alone. */
+const TEXT_ALONE = /^(Breadth map of|Source reads in) /;
+
 /** Each call is a fresh server process; `calls` run in one process, so its reads count for its later calls. */
+function activityFor(root, tool) {
+  const log = join(root, 'atlas', '.ontology-atlas', 'activity.jsonl');
+  if (!existsSync(log)) return [];
+  return readFileSync(log, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line)).filter((entry) => entry.tool === tool);
+}
+
 function server(root) {
   const vault = join(root, 'atlas');
   mkdirSync(vault, { recursive: true });
@@ -52,7 +61,8 @@ function server(root) {
       const result = responses.find(({ id }) => id === index + 2)?.result;
       assert.ok(result, `${name} returned no result`);
       const text = result.content?.[0]?.text ?? '';
-      return result.isError ? { error: text } : (result.structuredContent ?? JSON.parse(text));
+      if (result.isError) return { error: text };
+      return result.structuredContent ?? (TEXT_ALONE.test(text) ? { text, blocks: result.content.length } : JSON.parse(text));
     });
   };
   const call = async (name, args) => (await session([[name, args]]))[0];
@@ -126,8 +136,7 @@ test('a build on an empty vault inside its repository reaches finalize without e
   assert.match(refused.error, /- evidence: /);
   assert.match(refused.error, /concept `capabilities\/ghost` is not in this project's containment graph/);
   assert.match(refused.error, /no longer matches `src\/charge\.mjs`/);
-  assert.match(refused.error, /evidence `src\/unmeasured\.mjs` is not a measured source witness/);
-  assert.match(refused.error, /call connect_project_source again/);
+  assert.match(refused.error, /evidence `src\/unmeasured\.mjs` is not a file in the connected source folder/);
 
   const sha = createHash('sha256').update(readFileSync(join(root, 'src', 'charge.mjs'))).digest('hex');
   // One of the two capabilities is cited: whether that answers "each" is the person's call.
@@ -142,9 +151,117 @@ test('a build on an empty vault inside its repository reaches finalize without e
     ['analyze_repo_structure', { sourceOnly: true, sourceReads: [{ path: 'src/charge.mjs', symbol: 'charge' }, { path: 'src/refund.mjs', symbol: 'refund' }] }],
     ['finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: repaired.mtime }],
   ]);
-  assert.deepEqual(read.sourceEvidence.rows.map((row) => row.status), ['read', 'read']);
+  assert.match(read.text, /: 2 read, 0 outlined, 0 not returned\. /);
   assert.equal(finalized.error, undefined, finalized.error);
   assert.equal(finalized.ok, true);
+});
+
+function partialAnswer(id) {
+  return { id, status: 'partial', answer: `The ${id} answer is partial.`, gap: 'The fixture leaves this open.' };
+}
+
+async function connectedLedger(call) {
+  const created = await call('add_concepts', { concepts: [
+    { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
+    { slug: 'domains/payments', kind: 'domain', title: 'Payments', labels: { en: 'Payments' }, body: BODY },
+    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, domain: 'domains/payments', path: 'src/charge.mjs', body: `Charges an amount (src/charge.mjs:L2).\n\n${BODY}` },
+  ] });
+  const related = await call('add_relations', { relations: [
+    { from: 'ledger', to: 'domains/payments', type: 'domains', expected_mtime: created.concepts[0].mtime },
+    { from: 'domains/payments', to: 'capabilities/charge', type: 'capabilities' },
+  ] });
+  await call('connect_project_source', { projectSlug: 'ledger', confirm: true });
+  return related.mtimes.ledger;
+}
+
+test('one finalize call with answers writes the section and measures a cited file no concept names', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  const mtime = await connectedLedger(call);
+
+  const finalized = await call('finalize_project_meaning', {
+    projectSlug: 'ledger',
+    expected_mtime: mtime,
+    answers: [
+      { id: 'scope', status: 'answered', answer: 'Ledger exists so a customer can be charged.', concepts: ['ledger'], evidence: ['README.md'] },
+      partialAnswer('domains'),
+      partialAnswer('abilities'),
+      partialAnswer('evidence'),
+      partialAnswer('impact'),
+    ],
+  });
+  assert.equal(finalized.error, undefined, finalized.error);
+  assert.equal(finalized.ok, true);
+  const scope = finalized.meaningAssessment.dimensions.competency.questions.find((row) => row.id === 'scope');
+  assert.equal(scope.witnessStatus, 'resolved', 'README.md was measured in the finalize call');
+
+  const body = readFileSync(join(root, 'atlas', 'ledger.md'), 'utf8');
+  assert.match(body, /^### scope: answered\n\nWhat product\/system outcome and user problem define the ontology scope\?\n\nLedger exists so a customer can be charged\.\n\n- Concepts: `ledger`\n- Evidence: `README\.md`$/m);
+  const sources = JSON.parse(readFileSync(join(root, 'atlas', '.ontology-atlas', 'project-sources.json'), 'utf8'));
+  assert.ok(sources.bindings[0].receipt.witnesses.some((witness) => witness.path === 'README.md' && witness.supported));
+  const receipts = JSON.parse(readFileSync(join(root, 'atlas', '.ontology-atlas', 'project-meaning.json'), 'utf8'));
+  assert.equal(receipts.receipts[0].bodyDigest, finalized.bodyDigest);
+  assert.deepEqual(activityFor(root, 'finalize_project_meaning').map((entry) => entry.target), ['ledger'], 'the body finalize wrote leaves one activity line');
+});
+
+test('a finalize refusal names the answers row and the argument to change, and writes nothing', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  const mtime = await connectedLedger(call);
+  const ledger = join(root, 'atlas', 'ledger.md');
+  const before = readFileSync(ledger, 'utf8');
+
+  const malformed = await call('finalize_project_meaning', {
+    projectSlug: 'ledger',
+    expected_mtime: mtime,
+    answers: [{ id: 'scope', status: 'partial', answer: 'Half.', evidence: ['README.md:L1'] }],
+  });
+  assert.match(malformed.error, /answers\[0\] is "partial", so `gap` must say in one line what is missing/);
+  assert.match(malformed.error, /answers\[0\]\.evidence\[0\]: `README\.md:L1` is a line cite; name the file `README\.md`/);
+  assert.match(malformed.error, /answers has no row for domains, abilities, evidence, impact/);
+
+  const unresolved = await call('finalize_project_meaning', {
+    projectSlug: 'ledger',
+    expected_mtime: mtime,
+    answers: [
+      partialAnswer('scope'),
+      partialAnswer('domains'),
+      partialAnswer('abilities'),
+      partialAnswer('impact'),
+      { id: 'evidence', status: 'answered', answer: 'Charging enters at its file.', concepts: ['capabilities/charge'], evidence: ['src/missing.mjs'] },
+    ],
+  });
+  assert.match(unresolved.error, /^Error: finalize_project_meaning blocked: 1 answered row/);
+  assert.match(unresolved.error, /- answers\[4\] evidence: .*evidence `src\/missing\.mjs` is not a file in the connected source folder/);
+  assert.match(unresolved.error, /Change answers\[4\]\.(paths or answers\[4\]\.evidence|evidence or answers\[4\]\.paths), or set its status "partial" with a gap\./);
+  assert.doesNotMatch(unresolved.error, /connection_info|guide/);
+  assert.equal(readFileSync(ledger, 'utf8'), before, 'a refused finalize leaves the body as it was');
+  assert.deepEqual(activityFor(root, 'finalize_project_meaning'), [], 'a refused finalize logs nothing');
+
+  const noSection = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: mtime });
+  assert.match(noSection.error, /Call finalize_project_meaning again with `answers`/);
+  assert.doesNotMatch(noSection.error, /connection_info/);
+});
+
+test('a build write answers with each row, its mtime and one line per finding on the nodes it wrote', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  const created = await call('add_concepts', { concepts: [
+    { slug: 'domains/payments', kind: 'domain', title: 'Payments', labels: { en: 'Payments' }, body: BODY, capabilities: ['capabilities/charge', 'capabilities/refund'] },
+  ] });
+  assert.deepEqual(Object.keys(created.concepts[0]).sort(), ['changed', 'mtime', 'ok', 'slug']);
+  assert.equal(created.postWriteMaintenance, undefined);
+  assert.doesNotMatch(JSON.stringify(created), new RegExp(root.replaceAll('/', '\\/')), 'no absolute path leaves the server');
+  const dangling = created.findings.filter((line) => line.startsWith('Graph reference'));
+  assert.equal(dangling.length, 1, 'two findings of one kind share one line');
+  assert.match(dangling[0], /^Graph reference "capabilities\/charge" .* Next: add_concept\(.*\) Same for 1 more: capabilities\/refund\.$/);
+  assert.ok(created.findings.every((line) => line.includes('domains/payments')), 'each finding is about the node just written');
+
+  const patched = await call('patch_concept', { slug: 'domains/payments', expected_mtime: created.concepts[0].mtime, body: BODY });
+  assert.deepEqual(Object.keys(patched).sort(), ['changed', 'findings', 'mtime', 'ok', 'slug']);
 });
 
 test('a relation write never hands out an mtime that would let a body write pass over an unread edit', async (t) => {
@@ -222,31 +339,38 @@ test('the survey is a breadth map of units, entry points and docs, with no candi
   writeFileSync(join(root, 'tests', 'charge.test.mjs'), "import { charge } from '../src/charge.mjs';\ncharge();\n");
   mkdirSync(join(root, 'docs'));
   writeFileSync(join(root, 'docs', 'refunds.md'), '# Refund rules\n\nA refund needs a captured charge.\n');
-  const survey = await server(root)('analyze_repo_structure', { ignore: ['atlas'] });
-  assert.equal(survey.contract, 'breadthMap:v1');
-  for (const removed of ['domains', 'capabilities', 'elements', 'suggestedRelations', 'meaningGate', 'extractionContract', 'proposalValidation']) {
-    assert.equal(survey[removed], undefined, `${removed} is not part of the default survey`);
+  const { text, blocks } = await server(root)('analyze_repo_structure', { ignore: ['atlas'] });
+  assert.equal(blocks, 1, 'the map is one text block with no structuredContent');
+  assert.match(text, /^Breadth map of /);
+  for (const removed of ['domains/', 'capabilities/', 'elements/', 'suggestedRelations', 'meaningGate', 'extractionContract', 'proposalValidation']) {
+    assert.ok(!text.includes(removed), `${removed} is not part of the default survey`);
   }
-  assert.deepEqual(survey.size, { productFiles: 3, productLines: 10, units: 2, outside: { test: { files: 1, lines: 2 } } });
-  assert.deepEqual(survey.units.map((unit) => unit.path), ['lib', 'src']);
-  const lib = survey.units.find((unit) => unit.path === 'lib');
-  assert.deepEqual(lib.imports, ['src'], 'a product import between units is an edge');
-  assert.equal(survey.units.find((unit) => unit.path === 'src').importedBy, 1, 'the test file\'s import is not counted');
-  assert.deepEqual(lib.exports, ['store']);
-  assert.match(survey.docs.readme.purpose, /charges customers/);
-  assert.deepEqual(survey.docs.pages, [{ path: 'docs/refunds.md', title: 'Refund rules' }]);
-  assert.match(survey.next, /^2 product units, 10 lines in 3 files\./);
+  const lines = text.split('\n');
+  assert.match(lines[0], /: 2 product units, 10 lines in 3 files \(left out: test 1 files 2 lines\)\.$/);
+  const section = (header) => {
+    const rows = lines.slice(lines.findIndex((line) => line.startsWith(header)) + 1);
+    return rows.slice(0, rows.indexOf('')).map((line) => line.split(' | '));
+  };
+  const units = section('Units: ');
+  assert.deepEqual(units.map(([path]) => path), ['lib', 'src']);
+  const [, , , , libExports, , libImports] = units.find(([path]) => path === 'lib');
+  assert.equal(libImports, 'src', 'a product import between units is an edge');
+  assert.equal(units.find(([path]) => path === 'src')[5], '1', 'the test file\'s import is not counted');
+  assert.equal(libExports, 'store');
+  assert.match(lines.find((line) => line.startsWith('README.md: ')), /charges customers/);
+  assert.deepEqual(section('Docs: ').map(([row]) => row), ['docs/refunds.md - Refund rules']);
+  assert.match(lines.at(-1), /^Next: 2 product units, 10 lines in 3 files\./);
 });
 
 test('outline reads take sixteen selectors and answer without the map or a limits block', async (t) => {
   const root = repository();
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const sourceReads = Array.from({ length: 16 }, (_, index) => ({ path: index % 2 ? 'src/refund.mjs' : 'src/charge.mjs', mode: 'outline' }));
-  const reads = await server(root)('analyze_repo_structure', { sourceReads });
-  assert.equal(reads.delivery, 'source_only');
-  assert.equal(reads.units, undefined);
-  assert.equal(reads.sourceEvidence.rows.length, 16);
-  assert.equal(reads.sourceEvidence.limits, undefined);
+  const { text, blocks } = await server(root)('analyze_repo_structure', { sourceReads });
+  assert.equal(blocks, 1);
+  assert.match(text, /^Source reads in .*: 0 read, 16 outlined, 0 not returned\. /);
+  assert.equal(text.split('\n').filter((line) => line.startsWith('== outline ')).length, 16);
+  assert.doesNotMatch(text, /Breadth map|^Units: |limits/m);
 });
 
 /*
@@ -277,7 +401,8 @@ test('validate names the capabilities that cite no lines this server process rea
   });
   const result = (id) => responses.find((response) => response.id === id)?.result;
   assert.match(result(2).structuredContent.coverage, /Depth: 0 of 2 capabilities cite lines this session read that hold a condition\. This server process has served no reads/);
-  assert.equal(result(3).structuredContent.sourceEvidence.rows[0].symbol, 'charge');
+  assert.equal(result(3).structuredContent, undefined);
+  assert.match(result(3).content[0].text, /^== read src\/charge\.mjs charge L1-L4 of 4 lines$/m);
   const coverage = result(4).structuredContent.coverage;
   assert.match(coverage, /Depth: 1 of 2 capabilities cite lines this session read that hold a condition\. Not yet: capabilities\/refund \(src\/refund\.mjs\)/);
   assert.match(coverage, /analyze_repo_structure\(\{"sourceOnly":true,"sourceReads":\[\{"path":"src\/refund\.mjs","symbol":"refund"\}\]\}\)/);

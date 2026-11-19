@@ -6,7 +6,7 @@ import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entiti
 import { useVaultHealth } from '@/features/vault-ontology';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
-import { canonicalSlug, capabilitiesWithoutDependency, codeShapedTitles } from './measured-facts';
+import { canonicalSlug, capabilitiesWithoutDependency, capabilitiesWithoutReadRule, codeShapedTitles } from './measured-facts';
 
 /**
  * Next steps for the vault currently viewed. The rules live in the pure `chat-suggestions.ts`; this
@@ -34,6 +34,7 @@ export function useChatSuggestions(
       nodeCount: health.summary.nodes,
       sourceState,
       islands: health.islands.map((group) => group.map((slug) => slugByAddress.get(slug) ?? slug)),
+      withoutReadRule: capabilitiesWithoutReadRule(docs),
       withoutDependency: capabilitiesWithoutDependency(docs),
       codeShaped: codeShapedTitles(docs),
       changedSource,
