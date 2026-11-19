@@ -47,12 +47,15 @@ function stepPaths(shares: readonly number[], width: number): { line: string; fi
 export function SourceProgressChart({
   progress,
   intro,
+  started,
   reduced,
   locale,
   t,
 }: {
   progress: SourceProgress;
   intro: boolean;
+  /** False while a first open's count waits to begin; the draw-in holds on its first frame with it. */
+  started: boolean;
   reduced: boolean;
   locale: string;
   t: ReturnType<typeof useTranslations<"library">>;
@@ -159,6 +162,7 @@ export function SourceProgressChart({
           "relative h-[72px] w-full rounded-micro focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]",
           reveal && "motion-progress-reveal",
         )}
+        style={revealed && !started ? { animationPlayState: "paused" } : undefined}
       >
         <svg width={width} height={CHART_HEIGHT} aria-hidden className="absolute inset-0 overflow-visible">
           <defs>

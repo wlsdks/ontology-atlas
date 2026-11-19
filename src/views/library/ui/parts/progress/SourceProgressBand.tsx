@@ -132,7 +132,9 @@ export function SourceProgressBand({
   );
 
   const hold = !waited && byState.checking > 0;
-  useBandMotion([...boundaries, today], { intro, reduced, hold }, (drawn, settled) => {
+  const [started, setStarted] = useState(!intro);
+  const start = useCallback(() => setStarted(true), []);
+  useBandMotion([...boundaries, today], { intro, reduced, hold, onStart: start }, (drawn, settled) => {
     let start = 0;
     SEGMENTS.forEach((_, i) => {
       const end = drawn[i] ?? 0;
@@ -248,7 +250,7 @@ export function SourceProgressBand({
 
       {showChart ? (
         <div className="min-w-[200px] flex-1 max-md:hidden">
-          <SourceProgressChart progress={progress} intro={intro} reduced={reduced} locale={locale} t={t} />
+          <SourceProgressChart progress={progress} intro={intro} started={started} reduced={reduced} locale={locale} t={t} />
         </div>
       ) : (
         <div className="flex-1 max-md:hidden" />
