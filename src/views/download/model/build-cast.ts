@@ -1,14 +1,15 @@
 /**
  * The sample repository the download page's build-with-Moru section plays with: a small shop app
- * of eight files, three concepts a person would name, two relations and one commit. Positions are
- * percentages of the stage, so one cast serves a phone's square stage and a desktop's wide one.
+ * of eight files, three concepts the agent writes (one under a name that reads like code), the
+ * relation it writes, the one it leaves out, and one commit. Positions are percentages of the
+ * stage, so one cast serves a phone's square stage and a desktop's wide one.
  */
 
 export type BuildConceptId = 'cart' | 'payment' | 'account';
 
 export interface BuildConcept {
   id: BuildConceptId;
-  /** The folder the files sit in, offered beside the person's word as a name. */
+  /** The folder the files sit in, which the concept's Markdown cites as its path. */
   folder: string;
   at: { x: number; y: number };
 }
@@ -27,6 +28,8 @@ export interface BuildRelation {
   label: 'readsTotal' | 'needsLogin';
   /** Where along the line, from `from` to `to`, its label sits clear of both names. */
   labelAt: number;
+  /** The agent writes its relation while building; the person adds the one it left out. */
+  by: 'agent' | 'person';
 }
 
 export const BUILD_REPO = 'shop-app';
@@ -49,9 +52,18 @@ export const BUILD_FILES: readonly BuildFile[] = [
 ];
 
 export const BUILD_RELATIONS: readonly BuildRelation[] = [
-  { from: 'payment', to: 'cart', label: 'readsTotal', labelAt: 0.4 },
-  { from: 'payment', to: 'account', label: 'needsLogin', labelAt: 0.65 },
+  { from: 'payment', to: 'cart', label: 'readsTotal', labelAt: 0.4, by: 'agent' },
+  { from: 'payment', to: 'account', label: 'needsLogin', labelAt: 0.65, by: 'person' },
 ];
+
+export const AGENT_RELATION = BUILD_RELATIONS.find((relation) => relation.by === 'agent')!;
+export const PERSON_RELATION = BUILD_RELATIONS.find((relation) => relation.by === 'person')!;
+
+/**
+ * The concept the agent names the way the code does; Atlas counts such a title as one to rename
+ * ("Rename N concepts that read like code"), and the person gives it a word people use.
+ */
+export const CODE_NAMED = { concept: 'account', title: 'authService' } as const satisfies { concept: BuildConceptId; title: string };
 
 /** The commit an agent makes after the map exists; its file belongs to one concept. */
 export const BUILD_CHANGE = { concept: 'payment', file: 'src/payment/charge-card.ts', sha: '4f2a91c' } as const satisfies {

@@ -258,8 +258,9 @@ export function GatewayFx() {
           cy = ty;
           put();
         }
-        ringHost.classList.add('is-on');
         const target = e.target as Element | null;
+        // A surface that draws its own pointer feedback, such as the build section's wire, keeps the ring off.
+        ringHost.classList.toggle('is-on', !target?.closest?.('[data-own-pointer]'));
         ring?.classList.toggle('is-hot', Boolean(target?.closest?.(HOT)));
       };
       cursorTick = () => {
