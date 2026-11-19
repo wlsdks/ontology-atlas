@@ -50,13 +50,18 @@ export interface PageMetadataInput {
   contentLocales?: readonly string[];
 }
 
+/** The locale's site card (`pnpm og:build`), or the English one for a locale outside the routes. */
+export function siteOgImagePath(locale: string, locales: readonly string[] = routing.locales): string {
+  return locales.includes(locale) ? `/og/${locale}.png` : '/og-image.png';
+}
+
 /**
  * Every page must carry the social card explicitly: Next replaces the whole top-level
  * `openGraph`/`twitter` key when merging, so root layout images are dropped. A routed locale
  * gets its own card (`pnpm og:build`); anything else falls back to the English site card.
  */
 function siteOgImage(locale: string, locales: readonly string[]) {
-  const url = locales.includes(locale) ? `/og/${locale}.png` : '/og-image.png';
+  const url = siteOgImagePath(locale, locales);
   return { url, width: 1200, height: 630, alt: 'Ontology Atlas' };
 }
 

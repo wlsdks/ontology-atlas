@@ -1,6 +1,7 @@
 import { absoluteUrl } from '@/shared/config';
 import { SITE_ORGANIZATION_REF, SITE_WEBSITE_REF } from '@/shared/config/site-entity';
 import { LOCALE_META } from '@/i18n/locales';
+import { siteOgImagePath } from '@/shared/lib/public-pages/page-metadata';
 
 import { guideCanonicalPath, type GuidePage } from '../model/guide-pages';
 
@@ -45,7 +46,7 @@ export function guideStructuredData({
     description,
     inLanguage,
     url,
-    image: absoluteUrl(`/og/${locale}.png`),
+    image: absoluteUrl(siteOgImagePath(locale)),
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     isPartOf: SITE_WEBSITE_REF,
     author: SITE_ORGANIZATION_REF,
