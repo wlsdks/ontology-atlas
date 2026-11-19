@@ -1,57 +1,34 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { cameraAt, drawHalo, projectPoint } from './film-kit';
+import { easeInOut, easeOut, LIGHT_STOPS } from './film-kit';
 
-const KEYS = [
-  { at: 0, cx: 100, cy: 100, zoom: 1 },
-  { at: 0.5, cx: 300, cy: 100, zoom: 2 },
-];
-
-describe('cameraAt', () => {
-  it('holds the first shot before it and the last after it', () => {
-    expect(cameraAt(KEYS, -1)).toEqual({ cx: 100, cy: 100, zoom: 1 });
-    expect(cameraAt(KEYS, 0.9)).toEqual({ cx: 300, cy: 100, zoom: 2 });
+describe('film easing', () => {
+  it('starts and ends exactly, so a move hands its last value to the next one', () => {
+    for (const ease of [easeInOut, easeOut]) {
+      expect(ease(0)).toBe(0);
+      expect(ease(1)).toBe(1);
+      expect(ease(-0.5)).toBe(0);
+      expect(ease(1.5)).toBe(1);
+    }
   });
 
-  it('eases between keys, passing the midpoint halfway', () => {
-    const mid = cameraAt(KEYS, 0.25);
-    expect(mid.cx).toBeCloseTo(200);
-    expect(mid.zoom).toBeCloseTo(1.5);
-    expect(cameraAt(KEYS, 0.05).cx).toBeLessThan(110);
-  });
-
-  it('creeps the zoom forward with progress', () => {
-    expect(cameraAt(KEYS, 1, 0.1).zoom).toBeCloseTo(2.2);
-  });
-});
-
-describe('projectPoint', () => {
-  it('puts the shot centre on the stage centre and scales distance by zoom', () => {
-    const shot = { cx: 300, cy: 200, zoom: 2 };
-    expect(projectPoint(800, 600, shot, 300, 200)).toEqual({ x: 400, y: 300 });
-    expect(projectPoint(800, 600, shot, 310, 200)).toEqual({ x: 420, y: 300 });
+  it('never moves backward and never overshoots', () => {
+    for (const ease of [easeInOut, easeOut]) {
+      let last = 0;
+      for (let i = 1; i <= 200; i += 1) {
+        const v = ease(i / 200);
+        expect(v).toBeGreaterThanOrEqual(last);
+        expect(v).toBeLessThanOrEqual(1);
+        last = v;
+      }
+    }
   });
 });
 
-describe('drawHalo', () => {
-  const ctx = () => ({ globalAlpha: 1, drawImage: vi.fn() }) as unknown as CanvasRenderingContext2D & { drawImage: ReturnType<typeof vi.fn> };
-  const sprite = {} as HTMLCanvasElement;
-
-  it('stamps the sprite centred on the mark at the given radius and alpha, above the key light\'s cap', () => {
-    const c = ctx();
-    let seen = 0;
-    c.drawImage.mockImplementation(() => {
-      seen = c.globalAlpha;
-    });
-    drawHalo(c, sprite, 100, 50, 40, 0.22);
-    expect(c.drawImage).toHaveBeenCalledWith(sprite, 60, 10, 80, 80);
-    expect(seen).toBeCloseTo(0.22);
-    expect(c.globalAlpha).toBe(1);
-  });
-
-  it('draws nothing before it has grown', () => {
-    const c = ctx();
-    drawHalo(c, sprite, 100, 50, 0, 0.22);
-    expect(c.drawImage).not.toHaveBeenCalled();
+describe('the cluster light', () => {
+  it('falls from full at its centre to nothing at its edge without a step', () => {
+    expect(LIGHT_STOPS[0]).toEqual([0, 1]);
+    expect(LIGHT_STOPS[LIGHT_STOPS.length - 1]![1]).toBe(0);
+    for (let i = 1; i < LIGHT_STOPS.length; i += 1) expect(LIGHT_STOPS[i]![1]).toBeLessThan(LIGHT_STOPS[i - 1]![1]);
   });
 });

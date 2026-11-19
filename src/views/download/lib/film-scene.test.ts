@@ -1,19 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildFilmScene,
-  clusterRing,
-  crossesClusters,
-  haloMarks,
-  labelBox,
-  markRadius,
-  pickCloseUp,
-  pickNamedFiles,
-  placeLabels,
-  scheduleRelations,
-  scheduleTyping,
-  type FilmEdge,
-} from './film-scene';
+import { buildFilmScene, clusterRing, crossesClusters, labelBox, placeLabels } from './film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>
@@ -88,65 +75,6 @@ describe('buildFilmScene', () => {
   });
 });
 
-describe('pickCloseUp', () => {
-  it('opens a capability held by a domain, with the dependencies it declares', () => {
-    const graph: StageGraph = {
-      nodes: [node('p', 'project'), node('d', 'domain'), node('c', 'capability'), node('lone', 'capability'), node('e', 'element')],
-      edges: [edge('p', 'd', 'contains'), edge('d', 'c', 'contains'), edge('p', 'lone', 'contains'), edge('c', 'e', 'depends'), edge('lone', 'e', 'depends')],
-    };
-    const scene = buildFilmScene(graph);
-    const pick = pickCloseUp(scene);
-    expect(pick && scene.nodes[pick.index].id).toBe('c');
-    expect(pick && scene.nodes[pick.parent].id).toBe('d');
-    expect(pick?.dependencies.map((i) => scene.nodes[i].id)).toEqual(['e']);
-  });
-
-  it('names the opened file first, then the most connected files whose names fit', () => {
-    const ranked: StageGraph = {
-      nodes: [
-        { ...node('p', 'project'), fullDegree: 1 },
-        { ...node('busy', 'domain'), fullDegree: 9 },
-        { ...node('a-very-long-name', 'domain'), fullDegree: 8 },
-        { ...node('quiet', 'capability'), fullDegree: 2 },
-      ],
-      edges: [],
-    };
-    const scene = buildFilmScene(ranked);
-    const fits = (file: string) => file.length <= 10;
-    const named = pickNamedFiles(scene, 3, 3, fits).map((i) => scene.nodes[i].id);
-    expect(named).toEqual(['quiet', 'busy', 'p']);
-  });
-
-  it('opens nothing when no capability declares a dependency', () => {
-    const scene = buildFilmScene({ nodes: [node('p', 'project'), node('d', 'domain')], edges: [edge('p', 'd', 'contains')] });
-    expect(pickCloseUp(scene)).toBeNull();
-  });
-});
-
-describe('scheduleTyping', () => {
-  const rows = [null, 'domain', 'kind', 'title', null, 'dependency', 'dependency', 'dependency', null].map((role) => ({ role }));
-  const landings = [3000, 3400, 3800, 4300, 4650, 5000];
-  const times = scheduleTyping(rows, landings, 2640, 380);
-
-  it('finishes each line that becomes a mark on its landing beat', () => {
-    const marks = times.filter((_, k) => rows[k]!.role !== null).map((t) => t.to);
-    expect(marks).toEqual(landings);
-  });
-
-  it('types one line at a time, each after the panel has opened', () => {
-    times.slice(1).forEach((t, k) => {
-      expect(t.from).toBeGreaterThanOrEqual(times[k]!.to);
-      expect(t.to).toBeGreaterThan(t.from);
-      expect(t.from).toBeGreaterThanOrEqual(2520);
-    });
-  });
-
-  it('still types a line when its landing beat has already passed', () => {
-    const late = scheduleTyping([{ role: null }, { role: 'kind' }], [100], 2640, 380);
-    expect(late[1]!.to).toBeGreaterThan(late[1]!.from);
-  });
-});
-
 describe('placeLabels', () => {
   /* The opened concept and its dependencies sit within 20px of each other on the real map. */
   const crowd = [
@@ -183,70 +111,5 @@ describe('placeLabels', () => {
     const box = labelBox(1430 + spot!.dx, 450 + spot!.dy, 120, 20, spot!.align);
     expect(box.r).toBeLessThanOrEqual(1440);
     expect(box.l).toBeGreaterThanOrEqual(0);
-  });
-});
-
-describe('markRadius', () => {
-  it('grows with relations and stays inside its kind\'s range', () => {
-    expect(markRadius('project', 0, true)).toBe(11);
-    expect(markRadius('domain', 0, true)).toBe(8);
-    expect(markRadius('domain', 400, true)).toBe(10);
-    expect(markRadius('capability', 9, true)).toBeGreaterThan(markRadius('capability', 1, true));
-    expect(markRadius('capability', 400, true)).toBe(6.5);
-    expect(markRadius('element', 0, true)).toBe(3);
-    expect(markRadius('element', 400, true)).toBe(4);
-  });
-
-  it('draws a phone\'s marks smaller', () => {
-    expect(markRadius('project', 0, false)).toBeCloseTo(11 * 0.85);
-  });
-});
-
-describe('haloMarks', () => {
-  it('lights the project, then the cluster hubs, then the busiest marks, never more than asked', () => {
-    const busy: StageGraph = {
-      nodes: [
-        { ...node('p', 'project'), fullDegree: 2 },
-        { ...node('d1', 'domain'), fullDegree: 3 },
-        { ...node('d2', 'domain'), fullDegree: 4 },
-        { ...node('c1', 'capability'), fullDegree: 12 },
-        { ...node('c2', 'capability'), fullDegree: 9 },
-        { ...node('e1', 'element'), fullDegree: 1 },
-      ],
-      edges: [edge('p', 'd1', 'contains'), edge('p', 'd2', 'contains'), edge('d1', 'c1', 'contains'), edge('d2', 'c2', 'contains'), edge('c1', 'e1', 'contains')],
-    };
-    const scene = buildFilmScene(busy);
-    const ids = (list: number[]) => list.map((i) => scene.nodes[i]!.id);
-    expect(ids(haloMarks(scene))).toEqual(['p', 'd2', 'd1', 'c1', 'c2']);
-    expect(ids(haloMarks(scene, 2))).toEqual(['p', 'd2']);
-  });
-});
-
-describe('scheduleRelations', () => {
-  const edges: FilmEdge[] = [
-    { from: 0, to: 1, contains: true, reveal: 0 },
-    { from: 1, to: 2, contains: false, reveal: 0 },
-    { from: 1, to: 3, contains: true, reveal: 0 },
-    { from: 2, to: 3, contains: false, reveal: 0 },
-    { from: 0, to: 2, contains: false, reveal: 0 },
-  ];
-  const land = [100, 500, 520, 900];
-  const starts = scheduleRelations(edges, land, new Set([4]), { delay: 60, containLead: 90, earliest: 0, lastStart: 2000 });
-
-  it('starts every relation after both its ends have landed', () => {
-    edges.forEach((e, k) => {
-      if (k === 4) return;
-      expect(starts[k]).toBeGreaterThanOrEqual(Math.max(land[e.from]!, land[e.to]!) + 60);
-    });
-  });
-
-  it('draws a containment line before a relation that lands with it, and the last at the given time', () => {
-    expect(starts[2]).toBeLessThan(starts[3]!);
-    expect(Math.max(...starts)).toBe(2000);
-    expect(starts[0]).toBe(560);
-  });
-
-  it('skips relations already drawn', () => {
-    expect(starts[4]).toBe(-1);
   });
 });
