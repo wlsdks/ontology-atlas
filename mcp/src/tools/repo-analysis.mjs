@@ -78,7 +78,7 @@ function readsWith(target, sourceEvidence) {
  * recorded as read.
  */
 function sourceOnlyAnswer(target, sourceReads, ignore) {
-  const read = readSourceEvidence(target, sourceReads, { ignore });
+  const read = readSourceEvidence(target, sourceReads, { ignore, sentAsText: true });
   noteFamilies(target, read, ignore, readsWith(target, read));
   const sourceEvidence = fitSourceReads(target, read);
   recordSourceEvidence(target, sourceEvidence);
