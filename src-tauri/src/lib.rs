@@ -28,6 +28,7 @@ mod local_construction;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
+mod no_console;
 mod planning;
 mod project_source;
 mod secrets;
@@ -271,6 +272,8 @@ pub fn run() {
             vault::index::vault_index_search,
             vault::index::vault_index_clear,
             vault::index::vault_index_forget,
+            vault::index_rows::vault_index_rows_get,
+            vault::index_rows::vault_index_rows_put,
             vault::read::read_vault_text_file,
             vault::read::read_vault_text_files,
             vault::read::read_vault_text_tail,

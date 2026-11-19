@@ -27,6 +27,7 @@ impl EvidenceReader {
         #[cfg(not(unix))]
         let _ = &snapshot_file;
         let mut command = Command::new(&binary);
+        crate::no_console::hide_console(&mut command);
         command.current_dir(binary.parent().ok_or("reader_unavailable")?);
         command
             .env_clear()

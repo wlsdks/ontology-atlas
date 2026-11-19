@@ -1,18 +1,32 @@
-import { BUILD_CHANGE, BUILD_CONCEPTS, BUILD_RELATIONS, type BuildConceptId } from '../model/build-cast';
+import { BUILD_CHANGE, BUILD_RELATIONS, CODE_NAMED, loneEndOf, PERSON_RELATIONS, type BuildConcept, type BuildConceptId, type CodeNamedId } from '../model/build-cast';
 
 /**
- * The build-with-Moru section as a reducer: open the folder, name each concept, link the two
- * relations in order, apply the agent's commit, look at the concept it changed, and finish.
+ * The build-with-Moru section as a reducer, in the order Atlas is used: the person asks for the
+ * first map, the agent reads the repository and writes it cluster by cluster, Atlas counts what to
+ * fix (concepts named like code, concepts standing alone), the person fixes them, then an agent's
+ * commit lands and the person looks at the concept it changed.
  */
-export type BuildPhase = 'closed' | 'reading' | 'naming' | 'linking' | 'commit' | 'impact' | 'inspect' | 'done';
+export type BuildPhase = 'closed' | 'building' | 'rename' | 'renaming' | 'linking' | 'commit' | 'impact' | 'inspect' | 'done';
+
+/**
+ * The agent's first map, one beat at a time: 1 reads the files, 2-6 write the concepts whose
+ * `beat` it is, 7 draws its relations, 8 is Atlas counting what to fix. The next beat hands over.
+ */
+export const AGENT_BEATS = 8;
+export const RELATIONS_BEAT = 7;
+export const MEASURE_BEAT = 8;
 
 export interface BuildState {
   phase: BuildPhase;
-  /** The option the person chose for each concept, in `BUILD_CONCEPTS` order; null until named. */
-  names: readonly (number | null)[];
-  /** Relations drawn so far, in `BUILD_RELATIONS` order. */
-  links: number;
-  /** The concept tapped first while linking. */
+  /** How far the agent's first map has come, 0 to `AGENT_BEATS`. */
+  built: number;
+  /** The word the person chose for each concept named like code. */
+  renamed: Partial<Record<CodeNamedId, number>>;
+  /** The concept being renamed. */
+  renaming: CodeNamedId | null;
+  /** Indexes into `PERSON_RELATIONS` of the relations the person has drawn, in order. */
+  links: readonly number[];
+  /** The concept pressed first while linking. */
   pick: BuildConceptId | null;
   /** Counts taps that did not fit; the line keys on it, so a second miss in a row replays. */
   misses: number;
@@ -20,57 +34,73 @@ export interface BuildState {
 
 export type BuildAction =
   | { type: 'open' }
-  | { type: 'read' }
-  | { type: 'name'; option: number }
+  | { type: 'beat' }
+  | { type: 'rename'; option: number }
   | { type: 'tap'; concept: BuildConceptId }
   | { type: 'commit' }
   | { type: 'confirm' }
   | { type: 'restart' };
 
-export const INITIAL_BUILD: BuildState = {
-  phase: 'closed',
-  names: BUILD_CONCEPTS.map(() => null),
-  links: 0,
-  pick: null,
-  misses: 0,
-};
+export const INITIAL_BUILD: BuildState = { phase: 'closed', built: 0, renamed: {}, renaming: null, links: [], pick: null, misses: 0 };
 
-/** The concept that glows for the next tap, or null when no tap is asked for. */
-export function targetConcept(state: BuildState): BuildConceptId | null {
-  const relation = linkingRelation(state);
-  if (relation) return state.pick === null ? relation.from : relation.to;
-  return state.phase === 'impact' ? BUILD_CHANGE.concept : null;
+const past = (state: BuildState, beat: number) => state.phase !== 'closed' && (state.phase !== 'building' || state.built >= beat);
+
+/** Whether the agent has written this concept onto the map yet. */
+export const isWritten = (state: BuildState, concept: BuildConcept) => past(state, concept.beat);
+/** Whether the agent's own relations are on the map. */
+export const agentRelationsDrawn = (state: BuildState) => past(state, RELATIONS_BEAT);
+/** Whether Atlas has counted what to fix, so the code-like names and lone concepts are marked. */
+export const isMeasured = (state: BuildState) => past(state, MEASURE_BEAT);
+
+export const codeNamedLeft = (state: BuildState) => CODE_NAMED.filter((entry) => state.renamed[entry.concept] === undefined);
+export const relationsLeft = (state: BuildState) => PERSON_RELATIONS.filter((_, index) => !state.links.includes(index));
+export const isLinked = (state: BuildState, relation: (typeof PERSON_RELATIONS)[number]) => state.links.includes(PERSON_RELATIONS.indexOf(relation));
+
+/** The other end of the picked concept's relation, while linking. */
+export function partnerOf(state: BuildState): BuildConceptId | null {
+  if (state.pick === null) return null;
+  const relation = relationsLeft(state).find((rel) => rel.from === state.pick || rel.to === state.pick);
+  if (!relation) return null;
+  return relation.from === state.pick ? relation.to : relation.from;
 }
 
-/** The concept the person is naming now, or null outside naming. */
-export function namingIndex(state: BuildState): number | null {
-  if (state.phase !== 'naming') return null;
-  const index = state.names.indexOf(null);
-  return index === -1 ? null : index;
-}
-
-/** The relation the person is drawing now, or null outside linking. */
-export function linkingRelation(state: BuildState) {
-  return state.phase === 'linking' ? (BUILD_RELATIONS[state.links] ?? null) : null;
-}
-
-/** The five steps the progress row names; reading belongs to opening the folder. */
-export function stepOf(phase: BuildPhase): 0 | 1 | 2 | 3 | 4 {
-  switch (phase) {
-    case 'closed':
-    case 'reading':
-      return 0;
-    case 'naming':
-      return 1;
-    case 'linking':
-      return 2;
-    case 'commit':
+/** The concepts that glow for the next tap; the first is the one a hint points at. */
+export function targetConcepts(state: BuildState): BuildConceptId[] {
+  switch (state.phase) {
+    case 'rename':
+      return codeNamedLeft(state).map((entry) => entry.concept);
+    case 'linking': {
+      const partner = partnerOf(state);
+      return partner ? [partner] : relationsLeft(state).map(loneEndOf);
+    }
     case 'impact':
-    case 'inspect':
-      return 3;
-    case 'done':
-      return 4;
+      return [BUILD_CHANGE.concept];
+    default:
+      return [];
   }
+}
+
+/** Concepts a linking press may start from: either end of a relation still to draw. */
+export const linkEnds = (state: BuildState): BuildConceptId[] =>
+  state.phase === 'linking' && state.pick === null ? relationsLeft(state).flatMap((rel) => [rel.to, rel.from]) : [];
+
+export const BUILD_STEPS = ['open', 'build', 'rename', 'link', 'change', 'done'] as const;
+export type BuildStep = (typeof BUILD_STEPS)[number];
+
+/** The step the progress row marks as now. */
+export function stepOf(phase: BuildPhase): number {
+  const step: Record<BuildPhase, BuildStep> = {
+    closed: 'open',
+    building: 'build',
+    rename: 'rename',
+    renaming: 'rename',
+    linking: 'link',
+    commit: 'change',
+    impact: 'change',
+    inspect: 'change',
+    done: 'done',
+  };
+  return BUILD_STEPS.indexOf(step[phase]);
 }
 
 export function buildReducer(state: BuildState, action: BuildAction): BuildState {
@@ -78,14 +108,15 @@ export function buildReducer(state: BuildState, action: BuildAction): BuildState
     case 'restart':
       return INITIAL_BUILD;
     case 'open':
-      return state.phase === 'closed' ? { ...state, phase: 'reading' } : state;
-    case 'read':
-      return state.phase === 'reading' ? { ...state, phase: 'naming' } : state;
-    case 'name': {
-      const index = namingIndex(state);
-      if (index === null) return state;
-      const names = state.names.map((chosen, at) => (at === index ? action.option : chosen));
-      return { ...state, names, phase: names.includes(null) ? 'naming' : 'linking' };
+      return state.phase === 'closed' ? { ...state, phase: 'building' } : state;
+    case 'beat':
+      if (state.phase !== 'building') return state;
+      return state.built < AGENT_BEATS ? { ...state, built: state.built + 1 } : { ...state, phase: 'rename' };
+    case 'rename': {
+      if (state.phase !== 'renaming' || state.renaming === null) return state;
+      const renamed = { ...state.renamed, [state.renaming]: action.option };
+      const done = CODE_NAMED.every((entry) => renamed[entry.concept] !== undefined);
+      return { ...state, renamed, renaming: null, phase: done ? 'linking' : 'rename' };
     }
     case 'tap':
       return tap(state, action.concept);
@@ -97,16 +128,21 @@ export function buildReducer(state: BuildState, action: BuildAction): BuildState
 }
 
 function tap(state: BuildState, concept: BuildConceptId): BuildState {
-  if (state.phase === 'impact') {
-    return concept === BUILD_CHANGE.concept ? { ...state, phase: 'inspect' } : { ...state, misses: state.misses + 1 };
+  const miss = { ...state, misses: state.misses + 1 };
+  if (state.phase === 'rename') {
+    const entry = codeNamedLeft(state).find((left) => left.concept === concept);
+    return entry ? { ...state, phase: 'renaming', renaming: entry.concept } : miss;
   }
-  const relation = linkingRelation(state);
-  if (!relation) return state;
-  if (state.pick === null) {
-    return concept === relation.from ? { ...state, pick: concept } : { ...state, misses: state.misses + 1 };
-  }
+  if (state.phase === 'impact') return concept === BUILD_CHANGE.concept ? { ...state, phase: 'inspect' } : miss;
+  if (state.phase !== 'linking') return state;
+  if (state.pick === null) return linkEnds(state).includes(concept) ? { ...state, pick: concept } : miss;
   if (concept === state.pick) return { ...state, pick: null };
-  if (concept !== relation.to) return { ...state, misses: state.misses + 1 };
-  const links = state.links + 1;
-  return { ...state, links, pick: null, phase: links === BUILD_RELATIONS.length ? 'commit' : 'linking' };
+  if (concept !== partnerOf(state)) return miss;
+  const relation = relationsLeft(state).find((rel) => rel.from === state.pick || rel.to === state.pick)!;
+  const links = [...state.links, PERSON_RELATIONS.indexOf(relation)];
+  return { ...state, links, pick: null, phase: links.length === PERSON_RELATIONS.length ? 'commit' : 'linking' };
 }
+
+/** Whether a relation is on the map: the agent's once drawn, the person's once linked. */
+export const isRelationDrawn = (state: BuildState, relation: (typeof BUILD_RELATIONS)[number]) =>
+  relation.by === 'agent' ? agentRelationsDrawn(state) : isLinked(state, relation);

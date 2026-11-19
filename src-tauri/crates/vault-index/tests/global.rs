@@ -55,6 +55,66 @@ fn indexes_not_opened_for_two_weeks_or_of_vanished_folders_are_swept() {
     std::fs::rename(gone.root.with_extension("gone"), &gone.root).unwrap();
 }
 
+#[test]
+fn a_folder_holding_only_rows_is_swept_like_one_holding_the_search_file() {
+    let _alone = ALONE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let rows_only = |name: &str, seed: u64| {
+        let vault = TempVault::new(name);
+        let files = write_corpus(&vault.root, 10, seed);
+        let then = std::time::SystemTime::now() - std::time::Duration::from_secs(60);
+        for path in &files {
+            std::fs::File::options()
+                .write(true)
+                .open(vault.root.join(path))
+                .unwrap()
+                .set_modified(then)
+                .unwrap();
+        }
+        let (found, _) = vault_index::rows::lookup(&vault.root, "test-entry/1", &files).unwrap();
+        let rows: Vec<_> = files
+            .iter()
+            .zip(found)
+            .filter_map(|(path, found)| match found {
+                vault_index::rows::Found::Miss(token) => Some(vault_index::rows::NewRow {
+                    path: path.clone(),
+                    token,
+                    last_modified_ms: i64::try_from(
+                        then.duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis(),
+                    )
+                    .unwrap(),
+                    value: "{}".to_string(),
+                }),
+                vault_index::rows::Found::Hit(_) => None,
+            })
+            .collect();
+        let written = vault_index::rows::put(&vault.root, "test-entry/1", &rows, None).unwrap();
+        assert_eq!(written.written, files.len());
+        assert!(!vault.index_file().exists(), "no search file, only rows");
+        vault
+    };
+    let unused = rows_only("sweep-rows-unused", 41);
+    let kept = rows_only("sweep-rows-kept", 42);
+    let conn =
+        rusqlite::Connection::open(index_dir(&unused.root).unwrap().join("rows.sqlite")).unwrap();
+    conn.execute("UPDATE meta SET value = '0' WHERE key = 'last_used_ms'", [])
+        .unwrap();
+    drop(conn);
+
+    vault_index::sweep_orphans().unwrap();
+    assert!(
+        !index_dir(&unused.root).unwrap().exists(),
+        "rows not used for two weeks are deleted"
+    );
+    assert!(
+        index_dir(&kept.root).unwrap().exists(),
+        "recent rows of a present folder stay"
+    );
+}
+
 /// Folders a person or another program put beside the indexes, including one named like a key
 /// but without the marker, survive every delete and sweep.
 #[test]

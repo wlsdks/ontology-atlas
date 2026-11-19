@@ -50,7 +50,13 @@ function greenExport() {
     pages.set(`/${l}/download/`, page({ ...home, body: `<h1>${messages[l].download.heroTitleLine1}</h1>` }));
     pages.set(
       `/${l}/guide/`,
-      page({ canonical: `${ORIGIN}/${l}/guide/`, route: 'guide', title: `Guide ${l}`, description: `Guide ${l}` }),
+      page({
+        canonical: `${ORIGIN}/${l}/guide/`,
+        route: 'guide',
+        title: `Guide ${l}`,
+        description: `Guide ${l}`,
+        body: '<article data-testid="gateway-doc-body" class="x"><p>Body</p></article>',
+      }),
     );
   }
   pages.set('/404/', page({ title: 'Missing', description: 'Missing', robots: 'noindex' }));
@@ -164,4 +170,11 @@ test('rule 6: a localized page that declares English in its HTML fails', () => {
     page({ canonical: `${ORIGIN}/ko/guide/`, route: 'guide', title: 'G', description: 'G', lang: 'en' }),
   );
   assert.deepEqual(rules(input), ['6-html-lang']);
+});
+
+test('rule 8: a guide page in another language that ships the English body fails', () => {
+  const input = greenExport();
+  const ko = input.pages.get('/ko/guide/');
+  input.pages.set('/ko/guide/', ko.replace('data-testid="gateway-doc-body"', 'data-testid="gateway-doc-body" lang="en"'));
+  assert.deepEqual(rules(input), ['8-guide-in-its-language']);
 });

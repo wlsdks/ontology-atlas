@@ -186,8 +186,17 @@ every Markdown file: paths, stamps, and each document's words with their
 positions, so a document's text can be pieced back together from it. Anyone
 who can read the user account's cache folder can read those words; Settings
 says so beside the switch. Every row carries the stamp of the file it came from (modified time, size, and
-change time on Unix) and is used only while that stamp still matches; a file
-modified within two seconds of its row is compared by SHA-256 instead. A
+change time: Unix `ctime`, NTFS and ReFS `ChangeTime`) and is used only while
+that stamp still matches; a file
+modified within two seconds of its row is compared by SHA-256 instead. The
+stamp counts only on a volume whose file system moves the change time on every
+write, named by `statfs` or `GetVolumeInformation`: APFS, HFS+, NTFS, ReFS,
+ext2/3/4, btrfs, XFS and tmpfs, and only for a file on the root's own device
+(Unix device number, Windows volume serial number). Anywhere else (FAT and
+exFAT, where macOS reports the modified time as the change time, network and
+unknown file systems, and any volume mounted inside the vault) the file is
+compared by SHA-256 on each update and each search hit,
+which on a 10,000-file exFAT image took a reopen from 23 ms to 575 ms. A
 derived index holds only what can be recomputed from vault files: no user state,
 edits, approvals or drafts. It lives in the OS cache directory, never in the
 vault or Git, is private to the user account, and never leaves the computer;
@@ -213,9 +222,37 @@ so the app and another process can read at the same time. Settings › Privacy �
 data shows the size, deletes the index and can turn it off. The web playground
 has no index.
 
-A second file, `rows.sqlite`, holding per file and per producer the result a
-program computed from that file, is planned for reopening from cached rows; it
-does not exist yet. Searching is one rule shared by indexing and queries: words of
+Beside it, `rows.sqlite` holds per file and per producer what a program
+computed from that file, so a reopen reads and derives only the files that
+changed. The app's producer keeps what `buildMdEntry` derives: parsed
+frontmatter, diagnostics, title, headings, excerpt, link text and, for each
+page a document links to, the short passage (up to 120 characters each side)
+around its first link there, which the backlinks show; the rest of the body is
+not kept. Values are DEFLATE-compressed JSON. The producer's name,
+`app-entry/<hash>`, is a hash of `build-local-manifest.ts`, every module it
+loads and the versions of the packages they import, made at build time
+(`scripts/lib/row-producer.mjs`), so a build whose parser or derive code
+changed never reads an older build's rows; the dev server has no name and keeps
+no rows. On open the
+full build sends its walked Markdown paths in read order
+(`vault_index_rows_get`); Rust stats each file and hands back a value only while
+the file's stamp equals the row's and the file was modified more than two
+seconds before that version was first seen. The build reads and derives the
+rest with the same code as before and writes those rows back behind itself
+(`vault_index_rows_put`), where each is refused unless its file still has the
+stamp the lookup saw and was older than two seconds then, so no row pairs a
+value with a later version of its file. A file whose stamp does not count
+(on FAT, exFAT, a network or unknown file system, or another volume mounted
+inside the vault, as above) gets no row and is read from disk, since there a same-size rewrite whose modified time was
+put back would look unchanged. A batch takes the writer lock
+the search build and Delete take, and carries how many deletions of that
+folder (or of every folder) the app had made when its lookup ran; after a
+Delete or switch-off it writes nothing and never recreates the folder. Another
+producer version, a missing,
+older, newer or damaged file, and the switch turned off all leave the build
+reading every file. Settings lists these fields beside the switch with the
+search words; Delete, turning the switch off and the folder sweep remove both
+files together. Searching is one rule shared by indexing and queries: words of
 alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
 become overlapping pairs, so a Korean term is found inside a word that carries
 a particle. The palette reads only the hit files to show their matching lines.
@@ -852,7 +889,7 @@ until a local manifest, or the first part of one, exists.
 /download                  the same gateway page at its own address — it keeps the breadcrumb
                            and the back-to-map link that / leaves out
 /guide                     the project guide, several chapters rendering docs/guide/*.md vault
-                           docs. Named `guide` and not `docs` because /docs is already the
+                           docs in English and docs-i18n/guide/<locale>/*.md in ko, ja, zh. Named `guide` and not `docs` because /docs is already the
                            vault workbench (2026-07-30 ledger). Order and slugs live once in
                            src/views/gateway-doc/model/guide-pages.ts
 /guide/[segment]           one chapter; static params come from that same registry

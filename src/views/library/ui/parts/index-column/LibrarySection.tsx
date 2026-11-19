@@ -43,7 +43,7 @@ const LIBRARY_INDEX_HITS = 5000;
 /** One screen of index rows: past this, a pill repeated on every row is texture and folds into the head. */
 const SOURCE_STATE_FOLDS_FROM = 12;
 /** The order the head counts states in: what to act on first, what is done last. */
-const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking"];
+const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking", "unreadable"];
 import type { LibraryUiModel } from "@/features/library";
 import { WIKI_SECTION_ORDER } from "@/shared/lib/library/wiki-page-schema";
 

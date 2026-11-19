@@ -16,6 +16,7 @@ import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BrandCompanion } from '@/shared/ui/marks/brand-companion';
+import { AtlasSymbol } from '@/shared/ui/marks/brand-mark';
 import { GithubMark } from '@/shared/ui/marks/github-mark';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
@@ -32,10 +33,9 @@ import { useStageGraph } from '../lib/use-stage-graph';
 import type { StageGraph } from '../lib/stage-graph';
 import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
-import { LoopSection, StartSection } from './LoopSection';
+import { StartSection } from './StartSection';
 import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
-import { ProofNumbers } from './ProofNumbers';
 import { BuildWithMoru } from './BuildWithMoru';
 import { FilmSection } from './FilmSection';
 import { HarnessFilm } from './HarnessFilm';
@@ -104,11 +104,9 @@ export function DownloadPage() {
           winner={winner}
           handheld={visitorPlatform === 'handheld'}
         />
-        <ProofNumbers graph={graph} />
         <FilmSection graph={graph} />
         <BuildWithMoru handheld={visitorPlatform === 'handheld'} />
         <HarnessFilm />
-        <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection graph={graph} />
         <OpenSourceSection />
@@ -131,36 +129,47 @@ export function DownloadPage() {
           data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
-            // The closing's contact line already ends the page; the colophon follows it closely.
-            'mt-16 sm:mt-20',
+            // The closing's map and maker's line already end the page; the colophon follows closely.
+            'mt-16 sm:mt-24',
             'shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
             bottomTabBarPresent &&
               'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
           )}
         >
-          <div className={PAGE_COLUMN}>
-            <footer className="border-t border-[color:var(--color-divider)] pt-5 text-label leading-label text-[color:var(--color-text-quaternary)]">
-              <GatewayReadingLinks />
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">
-                  {tFooter('license')}
-                </span>
-                <span aria-hidden>·</span>
-                <a
-                  href={THIRD_PARTY_LICENSES_HREF}
-                  data-testid="download-footer-third-party-licenses"
-                  className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' })}
-                >
-                  {tFooter('thirdPartyLicenses')}
-                </a>
-                <span aria-hidden>·</span>
-                <span className="font-mono">{tFooter('stack')}</span>
-                <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="gap-1.5 sm:ml-auto" />
+          <div className={cn(PAGE_COLUMN, '@container')}>
+            {/*
+              A colophon on the closing's grid: who made the page and the legal line under the name,
+              the license, stack and motion control in the map's column.
+            */}
+            <footer className="border-t border-[color:var(--color-divider)] pt-8 text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <GatewayReadingLinks className="mb-6" />
+              <div className="grid min-w-0 gap-x-12 gap-y-6 @min-[52rem]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2.5 text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                    <AtlasSymbol size={20} alt="" aria-hidden="true" className="size-5 shrink-0" />
+                    Ontology Atlas
+                  </p>
+                  {/* Nominative use; marks follow the stricter rule in docs/features/agents.md. */}
+                  <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep">{tFooter('trademarks')}</p>
+                </div>
+                <div className="flex min-w-0 flex-col items-start gap-3">
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[color:var(--color-text-tertiary)]">
+                    <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">{tFooter('license')}</span>
+                    <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
+                      ·
+                    </span>
+                    <a
+                      href={THIRD_PARTY_LICENSES_HREF}
+                      data-testid="download-footer-third-party-licenses"
+                      className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' })}
+                    >
+                      {tFooter('thirdPartyLicenses')}
+                    </a>
+                  </p>
+                  <p className="font-mono">{tFooter('stack')}</p>
+                  <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="gap-1.5" />
+                </div>
               </div>
-              {/* Nominative use; marks follow the stricter rule in docs/features/agents.md. */}
-              <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
-                {tFooter('trademarks')}
-              </p>
             </footer>
           </div>
         </div>
@@ -510,10 +519,11 @@ function ClosingSection({
     >
       <div className={cn(PAGE_COLUMN, '@container min-w-0 border-t border-[color:var(--color-divider)] pt-16 sm:pt-20')}>
         {/*
-          The words on the left, the film's finished map on the right, where it runs past the column
-          to 2rem from the window's edge as the hero's app window does; stacked, the map follows.
+          The words and the maker's line on the left, the film's finished map on the right across
+          both rows, where it runs past the column to 2rem from the window's edge as the hero's
+          app window does; stacked, the map sits between the facts and the maker's line.
         */}
-        <div className="grid min-w-0 gap-x-12 gap-y-10 @min-[52rem]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <div className="grid min-w-0 gap-x-12 gap-y-8 @min-[52rem]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] @min-[52rem]:gap-y-12">
           <div className="min-w-0">
             <h2
               id="gateway-closing-title"
@@ -548,14 +558,14 @@ function ClosingSection({
               handheld={handheld}
             />
           </div>
-          <div className="relative min-w-0 @min-[52rem]:min-h-[26rem]">
+          <div className="relative min-w-0 @min-[52rem]:col-start-2 @min-[52rem]:row-span-2 @min-[52rem]:row-start-1 @min-[52rem]:min-h-[30rem]">
             <ClosingMap
               graph={graph}
-              className="aspect-[4/3] w-full @min-[52rem]:absolute @min-[52rem]:-inset-y-8 @min-[52rem]:left-0 @min-[52rem]:right-[calc(2rem-var(--gateway-origin))] @min-[52rem]:aspect-auto @min-[52rem]:w-auto"
+              className="aspect-square w-full @min-[52rem]:absolute @min-[52rem]:-inset-y-10 @min-[52rem]:left-0 @min-[52rem]:right-[calc(2rem-var(--gateway-origin))] @min-[52rem]:aspect-auto @min-[52rem]:w-auto"
             />
           </div>
+          <ClosingContact className="@min-[52rem]:col-start-1 @min-[52rem]:row-start-2 @min-[52rem]:self-end" />
         </div>
-        <ClosingContact className="mt-16 border-t border-[color:var(--color-divider)] pt-8" />
       </div>
     </section>
   );

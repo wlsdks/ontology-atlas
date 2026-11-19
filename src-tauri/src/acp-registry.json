@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-17T14:41:00.514Z",
+  "npmDependencyCutoff": "2026-11-19T14:46:44.417Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.108.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.109.0",
         "args": []
       }
     },
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@2.7.0",
+        "package": "@agentclientprotocol/codex-acp@2.8.0",
         "args": []
       }
     },
@@ -294,7 +294,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.6.0",
+        "package": "dirac-cli@0.6.1",
         "args": [
           "--acp"
         ]
@@ -312,7 +312,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@1.13.0",
+        "package": "droid@1.15.0",
         "args": [
           "exec",
           "--output-format",
@@ -350,7 +350,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.68.0",
+        "package": "@google/gemini-cli@0.69.0",
         "args": [
           "--acp"
         ]
@@ -368,7 +368,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.112",
+        "package": "@github/copilot@1.0.114",
         "args": [
           "--acp"
         ]
@@ -436,7 +436,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.88",
+        "package": "@xai-official/grok@1.0.90",
         "args": [
           "agent",
           "stdio"
@@ -547,7 +547,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@moonshot-ai/kimi-code@2.6.2",
+        "package": "@moonshot-ai/kimi-code@2.7.0",
         "args": [
           "acp"
         ]
@@ -584,7 +584,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@minimax-ai/code@0.2.7",
+        "package": "@minimax-ai/code-acp@0.7.8",
         "args": [
           "acp"
         ]
@@ -742,7 +742,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@qoder-ai/qodercli@1.1.91",
+        "package": "@qoder-ai/qodercli@1.1.92",
         "args": [
           "--acp"
         ]

@@ -42,26 +42,30 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // Driven by scroll position via `animation-timeline: view()`, with no duration to shorten. They live
   // only inside `no-preference`, so reduced-motion users see everything from the start. The exemption
   // holds only inside that media query, which the test below measures.
-  "gateway-scene-read":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-mark":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-dot":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-ring":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-allow":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-pointer":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-press":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
-  "gateway-scene-focus":
-    "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "build-carry-at":
     "The changed file's flight from the commit card into its concept on the download page, declared only inside no-preference. Under reduced motion the concept turns the change colour at once and the card beside it names the changed file.",
   "build-moru-emote":
     "Moru's wordless heart, note or spark over a reaction on the download page, declared only inside no-preference. It repeats what the line and the step bar already say, so reduced motion simply omits it.",
+  "build-letter":
+    "Moru's line typed out letter by letter on the download page, declared only inside no-preference. Under reduced motion the whole line is there at once with the line's own fade, and a screen reader always gets it whole.",
+  "build-pulse":
+    "The light that runs along the changed concept's relations once on the download page, declared only inside no-preference. Under reduced motion those relations simply turn the change colour and the inspect card names the linked concepts.",
+  "build-spark":
+    "Sparks thrown once from a concept's dot when it is named or linked, or when the map is done, declared only inside no-preference (the burst is not even displayed otherwise). They repeat what the dot, the line and Moru's words already say.",
+  "build-node-dot":
+    "A one-shot punch of the changed concept's dot when the commit's file lands on the download page, declared only inside no-preference. Under reduced motion the dot simply takes the change colour.",
+  "build-pickup":
+    "The small label rising from a concept when a move lands on the download page (+1 concept, renamed, changed), declared only inside no-preference and not even displayed otherwise. Moru's line and the mission list carry the same facts.",
+  "build-quest-mark":
+    "A one-shot pop of a mission's tick on the download page, declared only inside no-preference. Under reduced motion the tick is simply there.",
+  "build-hint-at":
+    "The tutorial hand that shows where to press after a still moment on the download page; declared only inside no-preference, not displayed otherwise, and resumed only by useInViewMotion. Under reduced motion the concept to press keeps its still ring and Moru's line names it.",
+  "build-scan":
+    "One band of light crossing the download page's build stage while the sample agent reads the repository, declared only inside no-preference. Under reduced motion the concepts simply appear and Moru's line says the files are being read.",
+  "build-log-row":
+    "The newest row of the sample agent's tool calls rising into place on the download page, declared only inside no-preference. Under reduced motion the row is simply there.",
+  "build-hint-ripple":
+    "The ring under the tutorial hand's press on the download page, part of the same hint and as absent under reduced motion.",
   "build-node-ring":
     "The pulse on the concept to tap in the download page's build section, declared only inside no-preference and resumed only by useInViewMotion. Under reduced motion the target keeps its still ring and brighter dot, and Moru's line names the concept.",
   "gateway-step-spark":

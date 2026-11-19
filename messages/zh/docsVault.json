@@ -328,7 +328,7 @@
     "gateReadyTerm": "就绪",
     "gateReadyDesc": "两者都满足时，智能体就可以先从读取开始。",
     "syncAfterChangeTitle": "修改代码之后",
-    "syncAfterChangeDesc": "如果出现了新的领域、能力、要素或关系，或者它们被重命名了，请在结束之前同步这个文件夹。只改了错别字、注释、格式、配置或测试数据时可以跳过。",
+    "syncAfterChangeDesc": "如果出现了新的领域、能力、元素或关系，或者它们被重命名了，请在结束之前同步这个文件夹。只改了错别字、注释、格式、配置或测试数据时可以跳过。",
     "copyPostChangeSync": "复制同步步骤",
     "copyPostChangeSyncCopied": "已复制同步步骤",
     "copyPostChangeSyncFailed": "复制失败",

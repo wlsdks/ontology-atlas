@@ -198,6 +198,15 @@ export function evaluateSeoSurface({ sitemapXml, pages, messages }) {
     }
   }
 
+  // A guide page in another language that ships the English body would rank as a duplicate.
+  for (const entry of entries) {
+    const urlPath = new URL(entry.loc).pathname;
+    const locale = urlPath.split('/')[1] ?? '';
+    if (locale === 'en' || !/^\/[a-z]{2}\/guide\//.test(urlPath)) continue;
+    const article = /<article\b[^>]*data-testid="gateway-doc-body"[^>]*>/.exec(pages.get(urlPath) ?? '')?.[0];
+    if (article && /\blang="/.test(article)) fail('8-guide-in-its-language', `${entry.loc} ships a body in another language: ${article.match(/lang="[^"]*"/)[0]}`);
+  }
+
   const seen = new Map();
   for (const entry of entries) {
     const urlPath = new URL(entry.loc).pathname;
