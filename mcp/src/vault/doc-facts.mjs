@@ -15,7 +15,7 @@ import {
 } from '../validate.mjs';
 
 import { signatureMayContain } from './doc-shape.mjs';
-import { cachedDocShape, cachedDocVersionKey } from './documents.mjs';
+import { cachedDocShape, cachedDocVersionKey, readVaultDocText } from './documents.mjs';
 
 /** Keyed by a file version (`cachedDocVersionKey`), so a load pass's text-carrying twin shares it. */
 const memos = new WeakMap();
@@ -90,14 +90,38 @@ export function docUncertaintyReads(doc, { slug, kind, title, path }) {
   return rows;
 }
 
+/** Needles whose per-document answers {@link docBodyIncluder} keeps, most recent last. */
+const BODY_NEEDLES_KEPT = 4;
+/** needle → (file version → whether its lowercased body includes the needle). */
+const bodyAnswers = new Map();
+
 /**
- * Whether `doc.body.toLowerCase()` may contain `needle` (already lowercased): false
- * only when it cannot. A cached document answers from the fingerprint taken at load
- * (`evidenceSignature`) without reading its file; any other document says yes.
+ * A test of `doc.body.toLowerCase().includes(needle)` (`needle` already lowercased)
+ * for one query. A cached document whose fingerprint (`evidenceSignature`) rules the
+ * needle out is not read; one that is read has its answer kept for its file version,
+ * for the last {@link BODY_NEEDLES_KEPT} needles, so asking the same needle again
+ * reads only files that changed. Those reads stay out of the body cache: a broad
+ * needle reads tens of thousands of bodies once each. Any other document is
+ * answered from its own body.
+ * @returns {(doc: object) => boolean}
  */
-export function docBodyMayContain(doc, needle) {
-  const shape = cachedDocShape(doc);
-  return shape ? signatureMayContain(shape.evidence, needle) : true;
+export function docBodyIncluder(needle) {
+  let answers = bodyAnswers.get(needle);
+  if (answers) bodyAnswers.delete(needle);
+  else answers = new WeakMap();
+  bodyAnswers.set(needle, answers);
+  while (bodyAnswers.size > BODY_NEEDLES_KEPT) bodyAnswers.delete(bodyAnswers.keys().next().value);
+  return (doc) => {
+    const shape = cachedDocShape(doc);
+    if (!shape) return String(doc.body ?? '').toLowerCase().includes(needle);
+    if (!signatureMayContain(shape.evidence, needle)) return false;
+    let answer = answers.get(shape);
+    if (answer === undefined) {
+      answer = readVaultDocText(doc, { remember: false }).body.toLowerCase().includes(needle);
+      answers.set(shape, answer);
+    }
+    return answer;
+  };
 }
 
 /**

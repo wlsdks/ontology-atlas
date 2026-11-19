@@ -304,7 +304,7 @@ class CachedVaultDoc {
   }
 }
 
-function cachedDocText(doc, source) {
+function cachedDocText(doc, source, remember) {
   let text = recalledText(source);
   if (text) return text;
   let snapshot = null;
@@ -320,18 +320,20 @@ function cachedDocText(doc, source) {
   noteTextRead(snapshot.raw.length);
   const { raw } = snapshot;
   text = { raw, body: source.bodyStart >= 0 ? raw.slice(source.bodyStart) : parseFrontmatter(raw).body };
-  rememberText(source, text);
+  if (remember) rememberText(source, text);
   return text;
 }
 
 /**
  * A document's `{ raw, body }`: a cached document's text as `body` and `raw` read
  * it, a plain one (a fresh read, a test fixture) from its own fields.
+ * `remember: false` leaves a text read from disk out of the body cache, for a
+ * caller that reads many bodies once each.
  */
-export function readVaultDocText(doc) {
+export function readVaultDocText(doc, { remember = true } = {}) {
   const source = CachedVaultDoc.sourceOf(doc);
   if (!source) return { raw: doc?.raw ?? '', body: doc?.body ?? '' };
-  return CachedVaultDoc.textOf(doc) ?? cachedDocText(doc, source);
+  return CachedVaultDoc.textOf(doc) ?? cachedDocText(doc, source, remember);
 }
 
 /**
@@ -503,14 +505,6 @@ class CacheEntry {
     this.doc = null;
   }
 
-  setStamp(stats) {
-    this.dev = stats.dev;
-    this.ino = stats.ino;
-    this.size = stats.size;
-    this.mtimeMs = stats.mtimeMs;
-    this.ctimeMs = stats.ctimeMs;
-  }
-
   read() {
     return this.io.readSnapshot(this.path);
   }
@@ -671,7 +665,7 @@ export function createVaultDocCache(rootPath, io = {}) {
       rawShape: rawShapeOf(raw),
       bodyStart: bodyStartOf(raw, body),
       links: bodyLinkKeys(body),
-      evidence: evidenceSignature(body.toLowerCase()),
+      evidence: evidenceSignature(body),
     });
     entry.pass = pass;
     entry.doc = deepFreeze(new CachedVaultDoc(

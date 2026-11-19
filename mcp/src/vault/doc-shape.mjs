@@ -34,6 +34,25 @@ const LINK_NEEDLE_STOP = /[\]#|(\n]/;
 const SEPARATOR = '\n';
 
 /**
+ * What {@link bodyLinkKeys} returns for a body whose link targets cost more than its
+ * work budget to list: every needle then reads the body.
+ */
+export const LINKS_UNINDEXED = false;
+
+/**
+ * Characters {@link bodyLinkKeys} may scan and copy per character of body, plus a
+ * floor. A body of ordinary links costs about three per character, so only text
+ * built to make the backward walks overlap (`/a.md` repeated) reaches it.
+ */
+const LINK_WORK_PER_CHAR = 8;
+const LINK_WORK_FLOOR = 4096;
+
+/** `]`, `#`, `|` or a newline: the characters that end a wiki link's target. */
+function endsWikiTarget(code) {
+  return code === 0x5d || code === 0x23 || code === 0x7c || code === 0x0a;
+}
+
+/**
  * Every string `needle` for which the body holds `[[needle]]`, `[[needle#`,
  * `[[needle|`, `(needle.md` or `/needle.md`, for a needle that
  * {@link isIndexedLinkNeedle} accepts, joined as `\n` + keys + `\n` (null when none).
@@ -41,34 +60,43 @@ const SEPARATOR = '\n';
  * after each `[[` fixes its one possible end; walking back from each `.md`, every `/`
  * and the nearest `(` start one, and `(`, `]`, `#`, `|` or a newline cannot be inside it.
  * One string per document, copied out of the text so it keeps none of it alive.
- * Cost: O(body length + LINK_KEY_MAX_CHARS × links).
+ * Cost: linear in the body. The `[[` ends are found with one forward pointer; the
+ * backward walks and the keys copied are counted, and a body that spends more than
+ * {@link LINK_WORK_PER_CHAR} per character on them returns {@link LINKS_UNINDEXED}.
  */
 export function bodyLinkKeys(body) {
   const keys = new Set();
+  let budget = LINK_WORK_FLOOR + LINK_WORK_PER_CHAR * body.length;
+  const add = (from, to) => {
+    budget -= to - from;
+    keys.add(body.slice(from, to));
+  };
+  // The first character at or after the current `[[` that ends a wiki target; `[[`
+  // positions only grow, so it only moves forward.
+  let end = -1;
   for (let open = body.indexOf('[['); open !== -1; open = body.indexOf('[[', open + 1)) {
     const from = open + 2;
-    const limit = Math.min(body.length, from + LINK_KEY_MAX_CHARS + 1);
-    for (let at = from; at < limit; at += 1) {
-      const code = body.charCodeAt(at);
-      if (code === 0x5d) {
-        if (body.charCodeAt(at + 1) === 0x5d) keys.add(body.slice(from, at));
-        break;
-      }
-      if (code === 0x23 || code === 0x7c) {
-        keys.add(body.slice(from, at));
-        break;
-      }
-      // A key never holds the separator, so no key can read as two.
-      if (code === 0x0a) break;
+    if (end < from) {
+      end = from;
+      while (end < body.length && !endsWikiTarget(body.charCodeAt(end))) end += 1;
     }
+    if (end >= body.length || end - from > LINK_KEY_MAX_CHARS) continue;
+    const code = body.charCodeAt(end);
+    // A key never holds the separator, so no key can read as two.
+    if (code === 0x0a) continue;
+    if (code !== 0x5d || body.charCodeAt(end + 1) === 0x5d) add(from, end);
+    if (budget < 0) return LINKS_UNINDEXED;
   }
   for (let ext = body.indexOf('.md'); ext !== -1; ext = body.indexOf('.md', ext + 1)) {
     const floor = Math.max(0, ext - LINK_KEY_MAX_CHARS - 1);
-    for (let at = ext - 1; at >= floor; at -= 1) {
+    let at = ext - 1;
+    for (; at >= floor; at -= 1) {
       const code = body.charCodeAt(at);
-      if (code === 0x2f || code === 0x28) keys.add(body.slice(at + 1, ext));
-      if (code === 0x28 || code === 0x5d || code === 0x23 || code === 0x7c || code === 0x0a) break;
+      if (code === 0x2f || code === 0x28) add(at + 1, ext);
+      if (code === 0x28 || endsWikiTarget(code)) break;
     }
+    budget -= ext - at;
+    if (budget < 0) return LINKS_UNINDEXED;
   }
   if (keys.size === 0) return null;
   // Each key is a slice of the body, and a join or concatenation may keep the slice
@@ -76,8 +104,16 @@ export function bodyLinkKeys(body) {
   return JSON.parse(JSON.stringify(`${SEPARATOR}${[...keys].join(SEPARATOR)}${SEPARATOR}`));
 }
 
-/** Whether {@link bodyLinkKeys} answers for `needle` exactly. */
-export function isIndexedLinkNeedle(needle) {
+/**
+ * Whether the keys {@link bodyLinkKeys} returned answer for `needle` exactly; when
+ * not, the caller reads the body.
+ */
+export function linkIndexAnswers(keys, needle) {
+  return keys !== LINKS_UNINDEXED && isIndexedLinkNeedle(needle);
+}
+
+/** Whether a needle is one {@link bodyLinkKeys} can index. */
+function isIndexedLinkNeedle(needle) {
   return typeof needle === 'string'
     && needle.length > 0
     && needle.length <= LINK_KEY_MAX_CHARS
@@ -86,7 +122,7 @@ export function isIndexedLinkNeedle(needle) {
 
 /** Whether the keys {@link bodyLinkKeys} returned hold `needle`. */
 export function linkKeysHold(keys, needle) {
-  return keys !== null && keys.includes(`${SEPARATOR}${needle}${SEPARATOR}`);
+  return typeof keys === 'string' && keys.includes(`${SEPARATOR}${needle}${SEPARATOR}`);
 }
 
 /**
@@ -99,33 +135,72 @@ export function linkKeysHold(keys, needle) {
  * always read; a needle under three characters filters nothing. Null when the
  * body is too short to hold any needle the table answers for.
  */
-const SIGNATURE_RUNS = [3, 5];
+const SHORT_RUN = 3;
+const LONG_RUN = 5;
 const MIN_SIGNATURE_BITS = 256;
 const MAX_SIGNATURE_BITS = 65_536;
 
-function runBit(text, at, length, mask) {
-  let hash = Math.imul(length, 0x9e3779b1);
-  for (let offset = 0; offset < length; offset += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(at + offset), 0x85ebca77) + offset;
-  }
-  hash ^= hash >>> 15;
-  hash = Math.imul(hash, 0x2c1b3c6d);
-  hash ^= hash >>> 12;
-  return hash & mask;
+/** The multiplier of the polynomial run hash, and its powers that drop a run's first character. */
+const RUN_BASE = 0x01000193;
+const SHORT_DROP = Math.imul(RUN_BASE, RUN_BASE);
+const LONG_DROP = Math.imul(SHORT_DROP, SHORT_DROP);
+
+function mixChar(code) {
+  const hash = Math.imul(code ^ 0x9e3779b9, 0x85ebca77);
+  return hash ^ (hash >>> 13);
 }
 
-export function evidenceSignature(lowered) {
-  if (lowered.length < SIGNATURE_RUNS[0]) return null;
-  let bits = MIN_SIGNATURE_BITS;
-  while (bits < lowered.length && bits < MAX_SIGNATURE_BITS) bits *= 2;
-  const table = new Uint32Array(bits >>> 5);
-  const mask = bits - 1;
-  for (const length of SIGNATURE_RUNS) {
-    for (let at = 0; at + length <= lowered.length; at += 1) {
-      const bit = runBit(lowered, at, length, mask);
-      table[bit >>> 5] |= 1 << (bit & 31);
-    }
+function runBit(hash, length, mask) {
+  let bit = hash ^ Math.imul(length, 0x9e3779b1);
+  bit ^= bit >>> 15;
+  bit = Math.imul(bit, 0x2c1b3c6d);
+  bit ^= bit >>> 12;
+  bit = Math.imul(bit, 0x297a2d39);
+  bit ^= bit >>> 15;
+  return bit & mask;
+}
+
+/**
+ * Calls `visit(bit)` for every run of three and of five characters in `text`. Each
+ * character is mixed once and enters both runs' rolling hashes, which drop the
+ * character leaving the run with one multiply each.
+ */
+function forEachRunBit(text, mask, visit) {
+  const mixed = new Int32Array(LONG_RUN);
+  let short = 0;
+  let long = 0;
+  for (let at = 0; at < text.length; at += 1) {
+    const value = mixChar(text.charCodeAt(at));
+    const slot = at % LONG_RUN;
+    if (at >= SHORT_RUN) short = (short - Math.imul(mixed[(at - SHORT_RUN) % LONG_RUN], SHORT_DROP)) | 0;
+    if (at >= LONG_RUN) long = (long - Math.imul(mixed[slot], LONG_DROP)) | 0;
+    mixed[slot] = value;
+    short = (Math.imul(short, RUN_BASE) + value) | 0;
+    long = (Math.imul(long, RUN_BASE) + value) | 0;
+    if (at >= SHORT_RUN - 1) visit(runBit(short, SHORT_RUN, mask));
+    if (at >= LONG_RUN - 1) visit(runBit(long, LONG_RUN, mask));
   }
+}
+
+/** `body.toLowerCase()`, but without the copy when the body is ASCII with no capital. */
+function lowered(body) {
+  for (let at = 0; at < body.length; at += 1) {
+    const code = body.charCodeAt(at);
+    if (code >= 0x80 || (code >= 0x41 && code <= 0x5a)) return body.toLowerCase();
+  }
+  return body;
+}
+
+/** The fingerprint of `body` as find_evidence matches it, lowercased. */
+export function evidenceSignature(body) {
+  if (body.length < SHORT_RUN) return null;
+  const text = lowered(body);
+  let bits = MIN_SIGNATURE_BITS;
+  while (bits < text.length && bits < MAX_SIGNATURE_BITS) bits *= 2;
+  const table = new Uint32Array(bits >>> 5);
+  forEachRunBit(text, bits - 1, (bit) => {
+    table[bit >>> 5] |= 1 << (bit & 31);
+  });
   return table;
 }
 
@@ -134,14 +209,11 @@ export function evidenceSignature(lowered) {
  * lowercased): false only when it cannot.
  */
 export function signatureMayContain(table, needle) {
-  if (needle.length < SIGNATURE_RUNS[0]) return true;
+  if (needle.length < SHORT_RUN) return true;
   if (table === null) return false;
-  const mask = table.length * 32 - 1;
-  for (const length of SIGNATURE_RUNS) {
-    for (let at = 0; at + length <= needle.length; at += 1) {
-      const bit = runBit(needle, at, length, mask);
-      if ((table[bit >>> 5] & (1 << (bit & 31))) === 0) return false;
-    }
-  }
-  return true;
+  let present = true;
+  forEachRunBit(needle, table.length * 32 - 1, (bit) => {
+    if ((table[bit >>> 5] & (1 << (bit & 31))) === 0) present = false;
+  });
+  return present;
 }

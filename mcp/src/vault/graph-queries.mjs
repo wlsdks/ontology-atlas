@@ -1,6 +1,6 @@
 import { nodeUidIssue } from '../schema.mjs';
 
-import { isIndexedLinkNeedle, linkKeysHold } from './doc-shape.mjs';
+import { linkIndexAnswers, linkKeysHold } from './doc-shape.mjs';
 import { cachedDocShape, docTitle, loadVaultDocs } from './documents.mjs';
 import { collectNeighborRefs, relationNoteFor } from './relation-refs.mjs';
 
@@ -201,7 +201,7 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
     const shape = cachedDocShape(doc);
     const bodyHit = [...bodyNeedles].some(
       (needle) =>
-        shape && isIndexedLinkNeedle(needle)
+        shape && linkIndexAnswers(shape.links, needle)
           ? linkKeysHold(shape.links, needle)
           : bodyLinksTo(doc.body, needle),
     );

@@ -157,8 +157,11 @@ const READS = [
   ['find_backlinks', { slug: 'elements/el-15' }],
   ['find_path', { from: 'capabilities/cap-5', to: 'domains/dom-1' }],
   ['compile_ontology', { summary: true }],
-  // The one read that scores file text, which the server reads back from disk.
-  ['find_evidence', { title: 'relation boundary meaning' }],
+  // The one read that scores file text, which the server reads back from disk: a
+  // phrase few files hold, and a word about half of them hold, so half the bodies
+  // are read and scored.
+  ['find_evidence', { title: 'relation boundary meaning' }, 'evidence phrase'],
+  ['find_evidence', { title: 'meaning' }, 'evidence word'],
 ];
 
 async function openFlow(serverPath, flow) {
@@ -235,7 +238,7 @@ function printTable(serverPath, results, note = '') {
   console.log(`# perf-mcp-scale — ${files} files, server ${serverPath.replace(`${ROOT}/`, '')}${note}`);
   console.log(`${'call'.padEnd(18)}${results.map((result) => `flow ${result.flow} 1st / 2nd ms`.padStart(24)).join('')}`);
   for (let index = 0; index < READS.length; index += 1) {
-    console.log(`${READS[index][0].padEnd(18)}${results.map((result) => `${result.rows[index].first} / ${result.rows[index].second}`.padStart(24)).join('')}`);
+    console.log(`${(READS[index][2] ?? READS[index][0]).padEnd(18)}${results.map((result) => `${result.rows[index].first} / ${result.rows[index].second}`.padStart(24)).join('')}`);
   }
   console.log(`${'after 1-file edit'.padEnd(18)}${results.map((result) => `get_concept ${result.afterEdit}`.padStart(24)).join('')}`);
   if (results.some((result) => result.footprint)) {
