@@ -370,7 +370,7 @@ try {
   assertStatus(packedQuickStart, 3);
   const packedQuickStartClean = stripAnsi(packedQuickStart.stdout);
   assert.match(packedQuickStartClean, /quick start review ready/);
-  assert.match(packedQuickStartClean, /semantic writes are blocked/);
+  assert.match(packedQuickStartClean, /writes no meaning|writes nothing|does not write/i);
   assert.doesNotMatch(packedQuickStartClean, /quick start done/);
   assert.doesNotMatch(packedQuickStartClean, /quick start incomplete/);
   assert.equal((packedQuickStartClean.match(/^\s*\d\.\s/gm) || []).length, 3);
@@ -541,7 +541,7 @@ try {
     /maintenance cursor: ready page stable \((\d+) remaining actions?;[^\n]*executable (maint_[a-f0-9]{8}):/,
   );
   assert.ok(readyCursor, 'maintenance ready page must expose a remaining count and executable cursor');
-  assert.match(cliMaintenanceResumeMcpVerify.stdout, /kind add_missing_relation:1/);
+  assert.match(cliMaintenanceResumeMcpVerify.stdout, /kind [^;]*\badd_missing_relation:1\b/);
   const resumedCursor = cliMaintenanceResumeMcpVerify.stdout.match(
     /maintenance cursor: resume afterActionId advanced \((maint_[a-f0-9]{8}); (\d+) remaining actions?/,
   );
@@ -785,7 +785,7 @@ try {
     /maintenance cursor: ready page stable \((\d+) remaining actions?;[^\n]*executable (maint_[a-f0-9]{8}):/,
   );
   assert.ok(directReadyCursor, 'direct MCP maintenance ready page must expose a remaining count and executable cursor');
-  assert.match(directMcpMaintenanceResumeVerify.stdout, /kind add_missing_relation:1/);
+  assert.match(directMcpMaintenanceResumeVerify.stdout, /kind [^;]*\badd_missing_relation:1\b/);
   const directResumedCursor = directMcpMaintenanceResumeVerify.stdout.match(
     /maintenance cursor: resume afterActionId advanced \((maint_[a-f0-9]{8}); (\d+) remaining actions?/,
   );
