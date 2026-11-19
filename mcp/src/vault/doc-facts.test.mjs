@@ -11,6 +11,7 @@ import { extractUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
 import { parseFrontmatter } from '../parser.mjs';
 import { validateVaultDocument } from '../validate.mjs';
 import {
+  docBodyAnswer,
   docBodyIncluder,
   docBodyMeaningFindings,
   docUncertaintyReads,
@@ -165,6 +166,18 @@ describe('answers the cache keeps per document', () => {
       if (!signatureMayContain(cachedDocShape(doc).evidence, 'zqxjv-never-written')) ruledOut += 1;
     }
     assert.ok(ruledOut >= docs.length - 2, `the fingerprint ruled out ${ruledOut} of ${docs.length}`);
+  });
+
+  it('keeps a per-version answer about the body, reading each body once', (t) => {
+    const root = makeVault(t, FILES);
+    const docs = textlessDocs(root);
+    const test = (body) => body.length % 3;
+    const expected = docs.map((doc) => test(parseFrontmatter(readFileSync(join(root, `${doc.slug}.md`), 'utf8')).body));
+    assert.deepEqual(docs.map((doc) => docBodyAnswer(doc, 'length mod 3', test)), expected);
+    for (const doc of docs) rmSync(join(root, `${doc.slug}.md`));
+    assert.deepEqual(docs.map((doc) => docBodyAnswer(doc, 'length mod 3', test)), expected);
+    // Another question about the same version reads the body again.
+    assert.throws(() => docBodyAnswer(docs[0], 'length', (body) => body.length), VaultDocChangedError);
   });
 
   it('answers whether a body includes a needle as reading it does, and reads it once per needle', (t) => {
