@@ -337,7 +337,7 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
       continue;
     }
     add('callee', file, target.name, target.line, end, bonus, { byName: callee.byName });
-    expandable.push({ file, target, end });
+    expandable.push({ file, target, end, weak: Boolean(callee.byName) });
   }
 
   // One call deeper: what each direct callee calls, through an accessor too short to be a level.
@@ -345,11 +345,13 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
   // A body is examined as far as a read would serve it.
   const head = (target, end) => Math.min(end, target.line + SYMBOL_CONTEXT_LIMITS.examinedLines - 1);
   const resolve = (file, target, end) => calleesOf({ text: slice(file.lines, target.line, head(target, end)), file, declaration: target, rootPath, ignore, files, open });
-  for (const { file, target, end } of expandable.slice(0, SYMBOL_CONTEXT_LIMITS.deeperSources)) {
+  for (const { file, target, end, weak } of expandable.slice(0, SYMBOL_CONTEXT_LIMITS.deeperSources)) {
     const conditions = calledInConditions(file.lines.slice(target.line - 1, head(target, end)));
-    const queue = resolve(file, target, end).map((row) => ({ row, via: qualified(file, target.name, target.line), conditions, through: false }));
+    const queue = resolve(file, target, end).map((row) => ({ row, via: qualified(file, target.name, target.line), conditions, through: false, weak }));
     while (queue.length > 0 && deeper < SYMBOL_CONTEXT_LIMITS.deeperCallees) {
-      const { row, via, conditions: branchedOn, through } = queue.shift();
+      const { row, via, conditions: branchedOn, through, weak: reachedWeakly } = queue.shift();
+      // A part reached through a by-name match is as weak as the weakest link above it.
+      const byName = reachedWeakly || Boolean(row.byName);
       const key = `${row.path}\0${row.line}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -361,10 +363,10 @@ export function symbolContext({ rootPath, ignore, path, lines, declarations, dec
       const innerLines = inner.lines.slice(found.line - 1, head(found, innerEnd));
       if (!through && !row.implementation && innerEnd - found.line + 1 <= SYMBOL_CONTEXT_LIMITS.accessorLines) {
         const innerConditions = calledInConditions(innerLines);
-        for (const next of resolve(inner, found, innerEnd)) queue.push({ row: next, via: qualified(inner, found.name, found.line), conditions: innerConditions, through: true });
+        for (const next of resolve(inner, found, innerEnd)) queue.push({ row: next, via: qualified(inner, found.name, found.line), conditions: innerConditions, through: true, weak: byName });
       }
       add(row.implementation ? 'implementation' : 'callee', inner, found.name, found.line, innerEnd,
-        calleeBonus(row.name, innerLines, branchedOn) - 3, { via, cap: SYMBOL_CONTEXT_LIMITS.deeperDeciding, byName: row.byName });
+        calleeBonus(row.name, innerLines, branchedOn) - 3, { via, cap: SYMBOL_CONTEXT_LIMITS.deeperDeciding, byName });
     }
   }
 

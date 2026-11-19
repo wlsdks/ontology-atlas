@@ -679,6 +679,41 @@ test('a role is used by a capability that cites only the part its own read serve
   }
 });
 
+/*
+ * A part a read serves one call deeper is only as sure as the chain above it:
+ * reached through a callee found by name alone, it is no shared role either,
+ * however exactly its own import resolves.
+ */
+test('a part reached through a callee found by name alone is no shared role, one call deeper or through an accessor', () => {
+  const run = (spec) => {
+    resetSessionReads();
+    const entry = (name) => `import { checkQuota } from '${spec}';\nexport function ${name}(x: number) {\n  if (!checkQuota(x)) return 0;\n  return x;\n}\n`;
+    const root = repository({
+      'package.json': '{"name":"tool"}',
+      'src/quota.ts': "import { quotaOf } from './plan';\nimport { ceilingFor } from './ceiling';\nexport function checkQuota(x: number) {\n  if (x > quotaOf(x)) throw new Error('over quota');\n  if (x > ceilingFor(x)) throw new Error('over ceiling');\n  return x;\n}\n",
+      'src/plan.ts': "import { limitFor } from './limits';\nexport function quotaOf(x: number) {\n  return limitFor(x);\n}\n",
+      'src/limits.ts': "export function limitFor(x: number) {\n  if (x > 100) return 3;\n  if (x < 0) throw new Error('negative');\n  return 5;\n}\n",
+      'src/ceiling.ts': "export function ceilingFor(x: number) {\n  if (x > 50) return 9;\n  if (x < 0) throw new Error('negative');\n  return 7;\n}\n",
+      'src/upload.ts': entry('upload'),
+      'src/share.ts': entry('share'),
+    });
+    try {
+      const packet = readSourceEvidence(root, [{ path: 'src/upload.ts', symbol: 'upload' }, { path: 'src/share.ts', symbol: 'share' }]);
+      recordSourceEvidence(root, packet);
+      const capability = (row) => doc(`capabilities/${row.symbol}`, { path: row.path }, `Does it. \`${row.path}\` \`${row.symbol}\`.\n\nRefuses past the quota (${row.cite}).\n\n## Uncertainty\n- None.\n`);
+      const depth = measureBuildDepth([doc('tool', {}, 'Tool.\n\n## Uncertainty\n- None.\n'), ...packet.rows.map(capability)], null, sessionReads(root));
+      const parts = packet.rows[0].context.filter((part) => part.role === 'callee').map((part) => `${part.symbol}${part.byName ? ' by name' : ''}`).sort();
+      return { parts, roles: depth.roles.unplaced.map((row) => row.name).sort() };
+    } finally {
+      resetSessionReads();
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+  assert.deepEqual(run('./quota'), { parts: ['ceilingFor', 'checkQuota', 'limitFor', 'quotaOf'], roles: ['ceilingFor', 'checkQuota', 'limitFor', 'quotaOf'] });
+  assert.deepEqual(run('@/missing/quota'), { parts: ['ceilingFor by name', 'checkQuota by name', 'limitFor by name', 'quotaOf by name'], roles: [] },
+    'everything below a by-name callee is by name');
+});
+
 test('64 same-named declarations do not hide an imported role, and a callee found by name alone is no role', () => {
   const run = (spec, decoys = 64) => {
     resetSessionReads();

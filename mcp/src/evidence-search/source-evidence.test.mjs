@@ -709,6 +709,44 @@ test('an imported name is found in the module its import names, past any number 
   assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows[0].callees, [], 'an outside package is never followed by name');
 });
 
+/*
+ * A name is looked up everywhere only for an import of this project whose module
+ * names no file here: a module that exists but lacks the name, or an outside
+ * package (a scoped one too), is never stretched to a same-named declaration.
+ */
+test('a name falls back to a by-name match only when an import of this project names no file', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  mkdirSync(join(root, 'lib'));
+  writeFileSync(join(root, 'lib', 'elsewhere.ts'), 'export function save(x) {\n  if (!x) throw new Error("empty");\n  return x;\n}\nexport function load(x) {\n  if (!x) throw new Error("none");\n  return x;\n}\n');
+  const callees = (imports, call) => {
+    writeFileSync(join(root, 'src', 'entry.ts'), `${imports}\nexport function entry(x) {\n  if (x) return ${call}(x);\n  return 0;\n}\n`);
+    return readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows[0].callees;
+  };
+  writeFileSync(join(root, 'src', 'store.ts'), 'export const kind = "store";\n');
+  assert.deepEqual(callees("import { save } from './store';", 'save'), [], 'a module that exists but lacks the name is not stretched by name');
+  assert.deepEqual(callees("import { load } from '@scope/missing';", 'load'), [], 'a scoped package is outside this project');
+  assert.deepEqual(callees("import { trim } from 'loader';\nimport { load } from '@/loader';", 'load'), [{ name: 'load', path: 'lib/elsewhere.ts', line: 5, byName: true }],
+    'an alias of this project keeps its own resolution beside a package of the same name');
+
+  mkdirSync(join(root, 'rs'));
+  writeFileSync(join(root, 'rs', 'gate.rs'), 'pub fn load(x: u32) -> u32 {\n    if x == 0 {\n        panic!("none");\n    }\n    x\n}\n');
+  writeFileSync(join(root, 'rs', 'entry.rs'), 'use crate::missing::load;\n\npub fn entry(x: u32) -> u32 {\n    if x > 1 {\n        return load(x);\n    }\n    0\n}\n');
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'rs/entry.rs', symbol: 'entry' }]).rows[0].callees, [{ name: 'load', path: 'rs/gate.rs', line: 1, byName: true }],
+    'crate:: names this project');
+});
+
+test('a field call reaches a method only in the importing file\'s own language', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  writeFileSync(join(root, 'src', 'store.ts'), 'export const kind = "store";\n');
+  writeFileSync(join(root, 'src', 'store.py'), 'class Store:\n    def save(self, x):\n        if not x:\n            raise ValueError("empty")\n        return x\n');
+  writeFileSync(join(root, 'src', 'entry.ts'), "import { kind } from './store';\nexport class Entry {\n  run(x) {\n    if (x) return this.store.save(x);\n    return kind;\n  }\n}\n");
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'Entry.run' }]).rows[0].callees, []);
+  writeFileSync(join(root, 'src', 'store.ts'), 'export class Store {\n  save(x) {\n    if (!x) throw new Error("empty");\n    return x;\n  }\n}\n');
+  assert.deepEqual(readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'Entry.run' }]).rows[0].callees, [{ name: 'save', path: 'src/store.ts', line: 2 }]);
+});
+
 test('a body read short and reached again whole is resolved again from its whole text', () => {
   const root = fixture();
   writeFileSync(join(root, 'flow.ts'), [
