@@ -315,8 +315,9 @@ describe('time stays linear on hostile text', () => {
     it(`a 1 MB body of ${name} indexes about as fast as plain text`, () => {
       const plain = indexMs('plain text without any link. '.repeat(Math.ceil(MB / 29)));
       const hostile = indexMs(unit.repeat(Math.ceil(MB / unit.length)));
-      // Before the bound the hostile bodies cost 45 to 1,000 times plain text.
-      assert.ok(hostile < plain * 5 + 20, `${hostile.toFixed(0)} ms against ${plain.toFixed(0)} ms for plain text`);
+      // The budget allows eight units of work per character before a body gives up,
+      // so up to about ten times plain text; unbounded they cost 60 to 400 times.
+      assert.ok(hostile < plain * 20 + 50, `${hostile.toFixed(0)} ms against ${plain.toFixed(0)} ms for plain text`);
     });
   }
 
