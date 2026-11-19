@@ -20,9 +20,18 @@ function trailingSpaceCount(text, end) {
 }
 
 // When a block closes, its first line's container prefix is still applied, so
-// bMarks + tShift is where the block's own content starts on that line.
+// bMarks + tShift is where the block's own content starts on that line. A rule
+// that reads past the end it was given asks isEmpty first; furthestProbe keeps
+// the furthest line asked about.
 const BlockState = parser.block.State;
 parser.block.State = class extends BlockState {
+  furthestProbe = -1;
+
+  isEmpty(line) {
+    if (line > this.furthestProbe) this.furthestProbe = line;
+    return super.isEmpty(line);
+  }
+
   push(type, tag, nesting) {
     const token = super.push(type, tag, nesting);
     this.openTokens ??= [];
@@ -39,11 +48,11 @@ parser.block.State = class extends BlockState {
 // markdown-it's blockquote rule reads every lazy line that follows a quote, to
 // the end of the container, before it parses the quote; a page of short quotes
 // each followed by a lazy line costs quadratic time. The rule first runs with a
-// bounded end. When the quote's parse stops before that end, it never read a line
-// past it, so the result is the unbounded one; otherwise the attempt is undone,
-// including the definitions it recorded, and the bound grows. Each quote
-// remembers the largest bound it has reached, so an enclosing quote's retry does
-// not repeat the probes of the quotes inside it.
+// bounded end. When the quote's parse stops before that end and no rule looked
+// at a line past it, the result is the unbounded one; otherwise the attempt's
+// tokens and the definitions it recorded are dropped and the bound grows. Each
+// quote remembers the largest bound it has reached, so an enclosing
+// quote's retry does not repeat the probes of the quotes inside it.
 const QUOTE_FIRST_SPAN = 4;
 const QUOTE_SPAN_GROWTH = 4;
 const quoteRule = parser.block.ruler.__rules__.find((rule) => rule.name === 'blockquote');
@@ -56,13 +65,20 @@ function boundedQuote(state, startLine, endLine, silent) {
   const reached = state.quoteSpansReached.get(quote);
   for (let span = reached ? reached * QUOTE_SPAN_GROWTH : QUOTE_FIRST_SPAN; startLine + span < endLine; span *= QUOTE_SPAN_GROWTH) {
     const limit = startLine + span;
+    const outerProbe = state.furthestProbe;
     const references = state.env.references;
     const attempt = Object.create(references ?? null);
+    state.furthestProbe = -1;
     state.env.references = attempt;
     const matched = unboundedQuote(state, startLine, limit, false);
+    const probed = state.furthestProbe;
     state.env.references = references;
-    if (!matched) return false;
-    if (state.line < limit) {
+    if (!matched) {
+      state.furthestProbe = outerProbe;
+      return false;
+    }
+    if (state.line < limit && probed < limit) {
+      state.furthestProbe = Math.max(outerProbe, probed);
       const added = Object.keys(attempt);
       if (added.length) {
         state.env.references ??= {};
@@ -70,6 +86,7 @@ function boundedQuote(state, startLine, endLine, silent) {
       }
       return true;
     }
+    state.furthestProbe = outerProbe;
     state.tokens.length = tokenCount;
     state.quoteSpansReached.set(quote, span);
   }

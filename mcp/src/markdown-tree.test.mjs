@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { authoredMarkdownLines } from './analyze/authored-markdown.mjs';
 import { readCapabilityClaim, readRecordedSection, readReviewedEvidence } from './agent-brief/reviewed-evidence.mjs';
+import { markdownTree } from './markdown-tree.mjs';
 
 const evidencePage = (lineEnding) =>
   ['Intro line', 'second <b>bold</b> line', '', '## Evidence', '', '- `src/a.ts` entry <i>point</i>', '  continues', '', '## Includes', '', 'Reads files.', ''].join(lineEnding);
@@ -74,6 +75,16 @@ const CASES = [
     excerpt: 'Text <? more  end',
   },
   {
+    name: 'a lazy line ending a quote longer than the first bound',
+    text: '> a\n> b\n> c\n> d\nlazy tail\n',
+    lines: ['', '', '', '', '', ''],
+  },
+  {
+    name: 'a title read past the first bound of a quote',
+    text: '> [a]: /url\n"t1\nt2\nt3\n> t4"\n',
+    lines: ['', '', '', '', '', ''],
+  },
+  {
     name: 'HTML in a setext heading',
     text: 'Head <b>x</b>\n===\n',
     lines: ['# Head x', '', ''],
@@ -89,4 +100,30 @@ describe('the Markdown tree places every span on its source line', () => {
       assert.deepEqual(readReviewedEvidence(text).paths, paths);
     });
   }
+});
+
+describe('a quote parses the same whatever bound its first parse tried', () => {
+  const outline = (node) => ({ type: node.type, line: node.position?.start.line, children: node.children?.map(outline) });
+  const types = (node) => [node.type, ...(node.children ?? []).flatMap(types)];
+
+  it('keeps a quote longer than the first bound as one node holding its lazy line', () => {
+    assert.deepEqual(markdownTree('> a\n> b\n> c\n> d\nlazy tail\n> # Heading\n').children.map(outline), [
+      {
+        type: 'blockquote',
+        line: undefined,
+        children: [
+          { type: 'paragraph', line: 1, children: [{ type: 'text', line: undefined, children: undefined }] },
+          { type: 'heading', line: 6, children: [{ type: 'text', line: undefined, children: undefined }] },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps a definition made inside a quote whose bounded parse is kept', () => {
+    assert.ok(types(markdownTree('> q\n[a]\n > - [a]: u\n\n > </div>\n')).includes('link'));
+  });
+
+  it('drops a definition only a discarded bounded parse made', () => {
+    assert.ok(!types(markdownTree('> - [\n> - t\n=\n> > [b]: /u "\n    1. t3"\n')).includes('link'));
+  });
 });
