@@ -51,6 +51,7 @@ fn metadata(audit: &Path, base: &str, path: &str, body: Option<&str>) -> Result<
         },
         tools: None,
         payload_sha256: llm_audit::sha256_hex(payload),
+        embed: None,
     };
     let reservation =
         llm_audit::reserve(audit, draft).map_err(|e| format!("{AUDIT_BLOCKED_PREFIX}{e}"))?;

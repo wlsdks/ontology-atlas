@@ -65,6 +65,28 @@ pub struct AuditDraft {
     pub tools: Option<Vec<AuditToolRef>>,
     /// Lets a person check the payload matches the preview.
     pub payload_sha256: String,
+    /// Absent on every line but an embedding run's two lines.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embed: Option<AuditEmbedRun>,
+}
+
+/// An embedding run sends thousands of requests, so one line opens it before the
+/// first and a second line with the same `run` closes it; `flock` cannot be held
+/// for an hour.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditEmbedRun {
+    pub run: String,
+    /// `start` or `close`.
+    pub phase: String,
+    pub files_planned: usize,
+    pub passages_planned: usize,
+    pub chars_planned: usize,
+    pub passages_sent: usize,
+    pub chars_sent: usize,
+    /// `complete`, `stopped` or `failed`; absent on the start line.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ended: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -467,6 +489,7 @@ mod tests {
             },
             tools: None,
             payload_sha256: sha256_hex(""),
+            embed: None,
         }
     }
 

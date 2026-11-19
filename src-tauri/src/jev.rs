@@ -239,6 +239,7 @@ where
             },
             tools: None,
             payload_sha256: llm_audit::sha256_hex(payload),
+            embed: None,
         },
     )
     .map_err(|err| format!("audit-blocked:{err}"))?;
