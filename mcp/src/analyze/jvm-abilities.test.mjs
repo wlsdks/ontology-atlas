@@ -192,20 +192,27 @@ test('doubling a hostile file at most about doubles the time to read it', () => 
     if (shape === null) return `package p;\nimport jakarta.ws.rs.Path;\n@Path("a")\nclass A {\n${'a'.repeat(bytes)}\n}\n`;
     return `package p;\nimport jakarta.ws.rs.*;\n@Path("a")\npublic class Resource extends Base {\n${shape.repeat(Math.floor(bytes / shape.length))}`;
   };
-  // A warm-up run, then the fastest of seven: a busy machine only ever adds time, so the fastest run is the code's own.
-  const timed = (path, text) => {
-    abilities({ [path]: text });
-    const runs = [0, 1, 2, 3, 4, 5, 6].map(() => {
+  // Both sizes are timed in turn, seven times after a warm-up, and the fastest of each is compared:
+  // a busy machine only adds time, and a burst that slows one size slows the other beside it.
+  const timedPair = (path, small, large) => {
+    const once = (text) => {
       const started = performance.now();
       abilities({ [path]: text });
       return performance.now() - started;
-    });
-    return Math.min(...runs);
+    };
+    once(small);
+    once(large);
+    let single = Infinity;
+    let double = Infinity;
+    for (let run = 0; run < 7; run += 1) {
+      single = Math.min(single, once(small));
+      double = Math.min(double, once(large));
+    }
+    return { single, double };
   };
   for (const [name, shape] of Object.entries(shapes)) {
     const path = name.startsWith('Kotlin') ? 'src/main/kotlin/p/A.kt' : 'src/main/java/p/A.java';
-    const single = timed(path, fileOf(shape, 128 * 1024));
-    const double = timed(path, fileOf(shape, 256 * 1024));
+    const { single, double } = timedPair(path, fileOf(shape, 128 * 1024), fileOf(shape, 256 * 1024));
     assert.ok(double < 3 * single + 50, `${name}: ${single.toFixed(0)} ms at 128 KB, ${double.toFixed(0)} ms at 256 KB`);
   }
 });

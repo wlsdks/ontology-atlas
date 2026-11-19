@@ -131,21 +131,28 @@ test('doubling a hostile JVM file at most about doubles the time to read its imp
     ['Kotlin', 'fun <'],
     ['Kotlin', 'fun a<'],
   ];
-  // A warm-up run, then the fastest of seven: a busy machine only ever adds time, so the fastest run is the code's own.
-  const timed = (path, text) => {
-    parseJvmSource(text, path);
-    const runs = [0, 1, 2, 3, 4, 5, 6].map(() => {
+  // Both sizes are timed in turn, seven times after a warm-up, and the fastest of each is compared:
+  // a busy machine only adds time, and a burst that slows one size slows the other beside it.
+  const timedPair = (path, small, large) => {
+    const once = (text) => {
       const started = performance.now();
       parseJvmSource(text, path);
       return performance.now() - started;
-    });
-    return Math.min(...runs);
+    };
+    once(small);
+    once(large);
+    let single = Infinity;
+    let double = Infinity;
+    for (let run = 0; run < 7; run += 1) {
+      single = Math.min(single, once(small));
+      double = Math.min(double, once(large));
+    }
+    return { single, double };
   };
   for (const [language, unit] of shapes) {
     const path = language === 'Kotlin' ? 'A.kt' : 'A.java';
     const text = (bytes) => `package p;\n${unit.repeat(Math.floor(bytes / unit.length))}`;
-    const single = timed(path, text(256 * 1024));
-    const double = timed(path, text(512 * 1024));
+    const { single, double } = timedPair(path, text(256 * 1024), text(512 * 1024));
     assert.ok(double < 3 * single + 50, `${language} ${JSON.stringify(unit)}: ${single.toFixed(0)} ms at 256 KB, ${double.toFixed(0)} ms at 512 KB`);
   }
 });
