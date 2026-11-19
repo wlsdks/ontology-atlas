@@ -2,7 +2,7 @@ import type { useTopologyPreferences } from "../use-topology-preferences";
 import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model";
 
 import { buildNewNodeDoc } from "@/entities/docs-vault";
-import { buildOntologyChangeSet, type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyChangeSet, type OntologyRelationEditPlan, parseOntologyMeaningEditParam } from "@/entities/knowledge-graph";
+import { type MeaningEditRelation, meaningEditRelationForEdgeType, type OntologyRelationEditPlan, parseOntologyMeaningEditParam } from "@/entities/knowledge-graph";
 import { useAgentServer, VaultConflictError } from "@/entities/vault-session";
 import type { AcpTurnActivity } from "@/features/acp-session";
 import { type MeaningEditorPreview } from "@/features/ontology-meaning-editor";
@@ -12,10 +12,13 @@ import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { MOTION } from "@/shared/motion";
 import { useToast } from "@/shared/ui";
 import { type AcpOntologyRelationPreview } from "@/widgets/acp-chat-panel";
-import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type IndexAddConcept } from "@/widgets/topology-index-panel";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { resolveAgentFocusNodeId, resolveOntologyRelationPreview } from "../../lib/agent/resolve-agent-focus-node";
 import { resolveNodeVaultRef, resolveTopologyNodeEditTarget } from "../../lib/authoring/topology-node-edit";
-import { type CreateNodeKind } from "../../ui/CreateNodeForm";
+import { type CreateNodeInput } from "../../ui/CreateNodeForm";
+import { type CreateSelection } from "./create-defaults";
+import { useManualWriteUndo } from "./use-manual-write-undo";
 import { selectTopologyNodeRouteState } from "../route-state/url-state";
 import { useAgentConnectModel } from "../agent/use-agent-connect-model";
 import { useBootstrapFlow } from "./use-bootstrap-flow";
@@ -26,7 +29,7 @@ interface Options {
   meaningEditorIntent: boolean;
   meaningEditParam: string | null;
   toast: ReturnType<typeof useToast>;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "reducedMotion" | "tMeaningEditor" | "t" | "relationVocabulary" | "relationRegister">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "reducedMotion" | "tMeaningEditor" | "t" | "relationVocabulary" | "relationRegister" | "activeLocale">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
     | "selectedOntologyNode"
@@ -40,7 +43,7 @@ interface Options {
 }
 export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences }: Options) {
   const { selectedOntologyNode, vault, ontologyInsight, setNeedsVaultReason, recentChanges, docFreshnessIndex, updatedAgoNowMs } = topologyVaultReadModel;
-  const { reducedMotion, tMeaningEditor, t, relationVocabulary, relationRegister } = topologyPreferences;
+  const { reducedMotion, tMeaningEditor, t, relationVocabulary, relationRegister, activeLocale } = topologyPreferences;
 
   const nodeEditTarget = useMemo(
     () =>
@@ -228,32 +231,13 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   );
   // Only with a writable local vault.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
-  const [createNodeProposal, setCreateNodeProposal] = useState<{
-    input: {
-      title: string;
-      kind: CreateNodeKind;
-      domain?: string;
-      localeLabels?: Record<string, string>;
-    };
-    slug: string;
-    markdown: string;
-    changeSet: OntologyChangeSet;
-  } | null>(null);
-  const [createNodeConfirming, setCreateNodeConfirming] = useState(false);
-  const createNodeToggleRef = useRef<HTMLButtonElement | null>(null);
-  const createNodePanelRef = useRef<HTMLDivElement | null>(null);
   const closeCreateNode = useCallback(() => {
-    setCreateNodeProposal(null);
-    setCreateNodeConfirming(false);
     setCreateNodeOpen(false);
     setRouteState((current) => ({
       ...current,
       createNodeIntent: false,
     }));
-    window.requestAnimationFrame(() => {
-      createNodeToggleRef.current?.focus();
-    });
-  }, [setRouteState, setCreateNodeProposal, setCreateNodeOpen]);
+  }, [setRouteState, setCreateNodeOpen]);
   const canCreateNode = vault.manifest !== null;
   const [mapRevealToken, setMapRevealToken] = useState(0);
   const {
@@ -281,63 +265,84 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       );
     },
   });
+  const { runManualWrite } = useManualWriteUndo({ vault, toast, t });
+  /**
+   * Writes the new concept at once. Only the on-screen create controls reach this path, so it
+   * stamps `created_by: human`. Returns whether the file was written.
+   */
   const createNode = useCallback(
-    async (input: {
-      title: string;
-      kind: CreateNodeKind;
-      domain?: string;
-      localeLabels?: Record<string, string>;
-    }): Promise<false> => {
+    async (input: CreateNodeInput, { keepOpen = false }: { keepOpen?: boolean } = {}): Promise<boolean> => {
+      let built: { slug: string; markdown: string };
       try {
-        // Only the on-screen "create concept" control reaches this path, so it proves a human
-        // actor;
-        // without the stamp a new node gets no review-pending ring.
-        const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
-        if (vault.fileHandles.has(slug)) {
-          toast.show(t("createNode.toastExists"), "error");
-          return false;
-        }
-        const frontmatter = parseFrontmatter(markdown).frontmatter;
-        setCreateNodeProposal({
-          input,
-          slug,
-          markdown,
-          changeSet: buildOntologyChangeSet("add_concept", {
-            slug,
-            ...frontmatter,
-          }),
+        built = buildNewNodeDoc({ ...input, createdBy: "human" });
+      } catch {
+        toast.show(t("createNode.toastError"), "error");
+        return false;
+      }
+      const description = input.description?.trim();
+      const markdown = description ? `${built.markdown}\n${description}\n` : built.markdown;
+      if (vault.fileHandles.has(built.slug)) {
+        toast.show(t("createNode.toastExists"), "error");
+        return false;
+      }
+      try {
+        await runManualWrite({
+          slug: built.slug,
+          write: () => vault.createDoc(built.slug, markdown),
+          written: markdown,
+          message: t("createNode.toastCreated", { name: input.title.trim() }),
         });
       } catch (err) {
         const exists = err instanceof Error && err.message.includes("already exists");
         toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
+        return false;
       }
-      return false;
+      if (!keepOpen) {
+        const tail = built.slug.slice(built.slug.lastIndexOf("/") + 1);
+        setCreateNodeOpen(false);
+        setRouteState((current) => ({
+          ...current,
+          createNodeIntent: false,
+          selectedSlug: `${input.kind}:${tail}`,
+        }));
+      }
+      return true;
     },
-    [t, toast, vault.fileHandles, setCreateNodeProposal],
+    [runManualWrite, setRouteState, t, toast, vault],
   );
-  const confirmCreateNode = useCallback(async () => {
-    if (!createNodeProposal || createNodeConfirming) return;
-    setCreateNodeConfirming(true);
-    try {
-      await vault.createDoc(createNodeProposal.slug, createNodeProposal.markdown);
-      const tail = createNodeProposal.slug.includes("/")
-        ? createNodeProposal.slug.slice(createNodeProposal.slug.lastIndexOf("/") + 1)
-        : createNodeProposal.slug;
-      toast.show(t("createNode.toastSaved", { slug: createNodeProposal.slug }), "success", {
-        label: t("createNode.toastSavedAction"),
-        onClick: () =>
-          setRouteState((current) => ({
-            ...current,
-            selectedSlug: `${createNodeProposal.input.kind}:${tail}`,
-          })),
-      });
-      closeCreateNode();
-    } catch (err) {
-      const exists = err instanceof Error && err.message.includes("already exists");
-      toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
-      setCreateNodeConfirming(false);
-    }
-  }, [closeCreateNode, createNodeConfirming, createNodeProposal, setRouteState, t, toast, vault]);
+  /** The concept list's add row: a domain stands alone, a capability or element goes in the group's domain. */
+  const addConceptInGroup = useCallback<IndexAddConcept>(
+    (group, kind, title) =>
+      createNode(
+        {
+          title,
+          kind,
+          domain: kind === "domain" ? undefined : resolveNodeVaultRef(group),
+          localeLabels: { [activeLocale]: title },
+        },
+        { keepOpen: true },
+      ),
+    [activeLocale, createNode],
+  );
+  /** The concepts a new title is compared with, so a near-duplicate is named before it is made. */
+  const createNodeExistingConcepts = useMemo(
+    () =>
+      (ontologyInsight?.nodes ?? []).map((node) => ({
+        slug: node.id,
+        title: node.display ?? node.title,
+        kind: node.kind,
+      })),
+    [ontologyInsight],
+  );
+  const createSelection = useMemo<CreateSelection | null>(() => {
+    if (!selectedOntologyNode) return null;
+    const domain = nodeEditTarget?.frontmatter.domain;
+    return {
+      kind: selectedOntologyNode.kind,
+      ref: resolveNodeVaultRef(selectedOntologyNode),
+      domainRef: typeof domain === "string" ? domain : null,
+    };
+  }, [nodeEditTarget, selectedOntologyNode]);
   // `value` is the domain document's address (`domains/agent-access`), the spelling
   // agent-written `domain:` uses; `buildNewNodeDoc` keeps the folder
   // through `canonicalizeDomainRef`.
@@ -351,45 +356,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
         }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     [ontologyInsight],
-  );
-  const handleCreateNodePanelKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeCreateNode();
-        return;
-      }
-      if (event.key !== "Tab") {
-        return;
-      }
-      const panel = createNodePanelRef.current;
-      if (!panel) {
-        return;
-      }
-      const focusable = Array.from(
-        panel.querySelectorAll<HTMLElement>(
-          "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex='-1'])",
-        ),
-      ).filter(
-        (el) =>
-          !el.hasAttribute("disabled") &&
-          el.getAttribute("aria-hidden") !== "true" &&
-          el.offsetParent !== null,
-      );
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (!first || !last) {
-        return;
-      }
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    },
-    [closeCreateNode],
   );
   // Seeded from the whole raw file, since the manifest excerpt is truncated and editing it would
   // drop text;
@@ -450,8 +416,8 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     agentFocusNodeId, agentServer, acpTurnActivityFrame, setAcpTurnActivityFrame, nodeBody,
     saveNodeExplanation, meaningEditorState, meaningEditorSource, edgePanelOpen, setHoverEdge,
     setMeaningEditorState, setSelectedEdge, closeCreateNode, selectedEdge, setBootstrapOpen, bootstrapPlan,
-    runBootstrap, createNodePanelRef, handleCreateNodePanelKeyDown, createNode, createNodeDomainOptions,
-    createNodeProposal, createNodeConfirming, setCreateNodeProposal, confirmCreateNode,
+    runBootstrap, createNode, createNodeDomainOptions, createNodeExistingConcepts, createSelection,
+    runManualWrite, addConceptInGroup,
     agentAttributedRecentNodeId, agentConnect, mapRevealToken, handleHoverEdge, mapRelationPreview,
     handleHoverCluster, openMeaningEditor, heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview,
     applyMeaningEditor, closeMeaningEditor, hoverEdgeCardModel, clusterHoverCardModel, heldEdgePanelModel,

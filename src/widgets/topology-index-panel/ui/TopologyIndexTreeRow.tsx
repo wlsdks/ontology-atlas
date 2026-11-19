@@ -11,6 +11,10 @@ import { HighlightedText } from "@/shared/ui";
 import {
   computeDomainSubcounts,
 } from "../lib/domain-subcounts";
+import { ADD_KINDS_BY_GROUP, type IndexAddConcept, type IndexAddKind, TopologyIndexAddRow } from "./TopologyIndexAddRow";
+
+/** The add row's two words per kind: the quiet action and the name field it turns into. */
+export type IndexAddLabels = Record<IndexAddKind, { action: string; field: string }>;
 
 interface TopologyIndexTreeRowLabels {
   capabilitiesShort: string;
@@ -65,6 +69,9 @@ export interface TopologyIndexTreeRowProps {
   projectCount?: number | null;
   /** The panel's search text, so the row can mark where the query landed. */
   query?: string;
+  /** Present while the open folder is writable and the tree is not narrowed. */
+  onAddInGroup?: IndexAddConcept;
+  addLabels?: IndexAddLabels;
 }
 
 /**
@@ -90,6 +97,8 @@ export function TopologyIndexTreeRow({
   labels,
   projectCount = null,
   query,
+  onAddInGroup,
+  addLabels,
 }: TopologyIndexTreeRowProps) {
   const { node, children } = entry;
   const hasChildren = children.length > 0;
@@ -291,8 +300,22 @@ export function TopologyIndexTreeRow({
               labels={labels}
               projectCount={projectCount}
               query={query}
+              onAddInGroup={onAddInGroup}
+              addLabels={addLabels}
             />
           ))}
+          {onAddInGroup && addLabels
+            ? (ADD_KINDS_BY_GROUP[node.kind] ?? []).map((kind) => (
+                <TopologyIndexAddRow
+                  key={kind}
+                  parent={node}
+                  kind={kind}
+                  depth={depth + 1}
+                  onAdd={onAddInGroup}
+                  labels={addLabels[kind]}
+                />
+              ))
+            : null}
           </div>
           ) : null}
         </div>

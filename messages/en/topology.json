@@ -141,24 +141,14 @@
   },
   "createNode": {
     "heading": "Add concept",
-    "titlePlaceholder": "Concept title",
     "kind": "Kind",
-    "domain": "Domain",
-    "domainQuestion": "Which domain should this go in? (optional)",
     "domainNone": "No domain",
-    "domainHelper": "A domain groups related capabilities.",
     "create": "Create",
     "cancel": "Cancel",
-    "reviewHeading": "Review change",
-    "reviewBack": "Keep editing",
-    "reviewConfirm": "Confirm and save",
-    "reviewConfirming": "Saving…",
     "kindProject": "Project",
     "kindDomain": "Domain",
     "kindCapability": "Capability",
     "kindElement": "Element",
-    "toastSaved": "Created {slug}",
-    "toastSavedAction": "View on map",
     "toastExists": "A concept with that slug already exists.",
     "toastError": "Could not create the concept.",
     "unavailableHeading": "Open an ontology folder first",
@@ -166,8 +156,19 @@
     "unavailableAction": "Open ontology folder",
     "primaryNamePlaceholder": "Concept name (English)",
     "secondaryNamePlaceholder": "Korean name (optional)",
-    "localeNamesHint": "The field above is the name for your current screen language (English). Add the Korean name so Korean screens read it too.",
-    "primaryLocaleRequired": "Add the English name to save: your screen is English, so leaving it blank shows the raw title on the map and lists."
+    "primaryLocaleRequired": "Add the English name to save: your screen is English, so leaving it blank shows the raw title on the map and lists.",
+    "kindMeaningProject": "The product or system this folder describes: what it exists to do, and for whom.",
+    "kindMeaningDomain": "A lasting area of responsibility, such as billing or sign-in, that holds the capabilities inside it.",
+    "kindMeaningCapability": "Something the product can do that a person or another system notices, such as issuing a refund.",
+    "kindMeaningElement": "A part of the code with its own job that makes a capability work, such as a token signer.",
+    "parentLabel": "Goes in",
+    "parentNoMatch": "No domain has that name.",
+    "descriptionLabel": "What it is, in one sentence (optional)",
+    "similarExists": "“{name}” already exists as this kind.",
+    "openSimilar": "Open it",
+    "createAnyway": "Create anyway",
+    "keysHint": "Enter creates it. ⌘/Ctrl+Enter creates it and keeps this open for the next one.",
+    "toastCreated": "Created “{name}”"
   },
   "explanationEdit": {
     "saved": "Explanation saved",
@@ -231,10 +232,8 @@
     "bodyNoProjectsPicker": "Create one yourself, or let a coding agent read your code and fill it in one go.",
     "bodyNoDeps": "Create one relation on the map and its line appears here.",
     "crossViewHint": "What you create also shows in the Ontology documents.",
-    "ctaCreateNode": "Create concept",
+    "ctaCreateNode": "Add a concept",
     "ctaTree": "Browse concepts",
-    "ctaBuilder": "Create on the map",
-    "ctaBuilderNoDeps": "Create relation",
     "ctaOpenVaultDownload": "Get the app",
     "ctaOpenVaultPicker": "Open ontology folder",
     "kickerDocsFound": "Ontology folder · {count} documents",
@@ -279,7 +278,14 @@
     "tidyHeading": "Needs attention",
     "plainHint": "Elements are hidden: click a concept on the map to show its elements",
     "openedInsideLabel": "Opened the ontology folder found inside the folder you picked.",
-    "openedInsideDismiss": "Dismiss this notice"
+    "openedInsideDismiss": "Dismiss this notice",
+    "createConcept": "Add a concept",
+    "addDomain": "Add a domain",
+    "addDomainField": "New domain name",
+    "addCapability": "Add a capability",
+    "addCapabilityField": "New capability name",
+    "addElement": "Add an element",
+    "addElementField": "New element name"
   },
   "deeplinkNotFound": "Concept not found: {query}",
   "businessFlowRequest": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every concept.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full concept slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge.",
@@ -453,5 +459,12 @@
       "cta": "Build the map from my documents"
     },
     "next": "Next"
+  },
+  "manualWrite": {
+    "undo": "Undo",
+    "undone": "Undone. The file is back as it was.",
+    "undoChanged": "Not undone: the file changed on disk after that change.",
+    "undoNotLatest": "Only the most recent change can be undone.",
+    "undoFailed": "Could not undo. The file is unchanged."
   }
 }

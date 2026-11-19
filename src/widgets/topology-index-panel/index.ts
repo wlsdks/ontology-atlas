@@ -10,3 +10,4 @@ export {
   resolveLeftSlotOwner,
   resolveRenderedIndexPanelState,
 } from "./lib/slot-ownership";
+export type { IndexAddConcept, IndexAddKind } from "./ui/TopologyIndexAddRow";

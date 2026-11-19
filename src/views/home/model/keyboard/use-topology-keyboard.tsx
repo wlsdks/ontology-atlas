@@ -58,6 +58,7 @@ interface Options {
     | "bootstrapOpen"
     | "setBootstrapOpen"
     | "acpTurnActivityFrame"
+    | "canCreateNode"
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "ontologyMapGraph" | "canvasSelectedSlug" | "resolvedRealmSlug">;
@@ -71,7 +72,7 @@ export function useTopologyKeyboard({
 }: Options) {
   const { canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose } = topologyNavigationActions;
-  const { setSelectedEdge, closeCreateNode, selectedEdge, createNodeOpen, bootstrapOpen, setBootstrapOpen, acpTurnActivityFrame } = topologyAuthoring;
+  const { setSelectedEdge, closeCreateNode, selectedEdge, createNodeOpen, bootstrapOpen, setBootstrapOpen, acpTurnActivityFrame, canCreateNode } = topologyAuthoring;
   const {
     contextMenuNode, fullDetailOpen, selectedRelationActive, closeContextMenu, setFullDetailSlug,
     setSelectedRelationActive, setNodePopoverDismissed
@@ -224,6 +225,14 @@ export function useTopologyKeyboard({
         // the dock is not modal, so only this shortcut goes quiet.
         if (agentDockOpen) return;
         setDocsDrawerOpen((v) => !v);
+      },
+    },
+    {
+      // N opens the create card beside the map; the URL intent is the one door every opener uses.
+      combo: { key: "n" },
+      onFire: () => {
+        if (shortcutsSuppressed || !canCreateNode) return;
+        setRouteState((current) => ({ ...current, createNodeIntent: true }));
       },
     },
     {

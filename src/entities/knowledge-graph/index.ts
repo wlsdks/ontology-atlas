@@ -42,9 +42,13 @@ export {
 export {
   buildOntologyRelationEditPlan,
   buildOntologyRelationRemovalPlan,
+  eligibleRelationTargets,
   IMPACT_EDIT_RELATIONS,
   RELATION_EDGE_TYPE,
+  relationFrontmatterKey,
+  relationsAllowedFor,
   type OntologyRelationEditPlan,
+  type RelationTargetCandidate,
 } from "./lib/ontology-relation-edit";
 export { deriveCodeLocations } from "./lib/code-locations";
 export { buildChatNodeIndex } from "./lib/chat-node-index";

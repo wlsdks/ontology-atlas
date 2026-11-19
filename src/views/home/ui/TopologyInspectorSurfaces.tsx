@@ -23,6 +23,7 @@ import { Dialog, Surface, controlClass } from "@/shared/ui";
 import { morphName, runMorph } from "@/shared/motion/shared-element";
 import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailPanel, OntologyMapEdgeHoverCard, OntologyMapEdgePanel } from "@/widgets/ontology-map";
 import { ProjectDrawer } from "@/widgets/project-drawer";
+import { CreateNodeForm } from "./CreateNodeForm";
 import { useTranslations } from "next-intl";
 import { normalizeKindLabelKey } from "../lib/inspector/topology-node-significance";
 import { returnFocusIfDropped } from "../lib/keyboard/topology-focus-return";
@@ -115,9 +116,13 @@ interface TopologyInspectorSurfacesProps {
     | "heldEdgePanelModel"
     | "edgePanelOpen"
     | "setSelectedEdge"
+    | "createNode"
+    | "closeCreateNode"
+    | "createNodeDomainOptions"
+    | "createNodeExistingConcepts"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tKinds" | "tWorkbench" | "audiencePlain">;
-  topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "setCreateNodeSeedDomain" | "setCreateNodeDefaultKind" | "openCreateNode">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tKinds" | "tWorkbench" | "audiencePlain" | "activeLocale">;
+  topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "createNodeDefaults" | "openCreateNode">;
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "drawerProject">;
 }
 
@@ -130,14 +135,14 @@ export function TopologyInspectorSurfaces({
   acpRuntimeController, topologyRouteControls, topologyExplorationLenses, topologyCreateIntent
 }: TopologyInspectorSurfacesProps) {
   const { drawerProject } = topologyExplorationLenses;
-  const { setCreateNodeSeedDomain, setCreateNodeDefaultKind, openCreateNode } = topologyCreateIntent;
+  const { createNodeDefaults, openCreateNode } = topologyCreateIntent;
 
-  const { t, tKinds, tWorkbench, audiencePlain } = topologyPreferences;
+  const { t, tKinds, tWorkbench, audiencePlain, activeLocale } = topologyPreferences;
   const {
     createNodeOpen, nodeEditTarget, setMeaningEditorState, meaningEditorSource, openMeaningEditor, canCreateNode,
     heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview, applyMeaningEditor,
     closeMeaningEditor, hoverEdgeCardModel, selectedEdge, clusterHoverCardModel, heldEdgePanelModel,
-    edgePanelOpen, setSelectedEdge
+    edgePanelOpen, setSelectedEdge, createNode, closeCreateNode, createNodeDomainOptions, createNodeExistingConcepts
   } = topologyAuthoring;
   const { handleSelectImpactMode } = topologyKeyboard;
   const { handleClose, handleSelect, handleDatasheetClose } = topologyNavigationActions;
@@ -221,6 +226,33 @@ export function TopologyInspectorSurfaces({
         containerLabel={null}
       />
     ) : null}
+    {/* The create card takes the concept panel's place at the right inset; the map stays live. */}
+    <Surface
+      open={canCreateNode && createNodeOpen}
+      motion="overlay"
+      data-testid="topology-create-node-panel"
+      data-placement-contract="selected-inspector-aligns-to-right-inset"
+      data-topology-camera-obstacle="side-panel"
+      className="topology-ui-scale pointer-events-auto fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+    >
+      <div className="w-[var(--map-panel-width)] max-lg:w-[min(520px,calc(100vw-1.5rem))]">
+        <CreateNodeForm
+          key={createNodeDefaults.opening}
+          defaultKind={createNodeDefaults.kind}
+          defaultParent={createNodeDefaults.parent}
+          parentOptions={createNodeDomainOptions}
+          existingConcepts={createNodeExistingConcepts}
+          primaryLocale={activeLocale}
+          secondaryLocale={activeLocale === "en" ? "ko" : "en"}
+          onCreate={createNode}
+          onOpenExisting={(id) => {
+            closeCreateNode();
+            handleSelect(id);
+          }}
+          onClose={closeCreateNode}
+        />
+      </div>
+    </Surface>
     {/* Stays mounted until the panel's `<Surface>` reports `onExited`, drawing the retained model
        as it folds. */}
     {panelShown && panelDatasheetModel ? (
@@ -340,21 +372,14 @@ export function TopologyInspectorSurfaces({
                   }
                 }
               }
-              // Only on a domain node: domain -> capability is one `domain:` key, while other
-              // pairs edit the parent's document, a different act. It shows on the sample too and
-              // leads to connecting a folder, since a locked feature that vanishes reads as never
-              // having existed.
+              // Only on a domain node: a capability inside it is one `domain:` key on the new file.
+              // It shows on the sample too and leads to connecting a folder, since a locked feature
+              // that vanishes reads as never having existed.
               onCreateLinked={
                 canvasSelectedGraphNode?.kind === "domain" && !canCreateNode
                   ? () => setNeedsVaultReason("createNeedsVault")
                   : canCreateNode && canvasSelectedGraphNode?.kind === "domain"
-                    ? () => {
-                      // The domain's own address; the bare id tail wrote a second spelling of the
-                      // relation.
-                      setCreateNodeSeedDomain(resolveNodeVaultRef(canvasSelectedGraphNode));
-                      setCreateNodeDefaultKind("capability");
-                      openCreateNode();
-                    }
+                    ? () => openCreateNode({ kind: "capability", parent: resolveNodeVaultRef(canvasSelectedGraphNode) })
                     : undefined
               }
               // Without an agent surface (web) only the handoff copy is offered; no door that will
