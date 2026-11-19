@@ -69,7 +69,8 @@ test('the card states where a slug lives', () => {
 test('the card says where an unknown goes', () => {
   const body = CONSTRUCTION_CARD_EN.split('\n').find((line) => line.includes('Body, at most 150 words'));
   assert.ok(body?.includes('`## Uncertainty`'), 'the body enumeration must name Uncertainty');
-  assert.ok(body?.includes('Unread code is never an Excludes bullet'));
+  assert.ok(body?.includes('Unread code, and what unread members do, is Uncertainty, never Excludes'));
+  assert.ok(body?.includes('A family sentence says how many members were read ("2 of 16 read") or speaks only for the one read'), 'the scope rule sits where the body is written');
 });
 
 /**
@@ -132,4 +133,11 @@ test('the finalize refusal names the layout and the guide that carries it', () =
 
 test.after(() => {
   rmSync(scratch, { recursive: true, force: true });
+});
+
+test('the scope rule is said where each write is made', async () => {
+  const { ADD_CONCEPTS_TOOL, PATCH_CONCEPT_TOOL } = await import('../server/tool-definitions/write-concepts.mjs');
+  const { FAMILY_SCOPE_RULE_EN } = await import('./construction-rules.mjs');
+  for (const tool of [ADD_CONCEPTS_TOOL, PATCH_CONCEPT_TOOL]) assert.ok(tool.description.includes(FAMILY_SCOPE_RULE_EN), tool.name);
+  assert.match(FAMILY_SCOPE_RULE_EN, /"2 of 16 read"/);
 });
