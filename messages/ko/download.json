@@ -92,21 +92,6 @@
   },
   "closingTitle": "폴더 하나를 고르면 바로 시작해요.",
   "news": "{tag} 출시 · 바뀐 것 보기",
-  "numbers": {
-    "label": "숫자로 보면",
-    "tools": {
-      "label": "MCP 도구",
-      "body": "에이전트가 지도를 읽고 변경을 제안할 때 불러요."
-    },
-    "concepts": {
-      "label": "개념",
-      "body": "Atlas는 자기 코드도 이 저장소의 docs/ontology/에 지도로 남겨요."
-    },
-    "relations": {
-      "label": "관계",
-      "body": "그 개념 사이의 관계예요. 각 파일 맨 위 정보칸에 이름으로 적혀 있어요."
-    }
-  },
   "film": {
     "label": "마크다운이 지도가 되는 과정",
     "actsLabel": "장면으로 건너뛰기",

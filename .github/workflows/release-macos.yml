@@ -149,8 +149,9 @@ jobs:
     name: Verify macOS native bridge
     needs: admit-release
     runs-on: macos-15
-    # budget: 300s (v2.2.3: 339 s with the three gates that moved to Linux, which took 104 s)
-    timeout-minutes: 7
+    # budget: 600s (v2.3.0: cancelled at 7 min with the native bridge tests still compiling the
+    # grown src-tauri crates from a cold target; setup took 66 s)
+    timeout-minutes: 14
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -203,9 +204,9 @@ jobs:
     name: Verify Windows native bridge
     needs: admit-release
     runs-on: windows-2022
-    # budget: 400s (v2.2.2: these steps took 197 s inside build-windows, its setup 88 s;
-    # no standalone run measured yet)
-    timeout-minutes: 10
+    # budget: 900s (v2.3.0: cancelled at 10 min with the native bridge tests still compiling from
+    # a cold target; main's warm-cache Windows check spends 405 s in the same step)
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

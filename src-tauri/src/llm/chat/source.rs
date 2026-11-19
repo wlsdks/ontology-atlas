@@ -60,6 +60,7 @@ fn metadata(audit: &Path, base: &str, path: &str, body: Option<&str>) -> Result<
     let config = super::super::curl::curl_config_for(&url, &headers, body);
     let started = Instant::now();
     let mut command = Command::new("curl");
+    crate::no_console::hide_console(&mut command);
     command
         .args(curl_argv_with_timeout("15"))
         .args(["--noproxy", "*"]);
