@@ -171,6 +171,8 @@ where
         tools: Some(scope.tools),
         // The only anchor that the bytes sent match the scope the screen showed.
         payload_sha256: llm_audit::sha256_hex(body),
+        embed: None,
+        download: None,
     };
     // No recording, no transmission.
     let reservation = llm_audit::reserve(vault_dir, draft)

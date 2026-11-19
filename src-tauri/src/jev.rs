@@ -239,6 +239,8 @@ where
             },
             tools: None,
             payload_sha256: llm_audit::sha256_hex(payload),
+            embed: None,
+            download: None,
         },
     )
     .map_err(|err| format!("audit-blocked:{err}"))?;
@@ -465,10 +467,11 @@ mod tests {
     }
 
     /// Where the audit log cannot be written safely, nothing is sent.
-    #[cfg(not(unix))]
     #[test]
     fn sends_nothing_where_the_record_cannot_be_written() {
         let vault = temp_vault("closed");
+        // A file where the log's folder must go blocks the record on every platform.
+        fs::write(vault.join(".ontology-atlas"), b"not a folder").unwrap();
         let sent = Cell::new(false);
         let result = judge_with(&vault, SAMPLE_REQUEST.trim(), "sample-secret", |_| {
             sent.set(true);

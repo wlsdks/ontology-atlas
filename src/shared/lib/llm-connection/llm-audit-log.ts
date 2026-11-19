@@ -10,7 +10,8 @@ import { openTauriAuditSource } from '../vault-folder/tauri-vault-fs';
  * transmission, "a transmission with no record" becomes structurally impossible.
  *
  * Line schema v1:
- * `{"v":1,"at","provider","host","model","purpose","question","scope":{"nodes","promptChars","vaultChars"},"payloadSha256","outcome","httpStatus","responseChars","durationMs"}`
+ * `{"v":1,"at","provider","host","model","purpose","question","scope":{"nodes","promptChars","vaultChars"},"payloadSha256","outcome","httpStatus","responseChars","durationMs"}`,
+ * plus `embed` or `download` (`run`, `phase`, counts) on the two lines of a long run.
  *
  * - `host` was **added later**, which is why `v` is still 1. Older lines without
  *   it already sit on user disks, so they read as `null` — stating plainly that
@@ -30,7 +31,35 @@ import { openTauriAuditSource } from '../vault-folder/tauri-vault-fs';
  * `tests/fixtures/llm-audit-log.sample.jsonl`.
  */
 
-type LlmAuditOutcome = 'ok' | 'denied' | 'error' | 'unknown';
+/**
+ * `open` is a run's start line with no closing line in view: still running, or
+ * stopped before it could close. It is not invented as a success or a failure.
+ */
+type LlmAuditOutcome = 'ok' | 'denied' | 'error' | 'unknown' | 'open';
+
+/**
+ * Long sends (search by meaning preparing a folder, a model download) write one
+ * line before the first request and a closing line with the same `run`.
+ */
+interface LlmAuditRun {
+  run: string;
+  phase: 'start' | 'close';
+  ended: string | null;
+}
+
+export interface LlmAuditEmbedRun extends LlmAuditRun {
+  filesPlanned: number;
+  passagesPlanned: number;
+  charsPlanned: number;
+  passagesSent: number;
+  charsSent: number;
+}
+
+export interface LlmAuditDownload extends LlmAuditRun {
+  source: string;
+  revision: string | null;
+  bytes: number | null;
+}
 
 interface LlmAuditScope {
   /** Slugs of the nodes whose excerpts were sent; empty for a connection check. */
@@ -55,7 +84,10 @@ export interface LlmAuditEntry {
    */
   host: string | null;
   model: string | null;
-  /** `'verify' | 'agent'` — the parser passes future values through unchanged. */
+  /**
+   * `'verify' | 'agent' | 'judgment' | 'embed-build' | 'embed-query' | 'model-download'`;
+   * the parser passes future values through unchanged.
+   */
   purpose: string;
   /** The user's own words; `null` for a connection check. */
   question: string | null;
@@ -72,6 +104,10 @@ export interface LlmAuditEntry {
   httpStatus: number | null;
   responseChars: number | null;
   durationMs: number | null;
+  /** Present only on the two lines of a search-by-meaning preparation. */
+  embed: LlmAuditEmbedRun | null;
+  /** Present only on the two lines of a model download. */
+  download: LlmAuditDownload | null;
 }
 
 const KNOWN_OUTCOMES: readonly LlmAuditOutcome[] = ['ok', 'denied', 'error'];
@@ -100,7 +136,63 @@ function readTools(value: unknown): LlmAuditToolRef[] | null {
   });
 }
 
+function readRun(value: unknown): LlmAuditRun | null {
+  const raw = value as Record<string, unknown> | null;
+  if (!raw || typeof raw !== 'object' || typeof raw.run !== 'string') return null;
+  if (raw.phase !== 'start' && raw.phase !== 'close') return null;
+  return { run: raw.run, phase: raw.phase, ended: typeof raw.ended === 'string' ? raw.ended : null };
+}
+
+function readEmbed(value: unknown): LlmAuditEmbedRun | null {
+  const run = readRun(value);
+  if (!run) return null;
+  const raw = value as Record<string, unknown>;
+  return {
+    ...run,
+    filesPlanned: readNumber(raw.filesPlanned) ?? 0,
+    passagesPlanned: readNumber(raw.passagesPlanned) ?? 0,
+    charsPlanned: readNumber(raw.charsPlanned) ?? 0,
+    passagesSent: readNumber(raw.passagesSent) ?? 0,
+    charsSent: readNumber(raw.charsSent) ?? 0,
+  };
+}
+
+function readDownload(value: unknown): LlmAuditDownload | null {
+  const run = readRun(value);
+  if (!run) return null;
+  const raw = value as Record<string, unknown>;
+  return {
+    ...run,
+    source: typeof raw.source === 'string' ? raw.source : '',
+    revision: typeof raw.revision === 'string' ? raw.revision : null,
+    bytes: readNumber(raw.bytes),
+  };
+}
+
 type AuditRecord = Record<string, unknown> & { v: 1; at: string; provider: string };
+
+function isClosingLine(parsed: AuditRecord): boolean {
+  return (
+    (parsed.embed as { phase?: unknown } | undefined)?.phase === 'close' ||
+    (parsed.download as { phase?: unknown } | undefined)?.phase === 'close'
+  );
+}
+
+/**
+ * Shows a run once: a start line whose closing line is also in view is folded into
+ * the closing line, which states what was sent and how it ended.
+ */
+function pairRuns(entries: LlmAuditEntry[]): LlmAuditEntry[] {
+  const closed = new Set<string>();
+  for (const entry of entries) {
+    const run = entry.embed ?? entry.download;
+    if (run?.phase === 'close') closed.add(run.run);
+  }
+  return entries.filter((entry) => {
+    const run = entry.embed ?? entry.download;
+    return !(run?.phase === 'start' && closed.has(run.run));
+  });
+}
 
 function parseRecord(line: string): AuditRecord | null {
   if (!line.trim()) return null;
@@ -112,6 +204,9 @@ function parseRecord(line: string): AuditRecord | null {
 
 function toEntry(parsed: AuditRecord): LlmAuditEntry {
   const outcome = parsed.outcome;
+  const embed = readEmbed(parsed.embed);
+  const download = readDownload(parsed.download);
+  const opensRun = (embed ?? download)?.phase === 'start';
   return {
     v: 1,
     at: parsed.at,
@@ -127,10 +222,14 @@ function toEntry(parsed: AuditRecord): LlmAuditEntry {
     outcome:
       typeof outcome === 'string' && KNOWN_OUTCOMES.includes(outcome as LlmAuditOutcome)
         ? (outcome as LlmAuditOutcome)
-        : 'unknown',
+        : opensRun
+          ? 'open'
+          : 'unknown',
     httpStatus: readNumber(parsed.httpStatus),
     responseChars: readNumber(parsed.responseChars),
     durationMs: readNumber(parsed.durationMs),
+    embed,
+    download,
   };
 }
 
@@ -145,7 +244,7 @@ export function parseLlmAuditLog(
       try { entries.push(toEntry(parsed)); } catch { /* skip unreadable fields */ }
     }
   }
-  return entries.slice(-limit);
+  return pairRuns(entries).slice(-limit);
 }
 
 export const LLM_AUDIT_LOG_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
@@ -191,7 +290,8 @@ class SummaryCollector {
   private line(line: string) {
     const parsed = parseRecord(line);
     if (!parsed) return;
-    this.total++;
+    // A run's closing line belongs to a transfer its start line already counted.
+    if (!isClosingLine(parsed)) this.total++;
     if (this.limit === 0) return;
     this.entries[this.next] = line.length > DECODE_CHUNK_BYTES ? toEntry(parsed) : parsed;
     this.projected[this.next] = line.length > DECODE_CHUNK_BYTES;
@@ -222,7 +322,7 @@ class SummaryCollector {
     const entries = this.total >= this.limit
       ? [...this.entries.slice(this.next), ...this.entries.slice(0, this.next)]
       : this.entries;
-    return { total: this.total, entries: entries as LlmAuditEntry[] };
+    return { total: this.total, entries: pairRuns(entries as LlmAuditEntry[]) };
   }
 }
 
