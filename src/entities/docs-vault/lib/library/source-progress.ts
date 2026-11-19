@@ -89,15 +89,16 @@ function isoDay(day: number): string {
 }
 
 /**
- * ISO 8601 only: a date, or a date-time with `T`, optional seconds and fraction, and a required `Z`
+ * ISO 8601 only: a date, or a date-time with `T`, optional seconds and fraction, and an optional `Z`
  * or offset. `Date.parse` is not used, because engines disagree on anything else (V8 reads
  * `build 12` as 2001-12-01), and the web and the app must draw the same line.
  */
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(?:(Z)|([+-])(\d{2}):?(\d{2})))?$/;
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(?:(Z)|([+-])(\d{2}):?(\d{2}))?)?$/;
 
 /**
  * The local day index a recorded `compiled_at` falls on, or null when it is not an ISO date or
- * falls before 2000. A bare `YYYY-MM-DD` is the day as written; a timestamp is placed by its instant.
+ * falls before 2000. A bare `YYYY-MM-DD` or a date-time with no zone is the day as written; a zoned
+ * timestamp is placed by its instant.
  */
 export function recordedLocalDay(
   value: string,
@@ -119,6 +120,8 @@ function recordedDay(
   if (isoDay(date) !== `${year}-${month}-${day}`) return null;
   if (hour === undefined) return date;
   if (Number(hour) > 23 || Number(minute) > 59 || Number(second ?? 0) > 59) return null;
+  // A local time with no zone (Python's `isoformat()`) is the day as written, like a bare date.
+  if (!zulu && sign === undefined) return date;
   if (!zulu && (Number(zoneHour) > 23 || Number(zoneMinute) > 59)) return null;
   const zone = zulu ? 0 : (sign === '-' ? -1 : 1) * (Number(zoneHour) * 60 + Number(zoneMinute));
   const instant = date * DAY_MS

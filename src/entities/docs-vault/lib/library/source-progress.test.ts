@@ -162,7 +162,8 @@ describe('each source is dated once, by the earliest date it can be believed', (
     ['a word and a number', 'build 12'],
     ['a bare number', '1'],
     ['a bare year', '2026'],
-    ['a date-time without a zone', '2026-11-18T10:00:00'],
+    ['a zoneless date-time on an impossible date', '2026-02-30T10:00:00'],
+    ['a zoneless date-time past 23 hours', '2026-11-18T24:00:00.5'],
     ['an hour past 23', '2026-11-18T24:00:00Z'],
     ['a space instead of T', '2026-11-18 10:00:00Z'],
     ['a long-form date', 'November 18, 2026'],
@@ -178,6 +179,9 @@ describe('each source is dated once, by the earliest date it can be believed', (
     ['2026-11-18T23:59:59.999+09:00', '2026-11-18'],
     ['2026-11-19T00:30:00-0500', '2026-11-19'],
     ['2026-11-18T14:59:59.123456Z', '2026-11-18'],
+    // No zone: the day as written, whatever the zone, as a bare date is.
+    ['2026-11-17T23:30:00', '2026-11-17'],
+    ['2026-11-17T23:30:00.123456', '2026-11-17'],
   ])('reads the ISO date-time %s as the Seoul day %s', (value, day) => {
     const progress = deriveSourceProgress({ sources: [dated(value)] }, SEOUL);
     expect(progress.series[0]?.start).toBe(day);
