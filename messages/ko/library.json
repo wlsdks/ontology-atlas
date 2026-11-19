@@ -972,9 +972,11 @@
     "point": "{date}: 지금 원문 {total, number}개 중 {count, number}개 ({percent, number}%)",
     "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
     "undated": "{count, number}개는 날짜 없음",
+    "axisToday": "오늘",
     "continue": "{count, plural, =1 {마지막 원문 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
     "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
     "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
+    "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
     "allDone": "모든 원문에 위키 문서가 있어요"
   }
 }

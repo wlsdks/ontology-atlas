@@ -114,15 +114,15 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
   }
   await expect(page.getByTestId("library-compile")).toBeEnabled({ timeout: 30_000 });
   /*
-   * The brain picker is in the Compile popover the strip's `Compile next: <file>` clause opens;
-   * Escape leaves the walk on the home.
+   * On the home the brain picker stands in the guide's Compile step; Escape leaves the walk on the
+   * home.
    */
   if (options?.detectedRuntime) {
     await page.getByTestId('library-workspace-sources').click();
-    await page.getByTestId('library-strip-compile').click();
-    await expect(page.getByTestId('library-compile-brain')).toContainText('probe-model');
+    await page.getByTestId('library-guide-open').click();
+    await expect(page.getByTestId('library-guide-popover').getByTestId('library-compile-brain')).toContainText('probe-model');
     await page.keyboard.press('Escape');
-    await expect(page.getByTestId('library-compile-popover')).toHaveCount(0);
+    await expect(page.getByTestId('library-guide-popover')).toHaveCount(0);
     await page.getByTestId('library-workspace-wiki').click();
   }
   // This is the installed-shell local route; the web degradation copy must not be present.

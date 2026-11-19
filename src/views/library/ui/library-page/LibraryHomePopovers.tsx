@@ -53,7 +53,7 @@ export function LibraryHomePopovers({
   const { handleLint, compileBlocked, compileTransfer, agentOnlyReason } = turns;
   const { agentDoor } = graphCards;
   const { compileTarget, homeClauses, homeDoors } = homeStrip;
-  const batch = compileBatchView(compileBatch, model, agent);
+  const batch = compileBatchView(compileBatch, model);
   return (
     <>
       <LibraryHomePopover
@@ -256,18 +256,13 @@ export function LibraryHomePopovers({
 }
 
 /**
- * The batch the press names. The local runner picks its own sources (`localCompile.targets`), so
- * its list is that runner's; the coding-agent route reads the session's batch when given one.
+ * The batch the press names: the session's batch, which on the local route holds only files that
+ * runner can open and is the list its brief and system prompt receive.
  */
 function compileBatchView(
   given: Pick<CompileBatchState, "targets" | "rest" | "returned"> | undefined,
   model: LibraryUiModel,
-  agent: ReturnType<typeof useLibraryAgent>,
 ): { paths: readonly string[]; rest: number; returned: number } {
-  if (agent.route === "local") {
-    const paths = agent.localCompile.targets;
-    return { paths, rest: Math.max(0, model.needsCompileCount - paths.length), returned: 0 };
-  }
   const batch = given ?? selectCompileBatch(model.sources);
   return {
     paths: batch.targets.map((row) => row.path),
