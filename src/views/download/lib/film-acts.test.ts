@@ -1,0 +1,37 @@
+import { describe, expect, it } from 'vitest';
+
+import { FADE_MS, FILM_MS, flight, flightMs, HOLD_MS, seamLight } from './film-acts';
+
+const CYCLE = FILM_MS + HOLD_MS + FADE_MS;
+const FRAME_60 = 1000 / 60;
+
+describe('the loop seam', () => {
+  it('is fully dark on both sides of the restart, so no value is seen to jump back', () => {
+    expect(seamLight(0, CYCLE)).toBe(0);
+    expect(seamLight(CYCLE, CYCLE)).toBe(0);
+    expect(seamLight(FILM_MS + HOLD_MS - 1, CYCLE)).toBe(1);
+  });
+
+  it('changes the canvas light by less than a quarter in any 60 Hz frame', () => {
+    let worst = 0;
+    for (let t = 0; t + FRAME_60 <= CYCLE; t += 1) worst = Math.max(worst, Math.abs(seamLight(t + FRAME_60, CYCLE) - seamLight(t, CYCLE)));
+    expect(worst).toBeLessThan(0.25);
+  });
+});
+
+describe('a flight', () => {
+  it('moves a mark less than 2.5% of a 1920 stage diagonal in any 60 Hz frame, however far its row', () => {
+    const limit = 0.025 * Math.hypot(1920, 960);
+    for (const length of [120, 600, 1400, 2200]) {
+      const ms = flightMs(length);
+      let worst = 0;
+      for (let t = 0; t + FRAME_60 <= ms; t += 1) worst = Math.max(worst, (flight(t + FRAME_60, 0, ms).p - flight(t, 0, ms).p) * length);
+      expect(worst, `${length}px`).toBeLessThan(limit);
+    }
+  });
+
+  it('keeps the spec\'s 640 ms for a near row and lands exactly', () => {
+    expect(flightMs(300)).toBe(640);
+    expect(flight(flightMs(1400), 0, flightMs(1400)).p).toBe(1);
+  });
+});
