@@ -385,3 +385,72 @@ describe('countWikiPages', () => {
     expect(countWikiPages(docs)).toBe(selectWikiPages(docs).length);
   });
 });
+
+describe('citations match files whatever Unicode form the page was written in', () => {
+  const name = '회의록';
+  const nfc = `sources/${name.normalize('NFC')}.md`;
+  const nfd = `sources/${name.normalize('NFD')}.md`;
+
+  it.each([
+    ['both the list and the hash key', nfd, nfd],
+    ['only the hash key', nfc, nfd],
+    ['only the list', nfd, nfc],
+  ])('matches a decomposed Hangul path in %s', (_, listed, keyed) => {
+    const model = buildLibraryModel({
+      docs: [wiki('wiki/minutes', { sources: [listed], source_hash: { [keyed]: PLAN_HASH }, compiled_at: '2026-11-19' })],
+      sources: [source(nfc)],
+      hashes: new Map([[nfc, PLAN_HASH]]),
+    });
+    expect(model.sources[0].state).toBe('compiled');
+    expect(model.pairing.originalsByWiki.get('wiki/minutes')?.[0].state).toBe('compiled');
+    expect(model.pairing.writeUpsBySource.get(nfc)?.[0].freshness).toBe('current');
+    expect(model.wikiPages[0].sourcePaths).toEqual([nfc]);
+  });
+
+  it('marks a decomposed path read in part as partial', () => {
+    const model = buildLibraryModel({
+      docs: [wiki('wiki/minutes', { sources: [nfc], source_hash: { [nfc]: PLAN_HASH }, sources_truncated: [nfd] })],
+      sources: [source(nfc)],
+      hashes: new Map([[nfc, PLAN_HASH]]),
+    });
+    expect(model.sources[0].state).toBe('partial');
+  });
+});
+
+describe('a cited file that cannot be opened', () => {
+  const docs = [wiki('wiki/quarter-plan', { sources: ['sources/plan.pdf'], source_hash: { 'sources/plan.pdf': PLAN_HASH } })];
+  const model = buildLibraryModel({ docs, sources: [SOURCES[0]], hashes: new Map(), unreadable: new Set(['sources/plan.pdf']) });
+
+  it('reads as unreadable rather than checking, and is not asked for again', () => {
+    expect(model.sources[0].state).toBe('unreadable');
+    expect(model.pathsNeedingHash).toEqual([]);
+    expect(model.needsCompileCount).toBe(0);
+    expect(model.pairing.originalsByWiki.get('wiki/quarter-plan')?.[0].state).toBe('unreadable');
+  });
+
+  it('still reads stale when no citing page recorded a hash to check', () => {
+    const loose = buildLibraryModel({
+      docs: [wiki('wiki/loose', { sources: ['sources/plan.pdf'] })],
+      sources: [SOURCES[0]], hashes: new Map(), unreadable: new Set(['sources/plan.pdf']),
+    });
+    expect(loose.sources[0].state).toBe('stale');
+  });
+});
+
+describe('a compiled source names the pages that cover it and when they were written', () => {
+  it('lists only matching pages read whole, each with its compiled_at', () => {
+    const model = buildLibraryModel({
+      docs: [
+        ...DOCS,
+        wiki('wiki/excerpt', { sources: ['sources/plan.pdf'], source_hash: { 'sources/plan.pdf': PLAN_HASH }, sources_truncated: ['sources/plan.pdf'] }),
+      ],
+      sources: SOURCES,
+      hashes: new Map([['sources/plan.pdf', PLAN_HASH]]),
+    });
+    expect(model.sources[0].coveredBy).toEqual([{
+      wikiSlug: 'wiki/quarter-plan', sourcePath: 'sources/plan.pdf', sourceHash: PLAN_HASH,
+      truncated: false, compiledAt: '2026-09-05T10:00:00Z',
+    }]);
+    expect(model.sources[1].coveredBy).toEqual([]);
+  });
+});

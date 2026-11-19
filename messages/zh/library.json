@@ -173,6 +173,10 @@
       "checking": {
         "label": "检查中",
         "hint": "正在读取此文件，确认 Wiki 页面是否仍与它一致。"
+      },
+      "unreadable": {
+        "label": "无法读取",
+        "hint": "Atlas 无法打开此文件进行检查，因此未计入。请重新连接其所在磁盘或检查文件权限。"
       }
     },
     "added": "已有 {count} 份文档添加到 sources/",
@@ -189,7 +193,9 @@
     "importTooltip": "选择并连接服务，再指定要导入此文件夹的文档",
     "importedToPlanning": "导入的文档已放入规划文件夹",
     "openPlanning": "在规划中打开",
-    "pagesNeedReview": "{count} 个现有页面需要重新检查"
+    "pagesNeedReview": "{count} 个现有页面需要重新检查",
+    "filterShow": "只显示\"{label}\"的来源",
+    "filterAll": "显示全部 {count, number} 份"
   },
   "wiki": {
     "listAria": "此文件夹中的 Wiki 页面",
@@ -947,5 +953,20 @@
       "valueMinutes": "每 {count} 分钟",
       "valueHours": "每 {count} 小时"
     }
+  },
+  "progress": {
+    "aria": "来源 Wiki 页面进度",
+    "percent": "{percent, number}%",
+    "underOne": "不到 1%",
+    "first": "还没有来源有 Wiki 页面",
+    "today": "今天 +{count, number}",
+    "chartAria": "有 Wiki 页面的来源数量，按各页面记录的日期",
+    "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
+    "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
+    "undated": "{count, number} 份没有日期",
+    "continue": "{count, plural, =1 {为最后一份来源生成 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
+    "batchRest": "之后还有 {count, number} 份等待。",
+    "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
+    "allDone": "每份来源都有 Wiki 页面"
   }
 }

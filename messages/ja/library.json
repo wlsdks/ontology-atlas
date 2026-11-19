@@ -173,6 +173,10 @@
       "checking": {
         "label": "確認中",
         "hint": "Wikiページが今のファイルと合っているか確かめるため、読み込んでいます。"
+      },
+      "unreadable": {
+        "label": "読み込めない",
+        "hint": "Atlasがこのファイルを開いて確認できなかったため、数に入れていません。ディスクを再接続するか、ファイルの権限を確認してください。"
       }
     },
     "added": "文書{count, number}件を「sources/」に追加しました",
@@ -189,7 +193,9 @@
     "importTooltip": "サービスを選んで接続し、このフォルダに取り込む文書を指定します",
     "importedToPlanning": "取り込んだ文書を企画フォルダに入れました",
     "openPlanning": "企画で開く",
-    "pagesNeedReview": "再確認が必要な既存ページ{count, number}件"
+    "pagesNeedReview": "再確認が必要な既存ページ{count, number}件",
+    "filterShow": "「{label}」のソースだけ表示",
+    "filterAll": "全{count, number}件を表示"
   },
   "wiki": {
     "listAria": "このフォルダのWikiページ",
@@ -947,5 +953,20 @@
       "valueMinutes": "{count, number}分ごと",
       "valueHours": "{count, number}時間ごと"
     }
+  },
+  "progress": {
+    "aria": "ソースのWikiページ進捗",
+    "percent": "{percent, number}%",
+    "underOne": "1%未満",
+    "first": "Wikiページがあるソースはまだありません",
+    "today": "今日 +{count, number}",
+    "chartAria": "Wikiページがあるソースの数（各ページに記された日付順）",
+    "point": "{date}：現在のソース{total, number}件中{count, number}件（{percent, number}%）",
+    "dateBasis": "各点はWikiページに記された日付です。",
+    "undated": "日付なし{count, number}件",
+    "continue": "{count, plural, =1 {最後のソースのWikiページを作成} other {次の#件のWikiページを作成}}",
+    "batchRest": "この後に{count, number}件が待っています。",
+    "batchReturned": "前回のリクエストのソース{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
+    "allDone": "すべてのソースにWikiページがあります"
   }
 }

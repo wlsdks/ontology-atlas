@@ -180,15 +180,25 @@ export async function nativeVaultFileHashes(
   rootPath: string,
   relativePaths: readonly string[],
 ): Promise<Map<string, string> | null> {
+  const results = await nativeVaultFileHashResults(rootPath, relativePaths);
+  if (!results) return null;
+  const out = new Map<string, string>();
+  for (const [path, sha256] of results) if (sha256) out.set(path, sha256);
+  return out;
+}
+
+/** Every asked path with its sha256, or `null` for a file the app could not open. */
+export async function nativeVaultFileHashResults(
+  rootPath: string,
+  relativePaths: readonly string[],
+): Promise<Map<string, string | null> | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
   const rows = await invoke<Array<{ relativePath: string; sha256: string | null }>>(
     'hash_vault_files',
     { rootPath, relativePaths: [...relativePaths] },
   );
-  const out = new Map<string, string>();
-  for (const row of rows) if (row.sha256) out.set(row.relativePath, row.sha256);
-  return out;
+  return new Map(rows.map((row) => [row.relativePath, row.sha256 || null] as const));
 }
 
 /**
