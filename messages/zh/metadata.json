@@ -20,11 +20,17 @@
     "docs": "直接阅读和编辑 Markdown 文件夹。改动文件顶部的信息块，地图随之更新。",
     "projects": "这张地图上的所有项目和枢纽，以及各自包含的领域和能力。",
     "guide": "从 Markdown 文件夹开始，连接你的编码智能体，学习如何在 Ontology Atlas 中查看已记录的语义、依据和未知项。",
-    "changelog": "Ontology Atlas 更新日志：用户可见的变更，最新的在前。",
+    "changelog": "Ontology Atlas 更新日志：按版本列出桌面应用、地图、MCP 服务器和 CLI 中用户可见的变化，附发布日期，最新的排在最前。正文为英文。",
     "library": "收集来源，写成 Wiki 页面，并就内容提问，回答会标出引用的段落。全部在本地 Markdown 文件夹中完成。",
     "agents": "查看这台电脑上的编码智能体，并通过 MCP 把它们连接到 Ontology Atlas。",
     "automations": "可以定时安排本体审查和文档检查。它们在你的电脑上运行，结果以建议的形式留下，由你确认后再采纳。",
     "git": "查看文件夹的 Git 历史，把每次变更当作文档来阅读，并可单独恢复某一个文件。"
+  },
+  "projectTitles": {
+    "ontologyAtlas": "Ontology Atlas 的构成：它自己的本体"
+  },
+  "projectDescriptions": {
+    "ontologyAtlas": "用 Ontology Atlas 自己的本体描述它本身：构成产品的各个领域、每个领域负责的能力，以及它们之间的依赖关系，在一张图上看清它的整体结构。"
   },
   "guideDescriptions": {
     "whatIsAnOntology": "什么是本体：由概念、类型、关系和约定的含义组成；它与分类体系、模式（schema）和知识图谱有何区别，以及代码库的本体是什么样子。",

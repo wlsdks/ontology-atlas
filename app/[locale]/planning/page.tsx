@@ -6,6 +6,6 @@ import { PlanningPage } from '@/views/planning';
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'planning' });
-  return buildPageMetadata({ locale, path: 'planning', title: t('title'), description: t('chooseBody') });
+  return buildPageMetadata({ locale, path: 'planning', title: t('title'), description: t('chooseBody'), noindex: true });
 }
 export default function Page() { return <PlanningPage />; }

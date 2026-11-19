@@ -53,6 +53,8 @@ export interface GatewayDocPageProps {
   activeSegment?: string;
   /** This document's own `## ` entries on the left (the changelog): anchors inside one document, unlike `sidebar`'s routes. */
   entryNav?: boolean;
+  /** "Updated <date>" under the title, formatted by the route from the body's last commit. */
+  updated?: { dateTime: string; label: string };
 }
 
 export function GatewayDocPage({
@@ -65,6 +67,7 @@ export function GatewayDocPage({
   sidebar = false,
   activeSegment,
   entryNav = false,
+  updated,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
   /* A body not yet in the reader's language says so, and the article carries its language for screen readers. */
@@ -169,6 +172,14 @@ export function GatewayDocPage({
                 {lead}
               </p>
             ) : null}
+            {updated ? (
+              <p
+                data-testid="gateway-doc-updated"
+                className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]"
+              >
+                <time dateTime={updated.dateTime}>{updated.label}</time>
+              </p>
+            ) : null}
             {bodyIsForeign ? (
               <p
                 data-testid="gateway-doc-language-note"
@@ -269,7 +280,7 @@ function resolveProseHref(href: string, locale: string): string {
  * `.prose-link` (`.claude/rules/design.md`). `tests/contract/routes/guide-inbody-links.contract.test.ts`
  * checks where it points and `tests/e2e/gateway/guide-inbody-links.spec.ts` that it returns 200.
  */
-function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'a'>) {
+function ProseLink({ href, children, node: _node, ...rest }: React.ComponentPropsWithoutRef<'a'> & { node?: unknown }) {
   const locale = useLocale();
   const target = href ?? '';
   const external = /^https?:\/\//.test(target);
@@ -289,8 +300,8 @@ function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'
  * The prose component map, deliberately not shared with `widgets/docs-vault`, whose work-surface
  * machinery is dead weight here; both use the same ramp tokens.
  */
-const PROSE_COMPONENTS: Components = {
-  h2: ({ children, ...rest }) => (
+export const PROSE_COMPONENTS: Components = {
+  h2: ({ children, node: _node, ...rest }) => (
     <h2
       className="mt-12 mb-3 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       {...rest}
@@ -298,7 +309,7 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </h2>
   ),
-  h3: ({ children, ...rest }) => (
+  h3: ({ children, node: _node, ...rest }) => (
     <h3
       className="mt-8 mb-2 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       {...rest}
@@ -306,7 +317,7 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </h3>
   ),
-  p: ({ children, ...rest }) => (
+  p: ({ children, node: _node, ...rest }) => (
     <p
       className="my-4 text-reading leading-prose text-[color:var(--color-text-secondary)]"
       {...rest}
@@ -314,7 +325,7 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </p>
   ),
-  ul: ({ children, ...rest }) => (
+  ul: ({ children, node: _node, ...rest }) => (
     <ul
       className="my-4 list-disc pl-6 text-reading leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
       {...rest}
@@ -322,7 +333,7 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </ul>
   ),
-  ol: ({ children, ...rest }) => (
+  ol: ({ children, node: _node, ...rest }) => (
     <ol
       className="my-4 list-decimal pl-6 text-reading leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
       {...rest}
@@ -330,17 +341,17 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </ol>
   ),
-  li: ({ children, ...rest }) => (
+  li: ({ children, node: _node, ...rest }) => (
     <li className="my-1.5" {...rest}>
       {children}
     </li>
   ),
-  strong: ({ children, ...rest }) => (
+  strong: ({ children, node: _node, ...rest }) => (
     <strong className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" {...rest}>
       {children}
     </strong>
   ),
-  blockquote: ({ children, ...rest }) => (
+  blockquote: ({ children, node: _node, ...rest }) => (
     <blockquote
       className="my-6 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-4 text-reading leading-prose text-[color:var(--color-text-tertiary)]"
       {...rest}
@@ -349,7 +360,7 @@ const PROSE_COMPONENTS: Components = {
     </blockquote>
   ),
   hr: () => <hr className="my-12 border-t border-[color:var(--color-divider)]" />,
-  code: ({ className, children, ...rest }) => {
+  code: ({ className, children, node: _node, ...rest }) => {
     const isBlock = /language-/.test(className ?? '');
     if (!isBlock) {
       return (
@@ -367,7 +378,7 @@ const PROSE_COMPONENTS: Components = {
       </code>
     );
   },
-  pre: ({ children, ...rest }) => (
+  pre: ({ children, node: _node, ...rest }) => (
     <pre
       className="my-6 overflow-x-auto rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-4 font-mono text-label leading-body text-[color:var(--color-indigo-pale-a92)] md:text-body"
       {...rest}
@@ -376,7 +387,7 @@ const PROSE_COMPONENTS: Components = {
     </pre>
   ),
   // A wide table scrolls inside its own box, so the body never scrolls sideways.
-  table: ({ children, ...rest }) => (
+  table: ({ children, node: _node, ...rest }) => (
     <div className="my-6 overflow-x-auto">
       <table
         className="w-full border-collapse text-body leading-body text-[color:var(--color-text-secondary)]"
@@ -386,7 +397,7 @@ const PROSE_COMPONENTS: Components = {
       </table>
     </div>
   ),
-  th: ({ children, ...rest }) => (
+  th: ({ children, node: _node, ...rest }) => (
     <th
       className="border-b border-[color:var(--color-divider)] px-2 py-2 text-left font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
       {...rest}
@@ -394,7 +405,7 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </th>
   ),
-  td: ({ children, ...rest }) => (
+  td: ({ children, node: _node, ...rest }) => (
     <td className="border-b border-[color:var(--color-overlay-1)] px-2 py-2 align-top" {...rest}>
       {children}
     </td>
@@ -603,10 +614,10 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
  * The prose map plus `h2` anchor ids taken verbatim from the list's function. `scroll-mt` clears
  * the sticky top bar, or an anchored heading would hide behind it.
  */
-function proseComponentsWithAnchors(headingIds: Map<string, string>): Components {
+export function proseComponentsWithAnchors(headingIds: Map<string, string>): Components {
   return {
     ...PROSE_COMPONENTS,
-    h2: ({ children, ...rest }) => (
+    h2: ({ children, node: _node, ...rest }) => (
       <h2
         id={headingIds.get(normalizeHeadingKey(flattenText(children)))}
         className="mt-12 mb-3 scroll-mt-24 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"

@@ -12,6 +12,7 @@
   "truncatedNote": "已隐藏 {count} 条较早的记录，此列表只显示最近的。",
   "emptyBody": "此版本未包含该文档，原文在代码仓库中。",
   "readFullSource": "在 GitHub 阅读全文",
+  "updatedOn": "最后更新：{date}",
   "guidePages": {
     "whatIsAtlas": "什么是 Ontology Atlas？",
     "whatIsAnOntology": "什么是本体（Ontology）？",

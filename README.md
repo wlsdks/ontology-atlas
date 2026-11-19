@@ -178,7 +178,7 @@ pre-push and CI, merging, and lane budgets.
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Merge a pull request: on its own CI when its branch contains main and no train overlaps, otherwise on a train; and show the queue. While `main`'s full browser run is red it names the failing specs and still merges |
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
-| `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
+| `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, every other indexable page consolidates into a sitemap URL, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
 | `pnpm ui:audit -- --url=<base> --route=<path> [--setup=<module.mjs>]` | Prepare an interactive state with an optional local module, then measure rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
 | `pnpm unit:durations -- <timings dir>` | Rebalances the Unit · Contract shards from downloaded `vitest-timings-*` artifacts of a full run |

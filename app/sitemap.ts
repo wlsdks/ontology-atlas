@@ -1,10 +1,16 @@
-import { execFileSync } from 'node:child_process';
 import type { MetadataRoute } from 'next';
-import { deriveBundledProjects } from '@/entities/docs-vault';
+import { deriveIndexedProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
+import { lastCommitDate } from '@/shared/lib/public-pages/source-dates';
 import { LOCALE_META } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
-import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, guideCanonicalPath, guideSourcePath } from '@/views/gateway-doc';
+import {
+  CHANGELOG_CONTENT_LOCALES,
+  GUIDE_ENTRY_PAGE,
+  GUIDE_PAGES,
+  guideCanonicalPath,
+  guideSourcePath,
+} from '@/views/gateway-doc';
 
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
@@ -41,25 +47,19 @@ function sourcesOf(route: string, locale: string): string[] {
   ];
 }
 
-/** Google uses `lastmod` only when it is verifiably accurate, so it comes from Git or is omitted. */
-function lastCommitDate(paths: string[]): string | undefined {
-  try {
-    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', ...paths], { encoding: 'utf8' }).trim();
-    return out || undefined;
-  } catch {
-    return undefined;
-  }
-}
+/** Locales whose copy of a route is a page of record; the rest canonicalize elsewhere (`buildPageMetadata`). */
+const localesOf = (route: string): readonly string[] =>
+  route === 'changelog' ? CHANGELOG_CONTENT_LOCALES : routing.locales;
 
 const hreflangOf = (locale: string): string =>
   (LOCALE_META as Record<string, { hreflang: string }>)[locale]?.hreflang ?? locale;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /**
-   * The project list must come from the same source as route generation, `bundledProjectSlugs()`, or
-   * built pages go missing from the sitemap.
+   * The project list comes from the same source as route generation, `bundledProjectSlugs()`, less
+   * the demo samples, whose pages are noindex (`app/[locale]/project/[slug]/page.tsx`).
    */
-  const projects = deriveBundledProjects();
+  const projects = deriveIndexedProjects();
   const entries: MetadataRoute.Sitemap = [];
   const modified = new Map(
     routing.locales.flatMap((locale) =>
@@ -72,6 +72,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // which Google uses to pick the right localized URL for a user.
   for (const locale of routing.locales) {
     for (const route of STATIC_ROUTES) {
+      const ownLocales = localesOf(route);
+      if (!ownLocales.includes(locale)) continue;
       const path = `/${locale}/${route}/`;
       const lastModified = modified.get(`${locale}/${route}`);
       entries.push({
@@ -84,12 +86,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           // are ignored.
           languages: {
             ...Object.fromEntries(
-              routing.locales.map((l) => [
+              ownLocales.map((l) => [
                 hreflangOf(l),
                 `${SITE_URL}/${l}/${route}/`,
               ])
             ),
-            'x-default': `${SITE_URL}/${routing.defaultLocale}/${route}/`,
+            'x-default': `${SITE_URL}/${ownLocales[0]}/${route}/`,
           },
         },
       });

@@ -7,3 +7,5 @@ export {
   guideCanonicalPath,
   resolveGuidePage,
 } from './model/guide-pages';
+export { CHANGELOG_CONTENT_LOCALES } from './model/changelog';
+export { guideChapterMeta } from './lib/guide-chapter-meta';
