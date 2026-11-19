@@ -126,6 +126,55 @@ describe('a symbol read over hostile source stays within the budget', () => {
   });
 });
 
+/*
+ * A callee's text was once scanned for calls with a pattern that restarted at
+ * every character of a long identifier: one 250 KB line in a callee took 40 s.
+ * Calls are found one identifier at a time, a line over 2,000 characters is not
+ * scanned, and a file's import lines are read with the same caps.
+ */
+describe('a symbol read over a hostile callee or import block stays within the budget', () => {
+  const entry = (imports) => `${imports}\nexport function entry(x) {\n  if (x) return helper(x);\n  return 0;\n}\n`;
+  const helper = (lines) => `export function helper(x) {\n${lines}  if (x) throw new Error('no');\n  return inner(x);\n}\nexport function inner(x) {\n  if (x) return 1;\n  return 2;\n}\n`;
+  const spaces = ' '.repeat(1990);
+  const cases = [
+    ['a callee line of 250 KB of word characters', { 'src/entry.ts': entry("import { helper } from './helper';"), 'src/helper.ts': helper(`  ${'a'.repeat(250 * 1024)}\n`) }],
+    ['200 callee lines of 1,900 word characters', { 'src/entry.ts': entry("import { helper } from './helper';"), 'src/helper.ts': helper(`  ${'a'.repeat(1900)}(\n`.repeat(200)) }],
+    ['200 callee condition lines of 1,900 word characters', { 'src/entry.ts': entry("import { helper } from './helper';"), 'src/helper.ts': helper(`  if (${'a'.repeat(1900)}) x;\n`.repeat(200)) }],
+    ['import lines that never name a module', { 'src/entry.ts': entry(linesOf(`import {${spaces}a`)), 'src/helper.ts': helper('') }],
+    ['import lines of space runs between names', { 'src/entry.ts': entry(linesOf(`import { a${spaces.slice(0, 900)}as${spaces.slice(0, 900)}b`)), 'src/helper.ts': helper('') }],
+  ];
+  const python = [
+    ['an unclosed Python import list of space runs', `from pkg import (\n${linesOf(`    a${spaces.slice(0, 900)}as${spaces.slice(0, 900)}b,`)}`],
+    ['Python import lines of dotted names', linesOf(`from ${'a.'.repeat(990)} x`)],
+  ];
+  const rust = [
+    ['Rust use lines that never end', linesOf(`use a${spaces.slice(0, 900)}::${spaces.slice(0, 900)}b`)],
+  ];
+  it('reads a symbol whose callee or own imports are 256 KiB of each hostile shape', (t) => {
+    for (const [name, files] of cases) {
+      const root = repoWith(Object.fromEntries(Object.entries(files).map(([path, text]) => [path, text.slice(0, FILE_BYTES * 2)])));
+      assertWithinBudget(t, name, () => {
+        const [row] = readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
+        assert.equal(row.status, 'read');
+      });
+    }
+    for (const [name, imports] of python) {
+      const root = repoWith({ 'pkg/entry.py': `${imports.slice(0, FILE_BYTES)}\n\n\ndef entry(x):\n    if x:\n        return helper(x)\n    return 0\n`, 'pkg/helper.py': 'def helper(x):\n    return x\n' });
+      assertWithinBudget(t, name, () => {
+        const [row] = readSourceEvidence(root, [{ path: 'pkg/entry.py', symbol: 'entry' }]).rows;
+        assert.equal(row.status, 'read');
+      });
+    }
+    for (const [name, imports] of rust) {
+      const root = repoWith({ 'src/lib.rs': `${imports.slice(0, FILE_BYTES)};\n\npub fn entry(x: u8) -> u8 {\n    if x > 1 { return helper(x); }\n    0\n}\n`, 'src/helper.rs': 'pub fn helper(x: u8) -> u8 {\n    x\n}\n' });
+      assertWithinBudget(t, name, () => {
+        const [row] = readSourceEvidence(root, [{ path: 'src/lib.rs', symbol: 'entry' }]).rows;
+        assert.equal(row.status, 'read');
+      });
+    }
+  });
+});
+
 describe('hostile document sources cost time linear in their size', () => {
   const workbook = { name: 'xl/workbook.xml', text: '<sheet name="a" r:id="r1"/>' };
   const zipped = (...entries) => Buffer.from(zipFile(entries));

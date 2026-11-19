@@ -1,19 +1,26 @@
 /**
  * The functions a body calls that the repository declares, each with the file
- * and line to read next. How a call is written decides where it leads:
+ * and line to read next. A call is followed only where the file can reach it,
+ * in its own language:
  * - `self.check(` / `this.check(` / a Go receiver's `r.check(` is the owner's
- *   own method, found in the owner, then in the classes it extends, so an
- *   override wins over the base it replaces;
+ *   own method, found in the owner, then in the classes it extends (local or
+ *   imported), so an override wins over the base it replaces;
  * - `self.store.save(` is a method of a field, whose type the text does not
- *   name: never the owner's own `save`, and when several types in one folder
- *   declare it (an interface's implementations live beside each other), each is
- *   listed as one implementation;
- * - a bare `check(` or `pkg.Check(` is found by name, first in the same file.
+ *   name: never the owner's own `save`, only one declared in this file or a
+ *   module it imports (a Go package it imports or shares), and when several
+ *   types in one folder declare it (an interface's implementations live beside
+ *   each other), each is listed as one implementation;
+ * - a bare `check(` is declared in this file, imported into it by name, or (Go)
+ *   declared in its package; `pkg.Check(` names an imported module or package;
+ * - any other `x.check(` (`map.get(`, `items.includes(`) is a method of a value
+ *   whose type the text does not name, and is not followed.
  * A name declared in more places than these allow is left out: following it
- * would be a guess.
+ * would be a guess. A line over `LINE_CHARS` characters is generated or
+ * minified and is not scanned for calls.
  */
 
 import { declarationIndex } from './declaration-index.mjs';
+import { childSpec, importsOf, languageOf, specReaches } from './import-bindings.mjs';
 
 const CALLEE_LIMITS = Object.freeze({
   callees: 12,
@@ -25,7 +32,9 @@ const CALLEE_LIMITS = Object.freeze({
   qualifier: 120,
 });
 
-const CALL = /([A-Za-z_$][\w$]*)\s*\(/gu;
+// A line longer than this is generated or minified: its calls are not followed.
+const LINE_CHARS = 2000;
+const IDENTIFIER = /[A-Za-z_$][\w$]*/gu;
 const NOT_A_CALLEE = new Set([
   'if', 'for', 'while', 'switch', 'catch', 'return', 'function', 'func', 'def', 'class', 'new', 'typeof',
   'await', 'yield', 'super', 'print', 'len', 'make', 'append', 'cap', 'panic', 'require', 'import',
@@ -54,20 +63,51 @@ function qualifierOf(text, start) {
   return chain;
 }
 
-/** How each called name is written: `own` (the owner's method), `field`, or `name` (bare or a package). */
+/**
+ * Each identifier in `line` written as a call (`name(` or `name (`), with where
+ * it starts. One pass: an identifier is matched once, whole, then the
+ * character after its spaces is checked.
+ */
+export function callsOnLine(line) {
+  const calls = [];
+  if (line.length > LINE_CHARS) return calls;
+  IDENTIFIER.lastIndex = 0;
+  for (let match = IDENTIFIER.exec(line); match; match = IDENTIFIER.exec(line)) {
+    let next = IDENTIFIER.lastIndex;
+    while (line[next] === ' ' || line[next] === '\t') next += 1;
+    if (line[next] === '(') calls.push({ name: match[0], index: match.index });
+  }
+  return calls;
+}
+
+/**
+ * How each called name is written: `own` (the owner's method), `field` (a
+ * method of the owner's field), `name` (bare), `qualified` (after a module or
+ * value, `chain` names it) or `expression` (after a call or index).
+ */
 function callsIn(text, selfNames) {
   const calls = [];
   const seen = new Set();
-  for (const match of text.matchAll(CALL)) {
-    const name = match[1];
-    if (NOT_A_CALLEE.has(name)) continue;
-    const chain = qualifierOf(text, match.index);
-    const segments = chain ? chain.split('.').filter(Boolean) : [];
-    const via = segments.length === 0 || !selfNames.has(segments[0]) ? 'name' : segments.length === 1 ? 'own' : 'field';
-    const key = `${via === 'field' ? 'field' : 'name'}\0${name}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    calls.push({ name, via });
+  let start = 0;
+  while (start < text.length) {
+    let end = text.indexOf('\n', start);
+    if (end < 0) end = text.length;
+    const line = text.slice(start, end);
+    start = end + 1;
+    for (const { name, index } of callsOnLine(line)) {
+      if (NOT_A_CALLEE.has(name)) continue;
+      const chain = qualifierOf(line, index);
+      const segments = chain ? chain.split('.').filter(Boolean) : [];
+      const via = chain === null ? 'expression'
+        : segments.length === 0 ? 'name'
+          : selfNames.has(segments[0]) ? (segments.length === 1 ? 'own' : 'field')
+            : 'qualified';
+      if (via === 'expression') continue;
+      const key = `${via}\0${via === 'qualified' ? chain : ''}\0${name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      calls.push({ name, via, chain });
+    }
   }
   return calls;
 }
@@ -121,7 +161,9 @@ function memberOf(file, owner, name) {
 
 /** The names a class line says it extends: `class A(B, mod.C):` or `class A extends B`. */
 function basesOf(file, owner) {
-  const line = String(file.lines[owner.line - 1] ?? '').trim();
+  const raw = String(file.lines[owner.line - 1] ?? '');
+  if (raw.length > LINE_CHARS) return [];
+  const line = raw.trim();
   const python = PYTHON_BASES.exec(line);
   if (python) {
     return python[1].split(',').map((part) => part.trim().split('[')[0].split('.').pop())
@@ -135,7 +177,7 @@ function basesOf(file, owner) {
  * The owner's own method `name`, or the nearest class it extends that declares
  * it. A class name declared in more than two places is not followed.
  */
-function inheritedMember({ file, owner, name, open, index }) {
+function inheritedMember({ file, owner, name, open, index, reaches }) {
   let current = { file, owner };
   const visited = new Set();
   for (let level = 0; level <= CALLEE_LIMITS.bases && current; level += 1) {
@@ -151,7 +193,7 @@ function inheritedMember({ file, owner, name, open, index }) {
       current = { file: current.file, owner: local };
       continue;
     }
-    const rows = (index().get(base) ?? []).filter((row) => row.kind === 'class');
+    const rows = (index().get(base) ?? []).filter((row) => row.kind === 'class' && reaches(current.file, base, row.path));
     if (rows.length !== 1) return null;
     const baseFile = open(rows[0].path);
     const baseOwner = baseFile?.declarations.find((candidate) => candidate.line === rows[0].line);
@@ -180,8 +222,20 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
   const ownType = declaration.name.includes('.') ? declaration.name.split('.')[0] : null;
   const selfNames = new Set(goReceiver ? [goReceiver[1]] : SELF_NAMES);
   const owner = goReceiver ? null : enclosingClass(file, declaration);
+  const language = languageOf(file.path);
+  const imports = importsOf(file);
   let built = null;
   const index = () => (built ??= rootPath ? declarationIndex(rootPath, { ignore, files: files?.() }) : new Map());
+  const lookup = (name) => [...(index().get(name) ?? []), ...(index().get(`*.${name}`) ?? [])];
+  const samePackage = (path) => language === 'go' && folderOf(path) === folderOf(file.path);
+  // Whether `from` can reach a declaration in `path`: the same file, its Go package, or a module it imports.
+  const reachesModule = (from, path) => path === from.path || (languageOf(path) === languageOf(from.path)
+    && ((languageOf(from.path) === 'go' && folderOf(path) === folderOf(from.path))
+      || importsOf(from).specs.some((spec) => specReaches(spec, path))));
+  // Whether `from` brings `name` declared in `path` into scope: imported by that name, or declared beside it.
+  const reachesName = (from, name, path) => path === from.path || (languageOf(path) === languageOf(from.path)
+    && ((languageOf(from.path) === 'go' && folderOf(path) === folderOf(from.path))
+      || (importsOf(from).names.get(name) ?? []).some((binding) => specReaches(binding.spec, path))));
   const ownDeclaration = (path, line) => path === file.path && line === declaration.line;
   const inOwner = (path, line) => path === file.path && owner && line > owner.line
     && line <= declarationEnd(file.lines, file.declarations, owner);
@@ -189,18 +243,19 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
   const push = (row) => {
     if (callees.length < CALLEE_LIMITS.callees && !callees.some((held) => held.path === row.path && held.line === row.line)) callees.push(row);
   };
-  for (const { name, via } of callsIn(text, selfNames)) {
+  const unique = (rows) => rows.filter((row, at) => rows.findIndex((other) => other.path === row.path && other.line === row.line) === at);
+  for (const { name, via, chain } of callsIn(text, selfNames)) {
     if (callees.length >= CALLEE_LIMITS.callees) break;
     if (via === 'own') {
       if (name === own) continue;
       if (goReceiver && ownType) {
-        const rows = index().get(`${ownType}.${name}`) ?? file.declarations.filter((candidate) => candidate.name === `${ownType}.${name}`).map((candidate) => ({ path: file.path, line: candidate.line }));
-        if (rows.length === 1) {
-          push({ name, path: rows[0].path, line: rows[0].line });
-          continue;
-        }
-      } else if (owner) {
-        const found = inheritedMember({ file, owner, name, open, index });
+        const rows = (index().get(`${ownType}.${name}`) ?? file.declarations.filter((candidate) => candidate.name === `${ownType}.${name}`).map((candidate) => ({ path: file.path, line: candidate.line })))
+          .filter((row) => row.path === file.path || samePackage(row.path));
+        if (rows.length === 1) push({ name, path: rows[0].path, line: rows[0].line });
+        continue;
+      }
+      if (owner) {
+        const found = inheritedMember({ file, owner, name, open, index, reaches: (from, base, path) => reachesName(from, base, path) });
         if (found) {
           push({ name, ...found });
           continue;
@@ -209,16 +264,24 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
     }
     if (via === 'field') {
       const local = file.declarations.filter((candidate) => isCode(candidate) && declares(candidate, name)).map((candidate) => ({ path: file.path, line: candidate.line, kind: candidate.kind, name: candidate.name }));
-      const elsewhere = rootPath
-        ? [...(index().get(name) ?? []), ...(index().get(`*.${name}`) ?? [])].filter((row) => row.path !== file.path)
-        : [];
-      const rows = [...local, ...elsewhere].filter((row) => row.kind === 'method' && !ownDeclaration(row.path, row.line)
-        && !inOwner(row.path, row.line) && !(ownType && row.name === `${ownType}.${name}`));
-      const unique = rows.filter((row, at) => rows.findIndex((other) => other.path === row.path && other.line === row.line) === at);
-      if (unique.length > 0 && unique.length <= 2) for (const row of unique) push({ name, path: row.path, line: row.line });
-      else if (unique.length > 2 && unique.length <= CALLEE_LIMITS.implementations && new Set(unique.map((row) => folderOf(row.path))).size === 1) {
-        for (const row of unique) push({ name, path: row.path, line: row.line, implementation: true });
+      const elsewhere = rootPath ? lookup(name).filter((row) => row.path !== file.path && reachesModule(file, row.path)) : [];
+      const rows = unique([...local, ...elsewhere].filter((row) => row.kind === 'method' && !ownDeclaration(row.path, row.line)
+        && !inOwner(row.path, row.line) && !(ownType && row.name === `${ownType}.${name}`)));
+      if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line });
+      else if (rows.length > 2 && rows.length <= CALLEE_LIMITS.implementations && new Set(rows.map((row) => folderOf(row.path))).size === 1) {
+        for (const row of rows) push({ name, path: row.path, line: row.line, implementation: true });
       }
+      continue;
+    }
+    if (via === 'qualified') {
+      // `pkg.Check(` or `ns.check(`: the module that name was imported as, and nothing else.
+      if (!rootPath) continue;
+      const imported = imports.modules.get(chain);
+      const specs = [imported, ...(imports.names.get(chain) ?? []).flatMap((binding) => [binding.spec, childSpec(binding.spec, binding.imported)])].filter(Boolean);
+      if (specs.length === 0) continue;
+      const rows = unique(lookup(name).filter((row) => languageOf(row.path) === language && row.path !== file.path
+        && specs.some((spec) => specReaches(spec, row.path))));
+      if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line });
       continue;
     }
     if (name === own) continue;
@@ -228,8 +291,13 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
       continue;
     }
     if (!rootPath) continue;
-    const elsewhere = [...(index().get(name) ?? []), ...(index().get(`*.${name}`) ?? [])].filter((row) => row.path !== file.path);
-    if (elsewhere.length > 0 && elsewhere.length <= 2) for (const row of elsewhere) push({ name, path: row.path, line: row.line });
+    const bindings = imports.names.get(name) ?? [];
+    const imported = bindings.length > 0
+      ? lookup(bindings[0].imported ?? name).filter((row) => row.path !== file.path && languageOf(row.path) === language
+        && bindings.some((binding) => specReaches(binding.spec, row.path)))
+      : lookup(name).filter((row) => row.path !== file.path && samePackage(row.path));
+    const rows = unique(imported);
+    if (rows.length > 0 && rows.length <= 2) for (const row of rows) push({ name, path: row.path, line: row.line });
   }
   return callees;
 }

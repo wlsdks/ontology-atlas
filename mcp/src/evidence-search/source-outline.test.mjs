@@ -430,3 +430,23 @@ test('is deterministic for the same text and path', () => {
   const text = 'func (c *Command) Run() error {\n\treturn nil\n}\n';
   assert.deepEqual(outlineSource(text, 'a.go'), outlineSource(text, 'a.go'));
 });
+
+test('a wrapped call is no method head: its parentheses must close, exactly, on the line that opens the body', () => {
+  const text = [
+    'export class Store {',                 // 1
+    '  save(input) {',                      // 2
+    '    register(',                        // 3
+    "      'event', function handler(a) {", // 4
+    '        return a;',                    // 5
+    '      });',                            // 6
+    '    guard(',                           // 7
+    '      input)) {',                      // 8
+    '    }',                                // 9
+    '  }',                                  // 10
+    '}',                                    // 11
+  ].join('\n');
+  assert.deepEqual(
+    outlineSource(text, 'store.ts').declarations.map((row) => [row.line, row.kind, row.name]),
+    [[1, 'class', 'Store'], [2, 'method', 'save']],
+  );
+});

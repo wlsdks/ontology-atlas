@@ -14,7 +14,7 @@
  * it exactly.
  */
 
-import { calleesOf, enclosingClass } from './callees.mjs';
+import { calleesOf, callsOnLine, enclosingClass } from './callees.mjs';
 import { callSitesOf } from './declaration-index.mjs';
 
 /**
@@ -47,7 +47,6 @@ export const SYMBOL_CONTEXT_LIMITS = Object.freeze({
 const CONDITION = /\b(?:if|elif|else|unless|switch|case|when|match|guard|while|raise|throw|except|catch|default)\b|\b(?:errors\.New|fmt\.Errorf)\(|\?\?|\|\||&&/u;
 /** A line that refuses: it throws, raises, panics or builds an error to return. */
 const REFUSAL = /\b(?:throw|raise|panic|errors\.New|fmt\.Errorf)\b/u;
-const CALLED = /([A-Za-z_$][\w$]*)\s*\(/gu;
 // A decisive line longer than this is generated or minified; only its head is examined.
 const DECIDE_CHARS = 2000;
 const SPACE = /\s/u;
@@ -90,7 +89,7 @@ function calledInConditions(lines) {
   for (const line of lines) {
     const head = line.length > DECIDE_CHARS ? line.slice(0, DECIDE_CHARS) : line;
     if (COMMENT.test(head) || !(CONDITION.test(head) || hasTernary(head))) continue;
-    for (const match of head.matchAll(CALLED)) names.add(match[1]);
+    for (const call of callsOnLine(head)) names.add(call.name);
   }
   return names;
 }

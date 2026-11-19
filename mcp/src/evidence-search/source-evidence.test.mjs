@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -315,6 +315,9 @@ test('a symbol read returns one declaration and names the callees it can follow'
   const root = fixture();
   mkdirSync(join(root, 'src'));
   writeFileSync(join(root, 'src', 'release.py'), [
+    'from bump import decide_bump',
+    '',
+    '',
     'class Release:',
     '    def ship(self, labels):',
     '        bump = decide_bump(labels)',
@@ -331,10 +334,10 @@ test('a symbol read returns one declaration and names the callees it can follow'
   const [row] = readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'Release.ship' }]).rows;
   assert.equal(row.status, 'read');
   assert.equal(row.symbol, 'Release.ship');
-  assert.deepEqual(row.actualRange, { startLine: 2, endLine: 4 });
+  assert.deepEqual(row.actualRange, { startLine: 5, endLine: 7 });
   assert.deepEqual(row.callees, [
     { name: 'decide_bump', path: 'src/bump.py', line: 1 },
-    { name: 'publish', path: 'src/release.py', line: 6 },
+    { name: 'publish', path: 'src/release.py', line: 9 },
   ]);
   assert.equal(row.next, null, 'a symbol read does not continue past its declaration');
   const [missing] = readSourceEvidence(root, [{ path: 'src/release.py', symbol: 'Release.cancel' }]).rows;
@@ -479,6 +482,8 @@ test('a field call lists the implementations it may reach, and serves the one th
   writeFileSync(join(root, 'service', 'service.go'), [
     'package service',
     '',
+    'import "example.com/app/store"',
+    '',
     'func (s *Service) Find(key string) error {',
     '\tinfo, err := s.store.Lookup(key)',
     '\treturn send(info, err)',
@@ -495,6 +500,13 @@ test('a field call lists the implementations it may reach, and serves the one th
   const served = row.context.filter((part) => part.role === 'implementation').map((part) => part.symbol).sort();
   assert.deepEqual(served, ['NullStore.Lookup', 'Remote.Lookup'], 'only the implementations that decide are served');
   assert.match(row.context.find((part) => part.symbol === 'Remote.Lookup').text, /lookup not supported/);
+
+  mkdirSync(join(root, 'cache'));
+  writeFileSync(join(root, 'store', 'remote.go'), 'package store\n');
+  writeFileSync(join(root, 'cache', 'cache.go'), 'package cache\n\nfunc (c *Cache) Lookup(key string) (*Info, error) {\n\treturn nil, errors.New("lookup not supported")\n}\n');
+  writeFileSync(join(root, 'service', 'service.go'), readFileSync(join(root, 'service', 'service.go'), 'utf8').replace('import "example.com/app/store"', 'import (\n\t"example.com/app/cache"\n\t"example.com/app/store"\n)'));
+  const [spread] = readSourceEvidence(root, [{ path: 'service/service.go', symbol: 'Service.Find' }]).rows;
+  assert.deepEqual(spread.callees.filter((callee) => callee.name === 'Lookup'), [], 'three declarations in two folders are a common name, not one interface');
 });
 
 test('a call on self reaches the override the owner inherits, not the base it replaces', () => {
@@ -591,6 +603,205 @@ test('a symbol read serves the rule one call deeper, through an accessor, and na
   assert.equal(deeper.cite, 'app/app.go:L23-L29');
   assert.equal(deeper.via, 'App.Routes');
   assert.equal(row.context.find((part) => part.symbol === 'App.Routes')?.via, 'App.newHandler');
+});
+
+/*
+ * A chain of short accessors once passed through one after another, so one
+ * read served 25 parts of a chain instead of the 3 it reaches.
+ */
+test('a short callee passes through to what it calls once, not down a chain', () => {
+  const root = fixture();
+  const step = (name, next) => [
+    `export function ${name}(x) {`,
+    `  if (x > 1) return ${next}(x);`,
+    '  if (x < 0) return 0;',
+    `  return ${next}(x - 1);`,
+    '}',
+    '',
+  ];
+  const names = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+  writeFileSync(join(root, 'chain.ts'), [
+    'export function entry(x) {',
+    '  return a(x);',
+    '}',
+    '',
+    ...names.flatMap((name, at) => step(name, names[at + 1] ?? 'stop')),
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'chain.ts', symbol: 'entry' }]).rows;
+  assert.deepEqual(row.context.map((part) => [part.symbol, part.via ?? null]), [['a', null], ['b', 'a'], ['c', 'b']]);
+});
+
+/*
+ * A call was once followed by its name alone: `items.includes(`, `map.get(` and
+ * `new Error(` reached any declaration of that name in the repository, in any
+ * language, and five capabilities "shared" an enum they never call.
+ */
+test('a call is followed only to a declaration the file reaches, in its own language', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  mkdirSync(join(root, 'native'));
+  mkdirSync(join(root, 'lib'));
+  writeFileSync(join(root, 'src', 'entry.ts'), [
+    "import { charge } from './billing';",
+    "import * as audit from '../lib/audit';",
+    'export function entry(items, map) {',
+    '  if (items.includes(map.get(1))) throw new Error(fold(items));',
+    '  audit.record(items);',
+    '  build().save(items);',
+    `  const note = "${'x'.repeat(2000)}"; settle(note);`,
+    '  return charge(items);',
+    '}',
+    'function save(x) {',
+    '  return x;',
+    '}',
+    'function settle(x) {',
+    '  return x;',
+    '}',
+    '',
+  ].join('\n'));
+  writeFileSync(join(root, 'src', 'billing.py'), 'def charge(items):\n    return 1\n');
+  writeFileSync(join(root, 'src', 'billing.ts'), 'export function charge(items) {\n  if (items.length === 0) throw new Error("empty");\n  return 1;\n}\n');
+  writeFileSync(join(root, 'src', 'other.ts'), 'export function fold(x) {\n  return x;\n}\nexport function record(x) {\n  return x;\n}\n');
+  writeFileSync(join(root, 'lib', 'audit.ts'), 'export function record(items) {\n  if (!items) return;\n  return items;\n}\n');
+  writeFileSync(join(root, 'src', 'search.ts'), 'export class Search {\n  includes(x) {\n    return x;\n  }\n  get(x) {\n    return x;\n  }\n}\n');
+  writeFileSync(join(root, 'native', 'lib.rs'), 'pub enum Error {\n    Io,\n}\npub fn charge() {}\n');
+  const [row] = readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
+  assert.deepEqual(row.callees.map((callee) => `${callee.name} ${callee.path}:${callee.line}`).sort(), [
+    'charge src/billing.ts:1',
+    'record lib/audit.ts:1',
+  ]);
+});
+
+test('a Go call reaches its own package and the packages it imports, nothing else', () => {
+  const root = fixture();
+  for (const folder of ['server', 'store', 'other']) mkdirSync(join(root, folder));
+  writeFileSync(join(root, 'server', 'server.go'), [
+    'package server',
+    '',
+    'import "example.com/app/store"',
+    '',
+    'func (s *Server) Serve() error {',
+    '\tif err := validate(s); err != nil {',
+    '\t\treturn err',
+    '\t}',
+    '\tstore.Save(s)',
+    '\ts.close()',
+    '\tplatform()',
+    '\treturn s.cache.Flush()',
+    '}',
+    '',
+  ].join('\n'));
+  for (const os of ['linux', 'darwin', 'windows']) writeFileSync(join(root, 'server', `platform_${os}.go`), 'package server\n\nfunc platform() {}\n');
+  writeFileSync(join(root, 'server', 'validate.go'), 'package server\n\nfunc validate(s *Server) error {\n\treturn nil\n}\n');
+  writeFileSync(join(root, 'store', 'store.go'), 'package store\n\nfunc Save(v any) {}\n');
+  writeFileSync(join(root, 'other', 'other.go'), 'package other\n\nfunc validate(v any) error {\n\treturn nil\n}\n\nfunc Save(v any) {}\n\nfunc (c *Cache) Flush() error {\n\treturn nil\n}\n\nfunc (s *Server) close() {}\n');
+  const [row] = readSourceEvidence(root, [{ path: 'server/server.go', symbol: 'Server.Serve' }]).rows;
+  assert.deepEqual(row.callees.map((callee) => `${callee.name} ${callee.path}`).sort(), ['Save store/store.go', 'validate server/validate.go']);
+});
+
+test('a Python call reaches the module it imports, and its base class only when imported', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'pkg'));
+  writeFileSync(join(root, 'pkg', '__init__.py'), '');
+  writeFileSync(join(root, 'pkg', 'job.py'), [
+    'from .limits import clamp',
+    'from pkg import queue',
+    '',
+    '',
+    'class Job(Base):',
+    '    def run(self, x):',
+    '        if self.check(x):',
+    '            return clamp(x)',
+    '        return queue.push(x)',
+    '',
+  ].join('\n'));
+  writeFileSync(join(root, 'pkg', 'limits.py'), 'def clamp(x):\n    return min(x, 3)\n');
+  writeFileSync(join(root, 'pkg', 'queue.py'), 'def push(x):\n    return x\n');
+  writeFileSync(join(root, 'pkg', 'base.py'), 'class Base:\n    def check(self, x):\n        return x > 0\n');
+  writeFileSync(join(root, 'pkg', 'other.py'), 'def clamp(x):\n    return x\n\ndef push(x):\n    return x\n');
+  const [row] = readSourceEvidence(root, [{ path: 'pkg/job.py', symbol: 'Job.run' }]).rows;
+  assert.deepEqual(row.callees.map((callee) => `${callee.name} ${callee.path}`).sort(), ['clamp pkg/limits.py', 'push pkg/queue.py']);
+  writeFileSync(join(root, 'pkg', 'job.py'), `from pkg.base import Base\n${readFileSync(join(root, 'pkg', 'job.py'), 'utf8')}`);
+  const [imported] = readSourceEvidence(root, [{ path: 'pkg/job.py', symbol: 'Job.run' }]).rows;
+  assert.ok(imported.callees.some((callee) => callee.name === 'check' && callee.path === 'pkg/base.py'), 'an imported base is followed');
+});
+
+test('one call deeper serves at most 24 parts, from up to six callees, each once', () => {
+  const root = fixture();
+  const leaf = (name) => `export function ${name}(x) {\n  if (x > 1) return 1;\n  if (x < 0) return 2;\n  return 0;\n}\n`;
+  const group = (prefix) => Array.from({ length: 12 }, (_, at) => `${prefix}${at}`);
+  const sets = [group('k'), group('k'), group('m'), group('n'), group('p'), group('q')];
+  const sources = sets.map((names, at) => `export function s${at}(x) {\n${names.map((name) => `  ${name}(x);\n`).join('')}}\n`);
+  const leaves = [...new Set(sets.flat())].map(leaf);
+  writeFileSync(join(root, 'fan.ts'), [
+    'export function entry(x) {',
+    ...sets.map((_, at) => `  s${at}(x);`),
+    '}',
+    '',
+    ...sources,
+    ...leaves,
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'fan.ts', symbol: 'entry' }]).rows;
+  const deeper = row.context.filter((part) => part.via);
+  assert.equal(deeper.length, 24, `served one call deeper: ${deeper.map((part) => part.symbol).join(', ')}`);
+  assert.equal(new Set(deeper.map((part) => part.symbol)).size, 24, 'each deeper callee once');
+  assert.deepEqual([...new Set(deeper.map((part) => part.via))].sort(), ['s0', 's2'], 's1 calls only what s0 already reached');
+
+  writeFileSync(join(root, 'wide.ts'), `export function entry(x) {\n${group('w').concat(['w12', 'w13', 'w14']).map((name) => `  ${name}(x);\n`).join('')}}\n${group('w').concat(['w12', 'w13', 'w14']).map(leaf).join('')}`);
+  assert.equal(readSourceEvidence(root, [{ path: 'wide.ts', symbol: 'entry' }]).rows[0].callees.length, 12, 'twelve callees listed at most');
+});
+
+test('a callee longer than an accessor is a level: what it calls is not served', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'level.ts'), [
+    'export function entry(x) {',
+    '  return a(x);',
+    '}',
+    'export function a(x) {',
+    '  if (x > 1) return long(x);',
+    '  if (x < 0) return 0;',
+    '  return 1;',
+    '}',
+    'export function long(x) {',
+    '  if (x > 1) return z(x);',
+    '  if (x < 0) return 0;',
+    '  const y = x * 2;',
+    '  const w = y + 1;',
+    '  const v = w + 1;',
+    '  const u = v + 1;',
+    '  return u;',
+    '}',
+    'export function z(x) {',
+    '  if (x > 1) return 1;',
+    '  if (x < 0) return 2;',
+    '  return 0;',
+    '}',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'level.ts', symbol: 'entry' }]).rows;
+  assert.deepEqual(row.context.map((part) => part.symbol), ['a', 'long']);
+});
+
+test('a callee is examined as far as a read serves it, past its first lines', () => {
+  const root = fixture();
+  writeFileSync(join(root, 'far.ts'), [
+    'export function entry(x) {',
+    '  return a(x);',
+    '}',
+    'export function a(x) {',
+    ...Array.from({ length: 8 }, (_, at) => `  const v${at} = x + ${at};`),
+    '  if (x > 1) return k(x);',
+    '  return 0;',
+    '}',
+    'export function k(x) {',
+    '  if (x > 1) return 1;',
+    '  if (x < 0) return 2;',
+    '  return 0;',
+    '}',
+    '',
+  ].join('\n'));
+  const [row] = readSourceEvidence(root, [{ path: 'far.ts', symbol: 'entry' }]).rows;
+  assert.ok(row.context.some((part) => part.symbol === 'k' && part.via === 'a'), row.context.map((part) => part.symbol).join(', '));
 });
 
 test('a symbol read serves the named constant its served code compares against', () => {
