@@ -26,6 +26,7 @@ import { basename, dirname, extname, posix } from 'node:path';
 
 import { declarationIndex } from '../evidence-search/declaration-index.mjs';
 import { documentedAbilities } from './documented-abilities.mjs';
+import { jvmAbilities } from './jvm-abilities.mjs';
 import { boundedLines, nameKey, operatorAbilities } from './operator-abilities.mjs';
 import { siblingFamilies } from './sibling-families.mjs';
 import { readSurveyText, surveyEntry } from './survey-paths.mjs';
@@ -403,6 +404,7 @@ export function abilitiesOf(rootPath, collection, entryPoints, { ignore = [], do
   }
   const operator = operatorAbilities(product, (path) => readText(rootPath, path));
   for (const row of [...operator.subcommands, ...operator.flags, ...operator.settings, ...operator.workers]) push(row, { merge: true });
+  for (const row of jvmAbilities(product, (path) => readText(rootPath, path))) push(row, { merge: row.kind === 'worker' });
   const documented = documentedAbilities((path, limit) => readText(rootPath, path, limit), documents, product, declarations());
   for (const row of documented) push(row, { merge: true });
   const shares = fairShares(counts, ABILITY_LIMIT);
