@@ -297,7 +297,8 @@ fn an_external_edit_delete_or_rename_while_open_is_seen_on_the_next_open() {
 
     // An in-place save that keeps the size and restores the modified time: only the change
     // time moves (Unix). Windows has none, so there this case is the documented blind spot.
-    let same = &files[0];
+    let same = files[0].clone();
+    let same = &same;
     let text = std::fs::read_to_string(root.join(same)).unwrap();
     let before = std::fs::metadata(root.join(same))
         .unwrap()
@@ -368,8 +369,14 @@ fn an_external_edit_delete_or_rename_while_open_is_seen_on_the_next_open() {
             "a renamed file was served from its old row: {path}"
         );
     }
-    let opened = open(&root, NS, &files);
-    assert_eq!(opened.values, from_files(&root, &files));
+    let mut opened = open(&root, NS, &files).values;
+    let mut expected = from_files(&root, &files);
+    if !cfg!(unix) {
+        // The blind spot above: the row is still served, and only that file may differ.
+        opened.remove(same);
+        expected.remove(same);
+    }
+    assert_eq!(opened, expected);
 }
 
 #[test]
