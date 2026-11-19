@@ -12,6 +12,7 @@
   "truncatedNote": "古い{count}件は非表示です。この一覧には最近のものだけを表示しています。",
   "emptyBody": "このビルドにはこの文書が含まれていません。原本はリポジトリにあります。",
   "readFullSource": "GitHubでファイル全文を読む",
+  "updatedOn": "最終更新日：{date}",
   "guidePages": {
     "whatIsAtlas": "Ontology Atlasとは",
     "whatIsAnOntology": "オントロジーとは",

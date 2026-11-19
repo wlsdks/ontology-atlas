@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import type { MetadataRoute } from 'next';
 import { deriveIndexedProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
+import { lastCommitDate } from '@/shared/lib/public-pages/source-dates';
 import { LOCALE_META } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
 import {
@@ -45,16 +45,6 @@ function sourcesOf(route: string, locale: string): string[] {
     `messages/${locale}/gatewayNav.json`,
     `messages/${locale}/metadata.json`,
   ];
-}
-
-/** Google uses `lastmod` only when it is verifiably accurate, so it comes from Git or is omitted. */
-function lastCommitDate(paths: string[]): string | undefined {
-  try {
-    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', ...paths], { encoding: 'utf8' }).trim();
-    return out || undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 /** Locales whose copy of a route is a page of record; the rest canonicalize elsewhere (`buildPageMetadata`). */

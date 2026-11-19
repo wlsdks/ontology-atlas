@@ -12,6 +12,7 @@
   "truncatedNote": "{count} older entries are hidden; this list shows only recent ones.",
   "emptyBody": "This build does not carry this document. The original is in the repository.",
   "readFullSource": "Read the full file on GitHub",
+  "updatedOn": "Updated {date}",
   "guidePages": {
     "whatIsAtlas": "What is Ontology Atlas?",
     "whatIsAnOntology": "What is an ontology?",

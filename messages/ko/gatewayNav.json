@@ -12,6 +12,7 @@
   "truncatedNote": "이전 항목 {count}개는 숨겼어요. 이 목록은 최근 항목만 보여줘요.",
   "emptyBody": "이 빌드에는 이 문서가 실려 있지 않아요. 원문은 저장소에서 읽을 수 있어요.",
   "readFullSource": "저장소에서 전문 읽기",
+  "updatedOn": "최종 수정: {date}",
   "guidePages": {
     "whatIsAtlas": "Ontology Atlas란?",
     "whatIsAnOntology": "온톨로지란?",

@@ -53,6 +53,8 @@ export interface GatewayDocPageProps {
   activeSegment?: string;
   /** This document's own `## ` entries on the left (the changelog): anchors inside one document, unlike `sidebar`'s routes. */
   entryNav?: boolean;
+  /** "Updated <date>" under the title, formatted by the route from the body's last commit. */
+  updated?: { dateTime: string; label: string };
 }
 
 export function GatewayDocPage({
@@ -65,6 +67,7 @@ export function GatewayDocPage({
   sidebar = false,
   activeSegment,
   entryNav = false,
+  updated,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
   /* A body not yet in the reader's language says so, and the article carries its language for screen readers. */
@@ -167,6 +170,14 @@ export function GatewayDocPage({
             {lead ? (
               <p className="mt-3 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
                 {lead}
+              </p>
+            ) : null}
+            {updated ? (
+              <p
+                data-testid="gateway-doc-updated"
+                className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]"
+              >
+                <time dateTime={updated.dateTime}>{updated.label}</time>
               </p>
             ) : null}
             {bodyIsForeign ? (

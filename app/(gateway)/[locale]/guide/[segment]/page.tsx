@@ -5,11 +5,13 @@ import {
   GUIDE_PAGES,
   GUIDE_ENTRY_PAGE,
   guideCanonicalPath,
+  guideChapterMeta,
   readGuideDocument,
   resolveGuidePage,
 } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { routing } from '@/i18n/routing';
+import { JsonLd } from '@/shared/ui';
 
 /**
  * Static export means every path is generated ahead of time, and the single source for the list is
@@ -28,17 +30,23 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, segment } = await params;
   const { page } = resolveGuidePage(segment);
-  const tNav = await getTranslations({ locale, namespace: 'gatewayNav' });
   const t = await getTranslations({ locale, namespace: 'metadata' });
-  return buildPageMetadata({
+  const chapter = await guideChapterMeta(page, locale, readGuideDocument(page, locale).sourcePath);
+  const base = buildPageMetadata({
     locale,
     path: guideCanonicalPath(page),
-    title: `${tNav(`guidePages.${page.titleKey}`)} · ${t('pages.guide')}`,
-    description:
-      page.segment === GUIDE_ENTRY_PAGE.segment
-        ? t('descriptions.guide')
-        : t(`guideDescriptions.${page.titleKey}`),
+    title: `${chapter.headline} · ${t('pages.guide')}`,
+    description: chapter.description,
   });
+  return {
+    ...base,
+    openGraph: {
+      ...base.openGraph,
+      type: 'article',
+      ...(chapter.datePublished ? { publishedTime: chapter.datePublished } : {}),
+      ...(chapter.dateModified ? { modifiedTime: chapter.dateModified } : {}),
+    },
+  };
 }
 
 export default async function Page({
@@ -50,20 +58,27 @@ export default async function Page({
   const { page, matched } = resolveGuidePage(segment);
   const t = await getTranslations({ locale, namespace: 'gatewayNav' });
   const document = readGuideDocument(page, locale);
+  const chapter = await guideChapterMeta(page, locale, document.sourcePath);
 
   return (
-    <GatewayDocPage
-      document={document}
-      title={t(`guidePages.${page.titleKey}`)}
-      {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
-      /*
-       * An unknown segment renders the first chapter but says it substituted; a silent fallback would
-       * pass as that address's document.
-       */
-      {...(matched ? {} : { notice: t('guideUnknownSegment') })}
-      sourcePath={document.sourcePath}
-      sidebar
-      activeSegment={page.segment}
-    />
+    <>
+      {/* A substituted chapter is not this address's article, so it claims none. */}
+      {matched ? <JsonLd data={chapter.structuredData.article} /> : null}
+      {matched ? <JsonLd data={chapter.structuredData.breadcrumb} /> : null}
+      <GatewayDocPage
+        document={document}
+        title={t(`guidePages.${page.titleKey}`)}
+        {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
+        /*
+         * An unknown segment renders the first chapter but says it substituted; a silent fallback would
+         * pass as that address's document.
+         */
+        {...(matched ? {} : { notice: t('guideUnknownSegment') })}
+        sourcePath={document.sourcePath}
+        sidebar
+        activeSegment={page.segment}
+        {...(chapter.updated ? { updated: chapter.updated } : {})}
+      />
+    </>
   );
 }
