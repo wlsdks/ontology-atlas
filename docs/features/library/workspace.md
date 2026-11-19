@@ -150,9 +150,19 @@ With no folder open the whole screen is one centred stage naming the two kinds o
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
 the two doors instead. **With a folder open and nothing selected in Sources,
 the right pane is the folder's graph** (2026-09-12, restoring 2026-09-06);
-in Wiki it is the question desk. Above the Sources graph sits one `text-label` row — the canvas's own
-counts caption, then the step facts as pressable clauses (`Compile next: <source>` opens
-Compile and its brain picker; `N sources changed` lights that citation and its two ends
+in Wiki it is the question desk. When the folder has a source, the **progress band** (2026-11-19,
+`docs/specs/2026-11-19-source-progress.md`) stands on top of the Sources graph, at most 112px
+tall: the percent of sources that have a wiki page, rounded down, with today's additions; the
+sentence it rests on; a 6px state bar (has a page in the accent, needs review and read in part
+in amber, checking and can't read neutral, no page the track); a cumulative step chart by the
+`compiled_at` each page records, whose Left and Right keys read each point; and the press that
+writes the next 10 waiting sources (3 on the local model), with how many wait after them or how
+many came back without a page. On the web the press is disabled with the reason and Get the app.
+The numbers count up on a folder's first visit in a session and later move on from what is
+drawn; at 100% the bar turns green and one light passes along it. Below `md` the chart steps
+aside. The index's state counts are presses that show only their rows, combined with the
+search; `Show all` undoes one. Under the band sits one `text-label` row — the canvas's own
+counts caption, then the step facts as pressable clauses (`N sources changed` lights that citation and its two ends
 without moving a mark; `N off-template` presses into the check report, whose one door with
 live state — a count, *running*, *unseen* — is the index's own row) — and then the doors
 `How to use`, the saved questions, and the existing `Conversation`. `How to

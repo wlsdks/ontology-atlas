@@ -596,9 +596,9 @@ test.describe("the Library pane", () => {
       expect(hit, `${id} is occluded`).toBe(true);
     }
 
-    // One strip, and the step facts are on it — not in a second header row.
-    const strip = page.getByTestId("library-home-strip");
-    await expect(strip).toContainText("Write wiki page:");
+    // The next step is the progress band's press, not a strip clause or a second header row.
+    await expect(page.getByTestId("library-progress-continue")).toBeVisible();
+    await expect(page.getByTestId("library-home-strip")).not.toContainText("Write wiki page:");
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("library-needs-compile")).toHaveCount(0);
 

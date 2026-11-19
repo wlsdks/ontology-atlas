@@ -13,7 +13,6 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import { SourceProgressChart } from "./SourceProgressChart";
 import { useBandMotion } from "./use-band-motion";
-import type { ContinueBatch } from "./use-continue-batch";
 
 /** Folders whose band already counted up this session; a later visit draws the values at once. */
 const counted = new Set<string>();
@@ -48,6 +47,19 @@ function localNoon(): number {
 function FirstText({ text }: { text: string }) {
   const [first] = useState(text);
   return <>{first}</>;
+}
+
+/** What the Continue press needs from the request it starts (`useCompileBatch` on the page). */
+export interface ContinueBatch {
+  /** Sources the next press names, in list order. */
+  next: readonly LibrarySourceRow[];
+  /** Paths the request in flight named; empty while none runs. */
+  running: ReadonlySet<string>;
+  /** Waiting sources after the next press, or after the request in flight while one runs. */
+  rest: number;
+  /** Sources the last finished request named that still have no wiki page. */
+  returned: number;
+  start: () => void;
 }
 
 /** Why Continue cannot run, and the door that fixes it when one exists. */

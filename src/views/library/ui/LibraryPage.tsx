@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
+import { isWikiPage, sourceNeedsCompile, type LibrarySourceRow } from "@/entities/docs-vault";
+import { selectLocalCompileTargets } from "@/features/vault-agent";
 import { useRouter } from "@/i18n/navigation";
 import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
 import { useVaultConnectors } from "@/features/mcp-connectors";
@@ -68,7 +69,7 @@ import { LibraryDocumentColumn } from "./library-page/LibraryDocumentColumn";
 import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
 import { AgentDoor } from "./parts/agent/AgentDoor";
 import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
-import { useContinueBatch } from "./parts/progress/use-continue-batch";
+import { useContinuePress } from "./parts/progress/use-continue-press";
 
 export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
@@ -246,13 +247,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: openPlanning });
   }, [openPlanning, t, toast]);
   useEffect(() => { clearLibraryImportRequest(); }, []);
-  const compileSources = useCallback((sources: readonly LibrarySourceRow[]) => {
+  const sendCompile = useCallback((batch: readonly LibrarySourceRow[]): boolean => {
     try {
       const localExecution = agent.route === 'local';
       agent.start(
         buildCompileBrief({
-          sources,
+          sources: batch,
           existingPages: model.wikiPages,
+          hashes: model.hashes,
           locale,
           execution: localExecution ? 'local' : 'acp',
           writerId: localExecution
@@ -262,6 +264,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           now: new Date(),
         }),
       );
+      return true;
     } catch (error) {
       toast.show(
         t("wiki.compileFailed", {
@@ -269,18 +272,24 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         }),
         "error",
       );
+      return false;
     }
-  }, [agent, locale, model.wikiPages, nativeVaultRootPath, t, toast]);
-  const handleCompile = useCallback(() => {
-    compileSources(agent.route === 'local'
-      ? model.sources.filter((source) => agent.localCompile.targets.includes(source.path))
-      : model.sources);
-  }, [agent.localCompile.targets, agent.route, compileSources, model.sources]);
-  const continueBatch = useContinueBatch({
-    sources: model.sources,
-    localTargets: agent.route === 'local' ? agent.localCompile.targets : null,
+  }, [agent, locale, model.hashes, model.wikiPages, nativeVaultRootPath, t, toast]);
+  /* Every Compile door sends the batch the band and the popover name, never every waiting source. */
+  // The local runner opens only text formats, so on its route a waiting file it cannot read is never named.
+  const localRoute = agent.route === 'local';
+  const compileRows = useMemo(() => {
+    if (!localRoute) return model.sources;
+    const openable = new Set(selectLocalCompileTargets(model.sources).map((row) => row.path));
+    return model.sources.filter((row) => !sourceNeedsCompile(row) || openable.has(row.path));
+  }, [localRoute, model.sources]);
+  const { compileBatch, continueBatch, press: handleCompile } = useContinuePress({
+    sources: compileRows,
+    folderKey: workVaultScope,
+    // The local runner reads its own capped targets; the batch names as many.
+    size: localRoute ? Math.max(1, agent.localCompile.targets.length) : undefined,
     running: compileRunning || agent.localCompile.status === 'running',
-    send: compileSources,
+    send: sendCompile,
   });
 
   const turns = useLibraryTurns({
@@ -656,7 +665,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         model={model} retainedAnswers={retainedAnswers} knownOriginalPaths={knownOriginalPaths}
         retainedAnswerSlugs={retainedAnswerSlugs} agent={agent} closeHomeSurface={closeHomeSurface}
         handleCompile={handleCompile} sources={sources} home={home} turns={turns} graphCards={graphCards}
-        homeStrip={homeStrip}
+        homeStrip={homeStrip} compileBatch={compileBatch}
       />
       {agentDock}
 
