@@ -185,15 +185,23 @@ export function useTopologyVaultReadModel({
     deeplinkMissNotifiedRef.current = null;
     setRouteState(clearVaultScopedRouteState, { replace: true });
   }, [deeplinkSourceReady, vaultIdentity, setRouteState]);
+  const resolvedSlugRef = useRef<string | null>(null);
   useEffect(() => {
+    if (selectedSlug && (selectedOntologyNode || selectedProject)) resolvedSlugRef.current = selectedSlug;
     const decision = resolveDeeplinkMissDecision({
       selectedSlug,
       hasOntologyMatch: Boolean(selectedOntologyNode),
       hasProjectMatch: Boolean(selectedProject),
       projectsLoaded: projectsQuery.loaded,
       sourceReady: deeplinkSourceReady,
+      resolvedBefore: selectedSlug !== null && resolvedSlugRef.current === selectedSlug,
     });
     if (decision.action === "none") return;
+    if (decision.action === "deselect") {
+      resolvedSlugRef.current = null;
+      setRouteState({ selectedSlug: null }, { replace: true });
+      return;
+    }
     if (!selectedSlug || deeplinkMissNotifiedRef.current === selectedSlug) return;
 
     const notify = () => {
@@ -221,6 +229,7 @@ export function useTopologyVaultReadModel({
     selectedProject,
     selectedOntologyNode,
     deeplinkSourceReady,
+    setRouteState,
     toast,
     t,
   ]);
