@@ -23,7 +23,7 @@ export { buildFixBrief } from "./lib/wiki/fix-brief";
 export { buildWikiShapeFixBrief } from "./lib/wiki/wiki-fix-brief";
 export type { LintNodeCandidate } from "./lib/wiki/lint-brief";
 export { buildProposeNodeBrief } from "./lib/wiki/propose-node-brief";
-export { judgePageWrite, wikiPagePathOf } from "./lib/wiki/judge-page-write";
+export { judgePageWrite, wikiNodeIndexOfDocs, wikiPagePathOf } from "./lib/wiki/judge-page-write";
 export { appendWikiLog, describeCompileTurn, describeLintTurn } from "./lib/wiki/wiki-log";
 export type { PageWriteRequest, PageWriteVerdict } from "./lib/wiki/judge-page-write";
 export { describeWikiProblem, groupWikiProblems, wikiProblemMachineLine } from "./lib/wiki/describe-wiki-problem";

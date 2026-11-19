@@ -83,6 +83,7 @@ vi.mock('@/features/library', async () => ({
   appendWikiLog: vi.fn(async () => undefined),
   buildCompileBrief: () => 'compile brief',
   judgePageWrite: (await import('@/features/library/lib/wiki/judge-page-write')).judgePageWrite,
+  wikiNodeIndexOfDocs: (await import('@/features/library/lib/wiki/judge-page-write')).wikiNodeIndexOfDocs,
   writeWikiFile: vi.fn(async (_vault: unknown, path: string, text: string) => {
     h.files[path] = text;
   }),

@@ -1,14 +1,14 @@
 ---
-title: Ontology Atlas Vault Specification v2.0-rc (RFC)
+title: Ontology Atlas Vault Specification v2.1-rc (RFC)
 doc_type: authority
 status: current
 area: ontology-model
-contract_version: 2.0-rc
+contract_version: 2.1-rc
 ---
 
-# Ontology Atlas Vault Specification v2.0-rc (RFC)
+# Ontology Atlas Vault Specification v2.1-rc (RFC)
 
-> Status: **RFC** (Request for Comments). This is a v2.0 release candidate,
+> Status: **RFC** (Request for Comments). This is a v2.1 release candidate,
 > not a ratified standard — see [§0 RFC status and feedback](#0-rfc-status-and-feedback)
 > for the review window and how to comment.
 >
@@ -58,7 +58,7 @@ consulting this repository's source code.
 
 ## 0. RFC status and feedback
 
-This is **v2.0-rc**, a release candidate open for public comment. It documents
+This is **v2.1-rc**, a release candidate open for public comment. It documents
 the already-enforced dual-identity behavior covered by contract tests in this
 repository (`ontology-atlas`). The v1 RC never became a ratified compatibility
 baseline, but v2 still names the UID requirement as breaking and provides an
@@ -682,7 +682,12 @@ injection." Implementations MUST NOT claim or imply the stronger meaning.
 
 ## 8. Versioning and compatibility policy
 
-- **This spec is v2.0-rc.** v2 deliberately requires immutable lowercase
+- **This spec is v2.1-rc.** v2.1 lifts the `reviewed`-only rule on a wiki
+  page's `describes:` and adds the page codes `describes-target-missing` and
+  `bad-describes` (§11.4). A v2.0 wiki page passes unless its `describes:` is
+  not a list or an entry names no `kind:` node in its folder;
+  `describes-needs-approval` is retired.
+- **v2.0-rc** deliberately requires immutable lowercase
   UUIDv4 `uid` on every `kind:` node, including `vault-readme`. Rename and
   reclassify preserve it; merge records absorbed identity in `merged_uids`.
   A v1 vault without UID therefore requires the migration below.
@@ -799,7 +804,8 @@ node because of its folder, its frontmatter, or its prose.
 | `sources_truncated` | no | the subset of `sources` this run read only part of; every entry MUST be in `sources` |
 | `status` | yes | `draft` until a person has read it, `reviewed` after |
 | `summary` | yes | one sentence about what the page is about |
-| `describes` | no | ontology slugs the page speaks for; allowed only on a `reviewed` page |
+| `describes` | no | slugs of the `kind:` nodes this page is about: nodes without which its Summary would be wrong; allowed at any `status`; an empty list records that a writer checked and found none |
+| `relation_notes` | no | `{ <slug in describes>: "one sentence" }`: why the page is about that node |
 
 `source_hash` is what lets a page go stale **out loud**: a reader hashes the file
 on disk and compares. Without it, a citation says only "somebody once read
@@ -814,9 +820,22 @@ of, and MUST omit the key when it read them all: an empty list on every page eve
 compiled is a key nobody reads. A reader MAY use it to distinguish a source
 described whole from one described in part (`/library` says *read in part*).
 
-`describes` on a `draft` is an unapproved claim about the graph and MUST be
-reported (`describes-needs-approval`). A person raises the status; a compiler
-does not.
+`describes` links a page to the concepts it is about. The page's writer, an
+agent included, writes it with a one-sentence reason per slug in
+`relation_notes`, without a person approving it first; a person sees every link
+on the page and can remove it, and Git keeps every version. Each entry MUST name
+a `kind:` node in the folder (`describes-target-missing`). The reverse direction
+is a backlink only (§5). A person raises `status`; no writer raises it.
+
+```md
+status: draft
+describes:
+  - capabilities/session-token-issue
+  - elements/jwt-signer
+relation_notes:
+  capabilities/session-token-issue: "Facts 1-3 state when a token is issued and revoked."
+  elements/jwt-signer: "Fact 4 names the signer and its key rotation."
+```
 
 ### 11.2 Body — five sections, always, in this order
 
@@ -871,7 +890,16 @@ NOT**.
 | `bad-citation` | text shaped like a citation the syntax cannot resolve |
 | `bad-truncation-record` | `sources_truncated:` is not a list of paths, or names a path not in `sources:` |
 | `citation-target-missing` | a cited path is not in `sources:`, or not in the folder |
-| `describes-needs-approval` | `describes:` on a page that is not `reviewed` |
+| `bad-describes` | `describes:` is present but not a list |
+| `describes-target-missing` | a `describes:` entry names no `kind:` node in the folder |
+
+A `describes:` entry resolves as `find_backlinks` resolves a reference, after
+NFC normalisation: the full slug, then a frontmatter `slug:` alias, then a tail
+or path suffix that matches exactly one document. A missing slug, a tail more
+than one document shares, a wiki page and the vault README all report
+`describes-target-missing`. The check needs every document in the folder: a
+caller that passes none skips it, and `validate_wiki`, `wiki-validate` and the
+app's page-write judge always pass them.
 
 Three more codes come from the folder, not the page. `validateWikiFolder` (the same
 two modules) judges every page under `wiki/` together, and `wiki-validate` and

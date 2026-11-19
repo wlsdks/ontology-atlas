@@ -73,6 +73,7 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
 
 pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
+    crate::no_console::hide_console(&mut command);
     command.args(argv);
     let output = http_output::capture(command, config.as_bytes()).map_err(|err| match err {
         http_output::CaptureError::Request(err) => coded("request-failed", err),

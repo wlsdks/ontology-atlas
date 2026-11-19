@@ -891,7 +891,7 @@ until a local manifest, or the first part of one, exists.
 /download                  the same gateway page at its own address — it keeps the breadcrumb
                            and the back-to-map link that / leaves out
 /guide                     the project guide, several chapters rendering docs/guide/*.md vault
-                           docs. Named `guide` and not `docs` because /docs is already the
+                           docs in English and docs-i18n/guide/<locale>/*.md in ko, ja, zh. Named `guide` and not `docs` because /docs is already the
                            vault workbench (2026-07-30 ledger). Order and slugs live once in
                            src/views/gateway-doc/model/guide-pages.ts
 /guide/[segment]           one chapter; static params come from that same registry

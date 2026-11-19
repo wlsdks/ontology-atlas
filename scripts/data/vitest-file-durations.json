@@ -843,7 +843,6 @@
     "jsdom:src/views/download/ui/MoruPlayEntry.test.tsx": 3.515,
     "jsdom:src/views/download/ui/MoruPlayground.test.tsx": 2.019,
     "jsdom:src/views/download/ui/OpenSourceSection.test.tsx": 2.505,
-    "jsdom:src/views/download/ui/ProofNumbers.test.tsx": 1.38,
     "jsdom:src/views/download/ui/ScreensStage.test.tsx": 4.697,
     "jsdom:src/views/first-run/ui/FirstRunPage.test.tsx": 2.872,
     "jsdom:src/views/gateway-doc/lib/vault-doc.test.ts": 2.075,

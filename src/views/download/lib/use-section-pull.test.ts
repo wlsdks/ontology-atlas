@@ -9,6 +9,7 @@ import {
   glideDuration,
   glideProgress,
   pullTarget,
+  stageRest,
   useSectionPull,
 } from './use-section-pull';
 
@@ -26,9 +27,38 @@ describe('pullTarget', () => {
     expect(pullTarget(starts, 1700, -1, 378)).toBeNull();
   });
 
+  it('decides by the section start but lands on its centred stage', () => {
+    const stops = [{ near: 1800, rest: 1980 }];
+    expect(pullTarget(stops, 1500, 1, 378)).toBe(1980);
+    expect(pullTarget(stops, 1900, 1, 378)).toBe(1980);
+    expect(pullTarget(stops, 1990, 1, 378)).toBeNull();
+  });
+
   it('leaves a rest that already sits on a start where it is', () => {
     expect(pullTarget(starts, 1799, -1, 378)).toBeNull();
     expect(pullTarget(starts, 2700, 1, 378)).toBeNull();
+  });
+});
+
+describe('stageRest', () => {
+  const header = 65;
+  const height = 860;
+
+  it('rests on the section title while the stage fits under it', () => {
+    expect(stageRest({ start: 3000, offset: 96, stageTop: 3186, stageBottom: 3700, header, height })).toBe(2904);
+  });
+
+  it('centres a stage that would run past the window under the header', () => {
+    // The game frame of a 1900x860 window: 742px tall, 186px under the section start.
+    const rest = stageRest({ start: 3000, offset: 96, stageTop: 3186, stageBottom: 3928, header, height });
+    const top = 3186 - rest;
+    expect(top).toBeGreaterThanOrEqual(header + 16);
+    expect(top + 742).toBeLessThanOrEqual(height - 16);
+    expect(top - header).toBeCloseTo(height - (top + 742), 0);
+  });
+
+  it('keeps a stage taller than the room at least 16px under the header', () => {
+    expect(3186 - stageRest({ start: 3000, offset: 96, stageTop: 3186, stageBottom: 4186, header, height })).toBe(header + 16);
   });
 });
 

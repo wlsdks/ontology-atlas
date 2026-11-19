@@ -20,7 +20,7 @@ const COLLECT_AFTER_NODES = 5000;
 /**
  * Bun leaves a large compile's garbage in the physical footprint until its next
  * full collection; one synchronous collection returns it. Only a miss on a graph
- * of {@link COLLECT_AFTER_NODES} or more pays it. Node has no collector hook
+ * of {@link COLLECT_AFTER_NODES} or more pays it, before and after the compile. Node has no collector hook
  * without a flag; its own collection runs.
  */
 function collectAfterCompile() {
@@ -87,8 +87,13 @@ export function createCompiledOntologyCache({
       return { artifact, docs };
     }
     misses += 1;
+    const large = nodeCountAtLeast(docs, COLLECT_AFTER_NODES);
+    // Before as well: whatever earlier calls left uncollected would otherwise sit
+    // under the compile's own peak (measured at 50,000 nodes: 395-487 MB peak
+    // without it, 362-374 MB with it).
+    if (large) collectGarbage();
     const artifact = compile(docs, view);
-    if (nodeCountAtLeast(docs, COLLECT_AFTER_NODES)) collectGarbage();
+    if (large) collectGarbage();
     if (version === undefined) return { artifact, docs };
     if (version !== cachedVersion) {
       views.clear();

@@ -40,12 +40,15 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   // the wrong concept. Exact canonical refs stay safe.
   const canRewriteTail = tailMatches.length === 1 && tailMatches[0] === targetSlug;
 
+  // Compared after NFC, as the ref index and the wiki schema compare: a Hangul ref typed
+  // as NFD still names the NFC slug the file walk produces.
   function rewriteArrayItem(value) {
     if (typeof value !== 'string') return { value, changed: false };
-    if (value === targetSlug) return { value: nextSlug, changed: true };
-    if (canRewriteTail && value === targetTail) return { value: nextTail, changed: true };
-    if (canRewriteTail && value.endsWith(`/${targetTail}`)) {
-      const prefix = value.slice(0, value.length - targetTail.length);
+    const ref = value.normalize('NFC');
+    if (ref === targetSlug) return { value: nextSlug, changed: true };
+    if (canRewriteTail && ref === targetTail) return { value: nextTail, changed: true };
+    if (canRewriteTail && ref.endsWith(`/${targetTail}`)) {
+      const prefix = ref.slice(0, ref.length - targetTail.length);
       return { value: `${prefix}${nextTail}`, changed: true };
     }
     return { value, changed: false };

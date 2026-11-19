@@ -177,5 +177,5 @@ export const STILL_LOCALES = ['ko', 'en', 'ja', 'zh'] as const;
 
 export function stillSrc(name: (typeof STILL_NAMES)[number], locale: string): string {
   const shot = (STILL_LOCALES as readonly string[]).includes(locale) ? locale : 'en';
-  return `/gateway/${name}.${shot}.png`;
+  return `/gateway/${name}.${shot}.webp`;
 }

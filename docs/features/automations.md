@@ -105,7 +105,9 @@ it did not find as a real folder when it started. After the agent's turn, Atlas 
 page the pass wrote. A page that no longer holds what the pass's own write left changed after
 the pass wrote it: Atlas leaves it as it is and says so, and if the page no longer reads as a
 draft, the run fails and names it. A page that still holds the pass's own text but does not
-read `status: draft`, repeats a frontmatter key, or carries `describes:` or `kind:` is put back
+read `status: draft`, repeats a frontmatter key, carries `kind:`, or adds, changes or removes a
+`describes:` or `relation_notes:` it found (a pass carries a page's links to concepts unchanged)
+is put back
 as the pass found it, or removed if the pass created it. Atlas first saves the text it takes out
 under `.ontology-atlas/undone/`, and names that copy in the run, which is marked failed with a
 sentence naming the page and the reason.

@@ -24,7 +24,6 @@ import {
   rawSourceKindIssues,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
-  validateVaultDocument,
 } from '../validate.mjs';
 import {
   dependencyWitnessFinding,
@@ -33,6 +32,7 @@ import {
 } from '../meaning/meaning-findings.mjs';
 import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
+import { validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
@@ -41,6 +41,7 @@ import { repoText } from '../analyze/repo-text.mjs';
 import {
   WIKI_ADVISORY_CODES,
   WIKI_DIR,
+  buildWikiNodeIndex,
   isWikiFurnitureSlug,
   validateWikiFolder,
   validateWikiPage,
@@ -60,7 +61,7 @@ import { relative } from 'node:path';
  * like `validate_vault`'s problems, because a folder of tens of thousands of pages
  * would otherwise be one reply no agent can read.
  *
- * Cost per call: O(pages + bytes + links + citations) with Maps and Sets; pages that
+ * Cost per call: O(pages + bytes + links + citations + `describes:` entries) with Maps and Sets; pages that
  * share a primary source name at most ten partners each. Failing pages keep the path
  * order the pages were judged in, so ordering them is O(failing).
  */
@@ -151,6 +152,12 @@ function judgeWikiPages(paths) {
   const knownSources = new Set(listVaultSourcePaths());
   const docs = loadVaultDocs(VAULT_ROOT);
   const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+  // Every document once, so each `describes:` entry resolves in O(1) as find_backlinks resolves it.
+  const nodes = buildWikiNodeIndex(docs.map((doc) => ({
+    slug: doc.slug,
+    kind: doc.frontmatter?.kind,
+    alias: doc.frontmatter?.slug,
+  })));
   const folderDocs = docs.filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug));
 
   const requested =
@@ -184,14 +191,21 @@ function judgeWikiPages(paths) {
       });
       continue;
     }
-    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, parsed: doc });
+    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, nodes, parsed: doc });
     pages.push({ path, ok, problems });
   }
 
   // The folder half is judged over every page in the folder, whatever `paths` narrowed
   // the report to: whether somebody links to a page is a fact about the other pages,
   // and a page asked about alone would otherwise always read as an orphan.
-  const folderPages = folderDocs.map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '', parsed: doc }));
+  // `raw` is read as each page is judged, so the folder's text is never held at once.
+  const folderPages = folderDocs.map((doc) => ({
+    path: `${doc.slug}.md`,
+    get raw() {
+      return doc.raw || '';
+    },
+    parsed: doc,
+  }));
   const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
   for (const page of pages) {
     const extra = folderByPath.get(page.path) ?? [];
@@ -393,7 +407,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
     // where the file sits, and only this caller knows it.
-    const result = validateVaultDocument(doc.raw || '', { slug: doc.slug, parsed: doc });
+    const result = validateLoadedVaultDocument(doc, { slug: doc.slug });
     docIssues.set(doc.slug, result.issues || []);
   }
   for (const [slug, danglingIssues] of groupDanglingIssuesBySlug(docs)) {
@@ -648,12 +662,15 @@ function findDependencyWitnessIssues(docs, repoRoot) {
  * only node of its kind.
  */
 function findStarterExampleIssues(docs) {
+  // `body` is read only for a starter the vault has outgrown, not for every document.
   return starterExampleFindings(
     docs.map((doc) => ({
       slug: doc.slug,
       kind: doc?.frontmatter?.kind,
       title: doc?.frontmatter?.title,
-      body: doc?.body,
+      get body() {
+        return doc?.body;
+      },
     })),
   ).map((finding) => ({
     slug: finding.slug,

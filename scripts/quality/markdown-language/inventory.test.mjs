@@ -230,3 +230,12 @@ test('treats Han, kana and Hangul alike for every locale, in prose and in typed 
   }
   assert.equal(classifyMarkdownPath('cli/templates/vault-english/README.md').kind, 'canonical');
 });
+
+test('allows guide chapters in the three reader languages, and no other path beside them', () => {
+  for (const path of ['docs-i18n/guide/ko/relations.md', 'docs-i18n/guide/ja/cli.md', 'docs-i18n/guide/zh/what-is-an-ontology.md']) {
+    assert.equal(classifyMarkdownPath(path).kind, 'localized-guide', path);
+  }
+  for (const path of ['docs/guide/relations.md', 'docs-i18n/guide/en/cli.md', 'docs-i18n/notes/ko/a.md', 'docs-i18n/guide/ko/nested/a.md']) {
+    assert.notEqual(classifyMarkdownPath(path).kind, 'localized-guide', path);
+  }
+});

@@ -359,9 +359,13 @@
         "what": "{path} is cited but it is not among the sources this page uses.",
         "do": "Add it to the list of sources, or fix the citation."
       },
-      "describes-needs-approval": {
-        "what": "This page says it speaks for a concept (describes), and that is a claim about the map a person has to confirm.",
-        "do": "Read it and set the status to reviewed, or remove that line."
+      "describes-target-missing": {
+        "what": "This page says it is about {target}, and this folder has no concept by that name.",
+        "do": "Remove that name from the page, or replace it with the slug of a concept in this folder."
+      },
+      "bad-describes": {
+        "what": "The line that names the concepts this page is about (describes) is not a list, so no reader takes it as a link and a rename cannot follow it.",
+        "do": "Write each concept's slug as a list item, or write an empty list when no concept fits."
       },
       "dangling-wikilink": {
         "what": "The link at {where} points at {target}, and there is no such page in this folder.",
@@ -659,7 +663,8 @@
     "rule": {
       "kind-present": "This page is marked for the map",
       "missing-field": "A required line is missing",
-      "describes-needs-approval": "Nobody has confirmed this claim",
+      "describes-target-missing": "A linked concept is not here",
+      "bad-describes": "The concept list is not a list",
       "section-order": "Sections are missing or misordered",
       "bad-truncation-record": "The read-so-far record disagrees",
       "uncited-fact": "No source backs this up",
@@ -864,7 +869,7 @@
       "undoneReason": {
         "notDraft": "It did not read status: draft, and a schedule writes drafts only.",
         "duplicateKey": "The info block at the top of the page had two {key}: lines, so readers could disagree about it.",
-        "forbiddenKey": "It carried a {key}: line, which only a person may add.",
+        "forbiddenKey": "It added, changed or removed a {key}: line, which a schedule may not do; it keeps that line as it found it.",
         "noFrontmatter": "It had no info block at the top, so it could not be read as a draft.",
         "unreadable": "Atlas could not read it back to check it."
       },

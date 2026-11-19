@@ -20,6 +20,7 @@ import {
   describeCompileTurn,
   describeLintTurn,
   judgePageWrite,
+  wikiNodeIndexOfDocs,
   parseLintCandidates,
   dropCandidatesWithNodes,
   wikiPagePathOf,
@@ -161,6 +162,7 @@ export function useLibraryTurns({
   const [filingAnswer, setFilingAnswer] = useState<RetainedLibraryAnswer | null>(null);
   const [fileAnswerNote, setFileAnswerNote] = useState<string | null>(null);
   const consumedOpeningNonceRef = useRef<number | null>(null);
+  const conceptIndex = useMemo(() => wikiNodeIndexOfDocs(docs), [docs]);
   const judgeWrite = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null }) =>
       nativeVaultRootPath
@@ -169,9 +171,10 @@ export function useLibraryTurns({
             vaultRoot: nativeVaultRootPath,
             currentText: (slug) => model.pageTexts.get(slug) ?? null,
             knownSources: model.sources.map((row) => row.path),
+            nodes: conceptIndex,
           })
         : null,
-    [model.pageTexts, model.sources, nativeVaultRootPath],
+    [conceptIndex, model.pageTexts, model.sources, nativeVaultRootPath],
   );
   const pendingFixRef = useRef<LintFinding | null>(null);
   const [fixedKeys, setFixedKeys] = useState<ReadonlySet<string>>(() => new Set());

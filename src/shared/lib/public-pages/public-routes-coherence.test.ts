@@ -42,6 +42,9 @@ describe("public route coherence", () => {
         // slugs.
         if (name.startsWith("__next")) continue;
         if (name === "view" || name === "topology" || name === "new" || name === "fallback") continue;
+        // A demo sample's project page is built but noindex, so the sitemap leaves it out.
+        const html = await readFile(path.join(projectDir, name, "index.html"), "utf8").catch(() => "");
+        if (/<meta name="robots" content="[^"]*noindex/.test(html)) continue;
         builtSlugs.add(name);
       }
 

@@ -23,7 +23,12 @@ export interface PassScan {
   links?: Iterable<string>;
 }
 
-const FORBIDDEN_KEYS = new Set(['describes', 'kind']);
+const FORBIDDEN_KEYS = new Set(['kind']);
+/**
+ * A page's links to concepts. Its writer adds them; a round only carries them as it found them
+ * (`docs/records/decisions/2026-11-19-wiki-page-describes-at-any-status-afd11e09-c68a-465a-83fa-d8abd8cabdfc.md`).
+ */
+const LINK_KEYS = ['describes', 'relation_notes'] as const;
 
 const REASON_KEYS = {
   'not-draft': 'notDraft',
@@ -55,7 +60,24 @@ function frontmatterKeys(text: string): { key: string; line: string }[] | null {
   return keys;
 }
 
-export function roundDraftProblem(text: string): RoundDraftProblem | null {
+/**
+ * The link key a round added, changed or dropped against `before`, the page as the round found it
+ * (`null` for a new page). Values are compared as parsed, so re-serialising the same links is not a
+ * change; a link key spelled any other way is, since no reader would see it as the same key.
+ */
+function changedLinkKey(keys: { key: string; line: string }[], text: string, before: string | null): string | null {
+  for (const { key, line } of keys) {
+    if ((LINK_KEYS as readonly string[]).includes(key) && line.slice(0, line.indexOf(':')) !== key) return key;
+  }
+  const now = parseFrontmatter(normalized(text)).frontmatter;
+  const was = before === null ? {} : parseFrontmatter(normalized(before)).frontmatter;
+  for (const key of LINK_KEYS) {
+    if (JSON.stringify(now[key]) !== JSON.stringify(was[key])) return key;
+  }
+  return null;
+}
+
+export function roundDraftProblem(text: string, before: string | null = null): RoundDraftProblem | null {
   const keys = frontmatterKeys(text);
   if (!keys) return { reason: 'no-frontmatter' };
   const seen = new Set<string>();
@@ -66,6 +88,8 @@ export function roundDraftProblem(text: string): RoundDraftProblem | null {
     if (FORBIDDEN_KEYS.has(key)) return { reason: 'forbidden-key', key };
     if (key === 'status') status = line.trimEnd();
   }
+  const link = changedLinkKey(keys, text, before);
+  if (link) return { reason: 'forbidden-key', key: link };
   return status === 'status: draft' && parseFrontmatter(normalized(text)).frontmatter.status === 'draft' ? null : { reason: 'not-draft' };
 }
 
@@ -240,12 +264,12 @@ export async function settlePassPages({ pages, read, keep, restore, remove }: Se
     }
     if (now === null || now === start) continue;
     if (now !== own) {
-      const changed = roundDraftProblem(now);
+      const changed = roundDraftProblem(now, start);
       if (changed) undone.push({ path, ...changed, action: 'left' });
       else leftAsIs.push(path);
       continue;
     }
-    const problem = roundDraftProblem(now);
+    const problem = roundDraftProblem(now, start);
     if (!problem) continue;
     const item: RoundUndone = { path, ...problem, action: 'failed' };
     undone.push(item);

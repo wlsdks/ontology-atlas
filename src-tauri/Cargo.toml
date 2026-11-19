@@ -93,6 +93,10 @@ keyring = { version = "3", features = ["apple-native"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
+# Already in the resolved graph (0.61.2, through tokio, tauri and others): no new crate. The audit
+# log needs `LockFileEx`, `GetFinalPathNameByHandleW` and `GetFileInformationByHandle`, which std
+# does not expose, to hold the same before-send guarantee on Windows as `openat` does on Unix.
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO"] }
 
 # "Show in Explorer" and its Linux equivalent: the official opener plugin's Rust function
 # `reveal_item_in_dir`, called only from commands that have already resolved the path inside

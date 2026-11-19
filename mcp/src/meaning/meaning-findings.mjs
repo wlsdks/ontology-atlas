@@ -215,6 +215,31 @@ export function bodyMeaningFindings(input) {
   return BODY_CHECKS.flatMap((check) => check(input, view) ?? []);
 }
 
+const NO_BODY_FINDINGS = Object.freeze([]);
+
+/**
+ * What {@link bodyMeaningFindings} judged of one body, without the slug its
+ * findings are addressed to: a cache keeps this per document instead of the body.
+ * `refs` are copied out of the body, so the verdict keeps no slice of it alive.
+ */
+export function bodyMeaningVerdict({ kind, title, body }) {
+  const findings = bodyMeaningFindings({ kind, slug: '', title, body });
+  if (findings.length === 0) return NO_BODY_FINDINGS;
+  return Object.freeze(findings.map(({ code, key, refs }) =>
+    Object.freeze({ code, key, refs: Object.freeze(refs.map((ref) => JSON.parse(JSON.stringify(ref)))) })));
+}
+
+/** The findings {@link bodyMeaningFindings} returns for `slug`, rebuilt from a {@link bodyMeaningVerdict}. */
+export function bodyMeaningFindingsFromVerdict(verdict, { kind, slug }) {
+  return verdict.map(({ code, key, refs }) => {
+    if (code === 'definition-missing') return definitionMissingFinding(slug, kind);
+    if (code === 'boundary-missing') return boundaryMissingFinding(slug, kind, key);
+    if (code === 'uncertainty-missing') return uncertaintyMissingFinding(slug, kind);
+    if (code === 'epistemic-exclusion') return epistemicExclusionFindingFor(slug, [...refs]);
+    throw new Error(`unknown body meaning finding ${code}`);
+  });
+}
+
 /**
  * Is this line still a slot? Either untouched (matches the template) or reworded
  * around a surviving `<…>` slot, which a counter reads as filled.
@@ -255,6 +280,10 @@ export function definitionFinding({ kind, slug, title, body }, view = null) {
     if (novelWordCount(candidate, titleWords) < DEFINITION_MIN_NOVEL_WORDS) continue;
     return null;
   }
+  return definitionMissingFinding(slug, kind);
+}
+
+function definitionMissingFinding(slug, kind) {
   return {
     code: 'definition-missing',
     slug,
@@ -276,16 +305,20 @@ export function boundaryFindings({ kind, slug, title, body }, view = null) {
   for (const side of ['includes', 'excludes']) {
     const section = findBoundarySection(sections, side);
     if (contentLines(section, placeholders).length > 0) continue;
-    findings.push({
-      code: 'boundary-missing',
-      slug,
-      key: side,
-      refs: [],
-      count: 1,
-      message: boundaryMissingMessage({ slug, kind, side }),
-    });
+    findings.push(boundaryMissingFinding(slug, kind, side));
   }
   return findings;
+}
+
+function boundaryMissingFinding(slug, kind, side) {
+  return {
+    code: 'boundary-missing',
+    slug,
+    key: side,
+    refs: [],
+    count: 1,
+    message: boundaryMissingMessage({ slug, kind, side }),
+  };
 }
 
 /**
@@ -298,6 +331,10 @@ export function uncertaintyFinding({ kind, slug, title, body }, view = null) {
   const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const section = sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
   if (contentLines(section, placeholders).length > 0) return null;
+  return uncertaintyMissingFinding(slug, kind);
+}
+
+function uncertaintyMissingFinding(slug, kind) {
   return {
     code: 'uncertainty-missing',
     slug,
@@ -334,6 +371,10 @@ export function epistemicExclusionFinding({ kind, slug, title, body }, view = nu
     .map((line) => stripMarker(line))
     .filter((text) => text && isEpistemicExclusionBoundary(text));
   if (offending.length === 0) return null;
+  return epistemicExclusionFindingFor(slug, offending);
+}
+
+function epistemicExclusionFindingFor(slug, offending) {
   return {
     code: 'epistemic-exclusion',
     slug,
@@ -739,19 +780,21 @@ export function starterExampleFinding({ slug, kind, title, body, realSlug = null
  * nobody compiled with bodies. `nodes`: iterable of `{ slug, kind, title, body? }`.
  */
 export function starterExampleFindings(nodes) {
+  // The row keeps its node rather than a copy of it: a cached document reads its
+  // body only when asked, and only a starter's body is.
   const rows = [];
   for (const node of nodes ?? []) {
     const kind = typeof node?.kind === 'string' ? node.kind.trim() : '';
     if (!kind) continue;
-    rows.push({ ...node, kind, starter: isStarterExampleNode({ slug: node.slug, kind, title: node.title }) });
+    rows.push({ node, slug: node.slug, kind, starter: isStarterExampleNode({ slug: node.slug, kind, title: node.title }) });
   }
   const findings = [];
-  for (const node of rows) {
-    if (!node.starter) continue;
+  for (const row of rows) {
+    if (!row.starter) continue;
     // Until a real node of the kind exists, the starter is the product's own instructions.
-    const sibling = rows.find((other) => other.kind === node.kind && !other.starter);
+    const sibling = rows.find((other) => other.kind === row.kind && !other.starter);
     if (!sibling) continue;
-    const finding = starterExampleFinding({ ...node, realSlug: sibling.slug ?? null });
+    const finding = starterExampleFinding({ ...row.node, kind: row.kind, starter: true, realSlug: sibling.slug ?? null });
     if (finding) findings.push(finding);
   }
   return findings.sort((a, b) => String(a.slug).localeCompare(String(b.slug)));

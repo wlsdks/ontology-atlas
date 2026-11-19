@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
 
 /**
- * Under `prefers-reduced-motion` the field draws one static frame, the cursor snaps,
+ * Under `prefers-reduced-motion` the field draws one static frame, the system pointer stays,
  * and the entrance choreography is replaced by always visible.
  */
 
@@ -19,9 +19,9 @@ describe("gateway FX: reduced-motion equivalent", () => {
     // Reduced-motion branch: one static frame (draw(0)) — the loop starts only in the
     // else branch.
     expect(fx).toMatch(/if \(reduced\) \{\s*\n\s*draw\(0\);/);
-    // The cursor lerp snaps instantly under reduced motion — a lagging cursor is not an
-    // equivalent.
-    expect(fx).toMatch(/!fxLoopLive \|\| reduced/);
+    // Under reduced motion the page's own pointer never starts: the system pointer stays, which
+    // has no lag, no links and no click sparks.
+    expect(fx).toMatch(/if \(finePointer && !reduced && /);
   });
 
   /*
