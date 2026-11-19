@@ -549,9 +549,9 @@ test('a role two capabilities\' reads pass through is listed until an element ho
     assert.ok(sessionReads(root).get('shop/cli.py')?.some((range) => range.role === 'caller'), 'the shared caller was served');
     assert.deepEqual(competencyDepthRefusals([{ id: 'impact', status: 'partial' }], { ...unplaced, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } })
       .filter((line) => /implementation roles/.test(line)), [], 'a partial impact row is not refused for roles');
-    assert.match(unplaced.line, /Roles: 1 of the 1 implementation roles that two or more capabilities' reads pass through have no element: Store \(shop\/store\.py:L1, read for capabilities\/canary, capabilities\/ship\)\. Next: add_concepts an element/);
+    assert.match(unplaced.line, /Roles: 1 of the 1 implementation roles that two or more capabilities' reads pass through have no element: Store \(shop\/store\.py:L1-L5, read for capabilities\/canary, capabilities\/ship\)\. Next: add_concepts an element/);
     const [refusal] = competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...unplaced, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } });
-    assert.match(refusal, /^- impact: 1 implementation roles .* Store \(shop\/store\.py:L1, .*Only if that cannot be done, mark impact partial/);
+    assert.match(refusal, /^- impact: 1 implementation roles .* Store \(shop\/store\.py:L1-L5, .*Only if that cannot be done, mark impact partial/);
 
     const element = doc('elements/persistence', { path: 'shop/store.py', title: 'Persistence' });
     assert.deepEqual(measureBuildDepth([project('- None.'), ...base, element], repo, sessionReads(root)).roles.unplaced, []);
@@ -608,6 +608,19 @@ test('a role is placed by an element\'s path, symbol or title, never by a mentio
     const bySymbol = doc('elements/price-rule', { path: 'shop/rules.py', title: 'Pricing rule' }, 'Refuses an unpriced item (`shop/rules.py` `check_price`).\n\n## Uncertainty\n- None.\n');
     assert.deepEqual(none.unplaced.length - measure(project('- None.'), bySymbol).unplaced.length, 1, 'a path shared by several roles places the one its symbol names');
 
+    // The repair message, followed to the letter: a job title, path: the file, a body citing the range listed for the role.
+    const depth = measureBuildDepth([project('- None.'), ...base], repo, sessionReads(root));
+    const listed = [...depth.line.matchAll(/(check_\w+) \((shop\/rules\.py:L\d+-L\d+), read for/g)];
+    assert.equal(listed.length, 8);
+    const repaired = listed.map(([, , lines], at) => doc(`elements/guard-${at}`, { path: 'shop/rules.py', title: `Guard ${at}` },
+      `Ship and canary rely on it to refuse an item it rejects (${lines}).\n\n## Uncertainty\n- None.\n`));
+    const afterRepair = measureBuildDepth([project('- None.'), ...base, ...repaired], repo, sessionReads(root));
+    assert.deepEqual([afterRepair.roles.element, afterRepair.roles.unplaced.length], [8, 0], 'elements written as the repair says are placed');
+    assert.deepEqual(competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...afterRepair, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } })
+      .filter((line) => /implementation roles/.test(line)), []);
+    const wholeFile = doc('elements/rules', { path: 'shop/rules.py', title: 'Item rules' }, 'Every check (`shop/rules.py:L1-L44`).\n\n## Uncertainty\n- None.\n');
+    assert.equal(measure(project('- None.'), wholeFile).unplaced.length, 8, 'a cite of the whole file names no one role');
+
     const both = measure(project(`- \`${evidence('stock')}\` and \`${evidence('price')}\` are small guards each command repeats, not roles of their own.`));
     assert.equal(both.excluded, 0, 'one line naming two roles excludes neither');
     const one = measure(project(`- \`${evidence('stock')}\` is a small guard each command repeats, not a role of its own.`));
@@ -635,6 +648,31 @@ test('an implementation two capabilities\' reads reach is a shared role', () => 
     const repo = repositorySurvey(root, join(root, 'atlas'));
     const roles = measureBuildDepth([doc('app', {}, 'App.\n\n## Uncertainty\n- None.\n'), capability('find'), capability('list')], repo, sessionReads(root)).roles;
     assert.deepEqual(roles.unplaced.map((row) => row.name).sort(), ['NullStore', 'Remote']);
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a role is used by a capability that cites only the part its own read served, and a common name is not placed by a title', () => {
+  resetSessionReads();
+  const caller = (name) => `from shop.notify import message\n\n\ndef ${name}(item):\n    if item.ready:\n        return message(item)\n    return None\n`;
+  const root = repository({
+    'pyproject.toml': '[project]\nname = "shop"\n',
+    'shop/__init__.py': '',
+    'shop/notify.py': 'def message(item):\n    if item.muted:\n        raise ValueError("muted")\n    return item\n',
+    'shop/ship.py': caller('ship'),
+    'shop/canary.py': caller('canary'),
+  });
+  try {
+    for (const name of ['ship', 'canary']) recordSourceEvidence(root, readSourceEvidence(root, [{ path: `shop/${name}.py`, symbol: name }]));
+    const capability = (name) => doc(`capabilities/${name}`, { path: `shop/${name}.py` }, `Does ${name}.\n\nRefuses a muted item (\`shop/notify.py:L2-L3\`).\n\n## Uncertainty\n- None.\n`);
+    const repo = repositorySurvey(root, join(root, 'atlas'));
+    const docs = [doc('shop', {}, 'Shop.\n\n## Uncertainty\n- None.\n'), capability('ship'), capability('canary')];
+    const roles = measureBuildDepth(docs, repo, sessionReads(root)).roles;
+    assert.deepEqual(roles.unplaced.map((row) => [row.name, row.users]), [['message', ['capabilities/canary', 'capabilities/ship']]]);
+    const titled = doc('elements/message-log', { path: 'shop/log.py', title: 'Message log' });
+    assert.equal(measureBuildDepth([...docs, titled], repo, sessionReads(root)).roles.unplaced.length, 1, '"message" is too common a word for a title to place');
   } finally {
     resetSessionReads();
     rmSync(root, { recursive: true, force: true });

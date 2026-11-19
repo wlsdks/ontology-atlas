@@ -20,7 +20,7 @@
  */
 
 import { declarationIndex } from './declaration-index.mjs';
-import { childSpec, importsOf, languageOf, specReaches } from './import-bindings.mjs';
+import { childSpec, importsOf, languageOf, reachesAnySpec, specReaches } from './import-bindings.mjs';
 
 const CALLEE_LIMITS = Object.freeze({
   callees: 12,
@@ -30,6 +30,8 @@ const CALLEE_LIMITS = Object.freeze({
   bases: 4,
   // Characters of a call's qualifier (`this.git.options.`) examined.
   qualifier: 120,
+  // Declarations of one name examined; more is a common name, not one function.
+  declarations: 64,
 });
 
 // A line longer than this is generated or minified: its calls are not followed.
@@ -226,12 +228,16 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
   const imports = importsOf(file);
   let built = null;
   const index = () => (built ??= rootPath ? declarationIndex(rootPath, { ignore, files: files?.() }) : new Map());
-  const lookup = (name) => [...(index().get(name) ?? []), ...(index().get(`*.${name}`) ?? [])];
+  // A name declared in more places than this is a common word: it is not followed.
+  const lookup = (name) => {
+    const rows = [...(index().get(name) ?? []), ...(index().get(`*.${name}`) ?? [])];
+    return rows.length > CALLEE_LIMITS.declarations ? [] : rows;
+  };
   const samePackage = (path) => language === 'go' && folderOf(path) === folderOf(file.path);
   // Whether `from` can reach a declaration in `path`: the same file, its Go package, or a module it imports.
   const reachesModule = (from, path) => path === from.path || (languageOf(path) === languageOf(from.path)
     && ((languageOf(from.path) === 'go' && folderOf(path) === folderOf(from.path))
-      || importsOf(from).specs.some((spec) => specReaches(spec, path))));
+      || reachesAnySpec(importsOf(from), path)));
   // Whether `from` brings `name` declared in `path` into scope: imported by that name, or declared beside it.
   const reachesName = (from, name, path) => path === from.path || (languageOf(path) === languageOf(from.path)
     && ((languageOf(from.path) === 'go' && folderOf(path) === folderOf(from.path))
@@ -243,7 +249,15 @@ export function calleesOf({ text, file, declaration, rootPath, ignore = [], file
   const push = (row) => {
     if (callees.length < CALLEE_LIMITS.callees && !callees.some((held) => held.path === row.path && held.line === row.line)) callees.push(row);
   };
-  const unique = (rows) => rows.filter((row, at) => rows.findIndex((other) => other.path === row.path && other.line === row.line) === at);
+  const unique = (rows) => {
+    const seen = new Set();
+    return rows.filter((row) => {
+      const key = `${row.path}\0${row.line}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
   for (const { name, via, chain } of callsIn(text, selfNames)) {
     if (callees.length >= CALLEE_LIMITS.callees) break;
     if (via === 'own') {

@@ -9,6 +9,7 @@ import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
+import { importsOf } from './import-bindings.mjs';
 import { readSourceEvidence } from './source-evidence.mjs';
 
 const FILE_BYTES = 256 * 1024;
@@ -172,6 +173,62 @@ describe('a symbol read over a hostile callee or import block stays within the b
         assert.equal(row.status, 'read');
       });
     }
+  });
+});
+
+/*
+ * The import rule once checked every declaration of a name against every
+ * import of the file: one name imported 78,000 times and declared in 1,500
+ * modules took 23 s per read, and one 76 KB Rust `use` held 456 MB. Imports
+ * are now deduplicated and capped per file and per name, matched by set
+ * lookups, and a name declared in more than 64 places is not followed.
+ */
+describe('the import rule costs time and memory linear in the imports', () => {
+  const wrapped = (unit, bytes, indent = '    ') => {
+    const line = `${indent}${unit.repeat(Math.floor(1900 / unit.length))}\n`;
+    return line.repeat(Math.floor(bytes / line.length));
+  };
+  const pythonRepo = (importBytes, modules) => {
+    const imports = Array.from({ length: 3 }, (_, at) => `from pkg${at}.missing import (\n${wrapped('x, ', importBytes)})\n`).join('');
+    const files = { 'src/entry.py': `${imports}\n\nclass Service:\n    def entry(self, v):\n        if v:\n            return x(v) + self.store.x(v)\n        return 0\n` };
+    for (let at = 0; at < modules; at += 1) files[`lib/m${at}/mod.py`] = 'def x(v):\n    if v:\n        return 1\n    return 0\n\n\nclass Store:\n    def x(self, v):\n        return v\n';
+    return repoWith(files);
+  };
+  const read = (root, path, symbol) => () => {
+    const [row] = readSourceEvidence(root, [{ path, symbol }]).rows;
+    assert.equal(row.status, 'read');
+  };
+
+  it('reads past each hostile import shape within the budget', (t) => {
+    const cases = [
+      ['one name imported 78,000 times, declared in 400 modules', pythonRepo(78 * 1024, 400), 'src/entry.py', 'Service.entry'],
+      ['a Rust use of a 13,000-segment prefix and 19,000 items', repoWith({
+        'src/lib.rs': `use ${wrapped('a::', 38 * 1024, '').trimEnd()}\n{\n${wrapped('b,', 38 * 1024, '')}};\n\npub fn entry(v: u32) -> u32 {\n    if v > 1 { return b(v); }\n    0\n}\n`,
+        'src/a/b.rs': 'pub fn b(v: u32) -> u32 {\n    v\n}\n',
+      }), 'src/lib.rs', 'entry'],
+      ['250 KB of Python `from` lines of dots', repoWith({
+        'src/entry.py': `${`from ${'.'.repeat(1990)}\n`.repeat(125)}\ndef entry(v):\n    if v:\n        return helper(v)\n    return 0\n\ndef helper(v):\n    return v\n`,
+      }), 'src/entry.py', 'entry'],
+    ];
+    for (const [name, root, path, symbol] of cases) assertWithinBudget(t, name, read(root, path, symbol));
+  });
+
+  it('holds at most 256 modules and 1,024 names for one file', () => {
+    const lines = [`from pkg.missing import (\n${wrapped('x, ', 64 * 1024)})`];
+    for (let at = 0; at < 2000; at += 100) lines.push(`from pkg import ${Array.from({ length: 100 }, (_, n) => `n${at + n}`).join(', ')}`);
+    const bindings = importsOf({ path: 'src/entry.py', lines: lines.join('\n').split('\n').map((line) => `${line}\n`) });
+    assert.equal(bindings.specs.length, 256);
+    assert.equal(bindings.names.size, 1024);
+    assert.equal(bindings.names.get('x').length, 1, 'a name imported thousands of times from one module is one binding');
+  });
+
+  it('doubling the imports and the modules declaring the name about doubles the time', (t) => {
+    const small = pythonRepo(20 * 1024, 300);
+    const large = pythonRepo(40 * 1024, 600);
+    const smallMs = fastestRunMs(read(small, 'src/entry.py', 'Service.entry'));
+    const largeMs = fastestRunMs(read(large, 'src/entry.py', 'Service.entry'));
+    t.diagnostic(`${smallMs.toFixed(1)} ms -> ${largeMs.toFixed(1)} ms`);
+    assert.ok(largeMs < smallMs * 3 + 20, `doubled input took ${largeMs.toFixed(0)} ms against ${smallMs.toFixed(0)} ms`);
   });
 });
 

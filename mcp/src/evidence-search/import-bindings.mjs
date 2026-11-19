@@ -13,6 +13,11 @@ import { posix } from 'node:path';
 const LINE_CHARS = 2000;
 const STATEMENT_LINES = 40;
 const SPEC_CHARS = 300;
+// Modules and names one file brings in that are kept; a file importing more is generated.
+const SPECS = 256;
+const NAMES = 1024;
+// Modules one name may come from (a name imported twice, or once per build tag).
+const BINDINGS_PER_NAME = 4;
 
 const FAMILIES = new Map([
   ...['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts'].map((ext) => [ext, 'js']),
@@ -56,6 +61,33 @@ export function specReaches(spec, path) {
   return Boolean(spec.tail) && stems.some((stem) => stem === spec.tail || stem.endsWith(`/${spec.tail}`));
 }
 
+/** Every suffix of `path` that starts at a segment: `a/b/c`, `b/c`, `c`. */
+function segmentSuffixes(path) {
+  const suffixes = [path];
+  for (let at = path.indexOf('/'); at >= 0; at = path.indexOf('/', at + 1)) suffixes.push(path.slice(at + 1));
+  return suffixes;
+}
+
+/**
+ * Whether any module a file imports is the one at `path`. The specs are held
+ * in sets, so each check is a few lookups, never a scan of every import.
+ */
+export function reachesAnySpec(bindings, path) {
+  if (!bindings.reach) {
+    const reach = { exact: new Set(), tail: new Set(), go: new Set() };
+    for (const spec of bindings.specs) {
+      if (spec.go) for (const suffix of segmentSuffixes(spec.go)) reach.go.add(suffix);
+      else if (spec.exact) reach.exact.add(spec.exact);
+      else if (spec.tail) reach.tail.add(spec.tail);
+    }
+    bindings.reach = reach;
+  }
+  const { exact, tail, go } = bindings.reach;
+  const folder = posix.dirname(path);
+  if (folder !== '.' && go.has(folder)) return true;
+  return stemsOf(path).some((stem) => exact.has(stem) || segmentSuffixes(stem).some((suffix) => tail.has(suffix)));
+}
+
 /** The module one level below `spec`: `from a import b` may bring in the module `a/b`. */
 export function childSpec(spec, name) {
   if (!spec || spec.go) return null;
@@ -73,6 +105,7 @@ function jsSpec(file, raw) {
 }
 
 function pySpec(file, dots, dotted) {
+  if (dots + (dotted?.length ?? 0) > SPEC_CHARS) return null;
   const parts = dotted ? dotted.split('.').filter(Boolean) : [];
   if (dots === 0) return parts.length > 0 ? { tail: parts.join('/') } : null;
   let base = posix.dirname(file.path);
@@ -90,11 +123,33 @@ function spaced(text) {
   return text.replace(/\s+/gu, ' ').trim();
 }
 
+function specKey(spec) {
+  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}`;
+}
+
+/** The one copy of `spec` this file holds, or null past the cap or for no spec. */
+function addSpec(bindings, spec) {
+  if (!spec) return null;
+  const key = specKey(spec);
+  const held = bindings.byKey.get(key);
+  if (held) return held;
+  if (bindings.byKey.size >= SPECS) return null;
+  bindings.byKey.set(key, spec);
+  return spec;
+}
+
+function addModule(bindings, local, spec) {
+  if (spec && (bindings.modules.has(local) || bindings.modules.size < NAMES)) bindings.modules.set(local, spec);
+}
+
 function addName(bindings, local, spec, imported = local) {
   if (!spec || !/^[A-Za-z_$][\w$]*$/u.test(local)) return;
-  const held = bindings.names.get(local) ?? [];
-  held.push({ spec, imported });
-  bindings.names.set(local, held);
+  const held = bindings.names.get(local);
+  if (!held && bindings.names.size >= NAMES) return;
+  const rows = held ?? [];
+  if (rows.length >= BINDINGS_PER_NAME || rows.some((row) => row.spec === spec && row.imported === imported)) return;
+  rows.push({ spec, imported });
+  bindings.names.set(local, rows);
 }
 
 /** The statement starting at `index`, joined over its continuation lines until `done` holds for one. */
@@ -117,7 +172,7 @@ const JS_REQUIRE = /^(?:const|let|var)\s+(\{[^}]{0,1000}\}|[A-Za-z_$][\w$]*)\s*=
 function jsClause(bindings, spec, clause) {
   const body = spaced(clause).replace(/^type /u, '');
   const namespace = /\* ?as ([A-Za-z_$][\w$]*)/u.exec(body);
-  if (namespace) bindings.modules.set(namespace[1], spec);
+  if (namespace) addModule(bindings, namespace[1], spec);
   const open = body.indexOf('{');
   const close = open < 0 ? -1 : body.indexOf('}', open);
   if (open >= 0 && close > open) {
@@ -129,7 +184,7 @@ function jsClause(bindings, spec, clause) {
   const head = /^([A-Za-z_$][\w$]*)\s*(?:,|$)/u.exec((open >= 0 ? body.slice(0, open) : body).trim());
   if (head) {
     addName(bindings, head[1], spec);
-    bindings.modules.set(head[1], spec);
+    addModule(bindings, head[1], spec);
   }
 }
 
@@ -143,17 +198,15 @@ function readJs(file, lines, bindings) {
       index = last;
       const from = JS_FROM.exec(text);
       if (!from) continue;
-      const spec = jsSpec(file, from[1]);
+      const spec = addSpec(bindings, jsSpec(file, from[1]));
       if (!spec) continue;
-      bindings.specs.push(spec);
       jsClause(bindings, spec, text.slice(text.search(/\b(?:import|export)\b/u) + 6, from.index));
       continue;
     }
     const required = JS_REQUIRE.exec(trimmed);
     if (required) {
-      const spec = jsSpec(file, required[2]);
+      const spec = addSpec(bindings, jsSpec(file, required[2]));
       if (!spec) continue;
-      bindings.specs.push(spec);
       jsClause(bindings, spec, required[1]);
     }
   }
@@ -164,7 +217,8 @@ function readPython(file, lines, bindings) {
     const line = lines[index];
     if (line.length > LINE_CHARS) continue;
     const trimmed = line.trim();
-    const from = /^from\s+(\.*)([\w.]*)\s+import\s+(.*)$/u.exec(trimmed);
+    // The module part starts with a word, so the dots and it never trade characters.
+    const from = /^from\s+(\.*)(\w[\w.]*)?\s+import\s+(.*)$/u.exec(trimmed);
     if (from) {
       let names = from[3];
       if (names.startsWith('(') && !names.includes(')')) {
@@ -172,16 +226,13 @@ function readPython(file, lines, bindings) {
         index = last;
         names += ` ${text}`;
       }
-      const spec = pySpec(file, from[1].length, from[2]);
+      const spec = addSpec(bindings, pySpec(file, from[1].length, from[2] ?? ''));
       if (!spec) continue;
-      bindings.specs.push(spec);
       for (const item of spaced(names.replace(/[()\\]/gu, ' ')).split(',')) {
         const [imported, local] = item.trim().split(/ as /u).map((part) => part.trim());
         if (!imported || imported === '*') continue;
         addName(bindings, local || imported, spec, imported);
-        const child = childSpec(spec, imported);
-        bindings.specs.push(child);
-        bindings.modules.set(local || imported, child);
+        addModule(bindings, local || imported, addSpec(bindings, childSpec(spec, imported)));
       }
       continue;
     }
@@ -189,10 +240,9 @@ function readPython(file, lines, bindings) {
     if (!plain) continue;
     for (const item of spaced(plain[1]).split(',')) {
       const [dotted, local] = item.trim().split(/ as /u).map((part) => part.trim());
-      const spec = pySpec(file, 0, dotted);
+      const spec = addSpec(bindings, pySpec(file, 0, dotted));
       if (!spec) continue;
-      bindings.specs.push(spec);
-      bindings.modules.set(local || dotted, spec);
+      addModule(bindings, local || dotted, spec);
     }
   }
 }
@@ -201,11 +251,11 @@ function readGo(lines, bindings) {
   const take = (text) => {
     const match = /^(?:([A-Za-z_.]\w*)\s+)?"([^"\n]{1,300})"/u.exec(text.trim());
     if (!match) return;
-    const spec = { go: match[2] };
-    bindings.specs.push(spec);
+    const spec = addSpec(bindings, { go: match[2] });
+    if (!spec) return;
     const segments = match[2].split('/');
     const name = match[1] ?? (/^v\d+$/u.test(segments.at(-1)) && segments.length > 1 ? segments.at(-2) : segments.at(-1));
-    if (name && name !== '_' && name !== '.') bindings.modules.set(name.replace(/[^\w]/gu, '_'), spec);
+    if (name && name !== '_' && name !== '.') addModule(bindings, name.replace(/[^\w]/gu, '_'), spec);
   };
   let block = false;
   for (const line of lines) {
@@ -229,17 +279,20 @@ function readRust(lines, bindings) {
     index = last;
     const path = spaced(text.replace(RUST_USE, '').split(';')[0]).replace(/ ?:: ?/gu, '::');
     const open = path.indexOf('{');
-    const prefix = (open < 0 ? path : path.slice(0, open)).split('::').filter(Boolean);
+    const head = open < 0 ? path : path.slice(0, open);
+    // A module path longer than any import names is not one: the statement is skipped whole.
+    if (head.length > SPEC_CHARS) continue;
+    const prefix = head.split('::').filter(Boolean);
     const items = open < 0 ? [prefix.pop() ?? ''] : path.slice(open + 1, path.lastIndexOf('}')).split(',');
     for (const item of items) {
       if (item.includes('{')) continue;
       const [route, local] = item.trim().split(/ as /u);
+      if (route.length > SPEC_CHARS) continue;
       const segments = route.split('::').filter(Boolean);
       const name = segments.pop();
       if (!name || name === '*' || name === 'self') continue;
-      const spec = rsSpec([...prefix, ...segments]);
+      const spec = addSpec(bindings, rsSpec([...prefix, ...segments]));
       if (!spec) continue;
-      bindings.specs.push(spec);
       addName(bindings, local || name, spec, name);
     }
   }
@@ -256,14 +309,14 @@ const BINDINGS = new WeakMap();
  */
 export function importsOf(file) {
   if (BINDINGS.has(file)) return BINDINGS.get(file);
-  const bindings = { names: new Map(), modules: new Map(), specs: [] };
+  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [], reach: null };
   const lines = file.lines.map((line) => (line.length > LINE_CHARS ? line : line.replace(/\r?\n$/u, '')));
   const language = languageOf(file.path);
   if (language === 'js') readJs(file, lines, bindings);
   else if (language === 'py') readPython(file, lines, bindings);
   else if (language === 'go') readGo(lines, bindings);
   else if (language === 'rs') readRust(lines, bindings);
-  bindings.specs = bindings.specs.filter(Boolean);
+  bindings.specs = [...bindings.byKey.values()];
   BINDINGS.set(file, bindings);
   return bindings;
 }

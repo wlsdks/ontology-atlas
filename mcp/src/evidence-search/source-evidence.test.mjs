@@ -672,6 +672,21 @@ test('a call is followed only to a declaration the file reaches, in its own lang
   ]);
 });
 
+test('a name declared in more than 64 places is not followed, even when imported', () => {
+  const root = fixture();
+  mkdirSync(join(root, 'src'));
+  writeFileSync(join(root, 'src', 'entry.ts'), "import { save } from './store';\nexport function entry(x) {\n  if (x) return save(x);\n  return 0;\n}\n");
+  writeFileSync(join(root, 'src', 'store.ts'), 'export function save(x) {\n  if (!x) throw new Error("empty");\n  return x;\n}\n');
+  const [few] = readSourceEvidence(root, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
+  assert.deepEqual(few.callees.map((callee) => callee.path), ['src/store.ts']);
+  const many = fixture();
+  mkdirSync(join(many, 'src'));
+  for (const name of ['entry.ts', 'store.ts']) writeFileSync(join(many, 'src', name), readFileSync(join(root, 'src', name)));
+  for (let at = 0; at < 64; at += 1) writeFileSync(join(many, 'src', `other${at}.ts`), 'export function save(x) {\n  return x;\n}\n');
+  const [common] = readSourceEvidence(many, [{ path: 'src/entry.ts', symbol: 'entry' }]).rows;
+  assert.deepEqual(common.callees, []);
+});
+
 test('a Go call reaches its own package and the packages it imports, nothing else', () => {
   const root = fixture();
   for (const folder of ['server', 'store', 'other']) mkdirSync(join(root, folder));
@@ -717,6 +732,7 @@ test('a Python call reaches the module it imports, and its base class only when 
   ].join('\n'));
   writeFileSync(join(root, 'pkg', 'limits.py'), 'def clamp(x):\n    return min(x, 3)\n');
   writeFileSync(join(root, 'pkg', 'queue.py'), 'def push(x):\n    return x\n');
+  writeFileSync(join(root, 'pkg', 'queue.js'), 'export function push(x) {\n  return x;\n}\n');
   writeFileSync(join(root, 'pkg', 'base.py'), 'class Base:\n    def check(self, x):\n        return x > 0\n');
   writeFileSync(join(root, 'pkg', 'other.py'), 'def clamp(x):\n    return x\n\ndef push(x):\n    return x\n');
   const [row] = readSourceEvidence(root, [{ path: 'pkg/job.py', symbol: 'Job.run' }]).rows;

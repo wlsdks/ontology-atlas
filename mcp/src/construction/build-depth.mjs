@@ -429,8 +429,8 @@ function roleName(symbol) {
 /**
  * The implementation roles two or more capabilities' reads pass through, and
  * where each sits: an element whose `path:` is its file (and, when the file
- * holds several listed roles, whose cited symbol is this one) or whose title
- * names it, one
+ * holds several listed roles, whose cited symbol is this one or whose body cites
+ * lines inside this role's) or whose title names it, one
  * line in the project's ## Uncertainty or ## Excludes that points at it alone
  * and says why, or unplaced. A capability's reads are the symbol reads whose
  * body it cites, or whose context it cites when the read is of its own `path:`
@@ -472,8 +472,9 @@ function measureRoles(docs, reads, repoRoot) {
         || own.some((cite) => cite.path === path && cite.startLine <= range.endLine && cite.endLine >= range.startLine)) continue;
       const name = roleName(range.symbol);
       const key = `${path}\0${name}`;
-      const group = groups.get(key) ?? { name, symbol: name, kind: 'role', path, line: range.startLine, users: new Set() };
+      const group = groups.get(key) ?? { name, symbol: name, kind: 'role', path, line: range.startLine, endLine: range.endLine, users: new Set() };
       group.line = Math.min(group.line, range.startLine);
+      group.endLine = Math.max(group.endLine, range.endLine);
       for (const slug of users) group.users.add(slug);
       groups.set(key, group);
     }
@@ -481,11 +482,12 @@ function measureRoles(docs, reads, repoRoot) {
   const candidates = [...groups.values()].filter((group) => group.users.size >= 2)
     .sort((a, b) => b.users.size - a.users.size || a.path.localeCompare(b.path) || a.line - b.line)
     .slice(0, ROLE_LIMIT)
-    .map((group) => ({ ...group, evidence: `${group.path}:L${group.line}`, users: [...group.users].sort() }));
+    .map((group) => ({ ...group, evidence: `${group.path}:L${group.line}`, lines: `${group.path}:L${group.line}-L${group.endLine}`, users: [...group.users].sort() }));
   const elements = docs.filter((doc) => kindOf(doc) === 'element').map((doc) => {
     const path = pathOf(doc);
     const symbol = path ? citedSymbol(doc, path) : null;
-    return { path, symbol: symbol ? roleName(symbol) : null, title: String(doc.frontmatter?.title ?? '') };
+    const cites = path ? lineCites(doc.body, reads, repoRoot).filter((cite) => cite.path === path) : [];
+    return { path, symbol: symbol ? roleName(symbol) : null, cites, title: String(doc.frontmatter?.title ?? '') };
   });
   const project = docs.find((doc) => kindOf(doc) === 'project');
   const exclusionLines = project
@@ -495,7 +497,10 @@ function measureRoles(docs, reads, repoRoot) {
   const titled = (element, row) => !GENERIC_SYMBOLS.has(row.name.toLowerCase()) && spokenForms(row.name).some((form) => namesWord(element.title, form));
   const place = (row) => {
     const sameFile = candidates.filter((other) => other.path === row.path).length;
-    if (elements.some((element) => (element.path === row.path && (sameFile === 1 || element.symbol === row.name)) || titled(element, row))) return 'element';
+    // In a file holding several listed roles, the element says which: its symbol, or a cite inside this role's lines.
+    const names = (element) => element.symbol === row.name
+      || element.cites.some((cite) => cite.startLine >= row.line && cite.endLine <= row.endLine);
+    if (elements.some((element) => (element.path === row.path && (sameFile === 1 || names(element))) || titled(element, row))) return 'element';
     const excluded = exclusionLines.some((line) => {
       const pointed = candidates.filter((other) => new RegExp(`${escapeRegExp(other.evidence)}(?!\\d)`).test(line)
         || namedInCode(line, other, codeTokens(line)) || exactlyNamed(line, other));
@@ -514,11 +519,11 @@ function measureRoles(docs, reads, repoRoot) {
 
 function roleLabel(row) {
   const users = row.users.slice(0, 3).join(', ') + (row.users.length > 3 ? ` and ${row.users.length - 3} more` : '');
-  return `${repoText(row.name, 120)} (${repoText(row.evidence)}, read for ${users})`;
+  return `${repoText(row.name, 120)} (${repoText(row.lines ?? row.evidence)}, read for ${users})`;
 }
 
 /** The writes that give each unplaced role its element, or its one-line exclusion. */
-const ROLE_REPAIR = 'add_concepts an element for each, titled for the job it does for those abilities (not its code name), with path: its file and a body saying what they rely on it for with the cite of the read lines; then add_relations from each capability that leans on it. Or exclude one in the project\'s ## Uncertainty with one line for it alone that cites its path:Lline and says why it is no shared role';
+const ROLE_REPAIR = 'add_concepts an element for each, titled for the job it does for those abilities (not its code name), with path: its file and a body saying what they rely on it for that cites lines inside the range listed for it (path:Lstart-Lend, not the whole file); then add_relations from each capability that leans on it. Or exclude one in the project\'s ## Uncertainty with one line for it alone that cites its path:Lline and says why it is no shared role';
 
 /** Capability -> capability `depends_on` edges, and the capabilities in none. */
 function measureAbilityEdges(docs) {
