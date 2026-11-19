@@ -102,6 +102,9 @@ function withoutJsonComments(text) {
   return text.replace(/("(?:\\.|[^"\\\n])*")|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//gu, (match, string) => string ?? '').replace(/,(\s*[}\]])/gu, '$1');
 }
 
+// Imports read as the family count reads them (`importsOf`).
+const FAMILY_READ = Object.freeze({ family: true });
+
 const lastSegment = (name) => String(name).split('.').pop();
 const sameDeclaration = (a, b) => a && b && typeof a === 'object' && typeof b === 'object' && a.path === b.path && a.line === b.line;
 const isType = (declaration, path) => TYPE_KINDS.has(declaration.kind) && !(declaration.kind === 'class' && path.endsWith('.rs'));
@@ -350,7 +353,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     for (const path of list) {
       const file = fileOf(path);
       if (!file) return null;
-      for (const row of importsOf(file.imports).names.get(name) ?? []) results.push(resolveExport(row.spec, row.imported, language, depth + 1));
+      for (const row of importsOf(file.imports, FAMILY_READ).names.get(name) ?? []) results.push(resolveExport(row.spec, row.imported, language, depth + 1));
     }
     return agree(results);
   }
@@ -362,7 +365,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const local = (byPath.get(path) ?? []).filter((declaration) => isType(declaration, path) && declaration.name === name);
     if (local.length === 1) return { path, line: local[0].line, name };
     if (local.length > 1) return null;
-    const bindings = importsOf(file.imports);
+    const bindings = importsOf(file.imports, FAMILY_READ);
     const rows = bindings.names.get(name);
     if (!rows) return null;
     // `import Name from` binds whatever the module exports by default, under any name.
@@ -413,7 +416,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
           if (words.length === 3 && words[1] === 'as' && words[2] === 'default') names.add(words[0]);
         }
       }
-      const reexports = importsOf(file.imports).names.get('default') ?? [];
+      const reexports = importsOf(file.imports, FAMILY_READ).names.get('default') ?? [];
       if (names.size === 1 && reexports.length === 0) result = resolveName(path, [...names][0], language, depth + 1);
       else if (names.size === 0 && reexports.length === 1) result = resolveExport(reexports[0].spec, reexports[0].imported, language, depth + 1);
     }
@@ -428,7 +431,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const language = languageOf(path);
     const segments = reference.split('.');
     if (segments.length === 1) return resolveName(path, segments[0], language, 0);
-    const bindings = importsOf(file.imports);
+    const bindings = importsOf(file.imports, FAMILY_READ);
     let spec = bindings.modules.get(segments[0]) ?? null;
     for (const middle of segments.slice(1, -1)) spec = spec ? childSpec(spec, middle) : null;
     return spec ? resolveExport(spec, segments.at(-1), language, 0) : null;
@@ -452,7 +455,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
       const renamed = new Map();
       const defaults = [];
       let count = 0;
-      for (const [local, rows] of importsOf(file.imports).names) {
+      for (const [local, rows] of importsOf(file.imports, FAMILY_READ).names) {
         if (local === 'default') continue;
         for (const row of rows) {
           if (row.imported === 'default') defaults.push({ local, spec: row.spec });

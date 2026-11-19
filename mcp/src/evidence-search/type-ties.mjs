@@ -247,7 +247,7 @@ export function typeTiesOf(declarations, text, path, { partial = false, importLi
   let lines = null;
   const linesOf = () => (lines ??= text.split('\n'));
   let imports = null;
-  const importsHere = () => (imports ??= importsOf({ path, lines: importLines ? importLines() : linesOf() }));
+  const importsHere = () => (imports ??= importsOf({ path, lines: importLines ? importLines() : linesOf() }, { family: true }));
   declarations.forEach((declaration, index) => {
     const signature = typeof declaration.signature === 'string' ? declaration.signature : '';
     if (declaration.kind === 'class' && (python || js || rust)) {

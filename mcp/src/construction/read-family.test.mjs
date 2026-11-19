@@ -205,6 +205,20 @@ test('a class shown in a comment or a string is no member, in each language', ()
     'a Rust impl in a nested block comment and a raw string');
 });
 
+test('a regular expression holding a quote inside a template part does not turn a later sample into a member', () => {
+  const quote = "export function quote(s: string) {\n  return `'${s.replace(/'/g, \"'\\\\''\")}'`;\n}\n";
+  const sample = 'export const TEMPLATE = `\nexport class NewPlugin extends Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n`;\n';
+  const files = {
+    'src/base.ts': TS_BASE,
+    'src/slack.ts': ts('export class Slack implements Plugin {'),
+    'src/mail.ts': ts('export class Mail implements Plugin {'),
+    'src/scaffold.ts': `import { Plugin } from './base';\n${quote}${sample}`,
+  };
+  const row = readIn(files, [{ path: 'src/slack.ts', symbol: 'Slack.apply' }]);
+  assert.equal(sizeOf(row), 2);
+  assert.doesNotMatch(row.family, /NewPlugin/);
+});
+
 test('a bare module specifier names a package, never a local file of that name', () => {
   const emitter = 'export class EventEmitter {\n  apply(token: string) {\n    return true;\n  }\n}\n';
   const extending = (name, from) => ts(`export class ${name} extends EventEmitter {`, `import { EventEmitter } from '${from}';`);
@@ -245,6 +259,10 @@ test('a count that a cut-short file or walk could change has no line', () => {
   assert.equal(sizeOf(readIn({ ...pyFiles, 'app/push.py': `${long}${py('class Push(Plugin):')}` }, slack)), 0, 'a line too long to outline in a file naming the base');
   assert.equal(sizeOf(readIn({ ...pyFiles, 'app/data.py': long }, slack)), 2, 'a line too long to outline in a file that never names the base');
   assert.equal(sizeOf(readIn({ ...pyFiles, 'app/huge.py': `${'# filler\n'.repeat(30_000)}` }, slack)), 0, 'a file past the size cap may name anything');
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/push.py': `${py('class Push(Plugin):')}\nNOTE = """left open\n` }, slack)), 0,
+    'a file naming the base whose strings the blanking could not close');
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/data.py': 'NOTE = """left open\n' }, slack)), 2,
+    'an unclosed string in a file that never names the base');
   const goFiles = {
     'go.mod': GO_MOD,
     'store/store.go': 'package store\n\ntype Store interface {\n\tGet(key string) string\n\tSet(key string, value string)\n}\n',

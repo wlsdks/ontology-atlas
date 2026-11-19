@@ -118,34 +118,15 @@ function factsOf(file) {
   const text = textOf(file);
   const facts = {
     stamp,
-    declarations: [],
-    goImports: [],
-    defaultImports: [],
-    expressions: [],
-    // A file past the size cap is not read at all; one whose outline stopped early is read only in part.
-    capped: file.size > MAX_INDEXED_BYTES,
-    truncated: file.size > MAX_INDEXED_BYTES,
+    declarations: text
+      ? outlineSource(text, file.path).declarations
+        .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export')
+        // A copy: a substring would keep the whole file text alive.
+        .map(({ name, line, kind }) => ({ name: Buffer.from(name).toString(), line, kind }))
+      : [],
     names: identifierFilter(text),
+    family: null,
   };
-  if (text) {
-    // Declarations and class headers are read with comments and strings blanked; imports from the original lines.
-    const blanked = blankLiterals(text, file.path);
-    const outlined = outlineSource(blanked.code, file.path);
-    const outline = outlined.declarations
-      .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
-    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, blanked.code, file.path, {
-      partial: Boolean(outlined.truncated),
-      importLines: () => importLines(text, blanked),
-    });
-    // A copy: a substring would keep the whole file text alive.
-    facts.declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
-    facts.goImports = goImports;
-    facts.defaultImports = defaultImports;
-    facts.expressions = expressions;
-    facts.importsCut = importsCut;
-    // An import cut at a cap may hide a name a member is written under.
-    facts.truncated = Boolean(outlined.truncated) || importsCut;
-  }
   DECLARATIONS.delete(file.abs);
   DECLARATIONS.set(file.abs, facts);
   if (DECLARATIONS.size > FILE_LIMIT) DECLARATIONS.delete(DECLARATIONS.keys().next().value);
@@ -153,8 +134,48 @@ function factsOf(file) {
 }
 
 /**
- * Each product file's declarations, with the ties `typeTiesOf` reads, and the
- * packages a Go file imports, from the same cache the index uses.
+ * What the family count reads of one file, built the first time it is asked
+ * for and kept with the file's facts. Declarations and class headers come from
+ * the text with comments and strings blanked (`code-text`), so a class shown in
+ * a docstring is no class; the general index above keeps reading the plain
+ * outline. A file the blanking could not read with certainty, past the size
+ * cap, with an outline that stopped early or an import cut at a cap is
+ * `truncated`, and the count withholds what it could hold.
+ */
+function familyFactsOf(file, facts) {
+  if (facts.family) return facts.family;
+  const capped = file.size > MAX_INDEXED_BYTES;
+  const family = { declarations: [], goImports: [], defaultImports: [], capped, truncated: capped, importsCut: false };
+  const text = capped ? '' : textOf(file);
+  if (text) {
+    const blanked = blankLiterals(text, file.path);
+    const outlined = outlineSource(blanked.code, file.path);
+    const outline = outlined.declarations
+      .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
+    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, blanked.code, file.path, {
+      partial: Boolean(outlined.truncated) || blanked.uncertain,
+      importLines: () => importLines(text, blanked),
+    });
+    // A copy: a substring would keep the whole file text alive.
+    const declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
+    // A class expression takes the place of what the outline listed on its line (a `const`, or a class named `extends`).
+    const replaced = new Set(expressions.map((expression) => expression.line));
+    family.declarations = replaced.size === 0 ? declarations : [
+      ...declarations.filter((declaration) => !replaced.has(declaration.line)),
+      ...expressions,
+    ].sort((a, b) => a.line - b.line);
+    family.goImports = goImports;
+    family.defaultImports = defaultImports;
+    family.importsCut = importsCut;
+    family.truncated = Boolean(outlined.truncated) || importsCut || blanked.uncertain;
+  }
+  facts.family = family;
+  return family;
+}
+
+/**
+ * Each product file as the family count reads it (`familyFactsOf`), from the
+ * same cache the index uses.
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], files?: object[] }} [options]
@@ -163,22 +184,8 @@ function factsOf(file) {
 export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
   for (const file of files ?? productFiles(rootPath, ignore)) {
     const facts = factsOf(file);
-    // A class expression takes the place of what the outline listed on its line (a `const`, or a class named `extends`).
-    const replaced = new Set(facts.expressions.map((expression) => expression.line));
-    const declarations = replaced.size === 0 ? facts.declarations : [
-      ...facts.declarations.filter((declaration) => !replaced.has(declaration.line)),
-      ...facts.expressions,
-    ].sort((a, b) => a.line - b.line);
-    yield {
-      path: file.path,
-      declarations,
-      goImports: facts.goImports,
-      defaultImports: facts.defaultImports,
-      truncated: facts.truncated,
-      capped: facts.capped,
-      importsCut: Boolean(facts.importsCut),
-      mayName: (name) => mayName(facts, name),
-    };
+    const family = familyFactsOf(file, facts);
+    yield { path: file.path, ...family, mayName: (name) => mayName(facts, name) };
   }
 }
 

@@ -6,13 +6,16 @@
  *
  * Each statement is read from lines of at most `LINE_CHARS` characters and at
  * most `STATEMENT_LINES` lines, so a hostile file costs one pass. A statement
- * or name cut at a cap marks the file's bindings `incomplete`.
+ * or name cut at a cap marks the file's bindings `incomplete`. The family count
+ * reads with `{ family: true }`: statements of up to `FAMILY_STATEMENT_LINES`
+ * lines, and a JavaScript specifier kept apart by how it was written.
  */
 
 import { posix } from 'node:path';
 
 const LINE_CHARS = 2000;
-const STATEMENT_LINES = 400;
+const STATEMENT_LINES = 40;
+const FAMILY_STATEMENT_LINES = 400;
 const SPEC_CHARS = 300;
 // Modules and names one file brings in that are kept; a file importing more is generated.
 const SPECS = 256;
@@ -95,13 +98,13 @@ function spaced(text) {
 
 /** One string per module a spec names; a package-internal tail (`@/x`, `crate::x`) is its own key. */
 export function specKey(spec) {
-  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}\0${spec.internal ? 1 : 0}\0${spec.raw ?? ''}`;
+  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}\0${spec.internal ? 1 : 0}`;
 }
 
 /** The one copy of `spec` this file holds, or null past the cap or for no spec. */
 function addSpec(bindings, spec) {
   if (!spec) return null;
-  const key = specKey(spec);
+  const key = bindings.family && typeof spec.raw === 'string' ? `${specKey(spec)}\0${spec.raw}` : specKey(spec);
   const held = bindings.byKey.get(key);
   if (held) return held;
   if (bindings.byKey.size >= SPECS) {
@@ -130,11 +133,11 @@ function addName(bindings, local, spec, imported = local) {
 }
 
 /** The statement starting at `index`, joined over its continuation lines until `done` holds for one. */
-function statement(lines, index, done) {
+function statement(lines, index, done, limit = STATEMENT_LINES) {
   let text = '';
   let at = index;
   let ended = false;
-  for (; at < lines.length && at < index + STATEMENT_LINES; at += 1) {
+  for (; at < lines.length && at < index + limit; at += 1) {
     const line = lines[at];
     if (line.length > LINE_CHARS) break;
     text += `${line} `;
@@ -178,7 +181,7 @@ function readJs(file, lines, bindings) {
     }
     const trimmed = line.trimStart();
     if (/^(?:import\s|import\{|export\s*(?:type\s*)?[{*])/u.test(trimmed)) {
-      const { text, last, cut } = statement(lines, index, (held, first) => JS_FROM.test(held) || (first && /^import\s*['"]/u.test(held.trimStart())) || /;\s*$/u.test(held));
+      const { text, last, cut } = statement(lines, index, (held, first) => JS_FROM.test(held) || (first && /^import\s*['"]/u.test(held.trimStart())) || /;\s*$/u.test(held), bindings.statementLines);
       index = last;
       if (cut) bindings.incomplete = true;
       const from = JS_FROM.exec(text);
@@ -210,7 +213,7 @@ function readPython(file, lines, bindings) {
     if (from) {
       let names = from[3];
       if (names.startsWith('(') && !names.includes(')')) {
-        const { text, last, cut } = statement(lines, index + 1, (held) => held.includes(')'));
+        const { text, last, cut } = statement(lines, index + 1, (held) => held.includes(')'), bindings.statementLines);
         index = last;
         if (cut) bindings.incomplete = true;
         names += ` ${text}`;
@@ -264,7 +267,7 @@ function readRust(lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     if (line.length > LINE_CHARS || !RUST_USE.test(line)) continue;
-    const { text, last, cut } = statement(lines, index, (held) => held.includes(';'));
+    const { text, last, cut } = statement(lines, index, (held) => held.includes(';'), bindings.statementLines);
     index = last;
     if (cut) bindings.incomplete = true;
     const path = spaced(text.replace(RUST_USE, '').split(';')[0]).replace(/ ?:: ?/gu, '::');
@@ -289,6 +292,7 @@ function readRust(lines, bindings) {
 }
 
 const BINDINGS = new WeakMap();
+const FAMILY_BINDINGS = new WeakMap();
 
 /**
  * The names and modules a file imports: `names` local name -> [{ spec, imported }],
@@ -296,10 +300,15 @@ const BINDINGS = new WeakMap();
  * every spec it imports.
  *
  * @param {{ path: string, lines: string[] }} file
+ * @param {{ family?: boolean }} [options] read as the family count does
  */
-export function importsOf(file) {
-  if (BINDINGS.has(file)) return BINDINGS.get(file);
-  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [], incomplete: false };
+export function importsOf(file, { family = false } = {}) {
+  const cache = family ? FAMILY_BINDINGS : BINDINGS;
+  if (cache.has(file)) return cache.get(file);
+  const bindings = {
+    names: new Map(), modules: new Map(), byKey: new Map(), specs: [], incomplete: false,
+    family, statementLines: family ? FAMILY_STATEMENT_LINES : STATEMENT_LINES,
+  };
   const lines = file.lines.map((line) => (line.length > LINE_CHARS ? line : line.replace(/\r?\n$/u, '')));
   const language = languageOf(file.path);
   if (language === 'js') readJs(file, lines, bindings);
@@ -307,6 +316,6 @@ export function importsOf(file) {
   else if (language === 'go') readGo(lines, bindings);
   else if (language === 'rs') readRust(lines, bindings);
   bindings.specs = [...bindings.byKey.values()];
-  BINDINGS.set(file, bindings);
+  cache.set(file, bindings);
   return bindings;
 }
