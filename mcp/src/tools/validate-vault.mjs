@@ -38,6 +38,7 @@ import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
+import { foldRepeatedGuidance } from './validate-page-fold.mjs';
 import {
   WIKI_ADVISORY_CODES,
   WIKI_DIR,
@@ -90,7 +91,7 @@ function validateWikiTool({ paths, offset, limit, afterPath } = {}) {
     offset: offset ?? 0,
     cursor,
     limit: limit ?? VALIDATION_PAGE_LIMIT,
-    textBudget: limit === undefined ? VALIDATION_PAGE_TEXT_BYTES : null,
+    textBudget: limit === undefined ? WIKI_VALIDATION_PAGE_TEXT_BYTES : null,
     callerArguments: limit === undefined ? {} : { limit },
   });
 }
@@ -314,7 +315,9 @@ function pageWikiValidation(judged, { offset, cursor = null, limit, textBudget =
 }
 
 const VALIDATION_PAGE_LIMIT = 100;
-const VALIDATION_PAGE_TEXT_BYTES = 128 * 1024;
+const WIKI_VALIDATION_PAGE_TEXT_BYTES = 128 * 1024;
+/** A host stops forwarding a tool answer near 56,000 characters; 43,935 was delivered. */
+const VALIDATION_PAGE_TEXT_BYTES = 40_000;
 const BRIEF_PROBLEM_LIMIT = 20;
 const BY_CODE_FILE_SAMPLE = 20;
 
@@ -349,7 +352,7 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, callerA
     ...(entry.files.length > BY_CODE_FILE_SAMPLE ? { filesOmitted: entry.files.length - BY_CODE_FILE_SAMPLE } : {}),
   }]));
   const frame = { ...report, problems: [], summary: { ...report.summary, byCode } };
-  let problems = report.problems.slice(start, start + limit);
+  let problems = foldRepeatedGuidance(report.problems.slice(start, start + limit));
   let stoppedForSize = false;
   if (textBudget !== null) {
     let room = textBudget - prettyBytes(frame) - PAGE_HINT_AND_ENVELOPE_BYTES;
@@ -374,7 +377,7 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, callerA
             (problems.length > 0
               ? `Problem files ${start + 1}-${end} of ${total}, files with errors first and then by slug`
               : `No problem files from offset ${start}; the vault has ${total}`)
-            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within 128 KiB of text` : '')
+            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within 40,000 characters` : '')
             + (nextOffset !== null ? `. The next page: validate_vault(${JSON.stringify(nextArguments)}).` : '.'),
         }
       : {}),
