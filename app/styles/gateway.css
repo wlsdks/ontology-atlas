@@ -996,6 +996,8 @@
 .build-map {
   container-type: size;
   aspect-ratio: 1 / 1;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .build-stage {
@@ -1008,6 +1010,13 @@
 @container (min-width: 40rem) {
   .build-map {
     aspect-ratio: 16 / 10;
+  }
+}
+
+/* Beside the panel the map is at least as tall as the panel's tallest step, so the frame keeps one height. */
+@container build (min-width: 60rem) {
+  .build-map {
+    min-height: 38.5rem;
   }
 }
 
@@ -1062,6 +1071,22 @@
   height: var(--build-dot);
 }
 
+.build-node-mark {
+  transition: scale var(--motion-settle) var(--motion-ease-place);
+}
+
+@media (hover: hover) {
+  .build-node:not(:disabled):hover .build-node-mark {
+    scale: 1.15;
+  }
+}
+
+/* The concept a relation is drawn from can be dragged, so a touch drag does not scroll the page. */
+.build-node[data-grab] {
+  touch-action: none;
+  cursor: grab;
+}
+
 /* The folder. */
 .build-at:has(> .build-folder) {
   opacity: 0;
@@ -1077,6 +1102,52 @@
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-strong);
   background: radial-gradient(circle at 50% 30%, var(--color-indigo-a14), transparent 70%), var(--color-overlay-1);
+}
+
+/* The mission card around the closed folder, and its Start button lit like a game's. */
+.build-mission-chip {
+  color: var(--map-indigo-bright);
+  border: 1px solid var(--color-indigo-a14);
+  background: var(--color-overlay-1);
+}
+
+.build-start {
+  border-color: var(--map-indigo-bright);
+}
+
+/* The glow yields to the button's focus ring, which is also a box-shadow. */
+.build-start:not(:focus-visible) {
+  box-shadow: 0 0 0 4px var(--color-indigo-a14);
+}
+
+/* The tutorial hand: its fingertip sits on the point; hidden unless motion is allowed. */
+.build-hint-at {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  display: none;
+  pointer-events: none;
+  translate: calc(var(--x) * 1cqw) calc(var(--y) * 1cqh);
+}
+
+/* Lucide's pointer has its fingertip at (8, 2) of 24; at 40px that is (13.3, 3.3). */
+.build-hint-hand {
+  left: -13.3px;
+  top: -3.3px;
+  color: var(--color-canvas);
+  fill: var(--color-text-primary);
+  filter: drop-shadow(0 2px 6px var(--color-canvas));
+}
+
+.build-hint-ripple {
+  left: -16px;
+  top: -16px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--color-text-primary);
+  opacity: 0;
 }
 
 /* Files: in the folder, loose once read, stacked by their concept, then absorbed by its name. */
@@ -1102,6 +1173,14 @@
 .build-file-at[data-file='live'] .build-file {
   color: var(--color-text-primary);
   border-color: var(--gateway-window-edge);
+}
+
+/* Drawn pieces that answer nothing: the pointer, the carried file and the labels never take a press
+   meant for the concept under them. */
+.build-agent-at,
+.build-carry-at,
+.build-edge-label-at {
+  pointer-events: none;
 }
 
 /* Concepts. */
@@ -1197,6 +1276,45 @@
   stroke-dashoffset: 0;
 }
 
+/* A relation dragged into place is already drawn; it does not draw a second time. */
+.build-edge[data-by-hand] {
+  transition: stroke var(--motion-settle) var(--motion-ease);
+}
+
+/* The wire a person drags from one concept, caught by the concept it is drawn to. */
+.build-wire {
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+
+.build-wire[data-live] {
+  opacity: 1;
+}
+
+.build-wire line {
+  stroke: var(--map-indigo-bright);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 6;
+  opacity: 0.75;
+}
+
+.build-wire circle {
+  fill: var(--map-indigo-bright);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: scale var(--motion-settle) var(--motion-ease-place);
+}
+
+.build-wire[data-snapped] line {
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
+.build-wire[data-snapped] circle {
+  scale: 1.6;
+}
+
 /* WebKit paints a round cap on a dash of zero length; an undrawn line has none. */
 .build-edge:not([data-drawn]) {
   stroke-linecap: butt;
@@ -1219,6 +1337,93 @@
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border-soft);
   background: var(--color-canvas);
+}
+
+/* The agent at work: a named pointer, the way a shared document shows who is writing. */
+.build-agent-at {
+  opacity: 0;
+}
+
+.build-agent-at[data-shown] {
+  opacity: 1;
+}
+
+.build-agent {
+  translate: 10px 6px;
+}
+
+.build-agent-pointer {
+  color: var(--color-text-primary);
+  filter: drop-shadow(0 1px 2px var(--color-canvas));
+}
+
+.build-agent-tag {
+  color: var(--color-canvas);
+  background: var(--color-text-primary);
+  font-weight: var(--font-weight-strong);
+}
+
+/* A name that reads like code is the one Atlas counts to fix. */
+.build-node-name[data-code-name] {
+  color: var(--color-status-warning);
+}
+
+.build-node-name {
+  --type-step: var(--motion-stagger);
+}
+
+/* What a move earns, rising from the concept it happened to. */
+.build-pickup {
+  display: none;
+  pointer-events: none;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  translate: -50% 0;
+  opacity: 0;
+}
+
+.build-pickup[data-tone='changed'] {
+  color: var(--map-recent-change);
+  border-color: var(--map-recent-change);
+}
+
+/* The commit's reach: once its file lands, a light runs along each relation of the changed
+   concept and the concepts at the other ends ring once. */
+.build-pulse {
+  stroke: var(--map-recent-change);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0.18 2;
+  stroke-dashoffset: 0.18;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px var(--map-recent-change));
+}
+
+.build-node[data-touched] .build-node-ring {
+  border-color: var(--map-recent-change);
+}
+
+/* Sparks thrown from a concept's dot: named, linked, and all together when the map is done. */
+.build-burst {
+  display: none;
+  pointer-events: none;
+}
+
+.build-spark {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--map-indigo-bright);
+  opacity: 0;
+}
+
+.build-spark:nth-child(even) {
+  background: var(--color-text-primary);
+}
+
+.build-node[data-changed] .build-spark:nth-child(odd) {
+  background: var(--map-recent-change);
 }
 
 /* The commit and the file it carries into the concept that holds it. */
@@ -1302,6 +1507,71 @@
   background-color: var(--color-text-primary);
 }
 
+/* The run's clock and the wide panel's mission list. */
+.build-clock {
+  color: var(--color-text-tertiary);
+}
+
+.build-clock[data-stopped] {
+  color: var(--color-text-primary);
+}
+
+.build-quest {
+  color: var(--color-text-tertiary);
+  border: 1px solid transparent;
+  transition:
+    color var(--motion-slow) var(--motion-ease),
+    background-color var(--motion-slow) var(--motion-ease),
+    border-color var(--motion-slow) var(--motion-ease);
+}
+
+.build-quest[data-quest='now'] {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-soft);
+  background-color: var(--color-overlay-1);
+}
+
+.build-quest[data-quest='done'] {
+  color: var(--color-text-secondary);
+}
+
+.build-quest-mark {
+  color: var(--color-canvas);
+  border: 1.5px solid var(--color-border-strong);
+  transition:
+    background-color var(--motion-slow) var(--motion-ease),
+    border-color var(--motion-slow) var(--motion-ease);
+}
+
+.build-quest[data-quest='now'] .build-quest-mark {
+  border-color: var(--color-text-primary);
+}
+
+.build-quest[data-quest='done'] .build-quest-mark {
+  border-color: var(--map-indigo-bright);
+  background-color: var(--map-indigo-bright);
+}
+
+/* The finish: three stars, earned ones lit. */
+.build-clear {
+  border: 1px solid var(--color-border-strong);
+  background:
+    radial-gradient(80% 120% at 50% 0%, var(--color-indigo-a14), transparent 70%),
+    var(--color-overlay-1);
+}
+
+.build-star {
+  color: var(--color-text-tertiary);
+}
+
+.build-star[data-earned] {
+  color: var(--color-text-primary);
+}
+
+.build-star[data-earned] .build-star-mark > svg {
+  filter: drop-shadow(0 0 6px var(--map-indigo-bright));
+}
+
 .build-bubble {
   border: 1px solid var(--color-border-strong);
   background: var(--color-overlay-1);
@@ -1355,6 +1625,62 @@
     animation: buildEmote var(--motion-choreography) var(--motion-ease) both;
   }
 
+  .build-letter {
+    animation: buildLetter var(--motion-base) var(--motion-ease) both;
+    animation-delay: calc(var(--type-step, calc(var(--motion-stagger) / 3)) * var(--i));
+  }
+
+  .build-hint-at {
+    display: block;
+    animation: buildHintTap calc(var(--motion-base) * 9) var(--motion-ease) calc(var(--motion-choreography) * 1.5) infinite both;
+    animation-play-state: paused;
+  }
+
+  .build-hint-ripple {
+    animation: buildHintRipple calc(var(--motion-base) * 9) var(--motion-ease) calc(var(--motion-choreography) * 1.5) infinite both;
+    animation-play-state: paused;
+  }
+
+  [data-build-motion='running'] .build-hint-at,
+  [data-build-motion='running'] .build-hint-ripple {
+    animation-play-state: running;
+  }
+
+  .build-pickup {
+    display: block;
+    animation: buildPickup var(--motion-choreography) var(--motion-ease) var(--burst-delay) both;
+  }
+
+  .build-quest[data-quest='done'] .build-quest-mark {
+    animation: buildPop var(--motion-slow) var(--motion-ease-place) both;
+  }
+
+  .build-star[data-earned] .build-star-mark > svg {
+    animation: buildStarIn var(--motion-slow) var(--motion-ease-place) both;
+    animation-delay: calc(var(--motion-slow) + var(--motion-stagger) * 6 * var(--order));
+  }
+
+  .build-node[data-changed] .build-node-dot {
+    animation: buildPop var(--motion-slow) var(--motion-ease-place) calc(var(--motion-choreography) * 0.8) both;
+  }
+
+  .build-burst {
+    display: block;
+  }
+
+  .build-spark {
+    animation: buildSpark var(--motion-expressive) var(--motion-ease) both;
+    animation-delay: var(--burst-delay);
+  }
+
+  .build-pulse {
+    animation: buildPulse var(--motion-choreography) var(--motion-ease) var(--motion-expressive) both;
+  }
+
+  .build-node[data-touched] .build-node-ring {
+    animation: buildTouch var(--motion-expressive) var(--motion-ease) calc(var(--motion-choreography) * 1.4) both;
+  }
+
   .build-node[data-target] .build-node-ring,
   .build-node[data-changed] .build-node-ring {
     animation: buildRing calc(var(--motion-base) * 9) var(--motion-ease) infinite;
@@ -1385,6 +1711,65 @@
   15% { opacity: 1; scale: 1; }
   75% { opacity: 1; scale: 0.9; }
   100% { opacity: 0; scale: 0.5; }
+}
+
+@keyframes buildHintTap {
+  0% { opacity: 0; scale: 1; }
+  15% { opacity: 1; scale: 1; }
+  35% { scale: 0.82; }
+  50% { scale: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; scale: 1; }
+}
+
+@keyframes buildHintRipple {
+  0%, 33% { opacity: 0; scale: 0.6; }
+  38% { opacity: 0.8; }
+  70% { opacity: 0; scale: 1.8; }
+  100% { opacity: 0; scale: 1.8; }
+}
+
+@keyframes buildPickup {
+  0% { opacity: 0; translate: -50% 0; scale: 0.8; }
+  12% { opacity: 1; translate: -50% -14px; scale: 1; }
+  70% { opacity: 1; translate: -50% -24px; }
+  100% { opacity: 0; translate: -50% -32px; }
+}
+
+@keyframes buildPop {
+  0% { scale: 1; }
+  40% { scale: 1.45; }
+  100% { scale: 1; }
+}
+
+@keyframes buildStarIn {
+  0% { opacity: 0; scale: 0.2; rotate: -40deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+
+@keyframes buildLetter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes buildSpark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(-10px); }
+  10% { opacity: 1; }
+  70% { opacity: 1; transform: rotate(var(--a)) translateY(-36px) scale(0.9); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-44px) scale(0.5); }
+}
+
+@keyframes buildPulse {
+  0% { opacity: 0; stroke-dashoffset: 0.18; }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; stroke-dashoffset: -1; }
+}
+
+@keyframes buildTouch {
+  0% { opacity: 0; scale: 1; }
+  12% { opacity: 0.9; }
+  100% { opacity: 0; scale: 2.6; }
 }
 
 @keyframes buildRing {

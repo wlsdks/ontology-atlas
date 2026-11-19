@@ -5,6 +5,7 @@ import path from 'path';
 
 import packageJson from './package.json' with { type: 'json' };
 import { DurationShardSequencer, VitestTimingsReporter } from './scripts/ci/vitest-shard-sequencer.mjs';
+import { rowProducerHash } from './scripts/lib/row-producer.mjs';
 
 // Only these contract files render components; source/parser guards need no DOM.
 const domContracts = [
@@ -39,7 +40,7 @@ export default defineConfig({
      * `package.json` rather than carrying a copy, and without this the tests would see the
      * deliberate `unknown` fallback and fail on a repair that is working correctly.
      */
-    env: { NEXT_PUBLIC_RELEASE_VERSION: packageJson.version },
+    env: { NEXT_PUBLIC_RELEASE_VERSION: packageJson.version, NEXT_PUBLIC_ROW_PRODUCER: rowProducerHash() },
     // Composes messages/<locale>.json from its parts before any test imports it.
     globalSetup: ['./scripts/i18n/build-messages.mjs'],
     projects: [

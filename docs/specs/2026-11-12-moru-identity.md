@@ -266,3 +266,9 @@ chase. Props and drawn notes replace an extra speech bubble. A pup occasionally
 peeks out during the longer idle routine; waiting remains quiet and stationary.
 Sources, prompts and the four localized README examples ship with the 74-clip
 pack. Existing scene framing keeps blanket peekaboo in the catalogue.
+
+## Revisions
+
+- 2026-11-12: first draft, with the owner's choice of Moru.
+- 2026-11-13: Moru motions, friends, pups and weather scenes added; hops grounded and playback kept in the context menu.
+- 2026-11-14: prop gestures, wordless emotions, playful encounters and the 32-pose dance added; motion refined and variations quieted.

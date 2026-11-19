@@ -4,7 +4,7 @@
 //! file from outside the vault, and dotfiles (where credentials such as `.env` live) are never
 //! read; credential files are not `.md` files either.
 
-use crate::stamps::Stamp;
+use crate::stamps::{Stamp, Volume};
 use std::collections::HashMap;
 use std::fs::{File, Metadata};
 use std::path::{Path, PathBuf};
@@ -64,12 +64,12 @@ impl<'a> Folders<'a> {
         true
     }
 
-    /// The file's stamp, or `None` when it is gone or not admitted.
-    pub(crate) fn stamp(&mut self, relative: &str) -> Option<Stamp> {
+    /// The file's stamp as `volume` vouches for it, or `None` when it is gone or not admitted.
+    pub(crate) fn stamp(&mut self, relative: &str, volume: &Volume) -> Option<Stamp> {
         if !admits_name(relative) || !self.folders_are_real(relative) {
             return None;
         }
-        regular_file(&self.root.join(relative)).map(|meta| Stamp::of(&meta))
+        volume.stamp(&self.root.join(relative))
     }
 }
 

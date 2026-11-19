@@ -2,7 +2,7 @@
 
 use crate::confine;
 use crate::segment::match_expression;
-use crate::stamps::{is_racy, sha256, Sha, Stamp};
+use crate::stamps::{is_racy, sha256, Sha, Stamp, Volume};
 use rusqlite::{params, Connection};
 use sha2::{Digest, Sha256};
 use std::io::Read;
@@ -68,12 +68,13 @@ pub(crate) fn search(
             })
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
+    let volume = Volume::of(root);
     let mut found = Found::default();
     for candidate in candidates {
         if found.hits.len() == limit {
             break;
         }
-        if still_describes_disk(root, &candidate) {
+        if still_describes_disk(root, &candidate, &volume) {
             found.hits.push(candidate.hit);
         } else {
             found.stale += 1;
@@ -82,20 +83,20 @@ pub(crate) fn search(
     Ok(found)
 }
 
-/// A row is used only while its stamp equals the file's, and a racy one only while its hash does.
-/// The file is reached as the index reached it (`confine`), or the hit is dropped.
-fn still_describes_disk(root: &Path, candidate: &Candidate) -> bool {
+/// A row is used only while its stamp equals the file's, and a racy one, or one whose stamp its
+/// volume does not vouch for (`Volume`), only while its hash does too. The file is reached as the index reached
+/// it (`confine`), or the hit is dropped.
+fn still_describes_disk(root: &Path, candidate: &Candidate, volume: &Volume) -> bool {
     let Some(path) = confine::resolve(root, &candidate.hit.path) else {
         return false;
     };
-    let Ok(metadata) = std::fs::symlink_metadata(&path) else {
+    let Some(stamp) = volume.stamp(&path) else {
         return false;
     };
-    let stamp = Stamp::of(&metadata);
     if stamp != candidate.stamp {
         return false;
     }
-    !is_racy(stamp.mtime_ns, candidate.read_at_ns)
+    (stamp.is_vouched() && !is_racy(stamp.mtime_ns, candidate.read_at_ns))
         || file_sha(root, &candidate.hit.path)
             .is_some_and(|sha| sha.as_slice() == candidate.sha.as_slice())
 }
@@ -155,35 +156,73 @@ mod tests {
     fn a_hit_is_kept_only_while_its_row_still_describes_the_file() {
         let vault = Vault::new("describes");
         std::fs::write(vault.0.join("a.md"), "alpha").unwrap();
-        let stamp = Stamp::of(&std::fs::symlink_metadata(vault.0.join("a.md")).unwrap());
+        let stamp = Volume::of(&vault.0).stamp(&vault.0.join("a.md")).unwrap();
         let right = file_sha(&vault.0, "a.md").unwrap().to_vec();
         let wrong = vec![0u8; 32];
         let settled = stamp.mtime_ns + RACY_WINDOW_NS + 1;
         let racy = stamp.mtime_ns;
+        let unvouched = Volume::untrusted().stamp(&vault.0.join("a.md")).unwrap();
+        assert_eq!(unvouched.ctime_ns, 0);
 
         assert!(
-            still_describes_disk(&vault.0, &candidate(stamp, settled, &wrong)),
+            still_describes_disk(
+                &vault.0,
+                &candidate(stamp, settled, &wrong),
+                &Volume::of(&vault.0)
+            ),
             "a settled stamp is trusted without reading"
         );
         assert!(
-            still_describes_disk(&vault.0, &candidate(stamp, racy, &right)),
+            still_describes_disk(
+                &vault.0,
+                &candidate(stamp, racy, &right),
+                &Volume::of(&vault.0)
+            ),
             "a racy row whose hash matches is kept"
         );
         assert!(
-            !still_describes_disk(&vault.0, &candidate(stamp, racy, &wrong)),
+            !still_describes_disk(
+                &vault.0,
+                &candidate(stamp, racy, &wrong),
+                &Volume::of(&vault.0)
+            ),
             "a racy row whose hash differs is dropped"
+        );
+        assert!(
+            !still_describes_disk(
+                &vault.0,
+                &candidate(unvouched, settled, &wrong),
+                &Volume::untrusted()
+            ),
+            "on a volume whose stamps are not trusted, a settled row whose hash differs is dropped"
+        );
+        assert!(
+            still_describes_disk(
+                &vault.0,
+                &candidate(unvouched, settled, &right),
+                &Volume::untrusted()
+            ),
+            "and one whose hash matches is kept"
         );
         let older = Stamp {
             size: stamp.size + 1,
             ..stamp
         };
         assert!(
-            !still_describes_disk(&vault.0, &candidate(older, settled, &wrong)),
+            !still_describes_disk(
+                &vault.0,
+                &candidate(older, settled, &wrong),
+                &Volume::of(&vault.0)
+            ),
             "a different stamp is dropped"
         );
         std::fs::remove_file(vault.0.join("a.md")).unwrap();
         assert!(
-            !still_describes_disk(&vault.0, &candidate(stamp, settled, &wrong)),
+            !still_describes_disk(
+                &vault.0,
+                &candidate(stamp, settled, &wrong),
+                &Volume::of(&vault.0)
+            ),
             "a vanished file is dropped"
         );
     }

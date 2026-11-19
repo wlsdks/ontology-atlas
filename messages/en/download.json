@@ -154,44 +154,59 @@
   "build": {
     "eyebrow": "Try it",
     "title": "Build a map with Moru",
-    "sub": "One sample repository, about a minute: open the folder, name what the files do, link the concepts, then find what a commit changed.",
+    "sub": "One sample repository, about a minute: Claude Code writes the first map, you fix what Atlas finds, then you see what a commit changed.",
     "repo": "sample repository",
+    "mission": {
+      "eyebrow": "1-minute mission",
+      "title": "Finish the map of a shop app"
+    },
     "files": "{count} files",
-    "stepCount": "{step}/5",
+    "stepCount": "{step}/6",
     "steps": {
       "open": "Open",
-      "name": "Name",
+      "build": "Build",
+      "rename": "Rename",
       "link": "Link",
       "change": "Change",
       "done": "Done"
     },
+    "quests": {
+      "open": "Open the folder",
+      "build": "Claude Code writes the first map",
+      "rename": "Rename what reads like code",
+      "link": "Link the concept standing alone",
+      "change": "Find what the commit changed",
+      "done": "Finish the map"
+    },
     "moru": {
-      "closed": "This is a small shop app. Shall we map it together? Let’s open the folder first.",
-      "reading": "Reading {count} files and gathering the ones that do the same job.",
-      "naming": "These {count} files do one job. What should the map call it?",
-      "namingHint": "Name it the way people talk about it, and the map reads at a glance.",
-      "linkStart": "{from} connects to {to} ({reason}). Tap {from} first.",
+      "closed": "A small shop app. Press Start: Claude Code writes the first map, then we fix what Atlas finds. Can you get all three stars?",
+      "building": "Claude Code is reading {count} files and writing the concepts and relations.",
+      "rename": "The first map is in! Atlas found what to fix. Tap {name} first, the name that reads like code.",
+      "renaming": "What would people call it? Pick a name.",
+      "renameHint": "When names are people’s words, anyone new to the map reads it at a glance.",
+      "linkStart": "{to} stands alone. {from} {reason}. Link {from} to {to}.",
       "linkEnd": "Good. Now tap {to} to draw the line.",
       "miss": "Not that one. Tap {name}, the one that glows.",
-      "commit": "The map is ready! Now an agent has changed the code and committed. Shall we see it on the map?",
+      "commit": "Both fixed! Now Claude Code has changed the code and committed. Shall we see it on the map?",
       "impact": "The changed file lives in {name}. Tap the glowing {name} concept.",
       "inspect": "Here you see what changed and which concepts it is linked to.",
       "done": "Done! This map stays in your repository as Markdown files, and you and your agents read it together."
     },
     "actions": {
-      "open": "Open folder",
+      "start": "Start",
       "commit": "See it on the map",
       "confirm": "Got it",
       "restart": "Start over",
-      "tryBrowser": "Try it in the browser"
+      "tryBrowser": "Try it in the browser",
+      "retry": "Try again for three stars"
     },
     "suggested": "Moru’s pick",
-    "folderName": "{folder} folder",
     "names": {
       "cart": "Cart",
       "payment": "Payment",
       "account": "Sign-in"
     },
+    "altName": "Account",
     "relations": {
       "readsTotal": "reads the total",
       "needsLogin": "needs sign-in"
@@ -203,8 +218,22 @@
       "linked": "Linked concepts",
       "note": "The map marks this concept as changed, so you know to recheck what it says."
     },
-    "doneSummary": "{concepts} concepts · {relations} relations · 1 change checked",
-    "honesty": "A guided sample. In real use Claude Code or Codex reads your files over MCP and writes the concepts and relations, and you can rename anything at any time.",
+    "result": "Built in {seconds}s · {misses, plural, =0 {no wrong taps} one {# wrong tap} other {# wrong taps}}",
+    "stars": {
+      "built": "Map built",
+      "flawless": "No misses",
+      "brisk": "Under {seconds}s",
+      "earned": "Earned:",
+      "missed": "Not earned:",
+      "count": "{count, plural, one {# star} other {# stars}}"
+    },
+    "pickup": {
+      "concept": "+1 concept",
+      "renamed": "Renamed",
+      "relation": "+1 relation",
+      "changed": "Changed"
+    },
+    "honesty": "A guided sample. In real use Claude Code or Codex reads your files over MCP and writes the concepts and relations, and Atlas counts names that read like code and concepts standing alone. You fix them yourself or hand them to your agent.",
     "stageLabel": "Sample map built with Moru",
     "nodeLabel": "{name} concept, {count} files"
   },

@@ -15,8 +15,6 @@ paths and `rules-path-scope.contract.test.ts` keep the
 conditions live. Making a rule resident updates that contract, this sentence,
 and the commit's reason together.
 
-Opus builds (`implementer`) and debugs (`investigator`); Fable plans, specs,
-reviews and gives design verdicts (`docs/engineering/agent-effort.md`).
 Claude discovers skills under `.claude/skills/`.
 Codex discovers `.agents/skills/`; it does not auto-load `CLAUDE.md`.
 
