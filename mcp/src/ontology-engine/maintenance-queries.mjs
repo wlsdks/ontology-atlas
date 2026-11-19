@@ -1,6 +1,7 @@
 import { normalizeLimit, normalizeOptionalBoolean, summarizeNode } from './query-primitives.mjs';
 import { folderForKind } from '../schema.mjs';
-import { bodyMeaningFindings, starterExampleFindings } from '../meaning/meaning-findings.mjs';
+import { starterExampleFindings } from '../meaning/meaning-findings.mjs';
+import { docBodyMeaningFindings, docHasBody } from '../vault/doc-facts.mjs';
 import { slugOutsideKindFolderMessage } from '../construction/construction-rules.mjs';
 
 const MEANING_GAP_KIND_BY_CODE = Object.freeze({
@@ -56,9 +57,8 @@ export function createMaintenanceQueries({
     const rows = [];
     for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
       const doc = sourceDocFor(node.slug);
-      if (!doc || typeof doc.body !== 'string') continue;
-      const input = { kind: node.kind, slug: node.slug, title: node.title, body: doc.body };
-      for (const finding of bodyMeaningFindings(input)) {
+      if (!docHasBody(doc)) continue;
+      for (const finding of docBodyMeaningFindings(doc, { kind: node.kind, slug: node.slug, title: node.title })) {
         rows.push({
           kind: MEANING_GAP_KIND_BY_CODE[finding.code],
           score: MEANING_GAP_SCORE_BY_CODE[finding.code],

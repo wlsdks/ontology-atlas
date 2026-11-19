@@ -50,19 +50,19 @@ macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サ
 <table>
 <tr>
 <td width="50%"><img src="docs/assets/readme/neural.png" alt="マップの神経網ビュー：オントロジーを立体で描き、ケイパビリティを一つ選ぶと、それが依存するものとそれを使うものがパネルに並ぶ" /><br /><b>マップ · 神経網</b> — 同じ概念を、回して見られる立体として描きます。一つ選ぶと、何に依存し、何から使われているかがわかります。</td>
-<td width="50%"><img src="public/gateway/projects.en.png" alt="プロジェクト：プロジェクトの説明、含まれる概念の数に応じた長さのドメインのバー、選んだドメイン内のケイパビリティ一覧" /><br /><b>プロジェクト</b> — プロジェクトが何のためにあり、どのドメインに分かれ、各ドメインに何が入っているか。</td>
+<td width="50%"><img src="public/gateway/projects.en.webp" alt="プロジェクト：プロジェクトの説明、含まれる概念の数に応じた長さのドメインのバー、選んだドメイン内のケイパビリティ一覧" /><br /><b>プロジェクト</b> — プロジェクトが何のためにあり、どのドメインに分かれ、各ドメインに何が入っているか。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/library.en.png" alt="資料室：左に Wiki ページとソースとの一致状態、中央に検索欄、その下に最初に読むソース" /><br /><b>資料室</b> — 文書を入れると、出典つきの Wiki ページが出てきます。一節を探し、ソースで確かめます。</td>
-<td width="50%"><img src="public/gateway/planning.en.png" alt="企画：左に Markdown ファイルの一覧、右に開いた文書" /><br /><b>企画</b> — 開いているフォルダ内の <code>planning/</code> に、計画を Markdown で書きます。アプリでもブラウザでも使え、macOS アプリでは別のフォルダをその場で読むこともできます。</td>
+<td width="50%"><img src="public/gateway/library.en.webp" alt="資料室：左に Wiki ページとソースとの一致状態、中央に検索欄、その下に最初に読むソース" /><br /><b>資料室</b> — 文書を入れると、出典つきの Wiki ページが出てきます。一節を探し、ソースで確かめます。</td>
+<td width="50%"><img src="public/gateway/planning.en.webp" alt="企画：左に Markdown ファイルの一覧、右に開いた文書" /><br /><b>企画</b> — 開いているフォルダ内の <code>planning/</code> に、計画を Markdown で書きます。アプリでもブラウザでも使え、macOS アプリでは別のフォルダをその場で読むこともできます。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="変更：1 日にマージされた変更の数、マージされた時間帯、スコープごとにまとめた変更" /><br /><b>変更</b> — 期間中に何がマージされたかを数えてまとめ、その元のプルリクエスト、コミット、ファイルへ進めます。</td>
-<td width="50%"><img src="public/gateway/git.en.png" alt="Git：左にコミット履歴、右に一つのコミットが変えた概念とその関係" /><br /><b>Git</b> — コミットごとに、どの概念が変わったかを示します。編集した文書は、コミットする前にここに現れます。</td>
+<td width="50%"><img src="public/gateway/changes.en.webp" alt="変更：1 日にマージされた変更の数、マージされた時間帯、スコープごとにまとめた変更" /><br /><b>変更</b> — 期間中に何がマージされたかを数えてまとめ、その元のプルリクエスト、コミット、ファイルへ進めます。</td>
+<td width="50%"><img src="public/gateway/git.en.webp" alt="Git：左にコミット履歴、右に一つのコミットが変えた概念とその関係" /><br /><b>Git</b> — コミットごとに、どの概念が変わったかを示します。編集した文書は、コミットする前にここに現れます。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="ハーネス：エージェントが読むファイル、実行前に止めるルール、終了後に検査するもの、そして開いている指示ファイル" /><br /><b>ハーネス</b> — エージェントがこのリポジトリで読むもの、実行前に止められるもの、終了後に検査されるもの。</td>
-<td width="50%"><img src="public/gateway/automations.en.png" alt="自動化：予約した文書チェックの頻度と最後の結果、そして実行履歴" /><br /><b>自動化</b> — 定期チェックと、各実行で見つかったこと。</td>
+<td width="50%"><img src="public/gateway/harness.en.webp" alt="ハーネス：エージェントが読むファイル、実行前に止めるルール、終了後に検査するもの、そして開いている指示ファイル" /><br /><b>ハーネス</b> — エージェントがこのリポジトリで読むもの、実行前に止められるもの、終了後に検査されるもの。</td>
+<td width="50%"><img src="public/gateway/automations.en.webp" alt="自動化：予約した文書チェックの頻度と最後の結果、そして実行履歴" /><br /><b>自動化</b> — 定期チェックと、各実行で見つかったこと。</td>
 </tr>
 </table>
 

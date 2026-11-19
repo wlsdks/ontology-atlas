@@ -10,6 +10,8 @@ import {
   availableDemoClips,
 } from '@/views/download/model/demo-clips';
 
+import { webpSize } from '../lib/webp-size';
+
 /**
  * The length is read from the MP4 `mvhd` box directly: ffprobe would need ffmpeg on the CI runner
  * and the check would silently skip. Declared `seconds` must match the real file.
@@ -72,7 +74,7 @@ describe('demo clip — declaration and assets', () => {
           for (const name of [
             `${clip.basename}.${locale}.webm`,
             `${clip.basename}.${locale}.mp4`,
-            `${clip.basename}.${locale}-poster.png`,
+            `${clip.basename}.${locale}-poster.webp`,
           ]) {
             const stat = statSync(join(DEMO_DIR, name));
             // 10KB is the floor that filters out "the file exists but only half uploaded".
@@ -81,8 +83,8 @@ describe('demo clip — declaration and assets', () => {
         });
 
         it(`${locale}: the poster is the declared frame size, which the video reserves before it loads`, () => {
-          const png = readFileSync(join(DEMO_DIR, `${clip.basename}.${locale}-poster.png`));
-          expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([clip.width, clip.height]);
+          const poster = readFileSync(join(DEMO_DIR, `${clip.basename}.${locale}-poster.webp`));
+          expect(webpSize(poster)).toEqual({ width: clip.width, height: clip.height });
         });
 
         it(`${locale}: the declared webm codec matches the file, or an iPhone without AV1 picks it and shows black`, () => {
@@ -103,7 +105,7 @@ describe('demo clip — declaration and assets', () => {
        * above would pass. Compares bytes, not pixels.
        */
       it('the two locales are not the same file — if one is overwritten every check above stays green', () => {
-        for (const ext of ['webm', 'mp4', '-poster.png'] as const) {
+        for (const ext of ['webm', 'mp4', '-poster.webp'] as const) {
           const name = (locale: string) =>
             ext.startsWith('-')
               ? `${clip.basename}.${locale}${ext}`
