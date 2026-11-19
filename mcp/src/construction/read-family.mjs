@@ -7,14 +7,14 @@
  * builder.
  *
  * Members are counted only inside the folder the read was made in, never above
- * it: that folder is all the server was granted. A folder that is not itself a
- * repository root says the count is within this folder. A member counts as read
- * when a range this session served overlaps its own code: its declaration of
- * the read method, else the whole class or method.
+ * it: that folder is all the server was granted. The count is a floor, and the
+ * line says so: ties written in a way this pass cannot follow are not found,
+ * while a member it lists is always one. A member counts as read when a range
+ * this session served overlaps its own code: its declaration of the read
+ * method, else the whole class or method.
  */
 
-import { existsSync } from 'node:fs';
-import { join, posix } from 'node:path';
+import { posix } from 'node:path';
 
 import { repoText } from '../analyze/repo-text.mjs';
 import { productWalk } from '../evidence-search/declaration-index.mjs';
@@ -40,7 +40,6 @@ export function noteReadFamilies(packet, { root, ignore = [], reads }) {
   if (rows.length === 0 || !root) return packet;
   const walk = productWalk(root, ignore);
   const families = createFamilies(root, walk.files, { truncated: walk.truncated });
-  const scope = existsSync(join(root, '.git')) ? '' : ' within this folder';
   const shown = (path) => repoText(path);
   for (const row of rows) {
     const family = families.familyOf(row.path, row.actualRange, row.symbol);
@@ -58,7 +57,7 @@ export function noteReadFamilies(packet, { root, ignore = [], reads }) {
       : `the classes whose header names ${base}`;
     const named = members.slice(0, SHOWN).map((member) => `${repoText(member.name, 80)} ${shown(member.path)}:L${member.line}`).join(', ');
     const more = members.length > SHOWN ? ` and ${members.length - SHOWN} more` : '';
-    row.family = `This family has ${members.length} members${scope}: ${what} (${named}${more}). This session has read ${read} of them; a sentence about the family says "${read} of ${members.length} read" or speaks only for the member${read === 1 ? '' : 's'} read, and what the others do is an Uncertainty line.`;
+    row.family = `This family has at least ${members.length} members found in this folder: ${what} (${named}${more}). You read ${read} of them; a sentence about the family says "${read} of at least ${members.length} read" or speaks only for the member${read === 1 ? '' : 's'} read, never "every" unless all were read, and what the others do is an Uncertainty line.`;
   }
   return packet;
 }

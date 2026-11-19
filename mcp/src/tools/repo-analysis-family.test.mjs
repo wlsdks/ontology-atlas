@@ -69,7 +69,7 @@ test('a family is counted only inside the folder the server was granted, never i
     const [atFolder, outside] = inside.results;
     assert.deepEqual(schemaErrors(inside.schema, atFolder.structuredContent), []);
     const family = atFolder.structuredContent.sourceEvidence.rows[0].family;
-    assert.match(family, /^This family has 2 members within this folder: the classes whose header names `Plugin` \(src\/plugin\.ts:L1\) \(Mail src\/mail\.ts:L2, Slack src\/slack\.ts:L2\)\. This session has read 1 of them/);
+    assert.match(family, /^This family has at least 2 members found in this folder: the classes whose header names `Plugin` \(src\/plugin\.ts:L1\) \(Mail src\/mail\.ts:L2, Slack src\/slack\.ts:L2\)\. You read 1 of them; a sentence about the family says "1 of at least 2 read"/);
     assert.doesNotMatch(family, /plan\.ts|UnannouncedBridge|private/, 'a file above the granted folder never reaches the line');
     assert.equal(outside.isError, true, 'a read addressed to a sibling folder is refused');
 
@@ -77,8 +77,8 @@ test('a family is counted only inside the folder the server was granted, never i
     const whole = await answers(root, join(root, 'atlas'), [{ sourceOnly: true, sourceReads: [{ path: 'granted/src/slack.ts', symbol: 'Slack.apply' }] }]);
     const repositoryFamily = whole.results[0].structuredContent.sourceEvidence.rows[0].family;
     assert.deepEqual(schemaErrors(whole.schema, whole.results[0].structuredContent), []);
-    assert.match(repositoryFamily, /^This family has 3 members: the classes whose header names `Plugin` \(granted\/src\/plugin\.ts:L1\) \(Mail granted\/src\/mail\.ts:L2, Slack granted\/src\/slack\.ts:L2, UnannouncedBridge private\/notes\/plan\.ts:L2\)\./,
-      'a server granted the repository root counts the whole repository and does not say "within this folder"');
+    assert.match(repositoryFamily, /^This family has at least 3 members found in this folder: the classes whose header names `Plugin` \(granted\/src\/plugin\.ts:L1\) \(Mail granted\/src\/mail\.ts:L2, Slack granted\/src\/slack\.ts:L2, UnannouncedBridge private\/notes\/plan\.ts:L2\)\./,
+      'a server granted the repository root counts the whole repository');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

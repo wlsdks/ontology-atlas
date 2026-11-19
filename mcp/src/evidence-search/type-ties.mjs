@@ -122,6 +122,26 @@ function jsBases(text) {
   return bases;
 }
 
+// A class written as an expression: `module.exports = class X`, `exports.X = class`, `const X = class`, `export default class`.
+const CLASS_EXPRESSION = /^\s*(?:(?:module\.exports|exports\.([A-Za-z_$][\w$]*)|(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*))\s*=\s*|export\s+default\s+)class\b(?:\s+(?!extends\b|implements\b)([A-Za-z_$][\w$]*))?/u;
+
+/** Each class expression in a JavaScript file as a class declaration with its ties: the outline lists none of them as a class with its own name. */
+function classExpressions(lines) {
+  const out = [];
+  for (let at = 0; at < lines.length; at += 1) {
+    const line = lines[at];
+    if (line.length > LINE_CHARS || !line.includes('class')) continue;
+    const match = CLASS_EXPRESSION.exec(line);
+    if (!match) continue;
+    const written = header(lines, at + 1, false);
+    const bases = written === null ? null : jsBases(written);
+    if (bases !== null && bases.length === 0) continue;
+    const name = match[3] ?? match[1] ?? match[2] ?? 'default';
+    out.push({ name: copy(name), line: at + 1, kind: 'class', ...(bases === null ? { open: true } : { bases: bases.map(copy) }) });
+  }
+  return out;
+}
+
 function rustBases(text) {
   const impl = /^(?:unsafe\s+)?impl\s+(.*?)\s+for\s+/u.exec(text.trim());
   if (!impl) return [];
@@ -208,8 +228,9 @@ function goStruct(lines, line, signature) {
 
 /**
  * The ties of each declaration in `declarations` (outline rows with their
- * `signature`), by index, the packages a Go file imports, and the local
- * names a JavaScript file binds by default import.
+ * `signature`), by index, the packages a Go file imports, the local names a
+ * JavaScript file binds by default import, its class expressions, and whether
+ * an import statement was cut at a cap.
  *
  * @param {object[]} declarations
  * @param {string} text the file's text
@@ -222,7 +243,7 @@ export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
   const rust = path.endsWith('.rs');
   const go = path.endsWith('.go');
   const ties = new Map();
-  if (!(python || js || rust || go)) return { ties, goImports: [] };
+  if (!(python || js || rust || go)) return { ties, goImports: [], defaultImports: [], expressions: [], importsCut: false };
   let lines = null;
   const linesOf = () => (lines ??= text.split('\n'));
   declarations.forEach((declaration, index) => {
@@ -250,13 +271,19 @@ export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
   const goImports = go
     ? [...importsOf({ path, lines: linesOf() }).modules].filter(([, spec]) => spec?.go).map(([local, spec]) => [copy(local), copy(spec.go)])
     : [];
-  // A default import may give a base any local name, so a file whose class headers name a base, or that was not all outlined, keeps those names.
+  const expressions = js && text.includes('class') ? classExpressions(linesOf()) : [];
+  // A default import may give a base any local name, so a file whose class headers name a base, or that was not all outlined, keeps those names;
+  // an import statement cut at a cap may hide one.
   let defaultImports = [];
-  if (js && (partial || [...ties.values()].some((tie) => tie.bases || tie.open))) {
+  let importsCut = false;
+  if ((js || python) && (partial || expressions.length > 0 || [...ties.values()].some((tie) => tie.bases || tie.open))) {
     const bindings = importsOf({ path, lines: linesOf() });
-    defaultImports = [...bindings.names]
-      .filter(([local, rows]) => rows.some((row) => row.imported === local && bindings.modules.get(local) === row.spec))
-      .map(([local]) => copy(local));
+    importsCut = Boolean(bindings.incomplete);
+    if (js) {
+      defaultImports = [...bindings.names]
+        .filter(([local, rows]) => rows.some((row) => row.imported === local && bindings.modules.get(local) === row.spec))
+        .map(([local]) => copy(local));
+    }
   }
-  return { ties, goImports, defaultImports };
+  return { ties, goImports, defaultImports, expressions, importsCut };
 }

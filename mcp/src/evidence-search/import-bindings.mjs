@@ -5,13 +5,14 @@
  * anywhere, in any language, and following them reads code no caller runs.
  *
  * Each statement is read from lines of at most `LINE_CHARS` characters and at
- * most `STATEMENT_LINES` lines, so a hostile file costs one pass.
+ * most `STATEMENT_LINES` lines, so a hostile file costs one pass. A statement
+ * or name cut at a cap marks the file's bindings `incomplete`.
  */
 
 import { posix } from 'node:path';
 
 const LINE_CHARS = 2000;
-const STATEMENT_LINES = 40;
+const STATEMENT_LINES = 400;
 const SPEC_CHARS = 300;
 // Modules and names one file brings in that are kept; a file importing more is generated.
 const SPECS = 256;
@@ -101,7 +102,10 @@ function addSpec(bindings, spec) {
   const key = specKey(spec);
   const held = bindings.byKey.get(key);
   if (held) return held;
-  if (bindings.byKey.size >= SPECS) return null;
+  if (bindings.byKey.size >= SPECS) {
+    bindings.incomplete = true;
+    return null;
+  }
   bindings.byKey.set(key, spec);
   return spec;
 }
@@ -113,9 +117,12 @@ function addModule(bindings, local, spec) {
 function addName(bindings, local, spec, imported = local) {
   if (!spec || !/^[A-Za-z_$][\w$]*$/u.test(local)) return;
   const held = bindings.names.get(local);
-  if (!held && bindings.names.size >= NAMES) return;
   const rows = held ?? [];
-  if (rows.length >= BINDINGS_PER_NAME || rows.some((row) => row.spec === spec && row.imported === imported)) return;
+  if (rows.some((row) => row.spec === spec && row.imported === imported)) return;
+  if ((!held && bindings.names.size >= NAMES) || rows.length >= BINDINGS_PER_NAME) {
+    bindings.incomplete = true;
+    return;
+  }
   rows.push({ spec, imported });
   bindings.names.set(local, rows);
 }
@@ -124,13 +131,17 @@ function addName(bindings, local, spec, imported = local) {
 function statement(lines, index, done) {
   let text = '';
   let at = index;
+  let ended = false;
   for (; at < lines.length && at < index + STATEMENT_LINES; at += 1) {
     const line = lines[at];
     if (line.length > LINE_CHARS) break;
     text += `${line} `;
-    if (done(line, at === index)) break;
+    if (done(line, at === index)) {
+      ended = true;
+      break;
+    }
   }
-  return { text, last: Math.min(at, lines.length - 1) };
+  return { text, last: Math.min(at, lines.length - 1), cut: !ended && at < lines.length };
 }
 
 const JS_FROM = /\bfrom\s*['"]([^'"\n]{1,300})['"]/u;
@@ -159,11 +170,15 @@ function jsClause(bindings, spec, clause) {
 function readJs(file, lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (line.length > LINE_CHARS) continue;
+    if (line.length > LINE_CHARS) {
+      if (/^\s*(?:import|export)\b/u.test(line.slice(0, 64))) bindings.incomplete = true;
+      continue;
+    }
     const trimmed = line.trimStart();
     if (/^(?:import\s|import\{|export\s*(?:type\s*)?[{*])/u.test(trimmed)) {
-      const { text, last } = statement(lines, index, (held, first) => JS_FROM.test(held) || (first && /^import\s*['"]/u.test(held.trimStart())) || /;\s*$/u.test(held));
+      const { text, last, cut } = statement(lines, index, (held, first) => JS_FROM.test(held) || (first && /^import\s*['"]/u.test(held.trimStart())) || /;\s*$/u.test(held));
       index = last;
+      if (cut) bindings.incomplete = true;
       const from = JS_FROM.exec(text);
       if (!from) continue;
       const spec = addSpec(bindings, jsSpec(file, from[1]));
@@ -183,15 +198,19 @@ function readJs(file, lines, bindings) {
 function readPython(file, lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (line.length > LINE_CHARS) continue;
+    if (line.length > LINE_CHARS) {
+      if (/^\s*(?:from|import)\b/u.test(line.slice(0, 64))) bindings.incomplete = true;
+      continue;
+    }
     const trimmed = line.trim();
     // The module part starts with a word, so the dots and it never trade characters.
     const from = /^from\s+(\.*)(\w[\w.]*)?\s+import\s+(.*)$/u.exec(trimmed);
     if (from) {
       let names = from[3];
       if (names.startsWith('(') && !names.includes(')')) {
-        const { text, last } = statement(lines, index + 1, (held) => held.includes(')'));
+        const { text, last, cut } = statement(lines, index + 1, (held) => held.includes(')'));
         index = last;
+        if (cut) bindings.incomplete = true;
         names += ` ${text}`;
       }
       const spec = addSpec(bindings, pySpec(file, from[1].length, from[2] ?? ''));
@@ -243,8 +262,9 @@ function readRust(lines, bindings) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     if (line.length > LINE_CHARS || !RUST_USE.test(line)) continue;
-    const { text, last } = statement(lines, index, (held) => held.includes(';'));
+    const { text, last, cut } = statement(lines, index, (held) => held.includes(';'));
     index = last;
+    if (cut) bindings.incomplete = true;
     const path = spaced(text.replace(RUST_USE, '').split(';')[0]).replace(/ ?:: ?/gu, '::');
     const open = path.indexOf('{');
     const head = open < 0 ? path : path.slice(0, open);
@@ -277,7 +297,7 @@ const BINDINGS = new WeakMap();
  */
 export function importsOf(file) {
   if (BINDINGS.has(file)) return BINDINGS.get(file);
-  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [] };
+  const bindings = { names: new Map(), modules: new Map(), byKey: new Map(), specs: [], incomplete: false };
   const lines = file.lines.map((line) => (line.length > LINE_CHARS ? line : line.replace(/\r?\n$/u, '')));
   const language = languageOf(file.path);
   if (language === 'js') readJs(file, lines, bindings);

@@ -120,6 +120,7 @@ function factsOf(file) {
     declarations: [],
     goImports: [],
     defaultImports: [],
+    expressions: [],
     // A file past the size cap is not read at all; one whose outline stopped early is read only in part.
     capped: file.size > MAX_INDEXED_BYTES,
     truncated: file.size > MAX_INDEXED_BYTES,
@@ -129,12 +130,15 @@ function factsOf(file) {
     const outlined = outlineSource(text, file.path);
     const outline = outlined.declarations
       .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
-    const { ties, goImports, defaultImports } = typeTiesOf(outline, text, file.path, { partial: Boolean(outlined.truncated) });
+    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, text, file.path, { partial: Boolean(outlined.truncated) });
     // A copy: a substring would keep the whole file text alive.
     facts.declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
     facts.goImports = goImports;
     facts.defaultImports = defaultImports;
-    facts.truncated = Boolean(outlined.truncated);
+    facts.expressions = expressions;
+    facts.importsCut = importsCut;
+    // An import cut at a cap may hide a name a member is written under.
+    facts.truncated = Boolean(outlined.truncated) || importsCut;
   }
   DECLARATIONS.delete(file.abs);
   DECLARATIONS.set(file.abs, facts);
@@ -148,18 +152,25 @@ function factsOf(file) {
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], files?: object[] }} [options]
- * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], defaultImports: string[], truncated: boolean, capped: boolean, mayName: (name: string) => boolean }>}
+ * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], defaultImports: string[], truncated: boolean, capped: boolean, importsCut: boolean, mayName: (name: string) => boolean }>}
  */
 export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
   for (const file of files ?? productFiles(rootPath, ignore)) {
     const facts = factsOf(file);
+    // A class expression takes the place of what the outline listed on its line (a `const`, or a class named `extends`).
+    const replaced = new Set(facts.expressions.map((expression) => expression.line));
+    const declarations = replaced.size === 0 ? facts.declarations : [
+      ...facts.declarations.filter((declaration) => !replaced.has(declaration.line)),
+      ...facts.expressions,
+    ].sort((a, b) => a.line - b.line);
     yield {
       path: file.path,
-      declarations: facts.declarations,
+      declarations,
       goImports: facts.goImports,
       defaultImports: facts.defaultImports,
       truncated: facts.truncated,
       capped: facts.capped,
+      importsCut: Boolean(facts.importsCut),
       mayName: (name) => mayName(facts, name),
     };
   }

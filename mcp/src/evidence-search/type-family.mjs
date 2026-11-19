@@ -55,11 +55,17 @@ const KNOWN_EMBEDS = new Map([
 ]);
 const ENTRY_EXTENSIONS = ['.ts', '.tsx', '.mts', '.js', '.jsx', '.mjs'];
 // What a module's default export names: `export default class X`, `export default X`, `module.exports = X`.
+// Each runs on one trimmed line of at most `LINE_CHARS` characters, and no two
+// of its repeated parts can match the same characters, so a line costs one pass.
 const DEFAULT_EXPORTS = [
-  /^export\s+default\s+(?:abstract\s+)?(?:class|interface)\s+([A-Za-z_$][\w$]*)/gmu,
-  /^export\s+default\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gmu,
-  /^module\.exports\s*=\s*(?:class\s+)?([A-Za-z_$][\w$]*)/gmu,
+  /^export\s+default\s+(?:abstract\s+)?(?:class|interface)\s+([A-Za-z_$][\w$]*)/u,
+  /^export\s+default\s+([A-Za-z_$][\w$]*)\s*;?$/u,
+  /^module\.exports\s*=\s*(?:class\s+)?([A-Za-z_$][\w$]*)/u,
 ];
+const LINE_CHARS = 2000;
+// Lines and characters an `export { … }` list is read over.
+const LIST_LINES = 40;
+const LIST_CHARS = 4000;
 
 const lastSegment = (name) => String(name).split('.').pop();
 const sameDeclaration = (a, b) => a && b && typeof a === 'object' && typeof b === 'object' && a.path === b.path && a.line === b.line;
@@ -95,11 +101,11 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     if (held) held.push(value);
     else map.set(key, [value]);
   };
-  for (const { path, declarations, goImports, defaultImports, truncated, capped, mayName } of declarationsByFile(repoRoot, { files })) {
+  for (const { path, declarations, goImports, defaultImports, truncated, capped, importsCut, mayName } of declarationsByFile(repoRoot, { files })) {
     byPath.set(path, declarations);
     mayNameIn.set(path, mayName);
     // A file past the size cap was never read: it may name anything.
-    if (truncated) cutShort.push({ path, language: languageOf(path), folder: posix.dirname(path), mayName: capped ? () => true : mayName, defaults: Boolean(defaultImports?.length) });
+    if (truncated) cutShort.push({ path, language: languageOf(path), folder: posix.dirname(path), mayName: capped ? () => true : mayName, defaults: Boolean(defaultImports?.length) || importsCut });
     const defaults = new Set(defaultImports ?? []);
     if (defaults.size) defaultLocalsIn.set(path, [...defaults]);
     const folder = posix.dirname(path);
@@ -269,11 +275,30 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     let result = null;
     if (file) {
       const names = new Set();
-      for (const pattern of DEFAULT_EXPORTS) for (const match of file.text.matchAll(pattern)) names.add(match[1]);
-      for (const match of file.text.matchAll(/\bexport\s*\{([^}]*)\}(?!\s*from\b)/gu)) {
-        for (const item of match[1].split(',')) {
-          const [local, exported] = item.trim().split(/\s+as\s+/u);
-          if (exported === 'default') names.add(local);
+      const { lines } = file;
+      for (let at = 0; at < lines.length; at += 1) {
+        const line = lines[at];
+        if (line.length > LINE_CHARS) continue;
+        const trimmed = line.trim();
+        if (!/^(?:export|module)\b/u.test(trimmed)) continue;
+        for (const pattern of DEFAULT_EXPORTS) {
+          const match = pattern.exec(trimmed);
+          if (match) names.add(match[1]);
+        }
+        if (!/^export\s*\{/u.test(trimmed)) continue;
+        let list = trimmed;
+        let end = at;
+        while (!list.includes('}') && end + 1 < lines.length && end - at < LIST_LINES && list.length < LIST_CHARS && lines[end + 1].length <= LINE_CHARS) {
+          end += 1;
+          list += ` ${lines[end].trim()}`;
+        }
+        at = end;
+        const close = list.indexOf('}');
+        if (close < 0) continue;
+        if (/^\s*from\b/u.test(list.slice(close + 1, close + 64))) continue;
+        for (const item of list.slice(list.indexOf('{') + 1, close).split(',')) {
+          const words = item.trim().split(/\s+/u);
+          if (words.length === 3 && words[1] === 'as' && words[2] === 'default') names.add(words[0]);
         }
       }
       const reexports = importsOf(file).names.get('default') ?? [];
@@ -309,17 +334,19 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const reaches = (row) => names.has(row.imported) || (byDefault && row.imported === 'default' && modulePaths(row.spec, language).includes(base.path));
     for (let round = 0; round < FAMILY_LIMITS.reexportDepth; round += 1) {
       const before = names.size;
+      // A file read in an earlier round is read again: a name found since may be the one it renames.
       for (const [path, mayName] of mayNameIn) {
-        if (scanned.has(path) || languageOf(path) !== language || !((byDefault && mayName('default')) || [...names].some((name) => mayName(name)))) continue;
+        if (languageOf(path) !== language || !((byDefault && mayName('default')) || [...names].some((name) => mayName(name)))) continue;
         scanned.add(path);
         if (scanned.size > FAMILY_LIMITS.aliasFiles) return null;
         const file = fileOf(path);
         if (!file) return null;
         for (const [local, rows] of importsOf(file).names) if (local !== 'default' && rows.some(reaches)) names.add(local);
       }
-      if (names.size === before) break;
+      // Names still growing after the last round may not all be found.
+      if (names.size === before) return names;
     }
-    return names;
+    return null;
   }
 
   const memberSets = new Map();

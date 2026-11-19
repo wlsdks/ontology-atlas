@@ -22,8 +22,6 @@ function readIn(files, selectors) {
   resetSessionReads();
   const root = mkdtempSync(join(tmpdir(), 'atlas-read-family-'));
   try {
-    // A repository root: the line then speaks for the whole repository.
-    mkdirSync(join(root, '.git'));
     for (const [path, text] of Object.entries({ 'package.json': '{"name":"tool"}', ...files })) {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), text);
@@ -41,13 +39,13 @@ function readIn(files, selectors) {
   }
 }
 
-const sizeOf = (row) => Number(/^This family has (\d+) members/.exec(row?.family ?? '')?.[1] ?? 0);
-const readOf = (row) => Number(/This session has read (\d+) of them/.exec(row?.family ?? '')?.[1] ?? -1);
+const sizeOf = (row) => Number(/^This family has at least (\d+) members/.exec(row?.family ?? '')?.[1] ?? 0);
+const readOf = (row) => Number(/You read (\d+) of them/.exec(row?.family ?? '')?.[1] ?? -1);
 
 test('a class read says how many classes name its resolved base and how many this session read', () => {
   const files = { 'src/base.ts': TS_BASE, 'src/slack.ts': ts('export class Slack implements Plugin {'), 'src/mail.ts': ts('export class Mail implements Plugin {'), 'src/sms.ts': ts('export class Sms implements Plugin {') };
   const row = readIn(files, [{ path: 'src/mail.ts', startLine: 5, maxLines: 2 }, { path: 'src/slack.ts', symbol: 'apply' }]);
-  assert.equal(row.family, 'This family has 3 members: the classes whose header names `Plugin` (src/base.ts:L1) (Mail src/mail.ts:L2, Slack src/slack.ts:L2, Sms src/sms.ts:L2). This session has read 2 of them; a sentence about the family says "2 of 3 read" or speaks only for the members read, and what the others do is an Uncertainty line.');
+  assert.equal(row.family, 'This family has at least 3 members found in this folder: the classes whose header names `Plugin` (src/base.ts:L1) (Mail src/mail.ts:L2, Slack src/slack.ts:L2, Sms src/sms.ts:L2). You read 2 of them; a sentence about the family says "2 of at least 3 read" or speaks only for the members read, never "every" unless all were read, and what the others do is an Uncertainty line.');
   assert.equal(readOf(readIn(files, [{ path: 'src/mail.ts', startLine: 1, maxLines: 1 }, { path: 'src/slack.ts', symbol: 'apply' }])), 1, 'a range outside every member is no member read');
 });
 
@@ -139,6 +137,40 @@ test('a class naming its base through a default import, under any name, is a mem
     'a line too long to outline in a file importing a base by default');
 });
 
+test('a base renamed in a long import, a class expression, or a later alias round is counted', () => {
+  const helpers = (count) => Array.from({ length: count }, (_, at) => `helper${at}`);
+  const longImport = (names, alias, from) => `import {\n${names.map((name) => `  ${name},`).join('\n')}\n  ${alias},\n} from '${from}';`;
+  const barrel = (names) => `${names.map((name) => `export const ${name} = 1;`).join('\n')}\nexport { Plugin } from './base';\n`;
+  const read = [{ path: 'src/slack.ts', symbol: 'Slack.apply' }];
+  const files = { 'src/base.ts': TS_BASE, 'src/slack.ts': ts('export class Slack implements Plugin {'), 'src/mail.ts': ts('export class Mail implements Plugin {') };
+  assert.equal(sizeOf(readIn({ ...files, 'src/helpers.ts': barrel(helpers(45)), 'src/sms.ts': ts('export class Sms implements DeliveryPlugin {', longImport(helpers(45), 'Plugin as DeliveryPlugin', './helpers')) }, read)), 3,
+    'an alias inside an import of 48 lines');
+  assert.equal(sizeOf(readIn({ ...files, 'src/helpers.ts': barrel([]), 'src/sms.ts': ts('export class Sms implements DeliveryPlugin {', longImport(helpers(420), 'Plugin as DeliveryPlugin', './helpers')) }, read)), 0,
+    'an import longer than the statement cap may hide the alias');
+  assert.equal(sizeOf(readIn({
+    ...files,
+    'src/zbarrel.ts': "export { Plugin as DeliveryPlugin } from './base';\n",
+    'src/aaa.ts': ts('export class Sms implements Channel {', "import { DeliveryPlugin as Channel } from './zbarrel';\n// a Plugin for text messages"),
+  }, read)), 3, 'a file read before the alias it renames was found is read again');
+  assert.equal(sizeOf(readIn({
+    ...files,
+    'src/z1.ts': "export { Plugin as A } from './base';\n",
+    'src/y2.ts': "export { A as B } from './z1';\n",
+    'src/x3.ts': "export { B as C } from './y2';\n",
+    'src/w4.ts': ts('export class Sms implements D {', "import { C as D } from './x3';"),
+  }, read)), 0, 'a chain of renames longer than the rounds read');
+  const classBase = 'export class Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n';
+  const body = '\n  apply(token) {\n    if (!token) throw new Error("no token");\n    return true;\n  }\n}';
+  const classFiles = { 'src/base.ts': classBase, 'src/slack.ts': ts('export class Slack extends Plugin {'), 'src/mail.ts': ts('export class Mail extends Plugin {') };
+  assert.equal(sizeOf(readIn({
+    ...classFiles,
+    'src/sms.js': `const { Plugin } = require('./base');\n\nmodule.exports = class Sms extends Plugin {${body};\n`,
+    'src/push.ts': `import { Plugin } from './base';\n\nexport default class extends Plugin {${body}\n`,
+    'src/hook.ts': `import { Plugin } from './base';\n\nexport const Hook = class extends Plugin {${body};\n`,
+    'src/fax.js': `const { Plugin } = require('./base');\n\nexports.Fax = class extends Plugin {${body};\n`,
+  }, read)), 6, 'classes written as expressions');
+});
+
 test('a count that a cut-short file or walk could change has no line', () => {
   const handlers = (count) => `from .base import Plugin\n\n\n${Array.from({ length: count }, (_, at) => `class Handler${at}(Plugin):\n${['apply', 'validate', 'store', 'render', 'close', 'retry', 'audit', 'load', 'name'].map((name) => `    def ${name}(self, token):\n        return token\n\n`).join('')}\n`).join('')}`;
   const read = [{ path: 'app/handlers.py', symbol: 'Handler0.apply' }];
@@ -191,7 +223,7 @@ test('a family that cannot be decided has no line', () => {
   }, [{ path: 'app/slack.py', symbol: 'Slack.apply' }]).family, undefined, 'a base the file itself declares twice');
   assert.equal(sizeOf(readIn({ ...both, 'src/lint.py': py('class Lint(Plugin):', '') }, [{ path: 'src/slack.ts', symbol: 'apply' }])), 2,
     'a class in another language naming the same word is no member and withholds nothing');
-  assert.equal(readIn({ ...both, 'src/other.ts': TS_BASE, 'src/sms.ts': ts('export class Sms implements Plugin {', "import { Plugin } from './other';") }, [{ path: 'src/slack.ts', symbol: 'apply' }]).family?.match(/has (\d+)/)?.[1], '2',
+  assert.equal(readIn({ ...both, 'src/other.ts': TS_BASE, 'src/sms.ts': ts('export class Sms implements Plugin {', "import { Plugin } from './other';") }, [{ path: 'src/slack.ts', symbol: 'apply' }]).family?.match(/has at least (\d+)/)?.[1], '2',
     'a same-named base declared elsewhere is another family');
   assert.equal(readIn({
     'src/base.ts': TS_BASE,
@@ -275,7 +307,7 @@ test('a Go interface with one method, an embedding interface or two of the same 
   assert.equal(readIn(files, [{ path: 'wide/file.go', symbol: 'File.Open' }]).family, undefined, 'two equal-width interfaces with different implementers');
   assert.equal(readIn(files, [{ path: 'wide/file.go', symbol: 'File.Seek' }]).family, undefined, 'an interface that embeds another');
   assert.equal(readIn(files, [{ path: 'wide/pipe.go', symbol: 'Pipe.Ping' }]).family, undefined, 'a one-method interface');
-  assert.match(readIn(files, [{ path: 'wide/pipe.go', symbol: 'Pipe.Read' }]).family, /^This family has 2 members: the Go types in or importing wide\/ whose methods match `Reader`/);
+  assert.match(readIn(files, [{ path: 'wide/pipe.go', symbol: 'Pipe.Read' }]).family, /^This family has at least 2 members found in this folder: the Go types in or importing wide\/ whose methods match `Reader`/);
 });
 
 test('a name in the member list cannot start a line of its own', (t) => {

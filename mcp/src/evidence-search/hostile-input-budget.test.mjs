@@ -427,15 +427,31 @@ describe('a family costs time linear in the types and interfaces that could join
     const reads = new Map([['src/impl.ts', [{ startLine: 1, endLine: 2 }]]]);
     return () => {
       const row = noteReadFamilies(structuredClone(packet), { root, reads }).rows[0];
-      assert.match(row.family ?? '', new RegExp(`^This family has ${classes} members`));
+      assert.match(row.family ?? '', new RegExp(`^This family has at least ${classes} members`));
     };
   };
+
+  // A base module whose text the default-export scan reads: a default export followed by a run of blanks and a letter.
+  const defaultScan = (tail) => {
+    const root = repoWith({
+      'package.json': '{"name":"x"}',
+      'src/base.ts': `export class Plugin {\n  apply(v: number) {\n    return v;\n  }\n}\n${tail}`,
+      'src/p0.ts': "import { Plugin } from './base';\nexport class P0 extends Plugin {\n  apply(v: number) {\n    return v ? 1 : 0;\n  }\n}\n",
+      'src/p1.ts': "import { Plugin } from './base';\nexport class P1 extends Plugin {\n  apply(v: number) {\n    return v ? 2 : 0;\n  }\n}\n",
+    });
+    const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'P0.apply' }]);
+    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
+  };
+  const blankRunsAfterDefault = (lines) => defaultScan(`export default Plugin${' '.repeat(1900)}x\n`.repeat(lines));
 
   it('notes one read row against thousands of interfaces and types within the budget', (t) => {
     assertWithinBudget(t, '3,200 interfaces and 10,640 types', familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 })), 1000);
     assertWithinBudget(t, '16 interfaces and 4,000 types in their package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 })), 1000);
     assertWithinBudget(t, '500 classes naming one base', classRepo(500), 1000);
     assertWithinBudget(t, 'one file of 180 members, each with the read method', oneFile(180), 1000);
+    assertWithinBudget(t, 'a base module of a default export, 100,000 blanks and a letter', defaultScan(`export default Plugin${' '.repeat(100_000)}x\n`), 1000);
+    assertWithinBudget(t, 'a 96 KiB base module of default exports each followed by 1,900 blanks', blankRunsAfterDefault(50), 1000);
+    assertWithinBudget(t, 'a base module of 11,000 export lists that never close', defaultScan('export {\n'.repeat(11_000)), 1000);
     assertWithinBudget(t, 'a 247 KiB Go file of 400 interfaces between blank runs', blankRuns(1));
   });
 
@@ -445,6 +461,7 @@ describe('a family costs time linear in the types and interfaces that could join
       ['types in the interfaces\' package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 20, typesPerFile: 100 })), familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 }))],
       ['classes naming one base', classRepo(200), classRepo(400)],
       ['members in one file', oneFile(90), oneFile(180)],
+      ['default exports followed by blank runs', blankRunsAfterDefault(25), blankRunsAfterDefault(50)],
       ['Go files of interfaces between blank runs', blankRuns(1), blankRuns(2)],
     ];
     for (const [name, small, large] of pairs) {
