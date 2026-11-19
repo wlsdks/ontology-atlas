@@ -22,6 +22,8 @@ Shows a proposed change to recorded meaning as something a person can read and d
 ## Excludes
 - Code review, merge, and deployment, which stay separate decisions.
 - The file-level write guard, which the meaning layer owns.
+- A person's own write on the map, which lands at once and is taken back with Undo; only an agent's proposal waits here.
 
 ## Uncertainty
 - Read from `src/features/ontology-change-review/` by layout and from the repository's statement that agent writes pause for `allow_once` or `reject_once`. The review screen was not rendered, and how it presents a multi-node proposal is unknown here.
+- Re-read 2026-11-20: the review is rendered by the agent permission card and the agent activity chip only (`src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx`, `src/features/agent-activity/ui/AgentActivityChip.tsx`).
