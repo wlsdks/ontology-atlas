@@ -19,7 +19,7 @@ use lifecycle::{
 };
 use rusqlite::{params, Connection};
 use sha2::{Digest, Sha256};
-use stamps::{is_racy, now_ns, sha256, stamps_are_trusted, Sha};
+use stamps::{is_racy, now_ns, sha256, Sha};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -33,7 +33,7 @@ pub use location::{
     INDEX_DIR_OVERRIDE_ENV,
 };
 pub use search::{Found, Hit};
-pub use stamps::Stamp;
+pub use stamps::{Stamp, Volume};
 
 #[derive(Debug)]
 pub enum Error {
@@ -271,11 +271,10 @@ struct Plan<'a> {
     removed: Vec<i64>,
 }
 
-/// Stats every listed file in parallel and compares it with its row. O(n) stats and lookups. On a
-/// volume whose stamps are not trusted, a file whose stamp matches is still read and compared by
-/// hash, so the index never keeps an older version's words.
+/// Stats every listed file in parallel and compares it with its row. O(n) stats and lookups. A
+/// file whose stamp its volume does not vouch for (`Volume`) is still read and compared by hash
+/// when the stamp matches, so the index never keeps an older version's words.
 fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result<Plan<'a>> {
-    let trusted = stamps_are_trusted(root);
     let mut rows = load_rows(conn)?;
     let stamps = stat_all(root, files);
     let mut plan = Plan {
@@ -297,7 +296,9 @@ fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result
         plan.listed += 1;
         match row {
             Some(row)
-                if trusted && row.stamp == stamp && !is_racy(stamp.mtime_ns, row.read_at_ns) =>
+                if stamp.is_vouched()
+                    && row.stamp == stamp
+                    && !is_racy(stamp.mtime_ns, row.read_at_ns) =>
             {
                 plan.unchanged += 1
             }
@@ -355,6 +356,7 @@ fn worker_count() -> usize {
 
 /// `None` for a file that is gone or that `confine` does not admit.
 fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
+    let volume = &Volume::of(root);
     let chunk = files.len().div_ceil(worker_count()).max(1);
     std::thread::scope(|scope| {
         let handles: Vec<_> = files
@@ -364,7 +366,7 @@ fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
                     let mut folders = confine::Folders::new(root);
                     paths
                         .iter()
-                        .map(|path| folders.stamp(path))
+                        .map(|path| folders.stamp(path, volume))
                         .collect::<Vec<_>>()
                 });
                 (paths.len(), handle)
@@ -437,11 +439,12 @@ fn index_work(
     work: &[Work],
     progress: &Progress,
 ) -> Result<Counts> {
+    let volume = &Volume::of(root);
     if work.len() <= INLINE_WORK_FILES {
         let (sender, receiver) = sync_channel::<Prepared>(work.len());
         for (slot, item) in work.iter().enumerate() {
             sender
-                .send(prepare(root, item, slot))
+                .send(prepare(root, volume, item, slot))
                 .map_err(|_| Error::Cancelled)?;
         }
         drop(sender);
@@ -459,7 +462,7 @@ fn index_work(
                 if progress.cancelled() {
                     break;
                 }
-                if sender.send(prepare(root, item, slot)).is_err() {
+                if sender.send(prepare(root, volume, item, slot)).is_err() {
                     break;
                 }
             });
@@ -473,12 +476,12 @@ fn index_work(
     })
 }
 
-fn prepare(root: &Path, work: &Work, slot: usize) -> Prepared {
+fn prepare(root: &Path, volume: &Volume, work: &Work, slot: usize) -> Prepared {
     let read_at_ns = now_ns();
     let Some((mut file, metadata)) = confine::open(root, work.path) else {
         return Prepared::Gone { slot };
     };
-    let stamp = Stamp::of_open(&file, &metadata);
+    let stamp = volume.stamp_open(&file, &metadata);
     let mut text = Vec::with_capacity(
         usize::try_from(metadata.len())
             .unwrap_or(0)

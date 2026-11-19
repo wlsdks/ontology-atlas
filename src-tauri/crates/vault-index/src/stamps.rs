@@ -6,8 +6,9 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Modified time and size, plus change time, which also moves when a tool restores the modified
-/// time after rewriting a file: Unix `ctime`, NTFS and ReFS `ChangeTime`. Only some file systems
-/// keep a change time worth the name; `stamps_are_trusted` says per vault whether this one does.
+/// time after rewriting a file: Unix `ctime`, NTFS and ReFS `ChangeTime`. A stamp taken through a
+/// `Volume` has `ctime_ns` 0 unless that volume vouches for the file: such a stamp never stands for
+/// the file's content (no row; the search index compares the hash).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Stamp {
     pub mtime_ns: i64,
@@ -24,14 +25,64 @@ impl Stamp {
         }
     }
 
-    /// The stamp of a file already open, from its own handle.
-    pub fn of_open(file: &File, metadata: &Metadata) -> Stamp {
-        Stamp::with_change_time(metadata, change_time_of_open(file, metadata))
+    /// The stamp of the regular file at `path`, never through a link: `None` for anything else.
+    /// As the file system reports it, whether or not any volume would vouch for it.
+    pub fn of_regular_file(path: &Path) -> Option<Stamp> {
+        regular_file_stamp(path).map(|(stamp, _)| stamp)
     }
 
-    /// The stamp of the regular file at `path`, never through a link: `None` for anything else.
-    pub fn of_regular_file(path: &Path) -> Option<Stamp> {
-        regular_file_stamp(path)
+    /// Whether the stamp may stand for the file's content (see `Volume`).
+    pub(crate) fn is_vouched(&self) -> bool {
+        self.ctime_ns != 0
+    }
+}
+
+/// The volume a vault root sits on: whether its file system keeps a change time worth the name
+/// (`stamps_are_trusted`), and its device, so a file on another volume mounted inside the vault
+/// (a USB drive under `vault/usb`) is not taken on the root's word.
+#[derive(Clone, Copy, Debug)]
+pub struct Volume {
+    trusted: bool,
+    device: Option<u64>,
+}
+
+impl Volume {
+    pub fn of(root: &Path) -> Volume {
+        let device = device_of_path(root);
+        Volume {
+            trusted: device.is_some() && stamps_are_trusted(root),
+            device,
+        }
+    }
+
+    /// `of_regular_file`, with the change time kept only when this volume vouches for the file.
+    pub fn stamp(&self, path: &Path) -> Option<Stamp> {
+        regular_file_stamp(path).map(|(stamp, device)| self.vouch(stamp, device))
+    }
+
+    /// The stamp of a file already open, from its own handle.
+    pub fn stamp_open(&self, file: &File, metadata: &Metadata) -> Stamp {
+        let (stamp, device) = open_stamp(file, metadata);
+        self.vouch(stamp, device)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn untrusted() -> Volume {
+        Volume {
+            trusted: false,
+            device: None,
+        }
+    }
+
+    fn vouch(&self, stamp: Stamp, device: Option<u64>) -> Stamp {
+        if self.trusted && device.is_some() && device == self.device {
+            stamp
+        } else {
+            Stamp {
+                ctime_ns: 0,
+                ..stamp
+            }
+        }
     }
 }
 
@@ -45,29 +96,55 @@ fn change_time_ns(metadata: &Metadata) -> i64 {
 }
 
 #[cfg(unix)]
-fn change_time_of_open(_file: &File, metadata: &Metadata) -> i64 {
-    change_time_ns(metadata)
+fn device_of(metadata: &Metadata) -> Option<u64> {
+    use std::os::unix::fs::MetadataExt;
+    #[allow(clippy::unnecessary_cast)]
+    Some(metadata.dev() as u64)
 }
 
 #[cfg(unix)]
-fn regular_file_stamp(path: &Path) -> Option<Stamp> {
+fn device_of_path(path: &Path) -> Option<u64> {
+    device_of(&std::fs::metadata(path).ok()?)
+}
+
+#[cfg(unix)]
+fn open_stamp(_file: &File, metadata: &Metadata) -> (Stamp, Option<u64>) {
+    (
+        Stamp::with_change_time(metadata, change_time_ns(metadata)),
+        device_of(metadata),
+    )
+}
+
+#[cfg(unix)]
+fn regular_file_stamp(path: &Path) -> Option<(Stamp, Option<u64>)> {
     let metadata = std::fs::symlink_metadata(path).ok()?;
-    (metadata.is_file() && !metadata.file_type().is_symlink())
-        .then(|| Stamp::with_change_time(&metadata, change_time_ns(&metadata)))
+    (metadata.is_file() && !metadata.file_type().is_symlink()).then(|| {
+        (
+            Stamp::with_change_time(&metadata, change_time_ns(&metadata)),
+            device_of(&metadata),
+        )
+    })
 }
 
 #[cfg(windows)]
-fn change_time_of_open(file: &File, _metadata: &Metadata) -> i64 {
-    windows::change_time(file)
+fn device_of_path(path: &Path) -> Option<u64> {
+    windows::volume_serial(&windows::open_attributes(path)?)
 }
 
 #[cfg(windows)]
-fn regular_file_stamp(path: &Path) -> Option<Stamp> {
+fn open_stamp(file: &File, metadata: &Metadata) -> (Stamp, Option<u64>) {
+    (
+        Stamp::with_change_time(metadata, windows::change_time(file)),
+        windows::volume_serial(file),
+    )
+}
+
+#[cfg(windows)]
+fn regular_file_stamp(path: &Path) -> Option<(Stamp, Option<u64>)> {
     // One open, as `symlink_metadata` itself does on Windows, never following a reparse point.
     let file = windows::open_attributes(path)?;
     let metadata = file.metadata().ok()?;
-    (metadata.is_file() && !metadata.file_type().is_symlink())
-        .then(|| Stamp::with_change_time(&metadata, windows::change_time(&file)))
+    (metadata.is_file() && !metadata.file_type().is_symlink()).then(|| open_stamp(&file, &metadata))
 }
 
 /// Whether a file's stamp can stand for its content on the volume holding `root`: only on file
@@ -171,9 +248,9 @@ mod windows {
     use std::os::windows::io::AsRawHandle;
     use std::path::Path;
     use windows_sys::Win32::Storage::FileSystem::{
-        FileBasicInfo, GetFileInformationByHandleEx, GetVolumeInformationByHandleW,
-        FILE_BASIC_INFO, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
-        FILE_READ_ATTRIBUTES,
+        FileBasicInfo, GetFileInformationByHandle, GetFileInformationByHandleEx,
+        GetVolumeInformationByHandleW, BY_HANDLE_FILE_INFORMATION, FILE_BASIC_INFO,
+        FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES,
     };
 
     /// 100-nanosecond ticks from 1601-01-01 to 1970-01-01.
@@ -208,6 +285,14 @@ mod windows {
         info.ChangeTime
             .saturating_sub(UNIX_EPOCH_TICKS)
             .saturating_mul(100)
+    }
+
+    /// The serial number of the volume holding the open file or folder.
+    pub(super) fn volume_serial(file: &File) -> Option<u64> {
+        let mut info = BY_HANDLE_FILE_INFORMATION::default();
+        // SAFETY: the handle stays open for the call, and `info` is the structure it fills.
+        let read = unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) };
+        (read != 0).then_some(u64::from(info.dwVolumeSerialNumber))
     }
 
     /// The name of the file system holding `path` ("NTFS", "ReFS", "exFAT", "FAT32"…).

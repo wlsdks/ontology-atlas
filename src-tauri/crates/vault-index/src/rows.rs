@@ -13,7 +13,7 @@ use crate::lifecycle::{
     create_index_dir, delete_locked, deletions, is_damage, lock_writer, open_store_reader,
     open_store_writer, set_aside_file, write_meta, Store, META_LAST_USED_MS, ROWS_FILE,
 };
-use crate::stamps::{is_racy, now_ns, stamps_are_trusted};
+use crate::stamps::{is_racy, now_ns};
 use crate::{canonical_vault_root, index_dir, stat_all, Error, Result, Stamp};
 use miniz_oxide::deflate::compress_to_vec;
 use miniz_oxide::inflate::decompress_to_vec_with_limit;
@@ -216,9 +216,6 @@ fn look_up<A: Answers>(
     producer_of(namespace)?;
     let seen_at = now_ns();
     let deletions = deletions(&index_dir(&root)?);
-    // Without a change time a same-size rewrite whose modified time was put back looks unchanged,
-    // so such a volume (FAT, exFAT) gets no rows at all.
-    let volume_trusted = stamps_are_trusted(&root);
     let stamps = stat_all(&root, paths);
     let conn = match open_store_reader(&index_dir(&root)?, &ROWS) {
         Ok(conn) => conn,
@@ -231,7 +228,7 @@ fn look_up<A: Answers>(
             namespace,
             paths,
             &stamps,
-            (seen_at, deletions, volume_trusted),
+            (seen_at, deletions),
             answers,
         ) {
             Err(error) if is_damage(&error) => restart(answers),
@@ -243,7 +240,7 @@ fn look_up<A: Answers>(
         namespace,
         paths,
         &stamps,
-        (seen_at, deletions, volume_trusted),
+        (seen_at, deletions),
         answers,
     )?)
 }
@@ -253,7 +250,7 @@ fn answer<A: Answers>(
     namespace: &str,
     paths: &[String],
     stamps: &[Option<Stamp>],
-    (seen_at, deletions, volume_trusted): (i64, i64, bool),
+    (seen_at, deletions): (i64, i64),
     answers: &mut A,
 ) -> rusqlite::Result<Counts> {
     let mut counts = Counts::default();
@@ -264,7 +261,10 @@ fn answer<A: Answers>(
         None => None,
     };
     for (index, (path, stamp)) in paths.iter().zip(stamps).enumerate() {
-        let Some(stamp) = stamp.filter(|stamp| volume_trusted && stamp.ctime_ns != 0) else {
+        // A stamp its volume does not vouch for (FAT, exFAT, a network share, another volume
+        // mounted inside the vault) could hide a same-size rewrite whose modified time was put
+        // back, so that file gets no row.
+        let Some(stamp) = stamp.filter(Stamp::is_vouched) else {
             answers.miss(index, "");
             continue;
         };
@@ -353,7 +353,7 @@ pub struct PutReport {
 /// Whether `row` describes the file version now on disk, seen long enough after its last write.
 fn trusted(row: &NewRow, seen: Seen, now: Option<Stamp>) -> bool {
     now == Some(seen.stamp)
-        && seen.stamp.ctime_ns != 0
+        && seen.stamp.is_vouched()
         && !is_racy(seen.stamp.mtime_ns, seen.at_ns)
         && row.last_modified_ms == whole_ms(seen.stamp.mtime_ns)
         && is_value(row.value.as_bytes())

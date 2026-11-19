@@ -191,9 +191,11 @@ that stamp still matches; a file
 modified within two seconds of its row is compared by SHA-256 instead. The
 stamp counts only on a volume whose file system moves the change time on every
 write, named by `statfs` or `GetVolumeInformation`: APFS, HFS+, NTFS, ReFS,
-ext2/3/4, btrfs, XFS and tmpfs. Anywhere else (FAT and exFAT, where macOS
-reports the modified time as the change time, network and unknown file
-systems) every file is compared by SHA-256 on each update and each search hit,
+ext2/3/4, btrfs, XFS and tmpfs, and only for a file on the root's own device
+(Unix device number, Windows volume serial number). Anywhere else (FAT and
+exFAT, where macOS reports the modified time as the change time, network and
+unknown file systems, and any volume mounted inside the vault) the file is
+compared by SHA-256 on each update and each search hit,
 which on a 10,000-file exFAT image took a reopen from 23 ms to 575 ms. A
 derived index holds only what can be recomputed from vault files: no user state,
 edits, approvals or drafts. It lives in the OS cache directory, never in the
@@ -239,9 +241,9 @@ seconds before that version was first seen. The build reads and derives the
 rest with the same code as before and writes those rows back behind itself
 (`vault_index_rows_put`), where each is refused unless its file still has the
 stamp the lookup saw and was older than two seconds then, so no row pairs a
-value with a later version of its file. A volume whose stamps do not count
-(FAT, exFAT, network and unknown file systems, as above) gets no rows at all and
-is read from its files, since there a same-size rewrite whose modified time was
+value with a later version of its file. A file whose stamp does not count
+(on FAT, exFAT, a network or unknown file system, or another volume mounted
+inside the vault, as above) gets no row and is read from disk, since there a same-size rewrite whose modified time was
 put back would look unchanged. A batch takes the writer lock
 the search build and Delete take, and carries how many deletions of that
 folder (or of every folder) the app had made when its lookup ran; after a
