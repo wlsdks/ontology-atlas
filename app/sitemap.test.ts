@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { deriveBundledProjects } from '@/entities/docs-vault';
 import { routing } from '@/i18n/routing';
 import { SITE_URL } from '@/shared/config';
-import { GUIDE_ENTRY_PAGE, GUIDE_PAGES } from '@/views/gateway-doc';
+import { CHANGELOG_CONTENT_LOCALES, GUIDE_ENTRY_PAGE, GUIDE_PAGES } from '@/views/gateway-doc';
 
 import sitemap from './sitemap';
 
@@ -45,7 +45,6 @@ const PUBLIC_STATIC_PATHS = [
   'download',
   'topology',
   'guide',
-  'changelog',
   ...GUIDE_PAGES.filter((page) => page.segment !== GUIDE_ENTRY_PAGE.segment).map(
     (page) => `guide/${page.segment}`,
   ),
@@ -60,6 +59,7 @@ describe('public sitemap', () => {
         ...PUBLIC_STATIC_PATHS.map(
           (path) => `${SITE_URL}/${locale}/${path ? `${path}/` : ''}`,
         ),
+        ...(CHANGELOG_CONTENT_LOCALES.includes(locale) ? [`${SITE_URL}/${locale}/changelog/`] : []),
         ...deriveBundledProjects().map(
           (project) => `${SITE_URL}/${locale}/project/${project.slug}/`,
         ),
@@ -94,8 +94,17 @@ describe('public sitemap', () => {
     expect(dates.size).not.toBe(1);
   });
 
-  it('keeps each canonical paired with its English, Korean, and x-default URLs', async () => {
-    const entries = await sitemap();
+  it('lists one changelog, in its content locale, paired only with x-default', async () => {
+    const changelogs = (await sitemap()).filter((entry) => entry.url.endsWith('/changelog/'));
+    expect(changelogs.map((entry) => entry.url)).toEqual([`${SITE_URL}/en/changelog/`]);
+    expect(changelogs[0]?.alternates?.languages).toEqual({
+      en: `${SITE_URL}/en/changelog/`,
+      'x-default': `${SITE_URL}/en/changelog/`,
+    });
+  });
+
+  it('keeps each translated canonical paired with its English, Korean, and x-default URLs', async () => {
+    const entries = (await sitemap()).filter((entry) => !entry.url.endsWith('/changelog/'));
 
     for (const entry of entries) {
       const languages = entry.alternates?.languages;
@@ -105,10 +114,10 @@ describe('public sitemap', () => {
     }
   });
 
-  it('with four locales every entry lists all four plus x-default and is reciprocal', async () => {
+  it('with four locales every translated entry lists all four plus x-default and is reciprocal', async () => {
     FOUR.active = true;
     try {
-      const entries = await sitemap();
+      const entries = (await sitemap()).filter((entry) => !entry.url.endsWith('/changelog/'));
       const byUrl = new Map(entries.map((entry) => [entry.url, entry]));
       const hreflangs = ['en', 'ko', 'ja', 'zh-Hans'];
       for (const entry of entries) {

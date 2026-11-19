@@ -4,7 +4,13 @@ import { deriveBundledProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
 import { LOCALE_META } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
-import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, guideCanonicalPath, guideSourcePath } from '@/views/gateway-doc';
+import {
+  CHANGELOG_CONTENT_LOCALES,
+  GUIDE_ENTRY_PAGE,
+  GUIDE_PAGES,
+  guideCanonicalPath,
+  guideSourcePath,
+} from '@/views/gateway-doc';
 
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
@@ -51,6 +57,10 @@ function lastCommitDate(paths: string[]): string | undefined {
   }
 }
 
+/** Locales whose copy of a route is a page of record; the rest canonicalize elsewhere (`buildPageMetadata`). */
+const localesOf = (route: string): readonly string[] =>
+  route === 'changelog' ? CHANGELOG_CONTENT_LOCALES : routing.locales;
+
 const hreflangOf = (locale: string): string =>
   (LOCALE_META as Record<string, { hreflang: string }>)[locale]?.hreflang ?? locale;
 
@@ -72,6 +82,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // which Google uses to pick the right localized URL for a user.
   for (const locale of routing.locales) {
     for (const route of STATIC_ROUTES) {
+      const ownLocales = localesOf(route);
+      if (!ownLocales.includes(locale)) continue;
       const path = `/${locale}/${route}/`;
       const lastModified = modified.get(`${locale}/${route}`);
       entries.push({
@@ -84,12 +96,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           // are ignored.
           languages: {
             ...Object.fromEntries(
-              routing.locales.map((l) => [
+              ownLocales.map((l) => [
                 hreflangOf(l),
                 `${SITE_URL}/${l}/${route}/`,
               ])
             ),
-            'x-default': `${SITE_URL}/${routing.defaultLocale}/${route}/`,
+            'x-default': `${SITE_URL}/${ownLocales[0]}/${route}/`,
           },
         },
       });
