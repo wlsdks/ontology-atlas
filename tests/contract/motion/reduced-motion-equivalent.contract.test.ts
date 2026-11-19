@@ -58,6 +58,12 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
   "gateway-scene-focus":
     "Part of the download page's loop-card scene, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The cards then stand complete and still; their titles and text say the same story.",
+  "build-carry-at":
+    "The changed file's flight from the commit card into its concept on the download page, declared only inside no-preference. Under reduced motion the concept turns the change colour at once and the card beside it names the changed file.",
+  "build-moru-emote":
+    "Moru's wordless heart, note or spark over a reaction on the download page, declared only inside no-preference. It repeats what the line and the step bar already say, so reduced motion simply omits it.",
+  "build-node-ring":
+    "The pulse on the concept to tap in the download page's build section, declared only inside no-preference and resumed only by useInViewMotion. Under reduced motion the target keeps its still ring and brighter dot, and Moru's line names the concept.",
   "gateway-step-spark":
     "Part of the download page's step path, declared only inside no-preference and started only by useInViewMotion, which never starts under reduced motion. The buttons then stand unlit and the rail's nodes carry the order.",
   "gateway-step-lit":

@@ -515,3 +515,193 @@ test('an exclusion that cites the survey row\'s own line excludes a row whose na
   assert.ok(!unplaced('- The App setting (config/config.go:L4) is not an ability; it groups node settings.').includes('App'));
   assert.ok(unplaced('- The App setting (config/config.go:L41) is not an ability; it groups node settings.').includes('App'), 'another line is another row');
 });
+
+/*
+ * Key elements fell from 25 to 11 over five stages: every message asked for
+ * capabilities and none for the roles they share. A role two capabilities'
+ * reads pass through is now a floor beside the abilities.
+ */
+test('a role two capabilities\' reads pass through is listed until an element holds it or a line excludes it', () => {
+  resetSessionReads();
+  const root = repository({
+    'pyproject.toml': '[project]\nname = "shop"\n',
+    'shop/__init__.py': '',
+    'shop/store.py': 'class Store:\n    def save(self, item):\n        if item.locked:\n            raise ValueError("locked")\n        return item\n',
+    'shop/ship.py': 'from shop.store import Store\nfrom shop.stamp import stamp\n\ndef ship(item):\n    if item.ready:\n        return Store().save(stamp(item))\n    return None\n',
+    'shop/stamp.py': 'def stamp(item):\n    if item.signed:\n        raise ValueError("signed")\n    return item\n',
+    'shop/cli.py': 'from shop.ship import ship\nfrom shop.canary import canary\n\n\ndef run(item):\n    if item.beta:\n        return canary(item)\n    return ship(item)\n',
+    'shop/canary.py': 'from shop.store import Store\n\n\ndef canary(item):\n    if item.beta:\n        return Store().save(item)\n    return None\n',
+    'shop/audit.py': 'from shop.store import Store\n\n\ndef audit(item):\n    if item.flagged:\n        return Store().save(item)\n    return None\n',
+  });
+  try {
+    for (const [path, symbol] of [['shop/ship.py', 'ship'], ['shop/canary.py', 'canary'], ['shop/audit.py', 'audit']]) {
+      const packet = readSourceEvidence(root, [{ path, symbol }]);
+      assert.ok(packet.rows[0].context.some((part) => part.role === 'callee' && /^Store\b/.test(part.symbol)), path);
+      recordSourceEvidence(root, packet);
+    }
+    const capability = (name) => doc(`capabilities/${name}`, { path: `shop/${name}.py` }, `Does ${name}.\n\nOnly when ready (\`shop/${name}.py:L4-L7\`).\n\n## Uncertainty\n- None.\n`);
+    const project = (uncertainty) => doc('shop', {}, `Shop.\n\n## Uncertainty\n${uncertainty}\n`);
+    const base = [capability('ship'), capability('canary'), doc('capabilities/audit', { path: 'shop/audit.py' })];
+    const repo = repositorySurvey(root, join(root, 'atlas'));
+    const unplaced = measureBuildDepth([project('- None.'), ...base], repo, sessionReads(root));
+    assert.deepEqual(unplaced.roles.unplaced.map((row) => [row.name, row.evidence, row.users]), [['Store', 'shop/store.py:L1', ['capabilities/canary', 'capabilities/ship']]],
+      'audit cites no read lines, so its read is not counted as its own; stamp is read for ship alone; the caller both reads show is no role');
+    assert.ok(sessionReads(root).get('shop/cli.py')?.some((range) => range.role === 'caller'), 'the shared caller was served');
+    assert.deepEqual(competencyDepthRefusals([{ id: 'impact', status: 'partial' }], { ...unplaced, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } })
+      .filter((line) => /implementation roles/.test(line)), [], 'a partial impact row is not refused for roles');
+    assert.match(unplaced.line, /Roles: 1 of the 1 implementation roles that two or more capabilities' reads pass through have no element: Store \(shop\/store\.py:L1-L5, read for capabilities\/canary, capabilities\/ship\)\. Next: add_concepts an element/);
+    const [refusal] = competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...unplaced, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } });
+    assert.match(refusal, /^- impact: 1 implementation roles .* Store \(shop\/store\.py:L1-L5, .*Only if that cannot be done, mark impact partial/);
+
+    const element = doc('elements/persistence', { path: 'shop/store.py', title: 'Persistence' });
+    assert.deepEqual(measureBuildDepth([project('- None.'), ...base, element], repo, sessionReads(root)).roles.unplaced, []);
+    const excluded = measureBuildDepth([project('- `shop/store.py:L1` is a thin persistence call each command makes, not a role of its own.'), ...base], repo, sessionReads(root));
+    assert.deepEqual([excluded.roles.excluded, excluded.roles.unplaced.length], [1, 0]);
+    const listOnly = measureBuildDepth([project('- Not modelled: `Store`.'), ...base], repo, sessionReads(root));
+    assert.equal(listOnly.roles.unplaced.length, 1, 'a name with no reason excludes nothing');
+
+    const entry = doc('capabilities/store', { path: 'shop/store.py' }, 'Stores items.\n\nRefuses a locked item (`shop/store.py` `Store.save`, `shop/store.py:L3-L4`).\n\n## Uncertainty\n- None.\n');
+    assert.deepEqual(measureBuildDepth([project('- None.'), ...base, entry], repo, sessionReads(root)).roles.unplaced, [], 'an ability\'s own entry is no role');
+    const named = doc('capabilities/store', { path: 'shop/store.py' }, 'Stores items (`shop/store.py` `Store`).\n\n## Uncertainty\n- None.\n');
+    assert.deepEqual(measureBuildDepth([project('- None.'), ...base, named], repo, sessionReads(root)).roles.unplaced, [], 'an entry symbol named without lines is no role either');
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+/*
+ * Roles were once placed by any element that mentioned them ("it does not call
+ * `checkQuota`" placed checkQuota), and one line naming several roles was
+ * checked only by the role it named. A role is placed by an element's path:
+ * (with its cited symbol when the file holds several roles) or its title, the
+ * same rule as abilities, and a line excludes the one role it points at alone.
+ */
+test('a role is placed by an element\'s path, symbol or title, never by a mention, and at most eight are listed', () => {
+  resetSessionReads();
+  const checks = ['stock', 'price', 'region', 'limit', 'owner', 'window', 'hold', 'fraud', 'tax'];
+  const rules = checks.map((name) => `def check_${name}(item):\n    if item.${name} is None:\n        raise ValueError("${name}")\n    return item.${name} > 0\n`).join('\n\n');
+  const caller = (name) => `from shop.rules import ${checks.map((check) => `check_${check}`).join(', ')}\n\n\ndef ${name}(item):\n${checks.map((check) => `    if not check_${check}(item):\n        return None\n`).join('')}    return item\n`;
+  const root = repository({
+    'pyproject.toml': '[project]\nname = "shop"\n',
+    'shop/__init__.py': '',
+    'shop/rules.py': rules,
+    'shop/ship.py': caller('ship'),
+    'shop/canary.py': caller('canary'),
+  });
+  try {
+    for (const name of ['ship', 'canary']) recordSourceEvidence(root, readSourceEvidence(root, [{ path: `shop/${name}.py`, symbol: name }]));
+    const capability = (name) => doc(`capabilities/${name}`, { path: `shop/${name}.py` }, `Does ${name}.\n\nOnly when every check passes (\`shop/${name}.py:L4-L10\`).\n\n## Uncertainty\n- None.\n`);
+    const project = (uncertainty) => doc('shop', {}, `Shop.\n\n## Uncertainty\n${uncertainty}\n`);
+    const base = [capability('ship'), capability('canary')];
+    const repo = repositorySurvey(root, join(root, 'atlas'));
+    const measure = (...docs) => measureBuildDepth([...docs, ...base], repo, sessionReads(root)).roles;
+    const none = measure(project('- None.'));
+    assert.equal(none.candidates, 8, 'nine shared roles, eight listed');
+    assert.equal(none.unplaced.length, 8);
+    const evidence = (name) => none.unplaced.find((row) => row.name === `check_${name}`).evidence;
+
+    const printer = doc('elements/receipt-printer', { path: 'shop/printer.py', title: 'Receipt printer' }, 'Prints receipts. It does not call `check_stock` or `check_price`.\n\n## Uncertainty\n- None.\n');
+    assert.equal(measure(project('- None.'), printer).unplaced.length, 8, 'a mention places nothing, and an unrelated element places nothing');
+    const byTitle = doc('elements/stock-check', { path: 'shop/printer.py', title: 'Check stock rule' });
+    assert.deepEqual(measure(project('- None.'), byTitle).unplaced.map((row) => row.name).includes('check_stock'), false, 'a title names its role');
+    const bySymbol = doc('elements/price-rule', { path: 'shop/rules.py', title: 'Pricing rule' }, 'Refuses an unpriced item (`shop/rules.py` `check_price`).\n\n## Uncertainty\n- None.\n');
+    assert.deepEqual(none.unplaced.length - measure(project('- None.'), bySymbol).unplaced.length, 1, 'a path shared by several roles places the one its symbol names');
+
+    // The repair message, followed to the letter: a job title, path: the file, a body citing the range listed for the role.
+    const depth = measureBuildDepth([project('- None.'), ...base], repo, sessionReads(root));
+    const listed = [...depth.line.matchAll(/(check_\w+) \((shop\/rules\.py:L\d+-L\d+), read for/g)];
+    assert.equal(listed.length, 8);
+    const repaired = listed.map(([, , lines], at) => doc(`elements/guard-${at}`, { path: 'shop/rules.py', title: `Guard ${at}` },
+      `Ship and canary rely on it to refuse an item it rejects (${lines}).\n\n## Uncertainty\n- None.\n`));
+    const afterRepair = measureBuildDepth([project('- None.'), ...base, ...repaired], repo, sessionReads(root));
+    assert.deepEqual([afterRepair.roles.element, afterRepair.roles.unplaced.length], [8, 0], 'elements written as the repair says are placed');
+    assert.deepEqual(competencyDepthRefusals([{ id: 'impact', status: 'answered' }], { ...afterRepair, dependsOn: 9, abilityEdges: { edges: 9, alone: [] } })
+      .filter((line) => /implementation roles/.test(line)), []);
+    const wholeFile = doc('elements/rules', { path: 'shop/rules.py', title: 'Item rules' }, 'Every check (`shop/rules.py:L1-L44`).\n\n## Uncertainty\n- None.\n');
+    assert.equal(measure(project('- None.'), wholeFile).unplaced.length, 8, 'a cite of the whole file names no one role');
+
+    const both = measure(project(`- \`${evidence('stock')}\` and \`${evidence('price')}\` are small guards each command repeats, not roles of their own.`));
+    assert.equal(both.excluded, 0, 'one line naming two roles excludes neither');
+    const one = measure(project(`- \`${evidence('stock')}\` is a small guard each command repeats, not a role of its own.`));
+    assert.equal(one.excluded, 1);
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('an implementation two capabilities\' reads reach is a shared role', () => {
+  resetSessionReads();
+  const find = (name) => `package service\n\nimport "example.com/app/store"\n\nfunc (s *Service) ${name}(key string) error {\n\tinfo, err := s.store.Lookup(key)\n\treturn send(info, err)\n}\n`;
+  const root = repository({
+    'go.mod': 'module example.com/app\n',
+    'service/find.go': find('Find'),
+    'service/list.go': find('List'),
+    'store/memory.go': 'package store\n\nfunc (m *Memory) Lookup(key string) (*Info, error) {\n\treturn m.rows[key], nil\n}\n',
+    'store/null.go': 'package store\n\nfunc (NullStore) Lookup(key string) (*Info, error) {\n\treturn nil, errors.New("lookup not supported")\n}\n',
+    'store/remote.go': 'package store\n\nfunc (r *Remote) Lookup(key string) (*Info, error) {\n\tif r.closed {\n\t\treturn nil, errors.New("closed")\n\t}\n\treturn r.fetch(key)\n}\n',
+  });
+  try {
+    for (const name of ['find', 'list']) recordSourceEvidence(root, readSourceEvidence(root, [{ path: `service/${name}.go`, symbol: `Service.${name[0].toUpperCase()}${name.slice(1)}` }]));
+    const capability = (name) => doc(`capabilities/${name}`, { path: `service/${name}.go` }, `Does ${name}.\n\nRefuses what the store refuses (\`service/${name}.go:L5-L8\`).\n\n## Uncertainty\n- None.\n`);
+    const repo = repositorySurvey(root, join(root, 'atlas'));
+    const roles = measureBuildDepth([doc('app', {}, 'App.\n\n## Uncertainty\n- None.\n'), capability('find'), capability('list')], repo, sessionReads(root)).roles;
+    assert.deepEqual(roles.unplaced.map((row) => row.name).sort(), ['NullStore', 'Remote']);
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a role is used by a capability that cites only the part its own read served, and a common name is not placed by a title', () => {
+  resetSessionReads();
+  const caller = (name) => `from shop.notify import message\n\n\ndef ${name}(item):\n    if item.ready:\n        return message(item)\n    return None\n`;
+  const root = repository({
+    'pyproject.toml': '[project]\nname = "shop"\n',
+    'shop/__init__.py': '',
+    'shop/notify.py': 'def message(item):\n    if item.muted:\n        raise ValueError("muted")\n    return item\n',
+    'shop/ship.py': caller('ship'),
+    'shop/canary.py': caller('canary'),
+  });
+  try {
+    for (const name of ['ship', 'canary']) recordSourceEvidence(root, readSourceEvidence(root, [{ path: `shop/${name}.py`, symbol: name }]));
+    const capability = (name) => doc(`capabilities/${name}`, { path: `shop/${name}.py` }, `Does ${name}.\n\nRefuses a muted item (\`shop/notify.py:L2-L3\`).\n\n## Uncertainty\n- None.\n`);
+    const repo = repositorySurvey(root, join(root, 'atlas'));
+    const docs = [doc('shop', {}, 'Shop.\n\n## Uncertainty\n- None.\n'), capability('ship'), capability('canary')];
+    const roles = measureBuildDepth(docs, repo, sessionReads(root)).roles;
+    assert.deepEqual(roles.unplaced.map((row) => [row.name, row.users]), [['message', ['capabilities/canary', 'capabilities/ship']]]);
+    const titled = doc('elements/message-log', { path: 'shop/log.py', title: 'Message log' });
+    assert.equal(measureBuildDepth([...docs, titled], repo, sessionReads(root)).roles.unplaced.length, 1, '"message" is too common a word for a title to place');
+  } finally {
+    resetSessionReads();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('64 same-named declarations do not hide an imported role, and a callee found by name alone is no role', () => {
+  const run = (spec, decoys = 64) => {
+    resetSessionReads();
+    const entry = (name) => `import { checkQuota } from '${spec}';\nexport function ${name}(x: number) {\n  if (!checkQuota(x)) return 0;\n  return x;\n}\n`;
+    const root = repository({
+      'package.json': '{"name":"tool"}',
+      'src/quota.ts': "export function checkQuota(x: number) {\n  if (x > 3) throw new Error('over quota');\n  return x;\n}\n",
+      'src/upload.ts': entry('upload'),
+      'src/share.ts': entry('share'),
+      'src/legacy/forms.ts': Array.from({ length: decoys }, (_, at) => `export class Form${at} {\n  checkQuota() {\n    return ${at};\n  }\n}\n`).join(''),
+    });
+    try {
+      const packet = readSourceEvidence(root, [{ path: 'src/upload.ts', symbol: 'upload' }, { path: 'src/share.ts', symbol: 'share' }]);
+      recordSourceEvidence(root, packet);
+      const capability = (row) => doc(`capabilities/${row.symbol}`, { path: row.path }, `Does it. \`${row.path}\` \`${row.symbol}\`.\n\nRefuses past the quota (${row.cite}).\n\n## Uncertainty\n- None.\n`);
+      const depth = measureBuildDepth([doc('tool', {}, 'Tool.\n\n## Uncertainty\n- None.\n'), ...packet.rows.map(capability)], null, sessionReads(root));
+      return { callees: packet.rows[0].callees, roles: depth.roles.unplaced.map((row) => row.name) };
+    } finally {
+      resetSessionReads();
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+  assert.deepEqual(run('./quota'), { callees: [{ name: 'checkQuota', path: 'src/quota.ts', line: 1 }], roles: ['checkQuota'] });
+  assert.deepEqual(run('@/missing/quota', 0), { callees: [{ name: 'checkQuota', path: 'src/quota.ts', line: 1, byName: true }], roles: [] },
+    'found by name alone, the callee is served but is no shared role');
+});

@@ -151,6 +151,63 @@
       }
     }
   },
+  "build": {
+    "eyebrow": "試してみる",
+    "title": "モルと地図をつくってみよう",
+    "sub": "サンプルのリポジトリで1分ほど。フォルダを開き、ファイルの役割に名前をつけ、概念をつなぎ、コミットで何が変わったかを見つけます。",
+    "repo": "サンプルリポジトリ",
+    "files": "ファイル{count}個",
+    "stepCount": "{step}/5",
+    "steps": {
+      "open": "開く",
+      "name": "名前",
+      "link": "つなぐ",
+      "change": "変化",
+      "done": "完成"
+    },
+    "moru": {
+      "closed": "小さなショップアプリのリポジトリです。一緒に地図をつくりましょう。まずフォルダを開きます。",
+      "reading": "{count}個のファイルを読んで、同じ仕事をするものをまとめています。",
+      "naming": "この{count}個のファイルは同じ仕事をしています。地図では何と呼びましょう？",
+      "namingHint": "人が呼ぶ言葉で名前をつけると、地図がすぐに読めます。",
+      "linkStart": "{from}は{to}とつながっています({reason})。まず{from}をタップしてください。",
+      "linkEnd": "いいですね。次に{to}をタップして線をつなぎましょう。",
+      "miss": "それではありません。光っている{name}をタップしてください。",
+      "commit": "地図ができました！エージェントがコードを直してコミットしました。地図で見てみましょう。",
+      "impact": "変わったファイルは{name}の中にあります。光っている{name}をタップしてください。",
+      "inspect": "何が変わったか、どの概念とつながっているかが一目でわかります。",
+      "done": "完成！この地図はMarkdownファイルとしてリポジトリに残り、あなたとエージェントが一緒に読みます。"
+    },
+    "actions": {
+      "open": "フォルダを開く",
+      "commit": "地図で見る",
+      "confirm": "確認しました",
+      "restart": "最初から",
+      "tryBrowser": "ブラウザで試す"
+    },
+    "suggested": "おすすめ",
+    "folderName": "{folder}フォルダ",
+    "names": {
+      "cart": "カート",
+      "payment": "決済",
+      "account": "ログイン"
+    },
+    "relations": {
+      "readsTotal": "合計を読む",
+      "needsLogin": "ログインが必要"
+    },
+    "commitAuthor": "Claude Codeがコミットしました",
+    "commitMessage": "fix(payment): カード決済の金額を丸める",
+    "inspect": {
+      "changedFile": "変わったファイル",
+      "linked": "つながっている概念",
+      "note": "地図はこの概念に変更の印を付けるので、書かれた内容を見直す場所がわかります。"
+    },
+    "doneSummary": "概念{concepts}個 · 関係{relations}個 · 確認した変化1か所",
+    "honesty": "サンプルで見せる体験です。実際にはClaude CodeやCodexがMCPでファイルを読み、概念と関係を書きます。名前はいつでも自分で直せます。",
+    "stageLabel": "モルとつくるサンプル地図",
+    "nodeLabel": "{name}の概念、ファイル{count}個"
+  },
   "harnessFilm": {
     "label": "ハーネスタブ：リポジトリのエージェント設定",
     "example": "例のリポジトリ",

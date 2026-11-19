@@ -11,7 +11,8 @@ import {
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
-import { declarationIndex, productFiles } from './declaration-index.mjs';
+import { calleesOf } from './callees.mjs';
+import { productFiles } from './declaration-index.mjs';
 import { OUTLINE_DECLARATION_LIMIT, outlineSource } from './source-outline.mjs';
 import { SYMBOL_CONTEXT_LIMITS, symbolContext } from './symbol-context.mjs';
 
@@ -72,7 +73,6 @@ function isSymbol(selector) {
 
 /** A declared name, or `Owner.member` for a method inside a class or type. */
 const SYMBOL_NAME = /^[A-Za-z_$#][\w$#]*(?:\.[A-Za-z_$#][\w$#]*)?$/u;
-const CALLEES_LIMIT = 12;
 
 function refuse(selector, reason) {
   return {
@@ -360,7 +360,11 @@ function readOne(rootPath, selector, ignore, hooks) {
   const hasMore = endLine < lines.length;
   const truncated = delivered.length < requested.length || hasMore;
   const symbolEnd = declaration ? declarationEnd(lines, outline.declarations, declaration) : null;
-  const callees = declaration ? calleesOf(delivered.join(''), selector, outline.declarations, declaration, hooks) : null;
+  const open = declaration ? hooks?.open ?? contextOpener(rootPath, ignore, hooks ?? {}) : null;
+  const file = declaration ? { path: selector.path, lines, declarations: outline.declarations } : null;
+  const callees = declaration
+    ? calleesOf({ text: delivered.join(''), file, declaration, rootPath: hooks?.rootPath, ignore: hooks?.ignore ?? [], files: hooks?.files, open })
+    : null;
   const context = declaration && hooks?.rootPath
     ? symbolContext({
       rootPath: hooks.rootPath,
@@ -371,7 +375,7 @@ function readOne(rootPath, selector, ignore, hooks) {
       declaration,
       bodyEnd: endLine,
       callees,
-      open: hooks.open ?? contextOpener(rootPath, ignore, hooks),
+      open,
       files: hooks.files,
       budget: contextBudget(hooks, returnedBytes),
     })
@@ -451,44 +455,6 @@ function declarationEnd(lines, declarations, declaration) {
   let end = next ? next.line - 1 : lines.length;
   while (end > declaration.line && (lines[end - 1] ?? '').trim() === '') end -= 1;
   return end;
-}
-
-const CALL = /([A-Za-z_$][\w$]*)\s*\(/gu;
-const NOT_A_CALLEE = new Set([
-  'if', 'for', 'while', 'switch', 'catch', 'return', 'function', 'func', 'def', 'class', 'new', 'typeof',
-  'await', 'yield', 'super', 'print', 'len', 'make', 'append', 'cap', 'panic', 'require', 'import',
-  'isinstance', 'range', 'str', 'int', 'float', 'list', 'dict', 'set', 'tuple', 'bool', 'with', 'elif',
-  'assert', 'not', 'and', 'or', 'in', 'is', 'lambda', 'match', 'case', 'select', 'go', 'defer', 'fn',
-]);
-
-/**
- * Functions the read body calls that the repository declares, each with the file
- * and line to read next by symbol. A name declared in more than two places is left
- * out: following it would be a guess.
- */
-function calleesOf(text, selector, declarations, declaration, hooks) {
-  const own = selector.symbol.split('.').pop();
-  const names = [];
-  for (const match of text.matchAll(CALL)) {
-    const name = match[1];
-    if (name === own || NOT_A_CALLEE.has(name) || names.includes(name)) continue;
-    names.push(name);
-  }
-  const callees = [];
-  let index = null;
-  for (const name of names) {
-    if (callees.length >= CALLEES_LIMIT) break;
-    const local = declarations.filter((candidate) => declares(candidate, name) && candidate.line !== declaration.line && isCode(candidate));
-    if (local.length > 0) {
-      if (local.length <= 2) for (const candidate of local) callees.push({ name, path: selector.path, line: candidate.line });
-      continue;
-    }
-    if (!hooks?.rootPath) continue;
-    index ??= declarationIndex(hooks.rootPath, { ignore: hooks.ignore ?? [], files: hooks.files?.() });
-    const elsewhere = [...(index.get(name) ?? []), ...(index.get(`*.${name}`) ?? [])].filter((row) => row.path !== selector.path);
-    if (elsewhere.length > 0 && elsewhere.length <= 2) for (const row of elsewhere) callees.push({ name, path: row.path, line: row.line });
-  }
-  return callees.slice(0, CALLEES_LIMIT);
 }
 
 function packetBytes(packet) {
