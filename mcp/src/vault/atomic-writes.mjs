@@ -17,6 +17,7 @@ import {
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { parseFrontmatter } from '../parser.mjs';
+import { forgetCachedFile } from './documents.mjs';
 import { REVIEW_NOTE_KEY, REVIEW_STATE_HUMAN_DECIDES, REVIEW_STATE_KEY } from '../schema.mjs';
 
 import { noteGateRemoval } from './eligibility-gate.mjs';
@@ -88,6 +89,9 @@ function fileMatchesExpectedRaw(filePath, expectedRaw) {
 function entryChangedOnDisk(entry) {
   if (entry.expectedAbsent === true) return existsSync(entry.path);
   if (entry.expectedRaw !== undefined && !fileMatchesExpectedRaw(entry.path, entry.expectedRaw)) {
+    // The plan's bytes may come from a cached parse the file's stamp could not
+    // invalidate; drop it so a retry plans from the file as it is.
+    forgetCachedFile(entry.path);
     return true;
   }
   if (entry.expectedMtime === null || entry.expectedMtime === undefined) return false;
