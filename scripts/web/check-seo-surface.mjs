@@ -198,6 +198,24 @@ export function evaluateSeoSurface({ sitemapXml, pages, messages }) {
     }
   }
 
+  /*
+   * The reverse of rule 1: an indexable page names a page of record, and that page is in the sitemap.
+   * A self-canonical page left out of the sitemap is one the site both offers and hides; a page that
+   * consolidates into another must consolidate into a listed one. Anything else is noindex.
+   */
+  for (const [urlPath, head] of heads) {
+    if (head.noindex || head.canonicals.length !== 1 || urlPath === '/') continue;
+    const self = `${origin}${urlPath}`;
+    const target = head.canonicals[0];
+    if (byLoc.has(target)) continue;
+    fail(
+      '9-indexable-in-sitemap',
+      target === self
+        ? `${self} is indexable and its own canonical but is not in the sitemap; list it or make it noindex`
+        : `${self} is indexable and canonicalizes to ${target}, which is not in the sitemap`,
+    );
+  }
+
   // A guide page in another language that ships the English body would rank as a duplicate.
   for (const entry of entries) {
     const urlPath = new URL(entry.loc).pathname;

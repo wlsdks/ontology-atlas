@@ -132,6 +132,43 @@ describe('buildPageMetadata — a four-locale registry', () => {
   });
 });
 
+describe('buildPageMetadata — index signals', () => {
+  const base = { path: 'agents', title: 'T', description: 'D' };
+  type Signals = {
+    robots?: { index: boolean; follow: boolean };
+    alternates?: { canonical: string; languages?: Record<string, string> };
+    openGraph: { locale: string; alternateLocale?: string[] };
+  };
+  const signals = (input: Parameters<typeof buildPageMetadata>[0]) => buildPageMetadata(input) as unknown as Signals;
+
+  it('marks a noindex page noindex-follow and declares no canonical, hreflang or alternate og:locale', () => {
+    const meta = signals({ ...base, locale: 'ko', noindex: true });
+    expect(meta.robots).toEqual({ index: false, follow: true });
+    expect(meta.alternates).toBeUndefined();
+    expect(meta.openGraph.alternateLocale).toBeUndefined();
+    expect(meta.openGraph.locale).toBe('ko_KR');
+  });
+
+  it('names every other routed locale as an alternate og:locale on an indexable page', () => {
+    const meta = signals({ ...base, locale: 'ja' });
+    expect(meta.robots).toBeUndefined();
+    expect(meta.openGraph.alternateLocale?.sort()).toEqual(['en_US', 'ko_KR', 'zh_CN']);
+  });
+
+  it('points a locale without its own words at the content locale and declares no cluster', () => {
+    const meta = signals({ ...base, path: 'changelog', locale: 'zh', contentLocales: ['en'] });
+    expect(meta.alternates).toEqual({ canonical: expect.stringMatching(/\/en\/changelog$/) });
+    expect(meta.openGraph.alternateLocale).toBeUndefined();
+  });
+
+  it('keeps only the content locales and x-default in the content locale cluster', () => {
+    const meta = signals({ ...base, path: 'changelog', locale: 'en', contentLocales: ['en'] });
+    expect(meta.alternates?.canonical).toMatch(/\/en\/changelog$/);
+    expect(Object.keys(meta.alternates?.languages ?? {}).sort()).toEqual(['en', 'x-default']);
+    expect(meta.openGraph.alternateLocale).toBeUndefined();
+  });
+});
+
 describe('fitMetaDescription', () => {
   it('keeps a description that fits and cuts a long one at a word, inside the limit', () => {
     expect(fitMetaDescription('A short, complete description of the page.')).toBe('A short, complete description of the page.');

@@ -17,6 +17,7 @@ export async function generateMetadata({
     path: 'library',
     title: t('pages.docs'),
     description: t('descriptions.docs'),
+    noindex: true,
   });
 }
 
