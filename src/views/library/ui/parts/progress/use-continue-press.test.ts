@@ -2,7 +2,6 @@ import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
-import { buildCompileBrief } from "@/features/library";
 
 import { useContinuePress } from "./use-continue-press";
 
@@ -12,31 +11,41 @@ function row(index: number): LibrarySourceRow {
 }
 
 const WAITING = Array.from({ length: 37 }, (_, index) => row(index));
+const paths = (rows: readonly LibrarySourceRow[]) => rows.map((source) => source.path);
+
+type Props = Parameters<typeof useContinuePress>[0];
 
 describe("useContinuePress", () => {
-  it("sends exactly the batch the band names, and its brief names no other source", () => {
-    const briefs: string[] = [];
-    const send = vi.fn((batch: readonly LibrarySourceRow[]) => {
-      briefs.push(buildCompileBrief({ sources: batch, locale: "en", writerId: "agent:test", vaultRoot: "/vault" }));
-      return true;
+  it("picks nothing while no surface draws the batch, and picks once on press", () => {
+    const eligible = vi.fn(() => true);
+    const send = vi.fn((_batch: readonly LibrarySourceRow[]) => true);
+    const { result, rerender } = renderHook((props: Props) => useContinuePress(props), {
+      initialProps: { sources: WAITING, folderKey: "/press/hidden", running: false, shown: false, eligible, send },
     });
-    const { result } = renderHook(() =>
-      useContinuePress({ sources: WAITING, folderKey: "/press/sent", running: false, send }),
-    );
-    const named = result.current.continueBatch.next.map((source) => source.path);
-    expect(named).toEqual(WAITING.slice(0, 10).map((source) => source.path));
-    expect(result.current.continueBatch.rest).toBe(27);
+    // Three publishes of the folder with the band and the popover closed.
+    for (let i = 0; i < 3; i += 1) {
+      rerender({ sources: [...WAITING], folderKey: "/press/hidden", running: false, shown: false, eligible, send });
+    }
+    expect(eligible).not.toHaveBeenCalled();
+    expect(result.current.continueBatch.next).toEqual([]);
 
     act(() => result.current.press());
-
-    expect(send).toHaveBeenCalledTimes(1);
-    expect(send.mock.calls[0]![0].map((source) => source.path)).toEqual(named);
-    for (const path of named) expect(briefs[0]).toContain(path);
-    for (const source of WAITING.slice(10)) expect(briefs[0]).not.toContain(source.path);
-    expect([...result.current.continueBatch.running]).toEqual(named);
+    expect(eligible).toHaveBeenCalledTimes(WAITING.length);
+    expect(paths(send.mock.calls[0]![0])).toEqual(paths(WAITING.slice(0, 10)));
   });
 
-  it("settles a batch whose request could not start, so its rows do not stay running", () => {
+  it("a door that names its sources sends exactly those and marks only them running", () => {
+    const send = vi.fn((_batch: readonly LibrarySourceRow[]) => true);
+    const { result } = renderHook(() =>
+      useContinuePress({ sources: WAITING, folderKey: "/press/named", running: false, send }),
+    );
+    act(() => result.current.pressFor([WAITING[30]!]));
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(paths(send.mock.calls[0]![0])).toEqual(["sources/doc-30.md"]);
+    expect([...result.current.continueBatch.running]).toEqual(["sources/doc-30.md"]);
+  });
+
+  it("drops a batch whose request could not start, so its rows do not stay running", () => {
     const { result } = renderHook(() =>
       useContinuePress({ sources: WAITING, folderKey: "/press/failed", running: false, send: () => false }),
     );

@@ -57,6 +57,27 @@ function settle(key: string, sources: readonly LibrarySourceRow[]): void {
   writeSession(key, { inFlight: [], started: false, last: session.inFlight, returned });
 }
 
+const NO_PICK = { batch: { targets: [] as readonly LibrarySourceRow[], rest: 0 }, returned: 0 };
+
+/** The next request's sources, skipping the one in flight and any waiting source `eligible` refuses. */
+function pick(
+  sources: readonly LibrarySourceRow[],
+  inFlight: ReadonlySet<string>,
+  eligible: ((row: LibrarySourceRow) => boolean) | undefined,
+  size: number,
+  session: BatchSession,
+) {
+  // A running request's sources are neither named again nor counted in what waits after it.
+  const open =
+    inFlight.size === 0 && !eligible
+      ? sources
+      : sources.filter((row) => !inFlight.has(row.path) && (!eligible || !sourceNeedsCompile(row) || eligible(row)));
+  const last = new Set(session.last);
+  let back = 0;
+  if (last.size > 0) for (const row of open) if (last.has(row.path) && sourceNeedsCompile(row)) back += 1;
+  return { batch: selectCompileBatch(open, { size, returned: session.returned }), returned: back };
+}
+
 export interface UseCompileBatchArgs {
   /** The Library's rows in list order (`model.sources`). */
   sources: readonly LibrarySourceRow[];
@@ -69,6 +90,13 @@ export interface UseCompileBatchArgs {
    * the sources it named that still wait become returned, whether the turn completed or was stopped.
    */
   running: boolean;
+  /**
+   * False while nothing draws `targets`, `rest` or `returned` (the band and the Compile popover are
+   * closed): they read empty and nothing is picked until `begin`. Defaults to true.
+   */
+  shown?: boolean;
+  /** A waiting source this route can write; one it refuses is neither named nor counted. */
+  eligible?: (row: LibrarySourceRow) => boolean;
 }
 
 export interface CompileBatchState {
@@ -80,8 +108,11 @@ export interface CompileBatchState {
   inFlight: ReadonlySet<string>;
   /** Sources the last finished request named that still wait, now last in the order; 0 while running. */
   returned: number;
-  /** Call on press: marks `targets` in flight and returns them, for `buildCompileBrief({ sources })`. */
-  begin: () => readonly LibrarySourceRow[];
+  /**
+   * Call on press: picks the next batch now (or takes `named`, for a door that names its own
+   * sources), marks it in flight and returns it, for `buildCompileBrief({ sources })`.
+   */
+  begin: (named?: readonly LibrarySourceRow[]) => readonly LibrarySourceRow[];
   /**
    * For a press whose turn never started (the agent refused or threw): drops the request without
    * marking anything returned. A turn that did run is settled by `running` falling, not by this.
@@ -94,19 +125,17 @@ export function useCompileBatch({
   folderKey,
   size = COMPILE_BATCH_SIZE,
   running,
+  shown = true,
+  eligible,
 }: UseCompileBatchArgs): CompileBatchState {
   const key = folderKey ?? "";
   const session = useSyncExternalStore(subscribe, () => readSession(key), () => EMPTY_SESSION);
 
   const inFlight = useMemo(() => new Set(session.inFlight), [session.inFlight]);
-  const { batch, returned } = useMemo(() => {
-    // A running request's sources are neither named again nor counted in what waits after it.
-    const open = inFlight.size === 0 ? sources : sources.filter((row) => !inFlight.has(row.path));
-    const last = new Set(session.last);
-    let back = 0;
-    for (const row of open) if (last.has(row.path) && sourceNeedsCompile(row)) back += 1;
-    return { batch: selectCompileBatch(open, { size, returned: session.returned }), returned: back };
-  }, [sources, size, session.returned, session.last, inFlight]);
+  const { batch, returned } = useMemo(
+    () => (shown ? pick(sources, inFlight, eligible, size, session) : NO_PICK),
+    [shown, sources, inFlight, eligible, size, session],
+  );
 
   useEffect(() => {
     if (session.inFlight.length === 0) return;
@@ -114,13 +143,17 @@ export function useCompileBatch({
     else if (!running && session.started) settle(key, sources);
   }, [key, running, session, sources]);
 
-  const begin = useCallback((): readonly LibrarySourceRow[] => {
-    const targets = batch.targets;
-    if (targets.length > 0) {
-      writeSession(key, { ...readSession(key), inFlight: targets.map((row) => row.path), started: running });
-    }
-    return targets;
-  }, [batch.targets, key, running]);
+  const begin = useCallback(
+    (named?: readonly LibrarySourceRow[]): readonly LibrarySourceRow[] => {
+      const current = readSession(key);
+      const targets = named ?? pick(sources, new Set(current.inFlight), eligible, size, current).batch.targets;
+      if (targets.length > 0) {
+        writeSession(key, { ...current, inFlight: targets.map((row) => row.path), started: running });
+      }
+      return targets;
+    },
+    [eligible, key, running, size, sources],
+  );
 
   const finish = useCallback(() => abandon(key), [key]);
 

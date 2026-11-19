@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isWikiPage, sourceNeedsCompile, type LibrarySourceRow } from "@/entities/docs-vault";
-import { selectLocalCompileTargets } from "@/features/vault-agent";
+import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
+import { opensLocally } from "@/features/vault-agent";
 import { useRouter } from "@/i18n/navigation";
 import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
 import { useVaultConnectors } from "@/features/mcp-connectors";
@@ -263,6 +263,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           vaultRoot: nativeVaultRootPath ?? "",
           now: new Date(),
         }),
+        'compile',
+        batch.map((row) => row.path),
       );
       return true;
     } catch (error) {
@@ -275,20 +277,22 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       return false;
     }
   }, [agent, locale, model.hashes, model.wikiPages, nativeVaultRootPath, t, toast]);
-  /* Every Compile door sends the batch the band and the popover name, never every waiting source. */
-  // The local runner opens only text formats, so on its route a waiting file it cannot read is never named.
+  const indexColumn = useLibraryIndexColumn({ segment, model });
+  const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
+  const bandShown = homeVisible && indexSegment !== 'wiki' && model.sources.length > 0;
+  /*
+   * Every Compile door sends what it names: the band and the popover the next batch, a source's own
+   * door that source. The batch is picked only while one of them draws it, and on press.
+   */
   const localRoute = agent.route === 'local';
-  const compileRows = useMemo(() => {
-    if (!localRoute) return model.sources;
-    const openable = new Set(selectLocalCompileTargets(model.sources).map((row) => row.path));
-    return model.sources.filter((row) => !sourceNeedsCompile(row) || openable.has(row.path));
-  }, [localRoute, model.sources]);
-  const { compileBatch, continueBatch, press: handleCompile } = useContinuePress({
-    sources: compileRows,
+  const { compileBatch, continueBatch, press: handleCompile, pressFor: compileSources } = useContinuePress({
+    sources: model.sources,
     folderKey: workVaultScope,
-    // The local runner reads its own capped targets; the batch names as many.
+    // The local runner reads its own capped targets; the batch names as many, all files it can open.
     size: localRoute ? Math.max(1, agent.localCompile.targets.length) : undefined,
     running: compileRunning || agent.localCompile.status === 'running',
+    shown: bandShown || homeSurface === 'compile',
+    eligible: localRoute ? opensLocally : undefined,
     send: sendCompile,
   });
 
@@ -306,15 +310,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     handleFileReport, autoDecide, handleTurnStarted,
   } = turns;
   const graphCards = useLibraryGraphCards({
-    localVault, nativeVaultRootPath, docs, model, agent, handleCompile, sources, turns,
+    localVault, nativeVaultRootPath, docs, model, agent, compileSources, sources, turns,
   });
   const { cardFacts } = graphCards;
   const { readerRef, paneBodyRef } = useLibraryFocus({
     selected, setSelected, mobileBrowseOpen, mobileBrowseBackRef, homeSurface,
     answerComparisonOpen, skipReaderFocusRef, agent, sources, workActivity,
   });
-  const indexColumn = useLibraryIndexColumn({ segment, model });
-  const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
   const templateProblems = useWikiTemplateProblems({
     t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,
   });
@@ -576,7 +578,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               data-testid="library-reader-landing"
               className="flex min-h-0 min-w-0 flex-1 flex-col"
             >
-              {model.sources.length > 0 ? (
+              {bandShown ? (
                 <SourceProgressBand
                   sources={model.sources}
                   vaultScope={workVaultScope}
@@ -638,7 +640,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               skipReaderFocusRef={skipReaderFocusRef} turnRunning={turnRunning} lintRunning={lintRunning}
               choose={choose} busy={busy} model={model} retainedAnswers={retainedAnswers}
               knownOriginalPaths={knownOriginalPaths} agent={agent} answerRefresh={answerRefresh}
-              handleCompile={handleCompile} reader={reader} sources={sources} turns={turns}
+              compileSources={compileSources} reader={reader} sources={sources} turns={turns}
               graphCards={graphCards} indexColumn={indexColumn} templateProblems={templateProblems}
             />
           ) : null}
