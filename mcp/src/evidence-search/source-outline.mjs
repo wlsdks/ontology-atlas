@@ -104,7 +104,7 @@ const JS_REEXPORT = /^export\s+(?:\*|\{)/u;
 const JS_FROM = /from\s+['"]([^'"]+)['"]/u;
 const JS_METHOD = /^(?:(?:public|private|protected|readonly|static|abstract|override|async|get|set)\s+)*(?:\*\s*)?([A-Za-z_$#][\w$]*)\s*(?:<[^>]*>\s*)?\(/u;
 /** Lines a method's parameters may run over before the `{` that opens its body. */
-const SIGNATURE_LINES = 12;
+const SIGNATURE_LINES = 24;
 
 /**
  * Whether a line ends a method head: `) {`, or `): Type {` where the return type
@@ -121,26 +121,39 @@ function endsWithMethodTail(trimmed) {
   return false;
 }
 
+/** Each line's count of `(` less its count of `)`, in one pass over the text. */
+function parenDeltas(lines) {
+  return lines.map((line) => {
+    let delta = 0;
+    for (let index = 0; index < line.length; index += 1) {
+      const code = line.charCodeAt(index);
+      if (code === 40) delta += 1;
+      else if (code === 41) delta -= 1;
+    }
+    return delta;
+  });
+}
+
 /**
  * A method head whose parameters start on the next line: `save(` then the
- * parameters, then `): Promise<void> {`. The lines are joined up to the one that
- * opens the body; a line ending in `;` or `}` first was a call, not a head.
+ * parameters, then `): Promise<void> {`. The parameters may hold an object type
+ * or a default (`options: A & {`, `} = {}`), so the head ends where its
+ * parentheses close, not at the first `{` or `}`; a head that closes on a line
+ * ending in `;` or `)` was a call. `deltas` are the lines' parenthesis balances.
  */
-function methodHeadAcrossLines(lines, index) {
-  const first = lines[index].trim();
-  if ((first.match(/\(/gu)?.length ?? 0) <= (first.match(/\)/gu)?.length ?? 0)) return false;
-  let joined = first;
+function methodHeadAcrossLines(lines, index, deltas) {
+  let depth = deltas[index];
+  if (depth <= 0) return false;
   for (let next = index + 1; next < Math.min(lines.length, index + SIGNATURE_LINES); next += 1) {
-    const part = lines[next].trim();
-    joined += ` ${part}`;
-    if (part.endsWith('{')) return endsWithMethodTail(joined);
-    if (part.endsWith(';') || part.endsWith('}')) return false;
+    depth += deltas[next];
+    if (depth <= 0) return depth === 0 && endsWithMethodTail(lines[next].trim());
   }
   return false;
 }
 
 function outlineJavaScript(lines, out) {
   let classIndent = null;
+  let deltas = null;
   for (const [index, line] of lines.entries()) {
     const trimmed = line.trim();
     if (trimmed === '' || isCommentLine(trimmed)) continue;
@@ -184,7 +197,7 @@ function outlineJavaScript(lines, out) {
       continue;
     }
     if (classIndent === null || indent <= classIndent) continue;
-    if (!endsWithMethodTail(trimmed) && !methodHeadAcrossLines(lines, index)) continue;
+    if (!endsWithMethodTail(trimmed) && !methodHeadAcrossLines(lines, index, deltas ??= parenDeltas(lines))) continue;
     match = JS_METHOD.exec(trimmed);
     if (match && !NOT_A_DECLARATION.has(match[1])) out.add(index, 'method', match[1], line);
   }

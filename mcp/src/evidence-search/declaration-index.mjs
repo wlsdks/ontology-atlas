@@ -147,8 +147,8 @@ export function productFiles(rootPath, ignore = []) {
 }
 
 /**
- * name -> [{ path, line, kind }] over every product source file under `rootPath`; a
- * `Receiver.method` declaration is also listed under `*.method`.
+ * name -> [{ path, line, kind, name }] over every product source file under
+ * `rootPath`; a `Receiver.method` declaration is also listed under `*.method`.
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], files?: object[] }} [options] `files` reuses one walk across a call
@@ -161,8 +161,8 @@ export function declarationIndex(rootPath, { ignore = [], files } = {}) {
       const keys = name.includes('.') ? [name, `*.${name.split('.').pop()}`] : [name];
       for (const key of keys) {
         const rows = index.get(key);
-        if (rows) rows.push({ path: file.path, line, kind });
-        else index.set(key, [{ path: file.path, line, kind }]);
+        if (rows) rows.push({ path: file.path, line, kind, name });
+        else index.set(key, [{ path: file.path, line, kind, name }]);
       }
     }
   }
@@ -174,9 +174,11 @@ function escapeRegExp(value) {
 }
 
 /**
- * Where product code calls `name(`: each call line outside a declaration line, at
- * most `limit` (the rest only counted), so a symbol read can show the guard its
- * caller puts around it.
+ * Where product code calls `name(`: each call line outside a declaration line, a
+ * comment, a doctest (`>>> f(x)`) or a Python docstring, at most `limit` (the
+ * rest only counted), so a symbol read can show the guard its caller puts around
+ * it. An example in a docstring is no caller, and showing it as one hides the
+ * docstring's own rule behind it.
  *
  * @returns {{ sites: { path: string, line: number }[], total: number }}
  */
@@ -191,12 +193,47 @@ export function callSitesOf(rootPath, name, { ignore = [], limit = 8, files } = 
     if (!text.includes(name)) continue;
     const declared = new Set(facts.declarations.map((declaration) => declaration.line));
     const lines = text.split(/\r?\n/);
+    const python = file.path.endsWith('.py') || file.path.endsWith('.pyi');
+    let quote = null;
     for (let index = 0; index < lines.length; index += 1) {
-      if (declared.has(index + 1) || !pattern.test(lines[index])) continue;
-      if (/^\s*(?:\/\/|#|\*|\/\*)/.test(lines[index])) continue;
+      let line = lines[index];
+      if (python) {
+        const code = codeOutsideDocstring(line, quote);
+        quote = code.quote;
+        line = code.text;
+      }
+      if (declared.has(index + 1) || !pattern.test(line)) continue;
+      if (/^\s*(?:\/\/|#|\*|\/\*|>>>|\.\.\.\s)/.test(line)) continue;
       total += 1;
       if (sites.length < limit) sites.push({ path: file.path, line: index + 1 });
     }
   }
   return { sites, total };
+}
+
+/**
+ * The part of a Python line outside a triple-quoted string, and the quote still
+ * open after it. One pass over the line: each opener is looked for once.
+ */
+function codeOutsideDocstring(line, open) {
+  let text = '';
+  let quote = open;
+  let at = 0;
+  while (at < line.length) {
+    if (quote) {
+      const close = line.indexOf(quote, at);
+      if (close < 0) return { text, quote };
+      at = close + 3;
+      quote = null;
+      continue;
+    }
+    const double = line.indexOf('"""', at);
+    const single = line.indexOf("'''", at);
+    const next = double < 0 ? single : single < 0 ? double : Math.min(double, single);
+    if (next < 0) return { text: text + line.slice(at), quote: null };
+    text += line.slice(at, next);
+    quote = line.slice(next, next + 3);
+    at = next + 3;
+  }
+  return { text, quote };
 }
