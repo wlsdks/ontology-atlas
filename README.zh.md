@@ -50,19 +50,19 @@ macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器
 <table>
 <tr>
 <td width="50%"><img src="docs/assets/readme/neural.png" alt="地图的神经视图：把本体画成立体，选中一个能力后，面板列出它依赖什么、谁在使用它" /><br /><b>地图 · 神经</b> — 把同样的概念画成可以转动的立体；选中一个，就能看到它依赖什么、被什么使用。</td>
-<td width="50%"><img src="public/gateway/projects.en.png" alt="项目：项目说明、按所含概念数量伸缩的领域条，以及所选领域中的能力列表" /><br /><b>项目</b> — 项目为何存在、分成哪些领域、每个领域里有什么。</td>
+<td width="50%"><img src="public/gateway/projects.en.webp" alt="项目：项目说明、按所含概念数量伸缩的领域条，以及所选领域中的能力列表" /><br /><b>项目</b> — 项目为何存在、分成哪些领域、每个领域里有什么。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/library.en.png" alt="资料库：左侧是 Wiki 页面及其与来源是否一致，中间是查找框，下方是建议先读的来源" /><br /><b>资料库</b> — 文档放进去，带出处的 Wiki 页面出来；先找到段落，再到来源中核对。</td>
-<td width="50%"><img src="public/gateway/planning.en.png" alt="规划：左侧是 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 在已打开文件夹的 <code>planning/</code> 中用 Markdown 写计划，应用和浏览器里都可以；macOS 应用还能就地阅读另一个文件夹。</td>
+<td width="50%"><img src="public/gateway/library.en.webp" alt="资料库：左侧是 Wiki 页面及其与来源是否一致，中间是查找框，下方是建议先读的来源" /><br /><b>资料库</b> — 文档放进去，带出处的 Wiki 页面出来；先找到段落，再到来源中核对。</td>
+<td width="50%"><img src="public/gateway/planning.en.webp" alt="规划：左侧是 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 在已打开文件夹的 <code>planning/</code> 中用 Markdown 写计划，应用和浏览器里都可以；macOS 应用还能就地阅读另一个文件夹。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="变更：一天内合并的变更数量、合并的时段，以及按范围分组的变更" /><br /><b>变更</b> — 一段时间内合并了什么，先计数、分组，再进入背后的拉取请求、提交和文件。</td>
-<td width="50%"><img src="public/gateway/git.en.png" alt="Git：左侧是提交历史，右侧是某次提交更改的概念及其关系" /><br /><b>Git</b> — 每次提交改了哪些概念；编辑过的文档在提交前就会出现在这里。</td>
+<td width="50%"><img src="public/gateway/changes.en.webp" alt="变更：一天内合并的变更数量、合并的时段，以及按范围分组的变更" /><br /><b>变更</b> — 一段时间内合并了什么，先计数、分组，再进入背后的拉取请求、提交和文件。</td>
+<td width="50%"><img src="public/gateway/git.en.webp" alt="Git：左侧是提交历史，右侧是某次提交更改的概念及其关系" /><br /><b>Git</b> — 每次提交改了哪些概念；编辑过的文档在提交前就会出现在这里。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness：智能体读取的文件、执行前拦截它的规则、结束后检查它的内容，以及一个打开的指令文件" /><br /><b>Harness</b> — 智能体在这个仓库里读什么、执行前被什么拦住、结束后被什么检查。</td>
-<td width="50%"><img src="public/gateway/automations.en.png" alt="自动化：一项定时文档检查的周期和最近结果，以及运行记录" /><br /><b>自动化</b> — 定时检查，以及每次运行发现了什么。</td>
+<td width="50%"><img src="public/gateway/harness.en.webp" alt="Harness：智能体读取的文件、执行前拦截它的规则、结束后检查它的内容，以及一个打开的指令文件" /><br /><b>Harness</b> — 智能体在这个仓库里读什么、执行前被什么拦住、结束后被什么检查。</td>
+<td width="50%"><img src="public/gateway/automations.en.webp" alt="自动化：一项定时文档检查的周期和最近结果，以及运行记录" /><br /><b>自动化</b> — 定时检查，以及每次运行发现了什么。</td>
 </tr>
 </table>
 
