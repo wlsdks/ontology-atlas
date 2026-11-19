@@ -1,4 +1,4 @@
-import { fromMarkdown } from 'mdast-util-from-markdown';
+import { markdownTree } from '../markdown-tree.mjs';
 
 // O(n) AST walks exclude literal and quoted blocks from reviewed evidence.
 function paragraphs(nodes) {
@@ -33,19 +33,26 @@ function inlineText(nodes) {
 
 function authoredSections(body) {
   const source = typeof body === 'string' ? body : '';
-  const blocks = fromMarkdown(source).children;
+  const blocks = markdownTree(source).children;
   const sections = new Map();
+  const spans = new Map();
   let active = null;
+  let span = null;
   for (const node of blocks) {
     if (node.type === 'heading' && node.depth <= 2) {
+      if (span) span.end = node.position.start.offset;
       const name = inlineText(node.children).normalize('NFKC').trim().toLowerCase();
       active = node.depth === 2 && !sections.has(name) ? [] : null;
-      if (active) sections.set(name, active);
+      span = active ? { start: node.position.end.offset, end: source.length } : null;
+      if (active) {
+        sections.set(name, active);
+        spans.set(name, span);
+      }
     } else if (active) {
       active.push(node);
     }
   }
-  return { source, blocks, sections };
+  return { source, blocks, sections, spans };
 }
 
 function prose(nodes) {
@@ -53,11 +60,9 @@ function prose(nodes) {
 }
 
 export function readRecordedSection(body, heading) {
-  const { source, sections } = authoredSections(body);
-  const nodes = sections.get(String(heading).normalize('NFKC').trim().toLowerCase()) ?? [];
-  return nodes.length
-    ? source.slice(nodes[0].position.start.offset, nodes.at(-1).position.end.offset).trim()
-    : '';
+  const { source, spans } = authoredSections(body);
+  const span = spans.get(String(heading).normalize('NFKC').trim().toLowerCase());
+  return span ? source.slice(span.start, span.end).trim() : '';
 }
 
 function legacyBoundaries(nodes, source) {

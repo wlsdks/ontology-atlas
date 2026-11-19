@@ -429,6 +429,7 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
   try {
     if (existsSync(docsRoot) && statSync(docsRoot).isDirectory()) {
       docsBuildScripts = readdirSync(docsRoot)
+        .sort()
         .filter((entry) => /^build_[A-Za-z0-9_-]+\.py$/i.test(entry))
         .filter((entry) => {
           const path = join(docsRoot, entry);

@@ -48,7 +48,7 @@ export function walk(dir, ignore, out, maxFiles) {
   if (out.length >= maxFiles) return;
   let entries;
   try {
-    entries = readdirSync(dir);
+    entries = readdirSync(dir).sort();
   } catch {
     return;
   }
