@@ -65,11 +65,25 @@ function absolute(locale: string, path: string): string {
   return `${SITE_URL}/${locale}${tail}`;
 }
 
+/** Bing flags a meta description outside 25-160 characters; Google cuts the snippet near 160 too. */
+export const META_DESCRIPTION_MAX = 160;
+
+/** A description within `META_DESCRIPTION_MAX`, cut at the last word that fits, with an ellipsis. */
+export function fitMetaDescription(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  const characters = Array.from(flat);
+  if (characters.length <= META_DESCRIPTION_MAX) return flat;
+  const room = characters.slice(0, META_DESCRIPTION_MAX - 1).join('');
+  const space = room.lastIndexOf(' ');
+  return `${(space > META_DESCRIPTION_MAX / 2 ? room.slice(0, space) : room).replace(/[\s,;:.—\-，。、；：]+$/u, '')}…`;
+}
+
 export function buildPageMetadata(
   { locale, path, title, description, ogImage, hasFileConventionImage, absoluteTitle }: PageMetadataInput,
   registry: PageMetadataLocales = ROUTED_LOCALES,
 ): Metadata {
   const canonical = absolute(locale, path);
+  const summary = fitMetaDescription(description);
 
   /**
    * Declare every locale to every other, plus `x-default`. Without the latter a
@@ -84,21 +98,21 @@ export function buildPageMetadata(
 
   return {
     title: absoluteTitle ? { absolute: title } : title,
-    description,
+    description: summary,
     alternates: { canonical, languages },
     openGraph: {
       type: 'website',
       siteName: 'Ontology Atlas',
       url: canonical,
       title,
-      description,
+      description: summary,
       locale: registry.meta[locale]?.ogLocale ?? locale,
       ...(hasFileConventionImage ? {} : { images: [ogImage ? { url: ogImage } : siteImage] }),
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description,
+      description: summary,
       ...(hasFileConventionImage ? {} : { images: [ogImage ?? siteImage.url] }),
     },
   };

@@ -98,9 +98,14 @@ export const WIKI_FIELDS: readonly WikiField[] = [
     key: 'describes',
     required: false,
     description:
-      'Ontology slugs this page describes. Allowed only on a page a person has reviewed; ' +
-      'on a draft it is flagged, because a draft naming graph nodes is an unapproved claim ' +
-      'about the graph.',
+      'Slugs of the `kind:` nodes this page is about: the concepts without which its Summary ' +
+      'would be wrong. Allowed at any `status`. An empty list records that a writer checked ' +
+      'and found none. Each entry must name a concept in this folder.',
+  },
+  {
+    key: 'relation_notes',
+    required: false,
+    description: 'One sentence per slug in `describes:`, saying why this page is about it.',
   },
 ];
 
@@ -196,7 +201,8 @@ type WikiProblemCode =
   | 'bad-citation'
   | 'bad-truncation-record'
   | 'citation-target-missing'
-  | 'describes-needs-approval'
+  | 'describes-target-missing'
+  | 'bad-describes'
   | 'dangling-wikilink'
   | 'orphan-page'
   | 'shared-source-unlinked';
@@ -235,6 +241,113 @@ function problem(
   const out: WikiProblem = { code, message };
   if (line !== undefined) out.line = line;
   if (detail !== undefined) out.detail = detail;
+  return out;
+}
+
+/** One document in the folder, as `buildWikiNodeIndex` reads it. */
+export interface WikiNodeEntry {
+  /** Vault-relative, without `.md`. */
+  slug: string;
+  kind?: unknown;
+  /** The document's frontmatter `slug:`. */
+  alias?: unknown;
+}
+
+const WIKI_NODE_INDEX: unique symbol = Symbol('wikiNodeIndex');
+const AMBIGUOUS: unique symbol = Symbol('ambiguous');
+
+type WikiNodeResolution = { slug: string; node: boolean } | 'missing' | 'ambiguous';
+
+/** Built once per folder; see `buildWikiNodeIndex`. */
+export interface WikiNodeIndex {
+  readonly [WIKI_NODE_INDEX]: true;
+  resolve(ref: string): WikiNodeResolution;
+}
+
+function nfc(value: unknown): string {
+  return typeof value === 'string' ? value.trim().normalize('NFC') : '';
+}
+
+function isConceptTarget(slug: string, kind: unknown): boolean {
+  const name = typeof kind === 'string' ? kind.trim() : '';
+  if (!name || name === 'vault-readme') return false;
+  return !slug.startsWith(`${WIKI_DIR}/`) && !slug.startsWith(`${WIKI_SOURCES_DIR}/`);
+}
+
+/**
+ * The concept index `describes:` entries resolve against, built once per folder so each entry is
+ * O(1). Mirrors `buildWikiNodeIndex` in the MCP module: full slug, then a frontmatter `slug:`
+ * alias, then a unique tail or path suffix, as `find_backlinks` resolves, over every document,
+ * and only a `kind:` node outside `wiki/` that is not the vault README is a target. Compared
+ * after NFC, because macOS hands Hangul file names over as NFD.
+ */
+export function buildWikiNodeIndex(entries: Iterable<WikiNodeEntry> | null | undefined): WikiNodeIndex {
+  const slugs = new Map<string, boolean>();
+  const aliases = new Map<string, string>();
+  const suffixes = new Map<string, string | typeof AMBIGUOUS>();
+  for (const entry of entries ?? []) {
+    const slug = nfc(entry?.slug);
+    if (!slug || slugs.has(slug)) continue;
+    slugs.set(slug, isConceptTarget(slug, entry.kind));
+    const alias = nfc(entry.alias);
+    if (alias && !aliases.has(alias)) aliases.set(alias, slug);
+    for (let at = slug.indexOf('/'); at >= 0; at = slug.indexOf('/', at + 1)) {
+      const suffix = slug.slice(at + 1);
+      if (suffix) suffixes.set(suffix, suffixes.has(suffix) ? AMBIGUOUS : slug);
+    }
+  }
+  const found = (slug: string) => ({ slug, node: slugs.get(slug) === true });
+  return Object.freeze({
+    [WIKI_NODE_INDEX]: true as const,
+    resolve(ref: string): WikiNodeResolution {
+      // Most entries are already NFC full slugs; only a miss pays for normalising.
+      const typed = typeof ref === 'string' ? ref.trim() : '';
+      if (slugs.has(typed)) return found(typed);
+      const name = typed.normalize('NFC');
+      if (!name) return 'missing';
+      if (slugs.has(name)) return found(name);
+      const alias = aliases.get(name);
+      if (alias !== undefined) return found(alias);
+      const tail = suffixes.get(name);
+      if (tail === undefined) return 'missing';
+      return tail === AMBIGUOUS ? 'ambiguous' : found(tail);
+    },
+  });
+}
+
+function wikiNodeIndexOf(nodes: WikiNodeIndex | Iterable<WikiNodeEntry>): WikiNodeIndex {
+  return (nodes as Partial<WikiNodeIndex>)[WIKI_NODE_INDEX] === true
+    ? (nodes as WikiNodeIndex)
+    : buildWikiNodeIndex(nodes as Iterable<WikiNodeEntry>);
+}
+
+function readDescribes(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+}
+
+function describesProblems(value: unknown, index: WikiNodeIndex): WikiProblem[] {
+  const out: WikiProblem[] = [];
+  let seen: Set<string> | null = null;
+  for (const entry of readDescribes(value)) {
+    const resolved = index.resolve(entry);
+    if (typeof resolved === 'object' && resolved.node) continue;
+    const target = nfc(entry);
+    seen ??= new Set<string>();
+    if (seen.has(target)) continue;
+    seen.add(target);
+    const message =
+      resolved === 'ambiguous'
+        ? `\`${target}\` under \`describes:\` matches more than one document by its last part, so it names no one concept. Write the concept's full slug.`
+        : resolved === 'missing'
+          ? `\`${target}\` under \`describes:\` names no concept in this folder. Remove it, or name a concept that exists by its slug.`
+          : `\`${target}\` under \`describes:\` is a wiki page or the vault README, not a concept. \`describes:\` names \`kind:\` nodes only.`;
+    out.push(
+      problem('describes-target-missing', message, undefined, {
+        key: 'describes-target-missing',
+        values: { target },
+      }),
+    );
+  }
   return out;
 }
 
@@ -290,11 +403,13 @@ function sectionBullets(
  * `knownSources` are the vault-relative paths that exist on disk. Given, a citation
  * naming a path that is not there is reported; omitted, citations are checked only
  * against the page's own `sources:` list, because a validator guessing about files it
- * cannot see would report a problem a person cannot act on.
+ * cannot see would report a problem a person cannot act on. `nodes` is every document in
+ * the folder (`buildWikiNodeIndex`); given, each `describes:` entry must name a `kind:`
+ * node, and omitted, `describes:` is not checked. Pass the built index for many pages.
  */
 export function validateWikiPage(
   raw: string,
-  options: { knownSources?: Iterable<string> } = {},
+  options: { knownSources?: Iterable<string>; nodes?: WikiNodeIndex | Iterable<WikiNodeEntry> | null } = {},
 ): WikiValidation {
   const text = raw ?? '';
   const problems: WikiProblem[] = [];
@@ -330,18 +445,22 @@ export function validateWikiPage(
     }
   }
 
-  const status = typeof frontmatter.status === 'string' ? frontmatter.status.trim() : '';
-  if (Object.prototype.hasOwnProperty.call(frontmatter, 'describes') && status !== 'reviewed') {
+  // Every graph reader takes `describes:` only as a list, and a rename refuses to rewrite a lone
+  // value, so one would read as a link here and block every rename of the concept it names.
+  if (Object.prototype.hasOwnProperty.call(frontmatter, 'describes') && !Array.isArray(frontmatter.describes)) {
     problems.push(
       problem(
-        'describes-needs-approval',
-        '`describes:` names ontology slugs, so it says this page speaks for those concepts. ' +
-          'That is a claim about the graph and it needs a person: set `status: reviewed` after ' +
-          'reading the page, or remove `describes:`.',
+        'bad-describes',
+        '`describes:` is not a list. Write each concept\'s slug as a list item (`describes:` then ' +
+          '`  - capabilities/<name>`), or `describes: []` when no concept fits. A single value is ' +
+          'not read as a link, and a rename cannot rewrite it.',
         undefined,
-        { key: 'describes-needs-approval' },
+        { key: 'bad-describes' },
       ),
     );
+  }
+  if (options.nodes !== undefined && options.nodes !== null) {
+    problems.push(...describesProblems(frontmatter.describes, wikiNodeIndexOf(options.nodes)));
   }
 
   const sections = readSections(body, frontmatterLines);

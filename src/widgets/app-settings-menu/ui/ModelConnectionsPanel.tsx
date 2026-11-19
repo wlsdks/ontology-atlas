@@ -1389,17 +1389,8 @@ function AuditSection({
                   {formatAuditTime(entry.at)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-label text-[color:var(--color-text-tertiary)]">
-                  {entry.host ?? entry.provider} ·{' '}
-                  {entry.purpose === 'verify'
-                    ? t('auditPurposeVerify')
-                    : entry.purpose === 'judgment'
-                      ? t('auditPurposeJudgment')
-                      : t('auditPurposeAsk')}{' '}
-                  ·{' '}
-                  {entry.purpose === 'judgment'
-                    ? // Jev reads no file: what left is what the person pasted.
-                      t('auditScopePasted', { chars: entry.scope.promptChars })
-                    : t('auditScope', { chars: entry.scope.vaultChars })}
+                  {entry.host ?? entry.provider} · {auditPurposeLabel(entry, t)} ·{' '}
+                  {auditScopeLabel(entry, t)}
                 </span>
                 <span
                   className={cn(
@@ -1417,7 +1408,9 @@ function AuditSection({
                       ? t('auditOutcomeDenied')
                       : entry.outcome === 'error'
                         ? t('auditOutcomeError')
-                        : t('auditOutcomeUnknown')}
+                        : entry.outcome === 'open'
+                          ? t('auditOutcomeOpen')
+                          : t('auditOutcomeUnknown')}
                 </span>
               </li>
             ))}
@@ -1433,6 +1426,45 @@ function AuditSection({
       </div>
     </section>
   );
+}
+
+type AuditTranslate = ReturnType<typeof useTranslations<'agents.models'>>;
+
+function auditPurposeLabel(entry: LlmAuditEntry, t: AuditTranslate): string {
+  switch (entry.purpose) {
+    case 'verify':
+      return t('auditPurposeVerify');
+    case 'judgment':
+      return t('auditPurposeJudgment');
+    case 'embed-build':
+      return t('auditPurposeEmbedBuild');
+    case 'embed-query':
+      return t('auditPurposeEmbedQuery');
+    case 'model-download':
+      return t('auditPurposeModelDownload');
+    default:
+      return t('auditPurposeAsk');
+  }
+}
+
+/** What left, in the terms of that kind of send. */
+function auditScopeLabel(entry: LlmAuditEntry, t: AuditTranslate): string {
+  if (entry.embed) {
+    const closed = entry.embed.phase === 'close';
+    return t('auditScopePassages', {
+      passages: closed ? entry.embed.passagesSent : entry.embed.passagesPlanned,
+      chars: closed ? entry.embed.charsSent : entry.embed.charsPlanned,
+    });
+  }
+  if (entry.download || entry.purpose === 'model-download') {
+    return t('auditScopeDownload', { model: entry.model ?? '' });
+  }
+  if (entry.purpose === 'embed-query') {
+    return t('auditScopeQuestion', { chars: entry.scope.promptChars });
+  }
+  // Jev reads no file: what left is what the person pasted.
+  if (entry.purpose === 'judgment') return t('auditScopePasted', { chars: entry.scope.promptChars });
+  return t('auditScope', { chars: entry.scope.vaultChars });
 }
 
 /** A log entry's time — `MM.DD HH:mm` in the local timezone. If the value is odd, the raw string is shown. */

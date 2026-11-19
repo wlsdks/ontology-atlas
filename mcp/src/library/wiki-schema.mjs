@@ -91,9 +91,14 @@ export const WIKI_FIELDS = Object.freeze([
     key: 'describes',
     required: false,
     description:
-      'Ontology slugs this page describes. Allowed only on a page a person has reviewed; ' +
-      'on a draft it is flagged, because a draft naming graph nodes is an unapproved claim ' +
-      'about the graph.',
+      'Slugs of the `kind:` nodes this page is about: the concepts without which its Summary ' +
+      'would be wrong. Allowed at any `status`. An empty list records that a writer checked ' +
+      'and found none. Each entry must name a concept in this folder.',
+  }),
+  Object.freeze({
+    key: 'relation_notes',
+    required: false,
+    description: 'One sentence per slug in `describes:`, saying why this page is about it.',
   }),
 ]);
 
@@ -208,6 +213,104 @@ function problem(code, message, line, detail) {
   return out;
 }
 
+/**
+ * The concept index `describes:` entries resolve against, built once per folder so each
+ * entry is O(1). It resolves as `find_backlinks` does (full slug, then a frontmatter
+ * `slug:` alias, then a unique tail or path suffix), over every document so a tail shared
+ * with a wiki page is ambiguous there too, and only a `kind:` node outside `wiki/` that is
+ * not the vault README is a target. Slugs, aliases and entries are compared after NFC:
+ * macOS hands Hangul file names over as NFD while frontmatter is typed as NFC.
+ *
+ * @typedef {{ slug: string, kind?: unknown, alias?: unknown }} WikiNodeEntry
+ *   `slug` is vault-relative without `.md`; `alias` is the document's frontmatter `slug:`.
+ * @typedef {{ resolve(ref: string): { slug: string, node: boolean } | 'missing' | 'ambiguous' }} WikiNodeIndex
+ */
+const WIKI_NODE_INDEX = Symbol('wikiNodeIndex');
+const AMBIGUOUS = Symbol('ambiguous');
+
+function nfc(value) {
+  return typeof value === 'string' ? value.trim().normalize('NFC') : '';
+}
+
+function isConceptTarget(slug, kind) {
+  const name = typeof kind === 'string' ? kind.trim() : '';
+  if (!name || name === 'vault-readme') return false;
+  return !slug.startsWith(`${WIKI_DIR}/`) && !slug.startsWith(`${WIKI_SOURCES_DIR}/`);
+}
+
+/**
+ * @param {Iterable<WikiNodeEntry>} entries every document in the folder, wiki pages included
+ * @returns {WikiNodeIndex}
+ */
+export function buildWikiNodeIndex(entries) {
+  const slugs = new Map();
+  const aliases = new Map();
+  const suffixes = new Map();
+  for (const entry of entries ?? []) {
+    const slug = nfc(entry?.slug);
+    if (!slug || slugs.has(slug)) continue;
+    slugs.set(slug, isConceptTarget(slug, entry.kind));
+    const alias = nfc(entry.alias);
+    if (alias && !aliases.has(alias)) aliases.set(alias, slug);
+    for (let at = slug.indexOf('/'); at >= 0; at = slug.indexOf('/', at + 1)) {
+      const suffix = slug.slice(at + 1);
+      if (suffix) suffixes.set(suffix, suffixes.has(suffix) ? AMBIGUOUS : slug);
+    }
+  }
+  const found = (slug) => ({ slug, node: slugs.get(slug) });
+  return Object.freeze({
+    [WIKI_NODE_INDEX]: true,
+    resolve(ref) {
+      // Most entries are already NFC full slugs; only a miss pays for normalising.
+      const typed = typeof ref === 'string' ? ref.trim() : '';
+      if (slugs.has(typed)) return found(typed);
+      const name = typed.normalize('NFC');
+      if (!name) return 'missing';
+      if (slugs.has(name)) return found(name);
+      if (aliases.has(name)) return found(aliases.get(name));
+      const tail = suffixes.get(name);
+      if (tail === undefined) return 'missing';
+      return tail === AMBIGUOUS ? 'ambiguous' : found(tail);
+    },
+  });
+}
+
+function wikiNodeIndexOf(nodes) {
+  return nodes && nodes[WIKI_NODE_INDEX] === true ? nodes : buildWikiNodeIndex(nodes);
+}
+
+/** `describes:` entries. Only a list counts: no graph reader takes a lone value as a link. */
+function readDescribes(value) {
+  return Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [];
+}
+
+/** One `describes-target-missing` per distinct entry that names no concept. */
+function describesProblems(value, index) {
+  const out = [];
+  let seen = null;
+  for (const entry of readDescribes(value)) {
+    const resolved = index.resolve(entry);
+    if (typeof resolved === 'object' && resolved.node) continue;
+    const target = nfc(entry);
+    seen ??= new Set();
+    if (seen.has(target)) continue;
+    seen.add(target);
+    const message =
+      resolved === 'ambiguous'
+        ? `\`${target}\` under \`describes:\` matches more than one document by its last part, so it names no one concept. Write the concept's full slug.`
+        : resolved === 'missing'
+          ? `\`${target}\` under \`describes:\` names no concept in this folder. Remove it, or name a concept that exists by its slug.`
+          : `\`${target}\` under \`describes:\` is a wiki page or the vault README, not a concept. \`describes:\` names \`kind:\` nodes only.`;
+    out.push(
+      problem('describes-target-missing', message, undefined, {
+        key: 'describes-target-missing',
+        values: { target },
+      }),
+    );
+  }
+  return out;
+}
+
 /** Level-2 headings in document order, with their line numbers. */
 function readSections(lines, offset) {
   const out = [];
@@ -250,12 +353,15 @@ function sectionBullets(lines, offset, sections, title) {
  * section, Set lookups per citation), with no filesystem reads.
  *
  * @param {string} raw the file's whole text
- * @param {{ knownSources?: Iterable<string>, parsed?: { frontmatter: object, body: string } }} [options]
+ * @param {{ knownSources?: Iterable<string>, nodes?: WikiNodeIndex | Iterable<WikiNodeEntry>, parsed?: { frontmatter: object, body: string } }} [options]
  *   `parsed` is `parseFrontmatter(raw)` when the caller already holds it (the server's
  *   document cache does); `knownSources` are vault-relative paths on
  *   disk. Given, a citation of a missing path is reported; omitted, citations are
  *   checked only against the page's `sources:`, never guessed. Pass a Set when
- *   judging many pages: any other iterable is copied into one per page.
+ *   judging many pages: any other iterable is copied into one per page. `nodes` is
+ *   every document in the folder (`buildWikiNodeIndex`); given, each `describes:`
+ *   entry must name a `kind:` node, and omitted, `describes:` is not checked. Pass
+ *   the built index when judging many pages, for the same reason.
  * @returns {{ ok: boolean, problems: Array<{ code: string, message: string, line?: number }> }}
  */
 export function validateWikiPage(raw, options = {}) {
@@ -296,19 +402,22 @@ export function validateWikiPage(raw, options = {}) {
     }
   }
 
-  // `describes` on a draft: a claim about the graph nobody has approved.
-  const status = typeof frontmatter.status === 'string' ? frontmatter.status.trim() : '';
-  if (Object.prototype.hasOwnProperty.call(frontmatter, 'describes') && status !== 'reviewed') {
+  // Every graph reader takes `describes:` only as a list, and a rename refuses to rewrite a lone
+  // value, so one would read as a link here and block every rename of the concept it names.
+  if (Object.prototype.hasOwnProperty.call(frontmatter, 'describes') && !Array.isArray(frontmatter.describes)) {
     problems.push(
       problem(
-        'describes-needs-approval',
-        '`describes:` names ontology slugs, so it says this page speaks for those concepts. ' +
-          'That is a claim about the graph and it needs a person: set `status: reviewed` after ' +
-          'reading the page, or remove `describes:`.',
+        'bad-describes',
+        '`describes:` is not a list. Write each concept\'s slug as a list item (`describes:` then ' +
+          '`  - capabilities/<name>`), or `describes: []` when no concept fits. A single value is ' +
+          'not read as a link, and a rename cannot rewrite it.',
         undefined,
-        { key: 'describes-needs-approval' },
+        { key: 'bad-describes' },
       ),
     );
+  }
+  if (options.nodes !== undefined && options.nodes !== null) {
+    problems.push(...describesProblems(frontmatter.describes, wikiNodeIndexOf(options.nodes)));
   }
 
   const sections = readSections(bodyLines, frontmatterLines);

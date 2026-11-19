@@ -173,6 +173,10 @@
       "checking": {
         "label": "检查中",
         "hint": "正在读取此文件，确认 Wiki 页面是否仍与它一致。"
+      },
+      "unreadable": {
+        "label": "无法读取",
+        "hint": "Atlas 无法打开此文件进行检查，因此未计入。请重新连接其所在磁盘或检查文件权限。"
       }
     },
     "added": "已有 {count} 份文档添加到 sources/",
@@ -189,7 +193,9 @@
     "importTooltip": "选择并连接服务，再指定要导入此文件夹的文档",
     "importedToPlanning": "导入的文档已放入规划文件夹",
     "openPlanning": "在规划中打开",
-    "pagesNeedReview": "{count} 个现有页面需要重新检查"
+    "pagesNeedReview": "{count} 个现有页面需要重新检查",
+    "filterShow": "只显示\"{label}\"的来源",
+    "filterAll": "显示全部 {count, number} 份"
   },
   "wiki": {
     "listAria": "此文件夹中的 Wiki 页面",
@@ -353,9 +359,13 @@
         "what": "引用了 {path}，但它不在此页面使用的来源列表中。",
         "do": "把它加入来源列表，或修正引用。"
       },
-      "describes-needs-approval": {
-        "what": "此页面声称代表某个概念（describes），这是关于地图的论断，需要由人确认。",
-        "do": "阅读后把状态设为已复核，或删除那一行。"
+      "describes-target-missing": {
+        "what": "此页面写明它描述 {target}，但此文件夹中没有这个名称的概念。",
+        "do": "从页面中删除该名称，或将其替换为此文件夹中某个概念的 slug。"
+      },
+      "bad-describes": {
+        "what": "记录此页面所描述概念的那一行（describes）不是列表，因此不会被当作链接读取，重命名时也无法跟随。",
+        "do": "把每个概念的 slug 写成列表项；没有匹配的概念时写一个空列表。"
       },
       "dangling-wikilink": {
         "what": "{where} 处的链接指向 {target}，但此文件夹中没有这个页面。",
@@ -537,7 +547,8 @@
       "done": "已完成",
       "next": "下一步",
       "waiting": "等待中",
-      "checking": "检查中"
+      "checking": "检查中",
+      "unreadable": "无法读取"
     },
     "none": "无",
     "formatEntry": "{format} {count, number}",
@@ -557,7 +568,8 @@
       "coveredLine": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面",
       "coveredChecking": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {checking, number} 份核对中",
       "coveredPartial": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {partial, number} 份只读了一部分",
-      "coveredStale": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {stale, number} 份来源已变更"
+      "coveredStale": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {stale, number} 份来源已变更",
+      "coveredUnreadable": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {unreadable, number} 份无法读取"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host} 上的 {model}",
@@ -580,7 +592,8 @@
     "statusReady": "每份来源都有 Wiki 页面",
     "statusUnlinked": "{count} 个悬空链接",
     "statusChecking": "{count} 个检查中",
-    "statusPartial": "{count} 个仅读部分"
+    "statusPartial": "{count} 个仅读部分",
+    "statusUnreadable": "{count, number} 份无法读取"
   },
   "localCompile": {
     "title": "可以写入",
@@ -650,7 +663,8 @@
     "rule": {
       "kind-present": "此页面被标记会出现在地图上",
       "missing-field": "缺少必需的一行",
-      "describes-needs-approval": "这条论断还没有人确认",
+      "describes-target-missing": "链接的概念不在这里",
+      "bad-describes": "概念列表不是列表",
       "section-order": "章节缺失或顺序错误",
       "bad-truncation-record": "已读范围的记录不一致",
       "uncited-fact": "有没有依据的内容",
@@ -855,7 +869,7 @@
       "undoneReason": {
         "notDraft": "它不是 status: draft，而计划只能写草稿。",
         "duplicateKey": "页面顶部的信息块有两行 {key}:，读取方可能得出不同结论。",
-        "forbiddenKey": "它带有一行 {key}:，这只能由人添加。",
+        "forbiddenKey": "它添加、修改或删除了 {key}: 这一行，而计划必须让这一行保持原样。",
         "noFrontmatter": "它顶部没有信息块，因此无法作为草稿读取。",
         "unreadable": "Atlas 无法回读它来检查。"
       },
@@ -947,5 +961,20 @@
       "valueMinutes": "每 {count} 分钟",
       "valueHours": "每 {count} 小时"
     }
+  },
+  "progress": {
+    "aria": "来源 Wiki 页面进度",
+    "percent": "{percent, number}%",
+    "underOne": "不到 1%",
+    "first": "还没有来源有 Wiki 页面",
+    "today": "今天 +{count, number}",
+    "chartAria": "有 Wiki 页面的来源数量，按各页面记录的日期",
+    "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
+    "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
+    "undated": "{count, number} 份没有日期",
+    "continue": "{count, plural, =1 {为最后一份来源生成 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
+    "batchRest": "之后还有 {count, number} 份等待。",
+    "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
+    "allDone": "每份来源都有 Wiki 页面"
   }
 }

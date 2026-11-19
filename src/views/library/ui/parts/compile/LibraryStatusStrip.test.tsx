@@ -241,3 +241,16 @@ describe("LibraryStatusStrip — the named file is said once", () => {
     expect(withNotCompiled(3)).toContain("위키 문서 없음 3개");
   });
 });
+
+describe("LibraryStatusStrip — a file that cannot be read", () => {
+  it("says how many cannot be read instead of calling every source written up", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <Harness value={{ ...model({ "wiki/a": [] }), sources: [{ state: "compiled" }, { state: "unreadable" }] } as unknown as LibraryUiModel} />
+      </NextIntlClientProvider>,
+    );
+    const text = screen.getByTestId("library-status-strip").textContent ?? "";
+    expect(text).toContain(ko.library.stage.statusUnreadable.replace("{count, number}", "1"));
+    expect(text).not.toContain(ko.library.stage.statusReady);
+  });
+});

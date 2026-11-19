@@ -30,7 +30,7 @@ import {
  */
 
 interface Validator {
-  (raw: string, options?: { knownSources?: Iterable<string> }): {
+  (raw: string, options?: { knownSources?: Iterable<string>; nodes?: Iterable<{ slug: string; kind?: unknown; alias?: unknown }> }): {
     ok: boolean;
     problems: Array<{ code: string; message: string; line?: number }>;
   };
@@ -46,7 +46,7 @@ describe('the wiki page contract — both implementations agree', () => {
     describe(name, () => {
       for (const testCase of WIKI_PAGE_CASES) {
         it(testCase.name, () => {
-          const result = validate(testCase.input);
+          const result = validate(testCase.input, testCase.nodes ? { nodes: testCase.nodes } : {});
           expect(result.problems.map((p) => p.code).sort()).toEqual(
             [...testCase.expectedCodes].sort(),
           );
@@ -70,6 +70,23 @@ describe('the wiki page contract — both implementations agree', () => {
       });
     });
   }
+
+  it('both implementations return the same verdict on every describes row, word for word', () => {
+    for (const testCase of WIKI_PAGE_CASES.filter((c) => c.nodes)) {
+      expect(JSON.stringify(validateMcp(testCase.input, { nodes: testCase.nodes }))).toBe(
+        JSON.stringify(validateTs(testCase.input, { nodes: testCase.nodes })),
+      );
+    }
+  });
+
+  it('neither implementation knows the retired describes-needs-approval code', () => {
+    const sources = ['mcp/src/library/wiki-schema.mjs', 'src/shared/lib/library/wiki-page-schema.ts'];
+    const repoRoot = resolve(__dirname, '../../..');
+    for (const file of sources) expect(readFileSync(resolve(repoRoot, file), 'utf8')).not.toContain('describes-needs-approval');
+    for (const locale of ['en', 'ko', 'ja', 'zh']) {
+      expect(readFileSync(resolve(repoRoot, `messages/${locale}/library.json`), 'utf8')).not.toContain('describes-needs-approval');
+    }
+  });
 
   it('both implementations ship the identical template text', () => {
     expect(TEMPLATE_TS).toBe(TEMPLATE_MCP);

@@ -108,6 +108,26 @@ describe('round scope', () => {
     expect(judge({ request: page(DRAFT.replace('status: draft', 'status: draft\ndescribes: [capabilities/checkout]')) }).decision).toBe('reject');
   });
 
+  it('carries the links to concepts a page already had, even one whose concept has gone, and adds none', () => {
+    const linked = DRAFT.replace('status: draft', 'status: draft\ndescribes:\n  - capabilities/checkout');
+    const revised = linked.replace('## Summary\n', '## Summary\n\nRevised.\n');
+    const page = (content: string) => request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content } });
+    const judgeAgainst = (before: string | null, problems: { code: string }[] = []) => (req: ScopeRequest) => ({
+      path: 'wiki/plan.md',
+      ok: problems.length === 0,
+      problems,
+      text: String(req.rawInput.content ?? ''),
+      before,
+    });
+    expect(judge({ request: page(revised), judgeWrite: judgeAgainst(linked) }).decision).toBe('allow');
+    const gone = [{ code: 'describes-target-missing' }];
+    expect(judge({ request: page(revised), judgeWrite: judgeAgainst(linked, gone) }).decision).toBe('allow');
+    expect(judge({ request: page(revised), judgeWrite: judgeAgainst(DRAFT, gone) }).decision).toBe('reject');
+    expect(judge({ request: page(revised), judgeWrite: judgeAgainst(linked, [...gone, { code: 'uncited-fact' }]) }).decision).toBe('reject');
+    const added = revised.replace('  - capabilities/checkout', '  - capabilities/checkout\n  - capabilities/login');
+    expect(judge({ request: page(added), judgeWrite: judgeAgainst(linked) }).decision).toBe('reject');
+  });
+
   it('never writes a path that belongs to an ontology node, under wiki/ or sources/', () => {
     const node = (relative: string) => relative === 'wiki/checkout.md' || relative === 'sources/pricing.md';
     for (const path of ['wiki/checkout.md', 'sources/pricing.md']) {
