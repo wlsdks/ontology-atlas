@@ -543,7 +543,8 @@
       "done": "done",
       "next": "next",
       "waiting": "waiting",
-      "checking": "checking"
+      "checking": "checking",
+      "unreadable": "can't read"
     },
     "none": "None",
     "formatEntry": "{format} {count, number}",
@@ -563,7 +564,8 @@
       "coveredLine": "{compiled, number} of {total, number} sources have a wiki page",
       "coveredChecking": "{compiled, number} of {total, number} have a wiki page, {checking, number} still being checked",
       "coveredPartial": "{compiled, number} of {total, number} have a wiki page, {partial, number} read in part",
-      "coveredStale": "{compiled, number} of {total, number} have a wiki page, {stale, number} changed since"
+      "coveredStale": "{compiled, number} of {total, number} have a wiki page, {stale, number} changed since",
+      "coveredUnreadable": "{compiled, number} of {total, number} have a wiki page, {unreadable, number} can't be read"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} on {host}",
@@ -586,7 +588,8 @@
     "statusReady": "Every source has a wiki page",
     "statusUnlinked": "{count, plural, one {# dangling link} other {# dangling links}}",
     "statusChecking": "{count, plural, one {# being checked} other {# being checked}}",
-    "statusPartial": "{count, plural, one {# read in part} other {# read in part}}"
+    "statusPartial": "{count, plural, one {# read in part} other {# read in part}}",
+    "statusUnreadable": "{count, number} can't be read"
   },
   "localCompile": {
     "title": "Ready to write",

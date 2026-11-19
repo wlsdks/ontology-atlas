@@ -50,6 +50,27 @@ describe("where the folder stands, while it is still being measured", () => {
     expect(states.checkingCount).toBe(1);
   });
 
+  it("never calls Compile or Read done while a cited file cannot be read", () => {
+    const states = libraryStepStates(model(["compiled", "unreadable"], 1, 0));
+    expect(states.compile).toBe("unreadable");
+    expect(states.read).toBe("unreadable");
+    expect(states.unreadableCount).toBe(1);
+    expect(states.leadIndex).toBe(-1);
+  });
+
+  it("names a file still being checked before one that cannot be read", () => {
+    const states = libraryStepStates(model(["checking", "unreadable"], 1, 0));
+    expect(states.read).toBe("checking");
+    expect(libraryCoverageCaption({ sources: model(["compiled", "checking", "unreadable"], 1, 0).sources, partialCount: 0, staleCount: 0 }, 1).key)
+      .toBe("coveredChecking");
+  });
+
+  it("captions an unreadable file instead of the plain coverage sentence", () => {
+    const sources = model(["compiled", "unreadable"], 1, 0).sources;
+    expect(libraryCoverageCaption({ sources, partialCount: 0, staleCount: 0 }, 0))
+      .toEqual({ key: "coveredUnreadable", values: { compiled: 1, total: 2, unreadable: 1 } });
+  });
+
   it("keeps an empty folder's shape: gather next, the rest not yet their turn", () => {
     const states = libraryStepStates(model([], 0, 0));
     expect(states.gather).toBe("next");

@@ -543,7 +543,8 @@
       "done": "완료",
       "next": "다음",
       "waiting": "대기",
-      "checking": "확인 중"
+      "checking": "확인 중",
+      "unreadable": "읽을 수 없음"
     },
     "none": "없음",
     "formatEntry": "{format} {count, number}",
@@ -563,7 +564,8 @@
       "coveredLine": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
       "coveredChecking": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
       "coveredPartial": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
-      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐"
+      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐",
+      "coveredUnreadable": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} · {host}",
@@ -586,7 +588,8 @@
     "statusReady": "모든 원문에 위키 문서가 있어요",
     "statusUnlinked": "끊긴 링크 {count, number}개",
     "statusChecking": "확인 중 {count, number}개",
-    "statusPartial": "일부만 읽음 {count, number}개"
+    "statusPartial": "일부만 읽음 {count, number}개",
+    "statusUnreadable": "읽을 수 없음 {count, number}개"
   },
   "localCompile": {
     "title": "쓸 준비가 됐어요",

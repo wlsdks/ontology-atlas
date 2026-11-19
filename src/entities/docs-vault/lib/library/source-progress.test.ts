@@ -152,12 +152,30 @@ describe('each source is dated once, by the earliest date it can be believed', (
     ['a day after today', '2026-11-20'],
     ['a year before 2000', '1998-05-01T00:00:00Z'],
     ['an impossible date', '2026-02-31'],
+    ['the 30th of February', '2026-02-30'],
     ['a word', 'yesterday'],
+    ['a word and a number', 'build 12'],
+    ['a bare number', '1'],
+    ['a bare year', '2026'],
+    ['a date-time without a zone', '2026-11-18T10:00:00'],
+    ['an hour past 23', '2026-11-18T24:00:00Z'],
+    ['a space instead of T', '2026-11-18 10:00:00Z'],
+    ['a long-form date', 'November 18, 2026'],
   ])('leaves %s out of the line and counts it as undated', (_, value) => {
     const progress = deriveSourceProgress({ sources: [dated(value)] }, SEOUL);
     expect(progress.series).toEqual([]);
     expect(progress.undated).toBe(1);
     expect(progress.compiled).toBe(1);
+  });
+
+  it.each([
+    ['2026-11-18T15:30Z', '2026-11-19'],
+    ['2026-11-18T23:59:59.999+09:00', '2026-11-18'],
+    ['2026-11-19T00:30:00-0500', '2026-11-19'],
+    ['2026-11-18T14:59:59.123456Z', '2026-11-18'],
+  ])('reads the ISO date-time %s as the Seoul day %s', (value, day) => {
+    const progress = deriveSourceProgress({ sources: [dated(value)] }, SEOUL);
+    expect(progress.series[0]?.start).toBe(day);
   });
 
   it('places a timestamp on the local day of the injected zone', () => {

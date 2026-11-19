@@ -89,7 +89,12 @@ function isoDay(day: number): string {
   return new Date(day * DAY_MS).toISOString().slice(0, 10);
 }
 
-const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+/**
+ * ISO 8601 only: a date, or a date-time with `T`, optional seconds and fraction, and a required `Z`
+ * or offset. `Date.parse` is not used, because engines disagree on anything else (V8 reads
+ * `build 12` as 2001-12-01), and the web and the app must draw the same line.
+ */
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(?:(Z)|([+-])(\d{2}):?(\d{2})))?$/;
 
 /**
  * The local day a recorded `compiled_at` falls on, or null when it is not a date. A bare
@@ -99,18 +104,20 @@ function recordedDay(
   value: string,
   offsetMinutes: (epochMs: number) => number,
 ): number | null {
-  const bare = DATE_ONLY.exec(value);
-  if (bare) {
-    const year = Number(bare[1]);
-    const month = Number(bare[2]);
-    const day = Number(bare[3]);
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    const number = dayOfDate(year, month, day);
-    // `Date.UTC` rolls 2026-02-31 into March; a date that rolled is not a date.
-    return isoDay(number) === value ? number : null;
-  }
-  const instant = Date.parse(value);
-  return Number.isFinite(instant) ? localDay(instant, offsetMinutes) : null;
+  const match = ISO_DATE.exec(value);
+  if (!match) return null;
+  const [, year, month, day, hour, minute, second, fraction, zulu, sign, zoneHour, zoneMinute] = match;
+  const date = dayOfDate(Number(year), Number(month), Number(day));
+  // `Date.UTC` rolls 2026-02-30 into March; a date that rolled is not a date.
+  if (isoDay(date) !== `${year}-${month}-${day}`) return null;
+  if (hour === undefined) return date;
+  if (Number(hour) > 23 || Number(minute) > 59 || Number(second ?? 0) > 59) return null;
+  if (!zulu && (Number(zoneHour) > 23 || Number(zoneMinute) > 59)) return null;
+  const zone = zulu ? 0 : (sign === '-' ? -1 : 1) * (Number(zoneHour) * 60 + Number(zoneMinute));
+  const instant = date * DAY_MS
+    + ((Number(hour) * 60 + Number(minute) - zone) * 60 + Number(second ?? 0)) * 1000
+    + Number((fraction ?? '').slice(0, 3).padEnd(3, '0'));
+  return localDay(instant, offsetMinutes);
 }
 
 /** Months since 1970-01 of a day number. */

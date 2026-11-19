@@ -543,7 +543,8 @@
       "done": "完了",
       "next": "次",
       "waiting": "待機中",
-      "checking": "確認中"
+      "checking": "確認中",
+      "unreadable": "読み込めない"
     },
     "none": "なし",
     "formatEntry": "{format} {count, number}",
@@ -563,7 +564,8 @@
       "coveredLine": "ソース{total, number}件中{compiled, number}件にWikiページあり",
       "coveredChecking": "ソース{total, number}件中{compiled, number}件にWikiページあり · {checking, number}件を確認中",
       "coveredPartial": "ソース{total, number}件中{compiled, number}件にWikiページあり · {partial, number}件は一部のみ読み込み",
-      "coveredStale": "ソース{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件はソースが変更"
+      "coveredStale": "ソース{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件はソースが変更",
+      "coveredUnreadable": "ソース{total, number}件中{compiled, number}件にWikiページあり · {unreadable, number}件は読み込めない"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host}上の{model}",
@@ -586,7 +588,8 @@
     "statusReady": "すべてのソースにWikiページがあります",
     "statusUnlinked": "リンク切れ{count, number}件",
     "statusChecking": "確認中{count, number}件",
-    "statusPartial": "一部のみ読み込み済み{count, number}件"
+    "statusPartial": "一部のみ読み込み済み{count, number}件",
+    "statusUnreadable": "読み込めない{count, number}件"
   },
   "localCompile": {
     "title": "書き込みの準備ができました",

@@ -543,7 +543,8 @@
       "done": "已完成",
       "next": "下一步",
       "waiting": "等待中",
-      "checking": "检查中"
+      "checking": "检查中",
+      "unreadable": "无法读取"
     },
     "none": "无",
     "formatEntry": "{format} {count, number}",
@@ -563,7 +564,8 @@
       "coveredLine": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面",
       "coveredChecking": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {checking, number} 份核对中",
       "coveredPartial": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {partial, number} 份只读了一部分",
-      "coveredStale": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {stale, number} 份来源已变更"
+      "coveredStale": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {stale, number} 份来源已变更",
+      "coveredUnreadable": "{total, number} 份来源中 {compiled, number} 份有 Wiki 页面 · {unreadable, number} 份无法读取"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host} 上的 {model}",
@@ -586,7 +588,8 @@
     "statusReady": "每份来源都有 Wiki 页面",
     "statusUnlinked": "{count} 个悬空链接",
     "statusChecking": "{count} 个检查中",
-    "statusPartial": "{count} 个仅读部分"
+    "statusPartial": "{count} 个仅读部分",
+    "statusUnreadable": "{count, number} 份无法读取"
   },
   "localCompile": {
     "title": "可以写入",

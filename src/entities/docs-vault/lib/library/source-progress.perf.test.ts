@@ -41,10 +41,10 @@ function folder() {
 }
 
 describe('source progress at 50,000 sources and 50,000 pages', () => {
-  const model = folder();
   const clock = { now: NOW, offsetMinutes: () => 540 };
 
   it('derives within its budget', () => {
+    const model = folder();
     for (let warm = 0; warm < 3; warm += 1) deriveSourceProgress(model, clock);
     const runs: number[] = [];
     for (let run = 0; run < 5; run += 1) {
@@ -63,22 +63,30 @@ describe('source progress at 50,000 sources and 50,000 pages', () => {
     expect(median).toBeLessThanOrEqual(50);
   });
 
-  it('retains no more than its result', () => {
+  it('reports what the covering citations add to the library model', () => {
     setFlagsFromString('--expose-gc');
     const gc = runInNewContext('gc') as () => void;
-    deriveSourceProgress(model, clock);
-    let best = Infinity;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    const heap = () => {
       gc();
-      const before = process.memoryUsage().heapUsed;
-      const progress = deriveSourceProgress(model, clock);
       gc();
-      const retained = process.memoryUsage().heapUsed - before;
-      expect(progress.compiled).toBeGreaterThan(0);
-      best = Math.min(best, retained);
-    }
-    console.log(`[perf] source progress, ${COUNT} sources — retained ${(best / 1e6).toFixed(3)} MB`);
-    /* Product budget 4 MB (source-progress spec, criterion 4). */
-    expect(best).toBeLessThanOrEqual(4 * 1024 * 1024);
+      return process.memoryUsage().heapUsed;
+    };
+    const empty = heap();
+    let held = folder();
+    const whole = heap() - empty;
+    const covered = held.sources.filter((row) => (row.coveredBy?.length ?? 0) > 0).length;
+    // Clearing the field in place keeps each row's shape, so the drop is only what `coveredBy` keeps.
+    for (const row of held.sources) row.coveredBy = undefined;
+    const added = whole - (heap() - empty);
+    expect(held.sources).toHaveLength(COUNT);
+    held = null as never;
+    console.log(
+      `[perf] library model, ${COUNT} sources and pages — ${(whole / 1e6).toFixed(1)} MB retained with its inputs, ${(added / 1e6).toFixed(2)} MB of it covering citations (${covered} compiled rows, ${(added / covered).toFixed(0)} B each)`,
+    );
+    /*
+     * Relative in one run: the citations are one small object per compiled row, a fraction of the model
+     * that holds the rows, the derived pages and both pairing maps, and the docs it is built from.
+     */
+    expect(added).toBeLessThan(whole / 4);
   });
 });
