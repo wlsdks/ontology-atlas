@@ -4,6 +4,10 @@ const LINE_FEED = 10;
 const SPACE = 32;
 const TAB = 9;
 const BACKTICK = 96;
+const LESS_THAN = 60;
+const EXCLAMATION = 33;
+const QUESTION = 63;
+const BYTE_ORDER_MARK = '\uFEFF';
 
 // The preset's nesting limit (20) keeps each bracket's look-ahead bounded;
 // deeper containers and inline spans are not descended into.
@@ -41,6 +45,48 @@ function lineEndingBreak(state) {
   return trailing >= 2 && !hasTab ? 'hardbreak' : 'softbreak';
 }
 
+function isAsciiLetter(code) {
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+// The first terminator at or after `start`, remembered per terminator so a run of
+// openers that share one terminator, or have none, is scanned once.
+function nextTerminator(state, terminator, start) {
+  state.terminators ??= new Map();
+  let known = state.terminators.get(terminator);
+  if (!known || start < known.from || (known.at !== -1 && start > known.at)) {
+    known = { from: start, at: state.src.indexOf(terminator, start) };
+    state.terminators.set(terminator, known);
+  }
+  return known.at;
+}
+
+// Comments, processing instructions, CDATA and declarations. markdown-it stops
+// recognising all four after one of them is left unterminated; mdast does not.
+function specialHtml(state, silent) {
+  const { src, pos } = state;
+  if (src.charCodeAt(pos) !== LESS_THAN || pos + 2 >= state.posMax) return false;
+  let start;
+  let terminator;
+  let end = -1;
+  if (src.startsWith('<!-->', pos)) end = pos + 5;
+  else if (src.startsWith('<!--->', pos)) end = pos + 6;
+  else if (src.startsWith('<!--', pos)) [start, terminator] = [pos + 4, '-->'];
+  else if (src.startsWith('<![CDATA[', pos)) [start, terminator] = [pos + 9, ']]>'];
+  else if (src.charCodeAt(pos + 1) === QUESTION) [start, terminator] = [pos + 2, '?>'];
+  else if (src.charCodeAt(pos + 1) === EXCLAMATION && isAsciiLetter(src.charCodeAt(pos + 2))) [start, terminator] = [pos + 3, '>'];
+  else return false;
+  if (terminator) {
+    const at = nextTerminator(state, terminator, start);
+    if (at === -1) return false;
+    end = at + terminator.length;
+  }
+  if (!silent) state.push('html_inline', '', 0).content = src.slice(pos, end);
+  state.pos = end;
+  return true;
+}
+parser.inline.ruler.before('html_inline', 'html_special', specialHtml);
+
 const InlineState = parser.inline.State;
 parser.inline.State = class extends InlineState {
   push(type, tag, nesting) {
@@ -57,13 +103,18 @@ function lineStarts(text) {
   return starts;
 }
 
+// A leading byte order mark is not text; offsets still count it, as callers slice
+// the string they passed in.
 function sourceLines(source) {
-  const normalized = source.replace(/\r\n?/g, '\n');
+  const markLength = source.startsWith(BYTE_ORDER_MARK) ? 1 : 0;
+  const text = source.slice(markLength);
+  const normalized = text.replace(/\r\n?/g, '\n');
   const starts = lineStarts(normalized);
-  const hasCarriageReturn = source.includes('\r');
-  const originalStarts = hasCarriageReturn
-    ? [0, ...Array.from(source.matchAll(/\r\n?|\n/g), (match) => match.index + match[0].length)]
+  const hasCarriageReturn = text.includes('\r');
+  const textStarts = hasCarriageReturn
+    ? [0, ...Array.from(text.matchAll(/\r\n?|\n/g), (match) => match.index + match[0].length)]
     : starts;
+  const originalStarts = markLength ? textStarts.map((start) => start + markLength) : textStarts;
   const lineEnd = (line) => (line + 1 < starts.length ? starts[line + 1] - 1 : normalized.length);
   const original = (line, offset) => originalStarts[line] + offset - starts[line];
   return {
@@ -81,7 +132,8 @@ function sourceLines(source) {
 function inlineLocator(inline, open, lines) {
   const [firstLine] = inline.map;
   if (open.markup?.[0] === '#') {
-    const start = lines.normalized.indexOf(inline.content, open.contentStart + open.markup.length);
+    let start = open.contentStart + open.markup.length;
+    while (lines.normalized.charCodeAt(start) === SPACE || lines.normalized.charCodeAt(start) === TAB) start++;
     return (offset) => ({ line: firstLine, offset: start + offset });
   }
   const segments = inline.content.split('\n');
