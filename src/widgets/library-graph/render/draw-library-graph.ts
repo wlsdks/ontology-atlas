@@ -405,7 +405,8 @@ function placeIslandName(
   width: number,
   height: number,
   frame: LibraryGraphFrame,
-  placed: ReadonlyArray<{ x: number; y: number; width: number; height: number }>,
+  placed: BoxGrid<{ x: number; y: number; width: number; height: number }>,
+  islands: BoxGrid<LibraryGraphIsland>,
 ): { x: number; y: number; width: number; height: number } | null {
   const halfW = island.band ? island.band.width / 2 : island.r;
   const halfH = island.band ? island.band.height / 2 : island.r;
@@ -416,16 +417,94 @@ function placeIslandName(
     { x: island.x + halfW + reach + 4, y: island.y - height / 2, width, height },
     { x: island.x - halfW - reach - 4 - width, y: island.y - height / 2, width, height },
   ];
-  const others = (frame.islands ?? []).filter((other) => other.id !== island.id);
   let fallback: { seat: (typeof seats)[number]; cover: number } | null = null;
   for (const seat of seats) {
     if (seat.x < 2 || seat.x + seat.width > frame.width - 2 || seat.y < 2 || seat.y + seat.height > frame.height - 2) continue;
-    if (placed.some((other) => overlaps(seat, other))) continue;
-    const cover = others.reduce((sum, other) => sum + islandCover(seat, other), 0);
+    if (placed.some(seat, Math.max(NAME_GAP_X, NAME_GAP_Y), (other) => overlaps(seat, other))) continue;
+    let cover = 0;
+    islands.each(seat, ISLAND_SHORE_PX, (other) => {
+      if (other.id !== island.id) cover += islandCover(seat, other);
+    });
     if (cover === 0) return seat;
     if (!fallback || cover < fallback.cover) fallback = { seat, cover };
   }
   return fallback && fallback.cover <= ISLAND_NAME_REACH_MAX_PX ? fallback.seat : null;
+}
+
+/**
+ * Boxes bucketed on a fixed screen grid, so the name pass asks only the islands and names near
+ * a seat: testing every island at every seat was O(k²) a frame, seconds at five thousand.
+ */
+class BoxGrid<T extends { x: number; y: number }> {
+  private readonly cells = new Map<number, T[]>();
+  private stamp = 0;
+  private readonly seen = new Map<T, number>();
+
+  private readonly cell: number;
+  private readonly extent: (item: T) => { left: number; top: number; right: number; bottom: number };
+
+  constructor(cell: number, extent: (item: T) => { left: number; top: number; right: number; bottom: number }) {
+    this.cell = cell;
+    this.extent = extent;
+  }
+
+  add(item: T): void {
+    const { left, top, right, bottom } = this.extent(item);
+    this.span(left, top, right, bottom, (key) => {
+      const held = this.cells.get(key);
+      if (held) held.push(item);
+      else this.cells.set(key, [item]);
+    });
+  }
+
+  /** Every item whose extent meets the box grown by `margin`, each once. */
+  each(box: { x: number; y: number; width: number; height: number }, margin: number, visit: (item: T) => void): void {
+    this.some(box, margin, (item) => {
+      visit(item);
+      return false;
+    });
+  }
+
+  some(box: { x: number; y: number; width: number; height: number }, margin: number, test: (item: T) => boolean): boolean {
+    const stamp = ++this.stamp;
+    let found = false;
+    this.span(box.x - margin, box.y - margin, box.x + box.width + margin, box.y + box.height + margin, (key) => {
+      if (found) return;
+      for (const item of this.cells.get(key) ?? []) {
+        if (this.seen.get(item) === stamp) continue;
+        this.seen.set(item, stamp);
+        if (test(item)) {
+          found = true;
+          return;
+        }
+      }
+    });
+    return found;
+  }
+
+  private span(left: number, top: number, right: number, bottom: number, visit: (key: number) => void): void {
+    const x0 = Math.floor(left / this.cell);
+    const x1 = Math.floor(right / this.cell);
+    const y0 = Math.floor(top / this.cell);
+    const y1 = Math.floor(bottom / this.cell);
+    for (let cx = x0; cx <= x1; cx += 1) for (let cy = y0; cy <= y1; cy += 1) visit((cx + 0x8000) * 0x10000 + (cy + 0x8000));
+  }
+}
+
+/** The screen cell the name pass buckets islands and names on, in CSS px. */
+const NAME_GRID_PX = 96;
+
+/** Name widths by text, since the font is one step: thousands of `measureText` a frame were a third of it. */
+const islandNameWidths = new Map<string, number>();
+function islandNameWidth(ctx: CanvasRenderingContext2D, font: string, text: string): number {
+  const key = `${font}\u0000${text}`;
+  let width = islandNameWidths.get(key);
+  if (width === undefined) {
+    if (islandNameWidths.size > 20_000) islandNameWidths.clear();
+    width = ctx.measureText(text).width;
+    islandNameWidths.set(key, width);
+  }
+  return width;
 }
 
 /** How far a box reaches into an island's body with its shore, in px; 0 when it does not touch. */
@@ -456,28 +535,45 @@ function islandCover(
  * two would cross.
  */
 function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, ink: LibraryGraphInk): void {
-  const placed: Array<{ x: number; y: number; width: number; height: number }> = [];
+  const placed = new BoxGrid<{ x: number; y: number; width: number; height: number }>(NAME_GRID_PX, (box) => ({
+    left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height,
+  }));
+  const extentOf = (island: LibraryGraphIsland) => {
+    const halfW = (island.band ? island.band.width / 2 : island.r) + ISLAND_SHORE_PX;
+    const halfH = (island.band ? island.band.height / 2 : island.r) + ISLAND_SHORE_PX;
+    return { left: island.x - halfW, top: island.y - halfH, right: island.x + halfW, bottom: island.y + halfH };
+  };
+  const bodies = new BoxGrid<LibraryGraphIsland>(NAME_GRID_PX, extentOf);
+  const named: LibraryGraphIsland[] = [];
+  for (const island of frame.islands ?? []) {
+    const { left, top, right, bottom } = extentOf(island);
+    // Off the canvas an island can neither carry a name nor be covered by one.
+    if (right < 0 || bottom < 0 || left > frame.width || top > frame.height) continue;
+    bodies.add(island);
+    named.push(island);
+  }
+  named.sort((a, b) => b.r - a.r);
   const dim = frame.dim ?? 0;
-  ctx.font = `${ink.labelPx}px ${ink.fontFamily}`;
+  const font = `${ink.labelPx}px ${ink.fontFamily}`;
+  ctx.font = font;
   ctx.textBaseline = "middle";
   ctx.textAlign = "center";
   const lineHeight = Math.round(ink.labelPx * 1.35);
-  const named = [...(frame.islands ?? [])].sort((a, b) => b.r - a.r);
   for (const island of named) {
     // A topic counts pages; Unread counts files. Locale-grouped like every other count on screen.
     const count = island.kind === "unread" ? island.sources : island.pages;
     const text = `${island.label} · ${count.toLocaleString(frame.locale)}`;
-    const width = ctx.measureText(text).width;
+    const width = islandNameWidth(ctx, font, text);
     const across = island.band ? island.band.width : island.r * 2;
     // Inside when name and plate fit across the body; the plate adds 4px each side.
     const inside = across >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 8);
     const box = inside
       ? { x: island.x - width / 2, y: island.y - lineHeight / 2, width, height: lineHeight }
-      : placeIslandName(island, width, lineHeight, frame, placed);
+      : placeIslandName(island, width, lineHeight, frame, placed, bodies);
     if (!box) continue;
     if (box.x < 2 || box.x + box.width > frame.width - 2 || box.y < 2 || box.y + box.height > frame.height - 2) continue;
-    if (placed.some((other) => overlaps(box, other))) continue;
-    placed.push(box);
+    if (placed.some(box, Math.max(NAME_GAP_X, NAME_GAP_Y), (other) => overlaps(box, other))) continue;
+    placed.add(box);
     frame.islandReport?.push(island.id);
     // A ground plate under every name, so it reads off the ground, not the dots.
     const presence = (1 - dim * 0.5) * easeMotion(island.arrival ?? 1);
