@@ -28,6 +28,7 @@ mod local_construction;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
+mod no_console;
 mod planning;
 mod project_source;
 mod secrets;
