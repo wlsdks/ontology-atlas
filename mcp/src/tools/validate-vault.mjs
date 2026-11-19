@@ -36,7 +36,6 @@ import { sessionReads } from '../construction/session-reads.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
-import { isWikiAdvisoryCode } from '../library/wiki-report.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';
 import {
   WIKI_DIR,
@@ -147,6 +146,14 @@ function judgeWikiPages(paths) {
   }
   return pages;
 }
+
+/**
+ * Folder findings that never decide whether a page fits, as `WIKI_ADVISORY_CODES` in
+ * `library/wiki-report.mjs` names them for the Library. That module stays out of the
+ * server's runtime graph; `validate-wiki-paging.test.mjs` holds the two lists equal.
+ */
+const WIKI_ADVISORY_CODES = new Set(['orphan-page', 'shared-source-unlinked']);
+const isWikiAdvisoryCode = (code) => WIKI_ADVISORY_CODES.has(code);
 
 /**
  * One page of failing wiki pages, `validate_vault`'s paging: pages with a blocking

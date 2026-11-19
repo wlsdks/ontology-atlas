@@ -77,13 +77,15 @@ function wikiVault({ fit = 0, orphans = 0, broken = 0, facts = 1 } = {}) {
   return root;
 }
 
+/** Module URLs the server-shaped process loads, as `response-bounds.test.mjs` passes them. */
+const modules = Object.fromEntries(['tools/validate-vault.mjs', 'server/rpc.mjs', 'library/wiki-report.mjs']
+  .map((file) => [file, new URL(`../${file}`, import.meta.url).href]));
+
 /** Runs `body` in a server-shaped process for `root`, where `validateWikiTool` and `ok` are in scope. */
 function inServer(root, body) {
-  const tool = new URL('./validate-vault.mjs', import.meta.url).href;
-  const rpc = new URL('../server/rpc.mjs', import.meta.url).href;
   const script = `
-    const { validateWikiTool } = await import(${JSON.stringify(tool)});
-    const { ok } = await import(${JSON.stringify(rpc)});
+    const { validateWikiTool } = await import(${JSON.stringify(modules['tools/validate-vault.mjs'])});
+    const { ok } = await import(${JSON.stringify(modules['server/rpc.mjs'])});
     const follow = (first) => {
       const replies = [validateWikiTool(first)];
       for (let guard = 0; guard < 100 && replies.at(-1).nextCall; guard += 1) {
@@ -213,4 +215,31 @@ test('named paths list every named page, fitting or not, and refuse offset and l
   assert.equal(named.pagination, undefined);
   assert.match(refused, /pass one or the other/);
   assertConforms(named);
+});
+
+test('the summary calls exactly the Library\'s advisory codes warnings, and every other folder code an error', () => {
+  const root = wikiVault({ fit: 3 });
+  // Two pages written from one source that do not link each other, and one dangling link.
+  for (const name of ['s-one', 's-two']) {
+    writeFileSync(join(root, `wiki/${name}.md`), fitPage(name, ['wiki/m-0000', 'wiki/missing-page'])
+      .replace('sources: []', 'sources: [sources/shared.md]'));
+  }
+  let reply;
+  let library;
+  try {
+    // The Library's lists are read in the server-shaped process too: that module's
+    // consumers are the app's, and the MCP server never loads it.
+    ({ reply, library } = inServer(root, `
+      const { WIKI_ADVISORY_CODES, WIKI_FOLDER_CODES } = await import(${JSON.stringify(modules['library/wiki-report.mjs'])});
+      console.log(JSON.stringify({ reply: validateWikiTool({}), library: { WIKI_ADVISORY_CODES, WIKI_FOLDER_CODES } }));
+    `));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+  const severities = Object.fromEntries(Object.entries(reply.summary.byCode).map(([code, entry]) => [code, entry.severity]));
+  assert.deepEqual(Object.keys(severities).sort(), [...library.WIKI_FOLDER_CODES].sort(), 'the fixture raises every folder code');
+  for (const code of library.WIKI_FOLDER_CODES) {
+    assert.equal(severities[code], library.WIKI_ADVISORY_CODES.includes(code) ? 'warning' : 'error', code);
+  }
+  assertConforms(reply);
 });
