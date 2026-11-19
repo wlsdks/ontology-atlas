@@ -16,6 +16,7 @@
   "guidePages": {
     "whatIsAtlas": "Ontology Atlas란?",
     "whatIsAnOntology": "온톨로지란?",
+    "atlasCompared": "코드 그래프·위키·노트 앱·CLAUDE.md와 Atlas 비교",
     "firstFiveMinutes": "시작하기",
     "readingTheMap": "지도 읽는 법",
     "vaultStructure": "온톨로지 폴더: 마크다운 파일과 맨 위 정보칸",

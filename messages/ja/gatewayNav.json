@@ -16,6 +16,7 @@
   "guidePages": {
     "whatIsAtlas": "Ontology Atlasとは",
     "whatIsAnOntology": "オントロジーとは",
+    "atlasCompared": "Atlasとコードグラフ・Wiki・ノートアプリ・CLAUDE.mdの比較",
     "firstFiveMinutes": "はじめに",
     "readingTheMap": "マップの読み方",
     "vaultStructure": "オントロジーフォルダ：Markdownファイルと先頭の情報ブロック",

@@ -34,6 +34,7 @@
   },
   "guideDescriptions": {
     "whatIsAnOntology": "什么是本体：由概念、类型、关系和约定的含义组成；它与分类体系、模式（schema）和知识图谱有何区别，以及代码库的本体是什么样子。",
+    "atlasCompared": "将 Ontology Atlas 与代码图谱、仓库 Wiki、Obsidian 和 Notion、CLAUDE.md 与 AGENTS.md 以及图数据库进行比较，并说明各自适合在什么时候使用。",
     "firstFiveMinutes": "Ontology Atlas 快速上手：下载应用或在浏览器中试用，打开或创建本体文件夹，并连接 Claude Code 或 Codex。",
     "readingTheMap": "读懂 Ontology Atlas 的地图：领域、能力和元素，关系连线，概念面板，以及过时或未知的代码依据。",
     "vaultStructure": "Atlas 本体文件夹：每个概念一个 Markdown 文件，顶部信息块中的字段（uid、slug、kind、title、显示名称、关系），以及文件夹布局。",

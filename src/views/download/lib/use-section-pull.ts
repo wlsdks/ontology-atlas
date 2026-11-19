@@ -21,12 +21,47 @@ const GLIDE_MAX_MS = 640;
 /**
  * The films sit at the pane's top edge, under the overlaid header as they do today; the other
  * sections rest 96px down, where their `scroll-mt-24` puts them for a hash link, so a pull and a
- * link end in the same place. The hero is not a target: the top of the page stays free.
+ * link end in the same place. A section with a `stage` (something played or looked at whole) rests
+ * there only while its stage fits under it; otherwise the stage is centred under the header, since a
+ * title in view is worth less than a game cut off at the bottom. The hero is not a target: the top
+ * of the page stays free.
  */
-const TARGETS: readonly { selector: string; offset: number }[] = [
+const TARGETS: readonly { selector: string; offset: number; stage?: string }[] = [
   { selector: '[data-testid="gateway-film"], [data-testid="gateway-harness"]', offset: 0 },
-  { selector: '#build, #screens, #start, #source, #faq, [data-testid="gateway-closing"]', offset: 96 },
+  { selector: '#build', offset: 96, stage: '.build-frame' },
+  { selector: '#screens', offset: 96, stage: '[data-testid="gateway-screens-map"], .gateway-scroll-stage' },
+  { selector: '#start, #source, #faq, [data-testid="gateway-closing"]', offset: 96 },
 ];
+
+/** The least room kept between a centred stage and the header or the window's bottom edge. */
+const STAGE_MARGIN = 16;
+
+/**
+ * Where a section with a stage rests, in the pane's scroll coordinates: at `start - offset` while
+ * everything down to the stage's bottom fits above the window's bottom margin, else with the stage
+ * centred in the room under the header, never closer than `STAGE_MARGIN` to it.
+ */
+export function stageRest({
+  start,
+  offset,
+  stageTop,
+  stageBottom,
+  header,
+  height,
+}: {
+  start: number;
+  offset: number;
+  stageTop: number;
+  stageBottom: number;
+  header: number;
+  height: number;
+}): number {
+  const atStart = start - offset;
+  if (stageBottom - atStart <= height - STAGE_MARGIN) return atStart;
+  const room = height - header;
+  const above = Math.max(STAGE_MARGIN, (room - (stageBottom - stageTop)) / 2);
+  return stageTop - header - above;
+}
 
 const SCROLL_KEYS = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ']);
 
@@ -35,16 +70,24 @@ const ALLOWED_QUERY = '(min-width: 64rem) and (min-height: 40rem) and (not (poin
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
 
 /**
- * The section start a rest moves to: the nearest one past `top` in the direction the reader was
- * going, if it is no further than `reach`. Never one behind the reader.
+ * A place a rest can be carried to: `rest`, reached from a rest near `near`. They differ only for a
+ * section whose stage is centred, so the pull is still decided by how close the section is.
  */
-export function pullTarget(starts: readonly number[], top: number, direction: 1 | -1, reach: number): number | null {
-  let next: number | null = null;
-  for (const start of starts) {
-    const ahead = direction > 0 ? start > top + ON_TARGET_PX : start < top - ON_TARGET_PX;
-    if (ahead && (next === null || Math.abs(start - top) < Math.abs(next - top))) next = start;
+export type PullStop = { near: number; rest: number };
+
+/**
+ * The stop a rest moves to: the nearest one whose rest lies past `top` in the direction the reader
+ * was going, if it or its section start is no further than `reach`. Never one behind the reader.
+ */
+export function pullTarget(stops: readonly (number | PullStop)[], top: number, direction: 1 | -1, reach: number): number | null {
+  let next: PullStop | null = null;
+  const away = (stop: PullStop) => Math.min(Math.abs(stop.near - top), Math.abs(stop.rest - top));
+  for (const entry of stops) {
+    const stop = typeof entry === 'number' ? { near: entry, rest: entry } : entry;
+    const ahead = direction > 0 ? stop.rest > top + ON_TARGET_PX : stop.rest < top - ON_TARGET_PX;
+    if (ahead && (next === null || away(stop) < away(next))) next = stop;
   }
-  return next !== null && Math.abs(next - top) <= reach ? next : null;
+  return next !== null && away(next) <= reach ? next.rest : null;
 }
 
 /** Long enough to read as a pull, never a jump: 594ms for a 371px glide, which peaks near 980px/s. */
@@ -58,16 +101,39 @@ export function glideProgress(t: number): number {
   return (1 - Math.cos(Math.PI * clamped)) / 2;
 }
 
-function sectionStarts(pane: HTMLElement): number[] {
+/** A part's box where layout put it, without the rise its scroll entrance is still playing. */
+function layoutBox(part: Element): { top: number; bottom: number } {
+  const box = part.getBoundingClientRect();
+  const transform = getComputedStyle(part).transform;
+  const rise = transform && transform !== 'none' && typeof DOMMatrixReadOnly === 'function' ? new DOMMatrixReadOnly(transform).m42 : 0;
+  return { top: box.top - rise, bottom: box.bottom - rise };
+}
+
+function sectionStops(pane: HTMLElement): PullStop[] {
   const origin = pane.getBoundingClientRect().top - pane.scrollTop;
   const max = pane.scrollHeight - pane.clientHeight;
-  const starts: number[] = [];
-  for (const { selector, offset } of TARGETS) {
+  const header = pane.querySelector('[data-testid="download-gnb"]')?.getBoundingClientRect().height ?? 0;
+  const clamp = (value: number) => Math.max(0, Math.min(max, Math.round(value)));
+  const stops: PullStop[] = [];
+  for (const { selector, offset, stage } of TARGETS) {
     for (const element of document.querySelectorAll(selector)) {
-      starts.push(Math.max(0, Math.min(max, Math.round(element.getBoundingClientRect().top - origin - offset))));
+      const start = element.getBoundingClientRect().top - origin;
+      const boxes = stage ? [...element.querySelectorAll(stage)].map(layoutBox) : [];
+      const rest =
+        boxes.length > 0
+          ? stageRest({
+              start,
+              offset,
+              stageTop: Math.min(...boxes.map((box) => box.top)) - origin,
+              stageBottom: Math.max(...boxes.map((box) => box.bottom)) - origin,
+              header,
+              height: pane.clientHeight,
+            })
+          : start - offset;
+      stops.push({ near: clamp(start - offset), rest: clamp(rest) });
     }
   }
-  return starts;
+  return stops;
 }
 
 /** A key the page scrolls with: not typed into a field, not a press of a focused control. */
@@ -157,7 +223,7 @@ export function useSectionPull(): void {
       if (pulling) return;
       if (!direction || performance.now() - armedAt > ARMED_MS || !allowed()) return;
       const top = pane.scrollTop;
-      const target = pullTarget(sectionStarts(pane), top, direction, PULL_REACH * pane.clientHeight);
+      const target = pullTarget(sectionStops(pane), top, direction, PULL_REACH * pane.clientHeight);
       disarm();
       if (target === null) return;
       pulling = true;

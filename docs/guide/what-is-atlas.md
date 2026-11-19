@@ -87,9 +87,12 @@ own benchmark has not yet shown that agents give better answers with it
 
 1. [What is an ontology?](/guide/what-is-an-ontology): the idea behind the map,
    in general and for a codebase.
-2. [Getting started](/guide/first-five-minutes): download the app or try the
+2. [Atlas compared with code graphs, wikis, note apps and
+   CLAUDE.md](/guide/atlas-compared): what Atlas holds that those tools do
+   not, and when they are the better choice.
+3. [Getting started](/guide/first-five-minutes): download the app or try the
    browser, then open or create your ontology folder.
-3. [Connect a coding agent](/guide/connect-agent): let Claude Code, Codex or
+4. [Connect a coding agent](/guide/connect-agent): let Claude Code, Codex or
    Cursor read the map over MCP.
-4. [Build the first map from your code](/guide/from-your-repo): let the agent
+5. [Build the first map from your code](/guide/from-your-repo): let the agent
    draft the first concepts, and review them.
