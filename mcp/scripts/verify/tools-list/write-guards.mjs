@@ -8,6 +8,10 @@ import {
 import { sameArray } from '../value-checks.mjs';
 import { nonBlankStringSchemaFailure, outputPropertyAt, propertyAt } from './schema-primitives.mjs';
 
+const LEAN_BUILD_WRITE_TOOLS = ['add_concept', 'add_concepts', 'add_relation', 'add_relations', 'patch_concept'];
+const LEAN_WRITE_ABSENT_FIELDS = ['filePath', 'postWriteMaintenance', 'key'];
+const BATCH_ROWS_PROPERTY = { add_concepts: 'concepts', add_relations: 'relations' };
+
 function postWriteMaintenanceSchemaFailure(schema, toolName) {
   if (schema?.type !== 'object') {
     return `${toolName} outputSchema postWriteMaintenance drift`;
@@ -245,12 +249,28 @@ export function writeGuardsSchemaFailure(tools) {
     return 'absorb_document.allowOutsideRepo destructive boundary schema drift';
   }
 
+  // Build writes answer with their rows and the findings on the nodes they wrote;
+  // the vault-wide queue, absolute paths and storage keys stay out of their results.
+  for (const toolName of LEAN_BUILD_WRITE_TOOLS) {
+    const tool = tools.find((candidate) => candidate?.name === toolName);
+    if (!tool) return `tools/list response missing ${toolName} tool`;
+    if (!/`findings`/.test(tool.description || '')) {
+      return `${toolName} description missing findings guidance`;
+    }
+    const findings = outputPropertyAt(tool, ['properties', 'findings']);
+    if (findings?.type !== 'array' || findings.items?.type !== 'string') {
+      return `${toolName} outputSchema findings drift`;
+    }
+    const rows = BATCH_ROWS_PROPERTY[toolName]
+      ? outputPropertyAt(tool, ['properties', BATCH_ROWS_PROPERTY[toolName], 'items'])
+      : null;
+    for (const [where, properties] of [['', tool.outputSchema?.properties], [' row', rows?.properties]]) {
+      const leaked = LEAN_WRITE_ABSENT_FIELDS.find((field) => properties?.[field] !== undefined);
+      if (leaked) return `${toolName} outputSchema${where} still carries ${leaked}`;
+    }
+  }
+
   for (const toolName of [
-    'add_concept',
-    'add_concepts',
-    'add_relation',
-    'add_relations',
-    'patch_concept',
     'rename_concept',
     'merge_concepts',
     'delete_concept',

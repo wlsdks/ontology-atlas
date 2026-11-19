@@ -604,6 +604,8 @@ describe('verify.mjs first-contact gates', () => {
   it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {
     const postWriteDescription =
       'postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers';
+    const buildWriteDescription = '`findings`: one line per finding on the nodes this call wrote';
+    const findingsSchema = { type: 'array', items: { type: 'string' } };
     const compactProposedActionTools = ['add_concept', 'add_relation', 'patch_concept'];
     const maintenanceSummaryRequired = [
       'totalActions',
@@ -1218,7 +1220,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concept',
         description:
-          `Changed writes return ${postWriteDescription}.`,
+          `Changed writes return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['slug', 'kind', 'title'],
@@ -1226,14 +1228,14 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'slug', 'filePath', 'changed'],
+          required: ['ok', 'slug', 'changed', 'mtime'],
           properties: {
             ok: { type: 'boolean' },
             slug: { type: 'string' },
-            filePath: { type: 'string' },
             changed: { type: 'boolean' },
+            mtime: { type: 'number', minimum: 0 },
             warnings: { type: 'array', items: { type: 'string' } },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1241,7 +1243,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concepts',
         description:
-          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`, and changed batches return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`. Invalid-only batches return no row-level write metadata, no \`findings\` and no \`coverage\`, and changed batches return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['concepts'],
@@ -1259,8 +1261,8 @@ describe('verify.mjs first-contact gates', () => {
                 properties: {
                   slug: { type: 'string' },
                   ok: { type: 'boolean' },
-                  filePath: { type: 'string' },
                   changed: { type: 'boolean' },
+                  mtime: { type: 'number', minimum: 0 },
                   warnings: { type: 'array', items: { type: 'string' } },
                   error: { type: 'string' },
                   errorCode: { type: 'string' },
@@ -1293,7 +1295,8 @@ describe('verify.mjs first-contact gates', () => {
                 additionalProperties: false,
               },
             },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            findings: findingsSchema,
+            coverage: { type: 'string' },
           },
           additionalProperties: false,
         },
@@ -1301,7 +1304,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_relations',
         description:
-          `Batch writes isolate non-object row shape, unknown type with closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\`, and unknown row fields as ok:false rows with relations[n] labels and structured \`rowName\`, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints, \`allowedFields\`, \`receivedFields\`, and Received fields. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`, and changed batches return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape, unknown type with closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\`, and unknown row fields as ok:false rows with relations[n] labels and structured \`rowName\`, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints, \`allowedFields\`, \`receivedFields\`, and Received fields. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`findings\`, and changed batches return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['relations'],
@@ -1336,7 +1339,6 @@ describe('verify.mjs first-contact gates', () => {
                   to: { type: 'string' },
                   type: { type: 'string' },
                   alreadyExists: { type: 'boolean' },
-                  key: { type: 'string' },
                   changed: { type: 'boolean' },
                   error: { type: 'string' },
                   errorCode: { type: 'string' },
@@ -1369,7 +1371,8 @@ describe('verify.mjs first-contact gates', () => {
                 additionalProperties: false,
               },
             },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            mtimes: { type: 'object', additionalProperties: { type: 'number', minimum: 0 } },
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1377,7 +1380,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_relation',
         description:
-          `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`postWriteMaintenance\` write metadata. Changed writes return ${postWriteDescription}.`,
+          `Invalid relation \`type\` is rejected before endpoint slug resolution with a closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\` repair fields, with no \`changed\`, \`alreadyExists\`, or \`findings\` write metadata. Changed writes return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1399,10 +1402,9 @@ describe('verify.mjs first-contact gates', () => {
             from: { type: 'string' },
             to: { type: 'string' },
             type: { type: 'string' },
-            key: { type: 'string' },
             changed: { type: 'boolean' },
             alreadyExists: { type: 'boolean' },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -1410,20 +1412,20 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'patch_concept',
         description:
-          `Changed writes return ${postWriteDescription}.`,
+          `Changed writes return ${buildWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: { expected_mtime: { type: 'number', minimum: 0 } },
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'slug', 'filePath', 'changed', 'postWriteMaintenance'],
+          required: ['ok', 'slug', 'changed', 'mtime'],
           properties: {
             ok: { type: 'boolean' },
             slug: { type: 'string' },
-            filePath: { type: 'string' },
             changed: { type: 'boolean' },
-            postWriteMaintenance: postWriteMaintenanceSchema,
+            mtime: { type: 'number', minimum: 0 },
+            findings: findingsSchema,
           },
           additionalProperties: false,
         },
@@ -3086,73 +3088,36 @@ describe('verify.mjs first-contact gates', () => {
       })),
       'finalize_project_meaning meaningAssessment categorical/privacy contract drift',
     );
+    const withTool = (name, change) => tools.map((tool) => (tool.name === name && tool.outputSchema ? change(tool) : tool));
+    const withOutputProperty = (tool, propertyName, schema) => ({
+      ...tool,
+      outputSchema: { ...tool.outputSchema, properties: { ...tool.outputSchema.properties, [propertyName]: schema } },
+    });
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_concept' && tool.outputSchema
-          ? { ...tool, description: 'Successful writes return postWriteMaintenance with current-page nextExecutableAction / nextReviewAction pointers.' }
-          : tool
-      ))),
-      'add_concept description missing maintenance action score guidance',
+      toolsListSchemaFailure(withTool('add_concept', (tool) => ({ ...tool, description: 'Changed writes return the slug and mtime.' }))),
+      'add_concept description missing findings guidance',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_concept' && tool.outputSchema
-          ? {
-              ...tool,
-              description: 'Successful writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
-              outputSchema: {
-                ...tool.outputSchema,
-                properties: {
-                  ...tool.outputSchema.properties,
-                  postWriteMaintenance: { type: 'object' },
-                },
-              },
-            }
-          : tool
-      ))),
-      'add_concept outputSchema postWriteMaintenance required drift',
+      toolsListSchemaFailure(withTool('patch_concept', (tool) => withOutputProperty(tool, 'findings', { type: 'object' }))),
+      'patch_concept outputSchema findings drift',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'patch_concept'
-          ? { ...tool, description: 'Changed writes return postWriteMaintenance with score and proposedAction.' }
-          : tool
-      ))),
-      'patch_concept description missing maintenance next action pointer guidance',
+      toolsListSchemaFailure(withTool('add_concept', (tool) => withOutputProperty(tool, 'postWriteMaintenance', { type: 'object' }))),
+      'add_concept outputSchema still carries postWriteMaintenance',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'patch_concept'
-          ? {
-              ...tool,
-              description: 'Changed writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
-              outputSchema: {
-                ...tool.outputSchema,
-                properties: {
-                  ...tool.outputSchema.properties,
-                  postWriteMaintenance: { type: 'object' },
-                },
-              },
-            }
-          : tool
-      ))),
-      'patch_concept outputSchema postWriteMaintenance required drift',
+      toolsListSchemaFailure(withTool('add_relation', (tool) => withOutputProperty(tool, 'key', { type: 'string' }))),
+      'add_relation outputSchema still carries key',
     );
     assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_relation'
-          ? { ...tool, description: 'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. Changed writes return postWriteMaintenance with score and current-page nextExecutableAction / nextReviewAction pointers.' }
-          : tool
-      ))),
-      'add_relation description missing executable maintenance proposedAction guidance',
-    );
-    assert.equal(
-      toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_relation'
-          ? { ...tool, description: 'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. Changed writes return postWriteMaintenance with score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.' }
-          : tool
-      ))),
-      'add_relation description missing maintenance bucket guidance',
+      toolsListSchemaFailure(withTool('add_concepts', (tool) => {
+        const rows = tool.outputSchema.properties.concepts;
+        return withOutputProperty(tool, 'concepts', {
+          ...rows,
+          items: { ...rows.items, properties: { ...rows.items.properties, filePath: { type: 'string' } } },
+        });
+      })),
+      'add_concepts outputSchema row still carries filePath',
     );
     assert.equal(
       toolsListSchemaFailure([{ name: 'list_concepts', inputSchema: { properties: {} } }]),
@@ -6779,16 +6744,16 @@ describe('verify.mjs first-contact gates', () => {
           content: [{
             text: JSON.stringify({
               concepts: conceptRows,
-              postWriteMaintenance: {},
+              findings: [],
             }),
           }],
           structuredContent: {
             concepts: conceptRows,
-            postWriteMaintenance: {},
+            findings: [],
           },
         },
       }, 'concepts', 'add_concepts'),
-      'add_concepts row-isolation response unexpectedly included postWriteMaintenance',
+      'add_concepts row-isolation response unexpectedly included findings',
     );
     assert.equal(
       batchRowIsolationFailure({
@@ -7849,7 +7814,7 @@ describe('verify.mjs first-contact gates', () => {
       strictAddRelationFailure({
         result: {
           isError: true,
-          structuredContent: { postWriteMaintenance: { summary: { totalActions: 0 } } },
+          structuredContent: { findings: [] },
           content: [{ text: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' }],
         },
       }),

@@ -208,7 +208,7 @@ export function strictRepairSummary(response) {
 export function writeMetadataAbsenceSummary(response) {
   const result = response?.result;
   const structured = result?.structuredContent;
-  const keys = ["changed", "alreadyExists", "postWriteMaintenance"];
+  const keys = ["changed", "alreadyExists", "findings", "postWriteMaintenance"];
   const present = keys.filter((key) => (
     Object.prototype.hasOwnProperty.call(result || {}, key)
     || Object.prototype.hasOwnProperty.call(structured || {}, key)
@@ -217,7 +217,7 @@ export function writeMetadataAbsenceSummary(response) {
 }
 
 export function batchWriteMetadataAbsenceSummary(payload, structuredPayload, key) {
-  const keys = ["changed", "alreadyExists", "postWriteMaintenance"];
+  const keys = ["changed", "alreadyExists", "findings", "postWriteMaintenance"];
   const present = [];
   for (const [label, value] of [["parsed", payload], ["structuredContent", structuredPayload]]) {
     if (!value || typeof value !== "object") continue;
