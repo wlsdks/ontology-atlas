@@ -61,7 +61,18 @@ export function TopologyIndexAddRow({
   };
 
   return (
-    <div data-testid="topology-index-add-row" data-add-kind={kind} data-add-state={naming ? "naming" : "idle"} style={{ marginLeft: depth * 16 }}>
+    // A tree owns only tree items, so the row is one at its group's level; it holds a control,
+    // which a tree item may.
+    <div
+      role="treeitem"
+      aria-level={depth + 1}
+      aria-selected={false}
+      aria-label={naming ? labels.field : labels.action}
+      data-testid="topology-index-add-row"
+      data-add-kind={kind}
+      data-add-state={naming ? "naming" : "idle"}
+      style={{ marginLeft: depth * 16 }}
+    >
       {naming ? (
         <Input
           aria-label={labels.field}

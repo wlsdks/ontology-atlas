@@ -184,17 +184,14 @@ const STATES: readonly VaultState[] = [
     evidence: '[data-testid="docs-vault-doc-list"]',
   },
   {
-    // Creating from the map opens a **change review** after the input step. If the
-    // old immediate-write path returns, this evidence disappears and the gate turns
-    // red instead of idling.
-    name: "Map: new concept change review",
+    // The create card beside the map, filled but not written: its kind chips, place
+    // search and keys line are what a person reads before Enter writes the file.
+    name: "Map: create card",
     url: "/ko/topology/?workbench=create",
-    evidence: '[data-testid="create-node-change-review"]',
+    evidence: '[data-testid="create-node-kind-meaning"]',
     async act(page) {
       await expect(page.getByTestId("create-node-form")).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
       await page.getByTestId("create-node-title").fill("접근성 검토 임시 개념");
-      await page.getByTestId("create-node-submit").click({ timeout: EVIDENCE_TIMEOUT });
-      await expect(page.getByTestId("create-node-change-review")).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
     },
   },
 ];

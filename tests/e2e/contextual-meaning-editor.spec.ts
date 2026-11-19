@@ -37,8 +37,10 @@ async function openCheckoutEditor(page: import('@playwright/test').Page) {
 }
 
 async function openRelationEditorFromDetail(page: import('@playwright/test').Page) {
+  // In an open folder, Edit relations shares the Edit menu with rename, description and delete.
   const detailPanel = page.getByTestId('map-detail-panel');
-  await detailPanel.getByTestId('map-detail-panel-action-edit').click();
+  await detailPanel.getByTestId('map-detail-panel-edit-menu-trigger').click();
+  await page.getByTestId('map-detail-panel-action-edit').click();
 }
 
 async function chooseRelatedTaxReport(page: import('@playwright/test').Page) {
