@@ -1,175 +1,91 @@
 ---
-title: How to Read the Map
+title: "Reading the map"
 doc_type: guide
 status: current
-area: map
+area: product
 ---
 
-# How to Read the Map
+# Reading the map
 
-When you select a folder, dots and lines appear. However, most of the dots are the same shade of gray.
+The map is the knowledge graph Atlas draws from the Markdown files in your ontology folder, and everything on it comes from those files. Here you learn what each mark means, what lights up when you point at a concept, what the concept panel shows, and how Atlas marks concepts whose code changed after they were written.
 
-> What is this dot? What is that dot? Why are some large and others small? Why do numbers appear only on certain dots? When I zoomed in, more dots appeared. Where were they before?
+## The map at rest
 
-The map answers these questions **not with color, but with shape, size, and position**. Once you learn it, you can read it without explanation.
+The default view is **Flat**, a force-directed graph grouped by domain. The view picker also offers **Hex**, **3D**, **Domain structure** and **Neural**. This chapter describes **Flat**.
 
-## 1. Shape Indicates Type
+- **The project** is one disc at the center. While nothing is selected, it is the only mark in color.
+- **Domains** are soft pools of light, each with a disc, a large bold name, and a caption that counts its members, for example "12 capabilities · 30 elements".
+- **Capabilities** are smaller discs around their domain. A capability with more elements has a slightly larger disc.
+- **Elements** are dots around their capability.
+- Concepts outside every domain sit together under a caption such as "3 concepts belong to no domain".
+- Faint arcs between domains count the `depends_on` relations between their concepts. At rest, only the strongest pairs are drawn.
 
-Node types (kind) are distinguished by **shape**.
+Color is saved for what needs your attention: it shows which domain you are pointing at and which way a relation runs. The layout depends only on the folder's content and the window size. The same folder draws the same picture each time, so you can learn where things are.
 
-| Shape | Type | Meaning |
-|---|---|---|
-| Hexagonal plate | `project` | Top-level deliverable |
-| Square chip (with four legs at corners) | `domain` | Functional grouping |
-| Circle | `capability` | A single coherent action |
-| Square with a center hole | `element` | Concrete piece |
+## Names and zoom
 
-**Why not color.** Hue cannot express order. No one knows if blue is above or below green (Bertin, *Sémiologie graphique*, 1967). However, types have an order: project ⊃ domain ⊃ capability ⊃ element. Moreover, color in this map already serves two purposes. **Brightness** conveys hierarchy, and **signal colors** (warning/error/success) convey status. If we used color for type as well, the two channels already in use would become corrupted.
+Names never overlap; where there is no room, a name is left out. Domain names are always drawn. Capability names are added as space allows, the most connected first. Element names appear once you zoom in far enough that the dots stand apart. A selected concept is always named.
 
-Therefore, this app has no question like "What does a red node mean?" Color does not indicate type.
+A missing name does not mean a missing concept. Zoom in, point at its domain, or search with `⌘K`.
 
-## 2. Size Is Determined by Two Factors
+## Pointing and selecting
 
-### ① Fixed Size per Type
+Rest the pointer on a concept. After a short pause, the map lights up what it is connected to and dims the rest. Moving the pointer quickly across the map lights nothing.
 
-| Type | Radius |
-|---|---|
-| project | 30 |
-| domain | 17 |
-| capability | 11 |
-| element | 7 |
+- **A domain** lights its members and the domains it depends on or is used by.
+- **A capability** lights its domain, its elements, and every concept it depends on, is used by, relates to, or sits under as a narrower concept.
+- **An element** lights its capability, that capability's domain, and the far end of each of its own relations.
 
-This ladder is fixed. **A `domain` will never appear larger than a `project`.** If it did, the hierarchy would appear inverted.
-
-### ② Direct Child Count
-
-Within the same type, **more direct children make it slightly larger.** It grows up to a maximum of 1.4x (to prevent exceeding the ladder above).
-
-- **Only `domain` and `capability` grow.**
-- **`project` does not grow.** Since a vault typically has only one, there is no relative to compare against.
-- **`element` does not grow either.** By definition, an element is a leaf, so its child count is always 0. This means there is no information to convey, not that it signals "smallness".
-
-Size only says "this is unusually large," but **does not say "this is unusually small."** A node with only one child still has the base size.
-
-## 3. Numbers on Nodes
-
-Numbers appear embossed only on `project` and `domain`. They never appear on `capability` or `element`.
-
-**The number counts something different from size.**
-
-| Channel | What it Counts |
-|---|---|
-| Node Size | **Direct** child count (immediate next level) |
-| Embossed Number | **Total descendant** count (all the way down) |
-
-Thus, the "largest node" and the "node with the largest number" may differ. This is not a bug but an intentional dual channel. Size is a signal caught by a glance; the number is a value read upon stopping. If three domains look similar in size but one has a number three times larger, it means that one is much deeper inside.
-
-The number disappears when zoomed out (to prevent the number from becoming larger than the glyph).
-
-## 4. Line Grammar
+The shape of each line, not just its color, tells you the relation type:
 
 | Line | Meaning |
 |---|---|
-| Solid line | Containment: what contains what |
-| Dashed line + tapered thickness (thick start, thin end) | Directed relationship (relies on · is a parent concept) |
-| Dashed line + uniform thickness | Symmetric relationship (is similar to · reads together) |
+| Filled taper, wide at the selection, pointed at the other concept | **Depends on**: the selection needs it |
+| The same taper in a warm color, wide at the other concept | **Used by**: the other concept needs the selection |
+| Dotted hairline | **Related**: neither needs the other |
+| Double hairline toward the broader concept | **Broader concept** (`is_a`) |
 
-This legend **always floats** in the bottom-right corner. No need to memorize it.
+A legend at the bottom names the line types on screen, and `?` lists every keyboard shortcut.
 
-The **absence of tapering** is itself information: "this relationship is equal at both ends."
-See [How Relationships Are Formed](/guide/relations) for details.
+Click a concept to select it. The camera frames the selection and its lit neighbors, and a small light runs once along each line, from what is needed toward what needs it. With reduced motion turned on, no light moves. `Esc` clears the selection and moves the camera back, and the arrow keys step from concept to concept.
 
-## 5. Appears and Disappears with Zoom (Semantic Zoom)
+## The concept panel
 
-When you first open it, you only see the skeleton. **It's not that there is nothing else; it just hasn't been drawn yet.**
+Selecting a concept opens a compact panel at the right edge of the map:
 
-The initial view of the map is considered **1x**.
+- **Header**: the kind, the direct parent (a capability's domain, an element's capability), and the latest change, such as "changed 3d ago".
+- **Definition**: shortened to three lines. Press it to read the rest.
+- **A row that needs a person**, only when it applies: the document is marked for a person to decide, it changed after a person confirmed it, or some relations have no written reason.
+- **Depends on** and **Used by**: the relations the map draws, one row per concept. **No reason** marks a relation without a recorded reason. Point at a row to read its reason.
+- One line that counts the rest, such as **Other relations 2 · Implementation elements 1**.
 
-| Zoom Level | Visible Elements |
-|---|---|
-| 1x (initial screen) | project · domain · hub |
-| From 1.5x | capability gradually appears |
-| From 2.3x | element gradually appears |
+The footer shows the slug and the actions:
 
-"Gradually" is key. Elements don't abruptly pop out at the threshold; their alpha values blend smoothly.
-**Zooming out** returns you to the skeleton view. This prevents the screen from becoming a "point soup" regardless of zoom direction.
+- **Ask** (desktop app only) opens the agent chat with a question about this concept; you press send.
+- **Edit relations**. On a domain, an **Edit** menu holds it and also offers **Create linked concept**.
+- **More actions**.
+- **Details** opens a centered dialog with the full body, every relation, the code locations, and a prompt to copy for your agent.
 
-When zoomed out, shapes gradually converge into circles, and decorations (bridges, holes) disappear because you are not close enough to distinguish types.
+[Editing concepts and relations](/guide/studio) covers editing.
 
-> **If you don't want to see code elements at all**: Open the gear icon in the bottom-left › enable the "General" view.
-> This permanently collapses the element layer. Clicking a node still reveals its elements (hidden by default, revealed on click).
+Right-click a concept for **Document**, **Edit relations**, **Copy prompt**, **Path** and **Details**. After **Path**, select a second concept, and the map lights up the shortest path between them, one step at a time. For a concept that contains others, **More actions** › **Show only what is inside** narrows the map to that concept. **Full map** brings the whole map back.
 
-## 6. `+N` Chip: Collapsed Children
+The page address keeps the selection, the view, the path and the narrowed scope, so a link reopens the same picture.
 
-Parents with **more than 12 direct children** collapse the rest into a single `+N` chip. Even if a domain has 108 capabilities, the screen won't become a "label soup."
+## Stale and unknown evidence
 
-- Clicking the chip **expands only that parent**. Children spread out in a bounded disk.
-- Clicking the `−` chip collapses them again.
-- Expanded parents **persist in the URL** (`?open=slug1,slug2`). This allows recipients and AI agents to reproduce the same view.
-- If expanded children are still dense, they get their own chips.
+In the desktop app, when the ontology folder is inside a Git repository, Atlas compares each concept's document with the code files it cites in `path`.
 
-## 7. Clicking to Explore
+- **Stale**: a cited file changed after the document did. The disc gets a small amber dot, and the domain caption counts it, for example "2 stale".
+- **Unknown**: the concept cites no file, or Atlas could not tell when the file changed. The disc is drawn as a dashed, hollow outline.
+- When nothing could be checked, for example in the browser version, a line under the project reads **Evidence not checked**.
 
-**Clicking a node** highlights only that node and its direct neighbors (ego focus), dimming the rest. A small summary appears next to the node. **To see details, you must click again within that summary**. A single click does not cover the entire screen.
+These marks are not scores. They tell you where to read the code before you trust the text.
 
-| Action | Result |
-|---|---|
-| Click | Ego focus + node-side summary |
-| Drag | Move node (snaps back physically on release) |
-| Right-click | "Document" (or "Mentioned in" when the concept has no document of its own) · "Edit relations" · "Copy handoff" · "Path" · "Full detail" |
-| `Tab` | Move to neighbor hub |
-| `⌘K` | Search by name |
-| `?` | List of shortcuts |
-| `Esc` | Close the topmost open item |
+## Review results
 
-**View only this area**: Select a node that contains others and open its summary's
-"More actions" (⋯): "View only this" changes the map to **that node's world**. Once
-the summary is closed (`Esc` once), the same action is a round button beside the
-node (tooltip: "See only this node and what’s inside"). Only its containment subtree remains; everything else disappears behind a 1px indigo circle. Relationships crossing the boundary remain as short segments on the circle, listed under "Reaches outside · {count}" which you can expand.
-From there, you can jump to the other side's world via "View only that area".
+**More actions** › **Ontology review** opens a panel with three sections: **Role & connections**, **Review results** and **Conversation**. In the desktop app with a connected agent, **Ask AI to review** asks the agent to question the meaning of the concepts in scope. Its questions are saved under `.ontology-atlas/analyses` in your ontology folder and listed under **Review results**.
 
-While inside, a chip at the top reads "Viewing only {title}". Click "Full map" or press `Esc` to return. This also persists in the URL.
+**Have it fixed** hands a question to the agent; any file change it proposes still waits for your approval. **Keep for later** and **Dismiss** record your decision. As the panel says: "These are the AI's guesses. You decide whether they hold."
 
-## 8. What Do the Numbers in the Summary Count?
-
-The numbers in a node summary count **only direct connections**. They are not cumulative sums across multiple steps.
-
-| Term | Meaning |
-|---|---|
-| "contains" | Items this node directly contains: one level down, not the full subtree |
-| "used by" | Other items that directly use (point at) this node |
-| "leans on" | Other items this node directly leans on |
-| "belongs to" | The parent item that directly contains this node: one level up only |
-| "evidence" | The document this concept is written in: its own page, or another page that mentions it |
-
-The grouping axis is **direction**, not relationship type. If we grouped by both, the same line would be counted twice.
-
-A line such as "changed {count}d ago" (or "changed today", "changed yesterday",
-"changed {count}w ago", "changed {count}mo ago") says when the node's `.md` file
-last changed. This is a fact about the file, not a score generated by the map.
-
-## 9. Address is State
-
-Current screen state: what you selected, what you expanded, and which region you're in are all encoded in the URL.
-
-```
-/topology?open=domains/auth&realm=domains/auth
-```
-
-This leads to three consequences.
-
-- When you send a link, the recipient sees **the same screen**.
-- Back navigation works correctly.
-- An AI agent can say "look at this screen." Not via screenshot,
-  but via address.
-
-## Summary
-
-- **Shape = Type**, not color.
-- **Size = Type hierarchy level × direct children count**, max 1.4x.
-- **Number = total descendant count**, only for projects and domains.
-- **Lines = solid (containment), tapered dashed (direction), uniform dashed (symmetry)**.
-- What you don't see is **not missing, but folded**. Zoom or `+N` chip.
-- Screen state is in the address.
-
-If you click a node and the summary is empty, that's not a map issue but rather that no relations have been written in that `.md` file yet. What to write is covered in [Vault Structure](/guide/vault-structure), and how they connect is explained in [How Relations Are Created](/guide/relations).
+Next, [The ontology folder](/guide/vault-structure) shows the files behind every mark, and [Relations between concepts](/guide/relations) explains each line type.

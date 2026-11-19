@@ -1,259 +1,93 @@
 ---
-title: How Relations Are Created
+title: "Relations between concepts"
 doc_type: guide
 status: current
-area: ontology-model
+area: product
 ---
 
-# How Relations Are Created
+# Relations between concepts
 
-When you first open the map, domains radiate outward from the central hub. Just looking at this shape might raise these questions.
+Relations are the typed edges of the ontology's knowledge graph: "this capability depends on that one", "this element belongs to that capability". In Atlas, each relation is one entry in a concept's frontmatter. Below are the relation types, how to write them, and how the map and your coding agent's MCP tools (such as `find_path` and `find_backlinks`) read them.
 
-> Can't domains have any relations with each other? Is this structure just for querying pre-designed data? Are relations stored in the DB or in md files?
+## Structure and meaning
 
-We answer these three questions in order.
+Relations come in two groups.
 
-The authoritative source for storage keys, screen names, MCP query/write support scope, direction, endpoint kind, inverse, and inference boundaries is the [Atlas Metamodel Specification](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#5-relation-types-and-their-semantics). This chapter does not replicate that table but explains only how humans read relations from the map and Markdown.
+- **Structure** says what contains what: a project holds domains, a domain holds capabilities, a capability holds elements. Structure alone makes a tree.
+- **Meaning** says how concepts depend on or relate to each other, across any level. A capability in one domain can depend on a capability in another, and two domains can relate directly. A single relation like this turns the tree into a graph.
 
-## 1. Domains Do Have Relations
+## The relation types
 
-What appears radial is only the **structural (containment) relation**. On top of that, **semantic relations** are layered separately, freely crossing hierarchy levels.
+| Meaning | Frontmatter key | From → to | On the map |
+|---|---|---|---|
+| Project domains | `domains: [...]` | project → domain | domains around the project |
+| Contained capabilities | `capabilities: [...]` | project or domain → capability | discs around the domain |
+| Contained elements | `elements: [...]` | project, domain or capability → element | dots around the capability |
+| Domain membership | `domain: <slug>` | capability or element → domain | places it in that domain |
+| Generic containment | `contains: [...]` | any concept → any concept, when no key above fits | |
+| Depends on | `dependencies: [...]` | any concept → a concept it needs | a taper toward what is needed |
+| Related | `relates: [...]` | any concept ↔ any concept | a dotted hairline |
+| Broader concept | `broader: [...]` | domain → domain, capability → capability, element → element | a double hairline, shown as `is_a` |
+| Describes | `describes: [...]` | document → the concept it explains | listed in the document's panel |
 
-This repository holds itself as a vault (`docs/ontology/`), so you can actually count them.
+Atlas also reads `depends_on:` as another spelling of `dependencies:`, but always writes `dependencies:`. The full table, with direction and inference rules, is in [section 5 of the Atlas specification](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#5-relation-types-and-their-semantics).
 
-```bash
-node cli/src/index.mjs overview --vault docs/ontology
-```
+Use `broader` only for a real "is a kind of" claim between two concepts of the same kind: everything that fits the narrower definition must also fit the broader one. Being in the same domain, having similar names or sitting in nested folders is not enough.
 
-The relation type distribution looks like this. **We do not copy the numbers here.** Vaults grow as nodes are added, becoming outdated from the moment they are written in documents. Run it yourself to see the counts in your own vault.
+## Writing a relation
 
-Relation keys are divided into two types.
-
-| Relation Key | What It Is |
-|---|---|
-| `elements` · `capabilities` · `domains` · `domain` | **Structure**: what contains what |
-| `relates` · `dependencies` | **Semantics**: similar things, dependencies |
-| `describes` | The target a document points to |
-
-With only structure, it's a tree. The moment **even one semantic relation** is attached, it becomes a graph. This is because both can cross hierarchy levels.
-
-To view only relations between domains:
-
-```bash
-node cli/src/index.mjs domain-matrix --vault docs/ontology
-```
-
-A table shows which domain pairs are connected.
-
-### How a Domain Directly Points to Another Domain
-
-Simply write the target domain's slug in the frontmatter of the domain document.
+A relation is written once, on the source concept. The target does not need to mention it.
 
 ```markdown
 ---
-uid: 31890f3e-7b5d-4c0a-8f14-123456789abc
-slug: domains/onboarding-and-shell
-kind: domain
-title: "Onboarding, Distribution & App Shell"
-relates: [domains/topology-navigation]
----
-```
-
-You can also see it from the other side. `relates` is undirected, so writing it on one side creates the same single line; writing it on both sides still folds the map into a single bidirectional line.
-
-```markdown
----
-uid: 41890f3e-7b5d-4c0a-8f14-123456789abc
-slug: domains/topology-navigation
-kind: domain
-relates:
-  - domains/onboarding-and-shell    # domain → domain
----
-```
-
-This is the shortest answer to the question. **A domain can simply reference another domain by name.** There is no need to traverse up the hierarchy or create anything in between.
-
-## 2. Graphs Superimposed on a Tree
-
-Structure and meaning exist on the same map, but they are **different layers**.
-
-```
-         project
-            │
-   ┌────────┴────────┐
-   │                 │
-domain A ┄┄┄┄┄┄┄ domain B    ← relates
-   │                 │
-capability ┄┄┄┄> capability   ← depends_on
-   │                 │
-element           element
-
-│  Solid line = structure (containment)
-┄  Dashed line = meaning (relation)
-```
-
-Solid lines indicate "who contains whom," while dashed lines indicate "who depends on whom / what should be read together." Dashed lines can cross layers or traverse domains.
-
-## 3. Storage is Markdown, Not a Database
-
-There is no separate database, sync button, or server. **Relations are a single line in the frontmatter at the top of `.md` files**, and adding relations requires no DB migration. However, explicit file migration from UID-less v1 documents to v2 follows the [folder structure](/guide/vault-structure).
-
-### Declaring Relations
-
-For example, a capability document looks like this:
-
-```markdown
----
-uid: 51890f3e-7b5d-4c0a-8f14-123456789abc
+uid: 94cf0cde-1e74-497d-ac41-00cdf3a42f0b
 slug: capabilities/vault-live-updates
 kind: capability
 title: Vault live updates
-domain: domains/local-vault-management
-dependencies:
-  - capabilities/topology-canvas-render   # depends on (directional)
-relates:
-  - capabilities/mcp-conflict-guard       # read together (symmetric)
+domain: domains/local-vault
+dependencies: [capabilities/map-render]
+relates: [capabilities/conflict-guard]
+relation_notes: { capabilities/map-render: "A detected file change has to redraw the map to be seen." }
 ---
-
-When the folder changes, the map updates accordingly.
 ```
 
-### Receiving Relations
+`relation_notes` holds one sentence per relation saying why it holds, keyed by the target's slug. A new `depends_on` written through the MCP server or the map's relation editor must include that sentence. Other relations should have one whenever you know the reason. The concept panel marks relations without one as **No reason**.
 
-`capabilities/topology-canvas-render.md` inside the vault **contains nothing**.
+Values are slugs, so a person can read the graph in the file. A unique short form also works, such as `map-render` for `capabilities/map-render`. Renaming a concept through Atlas rewrites every relation that points to it.
 
-```markdown
----
-uid: 61890f3e-7b5d-4c0a-8f14-123456789abc
-slug: capabilities/topology-canvas-render
-kind: capability
-title: Topology canvas render
-domain: views
----
+When Atlas writes a relation list, it trims, deduplicates and sorts it, so the order has no meaning. Atlas never adds inverse or transitive relations on its own. `relates` written on one side is not copied to the other. If A depends on B and B depends on C, Atlas does not write "A depends on C". A missing relation means "not recorded", not "no relation".
 
-Renders the map on a 2D canvas.
+## How the map uses relations
+
+- At rest, faint arcs between domains count the `depends_on` relations between their concepts, in each direction.
+- When you point at or select a concept, the map draws only that concept's direct relations, one line per connected concept: tapers for **Depends on** and **Used by**, dotted lines for **Related**, double lines for **Broader concept**.
+- The concept panel lists **Depends on** and **Used by** from `depends_on` alone. Related and broader links are counted under **Other relations**.
+
+See [Reading the map](/guide/reading-the-map) for the full line key.
+
+## How agents use relations
+
+The MCP server answers graph questions from the same frontmatter, so your agent does not have to read every file.
+
+- `find_backlinks` lists every concept that points to a slug, through any relation key or a link in a body. Call it before a rename or a delete.
+- `find_path` returns the shortest path between two concepts. Each hop names the key that links it (`via`) and, when one is recorded, the reason (`rationale`).
+- `find_neighbors` returns one hop around a concept, filtered by direction and type.
+- `query_ontology` with `impact` or `blast_radius` answers "what is affected if this changes?" It follows declared `depends_on` relations only; structure is not impact.
+- `query_ontology` with `domain_matrix` counts the relations between domains. Limited to `depends_on`, it gives the same numbers as the map's arcs.
+
+To write, `add_relation` takes `from`, `to`, a `type` (`depends_on`, `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements` or `domain`) and a `why`. `remove_relation` and `replace_relation` preview by default and write only with `confirm: true`. `broader` is not one of the `add_relation` types yet. To change it, an agent calls `patch_concept` with the full new list and the file's `mtime`, then runs `validate_vault`.
+
+[The CLI](/guide/cli) offers the same reads in a terminal. Run from a checkout of the Atlas source, these commands read the Atlas repository's own ontology:
+
+```bash
+node cli/src/index.mjs backlinks capabilities/mcp-tool-server --vault docs/ontology
+node cli/src/index.mjs path capabilities/cli-commands domains/human-workbench --vault docs/ontology
+node cli/src/index.mjs blast-radius capabilities/mcp-tool-server --direction incoming --vault docs/ontology
+node cli/src/index.mjs domain-matrix docs/ontology --types depends_on
 ```
 
-Relations only need to be written on **one side**. The receiving side automatically knows via backlinks. You can write them on both sides (as with the two domains above), but the map folds the round-trip into a single line.
+`relate` and `remove-relation` write one relation, with the same checks as the MCP tools. On the map, **Edit relations** does the same, one relation at a time; see [Editing concepts and relations](/guide/studio).
 
-> Therefore, there are two counting standards. The number mentioned in `overview` is the count of *written references*, while the lines drawn by the map are fewer because they fold round-trips. It's just counting the same graph differently; neither is wrong.
+## The files stay the truth
 
-### Relation Key Table
-
-The exact correspondence is maintained in the single table in §5 of the specification above. What to remember here is that the three layers do not share the same set of names.
-
-- Markdown stores `dependencies:` and the MCP writer receives `depends_on`.
-- Markdown's `broader:` appears as `is_a` on screen, but neither is currently present in the public MCP relation query/write enum. When modifying existing nodes, use `patch_concept` with the `mtime` from `get_concept` and the full post-change `broader` array, followed by `validate_vault`.
-- `relates` implies symmetry but does not automatically write reciprocal frontmatter.
-- Backlinks and path traversal are read-derived, not inference creating new inverse/transitive relations. Missing relations are `unknown`/visible gaps, not falsehoods.
-
-### Line Syntax in the Map
-
-The type of relation is represented by line style.
-
-| Line | Meaning |
-|---|---|
-| Solid line | Structure: containment |
-| Dashed line + tapering thickness (thick start, thin end) | Directional screen relation (`depends_on` · derived `is_a` from frontmatter `broader`) |
-| Dashed line + uniform thickness | Symmetric relation (`relates`) |
-
-The **absence** of tapering itself conveys the information that "both ends of this relation are equal." We do not draw arrows on `relates` because doing so would imply causation where none exists.
-
-### The Source of Truth is Files, Visible via `git diff`
-
-Adding one more relation is just a matter of editing a single line in the file.
-
-```diff
-  dependencies:
-    - capabilities/topology-canvas-render
-+   - capabilities/vault-validator
-```
-
-Even if an AI agent adds relations, they remain in this same format. There's only one commit to review, and you can revert it if you don't like it. There is no silent state change inside the database.
-
-## 4. It’s not about querying pre-designed data
-
-Expanding a node doesn't mean pulling out a prepared answer from somewhere. The process is as follows.
-
-```
- .md files on disk
-        │
-        │  Parse frontmatter
-        ▼
-   Node list + Reference list
-        │
-        │  Resolve names (slug/alias → node)
-        ▼
-   Edge list ← "Relations" are created here for the first time
-        │
-        │  Traverse containment chain and stamp projectIds
-        ▼
-      Map · INDEX · Analysis
-```
-
-Derivation is handled by `src/entities/docs-vault/lib/derive-ontology-from-vault.ts`.
-Therefore:
-
-- If you edit a relation file, the graph changes **immediately in the next derivation**. There are no per-relation migrations.
-- Specifying only `domain:` automatically determines its project membership via the containment chain. You never need to manually enter the `project:` key.
-- If you reference a non-existent name, that reference remains as "a concept mentioned by name only." The validator (`validate`) reports this.
-
-## 5. Why there were no lines between domains in the demo map
-
-If you open the map with the performance test address (`?synth=3000`), there are no lines between domains.
-This isn't a product limitation; it's because **the synthetic vault only creates structural relations**.
-The synthesizer (`src/views/home/lib/synth-vault/synth-vault.ts`) produces only one type of relation: `contains`.
-
-If you open the real vault (`docs/ontology/`), you'll see lines crossing between domains. When judging the map's shape, **first check which vault you opened.**
-
-## 6. How the map draws thousands of nodes
-
-As relations increase, drawing becomes the problem. Four mechanisms work together.
-
-### Concentric ring layout
-
-Children are placed in sectors around the parent, with radii determined by depth.
-
-```
-        ·  ·  ·  ·  ·      element    (radius 90)
-      ·  ┌──────┐  ·
-    ·    │ capa │      ·   capability (radius 145)
-   ·   ┌─┴──────┴─┐   ·
-  ·    │  domain  │    ·   domain     (radius 250)
-       └────┬─────┘
-         project              Origin
-```
-
-### Switch to spiral if sectors overflow
-
-If there are too many children, the sector radius grows proportionally to the count (e.g., radius 2250 for 100 children). So, once a threshold is exceeded, we switch to a **golden angle spiral (phyllotaxis)** disk. It's the same method as sunflower seed placement. With an interval of 26, the disk radius for 108 children stays around 414. The overflow becomes bounded.
-
-### Density gate
-
-Parents with **more than 12** children collapse the rest into a single `+N` chip. In the 3,000-node vault, **95%** of elements are behind this chip. You must click it to expand.
-
-### Semantic zoom
-
-From afar, only the skeleton is visible; as you approach, flesh appears.
-
-| Zoom level | Visible |
-|---|---|
-| < 1.5x | project · domain · hubs (skeleton) |
-| ≥ 1.5x | capability appears |
-| ≥ 2.3x | element appears |
-
-### Overlap reduction applies only to visible nodes
-
-Seed placement is cheap, but overlap reduction is expensive. For 3,000 nodes, seed placement takes 4.3ms, while total reduction takes 2,253ms: **99.8% of the total cost** is reduction. Therefore, we only reduce overlaps for **nodes that are drawn**. The collapsed 95% hasn't yet competed for space.
-
-On slow devices (CPU throttled 6x), for 3,000 nodes: **13,457ms → 563ms**.
-
-## Summary
-
-- Relations cross hierarchy levels. Domains connect directly to each other.
-- The store is not a database but a single line of `.md` frontmatter.
-- Graphs are not pre-built; they are **derived every time** from files.
-- Directed and symmetric relations are distinguished by line style on the map.
-- Large-scale operations are handled via four mechanisms: batching, folding, zooming, and easing.
-
-If you want to count relations directly, see `overview`, `domain-matrix`, and `path` in the [CLI](/guide/cli) section. The remaining frontmatter rules are defined in [Vault Structure](/guide/vault-structure).
+Adding a relation changes one line in one file, and the change shows up in `git diff` like any other. A relation an agent writes looks the same as one you write, so one review covers both.
