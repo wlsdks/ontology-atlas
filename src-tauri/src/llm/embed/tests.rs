@@ -677,15 +677,20 @@ fn pull_progress_stays_linear_and_bounded_over_eighty_thousand_digests() {
     assert!(elapsed < Duration::from_millis(100), "{elapsed:?}");
     assert_eq!(tracker.error.as_deref(), Some("too-many-layers"));
 
+    // Updates to the same layers replace their share of the running sums.
     let mut repeated = PullTracker::default();
-    let started = Instant::now();
+    let mut last = None;
     for i in 0..80_000u64 {
-        repeated.read(&format!(
+        last = repeated.read(&format!(
             r#"{{"status":"pulling","digest":"sha256:{}","total":80000,"completed":{i}}}"#,
             i % 3
         ));
     }
-    assert!(started.elapsed() < Duration::from_secs(2));
+    let last = last.unwrap();
+    assert_eq!(
+        (last.completed, last.total),
+        (79_997 + 79_998 + 79_999, 240_000)
+    );
     assert!(repeated.error.is_none());
 }
 
