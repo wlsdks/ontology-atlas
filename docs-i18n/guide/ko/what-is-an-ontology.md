@@ -132,6 +132,8 @@ relation_notes: { capabilities/payment-authorization: "결제 대행사가 금�
 
 ## 다음에 읽을 글
 
+- [코드 그래프·위키·노트 앱·CLAUDE.md와 Atlas 비교](/guide/atlas-compared):
+  Atlas가 코드 그래프, 위키, 노트 앱, 그래프 데이터베이스와 어떻게 다른지.
 - [시작하기](/guide/first-five-minutes): 내 온톨로지 폴더를 열거나 만들어요.
 - [개념 고르기](/guide/what-becomes-a-node): 도메인, 역량, 요소 중 무엇으로
   만들지 고르는 법.

@@ -28,6 +28,7 @@
   },
   "guideDescriptions": {
     "whatIsAnOntology": "온톨로지란 무엇일까요? 개념, 종류, 관계, 합의된 의미로 이뤄진 온톨로지가 분류 체계·스키마·지식 그래프와 어떻게 다른지, 코드베이스 온톨로지는 어떻게 생겼는지 설명해요.",
+    "atlasCompared": "Ontology Atlas를 코드 그래프, 저장소 위키, Obsidian과 Notion, CLAUDE.md와 AGENTS.md, 그래프 데이터베이스와 비교하고, 각각 언제 쓰면 좋은지 정리했어요.",
     "firstFiveMinutes": "Ontology Atlas 시작하기: 앱을 내려받거나 브라우저로 써 보고, 온톨로지 폴더를 열거나 만든 뒤 Claude Code나 Codex를 연결해요.",
     "readingTheMap": "Ontology Atlas 지도 읽는 법: 도메인·역량·요소, 관계 선, 개념 패널, 그리고 오래됐거나 알 수 없는 코드 근거 표시.",
     "vaultStructure": "Atlas 온톨로지 폴더: 개념 하나당 마크다운 파일 하나, 파일 맨 위 정보칸의 필드(uid, slug, kind, title, 표시 이름, 관계), 폴더 구성.",

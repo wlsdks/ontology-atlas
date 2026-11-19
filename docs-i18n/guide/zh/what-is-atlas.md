@@ -44,6 +44,7 @@ Atlas 把这些答案放在代码旁边：
 ## 接下来读什么
 
 1. [什么是本体？](/guide/what-is-an-ontology)：地图背后的思想，包括一般意义上的本体和代码库的本体。
-2. [快速上手](/guide/first-five-minutes)：下载应用或在浏览器中试用，然后打开或创建你的本体文件夹。
-3. [通过 MCP 连接编码智能体](/guide/connect-agent)：让 Claude Code、Codex 或 Cursor 通过 MCP 读取地图。
-4. [从代码构建第一张地图](/guide/from-your-repo)。
+2. [Atlas 与代码图谱、Wiki、笔记应用和 CLAUDE.md 的比较](/guide/atlas-compared)：Atlas 记录了哪些这些工具没有的内容，以及什么时候这些工具才是更好的选择。
+3. [快速上手](/guide/first-five-minutes)：下载应用或在浏览器中试用，然后打开或创建你的本体文件夹。
+4. [通过 MCP 连接编码智能体](/guide/connect-agent)：让 Claude Code、Codex 或 Cursor 通过 MCP 读取地图。
+5. [从代码构建第一张地图](/guide/from-your-repo)。

@@ -28,6 +28,7 @@
   },
   "guideDescriptions": {
     "whatIsAnOntology": "What an ontology is: concepts, kinds, relations and agreed meaning, how it differs from a taxonomy, schema or knowledge graph, and one for a codebase.",
+    "atlasCompared": "How Ontology Atlas compares with code graphs, repository wikis, Obsidian and Notion, CLAUDE.md and AGENTS.md, and graph databases, and when to use each.",
     "firstFiveMinutes": "Getting started with Ontology Atlas: download the app or try the browser, open or create an ontology folder, and connect Claude Code or Codex.",
     "readingTheMap": "Reading the Ontology Atlas map: domains, capabilities and elements, relation lines, the concept panel, and stale or unknown code evidence.",
     "vaultStructure": "The Atlas ontology folder: one Markdown file per concept, the fields in the info block at its top (uid, slug, kind, title, display names, relations) and layout.",
