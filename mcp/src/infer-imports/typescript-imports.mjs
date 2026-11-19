@@ -1,4 +1,4 @@
-import { readFileSync, statSync, existsSync } from './confined-source-fs.mjs';
+import { readFileSync, existsSync } from './confined-source-fs.mjs';
 import { join, resolve, relative, isAbsolute } from 'node:path';
 import { pathResolvesInsideRoot } from './path-confinement.mjs';
 import { DEFAULT_IGNORE, isIgnoredPath } from './source-files.mjs';
@@ -44,15 +44,43 @@ export function importUsageOf(rawMatch) {
   return 'value';
 }
 
-export function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = [], ignore = DEFAULT_IGNORE, importUsage = 'value', workspacePackages = []) {
+/**
+ * One pass's resolver for JavaScript and TypeScript specifiers: a relative
+ * specifier is resolved once per importing folder, a workspace or alias
+ * specifier once per pass, and every probe goes through `facts`, so a pass costs
+ * O(distinct specifiers) resolutions however often a module is imported.
+ *
+ * @param {{ rootPath: string, pathAliases?: object[], workspacePackages?: object[], facts: ReturnType<import('./path-confinement.mjs').createPathFacts> }} options
+ */
+export function createTypeScriptResolver({ rootPath, pathAliases = [], workspacePackages = [], facts }) {
+  const relativeImports = new Map();
+  const workspaceImports = new Map();
+  const aliasImports = new Map();
+  const remembered = (memo, key, compute) => {
+    if (memo.has(key)) return memo.get(key);
+    const value = compute();
+    memo.set(key, value);
+    return value;
+  };
+  return {
+    relative: (spec, dir) =>
+      remembered(relativeImports, `${dir}\0${spec}`, () => resolveRelativeImport(spec, dir, facts)),
+    workspace: (spec) =>
+      remembered(workspaceImports, spec, () => resolveWorkspacePackageImport(spec, rootPath, workspacePackages, facts)),
+    alias: (spec) =>
+      remembered(aliasImports, spec, () => resolveAliasImport(spec, rootPath, pathAliases, facts)),
+  };
+}
+
+export function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, resolver, ignore = DEFAULT_IGNORE, importUsage = 'value') {
   const kind = kindOverride ?? 'static';
   if (!spec) {
     unresolved.push({ from: relative(rootPath, file), spec, reason: 'empty' });
     return;
   }
   if (spec.startsWith('.') || isAbsolute(spec)) {
-    const resolved = resolveRelativeImport(spec, dir);
-    if (resolved && existsSync(resolved)) {
+    const resolved = resolver.relative(spec, dir);
+    if (resolved) {
       const resolvedRelative = relative(rootPath, resolved);
       if (isIgnoredPath(resolvedRelative, ignore)) return;
       edges.push({
@@ -71,7 +99,7 @@ export function classify(spec, file, dir, rootPath, edges, external, unresolved,
     }
     return;
   }
-  const workspaceResolved = resolveWorkspacePackageImport(spec, rootPath, workspacePackages);
+  const workspaceResolved = resolver.workspace(spec);
   if (workspaceResolved.matched) {
     if (workspaceResolved.path) {
       const resolvedRelative = relative(rootPath, workspaceResolved.path);
@@ -94,7 +122,7 @@ export function classify(spec, file, dir, rootPath, edges, external, unresolved,
     }
     return;
   }
-  const aliasResolved = resolveAliasImport(spec, rootPath, pathAliases);
+  const aliasResolved = resolver.alias(spec);
   if (aliasResolved.matched) {
     if (aliasResolved.path) {
       const resolvedRelative = relative(rootPath, aliasResolved.path);
@@ -118,7 +146,7 @@ export function classify(spec, file, dir, rootPath, edges, external, unresolved,
   external.push({ from: relative(rootPath, file), spec });
 }
 
-function resolveWorkspacePackageImport(spec, rootPath, workspacePackages = []) {
+function resolveWorkspacePackageImport(spec, rootPath, workspacePackages, facts) {
   const matchingPackage = [...workspacePackages]
     .filter((workspacePackage) =>
       workspacePackage.name &&
@@ -128,7 +156,7 @@ function resolveWorkspacePackageImport(spec, rootPath, workspacePackages = []) {
   if (!matchingPackage) return { matched: false, path: null, denied: false };
 
   const packageRoot = join(rootPath, matchingPackage.path);
-  if (!pathResolvesInsideRoot(rootPath, packageRoot)) {
+  if (!facts.resolvesInsideRoot(packageRoot)) {
     return { matched: true, path: null, denied: true };
   }
   const subpath = spec.slice(matchingPackage.name.length).replace(/^\//, '');
@@ -143,10 +171,10 @@ function resolveWorkspacePackageImport(spec, rootPath, workspacePackages = []) {
     : workspaceEntryCandidates(packageRoot);
   let denied = false;
   for (const candidate of candidates) {
-    const resolved = resolveImportCandidate(candidate);
+    const resolved = resolveImportCandidate(candidate, facts);
     if (!resolved) continue;
     if (
-      pathResolvesInsideRoot(rootPath, resolved) &&
+      facts.resolvesInsideRoot(resolved) &&
       pathResolvesInsideRoot(packageRoot, resolved)
     ) {
       return { matched: true, path: resolved, denied: false };
@@ -202,9 +230,9 @@ function collectWorkspaceExportStrings(value, entries = []) {
   return entries;
 }
 
-function resolveAliasImport(spec, rootPath, pathAliases = []) {
+function resolveAliasImport(spec, rootPath, pathAliases, facts) {
   for (const alias of pathAliases) {
-    const mapped = resolveTsconfigPathAlias(spec, rootPath, alias);
+    const mapped = resolveTsconfigPathAlias(spec, rootPath, alias, facts);
     if (!mapped.matched) continue;
     if (mapped.path) return mapped;
     return { matched: true, path: null };
@@ -220,7 +248,7 @@ function resolveAliasImport(spec, rootPath, pathAliases = []) {
   // Fallback for repositories without tsconfig paths.
   for (const root of ['src', 'lib', 'app']) {
     const base = join(rootPath, root, subPath);
-    const resolved = resolveImportCandidate(base);
+    const resolved = resolveImportCandidate(base, facts);
     if (resolved) return { matched: true, path: resolved };
   }
   return { matched: true, path: null };
@@ -258,7 +286,7 @@ export function readTsconfigPathAliases(rootPath) {
   return aliases;
 }
 
-function resolveTsconfigPathAlias(spec, rootPath, alias) {
+function resolveTsconfigPathAlias(spec, rootPath, alias, facts) {
   if (!alias.wildcard && spec !== alias.pattern) return { matched: false, path: null };
   if (alias.wildcard && (!spec.startsWith(alias.prefix) || !spec.endsWith(alias.suffix))) {
     return { matched: false, path: null };
@@ -273,22 +301,22 @@ function resolveTsconfigPathAlias(spec, rootPath, alias) {
   for (const target of alias.targets) {
     const mapped = target.includes('*') ? target.replace('*', wildcardValue) : target;
     const base = resolve(rootPath, alias.baseUrl, mapped);
-    const resolved = resolveImportCandidate(base);
+    const resolved = resolveImportCandidate(base, facts);
     if (resolved) return { matched: true, path: resolved };
   }
   return { matched: true, path: null };
 }
 
-function resolveImportCandidate(base) {
-  if (existsSync(base) && statSync(base).isFile()) return base;
+function resolveImportCandidate(base, facts) {
+  if (facts.statKind(base) === 'file') return base;
   for (const ext of RESOLVE_EXT_ORDER) {
     const cand = base + ext;
-    if (existsSync(cand) && statSync(cand).isFile()) return cand;
+    if (facts.statKind(cand) === 'file') return cand;
   }
-  if (existsSync(base) && statSync(base).isDirectory()) {
+  if (facts.statKind(base) === 'directory') {
     for (const ext of RESOLVE_EXT_ORDER) {
       const cand = join(base, 'index' + ext);
-      if (existsSync(cand) && statSync(cand).isFile()) return cand;
+      if (facts.statKind(cand) === 'file') return cand;
     }
   }
   return null;
@@ -312,9 +340,9 @@ function parseTsconfigJson(text) {
   }
 }
 
-function resolveRelativeImport(spec, fromDir) {
+function resolveRelativeImport(spec, fromDir, facts) {
   const base = resolve(fromDir, spec);
-  if (existsSync(base) && statSync(base).isFile()) return base;
+  if (facts.statKind(base) === 'file') return base;
   // NodeNext TypeScript writes runtime `.js` specifiers in `.ts` source: resolve the
   // source sibling before declaring drift.
   const sourceBase = /\.(?:mjs|cjs|js|jsx)$/i.test(base)
@@ -322,12 +350,12 @@ function resolveRelativeImport(spec, fromDir) {
     : base;
   for (const ext of RESOLVE_EXT_ORDER) {
     const cand = sourceBase + ext;
-    if (existsSync(cand) && statSync(cand).isFile()) return cand;
+    if (facts.statKind(cand) === 'file') return cand;
   }
-  if (existsSync(base) && statSync(base).isDirectory()) {
+  if (facts.statKind(base) === 'directory') {
     for (const ext of RESOLVE_EXT_ORDER) {
       const cand = join(base, 'index' + ext);
-      if (existsSync(cand) && statSync(cand).isFile()) return cand;
+      if (facts.statKind(cand) === 'file') return cand;
     }
   }
   return null;

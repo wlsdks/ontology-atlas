@@ -1,12 +1,13 @@
-// infer_imports: static imports of TS/JS, Python and bounded Rust files become
-// observed file-level dependency edges; Go imports become package-directory
-// evidence. Non-JS languages are parsed as bounded text, never executed.
-// Results are returned only: nothing enters the vault until an agent reviews
-// them and calls add_relation. Regex-based (static, dynamic, re-export, type-only
-// and side-effect imports); relative imports, tsconfig paths and common `@/*`
-// aliases resolve to files, an unresolved alias is `alias-not-found`, and npm
-// packages are `externalImports`. Python reads root or src-layout packages only;
-// Go reads in-module imports, skipping vendor, testdata and `_` trees.
+// infer_imports: static imports of TS/JS, Python, Java, Kotlin and bounded Rust
+// files become observed file-level dependency edges; Go imports become
+// package-directory evidence. Non-JS languages are parsed as bounded text,
+// never executed. Results are returned only: nothing enters the vault until an
+// agent reviews them and calls add_relation. Regex-based (static, dynamic,
+// re-export, type-only and side-effect imports); relative imports, tsconfig
+// paths and common `@/*` aliases resolve to files, an unresolved alias is
+// `alias-not-found`, and npm packages are `externalImports`. Python reads root
+// or src-layout packages only; Go reads in-module imports, skipping vendor,
+// testdata and `_` trees.
 
 import {
   readFileSync,
@@ -18,12 +19,14 @@ import {
 import { join, dirname, relative, extname } from 'node:path';
 import { detectAutotoolsC } from './infer-imports/autotools-c.mjs';
 import { GO_SOURCE_EXTENSION, inferGoPackageImports } from './infer-imports/go-imports.mjs';
+import { classifyJvmImports, parseJvmSource } from './infer-imports/java-imports.mjs';
 import { moduleOf } from './infer-imports/module-grouping.mjs';
-import { isDirectoryInsideRoot } from './infer-imports/path-confinement.mjs';
+import { createPathFacts, isDirectoryInsideRoot } from './infer-imports/path-confinement.mjs';
 import {
   discoverRootPythonPackages,
   parsePythonImports,
   classifyPythonImport,
+  createPythonModuleResolver,
 } from './infer-imports/python-imports.mjs';
 import {
   RUST_IMPORT_TEXT_MAX_BYTES,
@@ -32,6 +35,8 @@ import {
 } from './infer-imports/rust-imports.mjs';
 import {
   DEFAULT_IGNORE,
+  IMPORT_SCAN_EXTENSIONS,
+  JVM_SOURCE_EXTENSIONS,
   RUST_SOURCE_EXTENSION,
   SOURCE_EXT,
   walk,
@@ -42,6 +47,7 @@ import {
   importKindOf,
   importUsageOf,
   classify,
+  createTypeScriptResolver,
   readTsconfigPathAliases,
 } from './infer-imports/typescript-imports.mjs';
 import { discoverDeclaredWorkspacePackages } from './infer-imports/workspace-packages.mjs';
@@ -81,8 +87,10 @@ export const IMPORT_UNRESOLVED_REASON_VALUES = Object.freeze([
 ]);
 
 /**
- * Bounded repository walk (`maxFiles`), O(bytes) import parsing and fs probes
- * per import. IMPORT_RE stops at import/export keywords; Maps aggregate edges.
+ * Bounded repository walk (`maxFiles`), O(bytes) import parsing, and resolution
+ * once per distinct specifier through one pass's path facts, which put each
+ * path question to the disk at most once. IMPORT_RE stops at import/export
+ * keywords; Maps aggregate edges.
  *
  * @param {string} rootPath — repo root (must exist)
  * @param {{ sourceFolders?: string[], ignore?: string[], maxFiles?: number }} options
@@ -152,7 +160,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
   }
 
   const files = [];
-  for (const r of uniqueRoots) walk(r, ignore, files, maxFiles);
+  for (const r of uniqueRoots) walk(r, ignore, files, maxFiles, IMPORT_SCAN_EXTENSIONS);
   const goPackageImports = inferGoPackageImports(
     rootPath,
     ignore,
@@ -165,7 +173,15 @@ function inferImportsWithinRoot(rootPath, options = {}) {
   const pythonEdgeKeys = new Set();
   const externalImports = [];
   const unresolved = [];
-  const pathAliases = readTsconfigPathAliases(rootPath);
+  const facts = createPathFacts(rootPath);
+  const resolvePythonModule = createPythonModuleResolver(rootPath, sourceFolders, facts);
+  const typeScriptResolver = createTypeScriptResolver({
+    rootPath,
+    pathAliases: readTsconfigPathAliases(rootPath),
+    workspacePackages,
+    facts,
+  });
+  const jvmSources = [];
   const rustPackageName = files.some((file) => extname(file) === RUST_SOURCE_EXTENSION)
     ? readRootRustPackageName(rootPath)
     : null;
@@ -216,10 +232,15 @@ function inferImportsWithinRoot(rootPath, options = {}) {
           externalImports,
           unresolved,
           ignore,
-          sourceFolders,
+          resolvePythonModule,
           pythonEdgeKeys,
         );
       }
+      continue;
+    }
+
+    if (JVM_SOURCE_EXTENSIONS.has(extname(file))) {
+      jvmSources.push({ file, ...parseJvmSource(content, file) });
       continue;
     }
 
@@ -234,11 +255,10 @@ function inferImportsWithinRoot(rootPath, options = {}) {
         externalImports,
         unresolved,
         importKindOf(match[0]),
-          pathAliases,
-          ignore,
-          importUsageOf(match[0]),
-          workspacePackages,
-        );
+        typeScriptResolver,
+        ignore,
+        importUsageOf(match[0]),
+      );
     }
     for (const match of content.matchAll(SIDE_IMPORT_RE)) {
       const window = content.slice(Math.max(0, match.index - 10), match.index + 2);
@@ -254,13 +274,13 @@ function inferImportsWithinRoot(rootPath, options = {}) {
         externalImports,
         unresolved,
         'side',
-        pathAliases,
+        typeScriptResolver,
         ignore,
         'value',
-        workspacePackages,
       );
     }
   }
+  classifyJvmImports(jvmSources, { rootPath, edges, externalImports, ignore, facts });
 
   const moduleCount = new Map();
   for (const e of edges) {
@@ -315,7 +335,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
   return {
     rootPath,
     filesScanned: files.length + (goPackageImports?.filesScanned ?? 0),
-    coverage: importScanCoverage(rootPath),
+    coverage: importScanCoverage(rootPath, jvmSources.length > 0),
     edges,
     externalImports,
     unresolved,
@@ -324,13 +344,16 @@ function inferImportsWithinRoot(rootPath, options = {}) {
   };
 }
 
-function importScanCoverage(rootPath) {
+function importScanCoverage(rootPath, jvmFilesScanned) {
   const detectedUnsupportedLanguages = [
     ...(detectAutotoolsC(rootPath) ? ['c'] : []),
   ];
   const limitations = [
     ...(detectedUnsupportedLanguages.includes('c')
       ? ['C include and build dependency graphs are not scanned; zero edges is not evidence that a C repository has no dependencies.']
+      : []),
+    ...(jvmFilesScanned
+      ? ['Java and Kotlin imports are file edges only (a wildcard import names its package folder): they form no module edges, and same-package references, which need no import, are not inferred.']
       : []),
     'Rust evidence covers deterministic use paths, file-backed mod declarations, and exact literal path/include forms; macro expansion, cfg evaluation, and symbol resolution are not inferred.',
     'Observed edges are bounded static source evidence, not runtime execution or semantic depends_on approval.',
