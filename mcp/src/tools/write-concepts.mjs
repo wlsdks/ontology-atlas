@@ -26,7 +26,7 @@ import { updateDoc, writeDoc } from '../vault/doc-writes.mjs';
 import { detectDuplicateTitle } from '../vault/graph-queries.mjs';
 import { measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
-import { compactPostWriteMaintenance } from './maintenance.mjs';
+import { findingsOnWrittenNodes } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,
   agentProvenance,
@@ -93,7 +93,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   });
   // Advisory title-collision warning before the write; it never blocks. Batches skip
   // it: their candidates were already reviewed and a per-node vault load costs.
-  const vaultDocs = options.includePostWriteMaintenance === false ? null : loadVaultDocs(VAULT_ROOT);
+  const vaultDocs = options.asBatchRow === true ? null : loadVaultDocs(VAULT_ROOT);
   const duplicateWarning = vaultDocs ? detectDuplicateTitle(title, slug, vaultDocs) : null;
   const filePath = writeDoc(VAULT_ROOT, slug, {
     frontmatter: fm,
@@ -117,16 +117,14 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     ...(duplicateWarning ? [duplicateWarning] : []),
     ...(partialLocaleWarning ? [partialLocaleWarning] : []),
   ];
+  const findings = options.asBatchRow === true ? [] : findingsOnWrittenNodes([slug]);
   return {
     ok: true,
     slug,
-    filePath,
     changed: true,
     mtime: statSync(filePath).mtimeMs,
     ...(warnings.length > 0 ? { warnings } : {}),
-    ...(options.includePostWriteMaintenance === false
-      ? {}
-      : { postWriteMaintenance: compactPostWriteMaintenance() }),
+    ...(findings.length > 0 ? { findings } : {}),
   };
 }
 
@@ -188,7 +186,7 @@ function addConceptsBatch({ concepts }) {
         };
       }
       if (slug) seenInBatch.set(slug, index);
-      const result = addConcept(spec, { includePostWriteMaintenance: false, vaultLocales });
+      const result = addConcept(spec, { asBatchRow: true, vaultLocales });
       // Advisory warning when a node already landed in this batch has the same
       // normalised title, catching one concept split into two nodes without a vault load.
       if (result.ok) {
@@ -210,11 +208,12 @@ function addConceptsBatch({ concepts }) {
       };
     }
   });
-  const wrote = results.some((row) => row.ok && row.changed !== false);
-  const coverage = wrote ? buildCoverageLine() : null;
+  const written = results.filter((row) => row.ok && row.changed !== false).map((row) => row.slug);
+  const findings = written.length > 0 ? findingsOnWrittenNodes(written) : [];
+  const coverage = written.length > 0 ? buildCoverageLine() : null;
   return {
     concepts: results,
-    postWriteMaintenance: wrote ? compactPostWriteMaintenance() : undefined,
+    ...(findings.length > 0 ? { findings } : {}),
     ...(coverage ? { coverage } : {}),
   };
 }
@@ -261,10 +260,10 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
     body,
     expectedMtime: typeof expected_mtime === 'number' ? expected_mtime : undefined,
   });
+  const findings = findingsOnWrittenNodes([slug]);
   return {
     ok: true,
     slug,
-    filePath,
     changed: true,
     mtime: statSync(filePath).mtimeMs,
     // Say when this write gave identity (`uid:`) to a hand-authored node, so a person
@@ -277,7 +276,7 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
             `This write minted ${mintedUid} for it. Tell the human — the node now has a permanent identity.`,
         }
       : {}),
-    postWriteMaintenance: compactPostWriteMaintenance(),
+    ...(findings.length > 0 ? { findings } : {}),
   };
 }
 
