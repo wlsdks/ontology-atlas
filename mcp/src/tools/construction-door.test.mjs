@@ -126,8 +126,7 @@ test('a build on an empty vault inside its repository reaches finalize without e
   assert.match(refused.error, /- evidence: /);
   assert.match(refused.error, /concept `capabilities\/ghost` is not in this project's containment graph/);
   assert.match(refused.error, /no longer matches `src\/charge\.mjs`/);
-  assert.match(refused.error, /evidence `src\/unmeasured\.mjs` is not a measured source witness/);
-  assert.match(refused.error, /call connect_project_source again/);
+  assert.match(refused.error, /evidence `src\/unmeasured\.mjs` is not a file in the connected source folder/);
 
   const sha = createHash('sha256').update(readFileSync(join(root, 'src', 'charge.mjs'))).digest('hex');
   // One of the two capabilities is cited: whether that answers "each" is the person's call.
@@ -145,6 +144,93 @@ test('a build on an empty vault inside its repository reaches finalize without e
   assert.deepEqual(read.sourceEvidence.rows.map((row) => row.status), ['read', 'read']);
   assert.equal(finalized.error, undefined, finalized.error);
   assert.equal(finalized.ok, true);
+});
+
+function partialAnswer(id) {
+  return { id, status: 'partial', answer: `The ${id} answer is partial.`, gap: 'The fixture leaves this open.' };
+}
+
+async function connectedLedger(call) {
+  const created = await call('add_concepts', { concepts: [
+    { slug: 'ledger', kind: 'project', title: 'Ledger', labels: { en: 'Ledger' }, body: BODY },
+    { slug: 'domains/payments', kind: 'domain', title: 'Payments', labels: { en: 'Payments' }, body: BODY },
+    { slug: 'capabilities/charge', kind: 'capability', title: 'Charge', labels: { en: 'Charge' }, domain: 'domains/payments', path: 'src/charge.mjs', body: `Charges an amount (src/charge.mjs:L2).\n\n${BODY}` },
+  ] });
+  const related = await call('add_relations', { relations: [
+    { from: 'ledger', to: 'domains/payments', type: 'domains', expected_mtime: created.concepts[0].mtime },
+    { from: 'domains/payments', to: 'capabilities/charge', type: 'capabilities' },
+  ] });
+  await call('connect_project_source', { projectSlug: 'ledger', confirm: true });
+  return related.mtimes.ledger;
+}
+
+test('one finalize call with answers writes the section and measures a cited file no concept names', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  const mtime = await connectedLedger(call);
+
+  const finalized = await call('finalize_project_meaning', {
+    projectSlug: 'ledger',
+    expected_mtime: mtime,
+    answers: [
+      { id: 'scope', status: 'answered', answer: 'Ledger exists so a customer can be charged.', concepts: ['ledger'], evidence: ['README.md'] },
+      partialAnswer('domains'),
+      partialAnswer('abilities'),
+      partialAnswer('evidence'),
+      partialAnswer('impact'),
+    ],
+  });
+  assert.equal(finalized.error, undefined, finalized.error);
+  assert.equal(finalized.ok, true);
+  const scope = finalized.meaningAssessment.dimensions.competency.questions.find((row) => row.id === 'scope');
+  assert.equal(scope.witnessStatus, 'resolved', 'README.md was measured in the finalize call');
+
+  const body = readFileSync(join(root, 'atlas', 'ledger.md'), 'utf8');
+  assert.match(body, /^### scope: answered\n\nWhat product\/system outcome and user problem define the ontology scope\?\n\nLedger exists so a customer can be charged\.\n\n- Concepts: `ledger`\n- Evidence: `README\.md`$/m);
+  const sources = JSON.parse(readFileSync(join(root, 'atlas', '.ontology-atlas', 'project-sources.json'), 'utf8'));
+  assert.ok(sources.bindings[0].receipt.witnesses.some((witness) => witness.path === 'README.md' && witness.supported));
+  const receipts = JSON.parse(readFileSync(join(root, 'atlas', '.ontology-atlas', 'project-meaning.json'), 'utf8'));
+  assert.equal(receipts.receipts[0].bodyDigest, finalized.bodyDigest);
+});
+
+test('a finalize refusal names the answers row and the argument to change, and writes nothing', async (t) => {
+  const root = repository();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const call = server(root);
+  const mtime = await connectedLedger(call);
+  const ledger = join(root, 'atlas', 'ledger.md');
+  const before = readFileSync(ledger, 'utf8');
+
+  const malformed = await call('finalize_project_meaning', {
+    projectSlug: 'ledger',
+    expected_mtime: mtime,
+    answers: [{ id: 'scope', status: 'partial', answer: 'Half.', evidence: ['README.md:L1'] }],
+  });
+  assert.match(malformed.error, /answers\[0\] is "partial", so `gap` must say in one line what is missing/);
+  assert.match(malformed.error, /answers\[0\]\.evidence\[0\]: `README\.md:L1` is a line cite; name the file `README\.md`/);
+  assert.match(malformed.error, /answers has no row for domains, abilities, evidence, impact/);
+
+  const unresolved = await call('finalize_project_meaning', {
+    projectSlug: 'ledger',
+    expected_mtime: mtime,
+    answers: [
+      partialAnswer('scope'),
+      partialAnswer('domains'),
+      partialAnswer('abilities'),
+      partialAnswer('impact'),
+      { id: 'evidence', status: 'answered', answer: 'Charging enters at its file.', concepts: ['capabilities/charge'], evidence: ['src/missing.mjs'] },
+    ],
+  });
+  assert.match(unresolved.error, /^Error: finalize_project_meaning blocked: 1 answered row/);
+  assert.match(unresolved.error, /- answers\[4\] evidence: .*evidence `src\/missing\.mjs` is not a file in the connected source folder/);
+  assert.match(unresolved.error, /Change answers\[4\]\.(paths or answers\[4\]\.evidence|evidence or answers\[4\]\.paths), or set its status "partial" with a gap\./);
+  assert.doesNotMatch(unresolved.error, /connection_info|guide/);
+  assert.equal(readFileSync(ledger, 'utf8'), before, 'a refused finalize leaves the body as it was');
+
+  const noSection = await call('finalize_project_meaning', { projectSlug: 'ledger', expected_mtime: mtime });
+  assert.match(noSection.error, /Call finalize_project_meaning again with `answers`/);
+  assert.doesNotMatch(noSection.error, /connection_info/);
 });
 
 test('a relation write never hands out an mtime that would let a body write pass over an unread edit', async (t) => {

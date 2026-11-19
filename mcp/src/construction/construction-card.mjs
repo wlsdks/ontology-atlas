@@ -6,6 +6,8 @@
  * tests/contract/mcp/mcp-instructions-card.contract.test.ts holds the budget.
  */
 
+import { MEANING_COMPETENCY_QUESTIONS } from '../meaning/meaning-assessment.mjs';
+
 /**
  * A 97-character identity line and a blank line precede the card, so 1,949 would
  * end on the 2,048th character; 1,940 leaves a margin, and the contract test
@@ -75,106 +77,41 @@ Never write both directions between one pair. \`relates\` is for neighbours with
 **Coverage.** Each write lists unplaced abilities and shared roles, unread capabilities, rules citing no read lines, and capabilities no ability-to-ability edge touches, each with the next call: make it. Finalize holds \`abilities\`, \`evidence\` and \`impact\` to those lists; \`partial\` with a \`Gap\` is the fallback.`;
 
 /**
- * The layout reminder appended to the finalize_project_meaning refusal, beside
- * the guide it points at; `tools/project-source.mjs` imports it.
+ * The repair a finalize_project_meaning refusal ends with when the project body
+ * holds no section the parser accepts; `tools/project-source.mjs` imports it.
  */
-export const COMPETENCY_SECTION_HINT_EN = 'The project body needs exactly one `## Competency answers` section holding five `### <id>: answered|partial|visible-gap` rows in the order scope, domains, abilities, evidence, impact; each row repeats its fixed question verbatim, then a blank line, then the answer, then optional `- Concepts:` / `- Relations:` / `- Evidence:` / `- Paths:` / `- Gap:` rows in that order. Call **connection_info**({guide:"competency"}) for the exact layout and a complete example.';
+export const COMPETENCY_ANSWERS_HINT_EN = 'Call finalize_project_meaning again with `answers`: five rows `{id, status, answer, concepts, relations, evidence, paths, gap}`, one each for scope, domains, abilities, evidence and impact; the server writes the `## Competency answers` section itself.';
+
+const QUESTION_LINES = MEANING_COMPETENCY_QUESTIONS
+  .map(({ id, question, requiredWitnesses }) => `- \`${id}\`: ${question} Answered cites ${requiredWitnesses.join(', ')}.`)
+  .join('\n');
 
 /**
- * The `## Competency answers` layout for the `competency`
- * guide. `parseProjectCompetencyMarkdown` accepts only
- * what `renderProjectCompetencyMarkdown` emits, and `construction-card.test.mjs`
- * feeds this example through the real parser so it cannot drift.
+ * The `competency` guide: what an agent needs to pass `answers`. The server owns the
+ * questions and the section layout, so neither is copied here for an agent to copy.
  */
-export const COMPETENCY_ANSWERS_GUIDE_EN = `## Competency answers — the exact section finalize_project_meaning parses
+export const COMPETENCY_ANSWERS_GUIDE_EN = `## Competency answers
 
-\`finalize_project_meaning\` reads one \`## Competency answers\` section from the
-project node's body. The parser is exact: anything else fails with
-\`Invalid project competency Markdown: <reason>\` and nothing is written.
+\`finalize_project_meaning({projectSlug, expected_mtime, answers})\` writes the project's \`## Competency answers\` section from \`answers\` and finalizes in one call. One row per question:
 
-1. Exactly one \`## Competency answers\` heading in the body, followed by a blank line.
-2. Exactly five rows, in this order, each \`### <id>: <status>\`:
-   \`scope\`, \`domains\`, \`abilities\`, \`evidence\`, \`impact\`.
-3. \`<status>\` is \`answered\`, \`partial\`, or \`visible-gap\`.
-4. Each row is: the heading, a blank line, the row's fixed question copied
-   verbatim, a blank line, then your answer prose.
-5. Witness rows, if any, follow the answer after one blank line, in this order
-   and at most once each: \`- Concepts:\`, \`- Relations:\`, \`- Evidence:\`,
-   \`- Paths:\`, \`- Gap:\`.
-6. \`Concepts\`, \`Evidence\`, and \`Paths\` are backticked values joined by
-   \`, \`. \`Relations\` rows are \`\\\`from\\\` --type--> \\\`to\\\`\`. \`Gap\` is one line of
-   plain prose and must be the last row.
-7. An \`answered\` row must not declare a \`Gap\`; a \`partial\` or \`visible-gap\` row
-   must. An \`answered\` row must also have witnesses that still resolve against
-   the current graph, or finalize refuses and names each witness and why.
-8. Write an \`Evidence\` value as a plain repository-relative path. A pinned citation
-   \`source:<path>#L<start>-L<end>@sha256:<64 hex>\` is accepted too, and counts only
-   while the file still has that hash. \`Paths\` takes plain paths only. A path counts once
-   \`connect_project_source\` has measured it: after adding one, connect again.
-9. Containment relations use the typed keys the writer stores: project
-   \`--domains-->\` domain, domain \`--capabilities-->\` capability, \`--elements-->\`
-   element. \`--contains-->\` is read as the same edge.
+${QUESTION_LINES}
 
-The five questions are fixed. Copy them exactly:
+A row is \`{id, status, answer, concepts?, relations?, evidence?, paths?, gap?}\`:
+- \`status\`: \`answered\` when the witnesses back the whole answer, else \`partial\` or \`visible-gap\` with \`gap\`: one line naming what is missing.
+- \`answer\`: plain sentences; no heading and no "- Label:" line.
+- \`concepts\`: slugs inside this project. \`relations\`: \`{from, to, type}\` with the stored key (\`domains\`, \`capabilities\`, \`elements\`, \`depends_on\`).
+- \`evidence\`, \`paths\`: repository-relative files or folders, such as \`README.md\`; line cites go in the answer. Evidence may be a pinned \`source:<path>#L<a>-L<b>@sha256:<64 hex>\`.
 
-- \`scope\` — What product/system outcome and user problem define the ontology scope?
-- \`domains\` — Which stable business responsibilities or decision boundaries form its domains?
-- \`abilities\` — Which observable abilities realize those outcomes inside each domain?
-- \`evidence\` — Which source artifacts provide implementation evidence for each ability?
-- \`impact\` — Which typed dependencies explain change impact across the model?
+Finalize measures each named file inside the folder \`connect_project_source\` bound; it never binds one. An answered \`abilities\`, \`evidence\` or \`impact\` row is held to the coverage each write reports: while it names work, do it or mark the row \`partial\`. A refusal names the row and argument to change, and writes nothing.
 
-A complete section, showing both an answered row and a declared gap:
+\`\`\`json
+{"projectSlug":"billing","expected_mtime":1795104500785.9,"answers":[
+  {"id":"scope","status":"answered","answer":"Billing lets an operator invoice a customer.","concepts":["billing"],"evidence":["README.md"]},
+  {"id":"domains","status":"answered","answer":"Invoicing owns what a customer is charged.","concepts":["domains/invoicing"],"relations":[{"from":"billing","to":"domains/invoicing","type":"domains"}],"evidence":["README.md"]},
+  {"id":"abilities","status":"partial","answer":"Invoicing issues one invoice per completed order.","concepts":["capabilities/issue-invoice"],"gap":"Credit notes were not read."},
+  {"id":"evidence","status":"answered","answer":"Invoicing enters at the file its path names.","concepts":["capabilities/issue-invoice"],"evidence":["src/billing/issue-invoice.ts"],"paths":["src/billing/issue-invoice.ts"]},
+  {"id":"impact","status":"visible-gap","answer":"No dependency is declared yet.","gap":"The tax table dependency is unrecorded."}
+]}
+\`\`\`
 
-\`\`\`markdown
-## Competency answers
-
-### scope: answered
-
-What product/system outcome and user problem define the ontology scope?
-
-Billing exists so an operator can invoice a customer and see what was charged.
-
-- Concepts: \`billing\`
-- Evidence: \`README.md\`
-
-### domains: answered
-
-Which stable business responsibilities or decision boundaries form its domains?
-
-Invoicing owns what a customer is charged; delivery owns when the order ships.
-
-- Concepts: \`domains/invoicing\`
-- Relations: \`billing\` --domains--> \`domains/invoicing\`
-- Evidence: \`README.md\`
-
-### abilities: answered
-
-Which observable abilities realize those outcomes inside each domain?
-
-Invoicing issues one invoice per completed order.
-
-- Concepts: \`capabilities/issue-invoice\`
-- Relations: \`domains/invoicing\` --capabilities--> \`capabilities/issue-invoice\`
-- Evidence: \`src/billing/issue-invoice.ts\`
-
-### evidence: answered
-
-Which source artifacts provide implementation evidence for each ability?
-
-Issuing an invoice enters at the one file the capability's path names.
-
-- Concepts: \`capabilities/issue-invoice\`
-- Evidence: \`src/billing/issue-invoice.ts\`
-- Paths: \`src/billing/issue-invoice.ts\`
-
-### impact: visible-gap
-
-Which typed dependencies explain change impact across the model?
-
-Invoicing declares one dependency on the tax table; nothing else is declared yet.
-
-- Concepts: \`capabilities/issue-invoice\`
-- Relations: \`capabilities/issue-invoice\` --depends_on--> \`elements/tax-table\`
-- Evidence: \`src/billing/issue-invoice.ts\`
-- Gap: delivery declares no dependency, so its change impact stays unknown.
-\`\`\``;
+Without \`answers\`, finalize reads a section already in the body, in the layout it writes.`;
