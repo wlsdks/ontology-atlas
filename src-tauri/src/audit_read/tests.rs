@@ -181,7 +181,11 @@ fn changes_at_middle_and_eof_never_validate() {
             }
             _ => unreachable!(),
         }
-        assert_eq!(session.validate().unwrap_err(), CHANGED, "{action}");
+        assert_eq!(
+            session.validate().err().as_deref(),
+            Some(CHANGED),
+            "{action}"
+        );
     }
 }
 #[cfg(any(unix, windows))]

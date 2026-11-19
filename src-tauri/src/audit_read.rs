@@ -78,7 +78,7 @@ fn stamp(entry: &Entry) -> Result<Stamp, String> {
         modified: entry.meta.modified().map_err(|_| FAILED)?,
         dev: entry.volume,
         ino: entry.index,
-        changed: (entry.changed, 0),
+        changed: (entry.changed, entry.usn),
     })
 }
 #[cfg(not(any(unix, windows)))]
