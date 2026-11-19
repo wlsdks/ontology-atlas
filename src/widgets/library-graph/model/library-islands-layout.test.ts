@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph } from "./build-library-graph";
-import { ISLAND_PAGE_RADIUS, ISLAND_SOURCE_RADIUS, islandsLayout } from "./library-islands-layout";
+import { ISLAND_GAP, ISLAND_PAGE_RADIUS, ISLAND_SOURCE_RADIUS, islandsLayout } from "./library-islands-layout";
 
 function graph(input: { sources?: string[]; pages?: string[]; concepts?: string[]; cites?: Array<[string, string]>; mentions?: Array<[string, string]> }): LibraryGraph {
   const nodes = [
@@ -80,6 +80,50 @@ describe("islands layout", () => {
     const layout = islandsLayout(graph({ sources: Array.from({ length: 50 }, (_, i) => `u${i}.md`) }), WORLD, LABELS);
     expect(layout.islands.map((i) => i.kind)).toEqual(["unread"]);
     expect(layout.islands[0].band!.width).toBeGreaterThan(layout.islands[0].band!.height);
+  });
+
+  it("puts a page on the island of the first concept it is about, before any concept it names", () => {
+    const folder = graph({ pages: ["one"], concepts: ["alpha", "beta", "zeta"], mentions: [["one", "alpha"]] });
+    folder.edges.push(
+      { id: "d0", source: "page:one", target: "concept:zeta", relation: "describes", certainty: "current" },
+      { id: "d1", source: "page:one", target: "concept:beta", relation: "describes", certainty: "current" },
+    );
+    const layout = islandsLayout(folder, WORLD, LABELS);
+    expect(layout.islands.map((island) => [island.id, island.pages])).toEqual([["concept:zeta", ["page:one"]]]);
+  });
+
+  it("stands a concept that leads no island amid the pages about it, not at the map's centre", () => {
+    const folder = graph({ pages: ["one", "two", "three"], concepts: ["alpha", "beta", "gamma"], mentions: [["one", "alpha"], ["two", "beta"]] });
+    folder.edges.push(
+      { id: "d0", source: "page:one", target: "concept:gamma", relation: "describes", certainty: "current" },
+      { id: "d1", source: "page:one", target: "concept:alpha", relation: "describes", certainty: "current" },
+    );
+    const layout = islandsLayout(folder, WORLD, LABELS);
+    // Page one leads with gamma, so alpha has no island and stands where page one is.
+    expect(layout.islands.some((island) => island.conceptId === "concept:alpha")).toBe(false);
+    expect(layout.positions.get("concept:alpha")).toEqual(layout.positions.get("page:one"));
+  });
+
+  it("packs thousands of islands with the island gap between every two", () => {
+    const pages = Array.from({ length: 3000 }, (_, i) => `p${i}`);
+    const concepts = Array.from({ length: 1500 }, (_, i) => `c${i}`);
+    // Sizes from one page to dozens, the skew a folder's popular concepts have.
+    const mentions = pages.map((p, i): [string, string] => [p, concepts[Math.floor((((i * 7919) % 3000) / 3000) ** 2 * 1500)]]);
+    // One file read by the first page: its dot's radius tells the scale the picture was fitted at.
+    const layout = islandsLayout(graph({ sources: ["read.md"], pages, concepts, mentions, cites: [["p0", "read.md"]] }), WORLD, LABELS);
+    const scale = layout.radii.get("source:read.md")! / ISLAND_SOURCE_RADIUS;
+    const gap = ISLAND_GAP * scale;
+    const discs = layout.islands.filter((island) => !island.band);
+    expect(discs.length).toBeGreaterThan(500);
+    const sorted = [...discs].sort((a, b) => a.x - a.r - (b.x - b.r));
+    let pairs = 0;
+    for (let i = 0; i < sorted.length; i += 1) {
+      for (let j = i + 1; j < sorted.length && sorted[j].x - sorted[j].r <= sorted[i].x + sorted[i].r + gap; j += 1) {
+        pairs += 1;
+        expect(Math.hypot(sorted[i].x - sorted[j].x, sorted[i].y - sorted[j].y)).toBeGreaterThanOrEqual(sorted[i].r + sorted[j].r + gap - 1e-6);
+      }
+    }
+    expect(pairs).toBeGreaterThan(discs.length);
   });
 
   it("groups by wiki sub-folder when a page names no concept", () => {
