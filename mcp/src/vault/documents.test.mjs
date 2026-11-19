@@ -28,8 +28,10 @@ import {
   loadVaultDocs,
   RACY_WINDOW_MS,
   readDoc,
+  vaultDocCacheStats,
   vaultDocsVersion,
   withVaultReadSnapshot,
+  withVaultWriteSnapshot,
 } from './documents.mjs';
 
 let uidSequence = 0;
@@ -433,13 +435,14 @@ describe('a write decides from other files as they are on disk', () => {
         fs[name] = (...args) => { const stats = original(...args); return same(stats) ? frozen : stats; };
       }
       syncBuiltinESMExports();
-      const { withVaultReadSnapshot } = await import(${JSON.stringify(modules['./documents.mjs'])});
+      const { withVaultReadSnapshot, withVaultWriteSnapshot } = await import(${JSON.stringify(modules['./documents.mjs'])});
       const { findBacklinks } = await import(${JSON.stringify(modules['./graph-queries.mjs'])});
       const lifecycle = await import(${JSON.stringify(modules['../tools/lifecycle.mjs'])});
       const primed = await withVaultReadSnapshot(async () => findBacklinks(root, 'capabilities/target').length);
       fs.writeFileSync(referrer, fs.readFileSync(referrer, 'utf8').replace(${JSON.stringify(pad)}, ${JSON.stringify(relation)}));
       let outcome;
-      try { lifecycle.${call}; outcome = 'done'; } catch (error) { outcome = 'refused: ' + error.message.split('\\n')[0]; }
+      // As the server runs a write: one fresh pass, then stamp passes.
+      try { await withVaultWriteSnapshot(async () => lifecycle.${call}); outcome = 'done'; } catch (error) { outcome = 'refused: ' + error.message.split('\\n')[0]; }
       console.log(JSON.stringify({ primed, outcome, referrer: fs.readFileSync(referrer, 'utf8'),
         targetExists: fs.existsSync(root + '/capabilities/target.md') }));
     `;
@@ -550,3 +553,41 @@ describe('read snapshot scope', () => {
 function readDocRaw(root, path) {
   return readDoc(root, path).raw;
 }
+
+describe('write snapshot scope', () => {
+  it('runs one fresh pass per write, however many loads the write makes', async (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('A'), 'capabilities/b': nodeText('B'), 'capabilities/c': nodeText('C') });
+    loadVaultDocs(root);
+    const before = vaultDocCacheStats(root);
+    await withVaultWriteSnapshot(async () => {
+      loadVaultDocs(root);
+      loadVaultDocs(root);
+      loadVaultDocs(root);
+    });
+    const after = vaultDocCacheStats(root);
+    // Files written just now stay racy, so the later stamp passes may read them again;
+    // only the first pass of the call trusts no stamp.
+    assert.equal(after.passes - before.passes, 3);
+    assert.equal(after.freshPasses - before.freshPasses, 1);
+  });
+
+  it('a later load in the write sees the write it made', async (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('A') });
+    const titlesSeen = await withVaultWriteSnapshot(async () => {
+      const first = titles(loadVaultDocs(root));
+      writeFileAtomically(join(root, 'capabilities/a.md'), nodeText('Renamed'));
+      return [first, titles(loadVaultDocs(root))];
+    });
+    assert.deepEqual(titlesSeen, [{ 'capabilities/a': 'A' }, { 'capabilities/a': 'Renamed' }]);
+  });
+
+  it('each write call starts with its own fresh pass', async (t) => {
+    const root = makeVault(t, { 'capabilities/a': nodeText('A') });
+    loadVaultDocs(root);
+    const before = vaultDocCacheStats(root).freshPasses;
+    await withVaultWriteSnapshot(async () => loadVaultDocs(root));
+    await withVaultWriteSnapshot(async () => loadVaultDocs(root));
+    assert.equal(vaultDocCacheStats(root).freshPasses - before, 2);
+  });
+});
+
