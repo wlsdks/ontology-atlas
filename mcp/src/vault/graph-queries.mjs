@@ -239,12 +239,15 @@ function buildRefIndex(docs) {
   }
   for (const doc of docs) {
     const fmSlug = doc.frontmatter.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim() && !frontmatterSlugToFull.has(fmSlug)) {
-      frontmatterSlugToFull.set(fmSlug, doc.slug);
+    const alias = typeof fmSlug === 'string' ? fmSlug.normalize('NFC') : '';
+    if (alias.trim() && !frontmatterSlugToFull.has(alias)) {
+      frontmatterSlugToFull.set(alias, doc.slug);
     }
   }
-  function resolveCandidates(ref) {
-    if (typeof ref !== 'string') return [];
+  function resolveCandidates(raw) {
+    if (typeof raw !== 'string') return [];
+    // Slugs come from the file walk in NFC; a ref typed as NFD names the same document.
+    const ref = raw.normalize('NFC');
     if (slugs.has(ref)) return [ref];
     if (frontmatterSlugToFull.has(ref)) return [frontmatterSlugToFull.get(ref)];
     const tails = tailToFulls.get(ref);

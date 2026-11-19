@@ -769,8 +769,8 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   The chip starts one agent turn that reads the pages carrying the name and the vault's
   own kinds and domains, then calls `add_concept` once, citing those pages as
   `[[wiki/…]]` links in the node's body. The write reaches the ontology-write card like
-  any other; nothing touches the wiki pages, and `describes:` stays the person's to add
-  after review. People and organisations stay names in the wiki, linked by the pages
+  any other; nothing touches the wiki pages, and the turn sets no `describes:` (a page's
+  links to concepts are its writer's, spec §11.1). People and organisations stay names in the wiki, linked by the pages
   that mention them: the map is the code's ontology, and this is the one place the
   wiki flows into it, through the person. The brief carries what the script already found (the page
   and folder codes the Wiki list shows) and asks the agent not to repeat them, so the

@@ -7,8 +7,15 @@ import { join, relative } from 'node:path';
 
 import { COLORS } from '../../lib/colors.mjs';
 import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
-import { walkMd } from '../../lib/vault-files/walk-vault.mjs';
-import { WIKI_DIR, isWikiFurnitureSlug, validateWikiPage, validateWikiFolder } from '../../lib/mcp-bridge/wiki-schema.mjs';
+import { pathToSlug, walkMd } from '../../lib/vault-files/walk-vault.mjs';
+import { parseFrontmatter } from '../../lib/mcp-bridge/parse-frontmatter.mjs';
+import {
+  WIKI_DIR,
+  buildWikiNodeIndex,
+  isWikiFurnitureSlug,
+  validateWikiPage,
+  validateWikiFolder,
+} from '../../lib/mcp-bridge/wiki-schema.mjs';
 import {
   formatUnknownFlagError,
   parseVaultFlag,
@@ -27,7 +34,8 @@ function printUsage(stream = process.stderr) {
       '',
       `  Checks every page under ${WIKI_DIR}/ against the wiki page contract:`,
       '  no kind:, the seven required frontmatter fields, the five sections in order,',
-      '  and a citation on every bullet under ## Facts.',
+      '  a citation on every bullet under ## Facts, and a concept in this folder for',
+      '  every entry under describes:.',
       '',
       '  Exit 0  every page fits (a folder with no wiki pages also fits).',
       '  Exit 1  at least one page does not.',
@@ -72,9 +80,11 @@ export async function runWikiValidate(args) {
   let vaultRoot;
   let files;
   let knownSources;
+  let documents;
   try {
     vaultRoot = resolveVaultRoot(vault);
-    files = walkMd(vaultRoot).filter((file) => {
+    documents = walkMd(vaultRoot);
+    files = documents.filter((file) => {
       const rel = relative(vaultRoot, file);
       // The shipped template is skipped: its citations name `sources/<file>`, a
       // placeholder, so judging it would report a problem on the file that is the answer.
@@ -89,6 +99,7 @@ export async function runWikiValidate(args) {
     return 2;
   }
 
+  const nodes = buildWikiNodeIndex(listDocuments(vaultRoot, documents));
   const pages = [];
   let unreadable = 0;
   for (const file of files.sort()) {
@@ -110,7 +121,7 @@ export async function runWikiValidate(args) {
       });
       continue;
     }
-    const { ok, problems } = validateWikiPage(raw, { knownSources });
+    const { ok, problems } = validateWikiPage(raw, { knownSources, nodes });
     pages.push({ page, ok, problems, raw });
   }
 
@@ -174,6 +185,22 @@ export async function runWikiValidate(args) {
 
   if (unreadable > 0) return 2;
   return failing.length > 0 ? 1 : 0;
+}
+
+/**
+ * Every document's slug, `kind:` and `slug:` alias, which `describes:` entries resolve
+ * against. An unreadable file stays in the index with no kind: it still holds its slug.
+ */
+function listDocuments(vaultRoot, files) {
+  return files.map((file) => {
+    const slug = pathToSlug(vaultRoot, file);
+    try {
+      const { frontmatter } = parseFrontmatter(readFileSync(file, 'utf8'));
+      return { slug, kind: frontmatter.kind, alias: frontmatter.slug };
+    } catch {
+      return { slug };
+    }
+  });
 }
 
 /**

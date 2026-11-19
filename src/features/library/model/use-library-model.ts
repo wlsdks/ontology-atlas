@@ -11,6 +11,7 @@ import {
 import { nativeVaultFileHashResults } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from "../lib/questions/answer-revision";
 import { parseWikiLog, type WikiLogEntry } from "../lib/wiki/wiki-log";
+import { wikiNodeIndexOfDocs } from "../lib/wiki/judge-page-write";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
 import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/library/wiki-report.mjs";
 import { mergeWikiVerdict } from "./merge-wiki-verdict";
@@ -280,6 +281,9 @@ export function useLibraryModel({
     };
   }, [cacheBodies, enabled, fileHandles, pageInputs, rawByStamp]);
 
+  // The folder's concepts, so a `describes:` entry whose concept is gone is reported here as
+  // `wiki-validate` reports it.
+  const concepts = useMemo(() => wikiNodeIndexOfDocs(docs), [docs]);
   const { pageTexts, verdicts } = useMemo(() => {
     const pageTexts = new Map<string, string>();
     for (const { slug, stamp } of pageInputs) {
@@ -290,10 +294,10 @@ export function useLibraryModel({
     const folderByPath = new Map(
       validateWikiFolder(folderInput).map((entry) => [entry.path, entry.problems] as const),
     );
-    const knownSources = (sources ?? []).map((source) => source.path);
+    const knownSources = new Set((sources ?? []).map((source) => source.path));
     const verdicts = new Map<string, LibraryWikiVerdict>();
     for (const [slug, raw] of pageTexts) {
-      const { ok, problems } = validateWikiPage(raw, { knownSources });
+      const { ok, problems } = validateWikiPage(raw, { knownSources, nodes: concepts });
       verdicts.set(slug, mergeWikiVerdict({
         ok,
         firstProblem: problems[0]?.code ?? null,
@@ -303,9 +307,12 @@ export function useLibraryModel({
       }, folderByPath.get(`${slug}.md`) ?? []));
     }
     return { pageTexts, verdicts };
-  }, [pageInputs, rawByStamp, sources]);
+  }, [concepts, pageInputs, rawByStamp, sources]);
 
-  /* One aggregator decides both numbers, so the footer and `wiki-validate` never disagree. */
+  /*
+   * The pages are judged with the inputs `wiki-validate` passes (the folder's sources and its
+   * concepts), and one aggregator decides both numbers, so the footer and `wiki-validate` agree.
+   */
   const structural = useMemo(
     () =>
       aggregateWikiFindings({

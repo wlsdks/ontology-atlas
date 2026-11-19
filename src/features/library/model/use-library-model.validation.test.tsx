@@ -2,6 +2,11 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
+import {
+  buildWikiNodeIndex as buildNodesMcp,
+  validateWikiFolder as validateFolderMcp,
+  validateWikiPage as validatePageMcp,
+} from "../../../../mcp/src/library/wiki-schema.mjs";
 import { useLibraryModel } from "./use-library-model";
 
 type ModelInput = Parameters<typeof useLibraryModel>[0];
@@ -110,5 +115,26 @@ describe("Library validation follows the current folder", () => {
     await act(async () => { finish(page()); });
     expect(result.current.pageTexts.size).toBe(0);
     expect(result.current.verdicts.size).toBe(0);
+  });
+
+  it("reports a page whose described concept was deleted, as wiki-validate does", async () => {
+    const linked = page().replace("status: draft", "status: draft\ndescribes:\n  - capabilities/login");
+    const login = doc("capabilities/login", "---\nkind: capability\ntitle: Login\n---\nA person signs in.\n");
+    const props = input([["wiki/plan", linked]]);
+    const withConcept: ModelInput = { ...props, docs: [...props.docs, login] };
+    const { result, rerender } = renderHook(useLibraryModel, { initialProps: withConcept });
+    await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(true));
+
+    rerender(props);
+    await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(false));
+    // The CLI and validate_wiki run the MCP module over the same folder.
+    const nodes = buildNodesMcp(props.docs.map((entry) => ({ slug: entry.slug, kind: entry.frontmatter.kind })));
+    const cli = [
+      ...validatePageMcp(linked, { knownSources: new Set(["sources/plan.md"]), nodes }).problems,
+      ...validateFolderMcp([{ path: "wiki/plan.md", raw: linked }])[0]!.problems,
+    ].map((problem) => problem.code);
+    expect(result.current.verdicts.get("wiki/plan")?.problems.map((problem) => problem.code)).toEqual(cli);
+    expect(cli).toEqual(["describes-target-missing"]);
+    expect(result.current.structural.blockingPageCount).toBe(1);
   });
 });
