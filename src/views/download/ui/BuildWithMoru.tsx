@@ -14,18 +14,37 @@ import { GithubMark } from '@/shared/ui/marks/github-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import {
+  AGENT_BEATS,
   BUILD_STEPS,
   buildReducer,
+  codeNamedLeft,
   INITIAL_BUILD,
-  linkingRelation,
+  isWritten,
+  partnerOf,
+  relationsLeft,
   stepOf,
-  targetConcept,
+  targetConcepts,
   type BuildAction,
   type BuildPhase,
   type BuildState,
 } from '../lib/build-play';
 import { useInViewMotion } from '../lib/use-in-view-motion';
-import { BUILD_CHANGE, BUILD_CONCEPTS, BUILD_FILES, BUILD_RELATIONS, BUILD_REPO, CODE_NAMED, fileNameOf, filesOf, type BuildConceptId } from '../model/build-cast';
+import {
+  BUILD_CHANGE,
+  BUILD_CONCEPTS,
+  BUILD_FILE_COUNT,
+  BUILD_RELATIONS,
+  BUILD_REPO,
+  CODE_NAMED,
+  conceptOf,
+  fileNameOf,
+  loneEndOf,
+  LONE_CONCEPTS,
+  PERSON_RELATIONS,
+  dependsOnChange,
+  touchesChange,
+  type BuildConceptId,
+} from '../model/build-cast';
 import { BuildMoru, preloadBuildRows, type BuildGesture, type BuildLoop } from './BuildMoru';
 import { Burst, BuildStage, isFirstPress } from './BuildStage';
 import { SectionIntro } from './SectionIntro';
@@ -33,12 +52,12 @@ import { TypedLetters } from './TypedLetters';
 
 const SECTION = cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24');
 /**
- * One wait per agent beat (`AGENT_BEATS` + 1): the files leave the folder and are read where they
- * land, then each beat gathers them, writes a concept or draws the relation, and the last hands over.
+ * One wait per agent beat (`AGENT_BEATS` + 1): the card leaves, the agent reads, writes the project
+ * and each cluster, its relations, then Atlas's count is held long enough to read before handing over.
  */
-const BEAT_MS = [1300, 750, 750, 750, 900, 1300] as const;
-/** The third star: a first visit that reads every line lands near a minute; a brisk one well inside this. */
-const STAR_SECONDS = 45;
+const BEAT_MS = [500, 1400, 900, 1100, 1100, 1100, 1000, 1100, 1900] as const;
+/** The third star: a first visit that reads every line lands near a minute and a half; a brisk one inside this. */
+const STAR_SECONDS = 60;
 
 const LOOP: Record<BuildPhase, BuildLoop> = {
   closed: 'tail-wag',
@@ -56,8 +75,8 @@ const LOOP: Record<BuildPhase, BuildLoop> = {
 function gestureFor(before: BuildState, after: BuildState): BuildGesture | null {
   if (after.phase === 'done' && before.phase !== 'done') return 'success';
   if (after.misses > before.misses) return 'uncertain';
-  if (after.links > before.links) return 'hop';
-  if (after.renamed !== null && before.renamed === null) return 'clap';
+  if (after.links.length > before.links.length) return 'hop';
+  if (Object.keys(after.renamed).length > Object.keys(before.renamed).length) return 'clap';
   return null;
 }
 
@@ -126,16 +145,16 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
   };
 
   const nameOf = (concept: BuildConceptId) => {
-    if (concept !== CODE_NAMED.concept) return t(`names.${concept}`);
-    if (state.renamed === null) return CODE_NAMED.title;
-    return state.renamed === 0 ? t(`names.${concept}`) : t('altName');
+    const code = CODE_NAMED.find((entry) => entry.concept === concept);
+    const option = code ? state.renamed[code.concept] : 0;
+    if (code && option === undefined) return code.title;
+    return option === 1 && code ? t(`altNames.${code.concept}`) : t(`names.${concept}`);
   };
 
   const step = stepOf(state.phase);
   const listed = state.phase !== 'inspect' && state.phase !== 'done';
-  const relation = linkingRelation(state);
-  const missedTarget = targetConcept(state);
-  const line = missed && missedTarget ? t('moru.miss', { name: nameOf(missedTarget) }) : lineFor(state, relation, nameOf, t);
+  const missedTarget = targetConcepts(state)[0];
+  const line = missed && missedTarget ? t('moru.miss', { name: nameOf(missedTarget) }) : lineFor(state, nameOf, t);
   const play = motion === undefined ? (reduced ? 'still' : 'paused') : motion;
 
   return (
@@ -196,6 +215,7 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
               {state.phase === 'renaming' ? (
                 <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('moru.renameHint')}</p>
               ) : null}
+              {state.phase === 'building' ? <AgentLog built={state.built} /> : null}
               {state.phase === 'done' && result ? <Stars result={result} onRetry={() => act({ type: 'restart' })} /> : null}
             </div>
 
@@ -250,9 +270,9 @@ function Clock({ startedAt, stoppedAt }: { startedAt: number; stoppedAt: number 
 function Quests({ state, step }: { state: BuildState; step: number }) {
   const t = useTranslations('download.build');
   const counts: Partial<Record<(typeof BUILD_STEPS)[number], string>> = {
-    build: `${Math.min(state.phase === 'building' ? Math.max(0, state.built - 1) : state.phase === 'closed' ? 0 : BUILD_CONCEPTS.length, BUILD_CONCEPTS.length)}/${BUILD_CONCEPTS.length}`,
-    rename: `${state.renamed === null ? 0 : 1}/1`,
-    link: `${state.links}/1`,
+    build: `${BUILD_CONCEPTS.filter((concept) => isWritten(state, concept)).length}/${BUILD_CONCEPTS.length}`,
+    rename: `${CODE_NAMED.length - codeNamedLeft(state).length}/${CODE_NAMED.length}`,
+    link: `${state.links.length}/${PERSON_RELATIONS.length}`,
   };
   return (
     <ol aria-label={t('stepCount', { step: step + 1 })} className="hidden flex-col gap-1 @min-[60rem]/build:flex">
@@ -310,6 +330,35 @@ function Stars({ result, onRetry }: { result: { seconds: number; misses: number 
   );
 }
 
+/**
+ * The agent's side of the first map, as the app's conversation shows it: one row per tool call,
+ * the newest at the bottom, and last the count Atlas makes from the finished map.
+ */
+function AgentLog({ built }: { built: number }) {
+  const t = useTranslations('download.build');
+  const nameOf = (id: BuildConceptId) => t(`names.${id}`);
+  const cluster = (id: BuildConceptId) => BUILD_CONCEPTS.filter((concept) => concept.beat === conceptOf(id).beat);
+  const rows: [string, string][] = [
+    ['analyze_repo_structure', t('log.read', { count: BUILD_FILE_COUNT })],
+    ['add_concepts', nameOf('shop')],
+    ...(['shopping', 'orders', 'members'] as const).map((id): [string, string] => ['add_concepts', t('log.cluster', { name: nameOf(id), count: cluster(id).length - 1 })]),
+    ['add_concepts', LONE_CONCEPTS.map(nameOf).join(', ')],
+    ['add_relations', t('log.relations', { count: BUILD_RELATIONS.filter((rel) => rel.by === 'agent').length })],
+    ['Atlas', t('found', { names: CODE_NAMED.length, lone: LONE_CONCEPTS.length })],
+  ];
+  const shown = rows.slice(0, Math.min(built, AGENT_BEATS)).slice(-4);
+  return (
+    <ol aria-hidden data-testid="build-log" className="build-log mt-3 flex flex-col gap-1">
+      {shown.map(([tool, detail], index) => (
+        <li key={`${tool}:${detail}`} data-atlas={tool === 'Atlas' || undefined} data-latest={index === shown.length - 1 || undefined} className="build-log-row flex min-w-0 items-center gap-2 font-mono text-label leading-label">
+          <span className="build-log-tool shrink-0">{tool}</span>
+          <span className="min-w-0 truncate">{detail}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /** Moru's line, typed out one letter after another; a screen reader gets the whole line at once. */
 function TypedLine({ text }: { text: string }) {
   return (
@@ -327,17 +376,18 @@ function Actions({ state, handheld, act }: { state: BuildState; handheld: boolea
   const tPage = useTranslations('download');
   switch (state.phase) {
     case 'renaming':
+      if (state.renaming === null) return null;
       return (
         <>
           <Button data-testid="build-name-0" variant="outline" className="w-full justify-between gap-2" onClick={(event) => isFirstPress(event) && act({ type: 'rename', option: 0 })}>
-            <span className="shrink-0">{t(`names.${CODE_NAMED.concept}`)}</span>
+            <span className="shrink-0">{t(`names.${state.renaming}`)}</span>
             <span className="inline-flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
               <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-[color:var(--map-indigo-bright)]" />
               <span className="truncate">{t('suggested')}</span>
             </span>
           </Button>
           <Button data-testid="build-name-1" variant="outline" className="w-full justify-start" onClick={(event) => isFirstPress(event) && act({ type: 'rename', option: 1 })}>
-            {t('altName')}
+            {t(`altNames.${state.renaming}`)}
           </Button>
         </>
       );
@@ -380,16 +430,14 @@ function Actions({ state, handheld, act }: { state: BuildState; handheld: boolea
 
 function InspectCard({ nameOf }: { nameOf: (concept: BuildConceptId) => string }) {
   const t = useTranslations('download.build');
-  const linked = BUILD_RELATIONS.filter((rel) => rel.from === BUILD_CHANGE.concept || rel.to === BUILD_CHANGE.concept).map((rel) =>
-    nameOf(rel.from === BUILD_CHANGE.concept ? rel.to : rel.from),
-  );
+  const linked = BUILD_RELATIONS.filter(touchesChange).map((rel) => nameOf(rel.from === BUILD_CHANGE.concept ? rel.to : rel.from));
   return (
     <div data-testid="build-inspect" className="build-file-card rounded-card p-4">
       <p className="flex items-center gap-2 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-[color:var(--map-recent-change)]" />
         {nameOf(BUILD_CHANGE.concept)}
         <span className="text-label leading-label font-normal text-[color:var(--color-text-tertiary)]">
-          {t('files', { count: filesOf(BUILD_CHANGE.concept).length })}
+          {t('files', { count: conceptOf(BUILD_CHANGE.concept).files })}
         </span>
       </p>
       <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-body leading-body">
@@ -410,7 +458,8 @@ function FileCard({ nameOf }: { nameOf: (concept: BuildConceptId) => string }) {
     [null, '---'],
     ['title', nameOf(BUILD_CHANGE.concept)],
     ['kind', 'capability'],
-    ['path', BUILD_CONCEPTS.find((concept) => concept.id === BUILD_CHANGE.concept)!.folder],
+    ['domain', 'domains/orders'],
+    ['path', BUILD_CHANGE.file.slice(0, BUILD_CHANGE.file.lastIndexOf('/'))],
     ['dependencies', ''],
     ...depends.map((slug): [string | null, string] => [null, `  - capabilities/${slug}`]),
     [null, '---'],
@@ -435,25 +484,35 @@ function FileCard({ nameOf }: { nameOf: (concept: BuildConceptId) => string }) {
 
 type T = ReturnType<typeof useTranslations<'download.build'>>;
 
-function lineFor(state: BuildState, relation: ReturnType<typeof linkingRelation>, nameOf: (concept: BuildConceptId) => string, t: T): string {
+function lineFor(state: BuildState, nameOf: (concept: BuildConceptId) => string, t: T): string {
   switch (state.phase) {
     case 'closed':
       return t('moru.closed');
     case 'building':
-      return t('moru.building', { count: BUILD_FILES.length });
-    case 'rename':
-      return t('moru.rename', { name: CODE_NAMED.title });
+      return t('moru.building', { count: BUILD_FILE_COUNT });
+    case 'rename': {
+      const left = codeNamedLeft(state);
+      return left.length === CODE_NAMED.length
+        ? t('moru.rename', { first: left[0].title, second: left[1].title })
+        : t('moru.renameLast', { name: left[0].title });
+    }
     case 'renaming':
-      return t('moru.renaming');
-    case 'linking':
-      if (!relation) return '';
-      return state.pick === null
-        ? t('moru.linkStart', { from: nameOf(relation.from), to: nameOf(relation.to), reason: t(`relations.${relation.label}`) })
-        : t('moru.linkEnd', { to: nameOf(relation.to) });
+      return t('moru.renaming', { name: CODE_NAMED.find((entry) => entry.concept === state.renaming)?.title ?? '' });
+    case 'linking': {
+      const partner = partnerOf(state);
+      if (partner && state.pick) {
+        const rel = relationsLeft(state).find((left) => left.from === state.pick || left.to === state.pick)!;
+        return t('moru.linkEnd', { to: nameOf(partner), from: nameOf(rel.from), reason: t(`relations.${rel.label}`) });
+      }
+      const left = relationsLeft(state);
+      return left.length === PERSON_RELATIONS.length
+        ? t('moru.linkStart', { first: nameOf(loneEndOf(left[0])), second: nameOf(loneEndOf(left[1])) })
+        : t('moru.linkLast', { name: nameOf(loneEndOf(left[0])) });
+    }
     case 'commit':
       return t('moru.commit');
     case 'impact':
-      return t('moru.impact', { name: nameOf(BUILD_CHANGE.concept) });
+      return t('moru.impact', { name: nameOf(BUILD_CHANGE.concept), linked: nameOf(BUILD_RELATIONS.find(dependsOnChange)!.from) });
     case 'inspect':
       return t('moru.inspect');
     case 'done':

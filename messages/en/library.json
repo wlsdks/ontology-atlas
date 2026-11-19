@@ -173,6 +173,10 @@
       "checking": {
         "label": "checking",
         "hint": "Reading this file to see whether its wiki page still matches."
+      },
+      "unreadable": {
+        "label": "can't read",
+        "hint": "Atlas could not open this file to check it, so it is not counted. Reconnect its disk or check the file's permissions."
       }
     },
     "added": "{count, plural, one {# document added to sources/} other {# documents added to sources/}}",
@@ -189,7 +193,9 @@
     "importTooltip": "Choose a service, connect it, then choose which documents to bring into this folder",
     "importedToPlanning": "The documents are in your planning folder",
     "openPlanning": "Open in Planning",
-    "pagesNeedReview": "{count, plural, one {# existing page needs rechecking} other {# existing pages need rechecking}}"
+    "pagesNeedReview": "{count, plural, one {# existing page needs rechecking} other {# existing pages need rechecking}}",
+    "filterShow": "Show only sources marked \"{label}\"",
+    "filterAll": "Show all {count, number}"
   },
   "wiki": {
     "listAria": "Wiki pages in this folder",
@@ -537,7 +543,8 @@
       "done": "done",
       "next": "next",
       "waiting": "waiting",
-      "checking": "checking"
+      "checking": "checking",
+      "unreadable": "can't read"
     },
     "none": "None",
     "formatEntry": "{format} {count, number}",
@@ -557,7 +564,8 @@
       "coveredLine": "{compiled, number} of {total, number} sources have a wiki page",
       "coveredChecking": "{compiled, number} of {total, number} have a wiki page, {checking, number} still being checked",
       "coveredPartial": "{compiled, number} of {total, number} have a wiki page, {partial, number} read in part",
-      "coveredStale": "{compiled, number} of {total, number} have a wiki page, {stale, number} changed since"
+      "coveredStale": "{compiled, number} of {total, number} have a wiki page, {stale, number} changed since",
+      "coveredUnreadable": "{compiled, number} of {total, number} have a wiki page, {unreadable, number} can't be read"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} on {host}",
@@ -580,7 +588,8 @@
     "statusReady": "Every source has a wiki page",
     "statusUnlinked": "{count, plural, one {# dangling link} other {# dangling links}}",
     "statusChecking": "{count, plural, one {# being checked} other {# being checked}}",
-    "statusPartial": "{count, plural, one {# read in part} other {# read in part}}"
+    "statusPartial": "{count, plural, one {# read in part} other {# read in part}}",
+    "statusUnreadable": "{count, number} can't be read"
   },
   "localCompile": {
     "title": "Ready to write",
@@ -947,5 +956,20 @@
       "valueMinutes": "{count, plural, one {every minute} other {every # minutes}}",
       "valueHours": "{count, plural, one {every hour} other {every # hours}}"
     }
+  },
+  "progress": {
+    "aria": "Wiki page progress for sources",
+    "percent": "{percent, number}%",
+    "underOne": "under 1%",
+    "first": "No source has a wiki page yet",
+    "today": "+{count, number} today",
+    "chartAria": "Sources with a wiki page, by the date each page records",
+    "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
+    "dateBasis": "Each point uses the date its wiki page records.",
+    "undated": "{count, plural, one {# has no date} other {# have no date}}",
+    "continue": "{count, plural, =1 {Write a wiki page for the last source} other {Write wiki pages for the next #}}",
+    "batchRest": "{count, number} more wait after these.",
+    "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
+    "allDone": "Every source has a wiki page"
   }
 }

@@ -96,6 +96,15 @@ describe("the source list says its common state once", () => {
     expect(screen.queryByTestId("library-source-state-folded")).toBeNull();
   });
 
+  it("counts unreadable files in the head, so its counts sum to every source", () => {
+    const sources = [source(0, "compiled"), source(1, "unreadable"), source(2, "checking")];
+    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
+    expect(screen.getByTestId("library-source-states-unreadable")).toHaveTextContent("can't read 1");
+    const counted = ["compiled", "unreadable", "checking"]
+      .map((state) => Number(screen.getByTestId(`library-source-states-${state}`).textContent?.match(/\d+$/)?.[0]));
+    expect(counted.reduce((sum, count) => sum + count, 0)).toBe(sources.length);
+  });
+
   it("compiled never folds: its check is already the quiet mark", () => {
     const sources = Array.from({ length: 14 }, (_, i) => source(i, "compiled"));
     mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");

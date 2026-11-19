@@ -173,6 +173,10 @@
       "checking": {
         "label": "확인 중",
         "hint": "위키 문서가 지금 파일과 맞는지 확인하려고 읽는 중이에요."
+      },
+      "unreadable": {
+        "label": "읽을 수 없음",
+        "hint": "Atlas가 이 파일을 열어 확인하지 못해 세지 않았어요. 디스크를 다시 연결하거나 파일 권한을 확인하세요."
       }
     },
     "added": "문서 {count, number}개를 sources/에 넣었어요",
@@ -189,7 +193,9 @@
     "importTooltip": "서비스를 고르고 연결한 뒤 이 폴더로 가져올 문서를 정해요",
     "importedToPlanning": "가져온 문서가 기획 폴더에 들어갔어요",
     "openPlanning": "기획에서 열기",
-    "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요"
+    "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요",
+    "filterShow": "\"{label}\" 원문만 보기",
+    "filterAll": "전체 {count, number}개 보기"
   },
   "wiki": {
     "listAria": "이 폴더의 위키 문서",
@@ -537,7 +543,8 @@
       "done": "완료",
       "next": "다음",
       "waiting": "대기",
-      "checking": "확인 중"
+      "checking": "확인 중",
+      "unreadable": "읽을 수 없음"
     },
     "none": "없음",
     "formatEntry": "{format} {count, number}",
@@ -557,7 +564,8 @@
       "coveredLine": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
       "coveredChecking": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
       "coveredPartial": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
-      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐"
+      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐",
+      "coveredUnreadable": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} · {host}",
@@ -580,7 +588,8 @@
     "statusReady": "모든 원문에 위키 문서가 있어요",
     "statusUnlinked": "끊긴 링크 {count, number}개",
     "statusChecking": "확인 중 {count, number}개",
-    "statusPartial": "일부만 읽음 {count, number}개"
+    "statusPartial": "일부만 읽음 {count, number}개",
+    "statusUnreadable": "읽을 수 없음 {count, number}개"
   },
   "localCompile": {
     "title": "쓸 준비가 됐어요",
@@ -947,5 +956,20 @@
       "valueMinutes": "{count, number}분마다",
       "valueHours": "{count, number}시간마다"
     }
+  },
+  "progress": {
+    "aria": "원문 위키 문서 진행률",
+    "percent": "{percent, number}%",
+    "underOne": "1% 미만",
+    "first": "아직 위키 문서가 있는 원문이 없어요",
+    "today": "오늘 +{count, number}",
+    "chartAria": "위키 문서가 있는 원문 수, 각 문서에 적힌 날짜 기준",
+    "point": "{date}: 지금 원문 {total, number}개 중 {count, number}개 ({percent, number}%)",
+    "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
+    "undated": "{count, number}개는 날짜 없음",
+    "continue": "{count, plural, =1 {마지막 원문 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
+    "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
+    "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
+    "allDone": "모든 원문에 위키 문서가 있어요"
   }
 }

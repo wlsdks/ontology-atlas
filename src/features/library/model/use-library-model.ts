@@ -8,7 +8,7 @@ import {
   type VaultDoc,
   type VaultSourceFile,
 } from "@/entities/docs-vault";
-import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { nativeVaultFileHashResults } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from "../lib/questions/answer-revision";
 import { parseWikiLog, type WikiLogEntry } from "../lib/wiki/wiki-log";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
@@ -53,10 +53,19 @@ export interface LibraryUiModel extends LibraryModel {
 
 const EMPTY_SOURCES: VaultSourceFile[] = [];
 
+/** Paths per native call, so the checking count can move while a large folder is hashed. */
+export const SOURCE_HASH_CHUNK = 256;
+
+/** The longest a measured hash waits before the model shows it; well inside the 2 s the spec allows. */
+export const SOURCE_HASH_PUBLISH_MS = 1000;
+
+/** The cached value of a file that could not be opened; kept until its stamp (path and mtime) changes. */
+const UNREADABLE = "";
+
+const canHashInBrowser = () => typeof crypto !== "undefined" && Boolean(crypto.subtle);
+
+/** `null` when the file could not be read. */
 async function hashInBrowser(handle: FileSystemFileHandle): Promise<string | null> {
-  // `crypto.subtle` needs a secure context. A browser that cannot hash reports the row
-  // as unchecked rather than guessing that it is fine.
-  if (typeof crypto === "undefined" || !crypto.subtle) return null;
   try {
     const file = await handle.getFile();
     const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
@@ -96,13 +105,19 @@ export function useLibraryModel({
   const [logEntries, setLogEntries] = useState<WikiLogEntry[]>([]);
   const logStamp = useRef<string | null>(null);
 
-  const hashes = useMemo(() => {
-    const out = new Map<string, string>();
+  const [hashRound, setHashRound] = useState(0);
+  const hashing = useRef(false);
+  const hashGeneration = useRef(0);
+
+  const { hashes, unreadable } = useMemo(() => {
+    const hashes = new Map<string, string>();
+    const unreadable = new Set<string>();
     for (const source of sources ?? []) {
       const hash = stampedHashes.get(`${vaultScope}\u0000${source.path}@${source.mtime}`);
-      if (hash) out.set(source.path, hash);
+      if (hash === UNREADABLE) unreadable.add(source.path);
+      else if (hash) hashes.set(source.path, hash);
     }
-    return out;
+    return { hashes, unreadable };
   }, [sources, stampedHashes, vaultScope]);
 
   const model = useMemo(
@@ -111,8 +126,9 @@ export function useLibraryModel({
         sources: enabled ? (sources ?? EMPTY_SOURCES) : EMPTY_SOURCES,
         docs: enabled ? docs : [],
         hashes,
+        unreadable,
       }),
-    [docs, enabled, hashes, sources],
+    [docs, enabled, hashes, sources, unreadable],
   );
 
   const wanted = useMemo(() => {
@@ -126,39 +142,70 @@ export function useLibraryModel({
     }
     return [...new Set([
       ...model.pathsNeedingHash,
-      ...model.sources.filter((source) => observed.has(source.path) && !hashes.has(source.path)).map((source) => source.path),
+      ...model.sources.filter((source) =>
+        observed.has(source.path) && !hashes.has(source.path) && !unreadable.has(source.path),
+      ).map((source) => source.path),
     ])];
-  }, [docs, hashes, model.pathsNeedingHash, model.sources]);
+  }, [docs, hashes, model.pathsNeedingHash, model.sources, unreadable]);
   const wantedKey = wanted.join("\u0000");
 
+  // A run for a folder that is no longer open stops at its next chunk.
+  useEffect(() => () => {
+    hashGeneration.current += 1;
+  }, [enabled, vaultRootPath, vaultScope]);
+
+  /*
+   * One run at a time, chunk by chunk. Results are published at most once per interval, because
+   * each publish rebuilds the model (about 0.3 s at 50,000 sources). A result is stamped with the
+   * path and mtime it was read under, so it stays true after a rerender; the stamped cache drops it
+   * if that file has since changed. When a run ends, `hashRound` lets the next one pick up whatever
+   * became wanted meanwhile.
+   */
   useEffect(() => {
-    if (!enabled || wanted.length === 0) return;
-    let cancelled = false;
+    if (!enabled || hashing.current || wanted.length === 0) return;
+    const queue = wanted;
+    const stamps = new Map((sources ?? []).map((source) => [source.path, source.mtime] as const));
+    const generation = hashGeneration.current;
+    const stamp = (path: string) => `${vaultScope}\u0000${path}@${stamps.get(path) ?? 0}`;
+    hashing.current = true;
     void (async () => {
-      const measured = new Map<string, string>();
-      const native = vaultRootPath ? await nativeVaultFileHashes(vaultRootPath, wanted) : null;
-      if (native) {
-        for (const [path, hash] of native) measured.set(path, hash);
-      } else {
-        for (const path of wanted) {
-          const handle = sourceHandles.get(path);
-          if (!handle) continue;
-          const hash = await hashInBrowser(handle);
-          if (hash) measured.set(path, hash);
+      let unpublished = new Map<string, string>();
+      let publishedAt = performance.now();
+      let askAgain = false;
+      try {
+        for (let at = 0; at < queue.length; at += SOURCE_HASH_CHUNK) {
+          if (generation !== hashGeneration.current) break;
+          const chunk = queue.slice(at, at + SOURCE_HASH_CHUNK);
+          let measured = vaultRootPath ? await nativeVaultFileHashResults(vaultRootPath, chunk) : null;
+          if (!measured) {
+            // A browser without `crypto.subtle` cannot judge any file, so it marks none unreadable.
+            if (!canHashInBrowser()) return;
+            measured = new Map();
+            for (const path of chunk) {
+              const handle = sourceHandles.get(path);
+              measured.set(path, handle ? await hashInBrowser(handle) : null);
+            }
+          }
+          // A path the call did not answer counts as unreadable, so it is not asked for forever.
+          for (const path of chunk) unpublished.set(stamp(path), measured.get(path) ?? UNREADABLE);
+          if (performance.now() - publishedAt >= SOURCE_HASH_PUBLISH_MS) {
+            cacheHashes(unpublished);
+            unpublished = new Map();
+            publishedAt = performance.now();
+          }
         }
+        askAgain = true;
+      } catch {
+        // A failed call leaves the rest checking; a later change of the folder asks again.
+      } finally {
+        hashing.current = false;
+        if (unpublished.size > 0) cacheHashes(unpublished);
+        if (askAgain) setHashRound((round) => round + 1);
       }
-      if (cancelled || measured.size === 0) return;
-      const stamps = new Map((sources ?? []).map((source) => [source.path, source.mtime] as const));
-      cacheHashes(new Map([...measured].map(([path, hash]) =>
-        [`${vaultScope}\u0000${path}@${stamps.get(path) ?? 0}`, hash],
-      )));
     })();
-    return () => {
-      cancelled = true;
-    };
     // `wantedKey` stands for `wanted`: a new array with the same paths is the same work.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cacheHashes, enabled, sourceHandles, sources, vaultRootPath, vaultScope, wantedKey]);
+  }, [cacheHashes, enabled, hashRound, sourceHandles, sources, vaultRootPath, vaultScope, wantedKey]);
 
   const logDoc = docs.find((doc) => doc.slug === "wiki/_log") ?? null;
   const logMtime = logDoc?.mtime ?? null;

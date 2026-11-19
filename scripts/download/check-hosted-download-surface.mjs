@@ -263,7 +263,7 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // with `\n` (the headline) never matches, so the headline is not a needle. One needle per section,
     // so a section dropping out of a deployment is caught.
     downloadCopy.eyebrow,
-    downloadCopy.loop?.title,
+    downloadCopy.build?.title,
     downloadCopy.screens.title,
     downloadCopy.start?.title,
     // The honesty facts: the trust line carries the Apple malware check (notarisation), and
