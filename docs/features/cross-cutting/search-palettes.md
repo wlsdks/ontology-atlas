@@ -28,8 +28,12 @@ many documents it searches inside. The Library's wiki list asks the same index, 
 is found by its text there too, and so is a Markdown file under `sources/`; the Library's
 source search reads only the other formats (PDF, CSV, DOCX and the like), so no Markdown
 file is searched twice. On the web a Markdown source matches by its name. Settings › Privacy · data, "Stored on this computer",
-says the index holds each document's words with their positions, so its text can be read
-back by anyone who can read the account's cache folder; it shows the open folder's index
+says the index holds file paths and modified times, each document's words with their
+positions, so its text can be read back by anyone who can read the account's cache folder,
+and each document's frontmatter, title, headings, excerpt, link text and the short passage
+around each link, which let a folder
+opened before open without reading every file again; it says all of it is rebuilt from
+the folder's files. It shows the open folder's index
 size, deletes that index, and turns indexing off (off leaves no index file). A folder's
 index is also deleted when the folder is taken off the folder list, or at launch when the
 folder is gone or was left unopened for fourteen days; an index being built or that cannot
