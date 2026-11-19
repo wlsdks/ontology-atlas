@@ -1113,6 +1113,10 @@
 
 .build-start {
   border-color: var(--map-indigo-bright);
+}
+
+/* The glow yields to the button's focus ring, which is also a box-shadow. */
+.build-start:not(:focus-visible) {
   box-shadow: 0 0 0 4px var(--color-indigo-a14);
 }
 
