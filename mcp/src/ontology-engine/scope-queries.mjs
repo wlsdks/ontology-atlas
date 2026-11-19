@@ -1,6 +1,7 @@
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 import { refMatchesOntologyAtlasIgnore } from '../vault/ontology-atlas-ignore.mjs';
-import { extractUncertaintyReads, orderUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
+import { orderUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
+import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../vault/doc-facts.mjs';
 import {
   edgeSortKey,
   formatPathEdge,
@@ -448,7 +449,9 @@ export function createScopeQueries({
           .map(({ next }) => nodeBySlug.get(next))
           .find((parent) => parent?.kind === node.kind);
         const doc = sourceDocFor(node.slug);
-        const starterBody = doc ? bodyIsStarterTemplate(node.kind, node.title, doc.body) : false;
+        const starterBody = doc
+          ? docBodyAnswer(doc, `starter\n${node.kind}\n${node.title}`, (body) => bodyIsStarterTemplate(node.kind, node.title, body))
+          : false;
         return { node, sameKindParent, starterBody };
       })
       .filter((row) => row.sameKindParent || row.starterBody)
@@ -774,19 +777,18 @@ export function createScopeQueries({
   function nextReadCandidates(limit) {
     const docsWithBodies = nodes
       .map((node) => ({ node, doc: sourceDocFor(node.slug) }))
-      .filter((entry) => typeof entry.doc?.body === 'string');
+      .filter((entry) => docHasBody(entry.doc));
     if (docsWithBodies.length === 0) {
       return { total: 0, limited: false, rows: [], reason: 'no_bodies' };
     }
     const rows = [];
     for (const { node, doc } of docsWithBodies) {
       rows.push(
-        ...extractUncertaintyReads({
+        ...docUncertaintyReads(doc, {
           slug: node.slug,
           kind: node.kind,
           title: node.title,
           path: typeof node.path === 'string' ? node.path : null,
-          body: doc.body,
         }),
       );
     }

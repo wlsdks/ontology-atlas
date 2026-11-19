@@ -366,7 +366,8 @@ describe('a stamp that cannot show an edit (FAT/exFAT)', () => {
       freezeStampOf(t, path);
       await served(root);
       writeFileSync(path, readFileSync(path, 'utf8').replaceAll('AAAA', 'BBBB'));
-      assert.equal((await served(root)).find((doc) => doc.raw.includes('AAAA'))?.frontmatter.title, 'AAAA');
+      // The stale parse is the cached frontmatter; the cache holds no text to show.
+      assert.ok((await served(root)).some((doc) => doc.frontmatter.title === 'AAAA'));
       assert.equal(readDoc(root, typedPath).frontmatter.title, 'BBBB');
       assert.ok((await served(root)).every((doc) => !doc.raw.includes('AAAA')));
     });
