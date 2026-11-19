@@ -9,7 +9,7 @@
     "save": "저장",
     "cancel": "취소",
     "delete": "삭제",
-    "deleteTitle": "“{title}”을(를) 삭제할까요?",
+    "deleteTitle": "“{title}” 개념을 삭제할까요?",
     "deleteReferrers": "{count, plural, other {아직 문서 #개가 이 개념을 가리켜요. 그 줄은 아무것도 가리키지 않게 돼요.}}",
     "deleteNoReferrers": "이 개념을 가리키는 다른 문서는 없어요.",
     "deleteMore": "외 {count}개",

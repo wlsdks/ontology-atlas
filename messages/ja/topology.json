@@ -167,7 +167,7 @@
     "similarExists": "同じ種類の「{name}」がすでにあります。",
     "openSimilar": "開く",
     "createAnyway": "それでも作成",
-    "keysHint": "Enter で作成します。⌘/Ctrl+Enter は作成して、次のためにこのカードを開いたままにします。",
+    "keysHint": "Enterで作成します。⌘/Ctrl+Enterは作成して、次のためにこのカードを開いたままにします。",
     "toastCreated": "「{name}」を作成しました"
   },
   "explanationEdit": {
@@ -468,7 +468,7 @@
     "undoFailed": "元に戻せませんでした。ファイルは変わっていません。"
   },
   "conceptEdit": {
-    "renamed": "名前を変更しました: 「{from}」→「{to}」",
+    "renamed": "名前を変更しました：「{from}」→「{to}」",
     "described": "「{name}」の説明を保存しました",
     "deleted": "「{name}」を削除しました",
     "deleteConflict": "削除していません。先にディスク上でファイルが変わりました。変更を確認してからやり直してください。",

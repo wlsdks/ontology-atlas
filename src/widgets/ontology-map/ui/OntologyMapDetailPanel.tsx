@@ -662,7 +662,14 @@ function DeleteConfirm({
         <Button variant="ghost" size="sm" onClick={onDone} disabled={deleting} autoFocus>
           {t("cancel")}
         </Button>
-        <Button variant="danger" size="sm" onClick={() => void confirm()} disabled={deleting} data-testid="map-detail-panel-delete-confirm-button">
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => void confirm()}
+          disabled={deleting}
+          data-confirm-step
+          data-testid="map-detail-panel-delete-confirm-button"
+        >
           {t("deleteConfirm")}
         </Button>
       </div>

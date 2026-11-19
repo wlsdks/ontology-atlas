@@ -29,16 +29,16 @@
   "listHeading": "つながり",
   "listEmpty": "まだつながりはありません。",
   "outgoing": {
-    "dependsOn": "依存先: {name}",
-    "relates": "関連: {name}",
-    "contains": "包含: {name}",
-    "isA": "上位概念: {name}"
+    "dependsOn": "依存先：{name}",
+    "relates": "関連：{name}",
+    "contains": "包含：{name}",
+    "isA": "上位概念：{name}"
   },
   "incoming": {
-    "dependsOn": "この概念に依存: {name}",
-    "relates": "この概念と関連: {name}",
-    "contains": "この概念を包含: {name}",
-    "isA": "この概念の下位: {name}"
+    "dependsOn": "この概念に依存：{name}",
+    "relates": "この概念と関連：{name}",
+    "contains": "この概念を包含：{name}",
+    "isA": "この概念の下位：{name}"
   },
   "edit": "編集",
   "add": "つながりを追加",
@@ -52,12 +52,12 @@
     "element": "要素"
   },
   "whyRequired": "依存する理由",
-  "whyDependsHint": "{target} が変わると {source} で何が壊れるかを書いてください。",
+  "whyDependsHint": "{target}が変わると{source}で何が壊れるかを書いてください。",
   "thatOne": "つなぐ概念",
-  "keysHint": "Enter で保存します。",
+  "keysHint": "Enterで保存します。",
   "written": {
-    "added": "つながりを追加しました: {source} → {target}",
-    "changed": "つながりを変更しました: {source} → {target}",
-    "removed": "つながりを削除しました: {source} → {target}"
+    "added": "つながりを追加しました：{source} → {target}",
+    "changed": "つながりを変更しました：{source} → {target}",
+    "removed": "つながりを削除しました：{source} → {target}"
   }
 }

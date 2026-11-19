@@ -188,9 +188,10 @@
                                 ? getComputedStyle(topologyMapSurface)
                                 : null;
                               const topologyCreateNodePanel = document.querySelector('[data-testid="topology-create-node-panel"]');
-                              const topologyCreateNodeBackdrop = document.querySelector('[data-testid="topology-create-node-backdrop"]');
+                              // The create card sits beside the map with no scrim, so there is no backdrop to measure.
+                              const topologyCreateNodeBackdrop = null;
                               const topologyCreateNodeTitleInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-title"]');
-                              const topologyCreateNodeDomainInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-domain"]');
+                              const topologyCreateNodeDomainInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-parent"]');
                               const topologyCreateNodeKindSelect = topologyCreateNodePanel?.querySelector('[data-testid="create-node-kind"]');
                               const topologyCreateNodeSubmit = topologyCreateNodePanel?.querySelector('[data-testid="create-node-submit"]');
                               const topologyCreateNodeActiveElement = document.activeElement;
@@ -253,9 +254,8 @@
                                 .map((overlay) => overlay.testId || overlay.role || "interactive-overlay");
                               const topologyBlockingComposerOverlayContract =
                                 topologyCreateNodePanel
-                                  ? topologyInteractiveOverlayNames.length === 1 &&
-                                    topologyInteractiveOverlayNames[0] === "topology-create-node-backdrop"
-                                    ? "exclusive-blocking-composer"
+                                  ? topologyInteractiveOverlayNames.length === 0
+                                    ? "beside-map-composer"
                                     : "stacked-interactive-overlays"
                                   : topologyInteractiveOverlayNames.length <= 1
                                     ? "single-interactive-overlay"
