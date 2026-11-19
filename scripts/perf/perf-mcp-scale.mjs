@@ -6,8 +6,8 @@
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
 //   --check: at 50,000 files and both flows unless given, gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
 //     placed): exit 1 when a second call exceeds --max-cpu-ms (600) or, on macOS, the physical
-//     footprint after 20 calls exceeds --max-footprint-mb (190) or its peak --max-peak-footprint-mb
-//     (440): the most measured on either flow (166 and 384 MB) with about 15% added, so a
+//     footprint after 20 calls exceeds --max-footprint-mb (185) or its peak --max-peak-footprint-mb
+//     (470): the most two runs measured on either flow (159 and 410 MB) with about 15% added, so a
 //     regression of a few dozen MB fails. The footprint is what Activity Monitor shows and what the user pays. RSS is printed,
 //     never gated: on macOS it keeps counting freed pages the allocator holds for reuse, and
 //     elsewhere the footprint is not read, so memory is not gated there. The source server is
@@ -40,8 +40,8 @@ const server = explicitServer ? resolve(explicitServer) : check ? builtBinary() 
 const isScript = (path) => /\.(?:c|m)?js$/.test(path);
 const baseDir = resolve(flag('dir', join(tmpdir(), 'atlas-mcp-scale')));
 const maxCpuMs = Number(flag('max-cpu-ms', '600'));
-const maxFootprintMb = Number(flag('max-footprint-mb', '190'));
-const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '440'));
+const maxFootprintMb = Number(flag('max-footprint-mb', '185'));
+const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '470'));
 const TOTAL_CALLS = 20;
 const SHAPES = { a: 'all', b: 'key' };
 const tool = flag('tool', null);
