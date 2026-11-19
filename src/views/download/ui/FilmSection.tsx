@@ -12,9 +12,9 @@ import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, 
 import { createFilmClock } from '../lib/film-clock';
 import { clamp01, easeInOut, easeOut, lightSprite } from '../lib/film-kit';
 import { layoutFilmMap, type FilmCopy, type FilmMapLayout, type FilmMarkTokens, type LabelSegment } from '../lib/film-map-layout';
-import { layoutOpen } from '../lib/film-open';
-import { pickFilmConcept, readFilmVault } from '../lib/film-vault';
-import { layoutWall } from '../lib/film-wall';
+import { layoutOpen, type OpenLayout } from '../lib/film-open';
+import { pickFilmConcept, readFilmVault, type FilmVault } from '../lib/film-vault';
+import { layoutWall, type WallLayout } from '../lib/film-wall';
 import type { Rect } from '../lib/film-geometry';
 import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
@@ -98,6 +98,19 @@ function readMarkTokens(): FilmMarkTokens {
   };
 }
 
+type LaidOut = {
+  key: string;
+  vault: FilmVault;
+  pick: string | null;
+  locale: string;
+  copy: FilmCopy;
+  map: FilmMapLayout;
+  wall: WallLayout;
+  open: OpenLayout | null;
+};
+
+const rectKey = (r: Rect) => `${Math.round(r.l)},${Math.round(r.t)},${Math.round(r.r)},${Math.round(r.b)}`;
+
 /** A text's box in stage pixels: its line box, not its element's full width. */
 function textRect(el: Element, stage: DOMRect): Rect {
   const range = document.createRange();
@@ -154,6 +167,8 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
   const bar = useRef<HTMLDivElement>(null);
   const seek = useRef<(act: number) => void>(() => {});
+  /* The film's layout searches hundreds of placements; it outlives the effect, which runs again once the film starts. */
+  const laid = useRef<LaidOut | null>(null);
   const [film, setFilm] = useState(false);
 
   useEffect(() => {
@@ -185,6 +200,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       return w;
     };
     let scene: FilmScene | null = null;
+    let sceneFrom: LaidOut | null = null;
     let size = { w: 0, h: 0, dpr: 1 };
     let stopWarm = () => {};
     let shown = film ? 0 : FILM_MS;
@@ -235,12 +251,8 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       const w = el.clientWidth;
       const h = el.clientHeight;
       if (w === 0 || h === 0) return;
-      widths.clear();
       /* The backing store stays under six million pixels, so a large screen draws as fast as a laptop. */
       const dpr = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(6e6 / Math.max(1, w * h)));
-      el.width = Math.round(w * dpr);
-      el.height = Math.round(h * dpr);
-      size = { w, h, dpr };
       const box = host.getBoundingClientRect();
       const title = column.current ? column.current.getBoundingClientRect() : null;
       const titleRect: Rect = title
@@ -258,6 +270,29 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       if (parts.length) {
         caption = parts.reduce((a, b) => ({ l: Math.min(a.l, b.l), t: Math.min(a.t, b.t), r: Math.max(a.r, b.r), b: Math.max(a.b, b.b) }));
       }
+      /* A resize, a font arriving or a new graph lays the map out again; anything else repaints the layout it has. */
+      const key = [w, h, dpr, document.fonts?.status ?? '', rectKey(titleRect), rectKey(caption)].join('|');
+      const kept = laid.current;
+      const same = kept !== null && kept.key === key && kept.vault === vault && kept.pick === pick && kept.locale === locale && kept.copy === copy;
+      if (same && sceneFrom === kept) return;
+      el.width = Math.round(w * dpr);
+      el.height = Math.round(h * dpr);
+      size = { w, h, dpr };
+      const next = same ? kept : layOut(w, h, titleRect, caption, key);
+      laid.current = next;
+      sceneFrom = next;
+      scene = buildScene(vault, next.map, next.wall, next.open, inks, new TextStamps(dpr), sprites, { sink: marks.sink, mono });
+      probe?.layout(scene);
+      stopWarm();
+      if (film) {
+        const warmed = scene;
+        stopWarm = warmFilm((scratch, T) => paintFilm(scratch, warmed, T, w, h));
+      }
+      paint();
+    };
+
+    const layOut = (w: number, h: number, titleRect: Rect, caption: Rect, key: string): LaidOut => {
+      widths.clear();
       const map: FilmMapLayout = layoutFilmMap({ vault, pick, w, h, locale, title: titleRect, caption, measure, sans, mono, tokens: marks, copy });
       const wall = layoutWall({
         vault,
@@ -272,14 +307,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
         mono,
       });
       const open = map.pick ? layoutOpen({ vault, pick: map.pick, map, locale, columnLeft: titleRect.l, measure, sans, mono }) : null;
-      scene = buildScene(vault, map, wall, open, inks, new TextStamps(dpr), sprites, { sink: marks.sink, mono });
-      probe?.layout(scene);
-      stopWarm();
-      if (film) {
-        const warmed = scene;
-        stopWarm = warmFilm((scratch, T) => paintFilm(scratch, warmed, T, w, h));
-      }
-      paint();
+      return { key, vault, pick, locale, copy, map, wall, open };
     };
 
     if (new URLSearchParams(window.location.search).has('e2e')) {
