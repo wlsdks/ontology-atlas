@@ -201,7 +201,7 @@ function statOrNull(filePath) {
 }
 
 /**
- * One file however its path is spelled: a slug resolves to NFC (`결제`) or to the
+ * One file however its path is spelled: a slug resolves to NFC (composed Hangul) or to the
  * case the agent typed, while the walk returns the name as stored (NFD on many
  * macOS volumes, any case on a case-insensitive one).
  */
