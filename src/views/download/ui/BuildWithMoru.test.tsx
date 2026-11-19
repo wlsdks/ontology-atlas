@@ -71,7 +71,7 @@ describe('BuildWithMoru', () => {
     const file = screen.getByTestId('build-file');
     expect(file).toHaveTextContent('payment.md');
     expect(file).toHaveTextContent('path: src/payment');
-    expect(file).toHaveTextContent('- capabilities/refund');
+    expect(file).toHaveTextContent('- capabilities/login');
     expect(screen.getByTestId('build-try-browser')).toHaveAttribute('href', '/topology');
     expect(screen.getByTestId('build-result')).toHaveAttribute('data-stars', '3');
 

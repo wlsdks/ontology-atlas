@@ -760,169 +760,10 @@
 }
 
 /* The hero window's light at card size: it falls from the top of each drawing. */
-.gateway-loop-drawing {
+.gateway-step-drawing {
   background:
     radial-gradient(70% 55% at 50% 0%, var(--gateway-hero-light-wing) 0%, transparent 100%),
     var(--color-canvas);
-}
-
-/*
- * The loop cards take turns in reading order: the agent reads, a commit marks three concepts, a
- * person presses "Allow once". In its 3.6s turn a card lights its outline, its drawing comes from
- * 60% to full and one 900ms action ends on one hit (`gateway-scene-ring`); the others wait at 60%.
- * It runs only while `useInViewMotion` reports the row in view; with no script, and under reduced
- * motion, every drawing stands still and complete. Only opacity, transform and filter move.
- */
-.gateway-scene-pointer,
-.gateway-scene-focus,
-.gateway-scene-ring {
-  opacity: 0;
-}
-
-.gateway-scene-focus {
-  box-shadow: inset 0 0 0 1px var(--gateway-window-edge);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  [data-gateway-scene-motion] {
-    --gateway-scene-cycle: 10.8s;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-read {
-    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-mark {
-    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-allow {
-    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-focus {
-    animation: gatewaySceneFocus var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-dot {
-    animation: gatewaySceneDot var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-pointer {
-    animation: gatewayScenePointer var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-pointer[data-gateway-hit='sweep'] {
-    animation-name: gatewaySceneSweep;
-    animation-timing-function: ease-in-out;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-press {
-    animation: gatewayScenePress var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  /* The hit lands at the action's end: 900ms into the turn, 720ms where the reading line meets the concept. */
-  [data-gateway-scene-motion] .gateway-scene-ring {
-    --gateway-scene-hit: 900ms;
-    /* Forwards only: before its first beat a ring keeps its resting style, which is unseen. */
-    animation: gatewaySceneRing var(--gateway-scene-cycle) ease-out infinite forwards;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0) + var(--gateway-scene-hit));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-read .gateway-scene-ring {
-    --gateway-scene-hit: 720ms;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-ring[data-gateway-hit='press'] {
-    animation-name: gatewayScenePressRing;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-read,
-  [data-gateway-scene-motion] .gateway-scene-mark,
-  [data-gateway-scene-motion] .gateway-scene-allow,
-  [data-gateway-scene-motion] .gateway-scene-focus,
-  [data-gateway-scene-motion] .gateway-scene-dot,
-  [data-gateway-scene-motion] .gateway-scene-pointer,
-  [data-gateway-scene-motion] .gateway-scene-press,
-  [data-gateway-scene-motion] .gateway-scene-ring {
-    animation-play-state: paused;
-  }
-
-  [data-gateway-scene-motion='running'] .gateway-scene-read,
-  [data-gateway-scene-motion='running'] .gateway-scene-mark,
-  [data-gateway-scene-motion='running'] .gateway-scene-allow,
-  [data-gateway-scene-motion='running'] .gateway-scene-focus,
-  [data-gateway-scene-motion='running'] .gateway-scene-dot,
-  [data-gateway-scene-motion='running'] .gateway-scene-pointer,
-  [data-gateway-scene-motion='running'] .gateway-scene-press,
-  [data-gateway-scene-motion='running'] .gateway-scene-ring {
-    animation-play-state: running;
-  }
-}
-
-/* 10.8s, a third per card. In: 400ms (3.7%). Out: from 3.2s (29.63%) to the turn's end (33.33%). */
-@keyframes gatewaySceneTurn {
-  0% { opacity: 0.6; }
-  3.7%, 29.63% { opacity: 1; }
-  33.33%, 100% { opacity: 0.6; }
-}
-
-@keyframes gatewaySceneFocus {
-  0% { opacity: 0; }
-  3.7%, 29.63% { opacity: 1; }
-  33.33%, 100% { opacity: 0; }
-}
-
-/* The reading line: down the answer from 300ms to 1.2s, then gone until the next turn. */
-@keyframes gatewaySceneSweep {
-  0%, 2.78% { opacity: 0; transform: translateY(0); }
-  3.7% { opacity: 0.5; }
-  10.19% { opacity: 0.5; }
-  11.11%, 100% { opacity: 0; transform: translateY(100%); }
-}
-
-/* The marks land at 900ms with the beat, and leave quietly half a second before the next turn. */
-@keyframes gatewaySceneDot {
-  0%, 7.41% { opacity: 0; transform: scale(0); }
-  8.33% { opacity: 1; transform: scale(1.3); }
-  9.72%, 92.59% { opacity: 1; transform: scale(1); }
-  96.3%, 100% { opacity: 0; transform: scale(1); }
-}
-
-/* 320ms (2.96%): from the mark's own size out 28px, 0.5 to nothing. */
-@keyframes gatewaySceneRing {
-  0% { opacity: 0.5; transform: scale(0.15); }
-  2.96%, 100% { opacity: 0; transform: scale(1); }
-}
-
-@keyframes gatewayScenePressRing {
-  0% { opacity: 0.5; transform: scale(0.86); }
-  2.96%, 100% { opacity: 0; transform: scale(1); }
-}
-
-/* The hand comes in from 300ms, presses at 900ms, rests on the button and leaves with the turn. */
-@keyframes gatewayScenePointer {
-  0%, 2.78% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
-  3.7% { opacity: 1; }
-  7.41% { transform: translate(0, 0) scale(1); }
-  8.33% { transform: translate(0, 0) scale(0.8); }
-  9.72%, 29.63% { opacity: 1; transform: translate(0, 0) scale(1); }
-  33.33% { opacity: 0; transform: translate(0, 0) scale(1); }
-  34.26%, 100% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
-}
-
-@keyframes gatewayScenePress {
-  0%, 8.33% { transform: none; filter: none; }
-  8.8% { transform: scale(0.93); filter: brightness(1.35); }
-  10.65%, 29.63% { transform: none; filter: brightness(1.15); }
-  33.33%, 100% { transform: none; filter: none; }
 }
 
 @keyframes gatewayRuleDraw {
@@ -1013,16 +854,15 @@
   }
 }
 
-/* Pieces on the stage grow with it, so a wide stage is not a phone's map left small in its middle. */
-.build-zoom {
-  zoom: 0.9;
-}
-
-@container (min-width: 30rem) {
-  .build-zoom {
-    zoom: 1;
+/* A tall stage (a phone's) places each piece at its tall layout's point. */
+@container (max-aspect-ratio: 6 / 5) {
+  .build-map .build-at,
+  .build-map .build-hint-at {
+    translate: calc(var(--tx, var(--x)) * 1cqw) calc(var(--ty, var(--y)) * 1cqh);
   }
 }
+
+/* Pieces on the stage grow with it, so a wide stage is not a phone's map left small in its middle. */
 
 @container (min-width: 52rem) {
   .build-zoom {

@@ -38,8 +38,10 @@ import {
   CODE_NAMED,
   conceptOf,
   fileNameOf,
+  loneEndOf,
   LONE_CONCEPTS,
   PERSON_RELATIONS,
+  dependsOnChange,
   touchesChange,
   type BuildConceptId,
 } from '../model/build-cast';
@@ -337,7 +339,7 @@ function AgentLog({ built }: { built: number }) {
   const nameOf = (id: BuildConceptId) => t(`names.${id}`);
   const cluster = (id: BuildConceptId) => BUILD_CONCEPTS.filter((concept) => concept.beat === conceptOf(id).beat);
   const rows: [string, string][] = [
-    ['Read', t('log.read', { count: BUILD_FILE_COUNT })],
+    ['analyze_repo_structure', t('log.read', { count: BUILD_FILE_COUNT })],
     ['add_concepts', nameOf('shop')],
     ...(['shopping', 'orders', 'members'] as const).map((id): [string, string] => ['add_concepts', t('log.cluster', { name: nameOf(id), count: cluster(id).length - 1 })]),
     ['add_concepts', LONE_CONCEPTS.map(nameOf).join(', ')],
@@ -504,13 +506,13 @@ function lineFor(state: BuildState, nameOf: (concept: BuildConceptId) => string,
       }
       const left = relationsLeft(state);
       return left.length === PERSON_RELATIONS.length
-        ? t('moru.linkStart', { first: nameOf(left[0].to), second: nameOf(left[1].to) })
-        : t('moru.linkLast', { name: nameOf(left[0].to) });
+        ? t('moru.linkStart', { first: nameOf(loneEndOf(left[0])), second: nameOf(loneEndOf(left[1])) })
+        : t('moru.linkLast', { name: nameOf(loneEndOf(left[0])) });
     }
     case 'commit':
       return t('moru.commit');
     case 'impact':
-      return t('moru.impact', { name: nameOf(BUILD_CHANGE.concept), linked: nameOf(PERSON_RELATIONS[0].to) });
+      return t('moru.impact', { name: nameOf(BUILD_CHANGE.concept), linked: nameOf(BUILD_RELATIONS.find(dependsOnChange)!.from) });
     case 'inspect':
       return t('moru.inspect');
     case 'done':

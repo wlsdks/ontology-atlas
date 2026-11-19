@@ -33,7 +33,7 @@ import { useStageGraph } from '../lib/use-stage-graph';
 import type { StageGraph } from '../lib/stage-graph';
 import { GatewayFx } from './GatewayFx';
 import { ScreensStage } from './ScreensStage';
-import { LoopSection, StartSection } from './LoopSection';
+import { StartSection } from './StartSection';
 import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
@@ -109,7 +109,6 @@ export function DownloadPage() {
         <FilmSection graph={graph} />
         <BuildWithMoru handheld={visitorPlatform === 'handheld'} />
         <HarnessFilm />
-        <LoopSection graph={graph} />
         <ScreensSection />
         <StartSection graph={graph} />
         <OpenSourceSection />

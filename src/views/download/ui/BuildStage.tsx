@@ -29,7 +29,7 @@ import {
   fileNameOf,
   LONE_CONCEPTS,
   PERSON_RELATIONS,
-  touchesChange,
+  dependsOnChange,
   type BuildConceptId,
   type BuildRelation,
 } from '../model/build-cast';
@@ -41,8 +41,8 @@ const DRAG_START_PX = 6;
 /** The wire's free end catches the concept it is drawn to within this distance. */
 const SNAP_PX = 44;
 const SPARKS = 8;
-/** Below this width-to-height ratio the stage uses the tall layout. */
-const TALL_RATIO = 1.2;
+/** At or below this width-to-height ratio the stage uses the tall layout, as the CSS container query does. */
+const TALL_RATIO = 6 / 5;
 
 /** A double click on a control that stays in place would answer twice; only its first press counts. */
 export const isFirstPress = (event: MouseEvent<HTMLElement>) => event.detail <= 1;
@@ -58,7 +58,16 @@ export function Burst({ delay }: { delay: string }) {
   );
 }
 
-const at = (point: { x: number; y: number }, extra?: CSSProperties) => ({ '--x': point.x, '--y': point.y, ...extra }) as CSSProperties;
+type Point = { x: number; y: number };
+const at = (point: Point, extra?: CSSProperties) => ({ '--x': point.x, '--y': point.y, ...extra }) as CSSProperties;
+/** Both layouts' places; CSS picks one by the stage's shape, so nothing moves once the stage is measured. */
+const placed = (where: (tall: boolean) => Point, extra?: CSSProperties) =>
+  at(where(false), { '--tx': where(true).x, '--ty': where(true).y, ...extra } as CSSProperties);
+const pointIn = (id: BuildConceptId, tall: boolean) => (tall ? conceptOf(id).atTall : conceptOf(id).at);
+const labelIn = (rel: BuildRelation, tall: boolean) => {
+  const [a, b] = [pointIn(rel.from, tall), pointIn(rel.to, tall)];
+  return { x: a.x + (b.x - a.x) * rel.labelAt, y: a.y + (b.y - a.y) * rel.labelAt };
+};
 
 /** Where the agent's pointer is on each beat of its first map. */
 const AGENT_AT: Record<number, BuildConceptId | 'center' | 'relations'> = { 1: 'center', 2: 'shop', 3: 'shopping', 4: 'orders', 5: 'members', 6: 'refund', 7: 'relations' };
@@ -99,13 +108,9 @@ export function BuildStage({
   const linking = phase === 'linking';
   const committed = ['impact', 'inspect', 'done'].includes(phase);
   const commitShown = ['commit', 'impact', 'inspect', 'done'].includes(phase);
-  const tall = size.width > 0 && size.width / size.height < TALL_RATIO;
-  const point = (id: BuildConceptId) => (tall ? conceptOf(id).atTall : conceptOf(id).at);
+  const tall = size.width > 0 && size.width / size.height <= TALL_RATIO;
+  const point = (id: BuildConceptId) => pointIn(id, tall);
   const px = (p: { x: number; y: number }) => ({ x: (p.x / 100) * size.width, y: (p.y / 100) * size.height });
-  const labelPoint = (rel: BuildRelation) => {
-    const [a, b] = [point(rel.from), point(rel.to)];
-    return { x: a.x + (b.x - a.x) * rel.labelAt, y: a.y + (b.y - a.y) * rel.labelAt };
-  };
   const targets = targetConcepts(state);
   const ends = linkEnds(state);
 
@@ -193,7 +198,8 @@ export function BuildStage({
   };
 
   const agentSpot = phase === 'building' ? AGENT_AT[built] : undefined;
-  const agentPoint = agentSpot === undefined || agentSpot === 'center' ? CENTER : agentSpot === 'relations' ? labelPoint(BUILD_RELATIONS[1]) : point(agentSpot);
+  const agentPoint = (layout: boolean) =>
+    agentSpot === undefined || agentSpot === 'center' ? CENTER : agentSpot === 'relations' ? labelIn(BUILD_RELATIONS[1], layout) : pointIn(agentSpot, layout);
 
   return (
     <div
@@ -220,7 +226,7 @@ export function BuildStage({
       >
         {/* Each cluster's light pool, lit as the agent writes it. */}
         {BUILD_CONCEPTS.filter((concept) => concept.kind === 'domain').map((concept) => (
-          <div key={concept.id} aria-hidden className="build-at build-pool-at" data-shown={isWritten(state, concept) || undefined} style={at(point(concept.id))}>
+          <div key={concept.id} aria-hidden className="build-at build-pool-at" data-shown={isWritten(state, concept) || undefined} style={placed((layout) => pointIn(concept.id, layout))}>
             <span className="build-pool absolute rounded-full" />
           </div>
         ))}
@@ -239,7 +245,7 @@ export function BuildStage({
           {BUILD_RELATIONS.map((rel) => {
             const a = px(point(rel.from));
             const b = px(point(rel.to));
-            const hot = committed && phase !== 'done' && touchesChange(rel);
+            const hot = committed && phase !== 'done' && dependsOnChange(rel);
             return (
               <line
                 key={rel.label}
@@ -258,7 +264,7 @@ export function BuildStage({
           })}
           {/* The commit's reach: a light runs out from the changed concept along each of its relations. */}
           {phase === 'impact'
-            ? BUILD_RELATIONS.filter(touchesChange).map((rel) => {
+            ? BUILD_RELATIONS.filter(dependsOnChange).map((rel) => {
                 const [a, b] = rel.from === BUILD_CHANGE.concept ? [px(point(rel.from)), px(point(rel.to))] : [px(point(rel.to)), px(point(rel.from))];
                 return <line key={rel.label} x1={a.x} y1={a.y} x2={b.x} y2={b.y} pathLength={1} className="build-pulse" />;
               })
@@ -298,7 +304,7 @@ export function BuildStage({
           aria-hidden
           className="build-at build-carry-at"
           data-carry={phase === 'commit' ? 'card' : committed ? 'landed' : 'none'}
-          style={at(committed ? point(BUILD_CHANGE.concept) : { x: 80, y: 12 })}
+          style={placed((layout) => (committed ? pointIn(BUILD_CHANGE.concept, layout) : { x: 80, y: 12 }))}
         >
           <span className="build-center build-zoom build-carry inline-flex items-center gap-1.5 whitespace-nowrap rounded-chip px-2.5 py-1 font-mono text-label leading-label">
             {fileNameOf(BUILD_CHANGE.file)}
@@ -306,7 +312,7 @@ export function BuildStage({
         </div>
 
         {BUILD_RELATIONS.map((rel) => (
-          <div key={rel.label} aria-hidden className="build-at build-edge-label-at" data-shown={isRelationDrawn(state, rel) || undefined} style={at(labelPoint(rel))}>
+          <div key={rel.label} aria-hidden className="build-at build-edge-label-at" data-shown={isRelationDrawn(state, rel) || undefined} style={placed((layout) => labelIn(rel, layout))}>
             <span className="build-center build-zoom build-edge-label whitespace-nowrap rounded-chip px-2 py-0.5 text-label leading-label">{t(`relations.${rel.label}`)}</span>
           </div>
         ))}
@@ -317,7 +323,7 @@ export function BuildStage({
           const changed = committed && id === BUILD_CHANGE.concept;
           const codeName = CODE_NAMED.find((entry) => entry.concept === id);
           const stillCode = codeName !== undefined && state.renamed[codeName.concept] === undefined;
-          const lone = LONE_CONCEPTS.includes(id) && !PERSON_RELATIONS.some((rel) => rel.to === id && isLinked(state, rel));
+          const lone = LONE_CONCEPTS.includes(id) && !PERSON_RELATIONS.some((rel) => (rel.from === id || rel.to === id) && isLinked(state, rel));
           const linkedHere = PERSON_RELATIONS.some((rel) => (rel.to === id || rel.from === id) && isLinked(state, rel));
           const burst = !written
             ? null
@@ -349,7 +355,7 @@ export function BuildStage({
                   : burst === 'linked' && LONE_CONCEPTS.includes(id)
                     ? t('pickup.relation')
                     : null;
-          const touched = phase === 'impact' && BUILD_RELATIONS.some((rel) => touchesChange(rel) && (rel.from === id || rel.to === id) && id !== BUILD_CHANGE.concept);
+          const touched = phase === 'impact' && BUILD_RELATIONS.some((rel) => dependsOnChange(rel) && rel.from === id);
           const name = written ? nameOf(id) : '';
           const tappable = written && (linking || phase === 'impact' || phase === 'rename');
           return (
@@ -358,7 +364,7 @@ export function BuildStage({
               className="build-at build-node-at"
               data-shown={written || undefined}
               inert={!written}
-              style={at(point(id), { '--order': burst === 'written' ? order : 0 } as CSSProperties)}
+              style={placed((layout) => pointIn(id, layout), { '--order': burst === 'written' ? order : 0 } as CSSProperties)}
             >
               <button
                 type="button"
@@ -416,7 +422,7 @@ export function BuildStage({
 
         {/* After a still moment, a hand shows where to press next. */}
         {targets.length > 0 ? (
-          <div key={`${phase}:${state.pick}:${state.misses}:${targets[0]}`} aria-hidden className="build-hint-at" style={at(point(targets[0]))}>
+          <div key={`${phase}:${state.pick}:${state.misses}:${targets[0]}`} aria-hidden className="build-hint-at" style={placed((layout) => pointIn(targets[0], layout))}>
             <span className="build-zoom absolute left-0 top-0">
               <span className="build-hint-ripple absolute rounded-full" />
               <Pointer size={40} strokeWidth={1.5} className="build-hint-hand absolute" />
@@ -425,7 +431,7 @@ export function BuildStage({
         ) : null}
 
         {/* The agent at work on its first map: a named pointer that flies to each cluster it writes. */}
-        <div aria-hidden className="build-at build-agent-at" data-shown={agentSpot !== undefined || undefined} style={at(agentPoint)}>
+        <div aria-hidden className="build-at build-agent-at" data-shown={agentSpot !== undefined || undefined} style={placed(agentPoint)}>
           <span className="build-agent build-zoom absolute left-0 top-0 inline-flex items-start">
             <MousePointer2 size={ICON_SIZE.md} fill="currentColor" className="build-agent-pointer shrink-0" />
             <span className="build-agent-tag ml-0.5 mt-4 whitespace-nowrap rounded-chip px-2 py-0.5 text-label leading-label">Claude Code</span>
@@ -435,7 +441,7 @@ export function BuildStage({
         {/* Atlas's count, the moment the first map is done: what it found to fix. */}
         <div
           aria-hidden
-          data-shown={(phase === 'building' && built >= 8) || undefined}
+          data-shown={(phase === 'building' && measured) || undefined}
           className="build-found absolute left-1/2 top-3 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-chip px-3 py-1.5 text-label leading-label"
         >
           <span className="build-found-dot size-1.5 rounded-full" />

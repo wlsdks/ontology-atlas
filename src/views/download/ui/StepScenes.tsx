@@ -10,8 +10,7 @@ import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { InViewMotion } from '../lib/use-in-view-motion';
-import { kindOf } from '../model/loop-cast';
-import { START_DRAFT, START_FOLDER, START_PATH } from '../model/start-cast';
+import { kindOf, START_DRAFT, START_FOLDER, START_PATH } from '../model/start-cast';
 
 /** The rail's cycle in `gateway.css` (`--gateway-steps-cycle`); the scenes play on its clock. */
 export const STEP_CYCLE_MS = 7800;
@@ -28,6 +27,8 @@ const EXIT_EASE = `cubic-bezier(${EXIT_TRANSITION.ease.join(', ')})`;
 const RESTING = 0.6;
 /** Rows of one beat follow each other this closely, top to bottom. */
 const STAGGER_MS = 40;
+/** The agent's concepts arrive one by one, far enough apart to read as written in turn. */
+const DRAFT_STAGGER_MS = 160;
 
 type Frame = Record<string, string | number>;
 
@@ -41,11 +42,6 @@ const BEATS = {
   show: { from: { opacity: 0 }, to: { opacity: 1 }, unseen: true },
   hide: { from: { opacity: 1 }, to: { opacity: 0 }, unseen: false },
   draw: { from: { opacity: 1, transform: 'scaleX(0)' }, to: { opacity: 1, transform: 'scaleX(1)' }, unseen: true },
-  type: {
-    from: { opacity: 1, clipPath: 'inset(0 100% 0 0)' },
-    to: { opacity: 1, clipPath: 'inset(0 0% 0 0)' },
-    unseen: true,
-  },
   knob: { from: { opacity: 1, transform: 'translateX(-0.875rem)' }, to: { opacity: 1, transform: 'none' }, unseen: false },
 } satisfies Record<string, { from: Frame; to: Frame; unseen: boolean }>;
 
@@ -196,7 +192,7 @@ export function SceneFrame({ step, children }: { step: number; children: ReactNo
       aria-hidden
       data-step-scene={step}
       data-testid={`gateway-step-scene-${step}`}
-      className="gateway-loop-drawing flex min-w-0 @min-[52rem]:min-h-[17rem] flex-col justify-center rounded-panel border border-[color:var(--color-border-soft)] p-5"
+      className="gateway-step-drawing flex min-w-0 @min-[52rem]:min-h-[17rem] flex-col justify-center rounded-panel border border-[color:var(--color-border-soft)] p-5"
     >
       {children}
     </div>
@@ -223,9 +219,8 @@ function Press({ accent = false, children }: { accent?: boolean; children: React
   );
 }
 
-/** Step one: the folder button, the project's tree unrolling, then the folder's path typed in. */
+/** Step one: the folder button, then the project's tree unrolling with the map's folder picked. */
 export function OpenFolderScene({ open }: { open: string }) {
-  const typed = START_PATH.length;
   return (
     <SceneFrame step={0}>
       <Press>{open}</Press>
@@ -253,43 +248,30 @@ export function OpenFolderScene({ open }: { open: string }) {
           );
         })}
       </ul>
-      <p className="relative mt-3 flex h-8 min-w-0 items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 font-mono text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
-        <span
-          {...beat('flash', 680, 400)}
-          className="absolute -inset-px rounded-[inherit] border border-[color:var(--color-indigo-accent)] opacity-0"
-        />
-        <Folder size={ICON_SIZE.sm} className={cn('relative shrink-0', QUIET)} />
-        <span {...beat('type', 720, typed * 26, typed)} className="relative whitespace-nowrap">
-          {START_PATH}
-        </span>
-      </p>
     </SceneFrame>
   );
 }
 
-/** Step two: the first card's agent button, then three proposed concepts, each waiting for approval. */
-export function DraftScene({ ask, waiting, labelOf }: { ask: string; waiting: string; labelOf: (id: string) => string }) {
+/** How far each drafted concept sits in from the one that contains it. */
+const DRAFT_INDENT = ['', 'ml-6', 'ml-12'] as const;
+
+/** Step two: the first card's agent button, then the agent's first concepts, each inside the last. */
+export function DraftScene({ ask, labelOf }: { ask: string; labelOf: (id: string) => string }) {
   return (
     <SceneFrame step={1}>
-      <Press accent>
-        {ask}
-      </Press>
-      <ul className="mt-3 flex min-w-0 flex-col gap-1.5">
-        {START_DRAFT.map((id, index) => (
-          <li
-            key={id}
-            {...beat('drop', 360 + index * STAGGER_MS)}
-            className="min-w-0 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-body-lg leading-body-lg"
-          >
-            <span className="flex min-w-0 items-center gap-2 text-[color:var(--color-text-primary)]">
+      <Press accent>{ask}</Press>
+      <ul className="mt-4 flex min-w-0 flex-col gap-1.5">
+        {START_DRAFT.map((id, depth) => (
+          <li key={id} {...beat('drop', 360 + depth * DRAFT_STAGGER_MS)} className={cn('relative flex min-w-0', DRAFT_INDENT[depth])}>
+            {depth ? (
+              <span
+                aria-hidden
+                className="absolute -left-[0.5625rem] -top-1.5 h-[1.375rem] w-[0.5625rem] border-b border-l border-[color:var(--color-border-strong)]"
+              />
+            ) : null}
+            <span className="flex h-8 min-w-0 items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
               <OntologyMapKindGlyph kind={kindOf(id)} size={10} />
               <span className="min-w-0 truncate">{labelOf(id)}</span>
-            </span>
-            <span className={cn('flex min-w-0 items-center gap-2', QUIET)}>
-              <span className="flex size-2.5 shrink-0 items-center justify-center">
-                <span className="size-1.5 rounded-full bg-[color:var(--color-status-warning)]" />
-              </span>
-              <span className="min-w-0 truncate">{waiting}</span>
             </span>
           </li>
         ))}

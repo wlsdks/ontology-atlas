@@ -1,4 +1,4 @@
-import { BUILD_CHANGE, BUILD_RELATIONS, CODE_NAMED, PERSON_RELATIONS, type BuildConcept, type BuildConceptId, type CodeNamedId } from '../model/build-cast';
+import { BUILD_CHANGE, BUILD_RELATIONS, CODE_NAMED, loneEndOf, PERSON_RELATIONS, type BuildConcept, type BuildConceptId, type CodeNamedId } from '../model/build-cast';
 
 /**
  * The build-with-Moru section as a reducer, in the order Atlas is used: the person asks for the
@@ -71,7 +71,7 @@ export function targetConcepts(state: BuildState): BuildConceptId[] {
       return codeNamedLeft(state).map((entry) => entry.concept);
     case 'linking': {
       const partner = partnerOf(state);
-      return partner ? [partner] : relationsLeft(state).map((rel) => rel.to);
+      return partner ? [partner] : relationsLeft(state).map(loneEndOf);
     }
     case 'impact':
       return [BUILD_CHANGE.concept];

@@ -136,7 +136,6 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   const stops = [
     { id: "gateway-film", attribute: "data-gateway-film", value: /playing/ },
     { id: "gateway-harness", attribute: "data-gateway-harness", value: /playing/ },
-    { id: "gateway-loop-cards", attribute: "data-gateway-scene-motion", value: /running/ },
     { id: "gateway-start-steps", attribute: "data-gateway-entrance", value: /entering|still/ },
   ];
   for (const { id, attribute, value } of stops) {
