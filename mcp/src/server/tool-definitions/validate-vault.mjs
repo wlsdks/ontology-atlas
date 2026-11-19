@@ -310,13 +310,13 @@ export const VALIDATE_WIKI_TOOL = {
     'and the advisory orphan-page and shared-source-unlinked. ' +
     'The optional `sources_truncated:` key lists which paths in `sources:` the run read only part of; ' +
     'it is what lets a reader tell a document written up whole from one written up in part. ' +
-    'Without `paths`, returns `{ pageCount, failingCount, pagination, nextCall?, summary: { blockingPages, advisoryOnlyPages, byCode }, pages: [{path, ok, problems: [{code, message, line?, detail?}], problemsOmitted?}] }`: ' +
-    '`pageCount` and `failingCount` count the whole folder and `pages` holds failing pages only, one page of them, ' +
-    'pages with a blocking problem first and then by path. `limit` (default 100, max 500) sets its size; ' +
+    'Without `paths`, returns `{ pageCount, failingCount, pagination, nextCall?, summary: { blockingPages, advisoryOnlyPages, byCode }, pages: [{path, ok, blocking, problems: [{code, message, line?, detail?}], problemsOmitted?}] }`: ' +
+    '`pageCount` and `failingCount` count the whole folder and `pages` holds failing pages only, one page of them, by path; ' +
+    '`blocking` says whether a page has a problem that is not advisory, and `summary.byCode` samples blocking pages first. `limit` (default 100, max 500) sets its size; ' +
     'a page left at the default `limit` stops sooner when the reply would pass 128 KiB, and always holds at least one page. ' +
-    '`nextCall` resumes after the last page shown (`afterPath`, `afterBlocking`), so repairing the listed pages before following it skips none; ' +
-    'follow it until `pagination.hasMore` is false. A page that starts failing behind the walk is found by the next walk: ' +
-    'the folder is clean only when `failingCount` is 0. Each page shows at most 20 problems and counts the rest in `problemsOmitted`; ' +
+    '`nextCall` resumes after the last page shown (`afterPath`), so every page that fails for the whole walk is listed once, repairs between calls included; ' +
+    'follow it until `pagination.hasMore` is false. A page renamed during the walk appears under its new path only if that path sorts after the cursor, ' +
+    'and a page that starts failing behind the walk is found by the next walk: the folder is clean only when `failingCount` is 0. Each page shows at most 20 problems and counts the rest in `problemsOmitted`; ' +
     'fix those and validate again to see more. `summary` always counts the whole folder; ' +
     'each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
     'With `paths`, every named page is listed with its `ok`, passing or not, unpaged. ' +
@@ -339,16 +339,12 @@ export const VALIDATE_WIKI_TOOL = {
       afterPath: {
         type: 'string',
         minLength: 1,
-        description: 'Resume after this page, copied with `afterBlocking` from the last reply\'s `nextCall`. Stable while listed pages are repaired. Not with `paths` or `offset`.',
-      },
-      afterBlocking: {
-        type: 'boolean',
-        description: 'Whether the `afterPath` page had a blocking problem when it was listed: the order is blocking pages, then advisory-only pages, each by path.',
+        description: 'Resume after this page path, copied from the last reply\'s `nextCall`. Failing pages are walked by path, so repairs between calls move no unseen page behind it. Not with `paths` or `offset`.',
       },
       offset: {
         type: 'integer',
         minimum: 0,
-        description: 'Zero-based index of the first failing page to return, in the order blocking first and then path. Shifts when a repair removes earlier pages; `nextCall` does not. Defaults 0. Not with `paths` or `afterPath`.',
+        description: 'Zero-based index of the first failing page to return, in path order. Shifts when a repair removes earlier pages; `nextCall` does not. Defaults 0. Not with `paths` or `afterPath`.',
       },
       limit: {
         type: 'integer',
@@ -381,10 +377,9 @@ export const VALIDATE_WIKI_TOOL = {
             type: 'object',
             properties: {
               afterPath: { type: 'string', minLength: 1 },
-              afterBlocking: { type: 'boolean' },
               limit: { type: 'integer', minimum: 1, maximum: 500 },
             },
-            required: ['afterPath', 'afterBlocking'],
+            required: ['afterPath'],
             additionalProperties: false,
           },
         },
@@ -417,7 +412,7 @@ export const VALIDATE_WIKI_TOOL = {
                   // A path exactly as the folder names it, like `pages[].path`: a file name may
                   // hold any character, and the path must round-trip into `paths` and `afterPath`.
                   items: { type: 'string', minLength: 1 },
-                  description: 'At most 20 of the `count` pages with this code, in page order.',
+                  description: 'At most 20 of the `count` pages with this code, blocking pages first, each group by path.',
                 },
                 filesOmitted: {
                   type: 'integer',
@@ -441,14 +436,15 @@ export const VALIDATE_WIKI_TOOL = {
           properties: {
             path: { type: 'string' },
             ok: { type: 'boolean' },
-            problems: { type: 'array', items: WIKI_PROBLEM_SCHEMA, description: 'At most 20, in the order judged.' },
+            blocking: { type: 'boolean', description: 'Whether any problem is more than advisory (orphan-page and shared-source-unlinked are advisory).' },
+            problems: { type: 'array', items: WIKI_PROBLEM_SCHEMA, description: 'At most 20, in the order judged; each message escapes control and format characters.' },
             problemsOmitted: {
               type: 'integer',
               minimum: 1,
               description: 'Present when the page has more problems than `problems` shows: how many more.',
             },
           },
-          required: ['path', 'ok', 'problems'],
+          required: ['path', 'ok', 'blocking', 'problems'],
           additionalProperties: false,
         },
       },

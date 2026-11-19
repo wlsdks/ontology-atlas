@@ -531,6 +531,9 @@ function readDeclaredSources(frontmatter) {
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  *   one entry per input page, in input order, `problems` possibly empty
  */
+/** Unlinked shared-source partners a page names before it counts the rest. */
+const WIKI_SHARED_PARTNER_LIMIT = 10;
+
 export function validateWikiFolder(pages) {
   const entries = (pages ?? []).map((page) => {
     const path = String(page.path ?? '');
@@ -590,62 +593,95 @@ export function validateWikiFolder(pages) {
     }
   }
 
-  // O(P + Σ kₛ²), kₛ = pages listing s; pairs sorted (a, b) so partners keep input order.
+  // Two pages are partners when one's primary source (its first) is listed by the other.
+  // Each page names at most WIKI_SHARED_PARTNER_LIMIT unlinked partners in input order and
+  // counts the rest, so a folder of k pages written from one document costs O(k), not k².
+  // Cost: O(P + Σ sources + links), plus per page O((limit + linked partners) · its sources).
   const listedBy = new Map();
+  const primaryOf = new Map();
+  const primaryListing = new Map();
+  const pushTo = (map, key, index) => {
+    const list = map.get(key);
+    if (list) list.push(index);
+    else map.set(key, [index]);
+  };
+  const pairKey = (primary, listed) => `${primary}\u0000${listed}`;
   entries.forEach((entry, index) => {
+    for (const source of entry.sources) pushTo(listedBy, source, index);
+    if (entry.primary === null) return;
+    pushTo(primaryOf, entry.primary, index);
     for (const source of entry.sources) {
-      const list = listedBy.get(source);
-      if (list) list.push(index);
-      else listedBy.set(source, [index]);
+      const key = pairKey(entry.primary, source);
+      primaryListing.set(key, (primaryListing.get(key) ?? 0) + 1);
     }
   });
-  const pairKeys = new Set();
-  const pairs = [];
+  const isPartner = (page, other) =>
+    page !== other &&
+    ((page.primary !== null && other.sources.has(page.primary)) ||
+      (other.primary !== null && page.sources.has(other.primary)));
+
   entries.forEach((entry, index) => {
     if (entry.primary === null) return;
-    for (const other of listedBy.get(entry.primary) ?? []) {
-      if (other === index) continue;
-      const a = Math.min(index, other);
-      const b = Math.max(index, other);
-      const key = a * entries.length + b;
-      if (pairKeys.has(key)) continue;
-      pairKeys.add(key);
-      pairs.push([a, b]);
+    const linked = new Set(inbound.get(entry.slug));
+    for (const link of entry.links) if (bySlug.has(link.target)) linked.add(link.target);
+    let linkedPartners = 0;
+    for (const slug of linked) if (isPartner(entry, bySlug.get(slug))) linkedPartners += 1;
+    // Pages listing this one's primary, plus pages whose primary this one lists and that
+    // do not also list this one's primary (those are already counted).
+    let partners = listedBy.get(entry.primary).length - 1;
+    const lists = [listedBy.get(entry.primary)];
+    for (const source of entry.sources) {
+      if (source === entry.primary) continue;
+      const written = primaryOf.get(source) ?? [];
+      partners += written.length - (primaryListing.get(pairKey(source, entry.primary)) ?? 0);
+      if (written.length > 0) lists.push(written);
+    }
+    const unlinked = partners - linkedPartners;
+    if (unlinked === 0) return;
+    // Merge the ascending index lists to meet partners in input order.
+    const heads = lists.map(() => 0);
+    let previous = -1;
+    let named = 0;
+    while (named < WIKI_SHARED_PARTNER_LIMIT) {
+      let pick = -1;
+      for (let list = 0; list < lists.length; list += 1) {
+        const at = lists[list][heads[list]];
+        if (at !== undefined && (pick < 0 || at < lists[pick][heads[pick]])) pick = list;
+      }
+      if (pick < 0) break;
+      const other = lists[pick][heads[pick]];
+      heads[pick] += 1;
+      if (other === previous || other === index) continue;
+      previous = other;
+      const partner = entries[other];
+      if (linked.has(partner.slug)) continue;
+      // Only a page's primary source counts; sorted so every caller words it alike.
+      const shared = [...entry.sources]
+        .filter((source) => partner.sources.has(source) && (entry.primary === source || partner.primary === source))
+        .sort();
+      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
+      entry.problems.push(
+        problem(
+          'shared-source-unlinked',
+          `\`${partner.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+          undefined,
+          { key: 'shared-source-unlinked', values: { other: partner.path, sources: sourceList } },
+        ),
+      );
+      named += 1;
+    }
+    if (unlinked > named) {
+      const more = unlinked - named;
+      entry.problems.push(
+        problem(
+          'shared-source-unlinked',
+          `${more} more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.`,
+          undefined,
+          { key: 'shared-source-unlinked-more', values: { count: String(more) } },
+        ),
+      );
     }
   });
-  pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
-  for (const [a, b] of pairs) {
-    const first = entries[a];
-    const second = entries[b];
-    // Only a page's primary source (its first) counts; sorted so every caller words it alike.
-    const shared = [...first.sources]
-      .filter(
-        (source) =>
-          second.sources.has(source) && (first.primary === source || second.primary === source),
-      )
-      .sort();
-    if (shared.length === 0) continue;
-    const linked =
-      inbound.get(first.slug).has(second.slug) || inbound.get(second.slug).has(first.slug);
-    if (linked) continue;
-    const sourceList = shared.map((source) => `\`${source}\``).join(', ');
-    first.problems.push(
-      problem(
-        'shared-source-unlinked',
-        `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-        undefined,
-        { key: 'shared-source-unlinked', values: { other: second.path, sources: sourceList } },
-      ),
-    );
-    second.problems.push(
-      problem(
-        'shared-source-unlinked',
-        `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-        undefined,
-        { key: 'shared-source-unlinked', values: { other: first.path, sources: sourceList } },
-      ),
-    );
-  }
 
   return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));
 }

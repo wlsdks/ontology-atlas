@@ -127,4 +127,36 @@ describe('validation stays linear as a folder grows', () => {
       expect(ratio).toBeLessThan(8);
     });
   }
+
+  /**
+   * Every page written from one source: naming every partner was k² findings, 11.8 s and 5.5 GB
+   * for 4,000 pages (2026-11-19). Each page now names ten and counts the rest. Measured
+   * 2026-11-19: 41 ms for 4,000 pages (MCP); the budget catches the quadratic shape returning.
+   */
+  it('one source shared by thousands of pages stays linear in both twins', () => {
+    const folder = (size: number) =>
+      Array.from({ length: size }, (_, index) => ({
+        path: `wiki/p-${index}.md`,
+        raw: `---\ntitle: p${index}\nsources: [sources/one.pdf]\n---\n\n## Summary\n\nAbout [[wiki/hub]].\n`,
+      }));
+    const small = folder(1000);
+    const large = folder(4000);
+    for (const validate of [validateFolderTs, validateFolderMcp]) {
+      const time = (pages: Array<{ path: string; raw: string }>) => {
+        let fastest = Infinity;
+        for (let run = 0; run < 3; run += 1) {
+          const started = performance.now();
+          validate(pages);
+          fastest = Math.min(fastest, performance.now() - started);
+        }
+        return fastest;
+      };
+      const largeMs = time(large);
+      const ratio = largeMs / Math.max(time(small), 0.5);
+      console.log(`[wiki-schema perf] one shared source: 4,000 pages in ${largeMs.toFixed(1)} ms, ratio ${ratio.toFixed(1)}`);
+      expect(largeMs).toBeLessThan(1500);
+      expect(ratio).toBeLessThan(8);
+      expect(validate(large)[0]!.problems.length).toBeLessThan(20);
+    }
+  });
 });

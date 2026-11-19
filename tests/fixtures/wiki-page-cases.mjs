@@ -477,4 +477,30 @@ export const WIKI_FOLDER_CASES = [
       'wiki/hub.md': [],
     },
   },
+  /*
+   * Past ten unlinked partners a page names the first ten in input order and counts the rest in
+   * one more finding, so pages written from one document cost linear time and memory.
+   */
+  (() => {
+    const names = Array.from({ length: 12 }, (_, index) => `m${String(index).padStart(2, '0')}`);
+    const path = (name) => `wiki/${name}.md`;
+    return {
+      name: 'twelve pages from one primary source name ten partners each and count the eleventh',
+      pages: [
+        ...names.map((name) => folderPage(name, ['wiki/hub'])),
+        folderPage('hub', names.map((name) => `wiki/${name}`), ['sources/hub.pdf']),
+      ],
+      expected: {
+        ...Object.fromEntries(names.map((name) => [path(name), Array(11).fill('shared-source-unlinked')])),
+        'wiki/hub.md': [],
+      },
+      partners: {
+        ...Object.fromEntries(names.map((name) => [
+          path(name),
+          [...names.filter((other) => other !== name).slice(0, 10).map(path), undefined],
+        ])),
+        'wiki/hub.md': [],
+      },
+    };
+  })(),
 ];
