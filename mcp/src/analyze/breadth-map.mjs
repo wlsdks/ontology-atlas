@@ -549,15 +549,14 @@ function areaNext(map, areas) {
   const opened = areas.find((area) => !area.own && !area.rest);
   const open = opened ? `analyze_repo_structure(${JSON.stringify({ rootPath: join(map.rootPath, opened.path) })})` : null;
   return `This repository is larger than one map, so it is listed as ${areas.length} areas: ${formatCount(size.productLines)} lines in ${formatCount(size.productFiles)} files. ` +
-    'Put the whole product on the map before any part of it in depth. ' +
-    '1. From this response alone, name the domains (a lasting responsibility; several areas usually share one) and write the project and every domain now with add_concepts; each domain says which areas it holds. ' +
-    '2. Then one domain at a time, largest first: ' +
-    (open ? `open its areas, up to three calls in one message, like ${open}. An area's map lists its units, entry points and every ability it holds; its paths are relative to that folder, so write each node's path: from the repository root (${t(opened.path, AREA_PATH_CHARS)}/...). ` : 'open its areas, up to three calls in one message. ') +
-    'Outline the area\'s main files (sourceReads mode "outline", up to 16 per call, sourceOnly true), read the operation that decides each ability by symbol (sourceReads {path, symbol}, three or four per call), ' +
-    'and write that domain\'s capabilities in one add_concepts call: one capability per thing a user, an operator or another system gets, a family as one capability naming its members and how many of them were read. ' +
-    '3. A domain you cannot open still gets its capabilities from the rows below, each saying it was listed and not read. ' +
+    'This run puts the whole product on the map and reads the main ability of every domain; reading the rest is a later request. ' +
+    '1. From this response alone, name the domains (a lasting responsibility; several areas usually share one) and write the project and every domain with add_concepts; each domain says which areas it holds. ' +
+    '2. Read by symbol the operation that decides the main ability of each domain (sourceReads {path, symbol}, three or four per call, sourceOnly true; outline a file first when you do not know its symbols). ' +
+    (open ? `Open an area when the rows below do not show what a domain holds, like ${open}: its map lists its units, entry points and every ability it holds, with paths relative to that folder, so write each node's path: from the repository root (${t(opened.path, AREA_PATH_CHARS)}/...). ` : '') +
+    '3. Write every domain\'s capabilities: one per thing a user, an operator or another system gets, a family as one capability naming its members and how many of them were read. ' +
+    'A capability whose code was not read states no rule and says so under ## Uncertainty. ' +
     'Every ability row below ends up as a capability, named in the node that covers it, or on one line of the project\'s ## Uncertainty that says why it is left out; the rows are a floor shared between areas, not all of them. ' +
-    'Every write and validate_vault names the areas no node\'s path: falls in yet, with the call that opens the next: open it, or name it in the project\'s ## Uncertainty as unopened.';
+    'Every write and validate_vault names the areas no node\'s path: falls in yet: list those in the project\'s ## Uncertainty as unopened, and end by telling the person how many capabilities are still unread, which they can ask for next.';
 }
 
 /** The first `count` rows, in the order the areas shared them. */

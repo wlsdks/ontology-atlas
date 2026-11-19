@@ -32,7 +32,7 @@ export function buildFromCodePrompt(
     'I want the whole product on the map first, then how each part works. Work in this order, in one go:',
     '1. Breadth. Call `analyze_repo_structure` on the folder and skip the vault folder. When it lists',
     '   areas instead of units, the code is larger than one map: follow the order its Next line gives,',
-    '   which puts every domain on the map first and then opens them one at a time. Otherwise outline',
+    '   which puts every domain on the map and reads the main ability of each. Otherwise outline',
     '   the main file of every unit it lists, up to sixteen files per call. From the outlines and the docs, list',
     '   every ability this product gives a user, an operator or another system. The abilities the',
     '   survey lists are the floor under that list, not all of it: each ends up as its own capability,',
