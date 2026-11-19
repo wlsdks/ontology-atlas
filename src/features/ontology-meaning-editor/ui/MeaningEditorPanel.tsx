@@ -429,7 +429,8 @@ export function MeaningEditorPanel({
                 data-testid="meaning-editor-target"
               />
               {query !== null ? (
-                <ul role="listbox" aria-label={t('target')} data-testid="meaning-editor-target-matches" className="flex flex-col gap-px">
+                // WebKit does not focus a pressed button, so the field's blur would close this list before the click lands.
+                <ul role="listbox" aria-label={t('target')} data-testid="meaning-editor-target-matches" className="flex flex-col gap-px" onMouseDown={(event) => event.preventDefault()}>
                   {matches.map((match) => {
                     const candidate = candidateById.get(match.id);
                     return (

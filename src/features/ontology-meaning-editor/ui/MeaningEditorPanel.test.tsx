@@ -81,6 +81,14 @@ describe('MeaningEditorPanel', () => {
     expect(options[0]).toHaveTextContent('Element · Agent access');
   });
 
+  it("keeps the field focused while a target is pressed, so WebKit's blur cannot close the list before the click", () => {
+    renderPanel();
+    const field = screen.getByTestId('meaning-editor-target');
+    fireEvent.focus(field);
+    fireEvent.change(field, { target: { value: 'mcp' } });
+    expect(fireEvent.mouseDown(screen.getAllByTestId('meaning-editor-target-option')[0]!)).toBe(false);
+  });
+
   it('offers only the targets a relation allows for the kind', () => {
     renderPanel();
     fireEvent.click(screen.getByTestId('meaning-editor-relation-contains'));
