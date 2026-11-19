@@ -332,7 +332,10 @@ mod tests {
         let root = managed_node_root(&app_data);
         place(root.join(artifact.platform));
         place(root.join("v0.0.0").join(artifact.platform));
-        assert!(!managed_node_present(&app_data), "an unpinned install was used");
+        assert!(
+            !managed_node_present(&app_data),
+            "an unpinned install was used"
+        );
         place(root.join(MANAGED_NODE_VERSION).join(artifact.platform));
         assert!(managed_node_present(&app_data));
         let _ = std::fs::remove_dir_all(&app_data);

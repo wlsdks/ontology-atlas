@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
+
 mod common;
 
 use common::{assert_consistent, found, truth, write_corpus, Lcg, TempVault, PROBE_QUERIES};

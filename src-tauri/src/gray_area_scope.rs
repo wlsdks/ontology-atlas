@@ -66,10 +66,9 @@ fn binding_from_value(data: &Value, project: &str) -> Result<BoundSource, String
         .iter()
         .filter(|b| b.get("projectSlug").and_then(Value::as_str) == Some(project))
         .collect();
-    if matches.len() != 1 {
+    let [binding] = matches.as_slice() else {
         return Err("binding_ambiguous".into());
-    }
-    let binding = matches[0];
+    };
     let root = binding
         .get("rootPath")
         .and_then(Value::as_str)
@@ -483,7 +482,7 @@ fn capture_directory(
             }
             let file = unsafe { fs::File::from_raw_fd(fd) };
             let opened = file.metadata().map_err(|_| "source_unavailable")?;
-            if opened.dev() != info.st_dev as u64 || opened.ino() != info.st_ino as u64 {
+            if opened.dev() != info.st_dev as u64 || opened.ino() != info.st_ino {
                 return Err("source_changed_during_read".into());
             }
             if kind == "directory" {
@@ -575,7 +574,7 @@ pub(crate) fn source_witness(root: &Path, source: &SourceObservation, path: &str
     }
     let lines: Vec<_> = text.lines().collect();
     let end = lines.len().min(80);
-    let excerpt = lines[..end].join("\n");
+    let excerpt = lines.get(..end).unwrap_or_default().join("\n");
     if excerpt.len() > 8 * 1024 {
         return json!({"path":path,"status":"refused","reason":"source_range_limit"});
     }

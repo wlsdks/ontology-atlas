@@ -49,9 +49,8 @@ fn entry(reference: &str) -> Result<Entry, String> {
 
 /// Duplicated from `secrets.rs` so neither module can silently widen the other.
 fn tail4(secret: &str) -> String {
-    let chars: Vec<char> = secret.chars().collect();
-    let start = chars.len().saturating_sub(4);
-    chars[start..].iter().collect()
+    let skip = secret.chars().count().saturating_sub(4);
+    secret.chars().skip(skip).collect()
 }
 
 #[derive(Debug, Serialize)]

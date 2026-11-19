@@ -143,8 +143,11 @@ fn copy_hashing(
             Err(err) if err.kind() == std::io::ErrorKind::Interrupted => continue,
             Err(err) => return Err(err),
         };
-        hasher.update(&buffer[..read]);
-        output.write_all(&buffer[..read])?;
+        let chunk = buffer.get(..read).ok_or_else(|| {
+            std::io::Error::other("a read returned more bytes than the buffer holds")
+        })?;
+        hasher.update(chunk);
+        output.write_all(chunk)?;
         length += read as u64;
     }
     Ok((format!("{:x}", hasher.finalize()), length))
@@ -644,7 +647,7 @@ pub fn discover_source_candidates(
         }
         let start = report.candidates.len();
         walk_candidates(&canonical, root, "", 0, &mut report);
-        for candidate in &report.candidates[start..] {
+        for candidate in report.candidates.iter().skip(start) {
             remember_source_path(
                 format!("{}/{}", candidate.root_path, candidate.relative_path),
                 canonical.join(&candidate.relative_path),

@@ -4,7 +4,7 @@ use std::{
     fs,
     io::{Read, Seek, SeekFrom},
     path::PathBuf,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
     time::{Duration, Instant},
 };
 
@@ -232,13 +232,13 @@ impl Drop for Operation {
     fn drop(&mut self) {
         drop(self.session.take());
         if !self.id.is_empty() {
-            self.registry.0.lock().unwrap().entries.remove(&self.id);
+            self.registry.slots().entries.remove(&self.id);
         }
     }
 }
 impl Operation {
     fn restore(mut self, now: Instant) -> Result<(), String> {
-        let mut slots = self.registry.0.lock().unwrap();
+        let mut slots = self.registry.slots();
         let slot = slots.entries.get_mut(&self.id).ok_or(EXPIRED)?;
         if slot.cancelled || slot.expired(now) {
             return Err(EXPIRED.into());
@@ -250,7 +250,7 @@ impl Operation {
         Ok(())
     }
     fn valid(&self, now: Instant) -> Result<(), String> {
-        let slots = self.registry.0.lock().unwrap();
+        let slots = self.registry.slots();
         let slot = slots.entries.get(&self.id).ok_or(EXPIRED)?;
         if slot.cancelled || slot.expired(now) {
             Err(EXPIRED.into())
@@ -260,8 +260,12 @@ impl Operation {
     }
 }
 impl Registry {
+    /// A reader that panicked leaves slot bookkeeping that is still valid, so a poisoned lock is taken over.
+    fn slots(&self) -> MutexGuard<'_, Slots> {
+        self.0.lock().unwrap_or_else(|e| e.into_inner())
+    }
     fn expire(&self, now: Instant) {
-        self.0.lock().unwrap().entries.retain(|_, slot| {
+        self.slots().entries.retain(|_, slot| {
             if slot.expired(now) {
                 slot.cancelled = true;
             }
@@ -274,7 +278,7 @@ impl Registry {
     }
     fn prepare(self: &Arc<Self>, owner: &str, now: Instant) -> Result<String, String> {
         self.expire(now);
-        let mut slots = self.0.lock().unwrap();
+        let mut slots = self.slots();
         if slots.entries.len() >= MAX_READERS
             || slots.entries.values().any(|slot| slot.owner == owner)
         {
@@ -297,7 +301,7 @@ impl Registry {
     }
     fn take(self: &Arc<Self>, owner: &str, id: &str, now: Instant) -> Result<Operation, String> {
         self.expire(now);
-        let mut slots = self.0.lock().unwrap();
+        let mut slots = self.slots();
         let slot = slots
             .entries
             .get_mut(id)
@@ -311,7 +315,7 @@ impl Registry {
         })
     }
     fn cancel(&self, owner: Option<&str>, id: Option<&str>) {
-        self.0.lock().unwrap().entries.retain(|key, slot| {
+        self.slots().entries.retain(|key, slot| {
             if owner.is_some_and(|owner| slot.owner != owner) || id.is_some_and(|id| key != id) {
                 return true;
             }
@@ -326,7 +330,7 @@ fn registry() -> &'static Arc<Registry> {
 }
 fn start_sweeper(registry: Arc<Registry>) {
     {
-        let mut slots = registry.0.lock().unwrap();
+        let mut slots = registry.slots();
         if slots.sweeping {
             return;
         }
@@ -336,7 +340,7 @@ fn start_sweeper(registry: Arc<Registry>) {
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
             registry.expire(Instant::now());
-            let mut slots = registry.0.lock().unwrap();
+            let mut slots = registry.slots();
             if slots.entries.is_empty() {
                 slots.sweeping = false;
                 break;

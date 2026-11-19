@@ -30,7 +30,7 @@ fn validate_file_name(name: &str) -> Result<(), String> {
             return Err("invalid analysis file name".into());
         }
     }
-    if bytes[39] != b'4' || !matches!(bytes[44], b'8' | b'9' | b'a' | b'b') {
+    if bytes.get(39) != Some(&b'4') || !matches!(bytes.get(44), Some(b'8' | b'9' | b'a' | b'b')) {
         return Err("analysis file name must carry a UUIDv4".into());
     }
     Ok(())
@@ -83,8 +83,8 @@ fn validate_envelope(file_name: &str, content: &str) -> Result<(), String> {
                 !byte.is_ascii_digit() && !(b'a'..=b'f').contains(byte)
             }
         })
-        || bytes[14] != b'4'
-        || !matches!(bytes[19], b'8' | b'9' | b'a' | b'b')
+        || bytes.get(14) != Some(&b'4')
+        || !matches!(bytes.get(19), Some(b'8' | b'9' | b'a' | b'b'))
     {
         return Err("analysis id must be a UUIDv4".into());
     }

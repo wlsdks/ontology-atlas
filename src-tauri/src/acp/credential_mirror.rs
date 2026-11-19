@@ -6,7 +6,10 @@ use super::bounded_command::{bounded_output, bounded_success, KEYCHAIN_PROBE_TIM
 pub(super) fn claude_credentials_service(config_dir: &Path) -> String {
     use sha2::{Digest, Sha256};
     let digest = Sha256::digest(config_dir.to_string_lossy().as_bytes());
-    format!("Claude Code-credentials-{}", &hex_lower(&digest)[..8])
+    format!(
+        "Claude Code-credentials-{}",
+        hex_lower(&digest).chars().take(8).collect::<String>()
+    )
 }
 
 fn hex_lower(bytes: &[u8]) -> String {
@@ -174,8 +177,9 @@ pub(super) fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
             }
         }
 
-        if let Some(chosen) = choose_terminal_credential(&carriers) {
-            let carrier = &carriers[chosen];
+        let chosen = choose_terminal_credential(&carriers)
+            .and_then(|at| Some((carriers.get(at)?, secrets.get(at)?)));
+        if let Some((carrier, chosen_secret)) = chosen {
             let account = mirror_account(&carriers, home);
             // Skip when identical so a locked keychain is not prompted. Reads are
             // account-qualified, or `security` answers with whichever item it reaches first.
@@ -203,7 +207,7 @@ pub(super) fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
                     "-a",
                     &account,
                     "-w",
-                    &secrets[chosen],
+                    chosen_secret,
                 ]);
                 // Only the exit status proves the write; a false yes would take down the symlink below.
                 if bounded_success(write, KEYCHAIN_PROBE_TIMEOUT) {

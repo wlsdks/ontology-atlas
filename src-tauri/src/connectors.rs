@@ -327,21 +327,27 @@ fn collect_codex_servers(text: &str) -> Found {
         };
         let key = unquote(key.trim());
         let value = value.trim();
+        let (Cursor::Server(index) | Cursor::Env(index) | Cursor::Headers(index)) = cursor else {
+            continue;
+        };
+        let Some(draft) = drafts.get_mut(index) else {
+            continue;
+        };
         match cursor {
-            Cursor::Server(index) => match key.as_str() {
-                "command" => drafts[index].command = toml_string(value),
-                "url" => drafts[index].url = toml_string(value),
-                "args" => drafts[index].args = toml_string_array(value),
+            Cursor::Server(_) => match key.as_str() {
+                "command" => draft.command = toml_string(value),
+                "url" => draft.url = toml_string(value),
+                "args" => draft.args = toml_string_array(value),
                 // Names only.
-                "env" => drafts[index].env_keys.extend(inline_table_keys(value)),
-                "headers" => drafts[index].header_keys.extend(inline_table_keys(value)),
+                "env" => draft.env_keys.extend(inline_table_keys(value)),
+                "headers" => draft.header_keys.extend(inline_table_keys(value)),
                 _ => {}
             },
-            Cursor::Env(index) => {
-                drafts[index].env_keys.insert(key);
+            Cursor::Env(_) => {
+                draft.env_keys.insert(key);
             }
-            Cursor::Headers(index) => {
-                drafts[index].header_keys.insert(key);
+            Cursor::Headers(_) => {
+                draft.header_keys.insert(key);
             }
             Cursor::Elsewhere => {}
         }
@@ -495,7 +501,7 @@ fn discovery_vault_root(
 #[tauri::command(async)]
 pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDiscovery, String> {
     let home = home_dir();
-    let vault = discovery_vault_root(vault_path.as_deref(), |path| crate::canonical_root(path))?;
+    let vault = discovery_vault_root(vault_path.as_deref(), crate::canonical_root)?;
     let vault_mcp_json = vault
         .as_deref()
         .and_then(|root| crate::resolve_existing_inside(&root.to_string_lossy(), ".mcp.json").ok());
@@ -885,13 +891,13 @@ url = "https://example.test/mcp"
                 Err("vault-root-not-granted".to_string())
             }
         };
-        assert_eq!(discovery_vault_root(None, &resolve), Ok(None));
-        assert_eq!(discovery_vault_root(Some("   "), &resolve), Ok(None));
+        assert_eq!(discovery_vault_root(None, resolve), Ok(None));
+        assert_eq!(discovery_vault_root(Some("   "), resolve), Ok(None));
         assert_eq!(
-            discovery_vault_root(Some("/granted"), &resolve).unwrap(),
+            discovery_vault_root(Some("/granted"), resolve).unwrap(),
             Some(PathBuf::from("/granted"))
         );
-        assert!(discovery_vault_root(Some("/forged"), &resolve).is_err());
+        assert!(discovery_vault_root(Some("/forged"), resolve).is_err());
     }
 
     #[test]

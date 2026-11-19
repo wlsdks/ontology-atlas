@@ -241,24 +241,37 @@ pub(crate) fn verify_source_snapshot(
     Ok(())
 }
 
-fn source_snapshot(source_path: &str, head: &str, snapshot: &str) -> Result<(Identity, Receipt), String> {
+fn source_snapshot(
+    source_path: &str,
+    head: &str,
+    snapshot: &str,
+) -> Result<(Identity, Receipt), String> {
     let current = picked_identity(source_path)?;
     let receipt = snapshot_for_identity(&current, head, snapshot)?;
     Ok((current, receipt))
 }
 
-fn snapshot_for_identity(current: &Identity, head: &str, snapshot: &str) -> Result<Receipt, String> {
+fn snapshot_for_identity(
+    current: &Identity,
+    head: &str,
+    snapshot: &str,
+) -> Result<Receipt, String> {
     let receipts = RECEIPTS
         .get_or_init(Default::default)
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    let receipt = receipts.iter().rev().find(|r| {
-        r.snapshot == snapshot
-            && r.identity.root == current.root
-            && r.identity.object == current.object
-            && r.identity.head == current.head
-            && current.head == head
-    }).cloned().ok_or("stale")?;
+    let receipt = receipts
+        .iter()
+        .rev()
+        .find(|r| {
+            r.snapshot == snapshot
+                && r.identity.root == current.root
+                && r.identity.object == current.object
+                && r.identity.head == current.head
+                && current.head == head
+        })
+        .cloned()
+        .ok_or("stale")?;
     Ok(receipt)
 }
 
@@ -337,13 +350,14 @@ fn parse_nul_git_history(
     end: i64,
 ) -> Result<(Vec<ParsedCommit>, Vec<String>), String> {
     let tokens: Vec<_> = bytes.split(|b| *b == 0).collect();
+    let token = |at: usize| tokens.get(at).copied().ok_or("unreadable");
     let mut index = 0;
     let mut commits = Vec::new();
     let mut reasons = Vec::new();
     let mut path_count = 0;
     let mut candidates = 0;
     while index + 4 <= tokens.len() {
-        let raw_hash = std::str::from_utf8(tokens[index])
+        let raw_hash = std::str::from_utf8(token(index)?)
             .map_err(|_| "unreadable")?
             .trim_start_matches('\n');
         if raw_hash.is_empty() {
@@ -353,16 +367,16 @@ fn parse_nul_git_history(
         if !valid_hash(raw_hash) {
             return Err("unreadable".into());
         }
-        let parents = std::str::from_utf8(tokens[index + 1]).map_err(|_| "unreadable")?;
-        let epoch: i64 = std::str::from_utf8(tokens[index + 2])
+        let parents = std::str::from_utf8(token(index + 1)?).map_err(|_| "unreadable")?;
+        let epoch: i64 = std::str::from_utf8(token(index + 2)?)
             .map_err(|_| "unreadable")?
             .parse()
             .map_err(|_| "unreadable")?;
-        let message_complete = std::str::from_utf8(tokens[index + 3]).is_ok();
+        let message_complete = std::str::from_utf8(token(index + 3)?).is_ok();
         if !message_complete && !reasons.iter().any(|r| r == "non-utf8-message") {
             reasons.push("non-utf8-message".into());
         }
-        let message = String::from_utf8_lossy(tokens[index + 3]).into_owned();
+        let message = String::from_utf8_lossy(token(index + 3)?).into_owned();
         let subject = message
             .lines()
             .next()
@@ -374,14 +388,15 @@ fn parse_nul_git_history(
         candidates += 1;
         let mut paths = Vec::new();
         let mut incomplete = false;
-        while index < tokens.len() && tokens[index].starts_with(b"\n:")
-            || index < tokens.len() && tokens[index].starts_with(b":")
+        while tokens
+            .get(index)
+            .is_some_and(|raw| raw.starts_with(b"\n:") || raw.starts_with(b":"))
         {
             if index + 1 >= tokens.len() || (index + 2 == tokens.len() && truncated) {
                 incomplete = true;
                 break;
             }
-            let path = match std::str::from_utf8(tokens[index + 1]) {
+            let path = match std::str::from_utf8(token(index + 1)?) {
                 Ok(value) => value,
                 Err(_) => {
                     reasons.push("non-utf8-path".into());

@@ -31,7 +31,7 @@ mod vault_scope_tests {
         let vault = std::fs::canonicalize(base.join("vault")).unwrap();
         let home_path = home.to_string_lossy().to_string();
         let vault_path = vault.to_string_lossy().to_string();
-        let scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone()]);
+        let scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault));
 
         let refused = |result: Result<(), String>| {
             let err = result.unwrap_err();

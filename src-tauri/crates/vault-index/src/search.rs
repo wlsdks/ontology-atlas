@@ -107,7 +107,10 @@ fn file_sha(root: &Path, relative: &str) -> Option<Sha> {
     loop {
         match file.read(&mut buffer) {
             Ok(0) => return Some(sha256(hasher)),
-            Ok(read) => hasher.update(&buffer[..read]),
+            Ok(read) => match buffer.get(..read) {
+                Some(chunk) => hasher.update(chunk),
+                None => return None,
+            },
             Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
             Err(_) => return None,
         }

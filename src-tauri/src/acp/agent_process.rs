@@ -19,7 +19,9 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
             return Ok(if out.is_empty() { None } else { Some(out) });
         }
         let newline = available.iter().position(|b| *b == b'\n');
-        let content = &available[..newline.unwrap_or(available.len())];
+        let content = available
+            .get(..newline.unwrap_or(available.len()))
+            .unwrap_or(available);
         if !oversized && out.len() + content.len() > max_bytes {
             oversized = true;
             out = Vec::new();

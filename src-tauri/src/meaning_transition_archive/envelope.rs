@@ -43,7 +43,7 @@ pub(super) fn validate_record_file_name(name: &str) -> Result<(), String> {
             return Err("invalid meaning transition record file name".into());
         }
     }
-    if bytes[39] != b'4' || !matches!(bytes[44], b'8' | b'9' | b'a' | b'b') {
+    if bytes.get(39) != Some(&b'4') || !matches!(bytes.get(44), Some(b'8' | b'9' | b'a' | b'b')) {
         return Err("meaning transition record name must carry a UUIDv4".into());
     }
     Ok(())

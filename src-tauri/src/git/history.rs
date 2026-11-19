@@ -143,10 +143,13 @@ fn content(vault_path: &str, slug: &str, revision: &str) -> Result<Option<String
         return Err(coded("git-history-unavailable", ""));
     };
     let fields: Vec<_> = metadata.split_ascii_whitespace().collect();
-    if path != file_path || fields.len() != 3 || fields[1] != "blob" || !valid_revision(fields[2]) {
+    let [_, "blob", blob] = fields.as_slice() else {
+        return Err(coded("git-history-unavailable", ""));
+    };
+    if path != file_path || !valid_revision(blob) {
         return Err(coded("git-history-unavailable", ""));
     }
-    let (success, text) = read(&root, &["cat-file", "blob", fields[2]], MAX_CONTENT_BYTES)?;
+    let (success, text) = read(&root, &["cat-file", "blob", blob], MAX_CONTENT_BYTES)?;
     if success {
         Ok(Some(text))
     } else {
