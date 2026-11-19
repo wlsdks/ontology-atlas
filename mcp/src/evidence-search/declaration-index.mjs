@@ -120,7 +120,7 @@ function factsOf(file) {
       ? outlineSource(text, file.path).declarations
         .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export')
         // A copy: a substring would keep the whole file text alive.
-        .map(({ name, line, kind }) => ({ name: Buffer.from(name).toString(), line, kind }))
+        .map(({ name, line, kind, signature }) => ({ name: Buffer.from(name).toString(), line, kind, ...tiesOf(kind, signature, line, file.path, text) }))
       : [],
     names: identifierFilter(text),
   };
@@ -128,6 +128,68 @@ function factsOf(file) {
   DECLARATIONS.set(file.abs, facts);
   if (DECLARATIONS.size > FILE_LIMIT) DECLARATIONS.delete(DECLARATIONS.keys().next().value);
   return facts;
+}
+
+const copy = (value) => Buffer.from(value).toString();
+const IDENTIFIER_NAME = /^[A-Za-z_$][\w$]*$/u;
+const PYTHON_CLASS = /^class\s+[A-Za-z_]\w*\s*\(([^)]{0,300})\)/u;
+const EXTENDS = /\bextends\s+([A-Za-z_$][\w$.]*)/u;
+const IMPLEMENTS = /\bimplements\s+([^{]{1,300})/u;
+const RUST_TRAIT_IMPL = /^impl\b(?:\s*<[^{]{0,200}?>)?\s+([A-Za-z_][\w:]*)(?:<[^{]{0,200}>)?\s+for\s/u;
+const GO_INTERFACE_METHOD = /^\s+([A-Za-z_]\w*)\s*\(/u;
+const GO_EMBEDDED = /^\s+\*?[A-Za-z_][\w.]*\s*(?:\/\/.*)?$/u;
+// An interface body longer than this is not read as a method set.
+const GO_INTERFACE_LINES = 200;
+
+/** The bare name a written type reference ends in: `mod.Base[T]` -> `Base`. */
+function typeName(written) {
+  let text = written.trim();
+  for (let pass = 0; pass < 4 && /[<[]/u.test(text); pass += 1) text = text.replace(/<[^<>]*>|\[[^[\]]*\]/gu, '');
+  const name = text.trim().split('.').pop();
+  return IDENTIFIER_NAME.test(name) ? name : null;
+}
+
+/**
+ * What a declaration says it is tied to (a keyword argument such as
+ * `metaclass=` is no name and drops out): a class header's bases (`class A(B):`,
+ * `extends B`, `implements C, D`, Rust's `impl Trait for Type`), and a Go interface's method set, or `open`
+ * when the interface embeds another and so its full set is not written here.
+ */
+function tiesOf(kind, signature, line, path, text) {
+  if (kind === 'class' && typeof signature === 'string' && signature.length <= 2000) {
+    const header = signature.trim();
+    const python = PYTHON_CLASS.exec(header);
+    const trait = path.endsWith('.rs') ? RUST_TRAIT_IMPL.exec(header) : null;
+    const written = trait ? [trait[1].split('::').pop()] : python
+      ? python[1].split(',')
+      : [EXTENDS.exec(header)?.[1], ...(IMPLEMENTS.exec(header)?.[1].replace(/<[^<>]*>/gu, '').split(',') ?? [])];
+    const bases = written.filter(Boolean).map(typeName).filter(Boolean);
+    return bases.length > 0 ? { bases: bases.map(copy) } : {};
+  }
+  if (kind === 'interface' && path.endsWith('.go')) {
+    const lines = text.split('\n', line + GO_INTERFACE_LINES).slice(line);
+    const methods = [];
+    for (const body of lines) {
+      if (/^\}/u.test(body)) return methods.length > 0 ? { methods: methods.map(copy) } : {};
+      const method = GO_INTERFACE_METHOD.exec(body);
+      if (method) methods.push(method[1]);
+      else if (GO_EMBEDDED.test(body)) return { open: true };
+    }
+    return { open: true };
+  }
+  return {};
+}
+
+/**
+ * Each product file's declarations, with the ties `tiesOf` reads, from the
+ * same cache the index uses.
+ *
+ * @param {string} rootPath absolute repository root
+ * @param {{ ignore?: string[], files?: object[] }} [options]
+ * @returns {Generator<{ path: string, declarations: object[] }>}
+ */
+export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
+  for (const file of files ?? productFiles(rootPath, ignore)) yield { path: file.path, declarations: factsOf(file).declarations };
 }
 
 /** False only when the file certainly never names `name` as a whole identifier. */
@@ -168,49 +230,6 @@ export function declarationIndex(rootPath, { ignore = [], files } = {}) {
   }
   return index;
 }
-// A `type` alias owns no methods, and one declared inside a method body must not take them over.
-const OWNER_KINDS = new Set(['class', 'interface', 'struct', 'enum', 'object', 'trait']);
-
-/**
- * name -> [{ path, line, kind, name, owner? }] for the given names only, over
- * the same cached per-file declarations: a file whose identifier filter rules
- * out every name is skipped, and no index of the rest is built. A
- * `Receiver.method` declaration answers to its full name and to its bare
- * method name; a method declared under its bare name carries `owner`, the
- * type declared last before it.
- *
- * @param {string} rootPath absolute repository root
- * @param {Iterable<string>} names
- * @param {{ ignore?: string[], files?: object[] }} [options]
- */
-export function declarationsNamed(rootPath, names, { ignore = [], files } = {}) {
-  const wanted = new Set(names);
-  const found = new Map();
-  if (wanted.size === 0) return found;
-  // Each name is hashed once; a file costs one filter probe per name.
-  const hashed = [...new Set([...wanted].map((name) => name.split('.').pop()))]
-    .filter((name) => /^[A-Za-z_$][\w$]*$/.test(name)).map(hashes);
-  const named = (facts) => hashed.some(([a, b]) => positions(a, b, facts.names.length * 8)
-    .every((bit) => (facts.names[bit >> 3] & (1 << (bit & 7))) !== 0));
-  for (const file of files ?? productFiles(rootPath, ignore)) {
-    const facts = factsOf(file);
-    if (!named(facts)) continue;
-    let owner = null;
-    for (const { name, line, kind } of facts.declarations) {
-      if (OWNER_KINDS.has(kind)) owner = name;
-      const keys = name.includes('.') ? [name, name.split('.').pop()] : [name];
-      for (const key of keys) {
-        if (!wanted.has(key)) continue;
-        const row = { path: file.path, line, kind, name, ...(kind === 'method' && owner && !name.includes('.') ? { owner } : {}) };
-        const rows = found.get(key);
-        if (rows) rows.push(row);
-        else found.set(key, [row]);
-      }
-    }
-  }
-  return found;
-}
-
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

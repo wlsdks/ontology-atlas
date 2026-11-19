@@ -1,89 +1,164 @@
 /**
  * The family a symbol read belongs to, as one plain line on the read: how many
  * members the repository holds and how many this session has read. A family is
- * either the declarations that carry the read function's or method's name
- * under the folder holding its workspace package, else under its own folder
- * (each plugin's `apply`, each broker's `Presence`, each transform's
- * `__call__`), or a family row the survey lists whose members include the read
- * symbol (one class per file in a folder). A builder who read one member then
- * knows, where the sentence is written, that "every" would speak for members it
- * has not read. Nothing refuses: the line is a fact beside the read.
+ * only members with a written structural tie:
  *
- * The cost is one probe of the cached declarations per read call, for the
- * names its rows read.
+ * - classes whose header names the same base or interface (`class A(Base):`,
+ *   `extends Base`, `implements Plugin`), where that name is declared exactly
+ *   once in the repository;
+ * - Go types whose methods cover one interface the repository declares with two
+ *   or more methods, the read method among them.
+ *
+ * Declarations that only share a name, or share a folder, are no family, and a
+ * read whose tie cannot be established gets no line: a wrong count would be a
+ * false fact handed to the builder. Registration tables, switches and
+ * decorators are not read as ties.
+ *
+ * The cost is one pass over the cached declarations per read call that holds
+ * a symbol read.
  */
 
-import { posix } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, posix } from 'node:path';
 
 import { repoText } from '../analyze/repo-text.mjs';
-import { declarationsNamed } from '../evidence-search/declaration-index.mjs';
+import { enclosingClass } from '../evidence-search/callees.mjs';
+import { declarationsByFile } from '../evidence-search/declaration-index.mjs';
 
-const CALLABLE = new Set(['function', 'method']);
 // Members named in the line; the rest are counted.
 const SHOWN = 3;
+const TYPE_KINDS = new Set(['class', 'interface', 'struct', 'type', 'enum', 'trait']);
+const MAX_FILE_BYTES = 256 * 1024;
 
 const lastSegment = (name) => String(name).split('.').pop();
-const keyOf = (row) => `${row.path}\0${row.line}`;
 
-/** The folder a read's family spans: the one holding its workspace package, else its own; none at the root. */
-function familyRoot(path, packages) {
-  let holder = null;
-  for (const folder of packages) {
-    if (folder !== '.' && path.startsWith(`${folder}/`) && (!holder || folder.length > holder.length)) holder = folder;
+/** One pass over the declarations: classes by base, type names, Go method sets and interfaces. */
+function familyIndex(repoRoot, files) {
+  const byPath = new Map();
+  const subclasses = new Map();
+  const typeCount = new Map();
+  const goMethods = new Map();
+  const goInterfaces = [];
+  for (const { path, declarations } of declarationsByFile(repoRoot, files ? { files } : {})) {
+    byPath.set(path, declarations);
+    const go = path.endsWith('.go');
+    const folder = posix.dirname(path);
+    for (const declaration of declarations) {
+      if (TYPE_KINDS.has(declaration.kind)) typeCount.set(declaration.name, (typeCount.get(declaration.name) ?? 0) + 1);
+      for (const base of declaration.bases ?? []) {
+        const rows = subclasses.get(base) ?? [];
+        rows.push({ path, declaration });
+        subclasses.set(base, rows);
+      }
+      if (!go) continue;
+      if (declaration.kind === 'interface' && declaration.methods?.length >= 2) goInterfaces.push({ path, declaration });
+      if (declaration.kind === 'method' && declaration.name.includes('.')) {
+        const receiver = declaration.name.slice(0, declaration.name.lastIndexOf('.'));
+        const key = `${folder}\0${receiver}`;
+        const methods = goMethods.get(key) ?? { receiver, folder, lines: new Map() };
+        const method = lastSegment(declaration.name);
+        if (!methods.lines.has(method)) methods.lines.set(method, { path, line: declaration.line });
+        goMethods.set(key, methods);
+      }
+    }
   }
-  const root = posix.dirname(holder ?? path);
-  return root === '.' || root === '' ? null : root;
+  return { byPath, subclasses, typeCount, goMethods, goInterfaces };
 }
 
-/** Whether this session has served the member: a range from its declaration line on, or a read of it by name. */
+function linesOf(repoRoot, path) {
+  try {
+    const text = readFileSync(join(repoRoot, path), 'utf8');
+    return text.length > MAX_FILE_BYTES ? null : text.split('\n');
+  } catch {
+    return null;
+  }
+}
+
+/** The member's own declaration of `method`: the first one after its header and before the next type in its file. */
+function ownMethod(declarations, owner, method) {
+  for (const declaration of declarations) {
+    if (declaration.line <= owner.line) continue;
+    if (TYPE_KINDS.has(declaration.kind)) return null;
+    if (lastSegment(declaration.name) === method && (declaration.kind === 'method' || declaration.kind === 'function')) return declaration;
+  }
+  return null;
+}
+
+/** Classes whose header names the read class's first base that the repository declares once. */
+function classFamily(index, row, declaration, repoRoot) {
+  const declarations = index.byPath.get(row.path) ?? [];
+  let owner = declaration.kind === 'class' ? declaration : null;
+  if (!owner) {
+    const lines = linesOf(repoRoot, row.path);
+    owner = lines ? enclosingClass({ lines, declarations }, declaration) : null;
+  }
+  if (!owner?.bases) return null;
+  const method = owner === declaration ? null : lastSegment(declaration.name);
+  for (const base of owner.bases) {
+    if (index.typeCount.get(base) !== 1) continue;
+    const members = (index.subclasses.get(base) ?? []).map(({ path, declaration: member }) => {
+      const own = method ? ownMethod(index.byPath.get(path) ?? [], member, method) : null;
+      return { name: member.name, path, line: own?.line ?? member.line };
+    });
+    if (members.length >= 2) return { members, what: `classes whose header names \`${repoText(base, 80)}\`` };
+  }
+  return null;
+}
+
+/** Go types whose methods cover the widest interface holding the read method, when that interface is one. */
+function goFamily(index, row, declaration) {
+  if (!row.path.endsWith('.go') || declaration.kind !== 'method' || !declaration.name.includes('.')) return null;
+  const receiver = declaration.name.slice(0, declaration.name.lastIndexOf('.'));
+  const method = lastSegment(declaration.name);
+  const own = index.goMethods.get(`${posix.dirname(row.path)}\0${receiver}`);
+  if (!own) return null;
+  const covers = (methods, interfaceMethods) => interfaceMethods.every((name) => methods.lines.has(name));
+  const candidates = index.goInterfaces
+    .filter(({ declaration: face }) => face.methods.includes(method) && covers(own, face.methods))
+    .sort((a, b) => b.declaration.methods.length - a.declaration.methods.length);
+  if (candidates.length === 0) return null;
+  const widest = candidates.filter((candidate) => candidate.declaration.methods.length === candidates[0].declaration.methods.length);
+  const membersOf = ({ declaration: face }) => [...index.goMethods.values()].filter((methods) => covers(methods, face.methods));
+  const sets = widest.map((candidate) => membersOf(candidate).map((methods) => `${methods.folder}\0${methods.receiver}`).sort().join('\n'));
+  // Two interfaces of the same width that different types implement: no one tie.
+  if (new Set(sets).size !== 1) return null;
+  const face = widest[0];
+  const members = membersOf(face).map((methods) => ({ name: methods.receiver, ...methods.lines.get(method) }));
+  if (members.length < 2) return null;
+  return { members, what: `Go types implementing \`${repoText(face.declaration.name, 80)}\` (${repoText(`${face.path}:L${face.declaration.line}`)})` };
+}
+
+/** Whether this session has served the member: a range holding its declaration line. */
 function served(reads, member) {
-  return (reads?.get(member.path) ?? []).some((range) => range.startLine <= member.line && member.line <= range.endLine
-    && (range.endLine > member.line || (typeof range.symbol === 'string' && lastSegment(range.symbol) === lastSegment(member.name))));
+  return (reads?.get(member.path) ?? []).some((range) => range.startLine <= member.line && member.line <= range.endLine);
 }
 
-const label = (member) => repoText(member.owner ? `${member.owner}.${lastSegment(member.name)}` : member.name, 80);
-
-function line({ members, what, reads }) {
+function line({ members: unordered, what, reads }) {
+  const members = [...unordered].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : a.line - b.line));
   const read = members.filter((member) => served(reads, member)).length;
-  const shown = members.slice(0, SHOWN).map((member) => `${label(member)} ${repoText(`${member.path}:L${member.line}`)}`).join(', ');
+  const shown = members.slice(0, SHOWN).map((member) => `${repoText(member.name, 80)} ${repoText(`${member.path}:L${member.line}`)}`).join(', ');
   const more = members.length > SHOWN ? ` and ${members.length - SHOWN} more` : '';
   return `This family has ${members.length} members: ${what} (${shown}${more}). This session has read ${read} of them; a sentence about the family says "${read} of ${members.length} read" or speaks only for the member${read === 1 ? '' : 's'} read, and what the others do is an Uncertainty line.`;
 }
 
 /**
- * Adds `family`, one plain line, to each symbol read in the packet that belongs
- * to a family of two or more members.
+ * Adds `family`, one plain line, to each symbol read in the packet whose
+ * declaration has a structural family of two or more members.
  *
  * @param {object} packet a `sourceEvidence:v1` packet, changed in place
- * @param {{ repoRoot: string, collection: object, survey?: object, reads?: Map<string, object[]> }} context
+ * @param {{ repoRoot: string, files?: object[], reads?: Map<string, object[]> }} context
  */
-export function noteReadFamilies(packet, { repoRoot, collection, survey, reads }) {
+export function noteReadFamilies(packet, { repoRoot, files, reads }) {
   const rows = (packet?.rows ?? []).filter((row) => row?.status === 'read' && typeof row.symbol === 'string' && row.actualRange);
-  if (rows.length === 0 || !repoRoot || !collection) return packet;
-  const files = collection.files?.filter((file) => file.class === 'product');
-  const packages = (collection.members ?? []).map((member) => member.path).filter((path) => typeof path === 'string');
-  const families = (survey?.abilities ?? []).filter((ability) => ability.kind === 'family' && Array.isArray(ability.members));
-  const names = new Set(rows.map((row) => lastSegment(row.symbol)));
-  for (const family of families) {
-    if (rows.some((row) => posix.dirname(row.path) === family.path && family.members.includes(lastSegment(row.symbol)))) for (const member of family.members) names.add(member);
-  }
-  const named = declarationsNamed(repoRoot, names, files ? { files } : {});
+  if (rows.length === 0 || !repoRoot) return packet;
+  const index = familyIndex(repoRoot, files);
   for (const row of rows) {
-    const own = (candidate) => candidate.path === row.path && row.actualRange.startLine <= candidate.line && candidate.line <= row.actualRange.endLine;
-    const name = lastSegment(row.symbol);
-    const root = familyRoot(row.path, packages);
-    const seen = new Set();
-    const sameName = root
-      ? (named.get(name) ?? []).filter((member) => CALLABLE.has(member.kind) && member.path.startsWith(`${root}/`) && !seen.has(keyOf(member)) && seen.add(keyOf(member)))
-      : [];
-    if (sameName.length >= 2 && sameName.some(own)) {
-      row.family = line({ members: sameName, what: `\`${repoText(name, 80)}\` is declared ${sameName.length} times under ${repoText(root)}/`, reads });
-      continue;
-    }
-    const family = families.find((candidate) => posix.dirname(row.path) === candidate.path && candidate.members.includes(name));
-    if (!family) continue;
-    const members = family.members.map((member) => (named.get(member) ?? []).find((candidate) => posix.dirname(candidate.path) === family.path)).filter(Boolean);
-    if (members.length >= 2) row.family = line({ members, what: `the ${repoText(family.path)} family the survey lists`, reads });
+    const declarations = index.byPath.get(row.path) ?? [];
+    const declaration = declarations.find((candidate) => candidate.line === row.actualRange.startLine)
+      ?? declarations.find((candidate) => candidate.name === row.symbol && candidate.line >= row.actualRange.startLine && candidate.line <= row.actualRange.endLine);
+    if (!declaration) continue;
+    const family = classFamily(index, row, declaration, repoRoot) ?? goFamily(index, row, declaration);
+    if (family) row.family = line({ ...family, reads });
   }
   return packet;
 }
