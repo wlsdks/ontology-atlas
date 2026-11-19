@@ -90,6 +90,23 @@ export function docUncertaintyReads(doc, { slug, kind, title, path }) {
   return rows;
 }
 
+/**
+ * `test(doc.body)`, kept per file version under `question`, which names the test
+ * and everything it reads besides the body. For a question asked of many documents
+ * on every call (whether a body is still a starter template, which the maintenance
+ * plan after every write asks): the bodies are read once per file version, and
+ * stay out of the body cache.
+ */
+export function docBodyAnswer(doc, question, test) {
+  const memo = memoFor(doc);
+  if (!memo) return test(doc.body);
+  if (memo.question !== question) {
+    memo.answer = test(readVaultDocText(doc, { remember: false }).body);
+    memo.question = question;
+  }
+  return memo.answer;
+}
+
 /** Needles whose per-document answers {@link docBodyIncluder} keeps, most recent last. */
 const BODY_NEEDLES_KEPT = 4;
 /** needle → (file version → whether its lowercased body includes the needle). */

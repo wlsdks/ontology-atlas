@@ -1,7 +1,7 @@
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 import { refMatchesOntologyAtlasIgnore } from '../vault/ontology-atlas-ignore.mjs';
 import { orderUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
-import { docHasBody, docUncertaintyReads } from '../vault/doc-facts.mjs';
+import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../vault/doc-facts.mjs';
 import {
   edgeSortKey,
   formatPathEdge,
@@ -449,7 +449,9 @@ export function createScopeQueries({
           .map(({ next }) => nodeBySlug.get(next))
           .find((parent) => parent?.kind === node.kind);
         const doc = sourceDocFor(node.slug);
-        const starterBody = doc ? bodyIsStarterTemplate(node.kind, node.title, doc.body) : false;
+        const starterBody = doc
+          ? docBodyAnswer(doc, `starter\n${node.kind}\n${node.title}`, (body) => bodyIsStarterTemplate(node.kind, node.title, body))
+          : false;
         return { node, sameKindParent, starterBody };
       })
       .filter((row) => row.sameKindParent || row.starterBody)
