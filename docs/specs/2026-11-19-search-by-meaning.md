@@ -75,10 +75,16 @@ Outside facts (fetched 2026-11-19):
   - that Settings can delete it.
 
   Cancel is the default.
-- **The model.** bge-m3, in its most compressed file that keeps the same quality and passes a safety inspection. "Same quality" means recall@8 within 1 point of fp32 and cross-language within 2 points. The file's repo, commit and SHA-256 are compiled into the app. Candidates:
-  - `Xenova/bge-m3` int8, 568 MB, MIT;
-  - `onnx-community/bge-m3-ONNX` int8;
-  - the BAAI fp32 reference, 2.27 GB, at commit `5617a9f6`.
+- **The model.** bge-m3, in its most compressed file that keeps the same quality and passes a safety inspection. "Same quality" means recall@8 within 1 point of fp32, cross-language within 2 points, and mean cosine to fp32 ≥ 0.99. The file's repo, commit and SHA-256 are compiled into the app. Measured against fp32 (runtime spike, 2026-11-19):
+  - `Xenova/bge-m3` and `onnx-community/bge-m3-ONNX` int8 (568 MB): recall unchanged on the saturated fixture, but mean cosine 0.974 and top-8 overlap 83%. Refused.
+  - `Xenova/bge-m3` q4f16: cosine 0.952, and it needs the `MatMulNBits` contrib op, which has a public out-of-bounds proof of concept at load. Refused.
+  - f16: cosine 1.0000, top-8 overlap 99.8%. **Chosen.**
+
+  The app downloads the publisher's own `BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181` `pytorch_model.bin` (2.27 GB, SHA-256 `b5e0ce34…`) and `tokenizer.json`. It reads the weights with candle's Rust reader, which executes no code, converts them to f16 safetensors (1.14 GB kept, cosine 0.99999), and deletes the download.
+- **Runtime.** candle with Metal and Accelerate. It adds about 2.2 MB compressed, is MIT/Apache, and is memory-safe Rust. The fallback is ONNX Runtime with Microsoft's own dylib, which is also the Windows GPU path; pyke's static build is refused. Measured: 11.9 passages/s at a 1.77 GB peak, so about 2.3 h for 100k passages.
+- **Slow is acceptable; blocking is not.** The owner accepts hours of first preparation for quality. Two things are required in return:
+  - **It runs in the background.** The person keeps using every surface while it prepares. The UI thread never waits on it, it resumes after Stop, a quit or a crash, and it never prepares the same passage twice.
+  - **Progress is always visible and never dull.** The person can see how far it has come, what it is reading now, and roughly how long is left, from wherever they are in the app. Search improves while it runs, wiki pages first. Motion follows the smooth-motion rule.
 - **Memory.** The app may use 1–2 GB while preparing.
 - **Attribution.** The licence screen carries:
   - the MIT text with "Copyright (c) 2022 staoxiao" (FlagOpen/FlagEmbedding);
@@ -88,7 +94,7 @@ Outside facts (fetched 2026-11-19):
 
   The model repository has no LICENSE file, and Hugging Face's terms forbid removing a licence reference.
 - **Audit.** The download writes a `model-download` start line and a closing line to `llm-audit.jsonl`.
-- **Measured on the labelled set (#3611).** Recall@8 went from 66.7 for word search alone to 95.0 for word plus meaning with bge-m3. Cross-language went from 20.0 to 85.0, and exact terms stayed at 100. Preparing 50k files through Ollama took 5–8 hours, which misses the 60-minute budget. The built-in runtime's speed decides whether that budget holds.
+- **Measured on the labelled set (#3611).** Recall@8 went from 66.7 for word search alone to 95.0 for word plus meaning with bge-m3. Cross-language went from 20.0 to 85.0, and exact terms stayed at 100. Preparing 50k files through Ollama took 5–8 hours; the built-in runtime is faster but still takes hours, so preparation is a background job (below).
 
 ## Problem and alternatives
 
@@ -201,7 +207,7 @@ so.
 | Untrusted volume (no change time, per #3607) | Out of scope: as above | Works; `meaning.untrustedDrive` once; every update reads each file again and compares passage hashes |
 | Web playground | `meaning.web` under the question field; no setup button; `DEGRADED_SURFACES` entry pointing to `/download` | Out of scope: web-only row |
 | Windows app | Out of scope: web | Same cells as macOS; Ollama for Windows uses the same address; proof is Windows CI only, no Windows walk |
-| Largest measured vault (50k files) | Out of scope: as above | Same cells; preparation ≤ 60 min; query p95 ≤ 300 ms |
+| Largest measured vault (50k files) | Out of scope: as above | Same cells; preparation runs in the background with visible progress and no fixed time budget; query p95 ≤ 300 ms |
 
 ## Copy
 
@@ -273,11 +279,12 @@ writes them.
 1. **Baseline captured, quality gained.** Given a committed labelled fixture vault (≥ 300 pages; 60 questions: 20 Korean, 20 English, 20 paraphrase or cross-language), plus 10 questions the owner asks of their own largest wiki and captures in the installed app today. When `pnpm perf:meaning-quality` runs word-only and then word plus meaning. Then recall@8 rises by ≥ 15 points overall and ≥ 30 on the cross-language subset, and the exact-term subset loses ≤ 2 points. The capture, the script output and the owner-question results are attached to the PR.
 2. **One press from today's owner state.** Given an installed app on a scratch HOME, a 10k-file vault and Ollama running with no embedding model. When the person presses Set up search by meaning, then Download bge-m3 and prepare. Then with no other input the desk reaches `meaning.ready` in ≤ 15 min after the download. Stop, and quitting the app, both resume with zero passages sent twice (sent count = remaining). Installed-app walk with capture.
 3. **Recovery.** Given a build killed mid-batch 20 times. When the app reopens each time. Then the next open's vectors equal a build from scratch, and `quick_check` is ok (`src-tauri/crates/vault-index/tests/vectors.rs`).
-4. **Scale.** Given 50k files (the `perf:vault-open` shapes). When `pnpm perf:meaning -- --files=10000 --files=50000` runs. Then preparation is ≤ 60 min at 50k with bge-m3 on the owner's M2 Max; `vectors.sqlite` is ≤ 0.6 × the vault's text; query p95 is ≤ 300 ms with the model loaded (1,000 queries, embedding included); and the app's footprint is steady ≤ +25 MB and peak ≤ +64 MB while preparing (physical footprint, measured).
+4. **Scale.** Given 50k files (the `perf:vault-open` shapes). When `pnpm perf:meaning -- --files=10000 --files=50000` runs. Then the built-in runner prepares ≥ 10 passages/s at 50k with bge-m3 on the owner's M2 Max; `vectors.sqlite` is ≤ 0.6 × the vault's text; query p95 is ≤ 300 ms with the model loaded (1,000 queries, embedding included); the model adds ≤ 2 GB peak while preparing and the app returns to ≤ +25 MB steady within 60 s after preparation ends (physical footprint, measured).
 5. **Nothing leaves; every send is logged.** Given the address `https://example.com`, a symlinked audit log, and a runner that returns NaN, a wrong dimension or 5 MiB. When preparation or a search runs. Then no request leaves for the remote address, nothing is sent while the log is unwritable, and every bad response is refused with no vector stored. A run writes its `embed-build` line before its first request and closes it after; a press writes one `embed-query` line (`src-tauri/src/llm/embed/tests.rs`).
 6. **Incremental and fresh.** Given a prepared vault. When one file is edited, then another is renamed, then a third is deleted. Then only the edited file's changed passages are sent, the rename sends nothing, and a search between the edit and the update never shows a passage the file no longer holds (`tests/vectors.rs`).
 7. **States that fail softly.** Given Ollama stopped, the model removed, or the index switched off. When the person presses Find evidence. Then word results arrive within today's time plus 10 s at most, with `meaning.runnerDown`, `meaning.modelMissing` or `meaning.indexOff` (`tests/e2e/library/question-desk-meaning.spec.ts`, with a bridge stub).
 8. **Settings and web.** Given a prepared folder. When the person presses Delete under Search by meaning. Then the file is gone, the size row reads Nothing stored, and the 14-day sweep covers `vectors.sqlite` (`StoredHereSettings.test.tsx`, crate `tests/global.rs`). On the web the desk shows `meaning.web`, and its `DEGRADED_SURFACES` entry opens `/download` (`tests/e2e/web-surface-smoke.spec.ts`).
+9. **Background and visible.** Given preparation running at 50k. When the person pans the map, opens the wiki and runs word search. Then map frame p95 stays within 10% of the same walk with preparation stopped, no command waits on the runner, and the progress (done count, what it reads now, time left) is visible from every top-level tab and updates at least every 2 s. Quitting mid-run and relaunching resumes with zero passages prepared twice.
 
 ## Risks
 
@@ -319,3 +326,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 
 - 2026-11-19: first draft. Loopback Ollama runner, vectors in the derived index, no dedicated MCP server, no sqlite-vec.
 - 2026-11-19: owner decisions. A built-in model downloads on one press after a consent dialog. It is the most compressed bge-m3 file that keeps fp32 quality, uses 1–2 GB of memory while preparing, and ships with MIT attribution and the paper citation.
+- 2026-11-19: runtime spike measured. candle plus the publisher's bge-m3 file converted on device to f16 (1.14 GB) is chosen; int8 and q4f16 are refused on fidelity and safety. Owner decision: slow preparation is acceptable, but it must run in the background with visible, lively progress. The 60-minute preparation budget is replaced by that requirement.

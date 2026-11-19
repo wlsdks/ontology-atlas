@@ -173,6 +173,10 @@
       "checking": {
         "label": "확인 중",
         "hint": "위키 문서가 지금 파일과 맞는지 확인하려고 읽는 중이에요."
+      },
+      "unreadable": {
+        "label": "읽을 수 없음",
+        "hint": "Atlas가 이 파일을 열어 확인하지 못해 세지 않았어요. 디스크를 다시 연결하거나 파일 권한을 확인하세요."
       }
     },
     "added": "문서 {count, number}개를 sources/에 넣었어요",
@@ -189,7 +193,9 @@
     "importTooltip": "서비스를 고르고 연결한 뒤 이 폴더로 가져올 문서를 정해요",
     "importedToPlanning": "가져온 문서가 기획 폴더에 들어갔어요",
     "openPlanning": "기획에서 열기",
-    "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요"
+    "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요",
+    "filterShow": "\"{label}\" 원문만 보기",
+    "filterAll": "전체 {count, number}개 보기"
   },
   "wiki": {
     "listAria": "이 폴더의 위키 문서",
@@ -353,9 +359,13 @@
         "what": "근거로 {path}, 이 문서가 쓰는 원문 목록에 없어요.",
         "do": "원문 목록에 더하거나, 근거를 고치세요."
       },
-      "describes-needs-approval": {
-        "what": "이 글이 어떤 개념을 대신 말한다고 적혀 있어요(describes). 지도에 대한 주장이라 사람이 확인해야 해요.",
-        "do": "읽어 보고 맞으면 검토됨으로 바꾸고, 아니면 그 줄을 지우세요."
+      "describes-target-missing": {
+        "what": "이 문서는 {target}을 다룬다고 적혀 있는데, 이 폴더에 그 이름의 개념이 없어요.",
+        "do": "문서에서 그 이름을 지우거나, 이 폴더에 있는 개념의 슬러그로 바꾸세요."
+      },
+      "bad-describes": {
+        "what": "이 문서가 다루는 개념을 적는 줄(describes)이 목록이 아니어서, 어디서도 연결로 읽지 않고 이름을 바꿀 때도 따라가지 못해요.",
+        "do": "개념마다 슬러그를 목록 항목으로 적고, 맞는 개념이 없으면 빈 목록을 적으세요."
       },
       "dangling-wikilink": {
         "what": "{where}에서 {target} 문서로 연결했는데 이 폴더에 그 문서가 없어요.",
@@ -537,7 +547,8 @@
       "done": "완료",
       "next": "다음",
       "waiting": "대기",
-      "checking": "확인 중"
+      "checking": "확인 중",
+      "unreadable": "읽을 수 없음"
     },
     "none": "없음",
     "formatEntry": "{format} {count, number}",
@@ -557,7 +568,8 @@
       "coveredLine": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
       "coveredChecking": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
       "coveredPartial": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
-      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐"
+      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐",
+      "coveredUnreadable": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} · {host}",
@@ -580,7 +592,8 @@
     "statusReady": "모든 원문에 위키 문서가 있어요",
     "statusUnlinked": "끊긴 링크 {count, number}개",
     "statusChecking": "확인 중 {count, number}개",
-    "statusPartial": "일부만 읽음 {count, number}개"
+    "statusPartial": "일부만 읽음 {count, number}개",
+    "statusUnreadable": "읽을 수 없음 {count, number}개"
   },
   "localCompile": {
     "title": "쓸 준비가 됐어요",
@@ -650,7 +663,8 @@
     "rule": {
       "kind-present": "지도 표시가 붙어 있어요",
       "missing-field": "정보칸에 빠진 줄이 있어요",
-      "describes-needs-approval": "확인이 필요한 주장이 있어요",
+      "describes-target-missing": "이어진 개념이 여기 없어요",
+      "bad-describes": "개념 목록이 목록 형식이 아니에요",
       "section-order": "구획이 빠졌거나 순서가 달라요",
       "bad-truncation-record": "읽은 범위 기록이 맞지 않아요",
       "uncited-fact": "근거 없이 적은 사실이 있어요",
@@ -855,7 +869,7 @@
       "undoneReason": {
         "notDraft": "status: draft로 남지 않았어요. 예약 작업은 초안만 써요.",
         "duplicateKey": "파일 맨 위 정보칸(frontmatter)에 {key}: 항목이 두 번 있어 읽는 쪽마다 다르게 읽을 수 있었어요.",
-        "forbiddenKey": "{key}: 항목이 있었어요. 이 항목은 사람만 넣을 수 있어요.",
+        "forbiddenKey": "{key}: 항목을 넣거나 바꾸거나 지웠어요. 예약 작업은 이 항목을 처음 그대로 둬야 해요.",
         "noFrontmatter": "파일 맨 위 정보칸(frontmatter)이 없어 초안으로 읽을 수 없었어요.",
         "unreadable": "Atlas가 다시 읽어 확인하지 못했어요."
       },
@@ -947,5 +961,20 @@
       "valueMinutes": "{count, number}분마다",
       "valueHours": "{count, number}시간마다"
     }
+  },
+  "progress": {
+    "aria": "원문 위키 문서 진행률",
+    "percent": "{percent, number}%",
+    "underOne": "1% 미만",
+    "first": "아직 위키 문서가 있는 원문이 없어요",
+    "today": "오늘 +{count, number}",
+    "chartAria": "위키 문서가 있는 원문 수, 각 문서에 적힌 날짜 기준",
+    "point": "{date}: 지금 원문 {total, number}개 중 {count, number}개 ({percent, number}%)",
+    "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
+    "undated": "{count, number}개는 날짜 없음",
+    "continue": "{count, plural, =1 {마지막 원문 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
+    "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
+    "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
+    "allDone": "모든 원문에 위키 문서가 있어요"
   }
 }

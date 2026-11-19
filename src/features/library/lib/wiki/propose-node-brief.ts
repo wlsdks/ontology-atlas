@@ -58,7 +58,7 @@ function composeProposeNodeBrief({ candidate, locale, vaultRoot }: ProposeNodeBr
     "1. Read those wiki pages. A wiki page is what a document said; a node is what we mean. Confirm from the pages what the name actually is.",
     "2. Read the vault's own kinds and domains with `list_kinds` and `list_concepts`. If a node with the same meaning already exists, do not create another; answer with its slug instead.",
     `3. Call \`add_concept\` **once**: kind is one of domain / capability / element / document, the parent domain is one that exists, and the body cites the wiki pages that carry the name as \`[[${WIKI_DIR}/<slug>]]\` links so the evidence stays attached. Say in the body's first sentence why that kind and that parent.`,
-    "4. Write nothing else. Do not edit the wiki pages and do not add `describes:` to them; that is the person's to do after review.",
+    "4. Write nothing else. Do not edit the wiki pages and do not add `describes:` to them: this turn proposes one node, and a page's links to concepts are its writer's, written in their own pass.",
     "",
     "The write waits for the person's approval. What the permission card shows is the proposal.",
   ].join("\n");
