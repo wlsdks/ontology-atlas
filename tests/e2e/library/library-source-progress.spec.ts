@@ -125,6 +125,8 @@ test.describe("source progress on the Sources home", () => {
     // Three dated days, one point each.
     await expect(band.getByTestId("library-progress-chart")).toHaveAttribute("data-points", "5");
     await expect(band.getByTestId("library-progress-today")).toHaveText("+3 today");
+    // The chart's draw-in, the landing ring and the 100% light are never applied under reduced motion.
+    await expect(page.locator(".motion-progress-reveal, .motion-progress-ripple, .motion-progress-light")).toHaveCount(0);
 
     const press = band.getByTestId("library-progress-continue");
     await expect(press).toHaveText("Write wiki pages for the next 10");

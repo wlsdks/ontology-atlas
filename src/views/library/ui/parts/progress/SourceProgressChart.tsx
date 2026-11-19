@@ -198,7 +198,7 @@ export function SourceProgressChart({
         id={pointId}
         aria-live="polite"
         data-testid="library-progress-caption"
-        className="min-w-0 truncate text-caption leading-caption tabular-nums text-[color:var(--color-text-quaternary)]"
+        className="min-w-0 truncate text-caption leading-caption tabular-nums text-[color:var(--color-text-tertiary)]"
       >
         {caption}
       </p>
