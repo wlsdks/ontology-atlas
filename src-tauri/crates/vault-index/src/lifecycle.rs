@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 pub(crate) const SEARCH_FILE: &str = "search.sqlite";
+pub(crate) const ROWS_FILE: &str = "rows.sqlite";
 const LOCK_FILE: &str = "index.lock";
 /// Written into every folder this crate creates. Deletion touches only folders that carry it and
 /// hold nothing but the files below, so a mistaken index root never costs a person's own folder.
@@ -20,11 +21,15 @@ const SQLITE_SIDE_SUFFIXES: [&str; 2] = ["-wal", "-shm"];
 /// and are removed with the index.
 const OS_LITTER: [&str; 3] = [".DS_Store", "Thumbs.db", "desktop.ini"];
 /// Every name an index folder can hold.
-const INDEX_FILE_NAMES: [&str; 6] = [
+const INDEX_FILE_NAMES: [&str; 10] = [
     SEARCH_FILE,
     "search.sqlite-wal",
     "search.sqlite-shm",
     "search.sqlite.damaged",
+    ROWS_FILE,
+    "rows.sqlite-wal",
+    "rows.sqlite-shm",
+    "rows.sqlite.damaged",
     LOCK_FILE,
     MARKER_FILE,
 ];
@@ -32,6 +37,20 @@ const SEARCH_SCHEMA: &str = include_str!("../sql/search.sql");
 /// Table layout and segmentation together: either changing means a rebuild, never an `ALTER`.
 const TABLES_VERSION: i32 = 1;
 pub(crate) const SCHEMA_VERSION: i32 = TABLES_VERSION * 1000 + SEGMENTATION_VERSION as i32;
+
+/// One SQLite file of a vault's index: its name, its tables, and the `user_version` that keeps
+/// it. Every file goes through the same create, check, set-aside and discard code below.
+pub(crate) struct Store {
+    pub(crate) file: &'static str,
+    pub(crate) schema: &'static str,
+    pub(crate) version: i32,
+}
+
+pub(crate) const SEARCH: Store = Store {
+    file: SEARCH_FILE,
+    schema: SEARCH_SCHEMA,
+    version: SCHEMA_VERSION,
+};
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const WAL_SIZE_LIMIT_BYTES: i64 = 32 * 1024 * 1024;
 const WRITER_CACHE_KIB: i64 = 16 * 1024;
@@ -51,6 +70,10 @@ pub struct Repair {
 
 pub(crate) fn search_path(dir: &Path) -> PathBuf {
     dir.join(SEARCH_FILE)
+}
+
+fn store_path(dir: &Path, store: &Store) -> PathBuf {
+    dir.join(store.file)
 }
 
 fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
@@ -116,12 +139,13 @@ pub(crate) fn is_index_folder(dir: &Path) -> bool {
     })
 }
 
-/// A folder this crate made (key name and marker) that holds a search index, whether or not it may
-/// be deleted: what answers searches, for sizes and for saying when a delete left one in place.
+/// A folder this crate made (key name and marker) that holds index data, whether or not it may
+/// be deleted: what answers searches or reopens, for sizes and for saying when a delete left one
+/// in place.
 pub(crate) fn holds_index(dir: &Path) -> bool {
     named_by_key(dir)
         && fs::symlink_metadata(dir.join(MARKER_FILE)).is_ok_and(|meta| meta.is_file())
-        && search_path(dir).is_file()
+        && (search_path(dir).is_file() || dir.join(ROWS_FILE).is_file())
 }
 
 /// Every folder under `root` for which `holds_index` is true.
@@ -150,7 +174,7 @@ pub(crate) fn index_folders(root: &Path) -> Vec<PathBuf> {
         .unwrap_or_default()
 }
 
-fn create_private_file(path: &Path) -> io::Result<File> {
+pub(crate) fn create_private_file(path: &Path) -> io::Result<File> {
     let mut options = OpenOptions::new();
     options.read(true).write(true).create(true);
     #[cfg(unix)]
@@ -222,7 +246,7 @@ fn names_locked_file(_file: &File, path: &Path) -> bool {
     path.is_file()
 }
 
-fn configure(conn: &Connection) -> rusqlite::Result<()> {
+pub(crate) fn configure(conn: &Connection) -> rusqlite::Result<()> {
     conn.busy_timeout(BUSY_TIMEOUT)?;
     let mode: String = conn.query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))?;
     if !mode.eq_ignore_ascii_case("wal") {
@@ -238,14 +262,19 @@ fn configure(conn: &Connection) -> rusqlite::Result<()> {
     ))
 }
 
-fn open_flags() -> OpenFlags {
+pub(crate) fn open_flags() -> OpenFlags {
     OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX
 }
 
 /// A reader for another thread or process. `None` while no index exists, so a search never
 /// creates one.
 pub(crate) fn open_reader(dir: &Path) -> rusqlite::Result<Option<Connection>> {
-    let path = search_path(dir);
+    open_store_reader(dir, &SEARCH)
+}
+
+/// `None` while the file is missing, empty or of another version; reading never creates it.
+pub(crate) fn open_store_reader(dir: &Path, store: &Store) -> rusqlite::Result<Option<Connection>> {
+    let path = store_path(dir, store);
     if fs::metadata(&path)
         .map(|meta| meta.len() == 0)
         .unwrap_or(true)
@@ -256,35 +285,44 @@ pub(crate) fn open_reader(dir: &Path) -> rusqlite::Result<Option<Connection>> {
     conn.busy_timeout(BUSY_TIMEOUT)?;
     conn.execute_batch("PRAGMA query_only=1;")?;
     let version: i32 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
-    Ok((version == SCHEMA_VERSION).then_some(conn))
+    Ok((version == store.version).then_some(conn))
 }
 
 /// Opens the writer, creating, discarding or setting aside the file as needed. The caller holds
 /// the writer lock, so no other writer can be between commits.
 pub(crate) fn open_writer(dir: &Path, vault_path: &str) -> rusqlite::Result<(Connection, Repair)> {
+    open_store_writer(dir, &SEARCH, vault_path)
+}
+
+/// `open_writer` for any of the index's files.
+pub(crate) fn open_store_writer(
+    dir: &Path,
+    store: &Store,
+    vault_path: &str,
+) -> rusqlite::Result<(Connection, Repair)> {
     let mut repair = Repair::default();
-    if fs::metadata(search_path(dir)).is_ok_and(|meta| meta.len() == 0) {
-        set_aside(dir).map_err(io_failure)?;
+    if fs::metadata(store_path(dir, store)).is_ok_and(|meta| meta.len() == 0) {
+        set_aside_file(dir, store.file).map_err(io_failure)?;
         repair.set_aside_damaged = true;
     }
-    match open_existing(dir) {
+    match open_existing(dir, store) {
         Ok(Existing::Usable(conn)) => return Ok((conn, repair)),
         Ok(Existing::Missing) => {}
         Ok(Existing::OtherVersion) => {
-            discard(dir).map_err(io_failure)?;
+            discard_file(dir, store.file).map_err(io_failure)?;
             repair.discarded_version = true;
         }
         Ok(Existing::Damaged) => {
-            set_aside(dir).map_err(io_failure)?;
+            set_aside_file(dir, store.file).map_err(io_failure)?;
             repair.set_aside_damaged = true;
         }
         Err(error) if is_damage(&error) => {
-            set_aside(dir).map_err(io_failure)?;
+            set_aside_file(dir, store.file).map_err(io_failure)?;
             repair.set_aside_damaged = true;
         }
         Err(error) => return Err(error),
     }
-    let conn = create(dir, vault_path)?;
+    let conn = create(dir, store, vault_path)?;
     repair.created = true;
     Ok((conn, repair))
 }
@@ -296,15 +334,15 @@ enum Existing {
     Damaged,
 }
 
-fn open_existing(dir: &Path) -> rusqlite::Result<Existing> {
-    let path = search_path(dir);
+fn open_existing(dir: &Path, store: &Store) -> rusqlite::Result<Existing> {
+    let path = store_path(dir, store);
     if !path.exists() {
         return Ok(Existing::Missing);
     }
     let conn = Connection::open_with_flags(&path, open_flags())?;
     match conn.query_row("PRAGMA user_version", [], |row| row.get::<_, i32>(0))? {
         0 => return Ok(Existing::Missing),
-        SCHEMA_VERSION => {}
+        version if version == store.version => {}
         _ => return Ok(Existing::OtherVersion),
     }
     configure(&conn)?;
@@ -315,15 +353,15 @@ fn open_existing(dir: &Path) -> rusqlite::Result<Existing> {
     Ok(Existing::Usable(conn))
 }
 
-fn create(dir: &Path, vault_path: &str) -> rusqlite::Result<Connection> {
-    let path = search_path(dir);
-    discard(dir).map_err(io_failure)?;
+fn create(dir: &Path, store: &Store, vault_path: &str) -> rusqlite::Result<Connection> {
+    let path = store_path(dir, store);
+    discard_file(dir, store.file).map_err(io_failure)?;
     create_private_file(&path).map_err(io_failure)?;
     let mut conn = Connection::open_with_flags(&path, open_flags())?;
     configure(&conn)?;
     let tx = conn.transaction()?;
-    tx.execute_batch(SEARCH_SCHEMA)?;
-    tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+    tx.execute_batch(store.schema)?;
+    tx.pragma_update(None, "user_version", store.version)?;
     write_meta(&tx, META_VAULT_PATH, vault_path)?;
     tx.commit()?;
     Ok(conn)
@@ -366,7 +404,11 @@ fn io_failure(error: io::Error) -> rusqlite::Error {
 
 /// Keeps one damaged copy beside the index for a person to inspect, never more.
 pub(crate) fn set_aside(dir: &Path) -> io::Result<()> {
-    let path = search_path(dir);
+    set_aside_file(dir, SEARCH_FILE)
+}
+
+pub(crate) fn set_aside_file(dir: &Path, file: &str) -> io::Result<()> {
+    let path = dir.join(file);
     let damaged = with_suffix(&path, DAMAGED_SUFFIX);
     remove_if_present(&damaged)?;
     if path.exists() {
@@ -375,9 +417,9 @@ pub(crate) fn set_aside(dir: &Path) -> io::Result<()> {
     remove_side_files(&path)
 }
 
-/// Removes the index file and its WAL files; the next open starts from nothing.
-pub(crate) fn discard(dir: &Path) -> io::Result<()> {
-    let path = search_path(dir);
+/// Removes one index file and its WAL files; the next open starts from nothing.
+pub(crate) fn discard_file(dir: &Path, file: &str) -> io::Result<()> {
+    let path = dir.join(file);
     remove_if_present(&path)?;
     remove_side_files(&path)
 }
@@ -417,8 +459,16 @@ pub(crate) fn folder_bytes(dir: &Path) -> u64 {
 /// lock is held, so a writer waiting on it locks afresh (`lock_writer`).
 pub(crate) fn delete_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
     let search = search_path(dir);
-    if let Err(error) = remove_if_present(&search) {
-        empty_in_place(dir).map_err(|_| error)?;
+    let rows = dir.join(ROWS_FILE);
+    let search_removed = remove_if_present(&search);
+    let rows_removed = remove_if_present(&rows);
+    if search_removed.is_err() || rows_removed.is_err() {
+        if let Err(error) = search_removed {
+            empty_in_place(dir).map_err(|_| error)?;
+        }
+        if let Err(error) = rows_removed {
+            empty_rows_in_place(&rows).map_err(|_| error)?;
+        }
         return Ok(());
     }
     for name in INDEX_FILE_NAMES.iter().chain(OS_LITTER.iter()) {
@@ -443,6 +493,12 @@ fn empty_in_place(dir: &Path) -> rusqlite::Result<()> {
     conn.execute_batch(
         "BEGIN IMMEDIATE; DELETE FROM files; INSERT INTO terms(terms) VALUES ('delete-all'); COMMIT; VACUUM;",
     )
+}
+
+fn empty_rows_in_place(path: &Path) -> rusqlite::Result<()> {
+    let conn = Connection::open_with_flags(path, open_flags())?;
+    conn.busy_timeout(BUSY_TIMEOUT)?;
+    conn.execute_batch("BEGIN IMMEDIATE; DELETE FROM rows; COMMIT; VACUUM;")
 }
 
 /// The index holds each document's words, so it should not outlive its use: a folder opened at

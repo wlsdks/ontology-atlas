@@ -176,6 +176,7 @@
     "perf:graph": "node scripts/perf/perf-graph.mjs",
     "perf:graph:check": "node scripts/perf/perf-graph.mjs --check --n=1000",
     "perf:vault-index": "node scripts/perf/perf-vault-index.mjs",
+    "perf:vault-open": "node scripts/perf/perf-vault-open.mjs",
     "perf:graph:scale": "node scripts/perf/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",
     "perf:mcp:memory": "node scripts/perf/perf-mcp-memory.mjs",
     "perf:mcp:memory:check": "node scripts/perf/perf-mcp-memory.mjs --check",

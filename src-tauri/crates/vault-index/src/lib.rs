@@ -8,6 +8,7 @@
 mod confine;
 mod lifecycle;
 mod location;
+pub mod rows;
 mod search;
 mod segment;
 mod stamps;

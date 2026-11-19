@@ -213,9 +213,21 @@ so the app and another process can read at the same time. Settings â€º Privacy Â
 data shows the size, deletes the index and can turn it off. The web playground
 has no index.
 
-A second file, `rows.sqlite`, holding per file and per producer the result a
-program computed from that file, is planned for reopening from cached rows; it
-does not exist yet. Searching is one rule shared by indexing and queries: words of
+Beside it, `rows.sqlite` holds per file and per producer what a program
+computed from that file, so a reopen reads and derives only the files that
+changed. The app's producer (`app-entry/<n>+<release>`) keeps what
+`buildMdEntry` derives: parsed frontmatter, diagnostics, title, headings,
+excerpt and link text, never the body, as DEFLATE-compressed JSON. On open the
+full build sends its walked Markdown paths in read order
+(`vault_index_rows_get`); Rust stats each file and hands back a value only while
+the file's stamp equals the row's and the file was modified more than two
+seconds before that version was first seen. The build reads and derives the
+rest with the same code as before and writes those rows back behind itself
+(`vault_index_rows_put`), where each is refused unless its file still has the
+stamp the lookup saw and was older than two seconds then, so no row pairs a
+value with a later version of its file. Another producer version, a missing,
+older, newer or damaged file, and the switch turned off all leave the build
+reading every file. Searching is one rule shared by indexing and queries: words of
 alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
 become overlapping pairs, so a Korean term is found inside a word that carries
 a particle. The palette reads only the hit files to show their matching lines.

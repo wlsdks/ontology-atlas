@@ -17,6 +17,13 @@ import {
   type NativeVaultStamp,
   type NativeVaultTextRead,
 } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import {
+  getVaultRows,
+  isFramedVaultRowPath,
+  putVaultRows,
+  vaultRowsAvailable,
+  type VaultRowWrite,
+} from '@/shared/lib/vault-folder/tauri-vault-index-rows';
 import { walkVault, type WalkEntry } from './walk-vault';
 import type {
   VaultBacklinkEntry,
@@ -348,6 +355,18 @@ export function createMetadataStringPool() {
   };
 }
 
+/** Shares the strings many documents repeat; a document from a stored row gets the same. */
+function internDoc(doc: VaultDoc, internMetadata: (value: string) => string): VaultDoc {
+  if (typeof doc.frontmatter.kind === 'string') doc.frontmatter.kind = internMetadata(doc.frontmatter.kind);
+  if (typeof doc.frontmatter.domain === 'string') doc.frontmatter.domain = internMetadata(doc.frontmatter.domain);
+  if (doc.frontmatter.slug === doc.slug) doc.frontmatter.slug = doc.slug;
+  for (const heading of doc.headings) {
+    heading.text = internMetadata(heading.text);
+    heading.slug = internMetadata(heading.slug);
+  }
+  return doc;
+}
+
 /** Pure: one `.md` body to a BuiltVaultEntry. */
 export function buildMdEntry(
   entry: WalkEntry,
@@ -405,14 +424,7 @@ export function buildMdEntry(
     linksOut,
     mtime: lastModified,
   };
-  const detachedDoc = structuredClone(doc);
-  if (typeof detachedDoc.frontmatter.kind === 'string') detachedDoc.frontmatter.kind = internMetadata(detachedDoc.frontmatter.kind);
-  if (typeof detachedDoc.frontmatter.domain === 'string') detachedDoc.frontmatter.domain = internMetadata(detachedDoc.frontmatter.domain);
-  if (detachedDoc.frontmatter.slug === detachedDoc.slug) detachedDoc.frontmatter.slug = detachedDoc.slug;
-  for (const heading of detachedDoc.headings) {
-    heading.text = internMetadata(heading.text);
-    heading.slug = internMetadata(heading.slug);
-  }
+  const detachedDoc = internDoc(structuredClone(doc), internMetadata);
   return {
     relativePath: entry.relativePath,
     lastModified,
@@ -724,6 +736,162 @@ async function stampedEntry(entry: WalkEntry, stamps: VaultStampIndex | null): P
   return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
 }
 
+/**
+ * The derived index's name for what `buildMdEntry` computes. Raise the number whenever its output
+ * changes; the release version alone already drops every row when the app updates.
+ */
+const APP_ENTRY_ROWS_VERSION = 1;
+export const APP_ENTRY_ROWS = `app-entry/${APP_ENTRY_ROWS_VERSION}+${process.env.NEXT_PUBLIC_RELEASE_VERSION ?? 'dev'}`;
+/** Paths per lookup: the node folders come back first, so the first partial paint stays early. */
+const ROWS_LOOKUP_CHUNK = 2048;
+const ROWS_LOOKUP_AHEAD = 2;
+const ROWS_WRITE_BATCH = 500;
+
+let rowWrites: Promise<void> = Promise.resolve();
+
+/** Settles once every row a build handed to the derived index was written or refused. */
+export function vaultRowWritesSettled(): Promise<void> {
+  return rowWrites;
+}
+
+/** A JSON round trip turns a non-finite number into null and -0 into 0; such a document is not kept. */
+function survivesJson(value: unknown): boolean {
+  if (typeof value === 'number') return Number.isFinite(value) && !Object.is(value, -0);
+  if (Array.isArray(value)) return value.every((item) => item !== undefined && survivesJson(item));
+  if (value !== null && typeof value === 'object') return Object.values(value).every(survivesJson);
+  return true;
+}
+
+/** A stored value back to the entry `buildMdEntry` made from the same file version. */
+function storedMdEntry(
+  entry: WalkEntry,
+  value: unknown,
+  internMetadata: (value: string) => string,
+): BuiltVaultEntry | undefined {
+  const stored = value as { doc?: VaultDoc; linkContexts?: LinkContext[] } | null;
+  const doc = stored?.doc;
+  if (!doc || doc.path !== entry.relativePath || typeof doc.mtime !== 'number' || !Array.isArray(doc.headings)) {
+    return undefined;
+  }
+  return {
+    relativePath: entry.relativePath,
+    lastModified: doc.mtime,
+    handle: entry.handle,
+    kind: 'md',
+    doc: internDoc(doc, internMetadata),
+    linkContexts: stored?.linkContexts,
+  };
+}
+
+interface RowSource {
+  /** Entries from stored rows, aligned with `indices`; `undefined` where the file must be read. */
+  take(indices: readonly number[]): Promise<Array<BuiltVaultEntry | undefined>>;
+  /** Hands a freshly built entry to the index, if the lookup gave its file a token. */
+  keep(index: number, entry: BuiltVaultEntry): void;
+  /** Writes what is left; with a complete walk, also drops rows of files no longer listed. */
+  finish(walkComplete: boolean): void;
+}
+
+/**
+ * Looks up stored rows in read order, a chunk at a time and a little ahead of the reads, and
+ * writes new rows behind the build in batches. Any failure only means more files are read.
+ */
+function createRowSource(
+  rootPath: string,
+  files: readonly WalkEntry[],
+  tiers: readonly number[],
+  internMetadata: (value: string) => string,
+): RowSource | null {
+  if (!vaultRowsAvailable()) return null;
+  const order = files
+    .map((_, index) => index)
+    .filter((index) => files[index].kind === 'md' && isFramedVaultRowPath(files[index].relativePath))
+    .sort((a, b) => tiers[a] - tiers[b] || a - b);
+  const chunks: number[][] = [];
+  for (let at = 0; at < order.length; at += ROWS_LOOKUP_CHUNK) chunks.push(order.slice(at, at + ROWS_LOOKUP_CHUNK));
+  const chunkOf = new Int32Array(files.length).fill(-1);
+  chunks.forEach((chunk, number) => {
+    for (const index of chunk) chunkOf[index] = number;
+  });
+  const lookups: Array<Promise<void> | undefined> = new Array(chunks.length);
+  const fromRows: Array<BuiltVaultEntry | undefined> = new Array(files.length);
+  const tokens = new Map<number, string>();
+  let stored = 0;
+  let found = 0;
+  let otherVersions = 0;
+  let answeredAll = true;
+  const lookUp = (number: number): Promise<void> => {
+    const pending = lookups[number];
+    if (pending) return pending;
+    const chunk = chunks[number];
+    const started = getVaultRows(rootPath, APP_ENTRY_ROWS, chunk.map((index) => files[index].relativePath)).then(
+      (answer) => {
+        if (!answer) {
+          answeredAll = false;
+          return;
+        }
+        for (const [at, value] of answer.hits) {
+          const index = chunk[at];
+          if (index !== undefined) fromRows[index] = storedMdEntry(files[index], value, internMetadata);
+        }
+        for (const [at, token] of answer.misses) {
+          const index = chunk[at];
+          if (index !== undefined && token) tokens.set(index, token);
+        }
+        stored = Math.max(stored, answer.stored);
+        found += answer.found;
+        otherVersions = Math.max(otherVersions, answer.otherVersions);
+      },
+      () => {
+        answeredAll = false;
+      },
+    );
+    lookups[number] = started;
+    return started;
+  };
+  let batch: VaultRowWrite[] = [];
+  const write = (rows: VaultRowWrite[], retain: readonly string[] | null) => {
+    rowWrites = rowWrites.then(() => putVaultRows(rootPath, APP_ENTRY_ROWS, rows, retain)).catch(() => undefined);
+  };
+  return {
+    async take(indices) {
+      const numbers = new Set<number>();
+      for (const index of indices) if (chunkOf[index] >= 0) numbers.add(chunkOf[index]);
+      for (const number of numbers) {
+        for (let ahead = 1; ahead <= ROWS_LOOKUP_AHEAD && number + ahead < chunks.length; ahead += 1) {
+          void lookUp(number + ahead);
+        }
+      }
+      await Promise.all([...numbers].map(lookUp));
+      return indices.map((index) => {
+        const entry = fromRows[index];
+        fromRows[index] = undefined;
+        return entry;
+      });
+    },
+    keep(index, entry) {
+      const token = tokens.get(index);
+      if (!token || !entry.doc || !survivesJson(entry.doc.frontmatter)) return;
+      tokens.delete(index);
+      batch.push({
+        path: entry.relativePath,
+        token,
+        lastModified: entry.lastModified,
+        value: JSON.stringify({ doc: entry.doc, linkContexts: entry.linkContexts }),
+      });
+      if (batch.length >= ROWS_WRITE_BATCH) {
+        write(batch, null);
+        batch = [];
+      }
+    },
+    finish(walkComplete) {
+      const prune = walkComplete && answeredAll && (otherVersions > 0 || stored > found);
+      if (batch.length > 0 || prune) write(batch, prune ? order.map((index) => files[index].relativePath) : null);
+      batch = [];
+    },
+  };
+}
+
 async function collectEntries(
   root: FileSystemDirectoryHandle,
   walkInfo: WalkInfo,
@@ -742,6 +910,7 @@ async function collectEntries(
     : null;
   const readMarkdown = createMarkdownReader(nativeRoot);
   const tiers = files.map(readTier);
+  const rows = nativeRoot ? createRowSource(nativeRoot, files, tiers, internMetadata) : null;
   const results: Array<BuiltVaultEntry | undefined> = new Array(files.length);
   const total = files.filter((entry) => entry.kind === 'md').length;
   let read = 0;
@@ -765,9 +934,16 @@ async function collectEntries(
       batched ? NATIVE_BATCH_CONCURRENCY : concurrency,
       async (unit) => {
         const markdown = unit.filter((index) => files[index].kind === 'md');
-        const texts = markdown.length > 0 ? await readMarkdown(markdown.map((index) => files[index])) : [];
-        markdown.forEach((index, at) => {
-          results[index] = buildMdEntry(files[index], texts[at].text, texts[at].lastModified, internMetadata);
+        const stored = rows && markdown.length > 0 ? await rows.take(markdown) : [];
+        const unread = markdown.filter((index, at) => {
+          results[index] = stored[at];
+          return stored[at] === undefined;
+        });
+        const texts = unread.length > 0 ? await readMarkdown(unread.map((index) => files[index])) : [];
+        unread.forEach((index, at) => {
+          const built = buildMdEntry(files[index], texts[at].text, texts[at].lastModified, internMetadata);
+          results[index] = built;
+          rows?.keep(index, built);
         });
         for (const index of unit) {
           if (files[index].kind !== 'md') results[index] = await stampedEntry(files[index], stamps);
@@ -780,6 +956,7 @@ async function collectEntries(
   } finally {
     publishPartial?.stop();
   }
+  rows?.finish(!walked.truncated);
   return results as BuiltVaultEntry[];
 }
 
