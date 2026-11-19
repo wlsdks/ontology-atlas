@@ -7,12 +7,12 @@ import {
 import { LOCALE_LABELS_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 export const WRITE_FINDINGS_GUIDANCE =
-  '`findings`: one plain line per maintenance item on the nodes this call wrote, each with the call that settles it (absent when there is none; the whole queue is `query_ontology({operation:"maintenance_plan"})`)';
+  '`findings`: one plain line per kind of maintenance finding on the nodes this call wrote, with the call that settles it (absent when there is none; the whole queue is `query_ontology({operation:"maintenance_plan"})`)';
 
 export const WRITE_FINDINGS_SCHEMA = {
   type: 'array',
   items: { type: 'string' },
-  description: 'One line per maintenance item on the nodes this call wrote, with the call that settles it; at most five, then a count line.',
+  description: 'One line per kind of maintenance finding on the nodes this call wrote: the first finding with the call that settles it, then the other nodes it applies to.',
 };
 
 export const ADD_CONCEPT_TOOL = {
