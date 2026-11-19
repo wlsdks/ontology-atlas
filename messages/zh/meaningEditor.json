@@ -10,7 +10,7 @@
   "whyHint": "知道原因时就写上，这样下一个人不必再去推断这一行。",
   "whyRequiredHint": "依赖关系需要写明依赖目标的原因。",
   "relationName": {
-    "isA": "是一种",
+    "isA": "上位概念",
     "dependsOn": "依赖",
     "contains": "包含",
     "relates": "相关"

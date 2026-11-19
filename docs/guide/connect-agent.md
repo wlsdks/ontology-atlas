@@ -1,155 +1,174 @@
 ---
-title: Connecting an AI Agent
+title: "Connect a coding agent over MCP"
 doc_type: guide
 status: current
-area: agents
+area: product
 ---
 
-# Connecting an AI Agent
+# Connect a coding agent over MCP
 
-It takes one click. In "Agents" › "MCP", press "Connect" on the row for the tool
-you use. It writes that tool's configuration file with the **actual absolute path
-of the vault**.
+This chapter connects a coding agent such as Claude Code, Codex, Cursor or
+Antigravity to your ontology folder through MCP, the Model Context Protocol.
+Once connected, the agent can read your codebase ontology before it changes
+code, and it can record new concepts and relations in the same Markdown files
+that the map shows.
 
-| Tool | File used |
+## The agent connects to the folder
+
+Your agent starts the Atlas MCP server on your computer when a session needs it,
+and the server stops when the session ends. The server reads and writes the
+Markdown files in your ontology folder. It opens no port and makes no network
+request of its own. The agent itself still talks to its own model provider, as
+it always does.
+
+This has three effects:
+
+- The agent can read the folder while the Atlas app is closed.
+- What the agent writes appears on the map, because the map reads the same files.
+- The connection is a config file in your folder, so it shows in `git diff`
+  like any other change.
+
+## Connect from the app
+
+1. Open your ontology folder in the app.
+2. Choose **Agents** in the sidebar, then the **MCP** tab.
+3. Under **Connect this folder to an agent**, press **Connect** on the row for
+   your tool.
+
+| Tool | File the button writes |
 |---|---|
 | Claude Code | `.mcp.json` |
 | Codex | `.codex/config.toml` |
 | Cursor | `.cursor/mcp.json` |
 | Antigravity | `.agents/mcp_config.json` |
 
-One button writes one file. It does not create files for unselected tools.
+Each button writes only its own tool's file, and only when that file is
+missing. The app never overwrites a file that already exists. The config points
+at the MCP server that ships inside the app and contains the folder's absolute
+path, so you do not need Node.js or a copy of the Atlas source code.
 
-## What connects to what
+If `.mcp.json` or `.codex/config.toml` already exists but is not an Atlas
+connection file, the row shows a warning and offers to copy a corrected config.
+Read it and merge it into your file yourself.
 
-If you get confused here, everything else will seem wrong.
+Then quit and reopen your agent. An agent reads its MCP config only when a
+session starts.
 
-> **The agent connects to the folder, not to the Atlas app.**
+In a browser, Atlas cannot save the config file, because a web page does not
+know the folder's absolute path. The MCP tab instead asks you for that path and
+for the path of an Atlas source checkout, then builds the config text for you
+to copy and save. Nothing is written or sent. The desktop app is the shorter
+route: [download it here](https://ontologyatlas.com/en/download/).
 
-The agent starts a small server (MCP server) within its own session, and that server reads and writes directly to the vault folder on disk. The Atlas app is **another reader viewing the same folder**. Therefore:
+## Connect from a source checkout
 
-- The agent can read the vault even if the app is not running.
-- Changes made by the agent appear on the app screen (because the folder has changed).
-- **Web users are also connected.**
-
-## Connecting via the web
-
-The only thing the web cannot do is **save the configuration file for you**, because the browser does not know your disk's absolute paths. But you do.
-
-So the sheet asks for two paths.
-
-1. The absolute path of the vault folder
-2. The absolute path of the Atlas source checkout
-
-It generates the tool-specific configuration text and verification command right there. **It does not write any files, nor do the paths leave the screen.** Nothing is transmitted or saved. You just paste the generated text into your file, and you're done.
-
-Incomplete configurations are not copied. Unconnected settings are a trap, not a help.
-
-The connect buttons write only into this folder, and only a file that is missing,
-so the change shows in `git diff` and is shared with the team.
-
-## Verifying Connection
-
-**You must restart the tool after writing the configuration.** The MCP server list is read at session start.
-
-Once connected, ask the agent this:
-
-> Which vault are you currently connected to?
-
-The agent calls `connection_info` and reports the **parsed vault path and repository path**. If it is not the folder you expected, verify it there: proceeding with writes in this state will modify the wrong folder.
-
-To verify via terminal:
+Without the app, for example on Linux, run the server from a clone of the
+repository. You need Git, Node.js 24 and pnpm:
 
 ```bash
-node cli/src/index.mjs mcp-verify my-vault
+git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
+cd ~/tools/ontology-atlas && pnpm install
+pnpm --dir mcp install --frozen-lockfile
 ```
 
-This checks if the server is running, lists tools, and confirms actual queries work.
-
-To modify only an existing repository's configuration:
+Then, from the root of your own repository, write the configs for an existing
+ontology folder:
 
 ```bash
-node cli/src/index.mjs agent-setup my-vault --write
+node ~/tools/ontology-atlas/cli/src/index.mjs agent-setup ./atlas --write
 ```
 
-Do not touch the start file; only adjust agent settings. If the existing config can be parsed, keep other MCP servers and TOML sections intact, and atomically replace only the `ontology-atlas` entry with this vault. If JSON is broken or Atlas sections are duplicated, do not modify the original; instead, restore the example and nonzero review status. If the existing example can be parsed, change only the Atlas item and preserve the rest. If the example itself is broken, leave the original example as-is and create a `.ontology-atlas-current.example` sidecar containing only the current connection. When recreating a new vault in the same codebase folder, restart the agent and verify `vaultRoot` in `connection_info` to confirm the switch is complete.
+`agent-setup` creates or repairs `.mcp.json` for Claude Code and
+`.codex/config.toml` for Codex. It changes only the `ontology-atlas` entry and
+keeps your other MCP servers. A file it cannot parse stays untouched, and the
+command prints a template for you to merge by hand.
 
-Codex reads project settings only after approving the folder as **trusted**. Before approval, even if `.codex/config.toml` looks correct, `codex mcp list` will not show Atlas. After trusting the folder, run `codex mcp list` in that folder and sequentially verify that `ontology-atlas` appears and matches the path in `connection_info`.
+Any other client that speaks MCP over stdio can register the server with the
+same three fields:
 
-## What Changes When Connected
+```json
+{
+  "mcpServers": {
+    "ontology-atlas": {
+      "command": "node",
+      "args": ["/absolute/path/to/ontology-atlas/mcp/src/index.js"],
+      "env": { "OATLAS_VAULT": "/absolute/path/to/your/atlas" }
+    }
+  }
+}
+```
 
-**Before starting work**: The agent first reads the concepts and neighbors it will touch.
-
-- `get_concept({ slug })` or `get_concept({ uid })`: Fetches nodes and neighbors at once using current address or permanent identity
-- `find_backlinks(slug)`: Checks who relies on the name before renaming
-- `find_path(from, to)`: Checks if a relationship already exists
-
-**After work**: Records newly created items.
-
-- `add_concept(...)`: New capabilities/elements
-- `rename_concept(...)`: Rewrites all backlinks if the name changes
-- `merge_concepts(...)`: Merges two nearly identical nodes
-- `finalize_project_meaning(...)`: Leaves a project meaning receipt after approved writes, verification, and full compilation. It does not store original answers or private source roots; `ok: true` indicates successful receipt recording, not completion of meaning verification
-
-The exact current list of read/write tools is provided by the running server's `tools/list`. `mcp-verify` confirms that this list matches the initial instructions and that the vault is actually readable.
-
-### How the Agent Uses UID and Slug
-
-Node responses always include both `{ uid, slug }`. The agent uses `uid` for long-lived handoffs, work targets, and sources; use `slug` when displaying to humans or creating relationships/URLs/CLI commands.
-
-- Querying by UID finds the same node even after renaming.
-- Querying by slug allows using a readable address from the current vault.
-- Do not copy `uid` into relationship arrays or URLs; their surface address specification remains slug.
-
-## First Conversation: What to Ask
-
-This is where you might pause, unsure what to say after connecting. Here are questions that actually yield answers:
-
-- "What does the authentication side of this folder's map rely on?"
-- "What breaks if I fix `token issuance`?" → Impact scope
-- "Where is the strangest part of this map right now?" → Triage queue
-- "Reflect this newly created feature in the map." → Write nodes/relationships. The result remains as one line in `.md`
-  diff.
-
-**The key is not to re-paste the session background explanation.** You can ask the agent if needed.
-
-## Starting a New Session: Handoff
-
-To pass the background to a new session all at once:
+Use absolute paths. A config file does not expand `~`. Codex can also register
+the server globally:
 
 ```bash
-node cli/src/index.mjs agent-brief my-vault
+codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/your/atlas -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
 ```
 
-If there are multiple projects, select one with `--project SLUG`. The output's
-`meaningAssessment` will be one of `verified_current`, `review_required`,
-`needs_evidence`, or `invalid`. When evidence cannot be confirmed,
-it returns a fail-closed state without guessing.
+Codex reads a project's `.codex/config.toml` only after you trust that folder.
+After you trust it, `codex mcp list` should show `ontology-atlas`.
 
-**Exit code 1 is not a failure.** The `1` in this command signals that "the graph is still maturing." Newly created vaults usually return `1` because they have few nodes. The command itself completed successfully, and the output is valid. If you chain it like `agent-brief && next-command`, it will stop at that `1`. Instead, use `--exit-zero` and read the `status`/`readiness` from the output directly.
+To give a client read access only, add `"OATLAS_READ_ONLY": "1"` to `env`. The
+server then lists only its read tools and refuses every write.
 
+## Check the connection
+
+A config file on disk does not prove that the agent loaded it. After the
+restart, ask the agent:
+
+> Call connection_info and tell me which ontology folder and which code
+> repository you are connected to.
+
+`connection_info` returns the folder and repository paths the server resolved,
+and the tools it offers. If the folder is not the one you expected, fix the
+config before you let the agent write.
+
+In the app, **Confirm the connection** beside the heading shows the restart
+step and the state of each tool's file. From a terminal, `mcp-verify` starts
+the server, lists its tools and runs real queries against the folder:
+
+```bash
+node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
 ```
-agent brief healthy — readiness ready 100/100 · 70 nodes · 152 relations · 6 health checks
 
-ENTRYPOINTS (highly connected nodes the agent sees first)
-   1 domains/onboarding-and-shell   — Onboarding, Distribution & App Shell  deg 33
-   2 domains/topology-navigation    — Topology Map Navigation               deg 25
+It proves that the server and the folder work. It does not prove that your
+agent has loaded the config.
 
-FIRST MCP CALLS
-  query_ontology({"operation":"workspace_brief","limit":5})
-  query_ontology({"operation":"health","limit":5})
+## What the agent can read and write
 
-CLI FALLBACKS (MCP connector unavailable)
-  ontology-atlas workspace-brief [vault] --limit 5
-```
+The server's own tool list is the exact inventory. The tools fall into a few
+groups:
 
-It provides both the **entry node** (most connected) and the **first call**. For agents that haven't yet attached to MCP, it also includes the equivalent CLI commands.
+- **Read before work:** `get_concept` returns a concept with its neighbors,
+  `find_backlinks` shows what points at a concept, `find_path` shows how two
+  concepts connect, and `query_ontology` answers questions such as a workspace
+  overview or the impact of a change.
+- **Read the code:** `analyze_repo_structure`, `index_project` and
+  `infer_imports` survey a repository without writing anything.
+- **Write:** `add_concepts`, `add_relations`, `patch_concept`, `rename_concept`,
+  `merge_concepts`, `delete_concept` and a few more. Rename, merge, delete and
+  relation removal preview their changes first and write only when called again
+  with confirmation.
+- **Check:** `validate_vault` and `compile_ontology` report broken references
+  and missing parts.
 
-On the map, "Copy handoff" in a concept's summary or right-click menu copies the
-context of that one concept to paste into an agent.
+Every write lands as a Markdown change. When the agent passes the
+`expected_mtime` it read, a write tool refuses to overwrite a file that changed
+on disk since; without it, the write goes through.
 
-## Humans Are the Judges
+## What you still decide
 
-What the agent writes is just Markdown. It appears in `git diff`, and if it's wrong, you fix it manually. This is where it differs from "agent-only memory." A repository that humans cannot see is one they cannot trust.
+- **Whether a write needs your approval.** With an external agent, its own
+  permission settings decide this. In the app's built-in agent conversation,
+  each write asks you first unless you turn on **Auto-approve**.
+- **Whether the meaning is right.** A successful write is not an accepted
+  meaning. Read the diff before you commit it.
+- **What the agent works on.** On the map, **Copy prompt** in a concept's
+  actions copies that concept's context for your agent.
 
-It also prevents one party from silently overwriting changes when humans and agents edit the same file simultaneously ([after the folder grows](/guide/growing-vault), Section 6).
+The **Agents** tab on the same page lists the coding tools found on your
+computer and checks that they can run. In the app it can also open a
+conversation with one of them beside the map, using the same MCP server.
+
+Next: [build the first map from your code](/guide/from-your-repo). For what
+leaves your computer, see [data, privacy and safety](/guide/trust).

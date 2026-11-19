@@ -4,7 +4,7 @@ import { deriveBundledProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
 import { LOCALE_META } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
-import { GUIDE_PAGES, guideCanonicalPath } from '@/views/gateway-doc';
+import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, guideCanonicalPath, guideSourcePath } from '@/views/gateway-doc';
 
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
@@ -25,11 +25,20 @@ const STATIC_ROUTES = [
 ];
 
 /** Where each route's words live, so its `lastmod` is the last commit that changed them. */
-function sourcesOf(route: string): string[] {
+function sourcesOf(route: string, locale: string): string[] {
   if (route === 'download') return ['src/views/download', 'messages/en/download.json'];
   if (route === 'changelog') return ['docs/records/changes', 'docs/records/releases'];
   if (route === 'topology') return ['app/[locale]/topology', 'messages/en/topology.json'];
-  return ['src/views/gateway-doc', 'messages/en'];
+  // A guide chapter in one language changes with its own body, title and description, not with
+  // another language's.
+  const page = route === 'guide' ? GUIDE_ENTRY_PAGE : GUIDE_PAGES.find((guide) => guideCanonicalPath(guide) === route);
+  if (!page) return ['src/views/gateway-doc', `messages/${locale}`];
+  return [
+    'src/views/gateway-doc',
+    guideSourcePath(page, locale),
+    `messages/${locale}/gatewayNav.json`,
+    `messages/${locale}/metadata.json`,
+  ];
 }
 
 /** Google uses `lastmod` only when it is verifiably accurate, so it comes from Git or is omitted. */
@@ -52,7 +61,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    */
   const projects = deriveBundledProjects();
   const entries: MetadataRoute.Sitemap = [];
-  const modified = new Map(STATIC_ROUTES.map((route) => [route, lastCommitDate(sourcesOf(route))]));
+  const modified = new Map(
+    routing.locales.flatMap((locale) =>
+      STATIC_ROUTES.map((route) => [`${locale}/${route}`, lastCommitDate(sourcesOf(route, locale))] as const),
+    ),
+  );
 
   // Per-locale entries for the static set + per-locale per-project entries.
   // Each entry advertises its hreflang siblings via `alternates.languages`,
@@ -60,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const locale of routing.locales) {
     for (const route of STATIC_ROUTES) {
       const path = `/${locale}/${route}/`;
-      const lastModified = modified.get(route);
+      const lastModified = modified.get(`${locale}/${route}`);
       entries.push({
         url: `${SITE_URL}${path}`,
         ...(lastModified ? { lastModified } : {}),

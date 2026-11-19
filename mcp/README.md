@@ -423,7 +423,8 @@ bot, an external tool that only needs to *read* the graph — add
 In read-only mode the server advertises **only the 24 read tools** in
 `tools/list` (the 16 write tools — `add_concept`, `add_concepts`,
 `add_relation`, `add_relations`, `patch_concept`, `rename_concept`,
-`merge_concepts`, `delete_concept`, `absorb_document`, `git_snapshot`,
+`merge_concepts`, `delete_concept`, `reclassify_concept`, `remove_relation`,
+`replace_relation`, `absorb_document`, `git_snapshot`,
 `finalize_project_meaning`, `connect_project_source`, and
 `disconnect_project_source` — disappear), and any
 direct call to a write tool is rejected even if the client cached an older

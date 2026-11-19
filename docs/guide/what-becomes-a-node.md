@@ -1,134 +1,93 @@
 ---
-title: "What Becomes a Node?"
+title: "Choosing concepts: domain, capability, element"
 doc_type: guide
 status: current
-area: ontology-model
+area: product
 ---
 
-# What Becomes a Node?
+# Choosing concepts: domain, capability, element
 
-When building a vault, you inevitably stop at this question.
+Building a codebase ontology means deciding what becomes a concept and which kind it gets. This chapter gives the tests Atlas uses for each kind, explains why one source file is not one concept, and gives the one-sentence test for a parent with many children. Your coding agent (Claude Code, Codex, Cursor) reads the same rules through the MCP server before it writes, so concepts made by people and by agents follow one shape.
 
-> Is this a domain or a capability? Should I create one node per file? Is it wrong to have thirty children under one node?
+## Choose a kind by its job
 
-The answer is here. And **most of the answer is "don't count"**.
+Choose a kind by what the concept does in the model, not by its size, folder or owner.
 
-The definitive rules for inclusion/exclusion/examples by `kind` and `is_a` determination are in the [Atlas Metamodel Specification](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind). This chapter does not redefine those rules but explains practical pitfalls like file mirroring and fan-out.
+| Kind | Ask | Example | Not this |
+|---|---|---|---|
+| `project` | Does it finish the sentence "this system exists so that..." and set the scope for everything else? | "A local workbench that keeps a product's meaning shared between people and agents." | "A TypeScript monorepo." |
+| `domain` | Is it a lasting responsibility or problem boundary that groups capabilities and would survive a rewrite of the code? | "Identity owns sign-in and account-access policy." | "The `src/auth` folder" or "the auth team." |
+| `capability` | Does it state something the system can do, observable from outside, without naming the module that does it? | "Issue a revocable session token after sign-in." | "Token controller" or "login workflow." |
+| `element` | Does it name a distinct implementation role that carries a capability, with evidence someone can open? | "JWT signer" with `path: src/auth/jwt-signer.ts`. | `src/auth/jwt-signer.ts` as the name. |
+| `document` | Is the thing itself a text whose value is explaining or deciding something about another concept? | "ADR: local-first persistence." | A service filed as a document because it has a README. |
 
-## 1. The Four-Stage Reading Chain and How `document` Differs in Question
+Read the table top to bottom: what is delivered, where responsibilities split, what the system can do, and how it does it.
 
-Grouping by "how big" causes constant confusion. Group by **what question it answers** instead.
+A folder, package, team, route, class name or README heading is a clue, not a concept. It becomes a domain or capability only when you can write a definition that is not circular and say what it includes and excludes. A verb in a name does not make a capability, and a noun does not make an element.
 
-| kind | Question answered | Example |
-|---|---|---|
-| `project` | What are we delivering? | `auth-platform` |
-| `domain` | Where do concerns split within it? | `auth` · `billing` |
-| `capability` | What can this system do? | `token-issue` |
-| `element` | How is that action realized? | `jwt-signer` |
-| `document` | What decisions/policies/explanations are recorded? | `ADR: local-first persistence` |
+The full tests, with what each kind includes and excludes, are in the [Atlas specification](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 
-This table shows exploration order, not a copy of discrimination rules. When wavering at boundaries, apply both the positive test and counterexample for each specification. Specifically, having a verb in a sentence does not make it a `capability`, nor does having a noun make it an `element`. Folders, packages, teams, workflows, and README headings are merely evidence first; they do not self-promote to meaning kinds.
+## One file is not one concept
 
-## 2. One node per file is a trap
+The most common mistake is to open a directory and make one element per file. The result looks like an ontology but is a directory listing copied into the graph. This repository once had a capability with 92 elements that matched an `ls` of one folder.
 
-The most common failure is this: open a directory, and create one node per file.
+A path is evidence of a concept, not the concept.
 
-This repository actually did that. Under one capability, there were **92** items in `elements:`, and the list matched the byte count of the `ls` output. Instead of 92 concepts emerging, it was merely a **directory list transcribed into the meaning position**.
+- Name an element after its role: `jwt-signer`, `session-store`.
+- Put the location in `path:`.
+- If a title looks like `src/lib/auth/jwt.ts` or ends in a source extension, it is evidence. The MCP server warns when it sees one.
+- Keep slugs flat under the kind folder: `elements/jwt-signer`, not `elements/src/lib/auth/jwt`. A path-shaped slug is refused when a concept is written, because two files with the same name would quietly become one concept.
 
-**Paths are evidence of concepts, not concepts themselves.** Where a file lives is location; what role it plays is the concept. Therefore:
+Several files can share one role. If you cannot say in a sentence how two files differ in role, they are one element, or no element at all and just the `path` of a capability.
 
-- `title` describes the **role**. e.g., `jwt-token`, `session-store`.
-- Location goes in `path:`.
-- If `title` looks like `src/lib/auth/jwt.ts` or ends with a source extension, that is evidence, not a concept name. The tool will detect this and warn you.
+## Many children is not a defect
 
-**The same applies to slugs.** They must be flat under the kind folder (e.g., `elements/<name>`). Path-like slugs such as `elements/src/views/home` are **rejected**. This is not a matter of taste. The moment two files share a filename, different nodes quietly collapse into one (in this repository, 3 nodes visually became 1, and 4 relationships silently vanished).
+There is no limit on how many children a concept may have. A wide parent whose children each earn their place is correct, and a cap is easy to satisfy without understanding: split the pile into "Group A" and "Group B" and the number looks fine while nothing is clearer.
 
-## 3. Having many children is not a defect in itself
+A count is only a reason to ask a question. While the folder is young, the starting points are about 8 capabilities under a domain and about 6 elements under a capability. Once the folder has ten or more parents of a kind, Atlas compares against your folder's own distribution instead.
 
-You might want to impose an upper limit like "children up to 12." There is **no such rule**. It was discarded for two reasons.
+### The one-sentence test
 
-**First, the number is the wrong target.** `schema.org`'s `CreativeWork` has dozens of direct subtypes and has been maintained by the committee for 15 years. What separates a healthy 39 from a sick 92 is not the count. It is **whether siblings are interchangeable**. Article/Book/Recipe/Movie cannot be swapped, but "another subcommand" ×92 can.
+When a parent crosses that point, ask one question for each child:
 
-**Second, the upper limit is bypassed.** If you say "split when it exceeds 12," you can pass by creating two empty baskets named "Group A" and "Group B" and moving half into each. No information is added, yet the metric turns green. **Rules that can be satisfied without understanding are worse than no rules at all**; they create a false sense of confidence.
+> Can you write one sentence, not circular, that says why this child cannot be swapped with its siblings?
 
-### So, what is the signal?
+- If you can, leave it as it is, even with thirty siblings.
+- If you cannot, do not add a new concept. Improve the body of the existing sibling instead.
 
-The number is a **trigger**, not a limit. Vault's initial range when young is as follows:
+Shared name prefixes are a hint of where to look, not the test.
 
-| Parent → Child | Initial Trigger |
-|---|---|
-| domain → capability | ~8 |
-| capability → element | ~6 |
+### When three or more children fail
 
-Exceeding this number is not a defect, nor does it block writing. **It simply means you should ask one question.** And as Vault matures and the parent of that type exceeds ten, the tool discards this externally imported number and uses **Vault's own distribution**. A mature Vault knows its own shape better than anyone else.
+If three or more children fail the test, a level is missing. Add one concept between the parent and those children, but only when all of these hold:
 
-## 4. The Only Test: One Sentence
+1. It is named after a behavior the children share. "Other" or "Part 2" is not a name.
+2. You can state that behavior in one sentence.
+3. It passes the one-sentence test against its own siblings.
+4. You actually move the children under it. An empty grouping concept is reported for removal.
 
-When you exceed the trigger, there is only one question to ask:
+If any of these fails, create nothing.
 
-> **Can you write in a single non-circular sentence why this child cannot be swapped with its siblings?**
+## Give every capability evidence
 
-"Non-circular" is important. Saying "This handles A, so it differs from A" says nothing.
-
-- If you can write it → **leave it as is.** It is normal even if the child has thirty.
-- If you cannot write it → Do not create a new node; instead, fix the body of an existing sibling.
-
-Having the same prefix is just a hint, not a test. Measuring in this repository shows that siblings with the same prefix are usually justified, while the actual 92 broken ones **did not even share a prefix.**
-
-## 5. If Three or More Cannot Be Used: Bridge Node
-
-If three or more children cannot write a single sentence, the layer is missing one level.
-Insert a node between the parent and its children. Name this node **the behavior they share**.
-
-Create a bridge node only when all four conditions are met.
-
-1. **Use the behavior as the name.** "Group A," "Others," and "Part 2" only divide piles; they add no meaning. Those are just named empty baskets, not bridges.
-2. **The behavior must be expressible in one sentence.** If you can't write a sentence, you haven't found a grouping yet.
-3. **The bridge itself cannot replace its siblings.** A bridge that can replace an existing node is redundancy, not a layer.
-4. **Actually move the children under it.** An empty bridge is just the empty basket you intended to block with; nothing passes through it. Nodes that bind nothing are reported for cleanup.
-
-If even one condition is not met, **create nothing.** Count alone is not evidence of a problem.
-
-## 6. Attach the same evidence to capabilities
-
-When creating a capability, **the unfamiliar agent must first enter one implementation entry point** in the same task into `path:`.
+When you create a capability, give it something to open in the same step: one implementation entry point in `path:`, or at least one element in `elements:`. A capability with neither is a claim nobody can check. It is still written, but it stays in the cleanup queue (`maintenance_plan`, or `node cli/src/index.mjs maintenance`) as `capability_without_evidence` until it points at something.
 
 ```markdown
 ---
-uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
+uid: 9f6805c6-7f22-4ca8-8252-c0c2d06f3fad
 kind: capability
 slug: capabilities/token-issue
-title: Token Issuance
+title: Token issuance
 domain: domains/auth
-path: src/lib/auth/jwt-signer.ts
-elements: []                     # Only the slugs of actual implementation role nodes go here
+path: src/auth/issue-token.ts
+elements: [elements/jwt-signer]
 ---
 ```
 
-The path is evidence, not a node. Even if there are multiple files, do not create file-level element nodes if you cannot distinguish each file's role in one sentence. Conversely, if there truly is an independent implementation role, make that role an element and put only its slug in `elements:`.
+`elements:` holds only slugs of real element concepts, never file paths.
 
-A capability without evidence is **a claim no one can open.** The agent holding this vault can explain the capability but cannot navigate to it. Thus, such capabilities remain in the cleanup queue (`maintenance`) as `capability_without_evidence`, constantly asking for something to point to until they do.
+## The rules report, they do not block
 
-## 7. It blocks nothing
+These checks do not refuse a write. A concept that skips them is saved, and the response carries a warning or a row in the cleanup queue. Blocking would teach agents to work around the tool. The one exception is the path-shaped slug: it breaks identity, not meaning, and it is cheapest to fix when the concept is created.
 
-The above specification **does not reject writes.** Skipping saves successfully, but instead attaches a warning to the response or adds a row to the cleanup queue.
-
-This is not due to laxity but is a calculated choice. Blocking makes the vault feel adversarial, and agents will **find ways to bypass the tool.** A bypassed gate is no gate at all. Therefore, the gate reports, and humans and queues make the judgment.
-
-There is one exception. **Path-based slugs are hard errors.** This is a matter of structural validity, not semantic judgment (like duplicate slugs). Fixing them at creation time costs only the effort of choosing a name; fixing them later incurs the cost of renaming cascades.
-
-## Summary
-
-- Choose layers based on **the question being answered**, not size.
-- Determine the exact kind in **a single meta-model specification**.
-- **Paths are evidence; roles are concepts.** `title` indicates role, and position is defined by `path:`.
-- **There is no upper limit on count.** Numbers serve only as triggers to ask questions.
-- The test is simple: **Can you explain in one sentence why it cannot be swapped with a sibling?**
-- Use **bridge nodes** only if three or more cannot be used, and only when all four conditions are met.
-- Attach **evidence to the same hand as capability**. The path alone is sufficient.
-
-This specification applies not just to humans. AI agents connected via MCP also read the same sentences before acting. This ensures that nodes created by humans and those created by agents have the same structure.
-
-The repository analyzer also has a separate processing limit on the number of candidates shown at once. This is a mechanism to keep the **evidence packet bounded** for both LLMs and humans, not a rule governing node count or direct connection counts in this section. Check the [Ontology Quality Authority Map](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-QUALITY.md) for current values per language and verification ownership locations.
-
-Next is [How Relations Are Formed](/guide/relations). Once nodes are defined, it is time to connect them.
+Next: [Relations](/guide/relations) connects the concepts you have chosen.

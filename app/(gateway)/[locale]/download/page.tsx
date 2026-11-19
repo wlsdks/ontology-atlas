@@ -33,7 +33,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
        * After the page root, not before it: the slot's first child is the page. JSON-LD is read
        * by search engines wherever it sits in the document, so the ordering costs nothing.
        */}
-      <JsonLd data={downloadStructuredData(locale, t('descriptions.download'))} />
+      <JsonLd data={downloadStructuredData(locale, t('descriptions.download'), { reading: t('brandReading'), keywords: t('keywords') })} />
       <JsonLd data={faqStructuredData(answers)} />
     </>
   );

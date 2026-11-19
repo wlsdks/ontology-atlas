@@ -5,7 +5,7 @@ import {
   GUIDE_PAGES,
   GUIDE_ENTRY_PAGE,
   guideCanonicalPath,
-  readGatewayDocument,
+  readGuideDocument,
   resolveGuidePage,
 } from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
@@ -49,10 +49,11 @@ export default async function Page({
   const { locale, segment } = await params;
   const { page, matched } = resolveGuidePage(segment);
   const t = await getTranslations({ locale, namespace: 'gatewayNav' });
+  const document = readGuideDocument(page, locale);
 
   return (
     <GatewayDocPage
-      document={readGatewayDocument(page.slug)}
+      document={document}
       title={t(`guidePages.${page.titleKey}`)}
       {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
       /*
@@ -60,7 +61,7 @@ export default async function Page({
        * pass as that address's document.
        */
       {...(matched ? {} : { notice: t('guideUnknownSegment') })}
-      sourcePath={`docs/${page.slug}.md`}
+      sourcePath={document.sourcePath}
       sidebar
       activeSegment={page.segment}
     />
