@@ -6,15 +6,16 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru-rows';
 
 export type BuildLoop = WorkMotion | PlayMotion | 'tail-wag';
-export type BuildGesture = CelebrationMotion;
+/** A finishing gesture, or Moru's puzzled tilt at a tap that did not fit. */
+export type BuildGesture = CelebrationMotion | 'uncertain';
 type Row = BuildLoop | BuildGesture;
 
 /** Every row this section plays, fetched once the section is first seen so a swap never blinks. */
-const BUILD_ROWS: readonly Row[] = ['tail-wag', 'folder-open', 'think', 'follow-link', 'pondering', 'search', 'compare', 'flipper-groove', ...CELEBRATION_MOTIONS];
+const BUILD_ROWS: readonly Row[] = ['tail-wag', 'read', 'think', 'follow-link', 'pondering', 'search', 'compare', 'flipper-groove', 'uncertain', ...CELEBRATION_MOTIONS];
 const rowSrc = (row: Row) => withBasePath(`/brand/mascot-${row}-row-128.png`);
-const paceOf = (row: Row) => (row in PLAY_ROW_FRAMES || row === 'tail-wag' ? 'play' : 'work');
+const paceOf = (row: Row) => (row in PLAY_ROW_FRAMES || row === 'tail-wag' || row === 'uncertain' ? 'play' : 'work');
 const framesOf = (row: Row) => (PLAY_ROW_FRAMES as Record<string, number>)[row] ?? 24;
-const EMOTE: Record<BuildGesture, 'spark' | 'note' | 'heart'> = { clap: 'spark', hop: 'note', success: 'heart' };
+const EMOTE: Record<BuildGesture, 'spark' | 'note' | 'heart' | null> = { clap: 'spark', hop: 'note', success: 'heart', uncertain: null };
 
 /** Swaps faster than a fade can stack cells; the oldest, nearly gone, is dropped past this. */
 const MAX_LAYERS = 3;
@@ -93,7 +94,7 @@ export function BuildMoru({
           </span>
         );
       })}
-      {gestureLive ? (
+      {gestureLive && EMOTE[gesture.motion] ? (
         // eslint-disable-next-line @next/next/no-img-element -- Moru's own wordless emote, a 24px pixel SVG
         <img
           key={gesture.at}
