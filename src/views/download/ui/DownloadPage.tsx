@@ -63,9 +63,12 @@ const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
 
-/** On a touchscreen the chips grow to the 44px finger floor; they stack, so a wider hit box would overlap. */
+/**
+ * On a touchscreen the chips keep their size and their hit boxes reach the 44px finger floor; the
+ * row's gap grows to 14px there, so the stacked boxes meet instead of overlapping.
+ */
 const HERO_CHIP =
-  'atlas-touch-floor gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
+  'touch-hit-expand gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
 
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
@@ -248,7 +251,7 @@ function HeroSection({
 
         {/* From 80rem a container, so the headline is sized against this column, one line per sentence. */}
         <div className="gateway-hero-text relative z-[1] min-w-0 text-center min-[80rem]:text-left">
-          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap gap-2')}>
+          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap gap-2 pointer-coarse:gap-3.5')}>
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
