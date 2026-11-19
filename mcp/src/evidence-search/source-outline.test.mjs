@@ -118,6 +118,40 @@ test('lists a TypeScript method whose parameters start on the next line, and not
   );
 });
 
+test('a wrapped head ends where its parentheses close, past an object type, a default and a doc comment', () => {
+  const text = [
+    'export class Releaser {',                          // 1
+    '  constructor(',                                   // 2
+    '    options: ClientOptions & {',                   // 3
+    '      /** Turn the loader off. */',                // 4
+    '      disableLoader?: boolean;',                   // 5
+    '    } = {}',                                       // 6
+    '  ) {',                                            // 7
+    '    this.options = options;',                      // 8
+    '  }',                                              // 9
+    '  private async publishRelease(',                  // 10
+    '    options: PublishOptions & {',                  // 11
+    '      from?: string;',                             // 12
+    '    }',                                            // 13
+    '  ): Promise<ReleaseInfo | undefined> {',          // 14
+    '    entries',                                      // 15
+    '      .map(([key, result]) =>',                    // 16
+    '        processRow({',                             // 17
+    '          sha: key,',                              // 18
+    '        })',                                       // 19
+    '      )',                                          // 20
+    '      .map(async (commit) => {',                   // 21
+    '        run(commit);',                             // 22
+    '      });',                                        // 23
+    '  }',                                              // 24
+    '}',                                                // 25
+  ].join('\n');
+  assert.deepEqual(
+    outlineSource(text, 'releaser.ts').declarations.map((row) => [row.line, row.kind, row.name]),
+    [[1, 'class', 'Releaser'], [2, 'method', 'constructor'], [10, 'method', 'publishRelease']],
+  );
+});
+
 test('a class of wrapped heads with many parentheses outlines in linear time', () => {
   const head = `  run(${'('.repeat(400)}`;
   const tail = `  ${')'.repeat(OUTLINE_LINE_CHARS - 10)} {`;
@@ -395,4 +429,24 @@ test('caps the declaration list and the kept signature', () => {
 test('is deterministic for the same text and path', () => {
   const text = 'func (c *Command) Run() error {\n\treturn nil\n}\n';
   assert.deepEqual(outlineSource(text, 'a.go'), outlineSource(text, 'a.go'));
+});
+
+test('a wrapped call is no method head: its parentheses must close, exactly, on the line that opens the body', () => {
+  const text = [
+    'export class Store {',                 // 1
+    '  save(input) {',                      // 2
+    '    register(',                        // 3
+    "      'event', function handler(a) {", // 4
+    '        return a;',                    // 5
+    '      });',                            // 6
+    '    guard(',                           // 7
+    '      input)) {',                      // 8
+    '    }',                                // 9
+    '  }',                                  // 10
+    '}',                                    // 11
+  ].join('\n');
+  assert.deepEqual(
+    outlineSource(text, 'store.ts').declarations.map((row) => [row.line, row.kind, row.name]),
+    [[1, 'class', 'Store'], [2, 'method', 'save']],
+  );
 });
