@@ -427,7 +427,10 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
   if (projectDoc?.frontmatter?.kind !== 'project') {
     throw new Error(`finalize_project_meaning requires a kind: project node; received "${canonicalSlug}".`);
   }
-  if (projectDoc.mtime !== expected_mtime) {
+  // With `answers` the server replaces only its own section in the body as it is now, so the
+  // caller's view of the file cannot overwrite an edit; a relation write just before this call
+  // moves the project's mtime and is no conflict.
+  if (!answersGiven && projectDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(canonicalSlug, expected_mtime, projectDoc.mtime);
   }
   if (answersGiven) requireNodeNotReservedForHuman(projectDoc, 'finalize_project_meaning');
@@ -515,7 +518,7 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime, answers } = {
 
   let storedBody = projectBody;
   if (answersGiven && projectBody !== projectDoc.body) {
-    const { filePath } = updateDoc(VAULT_ROOT, canonicalSlug, { body: projectBody, expectedMtime: expected_mtime });
+    const { filePath } = updateDoc(VAULT_ROOT, canonicalSlug, { body: projectBody, expectedMtime: projectDoc.mtime });
     storedBody = readDoc(VAULT_ROOT, filePath).body;
     // The body is now on disk whatever the receipt write does, so it is logged here.
     logWrite('finalize_project_meaning', { projectSlug: canonicalSlug }, { bodyWritten: true });

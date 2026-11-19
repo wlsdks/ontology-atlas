@@ -15,7 +15,7 @@ import {
 } from '../tool-schemas/project-source-shapes.mjs';
 
 const COMPETENCY_QUESTION_LIST = MEANING_COMPETENCY_QUESTIONS
-  .map(({ id, question }) => `\`${id}\`: ${question}`)
+  .map(({ id, question, requiredWitnesses }) => `\`${id}\`: ${question} (answered needs ${requiredWitnesses.join(', ')})`)
   .join(' ');
 
 export const FINALIZE_PROJECT_MEANING_TOOL = {
@@ -37,7 +37,8 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
         type: 'number',
         minimum: 0,
         description:
-          'Required conflict guard: the project node mtime from its last write or get_concept; any intervening human or agent edit blocks finalization.',
+          'The project node mtime from its last write or get_concept. Without `answers` it is a conflict guard: any edit since blocks finalization. ' +
+          'With `answers` the server replaces only that section in the body as it is now, so an older value is accepted.',
       },
       answers: {
         type: 'array',
@@ -45,7 +46,7 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
         maxItems: MEANING_COMPETENCY_QUESTIONS.length,
         description:
           `One row per fixed question: ${COMPETENCY_QUESTION_LIST} ` +
-          '`answered` needs witnesses that back the whole answer; `partial` or `visible-gap` needs `gap`, one line naming what is missing. ' +
+          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`, one line naming what is missing. ' +
           'More: connection_info({guide:"competency"}).',
         items: {
           type: 'object',
