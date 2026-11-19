@@ -36,6 +36,7 @@ import { LoopSection, StartSection } from './LoopSection';
 import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
 import { ProofNumbers } from './ProofNumbers';
+import { BuildWithMoru } from './BuildWithMoru';
 import { FilmSection } from './FilmSection';
 import { HarnessFilm } from './HarnessFilm';
 import { MotionToggle } from '@/shared/ui/controls/motion-toggle';
@@ -105,6 +106,7 @@ export function DownloadPage() {
         />
         <ProofNumbers graph={graph} />
         <FilmSection graph={graph} />
+        <BuildWithMoru handheld={visitorPlatform === 'handheld'} />
         <HarnessFilm />
         <LoopSection graph={graph} />
         <ScreensSection />

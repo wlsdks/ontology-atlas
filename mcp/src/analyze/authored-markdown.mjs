@@ -1,4 +1,4 @@
-import { fromMarkdown } from 'mdast-util-from-markdown';
+import { markdownTree } from '../markdown-tree.mjs';
 import { cleanHeadingLabel } from './text.mjs';
 
 export function authoredMarkdownLines(text) {
@@ -14,7 +14,8 @@ export function authoredMarkdownLines(text) {
     if (index < content.length) content[index] = '';
   }
   const source = content.join('\n');
-  const pending = fromMarkdown(source).children.map((node) => ({ node, root: true })).reverse();
+  // markdownTree is linear in the text, so a hostile page cannot stall the survey.
+  const pending = markdownTree(source).children.map((node) => ({ node, root: true })).reverse();
   while (pending.length) {
     const { node, root } = pending.pop();
     if ((root && node.type === 'heading') || node.type === 'paragraph') {

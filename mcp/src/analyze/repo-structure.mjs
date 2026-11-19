@@ -161,7 +161,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       for (const r of fsdRoots) {
         const dir = join(srcDir, r);
         if (!existsSync(dir)) continue;
-        for (const sub of readdirSync(dir)) {
+        for (const sub of readdirSync(dir).sort()) {
           if (ignore.has(sub) || sub.startsWith('.')) {
             skipped.push({ path: join(dir, sub), reason: 'dotfile/ignore' });
             continue;

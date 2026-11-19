@@ -508,7 +508,7 @@ function gatesPlan({ suggestions, full }) {
   // These scripts spawn the source MCP server (`test:cli:commands` runs the real `growth` command,
   // which calls it). Without them listed, a gates lane dies on missing mcp/node_modules, a false red
   // no rerun fixes, since checks.yml gates `pnpm --dir mcp install` on this flag.
-  // A script test that imports mcp/src (a dogfood-walk test reaching mdast-util-from-markdown)
+  // A script test that imports mcp/src (a dogfood-walk test reaching markdown-it)
   // needs the same install, so any command whose files' import closure enters mcp/ raises it too.
   const commandFiles = commands.flatMap((command) => command.split(/\s+/).filter((token) => /^(?:scripts|cli|tests)\/.+\.[cm]?js$/.test(token)));
   const needsMcp =

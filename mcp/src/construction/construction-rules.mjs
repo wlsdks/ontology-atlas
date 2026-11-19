@@ -111,6 +111,13 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
 export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element names a CONCEPT a capability uses (e.g. "jwt-token"), not a file. If your \`title\` is a bare path or ends in a source extension, you are describing evidence, not the concept — rename \`title\` to the role and put the path in \`path:\`, or if 3+ siblings under the same parent already look like this, call \`get_concept\` on the parent and consider \`patch_concept\` on an existing sibling instead of adding another file-mirror node. The same rule binds the \`slug\`: flat under the kind folder (\`elements/<role-name>\`), never a code path (\`elements/src/views/home\` is rejected) — path-style slugs collide the moment two files share a basename and the graph silently merges distinct nodes.`;
 
 /** Batch variant — same rule, stated for the row-wise call shape. */
+/**
+ * The scope rule, said where a claim is written: a sentence speaks only for the
+ * members it read. A symbol read of a family member carries `family`, the
+ * member count and how many this session read.
+ */
+export const FAMILY_SCOPE_RULE_EN = 'A sentence about a family (plugins, transforms, brokers, handlers) says how many members were read against the count found ("2 of at least 16 read") or speaks only for the member read: never "every", "each", "all" or "they" unless every member was read. A symbol read of a member carries `family` with that count, a floor: a member written in a way the server cannot follow is not in it. What the unread members do is an `## Uncertainty` line, not part of the definition.';
+
 export const ELEMENT_NAMING_RULE_BATCH_EN = `Rows whose \`title\` is a bare file path follow the same rule as \`add_concept\` above. Prefer one capability node covering a directory plus a short \`elements:\` list over one row per file, unless each file's role differs in a stated sentence.`;
 
 /**

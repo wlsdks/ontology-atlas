@@ -74,7 +74,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
           type: 'object',
           properties: {
             path: { type: 'string', minLength: 1, maxLength: 1024, description: 'Literal repository-relative source path, at most 1,024 Unicode characters; no glob or directory traversal.' },
-            symbol: { type: 'string', minLength: 1, maxLength: 200, pattern: '^[A-Za-z_$#][\\w$#]*(?:\\.[A-Za-z_$#][\\w$#]*)?$', description: "A declared name in the file (\"issueInvoice\", or \"Invoice.total\" for a member). Returns that declaration's lines, up to maxLines (default and ceiling 200), its `cite`, `context` (the guards, defaults and callee bodies that decide it, each with role, path, lines and `cite`), and `callees`: the functions it calls that the repository declares, each with path and line. Rejects startLine and mode 'outline'." },
+            symbol: { type: 'string', minLength: 1, maxLength: 200, pattern: '^[A-Za-z_$#][\\w$#]*(?:\\.[A-Za-z_$#][\\w$#]*)?$', description: "A declared name in the file (\"issueInvoice\", or \"Invoice.total\" for a member). Returns that declaration's lines, up to maxLines (default and ceiling 200), its `cite`, `context` (the guards, defaults and callee bodies that decide it, one call deeper too with `via` naming the call it came through, the implementations a field call may reach, and the named constants the served code uses; each with role, path, lines and `cite`), and `callees`: the functions it calls that the repository declares, each with path and line. Rejects startLine and mode 'outline'." },
             mode: { type: 'string', enum: ['lines', 'outline'], description: "Read shape, default 'lines'. 'lines' returns the exact requested range. 'outline' reads the whole file under the same 256 KiB file cap and returns its declarations with line numbers, no source text, and no range." },
             startLine: { type: 'integer', minimum: 1, description: "One-based first source line to return. Required for mode 'lines' without symbol; rejected for mode 'outline' and with symbol." },
             maxLines: { type: 'integer', minimum: 1, maximum: 200, description: "Maximum complete source lines requested, from 1 through 200. Required for mode 'lines' without symbol, optional with symbol; rejected for mode 'outline'." },
@@ -453,7 +453,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   type: 'array', maxItems: 12,
                   items: {
                     type: 'object',
-                    properties: { name: NON_BLANK_STRING_SCHEMA, path: NON_BLANK_STRING_SCHEMA, line: { type: 'integer', minimum: 1 } },
+                    properties: { name: NON_BLANK_STRING_SCHEMA, path: NON_BLANK_STRING_SCHEMA, line: { type: 'integer', minimum: 1 }, implementation: { type: 'boolean', enum: [true] }, byName: { type: 'boolean', enum: [true], description: 'Found by name alone: its import names no file this project holds, so it is weaker evidence and no shared role.' } },
                     required: ['name', 'path', 'line'], additionalProperties: false,
                   },
                 },
@@ -463,13 +463,15 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   items: {
                     type: 'object',
                     properties: {
-                      role: { type: 'string', enum: ['caller', 'constructor', 'owner', 'callee'] },
+                      role: { type: 'string', enum: ['caller', 'constructor', 'owner', 'callee', 'implementation', 'constant'] },
                       path: NON_BLANK_STRING_SCHEMA,
                       symbol: NON_BLANK_STRING_SCHEMA,
                       startLine: { type: 'integer', minimum: 1 },
                       endLine: { type: 'integer', minimum: 1 },
                       cite: NON_BLANK_STRING_SCHEMA,
                       text: { type: 'string' },
+                      via: NON_BLANK_STRING_SCHEMA,
+                      byName: { type: 'boolean', enum: [true] },
                       next: {
                         type: 'object',
                         properties: { path: NON_BLANK_STRING_SCHEMA, startLine: { type: 'integer', minimum: 1 }, maxLines: { type: 'integer', minimum: 1 } },
@@ -483,7 +485,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   type: 'array', maxItems: 6,
                   items: {
                     type: 'object',
-                    properties: { role: { type: 'string', enum: ['caller', 'constructor', 'owner', 'callee'] }, path: NON_BLANK_STRING_SCHEMA, symbol: NON_BLANK_STRING_SCHEMA, line: { type: 'integer', minimum: 1 } },
+                    properties: { role: { type: 'string', enum: ['caller', 'constructor', 'owner', 'callee', 'implementation', 'constant'] }, path: NON_BLANK_STRING_SCHEMA, symbol: NON_BLANK_STRING_SCHEMA, line: { type: 'integer', minimum: 1 } },
                     required: ['role', 'path', 'symbol', 'line'], additionalProperties: false,
                   },
                 },
@@ -496,6 +498,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
                   },
                 },
                 deciding: NON_BLANK_STRING_SCHEMA,
+                family: NON_BLANK_STRING_SCHEMA,
                 mode: { type: 'string', enum: ['outline'] },
                 sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
                 language: NON_BLANK_STRING_SCHEMA,

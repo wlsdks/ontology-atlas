@@ -2,7 +2,7 @@
 // `configure.ac`, or the README H1; the domain candidates a README's H2 sections
 // suggest; and the ontology nodes an existing vault already contributes.
 
-import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
+import { closeSync, fstatSync, openSync, readFileSync, readSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, basename, relative, isAbsolute, sep } from 'node:path';
 import {
   AUTOTOOLS_IDENTITY_FILES,
@@ -12,6 +12,7 @@ import {
   ONTOLOGY_EVIDENCE_MAX_FILES,
   PYTHON_PROJECT_MAX_BYTES,
   PYTHON_SETUP_MAX_BYTES,
+  SEMANTIC_EVIDENCE_MAX_BYTES,
   STARTER_ONTOLOGY_SLUGS,
 } from './constants.mjs';
 import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from './text.mjs';
@@ -169,6 +170,24 @@ export function detectProject(rootPath, skipped = []) {
   return { slug: basename(rootPath), title: humanize(basename(rootPath)) };
 }
 
+// A README is read only as far as the survey reads any document, so one huge
+// file cannot hold up the survey.
+function readDocumentHead(path) {
+  const descriptor = openSync(path, 'r');
+  try {
+    const buffer = Buffer.alloc(Math.min(fstatSync(descriptor).size, SEMANTIC_EVIDENCE_MAX_BYTES));
+    let length = 0;
+    while (length < buffer.length) {
+      const read = readSync(descriptor, buffer, length, buffer.length - length, length);
+      if (read === 0) break;
+      length += read;
+    }
+    return buffer.toString('utf8', 0, length);
+  } finally {
+    closeSync(descriptor);
+  }
+}
+
 function detectReadmeH1(rootPath) {
   const seen = new Set();
   for (const cand of ['README.md', 'readme.md', 'README.rst', 'readme.rst', 'README']) {
@@ -178,7 +197,7 @@ function detectReadmeH1(rootPath) {
     const path = join(rootPath, source);
     if (!pathResolvesInsideRoot(rootPath, path)) continue;
     try {
-      const text = readFileSync(path, 'utf-8');
+      const text = readDocumentHead(path);
       const lines = /\.rst$/i.test(source) ? text.split(/\r?\n/) : authoredMarkdownLines(text);
       let fence = null;
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -253,7 +272,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
     if (visitedDirectories.has(realDirectory)) return;
     visitedDirectories.add(realDirectory);
     ancestors.add(realDirectory);
-    for (const entry of readdirSync(dir)) {
+    for (const entry of readdirSync(dir).sort()) {
       if (walkBudgetReached(dir)) return;
       entriesSeen += 1;
       const path = join(dir, entry);
@@ -398,7 +417,7 @@ export function detectDomainsFromReadme(rootPath) {
     const p = join(rootPath, source);
     if (!pathResolvesInsideRoot(rootPath, p)) continue;
     try {
-      const text = readFileSync(p, 'utf-8');
+      const text = readDocumentHead(p);
       const lines = authoredMarkdownLines(text);
       const domains = [];
       const seen = new Set();

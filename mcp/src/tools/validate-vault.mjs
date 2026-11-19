@@ -207,7 +207,8 @@ function briefVaultValidation(report) {
 
 function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
-  const docs = loadedDocs ?? loadVaultDocs(VAULT_ROOT);
+  // A directory walk lists files in whatever order the runtime returns them.
+  const docs = [...(loadedDocs ?? loadVaultDocs(VAULT_ROOT))].sort((left, right) => (left.slug < right.slug ? -1 : 1));
   const docIssues = new Map();
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about

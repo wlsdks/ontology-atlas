@@ -11,6 +11,8 @@ import { readFileSync } from 'node:fs';
 
 import { collectSourceUnits } from '../analyze/source-units.mjs';
 import { outlineSource } from './source-outline.mjs';
+import { blankLiterals, importLines } from './code-text.mjs';
+import { typeTiesOf } from './type-ties.mjs';
 
 const MAX_INDEXED_BYTES = 256 * 1024;
 // Declarations and a small filter of the identifiers a file names are kept for
@@ -123,11 +125,68 @@ function factsOf(file) {
         .map(({ name, line, kind }) => ({ name: Buffer.from(name).toString(), line, kind }))
       : [],
     names: identifierFilter(text),
+    family: null,
   };
   DECLARATIONS.delete(file.abs);
   DECLARATIONS.set(file.abs, facts);
   if (DECLARATIONS.size > FILE_LIMIT) DECLARATIONS.delete(DECLARATIONS.keys().next().value);
   return facts;
+}
+
+/**
+ * What the family count reads of one file, built the first time it is asked
+ * for and kept with the file's facts. Declarations and class headers come from
+ * the text with comments and strings blanked (`code-text`), so a class shown in
+ * a docstring is no class; the general index above keeps reading the plain
+ * outline. A file the blanking could not read with certainty, past the size
+ * cap, with an outline that stopped early or an import cut at a cap is
+ * `truncated`, and the count withholds what it could hold.
+ */
+function familyFactsOf(file, facts) {
+  if (facts.family) return facts.family;
+  const capped = file.size > MAX_INDEXED_BYTES;
+  const family = { declarations: [], goImports: [], defaultImports: [], capped, truncated: capped, importsCut: false };
+  const text = capped ? '' : textOf(file);
+  if (text) {
+    const blanked = blankLiterals(text, file.path);
+    const outlined = outlineSource(blanked.code, file.path);
+    const outline = outlined.declarations
+      .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
+    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, blanked.code, file.path, {
+      partial: Boolean(outlined.truncated) || blanked.uncertain,
+      importLines: () => importLines(text, blanked),
+    });
+    // A copy: a substring would keep the whole file text alive.
+    const declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
+    // A class expression takes the place of what the outline listed on its line (a `const`, or a class named `extends`).
+    const replaced = new Set(expressions.map((expression) => expression.line));
+    family.declarations = replaced.size === 0 ? declarations : [
+      ...declarations.filter((declaration) => !replaced.has(declaration.line)),
+      ...expressions,
+    ].sort((a, b) => a.line - b.line);
+    family.goImports = goImports;
+    family.defaultImports = defaultImports;
+    family.importsCut = importsCut;
+    family.truncated = Boolean(outlined.truncated) || importsCut || blanked.uncertain;
+  }
+  facts.family = family;
+  return family;
+}
+
+/**
+ * Each product file as the family count reads it (`familyFactsOf`), from the
+ * same cache the index uses.
+ *
+ * @param {string} rootPath absolute repository root
+ * @param {{ ignore?: string[], files?: object[] }} [options]
+ * @returns {Generator<{ path: string, declarations: object[], goImports: string[][], defaultImports: string[], truncated: boolean, capped: boolean, importsCut: boolean, mayName: (name: string) => boolean }>}
+ */
+export function* declarationsByFile(rootPath, { ignore = [], files } = {}) {
+  for (const file of files ?? productFiles(rootPath, ignore)) {
+    const facts = factsOf(file);
+    const family = familyFactsOf(file, facts);
+    yield { path: file.path, ...family, mayName: (name) => mayName(facts, name) };
+  }
 }
 
 /** False only when the file certainly never names `name` as a whole identifier. */
@@ -147,8 +206,25 @@ export function productFiles(rootPath, ignore = []) {
 }
 
 /**
- * name -> [{ path, line, kind }] over every product source file under `rootPath`; a
- * `Receiver.method` declaration is also listed under `*.method`.
+ * Product source files under `rootPath` and whether the walk stopped at its
+ * file cap before reaching them all.
+ *
+ * @param {string} rootPath absolute repository root
+ * @param {string[]} [ignore]
+ * @returns {{ files: object[], truncated: boolean }}
+ */
+export function productWalk(rootPath, ignore = []) {
+  try {
+    const collection = collectSourceUnits(rootPath, { ignore });
+    return { files: collection.files.filter((file) => file.class === 'product'), truncated: Boolean(collection.truncated) };
+  } catch {
+    return { files: [], truncated: true };
+  }
+}
+
+/**
+ * name -> [{ path, line, kind, name }] over every product source file under
+ * `rootPath`; a `Receiver.method` declaration is also listed under `*.method`.
  *
  * @param {string} rootPath absolute repository root
  * @param {{ ignore?: string[], files?: object[] }} [options] `files` reuses one walk across a call
@@ -161,8 +237,8 @@ export function declarationIndex(rootPath, { ignore = [], files } = {}) {
       const keys = name.includes('.') ? [name, `*.${name.split('.').pop()}`] : [name];
       for (const key of keys) {
         const rows = index.get(key);
-        if (rows) rows.push({ path: file.path, line, kind });
-        else index.set(key, [{ path: file.path, line, kind }]);
+        if (rows) rows.push({ path: file.path, line, kind, name });
+        else index.set(key, [{ path: file.path, line, kind, name }]);
       }
     }
   }
@@ -174,9 +250,11 @@ function escapeRegExp(value) {
 }
 
 /**
- * Where product code calls `name(`: each call line outside a declaration line, at
- * most `limit` (the rest only counted), so a symbol read can show the guard its
- * caller puts around it.
+ * Where product code calls `name(`: each call line outside a declaration line, a
+ * comment, a doctest (`>>> f(x)`) or a Python docstring, at most `limit` (the
+ * rest only counted), so a symbol read can show the guard its caller puts around
+ * it. An example in a docstring is no caller, and showing it as one hides the
+ * docstring's own rule behind it.
  *
  * @returns {{ sites: { path: string, line: number }[], total: number }}
  */
@@ -191,12 +269,47 @@ export function callSitesOf(rootPath, name, { ignore = [], limit = 8, files } = 
     if (!text.includes(name)) continue;
     const declared = new Set(facts.declarations.map((declaration) => declaration.line));
     const lines = text.split(/\r?\n/);
+    const python = file.path.endsWith('.py') || file.path.endsWith('.pyi');
+    let quote = null;
     for (let index = 0; index < lines.length; index += 1) {
-      if (declared.has(index + 1) || !pattern.test(lines[index])) continue;
-      if (/^\s*(?:\/\/|#|\*|\/\*)/.test(lines[index])) continue;
+      let line = lines[index];
+      if (python) {
+        const code = codeOutsideDocstring(line, quote);
+        quote = code.quote;
+        line = code.text;
+      }
+      if (declared.has(index + 1) || !pattern.test(line)) continue;
+      if (/^\s*(?:\/\/|#|\*|\/\*|>>>|\.\.\.\s)/.test(line)) continue;
       total += 1;
       if (sites.length < limit) sites.push({ path: file.path, line: index + 1 });
     }
   }
   return { sites, total };
+}
+
+/**
+ * The part of a Python line outside a triple-quoted string, and the quote still
+ * open after it. One pass over the line: each opener is looked for once.
+ */
+function codeOutsideDocstring(line, open) {
+  let text = '';
+  let quote = open;
+  let at = 0;
+  while (at < line.length) {
+    if (quote) {
+      const close = line.indexOf(quote, at);
+      if (close < 0) return { text, quote };
+      at = close + 3;
+      quote = null;
+      continue;
+    }
+    const double = line.indexOf('"""', at);
+    const single = line.indexOf("'''", at);
+    const next = double < 0 ? single : single < 0 ? double : Math.min(double, single);
+    if (next < 0) return { text: text + line.slice(at), quote: null };
+    text += line.slice(at, next);
+    quote = line.slice(next, next + 3);
+    at = next + 3;
+  }
+  return { text, quote };
 }

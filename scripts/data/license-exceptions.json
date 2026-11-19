@@ -12,6 +12,12 @@
       "package": "webpki-root-certs",
       "license": "CDLA-Permissive-2.0",
       "reason": "Mozilla's root certificates as data, in the Cargo graph only as a wasm32-target dependency of rustls-platform-verifier, so no desktop build links it. CDLA-Permissive-2.0 is a permissive data license whose one condition, that its text travel with the data, third-party-licenses.txt meets."
+    },
+    {
+      "ecosystem": "npm",
+      "package": "argparse",
+      "license": "PSF-2.0",
+      "reason": "A dependency of markdown-it's command-line entry, which the MCP server never imports, so the sidecar bundle leaves it out. PSF-2.0 is the Python Software Foundation part of the allowed Python-2.0 license: permissive, asking only that the license text travel with the code, which third-party-licenses.txt does."
     }
   ]
 }
