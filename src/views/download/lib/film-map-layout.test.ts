@@ -190,11 +190,17 @@ function restFrame(map: FilmMapLayout): Frame {
     labels: map.restLabels,
     boxes: [
       ...map.restLabels.map((l) => ({ key: l.key, group: groupOf(l), rect: l.box })),
-      ...map.restArcs.map((a) => ({
-        key: `numeral:${a.from}`,
-        group: `numeral:${a.from}>${a.to}`,
-        rect: { l: a.numeral.x - S.numeralR, t: a.numeral.y - S.numeralR, r: a.numeral.x + S.numeralR, b: a.numeral.y + S.numeralR },
-      })),
+      ...map.restArcs.flatMap((a) =>
+        a.numeral
+          ? [
+              {
+                key: `numeral:${a.from}`,
+                group: `numeral:${a.from}>${a.to}`,
+                rect: { l: a.numeral.x - S.numeralR, t: a.numeral.y - S.numeralR, r: a.numeral.x + S.numeralR, b: a.numeral.y + S.numeralR },
+              },
+            ]
+          : [],
+      ),
     ],
     marks: [...map.marks.values()].map((m) => ({ id: m.id, x: m.x, y: m.y, r: m.kind === 'project' ? m.r * 1.35 : m.r })),
     lines: map.restArcs.map((a) => a.pts),

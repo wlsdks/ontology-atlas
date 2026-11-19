@@ -229,6 +229,8 @@ export interface FilmScene {
   /** Which wall row stands for each concept. */
   rowOf: Map<string, PlacedRow>;
   slotSide: Map<string, number>;
+  /** How long act 3 carries the close-up's marks to the map: longer where they travel far on a small stage. */
+  travelMs: number;
   /** Ink share kept by unrelated clusters while lit. */
   sink: number;
   mono: string;
@@ -301,7 +303,7 @@ export function buildScene(
     const side = domain ? slotSide.get(domain) ?? 1 : 1;
     const path = bowedPoints(at, to, FLIGHT.bow * side, 24);
     flights.set(id, {
-      ms: flightMs(polylineLength(path)),
+      ms: flightMs(polylineLength(path), Math.hypot(map.w, map.h)),
       id,
       start,
       from: at,
@@ -356,7 +358,20 @@ export function buildScene(
       });
     }
   }
-  return { vault, map, wall, open, inks, stamps, sprites, flights, fragment, arcs, lit, rowOf, slotSide, sink, mono, record: null };
+  /* The close-up's marks travel to the map at most 2.2% of the stage's diagonal per 60 Hz frame; `easeInOut` peaks at three times the mean speed. */
+  let travelMs: number = FLIGHT.travelMs;
+  if (pick && open) {
+    const node = vault.byId.get(pick)!;
+    const legs: [Pt, Pt | undefined][] = [
+      [open.pick, map.marks.get(pick)],
+      [open.domain, node.domain ? map.marks.get(node.domain) : undefined],
+      ...open.dots.map((d, k): [Pt, Pt | undefined] => [d, map.marks.get(node.elements[k]!)]),
+    ];
+    const far = Math.max(0, ...legs.map(([a, b]) => (b ? Math.hypot(b.x - a.x, b.y - a.y) : 0)));
+    const allowed = (0.022 * Math.hypot(map.w, map.h)) / (1000 / 60);
+    travelMs = Math.max(FLIGHT.travelMs, (3 * far) / allowed);
+  }
+  return { vault, map, wall, open, inks, stamps, sprites, flights, fragment, arcs, lit, rowOf, slotSide, travelMs, sink, mono, record: null };
 }
 
 /* ------------------------------------------------------------------------------------------ */
@@ -697,7 +712,7 @@ function paintFragment(
           const E = O.namedEnd;
           ctx.globalAlpha = arrived;
           capMark(ctx, scene, E.at.x, E.at.y, E.r, inks.rest);
-          stamps.draw(ctx, vault.byId.get(E.id)!.label, E.label.x, E.label.y, E.font, inks.name, { halo: inks.halo, align: E.align });
+          if (E.label) stamps.draw(ctx, vault.byId.get(E.id)!.label, E.label.x, E.label.y, E.font, inks.name, { halo: inks.halo, align: E.align });
           ctx.globalAlpha = 1;
           scene.record?.set(`named:${E.id}`, E.at.x, E.at.y, arrived);
         }
@@ -814,7 +829,7 @@ interface MapState {
 /** A concept's mark position, radius and light in act 3 or 4; null while it has not appeared. */
 function markAt(scene: FilmScene, id: string, st: MapState): { x: number; y: number; light: number } | null {
   const m = scene.map.marks.get(id)!;
-  if (scene.fragment.has(id)) return st.t3 < TRAVEL_END ? null : { x: m.x, y: m.y, light: 1 };
+  if (scene.fragment.has(id)) return st.t3 < FLIGHT.travelFrom + scene.travelMs ? null : { x: m.x, y: m.y, light: 1 };
   const plan = scene.flights.get(id);
   if (!plan) return { x: m.x, y: m.y, light: 1 };
   if (st.t3 < plan.start) return null;
@@ -825,12 +840,10 @@ function markAt(scene: FilmScene, id: string, st: MapState): { x: number; y: num
   return { x: p.x, y: p.y, light: f.mark };
 }
 
-const TRAVEL_END = FLIGHT.travelFrom + FLIGHT.travelMs;
-
 /** When a hub's flight lands, so its light and name can follow. */
 function landedAt(scene: FilmScene, id: string): number {
   const plan = scene.flights.get(id);
-  if (scene.fragment.has(id)) return FLIGHT.travelFrom + FLIGHT.travelMs;
+  if (scene.fragment.has(id)) return FLIGHT.travelFrom + scene.travelMs;
   return plan ? plan.start + plan.ms : 0;
 }
 
@@ -881,7 +894,7 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     const r = c.footprint * 1.8;
     const own = c.id === pickDomain;
     const share = own ? 1 : sinkShare;
-    if (scene.fragment.has(c.id) && st.t3 < FLIGHT.travelFrom + FLIGHT.travelMs) continue;
+    if (scene.fragment.has(c.id) && st.t3 < FLIGHT.travelFrom + scene.travelMs) continue;
     light(ctx, scene.sprites.get(inks.rest), x, y, r, 0.2 * grown * share * (own ? 1 - selected : 1));
     if (own && selected > 0) light(ctx, scene.sprites.get(inks.project), x, y, r, 0.2 * selected);
   }
@@ -912,7 +925,7 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     const B = map.marks.get(stem.to);
     if (!A || !B) continue;
     const fromFragment = scene.fragment.has(stem.from) && scene.fragment.has(stem.to);
-    if (fromFragment && st.t3 < FLIGHT.travelFrom + FLIGHT.travelMs) continue;
+    if (fromFragment && st.t3 < FLIGHT.travelFrom + scene.travelMs) continue;
     const show = fromFragment ? 1 : easeOut(span(st.t3, FLIGHT.namesFrom, FLIGHT.namesMs));
     if (show <= 0.004) continue;
     const domain = B.domain;
@@ -1058,6 +1071,7 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
   /* Numerals on the rest arcs, then the names. */
   scene.arcs.forEach((plan) => {
     const arc = map.restArcs[plan.index]!;
+    if (!arc.numeral) return;
     const shown = span(st.t3, plan.start + arcMidpointMs, FLIGHT.numeralMs) * (lit && t4 >= 0 ? 1 - sinkT : 1);
     if (shown <= 0.004) return;
     ctx.globalAlpha = shown;
@@ -1097,16 +1111,18 @@ function paintNames(
   const pickDomain = map.pick ? vault.byId.get(map.pick)!.domain : null;
   const isLit = Boolean(lit) && t4 >= 0;
   const blockIn = (id: string) => {
-    if (scene.fragment.has(id)) return easeOut(span(st.t3, FLIGHT.travelFrom + FLIGHT.travelMs, FLIGHT.blockMs));
+    if (scene.fragment.has(id)) return easeOut(span(st.t3, FLIGHT.travelFrom + scene.travelMs, FLIGHT.blockMs));
     return easeOut(span(st.t3, landedAt(scene, id), FLIGHT.blockMs));
   };
   const namesIn = easeOut(span(st.t3, FLIGHT.namesFrom, FLIGHT.namesMs));
+  /* A context name the lit frame leaves out steps aside as the rest sinks. */
+  const litKeys = lit ? new Set(lit.labels.map((label) => label.key)) : null;
   for (const label of map.restLabels) {
     let alpha = 1;
     if (label.role === 'domain' || label.role === 'units' || label.role === 'project') alpha = blockIn(label.id!);
     else alpha = namesIn;
     if (isLit) {
-      if (label.role === 'cap') alpha *= 1 - sinkT;
+      if (label.role === 'cap' || !litKeys!.has(label.key)) alpha *= 1 - sinkT;
       else if ((label.role === 'domain' || label.role === 'units') && label.id !== pickDomain) {
         const floor = label.role === 'units' ? (map.sizes.wide ? 0.5 : 0) : scene.sink;
         alpha *= lerp(1, floor, sinkT);
@@ -1215,10 +1231,10 @@ export function paintFilm(ctx: CanvasRenderingContext2D, scene: FilmScene, T: nu
   /* Act 3 onward: the wall returns at half light and its files fly to the map. */
   const fold = easeInOutSine(span(t3, 0, FLIGHT.foldMs));
   const actTwoEnd = ACT_START[2]! - ACT_START[1]!;
-  const travel = easeInOut(span(t3, FLIGHT.travelFrom, FLIGHT.travelMs));
+  const travel = easeInOut(span(t3, FLIGHT.travelFrom, scene.travelMs));
   const linesLight = 1 - span(t3, 0, FLIGHT.fragmentOutMs);
   const namesLight = 1 - easeInOut(span(t3, FLIGHT.travelFrom, 300));
-  const travelling = scene.open && scene.map.pick && t3 < TRAVEL_END;
+  const travelling = scene.open && scene.map.pick && t3 < FLIGHT.travelFrom + scene.travelMs;
   if (t4 < 0) {
     const back = 0.5 * easeOut(span(t3, 0, FLIGHT.foldMs));
     /* Folders and the files already in the close-up leave as the map fills. */

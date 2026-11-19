@@ -30,6 +30,21 @@ describe('a flight', () => {
     }
   });
 
+  it('moves a mark less than 2.5% of a smaller stage diagonal too', () => {
+    for (const [w, h] of [
+      [1280, 720],
+      [402, 874],
+    ] as const) {
+      const diagonal = Math.hypot(w, h);
+      for (const length of [120, 600, 1100]) {
+        const ms = flightMs(length, diagonal);
+        let worst = 0;
+        for (let t = 0; t + FRAME_60 <= ms; t += 1) worst = Math.max(worst, (flight(t + FRAME_60, 0, ms).p - flight(t, 0, ms).p) * length);
+        expect(worst, `${w} ${length}px`).toBeLessThan(0.025 * diagonal);
+      }
+    }
+  });
+
   it('keeps the spec\'s 640 ms for a near row and lands exactly', () => {
     expect(flightMs(300)).toBe(640);
     expect(flight(flightMs(1400), 0, flightMs(1400)).p).toBe(1);

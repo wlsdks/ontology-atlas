@@ -2,7 +2,7 @@ import type { FilmVault } from './film-vault';
 import { reachOf } from './film-vault';
 import type { FilmMapLayout, Measure } from './film-map-layout';
 import { dotOffsets } from './film-map-layout';
-import type { Pt, Rect } from './film-geometry';
+import { circleIntoRect, inside, overlaps, quadAt, resample, type Pt, type Rect } from './film-geometry';
 
 /** What one frontmatter line draws in the close-up beside the panel. */
 export type OpenRole = 'rule' | 'kind' | 'title' | 'domain' | 'elements' | 'dependencies';
@@ -53,8 +53,8 @@ export interface OpenLayout {
   /** Indexes into `dots` of the pick's own elements it depends on. */
   ownNeeds: number[];
   leaving: LeavingLine[];
-  /** The named end of one leaving line and where its name goes. */
-  namedEnd: { id: string; at: Pt; r: number; label: Pt; align: 'left' | 'right' | 'center'; font: string; size: number } | null;
+  /** The named end of one leaving line and where its name goes; null `label` where no clear spot exists, so the mark stands unnamed. */
+  namedEnd: { id: string; at: Pt; r: number; label: Pt | null; align: 'left' | 'right' | 'center'; font: string; size: number } | null;
   pickName: { x: number; y: number; font: string; size: number };
   domainName: { x: number; y: number; font: string; size: number };
   light: { x: number; y: number; r: number };
@@ -183,25 +183,75 @@ export function layoutOpen(input: OpenInput): OpenLayout {
       const target = vault.byId.get(f.id)!;
       const r = target.kind === 'capability' ? map.capRadius(target.elements.length) * zoom * 0.8 : S.elemR * zoom;
       const at = { x: to.x + Math.cos(f.dir) * (r + 5), y: to.y + Math.sin(f.dir) * (r + 5) };
-      const textW = measure(target.label, endFont);
-      const fitsRight = at.x + r + 9 + textW <= w - S.safe;
-      /* Beside its mark when the stage has room; otherwise centred under it, never back across the pick's name. */
-      const under = { x: Math.min(w - S.safe - textW / 2, Math.max(S.safe + textW / 2, at.x)), y: at.y + r + 8 + endFontSize * 0.6 };
-      namedEnd = {
-        id: f.id,
-        at,
-        r,
-        label: fitsRight ? { x: at.x + r + 9, y: at.y } : under,
-        align: fitsRight ? 'left' : 'center',
-        font: endFont,
-        size: endFontSize,
-      };
+      namedEnd = { id: f.id, at, r, label: null, align: 'left', font: endFont, size: endFontSize };
     }
     return { id: f.id, from, to, named };
   });
 
   const pickNameSize = S.wide ? Math.round(26 * S.s) : 15;
   const domainNameSize = S.wide ? Math.round(30 * S.s) : 16;
+  const pickName = { x: pickAt.x, y: pickAt.y - pickR1 - (S.wide ? 30 : 20), font: `650 ${pickNameSize}px ${sans}`, size: pickNameSize };
+  const domainName = { x: domainAt.x, y: domainAt.y + domainR + 10 + domainNameSize * 0.6, font: `650 ${domainNameSize}px ${sans}`, size: domainNameSize };
+
+  /* The example's name: beside its mark, above or below it, wherever no line, dot or name of the close-up runs; with no such spot it is left out. */
+  if (namedEnd) {
+    const E: NonNullable<OpenLayout['namedEnd']> = namedEnd;
+    const textW = measure(vault.byId.get(E.id)!.label, E.font);
+    const textH = E.size * 1.24;
+    /* The pick's name is drawn from its left edge, the domain's centred. */
+    const textBox = (name: string, font: string, x: number, y: number, size: number, centred: boolean): Rect => {
+      const tw = measure(name, font);
+      const l = centred ? x - tw / 2 : x;
+      return { l, t: y - size * 0.62, r: l + tw, b: y + size * 0.62 };
+    };
+    const blocks = [
+      panel,
+      captionBox,
+      titleBox,
+      textBox(node.label, pickName.font, pickName.x, pickName.y, pickName.size, false),
+      ...(domainNode ? [textBox(domainNode.label, domainName.font, domainName.x, domainName.y, domainName.size, true)] : []),
+    ];
+    const half = (S.wide ? 4.2 : 2.8) / 2 + 6;
+    const rowsShown = lines.filter((l) => l.role !== 'rule');
+    const deps = rowsShown[4];
+    const first = leaving[0];
+    const hair: Pt[] = [];
+    if (deps && first) {
+      const from = { x: Math.min(panel.r - 8, deps.end + 12), y: deps.y };
+      const to = { x: first.from.x + (first.to.x - first.from.x) * 0.25, y: first.from.y + (first.to.y - first.from.y) * 0.25 + 8 };
+      const c = { x: from.x + (to.x - from.x) * 0.5, y: from.y };
+      for (let i = 0; i <= 32; i += 1) hair.push(quadAt(from, c, to, i / 32));
+    }
+    const samples = [...leaving.filter((l) => !l.named).flatMap((l) => resample([l.from, l.to], 3)), ...resample(hair, 3)];
+    const own = leaving.find((l) => l.named);
+    const ownSamples = own ? resample([own.from, own.to], 3) : [];
+    const clear = (box: Rect) => {
+      const padded = { l: box.l - 4, t: box.t - 4, r: box.r + 4, b: box.b + 4 };
+      if (padded.l < S.safe || padded.r > w - S.safe || padded.t < S.safe) return false;
+      if (blocks.some((b) => overlaps(padded, b))) return false;
+      if (circleIntoRect(pickAt, pickR1 + 4, padded) > 0 || circleIntoRect(domainAt, domainR + 4, padded) > 0) return false;
+      if (dots.some((d) => circleIntoRect(d, dotR + 3, padded) > 0)) return false;
+      const wide = { l: padded.l - half, t: padded.t - half, r: padded.r + half, b: padded.b + half };
+      return !samples.some((p) => inside(p, wide)) && !ownSamples.some((p) => inside(p, padded));
+    };
+    const at = E.at;
+    const spots: { label: Pt; align: 'left' | 'right' | 'center'; box: Rect }[] = [
+      { label: { x: at.x + E.r + 9, y: at.y }, align: 'left', box: { l: at.x + E.r + 9, t: at.y - textH / 2, r: at.x + E.r + 9 + textW, b: at.y + textH / 2 } },
+      {
+        label: { x: at.x, y: at.y - E.r - 8 - E.size * 0.6 },
+        align: 'center',
+        box: { l: at.x - textW / 2, t: at.y - E.r - 8 - textH, r: at.x + textW / 2, b: at.y - E.r - 8 },
+      },
+      {
+        label: { x: at.x, y: at.y + E.r + 8 + E.size * 0.6 },
+        align: 'center',
+        box: { l: at.x - textW / 2, t: at.y + E.r + 8, r: at.x + textW / 2, b: at.y + E.r + 8 + textH },
+      },
+    ];
+    const spot = spots.find((c) => clear(c.box));
+    if (spot) namedEnd = { ...E, label: spot.label, align: spot.align };
+  }
+
   return {
     panel,
     radius: 12,
@@ -226,8 +276,8 @@ export function layoutOpen(input: OpenInput): OpenLayout {
     ownNeeds,
     leaving,
     namedEnd,
-    pickName: { x: pickAt.x, y: pickAt.y - pickR1 - (S.wide ? 30 : 20), font: `650 ${pickNameSize}px ${sans}`, size: pickNameSize },
-    domainName: { x: domainAt.x, y: domainAt.y + domainR + 10 + domainNameSize * 0.6, font: `650 ${domainNameSize}px ${sans}`, size: domainNameSize },
+    pickName,
+    domainName,
     light: { x: domainAt.x, y: domainAt.y, r: S.wide ? 430 * S.s : 230 },
     fadePx: 60,
   };

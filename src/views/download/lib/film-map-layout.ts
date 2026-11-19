@@ -104,7 +104,8 @@ export interface FilmArc {
   count: number;
   pts: Pt[];
   width: number;
-  numeral: Pt;
+  /** Where its count stands; null where no clear spot exists on the arc, which then carries none. */
+  numeral: Pt | null;
 }
 
 export type LitKind = 'needs' | 'neededBy' | 'relates' | 'own';
@@ -219,9 +220,12 @@ const PHONE_UNITS_MAX = 160;
 const LABEL_PAD = 4;
 const NAME_GAP = 7;
 const CROSSING_COST = 4000;
+/** Stage width from which capabilities are named at rest. */
+const REST_NAMES_PX = 1400;
 const NUMERAL_SPOTS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74];
 
-export function filmSizes(w: number, h: number, tokens: FilmMarkTokens): FilmSizes {
+/** `fit` draws a cluster's rings closer on a stage too small for their full spread; names keep their size. */
+export function filmSizes(w: number, h: number, tokens: FilmMarkTokens, fit = 1): FilmSizes {
   const wide = w >= WIDE_PX;
   const s = Math.min(1, Math.max(0.74, Math.min(w / 1920, h / 960)));
   const K = wide ? tokens.growth * s : 0.84;
@@ -238,7 +242,7 @@ export function filmSizes(w: number, h: number, tokens: FilmMarkTokens): FilmSiz
     projectCore: tokens.projectCorePx * D,
     capRim: tokens.capRimPx * K,
     elemR: wide ? tokens.elementDotPx * K : Math.max(1.5, tokens.elementDotPx * K),
-    rings: wide ? [86 * s, 122 * s, 156 * s] : [38, 54, 70],
+    rings: wide ? [86 * s * fit, 122 * s * fit, 156 * s * fit] : [38, 54, 70],
     elemGap: wide ? 10 * s : 6,
     elemAlt: wide ? 7 * s : 5,
     fDomain: wide ? Math.max(22, 26 * s) : 15,
@@ -350,6 +354,18 @@ interface LocalCluster {
 
 function itemReach(item: Item, S: FilmSizes): number {
   return item.r + (item.elements.length ? S.elemGap + S.elemAlt + S.elemR * 2 : 0);
+}
+
+/** How far a cluster's marks rise above its domain disc's centre. */
+function upReach(local: LocalCluster, S: FilmSizes): number {
+  let up = S.domainR;
+  for (const it of local.items) {
+    const y = Math.sin(it.a) * it.d;
+    up = Math.max(up, it.r - y);
+    for (const o of dotOffsets(it.elements.length, it.a, it.r, S)) up = Math.max(up, S.elemR - y - o.y);
+  }
+  if (local.direct.length) up = Math.max(up, S.domainR + S.elemGap + S.elemR * 3);
+  return up;
 }
 
 /** Where a capability's dots sit, relative to the capability: fanned away from its domain. */
@@ -519,7 +535,7 @@ export function slotOrder(vault: FilmVault, first: string | null): string[] {
 
 export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   const { vault, w, h, measure, sans, mono, tokens, copy } = input;
-  const S = filmSizes(w, h, tokens);
+  let S = filmSizes(w, h, tokens);
   const capRadius = (e: number) =>
     Math.min(tokens.capDiscMaxPx, tokens.capDiscMinPx + tokens.capDiscGainPx * Math.sqrt(e)) * S.K;
   const pick = input.pick && vault.byId.get(input.pick)?.domain ? input.pick : null;
@@ -532,12 +548,39 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   const order = slotOrder(vault, pickDomain);
   const flows = domainFlows(vault).slice(0, 6);
   const arcBows = S.wide ? [0.16, 0.26, 0.36, 0.46, 0.06, 0.1, 0.12, 0.2] : [0.2, 0.34, 0.48, 0.1, 0.14, 0.26];
-  /* The spec's tilt first; a phone too narrow for its zigzag turns toward a two-by-two grid. */
-  let chosen: { locals: Map<string, LocalCluster>; placed: FilmPlacement; value: number } | null = null;
-  for (const tiltDeg of S.wide ? [-10] : [-25, -32, -39, -45]) {
+  /*
+   * The spec's ellipse first (a phone also tries its tilts toward a two-by-two grid). A stage it
+   * cannot hold, short or narrow and tall, then draws the clusters tighter and tries other tilts,
+   * measuring the top cluster by its marks and letting the ellipse widen, before anything collides.
+   */
+  const attempts: { fit: number; tiltDeg: number; adapt: boolean }[] = S.wide
+    ? [
+        { fit: 1, tiltDeg: -10, adapt: false },
+        ...[1, 0.9, 0.8, 0.72, 0.64, 0.56].flatMap((fit) => [-10, -20, 0, -30, -40].map((tiltDeg) => ({ fit, tiltDeg, adapt: true }))),
+      ]
+    : [
+        ...[-25, -32, -39, -45].map((tiltDeg) => ({ fit: 1, tiltDeg, adapt: false })),
+        /* A phone too narrow for two columns stacks the four as a slalom, each a step lower than the last. */
+        ...[-25, -39, -52, -60, -68].map((tiltDeg) => ({ fit: 1, tiltDeg, adapt: true })),
+      ];
+  type Attempt = (typeof attempts)[number];
+  type Placement = { locals: Map<string, LocalCluster>; placed: FilmPlacement; value: number; S: FilmSizes };
+  /** One attempt's best ellipse, searched on a grid of `grain` steps. */
+  const tryAttempt = ({ fit, tiltDeg, adapt }: Attempt, grain: number): Placement => {
+    S = filmSizes(w, h, tokens, fit);
     const tilt = tiltDeg * DEG;
     const slotAngle = new Map(order.map((id, i) => [id, -Math.PI / 2 + tilt + (i / Math.max(1, order.length)) * Math.PI * 2]));
 
+    /* An adapted ellipse is stretched so its highest and lowest clusters, not its poles, meet the frame's top and bottom. */
+    const sins = order.map((id) => Math.sin(slotAngle.get(id)!));
+    const coss = order.map((id) => Math.abs(Math.cos(slotAngle.get(id)!)));
+    const sinMin = adapt && order.length > 1 ? Math.min(...sins) : -1;
+    const sinMax = adapt && order.length > 1 ? Math.max(...sins) : 1;
+    const cosMax = adapt && order.length > 1 ? Math.max(0.2, ...coss) : 1;
+    const ellipse = (yTop: number, yBottom: number, rx: number) => {
+      const ry = Math.max(0, (yBottom - yTop) / Math.max(0.2, sinMax - sinMin));
+      return { cy: yTop - sinMin * ry, ry, rx: rx / cosMax };
+    };
     const hubOf = (id: string) => (order.length > 1 ? norm((slotAngle.get(id) ?? 0) + Math.PI) : null);
     let locals = new Map(vault.domains.map((d) => [d.id, localCluster(input, S, d, capRadius, null, hubOf(d.id))]));
     const reachOfAll = () => Math.max(S.domainR * 2, ...[...locals.values()].map((c) => c.footprint));
@@ -547,21 +590,23 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       const mapL = S.safe;
       const mapR = w - S.safe;
       /* The top slot's own reach sets the ellipse's top: a lighter top cluster leaves more room between rows. */
-      const topReach = Math.min(maxReach, locals.get(order[0] ?? '')?.footprint ?? maxReach);
+      const top = locals.get(adapt ? (order[sins.indexOf(Math.min(...sins))] ?? '') : (order[0] ?? ''));
+      const topReach = Math.min(maxReach, top ? (adapt ? upReach(top, S) : top.footprint) : maxReach);
       const yTop = mapTop + topReach + (S.wide ? 4 : 2);
       const yBottom = mapBottom - Math.max(titleDrop + 8, maxReach * (S.wide ? 0.78 : 0.8));
-      const rx = S.wide ? Math.min((mapR - mapL) / 2 - maxReach - 96 * S.s, 560 * S.s) : (mapR - mapL) / 2 - maxReach + 6;
+      /* The spec's side margin on a full stage; a narrower one gives it back to the clusters. */
+      const side = 96 * S.s * (adapt ? Math.min(1, Math.max(0, (mapR - mapL - 700) / 600)) : 1);
+      const rx = S.wide ? Math.min((mapR - mapL) / 2 - maxReach - side, 560 * S.s) : (mapR - mapL) / 2 - maxReach + 6;
       return { cx: (mapL + mapR) / 2 + (S.wide ? 10 * S.s : 0), yTop, yBottom, rx: Math.max(0, rx) };
     };
 
     /* The pick stands at its cluster's gate, facing the domain that holds most of its lit ends. */
     if (pick && pickDomain) {
       const base = frame(reachOfAll());
-      const cy = (base.yTop + base.yBottom) / 2;
-      const ry = (base.yBottom - base.yTop) / 2;
+      const { cy, ry, rx: rxe } = ellipse(base.yTop, base.yBottom, base.rx);
       const at = (id: string) => {
         const a = slotAngle.get(id) ?? 0;
-        return { x: base.cx + Math.cos(a) * base.rx, y: cy + Math.sin(a) * ry };
+        return { x: base.cx + Math.cos(a) * rxe, y: cy + Math.sin(a) * ry };
       };
       const reach = reachOf(vault, pick);
       const tally = new Map<string, number>();
@@ -628,9 +673,19 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       }
       return it.a;
     };
-    const place = (cx: number, yTop: number, yBottom: number, rx: number) => {
-      const cy = (yTop + yBottom) / 2;
-      const ry = Math.max(0, (yBottom - yTop) / 2);
+    /** The clusters alone, without their marks: enough for the rules about name blocks and footprints. */
+    const centres = (cx: number, yTop: number, yBottom: number, rx0: number): FilmCluster[] => {
+      const { cy, ry, rx } = ellipse(yTop, yBottom, rx0);
+      return order.map((id) => {
+        const a = slotAngle.get(id)!;
+        const p = order.length === 1 ? { x: cx, y: cy } : { x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry };
+        const local = locals.get(id)!;
+        const nb = local.nameBlock;
+        return { id, x: p.x, y: p.y, footprint: local.footprint, nameBlock: { l: p.x + nb.l, t: p.y + nb.t, r: p.x + nb.r, b: p.y + nb.b } };
+      });
+    };
+    const place = (cx: number, yTop: number, yBottom: number, rx0: number) => {
+      const { cy, ry, rx } = ellipse(yTop, yBottom, rx0);
       const marks = new Map<string, FilmMark>();
       const clusters: FilmCluster[] = [];
       if (vault.project) marks.set(vault.project.id, { id: vault.project.id, kind: 'project', x: cx, y: cy, r: S.projectR, domain: null });
@@ -698,38 +753,82 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       );
     };
 
-    /** How many of the map's hard rules a placement breaks: 0 is a fit. */
-    const faults = (placed: ReturnType<typeof place>) => {
+    /** Marks of two clusters closer than a mark's gap: only marks inside the other's footprint can be. */
+    const crowded = (placed: ReturnType<typeof place>, a: FilmCluster, b: FilmCluster) => {
+      const A: FilmMark[] = [];
+      const B: FilmMark[] = [];
+      for (const m of placed.marks.values()) {
+        if (m.domain === a.id && dist(m, b) < b.footprint + m.r + 8) A.push(m);
+        else if (m.domain === b.id && dist(m, a) < a.footprint + m.r + 8) B.push(m);
+      }
+      for (const p of A) for (const q of B) if (dist(p, q) < p.r + q.r + 8) return true;
+      return false;
+    };
+    const hubW = vault.project ? measure(vault.project.label, fontOf(510, S.fProject, sans)) : 0;
+
+    /** The rules a placement's name blocks and light centres break, counted up to `limit`. */
+    const blockFaults = (clusters: FilmCluster[], limit = Infinity) => {
+      let n = 0;
+      const fault = () => {
+        n += 1;
+        return n >= limit;
+      };
+      for (let i = 0; i < clusters.length; i += 1) {
+        const c = clusters[i]!;
+        const nb = c.nameBlock;
+        if ((nb.l < S.safe || nb.r > w - S.safe || nb.b > mapBottom || overlaps(nb, captionBox)) && fault()) return n;
+        /* A cluster's light centre stays clear of the caption by most of its footprint; its marks clear it entirely. */
+        if (S.wide && distanceToRect(c, captionBox) < c.footprint * 0.75 && fault()) return n;
+        for (let j = i + 1; j < clusters.length; j += 1) if (overlaps(grow(nb, 4), clusters[j]!.nameBlock) && fault()) return n;
+      }
+      return n;
+    };
+
+    /** How many of the map's other hard rules a placement breaks, counted up to `limit`: 0 is a fit. Cheapest rules first. */
+    const faults = (placed: ReturnType<typeof place>, limit = Infinity) => {
       const box: Rect = { l: S.safe, t: mapTop, r: w - S.safe, b: mapBottom };
       let n = 0;
-      for (const m of placed.marks.values()) {
-        const r = m.kind === 'project' ? m.r * 1.35 : m.r;
-        if (m.x - r < box.l || m.x + r > box.r || m.y - r < box.t || m.y + r > box.b) n += 1;
-        if (circleIntoRect(m, r + 2, captionBox) > 0 || circleIntoRect(m, r + 2, titleBox) > 0) n += 1;
-        for (const c of placed.clusters) if (c.id !== m.id && circleIntoRect(m, r + 2, c.nameBlock) > 0) n += 1;
+      const fault = () => {
+        n += 1;
+        return n >= limit;
+      };
+      const { clusters } = placed;
+      const hub = vault.project ? placed.marks.get(vault.project.id) : undefined;
+      /* The project's name stands above its mark, or below it: one of the two places must be free. */
+      if (hub) {
+        const lift = hub.r * 1.35;
+        const above: Rect = { l: hub.x - hubW / 2 - 6, t: hub.y - lift - 12 - S.fProject * 1.24, r: hub.x + hubW / 2 + 6, b: hub.y - lift - 4 };
+        const below: Rect = { l: above.l, t: hub.y + lift + 4, r: above.r, b: hub.y + lift + 12 + S.fProject * 1.24 };
+        const blocked = (rect: Rect) => {
+          if (clusters.some((c) => overlaps(grow(c.nameBlock, 4), rect))) return true;
+          for (const m of placed.marks.values()) if (m.id !== hub.id && circleIntoRect(m, m.r + 2, rect) > 0) return true;
+          return false;
+        };
+        if (blocked(above) && blocked(below) && fault()) return n;
       }
       /* Lit, the pick grows to its agent ring with its own dots pushed outside it. */
       const lifted = pick ? placed.marks.get(pick) : undefined;
       if (lifted) {
         const ringK = S.wide ? S.K : 0.84;
         const r = Math.max(lifted.r, 11 * ringK) + 11 * ringK + 5 + S.elemAlt + S.elemR * 2;
-        if (lifted.x - r < box.l || lifted.x + r > box.r || lifted.y - r < box.t || lifted.y + r > box.b) n += 1;
-        for (const c of placed.clusters) if (circleIntoRect(lifted, r + 2, c.nameBlock) > 0) n += 1;
-        if (circleIntoRect(lifted, r + 2, captionBox) > 0) n += 1;
+        if ((lifted.x - r < box.l || lifted.x + r > box.r || lifted.y - r < box.t || lifted.y + r > box.b) && fault()) return n;
+        for (const c of clusters) if (circleIntoRect(lifted, r + 2, c.nameBlock) > 0 && fault()) return n;
+        if (circleIntoRect(lifted, r + 2, captionBox) > 0 && fault()) return n;
       }
-      const hub = vault.project ? placed.marks.get(vault.project.id) : undefined;
-      const hubW = hub && vault.project ? measure(vault.project.label, fontOf(510, S.fProject, sans)) : 0;
-      const hubName: Rect | null = hub
-        ? { l: hub.x - hubW / 2 - 6, t: hub.y - hub.r * 1.35 - 12 - S.fProject * 1.24, r: hub.x + hubW / 2 + 6, b: hub.y - hub.r * 1.35 - 4 }
-        : null;
-      for (let i = 0; i < placed.clusters.length; i += 1) {
-        const c = placed.clusters[i]!;
-        const nb = c.nameBlock;
-        if (nb.l < box.l || nb.r > box.r || nb.b > (S.wide ? box.b : mapBottom) || overlaps(nb, captionBox)) n += 1;
-        /* A cluster's light centre stays clear of the caption by most of its footprint; its marks clear it entirely. */
-        if (S.wide && distanceToRect(c, captionBox) < c.footprint * 0.75) n += 1;
-        if (hubName && overlaps(grow(nb, 4), hubName)) n += 1;
-        for (const o of placed.clusters.slice(i + 1)) if (overlaps(grow(nb, 4), o.nameBlock)) n += 1;
+      for (const m of placed.marks.values()) {
+        const r = m.kind === 'project' ? m.r * 1.35 : m.r;
+        if ((m.x - r < box.l || m.x + r > box.r || m.y - r < box.t || m.y + r > box.b) && fault()) return n;
+        if ((circleIntoRect(m, r + 2, captionBox) > 0 || circleIntoRect(m, r + 2, titleBox) > 0) && fault()) return n;
+        for (const c of clusters) if (c.id !== m.id && circleIntoRect(m, r + 2, c.nameBlock) > 0 && fault()) return n;
+      }
+      /* Two clusters may share their outer air, not their marks. */
+      if (S.wide) {
+        for (let i = 0; i < clusters.length; i += 1)
+          for (let j = i + 1; j < clusters.length; j += 1) {
+            const c = clusters[i]!;
+            const o = clusters[j]!;
+            if (dist(c, o) < c.footprint + o.footprint && crowded(placed, c, o) && fault()) return n;
+          }
       }
       return n;
     };
@@ -747,39 +846,74 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
         t = Math.min(t, m.y - rr);
         b = Math.max(b, m.y + rr);
       }
-      return S.wide ? Math.min((r - l) / w / 0.7, (b - t) / h / 0.6) : (b - t) / Math.max(1, captionBox.t - titleBox.b) / 0.6;
+      /* An adapted ellipse keeps a hair of margin over the spec's shares, which the spec's own ellipse meets with room. */
+      const m = adapt ? 0.01 : 0;
+      return S.wide ? Math.min((r - l) / w / (0.7 + m), (b - t) / h / (0.6 + m)) : (b - t) / Math.max(1, captionBox.t - titleBox.b) / (0.6 + m);
     };
     let placed: ReturnType<typeof place> | null = null;
     let placedUse = -Infinity;
+    let placedBroken = Infinity;
     const room = Math.max(0, w - S.safe - (base.cx + base.rx + maxReach));
-    for (let cut = 0; cut <= 30; cut += 1) {
+    for (let cut = 0; cut <= 30; cut += grain) {
       const yBottom = base.yBottom - cut * 12;
       if (yBottom <= base.yTop) break;
-      for (let step = S.wide ? 0 : -15; step <= 15; step += 1) {
+      for (let step = S.wide ? (adapt ? -10 : 0) : -15; step <= 15; step += grain) {
         const rx = base.rx * (1 - step * 0.02);
         /* A phone's map stays centred; a wide one may shift right, away from the caption. */
         const slack = S.wide ? room + base.rx - rx : 0;
         /* Shifted as far right as the stage allows first: that is what clears the caption. */
-        for (let k = S.wide ? 12 : 0; k >= 0; k -= 1) {
-          const candidate = place(base.cx + (slack * k) / 12, base.yTop, yBottom, rx);
-          const broken = faults(candidate);
-          if (broken > 0 && S.wide) continue;
-          /* Fewest broken rules, then a clear corridor for every rest arc, then the stage used; ties keep the spec's order. */
+        for (let k = S.wide ? 12 : 0; k >= 0; k -= grain) {
+          const x = base.cx + (slack * k) / 12;
+          /* A candidate that already breaks more rules than the best so far cannot win: wide takes none that break any. */
+          const limit = S.wide ? 1 : placedBroken + 1;
+          let broken = blockFaults(centres(x, base.yTop, yBottom, rx), limit);
+          if (broken >= limit) continue;
+          const candidate = place(x, base.yTop, yBottom, rx);
+          broken += faults(candidate, limit - broken);
+          if (broken >= limit) continue;
+          /* Fewest broken rules, then the stage used, then a clear corridor for every rest arc; ties keep the spec's order. */
+          const used = stageUse(candidate);
+          const open = -broken * 10000 + (used >= 1 ? 4000 : used * 1000) - cut * 0.01 - Math.abs(step) * 0.001;
+          if (open + 2000 <= placedUse) {
+            if (S.wide) break;
+            continue;
+          }
           const clear = flows.every((f) => corridor(candidate, f.from, f.to)) ? 2000 : 0;
-          const value = -broken * 10000 + clear + Math.min(1, stageUse(candidate)) * 1000 - cut * 0.01 - Math.abs(step) * 0.001;
+          const value = open + clear;
           if (value > placedUse) {
             placed = candidate;
             placedUse = value;
+            placedBroken = broken;
           }
           if (S.wide) break;
         }
+        /* The first clear ellipse that fills the stage cannot be beaten: every later one gives up more. */
+        if (placedUse >= 5999) break;
       }
+      if (placedUse >= 5999) break;
     }
     placed ??= place(base.cx, base.yTop, Math.max(base.yTop, base.yBottom), base.rx);
-    if (!chosen || placedUse > chosen.value) chosen = { locals, placed, value: placedUse };
-    if (placedUse > -1) break;
+    return { locals, placed, value: placedUse, S };
+  };
+  /* On a full stage the spec's ellipse stands once it breaks nothing and fills the stage; elsewhere it also needs a clear way for every rest arc. */
+  const enough = (a: Attempt) => (!a.adapt && w >= REST_NAMES_PX ? 3999 : 5999);
+  /* The spec's ellipses are searched in full; the adapted ones on a coarse grid, and the one kept is then searched in full. */
+  let chosen: Placement | null = null;
+  let chosenAttempt: Attempt | null = null;
+  for (const attempt of attempts) {
+    const found = tryAttempt(attempt, attempt.adapt && S.wide ? 4 : 1);
+    if (!chosen || found.value > chosen.value) {
+      chosen = found;
+      chosenAttempt = attempt;
+    }
+    if (found.value >= enough(attempt)) break;
+  }
+  if (chosenAttempt?.adapt && chosen!.S.wide) {
+    const fine = tryAttempt(chosenAttempt, 1);
+    if (fine.value >= chosen!.value) chosen = fine;
   }
   const { locals, placed } = chosen!;
+  S = chosen!.S;
   const { marks, clusters } = placed;
   const clusterOf = new Map(clusters.map((c) => [c.id, c]));
 
@@ -800,12 +934,16 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     }
   }
   let projectLabel: FilmLabel | null = null;
+  let projectAt: ((dy: number) => FilmLabel) | null = null;
+  let projectLift = 0;
   const project = vault.project ? marks.get(vault.project.id)! : null;
   if (project) {
     const font = fontOf(510, S.fProject, sans);
     const at = (dy: number) =>
       makeLabel(measure, `project:${project.id}`, project.id, 'project', [{ text: vault.project!.label, ink: 'name' }], font, S.fProject, project.x, project.y + dy, 'center');
     const lift = project.r * 1.35 + 8 + S.fProject * 0.6;
+    projectAt = at;
+    projectLift = lift;
     /* Centred above its mark; below it when a domain's name block or a mark already holds that place. */
     const taken = (label: FilmLabel) => {
       const box = grow(label.box, LABEL_PAD);
@@ -898,6 +1036,7 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   let ownDots = new Map<string, Pt>();
   let pickClear = 0;
   let pickLabels: FilmLabel[] = [];
+  let pickSpots: { box: Rect; labels: FilmLabel[] }[] = [];
   if (pick && pickMark && reach) {
     selectedR = Math.max(pickMark.r, tokens.selectedDiscPx * ringK);
     agentR = Math.max(pickMark.r, 11 * ringK) + 11 * ringK;
@@ -930,10 +1069,12 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       candidates.push({ a: Math.PI / 2, align: 'center' });
       const field = baseField(true);
       field.marks.push({ x: pickMark.x, y: pickMark.y, r: pickClear });
-      const scored = candidates
+      /* Beside the pick first; farther out only as a place to move to when lit lines need the near ones. */
+      const scored = [0, 24, 48]
+        .flatMap((out) => candidates.map((c) => ({ ...c, out })))
         .map((c, k) => {
-          const ax = pickMark.x + Math.cos(c.a) * gap;
-          const ay = pickMark.y + Math.sin(c.a) * gap;
+          const ax = pickMark.x + Math.cos(c.a) * (gap + c.out);
+          const ay = pickMark.y + Math.sin(c.a) * (gap + c.out);
           const width = Math.max(nameW, reachW);
           const l = c.align === 'left' ? ax : c.align === 'right' ? ax - width : ax - width / 2;
           const top = Math.sin(c.a) < -0.3 ? ay - blockH : Math.sin(c.a) > 0.3 ? ay : ay - blockH / 2;
@@ -942,17 +1083,22 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
           return { c, k, box, ax, top, lineHit };
         })
         .filter((row) => field.free(row.box))
-        .sort((a, b) => a.lineHit - b.lineHit || a.k - b.k);
-      const chosen = scored[0];
-      if (chosen) {
-        pickBlock = chosen.box;
-        const nameY = chosen.top + (S.fPick * 1.24) / 2;
-        const reachY = chosen.top + S.fPick * 1.24 + 4 + (S.fReach * 1.24) / 2;
-        const ax = chosen.c.align === 'left' ? chosen.box.l : chosen.c.align === 'right' ? chosen.box.r : (chosen.box.l + chosen.box.r) / 2;
-        pickLabels = [
-          makeLabel(measure, `pick:${pick}`, pick, 'pick', [{ text: label, ink: 'strong' }], nameFont, S.fPick, ax, nameY, chosen.c.align),
-          makeLabel(measure, `reach:${pick}`, pick, 'reach', reachSegs, reachFont, S.fReach, ax, reachY, chosen.c.align),
-        ];
+        .sort((a, b) => a.c.out - b.c.out || a.lineHit - b.lineHit || a.k - b.k);
+      pickSpots = scored.map((row) => {
+        const nameY = row.top + (S.fPick * 1.24) / 2;
+        const reachY = row.top + S.fPick * 1.24 + 4 + (S.fReach * 1.24) / 2;
+        const ax = row.c.align === 'left' ? row.box.l : row.c.align === 'right' ? row.box.r : (row.box.l + row.box.r) / 2;
+        return {
+          box: row.box,
+          labels: [
+            makeLabel(measure, `pick:${pick}`, pick, 'pick', [{ text: label, ink: 'strong' }], nameFont, S.fPick, ax, nameY, row.c.align),
+            makeLabel(measure, `reach:${pick}`, pick, 'reach', reachSegs, reachFont, S.fReach, ax, reachY, row.c.align),
+          ],
+        };
+      });
+      if (pickSpots[0]) {
+        pickBlock = pickSpots[0].box;
+        pickLabels = pickSpots[0].labels;
       }
     }
   }
@@ -969,7 +1115,7 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     if (!A || !B) continue;
     const width = Math.min(tokens.lineTaperMaxPx, tokens.lineTaperPx + tokens.lineTaperGainPx * (f.count - 1)) * (S.wide ? 1 : 0.7);
     const reverse = sideOf.get(`${f.to}\n${f.from}`);
-    let best: { pts: Pt[]; numeral: Pt; cost: number; side: number } | null = null;
+    let best: { pts: Pt[]; numeral: Pt | null; cost: number; side: number } | null = null;
     for (const mag of arcBows) {
       for (const sign of [1, -1]) {
         const bow = mag * sign;
@@ -991,27 +1137,23 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
             if (into > 0) cost += 2000 + into;
           }
           if (project) cost += Math.max(0, project.r * 1.35 + 30 - dist(p, project));
-          if (projectLabel && inside(p, grow(projectLabel.box, 10))) cost += 200;
+          if (projectLabel && inside(p, grow(projectLabel.box, 4))) cost += 2000;
+          else if (projectLabel && inside(p, grow(projectLabel.box, 10))) cost += 200;
           if (pickZone) cost += Math.max(0, pickZone.r - dist(p, pickZone)) * 4;
           if (pickBlock && inside(p, grow(pickBlock, 8))) cost += 400;
           if (hitsMark(p)) cost += 2000;
           if (!inside(p, bounds) || inside(p, captionBox) || inside(p, titleBox)) cost += 2000;
+          if (restArcs.some((o) => o.numeral && dist(p, o.numeral) < S.numeralR + 4)) cost += 2000;
         }
         /* One crossing in the whole map is allowed; any more is as bad as a mark hit twice. */
         const crossed = restArcs.reduce((sum, other) => sum + crossings(pts, other.pts), 0);
         if (crossed > 0) cost += crossedSoFar + crossed <= 1 ? 300 : crossed * CROSSING_COST;
-        /* The count sits at the arc's middle, or slides along it to the nearest free spot. */
+        /* The count sits at the arc's middle, or slides along it to the nearest clear spot; with none, the arc carries no count. */
         const numeralFree = (q: Pt) =>
           restField.free({ l: q.x - S.numeralR, t: q.y - S.numeralR, r: q.x + S.numeralR, b: q.y + S.numeralR }) &&
-          !restArcs.some((o) => dist(o.numeral, q) < S.numeralR * 2 + 2 * LABEL_PAD + 4);
-        let numeral = pointAlong(pts, 0.5);
-        const spots = NUMERAL_SPOTS.map((u) => pointAlong(pts, u));
-        const slid = spots.find(numeralFree);
-        if (slid) numeral = slid;
-        else {
-          cost += 1500;
-          numeral = spots.find((q) => !restArcs.some((o) => dist(o.numeral, q) < S.numeralR * 2 + 2 * LABEL_PAD + 4)) ?? numeral;
-        }
+          !restArcs.some((o) => (o.numeral && dist(o.numeral, q) < S.numeralR * 2 + 2 * LABEL_PAD + 4) || o.pts.some((p) => dist(p, q) < S.numeralR + 4));
+        const numeral = NUMERAL_SPOTS.map((u) => pointAlong(pts, u)).find(numeralFree) ?? null;
+        if (!numeral) cost += 1500;
         if (!best || cost < best.cost - 1e-6) best = { pts, numeral, cost, side };
       }
     }
@@ -1020,19 +1162,44 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       const sign = reverse === undefined ? 1 : f.from < f.to ? -reverse : reverse;
       const chord = dist(A, B);
       const pts = trim(bowedPoints(A, B, arcBows[0]! * sign, 48), A, Math.min(A.footprint, chord * 0.3), B, Math.min(B.footprint, chord * 0.3));
-      best = { pts, numeral: pointAlong(pts, 0.5), cost: Infinity, side: f.from < f.to ? sign : -sign };
+      best = { pts, numeral: null, cost: Infinity, side: f.from < f.to ? sign : -sign };
     }
     crossedSoFar += restArcs.reduce((sum, other) => sum + crossings(best!.pts, other.pts), 0);
     sideOf.set(`${f.from}\n${f.to}`, best.side);
     restArcs.push({ from: f.from, to: f.to, count: f.count, pts: best.pts, width, numeral: best.numeral });
-    restField.take({ l: best.numeral.x - S.numeralR, t: best.numeral.y - S.numeralR, r: best.numeral.x + S.numeralR, b: best.numeral.y + S.numeralR });
+    if (best.numeral)
+      restField.take({ l: best.numeral.x - S.numeralR, t: best.numeral.y - S.numeralR, r: best.numeral.x + S.numeralR, b: best.numeral.y + S.numeralR });
+  }
+  /* A later arc that still passes over an earlier count takes that count away. */
+  for (const arc of restArcs) {
+    const q = arc.numeral;
+    if (q && restArcs.some((o) => o !== arc && o.pts.some((p) => dist(p, q) < S.numeralR + 2))) arc.numeral = null;
+  }
+  /* A rest arc that must pass where the project's name stands sends the name to the mark's other side, if that side is clear. */
+  if (projectLabel && projectAt && project) {
+    const crossed = (label: FilmLabel) => restArcs.some((arc) => arc.pts.some((p) => inside(p, grow(label.box, LABEL_PAD))));
+    if (crossed(projectLabel)) {
+      const other = projectAt(projectLabel.y < project.y ? projectLift : -projectLift);
+      const check = new Field(bounds, [titleBox, captionBox]);
+      for (const m of marks.values()) if (m.id !== project.id) check.marks.push({ x: m.x, y: m.y, r: m.r });
+      for (const c of clusters) check.boxes.push(c.nameBlock);
+      for (const arc of restArcs)
+        if (arc.numeral)
+          check.take({ l: arc.numeral.x - S.numeralR, t: arc.numeral.y - S.numeralR, r: arc.numeral.x + S.numeralR, b: arc.numeral.y + S.numeralR });
+      if (!crossed(other) && check.free(other.box)) {
+        /* The rest field holds the name blocks, then the project's name. */
+        restField.boxes[clusters.length] = grow(other.box, LABEL_PAD);
+        projectLabel = other;
+      }
+    }
   }
   restField.samples = restArcs.flatMap((arc) => resample(arc.pts, 8));
 
   /* ---------------- rest names ---------------- */
   const restLabels: FilmLabel[] = [...blockLabels];
   if (projectLabel) restLabels.push(projectLabel);
-  if (S.wide) {
+  /* Capability names at rest only where the stage has room for them; a smaller one keeps the domains and the project. */
+  if (S.wide && w >= REST_NAMES_PX) {
     const capFont = fontOf(510, S.fCap, sans);
     /* Rest names fade while the pick's block fades in, so they never share its place. */
     if (pickBlock) restField.boxes.push(pickBlock);
@@ -1081,7 +1248,7 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       const lines: FilmLitLine[] = [];
       const bowOf = new Map<string, number>();
       const litBows = [0.16, -0.16, 0.24, -0.24, 0.32, -0.32];
-      const wider = S.wide ? [0.42, -0.42, 0.52, -0.52] : [0.42, -0.42, 0.52, -0.52, 0.64, -0.64, 0.08, -0.08];
+      const wider = S.wide ? [0.42, -0.42, 0.52, -0.52, 0.64, -0.64, 0.08, -0.08, 0.8, -0.8] : [0.42, -0.42, 0.52, -0.52, 0.64, -0.64, 0.08, -0.08];
       const usedBows = new Map<string, number[]>();
       for (const row of endsFar) {
         const E = marks.get(row.end)!;
@@ -1163,8 +1330,15 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       const pointer = { x: pickMark.x + Math.cos(tipA) * selectedR * 0.55, y: pickMark.y + Math.sin(tipA) * selectedR * 0.55 };
       const pointerBox: Rect = { l: pointer.x - 1, t: pointer.y - 1, r: pointer.x + 15, b: pointer.y + 22 };
 
-      const litLabels: FilmLabel[] = [];
+      let litLabels: FilmLabel[] = [];
       const field = baseField(true);
+      /* Lit, the other domains' names and the project's are context: a lit line or the agent's leader never runs through one, it steps aside. */
+      const pickHome = vault.byId.get(pick)!.domain;
+      /* The pick's own domain is context too once a line must cross it: the pick's block or readout carries the content. */
+      const dimmed = (label: FilmLabel) => label.role === 'project' || label.role === 'domain' || label.role === 'units';
+      const hidden = new Set<string>();
+      const dimRects = new Set<Rect>(field.boxes.filter((_, k) => k < clusters.length && clusters[k]!.id !== pickHome));
+      if (projectLabel) dimRects.add(field.boxes[clusters.length]!);
       field.marks.push({ x: pickMark.x, y: pickMark.y, r: pickClear });
       for (const dot of ownDots.values()) field.marks.push({ x: dot.x, y: dot.y, r: S.elemR });
       field.boxes.push(grow(pointerBox, 0));
@@ -1175,6 +1349,15 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       litLabels.push(...blockLabels.filter((label) => !sunkPhone(label)));
       if (projectLabel) litLabels.push(projectLabel);
       if (S.wide) {
+        /* The pick's block keeps 12 px from every lit line: lines that pass where it was put move it to the next free place. */
+        const near = (box: Rect) => field.samples.some((p) => inside(p, grow(box, 12)));
+        if (pickBlock && near(pickBlock)) {
+          const moved = pickSpots.find((spot) => !near(spot.box));
+          if (moved) {
+            pickBlock = moved.box;
+            pickLabels = moved.labels;
+          }
+        }
         if (pickBlock) {
           litLabels.push(...pickLabels);
           field.boxes.push(grow(pickBlock, 12 - LABEL_PAD));
@@ -1218,7 +1401,20 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
           const line = lines.find((l) => l.end === row.end);
           const arrive = line ? Math.atan2(m.y - line.pts[line.pts.length - 1]!.y, m.x - line.pts[line.pts.length - 1]!.x) : outwardOf(row.end);
           const spots = ringSpots(m, S.fCap, arrive, m.kind === 'element' ? [0, 6, 12, 18] : [0, 8, 18, 30, 44, 60]);
-          const label = tryPlace(field, `end:${row.end}`, row.end, 'end', [{ text: vault.byId.get(row.end)!.label, ink: 'strong' }], endFont, S.fCap, spots);
+          const segments = [{ text: vault.byId.get(row.end)!.label, ink: 'strong' as const }];
+          let label = tryPlace(field, `end:${row.end}`, row.end, 'end', segments, endFont, S.fCap, spots);
+          /* No free spot: the name may stand where only dimmed context names are, which then step aside. */
+          if (!label) {
+            const kept = [...field.boxes];
+            field.boxes.splice(0, field.boxes.length, ...kept.filter((b) => !dimRects.has(b)));
+            label = tryPlace(field, `end:${row.end}`, row.end, 'end', segments, endFont, S.fCap, spots);
+            const taken = label ? field.boxes.pop()! : null;
+            field.boxes.splice(0, field.boxes.length, ...kept);
+            if (label && taken) {
+              field.boxes.push(taken);
+              for (const dim of litLabels) if (dimmed(dim) && overlaps(grow(dim.box, LABEL_PAD), taken)) hidden.add(dim.key);
+            }
+          }
           if (label) litLabels.push(label);
         }
       } else {
@@ -1236,6 +1432,20 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
         const tool = makeLabel(measure, 'tool', null, 'tool', [{ text: copy.tool, ink: 'secondary' }], fontOf(400, S.fTag, mono), S.fTag, agent.box.r + 10, y2, 'left');
         litLabels.push(name, reachLabel, agent, tool);
       }
+      const paths = [...lines.flatMap((line) => resample(line.pts, 3)), ...(leader ? resample([leader.from, leader.to], 3) : [])];
+      const blockOf = new Map(clusters.map((c) => [c.id, c.nameBlock]));
+      for (const label of litLabels) {
+        if (!dimmed(label)) continue;
+        /* A domain's name and count leave together when a line crosses their block. */
+        const area = label.role === 'project' ? grow(label.box, 3) : blockOf.get(label.id ?? '')!;
+        if (paths.some((p) => inside(p, area))) hidden.add(label.key);
+      }
+      for (const label of litLabels) {
+        if (label.role !== 'domain' && label.role !== 'units') continue;
+        if (litLabels.some((o) => o.id === label.id && o.role !== label.role && (o.role === 'domain' || o.role === 'units') && hidden.has(o.key)))
+          hidden.add(label.key);
+      }
+      litLabels = litLabels.filter((label) => !hidden.has(label.key));
       const named = new Set(litLabels.filter((l) => l.role === 'end').map((l) => l.id));
       const unnamed = S.wide ? endsFar.filter((row) => !named.has(row.end)) : [];
       if (!attempt || unnamed.length < attempt.unnamed) attempt = { lines, litLabels, keys, leader, owners, pointer, pointerBox, unnamed: unnamed.length };

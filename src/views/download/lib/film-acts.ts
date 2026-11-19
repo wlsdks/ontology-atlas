@@ -138,11 +138,15 @@ export function flightStart(kind: 'hub' | 'capability' | 'element', rank: number
   return FLIGHT.elementFrom + rank * FLIGHT.elementStep;
 }
 
+const FULL_DIAGONAL = Math.hypot(1920, 960);
+
 /**
  * How long a flight of `length` px takes: the spec's 640 ms, longer for a far row, so its top
- * speed stays under 2.8 px per ms (47 px in a 60 Hz frame, below 2.5% of a 1920 stage's diagonal).
+ * speed stays under 2.8 px per ms on a 1920 stage (47 px in a 60 Hz frame, 2.2% of its diagonal)
+ * and under the same share of a smaller stage's `diagonal`.
  */
-export const flightMs = (length: number) => Math.max(FLIGHT.flightMs, (length * Math.PI) / 2 / 2.8);
+export const flightMs = (length: number, diagonal = FULL_DIAGONAL) =>
+  Math.max(FLIGHT.flightMs, (length * Math.PI) / 2 / (2.8 * Math.min(1, diagonal / FULL_DIAGONAL)));
 
 /** Act 3: a flight's progress, its name's light and size, and its mark's light. */
 export function flight(t3: number, start: number, ms: number = FLIGHT.flightMs): { p: number; name: number; scale: number; mark: number } {

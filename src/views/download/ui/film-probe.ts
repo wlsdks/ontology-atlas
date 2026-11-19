@@ -27,14 +27,13 @@ function layoutJson(scene: FilmScene) {
   const rest = {
     boxes: [
       ...map.restLabels.map(box),
-      ...map.restArcs.map((arc) => ({
-        key: `numeral:${arc.from}>${arc.to}`,
-        id: null,
-        role: 'numeral',
-        text: String(arc.count),
-        size: map.sizes.fNumeral,
-        rect: rect({ l: arc.numeral.x - map.sizes.numeralR, t: arc.numeral.y - map.sizes.numeralR, r: arc.numeral.x + map.sizes.numeralR, b: arc.numeral.y + map.sizes.numeralR }),
-      })),
+      /* An arc whose count found no clear spot carries none. */
+      ...map.restArcs.flatMap((arc) => {
+        const q = arc.numeral;
+        if (!q) return [];
+        const r = map.sizes.numeralR;
+        return [{ key: `numeral:${arc.from}>${arc.to}`, id: null, role: 'numeral', text: String(arc.count), size: map.sizes.fNumeral, rect: rect({ l: q.x - r, t: q.y - r, r: q.x + r, b: q.y + r }) }];
+      }),
     ],
     marks,
     lines: map.restArcs.map((arc) => ({ kind: 'arc', from: arc.from, to: arc.to, count: arc.count, pts: pts(arc.pts) })),
