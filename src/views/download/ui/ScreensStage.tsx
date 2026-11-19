@@ -143,8 +143,11 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
         </div>
       </div>
 
-      {/* Capped at the capture's CSS size, or wide screens stretch it blurry. */}
-      <div className="gateway-scroll-stage grid w-full min-w-0 max-w-[83.5rem] min-[112rem]:col-start-2 min-[112rem]:row-span-3 min-[112rem]:row-start-1 [&>*]:[grid-area:1/1]">
+      {/*
+       * Capped at the capture's CSS size, or wide screens stretch it blurry, and at the width whose
+       * height still fits a short window under the header and the tabs, so a pull shows it whole.
+       */}
+      <div className="gateway-scroll-stage grid w-full min-w-0 max-w-[min(83.5rem,calc((100svh-10.75rem)*1336/860))] min-[112rem]:col-start-2 min-[112rem]:row-span-3 min-[112rem]:row-start-1 [&>*]:[grid-area:1/1]">
         {SCREEN_ORDER.map((id) => {
           const isActive = id === active;
           const name = tRail(id);

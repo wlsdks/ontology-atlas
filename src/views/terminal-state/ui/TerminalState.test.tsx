@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import ko from "../../../../messages/ko.json";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -55,6 +55,14 @@ describe("terminal state screens", () => {
     const home = screen.getByRole("link", { name: ko.notFound.home });
     expect(home.className).toMatch(/color-indigo-brand/u);
     expect(screen.queryByText(ko.notFound.findByProject)).toBeNull();
+  });
+
+  it("on the web the 404 links to the download page and the guide, labelled in the URL's locale", () => {
+    window.history.pushState({}, "", "/ko/nope-xyz/");
+    render(<NotFoundScreen standaloneMessages={notFoundMessages} />);
+    const destinations = within(screen.getByTestId("not-found-destinations"));
+    expect(destinations.getByRole("link", { name: ko.download.downloadSectionLabel }).getAttribute("href")).toMatch(/\/download\/?$/u);
+    expect(destinations.getByRole("link", { name: ko.gatewayNav.guide }).getAttribute("href")).toMatch(/\/guide\/?$/u);
   });
 
   it("the error screen is Korean on a Korean path and home keeps the locale", () => {

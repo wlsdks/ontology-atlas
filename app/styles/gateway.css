@@ -22,36 +22,65 @@
 }
 
 /*
- * The ring does not hide the native cursor (no `cursor: none`).
- * z-index 90 sits below `--z-skip-link` (100) and above
- * tooltip (80); the `--z-*` ladder is for surfaces and this ring is the pointer's shadow.
+ * The page's own pointer (`lib/gateway-pointer.ts`): an exact dot, a ring that follows it and wraps
+ * what it can press, and a canvas of links and click sparks beneath them. The system pointer hides
+ * only while `data-gateway-cursor` says ours is showing, and never over text entry or a surface
+ * that draws its own pointer. z-index 89-91 sits below `--z-skip-link` (100) and above tooltips (80).
  */
-.gateway-cursor {
+.gateway-pointer-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  pointer-events: none;
+}
+
+.gateway-cursor,
+.gateway-cursor-dot {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 90;
   pointer-events: none;
-  display: none;
   will-change: transform;
 }
 
-.gateway-cursor.is-live {
+.gateway-cursor {
+  z-index: 90;
+}
+
+.gateway-cursor-dot {
+  z-index: 91;
+  display: none;
+}
+
+html[data-gateway-cursor] .gateway-cursor-dot {
   display: block;
+}
+
+.gateway-cursor-dot::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  background: var(--color-text-primary);
+  box-shadow: 0 0 10px 1px var(--gateway-fx-cursor-glow);
 }
 
 .gateway-cursor > i {
   display: block;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
+  width: 32px;
+  height: 32px;
+  translate: -50% -50%;
   border-radius: 9999px;
   border: 1px solid var(--gateway-fx-cursor-ring);
   background: transparent;
-  transform: scale(0.636);
   opacity: 0;
   transition:
-    transform var(--motion-fast) var(--motion-ease),
+    width var(--motion-base) var(--motion-ease),
+    height var(--motion-base) var(--motion-ease),
+    border-radius var(--motion-base) var(--motion-ease),
+    scale var(--motion-fast) var(--motion-ease),
     border-color var(--motion-fast) var(--motion-ease),
     background-color var(--motion-fast) var(--motion-ease),
     opacity var(--motion-fast) var(--motion-ease);
@@ -61,14 +90,33 @@
   opacity: 1;
 }
 
-.gateway-cursor > i.is-hot {
-  transform: scale(1);
+/* Wrapped round a control: its own outline, a little out, with a faint fill. */
+.gateway-cursor > i[data-state='wrap'] {
+  border-color: var(--gateway-fx-cursor-wrap);
+  background: var(--gateway-fx-cursor-wrap-fill);
+}
+
+/* Over a pressable too large to wrap: a wider lit ring. */
+.gateway-cursor > i[data-state='fill'] {
+  width: 52px;
+  height: 52px;
   border-color: var(--color-indigo-accent);
   background: var(--color-indigo-a12);
 }
 
+.gateway-cursor.is-pressed > i {
+  scale: 0.9;
+}
+
+html[data-gateway-cursor] body,
+html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='true'], [data-own-pointer], [data-own-pointer] *) {
+  cursor: none !important;
+}
+
 @media (pointer: coarse) {
-  .gateway-cursor {
+  .gateway-cursor,
+  .gateway-cursor-dot,
+  .gateway-pointer-fx {
     display: none !important;
   }
 }
@@ -837,6 +885,8 @@
 .build-map {
   container-type: size;
   aspect-ratio: 4 / 5;
+  /* Never taller than the window under the header and the stage's bar, so the game is played whole. */
+  max-height: calc(100svh - 4rem - 2.75rem - 2rem);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -876,10 +926,10 @@
   }
 }
 
-/* Beside the panel the map is at least as tall as the panel's tallest step, so the frame keeps one height. */
+/* Beside the panel the map is as tall as the panel's tallest step where the window has the room. */
 @container build (min-width: 60rem) {
   .build-map {
-    min-height: 38.5rem;
+    min-height: min(38.5rem, calc(100svh - 4rem - 2.75rem - 2rem));
   }
 }
 
@@ -891,6 +941,9 @@
   .build-panel {
     border-top: 0;
     border-left: 1px solid var(--color-border-soft);
+    /* The board sets the frame's one height; on a short window a long step scrolls inside the panel. */
+    contain: size;
+    overflow-y: auto;
   }
 }
 

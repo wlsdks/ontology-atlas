@@ -486,7 +486,7 @@ describe('DownloadPage', () => {
 
     const harness = screen.getByTestId('gateway-architecture-section');
     expect(harness).toHaveAttribute('data-state', 'active');
-    expect(harness.querySelector('img')?.getAttribute('src')).toMatch(/\/gateway\/harness\.en\.png$/);
+    expect(harness.querySelector('img')?.getAttribute('src')).toMatch(/\/gateway\/harness\.en\.webp$/);
     const door = (id: string) => screen.getByTestId(`gateway-${id}-door`);
     expect(door('architecture')).toHaveAttribute('href', '/architecture');
     expect(door('architecture').parentElement).toHaveAttribute('data-state', 'active');

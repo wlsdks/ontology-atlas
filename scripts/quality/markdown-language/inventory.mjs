@@ -13,6 +13,9 @@ const QUOTED_EVIDENCE_COORDINATE = /^\s*-\s*Focused test:\s*(`[^`\n]+#[^`\n]+`)\
 
 const LOCALE_TEMPLATE = /^cli\/templates\/vault-[a-z]{2}\//;
 
+/** Guide chapters in the reader's language, beside the English vault source in `docs/guide/`. */
+const LOCALIZED_GUIDE = /^docs-i18n\/guide\/(?:ko|ja|zh)\/[a-z0-9-]+\.md$/;
+
 const LOCALIZED_READMES = Object.freeze(['README.ko.md', 'README.ja.md', 'README.zh.md']);
 const LANGUAGE_SWITCHER_LINK = /\[[^\]\n]{1,8}\]\((?:\.\/)?(README\.[a-z]{2}\.md)\)/gu;
 
@@ -56,6 +59,9 @@ export function classifyMarkdownPath(path) {
   if (LOCALIZED_READMES.includes(path)) {
     return { kind: 'localized-readme', scope: null };
   }
+  if (LOCALIZED_GUIDE.test(path)) {
+    return { kind: 'localized-guide', scope: null };
+  }
   return { kind: 'canonical', scope: canonicalScope(path) };
 }
 
@@ -88,6 +94,7 @@ export function auditMarkdownEntries(entries) {
     harnessFiles: { codex: 0, claude: 0 },
     localeTemplateFiles: 0,
     localizedReadmeFiles: 0,
+    localizedGuideFiles: 0,
     languageSwitcherLines: 0,
     allowedLocaleLines: 0,
     quotedEvidenceLines: 0,
@@ -116,6 +123,11 @@ export function auditMarkdownEntries(entries) {
     }
     if (classification.kind === 'localized-readme') {
       result.localizedReadmeFiles += 1;
+      result.skippedFiles += 1;
+      continue;
+    }
+    if (classification.kind === 'localized-guide') {
+      result.localizedGuideFiles += 1;
       result.skippedFiles += 1;
       continue;
     }

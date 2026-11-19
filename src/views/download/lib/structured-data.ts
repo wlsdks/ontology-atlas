@@ -1,21 +1,17 @@
 import { SITE_URL } from '@/shared/config';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { SITE_ORGANIZATION_REF } from '@/shared/config/site-entity';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';
 import { MACOS_RELEASE, windowsAsset } from './release-state';
 
-const SITE_PUBLISHER = {
-  '@type': 'Organization',
-  name: 'ontology-atlas contributors',
-  url: SITE_URL,
-  sameAs: [GITHUB_REPO_URL],
-};
 
 /**
  * The app's `SoftwareApplication` schema (the root `WebSite` one describes the site). Version,
  * URL and size appear only once published: a false claim here is indexed and penalised.
  * Price 0 is a fact: MIT, with no payment surface.
  */
-export function downloadStructuredData(locale: string, description: string) {
+/** `naming` is the brand as this locale reads it and the words its searchers use. */
+export function downloadStructuredData(locale: string, description: string, naming: { reading: string; keywords: string }) {
   const published = MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;
   const primary =
     MACOS_RELEASE.assets.find((asset) => asset.arch === 'aarch64') ?? MACOS_RELEASE.assets[0];
@@ -29,6 +25,8 @@ export function downloadStructuredData(locale: string, description: string) {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Ontology Atlas',
+    alternateName: [...new Set(['ontology-atlas', naming.reading])].filter((name) => name !== 'Ontology Atlas'),
+    keywords: naming.keywords.split(/\s*[,，、]\s*/),
     applicationCategory: 'DeveloperApplication',
     operatingSystem: windows ? [RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS] : RELEASE_MIN_MACOS,
     description,
@@ -36,11 +34,12 @@ export function downloadStructuredData(locale: string, description: string) {
     inLanguage: locale,
     image: `${SITE_URL}/og/${locale}.png`,
     // What an answer engine can cite beside the claim: the app's own map, and the guide.
-    screenshot: `${SITE_URL}/gateway/projects.${locale === 'ko' ? 'ko' : 'en'}.png`,
+    screenshot: `${SITE_URL}/gateway/projects.${locale === 'ko' ? 'ko' : 'en'}.webp`,
     softwareHelp: { '@type': 'CreativeWork', url: `${SITE_URL}/${locale}/guide/` },
     sameAs: [GITHUB_REPO_URL],
-    author: SITE_PUBLISHER,
-    publisher: SITE_PUBLISHER,
+    // The root layout declares the Organization once; this joins that node instead of restating it.
+    author: SITE_ORGANIZATION_REF,
+    publisher: SITE_ORGANIZATION_REF,
     license: 'https://opensource.org/licenses/MIT',
     isAccessibleForFree: true,
     offers: {

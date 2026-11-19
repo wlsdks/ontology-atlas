@@ -16,6 +16,7 @@ export async function generateMetadata({
     path: 'git',
     title: t('title'),
     description: tMeta('descriptions.git'),
+    noindex: true,
   });
 }
 

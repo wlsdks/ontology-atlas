@@ -1,5 +1,6 @@
 import type { RefObject, Dispatch, SetStateAction } from "react";
 import { useTranslations } from "next-intl";
+import type { LibrarySourceRow } from "@/entities/docs-vault";
 import {
   buildAskBrief,
   answerHistoryUnreadable,
@@ -29,7 +30,7 @@ import type { useWikiTemplateProblems } from "./use-wiki-template-problems";
 export function LibraryDocumentColumn({
   t, locale, nativeVaultRootPath, selected, setHomeSurface, setSourceCitation, skipReaderFocusRef,
   turnRunning, lintRunning, choose, busy, model, retainedAnswers, knownOriginalPaths, agent,
-  answerRefresh, handleCompile, reader, sources, turns, graphCards, indexColumn, templateProblems,
+  answerRefresh, compileSources, reader, sources, turns, graphCards, indexColumn, templateProblems,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   locale: string;
@@ -47,7 +48,8 @@ export function LibraryDocumentColumn({
   knownOriginalPaths: Set<string>;
   agent: ReturnType<typeof useLibraryAgent>;
   answerRefresh: ReturnType<typeof useAnswerRefresh>;
-  handleCompile: () => void;
+  /** Sends exactly these sources: the selected source's own Write wiki page door. */
+  compileSources: (rows: readonly LibrarySourceRow[]) => void;
   reader: ReturnType<typeof useLibraryReader>;
   sources: ReturnType<typeof useLibrarySources>;
   turns: ReturnType<typeof useLibraryTurns>;
@@ -230,7 +232,7 @@ export function LibraryDocumentColumn({
           onOpen={() => handleOpenSource(selectedSource)}
           onOpenPassage={(anchor) => setSourceCitation({ path: selectedSource.path, anchor })}
           onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
-          onCompile={handleCompile}
+          onCompile={() => compileSources([selectedSource])}
           compileNote={compileBlocked ?? compileTransfer}
           compileBlocked={compileBlocked !== null}
           agentDoor={agentDoor}

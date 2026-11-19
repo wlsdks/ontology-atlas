@@ -58,6 +58,8 @@ export type {
   LibraryWikiPage,
   LibraryWriteUpLink,
 } from './lib/library/vault-library';
+export { deriveSourceProgress } from './lib/library/source-progress';
+export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export { candidateKey, discoverCandidatesInHandle } from './lib/library/source-discovery';
 export type { SourceCandidate, SourceDiscoveryReport } from './lib/library/source-discovery';
 export {
@@ -82,7 +84,7 @@ export {
 export { createSummaryStalenessScan, daysBehind, SUMMARY_KINDS } from './lib/summary-freshness';
 export type { SummaryStaleness } from './lib/summary-freshness';
 export { deriveProjectsFromVault } from './lib/projects/derive-projects-from-vault';
-export { deriveBundledProjects, bundledProjectSlugs } from './lib/bundled-vault/bundled-projects';
+export { deriveBundledProjects, deriveIndexedProjects, bundledProjectSlugs } from './lib/bundled-vault/bundled-projects';
 export {
   findProjectVaultDoc,
   findProjectDocInList,

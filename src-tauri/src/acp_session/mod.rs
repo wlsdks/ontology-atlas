@@ -131,6 +131,7 @@ fn adapter_command(
 ) -> Command {
     debug_assert!(!launch_dir.starts_with(vault_root));
     let mut command = Command::new(program);
+    crate::no_console::hide_console(&mut command);
     command
         .args(args)
         .current_dir(launch_dir)
@@ -241,14 +242,6 @@ pub(crate) fn acp_start(
         use std::os::unix::process::CommandExt;
         command.process_group(0);
     }
-    #[cfg(windows)]
-    {
-        // The child does not inherit `windows_subsystem`, so suppress its console window.
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
-
     let mut child = command
         .spawn()
         .map_err(|err| format!("spawn-failed:{err}"))?;

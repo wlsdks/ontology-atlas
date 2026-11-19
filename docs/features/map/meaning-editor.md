@@ -30,7 +30,7 @@ routes: [/topology]
 - New concept creation uses `workbench=create`. It no longer calls `createDoc`
   from the first button press: the generated UID, slug, kind, display labels,
   domain, and authorship fields are shown in `OntologyChangeReview`, and only
-  "Confirm and write" creates the file.
+  **Confirm and save** creates the file.
 - ACP keeps read tools frictionless. Every Atlas write tool pauses the same
   conversation on a typed change card, hides `allow_always`, and resumes only on
   `allow_once`; rejection is `reject_once`. The tool-mode policy is checked against

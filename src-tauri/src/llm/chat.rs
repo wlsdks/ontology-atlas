@@ -112,6 +112,7 @@ fn send_chat_with_policy(
     construction: bool,
 ) -> Result<ChatEcho, String> {
     let mut command = Command::new("curl");
+    crate::no_console::hide_console(&mut command);
     command.args(curl_argv_with_timeout(timeout));
     if construction {
         construction_transport_policy(&mut command, request)?;
@@ -171,6 +172,8 @@ where
         tools: Some(scope.tools),
         // The only anchor that the bytes sent match the scope the screen showed.
         payload_sha256: llm_audit::sha256_hex(body),
+        embed: None,
+        download: None,
     };
     // No recording, no transmission.
     let reservation = llm_audit::reserve(vault_dir, draft)

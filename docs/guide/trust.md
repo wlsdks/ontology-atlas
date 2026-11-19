@@ -1,39 +1,115 @@
 ---
-title: About Trust
+title: "Data, privacy and safety"
 doc_type: guide
 status: current
 area: product
 ---
 
-# About Trust
+# Data, privacy and safety
 
-It involves pulling binaries from anonymous repositories onto your own computer. Therefore, we start by listing what it does not do.
+Where does your data live when you use Ontology Atlas? This chapter answers
+that, and covers what can leave your computer and when, how coding agents
+connected over MCP fit in, and how to check that the app you downloaded is the
+one we built. You can check every statement here in the public source code.
 
-## Local source of truth, explicit provider boundary
+## The short version
 
-The vault's canonical files remain on your disk. Atlas has no backend, account, or telemetry, and opening or editing a folder does not upload it to Atlas.
+- Your ontology is plain Markdown in a folder you choose. Atlas does not upload
+  it.
+- Atlas has no backend server, no account and no telemetry.
+- The app connects to the internet only through the paths listed below, and
+  most of them run only when you press a button.
+- A coding agent you connect is a separate program. It may send your prompts and
+  what it reads to its own provider, and Atlas cannot see or log that traffic.
 
-## It is plain Markdown
+## What stays on your computer
 
-Even if you delete the app, the folder remains. Nothing gets locked. This is not marketing copy; it is a structural fact. Because the storage format is Markdown, there is no way to lock it.
+- **The ontology folder.** The Markdown files are the only source of truth. If
+  you delete the app, the folder stays, and any editor or script can still read
+  it.
+- **`.ontology-atlas/` inside the folder.** Folder settings and the transfer log
+  described below. Git leaves this folder out by default.
+- **The app's search index.** On by default in the app. It is built from the
+  folder's files, kept in your computer's cache folder, and never sent
+  anywhere. Turn it off or delete it in Settings, under **Privacy · data** ›
+  **Stored on this computer**.
+- **API keys for model providers** (app only). They are kept in the operating
+  system's credential store, such as the macOS Keychain. The browser version
+  does not accept keys at all.
+- **Small preferences**, such as the list of recent folders. The browser keeps
+  only a handle to the folder you opened, so it can offer that folder again.
 
-## It does not scan automatically
+Atlas reads only the folders you choose. When it reads a folder, it skips
+dotfiles and dot folders such as `.env` and `.git/`.
 
-It reads only the folders you choose. Dotfiles like `.env` and `.git/` are excluded from indexing. It does not look at anything else on your disk.
+## What can leave your computer
 
-## AI connectivity is optional
+The app lists every outbound path in Settings, under **Privacy · data** ›
+**Outbound transfers**. They are:
 
-Atlas-controlled API and runner calls state and record their destination in `.ontology-atlas/llm-audit.jsonl`. ACP and externally connected MCP agents are a separate boundary: Atlas MCP stays local over stdio, but the selected coding agent may send prompts, context, and tool results to its provider. Atlas does not claim that provider-owned traffic is recorded in its LLM audit log.
+| Path | When | Goes to | Folder content? |
+|---|---|---|---|
+| Update check | Automatic, can be turned off | ontologyatlas.com | No |
+| Update download | When you press it | github.com | No |
+| Model providers | When you press it | Anthropic, OpenAI or Google API | What you send |
+| Local model server | When you press it | The address you entered | What you send |
+| External model review | When you press it | api.typesafe.ai | What you send |
+| Coding agent installs | When you press it | nodejs.org, npm registry | No |
+| ACP adapter packages | When you press it | npm registry, PyPI | No |
+| GitHub PR descriptions | When you press it | api.github.com | No |
+| Git push, pull and fetch | When you press it | Your Git remote | What you send |
+| MCP servers you add to the folder | When an agent uses them | Their addresses | Sent by the agent |
+| Coding agents | When an agent works | The agent's own provider | Atlas does not see it |
 
-## Signing and Notarization
+Atlas records each model call it makes, including calls to a local model
+server, in `.ontology-atlas/llm-audit.jsonl` in the folder. To turn off the
+automatic update check, use Settings › **About** › **Check for updates
+automatically**.
 
-The macOS app is signed with Apple Developer ID and notarized: Apple has checked it for malware. On first open macOS still asks once to confirm an app downloaded from the internet, and it does not show the warning for an unidentified developer.
+The browser version loads only the website's own files from ontologyatlas.com.
+It reads your folder on your computer and never uploads it.
 
-A release is published only after it clears signing and notarization verification: a build that fails either check never becomes a release asset. The Windows x64 beta is published unsigned, and only after a Defender scan and install and launch verification. There is no Linux app yet.
+## Coding agents and MCP
 
-## Check the file you downloaded
+The Atlas MCP server is not a service that keeps running. Your coding agent
+starts it on your computer when it needs it, talks to it over standard input
+and output (stdio), and stops it when the session ends. The server opens no
+network port and makes no network request.
 
-Each file on the release page has a `<file>.sha256` beside it; the download page's checksum links there. Compute the file's checksum and compare it with that file.
+The agent itself is a different matter. Claude Code, Codex, Cursor and other
+agents send your prompts and the files they read to their own providers. That
+traffic belongs to the agent, follows the agent's own settings, and does not
+appear in Atlas's log.
+
+Who approves a write depends on where the agent runs:
+
+- **In the app's agent chat**, each file edit and each Atlas write waits for you
+  to press **Allow once** or **Deny**, unless you turn on **Auto-approve** for
+  that folder. Shell commands, deletions and paths outside the folder always
+  ask first.
+- **An agent connected over MCP** in its own terminal or editor writes under
+  that tool's permission rules, not Atlas's.
+
+In both cases the change is a Markdown diff in your folder, so you can review or
+revert it in Git.
+
+## Check the app you downloaded
+
+- **macOS**: the app is signed with an Apple Developer ID and notarized by
+  Apple. Before a build is published, the release process verifies the signed
+  disk image and the installed app. A build that fails does not become a
+  release. In-app updates are signed as well.
+- **Windows x64 beta**: the installer is not signed, so SmartScreen may show an
+  unknown-publisher warning, and a managed computer may block it. Before
+  release, the build is scanned with Microsoft Defender, installed silently,
+  and launched.
+- **Linux**: there is no app yet. Use the browser version, or run the CLI and MCP
+  server from source ([The CLI](/guide/cli)).
+
+On the [releases page](https://github.com/wlsdks/ontology-atlas/releases),
+each installer (`.dmg`, `.exe`) and the MCP bundle (`.mcpb`) has a `.sha256`
+file beside it. Compare that value with the checksum of the file you
+downloaded.
 
 On macOS:
 
@@ -47,6 +123,11 @@ On Windows, in PowerShell:
 Get-FileHash <file> -Algorithm SHA256
 ```
 
-## Open Source
+## Open source
 
-Everything is open. You can verify any of the above statements in the code; claims that cannot be verified are not listed here.
+The app, the MCP server and the CLI are in one public repository under the MIT
+license: [github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas).
+The outbound paths listed above come from one file in the source,
+[outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts).
+To report a security problem, follow
+[SECURITY.md](https://github.com/wlsdks/ontology-atlas/blob/main/SECURITY.md).

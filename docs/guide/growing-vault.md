@@ -1,204 +1,132 @@
 ---
-title: After the Vault Grows
+title: "Keep the map current as code changes"
 doc_type: guide
 status: current
-area: ontology-model
+area: product
 ---
 
-# After the Vault Grows
+# Keep the map current as code changes
 
-Twenty nodes is no problem. Problems arise when you reach two hundred, three people start using it together, and agents add several items daily.
+You and your coding agents keep changing the code, so the codebase ontology
+needs to keep up. This chapter covers syncing the map after a change, finding
+concepts whose evidence went stale, avoiding duplicate concepts, renaming
+safely, and reviewing and committing what changed.
 
-> I think I made the same thing twice, but where is it? If I rename this, what breaks? How do I know what needs fixing now?
+## Sync after a code change
 
-This chapter covers what happens next.
+After a change, ask the agent that made it to update the map in the same
+session. The rule:
 
-## 1. The Most Common Failure is Duplication
+- **Sync** when the change adds, removes or renames a domain, a capability, an
+  element or a relation between them.
+- **Skip** typos, comments, one-line style changes, lint settings and test
+  fixtures that change no meaning.
 
-The primary failure mode as the vault grows is **creating the same concept twice**. If "User Authentication" and "Login Processing" exist separately, their relationship splits, and no one knows which to consult.
+The agent reads the affected concepts with `get_concept`, changes them with
+`patch_concept`, `add_concepts` or `add_relations`, and runs `validate_vault`.
+Renaming code does not mean the concept must be renamed. Decide whether the
+meaning changed or only the file did. If only the file moved, update the
+concept's `path`.
 
-**Ask before creating.**
+`init` installs three starter skills for Claude Code and Codex.
+`atlas-review` reports what is broken or disconnected, `atlas-grow` proposes
+what to add next, and `atlas-absorb` pulls concepts out of notes or specs. None
+of them writes anything until you choose what to keep.
 
-```bash
-node cli/src/index.mjs similar "map rendering" my-vault
-```
+## See what went stale
 
-```
-similar to: map rendering — 3 matches
+In the desktop app, the map marks concepts whose evidence may be out of date.
+A concept is **stale** when a file it cites was committed after the concept's
+own document last changed. Each map view marks stale concepts in amber or gold,
+and its legend names the mark. This needs the folder's Git history, so the
+browser version and a folder without Git show no stale marks.
 
-  1  0.158  element     elements/ontology-map      — Topology Map V2
-       signals: title 0.09 · slug 0.07
-  2  0.087  domain      domains/topology-navigation   — Topology Map Navigation
-```
-
-If it already exists, **fix the existing one** instead of creating a new one. Agents connected via MCP don't even need to call this separately; if a node with a similar title already exists, `add_concept` returns a warning along with the response.
-
-If they've already split into two, merge them.
-
-```bash
-node cli/src/index.mjs merge capabilities/guided-tour capabilities/topology-browsing --vault my-vault
-```
-
-```
-dry-run  capabilities/guided-tour → capabilities/topology-browsing
-         (1 file(s) would change, capabilities/guided-tour.md will be deleted)
-
-  domains/onboarding-and-shell — Onboarding, Distribution & App Shell
-    capabilities changed
-
-re-run with --confirm to apply.
-```
-
-**Dry-run is the default.** Review what changes first; execution requires adding `--confirm`.
-
-Merging does not break the identity history. The remaining node's `uid` stays as is, while the disappearing node's `uid` and existing `merged_uids` are absorbed into the remaining node's `merged_uids`. Agent handoffs that stored the old UID still find the same node.
-
-## 2. Renaming: Backlinks follow automatically
-
-When renaming, the scary part is wherever that name was used. If you fix them manually, you will inevitably miss one.
+In a terminal, `health` runs the full set of checks, including whether the
+source paths that concepts cite still exist:
 
 ```bash
-node cli/src/index.mjs rename capabilities/guided-tour capabilities/tour --vault my-vault
+node ~/tools/ontology-atlas/cli/src/index.mjs health ./atlas
 ```
 
-```
-dry-run  capabilities/guided-tour → capabilities/tour (1 file(s) would change)
+`validate` checks only the Markdown and its references, not the code. A
+refactor that deletes a cited file can pass `validate` and still fail `health`.
 
-  domains/onboarding-and-shell — Onboarding, Distribution & App Shell
-    capabilities changed
+The **Changes** screen in the app reads the Git history of a code repository
+you choose. It summarizes what was merged in a time period, and each change
+lists the **Affected concepts** whose code paths it touched. Look there after a
+busy week.
 
-re-run with --confirm to apply.
-```
+Before you commit, `preflight --staged` matches your staged files to the
+concepts that cite them and prints what they affect. It never blocks a commit,
+and it prints nothing when no concept matches.
 
-**Move the `.md` file and update all frontmatter pointing to its slug.** This includes keys in `relation_notes` attached to relationships.
-The `slug` changes, but the `uid` does not. Because of this difference, agents, exports, and provenance history recognize the same concept even when the name and file change.
+## Avoid duplicates
 
-If you want to see the blast radius before renaming:
+The most common way a map decays is the same concept written twice under two
+names. Check before you add one:
 
 ```bash
-node cli/src/index.mjs backlinks capabilities/mcp-server my-vault
-node cli/src/index.mjs blast-radius capabilities/mcp-server my-vault
+node ~/tools/ontology-atlas/cli/src/index.mjs similar "order acceptance" ./atlas
 ```
 
-`blast-radius` responds like this.
-
-```
-capabilities/mcp-server — blast radius (depth 2, incoming)
-  risk medium · 6 nodes · 9 relations · 0 cross-domain
-
-affected by kind
-  capability 2 · element 2 · domain 1 · project 1
-```
-
-## 3. The queue tells you what to do next
-
-Humans no longer need to visually scan to find "what needs fixing now."
+When the score is high, update the existing concept instead. Agents get the
+same protection: `add_concept` returns a warning when a concept with a similar
+title already exists. If the same concept already exists twice, merge the two.
+The merge moves every reference to the surviving concept:
 
 ```bash
-node cli/src/index.mjs maintenance my-vault
+node ~/tools/ontology-atlas/cli/src/index.mjs merge capabilities/checkout capabilities/order-acceptance --vault ./atlas
 ```
 
-```
-maintenance plan — 8 remaining / 8 filtered / 8 total
-summary: compileIssues:0, cycles:0, canonicalize:0, dangling:0, relations:0
-buckets: phase review:8 · severity info:8 · kind capability_without_evidence:8
+## Rename without breaking references
 
-  [info] maint_b4dc8feb  review/capability_without_evidence · score 0.5
-     The canonical `path:` for "capabilities/app-update" also lacks an actual element relation,
-     so the vault cannot indicate where this behavior resides in the code. …
-```
-
-**Each row is one task**, and each row states what it should do in a sentence.
-If there are too many lines, narrow them down.
+Renaming a concept by hand misses references. `rename` moves the file and
+rewrites every concept that points at it, relation notes included:
 
 ```bash
-node cli/src/index.mjs maintenance my-vault --kinds capability_without_evidence --limit 5
+node ~/tools/ontology-atlas/cli/src/index.mjs backlinks capabilities/checkout --vault ./atlas
+node ~/tools/ontology-atlas/cli/src/index.mjs rename capabilities/checkout capabilities/order-acceptance --vault ./atlas
 ```
 
-If you want to see where it can grow, `growth` is the pair. This one reports **missing connections** rather than faults.
+The slug changes, but the concept's `uid` stays the same, so agents and
+exports still recognize it. By default, `rename`, `merge` and `delete` only
+preview. Add `--confirm` to apply the change. `delete` refuses while other
+concepts still point at the concept you want to delete. Agents use the
+matching MCP tools, `rename_concept`, `merge_concepts` and `delete_concept`,
+which also preview first.
 
-## 4. Full health check
+## Review findings on the map
+
+In the app, select a concept and open **Ontology review** (under **More
+actions**). **Ask AI to review** asks the agent to check the map, and the
+answers appear under **Review results**, one row per finding. The map marks the
+concepts the findings point at. For each finding, choose **Have it fixed**,
+**Keep for later** or **Dismiss**. Findings are the agent's guesses. A review
+never edits the map on its own.
+
+## Edits at the same time
+
+You, a teammate and an agent may all edit the same file. Atlas never
+overwrites a change silently:
+
+- When an agent passes the `expected_mtime` it read, the MCP write tools
+  refuse to overwrite a file that changed since. The agent has to read it again
+  and retry. Without it, the write goes through.
+- When the app applies a proposed change to a document that just changed, it
+  writes nothing and says so.
+
+## Commit what changed
+
+The ontology folder is ordinary files in Git, so you review concept changes in
+the same pull request as the code. In the app, the **Git** screen lists the
+uncommitted changes by document, with the changed lines marked. The **Commit**
+button shows how many changes there are and commits them. You can also restore
+a single document to an earlier version there. In a terminal, `snapshot`
+commits only the ontology folder, with a summary of what changed:
 
 ```bash
-node cli/src/index.mjs health my-vault
+node ~/tools/ontology-atlas/cli/src/index.mjs snapshot ./atlas --dry-run
 ```
 
-```
-vault health healthy — 70 nodes · 152 relations
-
-  ✓ compile_issues            Compiled ontology artifact has no compiler issues.
-  ✓ unresolved_edges          Every internal edge resolves to a known node.
-  ✓ dependency_cycles         No directed dependency cycles were detected.
-  ✓ relation_recommendations  No safe containment suggestions are pending.
-  ✓ components                The actionable graph is connected.
-  ✓ vault_validation          Vault schema and graph references validate cleanly.
-```
-
-The six checks name what they look for. You can view only what you need.
-
-| Command | Question answered |
-|---|---|
-| `validate` | Do frontmatter and references hold? |
-| `orphans` | Are there nodes pointed to by no one? |
-| `cycles` | Do "leans on" relations form a loop? |
-| `components` | Is the graph split into islands? |
-| `overview` | What shape is Vault currently in? |
-
-`health` **compares against code paths**. `validate` looks only at frontmatter.
-If a file cited as evidence disappears due to refactoring, `health` catches it.
-
-## 5. Collaborative use
-
-**Vault lives inside the repository, and the source of truth is files.** So no special collaboration mechanism is needed. You already have one.
-
-- Concept changes appear as a single `.md` line diff. Review them together in code reviews.
-- Conflict resolution is text conflict resolution. No special tools required.
-- Reversion is done via `git revert`.
-
-Before committing, to see what part of Vault this change affects:
-
-```bash
-node cli/src/index.mjs preflight --staged
-```
-
-Interprets staged files as Vault nodes and summarizes the impact. If nothing is affected, it passes silently.
-
-If you want to commit only the vault:
-
-```bash
-node cli/src/index.mjs snapshot my-vault --dry-run
-```
-
-Creates a commit for the vault folder scope along with a summary of changes. If there are no changes, it prints `nothing to snapshot` and exits 0.
-
-## 6. When editing simultaneously: Preventing silent overwrites
-
-If an agent writes to a file while a human is editing it in an editor, one side may disappear silently. The write tools have mechanisms to prevent this.
-
-1. `get_concept` returns the file's `mtime` along with it.
-2. Pass that value as `expected_mtime` when writing.
-3. If the file has changed in the meantime, **it raises a conflict error instead of overwriting.**
-
-If you plan to entrust your vault to an agent, it's good to know this one thing.
-An incident where "the agent erased my edits" is prevented by this single value.
-
-## 7. Deletion
-
-```bash
-node cli/src/index.mjs delete elements/old-thing --vault my-vault
-```
-
-**It rejects if backlinks remain.** If something is pointed to, deleting it would leave those references as ghost names. To truly delete, first clean up the pointing side, or use `--force` to override this judgment.
-
-The default writer intentionally does not reissue deleted UIDs. However, since there is no separate tombstone ledger in the current scope, it can only check the current vault to prove if a human has manually reused a past UID. Querying a deleted UID will normally return `not found`. If you need to preserve history, use `merge` instead of deletion.
-
-## Summary
-
-- Duplicates are a single point of failure. Use `similar` before creation, or `merge` if already split.
-- `rename` **rewrites all backlinks.** Do not fix them manually.
-- `uid` is the permanent identity, `slug` is the mutable current address.
-- `rename`, `merge`, `delete`, and `snapshot` are **dry-run by default**.
-- Next steps: `maintenance`, areas for growth: `growth`, overall: `health`.
-- The collaboration mechanism is **git itself**. Concurrent editing is protected only by `expected_mtime`.
-
-The full list of commands is in [CLI](/guide/cli).
+Every command used here is listed in [The CLI](/guide/cli). How concepts and
+relations are shaped is covered in [Relations between concepts](/guide/relations).

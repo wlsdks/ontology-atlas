@@ -13,16 +13,18 @@ function tokenize(s) {
  * token-overlap tiebreaker of at most 0.1. score > 0 iff a substring matched.
  *
  * @param {string} query
- * @param {{title?:string, frontmatterHaystack?:string, body?:string}} fields
+ * `bodyIncludes`, when given, says whether the lowercased body includes the needle,
+ * for a caller that already knows and need not pass the body.
+ *
+ * @param {{title?:string, frontmatterHaystack?:string, body?:string, bodyIncludes?:boolean}} fields
  * @returns {{score:number, matchedIn:('frontmatter'|'body'|null)}}
  */
-export function scoreEvidence(query, { title = '', frontmatterHaystack = '', body = '' } = {}) {
+export function scoreEvidence(query, { title = '', frontmatterHaystack = '', body = '', bodyIncludes } = {}) {
   const needle = String(query ?? '').toLowerCase().trim();
   if (!needle) return { score: 0, matchedIn: null };
 
   const t = String(title ?? '').toLowerCase();
   const fm = String(frontmatterHaystack ?? '').toLowerCase();
-  const b = String(body ?? '').toLowerCase();
 
   let base = 0;
   let matchedIn = null;
@@ -38,7 +40,7 @@ export function scoreEvidence(query, { title = '', frontmatterHaystack = '', bod
   } else if (fm.includes(needle)) {
     base = 0.5;
     matchedIn = 'frontmatter';
-  } else if (b.includes(needle)) {
+  } else if (bodyIncludes ?? String(body ?? '').toLowerCase().includes(needle)) {
     base = 0.3;
     matchedIn = 'body';
   } else {

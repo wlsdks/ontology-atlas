@@ -15,7 +15,7 @@ export type {
 export { buildSystemPrompt } from './model/system-prompt';
 export { AGENT_TOOLS } from './model/agent-tools/tool-catalog';
 /* Compile's public surface is deliberately small. */
-export { selectLocalCompileTargets, useLocalCompile } from './model/compile/use-local-compile';
+export { opensLocally, selectLocalCompileTargets, useLocalCompile } from './model/compile/use-local-compile';
 export type { LocalCompileSession } from './model/compile/use-local-compile';
 export type { CompileCardRow } from './model/compile/compile-consent-card';
 export { PARSER_SOURCE_FORMATS } from './model/compile/source-text';

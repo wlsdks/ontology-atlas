@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isWikiPage } from "@/entities/docs-vault";
+import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
+import { opensLocally } from "@/features/vault-agent";
 import { useRouter } from "@/i18n/navigation";
 import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
 import { useVaultConnectors } from "@/features/mcp-connectors";
@@ -66,6 +67,9 @@ import { LibraryEmptyFolderStage } from "./library-page/LibraryEmptyFolderStage"
 import { LibraryIndexColumn } from "./library-page/LibraryIndexColumn";
 import { LibraryDocumentColumn } from "./library-page/LibraryDocumentColumn";
 import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
+import { AgentDoor } from "./parts/agent/AgentDoor";
+import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
+import { useContinuePress } from "./parts/progress/use-continue-press";
 
 export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
@@ -243,15 +247,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     toast.show(t("sources.importedToPlanning"), "success", { label: t("sources.openPlanning"), onClick: openPlanning });
   }, [openPlanning, t, toast]);
   useEffect(() => { clearLibraryImportRequest(); }, []);
-  const handleCompile = useCallback(() => {
+  const sendCompile = useCallback((batch: readonly LibrarySourceRow[]): boolean => {
     try {
       const localExecution = agent.route === 'local';
       agent.start(
         buildCompileBrief({
-          sources: localExecution
-            ? model.sources.filter((source) => agent.localCompile.targets.includes(source.path))
-            : model.sources,
+          sources: batch,
           existingPages: model.wikiPages,
+          hashes: model.hashes,
           locale,
           execution: localExecution ? 'local' : 'acp',
           writerId: localExecution
@@ -260,7 +263,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           vaultRoot: nativeVaultRootPath ?? "",
           now: new Date(),
         }),
+        'compile',
+        batch.map((row) => row.path),
       );
+      return true;
     } catch (error) {
       toast.show(
         t("wiki.compileFailed", {
@@ -268,8 +274,27 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         }),
         "error",
       );
+      return false;
     }
-  }, [agent, locale, model.sources, model.wikiPages, nativeVaultRootPath, t, toast]);
+  }, [agent, locale, model.hashes, model.wikiPages, nativeVaultRootPath, t, toast]);
+  const indexColumn = useLibraryIndexColumn({ segment, model });
+  const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
+  const bandShown = homeVisible && indexSegment !== 'wiki' && model.sources.length > 0;
+  /*
+   * Every Compile door sends what it names: the band and the popover the next batch, a source's own
+   * door that source. The batch is picked only while one of them draws it, and on press.
+   */
+  const localRoute = agent.route === 'local';
+  const { compileBatch, continueBatch, press: handleCompile, pressFor: compileSources } = useContinuePress({
+    sources: model.sources,
+    folderKey: workVaultScope,
+    // The local runner reads its own capped targets; the batch names as many, all files it can open.
+    size: localRoute ? Math.max(1, agent.localCompile.targets.length) : undefined,
+    running: compileRunning || agent.localCompile.status === 'running',
+    shown: bandShown || homeSurface === 'compile',
+    eligible: localRoute ? opensLocally : undefined,
+    send: sendCompile,
+  });
 
   const turns = useLibraryTurns({
     t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
@@ -285,15 +310,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     handleFileReport, autoDecide, handleTurnStarted,
   } = turns;
   const graphCards = useLibraryGraphCards({
-    localVault, nativeVaultRootPath, docs, model, agent, handleCompile, sources, turns,
+    localVault, nativeVaultRootPath, docs, model, agent, compileSources, sources, turns,
   });
   const { cardFacts } = graphCards;
   const { readerRef, paneBodyRef } = useLibraryFocus({
     selected, setSelected, mobileBrowseOpen, mobileBrowseBackRef, homeSurface,
     answerComparisonOpen, skipReaderFocusRef, agent, sources, workActivity,
   });
-  const indexColumn = useLibraryIndexColumn({ segment, model });
-  const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
   const templateProblems = useWikiTemplateProblems({
     t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,
   });
@@ -429,7 +452,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         mobileBrowseOpen={mobileBrowseOpen} setMobileBrowseOpen={setMobileBrowseOpen}
         mobileBrowseBackRef={mobileBrowseBackRef} browseFocusPendingRef={browseFocusPendingRef}
         searchHost={searchHost} setSearchHost={setSearchHost} setSourceCitation={setSourceCitation}
-        sourceCitation={sourceCitation} compileRunning={compileRunning} lintRunning={lintRunning}
+        sourceCitation={sourceCitation} compileRunning={compileRunning} runningSources={continueBatch.running}
+        lintRunning={lintRunning}
         reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
         openImport={openImport} handleCompile={handleCompile} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}
@@ -554,6 +578,19 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               data-testid="library-reader-landing"
               className="flex min-h-0 min-w-0 flex-1 flex-col"
             >
+              {bandShown ? (
+                <SourceProgressBand
+                  sources={model.sources}
+                  vaultScope={workVaultScope}
+                  batch={continueBatch}
+                  blocked={turns.compileBlocked
+                    ? { reason: turns.compileBlocked, door: graphCards.agentDoor ? <AgentDoor testId="library-progress-blocked-door" /> : null }
+                    : null}
+                  inApp={nativeVaultRootPath !== null}
+                  locale={locale}
+                  t={t}
+                />
+              ) : null}
               <LibraryGraph
                 docs={manifest?.docs ?? EMPTY_DOCS}
                 wikiPages={model.wikiPages}
@@ -603,7 +640,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               skipReaderFocusRef={skipReaderFocusRef} turnRunning={turnRunning} lintRunning={lintRunning}
               choose={choose} busy={busy} model={model} retainedAnswers={retainedAnswers}
               knownOriginalPaths={knownOriginalPaths} agent={agent} answerRefresh={answerRefresh}
-              handleCompile={handleCompile} reader={reader} sources={sources} turns={turns}
+              compileSources={compileSources} reader={reader} sources={sources} turns={turns}
               graphCards={graphCards} indexColumn={indexColumn} templateProblems={templateProblems}
             />
           ) : null}
@@ -630,7 +667,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         model={model} retainedAnswers={retainedAnswers} knownOriginalPaths={knownOriginalPaths}
         retainedAnswerSlugs={retainedAnswerSlugs} agent={agent} closeHomeSurface={closeHomeSurface}
         handleCompile={handleCompile} sources={sources} home={home} turns={turns} graphCards={graphCards}
-        homeStrip={homeStrip}
+        homeStrip={homeStrip} compileBatch={compileBatch}
       />
       {agentDock}
 

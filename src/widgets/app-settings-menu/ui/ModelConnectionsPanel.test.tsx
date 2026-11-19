@@ -587,7 +587,43 @@ describe('sent log', () => {
     httpStatus: 200,
     responseChars: 42,
     durationMs: 640,
+    embed: null,
+    download: null,
   };
+
+  it('names search by meaning and model downloads by what left, and an unclosed run as not finished', () => {
+    const local = { ...entry, provider: 'local', host: '127.0.0.1:11434', model: 'bge-m3' };
+    const run = { run: 'r', ended: null };
+    renderPanel(
+      makeConnection({
+        auditTotal: 3,
+        auditEntries: [
+          {
+            ...local,
+            purpose: 'embed-build',
+            outcome: 'open',
+            embed: { ...run, phase: 'start', filesPlanned: 3, passagesPlanned: 7, charsPlanned: 900, passagesSent: 0, charsSent: 0 },
+          },
+          { ...local, purpose: 'embed-query', scope: { nodes: [], promptChars: 17, vaultChars: 0 } },
+          {
+            ...local,
+            purpose: 'model-download',
+            download: { ...run, phase: 'close', ended: 'complete', source: 'ollama-pull', revision: 'sha256:x', bytes: 1 },
+          },
+        ],
+      }),
+    );
+    const [download, query, build] = screen.getAllByTestId('ai-audit-row');
+    expect(build).toHaveTextContent(`${NS}.auditPurposeEmbedBuild`);
+    expect(build).toHaveTextContent(`${NS}.auditScopePassages:7`);
+    expect(build).toHaveTextContent(`${NS}.auditOutcomeOpen`);
+    expect(build).not.toHaveTextContent(`${NS}.auditOutcomeUnknown`);
+    expect(query).toHaveTextContent(`${NS}.auditPurposeEmbedQuery`);
+    expect(query).toHaveTextContent(`${NS}.auditScopeQuestion:17`);
+    expect(query).not.toHaveTextContent(`${NS}.auditPurposeAsk`);
+    expect(download).toHaveTextContent(`${NS}.auditPurposeModelDownload`);
+    expect(download).toHaveTextContent(`${NS}.auditScopeDownload:bge-m3`);
+  });
 
   it('is not ashamed of an empty log — nothing sent is the promise kept', () => {
     renderPanel(makeConnection());

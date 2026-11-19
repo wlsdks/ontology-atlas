@@ -99,9 +99,25 @@ describe('guide table of contents', () => {
     30_000,
   );
 
-  it('every chapter of the table of contents has a name in both locales', async () => {
+  it('every chapter has a body in each reader language with the English source\'s sections', async () => {
+    const { GUIDE_PAGES, GUIDE_TRANSLATIONS_DIR, readVaultDoc } = await import('@/views/gateway-doc');
+    const sections = (body: string) => body.match(/^## /gm)?.length ?? 0;
+    for (const locale of ['ko', 'ja', 'zh'] as const) {
+      for (const page of GUIDE_PAGES) {
+        const path = resolve(repoRoot, GUIDE_TRANSLATIONS_DIR, locale, `${page.segment}.md`);
+        expect(existsSync(path), `${locale} has no translation of ${page.segment}, so its page falls back to English`).toBe(true);
+        const body = readFileSync(path, 'utf8');
+        expect(body.length, `${locale}/${page.segment} is practically empty`).toBeGreaterThan(200);
+        expect(sections(body), `${locale}/${page.segment} lost or added sections against the English source`).toBe(
+          sections(readVaultDoc(page.slug) ?? ''),
+        );
+      }
+    }
+  });
+
+  it('every chapter of the table of contents has a name in every locale', async () => {
     const { GUIDE_PAGES } = await import('@/views/gateway-doc');
-    for (const locale of ['ko', 'en'] as const) {
+    for (const locale of ['ko', 'en', 'ja', 'zh'] as const) {
       const messages = JSON.parse(
         readFileSync(resolve(repoRoot, `messages/${locale}.json`), 'utf8'),
       );

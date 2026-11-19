@@ -32,6 +32,8 @@ export interface LibraryAgentOpeningRequest {
   kind: "compile" | "lint" | "propose" | "import" | "ask" | "fix" | "refresh";
   text: string;
   nonce: number;
+  /** For `compile`: the source paths the brief names, which the vault log records for the turn. */
+  sources?: readonly string[];
 }
 
 /** Where focus goes back to when the opener itself is gone: the Library's own conversation door. */

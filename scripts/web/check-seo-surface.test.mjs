@@ -50,7 +50,13 @@ function greenExport() {
     pages.set(`/${l}/download/`, page({ ...home, body: `<h1>${messages[l].download.heroTitleLine1}</h1>` }));
     pages.set(
       `/${l}/guide/`,
-      page({ canonical: `${ORIGIN}/${l}/guide/`, route: 'guide', title: `Guide ${l}`, description: `Guide ${l}` }),
+      page({
+        canonical: `${ORIGIN}/${l}/guide/`,
+        route: 'guide',
+        title: `Guide ${l}`,
+        description: `Guide ${l}`,
+        body: '<article data-testid="gateway-doc-body" class="x"><p>Body</p></article>',
+      }),
     );
   }
   pages.set('/404/', page({ title: 'Missing', description: 'Missing', robots: 'noindex' }));
@@ -164,4 +170,27 @@ test('rule 6: a localized page that declares English in its HTML fails', () => {
     page({ canonical: `${ORIGIN}/ko/guide/`, route: 'guide', title: 'G', description: 'G', lang: 'en' }),
   );
   assert.deepEqual(rules(input), ['6-html-lang']);
+});
+
+test('rule 8: a guide page in another language that ships the English body fails', () => {
+  const input = greenExport();
+  const ko = input.pages.get('/ko/guide/');
+  input.pages.set('/ko/guide/', ko.replace('data-testid="gateway-doc-body"', 'data-testid="gateway-doc-body" lang="en"'));
+  assert.deepEqual(rules(input), ['8-guide-in-its-language']);
+});
+
+test('rule 9: an indexable self-canonical page outside the sitemap fails; noindex is exempt', () => {
+  const input = greenExport();
+  input.pages.set('/ko/agents/', page({ canonical: `${ORIGIN}/ko/agents/`, title: 'Agents', description: 'Agents' }));
+  assert.deepEqual(rules(input), ['9-indexable-in-sitemap']);
+  input.pages.set('/ko/agents/', page({ title: 'Agents', description: 'Agents', robots: 'noindex, follow' }));
+  assert.deepEqual(evaluateSeoSurface(input), []);
+});
+
+test('rule 9: a page outside the sitemap may consolidate into a sitemap URL, not into an unlisted one', () => {
+  const input = greenExport();
+  input.pages.set('/ko/changelog/', page({ canonical: `${ORIGIN}/en/guide/`, title: 'Changelog', description: 'Changelog', lang: 'ko' }));
+  assert.deepEqual(evaluateSeoSurface(input), []);
+  input.pages.set('/ko/changelog/', page({ canonical: `${ORIGIN}/en/changelog/`, title: 'Changelog', description: 'Changelog', lang: 'ko' }));
+  assert.deepEqual(rules(input), ['9-indexable-in-sitemap']);
 });

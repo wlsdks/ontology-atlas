@@ -11,7 +11,12 @@ export {
   readDeclinedCandidates,
   rememberDeclinedCandidates,
 } from "./lib/sources/declined-candidates";
-export { buildCompileBrief, selectCompileTargets } from "./lib/wiki/compile-brief";
+export {
+  buildCompileBrief,
+  COMPILE_BATCH_SIZE,
+  selectCompileBatch,
+  selectCompileTargets,
+} from "./lib/wiki/compile-brief";
 export { buildLintBrief, isMapKind, parseLintCandidates, parseLintFindings, dropCandidatesWithNodes } from "./lib/wiki/lint-brief";
 export type { LintFinding } from "./lib/wiki/lint-brief";
 export { buildFixBrief } from "./lib/wiki/fix-brief";
