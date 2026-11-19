@@ -8,6 +8,7 @@ import {
   type LinkContext,
 } from '@/shared/lib/vault-document/parse-frontmatter';
 import { countWhitespaceWords } from '@/shared/lib/vault-document/count-whitespace-words';
+import { citesReadLines } from '@/shared/lib/vault-document/line-cite';
 import { meaningFindings } from '@/shared/lib/vault-document/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-source/project-meaning-evidence';
 import {
@@ -419,6 +420,7 @@ export function buildMdEntry(
           ),
         }
       : {}),
+    ...(kind === 'capability' ? { citesReadLines: citesReadLines(body) } : {}),
     wordCount: countWhitespaceWords(body),
     updatedAt: new Date(lastModified).toISOString(),
     linksOut,

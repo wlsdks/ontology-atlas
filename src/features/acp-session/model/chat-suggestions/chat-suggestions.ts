@@ -3,17 +3,27 @@
  * graph and is above zero; the screen translates the keys, and a press sends the request at once.
  */
 
+import type { UnreadCapability } from './measured-facts';
+
 /** How many measured fixes are shown at once, before the whole-map check. Given too many choices, people choose none (Hick). */
 export const SUGGESTION_LIMIT = 3;
 
 /** How many slugs a request names before it says only the count. */
 const NAMED_SLUG_LIMIT = 12;
 
+/**
+ * Capabilities one read request names: the agent finishes a bounded request of this size in one
+ * turn, while a whole-map read is never done in one.
+ */
+export const READ_BATCH_LIMIT = 8;
+
 type SuggestionKind =
   /** Starter vault whose project has no source binding: connect before building. */
   | 'connectSource'
   /** Nothing beyond the starter nodes has been built. */
   | 'build'
+  /** Capabilities whose body cites no lines read from the code. */
+  | 'readRules'
   /** Capabilities that record neither `depends_on` nor an element. */
   | 'dependencies'
   /** Concepts in groups detached from the main map. */
@@ -44,6 +54,8 @@ export interface SuggestionInput {
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
   /** Groups that fell outside the main cluster, as canonical slugs. */
   islands: readonly (readonly string[])[];
+  /** Capabilities whose body cites no read lines, and how many capabilities were measured. */
+  withoutReadRule?: { unread: readonly UnreadCapability[]; measured: number };
   /** Capabilities with neither `depends_on` nor `elements`. */
   withoutDependency: readonly string[];
   /** Concepts whose title reads like code. */
@@ -99,6 +111,33 @@ function slugsParams(slugs: readonly string[]): { count: number; named: number; 
   return { count: unique.length, named: named.length, slugs: named.join(', '), rest: unique.length - named.length };
 }
 
+const bySlug = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * The capabilities one read request names: the domain with the most nameable unread capabilities
+ * first, filled from the next domains only when it holds fewer than the batch. Slugs that fail
+ * `isSafeSlug` are counted, never named. O(n log n) in the unread capabilities.
+ */
+export function readRuleBatch(unread: readonly UnreadCapability[]): string[] {
+  const groups = new Map<string, Set<string>>();
+  for (const { slug, domain } of unread) {
+    const bare = slug.replace(/^ontology\//, '');
+    if (!isSafeSlug(bare)) continue;
+    const group = groups.get(domain) ?? new Set<string>();
+    group.add(bare);
+    groups.set(domain, group);
+  }
+  const ordered = [...groups.entries()].sort(([domainA, a], [domainB, b]) =>
+    b.size - a.size || Number(domainA === '') - Number(domainB === '') || bySlug(domainA, domainB));
+  return ordered.flatMap(([, slugs]) => [...slugs].sort(bySlug)).slice(0, READ_BATCH_LIMIT);
+}
+
+function readRulesParams({ unread, measured }: { unread: readonly UnreadCapability[]; measured: number }) {
+  const named = readRuleBatch(unread);
+  const count = new Set(unread.map(({ slug }) => slug.replace(/^ontology\//, ''))).size;
+  return { count, total: measured, named: named.length, slugs: named.join(', ') };
+}
+
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   if (input.nodeCount <= STARTER_NODE_CEILING) {
     if (input.sourceState === 'unbound') {
@@ -116,6 +155,10 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   }
 
   const repairs: ChatSuggestion[] = [];
+  // A rule read from code is what the other repairs build on, so it comes first.
+  if (input.withoutReadRule && input.withoutReadRule.unread.length > 0) {
+    repairs.push({ kind: 'readRules', params: readRulesParams(input.withoutReadRule) });
+  }
   const measured: Array<[SuggestionKind, readonly string[]]> = [
     ['dependencies', input.withoutDependency],
     ['standAlone', input.islands.flat()],
