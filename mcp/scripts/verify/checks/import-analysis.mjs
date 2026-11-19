@@ -42,54 +42,78 @@ function importKindCountOutputSummary(kindCounts) {
 
 const ENTRY_POINT_KINDS = new Set(['executable', 'command', 'route', 'library', 'plugin']);
 
-/** The default survey is the breadth map: units, entry points and docs, and no candidate node. */
-export function analyzeRepoStructureFailure(parsed) {
-  if (typeof parsed?.rootPath !== 'string' || parsed.rootPath.length === 0) {
-    return 'analyze_repo_structure response missing rootPath';
-  }
-  if (parsed.contract !== 'breadthMap:v1') {
-    return `analyze_repo_structure response is not the breadth map: ${parsed?.contract}`;
-  }
-  for (const propertyName of ['domains', 'capabilities', 'elements', 'suggestedRelations', 'meaningGate']) {
-    if (parsed[propertyName] !== undefined) {
-      return `analyze_repo_structure survey carries ${propertyName}; the breadth map names no node`;
+const MAP_HEADER = /^Breadth map of (.+): (\d+) product units, ([\d,]+) lines in ([\d,]+) files[ ;.(]/;
+const CANDIDATE_FIELDS = ['domains', 'capabilities', 'elements', 'suggestedRelations', 'meaningGate'];
+const COUNT = /^\d[\d,]*$/;
+const MAIN_FILES = /^(-|.*\(\d[\d,]*\))$/;
+
+/** The rows under the line that starts with `header`, up to the next blank line. */
+function sectionRows(lines, header) {
+  const start = lines.findIndex((line) => line.startsWith(header));
+  if (start < 0) return null;
+  const rows = lines.slice(start + 1);
+  const end = rows.indexOf('');
+  return end < 0 ? rows : rows.slice(0, end);
+}
+
+function unitRowFailure(cells) {
+  const [path, files, lines, mainFiles, exports, importedBy, imports] = cells;
+  if (cells.length !== 7 || !path) return `analyze_repo_structure response malformed unit row: ${cells.join(' | ')}`;
+  if (!/^[1-9]\d*$/.test(files) || !COUNT.test(lines)) return `analyze_repo_structure response missing unit size: ${path}`;
+  if (!MAIN_FILES.test(mainFiles)) return `analyze_repo_structure response malformed main files: ${path}`;
+  if (!exports || !imports || !/^\d+$/.test(importedBy)) return `analyze_repo_structure response malformed exports or imports: ${path}`;
+  return null;
+}
+
+function areaRowFailure(cells) {
+  const [path, files, lines, mainFiles, abilities] = cells;
+  if (cells.length !== 5 || !path) return `analyze_repo_structure response malformed area row: ${cells.join(' | ')}`;
+  if (!COUNT.test(files) || !COUNT.test(lines)) return `analyze_repo_structure response missing area size: ${path}`;
+  if (!/^\+\d+ smaller folders in /.test(path) && !MAIN_FILES.test(mainFiles)) return `analyze_repo_structure response malformed main files: ${path}`;
+  if (!/^\d+$/.test(abilities)) return `analyze_repo_structure response malformed ability count: ${path}`;
+  return null;
+}
+
+/**
+ * The default survey is the breadth map, sent as text alone: a size header, a
+ * row per product unit (or per area when the repository is larger than one
+ * map), entry points, docs and the next step, and no candidate node.
+ */
+export function analyzeRepoStructureFailure(text) {
+  const lines = typeof text === 'string' ? text.split('\n') : [];
+  const header = MAP_HEADER.exec(lines[0] ?? '');
+  if (!header) return `analyze_repo_structure response is not the breadth map: ${JSON.stringify(String(lines[0] ?? '').slice(0, 80))}`;
+  if (header[1].length === 0) return 'analyze_repo_structure response missing rootPath';
+  for (const name of CANDIDATE_FIELDS) {
+    if (lines.some((line) => line.startsWith(`${name}/`) || line.startsWith(`${name}:`) || line.includes(`"${name}"`))) {
+      return `analyze_repo_structure survey carries ${name}; the breadth map names no node`;
     }
   }
-  const size = parsed.size;
-  for (const propertyName of ['productFiles', 'productLines', 'units']) {
-    if (!Number.isInteger(size?.[propertyName]) || size[propertyName] < 0) {
-      return `analyze_repo_structure response missing size.${propertyName}`;
+  const units = sectionRows(lines, 'Units: ');
+  const areas = sectionRows(lines, 'Areas, largest first: ');
+  if (!units && !areas) return 'analyze_repo_structure response lists neither units nor areas';
+  if (units) {
+    if (units.length !== Number(header[2])) return 'analyze_repo_structure response units do not match size.units';
+    for (const row of units) {
+      const failure = unitRowFailure(row.split(' | '));
+      if (failure) return failure;
+    }
+  } else {
+    if (areas.length === 0) return 'analyze_repo_structure response lists no area';
+    for (const row of areas) {
+      const failure = areaRowFailure(row.split(' | '));
+      if (failure) return failure;
     }
   }
-  if (!Array.isArray(parsed.units) || (!parsed.unitsOmitted && parsed.units.length !== size.units)) {
-    return 'analyze_repo_structure response units do not match size.units';
+  for (const [index, row] of (sectionRows(lines, 'Entry points: ') ?? []).entries()) {
+    if (/^\+\d+ more$/.test(row)) continue;
+    const [, kind, path] = /^(\S+) (\S.*)$/.exec(row) ?? [];
+    if (!ENTRY_POINT_KINDS.has(kind) || !path) return `analyze_repo_structure response malformed entry point at index ${index}`;
   }
-  for (const [index, unit] of parsed.units.entries()) {
-    if (typeof unit?.path !== 'string' || unit.path.length === 0) {
-      return `analyze_repo_structure response missing unit path at index ${index}`;
-    }
-    if (!Number.isInteger(unit.files) || unit.files < 1 || !Number.isInteger(unit.lines) || unit.lines < 0) {
-      return `analyze_repo_structure response missing unit size: ${unit.path}`;
-    }
-    if (!Array.isArray(unit.mainFiles) || unit.mainFiles.some((file) => typeof file?.path !== 'string' || !Number.isInteger(file.lines))) {
-      return `analyze_repo_structure response malformed main files: ${unit.path}`;
-    }
-    if (!Array.isArray(unit.exports) || !Array.isArray(unit.imports) || !Number.isInteger(unit.importedBy)) {
-      return `analyze_repo_structure response malformed exports or imports: ${unit.path}`;
-    }
+  for (const row of sectionRows(lines, 'Docs: ') ?? []) {
+    if (!/^\+\d+ more$/.test(row) && !/^\S.* - .+$/.test(row)) return 'analyze_repo_structure response malformed docs';
   }
-  if (!Array.isArray(parsed.entryPoints)) return 'analyze_repo_structure response missing entryPoints array';
-  for (const [index, row] of parsed.entryPoints.entries()) {
-    if (typeof row?.path !== 'string' || typeof row.symbol !== 'string' || !ENTRY_POINT_KINDS.has(row.kind)) {
-      return `analyze_repo_structure response malformed entry point at index ${index}`;
-    }
-  }
-  if (!parsed.docs || typeof parsed.docs !== 'object' || !Array.isArray(parsed.docs.pages)) {
-    return 'analyze_repo_structure response missing docs';
-  }
-  if (typeof parsed.next !== 'string' || parsed.next.length === 0) {
-    return 'analyze_repo_structure response missing next';
-  }
+  if (!/^Next: \S/.test(lines.at(-1))) return 'analyze_repo_structure response missing next';
   return null;
 }
 

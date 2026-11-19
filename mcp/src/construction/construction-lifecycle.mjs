@@ -7,14 +7,7 @@ import {
 
 export const CONSTRUCTION_LIFECYCLE_CONTRACT = 'ontologyConstructionLifecycle:v1';
 export const CONSTRUCTION_ADMISSION_CONTRACT = 'ontologyConstructionAdmission:v1';
-export const CONSTRUCTION_ADMISSION_TIERS = Object.freeze([
-  'self_qualified',
-  'partial_visible_gap',
-  'human_review_required',
-  'hard_block',
-]);
-
-export const CONSTRUCTION_LIFECYCLE_PHASES = Object.freeze([
+const CONSTRUCTION_LIFECYCLE_PHASES = Object.freeze([
   'purpose_authority',
   'approved_cqs',
   'evidence_reuse',

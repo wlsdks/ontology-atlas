@@ -7,6 +7,7 @@
  * escaped (`repo-text.mjs`); code sits inside a fence no line of it can close.
  */
 
+import { outlineLine } from '../evidence-search/source-evidence.mjs';
 import { SURVEY_RESPONSE_CHARS } from './breadth-map.mjs';
 import { repoText as t } from './repo-text.mjs';
 
@@ -33,12 +34,7 @@ function readCall(selectors) {
 
 function outlineLines(row) {
   const lines = [`== outline ${t(row.path)} (${t(row.language, 40)}, ${row.fileLines} lines, ${row.declarationCount} declarations, sha256 ${row.sha256})`];
-  for (const declaration of row.declarations) {
-    const signature = String(declaration.signature ?? '').trim();
-    lines.push(signature.includes(declaration.name)
-      ? `L${declaration.line} ${t(signature, 240)}`
-      : `L${declaration.line} ${declaration.kind} ${t(declaration.name, 120)}${signature ? ` ${t(signature, 240)}` : ''}`);
-  }
+  for (const declaration of row.declarations) lines.push(outlineLine(declaration));
   if (row.truncated) lines.push('Cut: the outline stopped at its size limit; read the rest by symbol or by lines.');
   return lines;
 }
@@ -82,9 +78,7 @@ function rowLines(row) {
   if (row.status === 'outlined') return outlineLines(row);
   if (row.status === 'read') return readLines(row);
   const what = `${t(row.path)}${row.symbol ? ` ${t(row.symbol, 200)}` : ''}${row.mode === 'outline' ? ' outline' : ''}`;
-  return row.status === 'omitted'
-    ? [`== not returned ${what}: ${t(row.reason)}; ask for it again in another call: ${readCall([selectorOf(row)])}`]
-    : [`== refused ${what}: ${t(row.reason)}`];
+  return [`== ${row.status === 'omitted' ? 'not returned' : 'refused'} ${what}: ${t(row.reason)}`];
 }
 
 /**
@@ -100,6 +94,10 @@ export function renderSourceReads({ rootPath, sourceEvidence }) {
       'Cite a rule by the cite of the lines that hold its condition (path:L12-L30).',
   ];
   for (const row of sourceEvidence.rows) lines.push('', ...rowLines(row));
+  const unreturned = sourceEvidence.rows.filter((row) => row.status === 'omitted');
+  if (unreturned.length > 0) {
+    lines.push('', `Not returned: ${unreturned.length} of the ${sourceEvidence.rows.length} asked, to keep this answer within its size. Read them next: ${readCall(unreturned.map(selectorOf))}`);
+  }
   return lines.join('\n');
 }
 
