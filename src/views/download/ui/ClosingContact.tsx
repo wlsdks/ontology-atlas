@@ -83,45 +83,44 @@ export function ClosingContact({ className }: { className?: string }) {
   }, [reducedMotion, write, hold]);
 
   return (
-    <div ref={row} data-testid="gateway-closing-contact" className={cn('flex min-w-0 flex-wrap items-center gap-x-6 gap-y-4', className)}>
-      <div className="flex min-w-0 flex-1 basis-80 items-center gap-6">
-        <span aria-hidden className="relative block size-32 shrink-0 overflow-hidden">
-          <span
-            ref={sprite}
-            data-moru-motion="write"
-            className="absolute top-0 left-0 block h-32"
-            style={{
-              width: CELL * FRAMES,
-              backgroundImage: `url(${withBasePath(ROW_SRC)})`,
-              backgroundSize: `${CELL * FRAMES}px ${CELL}px`,
-              backgroundRepeat: 'no-repeat',
-              imageRendering: 'pixelated',
-            }}
-          />
-        </span>
-        <p className="min-w-0 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-          {t('lead')}{' '}
-          <a
-            href={MAKER_LINKEDIN_URL}
-            target="_blank"
-            rel="noreferrer noopener me"
-            data-testid="gateway-closing-contact-link"
-            onPointerEnter={write}
-            onFocus={write}
-            className={controlClass({
-              shape: 'link',
-              tone: 'accent',
-              hoverInk: 'strong',
-              className: 'touch-hit-expand gap-1.5 whitespace-nowrap text-body-lg leading-body-lg',
-            })}
-          >
-            <span aria-hidden data-external-link-marker>
-              ↗
-            </span>
-            {t('link')}
-          </a>
-        </p>
-      </div>
+    <div ref={row} data-testid="gateway-closing-contact" className={cn('flex min-w-0 items-center gap-5', className)}>
+      {/* The cell's clear margin pulls left, so Moru's body, not its cell, lines up with the headline. */}
+      <span aria-hidden className="relative -ml-4 block size-32 shrink-0 overflow-hidden">
+        <span
+          ref={sprite}
+          data-moru-motion="write"
+          className="absolute top-0 left-0 block h-32"
+          style={{
+            width: CELL * FRAMES,
+            backgroundImage: `url(${withBasePath(ROW_SRC)})`,
+            backgroundSize: `${CELL * FRAMES}px ${CELL}px`,
+            backgroundRepeat: 'no-repeat',
+            imageRendering: 'pixelated',
+          }}
+        />
+      </span>
+      <p className="flex min-w-0 flex-col items-start gap-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+        <span>{t('lead')}</span>
+        <a
+          href={MAKER_LINKEDIN_URL}
+          target="_blank"
+          rel="noreferrer noopener me"
+          data-testid="gateway-closing-contact-link"
+          onPointerEnter={write}
+          onFocus={write}
+          className={controlClass({
+            shape: 'link',
+            tone: 'accent',
+            hoverInk: 'strong',
+            className: 'touch-hit-expand gap-1.5 whitespace-nowrap text-body-lg leading-body-lg',
+          })}
+        >
+          <span aria-hidden data-external-link-marker>
+            ↗
+          </span>
+          {t('link')}
+        </a>
+      </p>
     </div>
   );
 }

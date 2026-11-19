@@ -1,4 +1,4 @@
-/** The ontology vault: validation, audit, migration, meaning corpus, the gateway specimen, and section shape. */
+/** The ontology vault: validation, audit, migration, meaning corpus, and section shape. */
 
 export const rules = [
   {
@@ -50,25 +50,6 @@ export const rules = [
     command: 'pnpm vault:validate',
     reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
     matches: [/^docs\/ontology\//, /^mcp\//, /^cli\//, /^scripts\/dogfood\/dogfood/],
-  },
-  {
-    order: 1320,
-    /*
-     * **The gateway shows one vault file verbatim.** `/download`'s evidence section renders the
-     * frontmatter of a pinned node and claims it is a file you can open in this repository. That
-     * claim is only true while the committed generated copy matches the vault, so editing either
-     * side has to re-run the generator.
-     *
-     * The specimen file itself is the obvious trigger, but so is **any** vault edit: the caption
-     * states how many `kind:` nodes exist, which every added or deleted node changes.
-     */
-    command: 'pnpm gateway:specimen:check',
-    reason: 'the vault feeds the gateway evidence specimen (file shown verbatim + node count)',
-    matches: [
-      /^docs\/ontology\//,
-      /^scripts\/download\/generate-evidence-specimen\.mjs$/,
-      /^src\/views\/download\/model\/evidence-specimen\.generated\.ts$/,
-    ],
   },
   {
     order: 1340,

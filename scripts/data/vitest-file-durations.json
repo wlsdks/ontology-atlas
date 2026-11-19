@@ -839,7 +839,7 @@
     "jsdom:src/views/download/ui/GatewayFx.test.tsx": 2.62,
     "jsdom:src/views/download/ui/HarnessFilm.test.tsx": 2.544,
     "jsdom:src/views/download/ui/HeroTypewriter.test.tsx": 1.188,
-    "jsdom:src/views/download/ui/LoopSection.test.tsx": 3.892,
+    "jsdom:src/views/download/ui/StartSection.test.tsx": 3.892,
     "jsdom:src/views/download/ui/MoruPlayEntry.test.tsx": 3.515,
     "jsdom:src/views/download/ui/MoruPlayground.test.tsx": 2.019,
     "jsdom:src/views/download/ui/OpenSourceSection.test.tsx": 2.505,

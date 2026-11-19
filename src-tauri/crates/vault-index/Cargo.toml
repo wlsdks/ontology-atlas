@@ -11,6 +11,18 @@ publish = false
 # the operating system's SQLite build.
 rusqlite = { version = "=0.43.0", default-features = false, features = ["bundled", "cache"] }
 sha2 = "=0.10.9"
+# Row values are DEFLATE-compressed: the JSON a build derives is as large as the vault's text. The
+# app already links this exact version (png, through tray-icon and the updater), so it adds no crate.
+miniz_oxide = "=0.8.9"
+
+[target.'cfg(unix)'.dependencies]
+# `statfs`, which names the file system a vault sits on; the app already links this version.
+libc = "=0.2.186"
+
+[target.'cfg(windows)'.dependencies]
+# NTFS change time (`FILE_BASIC_INFO.ChangeTime`), which moves when a tool puts back a file's
+# modified time; the app already links this version.
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
 
 [lints]
 workspace = true

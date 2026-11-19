@@ -271,6 +271,8 @@ pub fn run() {
             vault::index::vault_index_search,
             vault::index::vault_index_clear,
             vault::index::vault_index_forget,
+            vault::index_rows::vault_index_rows_get,
+            vault::index_rows::vault_index_rows_put,
             vault::read::read_vault_text_file,
             vault::read::read_vault_text_files,
             vault::read::read_vault_text_tail,

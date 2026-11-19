@@ -15,6 +15,8 @@ export interface FilmNode {
   y: number;
   /** The first-ring concept it sits under; the root's own index for the root. */
   cluster: number;
+  /** Its container in the drawn tree; the root's own index for the root. */
+  parent: number;
   /** Place among the floating files, a jittered cell of the stage, both in [0, 1]. */
   gx: number;
   gy: number;
@@ -110,6 +112,7 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
   const px = new Array<number>(graph.nodes.length).fill(0);
   const py = new Array<number>(graph.nodes.length).fill(0);
   const cluster = new Array<number>(graph.nodes.length).fill(rootIndex);
+  const treeParent = new Array<number>(graph.nodes.length).fill(rootIndex);
   const kidsOf = (i: number) =>
     (children.get(i) ?? [])
       .filter((child) => depth[child] === depth[i] + 1)
@@ -123,6 +126,7 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
       const a = start + share / 2;
       const reach = radius * (1 + (hash(graph.nodes[child].id) - 0.5) * 0.36);
       cluster[child] = cluster[i];
+      treeParent[child] = i;
       px[child] = px[i] + Math.cos(a) * reach;
       py[child] = py[i] + Math.sin(a) * reach;
       fan(child, a, Math.min(share, 1.9), radius * 0.48);
@@ -166,6 +170,7 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
       x: px[i] / reach,
       y: py[i] / reach,
       cluster: cluster[i],
+      parent: treeParent[i],
       gx: (col + 0.5 + (hash(`${node.id}#x`) - 0.5) * 0.7) / FIELD_COLUMNS,
       gy: (row + 0.5 + (hash(`${node.id}#y`) - 0.5) * 0.7) / rows,
       layer: Math.min(2, Math.floor(hash(`${node.id}#z`) * 3)) as 0 | 1 | 2,

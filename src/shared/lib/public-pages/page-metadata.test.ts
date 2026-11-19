@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { routing } from '@/i18n/routing';
-import { buildPageMetadata, type PageMetadataLocales } from './page-metadata';
+import { buildPageMetadata, fitMetaDescription, META_DESCRIPTION_MAX, type PageMetadataLocales } from './page-metadata';
 
 // Next replaces the whole top-level openGraph/twitter key when merging metadata, so every card
 // fact must be explicit in what the builder returns.
@@ -129,5 +129,30 @@ describe('buildPageMetadata — a four-locale registry', () => {
         .openGraph as { locale: string }).locale;
     expect(og('ja')).toBe('ja_JP');
     expect(og('zh')).toBe('zh_CN');
+  });
+});
+
+describe('fitMetaDescription', () => {
+  it('keeps a description that fits and cuts a long one at a word, inside the limit', () => {
+    expect(fitMetaDescription('A short, complete description of the page.')).toBe('A short, complete description of the page.');
+    const long = 'word '.repeat(60);
+    const fitted = fitMetaDescription(long);
+    expect(fitted.length).toBeLessThanOrEqual(META_DESCRIPTION_MAX);
+    expect(fitted).toMatch(/word…$/);
+  });
+
+  it('cuts text without spaces by whole characters, never inside one', () => {
+    const fitted = fitMetaDescription('😀'.repeat(200));
+    expect(Array.from(fitted)).toHaveLength(META_DESCRIPTION_MAX);
+    expect(fitted.endsWith('😀…')).toBe(true);
+  });
+
+  it.each(['en', 'ko', 'ja', 'zh'])('finds every %s page description and the site default within 25-160 characters', async (locale) => {
+    const { default: metadata } = await import(`../../../../messages/${locale}/metadata.json`);
+    const all = [metadata.siteTagline, ...Object.values(metadata.descriptions), ...Object.values(metadata.guideDescriptions)] as string[];
+    for (const text of all) {
+      expect(text.length, text).toBeGreaterThanOrEqual(25);
+      expect(text.length, text).toBeLessThanOrEqual(META_DESCRIPTION_MAX);
+    }
   });
 });

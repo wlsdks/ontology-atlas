@@ -8,6 +8,7 @@
 mod confine;
 mod lifecycle;
 mod location;
+pub mod rows;
 mod search;
 mod segment;
 mod stamps;
@@ -32,7 +33,7 @@ pub use location::{
     INDEX_DIR_OVERRIDE_ENV,
 };
 pub use search::{Found, Hit};
-pub use stamps::Stamp;
+pub use stamps::{Stamp, Volume};
 
 #[derive(Debug)]
 pub enum Error {
@@ -270,7 +271,9 @@ struct Plan<'a> {
     removed: Vec<i64>,
 }
 
-/// Stats every listed file in parallel and compares it with its row. O(n) stats and lookups.
+/// Stats every listed file in parallel and compares it with its row. O(n) stats and lookups. A
+/// file whose stamp its volume does not vouch for (`Volume`) is still read and compared by hash
+/// when the stamp matches, so the index never keeps an older version's words.
 fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result<Plan<'a>> {
     let mut rows = load_rows(conn)?;
     let stamps = stat_all(root, files);
@@ -292,7 +295,11 @@ fn stamp_pass<'a>(conn: &Connection, root: &Path, files: &'a [String]) -> Result
         };
         plan.listed += 1;
         match row {
-            Some(row) if row.stamp == stamp && !is_racy(stamp.mtime_ns, row.read_at_ns) => {
+            Some(row)
+                if stamp.is_vouched()
+                    && row.stamp == stamp
+                    && !is_racy(stamp.mtime_ns, row.read_at_ns) =>
+            {
                 plan.unchanged += 1
             }
             Some(row) if row.stamp == stamp => plan.work.push(Work {
@@ -349,6 +356,7 @@ fn worker_count() -> usize {
 
 /// `None` for a file that is gone or that `confine` does not admit.
 fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
+    let volume = &Volume::of(root);
     let chunk = files.len().div_ceil(worker_count()).max(1);
     std::thread::scope(|scope| {
         let handles: Vec<_> = files
@@ -358,7 +366,7 @@ fn stat_all(root: &Path, files: &[String]) -> Vec<Option<Stamp>> {
                     let mut folders = confine::Folders::new(root);
                     paths
                         .iter()
-                        .map(|path| folders.stamp(path))
+                        .map(|path| folders.stamp(path, volume))
                         .collect::<Vec<_>>()
                 });
                 (paths.len(), handle)
@@ -431,11 +439,12 @@ fn index_work(
     work: &[Work],
     progress: &Progress,
 ) -> Result<Counts> {
+    let volume = &Volume::of(root);
     if work.len() <= INLINE_WORK_FILES {
         let (sender, receiver) = sync_channel::<Prepared>(work.len());
         for (slot, item) in work.iter().enumerate() {
             sender
-                .send(prepare(root, item, slot))
+                .send(prepare(root, volume, item, slot))
                 .map_err(|_| Error::Cancelled)?;
         }
         drop(sender);
@@ -453,7 +462,7 @@ fn index_work(
                 if progress.cancelled() {
                     break;
                 }
-                if sender.send(prepare(root, item, slot)).is_err() {
+                if sender.send(prepare(root, volume, item, slot)).is_err() {
                     break;
                 }
             });
@@ -467,12 +476,12 @@ fn index_work(
     })
 }
 
-fn prepare(root: &Path, work: &Work, slot: usize) -> Prepared {
+fn prepare(root: &Path, volume: &Volume, work: &Work, slot: usize) -> Prepared {
     let read_at_ns = now_ns();
     let Some((mut file, metadata)) = confine::open(root, work.path) else {
         return Prepared::Gone { slot };
     };
-    let stamp = Stamp::of(&metadata);
+    let stamp = volume.stamp_open(&file, &metadata);
     let mut text = Vec::with_capacity(
         usize::try_from(metadata.len())
             .unwrap_or(0)
@@ -700,6 +709,11 @@ pub fn set_aside_damaged(root: &Path) -> Result<()> {
 /// running build finishes its commit first. A folder that holds files the index never writes is
 /// left in place and reported as an error, never as deleted.
 pub fn delete(root: Option<&Path>) -> Result<()> {
+    // Counted even where no folder exists yet, so a first row batch still in flight writes nothing.
+    match root {
+        Some(root) => lifecycle::count_deletion(Some(&dir_for(root)?)),
+        None => lifecycle::count_deletion(None),
+    }
     let folders = match root {
         Some(root) => vec![dir_for(root)?],
         None => {
@@ -716,10 +730,9 @@ pub fn delete(root: Option<&Path>) -> Result<()> {
         if !folder.exists() {
             continue;
         }
-        if !lifecycle::is_index_folder(folder) {
-            if lifecycle::holds_index(folder) {
-                kept.push(folder.display().to_string());
-            }
+        // A writer between statements can hold a file SQLite makes and removes again (a
+        // `-journal`), so a folder holding index data is judged again once its lock is held.
+        if !lifecycle::is_index_folder(folder) && !lifecycle::holds_index(folder) {
             continue;
         }
         let lock = match lock_writer(folder) {
@@ -727,6 +740,10 @@ pub fn delete(root: Option<&Path>) -> Result<()> {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
             Err(error) => return Err(error.into()),
         };
+        if !lifecycle::is_index_folder(folder) {
+            kept.push(folder.display().to_string());
+            continue;
+        }
         lifecycle::delete_locked(folder, lock)?;
     }
     if root.is_none() {
@@ -796,7 +813,7 @@ mod tests {
         let vault = std::fs::canonicalize(&vault).unwrap();
         std::fs::write(vault.join("a.md"), "지도").unwrap();
         std::fs::write(vault.join("b.md"), "map").unwrap();
-        let stamp_of = |name: &str| Stamp::of(&std::fs::metadata(vault.join(name)).unwrap());
+        let stamp_of = |name: &str| Stamp::of_regular_file(&vault.join(name)).unwrap();
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(include_str!("../sql/search.sql"))
             .unwrap();

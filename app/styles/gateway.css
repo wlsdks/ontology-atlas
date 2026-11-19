@@ -760,169 +760,10 @@
 }
 
 /* The hero window's light at card size: it falls from the top of each drawing. */
-.gateway-loop-drawing {
+.gateway-step-drawing {
   background:
     radial-gradient(70% 55% at 50% 0%, var(--gateway-hero-light-wing) 0%, transparent 100%),
     var(--color-canvas);
-}
-
-/*
- * The loop cards take turns in reading order: the agent reads, a commit marks three concepts, a
- * person presses "Allow once". In its 3.6s turn a card lights its outline, its drawing comes from
- * 60% to full and one 900ms action ends on one hit (`gateway-scene-ring`); the others wait at 60%.
- * It runs only while `useInViewMotion` reports the row in view; with no script, and under reduced
- * motion, every drawing stands still and complete. Only opacity, transform and filter move.
- */
-.gateway-scene-pointer,
-.gateway-scene-focus,
-.gateway-scene-ring {
-  opacity: 0;
-}
-
-.gateway-scene-focus {
-  box-shadow: inset 0 0 0 1px var(--gateway-window-edge);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  [data-gateway-scene-motion] {
-    --gateway-scene-cycle: 10.8s;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-read {
-    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-mark {
-    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-allow {
-    animation: gatewaySceneTurn var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-focus {
-    animation: gatewaySceneFocus var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-dot {
-    animation: gatewaySceneDot var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-pointer {
-    animation: gatewayScenePointer var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-pointer[data-gateway-hit='sweep'] {
-    animation-name: gatewaySceneSweep;
-    animation-timing-function: ease-in-out;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-press {
-    animation: gatewayScenePress var(--gateway-scene-cycle) var(--motion-ease) infinite both;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0));
-  }
-
-  /* The hit lands at the action's end: 900ms into the turn, 720ms where the reading line meets the concept. */
-  [data-gateway-scene-motion] .gateway-scene-ring {
-    --gateway-scene-hit: 900ms;
-    /* Forwards only: before its first beat a ring keeps its resting style, which is unseen. */
-    animation: gatewaySceneRing var(--gateway-scene-cycle) ease-out infinite forwards;
-    animation-delay: calc(var(--gateway-scene-cycle) / 3 * var(--gateway-scene-card, 0) + var(--gateway-scene-hit));
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-read .gateway-scene-ring {
-    --gateway-scene-hit: 720ms;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-ring[data-gateway-hit='press'] {
-    animation-name: gatewayScenePressRing;
-  }
-
-  [data-gateway-scene-motion] .gateway-scene-read,
-  [data-gateway-scene-motion] .gateway-scene-mark,
-  [data-gateway-scene-motion] .gateway-scene-allow,
-  [data-gateway-scene-motion] .gateway-scene-focus,
-  [data-gateway-scene-motion] .gateway-scene-dot,
-  [data-gateway-scene-motion] .gateway-scene-pointer,
-  [data-gateway-scene-motion] .gateway-scene-press,
-  [data-gateway-scene-motion] .gateway-scene-ring {
-    animation-play-state: paused;
-  }
-
-  [data-gateway-scene-motion='running'] .gateway-scene-read,
-  [data-gateway-scene-motion='running'] .gateway-scene-mark,
-  [data-gateway-scene-motion='running'] .gateway-scene-allow,
-  [data-gateway-scene-motion='running'] .gateway-scene-focus,
-  [data-gateway-scene-motion='running'] .gateway-scene-dot,
-  [data-gateway-scene-motion='running'] .gateway-scene-pointer,
-  [data-gateway-scene-motion='running'] .gateway-scene-press,
-  [data-gateway-scene-motion='running'] .gateway-scene-ring {
-    animation-play-state: running;
-  }
-}
-
-/* 10.8s, a third per card. In: 400ms (3.7%). Out: from 3.2s (29.63%) to the turn's end (33.33%). */
-@keyframes gatewaySceneTurn {
-  0% { opacity: 0.6; }
-  3.7%, 29.63% { opacity: 1; }
-  33.33%, 100% { opacity: 0.6; }
-}
-
-@keyframes gatewaySceneFocus {
-  0% { opacity: 0; }
-  3.7%, 29.63% { opacity: 1; }
-  33.33%, 100% { opacity: 0; }
-}
-
-/* The reading line: down the answer from 300ms to 1.2s, then gone until the next turn. */
-@keyframes gatewaySceneSweep {
-  0%, 2.78% { opacity: 0; transform: translateY(0); }
-  3.7% { opacity: 0.5; }
-  10.19% { opacity: 0.5; }
-  11.11%, 100% { opacity: 0; transform: translateY(100%); }
-}
-
-/* The marks land at 900ms with the beat, and leave quietly half a second before the next turn. */
-@keyframes gatewaySceneDot {
-  0%, 7.41% { opacity: 0; transform: scale(0); }
-  8.33% { opacity: 1; transform: scale(1.3); }
-  9.72%, 92.59% { opacity: 1; transform: scale(1); }
-  96.3%, 100% { opacity: 0; transform: scale(1); }
-}
-
-/* 320ms (2.96%): from the mark's own size out 28px, 0.5 to nothing. */
-@keyframes gatewaySceneRing {
-  0% { opacity: 0.5; transform: scale(0.15); }
-  2.96%, 100% { opacity: 0; transform: scale(1); }
-}
-
-@keyframes gatewayScenePressRing {
-  0% { opacity: 0.5; transform: scale(0.86); }
-  2.96%, 100% { opacity: 0; transform: scale(1); }
-}
-
-/* The hand comes in from 300ms, presses at 900ms, rests on the button and leaves with the turn. */
-@keyframes gatewayScenePointer {
-  0%, 2.78% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
-  3.7% { opacity: 1; }
-  7.41% { transform: translate(0, 0) scale(1); }
-  8.33% { transform: translate(0, 0) scale(0.8); }
-  9.72%, 29.63% { opacity: 1; transform: translate(0, 0) scale(1); }
-  33.33% { opacity: 0; transform: translate(0, 0) scale(1); }
-  34.26%, 100% { opacity: 0; transform: translate(3.5rem, 2.25rem); }
-}
-
-@keyframes gatewayScenePress {
-  0%, 8.33% { transform: none; filter: none; }
-  8.8% { transform: scale(0.93); filter: brightness(1.35); }
-  10.65%, 29.63% { transform: none; filter: brightness(1.15); }
-  33.33%, 100% { transform: none; filter: none; }
 }
 
 @keyframes gatewayRuleDraw {
@@ -995,7 +836,9 @@
 
 .build-map {
   container-type: size;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .build-stage {
@@ -1008,6 +851,35 @@
 @container (min-width: 40rem) {
   .build-map {
     aspect-ratio: 16 / 10;
+  }
+}
+
+/* A tall stage (a phone's) places each piece at its tall layout's point. */
+@container (max-aspect-ratio: 6 / 5) {
+  .build-map .build-at,
+  .build-map .build-hint-at {
+    translate: calc(var(--tx, var(--x)) * 1cqw) calc(var(--ty, var(--y)) * 1cqh);
+  }
+}
+
+/* Pieces on the stage grow with it, so a wide stage is not a phone's map left small in its middle. */
+
+@container (min-width: 52rem) {
+  .build-zoom {
+    zoom: 1.12;
+  }
+}
+
+@container (min-width: 64rem) {
+  .build-zoom {
+    zoom: 1.24;
+  }
+}
+
+/* Beside the panel the map is at least as tall as the panel's tallest step, so the frame keeps one height. */
+@container build (min-width: 60rem) {
+  .build-map {
+    min-height: 38.5rem;
   }
 }
 
@@ -1046,14 +918,16 @@
 
 /* A concept's dot, not its whole label, sits on its point: 12px of padding plus half the dot. */
 .build-node-anchor {
-  --build-dot: 20px;
+  --build-dot: 18px;
   translate: -50% calc(-12px - var(--build-dot) / 2);
 }
 
-@container (min-width: 40rem) {
-  .build-node-anchor {
-    --build-dot: 26px;
-  }
+.build-node-anchor[data-kind='domain'] {
+  --build-dot: 24px;
+}
+
+.build-node-anchor[data-kind='project'] {
+  --build-dot: 30px;
 }
 
 .build-node-mark,
@@ -1062,21 +936,145 @@
   height: var(--build-dot);
 }
 
-/* The folder. */
-.build-at:has(> .build-folder) {
+.build-node-mark {
+  transition: scale var(--motion-settle) var(--motion-ease-place);
+}
+
+@media (hover: hover) {
+  .build-node:not(:disabled):hover .build-node-mark {
+    scale: 1.15;
+  }
+}
+
+/* The concept a relation is drawn from can be dragged, so a touch drag does not scroll the page. */
+.build-node[data-grab] {
+  touch-action: none;
+  cursor: grab;
+}
+
+/* The mission card, gone once the first map is asked for. */
+.build-mission-at {
   opacity: 0;
   scale: 0.9;
 }
 
-.build-at[data-shown]:has(> .build-folder) {
+.build-mission-at[data-shown] {
   opacity: 1;
   scale: 1;
+}
+
+/* A cluster's light pool, lit as the agent writes it. */
+.build-pool-at {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.build-pool-at[data-shown] {
+  opacity: 1;
+}
+
+.build-pool {
+  left: -18cqmin;
+  top: -18cqmin;
+  width: 36cqmin;
+  height: 36cqmin;
+  background: radial-gradient(circle, var(--color-indigo-a14) 0%, transparent 68%);
+}
+
+/* The agent reading the repository: a band of light that crosses the stage once. */
+.build-scan {
+  width: 30%;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--color-indigo-a14), transparent);
+  translate: -100% 0;
+}
+
+/* Atlas's count of what to fix, pinned to the stage's top edge while it is read. */
+.build-found {
+  z-index: 1;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-amber-source-a30);
+  background: var(--color-panel);
+  opacity: 0;
+  transition: opacity var(--motion-slow) var(--motion-ease);
+}
+
+.build-found[data-shown] {
+  opacity: 1;
+}
+
+.build-found-dot {
+  background: var(--color-status-warning);
+}
+
+/* The agent's tool calls, the newest brightest. */
+.build-log-row {
+  color: var(--color-text-tertiary);
+}
+
+.build-log-row[data-latest] {
+  color: var(--color-text-primary);
+}
+
+.build-log-tool {
+  color: var(--map-indigo-bright);
+}
+
+.build-log-row[data-atlas] .build-log-tool {
+  color: var(--color-status-warning);
 }
 
 .build-folder-icon {
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-strong);
   background: radial-gradient(circle at 50% 30%, var(--color-indigo-a14), transparent 70%), var(--color-overlay-1);
+}
+
+/* The mission card around the closed folder, and its Start button lit like a game's. */
+.build-mission-chip {
+  color: var(--map-indigo-bright);
+  border: 1px solid var(--color-indigo-a14);
+  background: var(--color-overlay-1);
+}
+
+.build-start {
+  border-color: var(--map-indigo-bright);
+}
+
+/* The glow yields to the button's focus ring, which is also a box-shadow. */
+.build-start:not(:focus-visible) {
+  box-shadow: 0 0 0 4px var(--color-indigo-a14);
+}
+
+/* The tutorial hand: its fingertip sits on the point; hidden unless motion is allowed. */
+.build-hint-at {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  display: none;
+  pointer-events: none;
+  translate: calc(var(--x) * 1cqw) calc(var(--y) * 1cqh);
+}
+
+/* Lucide's pointer has its fingertip at (8, 2) of 24; at 40px that is (13.3, 3.3). */
+.build-hint-hand {
+  left: -13.3px;
+  top: -3.3px;
+  color: var(--color-canvas);
+  fill: var(--color-text-primary);
+  filter: drop-shadow(0 2px 6px var(--color-canvas));
+}
+
+.build-hint-ripple {
+  left: -16px;
+  top: -16px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--color-text-primary);
+  opacity: 0;
 }
 
 /* Files: in the folder, loose once read, stacked by their concept, then absorbed by its name. */
@@ -1104,8 +1102,17 @@
   border-color: var(--gateway-window-edge);
 }
 
+/* Drawn pieces that answer nothing: the pointer, the carried file and the labels never take a press
+   meant for the concept under them. */
+.build-agent-at,
+.build-carry-at,
+.build-edge-label-at {
+  pointer-events: none;
+}
+
 /* Concepts. */
 .build-node-at {
+  --delay: calc(var(--motion-stagger) * 3 * var(--order, 0));
   opacity: 0;
   scale: 0.4;
   pointer-events: none;
@@ -1169,6 +1176,35 @@
   border-color: var(--map-recent-change);
 }
 
+/* The project is the map's amber hub; a domain holds a cluster and is drawn a step larger. */
+.build-node[data-kind='project'] .build-node-dot {
+  border-color: var(--map-amber-hub);
+  background: radial-gradient(circle, var(--map-amber-hub) 0 38%, var(--map-node-fill-project) 44%);
+}
+
+.build-node[data-kind='project'] .build-node-glow {
+  background: radial-gradient(circle, var(--map-amber-hub) 0%, transparent 70%);
+}
+
+.build-node[data-kind='domain'] .build-node-dot {
+  border-width: 3px;
+  background: radial-gradient(circle, var(--map-indigo-bright) 0 30%, var(--map-node-fill-domain) 36%);
+}
+
+.build-node[data-kind='capability'] .build-node-name {
+  color: var(--color-text-secondary);
+}
+
+/* A concept Atlas counted as standing alone: a dashed amber edge until a line reaches it. */
+.build-node[data-lone] .build-node-dot {
+  border-style: dashed;
+  border-color: var(--color-status-warning);
+}
+
+.build-node[data-lone] .build-node-glow {
+  background: radial-gradient(circle, var(--color-status-warning) 0%, transparent 70%);
+}
+
 /* Without the pulse (reduced motion), the concept to tap keeps one still halo. */
 .build-node[data-target] .build-node-ring,
 .build-node[data-changed] .build-node-ring {
@@ -1178,6 +1214,20 @@
 
 .build-node[data-checked] .build-node-ring {
   opacity: 0;
+}
+
+/* The lines from a cluster's domain to its concepts, quieter than the relations. */
+.build-tree {
+  stroke: var(--map-indigo-bright);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.32;
+  transition: stroke-dashoffset var(--motion-expressive) var(--motion-ease) calc(var(--motion-base) * 1);
+}
+
+.build-tree[data-drawn] {
+  stroke-dashoffset: 0;
 }
 
 /* Relations draw from their first concept to their second. */
@@ -1195,6 +1245,45 @@
 
 .build-edge[data-drawn] {
   stroke-dashoffset: 0;
+}
+
+/* A relation dragged into place is already drawn; it does not draw a second time. */
+.build-edge[data-by-hand] {
+  transition: stroke var(--motion-settle) var(--motion-ease);
+}
+
+/* The wire a person drags from one concept, caught by the concept it is drawn to. */
+.build-wire {
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+
+.build-wire[data-live] {
+  opacity: 1;
+}
+
+.build-wire line {
+  stroke: var(--map-indigo-bright);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 6;
+  opacity: 0.75;
+}
+
+.build-wire circle {
+  fill: var(--map-indigo-bright);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: scale var(--motion-settle) var(--motion-ease-place);
+}
+
+.build-wire[data-snapped] line {
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
+.build-wire[data-snapped] circle {
+  scale: 1.6;
 }
 
 /* WebKit paints a round cap on a dash of zero length; an undrawn line has none. */
@@ -1219,6 +1308,93 @@
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border-soft);
   background: var(--color-canvas);
+}
+
+/* The agent at work: a named pointer, the way a shared document shows who is writing. */
+.build-agent-at {
+  opacity: 0;
+}
+
+.build-agent-at[data-shown] {
+  opacity: 1;
+}
+
+.build-agent {
+  translate: 10px 6px;
+}
+
+.build-agent-pointer {
+  color: var(--color-text-primary);
+  filter: drop-shadow(0 1px 2px var(--color-canvas));
+}
+
+.build-agent-tag {
+  color: var(--color-canvas);
+  background: var(--color-text-primary);
+  font-weight: var(--font-weight-strong);
+}
+
+/* A name that reads like code is the one Atlas counts to fix. */
+.build-node .build-node-name[data-code-name] {
+  color: var(--color-status-warning);
+}
+
+.build-node-name {
+  --type-step: var(--motion-stagger);
+}
+
+/* What a move earns, rising from the concept it happened to. */
+.build-pickup {
+  display: none;
+  pointer-events: none;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  translate: -50% 0;
+  opacity: 0;
+}
+
+.build-pickup[data-tone='changed'] {
+  color: var(--map-recent-change);
+  border-color: var(--map-recent-change);
+}
+
+/* The commit's reach: once its file lands, a light runs along each relation of the changed
+   concept and the concepts at the other ends ring once. */
+.build-pulse {
+  stroke: var(--map-recent-change);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0.18 2;
+  stroke-dashoffset: 0.18;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px var(--map-recent-change));
+}
+
+.build-node[data-touched] .build-node-ring {
+  border-color: var(--map-recent-change);
+}
+
+/* Sparks thrown from a concept's dot: named, linked, and all together when the map is done. */
+.build-burst {
+  display: none;
+  pointer-events: none;
+}
+
+.build-spark {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--map-indigo-bright);
+  opacity: 0;
+}
+
+.build-spark:nth-child(even) {
+  background: var(--color-text-primary);
+}
+
+.build-node[data-changed] .build-spark:nth-child(odd) {
+  background: var(--map-recent-change);
 }
 
 /* The commit and the file it carries into the concept that holds it. */
@@ -1302,6 +1478,71 @@
   background-color: var(--color-text-primary);
 }
 
+/* The run's clock and the wide panel's mission list. */
+.build-clock {
+  color: var(--color-text-tertiary);
+}
+
+.build-clock[data-stopped] {
+  color: var(--color-text-primary);
+}
+
+.build-quest {
+  color: var(--color-text-tertiary);
+  border: 1px solid transparent;
+  transition:
+    color var(--motion-slow) var(--motion-ease),
+    background-color var(--motion-slow) var(--motion-ease),
+    border-color var(--motion-slow) var(--motion-ease);
+}
+
+.build-quest[data-quest='now'] {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-soft);
+  background-color: var(--color-overlay-1);
+}
+
+.build-quest[data-quest='done'] {
+  color: var(--color-text-secondary);
+}
+
+.build-quest-mark {
+  color: var(--color-canvas);
+  border: 1.5px solid var(--color-border-strong);
+  transition:
+    background-color var(--motion-slow) var(--motion-ease),
+    border-color var(--motion-slow) var(--motion-ease);
+}
+
+.build-quest[data-quest='now'] .build-quest-mark {
+  border-color: var(--color-text-primary);
+}
+
+.build-quest[data-quest='done'] .build-quest-mark {
+  border-color: var(--map-indigo-bright);
+  background-color: var(--map-indigo-bright);
+}
+
+/* The finish: three stars, earned ones lit. */
+.build-clear {
+  border: 1px solid var(--color-border-strong);
+  background:
+    radial-gradient(80% 120% at 50% 0%, var(--color-indigo-a14), transparent 70%),
+    var(--color-overlay-1);
+}
+
+.build-star {
+  color: var(--color-text-tertiary);
+}
+
+.build-star[data-earned] {
+  color: var(--color-text-primary);
+}
+
+.build-star[data-earned] .build-star-mark > svg {
+  filter: drop-shadow(0 0 6px var(--map-indigo-bright));
+}
+
 .build-bubble {
   border: 1px solid var(--color-border-strong);
   background: var(--color-overlay-1);
@@ -1355,6 +1596,70 @@
     animation: buildEmote var(--motion-choreography) var(--motion-ease) both;
   }
 
+  .build-letter {
+    animation: buildLetter var(--motion-base) var(--motion-ease) both;
+    animation-delay: calc(var(--type-step, calc(var(--motion-stagger) / 3)) * var(--i));
+  }
+
+  .build-hint-at {
+    display: block;
+    animation: buildHintTap calc(var(--motion-base) * 9) var(--motion-ease) calc(var(--motion-choreography) * 1.5) infinite both;
+    animation-play-state: paused;
+  }
+
+  .build-hint-ripple {
+    animation: buildHintRipple calc(var(--motion-base) * 9) var(--motion-ease) calc(var(--motion-choreography) * 1.5) infinite both;
+    animation-play-state: paused;
+  }
+
+  [data-build-motion='running'] .build-hint-at,
+  [data-build-motion='running'] .build-hint-ripple {
+    animation-play-state: running;
+  }
+
+  .build-scan[data-shown] {
+    animation: buildScan calc(var(--motion-base) * 7) var(--motion-ease) both;
+  }
+
+  .build-log-row[data-latest] {
+    animation: buildLineIn var(--motion-slow) var(--motion-ease) both;
+  }
+
+  .build-pickup {
+    display: block;
+    animation: buildPickup var(--motion-choreography) var(--motion-ease) var(--burst-delay) both;
+  }
+
+  .build-quest[data-quest='done'] .build-quest-mark {
+    animation: buildPop var(--motion-slow) var(--motion-ease-place) both;
+  }
+
+  .build-star[data-earned] .build-star-mark > svg {
+    animation: buildStarIn var(--motion-slow) var(--motion-ease-place) both;
+    animation-delay: calc(var(--motion-slow) + var(--motion-stagger) * 6 * var(--order));
+  }
+
+  .build-node[data-changed] .build-node-dot {
+    animation: buildPop var(--motion-slow) var(--motion-ease-place) calc(var(--motion-choreography) * 0.8) both;
+  }
+
+  .build-burst {
+    display: block;
+  }
+
+  .build-spark {
+    animation: buildSpark var(--motion-expressive) var(--motion-ease) both;
+    animation-delay: var(--burst-delay);
+  }
+
+  .build-pulse {
+    animation: buildPulse var(--motion-choreography) var(--motion-ease) var(--motion-expressive) both;
+  }
+
+  .build-node[data-touched] .build-node-ring {
+    animation: buildTouch var(--motion-expressive) var(--motion-ease) calc(var(--motion-choreography) * 1.4) both;
+  }
+
   .build-node[data-target] .build-node-ring,
   .build-node[data-changed] .build-node-ring {
     animation: buildRing calc(var(--motion-base) * 9) var(--motion-ease) infinite;
@@ -1385,6 +1690,72 @@
   15% { opacity: 1; scale: 1; }
   75% { opacity: 1; scale: 0.9; }
   100% { opacity: 0; scale: 0.5; }
+}
+
+@keyframes buildScan {
+  0% { opacity: 0; translate: -100% 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; translate: 100cqw 0; }
+}
+
+@keyframes buildHintTap {
+  0% { opacity: 0; scale: 1; }
+  15% { opacity: 1; scale: 1; }
+  35% { scale: 0.82; }
+  50% { scale: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; scale: 1; }
+}
+
+@keyframes buildHintRipple {
+  0%, 33% { opacity: 0; scale: 0.6; }
+  38% { opacity: 0.8; }
+  70% { opacity: 0; scale: 1.8; }
+  100% { opacity: 0; scale: 1.8; }
+}
+
+@keyframes buildPickup {
+  0% { opacity: 0; translate: -50% 0; scale: 0.8; }
+  12% { opacity: 1; translate: -50% -14px; scale: 1; }
+  70% { opacity: 1; translate: -50% -24px; }
+  100% { opacity: 0; translate: -50% -32px; }
+}
+
+@keyframes buildPop {
+  0% { scale: 1; }
+  40% { scale: 1.45; }
+  100% { scale: 1; }
+}
+
+@keyframes buildStarIn {
+  0% { opacity: 0; scale: 0.2; rotate: -40deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+
+@keyframes buildLetter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes buildSpark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(-10px); }
+  10% { opacity: 1; }
+  70% { opacity: 1; transform: rotate(var(--a)) translateY(-36px) scale(0.9); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-44px) scale(0.5); }
+}
+
+@keyframes buildPulse {
+  0% { opacity: 0; stroke-dashoffset: 0.18; }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; stroke-dashoffset: -1; }
+}
+
+@keyframes buildTouch {
+  0% { opacity: 0; scale: 1; }
+  12% { opacity: 0.9; }
+  100% { opacity: 0; scale: 2.6; }
 }
 
 @keyframes buildRing {

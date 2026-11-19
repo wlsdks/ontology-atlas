@@ -432,10 +432,10 @@ if (
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace"
+  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
 ) {
   pass(
-    "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, and Rust path guard",
+    "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, Rust path guard, and a manifest from cached rows equal to one from files",
   );
 } else {
   fail(

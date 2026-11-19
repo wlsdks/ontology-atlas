@@ -27,12 +27,29 @@ describe('what reads as a round draft', () => {
     expect(roundDraftProblem('# Plan\n')).toEqual({ reason: 'no-frontmatter' });
   });
 
-  it('refuses a key written twice, in any case or indentation, and the keys only a person may add', () => {
+  it('refuses a key written twice, in any case or indentation, and a kind: line', () => {
     expect(roundDraftProblem(withLine('status: reviewed'))).toEqual({ reason: 'duplicate-key', key: 'status' });
     expect(roundDraftProblem(withLine('  status: draft'))).toEqual({ reason: 'duplicate-key', key: 'status' });
     expect(roundDraftProblem(withLine('Status: reviewed'))).toEqual({ reason: 'duplicate-key', key: 'status' });
     expect(roundDraftProblem(withLine('describes: [capabilities/checkout]'))).toEqual({ reason: 'forbidden-key', key: 'describes' });
     expect(roundDraftProblem(withLine('kind: capability'))).toEqual({ reason: 'forbidden-key', key: 'kind' });
+  });
+
+  it('carries the links to concepts it found unchanged, and refuses one it adds, changes or drops', () => {
+    const links = 'describes:\n  - capabilities/checkout\nrelation_notes:\n  capabilities/checkout: "Facts 1-2 describe checkout."';
+    const linked = withLine(links);
+    const revised = linked.replace('## Summary\n', '## Summary\n\nRevised.\n');
+    expect(roundDraftProblem(revised, linked)).toBeNull();
+    expect(roundDraftProblem(revised.replace('  - capabilities/checkout', '- capabilities/checkout'), linked)).toBeNull();
+    expect(roundDraftProblem(revised, null)).toEqual({ reason: 'forbidden-key', key: 'describes' });
+    expect(roundDraftProblem(revised, DRAFT)).toEqual({ reason: 'forbidden-key', key: 'describes' });
+    expect(roundDraftProblem(revised.replace('  - capabilities/checkout', '  - capabilities/checkout\n  - capabilities/login'), linked))
+      .toEqual({ reason: 'forbidden-key', key: 'describes' });
+    expect(roundDraftProblem(revised.replace('describe checkout.', 'say more.'), linked))
+      .toEqual({ reason: 'forbidden-key', key: 'relation_notes' });
+    expect(roundDraftProblem(DRAFT, linked)).toEqual({ reason: 'forbidden-key', key: 'describes' });
+    expect(roundDraftProblem(withLine('Describes: [capabilities/checkout]'), withLine('Describes: [capabilities/checkout]')))
+      .toEqual({ reason: 'forbidden-key', key: 'describes' });
   });
 });
 
@@ -191,6 +208,24 @@ describe('after the turn, every page the pass wrote is read back', () => {
       }),
     };
   }
+
+  it('keeps a revision that carries the page\'s links unchanged and undoes one that adds a link', async () => {
+    const linked = withLine('describes:\n  - capabilities/checkout');
+    const kept = linked.replace('## Summary\n', '## Summary\n\nRevised.\n');
+    const added = kept.replace('  - capabilities/checkout', '  - capabilities/checkout\n  - capabilities/login');
+    const pages = createPassPages({ complete: true, pages: [{ path: 'wiki/kept.md', text: linked }, { path: 'wiki/added.md', text: linked }] });
+    pages.commit('wiki/kept.md', kept);
+    pages.land('wiki/kept.md', kept);
+    pages.commit('wiki/added.md', added);
+    pages.land('wiki/added.md', added);
+    const io = disk({ 'wiki/kept.md': kept, 'wiki/added.md': added });
+    expect(await settlePassPages({ pages, ...io })).toEqual({
+      undone: [{ path: 'wiki/added.md', reason: 'forbidden-key', key: 'describes', action: 'restored', copy: '.ontology-atlas/undone/p1/wiki/added.md' }],
+      leftAsIs: [],
+    });
+    expect(io.files['wiki/kept.md']).toBe(kept);
+    expect(io.files['wiki/added.md']).toBe(linked);
+  });
 
   it('puts back its own page, removes its own new page, and keeps a copy of what it took out', async () => {
     const reviewed = DRAFT.replace('status: draft', 'status: reviewed');

@@ -9,9 +9,10 @@ import type { LibraryUiModel } from "@/features/library";
 
 /**
  * `checking`: hashing is lazy, so a listed but unmeasured source is neither written up nor waiting.
- * Not `waiting`: nothing is wrong and there is nothing to press.
+ * Not `waiting`: nothing is wrong and there is nothing to press. `unreadable`: a cited file could not be
+ * opened to check, so the step cannot be called done, and pressing Compile would not change that.
  */
-export type LibraryStepState = "done" | "next" | "waiting" | "checking";
+export type LibraryStepState = "done" | "next" | "waiting" | "checking" | "unreadable";
 
 export interface LibraryStepStates {
   gather: LibraryStepState;
@@ -27,6 +28,8 @@ export interface LibraryStepStates {
   leadIndex: number;
   /** Sources listed but not yet measured — the count the `checking` word stands for. */
   checkingCount: number;
+  /** Cited sources that could not be opened to hash; never done, never counted. */
+  unreadableCount: number;
 }
 
 /**
@@ -83,6 +86,7 @@ export function libraryStepStates(
    * `checking`.
    */
   const checkingCount = model.sources.filter((row) => row.state === "checking").length;
+  const unreadableCount = model.sources.filter((row) => row.state === "unreadable").length;
   const gather: LibraryStepState = sourceCount > 0 ? "done" : "next";
   const compile: LibraryStepState =
     model.needsCompileCount > 0 && sourceCount > 0
@@ -91,9 +95,11 @@ export function libraryStepStates(
         ? "waiting"
         : checkingCount > 0
           ? "checking"
-          : model.wikiPages.length > 0
-            ? "done"
-            : "next";
+          : unreadableCount > 0
+            ? "unreadable"
+            : model.wikiPages.length > 0
+              ? "done"
+              : "next";
   /*
    * Reading is done only when every source is covered; with pages on the shelf and sources still
    * waiting, reading is what to do next.
@@ -105,13 +111,16 @@ export function libraryStepStates(
         ? "next"
         : checkingCount > 0
           ? "checking"
-          : "done";
+          : unreadableCount > 0
+            ? "unreadable"
+            : "done";
   return {
     gather,
     compile,
     read,
     leadIndex: [gather, compile, read].indexOf("next"),
     checkingCount,
+    unreadableCount,
   };
 }
 
@@ -124,11 +133,18 @@ export function libraryStepStates(
 export function libraryCoverageCaption(
   model: Pick<LibraryUiModel, "sources" | "partialCount" | "staleCount">,
   checkingCount: number,
-): { key: "coveredChecking" | "coveredPartial" | "coveredStale" | "coveredLine"; values: Record<string, number> } {
+): {
+  key: "coveredChecking" | "coveredUnreadable" | "coveredPartial" | "coveredStale" | "coveredLine";
+  values: Record<string, number>;
+} {
   const total = model.sources.length;
   const compiled = model.sources.filter((row) => row.state === "compiled").length;
   if (checkingCount > 0) {
     return { key: "coveredChecking", values: { compiled, total, checking: checkingCount } };
+  }
+  const unreadable = model.sources.filter((row) => row.state === "unreadable").length;
+  if (unreadable > 0) {
+    return { key: "coveredUnreadable", values: { compiled, total, unreadable } };
   }
   if (model.partialCount > 0) {
     return { key: "coveredPartial", values: { compiled, total, partial: model.partialCount } };
