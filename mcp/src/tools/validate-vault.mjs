@@ -36,6 +36,8 @@ import { sessionReads } from '../construction/session-reads.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
+import { isWikiAdvisoryCode } from '../library/wiki-report.mjs';
+import { okResponseBytes } from '../server/rpc.mjs';
 import {
   WIKI_DIR,
   isWikiFurnitureSlug,
@@ -52,26 +54,53 @@ import { relative } from 'node:path';
 
 /**
  * Judges wiki pages against their own contract, which `validate_vault` cannot: a
- * wiki page carries no `kind:` by contract. The output is the shape
- * `ontology-atlas wiki-validate --json` prints.
+ * wiki page carries no `kind:` by contract. Page and problem objects are the ones
+ * `ontology-atlas wiki-validate --json` prints; the whole-folder answer is paged
+ * like `validate_vault`'s problems, because a folder of tens of thousands of pages
+ * would otherwise be one reply no agent can read.
+ *
+ * Cost per call: O(pages + bytes + links + citations) with Maps and Sets, plus one
+ * entry per pair of pages sharing a primary source, which is the size of that
+ * finding itself; then O(failing · log failing) to order the failing pages.
  */
-function validateWikiTool({ paths } = {}) {
+function validateWikiTool({ paths, offset, limit } = {}) {
   if (paths !== undefined && !Array.isArray(paths)) {
     throw new Error('validate_wiki: `paths` must be an array of vault-relative page paths.');
   }
+  requireOptionalNonNegativeInteger(offset, 'offset');
+  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  if (paths !== undefined && (offset !== undefined || limit !== undefined)) {
+    throw new Error('validate_wiki: `offset` and `limit` page the whole folder; with `paths` every named page is returned, so pass one or the other.');
+  }
+  const judged = judgeWikiPages(paths);
+  if (paths !== undefined) {
+    return {
+      pageCount: judged.length,
+      failingCount: judged.filter((page) => !page.ok).length,
+      pages: judged,
+    };
+  }
+  return pageWikiValidation(judged, {
+    offset: offset ?? 0,
+    limit: limit ?? VALIDATION_PAGE_LIMIT,
+    textBudget: limit === undefined ? VALIDATION_PAGE_TEXT_BYTES : null,
+    callerArguments: limit === undefined ? {} : { limit },
+  });
+}
+
+function judgeWikiPages(paths) {
   const wikiPrefix = `${WIKI_DIR}/`;
   // Every raw source in the folder, so a citation naming a file nobody has is reported
   // rather than trusted. Listing only — no source is opened here or anywhere below.
-  const knownSources = listVaultSourcePaths();
+  // One Set for the whole folder: handed an array, every page would copy it.
+  const knownSources = new Set(listVaultSourcePaths());
   const docs = loadVaultDocs(VAULT_ROOT);
   const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+  const folderDocs = docs.filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug));
 
   const requested =
     paths === undefined
-      ? docs
-          .map((doc) => `${doc.slug}.md`)
-          .filter((path) => path.startsWith(wikiPrefix) && !isWikiFurnitureSlug(path))
-          .sort()
+      ? folderDocs.map((doc) => `${doc.slug}.md`).sort()
       : paths.map((path) => String(path));
 
   const pages = [];
@@ -100,16 +129,14 @@ function validateWikiTool({ paths } = {}) {
       });
       continue;
     }
-    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources });
+    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, parsed: doc });
     pages.push({ path, ok, problems });
   }
 
   // The folder half is judged over every page in the folder, whatever `paths` narrowed
   // the report to: whether somebody links to a page is a fact about the other pages,
   // and a page asked about alone would otherwise always read as an orphan.
-  const folderPages = docs
-    .filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug))
-    .map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '' }));
+  const folderPages = folderDocs.map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '', parsed: doc }));
   const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
   for (const page of pages) {
     const extra = folderByPath.get(page.path) ?? [];
@@ -118,12 +145,91 @@ function validateWikiTool({ paths } = {}) {
       page.ok = false;
     }
   }
+  return pages;
+}
 
-  return {
-    pageCount: pages.length,
-    failingCount: pages.filter((page) => !page.ok).length,
-    pages,
+/**
+ * One page of failing wiki pages, `validate_vault`'s paging: pages with a blocking
+ * problem first, then pages whose only problems are advisory, each by path, so
+ * following `nextOffset` visits every failing page once. OK pages are counted, never
+ * listed. A page left at the default `limit` stops before the whole reply would pass
+ * 128 KiB, measured as the bytes `ok()` sends, and always keeps its first page.
+ */
+function pageWikiValidation(judged, { offset, limit, textBudget = null, callerArguments = {} }) {
+  const failing = [];
+  let blockingPages = 0;
+  for (const page of judged) {
+    if (page.ok) continue;
+    const blocking = page.problems.some((entry) => !isWikiAdvisoryCode(entry.code));
+    if (blocking) blockingPages += 1;
+    failing.push({ page, blocking });
+  }
+  // `judged` is already in path order, and the sort is stable.
+  failing.sort((left, right) => Number(right.blocking) - Number(left.blocking));
+  const byCodeMap = new Map();
+  for (const { page } of failing) {
+    const seen = new Set();
+    for (const entry of page.problems) {
+      if (seen.has(entry.code)) continue;
+      seen.add(entry.code);
+      let row = byCodeMap.get(entry.code);
+      if (!row) {
+        row = { severity: isWikiAdvisoryCode(entry.code) ? 'warning' : 'error', count: 0, files: [] };
+        byCodeMap.set(entry.code, row);
+      }
+      row.count += 1;
+      if (row.files.length < BY_CODE_FILE_SAMPLE) row.files.push(page.path);
+    }
+  }
+  const byCode = Object.fromEntries([...byCodeMap.keys()].sort().map((code) => {
+    const row = byCodeMap.get(code);
+    return [code, {
+      severity: row.severity,
+      count: row.count,
+      files: row.files,
+      ...(row.count > row.files.length ? { filesOmitted: row.count - row.files.length } : {}),
+    }];
+  }));
+
+  const total = failing.length;
+  const start = Math.min(offset, total);
+  const slice = failing.slice(start, start + limit).map(({ page }) => page);
+  const build = (count) => {
+    const end = start + count;
+    const nextOffset = end < total ? end : null;
+    const nextArguments = { offset: nextOffset, ...callerArguments };
+    const stoppedForSize = count < slice.length;
+    return {
+      pageCount: judged.length,
+      failingCount: total,
+      pagination: { offset: start, limit, total, returned: count, hasMore: nextOffset !== null, nextOffset },
+      ...(nextOffset !== null ? { nextCall: { tool: 'validate_wiki', arguments: nextArguments } } : {}),
+      ...(start > 0 || nextOffset !== null
+        ? {
+            pagesHint:
+              (count > 0
+                ? `Failing pages ${start + 1}-${end} of ${total}, pages with a blocking problem first and then by path`
+                : `No failing pages from offset ${start}; the folder has ${total}`)
+              + (stoppedForSize ? `; the page stopped before ${limit} pages to stay within 128 KiB` : '')
+              + (nextOffset !== null ? `. The next page: validate_wiki(${JSON.stringify(nextArguments)}).` : '.'),
+          }
+        : {}),
+      summary: { blockingPages, advisoryOnlyPages: total - blockingPages, byCode },
+      pages: slice.slice(0, count),
+    };
   };
+  if (textBudget === null || slice.length === 0) return build(slice.length);
+  // The reply grows with every page it keeps, so the largest count that fits is
+  // found by bisection: O(log limit) serializations of at most one page of text.
+  if (okResponseBytes(build(slice.length)) <= textBudget) return build(slice.length);
+  let fits = 1;
+  let over = slice.length;
+  while (over - fits > 1) {
+    const middle = Math.floor((fits + over) / 2);
+    if (okResponseBytes(build(middle)) <= textBudget) fits = middle;
+    else over = middle;
+  }
+  return build(fits);
 }
 
 const VALIDATION_PAGE_LIMIT = 100;

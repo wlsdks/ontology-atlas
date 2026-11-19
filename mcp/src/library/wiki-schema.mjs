@@ -122,6 +122,9 @@ function wikiCitationRegex() {
   return new RegExp(WIKI_CITATION_PATTERN, 'g');
 }
 
+/** A whole candidate that is a well-formed citation. Anchored, so no `lastIndex` to share. */
+const WHOLE_CITATION = new RegExp(`^${WIKI_CITATION_PATTERN}$`);
+
 /** Anything shaped like a citation, so a malformed one is reported instead of ignored. */
 function citationCandidateRegex() {
   return /\[\[src:([^\]]*)\]\]/g;
@@ -194,9 +197,8 @@ function problem(code, message, line, detail) {
 }
 
 /** Level-2 headings in document order, with their line numbers. */
-function readSections(body, offset) {
+function readSections(lines, offset) {
   const out = [];
-  const lines = body.split('\n');
   let inFence = false;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -209,12 +211,11 @@ function readSections(body, offset) {
 }
 
 /** Bullet lines belonging to one section. */
-function sectionBullets(body, offset, sections, title) {
+function sectionBullets(lines, offset, sections, title) {
   const at = sections.findIndex((section) => section.title === title);
   if (at < 0) return [];
   const startLine = sections[at].line - offset;
   const endLine = at + 1 < sections.length ? sections[at + 1].line - offset - 1 : Infinity;
-  const lines = body.split('\n');
   const out = [];
   let inFence = false;
   for (let index = startLine; index < lines.length && index <= endLine; index += 1) {
@@ -234,18 +235,22 @@ function sectionBullets(body, offset, sections, title) {
 
 /**
  * Judges one wiki page. Pure and linear (one frontmatter parse, one pass per
- * section), with no filesystem reads.
+ * section, Set lookups per citation), with no filesystem reads.
  *
  * @param {string} raw the file's whole text
- * @param {{ knownSources?: Iterable<string> }} [options] vault-relative paths on
+ * @param {{ knownSources?: Iterable<string>, parsed?: { frontmatter: object, body: string } }} [options]
+ *   `parsed` is `parseFrontmatter(raw)` when the caller already holds it (the server's
+ *   document cache does); `knownSources` are vault-relative paths on
  *   disk. Given, a citation of a missing path is reported; omitted, citations are
- *   checked only against the page's `sources:`, never guessed.
+ *   checked only against the page's `sources:`, never guessed. Pass a Set when
+ *   judging many pages: any other iterable is copied into one per page.
  * @returns {{ ok: boolean, problems: Array<{ code: string, message: string, line?: number }> }}
  */
 export function validateWikiPage(raw, options = {}) {
   const text = String(raw ?? '');
   const problems = [];
-  const { frontmatter, body } = parseFrontmatter(text);
+  const { frontmatter, body } = options.parsed ?? parseFrontmatter(text);
+  const bodyLines = body.split('\n');
   // Body start line, so reported lines are lines in the real file.
   const frontmatterLines = text.startsWith('---')
     ? text.slice(0, text.length - body.length).split('\n').length - 1
@@ -294,7 +299,7 @@ export function validateWikiPage(raw, options = {}) {
     );
   }
 
-  const sections = readSections(body, frontmatterLines);
+  const sections = readSections(bodyLines, frontmatterLines);
   const found = sections.map((section) => section.title);
   const expected = [...WIKI_SECTION_ORDER];
   const foundExpected = found.filter((title) => expected.includes(title));
@@ -326,6 +331,7 @@ export function validateWikiPage(raw, options = {}) {
     : typeof frontmatter.sources === 'string' && frontmatter.sources.trim()
       ? [frontmatter.sources.trim()]
       : [];
+  const declared = new Set(declaredSources);
   const known = options.knownSources
     ? options.knownSources instanceof Set
       ? options.knownSources
@@ -353,7 +359,7 @@ export function validateWikiPage(raw, options = {}) {
       );
     } else {
       for (const path of listed) {
-        if (declaredSources.includes(path)) continue;
+        if (declared.has(path)) continue;
         problems.push(
           problem(
             'bad-truncation-record',
@@ -368,7 +374,7 @@ export function validateWikiPage(raw, options = {}) {
     }
   }
 
-  for (const bullet of sectionBullets(body, frontmatterLines, sections, 'Facts')) {
+  for (const bullet of sectionBullets(bodyLines, frontmatterLines, sections, 'Facts')) {
     if (extractWikiCitations(bullet.text).length === 0) {
       problems.push(
         problem(
@@ -385,7 +391,6 @@ export function validateWikiPage(raw, options = {}) {
 
   // A malformed citation is reported, or `[[src:plan.pdf]]` reads as prose and an
   // ungrounded claim passes the fact check.
-  const bodyLines = body.split('\n');
   let inFence = false;
   for (let index = 0; index < bodyLines.length; index += 1) {
     // Fenced text is quoted: a page may show a wrong citation to explain the syntax.
@@ -393,12 +398,12 @@ export function validateWikiPage(raw, options = {}) {
       inFence = !inFence;
       continue;
     }
-    if (inFence) continue;
+    if (inFence || !bodyLines[index].includes('[[src:')) continue;
     const candidates = citationCandidateRegex();
     let candidate;
     while ((candidate = candidates.exec(bodyLines[index])) !== null) {
       const whole = candidate[0];
-      if (new RegExp(`^${WIKI_CITATION_PATTERN}$`).test(whole)) continue;
+      if (WHOLE_CITATION.test(whole)) continue;
       problems.push(
         problem(
           'bad-citation',
@@ -415,7 +420,7 @@ export function validateWikiPage(raw, options = {}) {
   const seenMissing = new Set();
   for (const citation of extractWikiCitations(body)) {
     if (seenMissing.has(citation.path)) continue;
-    const undeclared = !declaredSources.includes(citation.path);
+    const undeclared = !declared.has(citation.path);
     const absent = known !== null && !known.has(citation.path);
     if (!undeclared && !absent) continue;
     seenMissing.add(citation.path);
@@ -477,7 +482,7 @@ function extractWikiPageLinks(body, offset) {
       inFence = !inFence;
       continue;
     }
-    if (inFence) continue;
+    if (inFence || !line.includes('[[')) continue;
     const regex = wikiPageLinkRegex();
     let match;
     while ((match = regex.exec(line)) !== null) {
@@ -505,8 +510,9 @@ function readDeclaredSources(frontmatter) {
  * Why these three: they are the folder faults (missing cross-references, unlinked
  * pages from one source) a script can decide while every single page validates.
  *
- * @param {Array<{ path: string, raw: string }>} pages every page, template excluded,
- *   each with a vault-relative `path` (`wiki/<slug>.md`)
+ * @param {Array<{ path: string, raw: string, parsed?: { frontmatter: object, body: string } }>} pages
+ *   every page, template excluded, each with a vault-relative `path` (`wiki/<slug>.md`);
+ *   `parsed`, when given, is `parseFrontmatter(raw)`
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  *   one entry per input page, in input order, `problems` possibly empty
  */
@@ -515,16 +521,17 @@ export function validateWikiFolder(pages) {
     const path = String(page.path ?? '');
     const slug = path.replace(/\.md$/, '');
     const text = String(page.raw ?? '');
-    const { frontmatter, body } = parseFrontmatter(text);
+    const { frontmatter, body } = page.parsed ?? parseFrontmatter(text);
     const frontmatterLines = text.startsWith('---')
       ? text.slice(0, text.length - body.length).split('\n').length - 1
       : 0;
+    const declared = readDeclaredSources(frontmatter);
     return {
       path,
       slug,
       links: extractWikiPageLinks(body, frontmatterLines),
-      sources: new Set(readDeclaredSources(frontmatter)),
-      primary: readDeclaredSources(frontmatter)[0] ?? null,
+      sources: new Set(declared),
+      primary: declared[0] ?? null,
       problems: [],
     };
   });

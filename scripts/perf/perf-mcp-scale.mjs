@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Measures MCP read calls on a generated vault of thousands to tens of thousands of files.
-// Usage: pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b [--server=<path>] [--dir=<path>] [--check]
+// Usage: pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b [--server=<path>] [--dir=<path>] [--check] [--tool=<name>]
 //   flow a: every page is a node. flow b: a few thousand nodes over many plain documents.
 //   --server: an entry script (run with node) or a compiled binary; default the source server.
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
@@ -11,6 +11,8 @@
 //     never gated: on macOS it keeps counting freed pages the allocator holds for reuse, and
 //     elsewhere the footprint is not read, so memory is not gated there. The source server is
 //     measured after it and printed, not gated.
+//   --tool: measure one tool with no arguments instead of the read table: two calls, each with
+//     its response size in bytes and its wall time, for a call whose cost is the reply itself.
 // CPU is the server process's user+system time across one call, read from the OS, so it
 // includes everything the call cost and nothing the harness did.
 
@@ -41,15 +43,17 @@ const maxFootprintMb = Number(flag('max-footprint-mb', '512'));
 const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '1024'));
 const TOTAL_CALLS = 20;
 const SHAPES = { a: 'all', b: 'key' };
+const tool = flag('tool', null);
 
 if (!Number.isInteger(files) || files < 100) usage('--files must be an integer of at least 100');
+if (tool !== null && check) usage('--tool measures one call and gates nothing; drop --check');
 if (check && isScript(server)) usage('--check gates the compiled binary the app ships; pass --server=<binary> or omit --server');
 if (flows.length === 0) flows.push(...(check ? ['a', 'b'] : ['a']));
 for (const flow of flows) if (!SHAPES[flow]) usage(`unknown --flow=${flow}`);
 
 function usage(message) {
   console.error(`[perf-mcp-scale] ${message}`);
-  console.error('usage: pnpm perf:mcp:scale -- --files=<n> --flow=a|b [--flow=b] [--server=<path>] [--dir=<path>] [--check]');
+  console.error('usage: pnpm perf:mcp:scale -- --files=<n> --flow=a|b [--flow=b] [--server=<path>] [--dir=<path>] [--check] [--tool=<name>]');
   process.exit(2);
 }
 
@@ -116,18 +120,27 @@ function startServer(serverPath, vault) {
     stdio: ['pipe', 'pipe', 'ignore'],
   });
   const waiters = new Map();
-  let buffer = '';
+  // Chunks are kept apart until a newline arrives: appending each to one string and
+  // searching it from the start is quadratic in a reply's size, which turned a
+  // 200 MB reply into minutes of this harness's own CPU.
+  let pending = [];
   let nextId = 1;
+  // Decoded by the stream, so a character split across two chunks stays whole.
+  child.stdout.setEncoding('utf8');
   child.stdout.on('data', (chunk) => {
-    buffer += chunk;
-    for (let newline = buffer.indexOf('\n'); newline >= 0; newline = buffer.indexOf('\n')) {
-      const line = buffer.slice(0, newline);
-      buffer = buffer.slice(newline + 1);
+    let rest = chunk;
+    for (let newline = rest.indexOf('\n'); newline >= 0; newline = rest.indexOf('\n')) {
+      pending.push(rest.slice(0, newline));
+      rest = rest.slice(newline + 1);
+      const line = pending.join('');
+      pending = [];
       if (!line.trim()) continue;
       const message = JSON.parse(line);
+      Object.defineProperty(message, 'bytes', { value: Buffer.byteLength(line, 'utf8') });
       waiters.get(message.id)?.(message);
       waiters.delete(message.id);
     }
+    if (rest) pending.push(rest);
   });
   const rpc = (method, params) => new Promise((resolveCall) => {
     const id = nextId;
@@ -145,7 +158,7 @@ const READS = [
   ['compile_ontology', { summary: true }],
 ];
 
-async function measureFlow(serverPath, flow) {
+async function openFlow(serverPath, flow) {
   const vault = ensureVault(flow);
   // A file written less than 2 s ago is re-read on every call by design (the racy
   // window); a vault generated just now would measure that, not the steady state.
@@ -154,6 +167,32 @@ async function measureFlow(serverPath, flow) {
   const { child, rpc } = startServer(serverPath, vault);
   await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'perf-mcp-scale', version: '0' } });
   child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
+  return { vault, child, rpc };
+}
+
+/** Two calls of one tool: the reply's size and the wall time the caller waited, then CPU. */
+async function measureTool(serverPath, flow, name) {
+  const { child, rpc } = await openFlow(serverPath, flow);
+  const calls = [];
+  try {
+    for (let index = 0; index < 2; index += 1) {
+      const before = cpuMs(child.pid);
+      const started = performance.now();
+      const response = await rpc('tools/call', { name, arguments: {} });
+      const wallMs = Math.round(performance.now() - started);
+      if (response.error || response.result?.isError) {
+        throw new Error(`${name} failed: ${JSON.stringify(response.error ?? response.result).slice(0, 300)}`);
+      }
+      calls.push({ bytes: response.bytes, wallMs, cpuMs: cpuMs(child.pid) - before });
+    }
+  } finally {
+    child.kill();
+  }
+  return { flow, calls };
+}
+
+async function measureFlow(serverPath, flow) {
+  const { vault, child, rpc } = await openFlow(serverPath, flow);
   let calls = 0;
   const call = async (name, argumentsValue) => {
     const before = cpuMs(child.pid);
@@ -202,6 +241,17 @@ function printTable(serverPath, results, note = '') {
   }
   console.log(`${'rss (not gated)'.padEnd(18)}${results.map((result) => `${result.rss} MB`.padStart(24)).join('')}`);
   if (process.platform !== 'darwin') console.log('# memory is not gated on this OS: only macOS reports the physical footprint here');
+}
+
+if (tool !== null) {
+  console.log(`# perf-mcp-scale — ${tool}, ${files} files, server ${server.replace(`${ROOT}/`, '')}`);
+  for (const flow of flows) {
+    const { calls } = await measureTool(server, flow, tool);
+    calls.forEach((row, index) => {
+      console.log(`flow ${flow} call ${index + 1}: ${row.bytes} bytes (${(row.bytes / 1024).toFixed(1)} KiB), ${row.wallMs} ms wall, ${row.cpuMs} ms CPU`);
+    });
+  }
+  process.exit(0);
 }
 
 const results = [];

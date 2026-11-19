@@ -276,6 +276,27 @@ export const VALIDATE_VAULT_TOOL = {
   },
 };
 
+const WIKI_PROBLEM_SCHEMA = {
+  type: 'object',
+  properties: {
+    code: { type: 'string' },
+    message: { type: 'string' },
+    line: { type: 'integer', minimum: 1 },
+    detail: {
+      type: 'object',
+      description: 'The pieces of `message`, so a screen can retell it in the reader\'s language: `key` names the sentence, `values` fills it.',
+      properties: {
+        key: { type: 'string' },
+        values: { type: 'object', additionalProperties: { type: 'string' } },
+      },
+      required: ['key'],
+      additionalProperties: false,
+    },
+  },
+  required: ['code', 'message'],
+  additionalProperties: false,
+};
+
 export const VALIDATE_WIKI_TOOL = {
   name: 'validate_wiki',
   description:
@@ -285,11 +306,19 @@ export const VALIDATE_WIKI_TOOL = {
     'A wiki page is **not** an ontology node — it carries no `kind:` by contract, which is what keeps it out ' +
     'of the graph — so `validate_vault` says nothing about whether one fits its own shape. This is that answer. ' +
     'Problem codes: kind-present, missing-field:<key>, section-order, uncited-fact, bad-citation, ' +
-    'bad-truncation-record, citation-target-missing, describes-needs-approval. ' +
+    'bad-truncation-record, citation-target-missing, describes-needs-approval; folder codes dangling-wikilink, ' +
+    'and the advisory orphan-page and shared-source-unlinked. ' +
     'The optional `sources_truncated:` key lists which paths in `sources:` the run read only part of; ' +
     'it is what lets a reader tell a document written up whole from one written up in part. ' +
-    'Returns `{ pageCount, failingCount, pages: [{path, problems: [{code, message, line?}]}] }` — the same shape ' +
-    '`ontology-atlas wiki-validate --json` prints, so a person and an agent read one report. ' +
+    'Without `paths`, returns `{ pageCount, failingCount, pagination, nextCall?, summary: { blockingPages, advisoryOnlyPages, byCode }, pages: [{path, ok, problems: [{code, message, line?, detail?}]}] }`: ' +
+    '`pageCount` and `failingCount` count the whole folder and `pages` holds failing pages only, one page of them, ' +
+    'pages with a blocking problem first and then by path: `offset` (default 0) and `limit` (default 100, max 500) choose it, ' +
+    'a page left at the default `limit` stops sooner when the reply would pass 128 KiB, and `nextCall` is the call for the next one, ' +
+    'so follow it until `pagination.hasMore` is false before calling the folder clean. `summary` always counts the whole folder; ' +
+    'each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
+    'With `paths`, every named page is listed with its `ok`, passing or not, unpaged. ' +
+    '`ontology-atlas wiki-validate --json` prints the same page and problem objects for every page in the folder, ' +
+    'because a person reading it locally has no reply budget. ' +
     'side effect 0. Use it after writing or editing a page, and before claiming a compile finished.',
   inputSchema: {
     type: 'object',
@@ -299,10 +328,21 @@ export const VALIDATE_WIKI_TOOL = {
         maxItems: 50,
         items: { type: 'string', minLength: 1 },
         description:
-          'Vault-relative page paths to judge (`wiki/quarter-plan.md`). Omit to judge every page under `wiki/`, ' +
-          'which has no cap because the folder decides how many there are. Max 50 when naming them, the same ' +
+          'Vault-relative page paths to judge (`wiki/quarter-plan.md`). Omit to judge every page under `wiki/` ' +
+          'and page through the failing ones with `offset` and `limit`. Max 50 when naming them, the same ' +
           'ceiling `get_concepts.uids` uses: past that, asking for the whole folder is one call instead of a ' +
           'list somebody has to assemble. A path outside `wiki/` is reported as a problem rather than silently skipped.',
+      },
+      offset: {
+        type: 'integer',
+        minimum: 0,
+        description: 'Zero-based index of the first failing page to return, in the order blocking first and then path. Resume with `pagination.nextOffset`. Defaults 0. Not with `paths`.',
+      },
+      limit: {
+        type: 'integer',
+        minimum: 1,
+        maximum: 500,
+        description: 'Failing pages per reply. Defaults 100. Not with `paths`.',
       },
     },
     additionalProperties: false,
@@ -310,32 +350,83 @@ export const VALIDATE_WIKI_TOOL = {
   outputSchema: {
     type: 'object',
     properties: {
-      pageCount: { type: 'integer', minimum: 0, description: 'Pages judged.' },
+      pageCount: { type: 'integer', minimum: 0, description: 'Pages judged: the whole folder, or the named `paths`.' },
       failingCount: {
         type: 'integer',
         minimum: 0,
         description: 'Pages with at least one problem. Zero means every page judged fits.',
       },
+      pagination: {
+        ...paginationOutputSchema(),
+        description: 'The page `pages` holds: `total` failing pages, and `nextOffset` for the next page until `hasMore` is false. Absent with `paths`.',
+      },
+      nextCall: {
+        type: 'object',
+        description: 'Present while more failing pages remain: the exact call for the next page.',
+        properties: {
+          tool: { type: 'string', enum: ['validate_wiki'] },
+          arguments: {
+            type: 'object',
+            properties: {
+              offset: { type: 'integer', minimum: 0 },
+              limit: { type: 'integer', minimum: 1, maximum: 500 },
+            },
+            required: ['offset'],
+            additionalProperties: false,
+          },
+        },
+        required: ['tool', 'arguments'],
+        additionalProperties: false,
+      },
+      pagesHint: {
+        type: 'string',
+        description: 'Present when the failing pages span more than one reply: which ones this reply shows, why it stopped, and the next call.',
+      },
+      summary: {
+        type: 'object',
+        description: 'The whole folder, whatever page `pages` holds. Absent with `paths`.',
+        properties: {
+          blockingPages: { type: 'integer', minimum: 0, description: 'Failing pages with at least one problem that is not advisory.' },
+          advisoryOnlyPages: { type: 'integer', minimum: 0, description: 'Failing pages whose only problems are advisory (orphan-page, shared-source-unlinked).' },
+          byCode: {
+            type: 'object',
+            additionalProperties: {
+              type: 'object',
+              properties: {
+                severity: {
+                  type: 'string',
+                  enum: ['error', 'warning'],
+                  description: '`warning` for an advisory code, `error` for the rest.',
+                },
+                count: { type: 'integer', minimum: 1, description: 'Pages with this code.' },
+                files: {
+                  type: 'array',
+                  items: NON_BLANK_STRING_SCHEMA,
+                  description: 'At most 20 of the `count` pages with this code, in page order.',
+                },
+                filesOmitted: {
+                  type: 'integer',
+                  minimum: 1,
+                  description: 'Present when `files` names fewer than `count`: how many more. Page through `pages` for them.',
+                },
+              },
+              required: ['severity', 'count', 'files'],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ['blockingPages', 'advisoryOnlyPages', 'byCode'],
+        additionalProperties: false,
+      },
       pages: {
         type: 'array',
+        description: 'Without `paths`, failing pages only, one page of them. With `paths`, every named page.',
         items: {
           type: 'object',
           properties: {
             path: { type: 'string' },
             ok: { type: 'boolean' },
-            problems: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  code: { type: 'string' },
-                  message: { type: 'string' },
-                  line: { type: 'integer', minimum: 1 },
-                },
-                required: ['code', 'message'],
-                additionalProperties: false,
-              },
-            },
+            problems: { type: 'array', items: WIKI_PROBLEM_SCHEMA },
           },
           required: ['path', 'ok', 'problems'],
           additionalProperties: false,

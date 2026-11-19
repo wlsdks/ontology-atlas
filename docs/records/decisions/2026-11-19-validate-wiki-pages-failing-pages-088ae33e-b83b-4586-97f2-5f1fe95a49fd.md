@@ -1,0 +1,12 @@
+---
+id: 088ae33e-b83b-4586-97f2-5f1fe95a49fd
+date: 2026-11-19
+---
+## 2026-11-19 — `validate_wiki` pages its failing pages as `validate_vault` pages its problems
+
+**Why**: An agent checking a large wiki after compiling it calls `validate_wiki` with no `paths`, as its description says to before claiming a compile finished. On a 50,000-file vault (`pnpm perf:mcp:scale` flow b) that reply was 228 MB, listing every page, fitting ones included; the server judged it in 2.5–4.8 s, and a line reader that reassembles one 228 MB line took 89–156 s more. No agent can read it, and a host may drop or cut it.
+**Prior**: Extends `80fc2632` (2026-09-28, large MCP answers are bounded by each tool's own default) and its `validate_vault` paging shape, itself from 2026-08-14 (`list_concepts` `offset`/`limit` with `nextOffset`) and 2026-08-13 (128 KiB on the default call).
+**Decision**: Without `paths`, `validate_wiki` returns `pageCount` and `failingCount` for the whole folder, a `summary` (`blockingPages`, `advisoryOnlyPages`, `byCode` with at most 20 files and `filesOmitted`) over the whole folder, and one page of failing pages only: blocking first, then advisory-only, each by path; `offset` (default 0), `limit` (default 100, max 500), a default page that stops before the reply passes 128 KiB, `pagination` and `nextCall`. Fitting pages are counted, not listed. With `paths` (at most 50) every named page is still listed with `ok`, unpaged. Page and problem objects keep their shape; `ontology-atlas wiki-validate --json` still prints every page, because a person reading it locally has no reply budget.
+**Dissent**: an agent that reads one page as the whole folder misses failing pages; the whole-folder counts and `nextCall` on every reply are the guard, as they are for `validate_vault`.
+**Falsifier**: an agent that calls the wiki clean while `hasMore` is true, a `nextCall` walk that loses or repeats a failing page, or a default reply on a large wiki that again exceeds 128 KiB.
+**Owner**: Stark
