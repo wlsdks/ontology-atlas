@@ -103,9 +103,10 @@ revert it in Git.
 - **Linux**: there is no app yet. Use the browser version, or run the CLI and MCP
   server from source ([The CLI](/guide/cli)).
 
-Every file on the
-[releases page](https://github.com/wlsdks/ontology-atlas/releases) has a
-`.sha256` file beside it. Compare it with the checksum of the file you
+On the
+[releases page](https://github.com/wlsdks/ontology-atlas/releases), each
+installer (`.dmg`, `.exe`) and the MCP bundle (`.mcpb`) has a `.sha256` file
+beside it. Compare it with the checksum of the file you
 downloaded.
 
 On macOS:

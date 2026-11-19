@@ -100,7 +100,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
 - **書き込む:** `add_concepts`、`add_relations`、`patch_concept`、`rename_concept`、`merge_concepts`、`delete_concept`などです。名前の変更、マージ、削除、関係の削除は、まず変更内容をプレビューし、確認付きでもう一度呼び出されたときにだけ書き込みます。
 - **チェックする:** `validate_vault`と`compile_ontology`は、壊れた参照や欠けている部分を報告します。
 
-書き込みはすべてMarkdownの変更になります。また、エージェントが読んだあとにディスク上で変更されたファイルは、書き込みツールが上書きを拒否します。
+書き込みはすべてMarkdownの変更になります。エージェントが読んだときの`expected_mtime`を渡した場合、その後ディスク上で変更されたファイルは書き込みツールが上書きを拒否します。渡さなければ、そのまま書き込まれます。
 
 ## あなたが決めること
 

@@ -152,8 +152,9 @@ groups:
 - **Check:** `validate_vault` and `compile_ontology` report broken references
   and missing parts.
 
-Every write lands as a Markdown change. A write tool also refuses to overwrite
-a file that changed on disk after the agent read it.
+Every write lands as a Markdown change. When the agent passes the
+`expected_mtime` it read, a write tool refuses to overwrite a file that changed
+on disk since; without it, the write goes through.
 
 ## What you still decide
 

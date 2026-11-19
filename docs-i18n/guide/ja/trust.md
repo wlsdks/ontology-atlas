@@ -60,7 +60,7 @@ AtlasのMCPサーバは、常に動き続けるサービスではありません
 - **Windows x64ベータ**: インストーラには署名がないため、SmartScreenが発行元不明の警告を出すことがあり、管理されたコンピュータではブロックされることもあります。リリース前に、ビルドはMicrosoft Defenderでスキャンされ、サイレントインストールされ、起動されます。
 - **Linux**: まだアプリはありません。ブラウザ版を使うか、ソースからCLIとMCPサーバを実行してください（[CLI](/guide/cli)）。
 
-[リリースページ](https://github.com/wlsdks/ontology-atlas/releases)のすべてのファイルには、隣に`.sha256`ファイルがあります。ダウンロードしたファイルのチェックサムと比べてください。
+[リリースページ](https://github.com/wlsdks/ontology-atlas/releases)のインストーラー（`.dmg`、`.exe`）とMCPバンドル（`.mcpb`）には、隣に`.sha256`ファイルがあります。ダウンロードしたファイルのチェックサムと比べてください。
 
 macOSの場合:
 

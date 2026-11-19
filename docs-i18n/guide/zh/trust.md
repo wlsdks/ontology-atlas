@@ -30,10 +30,10 @@ Atlas 只读取你选择的文件夹。读取文件夹时，它会跳过以点�
 | 模型服务商 | 你按下按钮时 | Anthropic、OpenAI 或 Google API | 你发送的内容 |
 | 本地模型服务器 | 你按下按钮时 | 你填写的地址 | 你发送的内容 |
 | 外部模型审阅 | 你按下按钮时 | api.typesafe.ai | 你发送的内容 |
-| 安装编码智能体 | 你按下按钮时 | nodejs.org、npm 仓库 | 否 |
+| 编码智能体安装 | 你按下按钮时 | nodejs.org、npm 仓库 | 否 |
 | ACP 适配器包 | 你按下按钮时 | npm 仓库、PyPI | 否 |
-| GitHub PR 描述 | 你按下按钮时 | api.github.com | 否 |
-| Git push、pull 和 fetch | 你按下按钮时 | 你的 Git 远程仓库 | 你发送的内容 |
+| 读取 GitHub PR 描述 | 你按下按钮时 | api.github.com | 否 |
+| Git 推送、拉取和获取 | 你按下按钮时 | 你的 Git 远程仓库 | 你发送的内容 |
 | 你添加到文件夹的 MCP 服务器 | 智能体使用它们时 | 它们各自的地址 | 由智能体发送 |
 | 编码智能体 | 智能体工作时 | 智能体自己的服务商 | Atlas 看不到 |
 
@@ -60,7 +60,7 @@ Atlas MCP 服务器不是一个常驻运行的服务。你的编码智能体在�
 - **Windows x64 测试版**：安装程序未签名，因此 SmartScreen 可能会显示“未知发布者”警告，受管理的电脑也可能会阻止它。发布之前，构建会经过 Microsoft Defender 扫描、静默安装并启动运行。
 - **Linux**：目前还没有应用。请使用浏览器版，或者从源码运行 CLI 和 MCP 服务器（[CLI](/guide/cli)）。
 
-[发布页面](https://github.com/wlsdks/ontology-atlas/releases) 上的每个文件旁边都有一个 `.sha256` 文件。把它与你下载的文件的校验和进行比对。
+[发布页面](https://github.com/wlsdks/ontology-atlas/releases) 上的安装包（`.dmg`、`.exe`）和 MCP 包（`.mcpb`）旁边都有一个 `.sha256` 文件。把它与你下载的文件的校验和进行比对。
 
 在 macOS 上：
 

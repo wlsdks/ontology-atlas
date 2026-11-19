@@ -135,8 +135,9 @@ node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
 - **점검:** `validate_vault`와 `compile_ontology`는 깨진 참조와 빠진 부분을
   알려 줘요.
 
-모든 쓰기는 마크다운 변경으로 남아요. 또 쓰기 도구는 에이전트가 읽은 뒤에
-디스크에서 바뀐 파일은 덮어쓰지 않아요.
+모든 쓰기는 마크다운 변경으로 남아요. 에이전트가 읽을 때 받은 `expected_mtime`을
+함께 보내면, 그 뒤에 디스크에서 바뀐 파일은 쓰기 도구가 덮어쓰지 않아요. 보내지 않으면
+그대로 써요.
 
 ## 여전히 내가 정하는 것
 

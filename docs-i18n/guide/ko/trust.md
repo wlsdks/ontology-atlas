@@ -41,14 +41,14 @@ Atlas는 내가 고른 폴더만 읽어요. 폴더를 읽을 때는 `.env`, `.gi
 | 경로 | 언제 | 보내는 곳 | 폴더 내용 포함? |
 |---|---|---|---|
 | 업데이트 확인 | 자동, 끌 수 있음 | ontologyatlas.com | 아니요 |
-| 업데이트 내려받기 | 내가 누를 때 | github.com | 아니요 |
+| 업데이트 받기 | 내가 누를 때 | github.com | 아니요 |
 | 모델 제공자 | 내가 누를 때 | Anthropic, OpenAI, Google API | 내가 보내는 것 |
 | 로컬 모델 서버 | 내가 누를 때 | 내가 입력한 주소 | 내가 보내는 것 |
-| 외부 모델 리뷰 | 내가 누를 때 | api.typesafe.ai | 내가 보내는 것 |
+| 외부 모델 검토 | 내가 누를 때 | api.typesafe.ai | 내가 보내는 것 |
 | 코딩 에이전트 설치 | 내가 누를 때 | nodejs.org, npm 레지스트리 | 아니요 |
 | ACP 어댑터 패키지 | 내가 누를 때 | npm 레지스트리, PyPI | 아니요 |
-| GitHub PR 설명 | 내가 누를 때 | api.github.com | 아니요 |
-| Git push, pull, fetch | 내가 누를 때 | 내 Git 원격 저장소 | 내가 보내는 것 |
+| GitHub PR 설명 조회 | 내가 누를 때 | api.github.com | 아니요 |
+| Git 푸시·풀·페치 | 내가 누를 때 | 내 Git 원격 저장소 | 내가 보내는 것 |
 | 폴더에 추가한 MCP 서버 | 에이전트가 쓸 때 | 각 서버의 주소 | 에이전트가 보냄 |
 | 코딩 에이전트 | 에이전트가 일할 때 | 에이전트의 제공자 | Atlas는 볼 수 없음 |
 
@@ -92,8 +92,8 @@ Atlas MCP 서버는 계속 떠 있는 서비스가 아니에요. 코딩 에이�
 - **Linux**: 아직 앱이 없어요. 브라우저 버전을 쓰거나, 소스에서 CLI와 MCP 서버를
   실행하세요([CLI와 MCP의 관계](/guide/cli)).
 
-[릴리스 페이지](https://github.com/wlsdks/ontology-atlas/releases)의 모든 파일
-옆에는 `.sha256` 파일이 있어요. 내려받은 파일의 체크섬과 비교해 보세요.
+[릴리스 페이지](https://github.com/wlsdks/ontology-atlas/releases)의 설치 파일(`.dmg`, `.exe`)과
+MCP 번들(`.mcpb`) 옆에는 `.sha256` 파일이 있어요. 내려받은 파일의 체크섬과 비교해 보세요.
 
 macOS에서는:
 

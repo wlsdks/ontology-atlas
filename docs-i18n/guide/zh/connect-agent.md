@@ -100,7 +100,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
 - **写入：** `add_concepts`、`add_relations`、`patch_concept`、`rename_concept`、`merge_concepts`、`delete_concept` 等。重命名、合并、删除以及移除关系时，会先预览改动，只有在带确认参数再次调用时才真正写入。
 - **检查：** `validate_vault` 和 `compile_ontology` 报告失效的引用和缺失的部分。
 
-每一次写入都会落为一处 Markdown 改动。如果某个文件在智能体读取之后又在磁盘上被修改，写入工具也会拒绝覆盖它。
+每一次写入都会落为一处 Markdown 改动。如果智能体传入了读取时得到的 `expected_mtime`，而文件此后又在磁盘上被修改，写入工具会拒绝覆盖它；不传则照常写入。
 
 ## 仍然由你决定的事
 
