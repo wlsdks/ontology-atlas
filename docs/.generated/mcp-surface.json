@@ -546,6 +546,8 @@
         "name": "validate_wiki",
         "mode": "read",
         "arguments": [
+          "limit",
+          "offset",
           "paths"
         ],
         "required": []
