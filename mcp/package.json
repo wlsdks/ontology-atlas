@@ -156,6 +156,7 @@
     "src/drift/evidence-verdict.mjs",
     "src/evidence-search/symbol-context.mjs",
     "src/evidence-search/callees.mjs",
+    "src/evidence-search/code-text.mjs",
     "src/evidence-search/import-bindings.mjs",
     "src/evidence-search/declaration-index.mjs",
     "src/evidence-search/declaration-survey.mjs",

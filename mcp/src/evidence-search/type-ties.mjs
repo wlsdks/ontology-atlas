@@ -233,11 +233,11 @@ function goStruct(lines, line, signature) {
  * an import statement was cut at a cap.
  *
  * @param {object[]} declarations
- * @param {string} text the file's text
+ * @param {string} text the file's text, comments and strings blanked (`code-text`)
  * @param {string} path repository-relative path
- * @param {{ partial?: boolean }} [outline] whether the outline skipped part of the file
+ * @param {{ partial?: boolean, importLines?: () => string[] }} [options] whether the outline skipped part of the file, and the lines imports are read from (default: `text`'s)
  */
-export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
+export function typeTiesOf(declarations, text, path, { partial = false, importLines } = {}) {
   const python = path.endsWith('.py') || path.endsWith('.pyi');
   const js = /\.(?:[cm]?[jt]sx?)$/u.test(path);
   const rust = path.endsWith('.rs');
@@ -246,6 +246,8 @@ export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
   if (!(python || js || rust || go)) return { ties, goImports: [], defaultImports: [], expressions: [], importsCut: false };
   let lines = null;
   const linesOf = () => (lines ??= text.split('\n'));
+  let imports = null;
+  const importsHere = () => (imports ??= importsOf({ path, lines: importLines ? importLines() : linesOf() }));
   declarations.forEach((declaration, index) => {
     const signature = typeof declaration.signature === 'string' ? declaration.signature : '';
     if (declaration.kind === 'class' && (python || js || rust)) {
@@ -269,7 +271,7 @@ export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
     }
   });
   const goImports = go
-    ? [...importsOf({ path, lines: linesOf() }).modules].filter(([, spec]) => spec?.go).map(([local, spec]) => [copy(local), copy(spec.go)])
+    ? [...importsHere().modules].filter(([, spec]) => spec?.go).map(([local, spec]) => [copy(local), copy(spec.go)])
     : [];
   const expressions = js && text.includes('class') ? classExpressions(linesOf()) : [];
   // A default import may give a base any local name, so a file whose class headers name a base, or that was not all outlined, keeps those names;
@@ -277,7 +279,7 @@ export function typeTiesOf(declarations, text, path, { partial = false } = {}) {
   let defaultImports = [];
   let importsCut = false;
   if ((js || python) && (partial || expressions.length > 0 || [...ties.values()].some((tie) => tie.bases || tie.open))) {
-    const bindings = importsOf({ path, lines: linesOf() });
+    const bindings = importsHere();
     importsCut = Boolean(bindings.incomplete);
     if (js) {
       defaultImports = [...bindings.names]

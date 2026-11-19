@@ -11,6 +11,7 @@ import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from '../library/source-text.mjs';
 import { noteReadFamilies } from '../construction/read-family.mjs';
+import { blankLiterals } from './code-text.mjs';
 import { declarationIndex } from './declaration-index.mjs';
 import { importsOf } from './import-bindings.mjs';
 import { readSourceEvidence } from './source-evidence.mjs';
@@ -444,6 +445,34 @@ describe('a family costs time linear in the types and interfaces that could join
   };
   const blankRunsAfterDefault = (lines) => defaultScan(`export default Plugin${' '.repeat(1900)}x\n`.repeat(lines));
 
+  // Many names for the base, against files whose class header cannot be read and that the names are checked in.
+  const aliasRepo = (aliases, openFiles) => {
+    const files = {
+      'package.json': '{"name":"x"}',
+      'src/base.ts': 'export class Plugin {\n  apply(v: number) {\n    return v;\n  }\n}\n',
+      'src/p0.ts': "import { Plugin } from './base';\nexport class P0 extends Plugin {\n  apply(v: number) {\n    return v ? 1 : 0;\n  }\n}\n",
+      'src/p1.ts': "import { Plugin } from './base';\nexport class P1 extends Plugin {\n  apply(v: number) {\n    return v ? 2 : 0;\n  }\n}\n",
+      'src/other.ts': 'export default class Other {}\n',
+    };
+    for (let f = 0; f * 50 < aliases; f += 1) {
+      const names = Array.from({ length: Math.min(50, aliases - f * 50) }, (_, i) => `Plugin as Q${f}x${i}`);
+      files[`src/alias${f}.ts`] = `import {\n  ${names.join(',\n  ')},\n} from './base';\n`;
+    }
+    const filler = `// ${'lorem ipsum dolor sit amet '.repeat(6)}\n`.repeat(1400);
+    for (let f = 0; f < openFiles; f += 1) files[`src/open${f}.ts`] = `import Other from './other';\n\nexport class Open${f} extends mixin(Other) {\n  run() {\n    return 1;\n  }\n}\n${filler}`;
+    const root = repoWith(files);
+    const packet = readSourceEvidence(root, [{ path: 'src/p0.ts', symbol: 'P0.apply' }]);
+    return () => noteReadFamilies(structuredClone(packet), { root, reads: new Map() });
+  };
+  const lexed = (path, text) => () => blankLiterals(text, path);
+  const lexerShapes = (size) => [
+    ['a line of unclosed regular expression classes', lexed('a.ts', `x = ${'(/['.repeat(size)}\n`)],
+    ['templates nested in their own parts', lexed('a.ts', '`${'.repeat(size))],
+    ['Rust escapes that never close', lexed('a.rs', `${"'\\".repeat(size)}\n`)],
+    ['block comments that never close', lexed('a.go', '/*'.repeat(size))],
+    ['Python triple quotes that never close', lexed('a.py', `x = """${'a\\'.repeat(size)}`)],
+  ];
+
   it('notes one read row against thousands of interfaces and types within the budget', (t) => {
     assertWithinBudget(t, '3,200 interfaces and 10,640 types', familyRead(goRepo({ faceFiles: 8, facesPerFile: 400, typeFiles: 80, typesPerFile: 133 })), 1000);
     assertWithinBudget(t, '16 interfaces and 4,000 types in their package', familyRead(goRepo({ faceFiles: 1, facesPerFile: 16, typeFiles: 40, typesPerFile: 100 })), 1000);
@@ -452,6 +481,9 @@ describe('a family costs time linear in the types and interfaces that could join
     assertWithinBudget(t, 'a base module of a default export, 100,000 blanks and a letter', defaultScan(`export default Plugin${' '.repeat(100_000)}x\n`), 1000);
     assertWithinBudget(t, 'a 96 KiB base module of default exports each followed by 1,900 blanks', blankRunsAfterDefault(50), 1000);
     assertWithinBudget(t, 'a base module of 11,000 export lists that never close', defaultScan('export {\n'.repeat(11_000)), 1000);
+    assertWithinBudget(t, '2,000 names for the base against 8 files with an unreadable header', aliasRepo(2000, 8), 1000);
+    assertWithinBudget(t, '250 names for the base against 16 files with an unreadable header', aliasRepo(250, 16), 1000);
+    for (const [name, run] of lexerShapes(100_000)) assertWithinBudget(t, `blanking ${name}`, run, 1000);
     assertWithinBudget(t, 'a 247 KiB Go file of 400 interfaces between blank runs', blankRuns(1));
   });
 
@@ -462,6 +494,9 @@ describe('a family costs time linear in the types and interfaces that could join
       ['classes naming one base', classRepo(200), classRepo(400)],
       ['members in one file', oneFile(90), oneFile(180)],
       ['default exports followed by blank runs', blankRunsAfterDefault(25), blankRunsAfterDefault(50)],
+      ['files with an unreadable header checked against 60 names', aliasRepo(60, 8), aliasRepo(60, 16)],
+      ['names for the base against 8 such files', aliasRepo(30, 8), aliasRepo(60, 8)],
+      ...lexerShapes(50_000).map(([name, small], at) => [`blanking ${name}`, small, lexerShapes(100_000)[at][1]]),
       ['Go files of interfaces between blank runs', blankRuns(1), blankRuns(2)],
     ];
     for (const [name, small, large] of pairs) {

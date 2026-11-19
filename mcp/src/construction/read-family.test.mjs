@@ -159,6 +159,11 @@ test('a base renamed in a long import, a class expression, or a later alias roun
     'src/x3.ts': "export { B as C } from './y2';\n",
     'src/w4.ts': ts('export class Sms implements D {', "import { C as D } from './x3';"),
   }, read)), 0, 'a chain of renames longer than the rounds read');
+  const aliasFile = (from, count) => `import {\n${Array.from({ length: count }, (_, at) => `  Plugin as Q${from}x${at},`).join('\n')}\n} from './base';\n`;
+  const aliasFiles = (files, each) => Object.fromEntries(Array.from({ length: files }, (_, at) => [`src/alias${at}.ts`, aliasFile(at, each)]));
+  assert.equal(sizeOf(readIn({ ...files, ...aliasFiles(5, 50) }, read)), 2, 'names under both caps');
+  assert.equal(sizeOf(readIn({ ...files, ...aliasFiles(6, 50) }, read)), 0, 'more than 256 names for one base');
+  assert.equal(sizeOf(readIn({ ...files, ...aliasFiles(1, 65) }, read)), 0, 'more than 64 names for the base in one file');
   const classBase = 'export class Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n';
   const body = '\n  apply(token) {\n    if (!token) throw new Error("no token");\n    return true;\n  }\n}';
   const classFiles = { 'src/base.ts': classBase, 'src/slack.ts': ts('export class Slack extends Plugin {'), 'src/mail.ts': ts('export class Mail extends Plugin {') };
@@ -169,6 +174,63 @@ test('a base renamed in a long import, a class expression, or a later alias roun
     'src/hook.ts': `import { Plugin } from './base';\n\nexport const Hook = class extends Plugin {${body};\n`,
     'src/fax.js': `const { Plugin } = require('./base');\n\nexports.Fax = class extends Plugin {${body};\n`,
   }, read)), 6, 'classes written as expressions');
+});
+
+test('a class shown in a comment or a string is no member, in each language', () => {
+  const pyFiles = { 'app/__init__.py': '', 'app/slack.py': py('class Slack(Plugin):'), 'app/mail.py': py('class Mail(Plugin):') };
+  const slackPy = [{ path: 'app/slack.py', symbol: 'Slack.apply' }];
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/base.py': 'class Plugin:\n    """Base of every plugin.\n\n    Subclass it::\n\nclass MyPlugin(Plugin):\n    def apply(self, token):\n        return bool(token)\n    """\n\n    def apply(self, token):\n        return True\n' }, slackPy)), 2,
+    'a subclass in the base class docstring');
+  assert.equal(sizeOf(readIn({ ...pyFiles, 'app/base.py': PY_BASE, 'app/notes.py': "from .base import Plugin\n# class Draft(Plugin):\n#     pass\nEXAMPLE = '''\nclass Example(Plugin):\n    pass\n'''\n" }, slackPy)), 2,
+    'a subclass in a comment and a triple-quoted string');
+  const tsFiles = { 'src/base.ts': 'export class Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n', 'src/slack.ts': ts('export class Slack extends Plugin {'), 'src/mail.ts': ts('export class Mail extends Plugin {') };
+  assert.equal(sizeOf(readIn({
+    ...tsFiles,
+    'src/scaffold.ts': "import { Plugin } from './base';\nexport const use = (plugin: Plugin) => plugin;\nexport const TEMPLATE = `\nimport { Plugin } from './base';\nexport class NewPlugin extends Plugin {\n  apply(token: string) {\n    return true;\n  }\n}\n`;\n/*\nexport class Legacy extends Plugin {\n}\n*/\n// export class Dropped extends Plugin {}\n",
+  }, [{ path: 'src/slack.ts', symbol: 'Slack.apply' }])), 2, 'a subclass in a template string, a block comment and a line comment');
+  assert.equal(sizeOf(readIn({
+    ...tsFiles,
+    'src/sms.ts': "import { Plugin } from './base';\nconst NOTE = `\nimport { Plugin } from './elsewhere';\n`;\nexport class Sms extends Plugin {\n  apply(token: string) {\n    return NOTE.length > 0;\n  }\n}\n",
+  }, [{ path: 'src/slack.ts', symbol: 'Slack.apply' }])), 3, 'an import written inside a string binds nothing');
+  const goFiles = {
+    'go.mod': GO_MOD,
+    'store/store.go': 'package store\n\ntype Store interface {\n\tGet(key string) string\n\tSet(key string, value string)\n}\n',
+    'store/disk.go': goType('store', 'Disk', ['Get(key string) string', 'Set(key string, value string)']),
+    'store/memory.go': goType('store', 'Memory', ['Get(key string) string', 'Set(key string, value string)']),
+  };
+  assert.equal(sizeOf(readIn({ ...goFiles, 'store/sample.go': 'package store\n\nconst sample = `\ntype Fake struct{}\n\nfunc (f *Fake) Get(key string) string { return "" }\n\nfunc (f *Fake) Set(key string, value string) {}\n`\n\n/*\ntype Old struct{}\n\nfunc (o *Old) Get(key string) string { return "" }\n\nfunc (o *Old) Set(key string, value string) {}\n*/\n' }, [{ path: 'store/disk.go', symbol: 'Disk.Get' }])), 2,
+    'a Go type in a raw string and a block comment');
+  const rust = 'pub trait Store {\n    fn load(&self) -> u8;\n}\n\nimpl Store for Disk {\n    fn load(&self) -> u8 {\n        if true { 1 } else { 0 }\n    }\n}\n\nimpl Store for Memory {\n    fn load(&self) -> u8 {\n        if true { 2 } else { 0 }\n    }\n}\n';
+  assert.equal(sizeOf(readIn({ 'Cargo.toml': '[package]\nname = "tool"\n', 'src/store.rs': `${rust}\n/* An example:\n/* nested */\nimpl Store for Fake {\n    fn load(&self) -> u8 { 0 }\n}\n*/\n\nconst SAMPLE: &str = r#"\nimpl Store for Sample {\n    fn load(&self) -> u8 { 0 }\n}\n"#;\n` }, [{ path: 'src/store.rs', symbol: 'load' }])), 2,
+    'a Rust impl in a nested block comment and a raw string');
+});
+
+test('a bare module specifier names a package, never a local file of that name', () => {
+  const emitter = 'export class EventEmitter {\n  apply(token: string) {\n    return true;\n  }\n}\n';
+  const extending = (name, from) => ts(`export class ${name} extends EventEmitter {`, `import { EventEmitter } from '${from}';`);
+  const read = [{ path: 'src/bus.ts', symbol: 'Bus.apply' }];
+  const files = { 'src/events.ts': emitter, 'src/bus.ts': extending('Bus', './events'), 'src/hub.ts': extending('Hub', './events'), 'src/server.ts': extending('Server', 'events') };
+  assert.equal(sizeOf(readIn(files, read)), 2, "Node's `events` beside a local events.ts");
+  assert.equal(sizeOf(readIn({ ...files, 'tsconfig.json': '{\n  // the project aliases\n  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["src/*"], }, },\n}\n', 'src/push.ts': extending('Push', '@/events') }, read)), 3,
+    'a tsconfig `paths` entry names the local file');
+  assert.equal(sizeOf(readIn({ ...files, 'tsconfig.json': '{ "compilerOptions": { "baseUrl": "src" } }' }, read)), 3,
+    'under a `baseUrl` the bare name is the local file');
+  assert.equal(sizeOf(readIn({
+    'package.json': '{"name":"release","private":true,"workspaces":["packages/*"]}',
+    'packages/core/package.json': '{"name":"@release/core","main":"dist/index.js"}',
+    'packages/core/src/index.ts': 'export const version = 1;\n',
+    'packages/core/src/plugin.ts': emitter,
+    'packages/core/src/bus.ts': extending('Bus', './plugin'),
+    'packages/hub/package.json': '{"name":"@release/hub"}',
+    'packages/hub/src/hub.ts': extending('Hub', '@release/core/plugin'),
+    'packages/hub/src/other.ts': extending('Other', '@vendor/emitter'),
+  }, [{ path: 'packages/core/src/bus.ts', symbol: 'Bus.apply' }])), 2, 'a workspace package subpath names its module; a package from outside names none');
+  const queue = 'class Queue:\n    def apply(self, token):\n        return True\n';
+  assert.equal(sizeOf(readIn({
+    'app/__init__.py': '', 'app/queue.py': queue,
+    'app/jobs.py': py('class Jobs(Queue):', 'from app.queue import Queue'), 'app/mail.py': py('class Mail(Queue):', 'from app.queue import Queue'),
+    'workers/__init__.py': '', 'workers/pool.py': py('class Pool(Queue):', 'from queue import Queue'),
+  }, [{ path: 'app/jobs.py', symbol: 'Jobs.apply' }])), 2, "Python's `queue` beside app/queue.py");
 });
 
 test('a count that a cut-short file or walk could change has no line', () => {

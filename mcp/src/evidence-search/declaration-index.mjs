@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 
 import { collectSourceUnits } from '../analyze/source-units.mjs';
 import { outlineSource } from './source-outline.mjs';
+import { blankLiterals, importLines } from './code-text.mjs';
 import { typeTiesOf } from './type-ties.mjs';
 
 const MAX_INDEXED_BYTES = 256 * 1024;
@@ -127,10 +128,15 @@ function factsOf(file) {
     names: identifierFilter(text),
   };
   if (text) {
-    const outlined = outlineSource(text, file.path);
+    // Declarations and class headers are read with comments and strings blanked; imports from the original lines.
+    const blanked = blankLiterals(text, file.path);
+    const outlined = outlineSource(blanked.code, file.path);
     const outline = outlined.declarations
       .filter((declaration) => declaration.kind !== 'section' && declaration.kind !== 'export');
-    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, text, file.path, { partial: Boolean(outlined.truncated) });
+    const { ties, goImports, defaultImports, expressions, importsCut } = typeTiesOf(outline, blanked.code, file.path, {
+      partial: Boolean(outlined.truncated),
+      importLines: () => importLines(text, blanked),
+    });
     // A copy: a substring would keep the whole file text alive.
     facts.declarations = outline.map(({ name, line, kind }, index) => ({ name: Buffer.from(name).toString(), line, kind, ...ties.get(index) }));
     facts.goImports = goImports;

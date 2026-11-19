@@ -29,6 +29,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 
+import { blankLiterals, importLines } from './code-text.mjs';
 import { declarationsByFile } from './declaration-index.mjs';
 import { buildSurvey } from './declaration-survey.mjs';
 import { childSpec, importsOf, languageOf } from './import-bindings.mjs';
@@ -43,8 +44,11 @@ const FAMILY_LIMITS = Object.freeze({
   scopeTypes: 4096,
   reexportDepth: 3,
   aliasFiles: 512,
+  aliasesPerFile: 64,
+  names: 256,
   embedDepth: 4,
   workspaceDirs: 8,
+  configs: 16,
 });
 // Promoted methods of standard-library types a struct commonly embeds.
 const KNOWN_EMBEDS = new Map([
@@ -53,6 +57,7 @@ const KNOWN_EMBEDS = new Map([
   ['sync\0WaitGroup', { Add: '(int)()', Done: '()()', Wait: '()()', Go: '(func())()' }],
   ['sync\0Once', { Do: '(func())()' }],
 ]);
+const CONFIG_BYTES = 64 * 1024;
 const ENTRY_EXTENSIONS = ['.ts', '.tsx', '.mts', '.js', '.jsx', '.mjs'];
 // What a module's default export names: `export default class X`, `export default X`, `module.exports = X`.
 // Each runs on one trimmed line of at most `LINE_CHARS` characters, and no two
@@ -66,6 +71,36 @@ const LINE_CHARS = 2000;
 // Lines and characters an `export { … }` list is read over.
 const LIST_LINES = 40;
 const LIST_CHARS = 4000;
+
+function readable(path, text) {
+  let blanked = null;
+  let codeLines = null;
+  let imports = null;
+  let identifiers = null;
+  const blankedOf = () => (blanked ??= blankLiterals(text, path));
+  return {
+    path,
+    text,
+    lines: text.split('\n'),
+    get codeLines() {
+      return (codeLines ??= blankedOf().code.split('\n'));
+    },
+    get imports() {
+      return (imports ??= { path, lines: importLines(text, blankedOf()) });
+    },
+    get identifiers() {
+      return (identifiers ??= new Set(blankedOf().code.match(/[A-Za-z_$][\w$]*/gu) ?? []));
+    },
+  };
+}
+
+// The stem a JavaScript module path resolves under: no extension, no `/index`.
+const jsStem = (path) => path.replace(/\.(?:d\.)?[cm]?[jt]sx?$/u, '').replace(/\/index$/u, '');
+
+/** JSON with line and block comments and trailing commas, as `tsconfig.json` allows, made plain. */
+function withoutJsonComments(text) {
+  return text.replace(/("(?:\\.|[^"\\\n])*")|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//gu, (match, string) => string ?? '').replace(/,(\s*[}\]])/gu, '$1');
+}
 
 const lastSegment = (name) => String(name).split('.').pop();
 const sameDeclaration = (a, b) => a && b && typeof a === 'object' && typeof b === 'object' && a.path === b.path && a.line === b.line;
@@ -155,13 +190,17 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
   const surveyed = () => (survey ??= buildSurvey(paths, index));
 
   const texts = new Map();
-  /** `{ path, lines, text }` of a product file, or null past the size cap. */
+  /**
+   * A product file, or null past the size cap: its text and lines; `codeLines`
+   * with comments and strings blanked; `imports`, the lines its imports are read
+   * from; and `identifiers`, every name its code writes.
+   */
   function fileOf(path) {
     if (texts.has(path)) return texts.get(path);
     let file = null;
     try {
       const text = readFileSync(join(repoRoot, path), 'utf8');
-      if (text.length <= MAX_FILE_BYTES) file = { path, text, lines: text.split('\n') };
+      if (text.length <= MAX_FILE_BYTES) file = readable(path, text);
     } catch {
       file = null;
     }
@@ -170,10 +209,17 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
   }
 
   const workspaceEntries = new Map();
-  /** The entry file of the workspace package a bare spec names: its `source`, `types` or `main`, mapped from a build folder to `src/`. */
-  function workspaceEntry(tail) {
-    if (workspaceEntries.has(tail)) return workspaceEntries.get(tail);
-    const leaf = posix.basename(tail);
+  /**
+   * The files of the workspace package a bare specifier names: its entry (its
+   * `source`, `types` or `main`, mapped from a build folder to `src/`), or the
+   * module a subpath names inside it. The package name must match exactly.
+   */
+  function workspaceEntry(raw) {
+    if (workspaceEntries.has(raw)) return workspaceEntries.get(raw);
+    const segments = raw.split('/');
+    const packageName = segments.slice(0, raw.startsWith('@') ? 2 : 1).join('/');
+    const subpath = segments.slice(raw.startsWith('@') ? 2 : 1).join('/');
+    const leaf = posix.basename(packageName);
     const found = [];
     for (const dir of [...dirs].filter((candidate) => posix.basename(candidate) === leaf).slice(0, FAMILY_LIMITS.workspaceDirs)) {
       let manifest = null;
@@ -183,7 +229,11 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
         manifest = null;
       }
       const name = typeof manifest?.name === 'string' ? manifest.name : '';
-      if (name !== tail && !name.endsWith(`/${tail}`)) continue;
+      if (name !== packageName) continue;
+      if (subpath) {
+        found.push(...[posix.join(dir, subpath), posix.join(dir, 'src', subpath)].flatMap((stem) => surveyed().modulePaths({ exact: jsStem(stem) })));
+        continue;
+      }
       const fields = [manifest.source, manifest.types, manifest.typings, manifest.module, manifest.main, manifest.exports?.['.']?.import, manifest.exports?.['.']?.default]
         .filter((value) => typeof value === 'string');
       const tries = [];
@@ -198,8 +248,63 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
       if (entry) found.push(entry);
     }
     const list = found.length === 1 ? found : [];
-    workspaceEntries.set(tail, list);
+    workspaceEntries.set(raw, list);
     return list;
+  }
+
+  let configs = null;
+  /** Each `tsconfig.json` or `jsconfig.json` in the folder: its folder, `baseUrl` and `paths`. */
+  function pathConfigs() {
+    if (configs) return configs;
+    configs = [];
+    for (const dir of ['', ...dirs]) {
+      for (const name of ['tsconfig.json', 'jsconfig.json']) {
+        const file = join(repoRoot, dir, name);
+        try {
+          if (!existsSync(file)) continue;
+          const text = readFileSync(file, 'utf8');
+          if (text.length > CONFIG_BYTES) continue;
+          const options = JSON.parse(withoutJsonComments(text))?.compilerOptions ?? {};
+          const baseUrl = typeof options.baseUrl === 'string' ? options.baseUrl : null;
+          const paths = options.paths && typeof options.paths === 'object' ? options.paths : null;
+          if (baseUrl !== null || paths) configs.push({ dir, base: posix.join(dir, baseUrl ?? '.'), paths: paths ?? {}, baseUrl: baseUrl !== null });
+        } catch {
+          // An unreadable config maps nothing.
+        }
+        if (configs.length >= FAMILY_LIMITS.configs) return configs;
+      }
+    }
+    return configs;
+  }
+
+  /** The files a non-relative JavaScript specifier names here: through a config's `paths` or `baseUrl`, or a workspace package; a bare package name names none. */
+  function packagePaths(spec) {
+    const raw = spec.raw;
+    if (typeof raw !== 'string') return [];
+    const stems = [];
+    for (const config of pathConfigs()) {
+      for (const [key, targets] of Object.entries(config.paths)) {
+        const star = key.indexOf('*');
+        const rest = star < 0 ? (raw === key ? '' : null) : raw.startsWith(key.slice(0, star)) && raw.endsWith(key.slice(star + 1)) && raw.length >= key.length - 1
+          ? raw.slice(star, raw.length - (key.length - star - 1)) : null;
+        if (rest === null) continue;
+        for (const target of Array.isArray(targets) ? targets : []) if (typeof target === 'string') stems.push(posix.join(config.base, target.replace('*', rest)));
+      }
+      if (config.baseUrl) stems.push(posix.join(config.base, raw));
+    }
+    const found = [...new Set(stems.map(posix.normalize).filter((stem) => !stem.startsWith('..')).flatMap((stem) => surveyed().modulePaths({ exact: jsStem(stem) })))];
+    return found.length > 0 ? found : workspaceEntry(raw);
+  }
+
+  const sourceRoots = new Map();
+  /** Whether a Python file reached by absolute module path `tail` sits under a source root, not inside another package. */
+  function underSourceRoot(path, tail) {
+    const stem = path.replace(/\.pyi?$/u, '').replace(/\/__init__$/u, '');
+    if (!stem.endsWith(tail)) return false;
+    const root = stem.slice(0, stem.length - tail.length).replace(/\/$/u, '');
+    if (root === '') return true;
+    if (!sourceRoots.has(root)) sourceRoots.set(root, !existsSync(join(repoRoot, root, '__init__.py')));
+    return sourceRoots.get(root);
   }
 
   /** A spec that names no module here and whose first segment is no folder or package here: outside the repository. */
@@ -209,10 +314,17 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     return !segments.some((segment) => folderNames.has(segment));
   }
 
+  /**
+   * The files a module spec names in `language`. A non-relative JavaScript
+   * specifier names a file only through a config's `paths` or `baseUrl` or a
+   * workspace package, so `events` is Node's module even beside an `events.ts`;
+   * an absolute Python module path names a file only from a source root.
+   */
   function modulePaths(spec, language) {
-    let list = surveyed().modulePaths(spec).filter((path) => languageOf(path) === language);
-    if (list.length === 0 && language === 'js' && spec?.tail) list = workspaceEntry(spec.tail);
-    return list;
+    if (!spec) return [];
+    if (language === 'js' && !spec.exact) return packagePaths(spec).filter((path) => languageOf(path) === language);
+    const list = surveyed().modulePaths(spec).filter((path) => languageOf(path) === language);
+    return language === 'py' && !spec.exact && spec.tail ? list.filter((path) => underSourceRoot(path, spec.tail)) : list;
   }
 
   /** One declaration all results agree on, `external` when all are outside, else null. */
@@ -238,7 +350,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     for (const path of list) {
       const file = fileOf(path);
       if (!file) return null;
-      for (const row of importsOf(file).names.get(name) ?? []) results.push(resolveExport(row.spec, row.imported, language, depth + 1));
+      for (const row of importsOf(file.imports).names.get(name) ?? []) results.push(resolveExport(row.spec, row.imported, language, depth + 1));
     }
     return agree(results);
   }
@@ -250,7 +362,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const local = (byPath.get(path) ?? []).filter((declaration) => isType(declaration, path) && declaration.name === name);
     if (local.length === 1) return { path, line: local[0].line, name };
     if (local.length > 1) return null;
-    const bindings = importsOf(file);
+    const bindings = importsOf(file.imports);
     const rows = bindings.names.get(name);
     if (!rows) return null;
     // `import Name from` binds whatever the module exports by default, under any name.
@@ -275,7 +387,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     let result = null;
     if (file) {
       const names = new Set();
-      const { lines } = file;
+      const lines = file.codeLines;
       for (let at = 0; at < lines.length; at += 1) {
         const line = lines[at];
         if (line.length > LINE_CHARS) continue;
@@ -301,7 +413,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
           if (words.length === 3 && words[1] === 'as' && words[2] === 'default') names.add(words[0]);
         }
       }
-      const reexports = importsOf(file).names.get('default') ?? [];
+      const reexports = importsOf(file.imports).names.get('default') ?? [];
       if (names.size === 1 && reexports.length === 0) result = resolveName(path, [...names][0], language, depth + 1);
       else if (names.size === 0 && reexports.length === 1) result = resolveExport(reexports[0].spec, reexports[0].imported, language, depth + 1);
     }
@@ -316,7 +428,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const language = languageOf(path);
     const segments = reference.split('.');
     if (segments.length === 1) return resolveName(path, segments[0], language, 0);
-    const bindings = importsOf(file);
+    const bindings = importsOf(file.imports);
     let spec = bindings.modules.get(segments[0]) ?? null;
     for (const middle of segments.slice(1, -1)) spec = spec ? childSpec(spec, middle) : null;
     return spec ? resolveExport(spec, segments.at(-1), language, 0) : null;
@@ -326,22 +438,61 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
    * The names `base` may be written under in `language`: its own and every local
    * name an import or re-export gives it, followed a few rounds; null past the cap.
    */
+  const aliasMaps = new Map();
+  /**
+   * What a file's imports and re-exports rename, built once: imported name ->
+   * local names, and the rows that bind a module's default. Null past the
+   * alias cap.
+   */
+  function aliasMapOf(path) {
+    if (aliasMaps.has(path)) return aliasMaps.get(path);
+    const file = fileOf(path);
+    let map = null;
+    if (file) {
+      const renamed = new Map();
+      const defaults = [];
+      let count = 0;
+      for (const [local, rows] of importsOf(file.imports).names) {
+        if (local === 'default') continue;
+        for (const row of rows) {
+          if (row.imported === 'default') defaults.push({ local, spec: row.spec });
+          else if (row.imported !== local) {
+            const held = renamed.get(row.imported);
+            if (held) held.push(local);
+            else renamed.set(row.imported, [local]);
+          } else continue;
+          count += 1;
+        }
+      }
+      map = count > FAMILY_LIMITS.aliasesPerFile ? null : { renamed, defaults };
+    }
+    aliasMaps.set(path, map);
+    return map;
+  }
+
+  /**
+   * The names `base` may be written under in `language`: its own and every local
+   * name an import or re-export gives it, followed a few rounds; null past a cap
+   * or when the names have not settled.
+   */
   function namesOf(base, language) {
     const names = new Set([base.name]);
     const scanned = new Set();
     // A base its module exports by default is also reached as `default`: `export { default as Channel } from './base'`.
     const byDefault = language === 'js' && sameDeclaration(defaultOf(base.path, language, 0), base);
-    const reaches = (row) => names.has(row.imported) || (byDefault && row.imported === 'default' && modulePaths(row.spec, language).includes(base.path));
+    const mentions = (mayName) => (byDefault && mayName('default')) || [...names].some((name) => mayName(name));
     for (let round = 0; round < FAMILY_LIMITS.reexportDepth; round += 1) {
       const before = names.size;
       // A file read in an earlier round is read again: a name found since may be the one it renames.
       for (const [path, mayName] of mayNameIn) {
-        if (languageOf(path) !== language || !((byDefault && mayName('default')) || [...names].some((name) => mayName(name)))) continue;
+        if (languageOf(path) !== language || !mentions(mayName)) continue;
         scanned.add(path);
         if (scanned.size > FAMILY_LIMITS.aliasFiles) return null;
-        const file = fileOf(path);
-        if (!file) return null;
-        for (const [local, rows] of importsOf(file).names) if (local !== 'default' && rows.some(reaches)) names.add(local);
+        const map = aliasMapOf(path);
+        if (!map) return null;
+        for (const name of [...names]) for (const local of map.renamed.get(name) ?? []) names.add(local);
+        if (byDefault) for (const { local, spec } of map.defaults) if (modulePaths(spec, language).includes(base.path)) names.add(local);
+        if (names.size > FAMILY_LIMITS.names) return null;
       }
       // Names still growing after the last round may not all be found.
       if (names.size === before) return names;
@@ -369,10 +520,9 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const unread = [...new Set(openHeaders)].filter((path) => languageOf(path) === language
       && (defaultLocalsIn.has(path) || [...names].some((name) => mayNameIn.get(path)?.(name))));
     if (unread.length > FAMILY_LIMITS.openHeaders) return null;
-    const words = [...names].map((name) => new RegExp(`(?<![\\w$])${name.replace(/[$]/gu, '\\$&')}(?![\\w$])`, 'u'));
     for (const path of unread) {
       const file = fileOf(path);
-      if (!file || words.some((word) => word.test(file.text))) return null;
+      if (!file || [...names].some((name) => file.identifiers.has(name))) return null;
       for (const local of defaultLocalsIn.get(path) ?? []) {
         const resolved = resolveReference(path, local);
         if (resolved === null || sameDeclaration(resolved, base)) return null;

@@ -57,7 +57,8 @@ export function childSpec(spec, name) {
   if (!spec || spec.go) return null;
   if (spec.exact) return { exact: posix.join(spec.exact, name) };
   const internal = spec.internal ? { internal: true } : {};
-  return spec.tail ? { tail: `${spec.tail}/${name}`, ...internal } : { tail: name, ...internal };
+  const raw = typeof spec.raw === 'string' ? { raw: `${spec.raw}/${name}` } : {};
+  return spec.tail ? { tail: `${spec.tail}/${name}`, ...internal, ...raw } : { tail: name, ...internal, ...raw };
 }
 
 function jsSpec(file, raw) {
@@ -68,7 +69,8 @@ function jsSpec(file, raw) {
   // `@/x`, `~/x` and `#x` are the project's own path aliases; `@scope/pkg` drops its scope.
   const alias = parts[0] && /^[@~#]/u.test(parts[0]) && (parts[0].length === 1 || parts.length > 1);
   if (alias) parts.shift();
-  return parts.length > 0 ? { tail: stripExtension(parts.join('/')), ...(alias && spec[1] === '/' ? { internal: true } : {}) } : null;
+  // `raw` keeps the written specifier: a bare one names a package, never a file of that name.
+  return parts.length > 0 ? { tail: stripExtension(parts.join('/')), raw: spec, ...(alias && spec[1] === '/' ? { internal: true } : {}) } : null;
 }
 
 function pySpec(file, dots, dotted) {
@@ -93,7 +95,7 @@ function spaced(text) {
 
 /** One string per module a spec names; a package-internal tail (`@/x`, `crate::x`) is its own key. */
 export function specKey(spec) {
-  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}\0${spec.internal ? 1 : 0}`;
+  return spec.go ? `g\0${spec.go}` : spec.exact ? `e\0${spec.exact}` : `t\0${spec.tail}\0${spec.internal ? 1 : 0}\0${spec.raw ?? ''}`;
 }
 
 /** The one copy of `spec` this file holds, or null past the cap or for no spec. */
