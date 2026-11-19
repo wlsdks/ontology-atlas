@@ -47,9 +47,11 @@ During a long turn, say in a line what you are doing every few tool calls.
 
 A fact the source can answer comes from a script: run or extend the `pnpm`
 command (README's command table) and read its output instead of re-deriving it.
-Write no plans, retrospectives, handoffs or notes into the repository or
-`~/scratch`; reasons go in commit bodies and pull requests, working files in the
-session scratchpad. Screenshots, recordings and image drafts are working
+Every product plan is a spec in `docs/specs/` (`pnpm doc:new -- --type=spec`),
+committed while its work is built; each later change, owner decisions included,
+adds a dated line to its `## Revisions`. Write no other plans, retrospectives,
+handoffs or notes into the repository or `~/scratch`; reasons go in commit
+bodies and pull requests, working files in the session scratchpad. Screenshots, recordings and image drafts are working
 files: attach them to the pull request. Git keeps only media the product
 ships (`committed-media.contract.test.ts`). Skill design:
 `docs/engineering/agent-instructions.md`.
