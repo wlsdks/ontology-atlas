@@ -36,7 +36,7 @@ export function DeskLeads({ set, expandedFor, onShowMore, reduced, citationState
   jev: ReturnType<typeof useDeskJev>;
   /** Whether Jev can run here at all: the installed app, with a folder on disk. */
   canCheck: boolean;
-  onOpenWiki: (slug: string) => void;
+  onOpenWiki: (slug: string, line?: number) => void;
   onOpenSource: (path: string, anchor?: string) => void;
 }) {
   const t = useTranslations('library');

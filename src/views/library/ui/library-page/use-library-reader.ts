@@ -8,12 +8,14 @@ import { useCitedPassage } from "../../lib/sources/use-cited-passage";
 import { useSourceOutline } from "../../lib/sources/use-source-outline";
 import { useAnswerHistory } from "../../lib/questions/use-answer-history";
 import { advisoryReportSlugs } from "../parts/wiki/LibraryCheckReport";
+import { useWikiReaderFacts } from "../parts/wiki/use-wiki-reader-facts";
 import type { LibrarySelection } from "./library-page-state";
 
 export function useLibraryReader({
-  reducedMotion, localVault, manifest, hasFolder, selected, sourceCitation, docs, model,
+  reducedMotion, localVault, manifest, hasFolder, selected, sourceCitation, docs, model, locale,
 }: {
   reducedMotion: boolean;
+  locale: string;
   localVault: ReturnType<typeof useLocalVault>;
   manifest: VaultManifest | null;
   hasFolder: boolean;
@@ -129,6 +131,10 @@ export function useLibraryReader({
     () => new Set((manifest?.docs ?? []).map((doc) => doc.slug)),
     [manifest],
   );
+  const facts = useWikiReaderFacts({
+    docs: manifest?.docs ?? EMPTY_ORIGINALS, locale, page: selectedWikiDoc, originals: selectedOriginals,
+    writeUps: model.pairing.writeUpsBySource,
+  });
   const getDocContent = useMemo<((slug: string) => Promise<string>) | undefined>(() => {
     if (localVault.fileHandles.size === 0) return undefined;
     const handles = localVault.fileHandles;
@@ -153,7 +159,8 @@ export function useLibraryReader({
     activeHeadingSlug, setActiveHeadingSlug, backToTop, reportSpy, reportBackToTop,
     reportAdvisoryOpen, setReportAdvisoryOpen, pendingReportJumpRef, jumpToReportSection,
     advisorySlugs, handleReportHeadingNavigate, outlineHeadings, handleHeadingNavigate, vaultSlugs,
-    getDocContent, resolveImage,
+    getDocContent, resolveImage, ...facts,
+    sourceHandles: localVault.sourceHandles,
   };
 }
 

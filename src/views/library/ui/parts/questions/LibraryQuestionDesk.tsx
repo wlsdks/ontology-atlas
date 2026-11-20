@@ -107,7 +107,7 @@ export function LibraryQuestionDesk({
   filingReport: boolean;
   fileReportNote: string | null;
   onBrowse: () => void;
-  onOpenWiki: (slug: string) => void;
+  onOpenWiki: (slug: string, line?: number) => void;
   onOpenSource: (path: string, anchor?: string) => void;
   workActivity?: ReactNode;
 }) {

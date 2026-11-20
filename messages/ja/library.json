@@ -238,8 +238,6 @@
       "draft": "下書き",
       "reviewed": "レビュー済み"
     },
-    "viewOriginalCount": "ソース{count, number}件",
-    "viewOriginalOne": "ソースを見る：{name}",
     "originalMissing": "{name}を引用していますが、このフォルダにはありません。",
     "compileCreateFile": "{path}を作成",
     "compileModifyFile": "{path}を置き換え",
@@ -1003,5 +1001,17 @@
     "failedTitle": "Wikiの検査が途中で終わりました",
     "failedBody": "{agent}は報告する前に終了しました。変更されたファイルはありません。「Wikiを検査」を押すと、もう一度実行します。",
     "stopped": "この検査を中止しました。報告されたものも、変更されたファイルもありません。"
+  },
+  "wikiReader": {
+    "citedSources": "引用した原文",
+    "linkedFrom": "このページを指すページ",
+    "concepts": "このページが扱う概念",
+    "citationCount": "引用 {count, number}か所",
+    "citationAt": "{file} · {line, number}行目",
+    "openSource": "原文を開く",
+    "sourceChanged": "ページを書いた後にこのファイルが変わりました。今の内容です。",
+    "sourceMissing": "このファイルはもうフォルダにありません。",
+    "linkMissing": "このフォルダにはこの名前のものがありません。",
+    "back": "戻る"
   }
 }

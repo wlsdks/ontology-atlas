@@ -33,6 +33,8 @@ import { cn } from "@/shared/lib/cn";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { ArrowLeft } from "lucide-react";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/tokens/page-frame";
 import {
   LIBRARY_TOAST_BOTTOM_OFFSET,
@@ -54,6 +56,8 @@ import { LibraryQuestionDesk } from "./parts/questions/LibraryQuestionDesk";
 import { AnswerRevisionComparison } from "./parts/questions/AnswerRevisionComparison";
 import { LibraryHomeStrip } from "./parts/LibraryHomeStrip";
 import { useLibraryReader } from "./library-page/use-library-reader";
+import { WikiReaderTopRow } from "./parts/wiki/WikiReaderTopRow";
+import type { ReaderLanding } from "./parts/wiki/reader-landing";
 import { useLibrarySources } from "./library-page/use-library-sources";
 import { useLibraryWorkActivity } from "./library-page/use-library-work-activity";
 import { useLibraryHome } from "./library-page/use-library-home";
@@ -199,8 +203,30 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   );
 
   const reader = useLibraryReader({
-    reducedMotion, localVault, manifest, hasFolder, selected, sourceCitation, docs, model,
+    reducedMotion, localVault, manifest, hasFolder, selected, sourceCitation, docs, model, locale,
   });
+  /*
+   * Where the next page body lands once painted: a desk row's claim, or the scroll a Back returns
+   * to. The trail is the pages a link press left, valid only while the page it leads from is open.
+   */
+  const landingRef = useRef<ReaderLanding | null>(null);
+  const [trail, setTrail] = useState<{ at: string | null; stack: Array<{ slug: string; title: string; top: number }> }>({ at: null, stack: [] });
+  const activeTrail = selected?.kind === "wiki" && trail.at === selected.slug ? trail.stack : EMPTY_TRAIL;
+  const openLinkedPage = useCallback((slug: string) => {
+    const from = reader.selectedWikiDoc;
+    if (from) {
+      const top = reader.articleScrollRef.current?.scrollTop ?? 0;
+      setTrail({ at: slug, stack: [...activeTrail, { slug: from.slug, title: from.title, top }] });
+    }
+    choose({ kind: "wiki", slug });
+  }, [activeTrail, choose, reader.articleScrollRef, reader.selectedWikiDoc]);
+  const backAlongTrail = () => {
+    const last = activeTrail[activeTrail.length - 1];
+    if (!last) return;
+    setTrail({ at: last.slug, stack: activeTrail.slice(0, -1) });
+    landingRef.current = { slug: last.slug, top: last.top };
+    choose({ kind: "wiki", slug: last.slug });
+  };
   const { opened, pendingAnswerFocus } = reader;
   const sources = useLibrarySources({
     t, toast, localVault, handle, manifest, nativeVaultRootPath, busy, setBusy,
@@ -250,6 +276,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const { homeVisible } = home;
   const connectors = useVaultConnectors(handle);
   const importRouter = useRouter();
+  /* A concept named on a page opens where concepts are judged: the Ontology tab, at that document. */
+  const openConcept = useCallback((slug: string) => {
+    navigateWithViewTransition(() => importRouter.push(`/library/?tab=ontology&slug=${encodeURIComponent(slug)}`));
+  }, [importRouter]);
   const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
   const openPlanning = useCallback(() => { navigateWithViewTransition(() => importRouter.push("/planning/")); }, [importRouter]);
   // An import asked for from Planning arrives through a route crossfade; the dialog rises once the pane has settled.
@@ -555,7 +585,21 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               >
                 {t(localReviewVisible ? "localCompile.back" : "graph.readerClose")}
               </button>
-              <div className="min-w-0 flex-1"><LibraryStatusStrip
+              {activeTrail.length > 0 && !localReviewVisible ? (
+                <button
+                  type="button"
+                  onClick={backAlongTrail}
+                  data-testid="library-reader-trail-back"
+                  title={activeTrail[activeTrail.length - 1]!.title}
+                  className={controlClass({ shape: "chip", tone: "muted", className: "gap-1.5" })}
+                >
+                  <ArrowLeft size={ICON_SIZE.sm} aria-hidden />
+                  {t("wikiReader.back")}
+                </button>
+              ) : null}
+              <div className="min-w-0 flex-1">{reader.selectedWikiDoc && !localReviewVisible ? (
+                <WikiReaderTopRow doc={reader.selectedWikiDoc} sourceChanged={reader.selectedSourceChanged} t={t} />
+              ) : <LibraryStatusStrip
                 model={model}
                 onCompileNext={localReviewVisible ? undefined : () => {
                   setHomeSurface((current) => (current === "compile" ? null : "compile"));
@@ -563,7 +607,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 compileAnchorRef={compileClauseRef}
                 compileOpen={homeSurface === "compile"}
                 t={t}
-              /></div>
+              />}</div>
               {nativeVaultRootPath !== null ? (
                 <LibraryWorkLine activity={libraryWorkActivity} onSelect={openWorkTarget} className="max-w-[45%] flex-none" />
               ) : null}
@@ -615,7 +659,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               filingReport={lastAnswer !== null && filingAnswer === lastAnswer}
               fileReportNote={fileAnswerNote}
               onBrowse={() => setMobileBrowseOpen(true)}
-              onOpenWiki={(slug) => choose({ kind: 'wiki', slug })}
+              onOpenWiki={(slug, line) => {
+                landingRef.current = line ? { slug, line } : null;
+                choose({ kind: 'wiki', slug });
+              }}
               onOpenSource={(path, anchor) => {
                 choose({ kind: 'source', path });
                 setSourceCitation(anchor ? { path, anchor } : null);
@@ -674,6 +721,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               knownOriginalPaths={knownOriginalPaths} agent={agent} answerRefresh={answerRefresh}
               compileSources={compileSources} reader={reader} sources={sources} turns={turns}
               graphCards={graphCards} indexColumn={indexColumn} templateProblems={templateProblems}
+              reducedMotion={reducedMotion} landingRef={landingRef} onOpenLinkedPage={openLinkedPage}
+              onOpenConcept={openConcept}
             />
           ) : null}
         </div>
@@ -711,4 +760,5 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 }
 
 const EMPTY_DOCS: never[] = [];
+const EMPTY_TRAIL: never[] = [];
 
