@@ -4,7 +4,7 @@
 mod request;
 pub(crate) mod source;
 
-use super::curl::{curl_argv_with_timeout, interpret_curl_output};
+use super::curl::{curl_argv_with_timeout, interpret_curl_output, TIMED_OUT_PREFIX};
 use super::http_output;
 use super::local_endpoint::{
     is_loopback_authority, normalize_base_url, LOCAL_DEFAULT_BASE_URL, LOCAL_PROVIDER,
@@ -127,6 +127,8 @@ fn send_chat_with_policy(
         http_output::CaptureError::Request(error) => coded("request-failed", error),
         http_output::CaptureError::Response(error) => coded("no-response", error),
         http_output::CaptureError::Cancelled => coded("cancelled", ""),
+        // A chat capture has no deadline of its own; curl's `--max-time` bounds it.
+        http_output::CaptureError::TimedOut => format!("{TIMED_OUT_PREFIX} capture deadline"),
     })?;
     let (status, body) = interpret_curl_output(
         output.status.code(),

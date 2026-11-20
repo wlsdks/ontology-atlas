@@ -8,6 +8,8 @@ pub(super) enum CaptureError {
     Request(io::Error),
     Response(io::Error),
     Cancelled,
+    /// Its deadline passed; the child was killed.
+    TimedOut,
 }
 struct ChildGuard(std::process::Child);
 impl Drop for ChildGuard {
@@ -31,17 +33,44 @@ fn read_pipe(reader: impl Read, limit: usize, stream: &str) -> io::Result<Vec<u8
     Ok(bytes)
 }
 pub(super) fn capture(command: Command, input: &[u8]) -> Result<Output, CaptureError> {
-    capture_until(command, input, None)
+    capture_until(command, input, Ends::default())
 }
 
-/// How often a capture that can be stopped looks at its flag.
+/// How often a capture that can be stopped looks at its flag and its deadline.
 const CANCEL_POLL: std::time::Duration = std::time::Duration::from_millis(50);
 
-/// `capture` that kills the child and answers `Cancelled` once `cancel` is set.
+/// What ends a capture early: a flag someone sets, or a moment it must not outlast.
+#[derive(Clone, Copy, Default)]
+pub(super) struct Ends<'a> {
+    pub cancel: Option<&'a std::sync::atomic::AtomicBool>,
+    pub deadline: Option<std::time::Instant>,
+}
+
+impl Ends<'_> {
+    /// Why the capture must end now, if it must.
+    fn reached(&self) -> Option<CaptureError> {
+        let cancelled = self
+            .cancel
+            .is_some_and(|cancel| cancel.load(std::sync::atomic::Ordering::SeqCst));
+        let late = self
+            .deadline
+            .is_some_and(|deadline| std::time::Instant::now() >= deadline);
+        if cancelled {
+            Some(CaptureError::Cancelled)
+        } else if late {
+            Some(CaptureError::TimedOut)
+        } else {
+            None
+        }
+    }
+}
+
+/// `capture` that kills the child and answers `Cancelled` once `cancel` is set, or `TimedOut`
+/// once `deadline` passes.
 pub(super) fn capture_until(
     mut command: Command,
     input: &[u8],
-    cancel: Option<&std::sync::atomic::AtomicBool>,
+    ends: Ends<'_>,
 ) -> Result<Output, CaptureError> {
     let mut child = ChildGuard(
         command
@@ -59,21 +88,24 @@ pub(super) fn capture_until(
     if input_result.is_err() {
         let _ = child.0.kill();
     }
-    let mut cancelled = false;
-    let status = match cancel {
-        None => child.0.wait(),
-        Some(cancel) => loop {
+    let mut ended = None;
+    let status = if ends.cancel.is_none() && ends.deadline.is_none() {
+        child.0.wait()
+    } else {
+        loop {
             match child.0.try_wait() {
                 Ok(Some(status)) => break Ok(status),
-                Ok(None) if cancel.load(std::sync::atomic::Ordering::SeqCst) => {
-                    cancelled = true;
-                    let _ = child.0.kill();
-                    break child.0.wait();
+                Ok(None) => {
+                    if let Some(reached) = ends.reached() {
+                        ended = Some(reached);
+                        let _ = child.0.kill();
+                        break child.0.wait();
+                    }
+                    std::thread::sleep(CANCEL_POLL);
                 }
-                Ok(None) => std::thread::sleep(CANCEL_POLL),
                 Err(error) => break Err(error),
             }
-        },
+        }
     };
     if status.is_err() {
         let _ = child.0.kill();
@@ -85,8 +117,8 @@ pub(super) fn capture_until(
     let stderr = err
         .join()
         .map_err(|_| CaptureError::Response(io::Error::other("stderr_reader_panicked")))?;
-    if cancelled {
-        return Err(CaptureError::Cancelled);
+    if let Some(ended) = ended {
+        return Err(ended);
     }
     input_result.map_err(CaptureError::Request)?;
     Ok(Output {

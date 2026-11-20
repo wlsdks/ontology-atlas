@@ -53,6 +53,8 @@ pub(crate) struct Timeouts {
     /// Outlasts a query's 10 s hold, so a closing line is not lost to it.
     pub line_wait: Duration,
     pub query_line_wait: Duration,
+    /// A question's one limit, from the call: the model check, the audit wait and the request.
+    pub question: Duration,
     pub pull: StreamLimits,
 }
 
@@ -62,6 +64,7 @@ pub(crate) const TIMEOUTS: Timeouts = Timeouts {
     probe: "5",
     line_wait: Duration::from_secs(15),
     query_line_wait: Duration::from_secs(2),
+    question: Duration::from_secs(10),
     pull: StreamLimits {
         max_bytes: 32 * 1024 * 1024,
         idle: Duration::from_secs(120),
@@ -292,7 +295,7 @@ impl LocalRunner {
         vault_dir: &Path,
         plan: BuildPlan,
     ) -> Result<BuildRun<'_>, EmbedError> {
-        self.ensure_local_model()?;
+        self.ensure_local_model(None)?;
         let run = audit::write_start(vault_dir, self, plan)?;
         Ok(BuildRun {
             runner: self,
@@ -307,18 +310,25 @@ impl LocalRunner {
         })
     }
 
-    /// One `embed-query` line, then one request with the 10 s timeout.
+    /// One `embed-query` line, then one request. The model check, the wait for the audit log and
+    /// the request share one limit, `Timeouts::question` from the call, and end at it.
     pub(crate) fn embed_query(
         &self,
         vault_dir: &Path,
         question: &str,
     ) -> Result<Vec<f32>, EmbedError> {
+        let deadline = Instant::now() + self.timeouts.question;
         check_passages(&[question])?;
-        self.ensure_local_model()?;
+        self.ensure_local_model(Some(deadline))?;
         let body = self.request_body(&[question]);
-        let reservation = audit::reserve_query(vault_dir, self, question, &body)?;
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() {
+            return Err(EmbedError::TimedOut);
+        }
+        let wait = self.timeouts.query_line_wait.min(left);
+        let reservation = audit::reserve_query(vault_dir, self, question, &body, wait)?;
         let started = Instant::now();
-        let sent = self.send_embeddings(&body, 1, self.timeouts.query, None);
+        let sent = self.send_embeddings(&body, 1, self.timeouts.query, None, Some(deadline));
         audit::finish_query(reservation, &sent, started)?;
         let mut vectors = sent?.vectors;
         vectors.pop().ok_or(EmbedError::ResponseInvalid("count"))
@@ -364,6 +374,7 @@ impl LocalRunner {
             body: Some(&body),
             timeout: self.timeouts.probe,
             pin: self.endpoint.pin(),
+            deadline: None,
         })?;
         match status {
             200..=299 => {}
@@ -389,9 +400,9 @@ impl LocalRunner {
 
     /// Ollama forwards a cloud model's input to its own servers, so a model the
     /// runner marks as remote is refused before any passage is sent.
-    fn ensure_local_model(&self) -> Result<(), EmbedError> {
+    fn ensure_local_model(&self, deadline: Option<Instant>) -> Result<(), EmbedError> {
         if self.checked_local.get().is_none() {
-            ollama::refuse_remote_model(self)?;
+            ollama::refuse_remote_model(self, deadline)?;
             let _ = self.checked_local.set(());
         }
         Ok(())
@@ -413,6 +424,7 @@ impl LocalRunner {
         count: usize,
         timeout: &'static str,
         cancel: Option<&AtomicBool>,
+        deadline: Option<Instant>,
     ) -> Result<Sent, EmbedError> {
         let url = self.endpoint.openai_url("embeddings");
         let request = Request {
@@ -420,6 +432,7 @@ impl LocalRunner {
             body: Some(body),
             timeout,
             pin: self.endpoint.pin(),
+            deadline,
         };
         let (status, text) = match cancel {
             Some(cancel) => self.transport.send_until(&request, cancel)?,
@@ -446,6 +459,7 @@ impl LocalRunner {
             body: None,
             timeout: self.timeouts.probe,
             pin: self.endpoint.pin(),
+            deadline: None,
         })?;
         match status {
             200..=299 => Ok(text),
@@ -504,9 +518,13 @@ impl BuildRun<'_> {
         self.passages_sent += passages.len();
         self.chars_sent += chars;
         self.sent_hash.update(body.as_bytes());
-        let sent =
-            self.runner
-                .send_embeddings(&body, passages.len(), self.runner.timeouts.batch, stop)?;
+        let sent = self.runner.send_embeddings(
+            &body,
+            passages.len(),
+            self.runner.timeouts.batch,
+            stop,
+            None,
+        )?;
         Ok(sent.vectors)
     }
 

@@ -30,9 +30,16 @@ fn runner() -> VectorSource {
     }
 }
 
+/// Builds the folder's search index, as opening it in the app does.
+fn indexed(root: &Path) {
+    let files = crate::vault::index::markdown_files(root).unwrap().files;
+    let progress = vault_index::Progress::default();
+    vault_index::sync(root, &files, &progress, vault_index::Check::Always).unwrap();
+}
+
 /// Prepares with the built-in model and waits for the job to end.
 fn prepare_and_wait(harness: &Harness, entry: &Arc<Entry>, source: VectorSource) {
-    harness.vectors.prepare(entry, source);
+    harness.vectors.prepare(entry, source, true);
     assert!(entry.wait_idle(WITHIN), "the job did not end");
 }
 
@@ -42,12 +49,12 @@ fn concurrent_prepare_calls_run_one_job_per_folder() {
     let root = vault("one-job", 70);
     let entry = entry(&harness, &root);
     harness.model().gate.hold();
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     let callers: Vec<_> = (0..8)
         .map(|_| {
             let (vectors, entry) = (harness.vectors.clone(), entry.clone());
-            std::thread::spawn(move || vectors.prepare(&entry, VectorSource::Builtin))
+            std::thread::spawn(move || vectors.prepare(&entry, VectorSource::Builtin, true))
         })
         .collect();
     for caller in callers {
@@ -77,9 +84,11 @@ fn a_second_folder_waits_its_turn_and_then_runs() {
     let (first_root, second_root) = (vault("turn-a", 40), vault("turn-b", 3));
     let (first, second) = (entry(&harness, &first_root), entry(&harness, &second_root));
     harness.model().gate.hold();
-    harness.vectors.prepare(&first, VectorSource::Builtin);
+    harness.vectors.prepare(&first, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
-    harness.vectors.prepare(&second, VectorSource::Builtin);
+    harness
+        .vectors
+        .prepare(&second, VectorSource::Builtin, true);
     assert!(harness
         .events
         .wait_for(|status| status.phase == VectorPhase::WaitingTurn));
@@ -100,7 +109,7 @@ fn stop_keeps_finished_passages_and_resume_sends_only_the_rest() {
     let root = vault("resume", 70);
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     harness.vectors.stop(&entry);
     assert!(entry.wait_idle(WITHIN));
@@ -188,12 +197,12 @@ fn a_question_during_a_job_is_answered_between_batches_by_the_same_copy() {
     let root = vault("question", 100);
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
 
     let found = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, "Passage number 3", 8);
+        .search(&entry, &VectorSource::Builtin, "Passage number 3", 8, &[]);
     assert_eq!(found.state, FoundState::Ok);
     assert_eq!(status(&harness, &entry).phase, VectorPhase::Preparing);
     harness.model().gate.open();
@@ -217,7 +226,7 @@ fn search_finds_prepared_passages_and_reports_coverage() {
     let entry = entry(&harness, &root);
     let before = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, "anything", 8);
+        .search(&entry, &VectorSource::Builtin, "anything", 8, &[]);
     assert_eq!(before.state, FoundState::NotReady);
 
     prepare_and_wait(&harness, &entry, VectorSource::Builtin);
@@ -230,7 +239,7 @@ fn search_finds_prepared_passages_and_reports_coverage() {
     let text = text.as_str();
     let found = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, text, 3);
+        .search(&entry, &VectorSource::Builtin, text, 3, &[]);
     assert_eq!(found.state, FoundState::Ok);
     assert_eq!(
         found.hits.first().map(|hit| hit.path.as_str()),
@@ -247,7 +256,7 @@ fn search_finds_prepared_passages_and_reports_coverage() {
     std::fs::write(root.join("sources/note-001.md"), "# Note 1\n\nGone.\n").unwrap();
     let stale = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, text, 3);
+        .search(&entry, &VectorSource::Builtin, text, 3, &[]);
     assert!(stale
         .hits
         .iter()
@@ -269,7 +278,7 @@ fn a_deleted_model_turns_search_and_status_into_model_gone() {
     assert!(harness.model().releases.load(Ordering::SeqCst) >= 1);
     let found = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, "quillwort", 8);
+        .search(&entry, &VectorSource::Builtin, "quillwort", 8, &[]);
     assert_eq!(
         (found.state, found.failure),
         (FoundState::Failed, Some(VectorFailure::ModelGone))
@@ -318,7 +327,7 @@ fn delete_during_a_job_ends_it_and_leaves_nothing() {
     let root = vault("delete", 70);
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     assert!(vault_index::vectors::vectors_bytes(&root).unwrap() > 0);
 
@@ -345,17 +354,22 @@ fn switching_the_index_off_while_a_folder_waits_its_turn_leaves_no_vectors() {
     let (busy_root, waiting_root) = (vault("off-busy", 40), vault("off-waiting", 3));
     let (busy, waiting) = (entry(&harness, &busy_root), entry(&harness, &waiting_root));
     harness.model().gate.hold();
-    harness.vectors.prepare(&busy, VectorSource::Builtin);
+    harness.vectors.prepare(&busy, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
-    harness.vectors.prepare(&waiting, VectorSource::Builtin);
+    harness
+        .vectors
+        .prepare(&waiting, VectorSource::Builtin, true);
     assert!(harness
         .events
         .wait_for(|status| status.phase == VectorPhase::WaitingTurn));
 
-    harness.vectors.forget(None, || {
-        vault_index::delete(Some(&busy_root)).unwrap();
-        vault_index::delete(Some(&waiting_root)).unwrap();
-    });
+    harness
+        .vectors
+        .forget(None, || {
+            vault_index::delete(Some(&busy_root))?;
+            vault_index::delete(Some(&waiting_root))
+        })
+        .unwrap();
     harness.model().gate.open();
     assert!(busy.wait_idle(WITHIN) && waiting.wait_idle(WITHIN));
     for root in [&busy_root, &waiting_root] {
@@ -375,6 +389,12 @@ fn every_failure_reaches_the_screen_as_its_code() {
     let runner = During::Embedding { runner: true };
     let cases = [
         (E::NoDirectConnection, prepare, VectorFailure::NeedsDirect),
+        // Offline: a failed lookup or connect with no proxy named.
+        (
+            E::Request("connect-failed".into()),
+            prepare,
+            VectorFailure::Download,
+        ),
         (
             E::DiskSpace { needed: 2, free: 1 },
             prepare,
@@ -464,7 +484,7 @@ fn a_failed_pass_names_its_failure_and_keeps_what_was_stored() {
     *lock(&harness.model().prepare_error) = None;
 
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     *lock(&harness.model().batch_error) = Some(EmbedError::WorkerExited);
     harness.model().gate.open();
@@ -551,7 +571,7 @@ fn no_status_event_carries_vault_text_other_than_a_relative_path() {
     }
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     // Time passes, so the next batch's progress is due.
     harness.clock.set(Duration::from_secs(10));
@@ -602,7 +622,7 @@ fn the_job_sends_progress_at_most_four_times_a_second() {
     let harness = Harness::new();
     let root = vault("throttle", 200);
     let entry = entry(&harness, &root);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(entry.wait_idle(WITHIN));
     // The clock never moved: only phase changes and the first progress event went out.
     let preparing = harness
@@ -664,11 +684,11 @@ fn the_job_releases_the_worker_by_the_clock() {
     let root = vault("release", 40);
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, "quillwort", 4);
+        .search(&entry, &VectorSource::Builtin, "quillwort", 4, &[]);
     harness.clock.set(Duration::from_secs(300));
     harness.vectors.tick();
     assert_eq!(
@@ -688,7 +708,7 @@ fn the_job_releases_the_worker_by_the_clock() {
     harness.clock.set(Duration::from_secs(400));
     harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, "sedges", 4);
+        .search(&entry, &VectorSource::Builtin, "sedges", 4, &[]);
     harness
         .clock
         .set(Duration::from_secs(400) + RELEASE_AFTER - Duration::from_secs(1));
@@ -773,5 +793,6 @@ fn the_contract_shapes_cross_as_camel_case() {
     }
 }
 
+mod contract;
 mod held;
 mod refused;

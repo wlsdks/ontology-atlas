@@ -18,7 +18,7 @@ use std::time::Instant;
 
 /// Hugging Face serves `resolve` from huggingface.co and redirects large files to
 /// its CDN and storage hosts under hf.co.
-pub(crate) const ALLOWED_DOMAINS: [&str; 2] = ["huggingface.co", "hf.co"];
+pub(crate) const MODEL_DOWNLOAD_HOSTS: [&str; 2] = ["huggingface.co", "hf.co"];
 const MAX_HOPS: usize = 8;
 const HASH_CHUNK: usize = 1024 * 1024;
 /// Names the run whose start line is written and whose close line is not yet.
@@ -40,7 +40,7 @@ pub(crate) struct DownloadReport {
 
 pub(crate) fn host_allowed(host: &str) -> bool {
     let host = host.trim_end_matches('.').to_ascii_lowercase();
-    ALLOWED_DOMAINS
+    MODEL_DOWNLOAD_HOSTS
         .iter()
         .any(|domain| host == *domain || host.ends_with(&format!(".{domain}")))
 }

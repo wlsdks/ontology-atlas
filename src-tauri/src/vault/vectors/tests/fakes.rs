@@ -166,7 +166,10 @@ pub(super) struct FakeModel {
     /// Worker starts.
     pub loads: AtomicUsize,
     pub releases: AtomicUsize,
+    /// Preparations of the model: the only way it fetches anything.
     pub downloads: AtomicUsize,
+    /// What the model holds on disk: a download writes it, a delete clears it.
+    pub on_disk: AtomicU64,
     /// `batch` and `question`, in the order the worker served them.
     pub log: Mutex<Vec<&'static str>>,
     pub sent: Mutex<Vec<String>>,
@@ -193,6 +196,7 @@ impl FakeModel {
             loads: AtomicUsize::new(0),
             releases: AtomicUsize::new(0),
             downloads: AtomicUsize::new(0),
+            on_disk: AtomicU64::new(0),
             log: Mutex::default(),
             sent: Mutex::default(),
             ends: Mutex::default(),
@@ -314,6 +318,9 @@ impl Embedder for FakeModel {
     }
 
     fn embed_query(&self, _vault_dir: &Path, question: &str) -> Result<Vec<f32>, EmbedError> {
+        if !self.ready.load(Ordering::SeqCst) {
+            return Err(EmbedError::ModelNotReady);
+        }
         let _worker = lock(&self.worker);
         self.load();
         lock(&self.log).push("question");
@@ -347,6 +354,9 @@ impl Builtin for FakeModel {
                 return Err(EmbedError::Cancelled);
             }
             on_progress(&Progress { stage, done, total });
+            if stage == Stage::Download {
+                self.on_disk.store(done * 1_000, Ordering::SeqCst);
+            }
             let fails = lock(&self.prepare_fails_at)
                 .as_ref()
                 .filter(|(at, _)| *at == stage)
@@ -367,6 +377,7 @@ impl Builtin for FakeModel {
         self.releases.fetch_add(1, Ordering::SeqCst);
         self.loaded.store(false, Ordering::SeqCst);
         self.ready.store(false, Ordering::SeqCst);
+        self.on_disk.store(0, Ordering::SeqCst);
         Ok(())
     }
 
@@ -398,6 +409,10 @@ impl Builtin for FakeModel {
 
     fn free_bytes(&self) -> Option<u64> {
         Some(1 << 40)
+    }
+
+    fn model_bytes(&self) -> u64 {
+        self.on_disk.load(Ordering::SeqCst)
     }
 }
 

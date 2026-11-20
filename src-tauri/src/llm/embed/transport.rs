@@ -3,7 +3,7 @@
 // and the pinned address. curl follows no redirect without `--location`, and the
 // caller refuses any 3xx.
 
-use super::super::curl::{curl_argv_with_timeout, curl_config_for, run_curl, run_curl_until};
+use super::super::curl::{curl_argv_with_timeout, curl_config_for, run_curl_until};
 use super::EmbedError;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, Command, Stdio};
@@ -16,6 +16,8 @@ pub(super) struct Request<'a> {
     pub body: Option<&'a str>,
     pub timeout: &'static str,
     pub pin: Option<&'a str>,
+    /// A moment the request may not outlast, besides its own `timeout`; a question's one limit.
+    pub deadline: Option<Instant>,
 }
 
 /// Bounds on a streamed answer: all bytes, the longest silence, the whole time.
@@ -97,9 +99,17 @@ impl Drop for KillOnDrop {
 
 impl Transport for CurlTransport {
     fn send(&self, request: &Request<'_>) -> Result<(u16, String), EmbedError> {
-        run_curl(
+        if request
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            return Err(EmbedError::TimedOut);
+        }
+        run_curl_until(
             curl_argv_with_timeout(request.timeout),
             &curl_config(request),
+            None,
+            request.deadline,
         )
         .map_err(curl_error)
     }
@@ -116,6 +126,7 @@ impl Transport for CurlTransport {
             curl_argv_with_timeout(request.timeout),
             &curl_config(request),
             Some(cancel),
+            request.deadline,
         )
         .map_err(curl_error)
     }

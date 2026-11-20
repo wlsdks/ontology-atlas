@@ -2,7 +2,8 @@
 //! one plain function on the blocking pool, which takes the folder through the same granted-root
 //! door as the search index and answers a model failure as a state, so the screen never parses an
 //! error string. A command errs only for what the screens cannot produce: a folder not granted, a
-//! runner address off this computer, a model name no runner holds, or an app closing.
+//! runner address off this computer, a model name no runner holds, search prefixes outside the
+//! contract, or an app closing; and for a Delete whose files stay on disk, which the screen shows.
 
 use super::job::Entry;
 use super::models::model_name;
@@ -23,20 +24,27 @@ const VECTORS_PER_TEXT_BYTE: f64 = 1.1;
 /// The store's limit on a model's name, its source prefix included (`vault_index::vectors`).
 const STORE_MODEL_NAME_MAX_CHARS: usize = 200;
 
+/// A search names at most this many path prefixes,
+const MAX_PREFIXES: usize = 16;
+/// each at most this many bytes.
+const MAX_PREFIX_BYTES: usize = 512;
+
 impl Vectors {
+    /// Reads the folder's files and their bytes from the search index alone, so nothing in the
+    /// person's folder is listed, opened or measured; 0 before the index's first pass.
     pub(super) fn probe(&self, root: &Path, runner_base_url: Option<&str>) -> VectorProbe {
-        let files = self.sources.markdown_files(root).unwrap_or_default();
-        let text_bytes: u64 = files
-            .iter()
-            .filter_map(|path| std::fs::metadata(root.join(path)).ok())
-            .map(|meta| meta.len())
-            .sum();
+        let (files, text_bytes) = vault_index::Searcher::open(root)
+            .ok()
+            .flatten()
+            .and_then(|index| index.indexed_text().ok())
+            .unwrap_or((0, 0));
         let vectors_room = (text_bytes as f64 * VECTORS_PER_TEXT_BYTE) as u64;
         let builtin = match self.sources.builtin() {
             Ok(builtin) => {
                 let runtime = builtin.runtime();
                 BuiltinProbe {
                     on_disk: builtin.is_ready(),
+                    model_bytes: builtin.model_bytes(),
                     download_bytes: ModelStore::download_bytes(),
                     kept_bytes: ModelStore::kept_bytes(),
                     needed_free_bytes: builtin.space_needed() + vectors_room,
@@ -47,6 +55,7 @@ impl Vectors {
             }
             Err(_) => BuiltinProbe {
                 on_disk: false,
+                model_bytes: 0,
                 download_bytes: ModelStore::download_bytes(),
                 kept_bytes: ModelStore::kept_bytes(),
                 needed_free_bytes: 0,
@@ -56,7 +65,7 @@ impl Vectors {
             },
         };
         VectorProbe {
-            files: files.len() as u64,
+            files,
             builtin,
             runner: runner_base_url.map(probe_runner),
         }
@@ -99,6 +108,23 @@ fn check_source(source: &VectorSource) -> Result<(), String> {
     Ok(())
 }
 
+/// Refuses prefixes no screen sends: too many, too long, absolute, or climbing out with `..`.
+fn check_prefixes(prefixes: &[String]) -> Result<(), String> {
+    if prefixes.len() > MAX_PREFIXES {
+        return Err("vectors-prefixes-too-many".into());
+    }
+    for prefix in prefixes {
+        if prefix.len() > MAX_PREFIX_BYTES {
+            return Err("vectors-prefix-too-long".into());
+        }
+        let absolute = prefix.starts_with('/') || prefix.starts_with('\\');
+        if absolute || prefix.split(['/', '\\']).any(|segment| segment == "..") {
+            return Err("vectors-prefix-not-relative".into());
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn probe(
     vectors: &Vectors,
     root_path: &str,
@@ -109,7 +135,7 @@ pub(super) fn probe(
 }
 
 pub(super) fn status(
-    vectors: &Vectors,
+    vectors: &Arc<Vectors>,
     root_path: &str,
     enabled: bool,
     source: Option<&VectorSource>,
@@ -118,21 +144,25 @@ pub(super) fn status(
     let entry = granted_entry(vectors, root_path)?;
     if let Some(source) = source {
         check_source(source)?;
-        entry.arm(source, paused);
+        if enabled {
+            vectors.arm(&entry, source, paused);
+        }
     }
     Ok(vectors.status(&entry, enabled, source))
 }
 
+/// Only with `download`, the dialog's press, may the job fetch the built-in model.
 pub(super) fn prepare(
     vectors: &Arc<Vectors>,
     root_path: &str,
     enabled: bool,
     source: VectorSource,
+    download: bool,
 ) -> Result<VectorStatus, String> {
     let entry = granted_entry(vectors, root_path)?;
     check_source(&source)?;
     if enabled {
-        vectors.prepare(&entry, source);
+        vectors.prepare(&entry, source, download);
     }
     Ok(vectors.status(&entry, enabled, None))
 }
@@ -143,24 +173,33 @@ pub(super) fn stop(vectors: &Vectors, root_path: &str) -> Result<VectorStatus, S
     Ok(vectors.status(&entry, true, None))
 }
 
+/// `prefixes` keeps the passages whose file path starts, byte for byte, with one of them; none
+/// keeps every file.
 pub(super) fn search(
     vectors: &Arc<Vectors>,
     root_path: &str,
     source: &VectorSource,
     question: &str,
     limit: usize,
+    prefixes: &[String],
 ) -> Result<VectorFound, String> {
     let entry = granted_entry(vectors, root_path)?;
     check_source(source)?;
-    Ok(vectors.search(&entry, source, question, limit))
+    check_prefixes(prefixes)?;
+    Ok(vectors.search(&entry, source, question, limit, prefixes))
 }
 
+/// A Delete that could not remove the store is no delete: the command errs with a code the
+/// screen can show, and the folder's status says what is still on disk.
 pub(super) fn delete(vectors: &Vectors, root_path: &str) -> Result<VectorStatus, String> {
     let entry = granted_entry(vectors, root_path)?;
     let root = &entry.root;
     vectors
         .forget(Some(root), || vault_index::vectors::delete_vectors(root))
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| {
+            log::warn!("search by meaning could not delete its vectors: {error}");
+            "vectors-delete-failed".to_string()
+        })?;
     Ok(vectors.status(&entry, true, None))
 }
 
@@ -198,16 +237,18 @@ pub(crate) async fn vault_vectors_status(
 }
 
 /// Starts or continues the folder's one background job and returns at once; with the search
-/// index off it answers `off` and starts nothing.
+/// index off it answers `off` and starts nothing. Only with `download`, the dialog's press, may
+/// it fetch the built-in model; without it a missing model answers `modelGone`.
 #[tauri::command]
 pub(crate) async fn vault_vectors_prepare(
     app_handle: AppHandle,
     root_path: String,
     enabled: bool,
     source: VectorSource,
+    download: bool,
 ) -> Result<VectorStatus, String> {
     bind(&app_handle);
-    run_blocking(move || prepare(app(), &root_path, enabled, source)).await
+    run_blocking(move || prepare(app(), &root_path, enabled, source, download)).await
 }
 
 /// Stops at the next batch, download chunk or model step and holds the folder; everything stored
@@ -231,7 +272,8 @@ pub(crate) async fn vault_vectors_warm(source: VectorSource) -> Result<(), Strin
     .await
 }
 
-/// The nearest passages, at most 64, each still in its file.
+/// The nearest passages, at most 64, each still in its file and, with `prefixes`, under one of
+/// them.
 #[tauri::command]
 pub(crate) async fn vault_vectors_search(
     app_handle: AppHandle,
@@ -239,9 +281,10 @@ pub(crate) async fn vault_vectors_search(
     source: VectorSource,
     question: String,
     limit: usize,
+    prefixes: Vec<String>,
 ) -> Result<VectorFound, String> {
     bind(&app_handle);
-    run_blocking(move || search(app(), &root_path, &source, &question, limit)).await
+    run_blocking(move || search(app(), &root_path, &source, &question, limit, &prefixes)).await
 }
 
 /// Deletes this folder's vectors and ends its job; the vault itself is not touched.

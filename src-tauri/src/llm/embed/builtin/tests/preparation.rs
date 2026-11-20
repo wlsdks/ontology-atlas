@@ -389,6 +389,61 @@ fn a_stop_during_conversion_or_the_check_leaves_only_the_download() {
     }
 }
 
+/// The preparation's model work, with a conversion that fails after it began writing.
+struct FailingConversion<'w> {
+    work: &'w InProcess,
+}
+
+impl ModelWork for FailingConversion<'_> {
+    fn convert(
+        &self,
+        store: &ModelStore,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError> {
+        self.work.convert(store, cancel, on_progress)?;
+        Err(EmbedError::Inference("shape".into()))
+    }
+
+    fn check(&self, store: &ModelStore, cancel: &AtomicBool) -> Result<(), EmbedError> {
+        self.work.check(store, cancel)
+    }
+}
+
+#[test]
+fn a_model_that_is_not_ready_still_counts_its_bytes_until_delete_model_removes_them() {
+    let served = served("not-ready-bytes");
+    let store = served.store();
+    let model = super::super::client::BuiltinModel::new(store.clone());
+    let total = (served.tokenizer.len() + served.checkpoint.len()) as u64;
+    let mut fake = served.fake();
+    fake.stop_after = Some(total * 2 / 5);
+    let stopped = served.prepare(&fake, &served.recipe());
+    assert!(matches!(stopped.result, Err(EmbedError::Cancelled)));
+    assert!(store.bytes() > 0);
+    assert!(!store.is_ready());
+    model.delete_model().unwrap();
+    assert_eq!(store.bytes(), 0);
+
+    let failing = FailingConversion { work: &served.work };
+    let recipe = Recipe {
+        work: &failing,
+        ..served.recipe()
+    };
+    let failed = served.prepare(&served.fake(), &recipe);
+    assert!(
+        matches!(failed.result, Err(EmbedError::Inference(_))),
+        "{:?}",
+        failed.result
+    );
+    assert!(store.bytes() > 0);
+    assert!(!store.is_ready());
+    model.delete_model().unwrap();
+    assert_eq!(store.bytes(), 0);
+    assert!(!store.dir().exists());
+    served.clean();
+}
+
 #[test]
 fn too_little_free_space_is_refused_before_the_first_byte() {
     let served = served("space");

@@ -134,9 +134,13 @@ section wins: those were written for a runner-only design and are kept for the O
    after an index pass, not after a search that dropped a stale passage, not a pass already
    queued) until **Resume** or Set up asks again. The WebView remembers the pause and sends it
    with the first status call after a restart (`paused`), so the hold outlives the app; the cache
-   does not carry it. A folder that was quit or crashed mid-job, and not paused, continues at the
-   next opening; no passage is prepared twice. A download that failed its check is deleted and
-   says so.
+   does not carry it. A folder that was quit or crashed mid-job, and not paused, continues by
+   itself: the first status call of a launch that arms it schedules the rest after the 30 quiet
+   seconds of an update, with no index pass needed; no passage is prepared twice. A download that
+   failed its check is deleted and says so.
+   Only the dialog's **Download and prepare** fetches the built-in model. Resume, a continuation,
+   an update, a status call, a search and warming never do: without the model they fetch and
+   create nothing and the folder says `modelGone`, whose **Download again** opens the dialog.
 8. **Ready.** The desk line reads "Searching by words and by meaning · N files". When files
    change, only changed passages are prepared again, and the line says "Updating N changed
    files" only while N > 0; the rail draws no ring for an update under ten files. An **update**
@@ -166,7 +170,7 @@ processor alone; the app stays within 10 MB of where it was, before, during and 
 
 | Path | What is sent | Where | Consent | Audit lines |
 |---|---|---|---|---|
-| Built-in model download | The model files' addresses only; no folder content | `huggingface.co` and the `hf.co` hosts it redirects to, https only, every hop checked | The dialog's primary press | `model-download` start line and closing line naming every host contacted |
+| Built-in model download | The model files' addresses only; no folder content | The hosts in `MODEL_DOWNLOAD_HOSTS` (`src-tauri/src/llm/embed/builtin/download.rs`): `huggingface.co`, `hf.co` and their subdomains, https only, every hop checked | The dialog's primary press, enforced in Rust: only a prepare with `download: true` fetches | `model-download` start line before the first request and a closing line naming every host contacted; an unwritable log stops the download before it asks anything (`auditBlocked`) |
 | Built-in preparing and searching | nothing | A worker process of the app on this computer, over a pipe | The same press | none, by rule: nothing is transferred, so it writes no `embed-build` or `embed-query` line and works in a folder whose `.ontology-atlas` cannot be written |
 | Runner on this computer | Passage text and the question | Loopback only | The dialog's second action | `embed-build` start and closing lines per pass, one `embed-query` line per question; an unwritable log blocks the runner (`auditBlocked`) before anything is sent |
 
@@ -192,12 +196,12 @@ with no close.
 | Stopped | Out of scope: as above | `meaning.stopped`; **Resume**; ring at rest, dimmed |
 | Ready | Out of scope: as above | `meaning.ready`; rows carry `meaning.reason*` |
 | Updating changed files | Out of scope: as above | `meaning.updating` while N > 0 |
-| Download failed | Out of scope: as above | `meaning.modelDownloadFailed`; **Resume** |
+| Download failed, offline included | Out of scope: as above | `meaning.modelDownloadFailed`; **Resume** |
 | Download did not match the published file | Out of scope: as above | `meaning.modelCheckFailed`; **Download again** |
-| Needs a direct connection (proxy only) | Out of scope: as above | `meaning.modelNeedsDirect` |
-| Model deleted while vectors exist | Out of scope: as above | Word results plus `meaning.modelGone`; **Download again** |
+| Needs a direct connection (the direct attempt failed and the environment names a proxy) | Out of scope: as above | `meaning.modelNeedsDirect` |
+| Model not on this computer (deleted, a download stopped or cut off, or never fetched) | Out of scope: as above | Word results plus `meaning.modelGone`; **Download again** |
 | Cache write failed | Out of scope: as above | `meaning.writeFailed`; **Resume** |
-| Audit log unwritable (runner only) | Out of scope: as above | `meaning.auditBlocked`; nothing sent |
+| Audit log unwritable (a runner, or the model download's log) | Out of scope: as above | `meaning.auditBlocked`; nothing sent |
 | Another folder is preparing | Out of scope: as above | `meaning.waitingTurn`; starts when that one ends |
 | Reduced motion | as above | The ring and the line show their end values; no travelling motion |
 | Windows | Out of scope: web | Same cells; the model runs on the processor there, so preparation is slower and uses more memory (stated in the dialog); proof is Windows CI only |
@@ -305,8 +309,11 @@ interface VectorStatus {
 }
 
 interface VectorProbe {
-  files: number;
-  builtin: { onDisk: boolean; downloadBytes: number; keptBytes: number; neededFreeBytes: number;
+  files: number;                       // from the search index; 0 before its first pass
+  builtin: { onDisk: boolean;          // ready to use
+             modelBytes: number;       // every byte in the app's data folder, a partial
+                                       // download and a failed conversion included; 0 if none
+             downloadBytes: number; keptBytes: number; neededFreeBytes: number;
              freeBytes: number; memoryBytes: number; accelerated: boolean };
   runner: { state: 'reachable' | 'unreachable' | 'notLocal'; address: string;
             models: string[] } | null;
@@ -321,31 +328,36 @@ interface VectorFound { state: 'ok' | 'notReady' | 'failed'; failure: VectorFail
 
 | Command | Does | Never |
 |---|---|---|
-| `vault_vectors_probe(rootPath, runnerBaseUrl?)` | Reads what the dialog states; a runner address off this computer answers `notLocal` | downloads, creates files, or contacts a non-loopback address |
-| `vault_vectors_status(rootPath, enabled, source?, paused?)` | Returns `VectorStatus`. A source arms a folder this launch has not armed; with `paused: true` it also holds it | creates anything; blocks on a model load; replaces a source a prepare chose |
-| `vault_vectors_prepare(rootPath, enabled, source)` | Chooses the folder's source, lets a held folder go, starts or continues its one background job (model first when it is missing) and returns at once. With `enabled` false it answers `off` | creates anything with the index off; runs two jobs for one folder, or two model jobs at once |
-| `vault_vectors_stop(rootPath)` | Stops at once and holds the folder; kept work stays. Its answer and every later event say `stopped` | discards finished work; starts again on its own |
+| `vault_vectors_probe(rootPath, runnerBaseUrl?)` | Reads what the dialog states: the folder's files and bytes from the search index, the model's bytes from the app's data folder; a runner address off this computer answers `notLocal` | downloads, creates files, lists, opens or measures a file in the person's folder, or contacts a non-loopback address |
+| `vault_vectors_status(rootPath, enabled, source?, paused?)` | Returns `VectorStatus`. A source arms a folder this launch has not armed; with `paused: true` it also holds it. Arming a folder whose store a preparation never finished, not held, schedules its continuation after 30 quiet seconds | creates anything; downloads; blocks on a model load; replaces a source a prepare chose |
+| `vault_vectors_prepare(rootPath, enabled, source, download)` | Chooses the folder's source, lets a held folder go, starts or continues its one background job and returns at once. Only with `download: true`, the dialog's press, does a missing built-in model download first; without it the folder answers `modelGone` and nothing starts. With `enabled` false it answers `off` | downloads without `download: true`; creates anything with the index off; runs two jobs for one folder, or two model jobs at once |
+| `vault_vectors_stop(rootPath)` | Stops at once and holds the folder; kept work stays. Its answer and every later event say `stopped`, or `modelGone` for a built-in folder whose model is not ready | discards finished work; starts again on its own |
 | `vault_vectors_warm(source)` | Loads the model for a question about to be asked | downloads |
-| `vault_vectors_search(rootPath, source, question, limit)` | Embeds the question, cut to 2,000 characters on a character boundary, and returns the nearest passages, at most 64 | waits longer than 10 s (a built-in worker that does not answer by then is killed, and the next question starts a fresh one); returns a passage its file no longer holds |
-| `vault_vectors_delete(rootPath)` | Deletes this folder's vectors and ends its job. Its answer and every later event say `notSetUp` with zero counts | touches the vault |
-| `vault_vectors_delete_model()` | Ends every job using the built-in model, a download, conversion or check included, then deletes its files in the same turn | touches vectors |
+| `vault_vectors_search(rootPath, source, question, limit, prefixes)` | Embeds the question, cut to 2,000 characters on a character boundary, and returns the nearest `limit` passages, at most 64, whose file path starts, byte for byte, with one of `prefixes`; an empty list means every file. The prefixes choose the candidates before the limit. `PassageHit.path` is the path as it is on disk | waits longer than 10 s: a built-in worker that does not answer by then is killed and the next question starts a fresh one; a runner question has one 10 s limit from the command's start for its model check, its wait for the audit log and its request together; downloads; returns a passage its file no longer holds |
+| `vault_vectors_delete(rootPath)` | Deletes this folder's vectors and ends its job. Its answer and every later event say `notSetUp` with zero counts. When the files cannot be removed it errs with `vectors-delete-failed` and the status says what is still on disk | touches the vault; reports a delete that left the files |
+| `vault_vectors_delete_model()` | Ends every job using the built-in model, a download, conversion or check included, then deletes every byte `modelBytes` counts, in any state; the next probe answers `modelBytes: 0` | touches vectors |
 
 `prepare`, `status`, `search` and `probe` refuse with a command error, never a state, a folder
 the person did not choose. `prepare`, `status` and `search` also refuse a runner address that is
 not on this computer (`embed-not-local`, or `embed-endpoint-invalid` for plain http off it), a
 model name that is malformed (`embed-model-invalid`) or names a cloud model
 (`embed-model-remote`), and a model name over 200 characters once prefixed
-(`vectors-model-name-too-long`). In the bridge only `searchVectors` never rejects: a refused
-search answers `failed` with no hits.
+(`vectors-model-name-too-long`). `search` also refuses more than 16 prefixes
+(`vectors-prefixes-too-many`), a prefix over 512 bytes (`vectors-prefix-too-long`), and one that
+starts with `/` or `\` or has a `..` segment (`vectors-prefix-not-relative`). In the bridge only
+`searchVectors` never rejects: a refused search answers `failed` with no hits.
 
 Failures, each with a coded `failureDetail`:
 
 | Failure | When |
 |---|---|
 | `modelCheck` | the download does not match the published file's hash or size; the download is deleted |
-| `modelFailed` | the converted model does not load (`embed-model-load-failed-in-convert` or `-in-check`), fails its reference check (`embed-model-reference-failed-in-check`), or its worker exits or times out during conversion or the check (`embed-worker-exited-in-convert`, `embed-timed-out-in-check`, …); the download is kept. Also a worker that exits, times out or answers wrongly while preparing, a runner's malformed answer, and a pass that failed inside Atlas (`internal`) |
-| `modelGone` | the built-in model is missing when a pass needs it, after a first pass and after an update alike; the vectors are kept |
-| `download`, `needsDirect`, `diskShort`, `write`, `runnerDown`, `modelMissing`, `auditBlocked`, `unreadable` | as their names say; `auditBlocked` only for a runner |
+| `modelFailed` | the converted model does not load, fails its reference check, or its worker exits or times out during conversion or the check; the download is kept. Also a worker that exits, times out or answers wrongly while preparing, a runner's malformed answer, and a pass that failed inside Atlas. Its detail is exactly one of `load`, `convert`, `check`, `worker-exited`, `timed-out`, `internal` (the bridge's `MODEL_FAILED_DETAILS`) |
+| `modelGone` | a built-in folder whose model is not ready while no download runs: deleted, a download stopped or cut off, or never fetched, after a first pass and after an update alike. It comes ahead of `stopped` and of a remembered failure, except the failure the last download ended with, which says why until the next prepare. It is not a hold: a prepare with `download: true` works. The vectors are kept |
+| `download` | the download failed, offline included (a host that could not be looked up or reached) |
+| `needsDirect` | the direct attempt failed and the environment the app sees names a proxy (`HTTPS_PROXY`, `https_proxy`, `ALL_PROXY` or `all_proxy`) |
+| `auditBlocked` | the audit log in `.ontology-atlas` could not be written, for a runner or for the model download's lines; nothing was sent |
+| `diskShort`, `write`, `runnerDown`, `modelMissing`, `unreadable` | as their names say |
 
 Finished work is kept after every failure, and Resume tries again. A folder waiting for another
 folder's turn says `waitingTurn` until it holds the turn, never `modelDownloading` first.
@@ -596,3 +608,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: the line's Download again opens the setup dialog, which states the size and the free room with Cancel the default, instead of starting the download; the notices under the results head are the sentence alone. When meaning took part, the limits sentence (`limitsBoth`, `limitsMethodBoth`) says the search matched words and meaning, in the popover, the brief and the saved record; a words-only search keeps the present sentence.
 - 2026-11-20: the long-work seat carries preparation on every tab. The card opens for a press made in this launch and shows the model download in GB, files prepared of the total with the file being read and minutes left, then the result with Ask a question, which opens the Wiki desk with focus in the field. A preparation that continues by itself after a restart, and an update of ten or more changed files, draw only the Library tile's ring, which fills with the fraction prepared; a failure raises the card even when hidden. While the desk's line is on screen, the card stands down. The seat only listens to the job's events, so the folder is still told its choice once at open. Item 8 measured in the static build: the card and the rail commit at most 4 times a second at 20 events a second, and no frame interval exceeds 50 ms while the count rolls or the phase changes.
 - 2026-11-20: after the second review the screens follow the contract's download, prefix and model-size rules. Only the dialog's Download and prepare asks for a download; Resume on a folder whose model is gone says so and offers Download again. A search names the top folders the desk searches, in composed and decomposed form, and a hit joins its file in composed form. Settings shows the model whenever it holds bytes, a download that did not finish included, with the index off or no folder open. A runner that did not answer, or no longer has the model, is held for the line until a search answers or the app's next status event, since the app leaves the status as it was. A choice is stored only once the app accepts it and is forgotten with its folder. When meaning covered part of the folder, the limits say how much. The desk is not drawn again on a status event; only the line is, and its ring moves by a CSS transition.
+- 2026-11-20: second independent review, Rust side. Consent is enforced in Rust: only a prepare with `download: true` fetches the model, and every other path answers `modelGone` without fetching or creating anything. A built-in folder whose model is not ready reads `modelGone` ahead of `stopped` and of other failures, so a stopped download no longer reads "stopped at 0 of 0". A job cut off by a quit continues 30 s after the status call that arms it. A search takes path prefixes that choose candidates before the limit; the probe reads the folder's counts from the search index and adds `modelBytes`; Delete model removes every byte it counts. `modelFailed` details are a closed list of six. Offline is a failed download, and `needsDirect` needs a proxy named in the environment. A runner question has one 10 s limit. A Delete that leaves its files is reported as an error, not as a delete. The download hosts are the one constant `MODEL_DOWNLOAD_HOSTS`.
