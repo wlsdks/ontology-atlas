@@ -226,7 +226,7 @@ deleted when nothing reads them.
 
 - 2026-11-20: first draft. Three rooms, eight decisions, the slice list, and H1 in full.
 - 2026-11-20: P1 built. Looking at 1280x800 showed that names sharing the width equally cut every title to five characters, so a kind is named only from 96 px on screen, pages first; the picture's margin above and below fell from 64 px to 24 px so a 60-page folder stands in two stacks at 1512x901.
-- 2026-11-20: H1 as built departs in seven places.
+- 2026-11-20: H1 as built departs in nine places.
   - Below a 60rem pane the number and the bar stack, so the band stays inside 112px at 1040 with
     the index open; from 60rem the four cells share one row.
   - The key's line still gives way to a pointed-at mark's or island's sentence, as the legend
@@ -242,3 +242,7 @@ deleted when nothing reads them.
   - With three or more states in a pane under 50rem the presses show swatch and count only;
     the word stays in `title` and for a screen reader, so the band never clips Continue with
     the conversation open.
+  - Show all is an × at the end of the legend, its slot held from the first paint, so a press
+    resizes no cell of the band; a folder with one state draws no legend and keeps its row empty.
+  - The work line names the file, not the path, and cuts a long name in the middle keeping its
+    ending; Continue carries no ring while work runs.

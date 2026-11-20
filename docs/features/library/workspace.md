@@ -158,16 +158,18 @@ have a wiki page, rounded down (below 10 sources the fraction `1 / 1`), with tod
 its baseline, and under it the sentence in primary ink on one line. The bar: a 6px state bar (has
 a page in the accent, needs review and read in part in amber, checking and can't read neutral, no
 page the track), 280–560px wide, and under it one row of state presses in bar order, each a
-swatch, its word and a count. A press shows only that state's rows in the index, combined with
+swatch, its word and a count, ending in a clear press (an × named `Show all N`) whose slot is held
+from the first paint, so a press resizes nothing in the band. With one state the row stays empty.
+A press shows only that state's rows in the index, combined with
 the search, and lights that state's marks in the picture (a compiled press lights the pages that
-cite them too); pressing it again, `Show all N`, or Escape clears both, and a press while the
+cite them too); pressing it again, the clear press, or Escape clears both, and a press while the
 column is folded unfolds it. The chart: a cumulative step chart by the `compiled_at` each page
 records, at most 26rem wide and captioned with its first date and today, whose Left and Right keys
 read each point, drawn only from three recorded days; without it the bar takes the room. The
 action: the press that writes the next 10 waiting sources (3 on the local model), with how many
 wait after them or how many came back without a page, and in the app one work line under it
 whose slot is held from the first paint: a running mark only while work happens, the kind of
-work, the file as a press that opens it, and `Recent N`, which opens the last three in an
+work, the file's name (its path is the title) as a press that opens it, and `Recent N`, which opens the last three in an
 anchored list. On the web, where nothing can write, one line says only the app writes pages and
 a Get the app button stands in for the press. Below a 60rem pane the number and bar stack, so
 the band stays inside 112px at 1040. The percent and the sentence's count rise together on a
