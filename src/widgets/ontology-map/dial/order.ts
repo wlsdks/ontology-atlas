@@ -1,14 +1,16 @@
 import type { DialModel } from "./types";
 
 const EXHAUSTIVE_MAX = 9;
-const SEARCH_ROUNDS = 20;
 const HYSTERESIS = 1.1;
 const RELATES_WEIGHT = 0.5;
 const EPS = 1e-9;
+/** Pair terms the local search may evaluate per domain and pair of its input, so its work is linear in n + P. */
+const SEARCH_WORK_PER_INPUT = 256;
+/** Pair terms every search may spend, so a ring of a few dozen domains still searches to convergence. */
+const SEARCH_WORK_FLOOR = 1 << 20;
 
-interface Pair { i: number; j: number; w: number }
-
-export interface DialOrder { order: string[]; evaluations: number }
+/** `work` counts pair terms evaluated, the unit every bound below is stated in. */
+export interface DialOrder { order: string[]; work: number }
 
 let remembered: readonly string[] | null = null;
 let rememberedFolder: string | null = null;
@@ -24,6 +26,229 @@ export function claimDialOrderFolder(folder: string): void {
 
 export function rememberedDialOrder(): readonly string[] | null {
   return remembered;
+}
+
+/** Domain pairs as a symmetric weighted adjacency list (CSR); duplicate pairs merge. O(n + P). */
+interface Adjacency { n: number; pairs: number; start: Int32Array; to: Int32Array; weight: Float64Array }
+
+function adjacencyOf(n: number, raw: readonly { i: number; j: number; w: number }[]): Adjacency {
+  const merged = new Map<number, number>();
+  for (const { i, j, w } of raw) {
+    if (i === j) continue;
+    const key = i < j ? i * n + j : j * n + i;
+    merged.set(key, (merged.get(key) ?? 0) + w);
+  }
+  const degree = new Int32Array(n + 1);
+  for (const key of merged.keys()) {
+    degree[Math.floor(key / n)]! += 1;
+    degree[key % n]! += 1;
+  }
+  const start = new Int32Array(n + 1);
+  for (let k = 0; k < n; k += 1) start[k + 1] = start[k]! + degree[k]!;
+  const fill = start.slice(0, n);
+  const to = new Int32Array(start[n]!);
+  const weight = new Float64Array(start[n]!);
+  for (const key of [...merged.keys()].sort((x, y) => x - y)) {
+    const i = Math.floor(key / n);
+    const j = key % n;
+    const w = merged.get(key)!;
+    to[fill[i]!] = j;
+    weight[fill[i]!] = w;
+    fill[i]! += 1;
+    to[fill[j]!] = i;
+    weight[fill[j]!] = w;
+    fill[j]! += 1;
+  }
+  return { n, pairs: merged.size, start, to, weight };
+}
+
+function ringDistance(a: number, b: number, m: number): number {
+  const d = a > b ? a - b : b - a;
+  return d < m - d ? d : m - d;
+}
+
+/**
+ * A circular arrangement of every domain with its total weighted ring distance kept current. Each
+ * move prices only the pairs that touch what moved and charges them to `work`.
+ */
+class Ring {
+  private readonly adj: Adjacency;
+  readonly at: Int32Array;
+  readonly pos: Int32Array;
+  work = 0;
+
+  constructor(adj: Adjacency, order: readonly number[]) {
+    this.adj = adj;
+    this.at = Int32Array.from(order);
+    this.pos = new Int32Array(adj.n);
+    order.forEach((node, slot) => {
+      this.pos[node] = slot;
+    });
+  }
+
+  /** O(P). */
+  cost(): number {
+    const { n, start, to, weight } = this.adj;
+    let total = 0;
+    for (let u = 0; u < n; u += 1) {
+      for (let e = start[u]!; e < start[u + 1]!; e += 1) {
+        if (to[e]! > u) total += weight[e]! * ringDistance(this.pos[u]!, this.pos[to[e]!]!, n);
+      }
+    }
+    this.work += this.adj.pairs;
+    return total;
+  }
+
+  /** Cost change of `node` standing at `slot` instead, its partners held: O(deg). */
+  private shift(node: number, slot: number, skip: number): number {
+    const { n, start, to, weight } = this.adj;
+    const from = this.pos[node]!;
+    let delta = 0;
+    for (let e = start[node]!; e < start[node + 1]!; e += 1) {
+      const other = to[e]!;
+      if (other === skip) continue;
+      const at = this.pos[other]!;
+      delta += weight[e]! * (ringDistance(slot, at, n) - ringDistance(from, at, n));
+    }
+    this.work += start[node + 1]! - start[node]!;
+    return delta;
+  }
+
+  /** Swaps the domains in `slot` and the slot after it; returns the cost change. O(deg u + deg v). */
+  stepForward(slot: number): number {
+    const next = (slot + 1) % this.adj.n;
+    const u = this.at[slot]!;
+    const v = this.at[next]!;
+    const delta = this.shift(u, next, v) + this.shift(v, slot, u);
+    this.place(u, next);
+    this.place(v, slot);
+    return delta;
+  }
+
+  private place(node: number, slot: number): void {
+    this.at[slot] = node;
+    this.pos[node] = slot;
+  }
+
+  /** Steps `node` backward `steps` slots without pricing. O(steps). */
+  stepBack(node: number, steps: number): void {
+    const { n } = this.adj;
+    for (let k = 0; k < steps; k += 1) {
+      const slot = this.pos[node]!;
+      const before = (slot - 1 + n) % n;
+      const other = this.at[before]!;
+      this.place(node, before);
+      this.place(other, slot);
+    }
+  }
+
+  /** Cost change of reversing the arc of `length` slots from `from`: only pairs leaving the arc change. O(Σ deg in arc). */
+  reversalDelta(from: number, length: number): number {
+    const { n, start, to, weight } = this.adj;
+    let delta = 0;
+    for (let k = 0; k < length; k += 1) {
+      const node = this.at[(from + k) % n]!;
+      const was = (from + k) % n;
+      const now = (from + length - 1 - k) % n;
+      for (let e = start[node]!; e < start[node + 1]!; e += 1) {
+        const at = this.pos[to[e]!]!;
+        if ((at - from + n) % n < length) continue;
+        delta += weight[e]! * (ringDistance(now, at, n) - ringDistance(was, at, n));
+      }
+      this.work += start[node + 1]! - start[node]!;
+    }
+    return delta;
+  }
+
+  reverse(from: number, length: number): void {
+    const { n } = this.adj;
+    for (let k = 0; k < length >> 1; k += 1) {
+      const a = (from + k) % n;
+      const b = (from + length - 1 - k) % n;
+      const u = this.at[a]!;
+      const v = this.at[b]!;
+      this.place(v, a);
+      this.place(u, b);
+    }
+  }
+
+  order(): number[] {
+    return Array.from(this.at);
+  }
+}
+
+/** Moves `node` to its best slot by stepping it once round the ring and keeping the best step. O(n·deg + P). */
+function relocate(ring: Ring, node: number, budget: number): boolean {
+  const n = ring.at.length;
+  let total = 0;
+  let best = 0;
+  let bestStep = 0;
+  let step = 0;
+  while (step < n - 1 && ring.work < budget) {
+    total += ring.stepForward(ring.pos[node]!);
+    step += 1;
+    if (total < best - EPS) {
+      best = total;
+      bestStep = step;
+    }
+  }
+  ring.stepBack(node, step - bestStep);
+  return bestStep > 0;
+}
+
+/** Reverses every arc up to half the ring once, keeping each reversal that lowers the cost. O(n² · deg) per sweep. */
+function reverseArcs(ring: Ring, budget: number): boolean {
+  const n = ring.at.length;
+  let improved = false;
+  for (let length = 2; length <= n >> 1; length += 1) {
+    for (let from = 0; from < n; from += 1) {
+      if (ring.work >= budget) return improved;
+      if (ring.reversalDelta(from, length) < -EPS) {
+        ring.reverse(from, length);
+        improved = true;
+      }
+    }
+  }
+  return improved;
+}
+
+/** Relocation and arc-reversal sweeps until neither improves or `budget` pair terms are spent. */
+function localSearch(adj: Adjacency, seed: readonly number[], budget: number): Ring {
+  const ring = new Ring(adj, seed);
+  const limit = ring.work + budget;
+  for (let improved = true; improved && ring.work < limit;) {
+    improved = false;
+    for (let node = 0; node < adj.n && ring.work < limit; node += 1) improved = relocate(ring, node, limit) || improved;
+    improved = reverseArcs(ring, limit) || improved;
+  }
+  return ring;
+}
+
+/** Chains each domain to its heaviest unplaced partner, else the lowest unplaced index. O(n + P). */
+function greedyChain(adj: Adjacency, startAt: number): number[] {
+  const { n, start, to, weight } = adj;
+  const placed = new Uint8Array(n);
+  placed[startAt] = 1;
+  const order = [startAt];
+  let lowestFree = 0;
+  while (order.length < n) {
+    const tail = order[order.length - 1]!;
+    let best = -1;
+    let bestW = 0;
+    for (let e = start[tail]!; e < start[tail + 1]!; e += 1) {
+      const k = to[e]!;
+      if (placed[k] || weight[e]! < bestW || (weight[e]! === bestW && k > best)) continue;
+      best = k;
+      bestW = weight[e]!;
+    }
+    if (best < 0) {
+      while (placed[lowestFree]) lowestFree += 1;
+      best = lowestFree;
+    }
+    placed[best] = 1;
+    order.push(best);
+  }
+  return order;
 }
 
 function heapPermutations(n: number, visit: (order: number[]) => void): void {
@@ -45,100 +270,47 @@ function heapPermutations(n: number, visit: (order: number[]) => void): void {
   }
 }
 
-function localSearch(start: number[], cost: (order: number[]) => number): number[] {
-  let order = start;
-  let current = cost(order);
-  const n = order.length;
-  for (let round = 0; round < SEARCH_ROUNDS; round += 1) {
-    let improved = false;
-    for (let a = 0; a < n - 1; a += 1) {
-      for (let b = a + 1; b < n; b += 1) {
-        const next = order.slice(0, a).concat(order.slice(a, b + 1).reverse(), order.slice(b + 1));
-        const value = cost(next);
-        if (value < current - EPS) {
-          order = next;
-          current = value;
-          improved = true;
-        }
-      }
+/** Ring cost of a partial order, counting only pairs with both ends placed. O(len + P). */
+function partialCost(adj: Adjacency, order: readonly number[], pos: Int32Array, stamp: Int32Array, round: number): number {
+  const m = order.length;
+  order.forEach((node, slot) => {
+    pos[node] = slot;
+    stamp[node] = round;
+  });
+  let total = 0;
+  for (const u of order) {
+    for (let e = adj.start[u]!; e < adj.start[u + 1]!; e += 1) {
+      const v = adj.to[e]!;
+      if (v > u && stamp[v] === round) total += adj.weight[e]! * ringDistance(pos[u]!, pos[v]!, m);
     }
-    for (let from = 0; from < n; from += 1) {
-      for (let to = 0; to < n; to += 1) {
-        if (Math.abs(from - to) <= 1) continue;
-        const next = order.slice();
-        const [moved] = next.splice(from, 1);
-        next.splice(to, 0, moved!);
-        const value = cost(next);
-        if (value < current - EPS) {
-          order = next;
-          current = value;
-          improved = true;
-        }
-      }
-    }
-    if (!improved) break;
   }
-  return order;
+  return total;
 }
 
-function greedyChain(n: number, pairs: readonly Pair[], startAt: number): number[] {
-  const weight = Array.from({ length: n }, () => new Float64Array(n));
-  for (const p of pairs) {
-    weight[p.i]![p.j]! += p.w;
-    weight[p.j]![p.i]! += p.w;
-  }
-  const placed = new Set<number>([startAt]);
-  const order = [startAt];
-  while (order.length < n) {
-    const tail = order[order.length - 1]!;
-    let best = -1;
-    let bestW = -1;
-    for (let k = 0; k < n; k += 1) {
-      if (placed.has(k)) continue;
-      if (weight[tail]![k]! > bestW) {
-        bestW = weight[tail]![k]!;
-        best = k;
-      }
-    }
-    placed.add(best);
-    order.push(best);
-  }
-  return order;
-}
-
+/**
+ * Orders domains round a circle to minimise Σ weight × ring distance. Up to `EXHAUSTIVE_MAX` domains
+ * every order is tried; above it two seeds go through a local search whose work is bounded by
+ * `SEARCH_WORK_FLOOR` + `SEARCH_WORK_PER_INPUT` × (n + P), so the cost is O(n + P) for n domains
+ * and P weighted pairs.
+ */
 export function circularDomainOrder(model: DialModel, previous: readonly string[] | null): DialOrder {
   const ids = model.domains.map((d) => d.id).sort();
   const n = ids.length;
   const index = new Map(ids.map((id, i) => [id, i] as const));
-  const pairs: Pair[] = [];
+  const raw: { i: number; j: number; w: number }[] = [];
   const strength = new Float64Array(n);
   for (const f of model.flows) {
     const i = index.get(f.a);
     const j = index.get(f.b);
     if (i === undefined || j === undefined) continue;
-    pairs.push({ i, j, w: f.relatesOnly ? RELATES_WEIGHT : f.total });
+    raw.push({ i, j, w: f.relatesOnly ? RELATES_WEIGHT : f.total });
     strength[i]! += f.total;
     strength[j]! += f.total;
   }
-  let evaluations = 0;
-  const pos = new Int32Array(n);
-  const placedAt = new Int32Array(n);
-  const cost = (order: readonly number[]) => {
-    evaluations += 1;
-    const m = order.length;
-    order.forEach((node, slot) => {
-      pos[node] = slot;
-      placedAt[node] = evaluations;
-    });
-    let total = 0;
-    for (const p of pairs) {
-      if (placedAt[p.i] !== evaluations || placedAt[p.j] !== evaluations) continue;
-      const d = Math.abs(pos[p.i]! - pos[p.j]!);
-      total += p.w * Math.min(d, m - d);
-    }
-    return total;
-  };
-  if (n === 0) return { order: [], evaluations };
+  if (n === 0) return { order: [], work: 0 };
+  const adj = adjacencyOf(n, raw);
+  const budget = SEARCH_WORK_FLOOR + SEARCH_WORK_PER_INPUT * (n + adj.pairs);
+  let work = 0;
 
   let hub = 0;
   for (let k = 1; k < n; k += 1) if (strength[k]! > strength[hub]!) hub = k;
@@ -149,11 +321,12 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
     let best: number[] = [hub, ...rest];
     let bestCost = Infinity;
     heapPermutations(n - 1, (perm) => {
-      const candidate = [hub, ...perm.map((k) => rest[k]!)];
-      const value = cost(candidate);
+      const ring = new Ring(adj, [hub, ...perm.map((k) => rest[k]!)]);
+      const value = ring.cost();
+      work += ring.work;
       if (value < bestCost - EPS) {
         bestCost = value;
-        best = candidate;
+        best = ring.order();
       }
     });
     order = best;
@@ -163,12 +336,13 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
     );
     let best: number[] = natural;
     let bestCost = Infinity;
-    for (const start of [greedyChain(n, pairs, hub), natural]) {
-      const candidate = localSearch(start, cost);
-      const value = cost(candidate);
+    for (const seed of [greedyChain(adj, hub), natural]) {
+      const ring = localSearch(adj, seed, budget / 2);
+      const value = ring.cost();
+      work += ring.work;
       if (value < bestCost - EPS) {
         bestCost = value;
-        best = candidate;
+        best = ring.order();
       }
     }
     const at = best.indexOf(hub);
@@ -178,23 +352,44 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
 
   if (previous && previous.length > 0) {
     const kept = previous.map((id) => index.get(id)).filter((k): k is number => k !== undefined);
-    const keptSet = new Set(kept);
-    let candidate = kept;
-    for (let k = 0; k < n; k += 1) {
-      if (keptSet.has(k)) continue;
-      let bestAt = candidate.length;
-      let bestCost = Infinity;
-      for (let at = 0; at <= candidate.length; at += 1) {
-        const trial = candidate.slice(0, at).concat([k], candidate.slice(at));
-        const value = cost(trial);
-        if (value < bestCost - EPS) {
-          bestCost = value;
-          bestAt = at;
-        }
-      }
-      candidate = candidate.slice(0, bestAt).concat([k], candidate.slice(bestAt));
+    const inserted = insertMissing(adj, kept, budget);
+    work += inserted.work;
+    if (inserted.order !== null) {
+      const pos = new Int32Array(n);
+      const stamp = new Int32Array(n);
+      if (partialCost(adj, inserted.order, pos, stamp, 1) <= HYSTERESIS * partialCost(adj, order, pos, stamp, 2) + EPS) order = inserted.order;
+      work += 2 * adj.pairs;
     }
-    if (cost(candidate) <= HYSTERESIS * cost(order) + EPS) order = candidate;
   }
-  return { order: order.map((k) => ids[k]!), evaluations };
+  return { order: order.map((k) => ids[k]!), work };
+}
+
+/**
+ * Inserts each domain missing from `kept` where the placed pairs cost least, in index order. Each
+ * trial is O(n + P); past `budget` pair terms it gives up and returns null.
+ */
+function insertMissing(adj: Adjacency, kept: readonly number[], budget: number): { order: number[] | null; work: number } {
+  const keptSet = new Set(kept);
+  const pos = new Int32Array(adj.n);
+  const stamp = new Int32Array(adj.n);
+  let round = 0;
+  let work = 0;
+  let candidate = [...kept];
+  for (let k = 0; k < adj.n; k += 1) {
+    if (keptSet.has(k)) continue;
+    let bestAt = candidate.length;
+    let bestCost = Infinity;
+    for (let at = 0; at <= candidate.length; at += 1) {
+      if (work >= budget) return { order: null, work };
+      round += 1;
+      const value = partialCost(adj, candidate.slice(0, at).concat([k], candidate.slice(at)), pos, stamp, round);
+      work += candidate.length + 1 + adj.pairs;
+      if (value < bestCost - EPS) {
+        bestCost = value;
+        bestAt = at;
+      }
+    }
+    candidate = candidate.slice(0, bestAt).concat([k], candidate.slice(bestAt));
+  }
+  return { order: candidate, work };
 }

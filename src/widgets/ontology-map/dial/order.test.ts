@@ -76,6 +76,68 @@ function randomLinks(n: number, count: number, seed: number): [number, number, n
   return out;
 }
 
+function chainedLinks(n: number, count: number, seed: number): [number, number, number][] {
+  const rand = seeded(seed);
+  const out: [number, number, number][] = [];
+  for (let k = 0; k < count; k += 1) {
+    const x = Math.floor(rand() * n);
+    const y = rand() < 0.7 ? (x + 1 + Math.floor(rand() * 3)) % n : Math.floor(rand() * n);
+    if (x !== y) out.push([x, y, 1 + Math.floor(rand() * 5)]);
+  }
+  return out;
+}
+
+/** The search this order replaced: 2-opt and single moves, each priced by a full recount, from a greedy chain and the natural order. */
+function referenceOrder(model: DialModel): string[] {
+  const ids = model.domains.map((d) => d.id).sort();
+  const n = ids.length;
+  const index = new Map(ids.map((id, i) => [id, i] as const));
+  const weight = Array.from({ length: n }, () => new Float64Array(n));
+  const strength = new Float64Array(n);
+  for (const f of model.flows) {
+    const i = index.get(f.a)!;
+    const j = index.get(f.b)!;
+    weight[i]![j]! += f.total;
+    weight[j]![i]! += f.total;
+    strength[i]! += f.total;
+    strength[j]! += f.total;
+  }
+  const cost = (order: readonly number[]) => ringCost(model, order.map((k) => ids[k]!));
+  const search = (start: number[]) => {
+    let order = start;
+    let current = cost(order);
+    for (let round = 0, improved = true; round < 20 && improved; round += 1) {
+      improved = false;
+      const consider = (next: number[]) => {
+        const value = cost(next);
+        if (value < current - 1e-9) [order, current, improved] = [next, value, true];
+      };
+      for (let a = 0; a < n - 1; a += 1) for (let b = a + 1; b < n; b += 1) consider(order.slice(0, a).concat(order.slice(a, b + 1).reverse(), order.slice(b + 1)));
+      for (let from = 0; from < n; from += 1) {
+        for (let to = 0; to < n; to += 1) {
+          if (Math.abs(from - to) <= 1) continue;
+          const next = order.slice();
+          next.splice(to, 0, next.splice(from, 1)[0]!);
+          consider(next);
+        }
+      }
+    }
+    return order;
+  };
+  let hub = 0;
+  for (let k = 1; k < n; k += 1) if (strength[k]! > strength[hub]!) hub = k;
+  const chain = [hub];
+  while (chain.length < n) {
+    const tail = chain[chain.length - 1]!;
+    let best = -1;
+    for (let k = 0; k < n; k += 1) if (!chain.includes(k) && (best < 0 || weight[tail]![k]! > weight[tail]![best]!)) best = k;
+    chain.push(best);
+  }
+  const natural = Array.from({ length: n }, (_, i) => i);
+  const [a, b] = [search(chain), search(natural)];
+  return (cost(b) < cost(a) - 1e-9 ? b : a).map((k) => ids[k]!);
+}
+
 afterEach(() => rememberDialOrder([]));
 
 describe("circularDomainOrder", () => {
@@ -99,9 +161,24 @@ describe("circularDomainOrder", () => {
     }
   });
 
-  it("stays within its evaluation budget", () => {
-    expect(circularDomainOrder(modelOf(9, randomLinks(9, 30, 5)), null).evaluations).toBeLessThanOrEqual(40_320);
-    expect(circularDomainOrder(modelOf(33, randomLinks(33, 120, 7)), null).evaluations).toBeLessThanOrEqual(50_000);
+  it("keeps the ring cost of the full-recount search it replaced on fixtures of 12 to 33 domains", () => {
+    const ratios: number[] = [];
+    for (const n of [12, 20, 33]) {
+      for (const seed of [1, 2, 3, 4]) {
+        for (const links of [randomLinks(n, n * 3, seed * 31 + n), chainedLinks(n, n * 3, seed * 31 + n)]) {
+          const model = modelOf(n, links);
+          ratios.push(ringCost(model, circularDomainOrder(model, null).order) / ringCost(model, referenceOrder(model)));
+        }
+      }
+    }
+    const mean = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
+    expect(mean, "mean ring cost against the old search").toBeLessThanOrEqual(1.02);
+    expect(Math.max(...ratios), "worst ring cost against the old search").toBeLessThanOrEqual(1.1);
+  });
+
+  it("grows its work linearly with domains and pairs", () => {
+    const work = (n: number) => circularDomainOrder(modelOf(n, randomLinks(n, n * 10, n)), null).work;
+    expect(work(1200) / work(300)).toBeLessThanOrEqual(5);
   });
 
   it("is deterministic", () => {

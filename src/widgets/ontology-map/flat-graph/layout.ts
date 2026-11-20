@@ -1,7 +1,7 @@
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 
-import type { Box, DialModel, Point } from "../dial/types";
+import type { Box, DialCapabilityDependency, DialModel, Point } from "../dial/types";
 import { GOLDEN_ANGLE, byId, seedAngle, seedUnit } from "./seed";
 import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./types";
 
@@ -17,6 +17,10 @@ const COMPACT_ROUNDS = 40;
 const COMPACT_PULL = 0.04;
 const COMPACT_SEPARATIONS = 6;
 const FULL_ITERATION_BODIES = 64;
+/** The neighbour list's skin, as a share of the median padded body diameter. */
+const SEPARATION_SKIN = 0.5;
+/** Bodies from which a neighbour list beats testing every pair in each separation round. */
+const NEIGHBOUR_LIST_FROM = 96;
 const MAX_STRETCH = 2;
 const MIN_ASPECT = 0.6;
 const MAX_ASPECT = 2.6;
@@ -54,7 +58,7 @@ const FORCE_SETTINGS = {
   edgeWeightInfluence: 1,
 } as const;
 
-interface Body { id: string; x: number; y: number; r: number; fixed: boolean }
+export interface Body { id: string; x: number; y: number; r: number; fixed: boolean }
 interface Spring { a: string; b: string; weight: number }
 
 export function directItemId(domainId: string): string {
@@ -94,38 +98,122 @@ function budgetedIterations(iterations: number, bodyCount: number): number {
   return Math.min(iterations, Math.max(1, Math.round(iterations * (FULL_ITERATION_BODIES / bodyCount) ** 2)));
 }
 
-/** Pairwise separation in sorted order; fixed bodies never move. O(rounds · n²). */
-function separate(bodies: Body[], gap: number, rounds: number): void {
+/** Each body's later neighbours, ascending: `to[start[i]..start[i + 1])`. */
+interface NeighbourList { start: Int32Array; to: Int32Array }
+
+/**
+ * For each body, the later bodies within `reach` of touching it; fixed pairs are left out. A sweep
+ * over x, then a sort of the pair keys: O(n log n + x-overlapping pairs + listed pairs · log).
+ */
+function neighbourList(bodies: readonly Body[], gap: number, reach: number): NeighbourList {
+  const n = bodies.length;
+  const byLeft = Array.from({ length: n }, (_, i) => i).sort((a, b) => bodies[a]!.x - bodies[a]!.r - (bodies[b]!.x - bodies[b]!.r));
+  const keys: number[] = [];
+  for (let s = 0; s < n; s += 1) {
+    const i = byLeft[s]!;
+    const p = bodies[i]!;
+    const right = p.x + p.r + gap + reach;
+    for (let t = s + 1; t < n; t += 1) {
+      const j = byLeft[t]!;
+      const q = bodies[j]!;
+      if (q.x - q.r >= right) break;
+      if (p.fixed && q.fixed) continue;
+      const near = p.r + q.r + gap + reach;
+      const dx = q.x - p.x;
+      const dy = q.y - p.y;
+      if (dx * dx + dy * dy < near * near) keys.push(i < j ? i * n + j : j * n + i);
+    }
+  }
+  const sorted = Float64Array.from(keys).sort();
+  const start = new Int32Array(n + 1);
+  const to = new Int32Array(sorted.length);
+  for (let k = 0; k < sorted.length; k += 1) {
+    start[Math.floor(sorted[k]! / n) + 1]! += 1;
+    to[k] = sorted[k]! % n;
+  }
+  for (let i = 0; i < n; i += 1) start[i + 1]! += start[i]!;
+  return { start, to };
+}
+
+/** Pushes two bodies apart until they keep `gap`, a fixed one never moving; reports whether they overlapped. */
+function pushApart(p: Body, q: Body, gap: number): boolean {
+  const need = p.r + q.r + gap;
+  let dx = q.x - p.x;
+  let dy = q.y - p.y;
+  const squared = dx * dx + dy * dy;
+  if (squared >= need * need) return false;
+  let d = Math.sqrt(squared);
+  if (d < 1e-6) {
+    const a = seedAngle(`${p.id}|${q.id}`);
+    dx = Math.cos(a);
+    dy = Math.sin(a);
+    d = 1;
+  }
+  const push = need - d;
+  const ux = dx / d;
+  const uy = dy / d;
+  const pShare = p.fixed ? 0 : q.fixed ? 1 : 0.5;
+  const qShare = 1 - pShare;
+  p.x -= ux * push * pShare;
+  p.y -= uy * push * pShare;
+  q.x += ux * push * qShare;
+  q.y += uy * push * qShare;
+  return true;
+}
+
+/**
+ * Pairwise separation in index order; fixed bodies never move. Below `NEIGHBOUR_LIST_FROM` bodies
+ * every pair is tested, O(rounds · n²); above it a round tests a neighbour list, see `separateNear`.
+ */
+export function separate(bodies: Body[], gap: number, rounds: number): void {
+  const n = bodies.length;
+  if (n >= NEIGHBOUR_LIST_FROM) {
+    separateNear(bodies, gap, rounds);
+    return;
+  }
   for (let round = 0; round < rounds; round += 1) {
     let moved = false;
-    for (let i = 0; i < bodies.length; i += 1) {
+    for (let i = 0; i < n; i += 1) {
       const p = bodies[i]!;
-      for (let j = i + 1; j < bodies.length; j += 1) {
+      for (let j = i + 1; j < n; j += 1) {
         const q = bodies[j]!;
         if (p.fixed && q.fixed) continue;
-        const need = p.r + q.r + gap;
-        let dx = q.x - p.x;
-        let dy = q.y - p.y;
-        const squared = dx * dx + dy * dy;
-        if (squared >= need * need) continue;
-        let d = Math.sqrt(squared);
-        if (d < 1e-6) {
-          const a = seedAngle(`${p.id}|${q.id}`);
-          dx = Math.cos(a);
-          dy = Math.sin(a);
-          d = 1;
-        }
-        const push = need - d;
-        const ux = dx / d;
-        const uy = dy / d;
-        const pShare = p.fixed ? 0 : q.fixed ? 1 : 0.5;
-        const qShare = 1 - pShare;
-        p.x -= ux * push * pShare;
-        p.y -= uy * push * pShare;
-        q.x += ux * push * qShare;
-        q.y += uy * push * qShare;
-        moved = true;
+        if (pushApart(p, q, gap)) moved = true;
       }
+    }
+    if (!moved) return;
+  }
+}
+
+/**
+ * Separation over a neighbour list with a skin, rebuilt when a body has drifted half the skin, so a
+ * round that moves nothing has tested every overlapping pair. O(rounds · n + rebuilds · n log n + listed pairs).
+ */
+function separateNear(bodies: Body[], gap: number, rounds: number): void {
+  const n = bodies.length;
+  const skin = SEPARATION_SKIN * bodies.map((b) => 2 * b.r + gap).sort((a, b) => a - b)[n >> 1]!;
+  const limit = (skin / 2) ** 2;
+  const builtX = new Float64Array(n);
+  const builtY = new Float64Array(n);
+  let list: NeighbourList | null = null;
+  for (let round = 0; round < rounds; round += 1) {
+    let drifted = list === null;
+    for (let k = 0; k < n && !drifted; k += 1) {
+      const dx = bodies[k]!.x - builtX[k]!;
+      const dy = bodies[k]!.y - builtY[k]!;
+      drifted = dx * dx + dy * dy > limit;
+    }
+    if (drifted) {
+      list = neighbourList(bodies, gap, skin);
+      for (let k = 0; k < n; k += 1) {
+        builtX[k] = bodies[k]!.x;
+        builtY[k] = bodies[k]!.y;
+      }
+    }
+    const { start, to } = list!;
+    let moved = false;
+    for (let i = 0; i < n; i += 1) {
+      for (let e = start[i]!; e < start[i + 1]!; e += 1) if (pushApart(bodies[i]!, bodies[to[e]!]!, gap)) moved = true;
     }
     if (!moved) return;
   }
@@ -162,7 +250,7 @@ function estimateFootprint(items: readonly FlatGraphItem[], tokens: FlatGraphLay
 }
 
 function layoutCluster(
-  model: DialModel,
+  dependencies: readonly DialCapabilityDependency[],
   domainId: string,
   items: FlatGraphItem[],
   outward: number,
@@ -206,7 +294,7 @@ function layoutCluster(
     anchorOf.set(p.domainId, id);
     bodies.push({ id, x: Math.cos(p.angle) * estimate * tokens.anchorReach, y: Math.sin(p.angle) * estimate * tokens.anchorReach, r: 1, fixed: true });
   }
-  for (const dep of model.capabilityDependencies) {
+  for (const dep of dependencies) {
     const inside = members.has(dep.from) ? dep.from : members.has(dep.to) ? dep.to : null;
     if (inside === null) continue;
     const other = inside === dep.from ? dep.to : dep.from;
@@ -517,28 +605,87 @@ function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
  * clear at the scale the fit will show, re-run at most `TITLE_PASSES` + `MEMBER_PASSES` times as it settles;
  * the graph is fitted once more to the name rows alone, and that picture wins when the full titles
  * outgrow the area or it shows clearly larger.
- * Cost: O(P·(I·D² + I·n²)) for P passes, D domains and n items per domain; elements are O(E).
+ * Cost: O(I·D²) for the domains once, then O(P·D·(I·b² + R·n²)) for P ≤ 20 passes over D clusters
+ * of b bodies and n members with R separation rounds; elements are O(E). An input equal to the
+ * last call's returns that layout after an O(input) comparison.
  */
 export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+  const inputs = layoutInputs(model, order, tokens, pins, frame);
+  if (lastLayout !== null && sameInputs(lastLayout.inputs, inputs)) return lastLayout.layout;
+  const layout = fitLayout(model, order, tokens, pins, frame);
+  lastLayout = { inputs, layout };
+  return layout;
+}
+
+type LayoutInput = string | number | boolean | null;
+
+/** The last layout and every value it read: a folder that grows only in kinds the graph does not draw lays out once. */
+let lastLayout: { inputs: LayoutInput[]; layout: FlatGraphLayout } | null = null;
+
+/** Every value `fitLayout` reads, in a fixed order with list lengths. O(D + C + E + flows + dependencies). */
+function layoutInputs(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutInput[] {
+  const out: LayoutInput[] = [model.projectId];
+  const list = (values: readonly LayoutInput[]) => {
+    out.push(values.length);
+    for (const v of values) out.push(v);
+  };
+  list(order);
+  for (const id of order) {
+    const d = model.domainById.get(id);
+    if (!d) {
+      out.push(null);
+      continue;
+    }
+    list(d.capabilityIds);
+    list(d.directElementIds);
+    for (const cap of d.capabilityIds) list(model.capabilityById.get(cap)?.elementIds ?? []);
+  }
+  out.push(model.flows.length);
+  for (const f of model.flows) out.push(f.a, f.b, f.total);
+  out.push(model.capabilityDependencies.length);
+  for (const dep of model.capabilityDependencies) out.push(dep.from, dep.to, dep.fromDomain, dep.toDomain);
+  list(model.orphanIds);
+  for (const key of Object.keys(tokens).sort()) out.push(key, tokens[key as keyof FlatGraphLayoutTokens]);
+  for (const points of [pins?.positions, pins?.seeds]) {
+    out.push(points?.size ?? null);
+    for (const [id, at] of points ?? []) out.push(id, at.x, at.y);
+  }
+  out.push(pins?.compactTitles ?? null, frame?.areaPx?.width ?? null, frame?.areaPx?.height ?? null, frame?.capDiscPx ?? null, frame?.hubPx ?? null);
+  for (const titles of [frame?.titles, frame?.compactTitles]) {
+    out.push(titles?.size ?? null);
+    for (const [id, t] of titles ?? []) out.push(id, t.halfWidthPx, t.topPx, t.bottomPx);
+  }
+  return out;
+}
+
+function sameInputs(a: readonly LayoutInput[], b: readonly LayoutInput[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let k = 0; k < a.length; k += 1) if (a[k] !== b[k]) return false;
+  return true;
+}
+
+function fitLayout(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): FlatGraphLayout {
+  const area = frame?.areaPx ?? null;
+  const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
+  const basis = graphBasis(model, order, tokens, pins, aspect);
   const nameRows = frame?.compactTitles ? { ...frame, titles: frame.compactTitles } : null;
-  if (nameRows === null) return fitGraph(model, order, tokens, pins, frame).layout;
+  if (nameRows === null) return fitGraph(basis, tokens, pins, frame).layout;
   // Pinned positions cannot answer a title reservation, so a pinned rebuild keeps the remembered choice.
   if (pins !== null && pins.positions.size > 0) {
-    return { ...fitGraph(model, order, tokens, pins, pins.compactTitles ? nameRows : frame).layout, compactTitles: pins.compactTitles };
+    return { ...fitGraph(basis, tokens, pins, pins.compactTitles ? nameRows : frame).layout, compactTitles: pins.compactTitles };
   }
-  const full = fitGraph(model, order, tokens, pins, frame);
-  const compact = fitGraph(model, order, tokens, pins, nameRows);
+  const full = fitGraph(basis, tokens, pins, frame);
+  const compact = fitGraph(basis, tokens, pins, nameRows);
   if (full.titlesHold && full.shown <= compact.shown * COMPACT_TITLE_GAIN) return full.layout;
   return { ...(compact.shown <= full.shown ? compact : full).layout, compactTitles: true };
 }
 
 /** One fit of the graph to the frame's titles: whether the fitted scale keeps every title block clear, and the world units it shows per px. */
-function fitGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): { layout: FlatGraphLayout; titlesHold: boolean; shown: number } {
+function fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): { layout: FlatGraphLayout; titlesHold: boolean; shown: number } {
   const area = frame?.areaPx ?? null;
-  const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
   const shownOf = (l: FlatGraphLayout) => area === null ? 1 : Math.max(1, (l.extent.maxX - l.extent.minX) / area.width, (l.extent.maxY - l.extent.minY) / area.height);
   let worldPerPx = 1;
-  let layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, worldPerPx);
+  let layout = placeGraph(basis, tokens, pins, frame, worldPerPx, worldPerPx);
   let shown = shownOf(layout);
   let before = { at: worldPerPx, shown };
   for (let pass = 1; pass < TITLE_PASSES && shown > worldPerPx; pass += 1) {
@@ -548,28 +695,72 @@ function fitGraph(model: DialModel, order: readonly string[], tokens: FlatGraphL
     const fixedPoint = outgrown ? shown : (shown - slope * worldPerPx) / (1 - slope);
     before = { at: worldPerPx, shown };
     worldPerPx = Math.max(shown, fixedPoint) * TITLE_PASS_MARGIN;
-    layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, worldPerPx);
+    layout = placeGraph(basis, tokens, pins, frame, worldPerPx, worldPerPx);
     shown = shownOf(layout);
   }
   const titlesHold = shown <= worldPerPx;
   for (let pass = 0, memberScale = worldPerPx; pass < MEMBER_PASSES && shown > memberScale; pass += 1) {
     memberScale = shown * TITLE_PASS_MARGIN;
-    layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, memberScale);
+    layout = placeGraph(basis, tokens, pins, frame, worldPerPx, memberScale);
     shown = shownOf(layout);
   }
   return { layout, titlesHold, shown };
 }
 
+/** What every pass of one layout shares: the domains' own placement and each cluster's inputs. O(D² · I + C + deps). */
+interface GraphBasis {
+  model: DialModel;
+  aspect: number;
+  domainIds: string[];
+  itemsByDomain: Map<string, FlatGraphItem[]>;
+  centres: Map<string, Point>;
+  outwardByDomain: Map<string, number>;
+  partnersByDomain: Map<string, { domainId: string; angle: number; weight: number }[]>;
+  dependenciesByDomain: Map<string, DialCapabilityDependency[]>;
+  degree: Map<string, number>;
+}
+
+function graphBasis(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, aspect: number): GraphBasis {
+  const domainIds = order.filter((id) => model.domainById.has(id));
+  const itemsByDomain = new Map(domainIds.map((id) => [id, itemsOf(model, id)] as const));
+  const estimates = new Map(domainIds.map((id) => [id, estimateFootprint(itemsByDomain.get(id)!, tokens)] as const));
+  const centres = placeDomains(model, domainIds, estimates, pins, tokens, aspect);
+  const weights = new Map<string, Map<string, number>>(domainIds.map((id) => [id, new Map()]));
+  for (const f of model.flows) {
+    weights.get(f.a)?.set(f.b, (weights.get(f.a)?.get(f.b) ?? 0) + f.total);
+    weights.get(f.b)?.set(f.a, (weights.get(f.b)?.get(f.a) ?? 0) + f.total);
+  }
+  const outwardByDomain = new Map<string, number>();
+  const partnersByDomain = new Map<string, { domainId: string; angle: number; weight: number }[]>();
+  for (const id of domainIds) {
+    const c = centres.get(id)!;
+    outwardByDomain.set(id, model.projectId !== null && Math.hypot(c.x, c.y) > 1e-6 ? Math.atan2(c.y, c.x) : seedAngle(id));
+    partnersByDomain.set(id, [...weights.get(id)!].sort(([a], [b]) => byId(a, b)).map(([other, weight]) => {
+      const o = centres.get(other)!;
+      return { domainId: other, angle: Math.atan2(o.y - c.y, o.x - c.x), weight };
+    }));
+  }
+  const domainOfItem = new Map<string, string>();
+  for (const [id, items] of itemsByDomain) for (const it of items) domainOfItem.set(it.id, id);
+  const dependenciesByDomain = new Map<string, DialCapabilityDependency[]>(domainIds.map((id) => [id, []]));
+  for (const dep of model.capabilityDependencies) {
+    const from = domainOfItem.get(dep.from);
+    const to = domainOfItem.get(dep.to);
+    if (from !== undefined) dependenciesByDomain.get(from)!.push(dep);
+    if (to !== undefined && to !== from) dependenciesByDomain.get(to)!.push(dep);
+  }
+  return { model, aspect, domainIds, itemsByDomain, centres, outwardByDomain, partnersByDomain, dependenciesByDomain, degree: crossDegree(model) };
+}
+
 function placeGraph(
-  model: DialModel,
-  order: readonly string[],
+  basis: GraphBasis,
   tokens: FlatGraphLayoutTokens,
   pins: FlatGraphPins | null,
   frame: FlatGraphFrame | null,
-  aspect: number,
   worldPerPx: number,
   memberWorldPerPx: number,
 ): FlatGraphLayout {
+  const { model, aspect, domainIds, itemsByDomain } = basis;
   const pinned = pins?.positions ?? new Map<string, Point>();
   const titleAt = (id: string, scale: number): Box => {
     const t = frame?.titles.get(id) ?? fallbackTitle(tokens);
@@ -581,25 +772,11 @@ function placeGraph(
     return Math.max(Math.hypot(t.minX, t.minY), Math.hypot(t.maxX, t.minY), Math.hypot(t.minX, t.maxY), Math.hypot(t.maxX, t.maxY));
   };
   const memberClearance = (frame?.capDiscPx ?? 0) * memberWorldPerPx;
-  const domainIds = order.filter((id) => model.domainById.has(id));
-  const itemsByDomain = new Map(domainIds.map((id) => [id, itemsOf(model, id)] as const));
-  const estimates = new Map(domainIds.map((id) => [id, estimateFootprint(itemsByDomain.get(id)!, tokens)] as const));
-  const centres = placeDomains(model, domainIds, estimates, pins, tokens, aspect);
-  const degree = crossDegree(model);
-  const partnersOf = new Map<string, Map<string, number>>(domainIds.map((id) => [id, new Map()]));
-  for (const f of model.flows) {
-    partnersOf.get(f.a)?.set(f.b, (partnersOf.get(f.a)?.get(f.b) ?? 0) + f.total);
-    partnersOf.get(f.b)?.set(f.a, (partnersOf.get(f.b)?.get(f.a) ?? 0) + f.total);
-  }
+  const centres = new Map([...basis.centres].map(([id, at]) => [id, { ...at }] as const));
   const locals = new Map<string, LocalCluster>();
   for (const id of domainIds) {
     const c = centres.get(id)!;
-    const outward = model.projectId !== null && Math.hypot(c.x, c.y) > 1e-6 ? Math.atan2(c.y, c.x) : seedAngle(id);
-    const partners = [...partnersOf.get(id)!].sort(([a], [b]) => byId(a, b)).map(([other, weight]) => {
-      const o = centres.get(other)!;
-      return { domainId: other, angle: Math.atan2(o.y - c.y, o.x - c.x), weight };
-    });
-    locals.set(id, layoutCluster(model, id, itemsByDomain.get(id)!, outward, partners, degree, pinned, pinned.has(id) ? c : null, titleAt(id, memberWorldPerPx), roomOf(id), memberClearance, tokens));
+    locals.set(id, layoutCluster(basis.dependenciesByDomain.get(id)!, id, itemsByDomain.get(id)!, basis.outwardByDomain.get(id)!, basis.partnersByDomain.get(id)!, basis.degree, pinned, pinned.has(id) ? c : null, titleAt(id, memberWorldPerPx), roomOf(id), memberClearance, tokens));
   }
   spreadDomains(centres, new Map(domainIds.map((id) => [id, locals.get(id)!.footprint])), pinned, model.projectId !== null, Math.max(tokens.hubClearance, (frame?.hubPx ?? 0) * worldPerPx), tokens, aspect);
 
