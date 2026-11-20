@@ -28,7 +28,6 @@ import {
   WIKI_REQUIRED_FIELDS as REQUIRED_MCP,
   WIKI_SECTION_ORDER as SECTIONS_MCP,
   validateWikiFolder as validateFolderMcp,
-  validateWikiFolderFromFacts as fromFactsMcp,
   validateWikiPage as validateMcp,
   wikiPageCodes as codesMcp,
   wikiPageFacts as factsMcp,
@@ -197,13 +196,25 @@ describe('the wiki folder contract — both implementations agree', () => {
 /**
  * Page facts stand in for page text once a page has been read, so judging from facts must answer
  * exactly what judging from text answers: the folder half byte for byte, a page's codes as a set.
+ * The MCP folder half judges from facts only, so the text-based reference is the web twin's.
  */
 describe('wiki page facts — judging from facts equals judging from text', () => {
   const generated = generatedWikiFolder();
   const folders = [...WIKI_FOLDER_CASES.map((testCase) => testCase.pages), generated.pages];
+  type FolderPages = Parameters<typeof validateFolderTs>[0];
   const IMPLEMENTATIONS = {
-    'src/shared/lib (TS)': { facts: factsTs, fromFacts: fromFactsTs, folder: validateFolderTs, page: validateTs, codes: codesTs },
-    'mcp/src/library/wiki-schema.mjs': { facts: factsMcp, fromFacts: fromFactsMcp, folder: validateFolderMcp, page: validateMcp, codes: codesMcp },
+    'src/shared/lib (TS)': {
+      facts: factsTs,
+      folderFromFacts: (pages: FolderPages) => fromFactsTs(pages.map((page) => ({ path: page.path, facts: factsTs(page.raw) }))),
+      page: validateTs,
+      codes: codesTs,
+    },
+    'mcp/src/library/wiki-schema.mjs': {
+      facts: factsMcp as typeof factsTs,
+      folderFromFacts: validateFolderMcp,
+      page: validateMcp,
+      codes: codesMcp as typeof codesTs,
+    },
   } as const;
   const distinct = (codes: readonly string[]) => [...new Set(codes)].sort();
 
@@ -224,8 +235,7 @@ describe('wiki page facts — judging from facts equals judging from text', () =
     describe(name, () => {
       it('the folder half from facts is byte-identical to the folder half from text on every folder', () => {
         for (const pages of folders) {
-          const fromFacts = implementation.fromFacts(pages.map((page) => ({ path: page.path, facts: implementation.facts(page.raw) })));
-          expect(JSON.stringify(fromFacts)).toBe(JSON.stringify(implementation.folder(pages)));
+          expect(JSON.stringify(implementation.folderFromFacts(pages))).toBe(JSON.stringify(validateFolderTs(pages)));
         }
       });
 

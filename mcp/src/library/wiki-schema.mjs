@@ -627,6 +627,9 @@ function readDeclaredSources(frontmatter) {
   return [];
 }
 
+/** Unlinked shared-source partners a page names before it counts the rest. */
+const WIKI_SHARED_PARTNER_LIMIT = 10;
+
 /**
  * The folder half: facts only visible with every page present. Whether pages
  * disagree is an agent's lint judgement; these are deterministic
@@ -635,6 +638,8 @@ function readDeclaredSources(frontmatter) {
  * from one primary source that do not link each other).
  * Why these three: they are the folder faults (missing cross-references, unlinked
  * pages from one source) a script can decide while every single page validates.
+ * Judged from each page's facts (`wikiFolderJudgement` states the cost); the web twin
+ * judges from text, and the contract test holds the two byte-identical.
  *
  * @param {Array<{ path: string, raw: string, parsed?: { frontmatter: object, body: string } }>} pages
  *   every page, template excluded, each with a vault-relative `path` (`wiki/<slug>.md`);
@@ -642,156 +647,11 @@ function readDeclaredSources(frontmatter) {
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  *   one entry per input page, in input order, `problems` possibly empty
  */
-/** Unlinked shared-source partners a page names before it counts the rest. */
-const WIKI_SHARED_PARTNER_LIMIT = 10;
-
 export function validateWikiFolder(pages) {
-  const entries = (pages ?? []).map((page) => {
-    const path = String(page.path ?? '');
-    const slug = path.replace(/\.md$/, '');
-    const text = String(page.raw ?? '');
-    const { frontmatter, body } = page.parsed ?? parseFrontmatter(text);
-    const declared = readDeclaredSources(frontmatter);
-    return {
-      path,
-      slug,
-      links: extractWikiPageLinks(body, frontmatterLineCount(text, body)),
-      sources: new Set(declared),
-      primary: declared[0] ?? null,
-      problems: [],
-    };
-  });
-  const bySlug = new Map(entries.map((entry) => [entry.slug, entry]));
-  const inbound = new Map(entries.map((entry) => [entry.slug, new Set()]));
-
-  for (const entry of entries) {
-    const seen = new Set();
-    for (const link of entry.links) {
-      if (link.target === entry.slug) continue;
-      const target = bySlug.get(link.target);
-      if (target) {
-        inbound.get(target.slug).add(entry.slug);
-        continue;
-      }
-      if (!namesWikiFolder(link.target)) continue;
-      if (seen.has(link.target)) continue;
-      seen.add(link.target);
-      entry.problems.push(
-        problem(
-          'dangling-wikilink',
-          `\`[[${link.target}]]\` names a page that is not in this folder. Link only to a page that exists, or write the page.`,
-          link.line,
-          { key: 'dangling-wikilink', values: { target: link.target } },
-        ),
-      );
-    }
-  }
-
-  if (entries.length >= 2) {
-    for (const entry of entries) {
-      if (inbound.get(entry.slug).size > 0) continue;
-      entry.problems.push(
-        problem(
-          'orphan-page',
-          'No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.',
-          undefined,
-          { key: 'orphan-page' },
-        ),
-      );
-    }
-  }
-
-  // Two pages are partners when one's primary source (its first) is listed by the other.
-  // Each page names at most WIKI_SHARED_PARTNER_LIMIT unlinked partners in input order and
-  // counts the rest, so a folder of k pages written from one document costs O(k), not k².
-  // Cost: O(P + Σ sources + links), plus per page O((limit + linked partners) · its sources).
-  const listedBy = new Map();
-  const primaryOf = new Map();
-  const primaryListing = new Map();
-  const pushTo = (map, key, index) => {
-    const list = map.get(key);
-    if (list) list.push(index);
-    else map.set(key, [index]);
-  };
-  const pairKey = (primary, listed) => `${primary}\u0000${listed}`;
-  entries.forEach((entry, index) => {
-    for (const source of entry.sources) pushTo(listedBy, source, index);
-    if (entry.primary === null) return;
-    pushTo(primaryOf, entry.primary, index);
-    for (const source of entry.sources) {
-      const key = pairKey(entry.primary, source);
-      primaryListing.set(key, (primaryListing.get(key) ?? 0) + 1);
-    }
-  });
-  const isPartner = (page, other) =>
-    page !== other &&
-    ((page.primary !== null && other.sources.has(page.primary)) ||
-      (other.primary !== null && page.sources.has(other.primary)));
-
-  entries.forEach((entry, index) => {
-    if (entry.primary === null) return;
-    const linked = new Set(inbound.get(entry.slug));
-    for (const link of entry.links) if (bySlug.has(link.target)) linked.add(link.target);
-    let linkedPartners = 0;
-    for (const slug of linked) if (isPartner(entry, bySlug.get(slug))) linkedPartners += 1;
-    // Pages listing this one's primary, plus pages whose primary this one lists and that
-    // do not also list this one's primary (those are already counted).
-    let partners = listedBy.get(entry.primary).length - 1;
-    const lists = [listedBy.get(entry.primary)];
-    for (const source of entry.sources) {
-      if (source === entry.primary) continue;
-      const written = primaryOf.get(source) ?? [];
-      partners += written.length - (primaryListing.get(pairKey(source, entry.primary)) ?? 0);
-      if (written.length > 0) lists.push(written);
-    }
-    const unlinked = partners - linkedPartners;
-    if (unlinked === 0) return;
-    // Merge the ascending index lists to meet partners in input order.
-    const heads = lists.map(() => 0);
-    let previous = -1;
-    let named = 0;
-    while (named < WIKI_SHARED_PARTNER_LIMIT) {
-      let pick = -1;
-      for (let list = 0; list < lists.length; list += 1) {
-        const at = lists[list][heads[list]];
-        if (at !== undefined && (pick < 0 || at < lists[pick][heads[pick]])) pick = list;
-      }
-      if (pick < 0) break;
-      const other = lists[pick][heads[pick]];
-      heads[pick] += 1;
-      if (other === previous || other === index) continue;
-      previous = other;
-      const partner = entries[other];
-      if (linked.has(partner.slug)) continue;
-      // Only a page's primary source counts; sorted so every caller words it alike.
-      const shared = [...entry.sources]
-        .filter((source) => partner.sources.has(source) && (entry.primary === source || partner.primary === source))
-        .sort();
-      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
-      entry.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `\`${partner.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-          undefined,
-          { key: 'shared-source-unlinked', values: { other: partner.path, sources: sourceList } },
-        ),
-      );
-      named += 1;
-    }
-    if (unlinked > named) {
-      const more = unlinked - named;
-      entry.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `${more} more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.`,
-          undefined,
-          { key: 'shared-source-unlinked-more', values: { count: String(more) } },
-        ),
-      );
-    }
-  });
-
-  return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));
+  return validateWikiFolderFromFacts((pages ?? []).map((page) => ({
+    path: page.path,
+    facts: wikiPageFacts(page.raw, page.parsed),
+  })));
 }
 
 /**
@@ -801,8 +661,7 @@ export function validateWikiFolder(pages) {
  * @property {readonly string[]} describes `describes:` entries, resolved per call against `nodes`
  * @property {readonly string[]} citations distinct cited paths, checked per call against `knownSources`
  * @property {readonly string[]} sources distinct declared sources, the first being the primary
- * @property {readonly string[]} links distinct link targets into `wiki/`, in order of first
- *   appearance: the folder half's pages all live there, so no other target can name one
+ * @property {readonly string[]} links distinct link targets in order of first appearance
  * @property {readonly number[]} linkLines the file line each target first appears on
  */
 
@@ -850,7 +709,7 @@ export function wikiPageFacts(raw, parsed) {
   // first line, and a link to a page counts once.
   const seen = new Set();
   for (const link of extractWikiPageLinks(body, frontmatterLineCount(text, body))) {
-    if (!namesWikiFolder(link.target) || seen.has(link.target)) continue;
+    if (seen.has(link.target)) continue;
     seen.add(link.target);
     links.push(link.target);
     linkLines.push(link.line);
@@ -895,11 +754,12 @@ export function wikiPageCodes(facts, options = {}) {
 }
 
 /**
- * `validateWikiFolder`'s judgement over page facts, asked one page at a time, so a caller
- * that shows a few pages builds the problem objects of those pages only.
+ * The folder half over page facts, asked one page at a time, so a caller that shows a few
+ * pages builds the problem objects of those pages only. Pages that share a primary source
+ * name at most ten partners each, met in input order by merging ascending index lists.
  * Cost: O(P + Σ links + Σ sources) to index the folder; then per page O(its links) for
  * dangling links, O(1) for an orphan, and O((limit + linked partners) · its sources) for
- * shared sources, which `validateWikiFolder` spends on every page.
+ * shared sources.
  *
  * @param {Array<{ path: string, facts: WikiPageFacts }>} pages in the order `validateWikiFolder` takes them
  * @returns {{ codesOf(index: number): string[], problemsOf(index: number): Array<{ code: string, message: string, line?: number }> }}
@@ -917,7 +777,7 @@ export function wikiFolderJudgement(pages) {
       primary: sources[0] ?? null,
     };
   });
-  // The last page of a slug wins and inbound links are keyed by slug, as in `validateWikiFolder`.
+  // The last page of a slug wins and inbound links are keyed by slug, as the text-based twin does.
   const bySlug = new Map(entries.map((entry, index) => [entry.slug, index]));
   const inbound = new Map();
   for (const entry of entries) {
@@ -1061,13 +921,13 @@ export function wikiFolderJudgement(pages) {
 }
 
 /**
- * `validateWikiFolder(pages)` from each page's facts instead of its text, equal byte for byte
- * for pages under `wiki/`, which is what `validateWikiFolder` is handed.
+ * The folder half from each page's facts instead of its text, byte-identical to the web
+ * twin's `validateWikiFolder`, which judges from text.
  *
  * @param {Array<{ path: string, facts: WikiPageFacts }>} pages
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  */
-export function validateWikiFolderFromFacts(pages) {
+function validateWikiFolderFromFacts(pages) {
   const judgement = wikiFolderJudgement(pages);
   return (pages ?? []).map((page, index) => ({ path: String(page.path ?? ''), problems: judgement.problemsOf(index) }));
 }

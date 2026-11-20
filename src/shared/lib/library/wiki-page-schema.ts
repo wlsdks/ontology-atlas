@@ -865,10 +865,7 @@ export interface WikiPageFacts {
   citations: readonly string[];
   /** Distinct declared sources, the first being the primary. */
   sources: readonly string[];
-  /**
-   * Distinct link targets into `wiki/`, in order of first appearance: the folder half's pages all
-   * live there, so no other target can name one.
-   */
+  /** Distinct link targets in order of first appearance. */
   links: readonly string[];
   /** The file line each target first appears on. */
   linkLines: readonly number[];
@@ -919,7 +916,7 @@ export function wikiPageFacts(raw: string, parsed?: ParsedFrontmatter): WikiPage
   // first line, and a link to a page counts once.
   const seen = new Set<string>();
   for (const link of extractWikiPageLinks(body, frontmatterLineCount(text, body))) {
-    if (!namesWikiFolder(link.target) || seen.has(link.target)) continue;
+    if (seen.has(link.target)) continue;
     seen.add(link.target);
     links.push(link.target);
     linkLines.push(link.line);
@@ -1131,10 +1128,7 @@ export function wikiFolderJudgement(pages: readonly WikiFolderFactsInput[]): Wik
   };
 }
 
-/**
- * `validateWikiFolder(pages)` from each page's facts instead of its text, equal byte for byte for
- * pages under `wiki/`, which is what `validateWikiFolder` is handed.
- */
+/** `validateWikiFolder(pages)` from each page's facts instead of its text, equal byte for byte. */
 export function validateWikiFolderFromFacts(pages: readonly WikiFolderFactsInput[]): WikiFolderVerdict[] {
   const judgement = wikiFolderJudgement(pages);
   return (pages ?? []).map((page, index) => ({ path: String(page.path ?? ''), problems: judgement.problemsOf(index) }));
