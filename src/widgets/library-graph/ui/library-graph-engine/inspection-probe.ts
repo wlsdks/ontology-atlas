@@ -50,7 +50,15 @@ export function mountLibraryGraphProbe(
       columnsRef.current
         ? {
             rowGap: columnsRef.current.rowGap,
-            columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length, labelRoom: column.labelRoom })),
+            columns: columnsRef.current.columns.map((column) => ({
+              kind: column.kind,
+              x: column.x,
+              lanes: column.lanes,
+              stacks: column.stacks,
+              named: column.named,
+              count: column.ids.length,
+              labelRoom: column.labelRoom,
+            })),
           }
         : null,
     /** The scale the fit tile would take the camera to. */

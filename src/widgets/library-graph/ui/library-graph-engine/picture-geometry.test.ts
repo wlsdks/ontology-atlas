@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph } from "../../model/build-library-graph";
-import { FLOW_ROW_MIN_PX, flowLayout } from "../../model/library-flow-layout";
-import { FIT_PADDING, FLOW_FIT_PADDING_Y, flowFitView, flowWorld } from "./picture-geometry";
+import { flowLayout } from "../../model/library-flow-layout";
+import { FLOW_ROW_MIN_PX } from "../../model/library-flow-measure";
+import { fitView } from "../../model/library-graph-view";
+import { FIT_PADDING, FLOW_FIT_PADDING, FLOW_FIT_PADDING_Y, flowWorld, zoomedToReadFlowNames } from "./picture-geometry";
 
 function foldedFolder(pages: number): LibraryGraph {
   const nodes = [
@@ -17,34 +19,44 @@ function foldedFolder(pages: number): LibraryGraph {
   return { nodes, edges } as LibraryGraph;
 }
 
+const CANVASES = [
+  { width: 856, height: 527 },
+  { width: 1088, height: 628 },
+  { width: 1496, height: 827 },
+];
+
 describe("flow picture geometry", () => {
-  it("frames a laid flow box with the flow clearance above and below and the full clearance at the sides", () => {
-    for (const box of [{ width: 856, height: 527 }, { width: 1088, height: 628 }, { width: 1496, height: 827 }]) {
+  it("shows the picture at exactly the zoom the layout was laid for, inside the flow clearance", () => {
+    for (const canvas of CANVASES) {
       for (const pages of [8, 60, 150]) {
-        const world = flowWorld(box, 2);
-        const layout = flowLayout(foldedFolder(pages), world);
-        const view = flowFitView({ minX: 0, minY: 0, maxX: layout.extent.width, maxY: layout.extent.height }, box, 2);
-        const shownWidth = layout.extent.width * view.scale;
-        const shownHeight = layout.extent.height * view.scale;
-        const label = `${box.width}x${box.height}, ${pages} pages`;
-        expect(shownWidth, label).toBeLessThanOrEqual(box.width - FIT_PADDING * 2 + 1e-6);
-        expect(shownHeight, label).toBeLessThanOrEqual(box.height - FLOW_FIT_PADDING_Y * 2 + 1e-6);
-        // The camera shows the picture at the scale the layout chose its stacks for, so a
-        // row the layout counted as keeping the floor keeps it on screen.
-        expect(view.scale, label).toBeCloseTo(Math.min(2, layout.scale * world.cameraGain!), 6);
-        if (layout.columns.some((column) => column.kind === "page" && column.grid > 1)) {
-          expect(layout.rowGap * view.scale, label).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
-        }
+        const layout = flowLayout(foldedFolder(pages), flowWorld(canvas, 2));
+        const view = fitView({ minX: 0, minY: 0, maxX: layout.extent.width, maxY: layout.extent.height }, canvas, FLOW_FIT_PADDING, 2);
+        const label = `${canvas.width}x${canvas.height}, ${pages} pages`;
+        expect(view.scale, label).toBe(layout.scale);
+        expect(layout.extent.width * view.scale, label).toBeLessThanOrEqual(canvas.width - FIT_PADDING * 2 + 1e-6);
+        expect(layout.extent.height * view.scale, label).toBeLessThanOrEqual(canvas.height - FLOW_FIT_PADDING_Y * 2 + 1e-6);
       }
     }
   });
 
+  it("names a column without names at rest once the view is zoomed in to read, a zoom the camera can reach", () => {
+    // Fit well under the ceiling: half again past the fit names everything; a nudge does not.
+    expect(zoomedToReadFlowNames(0.8, 0.8, 2)).toBe(false);
+    expect(zoomedToReadFlowNames(1.0, 0.8, 2)).toBe(false);
+    expect(zoomedToReadFlowNames(1.2, 0.8, 2)).toBe(true);
+    // Fit near the ceiling: the ceiling itself is enough, since half again is out of reach.
+    expect(zoomedToReadFlowNames(1.9, 1.6, 2)).toBe(false);
+    expect(zoomedToReadFlowNames(2, 1.6, 2)).toBe(true);
+    // Fit at the ceiling: nothing past it to zoom to.
+    expect(zoomedToReadFlowNames(2, 2, 2)).toBe(false);
+  });
+
   it("gives a folded folder's rows the height the side clearance does not take", () => {
-    const box = { width: 1088, height: 628 };
-    const layout = flowLayout(foldedFolder(60), flowWorld(box, 2));
-    const view = flowFitView({ minX: 0, minY: 0, maxX: layout.extent.width, maxY: layout.extent.height }, box, 2);
+    const canvas = { width: 1088, height: 628 };
+    const layout = flowLayout(foldedFolder(60), flowWorld(canvas, 2));
     // 30 rows at 18px need 522px: inside 628 less 24px twice, not 628 less 64px twice.
-    expect(layout.columns.find((column) => column.kind === "page")!.grid).toBe(2);
-    expect(layout.extent.height * view.scale).toBeGreaterThan(box.height - FIT_PADDING * 2);
+    expect(layout.columns.find((column) => column.kind === "page")!.stacks).toBe(2);
+    expect(layout.extent.height * layout.scale).toBeGreaterThan(canvas.height - FIT_PADDING * 2);
+    expect(layout.rowGap * layout.scale).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
   });
 });

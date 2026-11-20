@@ -395,8 +395,9 @@ test.describe("the library graph responds", () => {
     await page.mouse.move(0, 0);
     await expect(page.getByTestId("library-graph-canvas")).toHaveAttribute("data-hovered-node-id", "");
     const layout = await page.evaluate(() => window.__atlasLibraryGraph!.layout());
-    expect(layout?.columns.find((column) => column.kind === "page")?.grid, "the page column did not fold into stacks").toBeGreaterThan(1);
+    expect(layout?.columns.find((column) => column.kind === "page")?.stacks, "the page column did not fold into stacks").toBeGreaterThan(1);
     const marks = await nodes(page);
+    const kindOf = new Map(marks.map((mark) => [mark.id, mark.kind]));
     const named = (labels: LibraryGraphProbeLabel[]) => new Set(labels.map((label) => label.nodeId));
     // The label pass fills its report on the next frame after the pointer leaves.
     await expect
@@ -406,6 +407,14 @@ test.describe("the library graph responds", () => {
       })
       .toEqual([]);
     const labels = await page.evaluate(() => window.__atlasLibraryGraph!.labels());
+    // Every name is cut to the room its column publishes, at the zoom the picture is shown at.
+    const { scale } = await page.evaluate(() => window.__atlasLibraryGraph!.view());
+    const roomPx = new Map<string, number>(layout!.columns.map((column) => [column.kind, column.labelRoom * scale]));
+    for (const label of labels) {
+      const room = roomPx.get(kindOf.get(label.nodeId)!) ?? 0;
+      expect(room, `${label.text} stands in a column given no room`).toBeGreaterThan(0);
+      expect(label.width, `${label.text} runs past its column's room`).toBeLessThanOrEqual(room + 0.5);
+    }
     const overlaps = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
       a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
     for (const [index, label] of labels.entries()) {

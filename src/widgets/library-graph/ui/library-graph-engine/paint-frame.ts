@@ -16,7 +16,7 @@ import { readLibraryGraphInk } from "../../render/library-graph-ink";
 
 import type { LibraryGraphEngineScope } from "./engine-scope";
 import { libraryGraphActivityMarks } from "./activity-marks";
-import { FIT_PADDING, flowFitView } from "./picture-geometry";
+import { FIT_PADDING, FLOW_FIT_PADDING, zoomedToReadFlowNames } from "./picture-geometry";
 
 /** On the overview a page's name stands once its dot is this wide on screen. */
 const ISLAND_PAGE_LABEL_MIN_PX = 10;
@@ -27,12 +27,6 @@ const ISLAND_SOURCE_LABEL_MIN_PX = 36;
  * a small island opens when aimed at from the zoom ceiling instead.
  */
 const ISLAND_OPENS_AT_VIEW_SHARE = 0.45;
-
-/**
- * A flow column with no names at rest (folded, or given no room) names its marks only this
- * far past the source threshold: 24px squares leave no room for a name until about 60px a row.
- */
-const FOLDED_LABEL_MIN_SCALE = SOURCE_LABEL_MIN_SCALE * 3.5;
 
 /** How fast an auto-fitting view catches up with the settling picture, per frame. */
 const AUTO_FIT_FOLLOW = 0.16;
@@ -108,7 +102,7 @@ export function paintLibraryGraphFrame(
       ? librarySimulationBounds(sim)
       : overviewGeometry?.bounds ?? null;
   // Where the fit tile would take the camera, every frame, so the tile stops offering a no-op press.
-  const fitTarget = laidFlow && bounds ? flowFitView(bounds, box, zoomMaxRef.current) : fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
+  const fitTarget = fitView(bounds, box, laidFlow ? FLOW_FIT_PADDING : FIT_PADDING, zoomMaxRef.current);
   fitScaleRef.current = fitTarget.scale;
   if (autoFitRef.current.on) {
     const target = fitTarget;
@@ -357,14 +351,11 @@ export function paintLibraryGraphFrame(
     };
     overviewGeometryRef.current = overviewGeometry;
   }
-  /*
-   * In the flow picture a column names its marks at rest when the layout gave it room, files
-   * and concepts only while unfolded; a column without names shows them once zoomed in.
-   */
-  const namedAtRest = (kind: LibraryGraphNode["kind"], scale: number): boolean => {
+  // In the flow picture a column names its marks when the layout names them at rest, or once zoomed in to read.
+  const zoomedToRead = zoomedToReadFlowNames(view.scale, fitTarget.scale, zoomMaxRef.current);
+  const flowNamesShown = (kind: LibraryGraphNode["kind"]): boolean => {
     const column = columnsRef.current?.columns.find((candidate) => candidate.kind === kind);
-    if (!column || scale >= FOLDED_LABEL_MIN_SCALE) return true;
-    return column.labelRoom > 0 && (kind === "page" || column.grid === 1);
+    return !column || column.named || zoomedToRead;
   };
   drawLibraryGraph(context, {
     nodes,
@@ -383,13 +374,13 @@ export function paintLibraryGraphFrame(
     radii: screenRadiiRef.current,
     sourceLabels:
       pictureRef.current === "flow"
-        ? namedAtRest("source", view.scale)
+        ? flowNamesShown("source")
         : pictureRef.current === "islands"
           ? widestPagePx >= ISLAND_SOURCE_LABEL_MIN_PX
           : view.scale >= SOURCE_LABEL_MIN_SCALE,
     conceptLabels:
       pictureRef.current === "flow"
-        ? namedAtRest("concept", view.scale)
+        ? flowNamesShown("concept")
         : pictureRef.current === "islands"
           ? false
           : view.scale >= SOURCE_LABEL_MIN_SCALE,
@@ -411,7 +402,7 @@ export function paintLibraryGraphFrame(
     hoveredIslandId: hoveredIslandRef.current,
     focusedIslandId: focusedIslandRef.current,
     islandReport: islandReportRef.current ?? undefined,
-    pageLabels: pictureRef.current === "flow" ? namedAtRest("page", view.scale) : pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
+    pageLabels: pictureRef.current === "flow" ? flowNamesShown("page") : pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
     focusEdgesOnly: pictureRef.current === "islands",
   });
 
