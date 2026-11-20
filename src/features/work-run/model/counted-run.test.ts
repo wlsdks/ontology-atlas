@@ -10,6 +10,7 @@ const OTHER = 'local:atlas';
 const preparing = (filesDone: number, fields: Partial<CountedRunObservation> = {}): CountedRunObservation => ({
   phase: 'preparing',
   updating: false,
+  quiet: false,
   filesDone,
   filesTotal: 2000,
   bytes: null,
@@ -53,6 +54,16 @@ describe('when the counted card rises', () => {
     expect(ringRun(workRuns.read())?.kind).toBe('meaning');
     observe(failed);
     expect(counted()).toMatchObject({ phase: 'failed', card: 'open', failure: { message: 'runnerDown' } });
+  });
+
+  it('draws nothing for an update of fewer than ten files and leaves a standing result as it was', () => {
+    observe(preparing(3, { updating: true, quiet: true, filesTotal: 9 }));
+    expect(counted()).toBeNull();
+    observe(preparing(1999, { pressed: 1 }));
+    observe(ready);
+    observe(preparing(3, { pressed: 1, updating: true, quiet: true, filesTotal: 9 }));
+    expect(counted()).toMatchObject({ phase: 'ready', card: 'open' });
+    expect(workRuns.readProgress()?.filesTotal).toBe(2000);
   });
 
   it('never raises the card for an update of changed files', () => {

@@ -5,8 +5,11 @@ export {
   type WorkRunActivity,
   type WorkRunOutcome,
 } from './model/work-run';
+export { type CountedRunObservation } from './model/counted-run';
 export { workRuns } from './model/work-run-store';
 export {
+  ringRun,
+  useCountedProgress,
   useFolderWorkRun,
   useWorkRunElapsed,
   useWorkRunSnapshot,

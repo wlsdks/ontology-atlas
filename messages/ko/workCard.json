@@ -4,5 +4,20 @@
   "close": "닫기",
   "progressLabel": "{title} 진행",
   "railRunning": "{destination}: 실행 중",
-  "railFinished": "{destination}: 끝난 실행 {count, number}개 확인 전"
+  "railFinished": "{destination}: 끝난 실행 {count, number}개 확인 전",
+  "meaning": {
+    "title": "의미 검색",
+    "files": "파일 {total, number}개 중 {done}개",
+    "modelBytes": "{total}GB 중 {done}GB",
+    "downloading": "모델 다운로드 중",
+    "converting": "모델 준비 중",
+    "minutesLeft": "약 {minutes, number}분 남음",
+    "readyLead": "파일 {total, number}개",
+    "ready": "의미로 찾을 준비가 됐어요",
+    "ask": "질문하기",
+    "openLibrary": "자료실 열기"
+  },
+  "moreRunning": "{count, number}개 더 진행 중",
+  "runsTitle": "진행 중인 작업",
+  "railRunningPercent": "{destination}: {percent, number}% 완료"
 }

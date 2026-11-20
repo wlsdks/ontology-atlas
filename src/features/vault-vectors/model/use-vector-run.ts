@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type RefCallback } from 'react';
 import type { VectorPhase, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
-import { deskLine, minutesLeftOf, type DeskLine } from './desk-line';
+import { deskLine, minutesLeftOf, UPDATE_RING_FILES, type DeskLine } from './desk-line';
 import { pressOf, resume, stop, subscribe, useVectorStatus } from './vector-store';
 
 const RUN_PHASES: ReadonlySet<VectorPhase> = new Set([
@@ -14,6 +14,8 @@ export interface VectorRun {
   phase: VectorPhase;
   /** Preparing only files that changed after `ready`; the rail draws no ring under ten of them. */
   updating: boolean;
+  /** An update of fewer than ten changed files: nothing outside the desk draws it. */
+  quiet: boolean;
   /** Bytes while the model downloads, files otherwise. */
   fraction: number;
   filesDone: number;
@@ -57,6 +59,7 @@ export function useVectorRun(rootPath: string | null): VectorRun | null {
     return {
       phase: status.phase,
       updating: status.updating,
+      quiet: status.phase === 'preparing' && status.updating && status.filesTotal < UPDATE_RING_FILES,
       fraction: Math.min(1, bytes ?? files),
       filesDone: status.filesDone,
       filesTotal: status.filesTotal,

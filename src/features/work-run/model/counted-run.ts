@@ -27,6 +27,8 @@ export interface CountedRunObservation {
   phase: CountedRunPhase;
   /** Preparing only files that changed after the folder was ready once. */
   updating: boolean;
+  /** An update too small to draw anywhere outside the folder's own stage. */
+  quiet: boolean;
   filesDone: number;
   filesTotal: number;
   /** While the model downloads. */
@@ -114,6 +116,8 @@ export function observeCounted(
 ): CountedRun | null {
   if (observation === null) return null;
   const run = previous?.folder === context.folder ? previous : null;
+  // A small update leaves whatever stands, a result the person has not closed included.
+  if (observation.quiet) return run;
   const active = ACTIVE.has(observation.phase);
   const newPress = observation.pressed !== null && observation.pressed !== run?.pressed;
   if (newPress) {

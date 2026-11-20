@@ -4,5 +4,20 @@
   "close": "关闭",
   "progressLabel": "{title} 进度",
   "railRunning": "{destination}：运行中",
-  "railFinished": "{destination}：{count, number} 个已完成的运行待查看"
+  "railFinished": "{destination}：{count, number} 个已完成的运行待查看",
+  "meaning": {
+    "title": "语义搜索",
+    "files": "{done} / {total, number} 个文件",
+    "modelBytes": "{done} / {total} GB",
+    "downloading": "正在下载模型",
+    "converting": "正在准备模型",
+    "minutesLeft": "约剩 {minutes, number} 分钟",
+    "readyLead": "{total, number} 个文件",
+    "ready": "已可按语义搜索",
+    "ask": "提问",
+    "openLibrary": "打开资料库"
+  },
+  "moreRunning": "另有 {count, number} 项正在运行",
+  "runsTitle": "正在运行",
+  "railRunningPercent": "{destination}：已完成 {percent, number}%"
 }

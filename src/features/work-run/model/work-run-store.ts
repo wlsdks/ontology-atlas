@@ -28,6 +28,9 @@ import {
 /** A door the seat asks the owning screen to open once it is mounted for the run's folder. */
 export type WorkRunDoor = 'results' | 'conversation';
 
+/** The counted card's doors: the Wiki desk with its question field, or the desk to fix a failure. */
+export type CountedDoor = 'ask' | 'library';
+
 export interface WorkRunSnapshot {
   run: WorkRun | null;
   /** The folder whose Check results stage is on screen; the card stands down for it. */
@@ -52,6 +55,7 @@ const listeners = new Set<() => void>();
 /** Another folder's counted run, kept as it was so reopening that folder shows it as left. */
 const parkedCounted = new Map<string, CountedRun>();
 let countedStop: (() => void) | null = null;
+let countedDoor: ((kind: CountedDoor) => void) | null = null;
 let progress: CountedProgress | null = null;
 let pendingProgress: CountedProgress | null = null;
 let progressAt = Number.NEGATIVE_INFINITY;
@@ -203,6 +207,7 @@ export const workRuns = {
       folder, at, stageShown, nextId: () => (nextId += 1),
     });
     publish({ counted: next, countedStage: next !== null && stageShown });
+    if (observation?.quiet && next !== null && next === previous && progress?.runId === next.id) return;
     const nextProgress = next && observation ? progressOf(next.id, observation) : null;
     const turned = next === null || next !== previous || progress?.runId !== next.id;
     if (turned || nextProgress === null) setProgress(nextProgress, at);
@@ -219,6 +224,15 @@ export const workRuns = {
   setCountedStop(stop: (() => void) | null) {
     countedStop = stop;
   },
+  /** Where the counted card's doors lead, registered by the app layer that knows the screens. */
+  setCountedDoor(open: ((kind: CountedDoor) => void) | null) {
+    countedDoor = open;
+  },
+  /** The card has said what it had to: it closes as the door opens. */
+  openCountedDoor(kind: CountedDoor) {
+    changeCounted(closeCounted);
+    countedDoor?.(kind);
+  },
   stopCounted() {
     const run = snapshot.counted;
     if (!run || !isCountedActive(run)) return;
@@ -234,6 +248,7 @@ export const workRuns = {
   reset() {
     stopTurn = null;
     countedStop = null;
+    countedDoor = null;
     parkedCounted.clear();
     if (progressTimer !== null) clearTimeout(progressTimer);
     progressTimer = null;
