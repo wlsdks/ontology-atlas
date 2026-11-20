@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { Chip, CloseButton, Dialog, DialogBody } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { LANDED, useLandOnce } from '@/widgets/round-ledger';
 import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
 import listStyles from './automation-list-frame.module.css';
@@ -34,7 +35,7 @@ export function useRunLead(): (entry: RoundPassEntry) => RunLead & { undone: str
   return (entry) => {
     const noteText = entry.note === 'no-agent'
       ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
-      : entry.note === 'stopped' ? ledgerText('stopped') : null;
+      : entry.note === 'stopped' ? t('runStopped') : null;
     const undoneLines = (entry.undone ?? []).map((item) =>
       `${item.action === 'left' ? t('leftAsIs', { page: item.path }) : t(`undone.${item.action}`, { page: item.path })} ${ledgerText(`undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? '' })}${item.copy ? ` ${ledgerText('undoneCopy', { copy: item.copy })}` : ''}`);
     const undone = undoneLines.length > 0 ? undoneLines.join(' ') : null;
@@ -84,20 +85,25 @@ export function AutomationHistoryHeading({ name, onShowAll }: { name: string | n
 }
 
 /** The Ontology lane's runs, newest first; a long history grows by a page at a time. */
-export function AutomationRunHistory({ entries, named }: {
+export function AutomationRunHistory({ entries, named, landedRunId = null }: {
   entries: readonly RoundPassEntry[];
   /** Every schedule's runs are shown, so each run names its schedule. */
   named: boolean;
+  /** The run a door led here for: its page is shown, and it is scrolled to, focused and marked. */
+  landedRunId?: string | null;
 }) {
   const t = useTranslations('automations');
-  const [shown, setShown] = useState(RUNS_PER_PAGE);
   const recent = runsNewestFirst(entries.filter((entry) => entry.outcome !== 'asleep'));
+  const landedIndex = landedRunId ? recent.findIndex((entry) => entry.id === landedRunId) : -1;
+  const [shown, setShown] = useState(() => Math.max(RUNS_PER_PAGE, Math.ceil((landedIndex + 1) / RUNS_PER_PAGE) * RUNS_PER_PAGE));
+  const landOn = useLandOnce();
   if (recent.length === 0) return <p className="text-body text-[color:var(--color-text-tertiary)]">{t('noRuns')}</p>;
   const more = recent.length - shown;
   return (
     <div className="flex flex-col gap-2">
       <ol data-testid="automations-history" className="divide-y divide-[color:var(--color-divider)] border-y border-[color:var(--color-divider)]">
-        {recent.slice(0, shown).map((entry, index) => <RunEntry key={entry.id} entry={entry} named={named} latest={index === 0} />)}
+        {recent.slice(0, shown).map((entry, index) => <RunEntry key={entry.id} entry={entry} named={named} latest={index === 0}
+          landOn={entry.id === landedRunId ? landOn : null} />)}
       </ol>
       {more > 0 ? <div>
         <button type="button" onClick={() => setShown((count) => count + RUNS_PER_PAGE)} data-testid="automations-history-more"
@@ -109,7 +115,12 @@ export function AutomationRunHistory({ entries, named }: {
   );
 }
 
-function RunEntry({ entry, named, latest }: { entry: RoundPassEntry; named: boolean; latest: boolean }) {
+function RunEntry({ entry, named, latest, landOn }: {
+  entry: RoundPassEntry;
+  named: boolean;
+  latest: boolean;
+  landOn: ((element: HTMLElement | null) => void) | null;
+}) {
   const t = useTranslations('automations');
   const locale = useLocale();
   const lead = useRunLead()(entry);
@@ -117,7 +128,8 @@ function RunEntry({ entry, named, latest }: { entry: RoundPassEntry; named: bool
   const toolsTitleId = useId();
   const tools = entry.refused.length > 0 || entry.called.length > 0;
   return (
-    <li data-testid={latest ? 'automations-last-run' : undefined} data-run-id={entry.id} className="py-4">
+    <li data-testid={latest ? 'automations-last-run' : undefined} data-run-id={entry.id} ref={landOn ?? undefined}
+      tabIndex={landOn ? -1 : undefined} data-landed={landOn ? '' : undefined} className={cn('py-4', landOn && cn(LANDED, '-mx-3 px-3'))}>
       <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {named && entry.roundName ? <span className="min-w-0 truncate text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{entry.roundName}</span> : null}
         <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{t(`outcome.${entry.outcome}`)}</span>

@@ -481,7 +481,7 @@ describe('Automations manager', () => {
     expect(last).not.toHaveTextContent(en.automations.noSummary);
     const history = screen.getByTestId('automations-history');
     expect(within(history).getByText(en.automations.failedNoResult)).toBeInTheDocument();
-    expect(within(history).getByText(en.library.rounds.ledger.stopped)).toHaveAttribute('data-run-note', 'stopped');
+    expect(within(history).getByText(en.automations.runStopped)).toHaveAttribute('data-run-note', 'stopped');
     expect(history).not.toHaveTextContent('completed');
   });
 

@@ -5,12 +5,18 @@ import { useEffect, useRef, useState } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 
-import type { WorkRun } from '../model/work-run';
+import type { WorkRunLine, WorkRunPhase } from '../model/work-run';
+
+/** The observed state Moru stands beside: a run's phase and the kind of its current line. */
+export interface MoruState {
+  phase: WorkRunPhase;
+  line: { kind: WorkRunLine['kind'] };
+}
 
 type Clip = 'think' | 'read' | 'search' | 'code' | 'success' | 'waiting' | 'pondering';
 
 /** The conversation's work rows for what the turn reported; the result rows the update notice uses. */
-function clipsFor(run: WorkRun): { intro: Clip | null; loop: Clip } {
+function clipsFor(run: MoruState): { intro: Clip | null; loop: Clip } {
   switch (run.phase) {
     case 'running':
     case 'asking':
@@ -37,7 +43,7 @@ function clipsFor(run: WorkRun): { intro: Clip | null; loop: Clip } {
  * Moru at his native 128px beside an observed state. A new kind of work waits for the running
  * loop to come home to the shared neutral pose, so the figure never jumps; an ask holds that pose.
  */
-export function WorkRunMoru({ run }: { run: WorkRun }) {
+export function WorkRunMoru({ run }: { run: MoruState }) {
   const reducedMotion = usePrefersReducedMotion();
   const { intro, loop } = clipsFor(run);
   const [clip, setClip] = useState<Clip>(intro ?? loop);
