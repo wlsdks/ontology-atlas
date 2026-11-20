@@ -2,8 +2,10 @@
 //! Usage: vault-index-bench <build|reopen|update|search|size|read-loop> <vault> [args...]
 //!        vault-index-bench <vectors-prepare|vectors-search> <vault> [--dims=N] [--delay-ms=N]
 //!                          [--log=FILE] [--queries=N]
-//! Prints one JSON object. The folder walk here is a test stand-in; the app passes its own. The
-//! vector commands embed with a deterministic stand-in (`fake_embedding`), not a model.
+//!        vault-index-bench passages <vault>
+//! Prints one JSON object; `passages` prints one per passage, for `pnpm perf:meaning-quality`.
+//! The folder walk here is a test stand-in; the app passes its own. The vector commands embed
+//! with a deterministic stand-in (`fake_embedding`), not a model.
 
 #[path = "../../tests/common/walk.rs"]
 mod walk;
@@ -130,6 +132,7 @@ fn main() {
             let index_bytes = stored_bytes(Some(&root)).expect("size");
             println!("{{\"textBytes\":{text_bytes},\"indexBytes\":{index_bytes}}}");
         }
+        "passages" => print_passages(&root, &files),
         "vectors-prepare" => vectors_prepare(&root, &files, &Options::parse(&args)),
         "vectors-search" => vectors_search(&root, &files, &Options::parse(&args)),
         other => {
@@ -174,6 +177,52 @@ impl Options {
         }
         options
     }
+}
+
+/// One JSON line per passage of every listed file: path, lines, heading and text.
+fn print_passages(root: &Path, files: &[String]) {
+    let mut out = std::io::BufWriter::new(std::io::stdout().lock());
+    for path in files {
+        let Ok(bytes) = std::fs::read(root.join(path)) else {
+            continue;
+        };
+        for passage in vectors::passages_of(&String::from_utf8_lossy(&bytes)).0 {
+            let heading = passage
+                .heading
+                .as_deref()
+                .map_or("null".into(), json_string);
+            let written = writeln!(
+                out,
+                "{{\"path\":{},\"start\":{},\"end\":{},\"heading\":{heading},\"text\":{}}}",
+                json_string(path),
+                passage.line_start,
+                passage.line_end,
+                json_string(&passage.text)
+            );
+            if written.is_err() {
+                return;
+            }
+        }
+    }
+    let _ = out.flush();
+}
+
+fn json_string(text: &str) -> String {
+    let mut quoted = String::with_capacity(text.len() + 2);
+    quoted.push('"');
+    for c in text.chars() {
+        match c {
+            '"' => quoted.push_str("\\\""),
+            '\\' => quoted.push_str("\\\\"),
+            '\n' => quoted.push_str("\\n"),
+            '\r' => quoted.push_str("\\r"),
+            '\t' => quoted.push_str("\\t"),
+            c if u32::from(c) < 0x20 => quoted.push_str(&format!("\\u{:04x}", u32::from(c))),
+            c => quoted.push(c),
+        }
+    }
+    quoted.push('"');
+    quoted
 }
 
 /// A unit-free pseudo-random vector seeded by the text's SHA-256: equal texts get equal vectors.

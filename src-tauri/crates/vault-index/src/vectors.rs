@@ -138,6 +138,32 @@ fn reader(root: &Path, model: &Model) -> Result<Option<(PathBuf, PathBuf, Connec
     Ok(Some((root, dir, conn)))
 }
 
+/// One passage as search by meaning embeds it, for tools that measure search quality.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PassageText {
+    /// 1-based, inclusive, in the file as written.
+    pub line_start: u32,
+    pub line_end: u32,
+    pub heading: Option<String>,
+    pub text: String,
+}
+
+/// The passages `prepare` embeds for a file holding `raw`, and how many more it holds past the
+/// per-file cap. O(n) in the text's length.
+pub fn passages_of(raw: &str) -> (Vec<PassageText>, usize) {
+    let (passages, over) = crate::passage::split(raw);
+    let texts = passages
+        .into_iter()
+        .map(|passage| PassageText {
+            line_start: passage.line_start,
+            line_end: passage.line_end,
+            heading: passage.heading,
+            text: passage.text,
+        })
+        .collect();
+    (texts, over)
+}
+
 /// What the store holds for one vault and model.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Status {
