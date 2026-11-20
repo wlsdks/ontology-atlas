@@ -123,24 +123,40 @@ function cpuMs(): number {
  * settled, while the reader pans it a few px. The open pushes every fan its members cover on the way.
  */
 function frameCpuMs(model: DialModel, domainId: string, free: Free, zoom: number): number {
+  return frameCost(model, domainId, free, zoom).cpuMs;
+}
+
+/**
+ * `frameCpuMs`, with the median heap a settled frame leaves allocated before the collector runs, in
+ * KiB, and the median CPU of a frame while the star opens and the camera zooms.
+ */
+function frameCost(model: DialModel, domainId: string, free: Free, zoom: number): { cpuMs: number; heapKiB: number; zoomingMs: number } {
   clearDialFrame();
   const camera = cameraOn(model, domainId, free);
+  const zooming: number[] = [];
   let now = 0;
   for (let i = 0; i < 400; i += 1, now += FRAME_MS) {
     const t = Math.min(1, now / 600);
     const at = Math.pow(zoom, (1 - Math.cos(Math.PI * t)) / 2);
-    if (t >= 1 && !paintFlatGraphFrame(camera(at, now, { x: 0, y: 0 }), TOKENS).branchMembersAnimating) break;
-    if (t < 1) paintFlatGraphFrame(camera(at, now, { x: 0, y: 0 }), TOKENS);
+    const t0 = cpuMs();
+    const painted = paintFlatGraphFrame(camera(at, now, { x: 0, y: 0 }), TOKENS);
+    if (t < 1) zooming.push(cpuMs() - t0);
+    else if (!painted.branchMembersAnimating) break;
   }
   const times: number[] = [];
+  const heaps: number[] = [];
   for (let i = 0; i < 60; i += 1, now += FRAME_MS) {
     const input = camera(zoom, now, { x: Math.sin(i / 20) * 6, y: Math.cos(i / 20) * 6 });
+    const heap = process.memoryUsage().heapUsed;
     const t0 = cpuMs();
     paintFlatGraphFrame(input, TOKENS);
     times.push(cpuMs() - t0);
+    // A collection during the frame shows as a fall, which says nothing of what the frame allocated.
+    const grew = process.memoryUsage().heapUsed - heap;
+    if (grew >= 0) heaps.push(grew / 1024);
   }
-  times.sort((a, b) => a - b);
-  return times[Math.floor(times.length / 2)]!;
+  const median = (values: number[]) => values.sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
+  return { cpuMs: median(times), heapKiB: median(heaps), zoomingMs: median(zooming) };
 }
 
 /**
@@ -149,6 +165,18 @@ function frameCpuMs(model: DialModel, domainId: string, free: Free, zoom: number
  * a push that walked every mark of the star for every pushed dot took 71 to 98 ms.
  */
 const BUDGET_MS = 20;
+
+/**
+ * How many times the 40-capability star's frames, summed over the four maps and zooms, the
+ * 160-capability star's may take on the same machine: it has 4.1 times the marks, so about linear.
+ * Measured 2026-11-21 on an Apple-silicon Mac, the 160-capability star took 5.0 to 6.2 ms a settled
+ * frame against 1.1 to 2.4 ms, 2.3 to 4.0 times as much, and 9.5 to 24 ms a frame while it opens.
+ * Before its names' clearance tests read a grid and a pan reused its pushed dots' rooms it took 9.1
+ * to 35.9 ms settled, 9.9 times as much, and 34 to 60 ms opening, over a 60 Hz frame.
+ */
+const LARGE_STAR_RATIO = 5;
+
+const CASES = [["narrow", NARROW_FREE, 2.2], ["narrow", NARROW_FREE, 3.4], ["full-width", FULL_FREE, 2.2], ["full-width", FULL_FREE, 3.4]] as const;
 
 describe("the largest opened star", () => {
   const model = syntheticModel(3, 40, 12);
@@ -159,14 +187,32 @@ describe("the largest opened star", () => {
     expect(new Set(elements).size).toBeGreaterThan(450);
     const measured: string[] = [];
     let worst = 0;
-    for (const [name, free] of [["narrow", NARROW_FREE], ["full-width", FULL_FREE]] as const) {
-      for (const zoom of [2.2, 3.4]) {
-        const ms = frameCpuMs(model, "domain:d0", free, zoom);
-        measured.push(`${name} at ${zoom}: ${ms.toFixed(2)} ms`);
-        worst = Math.max(worst, ms);
-      }
+    for (const [name, free, zoom] of CASES) {
+      const ms = frameCpuMs(model, "domain:d0", free, zoom);
+      measured.push(`${name} at ${zoom}: ${ms.toFixed(2)} ms`);
+      worst = Math.max(worst, ms);
     }
     console.log(`[open-star-push] median CPU per frame: ${measured.join(", ")}`);
     expect(worst).toBeLessThan(BUDGET_MS);
+  });
+
+  it("paints a star four times as large, 160 capabilities and 1,984 elements, in about four times the CPU, every name's clearance and pushed dot included", () => {
+    const large = syntheticModel(3, 160, 12);
+    const star = domainStarIds(large, "domain:d0");
+    expect(star.capabilities.length).toBe(160);
+    expect(new Set(star.elements).size).toBe(1984);
+    let small = 0;
+    let big = 0;
+    const measured: string[] = [];
+    for (const [name, free, zoom] of CASES) {
+      const base = frameCost(model, "domain:d0", free, zoom);
+      const cost = frameCost(large, "domain:d0", free, zoom);
+      small += base.cpuMs;
+      big += cost.cpuMs;
+      measured.push(`${name} at ${zoom}: ${cost.cpuMs.toFixed(2)} ms against ${base.cpuMs.toFixed(2)}, ${cost.heapKiB.toFixed(0)} KiB a frame, ${cost.zoomingMs.toFixed(2)} ms zooming`);
+      expect(cost.cpuMs, `${name} at ${zoom}`).toBeLessThan(BUDGET_MS);
+    }
+    console.log(`[open-star-push] 160/1984 median CPU per frame: ${measured.join("; ")}; ${(big / small).toFixed(2)} times the 40/484 star`);
+    expect(big / small).toBeLessThan(LARGE_STAR_RATIO);
   });
 });
