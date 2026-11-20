@@ -31,6 +31,8 @@ export function OntologyLiveBaselineInit() {
     const preparing = new AbortController();
     // The signature pass runs in slices first, so marking or diffing below costs no long task.
     prepareGraphSignatures(insight.nodes, insight.edges, { signal: preparing.signal }).then(() => {
+      // A pass can finish after its abort; its graph is no longer the one on screen.
+      if (preparing.signal.aborted) return;
       handledScopeRef.current = vaultScope;
       // Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
       const restored = restorePersistedBaseline(insight.nodes);
