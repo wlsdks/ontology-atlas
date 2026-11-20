@@ -220,6 +220,8 @@ export interface AcpClientHandlers {
    * an unasked question as allowed is the same as having no permission gate.
    */
   askUser: (request: AcpPermissionRequest) => Promise<string | null>;
+  /** True while every request must be refused unseen, before any automatic allow (a stopped turn). */
+  refuseAll?: () => boolean;
   /** For diagnosis. Called when a line arrives that is outside the protocol. */
   onProtocolNotice?: (message: string) => void;
 }
@@ -426,6 +428,10 @@ export function createAcpClient(
     const request = toPermissionRequest(params, correlatedMcpTool, id);
     const allowOnce = request.options.find((o) => o.kind === 'allow_once');
     const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
+    if (handlers.refuseAll?.()) {
+      write({ jsonrpc: '2.0', id, result: rejectOnce ? selected(rejectOnce.optionId) : cancelled() });
+      return;
+    }
 
     /*
      * The Atlas reads we wired do not block the conversation. A write continues only after the person

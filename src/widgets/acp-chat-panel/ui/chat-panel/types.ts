@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { useTranslations } from 'next-intl';
 
 import type {
+  AcpAutoDecision,
   AcpEvent,
   AcpMapIntent,
   AcpPresentationIntent,
@@ -35,12 +36,26 @@ export interface AcpOntologyRelationPreview {
   phase: 'draft' | 'committing';
 }
 
+/** What a waiting request asks to do, in the card's words. */
+export type AcpTurnRequestAction = 'edit' | 'delete' | 'execute' | 'read' | 'ontology' | 'unknown';
+
+/** The request a turn waits on: its action and the file, command or change it names. */
+export interface AcpTurnRequest {
+  action: AcpTurnRequestAction;
+  /** Folder-relative when the path lies inside the folder; null when the request names nothing. */
+  target: string | null;
+}
+
 /** What the running turn is doing, in the words its transcript row uses; `asking` while a permission card waits. */
 export interface AcpTurnWork {
   kind: TurnActivityKind;
   label: ToolLabel | null;
   target: string | null;
   asking: boolean;
+  /** The waiting request while `asking`. */
+  request?: AcpTurnRequest | null;
+  /** Stop was pressed and the turn has not ended yet. */
+  stopping?: boolean;
 }
 
 export interface OpeningRequest {
@@ -126,13 +141,13 @@ export interface AcpChatPanelProps {
     rawInput: Record<string, unknown>;
     toolKind: string | null;
   }) => WriteJudgement | null;
-  /** Answers a file permission itself; a rejection is an answer too. */
+  /** Answers a file permission itself, reading what it needs at the request; a rejection is an answer too. */
   autoDecide?: (request: {
     filePath: string | null;
     rawInput: Record<string, unknown>;
     toolKind: string | null;
     toolName: string | null;
-  }) => string | { reject: string } | null;
+  }) => AcpAutoDecision | Promise<AcpAutoDecision>;
   suggestions?: readonly ChatSuggestion[];
   /** App-owned prerequisites such as opening source connection instead of drafting a prompt. */
   onSuggestionAction?: (suggestion: ChatSuggestion) => boolean;
@@ -168,12 +183,25 @@ export interface AcpChatPanelProps {
   onTurnStopChange?: (stop: (() => void) | null) => void;
   /** Kept while the panel is away, so a screen elsewhere can show the turn's progress. */
   onTurnWorkChange?: (work: AcpTurnWork | null) => void;
-  /** Which running turns keep going once the screen leaves; any other turn ends with it. */
-  parksTurns?: 'any' | 'read-only';
+  /**
+   * Which running turns keep going once the screen leaves: `chosen` keeps a read-only turn and one
+   * `turnOutlivesScreen` chose at its start; any other turn ends with the screen.
+   */
+  parksTurns?: 'any' | 'chosen';
   /** Asked as a turn starts; the session keeps the answer for that turn (`useAcpSession`). */
   turnReadOnly?: (turn: AcpTurnStart) => boolean;
+  /** Asked as a turn starts: whether it keeps running once its screen is gone. */
+  turnOutlivesScreen?: (turn: AcpTurnStart) => boolean;
+  /**
+   * Another conversation's turn holds this folder: this one starts no agent, resumes and sends
+   * nothing, and offers that turn's Stop until it ends.
+   */
+  folderBusy?: { stop: () => void } | null;
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   meaningTransitionContext?: MeaningTransitionContext;
-  /** `readOnly` is the running turn's own flag, so it holds whichever screen seats the panel. */
-  onBusyChange?: (busy: boolean, readOnly: boolean) => void;
+  /**
+   * `readOnly` and `outlives` are the running turn's own flags, so they hold whichever screen seats
+   * the panel; `stop` is its enforced Stop.
+   */
+  onBusyChange?: (busy: boolean, readOnly: boolean, outlives: boolean, stop: (() => void) | null) => void;
 }

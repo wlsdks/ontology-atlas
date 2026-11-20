@@ -16,7 +16,7 @@ import {
   showLibraryWorkStrip,
   useLibraryModel,
 } from "@/features/library";
-import { isRunActive, useWorkRunSnapshot, workCardHoldsSeat, workRuns, type WorkRunActivity } from "@/features/work-run";
+import { isRunActive, useActiveTurn, useTurnStage, useWorkRunSnapshot, workCardHoldsSeat, workRuns, type TurnWorkReport, type WorkRunActivity } from "@/features/work-run";
 import type { AcpEvent } from "@/features/acp-session";
 import { completedAcpReadEvent } from "@/features/library";
 import { LibraryGraph } from "@/widgets/library-graph";
@@ -74,6 +74,12 @@ import { useContinuePress } from "./parts/progress/use-continue-press";
 import { LibraryWorkLine } from "./parts/progress/LibraryWorkLine";
 import { useSourceFilter } from "./library-page/use-source-filter";
 import { checkOwner, folderRelativePage } from "./library-page/wiki-check-outcome";
+
+/** A tool's file inside the folder by its folder-relative name; anything else as it came. */
+function folderRelativeFile(target: string, vaultRoot: string): string {
+  const root = vaultRoot.replace(/\/+$/, "");
+  return target.startsWith(`${root}/`) ? target.slice(root.length + 1) : target;
+}
 
 /** The work card's box (`h-36` in `WorkRunCard`); a toast above it clears this much. */
 const WORK_CARD_HEIGHT = "9rem";
@@ -151,11 +157,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   }, [viewportDialogOpen, workCardShown]);
   const skipReaderFocusRef = useRef(false);
   const [pageTurnRunning, setTurnRunning] = useState(false);
-  const [compileRunning, setCompileRunning] = useState(false);
+  const [pageCompileRunning, setCompileRunning] = useState(false);
   const checkRun = workRunSnapshot.run?.folder === workVaultScope ? workRunSnapshot.run : null;
-  // A check started by an earlier visit is still this folder's running turn.
+  // A check or a writing turn started by an earlier visit is still this folder's running turn.
   const lintRunning = isRunActive(checkRun);
-  const turnRunning = pageTurnRunning || lintRunning;
+  const writingTurn = useActiveTurn(workVaultScope);
+  const turnRunning = pageTurnRunning || lintRunning || writingTurn !== null;
+  const compileRunning = pageCompileRunning || writingTurn?.door === "compile";
   const reportUnseen = checkRun?.unseen ?? false;
   const choose = useCallback((next: typeof selected) => {
     setSourceCitation(null);
@@ -339,7 +347,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   });
   // Each conversation reports only to the run it owns, so a newly seated agent cannot touch the check.
   const conversationOwner = checkOwner(nativeVaultRootPath, agent.runtime?.id ?? "");
-  const observeCheckWork = useCallback((work: WorkRunActivity | null) => {
+  const observeCheckWork = useCallback((work: (WorkRunActivity & TurnWorkReport) | null) => {
+    const turnId = workRuns.turnOwnedBy(conversationOwner);
+    if (turnId !== null) {
+      const target = work?.target && nativeVaultRootPath ? folderRelativeFile(work.target, nativeVaultRootPath) : work?.target ?? null;
+      workRuns.observeTurnWork(turnId, work && { ...work, target }, Date.now());
+    }
     const runId = workRuns.runOwnedBy(conversationOwner);
     if (!work || runId === null) return;
     const page = work.target ? folderRelativePage(work.target, nativeVaultRootPath) : null;
@@ -347,15 +360,51 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   }, [conversationOwner, nativeVaultRootPath]);
   const observeTerminalTool = useCallback((event: Extract<AcpEvent, { kind: "tool" }>) => {
     handleTerminalToolObservation(event);
+    const turnId = workRuns.turnOwnedBy(conversationOwner);
+    if (turnId !== null && nativeVaultRootPath) workRuns.observeTurnTool(turnId, event, nativeVaultRootPath);
     const runId = workRuns.runOwnedBy(conversationOwner);
     const read = runId === null ? null : completedAcpReadEvent(event, nativeVaultRootPath, Date.now());
     if (runId !== null && read?.target) workRuns.observeRead(runId, read.target.ref);
   }, [conversationOwner, handleTerminalToolObservation, nativeVaultRootPath]);
   const reportCheckStop = useCallback((stop: (() => void) | null) => {
+    const turnId = workRuns.turnOwnedBy(conversationOwner);
+    if (turnId !== null) workRuns.setTurnStop(turnId, stop);
     const runId = workRuns.runOwnedBy(conversationOwner);
     if (runId !== null) workRuns.setStop(runId, stop);
   }, [conversationOwner]);
+  // The conversation on screen is its turn's stage: no card stands for it while it is shown.
+  useTurnStage(conversationOwner, dockOpen && hasFolder);
   const setAgentOpen = agent.setOpen;
+  const setAgentRuntime = agent.setRuntimeId;
+  // Opening the Library reads every finished turn of this folder, and a turn still running
+  // brings its own conversation back on screen.
+  const returningTurn = useRef(writingTurn);
+  useEffect(() => {
+    if (!hasFolder) return;
+    workRuns.seeTurns(workVaultScope);
+    const turn = returningTurn.current;
+    if (!turn || turn.folder !== workVaultScope) return;
+    setAgentRuntime(turn.runtimeId);
+    setAgentOpen(true);
+  }, [hasFolder, setAgentOpen, setAgentRuntime, workVaultScope]);
+  // A turn's card door: its conversation, with the asking agent chosen again, or the page it wrote.
+  useEffect(() => {
+    if (!hasFolder) return;
+    const takeTurnDoor = () => {
+      const { turnDoor, runs } = workRuns.read();
+      const entry = turnDoor ? runs.get(`turn:${turnDoor.turnId}`) : null;
+      if (!turnDoor || entry?.kind !== "turn" || entry.run.folder !== workVaultScope) return;
+      workRuns.takeTurnDoor(turnDoor.turnId);
+      if (turnDoor.kind === "page") {
+        choose({ kind: "wiki", slug: turnDoor.page });
+        return;
+      }
+      setAgentRuntime(entry.run.runtimeId);
+      setAgentOpen(true);
+    };
+    queueMicrotask(takeTurnDoor);
+    return workRuns.subscribe(takeTurnDoor);
+  }, [choose, hasFolder, setAgentOpen, setAgentRuntime, workVaultScope]);
   // The card elsewhere asked for a door; it opens once this folder's Library is on screen.
   useEffect(() => {
     if (!hasFolder) return;
@@ -418,6 +467,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnStopChange={reportCheckStop}
           onTurnWorkChange={observeCheckWork}
           turnReadOnly={turns.turnReadOnly}
+          turnOutlivesScreen={turns.turnOutlivesScreen}
           onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
             ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
             : () => void handleFileAnswer() : null}
@@ -527,7 +577,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         mobileBrowseBackRef={mobileBrowseBackRef} browseFocusPendingRef={browseFocusPendingRef}
         searchHost={searchHost} setSearchHost={setSearchHost} setSourceCitation={setSourceCitation}
         sourceCitation={sourceCitation} compileRunning={compileRunning} runningSources={continueBatch.running}
-        lintRunning={lintRunning}
+        lintRunning={lintRunning} turnRunning={turnRunning}
         reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
         openImport={openImport} handleCompile={handleCompile} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}

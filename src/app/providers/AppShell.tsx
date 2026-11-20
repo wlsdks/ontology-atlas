@@ -23,7 +23,7 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isRunActive, isScheduledActive, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
+import { isRunActive, isScheduledActive, isTurnActive, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -43,7 +43,7 @@ import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
 import { buildTopologyReturnHref } from "@/entities/knowledge-graph";
 import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
-import { LibraryRoundsProvider } from "@/views/library";
+import { LibraryFolderMirror, LibraryRoundsProvider } from "@/views/library";
 import { clearPlanningReturn, getPlanningReturn, getPlanningReturnServer, subscribePlanningReturn } from "@/shared/lib/planning/navigation";
 
 /**
@@ -66,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           tick twice and could open two adapters for one pass.
         */}
         <LibraryRoundsProvider>
+          <LibraryFolderMirror />
           <ShellColumn>{children}</ShellColumn>
         </LibraryRoundsProvider>
       </AppUpdateProvider>
@@ -335,7 +336,8 @@ function AppNavRailSlot() {
 
 /**
  * The open folder's runs on their tiles, a ring while one runs and a badge until read: the wiki
- * check on Library, scheduled checks on Automations.
+ * check and writing turns on Library, scheduled checks on Automations. A turn waiting for
+ * permission stills the ring, and its mark wins over the count, which the tile's name keeps.
  */
 function useRailWorkRuns(): RailWorkRun[] {
   const { runs } = useWorkRunSnapshot();
@@ -344,14 +346,24 @@ function useRailWorkRuns(): RailWorkRun[] {
     const rail: RailWorkRun[] = [];
     let scheduledRunning = false;
     let scheduledUnseen = 0;
+    let libraryRunning = false;
+    let libraryWaiting = false;
+    let libraryUnseen = 0;
     for (const entry of runs.values()) {
       if (entry.run.folder !== folder) continue;
       if (entry.kind === "check") {
-        if (isRunActive(entry.run)) rail.push({ destination: "library", state: "running" });
-        else if (entry.run.unseen) rail.push({ destination: "library", state: "finished", count: 1 });
+        if (isRunActive(entry.run)) libraryRunning = true;
+        else if (entry.run.unseen) libraryUnseen += 1;
+      } else if (entry.kind === "turn") {
+        if (entry.run.phase === "asking") libraryWaiting = true;
+        else if (isTurnActive(entry.run)) libraryRunning = true;
+        else if (entry.run.unseen) libraryUnseen += 1;
       } else if (isScheduledActive(entry.run)) scheduledRunning = true;
       else if (entry.run.unseen) scheduledUnseen += 1;
     }
+    if (libraryWaiting) rail.push({ destination: "library", state: "waiting", finished: libraryUnseen });
+    else if (libraryRunning) rail.push({ destination: "library", state: "running" });
+    else if (libraryUnseen > 0) rail.push({ destination: "library", state: "finished", count: libraryUnseen });
     if (scheduledRunning) rail.push({ destination: "automations", state: "running" });
     else if (scheduledUnseen > 0) rail.push({ destination: "automations", state: "finished", count: scheduledUnseen });
     return rail;

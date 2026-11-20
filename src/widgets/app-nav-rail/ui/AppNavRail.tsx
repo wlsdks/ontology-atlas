@@ -72,6 +72,7 @@ const NO_WORK_RUNS: readonly RailWorkRun[] = [];
 
 export type RailWorkRun =
   | { destination: AppNavRailItemId; state: "running" }
+  | { destination: AppNavRailItemId; state: "waiting"; finished: number }
   | { destination: AppNavRailItemId; state: "finished"; count: number };
 
 interface RailDestination {
@@ -216,9 +217,13 @@ export function AppNavRail({
             const badgeCount = run?.state === "finished" ? run.count : ownBadge;
             const runName = run?.state === "running"
               ? tWork("railRunning", { destination: label })
-              : run?.state === "finished"
-                ? tWork("railFinished", { destination: label, count: run.count })
-                : undefined;
+              : run?.state === "waiting"
+                ? run.finished > 0
+                  ? tWork("railWaitingAndFinished", { destination: label, count: run.finished })
+                  : tWork("railWaiting", { destination: label })
+                : run?.state === "finished"
+                  ? tWork("railFinished", { destination: label, count: run.count })
+                  : undefined;
             const isShownActive = shownActiveId === id;
             const surfacePath = href.split(/[?#]/, 1)[0] || "/";
             return (
@@ -274,8 +279,13 @@ export function AppNavRail({
                       aria-hidden
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
-                    {run?.state === "running" ? <RunRing id={id} /> : null}
-                    {badgeCount ? (
+                    {run?.state === "running" || run?.state === "waiting" ? <RunRing id={id} still={run.state === "waiting"} /> : null}
+                    {run?.state === "waiting" ? (
+                      <span
+                        data-testid={`app-nav-rail-waiting-${id}`}
+                        className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-status-warning)]"
+                      />
+                    ) : badgeCount ? (
                       // Warning tone for unrecorded changes; caps at `9+` to keep the tile
                       // geometry.
                       <span
@@ -336,12 +346,16 @@ export function AppNavRail({
   );
 }
 
-/** A quarter arc around the icon while the destination's run works; it unmounts the moment it ends. */
-function RunRing({ id }: { id: AppNavRailItemId }) {
+/**
+ * A quarter arc around the icon while the destination's run works; it unmounts the moment it ends.
+ * A run waiting on a person holds the arc where it is and goes on from there once answered.
+ */
+function RunRing({ id, still }: { id: AppNavRailItemId; still: boolean }) {
   return (
     <svg
       aria-hidden
       data-testid={`app-nav-rail-ring-${id}`}
+      data-still={still || undefined}
       viewBox="0 0 32 32"
       fill="none"
       className="pointer-events-none absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2"
@@ -357,7 +371,7 @@ function RunRing({ id }: { id: AppNavRailItemId }) {
         pathLength={1}
         strokeDasharray="0.25 0.75"
         transform="rotate(-90 16 16)"
-        className="motion-work-spin"
+        className={cn("motion-work-spin", still && "[animation-play-state:paused]")}
       />
     </svg>
   );

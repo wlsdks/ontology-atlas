@@ -487,5 +487,6 @@
   "elapsedHours": "{hours} 小时 {minutes} 分",
   "checkAnswerLine": "检查结果显示在“检查结果”页面，与应用自己的检查并排放置。",
   "checkAnswerDoor": "打开检查结果",
-  "checkAnswerFull": "智能体的报告（原文）"
+  "checkAnswerFull": "智能体的报告（原文）",
+  "folderBusy": "资料库的对话正在这个文件夹中工作。它结束后你可以在这里提问。要立即结束，请按“停止”。"
 }

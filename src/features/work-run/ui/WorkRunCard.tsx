@@ -12,9 +12,11 @@ import { Button } from '@/shared/ui/controls/button';
 
 import { isRunActive, type WorkRun, type WorkRunPhase } from '../model/work-run';
 import type { ScheduledRun } from '../model/scheduled-run';
+import { turnPageDoor, type TurnRun } from '../model/turn-run';
 import { workRuns, type SeatRun } from '../model/work-run-store';
-import { useCheckDoor, useOpenScheduledRun } from './use-run-doors';
-import { isSeatRunActive, seatRuns, useWorkRunElapsed, useWorkRunSnapshot } from '../model/use-work-run';
+import { useCheckDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
+import { isSeatRunActive, seatRuns, useWaitedLabel, useWorkRunElapsed, useWorkRunSnapshot } from '../model/use-work-run';
+import { turnTint, useTurnRunCopy } from './use-turn-run-copy';
 import { useWorkRunCopy, type WorkRunMarks } from './use-work-run-copy';
 import { scheduledTint, useScheduledRunCopy, type SeatTint } from './use-scheduled-run-copy';
 import { RollingCount } from './RollingCount';
@@ -29,6 +31,10 @@ const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
 /** Running and asking share one layer, so a permission ask changes words in place, not the card. */
 function layerOf(entry: SeatRun): string {
   if (entry.kind === 'scheduled') return `${entry.key}:${entry.run.phase}`;
+  if (entry.kind === 'turn') {
+    const { phase } = entry.run;
+    return `${entry.key}:${phase === 'running' || phase === 'asking' ? 'live' : phase}`;
+  }
   const { phase } = entry.run;
   return `${entry.key}:${phase === 'running' || phase === 'asking' ? 'live' : phase}`;
 }
@@ -89,7 +95,7 @@ function CardBox({ entry, open, others, onOpenList }: {
   const layers = useLeavingLayer(entry);
   const cardRef = useRef<HTMLDivElement>(null);
   const { probe, shiftPx } = useSeatStepAside(open, cardRef);
-  const tint = entry.kind === 'check' ? tintOfCheck(entry.run.phase) : scheduledTint(entry.run);
+  const tint = entry.kind === 'check' ? tintOfCheck(entry.run.phase) : entry.kind === 'turn' ? turnTint(entry.run) : scheduledTint(entry.run);
   return (
     <div
       ref={cardRef}
@@ -109,7 +115,7 @@ function CardBox({ entry, open, others, onOpenList }: {
       style={shiftPx > 0 ? { translate: `${-shiftPx}px 0` } : undefined}
     >
       <span ref={probe} aria-hidden className="pointer-events-none invisible absolute h-0 w-[var(--app-toast-right-offset,16px)]" />
-      <MoruLight tint={tint} tintKey={entry.kind === 'check' ? entry.run.phase : tint} />
+      <MoruLight tint={tint} tintKey={entry.kind === 'scheduled' ? tint : entry.run.phase} />
       {layers.leaving && !reducedMotion ? (
         <EntryLayer key={`leaving-${layerOf(layers.leaving)}`} entry={layers.leaving} motion="out" others={[]} onOpenList={onOpenList} />
       ) : null}
@@ -177,6 +183,7 @@ interface LayerProps {
 }
 
 function EntryLayer(props: LayerProps) {
+  if (props.entry.kind === 'turn') return <TurnLayer {...props} run={props.entry.run} />;
   return props.entry.kind === 'check'
     ? <PhaseLayer {...props} run={props.entry.run} />
     : <ScheduledLayer {...props} run={props.entry.run} />;
@@ -386,6 +393,102 @@ function ScheduledLayer({ run, motion, others, onOpenList }: LayerProps & { run:
       {running ? (
         <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none">
           <WorkProgress phase="running" done={run.checkedCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
+        </div>
+      ) : null}
+    </LayerFrame>
+  );
+}
+
+/** A Library turn that may write: its door's name, files written and the line, or what it waits on. */
+function TurnLayer({ run, motion, others, onOpenList }: LayerProps & { run: TurnRun }) {
+  const tCheck = useTranslations('library.check');
+  const tTurn = useTranslations('workCard.turn');
+  const tCard = useTranslations('workCard');
+  const leaving = motion === 'out';
+  const live = run.phase === 'running' || run.phase === 'asking';
+  const active = live || run.phase === 'stopping';
+  const elapsed = useWorkRunElapsed(leaving ? null : run);
+  const waited = useWaitedLabel(leaving ? null : run.ask?.since ?? null);
+  const copy = useTurnRunCopy(run, elapsed, waited, CARD_MARKS);
+  const openDoor = useTurnDoor();
+  const testId = (id: string) => (leaving ? undefined : id);
+  const page = turnPageDoor(run);
+  const primary = run.phase === 'asking'
+    ? { label: tCheck('review'), onClick: () => openDoor({ turnId: run.id, kind: 'conversation' }), id: 'work-run-review' }
+    : page
+      ? { label: tTurn('openPage'), onClick: () => openDoor({ turnId: run.id, kind: 'page', page }), id: 'work-run-open-page' }
+      : !active && run.phase !== 'switched'
+        ? { label: tCheck('openConversation'), onClick: () => openDoor({ turnId: run.id, kind: 'conversation' }), id: 'work-run-open-conversation' }
+        : null;
+
+  return (
+    <LayerFrame motion={motion}>
+      <WorkRunMoru run={copy.moru} />
+      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
+      <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
+        {live ? (
+          <p data-testid={testId('work-run-title')} className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {copy.title}
+          </p>
+        ) : (
+          <p
+            data-testid={testId('work-run-title')}
+            className="truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+          >
+            {copy.title}
+          </p>
+        )}
+        {live ? (
+          <div aria-live="off" className="grid min-w-0">
+            <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
+              {copy.figures}
+            </p>
+            <p
+              data-testid={testId('work-run-line')}
+              className={cn(
+                'text-[color:var(--color-text-secondary)]',
+                run.phase === 'asking' ? 'line-clamp-2 text-label leading-label' : 'truncate text-body leading-body',
+              )}
+            >
+              {copy.detail}
+            </p>
+          </div>
+        ) : (
+          <p data-testid={testId('work-run-detail')} className="line-clamp-2 text-label leading-label text-[color:var(--color-text-secondary)]">
+            {copy.detail}
+          </p>
+        )}
+        <div className="flex h-8 min-w-0 items-center gap-2">
+          {run.phase === 'running' ? (
+            <Button size="sm" variant="outline" onClick={() => workRuns.stopRun(`turn:${run.id}`)} data-testid={testId('work-run-stop')}>
+              {tCard('stop')}
+            </Button>
+          ) : null}
+          {primary ? (
+            <Button size="sm" onClick={primary.onClick} data-testid={testId(primary.id)}>
+              {primary.label}
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => (active ? workRuns.hideActive() : workRuns.closeRun(`turn:${run.id}`))}
+            data-testid={testId(active ? 'work-run-hide' : 'work-run-close')}
+            className="touch-hit-expand text-[color:var(--color-text-secondary)]"
+          >
+            {active ? tCard('hide') : tCard('close')}
+          </Button>
+          <MoreRuns others={others} onOpenList={onOpenList} testId={testId} />
+        </div>
+      </div>
+      {live ? (
+        <div
+          className={cn(
+            'absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none',
+            run.phase === 'asking' && '[&_[data-work-sweep]]:[animation-play-state:paused]',
+          )}
+        >
+          <WorkProgress phase="running" done={run.written.length} total={null} label={tCard('progressLabel', { title: copy.title })} />
         </div>
       ) : null}
     </LayerFrame>
