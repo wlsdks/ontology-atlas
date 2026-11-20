@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { FileText, Search } from 'lucide-react';
 
+import { MeaningDeskLine } from '@/features/vault-vectors';
 import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 import { formatSourceBytes } from '@/entities/docs-vault';
 import {
@@ -584,7 +585,10 @@ export function LibraryQuestionDesk({
           {/* WebKit does not focus a pressed button, so the field's blur would hide this form before the click lands. */}
           <Button type="submit" onMouseDown={(event) => event.preventDefault()} size="sm" variant={displayResult && agentReady ? 'outline' : 'primary'} className="ml-auto" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
           </div>
-          {!displayResult ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p> : null}
+          <div className="mt-2 flex min-w-0 flex-col">
+            {!displayResult ? <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p> : null}
+            <MeaningDeskLine rootPath={vaultRoot} markdownFiles={docs.length} />
+          </div>
         </form> : null}
         <RowDisclosure open={!displayResult && !activeReport} id="question-desk-starting-material" className="max-w-[var(--measure-doc-column)] pb-5">
           <p className="text-reading leading-prose text-[color:var(--color-text-secondary)]">{t('intro')}</p>

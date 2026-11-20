@@ -90,11 +90,17 @@ export const LIBRARY_VECTOR_FAILURES: Record<VectorFailure, VectorStatus> = {
   modelGone: { ...LIBRARY_VECTOR_SCRIPT.ready, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready" },
   runnerDown: failedAfterWork("runnerDown", "embed-request-failed"),
   modelMissing: failedBeforeWork("modelMissing", "embed-model-missing"),
-  modelFailed: failedAfterWork("modelFailed", "embed-worker-exited"),
+  modelFailed: failedAfterWork("modelFailed", "worker-exited"),
   write: failedAfterWork("write", "vectors-store-failed"),
   auditBlocked: failedBeforeWork("auditBlocked", "embed-audit-blocked"),
   unreadable: failedBeforeWork("unreadable", "vectors-walk-failed"),
 };
+
+/** `modelFailed` before any passage was kept (the model could not load) and after (its worker ended). */
+export const LIBRARY_VECTOR_MODEL_FAILED = {
+  load: failedBeforeWork("modelFailed", "load"),
+  workerExited: failedAfterWork("modelFailed", "worker-exited"),
+} as const satisfies Record<string, VectorStatus>;
 
 /** What the setup dialog reads: the model not yet on this computer, Ollama offering bge-m3. */
 export const LIBRARY_VECTOR_PROBE: VectorProbe = {
@@ -126,9 +132,16 @@ export const LIBRARY_VECTOR_FOUND: VectorFound = {
 
 export interface LibraryVectorsScript {
   probe?: VectorProbe;
-  /** What status, prepare, stop and delete answer until a spec emits another status. */
+  /**
+   * What status and prepare answer until a spec emits another status. Stop answers it as
+   * `stopped` and delete as `notSetUp`, as the app does from the moment either is pressed.
+   */
   status?: VectorStatus;
   found?: VectorFound;
+  /** Commands that refuse, as the app does for a folder not granted or while it closes. */
+  refuse?: readonly string[];
+  /** How long the probe takes to answer, so a spec can see the dialog before it does. */
+  probeDelayMs?: number;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -494,8 +507,21 @@ export async function installLibraryWorkHarness(
         if (command === "acp_stop" || command === "start_vault_watch" || command === "ensure_vault_directory") return Promise.resolve(null);
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");
-        if (command === "vault_vectors_probe") return Promise.resolve(vectors.probe);
-        if (command === "vault_vectors_status" || command === "vault_vectors_prepare" || command === "vault_vectors_stop" || command === "vault_vectors_delete") return Promise.resolve(currentVectorStatus);
+        if (command.startsWith("vault_vectors_") && vectors.refuse.includes(command)) return Promise.reject(new Error(`${command} refused`));
+        if (command === "vault_vectors_probe") return new Promise((resolve) => window.setTimeout(() => resolve(vectors.probe), vectors.probeDelayMs));
+        const stopRunning = () => {
+          const running = ["waitingTurn", "modelDownloading", "modelConverting", "preparing"].includes(currentVectorStatus.phase);
+          if (running) currentVectorStatus = { ...currentVectorStatus, phase: "stopped", updating: false, currentPath: null, passagesPerSecond: null, model: null };
+          return Promise.resolve(currentVectorStatus);
+        };
+        // `calls` records `paused` as sent; a paused folder is reported stopped, as the app does.
+        if (command === "vault_vectors_status") return args.paused === true ? stopRunning() : Promise.resolve(currentVectorStatus);
+        if (command === "vault_vectors_prepare") return Promise.resolve(currentVectorStatus);
+        if (command === "vault_vectors_stop") return stopRunning();
+        if (command === "vault_vectors_delete") {
+          currentVectorStatus = { ...currentVectorStatus, phase: "notSetUp", failure: null, failureDetail: null, filesDone: 0, passagesDone: 0, updating: false, currentPath: null, passagesPerSecond: null, model: null, vectorsBytes: 0 };
+          return Promise.resolve(currentVectorStatus);
+        }
         if (command === "vault_vectors_search") return Promise.resolve(vectors.found);
         if (command === "vault_vectors_warm" || command === "vault_vectors_delete_model") return Promise.resolve(null);
         if (command === "mcp_bundled_server") return Promise.resolve({ path: mcpBinary, available: true, reason: null });
@@ -533,7 +559,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
       fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 } } },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0 } },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {
