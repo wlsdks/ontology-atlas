@@ -16,7 +16,7 @@ import { readLibraryGraphInk } from "../../render/library-graph-ink";
 
 import type { LibraryGraphEngineScope } from "./engine-scope";
 import { libraryGraphActivityMarks } from "./activity-marks";
-import { FIT_PADDING } from "./picture-geometry";
+import { FIT_PADDING, flowFitView } from "./picture-geometry";
 
 /** On the overview a page's name stands once its dot is this wide on screen. */
 const ISLAND_PAGE_LABEL_MIN_PX = 10;
@@ -108,7 +108,7 @@ export function paintLibraryGraphFrame(
       ? librarySimulationBounds(sim)
       : overviewGeometry?.bounds ?? null;
   // Where the fit tile would take the camera, every frame, so the tile stops offering a no-op press.
-  const fitTarget = fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
+  const fitTarget = laidFlow && bounds ? flowFitView(bounds, box, zoomMaxRef.current) : fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
   fitScaleRef.current = fitTarget.scale;
   if (autoFitRef.current.on) {
     const target = fitTarget;
