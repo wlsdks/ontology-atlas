@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "../first-run-seed";
+import { installLibraryWorkHarness } from "../library-work-harness";
+import { waitFrames } from "../settle";
 import { stubDirectoryPicker } from "../vault-picker-stub";
 
 /**
@@ -150,12 +152,16 @@ test.describe("source progress on the Sources home", () => {
     await expect.poll(async () => (await lit()).length).toBe(TOTAL - COMPILED);
     expect((await lit()).every((id) => id.startsWith("source:"))).toBe(true);
 
+    // The clear press is a glyph whose name is the Show all sentence.
     const all = page.getByTestId("library-source-states-all");
-    await expect(all).toHaveText(`Show all ${TOTAL}`);
+    await expect(all).toHaveAccessibleName(`Show all ${TOTAL}`);
+    await expect(all).toHaveAttribute("title", `Show all ${TOTAL}`);
     await all.click();
     await expect(rows(page)).toHaveCount(TOTAL);
     await expect(waiting).toHaveAttribute("aria-pressed", "false");
-    await expect(all).toHaveCount(0);
+    // At rest its slot stays, invisible and out of reach.
+    await expect(all).toHaveAttribute("aria-hidden", "true");
+    await expect(all).toHaveAttribute("tabindex", "-1");
     expect(await lit()).toEqual([]);
 
     // Escape clears both too.
@@ -178,7 +184,7 @@ test.describe("source progress on the Sources home", () => {
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
     await waiting.click();
     await expect(rows(page)).toHaveCount(HANGUL_WAITING);
-    await expect(all).toHaveText(`Show all ${TOTAL}`);
+    await expect(all).toHaveAccessibleName(`Show all ${TOTAL}`);
     await all.click();
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
   });
@@ -235,6 +241,9 @@ test.describe("source progress on the Sources home", () => {
       // The noun follows the total and the verb the count.
       if (locale === "en") await expect(band.getByTestId("library-progress-sentence")).toHaveText("1 of 1 source has a wiki page");
       await expect(band.getByTestId("library-progress-chart")).toHaveCount(0);
+      // One state has no legend: the number, the sentence and the bar say it. Its row stays as a reserve.
+      await expect(band.getByTestId("library-source-states")).toHaveCount(0);
+      expect((await band.getByTestId("library-source-states-reserve").boundingBox())!.height).toBe(24);
       for (const width of [1040, 1280, 1512, 1920]) {
         await page.setViewportSize({ width, height: 901 });
         await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
@@ -262,9 +271,79 @@ test.describe("source progress on the Sources home", () => {
         await expect(page.getByTestId("library-home-strip")).toHaveCount(0);
         await expect(page.getByTestId("library-doors")).toBeVisible();
         await expect(page.getByTestId("library-questions-open")).toHaveCount(1);
+        // The header's pills cast no shadow across its border into the band.
+        const shadows = await page.getByTestId("library-doors").locator("button").evaluateAll((buttons) =>
+          buttons.filter((button) => (button as HTMLElement).offsetWidth > 0).map((button) => getComputedStyle(button).boxShadow),
+        );
+        expect(shadows.length).toBeGreaterThan(0);
+        // Tailwind composes `shadow-none` as transparent layers; each layer must draw nothing.
+        const drawn = shadows.flatMap((shadow) => (shadow === "none" ? [] : shadow.split(/,(?![^(]*\))/)))
+          .filter((layer) => !layer.includes("rgba(0, 0, 0, 0)"));
+        expect(drawn).toEqual([]);
         // No chevron disclosure anywhere on the Sources home.
         await expect(page.getByTestId("library-reader-landing").locator("svg.lucide-chevron-down, svg.lucide-chevron-right")).toHaveCount(0);
       }
     });
   }
+
+  /*
+   * A press resizes nothing in the band: the clear press holds its slot from the first paint. The
+   * number cell, the bar cell, the chart and the action cell keep their boxes before a press, while
+   * pressed, and after clearing.
+   */
+  for (const locale of ["en", "ko"]) {
+    test(`a press resizes nothing in the band (${locale})`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await openSources(page, { locale });
+      for (const width of [1512, 1920]) {
+        await page.setViewportSize({ width, height: width === 1920 ? 1080 : 901 });
+        await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+        await expectStillBand(page, `${locale}@${width}`);
+      }
+    });
+
+    test(`a press resizes nothing in the band with the conversation open (${locale})`, async ({ page }) => {
+      await page.setViewportSize({ width: 1512, height: 901 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await installLibraryWorkHarness(page, { files: buildVault() });
+      await page.goto(`/${locale}/`);
+      await page.getByTestId("first-run-open").or(page.getByRole("button", { name: /^Open (?:a|my) folder/ })).first().click();
+      await page.getByTestId("app-nav-rail").waitFor();
+      await page.goto(`/${locale}/library/?tab=sources&guides=off`);
+      await expect(page.getByTestId("library-source-states-checking")).toHaveCount(0, { timeout: 25_000 });
+      await page.getByTestId("library-open-conversation").click();
+      await expect(page.getByTestId("library-agent-dock")).toBeVisible();
+      await expectStillBand(page, `${locale}@1512 with the dock`);
+    });
+  }
 });
+
+const BAND_CELLS = ["library-progress-number-cell", "library-progress-bar-cell", "library-progress-chart", "library-progress-action"];
+
+async function bandRects(page: Page) {
+  // Two frames apart and equal, so a layout still settling is never read as the press's doing.
+  let last = "";
+  for (;;) {
+    await waitFrames(page, 2);
+    const now = JSON.stringify(
+      await page.evaluate((ids) => ids.map((id) => {
+        const rect = document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect();
+        return rect ? [rect.x, rect.y, rect.width, rect.height].map((value) => Math.round(value * 10) / 10) : null;
+      }), BAND_CELLS),
+    );
+    if (now === last) return JSON.parse(now) as Array<number[] | null>;
+    last = now;
+  }
+}
+
+async function expectStillBand(page: Page, where: string) {
+  const before = await bandRects(page);
+  expect(before.filter(Boolean).length, `${where}: band cells drawn`).toBeGreaterThanOrEqual(3);
+  const press = page.getByTestId("library-source-states-not-compiled");
+  await press.click();
+  await expect(page.getByTestId("library-source-states-all")).toHaveAttribute("data-shown", "");
+  expect(await bandRects(page), `${where}: while pressed`).toEqual(before);
+  await page.keyboard.press("Escape");
+  await expect(press).toHaveAttribute("aria-pressed", "false");
+  expect(await bandRects(page), `${where}: after clearing`).toEqual(before);
+}

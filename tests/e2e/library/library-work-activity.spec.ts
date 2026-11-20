@@ -82,8 +82,8 @@ test.describe("Library live work activity", () => {
     await expect(page.getByTestId("acp-chat-panel")).toHaveAttribute("data-acp-status", "ready");
     await page.getByRole("button", { name: "Close conversation" }).click();
     await page.getByTestId("library-work-history-toggle").click();
-    await page.getByRole("button", { name: "File changed · wiki/architecture", exact: true }).focus();
-    await expect(page.getByRole("button", { name: "File changed · wiki/architecture", exact: true })).toBeFocused();
+    await page.getByRole("button", { name: "File changed · architecture", exact: true }).focus();
+    await expect(page.getByRole("button", { name: "File changed · architecture", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("library-reader-back")).toBeVisible();
     // A wiki page open: still one Conversation control and one Questions control, both in the header.
@@ -125,7 +125,20 @@ test.describe("Library live work activity", () => {
     await expect(band.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
     expect(await geometry()).toEqual(before);
     // The line is the kind of work and the file as a press; "Recent N" waits until there is a recent one.
-    await expect(band.getByTestId("library-work-target")).toContainText("architecture.docx");
+    // While work runs Continue carries no ring of its own, and its label sits centred.
+    const press = band.getByTestId("library-progress-continue");
+    await expect(press.locator("svg")).toHaveCount(0);
+    const offCentre = await press.evaluate((button) => {
+      const outer = button.getBoundingClientRect();
+      const label = button.querySelector("span")!.getBoundingClientRect();
+      return Math.abs(label.left - outer.left - (outer.right - label.right));
+    });
+    expect(offCentre).toBeLessThanOrEqual(1);
+    // The line names the file; its folders are the title and the accessible description.
+    const target = band.getByTestId("library-work-target");
+    await expect(target).toHaveText("architecture.docx");
+    await expect(target).toHaveAttribute("title", "sources/architecture.docx");
+    await expect(target).toHaveAccessibleDescription("sources/architecture.docx");
     await expect(band.getByText(/^Recent 0$/)).toHaveCount(0);
     await expect(page.getByText(/^(happening now|latest observation)$/i)).toHaveCount(0);
     await expect(page.getByTestId("library-reader-landing").locator("svg.lucide-chevron-down")).toHaveCount(0);
