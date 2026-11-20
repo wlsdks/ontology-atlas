@@ -46,7 +46,8 @@ define any name coined during the work, and say what was not done or checked.
 During a long turn, say in a line what you are doing every few tool calls.
 
 A fact the source can answer comes from a script: run or extend the `pnpm`
-command (README's command table) and read its output instead of re-deriving it.
+command (`docs/DEVELOPMENT-CHECKS.md` lists them) and read its output instead
+of re-deriving it.
 Plans are `docs/specs/` specs with a dated `## Revisions` log. Write no other plans, retrospectives, handoffs or notes into the
 repository or `~/scratch`; reasons go in commit bodies and pull requests,
 working files in the session scratchpad. Screenshots, recordings and image drafts are working

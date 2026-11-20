@@ -34,8 +34,11 @@ reject each change as a Markdown diff.
 
 - **Your agent starts with context.** Claude Code, Codex, Cursor and Antigravity read the concepts, code paths, dependencies and open questions a task touches, over MCP.
 - **You own the record.** One Markdown file per concept in an `atlas/` folder, versioned and reviewed in Git like the code.
-- **You decide what is true.** Agent proposals stay proposals until you accept them.
+- **You decide what is true.** Every agent edit is a Markdown diff you keep, correct or revert; in the app's own chat each write waits for you.
 - **It says what it does not know.** A line on the map is a declared relationship, not proof of runtime impact; missing evidence shows as unknown, never as safe.
+
+How is this different from a code graph, a wiki, Obsidian or `CLAUDE.md`? See
+[Atlas compared](docs/guide/atlas-compared.md), which also says when those are the better choice.
 
 ## Quick start
 
@@ -82,10 +85,51 @@ your-repo/
     └── wiki/              pages written from those sources, every fact cited
 ```
 
-A Markdown file whose frontmatter has `kind:` is one concept. Its `uid` never
+A Markdown file whose frontmatter has `kind:` is one concept: a **project**, a
+**domain** (a lasting responsibility), a **capability** (something the system
+does) or an **element** (a part two or more capabilities share). Its `uid` never
 changes, its `slug` is its current address, and its `path` names the code it
-describes. The map, documents, Library and Git screens all read these
-files.
+describes. This one is abridged from this repository's own map, in
+[`docs/ontology/`](docs/ontology/capabilities/vault-graph-query.md):
+
+```markdown
+---
+uid: 7c451ebd-9cd0-41a9-bc37-044affac786a
+slug: capabilities/vault-graph-query
+kind: capability
+title: Vault graph query
+domain: domains/meaning-layer
+path: mcp/src/tools/graph.mjs
+dependencies: [elements/graph-compiler, elements/graph-engine, elements/vault-file-store]
+---
+
+## Definition
+Compiles the folder of Markdown files into one typed graph and answers
+structural questions over it, so a person or agent can ask what a node touches
+without opening every file.
+
+## Excludes
+- Writing anything back to the vault.
+
+## Uncertainty
+- The engine is roughly 6,400 lines and was not read beyond its header.
+```
+
+The map, documents, Library and Git screens all read these files, and so does
+your agent. These MCP tools answer the questions an agent asks most:
+
+| Before or after a task, the agent asks | Tool |
+|---|---|
+| What is this part for, and what does it exclude? | `get_concept` |
+| What points at it, before I rename or delete it? | `find_backlinks` |
+| How are these two concepts connected? | `find_path` |
+| What may this change affect? | `query_ontology` with `impact` |
+| Where is this mentioned? | `find_evidence` |
+| Record what I just built or changed | `add_concepts`, `add_relations`, `patch_concept` |
+| Is the folder still consistent? | `validate_vault` |
+
+Register the server read-only and it offers only the tools that read
+([MCP reference](mcp/README.md#read-only-registration-oatlas_read_only)).
 
 Your agent reaches the folder two ways:
 
@@ -116,7 +160,7 @@ Construction trials, their failures and limits are in
 
 ## Documentation
 
-[What is Atlas?](docs/guide/what-is-atlas.md) · [First five minutes](docs/guide/first-five-minutes.md) · [What becomes a node?](docs/guide/what-becomes-a-node.md) · [Relations](docs/guide/relations.md) · [Specification](docs/ONTOLOGY-ATLAS-SPEC.md) · [Features](docs/FEATURES.md) · [CLI](cli/README.md) · [Architecture](docs/ARCHITECTURE.md)
+[What is Atlas?](docs/guide/what-is-atlas.md) · [Atlas compared](docs/guide/atlas-compared.md) · [First five minutes](docs/guide/first-five-minutes.md) · [Build the first map from your code](docs/guide/from-your-repo.md) · [What becomes a node?](docs/guide/what-becomes-a-node.md) · [Relations](docs/guide/relations.md) · [Specification](docs/ONTOLOGY-ATLAS-SPEC.md) · [Features](docs/FEATURES.md) · [CLI](cli/README.md) · [Architecture](docs/ARCHITECTURE.md)
 
 ## Contributing
 
@@ -134,59 +178,7 @@ Installs refuse dependency versions published less than seven days ago;
 and how an urgent security fix skips the wait.
 
 [Development checks](docs/DEVELOPMENT-CHECKS.md) covers choosing checks,
-pre-push and CI, merging, and lane budgets.
-
-<details>
-<summary><b>Repository commands</b></summary>
-
-| Command | What it answers |
-|---|---|
-| `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, including `--only` for a named set of spec files, without discovering or running tests; unknown options fail before execution |
-| `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
-| `pnpm brand:sprites` | Rebuild Moru sprites, 74 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
-| `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
-| `pnpm build:first-load -- out en en/topology` | Per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; fails on a page naming no chunks, a missing chunk, or an oversize literal. `pnpm build` runs it for `en`, `en/topology` and `en/download`; `--allow-json=<route>` exempts a route |
-| `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
-| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
-| `pnpm checks:changed` | Which gates this change needs |
-| `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
-| `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
-| `pnpm design:tokens -- [--prefix=<name>]` | The current token ramps, resolved from app/styles |
-| `pnpm dev:clean` | Delete the Turbopack dev cache in `.next/dev`; `pnpm dev` reuses it, so a warm start reaches the first route in about 3 s instead of 7 s |
-| `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/` |
-| `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
-| `pnpm docs:meta` · `pnpm doc:history -- <path>` | Every living document's kind, status and area; one document's commits across moves |
-| `pnpm docs:move` | Moves the documents in `docs/.moved.json` and rewrites references (`-- --check` only reports) |
-| `pnpm download:repo-facts` | Records this repository's star and fork counts, with the day read, for the download page's open-source section |
-| `pnpm e2e:durations -- <timings dir>` | Rebalances the browser shards from downloaded `playwright-timings-*` reports |
-| `pnpm e2e:sleeps:check` | Refuses a new fixed `waitForTimeout` without a `// measurement window:` note |
-| `pnpm gates:yield -- --runs=200` | Which CI checks ever failed, per run, from the lane reports CI uploads |
-| `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the app screens in `public/gateway/`, in Korean and English; `--only=map,neural` re-shoots this README's two map pictures; `--only=harness-film` re-shoots the download page's harness film stills in all four languages |
-| `pnpm harness:tokens -- --since=<date>` | Where Claude Code tokens went per agent type, from local transcripts, and which runs broke the compaction window or turn caps ([budget](docs/engineering/agent-effort.md#token-budget)) |
-| `pnpm knip` | Dead files, exports and types |
-| `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Shipped packages are on the license allow-list, and `NOTICE.md` is current ([rules](docs/engineering/third-party-code.md)) |
-| `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose `messages/<locale>.json` from one file per namespace, prove it current, and carry an old branch's edits |
-| `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
-| `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |
-| `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server releases memory across repeated calls; about a minute |
-| `pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b` | CPU of each MCP read's first and second call (`get_concept`, `find_backlinks`, `find_path`, `compile_ontology`, `find_evidence` with a phrase and with a word half the files hold), and memory after 20 calls, on a generated vault (`a`: every page a node; `b`: a few thousand nodes among plain pages); `--server=<binary>` measures a compiled server; `--check` (50,000 files, both flows) gates the compiled binary (`pnpm mcp:build-binary` output by default) at 600 ms per second call and, on macOS, a physical footprint of 185 MB after 20 calls and 470 MB at peak; RSS is printed, never gated; then it prints the source server's figures ungated |
-| `pnpm perf:meaning -- --files=10000 --files=50000 --shape=key` | Search by meaning's preparation through Ollama on this computer: passages per generated vault, embedding throughput per model, the preparation time it implies, one-question latency, and the runner's physical footprint, each with the load average; passage counts only without Ollama; a few minutes |
-| `pnpm perf:meaning-quality` | Recall@8 of the Wiki question desk on the labelled fixture (`tests/fixtures/meaning-search/`, 60 questions): the desk's word search against word plus meaning fused by reciprocal rank, per Ollama embedding model and per subset; word only without Ollama; about a minute |
-| `pnpm perf:vault-index -- --files=10000 --files=50000 --shape=key --shape=all --check` | The installed app's search index on generated vaults: build, reopen, one-file update, ranked search, size and peak memory against their limits; a few minutes |
-| `pnpm perf:vault-open -- --files=10000 --files=50000 --shape=key --shape=all --check` | The installed app's reopen from cached rows on generated vaults: a build from files against a reopen with one changed file, heap held, and the rows and index sizes against their limits; also proves a manifest from rows equals one from files; a few minutes |
-| `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
-| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Merge a pull request: on its own CI when its branch contains main and no train overlaps, otherwise on a train; and show the queue. While `main`'s full browser run is red it names the failing specs and still merges |
-| `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
-| `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, every other indexable page consolidates into a sitemap URL, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
-| `pnpm typecheck` | Types across every file, with Next's generated route and page types |
-| `pnpm ui:audit -- --url=<base> --route=<path> [--setup=<module.mjs>]` | Prepare an interactive state with an optional local module, then measure rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
-| `pnpm unit:durations -- <timings dir>` | Rebalances the Unit · Contract shards from downloaded `vitest-timings-*` artifacts of a full run |
-| `pnpm ui:look -- --route=<path> [--vault=fixture\|sample\|<dir>] [--widths=1440] [--audit]` | Builds and serves the static export on a free port (or uses `--url`), opens each route with a vault attached, and prints one screenshot path per route and width |
-
-Use `--scope=<selector>` to audit one visible modal or region. The selector must match exactly one visible element; the report includes its measured element count.
-
-</details>
+pre-push and CI, merging, lane budgets, and every repository command.
 
 ## Moru
 
