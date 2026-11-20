@@ -25,7 +25,8 @@ import { layoutDial } from "../../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../dial/order";
 import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../../dial/types";
 import { domainTitleBlocks, hubBlockReachPx } from "../../flat-graph/names";
-import { buildFlatGraphScene, flatGraphPins } from "../../flat-graph/scene";
+import { drainSteps, type LayoutSteps } from "../../flat-graph/layout";
+import { buildFlatGraphSceneSteps, flatGraphPins } from "../../flat-graph/scene";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../../render/traces";
 import { fireflySeed } from "../../render/edge-fireflies";
@@ -495,7 +496,19 @@ function computeRelaxScope(layoutInput: readonly LayoutGraphNode[]): ReadonlySet
 const EMPTY_EXPANDED_PARENTS: ReadonlySet<string> = new Set();
 const EMPTY_PARENT_GEOMETRY: ReadonlyMap<string, DensityGateParentGeometry> = new Map();
 
-export function buildTopologyWorld(
+export function buildTopologyWorld(...args: Parameters<typeof buildTopologyWorldSteps>): TopologyWorld {
+  return drainSteps(buildTopologyWorldSteps(...args));
+}
+
+/** Edges the world's tail turns into geometry between two steps. */
+const TAIL_EDGES_PER_STEP = 4000;
+
+/**
+ * `buildTopologyWorld` in steps: one per flat-graph cluster in each pass and per domain ForceAtlas2 iteration,
+ * one per tail pass and `TAIL_EDGES_PER_STEP` edges. Domain ordering, spreading the domains and
+ * reading the containment tree each remain one step.
+ */
+export function* buildTopologyWorldSteps(
   nodes: readonly OntologyMapNode[],
   edges: readonly OntologyMapEdge[],
   tokens: OntologyMapTokens,
@@ -508,7 +521,7 @@ export function buildTopologyWorld(
    */
   expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
   dialInput: DialWorldInput | null = null,
-  placeDial: ((model: DialModel) => DialModel) | null = null): TopologyWorld {
+  placeDial: ((model: DialModel) => DialModel) | null = null): LayoutSteps<TopologyWorld> {
   /*
    * A node is drawn under the last containment parent that keeps it in the domain the spine put it in.
    * `buildOntologyTree` keeps the first parent; keeping the last preserves the fans, but across a
@@ -552,7 +565,9 @@ export function buildTopologyWorld(
     capability: tokens.layoutRingCapability,
     element: tokens.layoutRingElement,
   };
-  const dial = dialInput ? buildDialWorld(nodes, edges, dialInput, placeDial) : null;
+  yield;
+  const dial = dialInput ? yield* buildDialWorld(nodes, edges, dialInput, placeDial) : null;
+  yield;
   const pointById = new Map<string, { x: number; y: number;
     }>();
   if (dial && nodes.every((n) => dial.scene.positions.has(n.id))) {
@@ -585,6 +600,7 @@ export function buildTopologyWorld(
     for (const p of seeded) pointById.set(p.id, dial?.scene.positions.get(p.id) ?? p);
   }
 
+  yield;
   const worldNodes: WorldNode[] = nodes.map((n) => {
     const point = pointById.get(n.id);
     const x = point?.x ?? 0;
@@ -610,6 +626,7 @@ export function buildTopologyWorld(
     };
   });
   const nodeById = new Map(worldNodes.map((n) => [n.id, n]));
+  yield;
 
   const neighborMap = new Map<string, Set<string>>();
   for (const n of worldNodes) neighborMap.set(n.id, new Set());
@@ -629,6 +646,7 @@ export function buildTopologyWorld(
     if (list) list.push(node.id);
     else childrenByParent.set(parentId, [node.id]);
   }
+  yield;
   const clusterMetaByParent = new Map<string, ClusterParentMeta>();
   for (const [parentId, childIds] of childrenByParent) {
     const parent = nodeById.get(parentId);
@@ -664,8 +682,14 @@ export function buildTopologyWorld(
     }
   }
 
+  yield;
   const worldEdges: WorldEdge[] = [];
+  let edgesSinceYield = 0;
   for (const edge of edges) {
+    if ((edgesSinceYield += 1) === TAIL_EDGES_PER_STEP) {
+      edgesSinceYield = 0;
+      yield;
+    }
     const a = nodeById.get(edge.source);
     const b = nodeById.get(edge.target);
     if (!a || !b) continue;
@@ -703,6 +727,7 @@ export function buildTopologyWorld(
   // magnitude = size + fullDegree*18, ported from the prototype's `count +
   // degree*18` — the adapter has no separate "count" field, `size` is its
   // closest analog (follow-up: confirm with the HomePage adapter contract).
+  yield;
   const rawMagnitude = (n: { size: number; fullDegree: number;
     }) => n.size + n.fullDegree * 18;
   const ranked = [...nodes].sort((x, y) => rawMagnitude(y) - rawMagnitude(x));
@@ -721,6 +746,7 @@ export function buildTopologyWorld(
     indexEdge(worldEdges[i].sourceId, i);
     indexEdge(worldEdges[i].targetId, i);
   }
+  yield;
 
   return {
     nodes: worldNodes,
@@ -742,27 +768,34 @@ export function buildTopologyWorld(
 
 const DIAL_KINDS: ReadonlySet<string> = new Set(["project", "domain", "capability", "element"]);
 
-function buildDialWorld(
+function* buildDialWorld(
   nodes: readonly OntologyMapNode[],
   edges: readonly OntologyMapEdge[],
   input: DialWorldInput,
-  placeDial: ((model: DialModel) => DialModel) | null): DialWorld | null {
+  placeDial: ((model: DialModel) => DialModel) | null): LayoutSteps<DialWorld | null> {
   const treeNodes: TreeInputNode[] = [];
   for (const n of nodes) if (DIAL_KINDS.has(n.kind)) treeNodes.push({ id: n.id, label: n.label, kind: n.kind });
   if (!treeNodes.some((n) => n.kind === "domain")) return null;
   const treeEdges: TreeInputEdge[] = edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType }));
   const tree = readContainmentTree(treeNodes, treeEdges);
+  yield;
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
+  yield;
   const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directRelations(treeEdges) });
   const model = placeDial ? placeDial(built) : built;
   const remember = input.rememberOrder && model.domains.length > 0;
   if (input.graph) {
+    yield;
     const paint = input.graph.paint;
     const face = labelFontFamily();
     const title = { model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: face };
-    const scene = buildFlatGraphScene(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles: domainTitleBlocks(title), compactTitles: domainTitleBlocks(title, "name"), capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
+    const titles = domainTitleBlocks(title);
+    yield;
+    const compactTitles = domainTitleBlocks(title, "name");
+    yield;
+    const scene = yield* buildFlatGraphSceneSteps(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles, compactTitles, capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
     if (remember) rememberDialOrder(scene.order);
     const pad = paint.domainNamePx;
     return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad }, labels: input.labels };

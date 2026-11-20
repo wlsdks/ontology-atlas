@@ -646,8 +646,9 @@ test.describe("the Library pane", () => {
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     await expect(page.getByTestId("library-wiki-header")).toBeVisible();
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
-    // The reading state keeps its own header row: a way back and the status strip.
-    await expect(page.getByTestId("library-status-strip")).toBeVisible();
+    // The reading state's row belongs to the page: a way back and the page's own state, not the folder's counts.
+    await expect(page.getByTestId("wiki-reader-status")).toBeVisible();
+    await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
     await page.getByTestId("library-reader-back").click();
     await expect(page.getByTestId("library-question-desk")).toBeVisible();

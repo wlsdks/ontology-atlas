@@ -1,4 +1,4 @@
-import type { RefObject, Dispatch, SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, type RefObject, type Dispatch, type SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import {
@@ -19,6 +19,10 @@ import { SelectionAsk } from "../parts/questions/SelectionAsk";
 import { SourceSummary } from "../parts/sources/SourceSummary";
 import { WikiPageHeader } from "../parts/wiki/WikiPageHeader";
 import { WikiTemplateProblems } from "../parts/wiki/WikiTemplateProblems";
+import { useSteadyFix } from "../parts/wiki/use-steady-fix";
+import { WikiCitationPopover, type WikiCitationPopoverHandle, type ReaderCitation } from "../parts/wiki/WikiCitationPopover";
+import { WikiPageFoot, createPaintedBody } from "../parts/wiki/WikiPageFoot";
+import { landAtLine, type ReaderLanding } from "../parts/wiki/reader-landing";
 import { RetainedAnswerContext, RetainedAnswerFooter } from "../parts/questions/RetainedAnswerContext";
 import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
 import type { useLibraryReader } from "./use-library-reader";
@@ -32,6 +36,7 @@ export function LibraryDocumentColumn({
   t, locale, nativeVaultRootPath, selected, setHomeSurface, setSourceCitation, skipReaderFocusRef,
   turnRunning, lintRunning, choose, busy, model, retainedAnswers, knownOriginalPaths, agent,
   answerRefresh, compileSources, reader, sources, turns, graphCards, indexColumn, templateProblems,
+  reducedMotion, landingRef, onOpenLinkedPage, onOpenConcept,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   locale: string;
@@ -57,13 +62,19 @@ export function LibraryDocumentColumn({
   graphCards: ReturnType<typeof useLibraryGraphCards>;
   indexColumn: ReturnType<typeof useLibraryIndexColumn>;
   templateProblems: ReturnType<typeof useWikiTemplateProblems>;
+  reducedMotion: boolean;
+  /** Where the next painted page should stand; consumed by the paint it names. */
+  landingRef: RefObject<ReaderLanding | null>;
+  /** A page link pressed in the body: the trail remembers where the reader was. */
+  onOpenLinkedPage: (slug: string) => void;
+  onOpenConcept: (slug: string) => void;
 }) {
   const {
     opened, selectedWikiDoc, selectedOriginals, selectedSource, citedPassage, sourceOutlineState,
     selectedAnswer, answerHistory, answerRefreshButtonRef, articleScrollRef, activeHeadingSlug,
     backToTop, reportSpy, reportBackToTop, reportAdvisoryOpen, setReportAdvisoryOpen,
     handleReportHeadingNavigate, outlineHeadings, handleHeadingNavigate, vaultSlugs, getDocContent,
-    resolveImage,
+    resolveImage, linkTargets, neighbours, recordedHash, sourceHandles,
   } = reader;
   const { handleOpenSource } = sources;
   const {
@@ -74,6 +85,54 @@ export function LibraryDocumentColumn({
   const { agentDoor } = graphCards;
   const { indexSegment, indexCollapsed } = indexColumn;
   const { wikiProblems, wikiPageTitle, wikiProblemDoors, wikiProblemFix } = templateProblems;
+  const pageSlug = selectedWikiDoc?.slug ?? null;
+  /* One object per title lookup, so the memoised problem list is not drawn again on a scroll. */
+  const problemContext = useMemo(() => ({ pageTitle: wikiPageTitle }), [wikiPageTitle]);
+  const steadyFix = useSteadyFix(wikiProblemFix);
+  const citationPopoverRef = useRef<WikiCitationPopoverHandle>(null);
+  const listedBytes = useMemo(() => new Map(model.sources.map((row) => [row.path, row.bytes])), [model.sources]);
+  /* Stable, so opening a popover hands the press over without rendering the page body again. */
+  const onCitationPress = useCallback((citation: ReaderCitation, button: HTMLButtonElement) => {
+    citationPopoverRef.current?.open(citation, button);
+  }, []);
+  // One painted body per page, so a page never shows the foot of the one before it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const painted = useMemo(() => createPaintedBody(), [pageSlug]);
+  const paintedSlugRef = useRef<string | null>(null);
+  const landingCleanupRef = useRef<(() => void) | null>(null);
+  /* A page that arrives clears the last one's landing itself; this covers leaving the reader. */
+  useEffect(() => () => landingCleanupRef.current?.(), []);
+  const onBodyPainted = useCallback((body: string | null, citations: ReadonlyMap<string, number>) => {
+    painted.set(body === null ? null : citations);
+    const scroller = articleScrollRef.current;
+    if (body === null || !pageSlug || !scroller) return;
+    const arrived = paintedSlugRef.current !== pageSlug;
+    paintedSlugRef.current = pageSlug;
+    const landing = landingRef.current?.slug === pageSlug ? landingRef.current : null;
+    if (landing) landingRef.current = null;
+    else if (!arrived) return;
+    /*
+     * In the next frame, before it paints: placing the scroll lays the new body out, and doing
+     * that inside the commit that rendered a long page would add the whole layout to that task.
+     */
+    landingCleanupRef.current?.();
+    const layer = pageBodyRef.current;
+    let undo: (() => void) | null = null;
+    const frame = requestAnimationFrame(() => {
+      if (!landing) scroller.scrollTop = 0;
+      else if ("top" in landing) scroller.scrollTop = landing.top;
+      else if (layer) undo = landAtLine(scroller, layer, landing, reducedMotion);
+    });
+    landingCleanupRef.current = () => {
+      cancelAnimationFrame(frame);
+      undo?.();
+    };
+  }, [articleScrollRef, landingRef, pageBodyRef, pageSlug, painted, reducedMotion]);
+  const openSourceAt = useCallback((path: string, anchor?: string) => {
+    skipReaderFocusRef.current = true;
+    choose({ kind: "source", path });
+    setSourceCitation({ path, anchor });
+  }, [choose, setSourceCitation, skipReaderFocusRef]);
   return (
     <div
       data-testid="library-document-column"
@@ -153,8 +212,8 @@ export function LibraryDocumentColumn({
             problems={wikiProblems}
             file={`${selectedWikiDoc.slug}.md`}
             doors={wikiProblemDoors}
-            fix={wikiProblemFix}
-            context={{ pageTitle: wikiPageTitle }}
+            fix={steadyFix}
+            context={problemContext}
             t={t}
           />
         )}
@@ -170,19 +229,24 @@ export function LibraryDocumentColumn({
           error={answerRefresh.error} t={t} /> : null}
         <div
           ref={pageBodyRef}
-          className="relative data-[selecting=true]:[&>:not([data-testid=library-selection-ask])_*]:text-[color:var(--color-text-quaternary)]"
+          className="relative isolate data-[selecting=true]:[&>:not([data-testid=library-selection-ask])_*]:text-[color:var(--color-text-quaternary)]"
         >
           <DocsVaultViewer
             key={selectedWikiDoc.slug}
             doc={selectedWikiDoc}
             vaultSlugs={vaultSlugs}
-            onNavigate={(slug) => choose({ kind: "wiki", slug })}
+            onNavigate={onOpenLinkedPage}
             getDocContent={getDocContent}
             resolveImage={resolveImage}
             knownOriginalPaths={knownOriginalPaths}
             namedSourcePath={selectedOriginals.length === 1 ? selectedOriginals[0]!.path : undefined}
             compactTop={selectedAnswer !== null}
-            onSourceNavigate={(path, anchor) => { skipReaderFocusRef.current = true; choose({ kind: 'source', path }); setSourceCitation({ path, anchor }); }}
+            onSourceNavigate={openSourceAt}
+            linkTargets={linkTargets}
+            onConceptNavigate={onOpenConcept}
+            onCitationPress={onCitationPress}
+            markSourceLines
+            onBodyPainted={onBodyPainted}
           />
           {agent.route === "agent" ? (
             <SelectionAsk
@@ -209,6 +273,30 @@ export function LibraryDocumentColumn({
             />
           ) : null}
         </div>
+        {neighbours ? (
+          <WikiPageFoot
+            painted={painted}
+            originals={selectedOriginals}
+            isPresent={(path) => knownOriginalPaths.has(path)}
+            linkedFrom={neighbours.linkedFrom}
+            concepts={neighbours.concepts}
+            onOpenSource={(path) => choose({ kind: "source", path })}
+            onOpenPage={(slug) => choose({ kind: "wiki", slug })}
+            onOpenConcept={onOpenConcept}
+            t={t}
+          />
+        ) : null}
+        <WikiCitationPopover
+          key={selectedWikiDoc.slug}
+          ref={citationPopoverRef}
+          sourceHandles={sourceHandles}
+          recordedHash={recordedHash}
+          listedBytes={listedBytes}
+          canReveal={nativeVaultRootPath !== null}
+          onOpenSource={openSourceAt}
+          onReveal={(path) => { const row = model.sources.find((one) => one.path === path); if (row) handleOpenSource(row); }}
+          t={t}
+        />
         {selectedAnswer ? (
           <>
             <WikiTemplateProblems
@@ -216,7 +304,7 @@ export function LibraryDocumentColumn({
               file={`${selectedWikiDoc.slug}.md`}
               collapsed
               doors={wikiProblemDoors}
-              context={{ pageTitle: wikiPageTitle }}
+              context={problemContext}
               t={t}
             />
             <RetainedAnswerFooter

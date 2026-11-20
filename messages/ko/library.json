@@ -304,8 +304,6 @@
       "draft": "초안",
       "reviewed": "검토됨"
     },
-    "viewOriginalCount": "원문 {count, number}개",
-    "viewOriginalOne": "원문 보기: {name}",
     "originalMissing": "근거로 인용한 {name}, 이 폴더에는 없어요.",
     "compileCreateFile": "{path} 만들기",
     "compileModifyFile": "{path} 바꾸기",
@@ -471,11 +469,11 @@
     "canvasAria": "자료실 그래프: 원문과 위키 문서, 그리고 그 문서가 부르는 개념.",
     "islandUnsorted": "분류 전",
     "islandUnread": "읽지 않음",
-    "describeIsland": "{name}: 문서 {pages, number}개와 그 문서가 읽은 원문 {sources, number}개가 모인 섬이에요. 누르면 열 그림으로 열리고, 확대하면 이름이 보여요.",
-    "announceIsland": "{name} 섬, {total, number}개 중 {position, number}번째: 문서 {pages, number}개와 원문 {sources, number}개. Enter를 누르면 열 그림으로 열려요.",
+    "describeIsland": "{name}: 문서 {pages, number}개와 그 문서가 읽은 원문 {sources, number}개가 모인 그룹이에요. 누르면 열 그림으로 열리고, 확대하면 이름이 보여요.",
+    "announceIsland": "{name} 그룹, {total, number}개 중 {position, number}번째: 문서 {pages, number}개와 원문 {sources, number}개. Enter를 누르면 열 그림으로 열려요.",
     "describeUnread": "읽지 않음: 아직 어떤 문서도 읽지 않은 원문 {sources, number}개. 누르면 어디서 시작할지 알려줘요.",
     "unreadPressed": "아직 어떤 문서도 읽지 않은 원문 {sources, number}개라 그 사이에 그릴 관계가 없어요. 원문 목록에서 「위키 문서 없음」으로 표시된 것들이고, 그림 위의 「위키 문서 만들기」가 첫 파일부터 시작해요.",
-    "islandBack": "섬 지도",
+    "islandBack": "전체 그룹",
     "islandName": "{name} · 문서 {pages, number}개 · 원문 {sources, number}개",
     "readerClose": "페이지 닫기",
     "keys": "화살표 키로 점 사이를 옮기고, Enter로 그 점 옆에 카드를 열고, Esc로 닫아요.",
@@ -522,7 +520,7 @@
       "concept": "개념 {count, number}",
       "cite": "인용 {count, number}",
       "mention": "언급 {count, number}",
-      "island": "섬 하나가 개념 하나",
+      "island": "그룹 하나가 개념 하나",
       "stale": "쓴 뒤 달라짐",
       "gestures": "누르면 카드 · 두 번 누르면 열기 · 스크롤로 확대"
     }
@@ -1069,5 +1067,18 @@
     "failedTitle": "위키 검사가 일찍 끝났어요",
     "failedBody": "{agent}가 보고하기 전에 끝났어요. 바뀐 파일은 없어요. 「위키 검사」를 누르면 다시 실행해요.",
     "stopped": "이 검사를 중지했어요. 보고된 것도, 바뀐 파일도 없어요."
+  },
+  "wikiReader": {
+    "citedSources": "인용한 원문",
+    "linkedFrom": "이 문서를 가리키는 문서",
+    "concepts": "이 문서가 다루는 개념",
+    "citationCount": "인용 {count, number}곳",
+    "citationAt": "{file} · {line, number}행",
+    "openSource": "원문 열기",
+    "sourceChanged": "문서를 쓴 뒤에 이 파일이 바뀌었어요. 지금 내용이에요.",
+    "sourceMissing": "이 폴더에 이 파일이 없어요.",
+    "sourceTooLarge": "여기서 보여 주기엔 파일이 너무 커요.",
+    "linkMissing": "이 폴더에 이 이름을 가진 것이 없어요.",
+    "back": "뒤로"
   }
 }

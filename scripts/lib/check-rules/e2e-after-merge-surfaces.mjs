@@ -67,4 +67,14 @@ export const rules = [
       /^src\/views\/library\/ui\/parts\/first-run\/LibraryConstellation\.tsx$/,
     ],
   },
+  {
+    order: 5224,
+    command: 'pnpm exec playwright test tests/e2e/library/wiki/library-wiki-reader.spec.ts',
+    reason: 'the library wiki reader or the source passage it reads on a press changed',
+    matches: [
+      /^src\/views\/library\/ui\/parts\/wiki\/[^/]+\.tsx?$/,
+      /^src\/views\/library\/lib\/sources\/use-cited-passage\.ts$/,
+      /^src\/shared\/lib\/library\/source-passage\.ts$/,
+    ],
+  },
 ]

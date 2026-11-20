@@ -328,6 +328,122 @@ building slice writes ko, ja and zh in the same register).
    reduced motion shows the end state.
 8. Print and Markdown export of a report are unchanged.
 
+## W2: Wiki reader
+
+### Today (installed-app state, 60 pages, one page open)
+
+- The row above the page is the folder's: Close page, "Write a wiki page: {file}", and five
+  folder-wide counts. Nothing in it is about the page being read.
+- Under the title, one faint row names the source ("View original: {file}").
+- In the body, a link to another page prints its path (`wiki/settlement-reconciliation-check`)
+  and a link to a concept prints its slug (`capabilities/background-job-runtime`).
+- A citation is the line number in 10 px accent type after the sentence ("line 13"). It names
+  no file, and pressing it leaves the page for the source.
+- The page ends where its text ends: nothing says what cites it or what it sits beside.
+
+### Decisions
+
+1. **The row above a page belongs to that page.** Close, the page's state (draft, checked,
+   source changed), who wrote it and when, and the page's actions. The folder-wide counts
+   leave this row; they stay where H1 put them and in Check results. Falsifier: a person
+   looking for "what is wrong in this folder" while a page is open cannot find it in one press.
+2. **A link says the name of what it opens.** A page link shows the page's title, a concept
+   link the concept's title with its kind glyph. A link whose target is missing shows the
+   written path in danger ink and says so on focus and hover. The file's text is not changed.
+3. **A citation shows its passage in place.** Pressing a citation opens a popover anchored to
+   it: the file's name, the line, the cited unit with one unit either side, and **Open the
+   source**. This narrows `docs/DECISIONS.md` 2026-09-11 "The Library reads a source only when a
+   person names it": a citation press already names the file, and the popover reads no more
+   than that press reads today. Dissent kept: reaching the full source takes a second press.
+   Falsifier: people press through to the source nearly every time, so the popover is a toll.
+4. **A page with more than one source names the file on each citation**; a page with one
+   source shows only the line.
+5. **The page ends with where it sits.** Three short groups under the text, each by title:
+   sources this page cites (with how many citations each), pages that link here, concepts it
+   touches. A group with nothing is absent. Nearness by meaning joins this foot only after
+   search by meaning has proved its gain on the desk (P2).
+
+6. **A result row opens the page at its claim.** On the Wiki desk a row that is a wiki claim
+   opens its page scrolled to that claim, and the claim's line carries a mark that fades over
+   the standard slow duration (present at once and without the fade under reduced motion; the
+   mark leaves the DOM or turns inert after it ends). Back returns to the desk with its results
+   and scroll position as they were. A claim on the page's first screen does not scroll.
+
+### Flow
+
+1. The person opens a page from the index or from a result row. The top row shows Close, the
+   state badge, "{author} · {date}", and at the right the page's actions and the conversation
+   door. The title leads the column; under it one line lists the sources cited as presses.
+2. Reading, they meet a link: it reads as a title. Pressing a page link opens that page in
+   place and Back returns to the same scroll position; a concept link opens the concept in the
+   Ontology tab.
+3. They press a citation. The popover rises from the citation with the passage; the cited unit
+   is marked. Escape or a press outside closes it and focus returns to the citation. **Open the
+   source** opens the Sources reader at that unit.
+4. At the foot they see what the page cites, what links here and which concepts it touches.
+
+### States
+
+| State | The reader shows |
+|---|---|
+| Page with one source | Citations show the line only |
+| Page with several sources | Each citation shows a short file name and the line |
+| Citation whose source changed | The popover says the source changed after the page was written and shows the present text |
+| Citation whose source is missing | The popover says the file is missing; no text |
+| Citation into a format the reader cannot read | The popover names the file and offers Show in Finder |
+| Link to a missing page or concept | Written path in danger ink; focus and hover say it is missing |
+| No backlinks, no concepts | Those groups are absent; "Sources cited" always shows for a page that cites any |
+| Long page | The outline at the right from `xl` up, as today |
+| Reduced motion | The popover appears at its end state |
+| Web playground | Same reader; reading a source needs the folder permission as today |
+
+### Copy
+
+New keys under `wikiReader` in `messages/<locale>/library.json` (English source).
+
+| Key | en |
+|---|---|
+| `citedSources` | Sources cited |
+| `linkedFrom` | Pages that link here |
+| `concepts` | Concepts this page touches |
+| `citationCount` | {count, plural, one {# citation} other {# citations}} |
+| `citationAt` | {file} · line {line, number} |
+| `openSource` | Open the source |
+| `sourceChanged` | This file changed after the page was written. This is its text now. |
+| `sourceMissing` | This file is no longer in the folder. |
+| `linkMissing` | Nothing in this folder has this name. |
+
+### Edge cases
+
+- **A citation on the last line of the column**: the popover opens above it.
+- **A cited unit of 40 lines**: the popover shows its first twelve lines and "Open the source".
+- **Two citations after one sentence**: two presses, each with its own popover; never merged.
+- **A title of 90 characters in a link**: it wraps with the text; it is never cut.
+- **A page that links to itself**: shown as plain text.
+- **2,000 pages**: titles for links come from the listing already in memory; opening a page
+  reads no other page.
+
+### Acceptance criteria
+
+1. With a page open, the row above it holds no folder-wide count and names the page's state.
+2. Given a page whose body links `wiki/settlement-reconciliation-check`, the link's text is
+   that page's title; given a link to a path that does not exist, the text is the path and its
+   accessible description says it is missing.
+3. Pressing a citation opens a popover that contains the cited unit's text, equal to what the
+   Sources reader marks for the same citation; Escape closes it and focus is on the citation.
+4. Opening a page reads no source file (read count zero) until a citation is pressed.
+5. A page citing two files shows the file's name on every citation; a page citing one shows
+   none.
+6. The foot lists every cited source with its citation count, and the groups with nothing are
+   absent.
+7. Recorded in the app's state: open a page, press a citation, close it, press a link, go
+   Back. No frame interval above 50 ms; the scroll position after Back equals the position
+   before the press.
+8. Pressing the first row for the capture folder's Korean returns question ("how many days do I
+   have to return an item?") opens the page
+   with that sentence inside the viewport and marked; a claim on the page's first screen does
+   not scroll. Back shows the desk with its results and scroll position as they were.
+
 ## Out of scope
 
 - A new renderer for the picture; P1 changes layout choice and labels only.
@@ -369,3 +485,35 @@ building slice writes ko, ja and zh in the same register).
     resizes no cell of the band; a folder with one state draws no legend and keeps its row empty.
   - The work line names the file, not the path, and cuts a long name in the middle keeping its
     ending; Continue carries no ring while work runs.
+- 2026-11-20: W2 detailed: the Wiki reader's top row belongs to the page, links say names,
+  a citation opens its passage in a popover, the page ends with where it sits, and a desk row
+  opens the page at its claim.
+- 2026-11-20: W2 as built departs in seven places.
+  - The page has no actions of its own, and the Conversation door stays in the page header
+    where H1 put every Library door; the top row holds Close, Back, the state, a source-changed
+    badge, the author and date, and the work line at its right.
+  - Following a link adds a Back press to the top row (`wikiReader.back`) that returns along
+    the links followed at the scroll each page was left at. Back to the desk is Close: the desk
+    is the reader with nothing open, and Close gives it back with its results and scroll.
+  - The popover rises once the one-file read has settled, so it never draws empty and then
+    grows; the read is the Sources reader's own hook for that file.
+  - The claim's mark holds for the choreography duration (1.2s) after the scroll settles and
+    then fades over the slow duration, so a person who watched the scroll still sees it.
+  - A link to nothing describes itself through `aria-describedby` and a hint shown on hover
+    and focus that is hidden from assistive technology, instead of the shared tooltip, which
+    gave a screen reader the same sentence twice.
+  - A citation into a missing file is still a press; its popover says the file is missing.
+    In the foot a missing source is named but is not a press. Show in Finder appears only in
+    the app, where there is a Finder.
+  - A concept link opens the Ontology tab with that concept selected
+    (`/library/?tab=ontology&slug=`).
+- 2026-11-20: W2 criterion 8 names the capture folder's Korean question in English, since
+  authored spec prose is English (`pnpm docs:language`).
+- 2026-11-20: W2 after the security review.
+  - A desk row lands on the block that shows its sentence, and uses the line only to choose
+    between identical sentences. If no block shows it, there is no mark and the page opens at
+    its top.
+  - "Changed since written" needs a recorded sha256 that differs from the current one.
+  - The foot counts only the citations the reader drew.
+  - The popover does not read a source listed above 5 MB, and offers the source instead.
+  - Each shown line stops at 400 characters.

@@ -19,7 +19,8 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
-import { layoutFlatGraph } from "./layout";
+import { layoutFlatGraph, runForceAtlas2, steppedForceAtlas2 } from "./layout";
+import { flatGraphPins, settleFlatGraph } from "./scene";
 import { separate, type Body } from "./separate";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame } from "./types";
@@ -118,6 +119,18 @@ describe("layoutFlatGraph", () => {
     expect(again.positions).toEqual(first.positions);
   });
 
+  it.each([5000, 20000])("rebuilds a remembered %i-file folder with the footprints and extent it first had", (files) => {
+    const model = folderModel(files);
+    const first = layoutOf(model);
+    settleFlatGraph(model, first, "settled", "test-face");
+    const again = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS, flatGraphPins(model, "test-face"), frameOf(model));
+    const drift = (a: number, b: number) => Math.abs(a - b) / Math.max(1, Math.abs(b));
+    const footprintDrift = Math.max(...again.clusters.map((c, k) => drift(c.footprint, first.clusters[k]!.footprint)));
+    const extentDrift = Math.max(...(["minX", "minY", "maxX", "maxY"] as const).map((side) => drift(again.extent[side], first.extent[side])));
+    expect(footprintDrift).toBeLessThan(1e-9);
+    expect(extentDrift).toBeLessThan(1e-9);
+  });
+
   it("lays the folder out again when a capability arrives", () => {
     layoutOf(folderModel(1500));
     const assign = vi.spyOn(forceAtlas2, "assign");
@@ -126,6 +139,23 @@ describe("layoutFlatGraph", () => {
     assign.mockRestore();
     expect(runs).toBeGreaterThan(0);
     expect(grown.positions.has(`capabilities/cap-${Math.round(1500 * 0.25)}`)).toBe(true);
+  });
+});
+
+describe("steppedForceAtlas2", () => {
+  it("lands every body where one synchronous ForceAtlas2 run puts it, one step per iteration", () => {
+    const bodies = crowd(120, 3);
+    const springs = bodies.slice(1).map((b, k) => ({ a: bodies[k % 9]!.id, b: b.id, weight: 1 + (k % 3) }));
+    const once = runForceAtlas2(bodies, springs, 40);
+    const steps = steppedForceAtlas2(bodies, springs, 40);
+    let taken = 0;
+    for (let step = steps.next(); ; step = steps.next(), taken += 1) {
+      if (step.done) {
+        expect(step.value).toEqual(once);
+        break;
+      }
+    }
+    expect(taken).toBe(40);
   });
 });
 
