@@ -342,7 +342,7 @@ export function DocsVaultViewer({
                 <button
                   type="button"
                   aria-label={label}
-                  aria-haspopup="dialog"
+                  aria-expanded={false}
                   data-source-path={citation.path ?? undefined}
                   data-source-anchor={citation.anchor}
                   data-citation-state={known ? 'known' : 'missing'}
@@ -754,7 +754,7 @@ export function DocsVaultViewer({
  * stays inline so a long run of citations wraps with the text.
  */
 const CITATION_CHIP_CLASS =
-  'mx-0.5 inline rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-px align-baseline text-label leading-label text-[color:var(--color-indigo-line-a90)] [box-decoration-break:clone] break-keep whitespace-normal transition-colors hover:bg-[color:var(--color-indigo-line-a22)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--color-indigo-focus-ring)] aria-expanded:bg-[color:var(--color-indigo-line-a22)] aria-expanded:text-[color:var(--color-text-primary)]';
+  'mx-0.5 inline rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-px align-baseline text-label leading-label text-[color:var(--color-indigo-line-a90)] [box-decoration-break:clone] whitespace-normal transition-colors hover:bg-[color:var(--color-indigo-line-a22)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--color-indigo-focus-ring)] aria-expanded:bg-[color:var(--color-indigo-line-a22)] aria-expanded:text-[color:var(--color-text-primary)]';
 const CITATION_CHIP_MISSING_CLASS =
   'bg-transparent border-b border-dashed border-[color:var(--color-amber-source-a50)] rounded-none text-[color:var(--color-amber-source-text-a85)]';
 

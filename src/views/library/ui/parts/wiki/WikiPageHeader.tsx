@@ -57,7 +57,7 @@ export function WikiPageHeader({
                 <span
                   data-testid={`library-wiki-source-missing-${original.path}`}
                   title={t("wiki.originalMissing", { name: original.name })}
-                  className="inline-flex min-h-7 max-w-full items-center gap-1.5 text-[color:var(--color-text-quaternary)] line-through [overflow-wrap:anywhere]"
+                  className="inline-flex min-h-7 max-w-full items-center gap-1.5 text-[color:var(--color-text-tertiary)] line-through [overflow-wrap:anywhere]"
                 >
                   <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                   {original.name}

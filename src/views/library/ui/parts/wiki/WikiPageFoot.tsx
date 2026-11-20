@@ -130,8 +130,8 @@ function FootRow({ icon, label, meta, title, onPress }: {
   const inner = (
     <>
       <span className="flex h-5 w-4 flex-none items-center justify-center opacity-70">{icon}</span>
-      <span className="min-w-0 flex-1 [overflow-wrap:anywhere] [word-break:keep-all]">{label}</span>
-      {meta ? <span className="flex-none text-label leading-label text-[color:var(--color-text-quaternary)]">{meta}</span> : null}
+      <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{label}</span>
+      {meta ? <span className="flex-none text-label leading-label text-[color:var(--color-text-tertiary)]">{meta}</span> : null}
     </>
   );
   const rowClass = "min-h-9 items-start gap-2 px-2 py-2 text-body leading-label";
@@ -143,7 +143,7 @@ function FootRow({ icon, label, meta, title, onPress }: {
           {inner}
         </button>
       ) : (
-        <span title={title} className={`flex w-full text-[color:var(--color-text-quaternary)] ${rowClass}`}>{inner}</span>
+        <span title={title} className={`flex w-full text-[color:var(--color-text-tertiary)] ${rowClass}`}>{inner}</span>
       )}
     </li>
   );

@@ -591,7 +591,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                   onClick={backAlongTrail}
                   data-testid="library-reader-trail-back"
                   title={activeTrail[activeTrail.length - 1]!.title}
-                  className={controlClass({ shape: "chip", tone: "muted", className: "gap-1.5" })}
+                  className={controlClass({ shape: "chip", tone: "default", className: "gap-1.5" })}
                 >
                   <ArrowLeft size={ICON_SIZE.sm} aria-hidden />
                   {t("wikiReader.back")}

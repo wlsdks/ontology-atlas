@@ -1006,7 +1006,7 @@
     "citedSources": "引用した原文",
     "linkedFrom": "このページを指すページ",
     "concepts": "このページが扱う概念",
-    "citationCount": "引用 {count, number}か所",
+    "citationCount": "引用{count, number}か所",
     "citationAt": "{file} · {line, number}行目",
     "openSource": "原文を開く",
     "sourceChanged": "ページを書いた後にこのファイルが変わりました。今の内容です。",

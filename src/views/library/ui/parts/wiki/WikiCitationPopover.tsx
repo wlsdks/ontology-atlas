@@ -64,7 +64,7 @@ export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(
   const close = useCallback((id: number, returnFocus: boolean) => {
     const entry = entriesRef.current.find((one) => one.id === id && one.open);
     if (!entry) return;
-    entry.button.removeAttribute("aria-expanded");
+    entry.button.setAttribute("aria-expanded", "false");
     if (returnFocus) entry.button.focus({ preventScroll: true });
     setEntries((current) => current.map((one) => (one.id === id ? { ...one, open: false } : one)));
   }, []);
@@ -74,7 +74,7 @@ export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(
       const current = entriesRef.current;
       // A second press on the open citation closes it, as a toggle does.
       const same = current.some((entry) => entry.open && entry.button === button);
-      for (const entry of current) if (entry.open) entry.button.removeAttribute("aria-expanded");
+      for (const entry of current) if (entry.open) entry.button.setAttribute("aria-expanded", "false");
       const rest = current.map((entry) => (entry.open ? { ...entry, open: false } : entry));
       if (same) {
         setEntries(rest);
@@ -92,7 +92,7 @@ export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(
 
   // A page change or unmount takes the open popover with it.
   useEffect(() => () => {
-    for (const entry of entriesRef.current) entry.button.removeAttribute("aria-expanded");
+    for (const entry of entriesRef.current) entry.button.setAttribute("aria-expanded", "false");
   }, []);
 
   if (typeof document === "undefined") return null;
@@ -210,7 +210,7 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
         motion="chrome"
         origin={box?.above ? "bottom left" : "top left"}
         tabIndex={-1}
-        role="dialog"
+        role="group"
         aria-label={where}
         onExited={() => onExited(id)}
         {...transientSurface("anchored")}
@@ -233,31 +233,31 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
             </p>
           ) : null}
           {changed && resolved ? (
-            <p data-testid="wiki-citation-changed" className="mb-2 text-label leading-label text-[color:var(--color-amber-source-text-a95)] [word-break:keep-all]">
+            <p data-testid="wiki-citation-changed" className="mb-2 text-label leading-label text-[color:var(--color-amber-source-text-a95)]">
               {t("wikiReader.sourceChanged")}
             </p>
           ) : null}
           {resolved && citedLines ? (
             <div className="flex flex-col gap-1.5">
               {resolved.before.slice(-1).map((unit) => <ContextLine key={`b-${unit.anchor}`} unit={unit} />)}
-              <p data-testid="wiki-citation-cited" className="whitespace-pre-wrap rounded-micro bg-[color:var(--color-indigo-line-a06)] px-2 py-1 -mx-2 text-body leading-body text-[color:var(--color-text-primary)] [overflow-wrap:break-word] [word-break:keep-all]">
+              <p data-testid="wiki-citation-cited" className="whitespace-pre-wrap rounded-micro bg-[color:var(--color-indigo-line-a06)] px-2 py-1 -mx-2 text-body leading-body text-[color:var(--color-text-primary)] [overflow-wrap:break-word]">
                 {citedLines.clipped ? `${citedLines.text}\n…` : citedLines.text}
               </p>
               {resolved.after.slice(0, 1).map((unit) => <ContextLine key={`a-${unit.anchor}`} unit={unit} />)}
             </div>
           ) : null}
           {passage?.phase === "ready" && passage.passage?.state === "unresolved" ? (
-            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]">
+            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word]">
               {t("source.passage.missing", { anchor: citation.anchor ?? "" })}
             </p>
           ) : null}
           {passage?.phase === "ready" && passage.passage?.state === "no-text" && label && citation.anchor ? (
-            <p data-testid="wiki-citation-no-text" className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]">
+            <p data-testid="wiki-citation-no-text" className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word]">
               {t("source.passage.noText", { label: passageLabelText(label, citation.anchor, t) })}
             </p>
           ) : null}
           {passage?.phase === "failed" ? (
-            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]">
+            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word]">
               {passage.error ? t("source.passage.unreadable", { reason: passage.error }) : t("source.passage.unreadableUnknown")}
             </p>
           ) : null}
@@ -266,7 +266,7 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
           <div className="flex flex-none flex-wrap items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 py-2.5">
             {passage?.phase === "ready" && passage.passage?.state === "no-text" && canReveal ? (
               <button type="button" data-testid="wiki-citation-reveal" onClick={() => onReveal(citation.path!)}
-                className={controlClass({ shape: "chip", tone: "muted", className: "gap-2" })}>
+                className={controlClass({ shape: "chip", tone: "default", className: "gap-2" })}>
                 <FolderOpen size={ICON_SIZE.sm} aria-hidden />
                 {t("source.reveal")}
               </button>
@@ -286,7 +286,7 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
 
 function ContextLine({ unit }: { unit: SourceUnit }) {
   return (
-    <p className="whitespace-pre-wrap text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]">
+    <p className="whitespace-pre-wrap text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word]">
       {unit.text}
     </p>
   );
