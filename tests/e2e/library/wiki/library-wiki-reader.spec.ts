@@ -189,7 +189,7 @@ test('a page citing two files names the file on every citation, and its popovers
 
   await citations.filter({ hasText: 'gone.md' }).click();
   await expect(popover).toHaveAttribute('data-state', 'missing');
-  await expect(popover.getByTestId('wiki-citation-missing')).toHaveText('This file is no longer in the folder.');
+  await expect(popover.getByTestId('wiki-citation-missing')).toHaveText('This file is not in the folder.');
   await expect(popover.getByTestId('wiki-citation-cited')).toHaveCount(0);
 });
 

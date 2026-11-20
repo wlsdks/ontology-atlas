@@ -1010,7 +1010,8 @@
     "citationAt": "{file} · {line, number}행",
     "openSource": "원문 열기",
     "sourceChanged": "문서를 쓴 뒤에 이 파일이 바뀌었어요. 지금 내용이에요.",
-    "sourceMissing": "이 파일은 이제 폴더에 없어요.",
+    "sourceMissing": "이 폴더에 이 파일이 없어요.",
+    "sourceTooLarge": "여기서 보여 주기엔 파일이 너무 커요.",
     "linkMissing": "이 폴더에 이 이름을 가진 것이 없어요.",
     "back": "뒤로"
   }

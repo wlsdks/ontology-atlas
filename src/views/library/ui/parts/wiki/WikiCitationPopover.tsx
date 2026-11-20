@@ -13,9 +13,14 @@ import { controlClass } from "@/shared/ui/control-class";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useCitedPassage } from "../../../lib/sources/use-cited-passage";
+import { changedSinceWritten } from "./wiki-reader-facts";
 
 /** Lines of the cited unit shown at most; the rest is one press away, in the source. */
 export const POPOVER_CITED_LINES = 12;
+/** Characters of one cited line shown at most, so a single enormous line cannot fill the page. */
+export const POPOVER_LINE_CHARS = 400;
+/** A source listed above this many bytes is not read on a press; the source pane is one press away. */
+export const POPOVER_READ_LIMIT_BYTES = 5_000_000;
 const GAP = 8;
 const INSET = 16;
 const WIDTH = 440;
@@ -41,8 +46,10 @@ interface Entry {
 
 interface Props {
   sourceHandles: ReadonlyMap<string, FileSystemFileHandle>;
-  /** Whether this page's recorded hash for the file differs from the file now. */
-  changedSince: (path: string) => boolean;
+  /** The sha256 this page recorded for the file when it was written, or null when it recorded none. */
+  recordedHash: (path: string) => string | null;
+  /** Each listed source's byte length, from the directory entry. */
+  listedBytes: ReadonlyMap<string, number>;
   canReveal: boolean;
   onOpenSource: (path: string, anchor?: string) => void;
   onReveal: (path: string) => void;
@@ -60,22 +67,31 @@ export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(
   const entriesRef = useRef(entries);
   useEffect(() => { entriesRef.current = entries; }, [entries]);
   const nextId = useRef(0);
+  /* Entries whose panel has shown; one closed before that has no exit to play and leaves at once. */
+  const shown = useRef(new Set<number>());
+  const onShown = useCallback((id: number) => { shown.current.add(id); }, []);
+  const closed = useCallback((list: readonly Entry[], ids: ReadonlySet<number>) => list.flatMap((one) => {
+    if (!ids.has(one.id)) return [one];
+    return shown.current.has(one.id) ? [{ ...one, open: false }] : [];
+  }), []);
 
   const close = useCallback((id: number, returnFocus: boolean) => {
     const entry = entriesRef.current.find((one) => one.id === id && one.open);
     if (!entry) return;
     entry.button.setAttribute("aria-expanded", "false");
     if (returnFocus) entry.button.focus({ preventScroll: true });
-    setEntries((current) => current.map((one) => (one.id === id ? { ...one, open: false } : one)));
-  }, []);
+    setEntries((current) => closed(current, new Set([id])));
+  }, [closed]);
 
   useImperativeHandle(ref, () => ({
     open(citation, button) {
       const current = entriesRef.current;
-      // A second press on the open citation closes it, as a toggle does.
-      const same = current.some((entry) => entry.open && entry.button === button);
+      const same = current.find((entry) => entry.open && entry.button === button);
+      // A press on a citation whose read is still in flight changes nothing and reads nothing again.
+      if (same && !shown.current.has(same.id)) return;
       for (const entry of current) if (entry.open) entry.button.setAttribute("aria-expanded", "false");
-      const rest = current.map((entry) => (entry.open ? { ...entry, open: false } : entry));
+      const rest = closed(current, new Set(current.filter((entry) => entry.open).map((entry) => entry.id)));
+      // A second press on the open citation closes it, as a toggle does.
       if (same) {
         setEntries(rest);
         return;
@@ -84,9 +100,10 @@ export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(
       nextId.current += 1;
       setEntries([...rest, { id: nextId.current, citation, button, open: true }]);
     },
-  }), []);
+  }), [closed]);
 
   const remove = useCallback((id: number) => {
+    shown.current.delete(id);
     setEntries((current) => current.filter((entry) => entry.id !== id));
   }, []);
 
@@ -97,25 +114,31 @@ export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(
 
   if (typeof document === "undefined") return null;
   return <>{entries.map((entry) => (
-    <CitationPanel key={entry.id} entry={entry} onClose={close} onExited={remove} {...props} />
+    <CitationPanel key={entry.id} entry={entry} onClose={close} onShown={onShown} onExited={remove} {...props} />
   ))}</>;
 });
 
-function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, canReveal, onOpenSource, onReveal, t }: Props & {
+function CitationPanel({ entry, onClose, onShown, onExited, sourceHandles, recordedHash, listedBytes, canReveal, onOpenSource, onReveal, t }: Props & {
   entry: Entry;
   onClose: (id: number, returnFocus: boolean) => void;
+  onShown: (id: number) => void;
   onExited: (id: number) => void;
 }) {
   const { citation, button, open, id } = entry;
+  const tooLarge = citation.path !== null && (listedBytes.get(citation.path) ?? 0) > POPOVER_READ_LIMIT_BYTES;
+  const readPath = tooLarge ? null : citation.path;
   const passage = useCitedPassage({
-    citation: citation.path && citation.anchor ? { path: citation.path, anchor: citation.anchor } : null,
-    handle: citation.path ? sourceHandles.get(citation.path) : undefined,
-    enabled: citation.path !== null,
+    citation: readPath && citation.anchor ? { path: readPath, anchor: citation.anchor } : null,
+    handle: readPath ? sourceHandles.get(readPath) : undefined,
+    enabled: readPath !== null,
   });
   const panelRef = useRef<HTMLElement | null>(null);
   const [box, setBox] = useState<{ top: number; left: number; width: number; above: boolean } | null>(null);
   /* Waits for the read, so the popover arrives once with its passage instead of growing. */
-  const ready = citation.path === null || !citation.anchor || (passage !== null && passage.phase !== "reading");
+  const ready = readPath === null || !citation.anchor || (passage !== null && passage.phase !== "reading");
+  useLayoutEffect(() => {
+    if (ready) onShown(id);
+  }, [id, onShown, ready]);
 
   const place = useCallback(() => {
     const panel = panelRef.current;
@@ -161,6 +184,11 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      // Before the popover shows, Escape drops the pending read and stays the reader's.
+      if (!ready) {
+        onClose(id, false);
+        return;
+      }
       // The reader closes its page on Escape; with a popover up, the press is the popover's.
       event.preventDefault();
       event.stopPropagation();
@@ -178,7 +206,7 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("mousedown", onDown);
     };
-  }, [button, id, onClose, open]);
+  }, [button, id, onClose, open, ready]);
 
   const focused = useRef(false);
   useEffect(() => {
@@ -195,7 +223,7 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
     : label.kind === "line" ? t("wikiReader.citationAt", { file, line: label.number })
       : `${file} · ${passageLabelText(label, citation.anchor, t)}`;
   const resolved = passage?.phase === "ready" && passage.passage?.state === "resolved" ? passage.passage : null;
-  const changed = citation.path !== null && changedSince(citation.path);
+  const changed = resolved !== null && readPath !== null && changedSinceWritten(recordedHash(readPath), passage?.hash);
   const citedLines = resolved ? clipLines(resolved.cited, POPOVER_CITED_LINES) : null;
 
   return createPortal(
@@ -216,7 +244,7 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
         {...transientSurface("anchored")}
         data-testid="wiki-citation-popover"
         data-side={box?.above ? "above" : "below"}
-        data-state={citation.path === null ? "missing" : resolved ? (changed ? "changed" : "resolved") : passage?.passage?.state ?? passage?.phase ?? "none"}
+        data-state={citation.path === null ? "missing" : tooLarge ? "too-large" : resolved ? (changed ? "changed" : "resolved") : passage?.passage?.state ?? passage?.phase ?? "none"}
         className={cn(
           "pointer-events-auto flex max-h-[min(28rem,70vh)] w-full flex-col overflow-hidden rounded-panel focus:outline-none",
           "border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]",
@@ -230,6 +258,11 @@ function CitationPanel({ entry, onClose, onExited, sourceHandles, changedSince, 
           {citation.path === null ? (
             <p data-testid="wiki-citation-missing" className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
               {t("wikiReader.sourceMissing")}
+            </p>
+          ) : null}
+          {tooLarge ? (
+            <p data-testid="wiki-citation-too-large" className="text-body leading-body text-[color:var(--color-text-secondary)]">
+              {t("wikiReader.sourceTooLarge")}
             </p>
           ) : null}
           {changed && resolved ? (
@@ -292,8 +325,16 @@ function ContextLine({ unit }: { unit: SourceUnit }) {
   );
 }
 
+/** One line cut at `POPOVER_LINE_CHARS`, never inside a surrogate pair, then an ellipsis. */
+function clipLine(line: string): string {
+  if (line.length <= POPOVER_LINE_CHARS) return line;
+  const last = line.charCodeAt(POPOVER_LINE_CHARS - 1);
+  const end = last >= 0xd800 && last <= 0xdbff ? POPOVER_LINE_CHARS - 1 : POPOVER_LINE_CHARS;
+  return `${line.slice(0, end)}…`;
+}
+
 /** The cited units' text, cut after `limit` lines; `clipped` counts the lines left in the source. */
 export function clipLines(units: readonly SourceUnit[], limit: number): { text: string; clipped: number } {
   const lines = units.map((unit) => unit.text).join("\n").split("\n");
-  return { text: lines.slice(0, limit).join("\n"), clipped: Math.max(0, lines.length - limit) };
+  return { text: lines.slice(0, limit).map(clipLine).join("\n"), clipped: Math.max(0, lines.length - limit) };
 }

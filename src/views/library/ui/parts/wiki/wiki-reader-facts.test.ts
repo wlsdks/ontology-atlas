@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { VaultDoc } from "@/entities/docs-vault";
-import { rewriteWikilinks } from "@/shared/lib/library/source-citation";
-import { citationCounts, citedSources, pageNeighbours, readerLinkTargets } from "./wiki-reader-facts";
+import { changedSinceWritten, citedSources, pageNeighbours, readerLinkTargets, recordedSourceHashes } from "./wiki-reader-facts";
 
 function doc(slug: string, title: string, extra: Partial<VaultDoc> = {}): VaultDoc {
   return {
@@ -39,12 +38,20 @@ describe("the Wiki reader's facts", () => {
     ]);
   });
 
-  it("counts citations per file from the body the viewer painted", () => {
-    const painted = rewriteWikilinks([
-      "- A. [[src:sources/a.md#l2]] [[src:sources/a.md#l3|the third line]]",
-      "- B. [[src:sources/%ED%95%9C.md#l1]] and [[wiki/settlement]]",
-    ].join("\n"));
-    expect(citationCounts(painted)).toEqual(new Map([["sources/a.md", 2], ["sources/한.md", 1]]));
+  it("says a source changed only when the page recorded a hash and the bytes now hash to another", () => {
+    const written = "a".repeat(64);
+    const recorded = recordedSourceHashes({
+      source_hash: { "sources/a.md": written, "sources/b.md": "unmeasured", "sources/한.md": written.toUpperCase() },
+    });
+    expect([...recorded.keys()]).toEqual(["sources/a.md", "sources/한.md"]);
+    // No recorded hash: nothing observed, whatever the file is now.
+    expect(changedSinceWritten(recorded.get("sources/b.md"), "b".repeat(64))).toBe(false);
+    expect(changedSinceWritten(null, "b".repeat(64))).toBe(false);
+    // Recorded and equal.
+    expect(changedSinceWritten(recorded.get("sources/a.md"), written)).toBe(false);
+    // Recorded and different; unmeasured bytes observe nothing.
+    expect(changedSinceWritten(recorded.get("sources/a.md"), "b".repeat(64))).toBe(true);
+    expect(changedSinceWritten(recorded.get("sources/a.md"), null)).toBe(false);
   });
 
   it("lists the frontmatter's sources first, then any the body cites beyond them, with their counts", () => {

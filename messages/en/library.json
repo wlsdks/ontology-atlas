@@ -1010,7 +1010,8 @@
     "citationAt": "{file} · line {line, number}",
     "openSource": "Open the source",
     "sourceChanged": "This file changed after the page was written. This is its text now.",
-    "sourceMissing": "This file is no longer in the folder.",
+    "sourceMissing": "This file is not in the folder.",
+    "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
     "back": "Back"
   }

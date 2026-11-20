@@ -74,7 +74,7 @@ export function LibraryDocumentColumn({
     selectedAnswer, answerHistory, answerRefreshButtonRef, articleScrollRef, activeHeadingSlug,
     backToTop, reportSpy, reportBackToTop, reportAdvisoryOpen, setReportAdvisoryOpen,
     handleReportHeadingNavigate, outlineHeadings, handleHeadingNavigate, vaultSlugs, getDocContent,
-    resolveImage, linkTargets, neighbours, sourceChangedSince, sourceHandles,
+    resolveImage, linkTargets, neighbours, recordedHash, sourceHandles,
   } = reader;
   const { handleOpenSource } = sources;
   const {
@@ -90,6 +90,7 @@ export function LibraryDocumentColumn({
   const problemContext = useMemo(() => ({ pageTitle: wikiPageTitle }), [wikiPageTitle]);
   const steadyFix = useSteadyFix(wikiProblemFix);
   const citationPopoverRef = useRef<WikiCitationPopoverHandle>(null);
+  const listedBytes = useMemo(() => new Map(model.sources.map((row) => [row.path, row.bytes])), [model.sources]);
   /* Stable, so opening a popover hands the press over without rendering the page body again. */
   const onCitationPress = useCallback((citation: ReaderCitation, button: HTMLButtonElement) => {
     citationPopoverRef.current?.open(citation, button);
@@ -101,8 +102,8 @@ export function LibraryDocumentColumn({
   const landingCleanupRef = useRef<(() => void) | null>(null);
   /* A page that arrives clears the last one's landing itself; this covers leaving the reader. */
   useEffect(() => () => landingCleanupRef.current?.(), []);
-  const onBodyPainted = useCallback((body: string | null) => {
-    painted.set(body);
+  const onBodyPainted = useCallback((body: string | null, citations: ReadonlyMap<string, number>) => {
+    painted.set(body === null ? null : citations);
     const scroller = articleScrollRef.current;
     if (body === null || !pageSlug || !scroller) return;
     const arrived = paintedSlugRef.current !== pageSlug;
@@ -289,7 +290,8 @@ export function LibraryDocumentColumn({
           key={selectedWikiDoc.slug}
           ref={citationPopoverRef}
           sourceHandles={sourceHandles}
-          changedSince={sourceChangedSince}
+          recordedHash={recordedHash}
+          listedBytes={listedBytes}
           canReveal={nativeVaultRootPath !== null}
           onOpenSource={openSourceAt}
           onReveal={(path) => { const row = model.sources.find((one) => one.path === path); if (row) handleOpenSource(row); }}

@@ -133,7 +133,7 @@ export function useLibraryReader({
   );
   const facts = useWikiReaderFacts({
     docs: manifest?.docs ?? EMPTY_ORIGINALS, locale, page: selectedWikiDoc, originals: selectedOriginals,
-    writeUps: model.pairing.writeUpsBySource,
+    hashes: model.hashes,
   });
   const getDocContent = useMemo<((slug: string) => Promise<string>) | undefined>(() => {
     if (localVault.fileHandles.size === 0) return undefined;

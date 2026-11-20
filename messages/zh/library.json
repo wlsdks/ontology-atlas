@@ -1010,7 +1010,8 @@
     "citationAt": "{file} · 第 {line, number} 行",
     "openSource": "打开原文",
     "sourceChanged": "撰写此页后，这个文件已变更。这是它现在的内容。",
-    "sourceMissing": "这个文件已不在文件夹中。",
+    "sourceMissing": "这个文件夹中没有这个文件。",
+    "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
     "back": "返回"
   }

@@ -1,5 +1,4 @@
 import { isWikiPage, type VaultDoc } from "@/entities/docs-vault";
-import { decodeWikilinkSlug, parseWikilinkHref } from "@/shared/lib/library/source-citation";
 import { buildWikiNodeIndex } from "@/shared/lib/library/wiki-page-schema";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-text/locale-display-name";
 
@@ -31,24 +30,23 @@ export function readerLinkTargets(docs: readonly VaultDoc[], locale: string): Ma
   return targets;
 }
 
-/** A link destination `rewriteWikilinks` wrote, as the viewer paints it. */
-const WIKILINK_DESTINATION = /\]\((\?wikilink=[^)\s]*)\)/g;
+const SHA256_HEX = /^[0-9a-f]{64}$/u;
 
-/**
- * How many citations the painted body (wikilinks already rewritten by the viewer) makes to each
- * source path, keyed by the decoded NFC path.
- */
-export function citationCounts(body: string): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const match of body.matchAll(WIKILINK_DESTINATION)) {
-    const link = parseWikilinkHref(match[1]!);
-    if (!link) continue;
-    const target = decodeWikilinkSlug(link.rawSlug);
-    if (!target.startsWith("src:")) continue;
-    const path = target.slice("src:".length);
-    counts.set(path, (counts.get(path) ?? 0) + 1);
+/** The sha256 the page recorded for each source when it was written, by NFC path; any other value records nothing. */
+export function recordedSourceHashes(frontmatter: Readonly<Record<string, unknown>>): Map<string, string> {
+  const recorded = new Map<string, string>();
+  const value = frontmatter.source_hash;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return recorded;
+  for (const [path, hash] of Object.entries(value)) {
+    const normal = typeof hash === "string" ? hash.trim().toLowerCase() : "";
+    if (SHA256_HEX.test(normal)) recorded.set(path.normalize("NFC"), normal);
   }
-  return counts;
+  return recorded;
+}
+
+/** A change is observed only when the page recorded a hash and the bytes now hash to another. */
+export function changedSinceWritten(recorded: string | null | undefined, current: string | null | undefined): boolean {
+  return Boolean(recorded && current && recorded !== current.toLowerCase());
 }
 
 export interface FootSource {
