@@ -150,7 +150,7 @@ The Korean catalogue names the same page two ways (`messages/ko/library.json:648
 - **First run.** If the agent still has to download, the existing first-run download state shows in the conversation; the stage's line reads "{agent} · Connecting" (the status word at `messages/en/acpChat.json:16`) until the first tool call.
 - **Hangul names.** Page names are shown as stored, NFC, truncated in the middle so the file's ending stays readable; the counter keeps a fixed width so the line never shifts.
 - **Moved, renamed or unreadable folder mid-run.** The turn fails as today; the card shows `check.failedTitle`.
-- **Two presses at once.** **Check wiki** stays disabled while any Library turn runs (`LibraryCheckReport.tsx:680`, `LibraryDocumentColumn.tsx:100`). A scheduled check running at the same time keeps its own row in Automations; it does not take the card in this slice.
+- **Two presses at once.** **Check wiki** stays disabled while any Library turn runs (`LibraryCheckReport.tsx:680`, `LibraryDocumentColumn.tsx:100`). A scheduled check running at the same time also takes the card: the card names the run that started last and "1 more running" opens the centred list of both. Schedules run one pass at a time, so two scheduled checks never run together.
 - **Pages edited after the check finished.** The findings keep the existing "Fixed · check again to re-judge" rule; nothing new.
 - **Offline.** The agent's own failure arrives as `check.failedTitle`; Atlas adds no network call.
 - **A dock opened for the same folder while the check runs away.** A parked conversation running the wiki check, which only reads, stays and finishes beside it; a parked turn that may write still ends, as before, so two writers never share a folder.
@@ -160,6 +160,9 @@ The Korean catalogue names the same page two ways (`messages/ko/library.json:648
 - **Agent switched mid-check.** The check keeps running in its own conversation and the card's **Stop** still ends it; the newly chosen agent's conversation cannot report into or clear the check.
 - **A dock or panel on the right.** The card glides left of any open dock (the Library's conversation, the map's conversation) and returns to the corner when it closes; notifications stand above the card. Where no room is left beside a dock (the Library below `xl`, where its dock overlays the page), the card stays in its corner above the dock, as notices already do there.
 - **Moving between tabs.** No tab change, dock or conversation ends or restarts the check; the card is one element across routes, and its count and time continue from the last value drawn.
+- **A scheduled check's Stop.** **Stop** on the card, in the list or on the Automations stage ends that run only; the schedule stays on, its next run stays where it was, and the run's history entry reads that the run was stopped before it finished.
+- **A scheduled check that finishes elsewhere.** The card turns into its result in place, with one **Open run** that opens Automations on that run's entry; the Automations tile keeps a count of finished runs until Automations is opened.
+- **What a scheduled check counts.** A document check counts the wiki pages it read, a service check the sources it refreshed (the same numbers as its history entry); an ontology review counts each distinct document the agent finished reading.
 - **Reduced motion.** The ring is a still arc, the bar a still track, Moru holds each clip's first frame; every word and button is unchanged. The app draws no pause button.
 
 ## Out of scope
@@ -214,3 +217,4 @@ None. Decided: "background" means another tab and a hidden window, not a quit ap
 - 2026-11-20: slice 1 built; added the edge cases for a parked read-only check, a folder switch mid-run and a write asked for during a check.
 - 2026-11-20: added the right-hand dock and tab-change edge cases after the owner asked that the work keep running and stay in view on every screen.
 - 2026-11-20: review round: the read-only flag belongs to the running turn, a write it asks for never takes an automatic approval, only the check is parked when Library goes, a re-check keeps the last findings until a new report arrives, and "Writing Library turns keep running" joined Later. The card's line names only what the agent does, and its found and unreadable states got sentences that fit its two lines.
+- 2026-11-20: Later item 2 built: a scheduled check takes the same card and seat everywhere but Automations, where a stage in the page shows it; the Automations tile rings while it runs and counts finished runs; **Stop** leaves the schedule on; two runs at once open the centred list. Edge cases updated to match.

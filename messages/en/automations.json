@@ -172,5 +172,10 @@
   },
   "scene": {
     "reviewTray": "Awaiting review"
+  },
+  "runStopped": "This run was stopped before it finished.",
+  "stage": {
+    "note": "It keeps running wherever you go in the app. Stop ends this run only; the schedule stays on.",
+    "label": "Run in progress"
   }
 }

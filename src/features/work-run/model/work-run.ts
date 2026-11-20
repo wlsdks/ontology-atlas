@@ -169,6 +169,6 @@ export function markHandled(run: WorkRun, key: string): WorkRun {
   return run.report ? { ...run, report: next } : { ...run, previousReport: next };
 }
 
-export function elapsedMs(run: WorkRun, now: number): number {
+export function elapsedMs(run: Pick<WorkRun, 'startedAt' | 'endedAt'>, now: number): number {
   return Math.max(0, (run.endedAt ?? now) - run.startedAt);
 }

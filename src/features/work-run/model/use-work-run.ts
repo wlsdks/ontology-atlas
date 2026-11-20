@@ -5,8 +5,9 @@ import { useTranslations } from 'next-intl';
 
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
+import { isScheduledActive, type ScheduledRun } from './scheduled-run';
 import { elapsedMs, isRunActive, type WorkRun } from './work-run';
-import { workRuns, type WorkRunSnapshot } from './work-run-store';
+import { workRuns, type SeatRun, type WorkRunSnapshot } from './work-run-store';
 
 export function useWorkRunSnapshot(): WorkRunSnapshot {
   return useSyncExternalStore(workRuns.subscribe, workRuns.read, workRuns.readServer);
@@ -18,16 +19,54 @@ export function useFolderWorkRun(folder: string): WorkRun | null {
   return run && run.folder === folder ? run : null;
 }
 
-/** The card holds the seat while it is open and the run's own stage is not on screen. */
+/** A run takes the card while its card is open and its own stage is not on screen. */
+function holdsSeat(entry: SeatRun, snapshot: WorkRunSnapshot): boolean {
+  const { run } = entry;
+  if (run.card !== 'open' || run.phase === 'stopped') return false;
+  return entry.kind === 'check'
+    ? snapshot.stageFolder !== entry.run.folder
+    : !snapshot.automationsShown && entry.run.folder === snapshot.folder;
+}
+
+/** The runs the card speaks for, oldest first: the card names the last, the person's latest. */
+export function seatRuns(snapshot: WorkRunSnapshot): SeatRun[] {
+  return [...snapshot.runs.values()]
+    .filter((entry) => holdsSeat(entry, snapshot))
+    .sort((a, b) => a.run.startedAt - b.run.startedAt);
+}
+
 export function workCardHoldsSeat(snapshot: WorkRunSnapshot): boolean {
-  const { run, stageFolder } = snapshot;
-  return run !== null && run.card === 'open' && run.phase !== 'stopped' && stageFolder !== run.folder;
+  for (const entry of snapshot.runs.values()) if (holdsSeat(entry, snapshot)) return true;
+  return false;
+}
+
+export function isSeatRunActive(entry: SeatRun): boolean {
+  return entry.kind === 'check' ? isRunActive(entry.run) : isScheduledActive(entry.run);
+}
+
+/** The open folder's scheduled runs, oldest first; another folder's never show here. */
+export function useScheduledRuns(): ScheduledRun[] {
+  const snapshot = useWorkRunSnapshot();
+  const runs: ScheduledRun[] = [];
+  for (const entry of snapshot.runs.values()) {
+    if (entry.kind === 'scheduled' && entry.run.folder === snapshot.folder) runs.push(entry.run);
+  }
+  return runs;
+}
+
+/** Registers Automations as the stage of every scheduled run while it is mounted. */
+export function useAutomationsStage(shown: boolean) {
+  useEffect(() => {
+    if (!shown) return;
+    workRuns.enterAutomations();
+    return () => workRuns.leaveAutomations();
+  }, [shown]);
 }
 
 /** Ticks once a second while the run is active and stops in the render that ends it. */
-export function useWorkRunElapsed(run: WorkRun | null): string | null {
+export function useWorkRunElapsed(run: Pick<WorkRun, 'phase' | 'startedAt' | 'endedAt'> | ScheduledRun | null): string | null {
   const t = useTranslations('acpChat');
-  const active = isRunActive(run);
+  const active = run !== null && (run.phase === 'running' || run.phase === 'asking');
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;
