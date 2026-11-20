@@ -90,9 +90,8 @@ function buildOutgoingMap(edges: readonly KnowledgeGraphEdge[]): Map<string, str
   return map;
 }
 
-/** One graph's signatures, aligned with its `nodes` array. */
+/** One graph's signatures; with duplicate ids the last node's signature wins, as in a snapshot. */
 interface GraphSignatures {
-  nodeSigs: number[];
   sigById: Map<string, number>;
   nodeKinds: Map<string, string>;
   edgeKeys: Set<string>;
@@ -125,7 +124,7 @@ function storeSignatures(
   });
   const edgeKeys = new Set<string>();
   for (const edge of edges) edgeKeys.add(edgeKey(edge));
-  const signatures = { nodeSigs, sigById, nodeKinds, edgeKeys };
+  const signatures = { sigById, nodeKinds, edgeKeys };
   let byNodes = signatureCache.get(edges);
   if (!byNodes) {
     byNodes = new WeakMap();
@@ -189,25 +188,25 @@ export function computeOntologyChangeset(
 ): OntologyChangeset {
   if (!baseline) return emptyChangeset();
   const signatures = graphSignatures(nodes, edges);
-  // Duplicate ids keep the full pass: each copy is compared with the one signature the map kept.
-  const takenFromThisGraph =
-    baseline.nodeSigs === signatures.sigById &&
-    baseline.edgeKeys === signatures.edgeKeys &&
-    signatures.sigById.size === nodes.length;
-  if (takenFromThisGraph) {
+  // With duplicate ids the map holds one signature per id, so each copy is hashed on its own.
+  const uniqueIds = signatures.sigById.size === nodes.length;
+  if (uniqueIds && baseline.nodeSigs === signatures.sigById && baseline.edgeKeys === signatures.edgeKeys) {
     return emptyChangeset();
   }
+  let outgoing: Map<string, string[]> | null = null;
+  const signatureOf = (node: KnowledgeGraphNode): number | undefined =>
+    uniqueIds ? signatures.sigById.get(node.id) : nodeSignature(node, (outgoing ??= buildOutgoingMap(edges)));
 
   const addedNodes: string[] = [];
   const changedNodes: string[] = [];
-  nodes.forEach((node, index) => {
+  for (const node of nodes) {
     const prevSig = baseline.nodeSigs.get(node.id);
     if (prevSig === undefined) {
       addedNodes.push(node.id);
-    } else if (prevSig !== signatures.nodeSigs[index]) {
+    } else if (prevSig !== signatureOf(node)) {
       changedNodes.push(node.id);
     }
-  });
+  }
   const removedNodes: string[] = [];
   const removedNodeKinds = new Map<string, string>();
   for (const id of baseline.nodeSigs.keys()) {
