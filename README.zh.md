@@ -105,7 +105,7 @@ without opening every file.
 - The engine is roughly 6,400 lines and was not read beyond its header.
 ```
 
-地图、文档、资料库和 Git 界面读取的都是这些文件，智能体读取的也是同一批文件。MCP 服务器共有 40 个工具（24 个读取、16 个写入），智能体最常问的问题由这些工具回答：
+地图、文档、资料库和 Git 界面读取的都是这些文件，智能体读取的也是同一批文件。智能体最常问的问题由这些 MCP 工具回答：
 
 | 任务前后智能体会问 | 工具 |
 |---|---|
@@ -117,7 +117,7 @@ without opening every file.
 | 记录刚刚新建或修改的内容 | `add_concepts`、`add_relations`、`patch_concept` |
 | 文件夹是否仍然一致？ | `validate_vault` |
 
-以只读方式注册服务器时，只会提供 24 个读取工具（[MCP 参考](mcp/README.md#read-only-registration-oatlas_read_only)）。
+以只读方式注册服务器时，只会提供读取类工具（[MCP 参考](mcp/README.md#read-only-registration-oatlas_read_only)）。
 
 你的智能体通过两种方式接触这个文件夹：
 

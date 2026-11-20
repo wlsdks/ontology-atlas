@@ -105,7 +105,7 @@ without opening every file.
 - The engine is roughly 6,400 lines and was not read beyond its header.
 ```
 
-マップ、文書、資料室、Git の各画面はこれらのファイルを読み、エージェントも同じファイルを読みます。MCP サーバーのツールは 40 個（読み取り 24、書き込み 16）で、エージェントがよく尋ねる問いには次のツールが答えます。
+マップ、文書、資料室、Git の各画面はこれらのファイルを読み、エージェントも同じファイルを読みます。エージェントがよく尋ねる問いには、次の MCP ツールが答えます。
 
 | タスクの前後にエージェントが尋ねること | ツール |
 |---|---|
@@ -117,7 +117,7 @@ without opening every file.
 | いま作った・変えたものを記録する | `add_concepts`、`add_relations`、`patch_concept` |
 | フォルダはまだ整合しているか | `validate_vault` |
 
-サーバーを読み取り専用で登録すると、読み取りツール 24 個だけが公開されます（[MCP リファレンス](mcp/README.md#read-only-registration-oatlas_read_only)）。
+サーバーを読み取り専用で登録すると、読み取りツールだけが公開されます（[MCP リファレンス](mcp/README.md#read-only-registration-oatlas_read_only)）。
 
 エージェントがフォルダに届く道は 2 つあります。
 

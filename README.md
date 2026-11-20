@@ -116,8 +116,7 @@ without opening every file.
 ```
 
 The map, documents, Library and Git screens all read these files, and so does
-your agent. The MCP server has 40 tools, 24 that read and 16 that write; these
-answer the questions an agent asks most:
+your agent. These MCP tools answer the questions an agent asks most:
 
 | Before or after a task, the agent asks | Tool |
 |---|---|
@@ -129,7 +128,7 @@ answer the questions an agent asks most:
 | Record what I just built or changed | `add_concepts`, `add_relations`, `patch_concept` |
 | Is the folder still consistent? | `validate_vault` |
 
-Register the server read-only and it offers only the 24 read tools
+Register the server read-only and it offers only the tools that read
 ([MCP reference](mcp/README.md#read-only-registration-oatlas_read_only)).
 
 Your agent reaches the folder two ways:

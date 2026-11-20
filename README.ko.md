@@ -114,9 +114,8 @@ without opening every file.
 - The engine is roughly 6,400 lines and was not read beyond its header.
 ```
 
-지도, 문서, 자료실, Git 화면이 모두 이 파일을 읽고, 에이전트도 같은 파일을 읽어요. MCP
-서버의 도구는 40개(읽기 24개, 쓰기 16개)이고, 에이전트가 가장 자주 묻는 질문에는 이
-도구들이 답해요.
+지도, 문서, 자료실, Git 화면이 모두 이 파일을 읽고, 에이전트도 같은 파일을 읽어요.
+에이전트가 가장 자주 묻는 질문에는 이 MCP 도구들이 답해요.
 
 | 작업 전후에 에이전트가 묻는 것 | 도구 |
 |---|---|
@@ -128,7 +127,7 @@ without opening every file.
 | 방금 만들거나 바꾼 것을 기록하기 | `add_concepts`, `add_relations`, `patch_concept` |
 | 폴더가 아직 일관된가? | `validate_vault` |
 
-서버를 읽기 전용으로 등록하면 읽기 도구 24개만 보여요. 방법은
+서버를 읽기 전용으로 등록하면 읽는 도구만 보여요. 방법은
 [MCP 레퍼런스](mcp/README.md#read-only-registration-oatlas_read_only)에 있어요.
 
 에이전트가 폴더에 닿는 길은 둘이에요.
