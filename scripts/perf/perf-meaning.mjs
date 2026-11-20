@@ -11,12 +11,23 @@
 // The machine may be shared: every figure carries the load average it was taken at.
 // Without Ollama only the passage counts are printed. Vaults live under the OS temp folder and are
 // deleted unless --keep.
+//
+// `--builtin [--model-store=<dir>]` measures the app itself instead: its job and search
+// (`src-tauri/src/vault/vectors.rs`) with the built-in model in a real worker, driven by the release
+// test `vault::vectors::tests::measure`, one process per vault (default 2,000 and 10,000 files).
+// The model store must already be ready: `pnpm perf:builtin-model -- --model-dir=<files> --only=prepare`
+// makes it from local files at the default `--model-store`; nothing is downloaded. It reports
+// passages per second, the app's peak footprint while preparing and its heap composition (vmmap
+// every 5 s), the footprint 60 s after the job ends, the cold first question and p50/p95 of 500
+// questions with the model loaded, and `plan` on the prepared, unchanged folder. The first release
+// build takes minutes.
 
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { cpus, loadavg, tmpdir, totalmem } from 'node:os';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createInterface } from 'node:readline';
 import { promisify } from 'node:util';
 import { generateScaleVault } from './gen-scale-vault.mjs';
 import { batches, cratePassages, DEFAULT_MODELS, DEFAULT_OLLAMA, ollamaModels, ollamaVersion } from './meaning-quality.mjs';
@@ -25,9 +36,12 @@ const run = promisify(execFile);
 const WORK = join(tmpdir(), 'atlas-perf-meaning');
 const MB = 1024 * 1024;
 const PREP_LIMIT_MINUTES = 60;
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const BUILTIN_STORE = join(tmpdir(), 'atlas-perf-builtin-model', 'store');
+const BUILTIN_TEST = 'vault::vectors::tests::measure::a_folder_prepared_and_asked_on_this_computer';
 
 function parseArgs(argv) {
-  const options = { files: [], shapes: [], models: DEFAULT_MODELS, sample: 1024, queries: 50, numCtx: null, ollama: DEFAULT_OLLAMA, keep: false };
+  const options = { files: [], shapes: [], models: DEFAULT_MODELS, sample: 1024, queries: 50, numCtx: null, ollama: DEFAULT_OLLAMA, keep: false, builtin: false, modelStore: BUILTIN_STORE };
   for (const arg of argv) {
     if (arg === '--') continue;
     else if (arg.startsWith('--files=')) options.files.push(Number(arg.slice(8)));
@@ -38,9 +52,11 @@ function parseArgs(argv) {
     else if (arg.startsWith('--num-ctx=')) options.numCtx = Number(arg.slice(10));
     else if (arg.startsWith('--ollama=')) options.ollama = arg.slice(9).replace(/\/$/, '');
     else if (arg === '--keep') options.keep = true;
+    else if (arg === '--builtin') options.builtin = true;
+    else if (arg.startsWith('--model-store=')) options.modelStore = resolve(arg.slice(14));
     else throw new Error(`unknown argument ${arg}`);
   }
-  if (!options.files.length) options.files = [10000, 50000];
+  if (!options.files.length) options.files = options.builtin ? [2000, 10000] : [10000, 50000];
   if (!options.shapes.length) options.shapes = ['key'];
   for (const value of [...options.files, options.sample, options.queries]) {
     if (!Number.isInteger(value) || value <= 0) throw new Error('--files, --sample and --queries take positive integers');
@@ -210,8 +226,138 @@ async function measureModel(options, model, sample) {
 
 const mb = (bytes) => (bytes ? `${(bytes / MB).toFixed(0)} MB` : 'unmeasured');
 
+const SIZE = /^([\d.]+)([BKMG]?)$/;
+const bytesOf = (text) => {
+  const match = SIZE.exec(text);
+  return match ? Number(match[1]) * ({ B: 1, '': 1, K: 1024, M: MB, G: 1024 * MB }[match[2]]) : 0;
+};
+
+/** One `vmmap --summary` of the app's process: footprint, the region types holding it, and malloc's totals. */
+async function heapOf(pid) {
+  let stdout;
+  try {
+    ({ stdout } = await run('vmmap', ['--summary', String(pid)], { maxBuffer: 16 * MB }));
+  } catch {
+    return null;
+  }
+  const lines = stdout.split('\n');
+  const footprint = bytesOf(/Physical footprint:\s+(\S+)/.exec(stdout)?.[1] ?? '');
+  const regions = new Map();
+  const start = lines.findIndex((line) => line.startsWith('REGION TYPE'));
+  for (const line of lines.slice(start + 2)) {
+    if (line.startsWith('====') || line.startsWith('TOTAL')) break;
+    const size = '([\\d.]+[BKMG]?)';
+    const match = new RegExp(`^(.+?)\\s+${size}\\s+${size}\\s+${size}\\s+${size}\\s`).exec(line);
+    if (!match) continue;
+    // Dirty plus swapped is what the region adds to the footprint.
+    const name = match[1].trim();
+    regions.set(name, (regions.get(name) ?? 0) + bytesOf(match[4]) + bytesOf(match[5]));
+  }
+  const zones = lines.slice(lines.findIndex((line) => line.startsWith('MALLOC ZONE')));
+  const total = zones.find((line) => line.startsWith('TOTAL'))?.trim().split(/\s+/) ?? [];
+  return {
+    footprint,
+    regions: [...regions].sort((a, b) => b[1] - a[1]).slice(0, 6),
+    malloc: { dirty: bytesOf(total[3] ?? ''), allocations: Number(total[5] ?? 0), allocated: bytesOf(total[6] ?? '') },
+  };
+}
+
+/** Runs the app's measurement test on one vault; samples its heap from the moment it starts preparing. */
+function builtinRun(options, vault, indexDir) {
+  const questions = join(ROOT, 'tests', 'fixtures', 'meaning-search', 'questions.json');
+  const child = spawn('cargo', [
+    'test', '--release', '--manifest-path', join(ROOT, 'src-tauri/Cargo.toml'), '-p', 'ontology-atlas', '--lib',
+    '--features', 'vault-index/index-dir-override', '--',
+    '--ignored', '--nocapture', '--exact', BUILTIN_TEST,
+  ], {
+    env: {
+      ...process.env,
+      ATLAS_VECTORS_MODEL_STORE: options.modelStore,
+      ATLAS_VECTORS_VAULT: vault,
+      ATLAS_VECTORS_QUESTIONS: questions,
+      OATLAS_INDEX_DIR: indexDir,
+      CARGO_TARGET_DIR: join(ROOT, 'src-tauri/target/perf-builtin-model'),
+      CARGO_PROFILE_RELEASE_LTO: 'false',
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const marks = {};
+  let heapPeak = null;
+  let sampling = null;
+  const errors = [];
+  createInterface({ input: child.stderr }).on('line', (line) => {
+    if (/panicked|error(\[|:)|assert/.test(line)) errors.push(line);
+  });
+  createInterface({ input: child.stdout }).on('line', (line) => {
+    if (!line.startsWith('{')) {
+      if (/panicked|assert/.test(line)) errors.push(line);
+      return;
+    }
+    const mark = JSON.parse(line);
+    marks[mark.mark] = mark;
+    if (mark.mark === 'preparing' && process.platform === 'darwin') {
+      sampling = (async () => {
+        while (!marks.prepared) {
+          const heap = await heapOf(mark.pid);
+          if (heap && (!heapPeak || heap.footprint > heapPeak.footprint)) heapPeak = heap;
+          await new Promise((done) => setTimeout(done, 5000));
+        }
+      })();
+    }
+  });
+  return new Promise((done, fail) => {
+    child.on('close', async (code) => {
+      await sampling;
+      if (code !== 0) fail(new Error(`the measurement failed (${code}):\n${errors.slice(0, 12).join('\n')}`));
+      else done({ ...marks, heapPeak });
+    });
+  });
+}
+
+async function measureBuiltin(options) {
+  if (!existsSync(options.modelStore)) {
+    throw new Error(`no model store at ${options.modelStore}; run pnpm perf:builtin-model -- --model-dir=<files> --only=prepare first`);
+  }
+  console.log(`built-in model from ${options.modelStore}; nothing is downloaded`);
+  for (const shape of options.shapes) {
+    for (const files of options.files) {
+      const vault = join(WORK, `${shape}-${files}`);
+      if (!existsSync(join(vault, 'atlas.md'))) {
+        rmSync(vault, { recursive: true, force: true });
+        mkdirSync(vault, { recursive: true });
+        generateScaleVault(vault, files, shape);
+      }
+      // A fresh index folder and no audit log from an earlier run, so every pass starts from nothing.
+      const indexDir = join(WORK, `index-${shape}-${files}`);
+      rmSync(indexDir, { recursive: true, force: true });
+      rmSync(join(vault, '.ontology-atlas'), { recursive: true, force: true });
+      const loadBefore = load();
+      const result = await builtinRun(options, vault, indexDir);
+      const { prepared, settled, asked, planned, heapPeak } = result;
+      console.log(`\nbuilt-in, ${shape}-${files} (load ${loadBefore} → ${load()})`);
+      console.log(`  ${prepared.files} files, ${prepared.passages} passages in ${prepared.prepare_s} s: ${prepared.passages_per_s} passages/s overall, ${prepared.reported_passages_per_s ?? 'no'} passages/s in the last status (30 s window); vectors ${mb(prepared.vectors_bytes)}`);
+      console.log(`  app footprint ${prepared.app_before_mib} MiB before, peak ${prepared.app_peak_mib} MiB while preparing (lifetime peak ${prepared.app_lifetime_peak_mib} MiB); worker peak ${prepared.worker_peak_mib} MiB`);
+      if (heapPeak) {
+        const mib = (bytes) => `${(bytes / MB).toFixed(1)} MiB`;
+        console.log(`  app heap at its largest sample (${mib(heapPeak.footprint)} footprint): malloc ${mib(heapPeak.malloc.allocated)} allocated in ${heapPeak.malloc.allocations} allocations, ${mib(heapPeak.malloc.dirty)} dirty; footprint by region ${heapPeak.regions.map(([name, bytes]) => `${name} ${mib(bytes)}`).join(', ')}`);
+      }
+      console.log(`  ${settled.after_s} s after the job: app ${settled.app_mib} MiB, worker ${settled.worker_running ? 'still running' : 'released'}`);
+      console.log(`  first question with a cold model ${asked.cold_ms} ms; ${asked.questions} questions loaded: p50 ${asked.p50_ms} ms, p95 ${asked.p95_ms} ms, max ${asked.max_ms} ms; app ${asked.app_mib} MiB`);
+      console.log(`  plan on the prepared, unchanged folder (${planned.files} files): median ${planned.plan_ms_median} ms, max ${planned.plan_ms_max} ms`);
+      if (!options.keep) rmSync(indexDir, { recursive: true, force: true });
+    }
+  }
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  if (options.builtin) {
+    console.log(`machine: ${cpus()[0]?.model ?? 'unknown'}, ${cpus().length} cores, ${(totalmem() / 1024 / MB).toFixed(0)} GB; load ${loadavg().map((value) => value.toFixed(1)).join(' ')}`);
+    await measureBuiltin(options);
+    if (!options.keep) rmSync(WORK, { recursive: true, force: true });
+    return;
+  }
   console.log(`machine: ${cpus()[0]?.model ?? 'unknown'}, ${cpus().length} cores, ${(totalmem() / 1024 / MB).toFixed(0)} GB; load ${loadavg().map((value) => value.toFixed(1)).join(' ')}`);
   const surveys = [];
   for (const shape of options.shapes) {

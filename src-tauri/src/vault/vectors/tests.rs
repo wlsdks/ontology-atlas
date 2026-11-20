@@ -13,6 +13,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 mod fakes;
+mod measure;
 
 fn entry(harness: &Harness, root: &Path) -> Arc<Entry> {
     harness.vectors.entry(root, &root.to_string_lossy())

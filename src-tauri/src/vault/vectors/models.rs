@@ -187,6 +187,16 @@ pub(super) struct AppSources {
     runners: Mutex<HashMap<(String, String), Arc<AppRunner>>>,
 }
 
+#[cfg(test)]
+impl AppSources {
+    /// The app's sources around a built-in model the caller started, as the measurement does.
+    pub(super) fn with_builtin(model: Arc<BuiltinModel>) -> Self {
+        let sources = Self::default();
+        let _ = sources.builtin.set(Arc::new(AppBuiltin(model)));
+        sources
+    }
+}
+
 impl Sources for AppSources {
     fn builtin(&self) -> Result<Arc<dyn Builtin>, EmbedError> {
         if let Some(made) = self.builtin.get() {
