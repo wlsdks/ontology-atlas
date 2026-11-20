@@ -20,6 +20,9 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source
 const statuses = new Map<string, VectorStatus>();
 const listeners = new Set<() => void>();
 const reading = new Map<string, Promise<void>>();
+/** The last press that started or resumed each folder's job in this launch, numbered in order. */
+const presses = new Map<string, number>();
+let pressCount = 0;
 let unsubscribeEvents: (() => void) | null = null;
 
 function publish(rootPath: string, status: VectorStatus): void {
@@ -27,7 +30,13 @@ function publish(rootPath: string, status: VectorStatus): void {
   for (const listener of listeners) listener();
 }
 
-function subscribe(listener: () => void): () => void {
+function recordPress(rootPath: string): void {
+  pressCount += 1;
+  presses.set(rootPath, pressCount);
+  for (const listener of listeners) listener();
+}
+
+export function subscribe(listener: () => void): () => void {
   unsubscribeEvents ??= subscribeVectorStatus(({ rootPath, status }) => publish(rootPath, status));
   listeners.add(listener);
   return () => {
@@ -74,9 +83,23 @@ export function readStatusAgain(rootPath: string): Promise<void> {
   return refresh(rootPath);
 }
 
+/** The folder's last known status without asking for one: the long-work seat only listens. */
+export function statusOf(rootPath: string): VectorStatus | null {
+  return statuses.get(rootPath) ?? null;
+}
+
+/**
+ * The press that last started or resumed this folder's job in this launch, or `null` when the job
+ * continues by itself (a restart, an update of changed files).
+ */
+export function pressOf(rootPath: string): number | null {
+  return presses.get(rootPath) ?? null;
+}
+
 /** Stores the choice first, unpaused, so the folder's next open continues even if this launch ends now. */
 export function prepare(rootPath: string, source: VectorSource): Promise<boolean> {
   vaultVectorSource.write(rootPath, source);
+  recordPress(rootPath);
   return answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, source));
 }
 
@@ -91,6 +114,7 @@ export function resume(rootPath: string): Promise<boolean> {
   const choice = vaultVectorSource.read(rootPath);
   if (choice === null) return Promise.resolve(false);
   vaultVectorSource.setPaused(rootPath, false);
+  recordPress(rootPath);
   return answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, choice.source));
 }
 

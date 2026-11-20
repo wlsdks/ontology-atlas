@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { useRouter } from '@/i18n/navigation';
@@ -12,15 +12,29 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION } from '@/shared/motion';
 import { WorkProgress } from '@/shared/motion/work-progress';
 import { Button } from '@/shared/ui/controls/button';
+import { controlClass } from '@/shared/ui/control-class';
 
+import { isCountedActive, type CountedRun } from '../model/counted-run';
 import { isRunActive, type WorkRun, type WorkRunPhase } from '../model/work-run';
 import { workRuns, type WorkRunDoor } from '../model/work-run-store';
-import { useWorkRunElapsed, useWorkRunSnapshot, workCardHoldsSeat } from '../model/use-work-run';
+import {
+  activeRuns,
+  seatRun,
+  useCountedProgress,
+  useWorkRunElapsed,
+  useWorkRunSnapshot,
+  type SeatRun,
+} from '../model/use-work-run';
+import { useCountedCopy, type CountedFigure } from './use-counted-copy';
 import { useWorkRunCopy, type WorkRunMarks } from './use-work-run-copy';
 import { RollingCount } from './RollingCount';
-import { WorkRunMoru } from './WorkRunMoru';
+import { CountedRunMoru, WorkRunMoru } from './WorkRunMoru';
+import { RunsDialog } from './RunsDialog';
 import { useSeatStepAside } from './use-seat-step-aside';
 import { WORK_CARD_ATTRIBUTE } from './use-clear-of-work-card';
+
+/** The gap between the title and "1 more running" beside it. */
+const TITLE_GAP_PX = 8;
 
 /** `.app-update-card[data-state='closed']` and `.app-update-layer-out` fade over `--motion-base`. */
 const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
@@ -30,32 +44,42 @@ function layerOf(phase: WorkRunPhase): string {
   return phase === 'running' || phase === 'asking' ? 'live' : phase;
 }
 
+/** Each counted phase is its own layer, so a phase change crossfades in place. */
+function seatLayer(seat: SeatRun): string {
+  return seat.kind === 'check' ? layerOf(seat.run.phase) : `meaning-${seat.run.phase}`;
+}
+
+const sameSeat = (a: SeatRun | null, b: SeatRun) => a !== null && a.kind === b.kind && a.run === b.run;
+
 /**
  * The run's card in the shell's notice seat, on every screen but the one whose stage already
  * shows it. It takes the update notice's box and motion; it never remounts across routes, its
- * box never changes between states, and it glides aside for docks (`useSeatStepAside`).
+ * box never changes between states or kinds of run, and it glides aside for docks
+ * (`useSeatStepAside`). Of two runs it shows the one the person started last.
  */
 export function WorkRunCard() {
   const snapshot = useWorkRunSnapshot();
-  const open = workCardHoldsSeat(snapshot);
+  const seat = seatRun(snapshot);
+  const open = seat !== null;
   const { mounted } = usePanelPresence(open, FADE_OUT_MS);
-  const [drawn, setDrawn] = useState<WorkRun | null>(snapshot.run);
-  if (open && snapshot.run && drawn !== snapshot.run) setDrawn(snapshot.run);
+  const [drawn, setDrawn] = useState<SeatRun | null>(seat);
+  if (seat && !sameSeat(drawn, seat)) setDrawn(seat);
+  const others = activeRuns(snapshot).filter((entry) => entry.kind !== drawn?.kind);
   return (
     <div aria-live="polite" data-testid="work-run-live">
-      {mounted && drawn ? <CardBox run={drawn} open={open} /> : null}
+      {mounted && drawn ? <CardBox seat={drawn} open={open} othersRunning={open ? others.length : 0} /> : null}
     </div>
   );
 }
 
-function useLeavingLayer(run: WorkRun) {
-  const layer = layerOf(run.phase);
-  const [layers, setLayers] = useState<{ current: WorkRun; leaving: WorkRun | null }>({ current: run, leaving: null });
-  if (layers.current !== run) {
-    const handover = layerOf(layers.current.phase) !== layer;
-    setLayers({ current: run, leaving: handover ? layers.current : layers.leaving });
+function useLeavingLayer(seat: SeatRun) {
+  const layer = seatLayer(seat);
+  const [layers, setLayers] = useState<{ current: SeatRun; leaving: SeatRun | null }>({ current: seat, leaving: null });
+  if (!sameSeat(layers.current, seat)) {
+    const handover = seatLayer(layers.current) !== layer;
+    setLayers({ current: seat, leaving: handover ? layers.current : layers.leaving });
   }
-  const leavingId = layers.leaving ? `${layers.leaving.id}:${layers.leaving.phase}` : null;
+  const leavingId = layers.leaving ? `${layers.leaving.kind}:${layers.leaving.run.id}:${layers.leaving.run.phase}` : null;
   useEffect(() => {
     if (!leavingId) return;
     const timer = window.setTimeout(() => setLayers((state) => ({ ...state, leaving: null })), FADE_OUT_MS);
@@ -64,17 +88,23 @@ function useLeavingLayer(run: WorkRun) {
   return layers;
 }
 
-function CardBox({ run, open }: { run: WorkRun; open: boolean }) {
+function CardBox({ seat, open, othersRunning }: { seat: SeatRun; open: boolean; othersRunning: number }) {
   const reducedMotion = usePrefersReducedMotion();
-  const layers = useLeavingLayer(run);
+  const layers = useLeavingLayer(seat);
   const cardRef = useRef<HTMLDivElement>(null);
   const { probe, shiftPx } = useSeatStepAside(open, cardRef);
+  const [moreWidth, setMoreWidth] = useState(0);
+  // The title row leaves room for "1 more running" only while it shows.
+  const room = othersRunning > 0 ? moreWidth + TITLE_GAP_PX : 0;
+  const style: CSSProperties & Record<'--work-run-more-room', string> = { '--work-run-more-room': `${room}px` };
+  if (shiftPx > 0) style.translate = `${-shiftPx}px 0`;
   return (
     <div
       ref={cardRef}
       data-testid="work-run-card"
       {...{ [WORK_CARD_ATTRIBUTE]: '' }}
-      data-phase={run.phase}
+      data-kind={seat.kind}
+      data-phase={seat.run.phase}
       data-state={open ? 'open' : 'closed'}
       // A floor wall: notifications stand above the card instead of over it.
       data-toast-wall={open ? 'bottom' : undefined}
@@ -84,29 +114,42 @@ function CardBox({ run, open }: { run: WorkRun; open: boolean }) {
         'right-4 bottom-[var(--app-work-card-bottom-offset,var(--app-toast-bottom-offset,calc(var(--app-toast-bottom-reserve,0px)_+_16px)))]',
         'rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]',
       )}
-      style={shiftPx > 0 ? { translate: `${-shiftPx}px 0` } : undefined}
+      style={style}
     >
       <span ref={probe} aria-hidden className="pointer-events-none invisible absolute h-0 w-[var(--app-toast-right-offset,16px)]" />
-      <MoruLight phase={run.phase} />
+      <MoruLight tint={tintOf(seat)} phase={seat.run.phase} />
       {layers.leaving && !reducedMotion ? (
-        <PhaseLayer key={`leaving-${layerOf(layers.leaving.phase)}`} run={layers.leaving} motion="out" />
+        <SeatLayer key={`leaving-${seatLayer(layers.leaving)}`} seat={layers.leaving} motion="out" />
       ) : null}
-      <PhaseLayer key={layerOf(run.phase)} run={run} motion={layers.leaving ? 'in' : 'none'} />
+      <SeatLayer key={seatLayer(seat)} seat={seat} motion={layers.leaving ? 'in' : 'none'} />
+      <MoreRunning count={othersRunning} onWidth={setMoreWidth} />
     </div>
   );
 }
 
+function SeatLayer({ seat, motion }: { seat: SeatRun; motion: LayerMotion }) {
+  return seat.kind === 'check' ? <PhaseLayer run={seat.run} motion={motion} /> : <MeaningLayer run={seat.run} motion={motion} />;
+}
+
+type LayerMotion = 'in' | 'out' | 'none';
+type Tint = 'success' | 'warning' | null;
+
+function tintOf(seat: SeatRun): Tint {
+  const phase = seat.run.phase;
+  if (phase === 'found' || phase === 'clean' || phase === 'ready') return 'success';
+  if (phase === 'failed' || phase === 'unreadable') return 'warning';
+  return null;
+}
+
 /** The light under Moru says how it ended before a word is read; the ladders' nearest steps. */
-const LIGHT_BY_OUTCOME: Partial<Record<WorkRunPhase, string>> = {
-  found: 'bg-[radial-gradient(closest-side,var(--color-success-a35),var(--color-success-a12)_45%,transparent)]',
-  clean: 'bg-[radial-gradient(closest-side,var(--color-success-a35),var(--color-success-a12)_45%,transparent)]',
-  failed: 'bg-[radial-gradient(closest-side,var(--color-amber-source-a34),var(--color-amber-source-a12)_45%,transparent)]',
-  unreadable: 'bg-[radial-gradient(closest-side,var(--color-amber-source-a34),var(--color-amber-source-a12)_45%,transparent)]',
+const LIGHT_BY_TINT: Record<NonNullable<Tint>, string> = {
+  success: 'bg-[radial-gradient(closest-side,var(--color-success-a35),var(--color-success-a12)_45%,transparent)]',
+  warning: 'bg-[radial-gradient(closest-side,var(--color-amber-source-a34),var(--color-amber-source-a12)_45%,transparent)]',
 };
 const LIGHT_WHILE_RUNNING = 'bg-[radial-gradient(closest-side,var(--color-indigo-accent-a32),var(--color-indigo-accent-a12)_45%,transparent)]';
 
-function MoruLight({ phase }: { phase: WorkRunPhase }) {
-  const tinted = LIGHT_BY_OUTCOME[phase];
+function MoruLight({ tint, phase }: { tint: Tint; phase: string }) {
+  const tinted = tint ? LIGHT_BY_TINT[tint] : undefined;
   return (
     <span aria-hidden className="pointer-events-none absolute bottom-3 left-3 size-32 max-sm:size-16">
       <span
@@ -118,7 +161,7 @@ function MoruLight({ phase }: { phase: WorkRunPhase }) {
       />
       <span
         data-testid="work-run-light"
-        data-tint={tinted ? phase : undefined}
+        data-tint={tint ? phase : undefined}
         className={cn(
           'absolute top-[72%] left-1/2 h-[130%] w-[150%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-[var(--motion-slow)] ease-[var(--motion-ease)]',
           tinted ?? LIGHT_WHILE_RUNNING,
@@ -130,16 +173,17 @@ function MoruLight({ phase }: { phase: WorkRunPhase }) {
   );
 }
 
+const COUNT_CLASS = 'mr-0.5 text-display leading-display-tight font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]';
+
 /** The count leads; the page being read is the line's one bright word. */
 const CARD_MARKS: WorkRunMarks = {
   page: (name) => <span className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>,
-  count: (value) => (
-    <RollingCount
-      value={value}
-      className="mr-0.5 text-display leading-display-tight font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-    />
-  ),
+  count: (value) => <RollingCount value={value} className={COUNT_CLASS} />,
 };
+
+const CARD_FIGURE: CountedFigure = (value, format) => (
+  <RollingCount value={value} format={format} className={COUNT_CLASS} />
+);
 
 function useDoor() {
   const router = useRouter();
@@ -149,7 +193,62 @@ function useDoor() {
   };
 }
 
-function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'none' }) {
+/** Title pinned to the top and buttons to the bottom, so no state moves either row. */
+function LayerFrame({ moru, motion, children }: { moru: ReactNode; motion: LayerMotion; children: ReactNode }) {
+  return (
+    <div
+      data-work-run-layer={motion === 'out' ? 'leaving' : 'current'}
+      inert={motion === 'out'}
+      className={cn(
+        'absolute inset-0 flex p-3',
+        motion === 'in' && 'app-update-layer-in',
+        motion === 'out' && 'app-update-layer-out [&_*]:[animation-play-state:paused]',
+      )}
+    >
+      {moru}
+      <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">{children}</div>
+    </div>
+  );
+}
+
+function Title({ text, small, aside, testId }: { text: string; small: boolean; aside?: string | null; testId?: string }) {
+  return (
+    <p
+      data-testid={testId}
+      className={cn(
+        'pr-[var(--work-run-more-room,0px)]',
+        small
+          ? 'truncate text-label leading-label text-[color:var(--color-text-tertiary)]'
+          : 'truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
+      )}
+    >
+      {text}
+      {aside ? (
+        <>
+          <span aria-hidden className="px-1.5 text-[color:var(--color-text-quaternary)]">·</span>
+          <span data-testid={testId ? 'work-run-minutes' : undefined}>{aside}</span>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+/** The bar along the card's foot; it fills only where a total is known. */
+function FootBar({ done, total, label, slow }: { done: number; total: number | null; label: string; slow?: boolean }) {
+  return (
+    <div
+      className={cn(
+        'absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none',
+        // Figures arrive four times a second, so each step eases into the next without a rest.
+        slow && '[&_[data-work-fill]]:duration-[var(--motion-slow)]',
+      )}
+    >
+      <WorkProgress phase="running" done={done} total={total} label={label} />
+    </div>
+  );
+}
+
+function PhaseLayer({ run, motion }: { run: WorkRun; motion: LayerMotion }) {
   const t = useTranslations('library.check');
   const tCard = useTranslations('workCard');
   const leaving = motion === 'out';
@@ -168,83 +267,167 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
         : null;
 
   return (
-    <div
-      data-work-run-layer={leaving ? 'leaving' : 'current'}
-      inert={leaving}
-      className={cn(
-        'absolute inset-0 flex p-3',
-        motion === 'in' && 'app-update-layer-in',
-        motion === 'out' && 'app-update-layer-out [&_*]:[animation-play-state:paused]',
-      )}
-    >
-      <WorkRunMoru run={run} />
-      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
-      <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
-        {copy.figures ? (
-          <p
-            data-testid={testId('work-run-title')}
-            className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]"
-          >
-            {copy.title}
+    <LayerFrame moru={<WorkRunMoru run={run} />} motion={motion}>
+      <Title text={copy.title} small={copy.figures !== null} testId={testId('work-run-title')} />
+      {copy.figures ? (
+        <div aria-live="off" className="grid min-w-0">
+          <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
+            {copy.figures}
           </p>
-        ) : (
           <p
-            data-testid={testId('work-run-title')}
-            className="truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-          >
-            {copy.title}
-          </p>
-        )}
-        {copy.figures ? (
-          <div aria-live="off" className="grid min-w-0">
-            <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
-              {copy.figures}
-            </p>
-            <p
-              data-testid={testId('work-run-line')}
-              className={cn(
-                'text-[color:var(--color-text-secondary)]',
-                run.phase === 'asking' ? 'line-clamp-2 text-label leading-label' : 'truncate text-body leading-body',
-              )}
-            >
-              {copy.detail}
-            </p>
-          </div>
-        ) : (
-          <p
-            data-testid={testId('work-run-detail')}
-            className="line-clamp-2 text-label leading-label text-[color:var(--color-text-secondary)]"
+            data-testid={testId('work-run-line')}
+            className={cn(
+              'text-[color:var(--color-text-secondary)]',
+              run.phase === 'asking' ? 'line-clamp-2 text-label leading-label' : 'truncate text-body leading-body',
+            )}
           >
             {copy.detail}
           </p>
-        )}
-        <div className="flex h-8 min-w-0 items-center gap-2">
-          {run.phase === 'running' ? (
-            <Button size="sm" variant="outline" onClick={() => workRuns.stop()} data-testid={testId('work-run-stop')}>
-              {tCard('stop')}
-            </Button>
-          ) : null}
-          {primary ? (
-            <Button size="sm" onClick={primary.onClick} data-testid={testId(primary.id)}>
-              {primary.label}
-            </Button>
-          ) : null}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => (active ? workRuns.hide() : workRuns.close())}
-            data-testid={testId(active ? 'work-run-hide' : 'work-run-close')}
-            className="touch-hit-expand text-[color:var(--color-text-secondary)]"
-          >
-            {active ? tCard('hide') : tCard('close')}
+        </div>
+      ) : (
+        <p data-testid={testId('work-run-detail')} className="line-clamp-2 text-label leading-label text-[color:var(--color-text-secondary)]">
+          {copy.detail}
+        </p>
+      )}
+      <div className="flex h-8 min-w-0 items-center gap-2">
+        {run.phase === 'running' ? (
+          <Button size="sm" variant="outline" onClick={() => workRuns.stop()} data-testid={testId('work-run-stop')}>
+            {tCard('stop')}
           </Button>
-        </div>
+        ) : null}
+        {primary ? (
+          <Button size="sm" onClick={primary.onClick} data-testid={testId(primary.id)}>
+            {primary.label}
+          </Button>
+        ) : null}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => (active ? workRuns.hide() : workRuns.close())}
+          data-testid={testId(active ? 'work-run-hide' : 'work-run-close')}
+          className="touch-hit-expand text-[color:var(--color-text-secondary)]"
+        >
+          {active ? tCard('hide') : tCard('close')}
+        </Button>
       </div>
-      {run.phase === 'running' ? (
-        <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none">
-          <WorkProgress phase="running" done={run.readCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
+      {run.phase === 'running' ? <FootBar done={run.readCount} total={null} label={tCard('progressLabel', { title: copy.title })} /> : null}
+    </LayerFrame>
+  );
+}
+
+/** The figures a leaving layer drew last, so it fades out as it was rather than with the next phase's. */
+function useLayerProgress(leaving: boolean) {
+  const live = useCountedProgress();
+  const [held] = useState(live);
+  return leaving ? held : live;
+}
+
+function MeaningLayer({ run, motion }: { run: CountedRun; motion: LayerMotion }) {
+  const t = useTranslations('workCard.meaning');
+  const tCard = useTranslations('workCard');
+  const leaving = motion === 'out';
+  const progress = useLayerProgress(leaving);
+  const copy = useCountedCopy(run, progress?.runId === run.id ? progress : null, CARD_FIGURE);
+  const active = isCountedActive(run);
+  const testId = (id: string) => (leaving ? undefined : id);
+  const primary = run.phase === 'ready'
+    ? { label: t('ask'), kind: 'ask' as const, id: 'work-run-ask' }
+    : run.phase === 'failed'
+      ? { label: t('openLibrary'), kind: 'library' as const, id: 'work-run-open-library' }
+      : null;
+
+  return (
+    <LayerFrame moru={<CountedRunMoru run={run} />} motion={motion}>
+      <Title text={copy.title} aside={copy.remaining} small={copy.lead !== null} testId={testId('work-run-title')} />
+      {copy.lead !== null ? (
+        <div aria-live="off" className="grid min-w-0">
+          <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
+            {copy.lead}
+          </p>
+          <div data-testid={testId('work-run-line')} className="flex min-w-0 truncate text-body leading-body text-[color:var(--color-text-secondary)]">
+            {copy.line}
+          </div>
         </div>
-      ) : null}
-    </div>
+      ) : (
+        <p data-testid={testId('work-run-detail')} className="line-clamp-2 text-label leading-label text-[color:var(--color-text-secondary)]">
+          {copy.line}
+        </p>
+      )}
+      <div className="flex h-8 min-w-0 items-center gap-2">
+        {active ? (
+          <Button size="sm" variant="outline" onClick={() => workRuns.stopCounted()} data-testid={testId('work-run-stop')}>
+            {tCard('stop')}
+          </Button>
+        ) : null}
+        {primary ? (
+          <Button size="sm" onClick={() => workRuns.openCountedDoor(primary.kind)} data-testid={testId(primary.id)}>
+            {primary.label}
+          </Button>
+        ) : null}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => (active ? workRuns.hideCounted() : workRuns.closeCounted())}
+          data-testid={testId(active ? 'work-run-hide' : 'work-run-close')}
+          className="touch-hit-expand text-[color:var(--color-text-secondary)]"
+        >
+          {active ? tCard('hide') : tCard('close')}
+        </Button>
+      </div>
+      {copy.bar ? <FootBar done={copy.bar.done} total={copy.bar.total} label={tCard('progressLabel', { title: copy.title })} slow /> : null}
+    </LayerFrame>
+  );
+}
+
+/**
+ * "1 more running" stands at the right of the title row, drawn from the card's first paint and
+ * only faded in, so its arrival moves no press; the title gives way beside it. It opens the list
+ * of running work.
+ */
+function MoreRunning({ count, onWidth }: { count: number; onWidth: (widthPx: number) => void }) {
+  const tCard = useTranslations('workCard');
+  const [open, setOpen] = useState(false);
+  const shown = count > 0;
+  if (open && !shown) setOpen(false);
+  const press = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    const element = press.current;
+    if (!element) return undefined;
+    onWidth(element.offsetWidth);
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => onWidth(element.offsetWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [onWidth]);
+  return (
+    <>
+      <button
+        ref={press}
+        type="button"
+        aria-hidden={shown ? undefined : true}
+        tabIndex={shown ? undefined : -1}
+        inert={!shown}
+        onClick={(event) => {
+          // WebKit does not focus a pressed button, so Escape would have nowhere to return focus.
+          event.currentTarget.focus({ preventScroll: true });
+          setOpen(true);
+        }}
+        data-testid="work-run-more"
+        data-shown={shown ? 'true' : 'false'}
+        className={controlClass({
+          shape: 'link',
+          size: 'md',
+          tone: 'secondary',
+          hoverInk: 'strong',
+          className: cn(
+            'touch-hit-expand absolute top-2.5 right-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)]',
+            shown ? 'opacity-100' : 'pointer-events-none opacity-0',
+          ),
+        })}
+      >
+        {tCard('moreRunning', { count: Math.max(1, count) })}
+      </button>
+      <RunsDialog open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }

@@ -4,5 +4,20 @@
   "close": "Close",
   "progressLabel": "{title} progress",
   "railRunning": "{destination}: running",
-  "railFinished": "{destination}: {count, plural, one {# finished run to read} other {# finished runs to read}}"
+  "railFinished": "{destination}: {count, plural, one {# finished run to read} other {# finished runs to read}}",
+  "meaning": {
+    "title": "Search by meaning",
+    "files": "{done} of {total, number} files",
+    "modelBytes": "{done} of {total} GB",
+    "downloading": "Downloading the model",
+    "converting": "Getting the model ready",
+    "minutesLeft": "about {minutes, plural, one {# minute} other {# minutes}} left",
+    "readyLead": "{total, plural, one {# file} other {# files}}",
+    "ready": "Ready to search by meaning",
+    "ask": "Ask a question",
+    "openLibrary": "Open Library"
+  },
+  "moreRunning": "{count, plural, one {# more running} other {# more running}}",
+  "runsTitle": "Running now",
+  "railRunningPercent": "{destination}: {percent, number}% done"
 }

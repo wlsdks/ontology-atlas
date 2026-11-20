@@ -69,7 +69,8 @@ export interface AppNavRailProps {
 }
 
 export type RailWorkRun =
-  | { destination: AppNavRailItemId; state: "running" }
+  /** `fraction` (0–1) where the run counts against a known total; without it the arc turns. */
+  | { destination: AppNavRailItemId; state: "running"; fraction?: number }
   | { destination: AppNavRailItemId; state: "finished"; count: number };
 
 interface RailDestination {
@@ -213,7 +214,9 @@ export function AppNavRail({
             const run = workRun?.destination === id ? workRun : null;
             const badgeCount = run?.state === "finished" ? run.count : ownBadge;
             const runName = run?.state === "running"
-              ? tWork("railRunning", { destination: label })
+              ? run.fraction === undefined
+                ? tWork("railRunning", { destination: label })
+                : tWork("railRunningPercent", { destination: label, percent: Math.floor(run.fraction * 100) })
               : run?.state === "finished"
                 ? tWork("railFinished", { destination: label, count: run.count })
                 : undefined;
@@ -272,7 +275,7 @@ export function AppNavRail({
                       aria-hidden
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
-                    {run?.state === "running" ? <RunRing id={id} /> : null}
+                    {run?.state === "running" ? <RunRing id={id} fraction={run.fraction} /> : null}
                     {badgeCount ? (
                       // Warning tone for unrecorded changes; caps at `9+` to keep the tile
                       // geometry.
@@ -334,12 +337,18 @@ export function AppNavRail({
   );
 }
 
-/** A quarter arc around the icon while the destination's run works; it unmounts the moment it ends. */
-function RunRing({ id }: { id: AppNavRailItemId }) {
+/**
+ * A ring around the icon while the destination's run works; it unmounts the moment it ends. With
+ * a counted fraction it is an arc from twelve o'clock that eases to each new value; without one, a
+ * quarter arc turns.
+ */
+function RunRing({ id, fraction }: { id: AppNavRailItemId; fraction?: number }) {
+  const counted = fraction !== undefined;
   return (
     <svg
       aria-hidden
       data-testid={`app-nav-rail-ring-${id}`}
+      data-ring-fraction={counted ? fraction.toFixed(4) : undefined}
       viewBox="0 0 32 32"
       fill="none"
       className="pointer-events-none absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2"
@@ -353,9 +362,13 @@ function RunRing({ id }: { id: AppNavRailItemId }) {
         stroke="var(--color-indigo-accent)"
         strokeLinecap="round"
         pathLength={1}
-        strokeDasharray="0.25 0.75"
+        strokeDasharray={counted ? "1 1" : "0.25 0.75"}
+        strokeDashoffset={counted ? 1 - Math.min(1, Math.max(0, fraction)) : undefined}
         transform="rotate(-90 16 16)"
-        className="motion-work-spin"
+        // Values arrive four times a second; each eases into the next from where it is drawn.
+        className={counted
+          ? "transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)]"
+          : "motion-work-spin"}
       />
     </svg>
   );

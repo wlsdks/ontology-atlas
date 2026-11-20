@@ -15,6 +15,7 @@ import { useGlide } from '../lib/use-glide';
 import { usePacedValue } from '../lib/use-paced-value';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
 import { resume, stop, useVectorStatus } from '../model/vector-store';
+import { useVectorRunStage } from '../model/use-vector-run';
 import { MeaningSetupDialog } from './MeaningSetupDialog';
 
 const FILE_NAME_PACE_MS = 1000;
@@ -105,6 +106,7 @@ export function MeaningDeskLine({
   const isApp = useSyncExternalStore(noSubscribe, isTauriVaultRuntime, () => false);
   const indexOn = vaultIndexPreference.use() === 'on';
   const status = useVectorStatus(isApp ? rootPath : null);
+  const stage = useVectorRunStage(isApp ? rootPath : null);
   const source = vaultVectorSource.use(rootPath)?.source ?? null;
   const [dialogOpen, setDialogOpen] = useState(false);
   const line = deskLine({
@@ -122,7 +124,7 @@ export function MeaningDeskLine({
   const glidedDone = useGlide(ring?.done ?? 0, ringTrack, reduced);
   const shownPath = usePacedValue(line?.readingPath ?? null, FILE_NAME_PACE_MS);
 
-  if (!line) return <div aria-hidden="true" className="h-6" data-testid="meaning-desk-line" data-state="pending" />;
+  if (!line) return <div ref={stage} aria-hidden="true" className="h-6" data-testid="meaning-desk-line" data-state="pending" />;
 
   const fraction = ring && ring.total > 0 ? Math.min(1, glidedDone / ring.total) : 0;
   const sentence = sentenceOf(line, ring, glidedDone);
@@ -171,6 +173,7 @@ export function MeaningDeskLine({
 
   return (
     <div
+      ref={stage}
       data-testid="meaning-desk-line"
       data-state={line.message}
       className={cn(

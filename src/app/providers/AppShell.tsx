@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
@@ -23,7 +23,7 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isRunActive, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
+import { ringRun, useCountedProgress, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -39,6 +39,7 @@ import { useProjectsDoorHref } from "@/features/project-data-source";
 import { ShellFrame, useShellSetup } from "./ShellFrame";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
+import { MeaningRunSeat } from "./MeaningRunSeat";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
 import { buildTopologyReturnHref } from "@/entities/knowledge-graph";
@@ -96,6 +97,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
         /* Owned by the shell so every screen surfaces an update and a long run. Outside a desktop
            shell neither exists, so there is no branch here to drift from them. */
         <>
+          <MeaningRunSeat />
           <WorkRunSeat />
           <AppUpdateSurface />
         </>
@@ -258,7 +260,6 @@ function AppNavRailSlot() {
 
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);
-  const workRun = useRailWorkRun();
 
   const visibleDestinations = useMemo(
     () => destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null),
@@ -307,7 +308,7 @@ function AppNavRailSlot() {
 
   return (
     <>
-      <AppNavRail
+      <WorkRunRail
         /*
          * Registered by the shell so the folder name shows on every destination, including the
          * ones a wiki-only vault has.
@@ -320,7 +321,6 @@ function AppNavRailSlot() {
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}
-        workRun={workRun}
         visibleDestinations={shownDestinations}
       />
       {/*
@@ -333,13 +333,39 @@ function AppNavRailSlot() {
   );
 }
 
-/** The open folder's wiki check on the Library tile: a ring while it runs, a badge until read. */
+const RailView = memo(AppNavRail);
+
+/**
+ * The rail with the open folder's long work on its Library tile. The runs are read here, in a
+ * leaf, so a count arriving four times a second redraws the rail and never the shell around it.
+ */
+function WorkRunRail(props: Omit<ComponentProps<typeof AppNavRail>, "workRun">) {
+  return <RailView {...props} workRun={useRailWorkRun()} />;
+}
+
+/** Fractions finer than the ring can draw would redraw it for nothing. */
+const RING_STEPS = 1_000;
+
+/**
+ * A ring while a run works (the run the card would show, else the latest), with its fraction
+ * where it counts against a total; the check's badge once it finished unread.
+ */
 function useRailWorkRun(): RailWorkRun | null {
-  const { run } = useWorkRunSnapshot();
+  const snapshot = useWorkRunSnapshot();
+  const progress = useCountedProgress();
   const folder = useVaultSessionIdentityScope();
-  if (!run || run.folder !== folder) return null;
-  if (isRunActive(run)) return { destination: "library", state: "running" };
-  return run.unseen ? { destination: "library", state: "finished", count: 1 } : null;
+  const ring = ringRun(snapshot);
+  const counted = ring?.kind === "meaning" && progress?.runId === ring.run.id ? progress.fraction : null;
+  const fraction = counted === null ? null : Math.round(counted * RING_STEPS) / RING_STEPS;
+  const check = snapshot.run;
+  const ringShown = ring !== null && (ring.kind === "meaning" || ring.run.folder === folder);
+  const unseen = check !== null && check.folder === folder && check.unseen;
+  return useMemo<RailWorkRun | null>(() => {
+    if (!ringShown) return unseen ? { destination: "library", state: "finished", count: 1 } : null;
+    return fraction === null
+      ? { destination: "library", state: "running" }
+      : { destination: "library", state: "running", fraction };
+  }, [ringShown, fraction, unseen]);
 }
 
 /**

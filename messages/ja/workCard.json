@@ -4,5 +4,20 @@
   "close": "閉じる",
   "progressLabel": "{title}の進行状況",
   "railRunning": "{destination}: 実行中",
-  "railFinished": "{destination}: 未確認の完了した実行{count, number}件"
+  "railFinished": "{destination}: 未確認の完了した実行{count, number}件",
+  "meaning": {
+    "title": "意味検索",
+    "files": "ファイル{total, number}件中{done}件",
+    "modelBytes": "{total} GB中{done} GB",
+    "downloading": "モデルをダウンロード中",
+    "converting": "モデルを準備中",
+    "minutesLeft": "残り約{minutes, number}分",
+    "readyLead": "ファイル{total, number}件",
+    "ready": "意味で検索できます",
+    "ask": "質問する",
+    "openLibrary": "資料室を開く"
+  },
+  "moreRunning": "ほかに{count, number}件実行中",
+  "runsTitle": "実行中の作業",
+  "railRunningPercent": "{destination}: {percent, number}%完了"
 }

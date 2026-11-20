@@ -176,6 +176,8 @@ interface HarnessWindow extends Window {
     think(text: string): void;
     mutateSource(path: string, text: string): void;
     emitVectorStatus(status: VectorStatus): void;
+    streamVectorStatus(base: VectorStatus, count: number, perSecond: number): void;
+    vectorStream(): LibraryVectorStreamProgress;
     setVectorFound(found: VectorFound): void;
     snapshot(): LibraryWorkHarnessSnapshot;
   };
@@ -187,6 +189,11 @@ export interface LibraryWorkStreamProgress {
 }
 
 export type LibraryWorkScenario = "successful-write" | "failed-unknown-target";
+
+export interface LibraryVectorStreamProgress {
+  emitted: number;
+  total: number;
+}
 
 export interface LibraryWorkHarnessSnapshot {
   files: Record<string, string>;
@@ -217,6 +224,13 @@ export interface LibraryWorkHarness {
   emitVectorStatus(page: Page, status: VectorStatus): Promise<void>;
   /** What every later `vault_vectors_search` answers, whatever the question. */
   setVectorFound(page: Page, found: VectorFound): Promise<void>;
+  /**
+   * `count` preparing statuses on a wall-clock schedule, each one file further than the last from
+   * `base`, as the app sends them for hours. Unlike `emitVectorStatus` none is kept in the
+   * snapshot's events, so a long stream measures the page and not the stub.
+   */
+  streamVectorStatus(page: Page, base: VectorStatus, options: { count: number; perSecond: number }): Promise<void>;
+  vectorStream(page: Page): Promise<LibraryVectorStreamProgress>;
 }
 
 /**
@@ -294,6 +308,7 @@ export async function installLibraryWorkHarness(
       let permissionId: number | string | null = null;
       let phase: "idle" | "read" | "waiting" | "approved" | "rejected" | "written" | "finished" = "idle";
       let currentVectorStatus = vectors.status;
+      let vectorStreamProgress = { emitted: 0, total: 0 };
       let currentFound: VectorFound | null = null;
       for (const path of Object.keys(files)) mtimes[path] = nextMtime;
 
@@ -576,7 +591,22 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
+      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, streamVectorStatus: (base: VectorStatus, count: number, perSecond: number) => {
+        const progress = { emitted: 0, total: count };
+        vectorStreamProgress = progress;
+        const startedAt = performance.now();
+        const tick = () => {
+          if (vectorStreamProgress !== progress) return;
+          const done = Math.min(base.filesTotal, base.filesDone + progress.emitted + 1);
+          // A fresh object per event, as each one arrives over IPC.
+          const status: VectorStatus = { ...base, filesDone: done, passagesDone: Math.round(base.passagesDone + progress.emitted * 4.9), currentPath: `wiki/notes/page-${done}.md` };
+          currentVectorStatus = status;
+          for (const id of listeners.get("vault-vectors-status") ?? []) callbacks.get(id)?.({ event: "vault-vectors-status", payload: { rootPath: vaultRoot, status } });
+          progress.emitted += 1;
+          if (progress.emitted < progress.total) window.setTimeout(tick, Math.max(0, startedAt + (progress.emitted * 1000) / perSecond - performance.now()));
+        };
+        window.setTimeout(tick, 0);
+      }, vectorStream: () => ({ ...vectorStreamProgress }), setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
     { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0 } },
   );
@@ -611,6 +641,15 @@ export async function installLibraryWorkHarness(
   think: (currentPage, text) => currentPage.evaluate((text) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.think(text), text),
   mutateSource: (currentPage, path, text) => currentPage.evaluate(({ path, text }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.mutateSource(path, text), { path, text }),
   emitVectorStatus: (currentPage, status) => currentPage.evaluate((status) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.emitVectorStatus(status), status),
+  streamVectorStatus: (currentPage, base, { count, perSecond }) => currentPage.evaluate(
+    ({ base, count, perSecond }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.streamVectorStatus(base, count, perSecond),
+    { base, count, perSecond },
+  ),
+  vectorStream: (currentPage) => currentPage.evaluate(() => {
+    const harness = (window as unknown as HarnessWindow).__atlasLibraryWorkHarness;
+    if (!harness) throw new Error("Library work harness is not installed");
+    return harness.vectorStream();
+  }),
   setVectorFound: (currentPage, found) => currentPage.evaluate((found) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.setVectorFound(found), found),
   };
 }
