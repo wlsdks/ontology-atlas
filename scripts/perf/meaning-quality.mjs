@@ -23,6 +23,8 @@ const CACHE = join(tmpdir(), 'atlas-meaning-quality');
 export const DEFAULT_OLLAMA = 'http://localhost:11434';
 export const DEFAULT_MODELS = ['bge-m3', 'qwen3-embedding:0.6b'];
 export const MAX_PASSAGE_CHARS = 2000;
+/** A whole section shorter than this joins its neighbour: alone it embeds too little to match. */
+export const MIN_SECTION_CHARS = 400;
 export const BATCH_PASSAGES = 32;
 export const BATCH_BYTES = 64 * 1024;
 const RRF_K = 60;
@@ -45,9 +47,48 @@ const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 /**
  * Splits one Markdown file into passages: frontmatter dropped, a new passage at every heading outside
  * a code fence, a heading with no body skipped, at most 2,000 characters each (split at line ends, a
- * longer line cut), NFC. Lines are 1-based in the file as written.
+ * longer line cut), NFC; then a whole section under 400 characters joins the passage after it (the
+ * file's last joins the one before) while the join stays within 2,000 characters, keeping the first
+ * section's heading and spanning both sections' lines. Lines are 1-based in the file as written.
  */
 export function splitPassages(path, raw) {
+  return joinShort(splitSections(path, raw));
+}
+
+const charCount = (text) => [...text].length;
+
+function joined(first, second) {
+  if (charCount(first.text) + 2 + charCount(second.text) > MAX_PASSAGE_CHARS) return null;
+  return { path: first.path, start: first.start, end: second.end, text: `${first.text}\n\n${second.text}` };
+}
+
+function joinShort(list) {
+  const out = [];
+  let carry = null;
+  for (const { whole, ...passage } of list) {
+    let current = passage;
+    let short = whole && charCount(passage.text) < MIN_SECTION_CHARS;
+    if (carry) {
+      const both = joined(carry, current);
+      if (both) {
+        current = both;
+        short = short && charCount(both.text) < MIN_SECTION_CHARS;
+      } else out.push(carry);
+      carry = null;
+    }
+    if (short) carry = current;
+    else out.push(current);
+  }
+  if (carry) {
+    const both = out.length ? joined(out.at(-1), carry) : null;
+    if (both) out[out.length - 1] = both;
+    else out.push(carry);
+  }
+  return out;
+}
+
+/** Each section's passages, each marked `whole` when it is its section's only one. */
+function splitSections(path, raw) {
   const lines = raw.split(/\r?\n/);
   let index = 0;
   if (lines[0]?.trim() === '---') {
@@ -75,6 +116,7 @@ export function splitPassages(path, raw) {
     current.lines.push(line);
   }
   const passages = [];
+  let marked = 0;
   for (const section of sections) {
     const body = section.heading ? section.lines.slice(1) : section.lines;
     if (!body.some((line) => line.trim())) continue;
@@ -111,6 +153,8 @@ export function splitPassages(path, raw) {
       while (end > chunkStart && !section.lines[end - section.start].trim()) end -= 1;
       flush(end);
     }
+    const made = passages.length - marked;
+    for (; marked < passages.length; marked += 1) passages[marked].whole = made === 1;
   }
   return passages;
 }
