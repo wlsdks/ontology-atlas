@@ -17,7 +17,7 @@ The local workspace for gathering originals, writing and checking Wiki pages tha
 
 ## Includes
 - Importing originals into the open folder, proposing Wiki pages, linting and repairing them, and judging a page before a permitted write.
-- A Wiki question desk that searches bounded local Wiki fact/decision sentences and original source units only after an explicit search. It shows coverage, omissions, freshness observations and exact source anchors. Local search and original-file entry rows work without an agent or a Jev key. In the installed app, passages found by meaning (see Search by meaning) join the word results in one ranked list, each row naming its reason.
+- A Wiki question desk that searches bounded local Wiki fact/decision sentences and original source units only after an explicit search. It shows coverage, omissions, freshness observations and exact source anchors. Local search and original-file entry rows work without an agent or a Jev key.
 - An explicit read-only ACP investigation that rereads originals and returns an unreviewed report: answer, source evidence, disagreements, and unknowns. A new question or changed inventoried listing invalidates the prior report. Unexpected writes retain the permission review. Exact runtime retries preserve the original question, read-only authority and strict report filing context; invalidated replies cannot become ordinary fileable answers.
 - Local Markdown download and document-only A4 Print/PDF. Exported external links/images are inert; unsupported unsafe syntax remains literal text. File as Wiki answer is a separate explicit action with report structure, current-source, citation, and Wiki write guards.
 - Ontology navigation containing Concept documents and Concept sets. Existing set links, immutable membership IDs, unresolved members, and unsaved document drafts survive the view change.
@@ -31,7 +31,7 @@ The local workspace for gathering originals, writing and checking Wiki pages tha
 
 ## Evidence
 - `src/views/library/ui/LibraryPage.tsx` coordinates the authoring and question/report flows; `src/views/library/ui/parts/questions/LibraryQuestionDesk.tsx` owns the inquiry surface, with the report and its guarded source opening in `desk/DeskReport.tsx` and the Jev consent in `desk/DeskJev.tsx`.
-- `src/features/library/lib/questions/question-desk.ts` implements bounded local retrieval; `src/features/library/lib/questions/question-desk-brief.ts` owns the report brief, section handling and inert export boundary.
+- `src/features/library/lib/questions/question-desk.ts` implements bounded local retrieval, and in the app `lead-fusion.ts` ranks Search by meaning passages with the word matches; `src/features/library/lib/questions/question-desk-brief.ts` owns the report brief, section handling and inert export boundary.
 - `src/app/library-workspace/index.tsx` owns navigation and legacy set-link canonicalization. `tests/e2e/library/answers/library-question-desk.spec.ts` and `tests/e2e/library/library-workspace.spec.ts` cover search, current report behavior, source reach, URL identity and draft recovery.
 
 ## Uncertainty
