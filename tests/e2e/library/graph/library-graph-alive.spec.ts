@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "../../first-run-seed";
-import type { LibraryGraphProbeNode as ProbeNode } from "./library-graph-probe";
+import type { LibraryGraphProbeLabel, LibraryGraphProbeNode as ProbeNode } from "./library-graph-probe";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
 import { waitFrames as frames } from "../../settle";
 
@@ -108,9 +108,45 @@ function denseVault(): Record<string, string> {
   return vault;
 }
 
-async function openGraph(page: Page): Promise<void> {
+/**
+ * Sixty pages, each written from its own file and naming two of sixteen concepts by a fixed
+ * stride: enough rows that the page column folds into stacks at the viewport below.
+ */
+function foldedVault(): Record<string, string> {
+  const vault: Record<string, string> = {
+    "project.md": ["---", "kind: project", "slug: folded-demo", "title: Folded demo", "---", "", "# Folded demo", ""].join("\n"),
+  };
+  const concept = (i: number) => `domains/topic-${String(i).padStart(2, "0")}`;
+  for (let i = 0; i < 16; i += 1) {
+    vault[`${concept(i)}.md`] = ["---", `title: Topic ${i} operations`, "kind: domain", `uid: 6a2b3c4d-5e6f-4a1b-8c2d-${String(i).padStart(12, "0")}`, "---", "", `# Topic ${i}`, ""].join("\n");
+  }
+  for (let i = 0; i < 60; i += 1) {
+    const file = `sources/report-${String(i).padStart(2, "0")}.md`;
+    vault[file] = `bytes for report ${i}\n`;
+    const named = [...new Set([(i * 7) % 16, (i * 3 + 5) % 16])];
+    vault[`wiki/page-${String(i).padStart(2, "0")}.md`] = [
+      "---",
+      `title: Weekly review ${i} and what it says`,
+      "created_by: agent:claude",
+      "compiled_at: 2026-09-06T10:00:00Z",
+      "sources:",
+      `  - ${file}`,
+      "status: draft",
+      `summary: Review ${i}.`,
+      "---",
+      "",
+      "## Facts",
+      "",
+      ...named.map((c) => `- Touches [[${concept(c)}]].`),
+      "",
+    ].join("\n");
+  }
+  return vault;
+}
+
+async function openGraph(page: Page, vault: Record<string, string> = denseVault()): Promise<void> {
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, denseVault());
+  await stubDirectoryPicker(page, vault);
   // `e2e=1` opens the inspection window; `guides=off` keeps the first-run shelf from
   // covering the canvas and intercepting every pointer event.
   await page.goto("/en/library/?guides=off&e2e=1");
@@ -351,6 +387,35 @@ test.describe("the library graph responds", () => {
     // The attribute assertion retries on its own, so the sweep needs nothing in front of it.
     await expect(canvas).toHaveAttribute("data-hovered-node-id", target.id);
     expect(travelled(beforeHover, await nodes(page)), "hover moved a mark").toBe(0);
+  });
+
+  test("a folded folder names every page and concept at rest, and no name covers another name or mark", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 901 });
+    await openGraph(page, foldedVault());
+    await page.mouse.move(0, 0);
+    await expect(page.getByTestId("library-graph-canvas")).toHaveAttribute("data-hovered-node-id", "");
+    const layout = await page.evaluate(() => window.__atlasLibraryGraph!.layout());
+    expect(layout?.columns.find((column) => column.kind === "page")?.grid, "the page column did not fold into stacks").toBeGreaterThan(1);
+    const marks = await nodes(page);
+    const named = (labels: LibraryGraphProbeLabel[]) => new Set(labels.map((label) => label.nodeId));
+    // The label pass fills its report on the next frame after the pointer leaves.
+    await expect
+      .poll(async () => {
+        const labels = await page.evaluate(() => window.__atlasLibraryGraph!.labels());
+        return marks.filter((mark) => mark.kind !== "source" && !named(labels).has(mark.id)).map((mark) => mark.label);
+      })
+      .toEqual([]);
+    const labels = await page.evaluate(() => window.__atlasLibraryGraph!.labels());
+    const overlaps = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+      a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    for (const [index, label] of labels.entries()) {
+      for (const other of labels.slice(index + 1)) expect(overlaps(label, other), `${label.text} covers ${other.text}`).toBe(false);
+      for (const mark of marks) {
+        if (mark.id === label.nodeId) continue;
+        const box = { x: mark.x - mark.radius, y: mark.y - mark.radius, width: mark.radius * 2, height: mark.radius * 2 };
+        expect(overlaps(label, box), `${label.text} covers ${mark.id}`).toBe(false);
+      }
+    }
   });
 
   test.describe("under reduced motion", () => {

@@ -45,10 +45,13 @@ export function mountLibraryGraphProbe(
       nodeId: pointerRef.current.drag?.nodeId ?? pointerRef.current.islandDrag?.id ?? null,
     }),
     view: () => ({ ...viewRef.current, ...boxRef.current }),
-    /** The columns of the flow picture as last laid, or null under the force layout. */
+    /** The columns of the flow picture as last laid, in world units, or null under the force layout. */
     layout: () =>
       columnsRef.current
-        ? { rowGap: columnsRef.current.rowGap, columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length })) }
+        ? {
+            rowGap: columnsRef.current.rowGap,
+            columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length, labelRoom: column.labelRoom })),
+          }
         : null,
     /** The scale the fit tile would take the camera to. */
     fitScale: () => fitScaleRef.current,

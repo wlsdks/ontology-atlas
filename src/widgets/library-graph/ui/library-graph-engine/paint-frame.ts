@@ -29,8 +29,8 @@ const ISLAND_SOURCE_LABEL_MIN_PX = 36;
 const ISLAND_OPENS_AT_VIEW_SHARE = 0.45;
 
 /**
- * A folded file band (`FlowColumn.grid` above one) names its files only this far past the
- * source threshold: 24px squares leave no room for a name until about 60px a row.
+ * A flow column with no names at rest (folded, or given no room) names its marks only this
+ * far past the source threshold: 24px squares leave no room for a name until about 60px a row.
  */
 const FOLDED_LABEL_MIN_SCALE = SOURCE_LABEL_MIN_SCALE * 3.5;
 
@@ -100,9 +100,13 @@ export function paintLibraryGraphFrame(
     overviewGeometry.columns !== columnsRef.current || overviewGeometry.islands !== islandsRef.current ||
     overviewGeometry.moving || moving;
   const box = { width, height };
-  const bounds = pictureRef.current !== "islands" || geometryChanged
-    ? librarySimulationBounds(sim)
-    : overviewGeometry?.bounds ?? null;
+  // The flow picture frames the box it was laid in, so the name room it keeps at its edges stays on screen.
+  const laidFlow = pictureRef.current === "flow" && columnsRef.current && columnsRef.current.positions.size > 0 ? columnsRef.current : null;
+  const bounds = laidFlow
+    ? { minX: 0, minY: 0, maxX: laidFlow.extent.width, maxY: laidFlow.extent.height }
+    : pictureRef.current !== "islands" || geometryChanged
+      ? librarySimulationBounds(sim)
+      : overviewGeometry?.bounds ?? null;
   // Where the fit tile would take the camera, every frame, so the tile stops offering a no-op press.
   const fitTarget = fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
   fitScaleRef.current = fitTarget.scale;
@@ -353,6 +357,15 @@ export function paintLibraryGraphFrame(
     };
     overviewGeometryRef.current = overviewGeometry;
   }
+  /*
+   * In the flow picture a column names its marks at rest when the layout gave it room, files
+   * and concepts only while unfolded; a column without names shows them once zoomed in.
+   */
+  const namedAtRest = (kind: LibraryGraphNode["kind"], scale: number): boolean => {
+    const column = columnsRef.current?.columns.find((candidate) => candidate.kind === kind);
+    if (!column || scale >= FOLDED_LABEL_MIN_SCALE) return true;
+    return column.labelRoom > 0 && (kind === "page" || column.grid === 1);
+  };
   drawLibraryGraph(context, {
     nodes,
     edges: graphRef.current.edges,
@@ -368,24 +381,23 @@ export function paintLibraryGraphFrame(
     activeLabel: stateRef.current.activeLabel,
     standingLabels: stateRef.current.standingLabels,
     radii: screenRadiiRef.current,
-    // A plain source column names every file; a folded band only once zoomed in.
     sourceLabels:
       pictureRef.current === "flow"
-        ? (columnsRef.current?.columns.find((column) => column.kind === "source")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
+        ? namedAtRest("source", view.scale)
         : pictureRef.current === "islands"
           ? widestPagePx >= ISLAND_SOURCE_LABEL_MIN_PX
           : view.scale >= SOURCE_LABEL_MIN_SCALE,
     conceptLabels:
       pictureRef.current === "flow"
-        ? (columnsRef.current?.columns.find((column) => column.kind === "concept")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
+        ? namedAtRest("concept", view.scale)
         : pictureRef.current === "islands"
           ? false
           : view.scale >= SOURCE_LABEL_MIN_SCALE,
-    // Each column's name room in screen px; the layout returns world units.
+    // Each named column's room in screen px; the layout returns world units.
     flowLabelRoom:
       pictureRef.current === "flow" && columnsRef.current
         ? Object.fromEntries(
-            columnsRef.current.columns.map((column) => [column.kind, column.labelRoom * view.scale]),
+            columnsRef.current.columns.filter((column) => column.labelRoom > 0).map((column) => [column.kind, column.labelRoom * view.scale]),
           )
         : undefined,
     labelReport: labelReportRef.current ?? undefined,
@@ -399,7 +411,7 @@ export function paintLibraryGraphFrame(
     hoveredIslandId: hoveredIslandRef.current,
     focusedIslandId: focusedIslandRef.current,
     islandReport: islandReportRef.current ?? undefined,
-    pageLabels: pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
+    pageLabels: pictureRef.current === "flow" ? namedAtRest("page", view.scale) : pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
     focusEdgesOnly: pictureRef.current === "islands",
   });
 
