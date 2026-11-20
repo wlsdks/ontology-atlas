@@ -279,7 +279,7 @@ job through the `vault-vectors-status` event. The web playground has none.
 One store in `src/features/vault-vectors/` keeps each folder's last status for
 the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx` only
 listens to it and copies the open folder's job into the long-work store
-(`src/features/work-run/`) as a counted run beside the wiki check, so
+(`src/features/work-run/`) as a `meaning` run beside the checks it holds, so
 `work-run` never imports `vault-vectors` and the card and rail ring redraw at
 most four times a second.
 
