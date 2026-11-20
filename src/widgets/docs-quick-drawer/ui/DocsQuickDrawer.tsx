@@ -26,10 +26,12 @@ import {
   pinnedDocsStorageKey,
   recentDocsStorageKey,
   vaultScopeKey,
+  type VaultDoc,
   type VaultManifest,
   type VaultTreeNode,
 } from "@/entities/docs-vault";
 import { useStaticVaultSource } from "@/entities/vault-session";
+import { useDocumentDetail } from "@/features/document-detail";
 import { useDataSourceMode } from "@/entities/vault-session";
 import { useLocalVault } from "@/entities/vault-session";
 import {
@@ -95,7 +97,8 @@ interface FlatDoc {
   path: string;
   updatedAt: string;
   tags: string[];
-  excerpt: string;
+  /** The manifest document, whose excerpt is read only while its row is hovered. */
+  source?: VaultDoc;
 }
 
 const MAX_RECENT = 8;
@@ -231,9 +234,15 @@ function DocRow({
   trailingText?: string;
 }) {
   const t = useTranslations("vaultWidgets.docsDrawer");
-  const hasExcerpt = doc.excerpt.trim().length > 0;
+  // The preview is read on a mouse hover only; touch never shows it, so it never reads.
+  const [previewing, setPreviewing] = useState(false);
+  const excerpt = useDocumentDetail(previewing ? doc.source : null, { headings: false })?.excerpt.trim() ?? "";
   return (
-    <div className="group flex flex-col rounded-card transition-colors hover:bg-[color:var(--color-indigo-a10)]">
+    <div
+      className="group flex flex-col rounded-card transition-colors hover:bg-[color:var(--color-indigo-a10)]"
+      onPointerEnter={(event) => setPreviewing(event.pointerType === "mouse")}
+      onPointerLeave={() => setPreviewing(false)}
+    >
       <div className="flex items-center gap-1">
         <Link
           href={getDocHref(doc.slug)}
@@ -275,12 +284,15 @@ function DocRow({
           <Star size={ICON_SIZE.sm} fill={pinned ? "currentColor" : "none"} />
         </IconButton>
       </div>
-      {hasExcerpt && (
-        // Body preview on hover only, gated by a hover media query so touch devices never show it.
-        <p className="hidden line-clamp-2 px-2 pb-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
-          {doc.excerpt}
+      {previewing && excerpt ? (
+        // Opens when its text arrives; the hover media query still keeps touch devices out.
+        <p
+          data-testid="docs-drawer-preview"
+          className="motion-swap-in hidden line-clamp-2 px-2 pb-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block"
+        >
+          {excerpt}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -383,7 +395,7 @@ export function DocsQuickDrawer({
           path: n.path,
           updatedAt: meta?.updatedAt ?? "",
           tags: meta?.tags ?? [],
-          excerpt: meta?.excerpt ?? "",
+          source: meta,
         } satisfies FlatDoc;
       });
     return all;

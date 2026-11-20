@@ -26,6 +26,7 @@ import { cn } from "@/shared/lib/cn";
 import { Chip, CloseButton, controlClass } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
 import { useStaticVaultSource } from "@/entities/vault-session";
+import { useDocumentDetails } from "@/features/document-detail";
 import { formatDate } from "@/shared/lib/locale-text/format-date";
 import {
   formatProjectIntegrityIssue,
@@ -304,6 +305,12 @@ export function ProjectDrawer({
       5,
     );
   }, [project, staticManifest]);
+  const relatedDocRefs = useMemo(
+    () => (relatedDocs.length > 0 ? relatedDocs.map((match) => match.doc) : null),
+    [relatedDocs],
+  );
+  // The section appears once every row has its excerpt, so no row fills in after the others.
+  const relatedDocDetails = useDocumentDetails(relatedDocRefs, { headings: false });
   const relationshipSummary = project
     ? (() => {
         if (project.isHub && referencedBy.length > 0) {
@@ -909,15 +916,19 @@ export function ProjectDrawer({
                             </ul>
                           </div>
                         )}
-                        {relatedDocs.length > 0 && (
-                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
+                        {relatedDocs.length > 0 && relatedDocDetails && (
+                          <div
+                            data-testid="project-drawer-related-docs"
+                            className="motion-swap-in rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
+                          >
                             <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               <BookOpen size={ICON_SIZE.sm} aria-hidden />
                               {t("relatedDocs", { count: relatedDocs.length })}
                             </p>
                             <ul className="mt-3 flex flex-col gap-1">
-                              {relatedDocs.map((m) => {
-                                const hasExcerpt = m.doc.excerpt.trim().length > 0;
+                              {relatedDocs.map((m, index) => {
+                                const excerpt = relatedDocDetails[index]?.excerpt ?? "";
+                                const hasExcerpt = excerpt.trim().length > 0;
                                 return (
                                   <li key={m.doc.slug}>
                                     <Link
@@ -937,7 +948,7 @@ export function ProjectDrawer({
                                       </span>
                                       {hasExcerpt && (
                                         <p className="hidden line-clamp-2 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
-                                          {m.doc.excerpt}
+                                          {excerpt}
                                         </p>
                                       )}
                                     </Link>

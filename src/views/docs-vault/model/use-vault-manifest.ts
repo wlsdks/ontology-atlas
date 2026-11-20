@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useLocalVault, useStaticVaultSource, useStaticVaultStatus } from '@/entities/vault-session';
 import {
   deriveOntologyFromVault,
-  loadStaticVaultHeadings,
-  type StaticVaultHeadings,
   type VaultManifest,
 } from '@/entities/docs-vault';
 import {
@@ -73,30 +71,6 @@ export function useVaultManifest({
       ? normalizedQuerySlug
       : null;
 
-  // Bundled headings live in a lazily loaded chunk (`entities/docs-vault/lib/bundled-vault/static-headings.ts`);
-  // use the map only for the vault currently drawn.
-  const [staticHeadingsBundle, setStaticHeadingsBundle] = useState<{
-    source: string;
-    map: StaticVaultHeadings;
-  } | null>(null);
-  useEffect(() => {
-    if (isLocalSourceLoaded) return undefined;
-    let cancelled = false;
-    loadStaticVaultHeadings(staticVault.source)
-      .then((map) => {
-        if (!cancelled) setStaticHeadingsBundle({ source: staticVault.source, map });
-      })
-      .catch(() => {
-        // The outline is supplementary; a load failure must not block the page.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isLocalSourceLoaded, staticVault.source]);
-  const staticHeadings =
-    staticHeadingsBundle && staticHeadingsBundle.source === staticVault.source
-      ? staticHeadingsBundle.map
-      : null;
   const ontologyDerivation = useMemo(
     () => deriveOntologyFromVault(manifest),
     [manifest],
@@ -141,7 +115,6 @@ export function useVaultManifest({
     scopedDocSlugs,
     outOfScopeQuerySlug,
     selectedDoc,
-    staticHeadings,
     ontologyDerivation,
     docsBySlug,
     vaultSlugs,

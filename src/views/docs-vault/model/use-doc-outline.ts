@@ -3,26 +3,22 @@
 import { useCallback, useMemo } from 'react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { shouldShowOutlineRail } from '@/widgets/doc-reading-pane';
-import type { VaultManifest, StaticVaultHeadings } from '@/entities/docs-vault';
+import type { VaultDocDetail } from '@/entities/docs-vault';
+
+type VaultHeading = VaultDocDetail['headings'][number];
+
+const NO_HEADINGS: VaultHeading[] = [];
 
 export function useDocOutline({
-  selectedDoc,
-  staticHeadings,
+  docHeadings = NO_HEADINGS,
   setActiveHeadingSlug,
 }: {
-  selectedDoc: VaultManifest['docs'][number] | null;
-  staticHeadings: StaticVaultHeadings | null;
+  /** The open document's headings; absent while its detail is read, so no rail shows yet. */
+  docHeadings: VaultHeading[] | undefined;
   setActiveHeadingSlug: (slug: string | null) => void;
 }) {
   const reducedMotion = usePrefersReducedMotion();
   const outlineHeadings = useMemo(() => {
-    // Bundled headings come from the lazily loaded map; a local manifest has them inline.
-    const docHeadings =
-      selectedDoc && selectedDoc.headings.length > 0
-        ? selectedDoc.headings
-        : selectedDoc
-          ? (staticHeadings?.[selectedDoc.slug] ?? [])
-          : [];
     const headings = docHeadings.filter((h) => h.depth >= 2 && h.depth <= 3);
     const totals = new Map<string, number>();
     for (const heading of headings) {
@@ -38,7 +34,7 @@ export function useDocOutline({
         occurrence,
       };
     });
-  }, [selectedDoc, staticHeadings]);
+  }, [docHeadings]);
   const showOutlineRail = shouldShowOutlineRail(outlineHeadings.length);
   const handleHeadingNavigate = useCallback(
     (slug: string) => {

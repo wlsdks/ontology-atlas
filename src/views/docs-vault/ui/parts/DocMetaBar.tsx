@@ -6,6 +6,7 @@ import {
   type VaultDoc,
   isWikiPage,
 } from "@/entities/docs-vault";
+import { useDocumentDetail } from "@/features/document-detail";
 import { LOCALE_META, type LocaleMeta } from "@/i18n/locales";
 import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";
@@ -43,7 +44,8 @@ export function DocMetaBar({
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
   const locale = useLocale();
   const numberLocale = (LOCALE_META as Record<string, LocaleMeta>)[locale]?.intlTag ?? "en-US";
-  const readingMinutes = estimateReadingMinutes(doc.wordCount);
+  // Absent while the document's detail is read: the count appears once known, never as 0.
+  const wordCount = useDocumentDetail(doc)?.wordCount;
   const updated = new Date(doc.updatedAt);
   // Two clocks, one row: `reviewed_at` is meaning time (a person judged it right), `updatedAt`
   // record time (bytes last written). One date alone cannot tell an approval from a save.
@@ -150,8 +152,12 @@ export function DocMetaBar({
           </button>
         ) : null}
         <span className="ml-auto flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 gap-y-1 tabular-nums">
-          <span>{t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}</span>
-          <span>{t("readingMinutes", { minutes: readingMinutes })}</span>
+          {wordCount !== undefined ? (
+            <span data-testid="doc-word-count" className="motion-swap-in flex gap-x-2">
+              <span>{t("wordsUnit", { count: wordCount.toLocaleString(numberLocale) })}</span>
+              <span>{t("readingMinutes", { minutes: estimateReadingMinutes(wordCount) })}</span>
+            </span>
+          ) : null}
           {doc.tags.length > 0 ? (
             <span className="font-mono">
               {doc.tags.map((tag) => `#${tag}`).join(" ")}
