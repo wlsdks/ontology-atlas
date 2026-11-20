@@ -9,7 +9,7 @@ export {
   isScheduledActive,
   type ScheduledRun,
 } from './model/scheduled-run';
-export { isMeaningActive, type MeaningRunObservation } from './model/meaning-run';
+export type { MeaningRunObservation } from './model/meaning-run';
 export { workRuns } from './model/work-run-store';
 export {
   libraryRingRun,
