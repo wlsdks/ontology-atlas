@@ -260,7 +260,7 @@ export function selectionFrameTarget(
       }
       scale = fits;
     }
-    marks = lastAt(scale);
+    marks = framesAt(scale) ?? lastAt(scale);
   }
   let target = framedAt(camera, marks, scale, viewport, free, margin, taken(scale));
   const panned = target;

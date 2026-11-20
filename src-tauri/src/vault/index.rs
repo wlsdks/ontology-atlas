@@ -110,7 +110,7 @@ pub(crate) struct VaultIndexStatus {
     vaults: usize,
 }
 
-fn granted_root(root_path: &str) -> Result<PathBuf, String> {
+pub(super) fn granted_root(root_path: &str) -> Result<PathBuf, String> {
     resolve_existing_inside(root_path, "")
 }
 
@@ -179,6 +179,7 @@ fn request_pass(app: AppHandle, root: PathBuf, entry: Arc<VaultEntry>) {
             if run_pass(&root, &entry) {
                 // An open query asks again now rather than when the document list next reloads.
                 let _ = app.emit(INDEX_UPDATED_EVENT, ());
+                super::vectors::after_index_pass(&root);
             }
             let paused = || entry.paused.load(Ordering::Acquire);
             if !paused() && entry.again.load(Ordering::Acquire) {
@@ -199,8 +200,8 @@ fn request_pass(app: AppHandle, root: PathBuf, entry: Arc<VaultEntry>) {
 }
 
 /// The folder walk's Markdown files, and whether the walk stopped at its limit.
-struct Walked {
-    files: Vec<String>,
+pub(super) struct Walked {
+    pub(super) files: Vec<String>,
     truncated: bool,
 }
 
@@ -212,7 +213,7 @@ fn markdown_only(paths: impl IntoIterator<Item = String>) -> Vec<String> {
         .collect()
 }
 
-fn markdown_files(root: &Path) -> Result<Walked, String> {
+pub(super) fn markdown_files(root: &Path) -> Result<Walked, String> {
     let walked = vault_fingerprint(root.to_string_lossy().into_owned())?;
     Ok(Walked {
         truncated: walked.truncated(),
@@ -435,7 +436,8 @@ fn delete_indexes(root: Option<&Path>) -> Result<(), String> {
         *lock(&entry.searcher) = None;
         *lock(&entry.failure) = None;
     }
-    vault_index::delete(root).map_err(|error| error.to_string())
+    super::vectors::with_jobs_stopped(root, || vault_index::delete(root))
+        .map_err(|error| error.to_string())
 }
 
 /// A folder taken off the app's folder list: its index is deleted at once. The folder may be gone

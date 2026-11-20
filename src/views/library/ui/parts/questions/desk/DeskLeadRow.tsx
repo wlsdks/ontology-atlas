@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { BookText, FileText } from 'lucide-react';
 
-import { deskSentenceWindow, passageLabelText, questionTermRuns, type DeskCitation, type DeskLead } from '@/features/library';
+import { deskLeadTermRuns, deskSentenceWindow, passageLabelText, type DeskCitation, type DeskLead } from '@/features/library';
 import { truncateMiddlePath } from '@/shared/lib/concept-display/truncate-middle-path';
 import { passageLabelFor } from '@/shared/lib/library/source-passage';
 import { Chip } from '@/shared/ui';
@@ -38,9 +38,11 @@ function fileName(path: string): string {
  * covers the row); the cited files and the Jev press sit above that layer as their own controls,
  * so no button is nested in another.
  */
-export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, riseDelay, openRef, onOpenWiki, onOpenSource }: {
+export function DeskLeadRow({ lead, terms, reason, citationState, jev, jevResult, rise, riseDelay, openRef, onOpenWiki, onOpenSource }: {
   lead: DeskLead;
   terms: readonly string[];
+  /** Why the row is here, when search by meaning took part; it ends the second line. */
+  reason: string | null;
   citationState: (citation: DeskCitation) => CitationState;
   /** The Jev press, when this row can be checked here. */
   jev: { busy: boolean; onCheck: () => void } | null;
@@ -56,7 +58,7 @@ export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, 
   const whereId = useId();
   // The window is cut before the highlight runs, so a megabyte line costs the row 320 characters.
   const sentence = deskSentenceWindow(lead.kind === 'claim' ? claimSentence(lead.claim.text) : passageSentence(lead.hit.text), terms);
-  const runs = questionTermRuns(sentence, terms);
+  const runs = deskLeadTermRuns(lead, sentence, terms);
   const place = (citation: DeskCitation) => passageLabelText(passageLabelFor(citation.anchor, []), citation.anchor, t);
   const states = lead.kind === 'claim' ? lead.claim.citations.map(citationState) : [];
   const attention = lead.kind !== 'claim' ? null
@@ -67,6 +69,23 @@ export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, 
   const uncited = lead.kind === 'claim' ? lead.claim.citations.length - cited.length : 0;
   /* `md` is the second line's own label size; the cited file differs from the file name only by ink. */
   const quietPress = controlClass({ shape: 'link', size: 'md', tone: 'default', hoverInk: 'strong', className: 'relative z-10 max-w-full leading-label' });
+  /* Line two in order; the reason stays joined to its last item, so a wrap never starts a line with its dot. */
+  const where: ReactNode[] = [
+    ...(lead.kind === 'claim' ? [<span key="title" className="min-w-0 max-w-full truncate text-[color:var(--color-text-secondary)]">{lead.claim.pageTitle}</span>]
+      : [
+        <span key="file" className="min-w-0 truncate text-[color:var(--color-text-secondary)]" title={lead.hit.path}>{fileName(lead.hit.path)}</span>,
+        <span key="place" className="flex-none">{place(lead.hit)}</span>,
+      ]),
+    ...(attention ? [<span key="attention" title={attention}><StateBadge tone="warning">{t('questionDesk.reviewBadge')}</StateBadge><span className="sr-only">{attention}</span></span>] : []),
+    ...cited.map((citation) => <button key={`${citation.path}#${citation.anchor}`} type="button" className={quietPress}
+      title={citation.path} data-cited-path={citation.path} data-cited-anchor={citation.anchor}
+      onClick={() => onOpenSource(citation.path, citation.anchor)}>
+      <span className="truncate">{fileName(citation.path)} · {place(citation)}</span>
+    </button>),
+    ...(lead.kind === 'claim' && uncited > 0 ? [<button key="uncited" type="button" className={quietPress}
+      aria-label={`+${uncited} · ${lead.claim.pageTitle}`}
+      onClick={() => onOpenWiki(lead.claim.pageSlug)}>+{uncited}</button>] : []),
+  ];
 
   return <motion.li layout="position" data-testid="question-desk-lead" data-lead-kind={lead.kind}
     initial={rise ? OVERLAY_RISE : false} animate={OVERLAY_SETTLED}
@@ -87,20 +106,14 @@ export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, 
         <span className="flex w-4 flex-none items-center justify-center opacity-60">
           {lead.kind === 'claim' ? <BookText size={ICON_SIZE.sm} aria-hidden /> : <FileText size={ICON_SIZE.sm} aria-hidden />}
         </span>
-        {lead.kind === 'claim' ? <span className="min-w-0 max-w-full truncate text-[color:var(--color-text-secondary)]">{lead.claim.pageTitle}</span>
-          : <>
-            <span className="min-w-0 truncate text-[color:var(--color-text-secondary)]" title={lead.hit.path}>{fileName(lead.hit.path)}</span>
-            <span className="flex-none">{place(lead.hit)}</span>
-          </>}
-        {attention ? <span title={attention}><StateBadge tone="warning">{t('questionDesk.reviewBadge')}</StateBadge><span className="sr-only">{attention}</span></span> : null}
-        {cited.map((citation) => <button key={`${citation.path}#${citation.anchor}`} type="button" className={quietPress}
-          title={citation.path} data-cited-path={citation.path} data-cited-anchor={citation.anchor}
-          onClick={() => onOpenSource(citation.path, citation.anchor)}>
-          <span className="truncate">{fileName(citation.path)} · {place(citation)}</span>
-        </button>)}
-        {lead.kind === 'claim' && uncited > 0 ? <button type="button" className={quietPress}
-          aria-label={`+${uncited} · ${lead.claim.pageTitle}`}
-          onClick={() => onOpenWiki(lead.claim.pageSlug)}>+{uncited}</button> : null}
+        {where.slice(0, -1)}
+        {reason ? <span className="flex min-w-0 max-w-full items-center gap-x-2">
+          {where.at(-1)}
+          <span className="flex flex-none items-center gap-x-2" data-lead-reason={lead.reason}>
+            <span aria-hidden="true">·</span>
+            <span>{reason}</span>
+          </span>
+        </span> : where.at(-1)}
       </div>
       {jevResult}
     </div>

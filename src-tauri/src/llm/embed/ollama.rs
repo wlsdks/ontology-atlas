@@ -92,8 +92,11 @@ fn has_remote_marker(value: &Value, depth: u8) -> bool {
 }
 
 /// `/api/show` for the configured model. A runner that is not Ollama answers 404
-/// or 405 and has no cloud models.
-pub(super) fn refuse_remote_model(runner: &LocalRunner) -> Result<(), EmbedError> {
+/// or 405 and has no cloud models. Asked within `deadline` when one is given.
+pub(super) fn refuse_remote_model(
+    runner: &LocalRunner,
+    deadline: Option<Instant>,
+) -> Result<(), EmbedError> {
     let body = serde_json::json!({ "model": runner.model() }).to_string();
     let url = runner.endpoint.api_url("show");
     let (status, text) = runner.transport.send(&Request {
@@ -101,6 +104,7 @@ pub(super) fn refuse_remote_model(runner: &LocalRunner) -> Result<(), EmbedError
         body: Some(&body),
         timeout: runner.timeouts.probe,
         pin: runner.endpoint.pin(),
+        deadline,
     })?;
     match status {
         200..=299 => {
@@ -163,6 +167,7 @@ pub(super) fn pull(
             body: Some(&body),
             timeout: runner.timeouts.probe,
             pin: runner.endpoint.pin(),
+            deadline: None,
         },
         &runner.timeouts.pull,
         cancel,

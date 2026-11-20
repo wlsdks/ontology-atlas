@@ -21,6 +21,7 @@ import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayou
 import type { Pulse } from "../../render/edge-fireflies";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, overviewEntryArea } from "../camera/topology-camera-math";
+import { layoutSizeOf } from "../camera/use-topology-viewport-lifecycle";
 import type { UseTopologyLoopArgs } from "../loop/topology-loop-contract";
 import {
   overviewBoundsFor,
@@ -322,7 +323,8 @@ export function useTopologyWorldLifecycle({
     };
     const graphArea: GraphArea = (graph) => {
       const measured = viewportRef.current;
-      const size = measured.width > 0 && measured.height > 0 ? measured : containerRef.current?.getBoundingClientRect();
+      const container = containerRef.current;
+      const size = measured.width > 0 && measured.height > 0 ? measured : container ? layoutSizeOf(container) : null;
       if (!size || size.width <= 0 || size.height <= 0) return null;
       const pad = graph.paint.domainNamePx;
       return overviewEntryArea(size.width, size.height, overviewFitTokens(cameraTokens(tokens)), { padPx: { left: pad, right: pad, top: pad, bottom: pad } });

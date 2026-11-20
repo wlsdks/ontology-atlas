@@ -21,6 +21,7 @@ import { classifyVaultAccessError, isMissingFolderError } from '../classify-vaul
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { isPickerAbort } from '@/shared/lib/failures/picker-abort';
 import { forgetVaultIndex } from '@/shared/lib/vault-folder/tauri-vault-index';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
 import { emptyAgentActivityStatus } from '../agent-activity-status';
 import {
   isSupported,
@@ -238,7 +239,11 @@ export function useVaultChoice({
       for (const record of records) {
         await forgetRecentLocalFsHandle(record);
         // The app's search index holds the folder's words; it goes with the folder's place in the list.
-        if (record.desktopRootPath) await forgetVaultIndex(record.desktopRootPath).catch(() => undefined);
+        if (record.desktopRootPath) {
+          await forgetVaultIndex(record.desktopRootPath).catch(() => undefined);
+          // Search by meaning lives beside the index; its stored choice goes with the folder too.
+          vaultVectorSource.clear(record.desktopRootPath);
+        }
       }
       await refreshRecentVaults();
     },

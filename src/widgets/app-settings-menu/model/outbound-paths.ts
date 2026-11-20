@@ -1,3 +1,5 @@
+import { MODEL_DOWNLOAD_HOSTS } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+
 type OutboundTrigger = 'automatic' | 'press' | 'agent-use';
 
 type OutboundCarries = 'no-folder-content' | 'what-you-send' | 'agent-sends' | 'provider-owned';
@@ -50,6 +52,14 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
     trigger: 'press',
     hosts: ['your-runner-address'],
     carries: 'what-you-send',
+    recordedIn: OUTBOUND_AUDIT_LOG,
+  },
+  {
+    // The hosts the download and its redirects may reach, the list download.rs checks against.
+    id: 'vector-model',
+    trigger: 'press',
+    hosts: [...MODEL_DOWNLOAD_HOSTS],
+    carries: 'no-folder-content',
     recordedIn: OUTBOUND_AUDIT_LOG,
   },
   {

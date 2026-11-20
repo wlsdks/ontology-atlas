@@ -64,5 +64,19 @@
     "switchedBody": "{agent}가 {folder} 폴더에서 작업 중이었어요. 끝나기 전에 그 폴더에 {written, plural, =0 {쓴 파일은 없어요} other {파일 #개를 썼어요}}."
   },
   "railWaiting": "{destination}: 권한 승인 대기 중",
-  "railWaitingAndFinished": "{destination}: 권한 승인 대기 중 · 끝난 실행 {count, number}개 확인 전"
+  "railWaitingAndFinished": "{destination}: 권한 승인 대기 중 · 끝난 실행 {count, number}개 확인 전",
+  "meaning": {
+    "title": "의미 검색",
+    "files": "파일 {total, number}개 중 {done}개",
+    "modelBytes": "{total}GB 중 {done}GB",
+    "downloading": "모델 다운로드 중",
+    "converting": "모델 준비 중",
+    "minutesLeft": "약 {minutes, number}분 남음",
+    "readyLead": "파일 {total, number}개",
+    "ready": "의미로 찾을 준비가 됐어요",
+    "ask": "질문하기",
+    "openLibrary": "자료실 열기",
+    "filesPrepared": "준비된 파일"
+  },
+  "railRunningPercent": "{destination}: {percent, number}% 완료"
 }

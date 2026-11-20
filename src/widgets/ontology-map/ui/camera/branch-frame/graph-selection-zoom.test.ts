@@ -228,6 +228,58 @@ describe("a selection framed between both panels", () => {
   });
 
   it.each([
+    ["docs", 1100, 700, docsManifest], ["docs", 1280, 800, docsManifest], ["docs", 1512, 949, docsManifest], ["docs", 1920, 1080, docsManifest],
+    ["storefront", 1100, 700, storefrontManifest], ["storefront", 1280, 800, storefrontManifest], ["storefront", 1410, 840, storefrontManifest],
+  ])("pans a domain's star off the free map's edge so each member's one-line name it leaves off, on the side facing away from the domain, is one the star had no width left for, in the %s vault at %ix%i", (_, width, height, manifest) => {
+    const map = vaultMap(manifest, { width, height });
+    const titleBlocks = domainTitleBlocks({ model: map.model, tokens: paint, labels: LABELS, measureText, fontFamily: "sans-serif" });
+    const domainR = graphDiscRadiusPx("domain", 0, paint, paint.growthMax);
+    const ownOf = (id: string) => {
+      const capability = map.model.capabilityById.get(id);
+      return graphDiscRadiusPx(capability ? "capability" : "element", capability?.elementIds.length ?? 0, paint, paint.growthMax);
+    };
+    const room = map.free.maxX - map.free.minX - paint.frameMarginPx * 2;
+    const left = map.free.minX + paint.frameMarginPx;
+    const right = map.free.maxX - paint.frameMarginPx;
+    const passedOver: string[] = [];
+    let short = 0;
+    for (const domain of map.model.domains) {
+      const landed = map.frame(domain.id, map.rest) ?? map.rest;
+      const s = landed.tscale;
+      const sx = (x: number) => (x - landed.tx) * s + width / 2;
+      const home = map.at(domain.id);
+      const title = titleBlocks.get(domain.id)!;
+      const half = Math.max(domainR, title.halfWidthPx);
+      const rooms = domainStarRooms(map.model, map.layout, domain.id, paint);
+      const { capabilities, elements } = domainStarIds(map.model, domain.id);
+      let lo = sx(home.x) - half;
+      let hi = sx(home.x) + half;
+      const names: { id: string; minX: number; maxX: number }[] = [];
+      for (const id of [...capabilities, ...elements]) {
+        const open = rooms.get(id)!;
+        const r = openRadiusPx(ownOf(id), open, s, domainR, paint, open.nearestId === null ? 0 : ownOf(open.nearestId));
+        const x = sx(map.at(id).x);
+        lo = Math.min(lo, x - r);
+        hi = Math.max(hi, x + r);
+        const label = map.model.capabilityById.get(id)?.label;
+        if (!label) continue;
+        const reach = r + paint.nameGapPx + measureText(label, `${paint.capNamePx}px sans-serif`);
+        names.push(map.at(id).x < home.x ? { id, minX: x - reach, maxX: x } : { id, minX: x, maxX: x + reach });
+      }
+      const spanOf = (list: readonly { minX: number; maxX: number }[]) => Math.max(hi, ...list.map((n) => n.maxX)) - Math.min(lo, ...list.map((n) => n.minX));
+      if (hi - lo > room - 1) continue;
+      if (spanOf(names) > room) short += 1;
+      const fitting = names.filter((n) => n.minX >= left - 0.5 && n.maxX <= right + 0.5);
+      for (const n of names) {
+        if (fitting.includes(n) || spanOf([...fitting, n]) > room - 1) continue;
+        passedOver.push(`${domain.id}: ${n.id} spans ${n.minX.toFixed(0)}..${n.maxX.toFixed(0)} beside ${fitting.length} fitting, ${(room - spanOf([...fitting, n])).toFixed(0)} px to spare`);
+      }
+    }
+    if (width < 1500) expect(short, "some domain's star leaves less width than every name wants").toBeGreaterThan(0);
+    expect(passedOver, "a name off the free map that the width the star left could have seated whole").toEqual([]);
+  });
+
+  it.each([
     ["docs", 1280, 800, docsManifest], ["docs", 1410, 840, docsManifest], ["storefront", 1280, 800, storefrontManifest],
   ])("never zooms out for a member pressed in the star a domain opened, in the %s vault at %ix%i", (_, width, height, manifest) => {
     const map = vaultMap(manifest, { width, height });
@@ -269,6 +321,18 @@ describe("a selection framed between both panels", () => {
       const again = frame(id, landed!, start.tscale);
       expect(again, `${id} landed at ${JSON.stringify(landed)} from ${start.tscale.toFixed(3)}, then ${JSON.stringify(again)}`).toBeNull();
     }
+  });
+
+  it.each([[1410, 840], [1920, 1080]])("lands a domain pressed from deep inside its star where framing again moves nothing, at %ix%i", (width, height) => {
+    const map = vaultMap(docsManifest, { width, height });
+    const moved: string[] = [];
+    for (const domain of map.model.domains) {
+      const deep = { tx: map.at(domain.id).x, ty: map.at(domain.id).y, tscale: map.rest.tscale * 4 };
+      const landed = map.frame(domain.id, deep) ?? deep;
+      const again = map.frame(domain.id, landed);
+      if (again) moved.push(`${domain.id}: ${Math.hypot((again.tx - landed.tx) * again.tscale, (again.ty - landed.ty) * again.tscale).toFixed(1)} px`);
+    }
+    expect(moved).toEqual([]);
   });
 });
 

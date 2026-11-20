@@ -3,15 +3,15 @@
 // address check resolved and pinned; what comes back is numbers, checked before
 // anyone stores them. Every send is preceded by a synced audit line.
 
-#![cfg_attr(
+mod audit;
+#[cfg_attr(
     not(test),
     expect(
         dead_code,
-        reason = "the app commands that call this are wired separately"
+        reason = "the store's size, the worker's id and idle time serve Settings and tests"
     )
 )]
-
-mod audit;
+pub(crate) mod builtin;
 mod loopback;
 mod ollama;
 mod response;
@@ -22,7 +22,7 @@ use loopback::{Endpoint, Resolve};
 use sha2::{Digest, Sha256};
 use std::fmt;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use transport::{CurlTransport, Request, StreamLimits, Transport};
@@ -53,6 +53,8 @@ pub(crate) struct Timeouts {
     /// Outlasts a query's 10 s hold, so a closing line is not lost to it.
     pub line_wait: Duration,
     pub query_line_wait: Duration,
+    /// A question's one limit, from the call: the model check, the audit wait and the request.
+    pub question: Duration,
     pub pull: StreamLimits,
 }
 
@@ -62,6 +64,7 @@ pub(crate) const TIMEOUTS: Timeouts = Timeouts {
     probe: "5",
     line_wait: Duration::from_secs(15),
     query_line_wait: Duration::from_secs(2),
+    question: Duration::from_secs(10),
     pull: StreamLimits {
         max_bytes: 32 * 1024 * 1024,
         idle: Duration::from_secs(120),
@@ -94,6 +97,32 @@ pub(crate) enum EmbedError {
     ResponseInvalid(&'static str),
     Cancelled,
     PullFailed(String),
+    /// A download hop named a scheme, host or port outside the allowed set.
+    HostRefused(String),
+    SizeMismatch(String),
+    HashMismatch(String),
+    /// The built-in model is not prepared on this computer.
+    ModelNotReady,
+    /// Another preparation of the built-in model is running.
+    ModelBusy,
+    ModelLoad(String),
+    Convert(String),
+    Inference(String),
+    /// Reading or writing the model directory failed.
+    Store(String),
+    /// The volume lacks the space the whole preparation needs; nothing was kept.
+    DiskSpace {
+        needed: u64,
+        free: u64,
+    },
+    /// The download host could not be reached directly; no proxy is used.
+    NoDirectConnection,
+    /// The model worker could not be started or did not introduce itself.
+    WorkerStart(String),
+    /// The model worker ended or closed its output before answering.
+    WorkerExited,
+    /// The model worker refused a request with a code this side does not know.
+    WorkerFailed(String),
 }
 
 impl EmbedError {
@@ -119,24 +148,51 @@ impl EmbedError {
             Self::ResponseInvalid(_) => "embed-response-invalid",
             Self::Cancelled => "embed-cancelled",
             Self::PullFailed(_) => "embed-pull-failed",
+            Self::HostRefused(_) => "embed-download-host-refused",
+            Self::SizeMismatch(_) => "embed-download-size-mismatch",
+            Self::HashMismatch(_) => "embed-download-hash-mismatch",
+            Self::ModelNotReady => "embed-model-not-ready",
+            Self::ModelBusy => "embed-model-busy",
+            Self::ModelLoad(_) => "embed-model-load-failed",
+            Self::Convert(_) => "embed-model-convert-failed",
+            Self::Inference(_) => "embed-inference-failed",
+            Self::Store(_) => "embed-model-store-failed",
+            Self::DiskSpace { .. } => "embed-model-disk-space",
+            Self::NoDirectConnection => "embed-download-no-direct-connection",
+            Self::WorkerStart(_) => "embed-worker-start-failed",
+            Self::WorkerExited => "embed-worker-exited",
+            Self::WorkerFailed(_) => "embed-worker-failed",
+        }
+    }
+
+    pub(crate) fn detail(&self) -> String {
+        match self {
+            Self::Endpoint(detail)
+            | Self::WorkerStart(detail)
+            | Self::WorkerFailed(detail)
+            | Self::AuditBlocked(detail)
+            | Self::Request(detail)
+            | Self::ModelNotAllowed(detail)
+            | Self::PullFailed(detail)
+            | Self::HostRefused(detail)
+            | Self::SizeMismatch(detail)
+            | Self::HashMismatch(detail)
+            | Self::ModelLoad(detail)
+            | Self::Convert(detail)
+            | Self::Inference(detail)
+            | Self::Store(detail) => detail.clone(),
+            Self::PassageTooLong(index) => index.to_string(),
+            Self::Redirected(status) | Self::Http(status) => status.to_string(),
+            Self::ResponseInvalid(reason) => (*reason).to_string(),
+            Self::DiskSpace { needed, free } => format!("needed={needed} free={free}"),
+            _ => String::new(),
         }
     }
 }
 
 impl fmt::Display for EmbedError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let detail = match self {
-            Self::Endpoint(detail)
-            | Self::AuditBlocked(detail)
-            | Self::Request(detail)
-            | Self::ModelNotAllowed(detail)
-            | Self::PullFailed(detail) => detail.clone(),
-            Self::PassageTooLong(index) => index.to_string(),
-            Self::Redirected(status) | Self::Http(status) => status.to_string(),
-            Self::ResponseInvalid(reason) => (*reason).to_string(),
-            _ => String::new(),
-        };
-        f.write_str(&coded(self.code(), detail))
+        f.write_str(&coded(self.code(), self.detail()))
     }
 }
 
@@ -163,6 +219,28 @@ pub(crate) struct LocalRunner {
 /// Builds from different folders still send one batch at a time; a query does
 /// not wait behind them.
 static BATCH_IN_FLIGHT: Mutex<()> = Mutex::new(());
+
+/// How often a batch waiting behind another looks at its stop.
+const BATCH_TURN_POLL: Duration = Duration::from_millis(20);
+
+/// The one batch in flight, or `Cancelled` once `stop` is set while waiting for it.
+fn batch_turn(stop: Option<&AtomicBool>) -> Result<std::sync::MutexGuard<'static, ()>, EmbedError> {
+    let Some(stop) = stop else {
+        return Ok(BATCH_IN_FLIGHT
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()));
+    };
+    loop {
+        if stop.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
+        match BATCH_IN_FLIGHT.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(std::sync::TryLockError::Poisoned(poisoned)) => return Ok(poisoned.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => std::thread::sleep(BATCH_TURN_POLL),
+        }
+    }
+}
 
 impl LocalRunner {
     pub(crate) fn connect(base_url: &str, model: &str) -> Result<Self, EmbedError> {
@@ -194,6 +272,10 @@ impl LocalRunner {
     }
 
     /// For Matryoshka models; every vector must then have exactly this many values.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "no store asks a runner for fewer dimensions yet")
+    )]
     pub(crate) fn with_dimensions(mut self, dimensions: usize) -> Self {
         self.dimensions = Some(dimensions);
         self
@@ -213,7 +295,7 @@ impl LocalRunner {
         vault_dir: &Path,
         plan: BuildPlan,
     ) -> Result<BuildRun<'_>, EmbedError> {
-        self.ensure_local_model()?;
+        self.ensure_local_model(None)?;
         let run = audit::write_start(vault_dir, self, plan)?;
         Ok(BuildRun {
             runner: self,
@@ -228,23 +310,34 @@ impl LocalRunner {
         })
     }
 
-    /// One `embed-query` line, then one request with the 10 s timeout.
+    /// One `embed-query` line, then one request. The model check, the wait for the audit log and
+    /// the request share one limit, `Timeouts::question` from the call, and end at it.
     pub(crate) fn embed_query(
         &self,
         vault_dir: &Path,
         question: &str,
     ) -> Result<Vec<f32>, EmbedError> {
+        let deadline = Instant::now() + self.timeouts.question;
         check_passages(&[question])?;
-        self.ensure_local_model()?;
+        self.ensure_local_model(Some(deadline))?;
         let body = self.request_body(&[question]);
-        let reservation = audit::reserve_query(vault_dir, self, question, &body)?;
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() {
+            return Err(EmbedError::TimedOut);
+        }
+        let wait = self.timeouts.query_line_wait.min(left);
+        let reservation = audit::reserve_query(vault_dir, self, question, &body, wait)?;
         let started = Instant::now();
-        let sent = self.send_embeddings(&body, 1, self.timeouts.query);
+        let sent = self.send_embeddings(&body, 1, self.timeouts.query, None, Some(deadline));
         audit::finish_query(reservation, &sent, started)?;
         let mut vectors = sent?.vectors;
         vectors.pop().ok_or(EmbedError::ResponseInvalid("count"))
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "the setup dialog's runner check is not wired yet")
+    )]
     pub(crate) fn version(&self) -> Result<String, EmbedError> {
         ollama::version(self)
     }
@@ -256,6 +349,10 @@ impl LocalRunner {
 
     /// Asks the runner to download an allow-listed model. It sends no folder
     /// content, and a `model-download` line opens and closes it.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "a runner model pull is not wired yet")
+    )]
     pub(crate) fn pull(
         &self,
         vault_dir: &Path,
@@ -266,11 +363,46 @@ impl LocalRunner {
         ollama::pull(self, vault_dir, model, cancel, on_progress)
     }
 
+    /// The width of the model's vectors as `/api/show` states it (a
+    /// `<family>.embedding_length` field), so a store can be made before any passage
+    /// is sent; `None` when the runner does not say.
+    pub(crate) fn reported_dimensions(&self) -> Result<Option<usize>, EmbedError> {
+        let body = serde_json::json!({ "model": self.model }).to_string();
+        let url = self.endpoint.api_url("show");
+        let (status, text) = self.transport.send(&Request {
+            url: &url,
+            body: Some(&body),
+            timeout: self.timeouts.probe,
+            pin: self.endpoint.pin(),
+            deadline: None,
+        })?;
+        match status {
+            200..=299 => {}
+            300..=399 => return Err(EmbedError::Redirected(status)),
+            404 => return Err(EmbedError::ModelMissing),
+            405 => return Ok(None),
+            _ => return Err(EmbedError::Http(status)),
+        }
+        let shown: serde_json::Value =
+            serde_json::from_str(&text).map_err(|_| EmbedError::ResponseInvalid("not-json"))?;
+        let width = shown
+            .get("model_info")
+            .and_then(serde_json::Value::as_object)
+            .and_then(|info| {
+                info.iter()
+                    .find(|(key, _)| key.ends_with(".embedding_length"))
+                    .and_then(|(_, value)| value.as_u64())
+            })
+            .and_then(|width| usize::try_from(width).ok())
+            .filter(|width| (1..=MAX_DIMENSIONS).contains(width));
+        Ok(width)
+    }
+
     /// Ollama forwards a cloud model's input to its own servers, so a model the
     /// runner marks as remote is refused before any passage is sent.
-    fn ensure_local_model(&self) -> Result<(), EmbedError> {
+    fn ensure_local_model(&self, deadline: Option<Instant>) -> Result<(), EmbedError> {
         if self.checked_local.get().is_none() {
-            ollama::refuse_remote_model(self)?;
+            ollama::refuse_remote_model(self, deadline)?;
             let _ = self.checked_local.set(());
         }
         Ok(())
@@ -291,14 +423,21 @@ impl LocalRunner {
         body: &str,
         count: usize,
         timeout: &'static str,
+        cancel: Option<&AtomicBool>,
+        deadline: Option<Instant>,
     ) -> Result<Sent, EmbedError> {
         let url = self.endpoint.openai_url("embeddings");
-        let (status, text) = self.transport.send(&Request {
+        let request = Request {
             url: &url,
             body: Some(body),
             timeout,
             pin: self.endpoint.pin(),
-        })?;
+            deadline,
+        };
+        let (status, text) = match cancel {
+            Some(cancel) => self.transport.send_until(&request, cancel)?,
+            None => self.transport.send(&request)?,
+        };
         match status {
             200..=299 => {}
             300..=399 => return Err(EmbedError::Redirected(status)),
@@ -320,6 +459,7 @@ impl LocalRunner {
             body: None,
             timeout: self.timeouts.probe,
             pin: self.endpoint.pin(),
+            deadline: None,
         })?;
         match status {
             200..=299 => Ok(text),
@@ -351,6 +491,16 @@ pub(crate) struct BuildRun<'r> {
 impl BuildRun<'_> {
     /// Exactly one finite vector per passage, in order, or an error and nothing.
     pub(crate) fn embed_batch(&mut self, passages: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError> {
+        self.embed_batch_in(passages, None)
+    }
+
+    /// `embed_batch` that kills the request and answers `Cancelled` once `stop` is set, whether
+    /// it waits behind another folder's batch or for the runner's answer.
+    fn embed_batch_in(
+        &mut self,
+        passages: &[&str],
+        stop: Option<&AtomicBool>,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
         let chars = check_passages(passages)?;
         if passages.len() > MAX_BATCH_PASSAGES
             || passages.iter().map(|p| p.len()).sum::<usize>() > MAX_BATCH_BYTES
@@ -363,19 +513,22 @@ impl BuildRun<'_> {
             return Err(EmbedError::OverPlan);
         }
         let body = self.runner.request_body(passages);
-        let _one_in_flight = BATCH_IN_FLIGHT
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _one_in_flight = batch_turn(stop)?;
         // Counted before the answer: a timed-out batch may still have been read.
         self.passages_sent += passages.len();
         self.chars_sent += chars;
         self.sent_hash.update(body.as_bytes());
-        let sent =
-            self.runner
-                .send_embeddings(&body, passages.len(), self.runner.timeouts.batch)?;
+        let sent = self.runner.send_embeddings(
+            &body,
+            passages.len(),
+            self.runner.timeouts.batch,
+            stop,
+            None,
+        )?;
         Ok(sent.vectors)
     }
 
+    #[cfg_attr(not(test), expect(dead_code, reason = "tests read what a run sent"))]
     pub(crate) fn passages_sent(&self) -> usize {
         self.passages_sent
     }
@@ -415,8 +568,9 @@ impl Drop for BuildRun<'_> {
     }
 }
 
-/// What the store asks of any source of vectors: today the loopback runner, later
-/// an in-process model. Each source keeps its own audit duty.
+/// What the store asks of any source of vectors: the loopback runner or the
+/// built-in model. Each source keeps its own audit duty. Every call blocks, so
+/// none belongs on the UI thread.
 pub(crate) trait Embedder {
     fn model(&self) -> &str;
     fn start_build<'a>(
@@ -429,6 +583,18 @@ pub(crate) trait Embedder {
 
 pub(crate) trait EmbedSession {
     fn embed_batch(&mut self, passages: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError>;
+    /// `embed_batch` that returns `Cancelled` once `stop` is set; a source that cannot
+    /// stop inside a batch checks it only before starting.
+    fn embed_batch_until(
+        &mut self,
+        passages: &[&str],
+        stop: &AtomicBool,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
+        if stop.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(EmbedError::Cancelled);
+        }
+        self.embed_batch(passages)
+    }
     fn finish(self: Box<Self>, ended: RunEnd) -> Result<(), EmbedError>;
 }
 
@@ -455,12 +621,38 @@ impl EmbedSession for BuildRun<'_> {
         BuildRun::embed_batch(self, passages)
     }
 
+    fn embed_batch_until(
+        &mut self,
+        passages: &[&str],
+        stop: &AtomicBool,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
+        if stop.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
+        self.embed_batch_in(passages, Some(stop))
+    }
+
     fn finish(self: Box<Self>, ended: RunEnd) -> Result<(), EmbedError> {
         BuildRun::finish(*self, ended)
     }
 }
 
+/// The embedding models a runner at `base_url` lists, bge-m3 first. The address
+/// passes the loopback rule before anything is asked, so nothing reaches another
+/// computer.
+pub(crate) fn runner_embedding_models(base_url: &str) -> Result<Vec<String>, EmbedError> {
+    let listing_model = PULLABLE_MODELS[0];
+    LocalRunner::connect(base_url, listing_model)?.embedding_models()
+}
+
 /// Splits passages into batches within both caps, in order.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the store splits its own batches; tests check the caps"
+    )
+)]
 pub(crate) fn plan_batches(passages: &[&str]) -> Vec<std::ops::Range<usize>> {
     let mut batches = Vec::new();
     let mut start = 0;
@@ -494,6 +686,15 @@ fn check_passages(passages: &[&str]) -> Result<usize, EmbedError> {
         chars += count;
     }
     Ok(chars)
+}
+
+/// What `LocalRunner::connect` refuses before anything is sent: an address that is not this
+/// computer (a name such as `localhost` is resolved, as connecting does), or a model name a runner
+/// cannot hold or that names a remote model.
+pub(crate) fn check_runner(base_url: &str, model: &str) -> Result<(), EmbedError> {
+    loopback::local_endpoint(base_url, &loopback::system_resolve)?;
+    validate_model(model)?;
+    Ok(())
 }
 
 fn validate_model(model: &str) -> Result<&str, EmbedError> {

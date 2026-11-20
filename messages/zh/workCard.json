@@ -64,5 +64,19 @@
     "switchedBody": "{agent} 当时在 {folder} 中工作。结束前在那里{written, plural, =0 {没有写入文件} other {写入了 # 个文件}}。"
   },
   "railWaiting": "{destination}：等待你的许可",
-  "railWaitingAndFinished": "{destination}：等待你的许可 · {count, number} 个已完成的运行待查看"
+  "railWaitingAndFinished": "{destination}：等待你的许可 · {count, number} 个已完成的运行待查看",
+  "meaning": {
+    "title": "语义搜索",
+    "files": "{done} / {total, number} 个文件",
+    "modelBytes": "{done} / {total} GB",
+    "downloading": "正在下载模型",
+    "converting": "正在准备模型",
+    "minutesLeft": "约剩 {minutes, number} 分钟",
+    "readyLead": "{total, number} 个文件",
+    "ready": "已可按语义搜索",
+    "ask": "提问",
+    "openLibrary": "打开资料库",
+    "filesPrepared": "已准备的文件"
+  },
+  "railRunningPercent": "{destination}：已完成 {percent, number}%"
 }

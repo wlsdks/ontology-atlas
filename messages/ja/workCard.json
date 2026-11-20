@@ -64,5 +64,19 @@
     "switchedBody": "{agent}は{folder}で作業中でした。終わるまでにそこへ{written, plural, =0 {ファイルは書いていません} other {#件のファイルを書きました}}。"
   },
   "railWaiting": "{destination}: 許可を待っています",
-  "railWaitingAndFinished": "{destination}: 許可を待っています · 未確認の完了した実行{count, number}件"
+  "railWaitingAndFinished": "{destination}: 許可を待っています · 未確認の完了した実行{count, number}件",
+  "meaning": {
+    "title": "意味検索",
+    "files": "ファイル{total, number}件中{done}件",
+    "modelBytes": "{total} GB中{done} GB",
+    "downloading": "モデルをダウンロード中",
+    "converting": "モデルを準備中",
+    "minutesLeft": "残り約{minutes, number}分",
+    "readyLead": "ファイル{total, number}件",
+    "ready": "意味で検索できます",
+    "ask": "質問する",
+    "openLibrary": "資料室を開く",
+    "filesPrepared": "準備済みのファイル"
+  },
+  "railRunningPercent": "{destination}: {percent, number}%完了"
 }

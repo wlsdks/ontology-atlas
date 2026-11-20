@@ -563,6 +563,56 @@ fn a_huge_limit_returns_at_most_sixty_four_hits() {
 }
 
 #[test]
+fn prefixes_choose_the_candidates_so_nearer_passages_elsewhere_never_crowd_them_out() {
+    let vault = TempVault::new("vectors-prefixes");
+    for i in 0..1_500 {
+        write(
+            &vault,
+            &format!("elsewhere/note-{i:04}.md"),
+            &format!("# Elsewhere {i}\nA note kept elsewhere, number {i}.\n"),
+        );
+    }
+    for i in 0..10 {
+        write(
+            &vault,
+            &format!("desk/page-{i}.md"),
+            &format!("# Desk {i}\nA page on the desk, number {i}.\n"),
+        );
+    }
+    // A prefix is bytes, not a folder: this one is under neither and matches nothing.
+    write(&vault, "desktop.md", "# Desktop\nNot on the desk.\n");
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    // Ten desk pages among 1,511 passages: the nearest 64 hold too few of them for a filter applied
+    // after the limit to return eight.
+    let question = fake("# Elsewhere 7\nA note kept elsewhere, number 7.");
+    let everywhere = searcher.nearest_within(&question, 64, &[]).unwrap();
+    assert_eq!(everywhere, searcher.nearest(&question, 64).unwrap());
+    let desk_among_nearest = everywhere
+        .hits
+        .iter()
+        .filter(|hit| hit.path.starts_with("desk/"))
+        .count();
+    assert!(desk_among_nearest < 8, "{desk_among_nearest}");
+
+    let desk = searcher
+        .nearest_within(&question, 8, &["desk/".to_string()])
+        .unwrap();
+    assert_eq!(desk.hits.len(), 8, "{:?}", desk.hits);
+    assert!(desk.hits.iter().all(|hit| hit.path.starts_with("desk/")));
+    let both = searcher
+        .nearest_within(&question, 64, &["desk/".to_string(), "desktop".to_string()])
+        .unwrap();
+    assert_eq!(both.hits.len(), 11);
+    assert!(searcher
+        .nearest_within(&question, 8, &["nowhere/".to_string()])
+        .unwrap()
+        .hits
+        .is_empty());
+}
+
+#[test]
 fn a_file_contributes_at_most_five_hundred_passages() {
     let vault = TempVault::new("vectors-cap");
     let many: String = (0..620)
@@ -629,6 +679,10 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     assert_eq!(progress.passages_done(), asked.len() as u64);
     assert_eq!(asked.len(), vectors::MAX_BATCH_PASSAGES);
     let first_batch = asked.clone();
+    assert!(
+        !vectors::completed(&vault.root, &model()).unwrap(),
+        "a stopped first build has not finished the store"
+    );
 
     let resumed = prepare_all(&vault, &mut asked);
     assert_eq!(resumed.passages as usize, total - first_batch.len());
@@ -636,6 +690,26 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     assert_eq!((asked.len(), distinct.len()), (total, total));
     let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
     assert_eq!((status.files, status.files_ready), (30, 30));
+    assert!(vectors::completed(&vault.root, &model()).unwrap());
+
+    // A later edit stopped half way leaves the store finished once: the next pass is an update.
+    write(
+        &vault,
+        "wiki/added.md",
+        &long("A page written after the store was finished."),
+    );
+    let progress = PrepareProgress::default();
+    progress.request_stop();
+    let stopped = vectors::prepare(plan(&vault), &progress, |texts: &[&str]| {
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    });
+    assert!(matches!(stopped, Err(PrepareError::Stopped)), "{stopped:?}");
+    assert!(vectors::completed(&vault.root, &model()).unwrap());
+    let other = Model {
+        name: "another-model".into(),
+        dimensions: DIMS,
+    };
+    assert!(!vectors::completed(&vault.root, &other).unwrap());
 }
 
 #[test]
