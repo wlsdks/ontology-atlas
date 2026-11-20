@@ -85,6 +85,8 @@ export function LibraryDocumentColumn({
   const { indexSegment, indexCollapsed } = indexColumn;
   const { wikiProblems, wikiPageTitle, wikiProblemDoors, wikiProblemFix } = templateProblems;
   const pageSlug = selectedWikiDoc?.slug ?? null;
+  /* One object per title lookup, so the memoised problem list is not drawn again on a scroll. */
+  const problemContext = useMemo(() => ({ pageTitle: wikiPageTitle }), [wikiPageTitle]);
   const citationPopoverRef = useRef<WikiCitationPopoverHandle>(null);
   /* Stable, so opening a popover hands the press over without rendering the page body again. */
   const onCitationPress = useCallback((citation: ReaderCitation, button: HTMLButtonElement) => {
@@ -208,7 +210,7 @@ export function LibraryDocumentColumn({
             file={`${selectedWikiDoc.slug}.md`}
             doors={wikiProblemDoors}
             fix={wikiProblemFix}
-            context={{ pageTitle: wikiPageTitle }}
+            context={problemContext}
             t={t}
           />
         )}
@@ -298,7 +300,7 @@ export function LibraryDocumentColumn({
               file={`${selectedWikiDoc.slug}.md`}
               collapsed
               doors={wikiProblemDoors}
-              context={{ pageTitle: wikiPageTitle }}
+              context={problemContext}
               t={t}
             />
             <RetainedAnswerFooter
