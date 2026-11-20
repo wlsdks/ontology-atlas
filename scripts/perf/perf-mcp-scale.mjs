@@ -2,6 +2,7 @@
 // Measures MCP read calls on a generated vault of thousands to tens of thousands of files.
 // Usage: pnpm perf:mcp:scale -- --files=50000 --flow=a --flow=b [--server=<path>] [--dir=<path>] [--check] [--tool=<name>]
 //   flow a: every page is a node. flow b: a few thousand nodes over many plain documents.
+//   flow library: half the files are sources, half wiki pages citing them (`gen-scale-vault.mjs`).
 //   --server: an entry script (run with node) or a compiled binary; default the source server.
 //   --dir: where generated vaults are kept and reused; default the OS temp folder.
 //   --check: at 50,000 files and both flows unless given, gates the compiled binary the app ships (--server, or the one `pnpm mcp:build-binary`
@@ -12,8 +13,11 @@
 //     never gated: on macOS it keeps counting freed pages the allocator holds for reuse, and
 //     elsewhere the footprint is not read, so memory is not gated there. The source server is
 //     measured after it and printed, not gated.
-//   --tool: measure one tool with no arguments instead of the read table: two calls, each with
-//     its response size in bytes and its wall time, for a call whose cost is the reply itself.
+//   --tool: measure one tool with no arguments instead of the read table, after one read call
+//     has loaded the vault: a first call, a repeat with nothing changed, and a call after one wiki
+//     page is edited when the vault has `wiki/page-7.md`, each with its response size, wall time and
+//     CPU. A source server (a script) also reports the heap: its peak during the call, from the
+//     collector's own records, and what is left after a full collection.
 // CPU is the server process's user+system time across one call, read from the OS, so it
 // includes everything the call cost and nothing the harness did.
 
@@ -43,7 +47,7 @@ const maxCpuMs = Number(flag('max-cpu-ms', '600'));
 const maxFootprintMb = Number(flag('max-footprint-mb', '185'));
 const maxPeakFootprintMb = Number(flag('max-peak-footprint-mb', '470'));
 const TOTAL_CALLS = 20;
-const SHAPES = { a: 'all', b: 'key' };
+const SHAPES = { a: 'all', b: 'key', library: 'library' };
 const tool = flag('tool', null);
 
 if (!Number.isInteger(files) || files < 100) usage('--files must be an integer of at least 100');
@@ -51,10 +55,12 @@ if (tool !== null && check) usage('--tool measures one call and gates nothing; d
 if (check && isScript(server)) usage('--check gates the compiled binary the app ships; pass --server=<binary> or omit --server');
 if (flows.length === 0) flows.push(...(check ? ['a', 'b'] : ['a']));
 for (const flow of flows) if (!SHAPES[flow]) usage(`unknown --flow=${flow}`);
+// The read table names concepts a library vault does not have.
+if (tool === null && flows.includes('library')) usage('--flow=library measures one --tool; the read table needs flow a or b');
 
 function usage(message) {
   console.error(`[perf-mcp-scale] ${message}`);
-  console.error('usage: pnpm perf:mcp:scale -- --files=<n> --flow=a|b [--flow=b] [--server=<path>] [--dir=<path>] [--check] [--tool=<name>]');
+  console.error('usage: pnpm perf:mcp:scale -- --files=<n> --flow=a|b|library [--flow=b] [--server=<path>] [--dir=<path>] [--check] [--tool=<name>]');
   process.exit(2);
 }
 
@@ -72,7 +78,8 @@ function ensureVault(flow) {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   const started = performance.now();
-  const written = generateScaleVault(dir, files, SHAPES[flow]);
+  // The library shape writes as many pages as sources, so half the count keeps --files the file count.
+  const written = generateScaleVault(dir, SHAPES[flow] === 'library' ? Math.floor(files / 2) : files, SHAPES[flow]);
   writeFileSync(marker, JSON.stringify(written));
   console.log(`# generated flow ${flow}: ${written.files} files, ${written.nodes} nodes, ${(written.bytes / 1048576).toFixed(0)} MB in ${((performance.now() - started) / 1000).toFixed(1)} s`);
   return dir;
@@ -120,6 +127,11 @@ function startServer(serverPath, vault) {
     env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: vault },
     stdio: ['pipe', 'pipe', 'ignore'],
   });
+  return { child, ...attachRpc(child) };
+}
+
+/** JSON-RPC over the child's stdin and stdout; each message carries the bytes its line took. */
+function attachRpc(child) {
   const waiters = new Map();
   // Chunks are kept apart until a newline arrives: appending each to one string and
   // searching it from the start is quadratic in a reply's size, which turned a
@@ -149,7 +161,7 @@ function startServer(serverPath, vault) {
     waiters.set(id, resolveCall);
     child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
   });
-  return { child, rpc };
+  return { rpc };
 }
 
 const READS = [
@@ -176,20 +188,89 @@ async function openFlow(serverPath, flow) {
   return { vault, child, rpc };
 }
 
-/** Two calls of one tool: the reply's size and the wall time the caller waited, then CPU. */
+/**
+ * Loaded into a source server with `--import`: on SIGUSR2 it writes to stderr the peak heap
+ * since the last signal, the larger of the heap now and the heap before each collection
+ * (`v8.GCProfiler`), then collects fully and writes what is left. A call runs synchronously
+ * between two signals, so the peak is the call's.
+ */
+const HEAP_PROBE = `
+import v8 from 'node:v8';
+import { writeSync } from 'node:fs';
+let profiler = new v8.GCProfiler();
+profiler.start();
+process.on('SIGUSR2', () => {
+  const before = profiler.stop().statistics.map((entry) => entry.beforeGC.heapStatistics.usedHeapSize);
+  const peak = Math.max(process.memoryUsage().heapUsed, ...before);
+  globalThis.gc();
+  writeSync(2, '\\nperf-heap ' + JSON.stringify({ peak, after: process.memoryUsage().heapUsed }) + '\\n');
+  profiler = new v8.GCProfiler();
+  profiler.start();
+});`;
+
+/** A source server that answers `heap()` with `{ peakMb, afterGcMb }`; null when the heap cannot be read. */
+function startHeapReadServer(serverPath, vault) {
+  if (!isScript(serverPath) || process.platform === 'win32') return { ...startServer(serverPath, vault), heap: null };
+  const child = spawn(process.execPath, ['--expose-gc', `--import=data:text/javascript,${encodeURIComponent(HEAP_PROBE)}`, serverPath], {
+    env: { ...process.env, OATLAS_VAULT: vault, OATLAS_REPO_ROOT: vault },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  const { rpc } = attachRpc(child);
+  let stderr = '';
+  let waiting = null;
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk;
+    const match = /perf-heap (\{.*\})\n/.exec(stderr);
+    if (!match) return;
+    stderr = stderr.slice(match.index + match[0].length);
+    const { peak, after } = JSON.parse(match[1]);
+    waiting?.({ peakMb: Math.round(peak / 1048576), afterGcMb: Math.round(after / 1048576) });
+    waiting = null;
+  });
+  const heap = () => new Promise((resolveHeap) => {
+    waiting = resolveHeap;
+    child.kill('SIGUSR2');
+  });
+  return { child, rpc, heap };
+}
+
+/**
+ * One tool after a read has loaded the vault: a first call, a repeat with nothing changed,
+ * and, when the vault has `wiki/page-7.md`, a call after that page is edited. Each with the
+ * reply's size, the wall time the caller waited, CPU and, for a source server, the heap.
+ */
 async function measureTool(serverPath, flow, name) {
-  const { child, rpc } = await openFlow(serverPath, flow);
+  const vault = ensureVault(flow);
+  const age = Date.now() - statSync(join(vault, '.atlas-scale.json')).mtimeMs;
+  if (age < 2500) await sleep(2500 - age);
+  const { child, rpc, heap } = startHeapReadServer(serverPath, vault);
   const calls = [];
+  const measure = async (label, method, params) => {
+    const before = cpuMs(child.pid);
+    const started = performance.now();
+    const response = await rpc(method, params);
+    const wallMs = Math.round(performance.now() - started);
+    if (response.error || response.result?.isError) {
+      throw new Error(`${label} failed: ${JSON.stringify(response.error ?? response.result).slice(0, 300)}`);
+    }
+    calls.push({ label, bytes: response.bytes, wallMs, cpuMs: cpuMs(child.pid) - before, heap: heap ? await heap() : null });
+  };
+  const edited = join(vault, 'wiki/page-7.md');
   try {
-    for (let index = 0; index < 2; index += 1) {
-      const before = cpuMs(child.pid);
-      const started = performance.now();
-      const response = await rpc('tools/call', { name, arguments: {} });
-      const wallMs = Math.round(performance.now() - started);
-      if (response.error || response.result?.isError) {
-        throw new Error(`${name} failed: ${JSON.stringify(response.error ?? response.result).slice(0, 300)}`);
+    await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'perf-mcp-scale', version: '0' } });
+    child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
+    await measure('vault load (list_kinds)', 'tools/call', { name: 'list_kinds', arguments: {} });
+    await measure(`${name} first`, 'tools/call', { name, arguments: {} });
+    await measure(`${name} repeat`, 'tools/call', { name, arguments: {} });
+    if (existsSync(edited)) {
+      const original = readFileSync(edited, 'utf8');
+      appendFileSync(edited, '\n- perf touch\n');
+      try {
+        await measure(`${name} after 1-page edit`, 'tools/call', { name, arguments: {} });
+      } finally {
+        writeFileSync(edited, original);
       }
-      calls.push({ bytes: response.bytes, wallMs, cpuMs: cpuMs(child.pid) - before });
     }
   } finally {
     child.kill();
@@ -253,9 +334,10 @@ if (tool !== null) {
   console.log(`# perf-mcp-scale — ${tool}, ${files} files, server ${server.replace(`${ROOT}/`, '')}`);
   for (const flow of flows) {
     const { calls } = await measureTool(server, flow, tool);
-    calls.forEach((row, index) => {
-      console.log(`flow ${flow} call ${index + 1}: ${row.bytes} bytes (${(row.bytes / 1024).toFixed(1)} KiB), ${row.wallMs} ms wall, ${row.cpuMs} ms CPU`);
-    });
+    for (const row of calls) {
+      const heap = row.heap ? `, heap peak ${row.heap.peakMb} MB, ${row.heap.afterGcMb} MB after GC` : '';
+      console.log(`flow ${flow} ${row.label}: ${row.bytes} bytes (${(row.bytes / 1024).toFixed(1)} KiB), ${row.wallMs} ms wall, ${row.cpuMs} ms CPU${heap}`);
+    }
   }
   process.exit(0);
 }

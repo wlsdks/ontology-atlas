@@ -3,7 +3,12 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { WIKI_FOLDER_CASES, WIKI_PAGE_CASES, WIKI_PAGE_KNOWN_SOURCES } from '../../fixtures/wiki-page-cases.mjs';
+import {
+  WIKI_FOLDER_CASES,
+  WIKI_PAGE_CASES,
+  WIKI_PAGE_KNOWN_SOURCES,
+  generatedWikiFolder,
+} from '../../fixtures/wiki-page-cases.mjs';
 import {
   WIKI_CITATION_PATTERN as PATTERN_TS,
   WIKI_FIELDS as FIELDS_TS,
@@ -11,7 +16,10 @@ import {
   WIKI_REQUIRED_FIELDS as REQUIRED_TS,
   WIKI_SECTION_ORDER as SECTIONS_TS,
   validateWikiFolder as validateFolderTs,
+  validateWikiFolderFromFacts as fromFactsTs,
   validateWikiPage as validateTs,
+  wikiPageCodes as codesTs,
+  wikiPageFacts as factsTs,
 } from '@/shared/lib/library/wiki-page-schema';
 import {
   WIKI_CITATION_PATTERN as PATTERN_MCP,
@@ -20,7 +28,10 @@ import {
   WIKI_REQUIRED_FIELDS as REQUIRED_MCP,
   WIKI_SECTION_ORDER as SECTIONS_MCP,
   validateWikiFolder as validateFolderMcp,
+  validateWikiFolderFromFacts as fromFactsMcp,
   validateWikiPage as validateMcp,
+  wikiPageCodes as codesMcp,
+  wikiPageFacts as factsMcp,
 } from '../../../mcp/src/library/wiki-schema.mjs';
 
 /**
@@ -180,5 +191,60 @@ describe('the wiki folder contract — both implementations agree', () => {
         JSON.stringify(validateFolderTs(testCase.pages)),
       );
     }
+  });
+});
+
+/**
+ * Page facts stand in for page text once a page has been read, so judging from facts must answer
+ * exactly what judging from text answers: the folder half byte for byte, a page's codes as a set.
+ */
+describe('wiki page facts — judging from facts equals judging from text', () => {
+  const generated = generatedWikiFolder();
+  const folders = [...WIKI_FOLDER_CASES.map((testCase) => testCase.pages), generated.pages];
+  const IMPLEMENTATIONS = {
+    'src/shared/lib (TS)': { facts: factsTs, fromFacts: fromFactsTs, folder: validateFolderTs, page: validateTs, codes: codesTs },
+    'mcp/src/library/wiki-schema.mjs': { facts: factsMcp, fromFacts: fromFactsMcp, folder: validateFolderMcp, page: validateMcp, codes: codesMcp },
+  } as const;
+  const distinct = (codes: readonly string[]) => [...new Set(codes)].sort();
+
+  it('the generated folder exercises every folder code and most page codes', () => {
+    const codes = new Set(validateFolderMcp(generated.pages).flatMap((entry) => entry.problems.map((p) => p.code)));
+    for (const page of generated.pages) {
+      for (const p of validateMcp(page.raw, { knownSources: generated.knownSources, nodes: generated.nodes }).problems) codes.add(p.code);
+    }
+    expect([...codes].sort()).toEqual([
+      'bad-citation', 'bad-describes', 'bad-truncation-record', 'citation-target-missing', 'dangling-wikilink',
+      'describes-target-missing', 'kind-present', 'missing-field:compiled_at', 'missing-field:created_by',
+      'missing-field:source_hash', 'missing-field:sources', 'missing-field:status', 'missing-field:summary',
+      'missing-field:title', 'orphan-page', 'section-order', 'shared-source-unlinked', 'uncited-fact',
+    ]);
+  });
+
+  for (const [name, implementation] of Object.entries(IMPLEMENTATIONS)) {
+    describe(name, () => {
+      it('the folder half from facts is byte-identical to the folder half from text on every folder', () => {
+        for (const pages of folders) {
+          const fromFacts = implementation.fromFacts(pages.map((page) => ({ path: page.path, facts: implementation.facts(page.raw) })));
+          expect(JSON.stringify(fromFacts)).toBe(JSON.stringify(implementation.folder(pages)));
+        }
+      });
+
+      it('a page\'s codes from facts are the codes its text reports, with and without the folder', () => {
+        const pages = [...WIKI_PAGE_CASES.map((testCase) => testCase.input), ...generated.pages.map((page) => page.raw)];
+        const optionSets = [{}, { knownSources: new Set(generated.knownSources), nodes: generated.nodes }];
+        for (const raw of pages) {
+          const facts = implementation.facts(raw);
+          for (const options of optionSets) {
+            const codes = implementation.page(raw, options).problems.map((p) => p.code);
+            expect(distinct(implementation.codes(facts, options))).toEqual(distinct(codes));
+          }
+        }
+      });
+    });
+  }
+
+  it('both implementations derive the same facts from every page', () => {
+    const pages = [...WIKI_PAGE_CASES.map((testCase) => testCase.input), ...folders.flat().map((page) => page.raw)];
+    for (const raw of pages) expect(JSON.stringify(factsMcp(raw))).toBe(JSON.stringify(factsTs(raw)));
   });
 });

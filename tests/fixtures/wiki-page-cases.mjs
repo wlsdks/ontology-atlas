@@ -632,3 +632,71 @@ export const WIKI_FOLDER_CASES = [
     };
   })(),
 ];
+
+/**
+ * A seeded folder of `count` pages mixing every shape the page and folder halves judge: missing
+ * fields, `kind:`, `describes:` as a list and as a lone value, truncation records, sections out of
+ * order, wrapped and uncited facts, malformed citations, fenced text, links bare, aliased, anchored,
+ * with `.md`, to themselves, twice, outside `wiki/` and to missing pages, and sources shared as
+ * primaries (each primary is shared by about twenty pages, past the ten partners a page names).
+ * Equal inputs give equal folders, so a failure reproduces.
+ */
+export function generatedWikiFolder(count = 600, seed = 20261120) {
+  let state = seed >>> 0;
+  const random = () => (state = (state * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const chance = (p) => random() < p;
+  const pick = (list) => list[Math.floor(random() * list.length)];
+  const pool = Array.from({ length: 30 }, (_, index) => `sources/doc-${index}.${['pdf', 'md', 'csv'][index % 3]}`);
+  const knownSources = pool.filter((_, index) => index % 7 !== 3);
+  const anchor = () => pick(['p1', 'p12', 's2', 's2r4', 'r9', 'l3', 'h:scope-note']);
+  const linkTo = (self) => {
+    const other = `page-${Math.floor(random() * (count + 40))}`;
+    return pick([
+      `[[wiki/${other}]]`,
+      `[[${other}]]`,
+      `[[${other}|the other page]]`,
+      `[[wiki/${other}#Facts]]`,
+      `[[${other}.md]]`,
+      `[[wiki/${self}]]`,
+      '[[capabilities/checkout]]',
+      '[[domains/commerce]]',
+    ]);
+  };
+  const pages = [];
+  for (let index = 0; index < count; index += 1) {
+    const self = `page-${index}`;
+    const sources = [...new Set(Array.from({ length: chance(0.1) ? 0 : 1 + Math.floor(random() * 3) }, () => pick(pool)))];
+    if (sources.length > 1 && chance(0.1)) sources.push(sources[0]);
+    const cite = () => (chance(0.85) && sources.length > 0 ? `[[src:${pick(sources)}#${anchor()}]]` : `[[src:${pick(pool)}#${anchor()}]]`);
+    const fm = ['---'];
+    if (chance(0.95)) fm.push(`title: Page ${index}`);
+    if (chance(0.95)) fm.push('created_by: agent:claude');
+    if (chance(0.95)) fm.push('compiled_at: 2026-09-06T10:00:00Z');
+    if (chance(0.05)) fm.push('kind: document');
+    if (chance(0.05) && sources.length > 0) fm.push(`sources: ${sources[0]}`);
+    else if (chance(0.97)) fm.push(sources.length > 0 ? `sources:\n${sources.map((source) => `  - ${source}`).join('\n')}` : 'sources: []');
+    if (chance(0.95)) fm.push('source_hash: {}');
+    if (chance(0.1)) fm.push(`sources_truncated:\n  - ${chance(0.7) && sources.length > 0 ? sources[0] : pick(pool)}`);
+    if (chance(0.05)) fm.push('sources_truncated: yes');
+    if (chance(0.3)) fm.push(`describes:\n${Array.from({ length: 1 + Math.floor(random() * 2) }, () => `  - ${pick(WIKI_PAGE_NODES).slug}`).join('\n')}`);
+    else if (chance(0.03)) fm.push('describes: capabilities/login');
+    if (chance(0.95)) fm.push('status: draft');
+    if (chance(0.95)) fm.push(`summary: About page ${index}.`);
+    fm.push('---');
+    const sections = {
+      Summary: [`Page ${index} reads ${linkTo(self)} and ${linkTo(self)}.`],
+      Facts: Array.from({ length: Math.floor(random() * 4) }, () => (chance(0.15)
+        ? `- A wrapped claim that goes on\n  past its first line. ${chance(0.6) ? cite() : ''}`
+        : `- A claim. ${chance(0.8) ? cite() : ''} ${chance(0.3) ? linkTo(self) : ''}`)),
+      Decisions: chance(0.3) ? [`- A decision. ${cite()}`] : [],
+      'Open questions': chance(0.2) ? [`- Malformed: [[src:${pick(pool)}]] and [[src:plan.pdf#p2]].`] : [],
+      'Not in sources': chance(0.2) ? ['```', `[[src:not-a-source]] ${linkTo(self)}`, '```'] : [],
+    };
+    let order = Object.keys(sections);
+    if (chance(0.05)) order = [order[1], order[0], ...order.slice(2)];
+    if (chance(0.05)) order = order.filter((title) => title !== 'Decisions');
+    const body = order.flatMap((title) => [`## ${title}`, '', ...sections[title], '']);
+    pages.push({ path: `wiki/${self}.md`, raw: `${fm.join('\n')}\n\n${body.join('\n')}` });
+  }
+  return { pages, knownSources, nodes: WIKI_PAGE_NODES };
+}

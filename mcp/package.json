@@ -82,6 +82,7 @@
     "src/schema.mjs",
     "src/validate.mjs",
     "src/library/wiki-schema.mjs",
+    "src/library/wiki-judgement.mjs",
     "src/library/wiki-report.mjs",
     "src/vault/atomic-writes.mjs",
     "src/vault/backlink-rewrite.mjs",
