@@ -29,45 +29,85 @@ pub(crate) fn read_vault_text_file(
 const VAULT_TEXT_BATCH_MAX: usize = 256;
 const VAULT_TEXT_BATCH_FILE_MAX_BYTES: u64 = 4 * 1024 * 1024;
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct TauriTextFileRead {
+/// One requested path and what reading it gave: the text and its mtime in milliseconds, or why not.
+#[derive(Debug, PartialEq)]
+struct VaultTextRead {
     relative_path: String,
-    text: Option<String>,
-    last_modified: Option<u128>,
-    error: Option<String>,
+    outcome: Result<(String, u128), String>,
 }
 
+/// Answers in the framing `vault-text-frames.ts` decodes, so a batch is never one JSON string.
 #[tauri::command(async)]
 pub(crate) fn read_vault_text_files(
     root_path: String,
     relative_paths: Vec<String>,
-) -> Result<Vec<TauriTextFileRead>, String> {
+) -> Result<tauri::ipc::Response, String> {
+    let reads = read_vault_text_batch(&root_path, relative_paths)?;
+    encode_text_reads(&reads).map(tauri::ipc::Response::new)
+}
+
+fn read_vault_text_batch(
+    root_path: &str,
+    relative_paths: Vec<String>,
+) -> Result<Vec<VaultTextRead>, String> {
     if relative_paths.len() > VAULT_TEXT_BATCH_MAX {
         return Err(format!(
             "at most {VAULT_TEXT_BATCH_MAX} files are read in one batch"
         ));
     }
-    let root = canonical_root(&root_path)?;
+    let root = canonical_root(root_path)?;
     Ok(relative_paths
         .into_iter()
-        .map(
-            |relative_path| match read_vault_markdown(&root, &relative_path) {
-                Ok((text, last_modified)) => TauriTextFileRead {
-                    relative_path,
-                    text: Some(text),
-                    last_modified: Some(last_modified),
-                    error: None,
-                },
-                Err(error) => TauriTextFileRead {
-                    relative_path,
-                    text: None,
-                    last_modified: None,
-                    error: Some(error),
-                },
-            },
-        )
+        .map(|relative_path| VaultTextRead {
+            outcome: read_vault_markdown(&root, &relative_path),
+            relative_path,
+        })
         .collect())
+}
+
+const FRAME_TEXT: u8 = 0;
+const FRAME_ERROR: u8 = 1;
+const FRAME_LENGTH_BYTES: usize = 4;
+const FRAME_MTIME_BYTES: usize = 8;
+
+/// Little-endian: a `u32` count, then per read a kind byte and a `u32`-length-prefixed UTF-8
+/// path; a text read adds an `f64` mtime and the text, an error read adds the reason.
+fn encode_text_reads(reads: &[VaultTextRead]) -> Result<Vec<u8>, String> {
+    let capacity = reads.iter().fold(FRAME_LENGTH_BYTES, |total, read| {
+        let outcome_bytes = match &read.outcome {
+            Ok((text, _)) => FRAME_MTIME_BYTES + FRAME_LENGTH_BYTES + text.len(),
+            Err(error) => FRAME_LENGTH_BYTES + error.len(),
+        };
+        total.saturating_add(1 + FRAME_LENGTH_BYTES + read.relative_path.len() + outcome_bytes)
+    });
+    let mut frames = Vec::with_capacity(capacity);
+    frames.extend_from_slice(&frame_length(reads.len())?.to_le_bytes());
+    for read in reads {
+        match &read.outcome {
+            Ok((text, last_modified)) => {
+                frames.push(FRAME_TEXT);
+                push_framed(&mut frames, read.relative_path.as_bytes())?;
+                frames.extend_from_slice(&(*last_modified as f64).to_le_bytes());
+                push_framed(&mut frames, text.as_bytes())?;
+            }
+            Err(error) => {
+                frames.push(FRAME_ERROR);
+                push_framed(&mut frames, read.relative_path.as_bytes())?;
+                push_framed(&mut frames, error.as_bytes())?;
+            }
+        }
+    }
+    Ok(frames)
+}
+
+fn frame_length(length: usize) -> Result<u32, String> {
+    u32::try_from(length).map_err(|_| "a framed field is longer than 4 GiB".to_string())
+}
+
+fn push_framed(frames: &mut Vec<u8>, bytes: &[u8]) -> Result<(), String> {
+    frames.extend_from_slice(&frame_length(bytes.len())?.to_le_bytes());
+    frames.extend_from_slice(bytes);
+    Ok(())
 }
 
 fn is_visible_markdown(relative: &Path) -> bool {
@@ -216,7 +256,180 @@ mod tests {
 
 #[cfg(test)]
 mod vault_text_batch_tests {
-    use super::{read_vault_text_files, VAULT_TEXT_BATCH_FILE_MAX_BYTES, VAULT_TEXT_BATCH_MAX};
+    use super::{
+        encode_text_reads, VaultTextRead, FRAME_ERROR, FRAME_TEXT, VAULT_TEXT_BATCH_FILE_MAX_BYTES,
+        VAULT_TEXT_BATCH_MAX,
+    };
+    use tauri::ipc::{InvokeResponseBody, IpcResponse};
+
+    /// The shape `vault-text-frames.ts` decodes into, which is what the JSON answer used to be.
+    #[derive(Debug, PartialEq, serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct DecodedRead {
+        relative_path: String,
+        text: Option<String>,
+        last_modified: Option<f64>,
+        error: Option<String>,
+    }
+
+    struct FrameCursor<'a> {
+        rest: &'a [u8],
+    }
+
+    impl<'a> FrameCursor<'a> {
+        fn take(&mut self, length: usize) -> Result<&'a [u8], String> {
+            let (head, rest) = self
+                .rest
+                .split_at_checked(length)
+                .ok_or_else(|| format!("frames end {length} bytes short"))?;
+            self.rest = rest;
+            Ok(head)
+        }
+
+        fn array<const N: usize>(&mut self) -> Result<[u8; N], String> {
+            self.take(N)?
+                .try_into()
+                .map_err(|_| "frames are misaligned".to_string())
+        }
+
+        fn length(&mut self) -> Result<usize, String> {
+            usize::try_from(u32::from_le_bytes(self.array()?)).map_err(|err| err.to_string())
+        }
+
+        fn text(&mut self) -> Result<String, String> {
+            let length = self.length()?;
+            String::from_utf8(self.take(length)?.to_vec()).map_err(|err| err.to_string())
+        }
+    }
+
+    fn decode_text_reads(frames: &[u8]) -> Result<Vec<DecodedRead>, String> {
+        let mut cursor = FrameCursor { rest: frames };
+        let count = cursor.length()?;
+        let mut reads = Vec::new();
+        for _ in 0..count {
+            let [kind] = cursor.array()?;
+            let relative_path = cursor.text()?;
+            reads.push(match kind {
+                FRAME_TEXT => {
+                    let last_modified = f64::from_le_bytes(cursor.array()?);
+                    DecodedRead {
+                        relative_path,
+                        last_modified: Some(last_modified),
+                        text: Some(cursor.text()?),
+                        error: None,
+                    }
+                }
+                FRAME_ERROR => DecodedRead {
+                    relative_path,
+                    text: None,
+                    last_modified: None,
+                    error: Some(cursor.text()?),
+                },
+                other => return Err(format!("unknown frame kind {other}")),
+            });
+        }
+        if !cursor.rest.is_empty() {
+            return Err(format!("{} bytes follow the last frame", cursor.rest.len()));
+        }
+        Ok(reads)
+    }
+
+    fn read_vault_text_files(
+        root_path: String,
+        relative_paths: Vec<String>,
+    ) -> Result<Vec<DecodedRead>, String> {
+        let response = super::read_vault_text_files(root_path, relative_paths)?;
+        match response.body().map_err(|err| err.to_string())? {
+            InvokeResponseBody::Raw(frames) => decode_text_reads(&frames),
+            InvokeResponseBody::Json(json) => Err(format!("the batch answered JSON: {json}")),
+        }
+    }
+
+    fn shared_fixture() -> (Vec<DecodedRead>, Vec<u8>) {
+        #[derive(serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Fixture {
+            reads: Vec<DecodedRead>,
+            frames_hex: String,
+        }
+        let fixture: Fixture = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/vault-text-frames.json"
+        ))
+        .unwrap();
+        let frames = (0..fixture.frames_hex.len())
+            .step_by(2)
+            .map(|at| u8::from_str_radix(&fixture.frames_hex[at..at + 2], 16).unwrap())
+            .collect();
+        (fixture.reads, frames)
+    }
+
+    fn as_vault_text_read(read: &DecodedRead) -> VaultTextRead {
+        VaultTextRead {
+            relative_path: read.relative_path.clone(),
+            outcome: match (&read.text, read.last_modified, &read.error) {
+                (Some(text), Some(last_modified), None) => {
+                    Ok((text.clone(), last_modified as u128))
+                }
+                (None, None, Some(error)) => Err(error.clone()),
+                _ => panic!("{} is neither a text nor an error", read.relative_path),
+            },
+        }
+    }
+
+    #[test]
+    fn the_rust_framing_is_the_bytes_the_typescript_decoder_is_pinned_to() {
+        let (reads, frames) = shared_fixture();
+        let sources: Vec<VaultTextRead> = reads.iter().map(as_vault_text_read).collect();
+        assert_eq!(encode_text_reads(&sources).unwrap(), frames);
+        assert_eq!(decode_text_reads(&frames).unwrap(), reads);
+    }
+
+    #[test]
+    fn frames_round_trip_large_multibyte_empty_and_error_reads() {
+        let large = "가나다 frontmatter\n".repeat(200_000);
+        let sources = vec![
+            VaultTextRead {
+                relative_path: "문서/큰.md".into(),
+                outcome: Ok((large.clone(), 1_763_600_000_123)),
+            },
+            VaultTextRead {
+                relative_path: "empty.md".into(),
+                outcome: Ok((String::new(), 0)),
+            },
+            VaultTextRead {
+                relative_path: "gone.md".into(),
+                outcome: Err("No such file or directory (os error 2)".into()),
+            },
+        ];
+        let decoded = decode_text_reads(&encode_text_reads(&sources).unwrap()).unwrap();
+        assert_eq!(decoded.len(), 3);
+        assert_eq!(decoded[0].text.as_deref(), Some(large.as_str()));
+        assert_eq!(decoded[0].last_modified, Some(1_763_600_000_123.0));
+        assert_eq!(decoded[1].text.as_deref(), Some(""));
+        assert_eq!(
+            decoded[2].error.as_deref(),
+            Some("No such file or directory (os error 2)")
+        );
+        assert!(decoded[2].text.is_none() && decoded[2].last_modified.is_none());
+    }
+
+    #[test]
+    fn a_truncated_or_padded_buffer_is_an_error_not_a_panic() {
+        let (_, frames) = shared_fixture();
+        for end in 0..frames.len() {
+            assert!(
+                decode_text_reads(&frames[..end]).is_err(),
+                "{end} of {} bytes decoded",
+                frames.len()
+            );
+        }
+        let mut padded = frames.clone();
+        padded.push(0);
+        assert!(decode_text_reads(&padded).is_err());
+        let mut huge_count = frames;
+        huge_count[..4].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert!(decode_text_reads(&huge_count).is_err());
+    }
 
     fn vault(name: &str) -> std::path::PathBuf {
         let base =
