@@ -32,5 +32,37 @@
     "failedBody": "The run says why. The schedule runs again at its next time."
   },
   "runsPagesRead": "Pages read",
-  "runsDocumentsChecked": "Documents checked"
+  "runsDocumentsChecked": "Documents checked",
+  "turn": {
+    "figures": "{written, plural, =0 {No file written yet} one {<count>#</count> file written} other {<count>#</count> files written}} · {elapsed}",
+    "writingFile": "Writing <name>{file}</name>",
+    "answering": "Writing the answer",
+    "waitingTitle": "Waiting for permission · {elapsed}",
+    "ask": {
+      "edit": "{agent} wants to change <name>{target}</name>",
+      "delete": "{agent} wants to delete <name>{target}</name>",
+      "execute": "{agent} wants to run <name>{target}</name>",
+      "read": "{agent} wants to read <name>{target}</name>",
+      "ontology": "{agent} proposes: <name>{target}</name>",
+      "unknown": "{agent} asks: <name>{target}</name>"
+    },
+    "writtenTitle": "{count, plural, one {# file written} other {# files written}}",
+    "wroteOne": "{agent} wrote {file}.",
+    "wroteMany": "{agent} wrote {file} and {more, plural, one {# more file} other {# more files}}.",
+    "openPage": "Open the page",
+    "answeredTitle": "The answer is ready",
+    "answeredBody": "{agent} wrote no file. The conversation has its answer.",
+    "beyond": "{agent} also ran a tool or wrote outside this folder. Atlas cannot see what that changed.",
+    "stoppingTitle": "Stopping {agent}",
+    "stoppingBody": "No further write is allowed. If {agent} has not ended in 5 seconds, Atlas ends it.",
+    "stoppedTitle": "{count, plural, =0 {Stopped} one {Stopped after # file} other {Stopped after # files}}",
+    "stoppedBody": "The files already written stay as they are. Nothing else was changed.",
+    "partial": "{file} may be incomplete: the write was cut off. Open it before you rely on it.",
+    "endedTitle": "{agent} ended early",
+    "endedBody": "{written, plural, =0 {No file was written} one {# file was written} other {# files were written}} before it ended. The conversation shows how far it got.",
+    "switchedTitle": "Ended when you switched folders",
+    "switchedBody": "{agent} was working in {folder}. {written, plural, =0 {No file was written} one {# file was written} other {# files were written}} there before it ended."
+  },
+  "railWaiting": "{destination}: waiting for your permission",
+  "railWaitingAndFinished": "{destination}: waiting for your permission · {count, plural, one {# finished run to read} other {# finished runs to read}}"
 }

@@ -115,7 +115,7 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   },
 }));
 
-import { snapshotPermissionRequest, useAcpSession } from './use-acp-session';
+import { snapshotPermissionRequest, TURN_STOP_GRACE_MS, useAcpSession } from './use-acp-session';
 import { unavailableTaskBaseline } from './task-baseline';
 
 describe('queued permission identity', () => {
@@ -1969,4 +1969,106 @@ it('keeps a stopped investigation idle when its source check returns late',async
  await act(async()=>{release(true);expect(await sending).toBe(false);});
  expect(hook.result.current.status).toBe('idle');
  expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+});
+
+describe('Stop holds when the agent ignores it', () => {
+  const OPTIONS = [
+    { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+    { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+  ];
+  const request = (id: number, path: string, kind = 'edit') => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `call-${id}`, title: `Edit ${path}`, kind, rawInput: { file_path: path } } },
+  });
+  const answerOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+
+  async function waitingTurn(autoDecide: Parameters<typeof useAcpSession>[0]['autoDecide']) {
+    const hook = renderHook(() => useAcpSession({
+      runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], rememberChoices: true, autoDecide,
+    }));
+    const starting = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    act(() => hook.result.current.setAutoApprove(true));
+    bridge.holdPrompt = true;
+    void hook.result.current.send('Write the wiki pages.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    await act(async () => { bridge.listener?.(request(501, '/outside/notes.md')); });
+    await waitFor(() => expect(hook.result.current.pending?.request.requestId).toBe(501));
+    return hook;
+  }
+
+  it('closes the waiting request, refuses every later one before any standing choice, and ends the process after the grace', async () => {
+    const autoDecide = vi.fn((asked: { filePath: string | null }) => (asked.filePath?.startsWith('/vault/wiki/') ? 'wiki/a.md' : null));
+    const { result } = await waitingTurn(autoDecide);
+    autoDecide.mockClear();
+    bridge.permissionVerdict = 'allow-inside-vault';
+
+    const timers = vi.spyOn(window, 'setTimeout');
+    act(() => result.current.stopTurn());
+    await waitFor(() => expect(answerOf(501)).toBe('reject'));
+    expect(result.current.turnStopping).toBe(true);
+    expect(bridge.sent.some((message) => message.method === 'session/cancel')).toBe(true);
+
+    await act(async () => { bridge.listener?.(request(502, '/vault/wiki/a.md')); });
+    await act(async () => { bridge.listener?.(request(503, '/vault/wiki/b.md', 'read')); });
+    await waitFor(() => expect([answerOf(502), answerOf(503)]).toEqual(['reject', 'reject']));
+    expect(autoDecide).not.toHaveBeenCalled();
+    expect(result.current.pending).toBeNull();
+    expect(result.current.events.some((event) => event.kind === 'notice' && /^auto-/.test(event.text))).toBe(false);
+
+    const grace = timers.mock.calls.filter(([, delay]) => delay === TURN_STOP_GRACE_MS);
+    expect(grace).toHaveLength(1);
+    expect(bridge.stopped).toEqual([]);
+    await act(async () => { (grace[0]![0] as () => void)(); });
+    expect(bridge.stopped).toEqual(['acp-1']);
+    expect(result.current.turnStopping).toBe(false);
+    timers.mockRestore();
+  });
+
+  it('leaves the process alone when the agent ends the turn within the grace', async () => {
+    const { result } = await waitingTurn(() => null);
+    const timers = vi.spyOn(window, 'setTimeout');
+    act(() => result.current.stopTurn());
+    await waitFor(() => expect(answerOf(501)).toBe('reject'));
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'cancelled' } }));
+    });
+    await waitFor(() => expect(result.current.turnStopping).toBe(false));
+    const grace = timers.mock.calls.filter(([, delay]) => delay === TURN_STOP_GRACE_MS);
+    await act(async () => { (grace[0]![0] as () => void)(); });
+    expect(bridge.stopped).toEqual([]);
+    timers.mockRestore();
+    await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('a screen decision read at the request', () => {
+  it('waits for an asynchronous decision and answers with what it says then', async () => {
+    let decide: ((note: string | null) => void) | null = null;
+    const { result } = renderHook(() => useAcpSession({
+      runtimeId: 'claude-acp', vaultRoot: '/vault',
+      autoDecide: () => new Promise<string | null>((resolve) => { decide = resolve; }),
+    }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    void result.current.send('Write the wiki pages.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({
+        jsonrpc: '2.0', id: 601, method: 'session/request_permission',
+        params: { sessionId: 's-1', options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+          toolCall: { toolCallId: 'call-601', title: 'Write a.md', kind: 'edit', rawInput: { file_path: '/vault/wiki/a.md' } } },
+      }));
+    });
+    await waitFor(() => expect(decide).not.toBeNull());
+    expect(bridge.sent.some((message) => message.id === 601)).toBe(false);
+    await act(async () => { decide?.(null); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(601));
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
 });

@@ -13,6 +13,7 @@ import { RowButton, Surface } from '@/shared/ui';
 
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useTranscriptFollow } from '../model/use-transcript-follow';
+import { turnRequestOf } from '../model/turn-request';
 import { splitAppRequest } from './request-parts';
 import { TEXT_ARRIVING_MS, turnActivity } from './turn-activity';
 import { ComposerInput } from './chat-panel/ComposerInput';
@@ -26,7 +27,7 @@ import { TranscriptOffers } from './chat-panel/TranscriptOffers';
 import { TranscriptPane } from './chat-panel/TranscriptPane';
 import { TranscriptRows } from './chat-panel/TranscriptRows';
 import { TurnWorkStage, type TurnWork } from './chat-panel/TurnWorkStage';
-import { ConnectStoppedState, EmptyState, StartingState } from './chat-panel/TranscriptStates';
+import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/TranscriptStates';
 import type { AcpChatPanelProps, HeldRequest } from './chat-panel/types';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/use-composer-menus';
 import { useComposerSizing } from './chat-panel/use-composer-sizing';
@@ -88,6 +89,8 @@ export function AcpChatPanelBody({
   onTurnStarted,
   onTurnStopChange,
   turnReadOnly,
+  turnOutlivesScreen,
+  folderBusy = null,
   onTurnWorkChange,
   captureTaskBaseline,
   meaningTransitionContext,
@@ -121,6 +124,8 @@ export function AcpChatPanelBody({
     lastTurnUpdateAt,
     events,
     activeTurnReadOnly,
+    activeTurnOutlivesScreen,
+    turnStopping,
     slashCommands,
     error,
     diagnostics,
@@ -137,7 +142,7 @@ export function AcpChatPanelBody({
     start,
     send,
     sendInvestigation,
-    cancel,
+    stopTurn: stopSessionTurn,
     stop,
     switchSession,
   } = useAcpSession({
@@ -152,6 +157,7 @@ export function AcpChatPanelBody({
     captureTaskBaseline,
     autoDecide,
     turnReadOnly,
+    turnOutlivesScreen,
     systemPromptAppendix,
     rememberChoices: true,
   });
@@ -440,13 +446,16 @@ export function AcpChatPanelBody({
     busy,
     held: status === 'thinking' || pending !== null,
     readOnly: activeTurnReadOnly,
+    outlives: activeTurnOutlivesScreen,
+    stopping: turnStopping,
+    request: pending ? turnRequestOf(pending.request, vaultRoot) : null,
     activity: () => lastUserEventIndex < 0 ? null
       : turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving),
     asking: awaitingAnswer,
     stop: () => {
       setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
       dropPending();
-      cancel();
+      stopSessionTurn();
     },
     onTurnWorkChange, onTurnStopChange, onBusyChange,
   });
@@ -519,7 +528,8 @@ export function AcpChatPanelBody({
           requestComposerFocus();
         }}
       >
-        {connecting ? (
+        {folderBusy ? <FolderBusyState t={t} onStop={folderBusy.stop} /> : null}
+        {connecting && !folderBusy ? (
           <StartingState
             t={t}
             download={download}
@@ -542,7 +552,7 @@ export function AcpChatPanelBody({
             }}
           />
         ) : null}
-        {events.length === 0 && status !== 'starting' && !connectStopped ? (
+        {events.length === 0 && status !== 'starting' && !connectStopped && !folderBusy ? (
           <EmptyState
             t={t}
             seatedRequestWaiting={seatedRequestWaiting}
@@ -632,7 +642,7 @@ export function AcpChatPanelBody({
       ) : null}
       <div
         data-testid="acp-chat-composer"
-        inert={presentationVisible ? true : undefined}
+        inert={presentationVisible || folderBusy ? true : undefined}
         className="@container/composer relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]"
       >
         {composerFocused && draft.length === 0 ? (

@@ -148,12 +148,14 @@ export interface UseAcpSessionOptions {
    * card, `{ reject: reason }` to refuse, or null to ask. An unattended round has nobody to
    * ask, so what its scope disallows is refused. Ontology writes never come here.
    */
-  autoDecide?: (request: AcpPermissionRequest) => string | { reject: string } | null;
+  autoDecide?: (request: AcpPermissionRequest) => AcpAutoDecision | Promise<AcpAutoDecision>;
   /**
    * Asked once as a turn starts. A read-only turn keeps that for its whole life, whichever screen
    * holds the conversation later, and none of its writes is ever answered without a person.
    */
   turnReadOnly?: (turn: AcpTurnStart) => boolean;
+  /** Asked once as a turn starts: whether the turn keeps running once its screen is gone. */
+  turnOutlivesScreen?: (turn: AcpTurnStart) => boolean;
   onToolSettled?: (toolCallId: string, status: string) => void;
   /**
    * A paragraph the consumer appends after the vault handoff, for rules that hold only on its
@@ -170,6 +172,16 @@ export interface UseAcpSessionOptions {
 }
 
 const PUT_AWAY_IDLE_STOP_MS = 10 * 60 * 1000;
+
+/** How long a stopped turn may take to end before Atlas ends the agent's process. */
+export const TURN_STOP_GRACE_MS = 5_000;
+
+/** A note allows without a card, `{ reject }` refuses, null asks the person. */
+export type AcpAutoDecision = string | { reject: string } | null;
+
+function isPromise<Value>(value: Value | Promise<Value>): value is Promise<Value> {
+  return typeof (value as Promise<Value> | null)?.then === 'function';
+}
 
 export interface AcpTurnStart {
   runtimeId: string;
@@ -376,6 +388,7 @@ export function useAcpSession({
   captureTaskBaseline,
   autoDecide,
   turnReadOnly,
+  turnOutlivesScreen,
   onToolSettled,
   systemPromptAppendix = null,
   resumeLatest = false,
@@ -432,9 +445,16 @@ export function useAcpSession({
     /** A source-bound investigation the app composed; it asks for no edits, so every write shows its card. */
     investigation: boolean;
     readOnly: boolean;
+    outlivesScreen: boolean;
+    /** Stop was pressed: every later request of the turn is refused and nothing answers for it. */
+    stopping: boolean;
   } | null>(null);
   const [activeTurnReadOnly, setActiveTurnReadOnly] = useState(false);
+  const [activeTurnOutlivesScreen, setActiveTurnOutlivesScreen] = useState(false);
+  const [turnStopping, setTurnStopping] = useState(false);
+  const turnStopTimerRef = useRef<number | null>(null);
   const turnReadOnlyRef = useRef<UseAcpSessionOptions['turnReadOnly']>(undefined);
+  const turnOutlivesScreenRef = useRef<UseAcpSessionOptions['turnOutlivesScreen']>(undefined);
   const [error, setError] = useState<string | null>(null);
   /** Commands the agent found in this folder — putting skills in the vault makes them appear here. */
   const [slashCommands, setSlashCommands] = useState<AcpSlashCommand[]>([]);
@@ -592,6 +612,12 @@ export function useAcpSession({
     if (!active) return;
     activeTurnRef.current = null;
     setActiveTurnReadOnly(false);
+    setActiveTurnOutlivesScreen(false);
+    setTurnStopping(false);
+    if (turnStopTimerRef.current !== null) {
+      window.clearTimeout(turnStopTimerRef.current);
+      turnStopTimerRef.current = null;
+    }
     if (!active.observer) return;
     const currentEvents = eventsRef.current;
     const index = currentEvents.findIndex((event) => event.kind === 'user' && event.id === active.start.userEventId);
@@ -801,23 +827,31 @@ export function useAcpSession({
         approvedReceiptsRef.current.set(receipt.id, { toolCallId: request.toolCallId, receipt });
       }
     };
-    const present = () => new Promise<string | null>((resolve) => {
-      // A question that waited in the queue may outlive its session: answered-by-nobody beats
-      // presenting a card for a conversation that is already stopped or dead.
-      if (generationRef.current !== generation || statusRef.current === 'exited') {
-        resolve(null);
-        return;
-      }
+    // A question that waited in the queue may outlive its session, and one after Stop is refused:
+    // answered-by-nobody beats presenting a card for a conversation that is stopping or dead.
+    const closed = () => generationRef.current !== generation || statusRef.current === 'exited'
+      || activeTurnRef.current?.stopping === true;
+    const present = async (): Promise<string | null> => {
+      if (closed()) return null;
       if (request.reviewKind === 'ontology-write' && (
         !origin.turn
         || request.requestId == null
         || request.sessionId !== origin.turn.sessionId
         || origin.turn.vaultRoot !== vaultRoot
       )) {
-        resolve(null);
-        return;
+        return null;
       }
-      const decided = autoDecideRef.current?.(request) ?? null;
+      let decided: AcpAutoDecision = null;
+      try {
+        const decision = autoDecideRef.current?.(request) ?? null;
+        decided = isPromise(decision) ? await decision : decision;
+      } catch {
+        decided = null;
+      }
+      if (closed()) return null;
+      return presentDecided(decided);
+    };
+    const presentDecided = (decided: AcpAutoDecision) => new Promise<string | null>((resolve) => {
       if (decided !== null && typeof decided === 'object') {
         push({ kind: 'notice', id: nextEventId(), text: 'auto-refused', detail: decided.reject });
         resolve(null);
@@ -1029,11 +1063,14 @@ export function useAcpSession({
           // through `askUser` and its standing-round receipt. Let the active surface classify the
           // exact request after the same policy check; ordinary chat has no active round and stays
           // silent.
-          const note = autoDecideRef.current?.(request);
-          if (typeof note === 'string') {
-            push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
-          }
+          const noteAllowed = (note: AcpAutoDecision | undefined) => {
+            if (typeof note === 'string') push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
+          };
+          const decision = autoDecideRef.current?.(request);
+          if (decision !== undefined && isPromise(decision)) void decision.then(noteAllowed, () => undefined);
+          else noteAllowed(decision);
         },
+        refuseAll: () => activeTurnRef.current?.stopping === true,
         /*
          * Vault server tools are allowed on the user's behalf when there is no path; without this the agent
          * cannot write to the map. Pass the name only when wired, or someone else's `atlas-vault` server
@@ -1268,8 +1305,12 @@ export function useAcpSession({
         keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
       }
       const readOnly = turnReadOnlyRef.current?.(start) === true;
-      activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null, investigation: Boolean(guard), readOnly };
+      const outlivesScreen = turnOutlivesScreenRef.current?.(start) === true;
+      activeTurnRef.current = {
+        start, observer, cancelRequested: false, taskBaseline: null, investigation: Boolean(guard), readOnly, outlivesScreen, stopping: false,
+      };
       setActiveTurnReadOnly(readOnly);
+      setActiveTurnOutlivesScreen(outlivesScreen);
       setReportedPlan(null);
       latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: userEventId, text });
@@ -1343,6 +1384,29 @@ export function useAcpSession({
     if (client && sessionId) void client.cancel(sessionId);
   }, []);
 
+  /**
+   * Stop that holds whether the agent cooperates: the waiting request closes, every later request
+   * is refused before any standing choice, and a turn still open after the grace ends the process.
+   */
+  const stopTurn = useCallback(() => {
+    const active = activeTurnRef.current;
+    if (!active || active.stopping) return;
+    active.stopping = true;
+    setTurnStopping(true);
+    if (permissionDecisionTimerRef.current !== null) {
+      window.clearTimeout(permissionDecisionTimerRef.current);
+      permissionDecisionTimerRef.current = null;
+    }
+    pendingResolverRef.current?.(null);
+    pendingResolverRef.current = null;
+    setPending(null);
+    cancel();
+    turnStopTimerRef.current = window.setTimeout(() => {
+      turnStopTimerRef.current = null;
+      if (activeTurnRef.current === active) void stopRef.current?.();
+    }, TURN_STOP_GRACE_MS);
+  }, [cancel]);
+
   const stop = useCallback(async () => {
     finishTurn('cancelled', 'session_closed');
     /*
@@ -1410,10 +1474,11 @@ export function useAcpSession({
     startRef.current = start;
     autoDecideRef.current = autoDecide;
     turnReadOnlyRef.current = turnReadOnly;
+    turnOutlivesScreenRef.current = turnOutlivesScreen;
     onToolSettledRef.current = onToolSettled;
     systemPromptAppendixRef.current = systemPromptAppendix;
     stopRef.current = stop;
-  }, [start, stop, setStatusTracked, autoDecide, turnReadOnly, onToolSettled, systemPromptAppendix]);
+  }, [start, stop, setStatusTracked, autoDecide, turnReadOnly, turnOutlivesScreen, onToolSettled, systemPromptAppendix]);
 
   useEffect(() => {
     disposedRef.current = false;
@@ -1430,6 +1495,10 @@ export function useAcpSession({
     events,
     /** The running turn was read-only when it started; false between turns. */
     activeTurnReadOnly,
+    /** The running turn keeps going once its screen is gone; false between turns. */
+    activeTurnOutlivesScreen,
+    /** Stop was pressed and the turn has not ended yet. */
+    turnStopping,
     error,
     slashCommands,
     diagnostics,
@@ -1447,6 +1516,7 @@ export function useAcpSession({
     send,
     sendInvestigation,
     cancel,
+    stopTurn,
     stop,
     switchSession,
   };

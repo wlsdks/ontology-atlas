@@ -26,7 +26,7 @@ import { LibraryHeader } from "./LibraryHeader";
 export function LibraryIndexColumn({
   segment, toolsHost, t, localVault, workVaultScope, handle, nativeVaultRootPath, selected,
   mobileBrowseOpen, setMobileBrowseOpen, mobileBrowseBackRef, browseFocusPendingRef, searchHost,
-  setSearchHost, setSourceCitation, sourceCitation, compileRunning, runningSources, lintRunning, reportUnseen,
+  setSearchHost, setSourceCitation, sourceCitation, compileRunning, runningSources, lintRunning, turnRunning, reportUnseen,
   choose, busy, docs, model, agent, openImport, handleCompile, narrowShowsReader, indexTitle,
   reader, sources, home, turns, indexColumn, stateFilter, headerDoors,
 }: {
@@ -50,6 +50,7 @@ export function LibraryIndexColumn({
   /** Sources the Continue request in flight named. */
   runningSources: ReadonlySet<string>;
   lintRunning: boolean;
+  turnRunning: boolean;
   reportUnseen: boolean;
   choose: (next: LibrarySelection) => void;
   busy: boolean;
@@ -233,6 +234,7 @@ export function LibraryIndexColumn({
             agentMissing={nativeVaultRootPath !== null && agent.route === "unavailable"}
             busy={busy}
             compiling={compileRunning || agent.localCompile.status === "running"}
+            turnRunning={turnRunning}
             runningSources={runningSources}
             stateFilter={stateFilter}
             t={t}

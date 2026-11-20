@@ -22,12 +22,10 @@ import {
   judgePageWrite,
   wikiNodeIndexOfDocs,
   dropCandidatesWithNodes,
-  wikiPagePathOf,
   planQuestionDeskReportFile,
   questionDeskReportFileCurrent,
   buildFixBrief,
   buildAnswerPage,
-  automaticWikiWriteAllowed,
   buildHumanPage,
   createWikiFile,
   deleteWikiFile,
@@ -40,7 +38,7 @@ import {
   type LibraryUiModel,
 } from "@/features/library";
 import type { AcpTurnCompletion } from "@/features/acp-session";
-import { latestReport, useFolderWorkRun, workRuns } from "@/features/work-run";
+import { latestReport, useFolderWorkRun, workRuns, type TurnToolEvent } from "@/features/work-run";
 import { useWikiWriteMode } from "@/shared/lib/preferences/appearance-preferences";
 import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
@@ -57,6 +55,18 @@ import type { QuestionDeskReportRequest } from "../parts/questions/LibraryQuesti
 import type { LibrarySelection } from "./library-page-state";
 import type { useLibraryWorkActivity } from "./use-library-work-activity";
 import { checkOwner, wikiCheckOutcome, wikiCheckPayload } from "./wiki-check-outcome";
+import { libraryAutoDecision, NATIVE_FOLDER_READS } from "../../lib/turns/library-auto-decision";
+import { readLiveLibraryFolder } from "../../lib/turns/library-folder-mirror";
+import { writingDoor } from "../../lib/turns/writing-door";
+
+/** The tool calls of a finished turn, as the work card counts them. */
+function turnToolEvents(completion: AcpTurnCompletion): TurnToolEvent[] {
+  const tools: TurnToolEvent[] = [];
+  for (const event of completion.events) {
+    if (event.kind === "tool") tools.push({ id: event.id, toolKind: event.toolKind, status: event.status, title: event.title, rawInput: event.rawInput });
+  }
+  return tools;
+}
 
 export function matchLibraryOpeningRequest(
   text: string,
@@ -133,9 +143,11 @@ export function useLibraryTurns({
   const pendingAskRef = useRef<LibraryAskContext | null>(null);
   const retryAskRef = useRef<{ nonce: number; text: string; scope: string; context: LibraryAskContext } | null>(null);
   const activeReadOnlyTurnRef = useRef(false);
-  // Only the check is read-only to the session: it alone keeps running after the Library goes.
+  // Only the check is read-only to the session; it and a turn that may write keep running after the Library goes.
   const activeCheckTurnRef = useRef(false);
+  const activeOutlivingTurnRef = useRef(false);
   const turnReadOnly = useCallback(() => activeCheckTurnRef.current, []);
+  const turnOutlivesScreen = useCallback(() => activeOutlivingTurnRef.current, []);
   // A check can finish after the Library is gone; opening its report then would mark it read unseen.
   const pageShownRef = useRef(true);
   useEffect(() => {
@@ -364,16 +376,13 @@ export function useLibraryTurns({
     } catch { setFileAnswerNote(t('questionDesk.report.fileRefused.source')); }
   }, [currentDeskListingVersion, deskReport, handle, handleFileAnswer, lastAnswer, latestDeskListingVersionRef, latestWorkVaultScopeRef, localVault.sourceHandles, locale, model.sources, t, workVaultScope]);
 
+  // Read at each request, not from this render: a turn that outlives the page keeps this callback.
   const autoDecide = useCallback(
-    (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
-      if (activeReadOnlyTurnRef.current) return null;
-      if (writeMode !== "auto" || !nativeVaultRootPath || captureAnswerRefresh()) return null;
-      const page = wikiPagePathOf(request.filePath, nativeVaultRootPath);
-      if (!page || !automaticWikiWriteAllowed(page)) return null;
-      const verdict = judgeWrite(request);
-      return verdict?.ok ? page : null;
+    async (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
+      if (activeReadOnlyTurnRef.current || !nativeVaultRootPath || captureAnswerRefresh()) return null;
+      return libraryAutoDecision(request, nativeVaultRootPath, readLiveLibraryFolder(), NATIVE_FOLDER_READS);
     },
-    [captureAnswerRefresh, judgeWrite, nativeVaultRootPath, writeMode],
+    [captureAnswerRefresh, nativeVaultRootPath],
   );
 
   const pageBodyRef = useRef<HTMLDivElement | null>(null);
@@ -405,8 +414,10 @@ export function useLibraryTurns({
       if (opening) consumedOpeningNonceRef.current = opening.nonce;
       const exactAsk = matchLibraryOpeningRequest(start.text, agent.openingRequest, null);
       const kind = opening?.kind ?? "ask";
+      const door = writingDoor(kind, exactAsk?.kind !== 'ask');
       activeReadOnlyTurnRef.current = exactAsk?.kind === 'ask' || kind === 'lint';
       activeCheckTurnRef.current = kind === 'lint';
+      activeOutlivingTurnRef.current = kind === 'lint' || door !== null;
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
       let asked: LibraryAskContext | null = null;
@@ -430,13 +441,17 @@ export function useLibraryTurns({
       setLastAnswer(null);
       setDeskReport(null);
       setFileAnswerNote(null);
-      const stamp = (list: typeof docs) =>
+      const stamp = (list: readonly VaultDoc[]) =>
         new Map(
           list
             .filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug))
             .map((doc) => [doc.slug, doc.mtime ?? 0] as const),
         );
-      const before = stamp(latestDocsRef.current);
+      const currentDocs = () => {
+        const live = readLiveLibraryFolder();
+        return live.vaultRoot !== null && live.vaultRoot === start.vaultRoot ? live.docs : latestDocsRef.current;
+      };
+      const before = stamp(currentDocs());
       // The log names the sources this turn was sent, not every source still waiting.
       const sources = opening?.sources ? [...opening.sources] : [];
       const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
@@ -451,11 +466,28 @@ export function useLibraryTurns({
             startedAt: Date.now(),
           })
         : null;
+      // A turn that may write is the app session's too: it keeps running and its card stands elsewhere.
+      const turnRunId = door !== null && start.vaultRoot
+        ? workRuns.beginTurn({
+            folder: workVaultScope,
+            folderName: handle.name,
+            owner: checkOwner(start.vaultRoot, start.runtimeId),
+            runtimeId: start.runtimeId,
+            agent: agent.runtime?.label ?? "",
+            door,
+            request: door === "typed" ? start.text : "",
+            startedAt: Date.now(),
+          })
+        : null;
       return async (completion: AcpTurnCompletion) => {
         if (checkRunId !== null) workRuns.finish(checkRunId, wikiCheckOutcome(completion), Date.now());
+        if (turnRunId !== null && start.vaultRoot) {
+          workRuns.finishTurn(turnRunId, { outcome: completion.outcome, events: turnToolEvents(completion), vaultRoot: start.vaultRoot }, Date.now());
+        }
         if (generation !== answerGenerationRef.current) return;
         activeReadOnlyTurnRef.current = false;
         activeCheckTurnRef.current = false;
+        activeOutlivingTurnRef.current = false;
         setTurnRunning(false);
         setCompileRunning(false);
         if (kind === 'refresh') {
@@ -478,7 +510,7 @@ export function useLibraryTurns({
           );
           return;
         }
-        const after = stamp(latestDocsRef.current);
+        const after = stamp(currentDocs());
         const observedAt = Date.now();
         const receipts = observedWikiWriteEvents(before, after, observedAt);
         setLibraryWorkActivity((current) =>
@@ -598,7 +630,7 @@ export function useLibraryTurns({
             : t("stage.blockedLocalOnly");
 
   return {
-    writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, turnReadOnly, checkRun,
+    writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, turnReadOnly, turnOutlivesScreen, checkRun,
     checkFolder: workVaultScope, lastAnswer, setLastAnswer,
     deskReport, setDeskReport, deskWorkRequest, setDeskWorkRequest, deskWorkActivity,
     latestDeskReportRef, reportEpochRef, invalidateDeskReport, previousReportScopeRef,

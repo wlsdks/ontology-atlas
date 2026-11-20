@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { RotateCcw, Undo2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { RotateCcw, Square, Undo2 } from 'lucide-react';
 
 import { isPressableSuggestion, type ChatSuggestion } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
@@ -153,6 +154,25 @@ export function ConnectStoppedState({ t, onConnectAgain }: { t: ChatT; onConnect
       >
         <RotateCcw size={ICON_SIZE.md} aria-hidden />
         {t('connectStopped.again')}
+      </Chip>
+    </div>
+  );
+}
+
+/** Another conversation's turn holds this folder; this one waits and offers that turn's Stop. */
+export function FolderBusyState({ t, onStop }: { t: ChatT; onStop: () => void }) {
+  const tCard = useTranslations('workCard');
+  return (
+    <div
+      data-testid="acp-folder-busy"
+      role="status"
+      aria-live="polite"
+      className="agent-panel-stage-swap m-auto grid w-full max-w-[40ch] justify-items-center gap-2 text-center"
+    >
+      <p className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">{t('folderBusy')}</p>
+      <Chip size="lg" tone="secondary" data-testid="acp-folder-busy-stop" onClick={onStop} className={cn(RETRY_CHIP_CLASS, 'mt-3')}>
+        <Square size={ICON_SIZE.md} aria-hidden />
+        {tCard('stop')}
       </Chip>
     </div>
   );

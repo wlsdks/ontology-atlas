@@ -8,8 +8,14 @@ export interface KeptPanel {
   busy: boolean;
   /** The busy turn started read-only (`useAcpSession`'s `turnReadOnly`). */
   readOnly: boolean;
+  /** The busy turn was started to keep running once its screen is gone (`turnOutlivesScreen`). */
+  outlives: boolean;
+  /** The busy turn's enforced Stop; null between turns. */
+  stop: (() => void) | null;
   held: boolean;
 }
+
+export type BusyReporter = (busy: boolean, readOnly?: boolean, outlives?: boolean, stop?: (() => void) | null) => void;
 
 const NONE: readonly KeptPanel[] = [];
 const SCREEN_BOUND = [
@@ -29,7 +35,7 @@ const SCREEN_BOUND = [
 let panels: readonly KeptPanel[] = NONE;
 let parking: HTMLElement | null = null;
 const listeners = new Set<() => void>();
-const busyReporters = new Map<string, (busy: boolean, readOnly?: boolean) => void>();
+const busyReporters = new Map<string, BusyReporter>();
 
 function publish(next: readonly KeptPanel[]) {
   panels = next;
@@ -44,7 +50,12 @@ function patch(key: string, change: Partial<KeptPanel>) {
 
 /** Whether a turn may keep running once its screen is gone (`parksTurns`). */
 function mayRunAway(panel: KeptPanel): boolean {
-  return panel.busy && (panel.props.parksTurns !== 'read-only' || panel.readOnly);
+  return panel.busy && (panel.props.parksTurns !== 'chosen' || panel.readOnly || panel.outlives);
+}
+
+/** A turn that may write and was started to outlive its screen holds its folder until it ends. */
+function holdsFolder(panel: KeptPanel): boolean {
+  return panel.busy && panel.outlives && !panel.readOnly;
 }
 
 function prune() {
@@ -62,7 +73,7 @@ function readsOnly(panel: KeptPanel): boolean {
 function withoutRivals(key: string, props: AcpChatPanelProps): readonly KeptPanel[] {
   if (props.sessionEnabled === false) return panels;
   return panels.filter((panel) => {
-    const rival = panel.key !== key && !panel.seated && !readsOnly(panel)
+    const rival = panel.key !== key && !panel.seated && !readsOnly(panel) && !holdsFolder(panel)
       && (!panel.busy || panel.props.vaultRoot === props.vaultRoot);
     if (rival) panel.node.remove();
     return !rival;
@@ -73,6 +84,12 @@ export function awayProps(props: AcpChatPanelProps): AcpChatPanelProps {
   const away: AcpChatPanelProps = { ...props, putAway: true };
   for (const name of SCREEN_BOUND) delete away[name];
   return away;
+}
+
+/** Another conversation's turn holding this folder; a newcomer for it starts nothing until it ends. */
+export function folderHolder(key: string, vaultRoot: string | null): KeptPanel | null {
+  if (!vaultRoot) return null;
+  return panels.find((panel) => panel.key !== key && holdsFolder(panel) && panel.props.vaultRoot === vaultRoot) ?? null;
 }
 
 export function keptAwayRuntimeId(): string | null {
@@ -102,7 +119,7 @@ export const keptPanels = {
     const node = document.createElement('div');
     node.className = 'contents';
     node.dataset.keptAgentPanel = key;
-    publish([...rest, { key, props, node, seated: true, busy: false, readOnly: false, held: false }]);
+    publish([...rest, { key, props, node, seated: true, busy: false, readOnly: false, outlives: false, stop: null, held: false }]);
     return node;
   },
   update(key: string, props: AcpChatPanelProps) {
@@ -119,8 +136,8 @@ export const keptPanels = {
   busyReporter(key: string) {
     let reporter = busyReporters.get(key);
     if (!reporter) {
-      reporter = (busy: boolean, readOnly = false) => {
-        patch(key, { busy, readOnly: busy && readOnly });
+      reporter = (busy, readOnly = false, outlives = false, stop = null) => {
+        patch(key, { busy, readOnly: busy && readOnly, outlives: busy && outlives, stop: busy ? stop : null });
       };
       busyReporters.set(key, reporter);
     }
