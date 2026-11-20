@@ -1,5 +1,7 @@
+import { BoxGrid } from "./library-box-grid";
 import { LibraryLabelCoverage } from "./library-label-coverage";
 import { LibraryLabelMarkIndex } from "./library-label-mark-index";
+import { LibraryLabelOccupancy } from "./library-label-occupancy";
 import type {
   LibraryGraphEdge,
   LibraryGraphNode,
@@ -438,77 +440,6 @@ function placeIslandName(
     if (!fallback || cover < fallback.cover) fallback = { seat, cover };
   }
   return fallback && fallback.cover <= ISLAND_NAME_REACH_MAX_PX ? fallback.seat : null;
-}
-
-/**
- * Boxes bucketed on a fixed screen grid, so the name pass asks only the islands and names near
- * a seat: testing every island at every seat was O(k²) a frame, seconds at five thousand.
- */
-class BoxGrid<T extends { x: number; y: number }> {
-  private readonly items: T[] = [];
-  private readonly cells = new Map<number, number[]>();
-  private stamp = 0;
-  private seen = new Uint32Array(64);
-
-  private readonly cell: number;
-  private readonly extent: (item: T) => { left: number; top: number; right: number; bottom: number };
-
-  constructor(cell: number, extent: (item: T) => { left: number; top: number; right: number; bottom: number }) {
-    this.cell = cell;
-    this.extent = extent;
-  }
-
-  add(item: T): void {
-    const index = this.items.length;
-    this.items.push(item);
-    if (index >= this.seen.length) {
-      const grown = new Uint32Array(this.seen.length * 2);
-      grown.set(this.seen);
-      this.seen = grown;
-    }
-    const { left, top, right, bottom } = this.extent(item);
-    const x0 = Math.floor(left / this.cell);
-    const x1 = Math.floor(right / this.cell);
-    const y0 = Math.floor(top / this.cell);
-    const y1 = Math.floor(bottom / this.cell);
-    for (let cx = x0; cx <= x1; cx += 1) {
-      for (let cy = y0; cy <= y1; cy += 1) {
-        const key = (cx + 0x8000) * 0x10000 + (cy + 0x8000);
-        const held = this.cells.get(key);
-        if (held) held.push(index);
-        else this.cells.set(key, [index]);
-      }
-    }
-  }
-
-  /** Every item whose extent meets the box grown by `margin`, each once. */
-  each(box: { x: number; y: number; width: number; height: number }, margin: number, visit: (item: T) => void): void {
-    this.some(box, margin, (item) => {
-      visit(item);
-      return false;
-    });
-  }
-
-  some(box: { x: number; y: number; width: number; height: number }, margin: number, test: (item: T) => boolean): boolean {
-    this.stamp += 1;
-    const stamp = this.stamp;
-    const x0 = Math.floor((box.x - margin) / this.cell);
-    const x1 = Math.floor((box.x + box.width + margin) / this.cell);
-    const y0 = Math.floor((box.y - margin) / this.cell);
-    const y1 = Math.floor((box.y + box.height + margin) / this.cell);
-    for (let cx = x0; cx <= x1; cx += 1) {
-      for (let cy = y0; cy <= y1; cy += 1) {
-        const held = this.cells.get((cx + 0x8000) * 0x10000 + (cy + 0x8000));
-        if (!held) continue;
-        for (const index of held) {
-          if (this.seen[index] === stamp) continue;
-          this.seen[index] = stamp;
-          if (test(this.items[index])) return true;
-        }
-      }
-    }
-    return false;
-  }
 }
 
 /** Pages with a stale citation, per edge list: the overview asks every frame, the edges change only with the folder. */
@@ -1320,254 +1251,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
 
   drawActivityMarks(ctx, frame);
 
-  /*
-   * Names are semantic, not thresholded: a page always carries its name, the quieter page
-   * losing a collision; a file or concept only when zoomed past `SOURCE_LABEL_MIN_SCALE`,
-   * pointed at or in the open page's neighbourhood. Losers are hidden, never overlapped.
-   * Greedy in a fixed order against boxes already taken, marks included:
-   * O(names × placed boxes), deterministic across draws and machines.
-   */
   if (frame.standingLabels || frame.layout === "flow") {
-    ctx.textBaseline = "top";
-    ctx.textAlign = "center";
-    /*
-     * Asked in order of focus, then kind (page, source, concept), then size largest first,
-     * then graph order. The greedy pass gives the room to whoever asks first, so without the
-     * focus key a narrow canvas names only dimmed marks and leaves the open page anonymous.
-     */
-    const order: LibraryGraphNodeKind[] = ["page", "source", "concept"];
-    const rank = (node: LibraryGraphNode): number => {
-      const near = !focus || focus.has(node.id) || node.id === frame.selectedId ? 0 : 1;
-      return near * order.length + order.indexOf(node.kind);
-    };
-    /** Whether a mark's name exists on this frame: its kind's names stand, or it is open, pointed at or near the focus. */
-    const carriesName = (node: LibraryGraphNode): boolean => {
-      const kindNamed =
-        node.kind === "page" ? (frame.pageLabels ?? true) : node.kind === "concept" ? (frame.conceptLabels ?? frame.sourceLabels) : frame.sourceLabels;
-      if (kindNamed) return true;
-      if (node.id === frame.selectedId || node.id === active) return true;
-      return focus !== null && focus.has(node.id);
-    };
-    const named: Array<{ node: LibraryGraphNode; index: number; priority: number; radius: number; x: number; y: number }> = [];
-    for (let index = 0; index < frame.nodes.length; index += 1) {
-      const node = frame.nodes[index];
-      if (node.id === active || !carriesName(node)) continue;
-      const centre = nodeCentre(frame, node.id);
-      if (!centre) continue;
-      const radius = radiusOf(frame, node);
-      const lineHeight = Math.round(labelFontPx(ink, node.kind) * 1.35);
-      const reach = Math.abs(radius) + STANDING_LABEL_GAP + Math.abs(lineHeight);
-      if (frame.nodes.length > LEADER_MAX_MARKS &&
-        (centre.y + reach < 2 || centre.y - reach > frame.height - 2)) continue;
-      named.push({ node, index, priority: rank(node), radius, x: centre.x, y: centre.y });
-    }
-    named.sort(
-      (first, second) =>
-        first.priority - second.priority ||
-        second.radius - first.radius ||
-        first.index - second.index,
-    );
-    const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
-    const overview = frame.overview;
-    const indexed = named.length > 0 && overview && frame.layout !== "flow" &&
-      Number.isFinite(overview.view.x) && Number.isFinite(overview.view.y) &&
-      Number.isFinite(overview.view.scale) && overview.view.scale > 0 && frame.nodes.length > 256
-      ? overviewMarkIndex(frame) : null;
-    let maxRadius = Math.max(...Object.values(NODE_RADIUS));
-    if (indexed) {
-      for (const radius of frame.radii?.values() ?? []) maxRadius = Math.max(maxRadius, Math.abs(radius));
-    } else if (named.length > 0) {
-      for (const node of frame.nodes) {
-        const centre = nodeCentre(frame, node.id);
-        if (!centre) continue;
-        const half = radiusOf(frame, node);
-        taken.push({ x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2, of: node.id });
-      }
-    }
-    const hitsMark = (box: { x: number; y: number; width: number; height: number }, own: string): boolean => {
-      if (!indexed || !overview) return false;
-      const view = overview.view;
-      const marginX = NAME_GAP_X + maxRadius;
-      const marginY = NAME_GAP_Y + maxRadius;
-      const left = view.x + (box.x - marginX - frame.width / 2) / view.scale;
-      const right = view.x + (box.x + box.width + marginX - frame.width / 2) / view.scale;
-      const top = view.y + (box.y - marginY - frame.height / 2) / view.scale;
-      const bottom = view.y + (box.y + box.height + marginY - frame.height / 2) / view.scale;
-      const tolerance = Math.max(1e-7, Math.max(Math.abs(left), Math.abs(right), Math.abs(top), Math.abs(bottom)) * Number.EPSILON * 16);
-      return indexed.some(left - tolerance, top - tolerance, right + tolerance, bottom + tolerance, (node) => {
-        const id = node.id;
-        if (id === own) return false;
-        const centre = nodeCentre(frame, id);
-        if (!centre) return false;
-        const half = radiusOf(frame, node);
-        return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
-      });
-    };
-    const coverage = named.length > 256 ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
-    if (coverage) {
-      for (const { node, radius, x, y } of named) {
-        const left = x - radius, top = y - radius, size = radius * 2;
-        coverage.add(node.id, left - NAME_GAP_X, top - NAME_GAP_Y,
-          left + size + NAME_GAP_X, top + size + NAME_GAP_Y);
-      }
-    }
-    const openLine = (x: number, y: number, height: number, own: string): boolean => {
-      if (x < 2 || x > frame.width - 2 || y < 2 || y + height > frame.height - 2) return false;
-      if (coverage?.blocksLine(x, y, height)) return false;
-      const box = { x, y, width: 0, height };
-      return !taken.some(other => other.of !== own && overlaps(box, other)) && !hitsMark(box, own);
-    };
-    for (const { node, radius: half, x, y } of named) {
-      const centre = { x, y };
-      const fontPx = labelFontPx(ink, node.kind);
-      const lineHeight = Math.round(fontPx * 1.35);
-      if (named.length > 256 && frame.nodes.length > LEADER_MAX_MARKS) {
-        const middle = Math.min(Math.max(2, centre.x), Math.max(2, frame.width - 2));
-        const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, node.id) ||
-          openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, node.id) ||
-          openLine(centre.x + half + STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id) ||
-          openLine(centre.x - half - STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id);
-        if (!possible) continue;
-      }
-      // Font per kind before measuring, so the tested box matches the drawn step.
-      ctx.font = `${fontPx}px ${ink.fontFamily}`;
-      /*
-       * A flow column's room is the layout's to give, so it replaces both flat caps there; a
-       * file keeps its distinguishing tail and a title loses its end. The canvas still bounds both.
-       */
-      const columnRoom = frame.flowLabelRoom?.[node.kind];
-      const cutFlowName = node.kind === "source" ? cutMiddleToWidth : cutEndToWidth;
-      const cut =
-        columnRoom === undefined
-          ? cutName(ctx, node, Math.min(STANDING_LABEL_MAX_WIDTH, frame.width - 8), (budget) =>
-              truncateToWidth(ctx, middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS), budget),
-            )
-          : cutName(ctx, node, Math.min(columnRoom, frame.width - 8), (budget) => cutFlowName(ctx, node.label, budget));
-      // A cut that keeps no glyph of the name says nothing, so the mark stands unnamed.
-      if (!cut.text) continue;
-      let text = cut.text;
-      let width = cut.width;
-      /*
-       * Four places, first free wins: under (read without a hint of which dot), over, right,
-       * left; one place alone named 8 of 60 pages on the 372-mark fixture. A name near an
-       * edge slides back inside, since the fit puts marks against both edges by design.
-       */
-      /*
-       * In the flow picture a page's or concept's name shortens to the room before the next
-       * box on its line rather than leave its side, where it would cover the rows below;
-       * under {@link STANDING_LABEL_MIN_PX} the four places take over.
-       */
-      if (frame.layout === "flow" && node.kind !== "source") {
-        const startX = centre.x + half + STANDING_LABEL_GAP;
-        const lineTop = centre.y - lineHeight / 2;
-        let room = frame.width - 2 - startX;
-        // The same gaps `overlaps` tests with, or the cut name still loses its side.
-        for (const other of taken) {
-          if (other.of === node.id || other.x < startX) continue;
-          if (other.y + other.height + NAME_GAP_Y <= lineTop || other.y - NAME_GAP_Y >= lineTop + lineHeight) continue;
-          room = Math.min(room, other.x - NAME_GAP_X - startX);
-        }
-        if (width > room && room >= STANDING_LABEL_MIN_PX) {
-          text = cutFlowName(ctx, text, room);
-          if (!text) continue;
-          width = ctx.measureText(text).width;
-        }
-      }
-      const centred = Math.min(
-        Math.max(2, centre.x - width / 2),
-        Math.max(2, frame.width - 2 - width),
-      );
-      const under = { x: centred, y: centre.y + half + STANDING_LABEL_GAP };
-      const over = { x: centred, y: centre.y - half - STANDING_LABEL_GAP - lineHeight };
-      const right = { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 };
-      const left = { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 };
-      /*
-       * In columns a name stands on the side its column keeps clear (`flowLabelRoom`):
-       * a file's left, a page's or concept's right. Under would sit on the next row's edges.
-       */
-      const candidates =
-        frame.layout === "flow"
-          ? node.kind === "source"
-            ? [left, right, under, over]
-            : [right, left, under, over]
-          : [under, over, right, left];
-      /*
-       * A name that loses all four places is pushed out on a leader rather than deleted, since
-       * nobody asks an anonymous dot for its name. Rings of spokes grow to
-       * {@link LEADER_REACH_MAX}; past that a name belongs to nothing and is dropped.
-       */
-      for (let step = 1; frame.nodes.length <= LEADER_MAX_MARKS && step <= LEADER_STEPS; step += 1) {
-        const reach = half + STANDING_LABEL_GAP + (LEADER_REACH_MAX / LEADER_STEPS) * step;
-        for (let spoke = 0; spoke < LEADER_SPOKES; spoke += 1) {
-          // From below the mark round, a fixed order near where a reader looks first.
-          const angle =
-            Math.PI / 2 +
-            (step - 1) * LEADER_RING_ROTATION +
-            (spoke * 2 * Math.PI) / LEADER_SPOKES;
-          const at = { x: centre.x + Math.cos(angle) * reach, y: centre.y + Math.sin(angle) * reach };
-          // Slid back inside the frame, as the four base places are.
-          candidates.push({
-            x: Math.min(Math.max(2, at.x - width / 2), Math.max(2, frame.width - 2 - width)),
-            y: at.y - lineHeight / 2,
-          });
-        }
-      }
-      let box: { x: number; y: number; width: number; height: number } | null = null;
-      let placement = 0;
-      for (const [index, candidate] of candidates.entries()) {
-        const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
-        if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
-        if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
-        if (taken.some((other) => other.of !== node.id && overlaps(tried, other)) || hitsMark(tried, node.id)) continue;
-        box = tried;
-        placement = index;
-        break;
-      }
-      if (!box) continue;
-      taken.push(box);
-      // A hairline leader only past the four base places; a label touching its dot needs none.
-      if (placement >= 4) {
-        const anchor = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-        const away = Math.hypot(anchor.x - centre.x, anchor.y - centre.y) || 1;
-        const unit = { x: (anchor.x - centre.x) / away, y: (anchor.y - centre.y) / away };
-        const stop = Math.max(0, away - Math.max(box.width, box.height) / 2 - 2);
-        ctx.globalAlpha = alphaOf(node.id);
-        ctx.strokeStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.moveTo(centre.x + unit.x * (half + 1), centre.y + unit.y * (half + 1));
-        ctx.lineTo(centre.x + unit.x * stop, centre.y + unit.y * stop);
-        ctx.stroke();
-      }
-      frame.labelReport?.push({
-        nodeId: node.id,
-        kind: node.kind,
-        text,
-        x: box.x,
-        y: box.y,
-        width: box.width,
-        height: box.height,
-        fontPx,
-      });
-      // A name dims with its mark.
-      ctx.globalAlpha = alphaOf(node.id);
-      // A ground outline stroked before the fill, so crossing lines never cut the glyphs.
-      ctx.strokeStyle = ink.ground;
-      ctx.lineWidth = labelOutlinePx() * 2;
-      ctx.lineJoin = "round";
-      ctx.strokeText(text, box.x + box.width / 2, box.y);
-      /*
-       * A name is one step brighter than its mark: a source's mark ink is also the edge ink,
-       * so file and concept names take `--color-text-tertiary`; a page keeps the page ink.
-       */
-      ctx.fillStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
-      // From the box, not the centre: a slid label is no longer centred on its dot.
-      ctx.fillText(text, box.x + box.width / 2, box.y);
-    }
-    ctx.globalAlpha = 1;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
+    drawStandingNames(ctx, frame, standingNames(ctx, frame, active, focus), alphaOf);
   }
 
   // The one label beside the pointed-at node.
@@ -1683,6 +1368,370 @@ function drawActivityMarks(ctx: CanvasRenderingContext2D, frame: LibraryGraphFra
     ctx.setLineDash([]);
   }
   ctx.globalAlpha = 1;
+}
+
+/** The screen cell placed names and marks are bucketed on, in CSS px: about one line of a name tall. */
+const STANDING_NAME_GRID_PX = 16;
+/** Past this many candidate names a placement builds its crowd rasters and pre-checks each place. */
+const STANDING_NAME_CROWD_MIN = 256;
+
+type ScreenBox = { x: number; y: number; width: number; height: number };
+
+/** A standing name where the placement put it; drawing needs nothing else. */
+interface StandingName {
+  node: LibraryGraphNode;
+  text: string;
+  box: ScreenBox;
+  fontPx: number;
+  /** The mark a name pushed past its four base places points back to on a leader. */
+  leaderFrom: { x: number; y: number; half: number } | null;
+}
+
+/** Each canvas keeps one raster, cleared per placement rather than allocated again. */
+const occupancyByCanvas = new WeakMap<CanvasRenderingContext2D, LibraryLabelOccupancy>();
+
+/** Per mark, in `frame.nodes` order: whether it has a centre, then its centre's x and y, then its radius. */
+const MARK_SLOTS = 4;
+
+/** The last placement per canvas, with the frame values and the per-mark centre and radius it read. */
+const standingNamesMemo = new WeakMap<CanvasRenderingContext2D, {
+  inputs: unknown[];
+  marks: Float64Array;
+  names: StandingName[];
+}>();
+
+/**
+ * The frame's standing names, placed again only when something the placement reads changed, so
+ * a frame that only fades, dims or moves dashes draws the last placement. O(marks) to check.
+ */
+function standingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  active: string | null,
+  focus: ReadonlySet<string> | null,
+): StandingName[] {
+  const room = frame.flowLabelRoom;
+  const view = frame.overview?.view;
+  const inputs: unknown[] = [
+    frame.nodes, frame.width, frame.height, frame.ink, frame.layout, frame.standingLabels,
+    frame.pageLabels, frame.sourceLabels, frame.conceptLabels, room?.page, room?.source, room?.concept,
+    frame.selectedId, active, focus, focus?.size, frame.overview?.geometry, view?.x, view?.y, view?.scale,
+  ];
+  const memo = standingNamesMemo.get(ctx);
+  const length = frame.nodes.length * MARK_SLOTS;
+  const marks = memo && memo.marks.length === length ? memo.marks : new Float64Array(length);
+  let same = memo !== undefined && marks === memo.marks && inputs.every((value, index) => Object.is(value, memo.inputs[index]));
+  const keep = (slot: number, value: number): void => {
+    if (Object.is(marks[slot], value)) return;
+    marks[slot] = value;
+    same = false;
+  };
+  for (let index = 0; index < frame.nodes.length; index += 1) {
+    const node = frame.nodes[index];
+    const centre = nodeCentre(frame, node.id);
+    keep(index * MARK_SLOTS, centre ? 1 : 0);
+    keep(index * MARK_SLOTS + 1, centre?.x ?? 0);
+    keep(index * MARK_SLOTS + 2, centre?.y ?? 0);
+    keep(index * MARK_SLOTS + 3, radiusOf(frame, node));
+  }
+  if (same && memo) return memo.names;
+  const names = placeStandingNames(ctx, frame, marks, active, focus);
+  standingNamesMemo.set(ctx, { inputs, marks, names });
+  return names;
+}
+
+/**
+ * Greedy in a fixed order against the boxes taken, marks included; a loser is hidden, never overlapped.
+ * Each test asks a {@link LibraryLabelOccupancy} raster, then a {@link BoxGrid}: O(marks + names) expected.
+ */
+function placeStandingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  marks: Float64Array,
+  active: string | null,
+  focus: ReadonlySet<string> | null,
+): StandingName[] {
+  const { ink } = frame;
+  const placedNames: StandingName[] = [];
+  /*
+   * Asked in order of focus, then kind (page, source, concept), then size largest first,
+   * then graph order. The greedy pass gives the room to whoever asks first, so without the
+   * focus key a narrow canvas names only dimmed marks and leaves the open page anonymous.
+   */
+  const order: LibraryGraphNodeKind[] = ["page", "source", "concept"];
+  const rank = (node: LibraryGraphNode): number => {
+    const near = !focus || focus.has(node.id) || node.id === frame.selectedId ? 0 : 1;
+    return near * order.length + order.indexOf(node.kind);
+  };
+  /** Whether a mark's name exists on this frame: its kind's names stand, or it is open, pointed at or near the focus. */
+  const carriesName = (node: LibraryGraphNode): boolean => {
+    const kindNamed =
+      node.kind === "page" ? (frame.pageLabels ?? true) : node.kind === "concept" ? (frame.conceptLabels ?? frame.sourceLabels) : frame.sourceLabels;
+    if (kindNamed) return true;
+    if (node.id === frame.selectedId || node.id === active) return true;
+    return focus !== null && focus.has(node.id);
+  };
+  const named: Array<{ node: LibraryGraphNode; index: number; priority: number; radius: number; x: number; y: number }> = [];
+  for (let index = 0; index < frame.nodes.length; index += 1) {
+    const node = frame.nodes[index];
+    if (node.id === active || !carriesName(node)) continue;
+    if (marks[index * MARK_SLOTS] === 0) continue;
+    const x = marks[index * MARK_SLOTS + 1], y = marks[index * MARK_SLOTS + 2], radius = marks[index * MARK_SLOTS + 3];
+    const lineHeight = Math.round(labelFontPx(ink, node.kind) * 1.35);
+    const reach = Math.abs(radius) + STANDING_LABEL_GAP + Math.abs(lineHeight);
+    if (frame.nodes.length > LEADER_MAX_MARKS &&
+      (y + reach < 2 || y - reach > frame.height - 2)) continue;
+    named.push({ node, index, priority: rank(node), radius, x, y });
+  }
+  named.sort(
+    (first, second) =>
+      first.priority - second.priority ||
+      second.radius - first.radius ||
+      first.index - second.index,
+  );
+  const taken = new BoxGrid<ScreenBox & { of?: string }>(STANDING_NAME_GRID_PX, (box) => ({
+    left: Math.min(box.x, box.x + box.width),
+    top: Math.min(box.y, box.y + box.height),
+    right: Math.max(box.x, box.x + box.width),
+    bottom: Math.max(box.y, box.y + box.height),
+  }));
+  // A few names cost less tested directly than a raster of the whole canvas costs to clear.
+  const occupancy = named.length > STANDING_NAME_CROWD_MIN
+    ? LibraryLabelOccupancy.create(frame.width, frame.height, NAME_GAP_X, NAME_GAP_Y, occupancyByCanvas.get(ctx))
+    : null;
+  if (occupancy) occupancyByCanvas.set(ctx, occupancy);
+  const take = (box: ScreenBox & { of?: string }): void => {
+    taken.add(box);
+    occupancy?.hold(box.of ?? null, box);
+  };
+  /** Whether a placed name or a mark other than `own`'s stands within the names' gap of `box`. */
+  const takenNear = (box: ScreenBox, own: string): boolean =>
+    occupancy?.blocks(box, own) === true ||
+    taken.some(
+      { x: box.x - NAME_GAP_X, y: box.y - NAME_GAP_Y, width: box.width + NAME_GAP_X * 2, height: box.height + NAME_GAP_Y * 2 },
+      0,
+      (other) => other.of !== own && overlaps(box, other),
+    );
+  const overview = frame.overview;
+  const indexed = named.length > 0 && overview && frame.layout !== "flow" &&
+    Number.isFinite(overview.view.x) && Number.isFinite(overview.view.y) &&
+    Number.isFinite(overview.view.scale) && overview.view.scale > 0 && frame.nodes.length > 256
+    ? overviewMarkIndex(frame) : null;
+  let maxRadius = Math.max(...Object.values(NODE_RADIUS));
+  if (indexed) {
+    for (const radius of frame.radii?.values() ?? []) maxRadius = Math.max(maxRadius, Math.abs(radius));
+  } else if (named.length > 0) {
+    for (let index = 0; index < frame.nodes.length; index += 1) {
+      if (marks[index * MARK_SLOTS] === 0) continue;
+      const x = marks[index * MARK_SLOTS + 1], y = marks[index * MARK_SLOTS + 2], half = marks[index * MARK_SLOTS + 3];
+      take({ x: x - half, y: y - half, width: half * 2, height: half * 2, of: frame.nodes[index].id });
+    }
+  }
+  const hitsMark = (box: ScreenBox, own: string): boolean => {
+    if (!indexed || !overview) return false;
+    const view = overview.view;
+    const marginX = NAME_GAP_X + maxRadius;
+    const marginY = NAME_GAP_Y + maxRadius;
+    const left = view.x + (box.x - marginX - frame.width / 2) / view.scale;
+    const right = view.x + (box.x + box.width + marginX - frame.width / 2) / view.scale;
+    const top = view.y + (box.y - marginY - frame.height / 2) / view.scale;
+    const bottom = view.y + (box.y + box.height + marginY - frame.height / 2) / view.scale;
+    const tolerance = Math.max(1e-7, Math.max(Math.abs(left), Math.abs(right), Math.abs(top), Math.abs(bottom)) * Number.EPSILON * 16);
+    return indexed.some(left - tolerance, top - tolerance, right + tolerance, bottom + tolerance, (node) => {
+      const id = node.id;
+      if (id === own) return false;
+      const centre = nodeCentre(frame, id);
+      if (!centre) return false;
+      const half = radiusOf(frame, node);
+      return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
+    });
+  };
+  const coverage = named.length > STANDING_NAME_CROWD_MIN ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
+  if (coverage) {
+    for (const { node, radius, x, y } of named) {
+      const left = x - radius, top = y - radius, size = radius * 2;
+      coverage.add(node.id, left - NAME_GAP_X, top - NAME_GAP_Y,
+        left + size + NAME_GAP_X, top + size + NAME_GAP_Y);
+    }
+  }
+  const openLine = (x: number, y: number, height: number, own: string): boolean => {
+    if (x < 2 || x > frame.width - 2 || y < 2 || y + height > frame.height - 2) return false;
+    if (coverage?.blocksLine(x, y, height)) return false;
+    const box = { x, y, width: 0, height };
+    return !takenNear(box, own) && !hitsMark(box, own);
+  };
+  for (const { node, radius: half, x, y } of named) {
+    const centre = { x, y };
+    const fontPx = labelFontPx(ink, node.kind);
+    const lineHeight = Math.round(fontPx * 1.35);
+    if (named.length > STANDING_NAME_CROWD_MIN && frame.nodes.length > LEADER_MAX_MARKS) {
+      const middle = Math.min(Math.max(2, centre.x), Math.max(2, frame.width - 2));
+      const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, node.id) ||
+        openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, node.id) ||
+        openLine(centre.x + half + STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id) ||
+        openLine(centre.x - half - STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id);
+      if (!possible) continue;
+    }
+    // Font per kind before measuring, so the tested box matches the drawn step.
+    ctx.font = `${fontPx}px ${ink.fontFamily}`;
+    /*
+     * A flow column's room is the layout's to give, so it replaces both flat caps there; a
+     * file keeps its distinguishing tail and a title loses its end. The canvas still bounds both.
+     */
+    const columnRoom = frame.flowLabelRoom?.[node.kind];
+    const cutFlowName = node.kind === "source" ? cutMiddleToWidth : cutEndToWidth;
+    const cut =
+      columnRoom === undefined
+        ? cutName(ctx, node, Math.min(STANDING_LABEL_MAX_WIDTH, frame.width - 8), (budget) =>
+            truncateToWidth(ctx, middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS), budget),
+          )
+        : cutName(ctx, node, Math.min(columnRoom, frame.width - 8), (budget) => cutFlowName(ctx, node.label, budget));
+    // A cut that keeps no glyph of the name says nothing, so the mark stands unnamed.
+    if (!cut.text) continue;
+    let text = cut.text;
+    let width = cut.width;
+    /*
+     * Four places, first free wins: under (read without a hint of which dot), over, right,
+     * left; one place alone named 8 of 60 pages on the 372-mark fixture. A name near an
+     * edge slides back inside, since the fit puts marks against both edges by design.
+     */
+    /*
+     * In the flow picture a page's or concept's name shortens to the room before the next
+     * box on its line rather than leave its side, where it would cover the rows below;
+     * under {@link STANDING_LABEL_MIN_PX} the four places take over.
+     */
+    if (frame.layout === "flow" && node.kind !== "source") {
+      const startX = centre.x + half + STANDING_LABEL_GAP;
+      const lineTop = centre.y - lineHeight / 2;
+      let room = frame.width - 2 - startX;
+      // Only a box starting before the canvas edge plus a gap can narrow the room.
+      const reach = frame.width - 2 + NAME_GAP_X - startX;
+      // The same gaps `overlaps` tests with, or the cut name still loses its side.
+      if (reach >= 0) {
+        taken.each({ x: startX, y: lineTop, width: reach, height: lineHeight }, NAME_GAP_X, (other) => {
+          if (other.of === node.id || other.x < startX) return;
+          if (other.y + other.height + NAME_GAP_Y <= lineTop || other.y - NAME_GAP_Y >= lineTop + lineHeight) return;
+          room = Math.min(room, other.x - NAME_GAP_X - startX);
+        });
+      }
+      if (width > room && room >= STANDING_LABEL_MIN_PX) {
+        text = cutFlowName(ctx, text, room);
+        if (!text) continue;
+        width = ctx.measureText(text).width;
+      }
+    }
+    const centred = Math.min(
+      Math.max(2, centre.x - width / 2),
+      Math.max(2, frame.width - 2 - width),
+    );
+    const under = { x: centred, y: centre.y + half + STANDING_LABEL_GAP };
+    const over = { x: centred, y: centre.y - half - STANDING_LABEL_GAP - lineHeight };
+    const right = { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 };
+    const left = { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 };
+    /*
+     * In columns a name stands on the side its column keeps clear (`flowLabelRoom`):
+     * a file's left, a page's or concept's right. Under would sit on the next row's edges.
+     */
+    const candidates =
+      frame.layout === "flow"
+        ? node.kind === "source"
+          ? [left, right, under, over]
+          : [right, left, under, over]
+        : [under, over, right, left];
+    /*
+     * A name that loses all four places is pushed out on a leader rather than deleted, since
+     * nobody asks an anonymous dot for its name. Rings of spokes grow to
+     * {@link LEADER_REACH_MAX}; past that a name belongs to nothing and is dropped.
+     */
+    for (let step = 1; frame.nodes.length <= LEADER_MAX_MARKS && step <= LEADER_STEPS; step += 1) {
+      const reach = half + STANDING_LABEL_GAP + (LEADER_REACH_MAX / LEADER_STEPS) * step;
+      for (let spoke = 0; spoke < LEADER_SPOKES; spoke += 1) {
+        // From below the mark round, a fixed order near where a reader looks first.
+        const angle =
+          Math.PI / 2 +
+          (step - 1) * LEADER_RING_ROTATION +
+          (spoke * 2 * Math.PI) / LEADER_SPOKES;
+        const at = { x: centre.x + Math.cos(angle) * reach, y: centre.y + Math.sin(angle) * reach };
+        // Slid back inside the frame, as the four base places are.
+        candidates.push({
+          x: Math.min(Math.max(2, at.x - width / 2), Math.max(2, frame.width - 2 - width)),
+          y: at.y - lineHeight / 2,
+        });
+      }
+    }
+    let box: ScreenBox | null = null;
+    let placement = 0;
+    for (const [index, candidate] of candidates.entries()) {
+      const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
+      if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
+      if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
+      if (takenNear(tried, node.id) || hitsMark(tried, node.id)) continue;
+      box = tried;
+      placement = index;
+      break;
+    }
+    if (!box) continue;
+    take(box);
+    // A hairline leader only past the four base places; a label touching its dot needs none.
+    placedNames.push({ node, text, box, fontPx, leaderFrom: placement >= 4 ? { x, y, half } : null });
+  }
+  return placedNames;
+}
+
+/** Draws placed names in placement order, each at its mark's alpha over a ground outline. */
+function drawStandingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  names: readonly StandingName[],
+  alphaOf: (id: string) => number,
+): void {
+  const { ink } = frame;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "center";
+  for (const { node, text, box, fontPx, leaderFrom } of names) {
+    ctx.font = `${fontPx}px ${ink.fontFamily}`;
+    if (leaderFrom) {
+      const anchor = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      const away = Math.hypot(anchor.x - leaderFrom.x, anchor.y - leaderFrom.y) || 1;
+      const unit = { x: (anchor.x - leaderFrom.x) / away, y: (anchor.y - leaderFrom.y) / away };
+      const stop = Math.max(0, away - Math.max(box.width, box.height) / 2 - 2);
+      ctx.globalAlpha = alphaOf(node.id);
+      ctx.strokeStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(leaderFrom.x + unit.x * (leaderFrom.half + 1), leaderFrom.y + unit.y * (leaderFrom.half + 1));
+      ctx.lineTo(leaderFrom.x + unit.x * stop, leaderFrom.y + unit.y * stop);
+      ctx.stroke();
+    }
+    frame.labelReport?.push({
+      nodeId: node.id,
+      kind: node.kind,
+      text,
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+      fontPx,
+    });
+    // A name dims with its mark.
+    ctx.globalAlpha = alphaOf(node.id);
+    // A ground outline stroked before the fill, so crossing lines never cut the glyphs.
+    ctx.strokeStyle = ink.ground;
+    ctx.lineWidth = labelOutlinePx() * 2;
+    ctx.lineJoin = "round";
+    ctx.strokeText(text, box.x + box.width / 2, box.y);
+    /*
+     * A name is one step brighter than its mark: a source's mark ink is also the edge ink,
+     * so file and concept names take `--color-text-tertiary`; a page keeps the page ink.
+     */
+    ctx.fillStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
+    // From the box, not the centre: a slid label is no longer centred on its dot.
+    ctx.fillText(text, box.x + box.width / 2, box.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
 }
 
 /** Cut names per canvas, keyed by font, kind, whole-pixel room and label: a resting frame measures nothing twice. */
