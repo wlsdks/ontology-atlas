@@ -81,9 +81,7 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
       }),
     );
 
-    const backlinks = manifest.manifest.backlinksDetail['capabilities/mcp-server'] ?? [];
-    const fromSlugs = backlinks.map((b) => b.fromSlug).sort();
-    expect(fromSlugs).toEqual([
+    expect(manifest.manifest.backlinkSources['capabilities/mcp-server']).toEqual([
       'capabilities/agent-brief',
       'capabilities/cli-entry',
       'documents/research',
@@ -101,8 +99,7 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
       }),
     );
     // A source-file ref, not a doc.
-    expect(manifest.manifest.backlinksDetail['mcp/src/index.js']).toBeUndefined();
-    expect(Object.keys(manifest.manifest.backlinksDetail)).not.toContain('mcp/src/index.js');
+    expect(Object.keys(manifest.manifest.backlinkSources)).not.toContain('mcp/src/index.js');
   });
 
   it('resolves a bare inline `domain:` ref to the domain doc by its unique tail', async () => {
@@ -116,8 +113,7 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
         ]),
       }),
     );
-    const backlinks = manifest.manifest.backlinksDetail['domains/ai-agent-partner'] ?? [];
-    expect(backlinks.map((b) => b.fromSlug)).toContain('capabilities/mcp-server');
+    expect(manifest.manifest.backlinkSources['domains/ai-agent-partner']).toEqual(['capabilities/mcp-server']);
   });
 
   it('does not create a self-backlink when a doc references its own slug', async () => {
@@ -130,10 +126,10 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
         ]),
       }),
     );
-    expect(manifest.manifest.backlinksDetail['capabilities/self']).toBeUndefined();
+    expect(manifest.manifest.backlinkSources['capabilities/self']).toBeUndefined();
   });
 
-  it('keeps the richer BODY-link context when a doc references a target through both body and frontmatter', async () => {
+  it('lists a document once when it references a target through both its body and its frontmatter', async () => {
     const manifest = await buildLocalManifest(
       makeRoot({
         'capabilities/mcp-server.md': md(['title: MCP Server', 'kind: capability']),
@@ -150,11 +146,34 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
         },
       }),
     );
-    const backlinks = manifest.manifest.backlinksDetail['capabilities/mcp-server'] ?? [];
-    // One entry per fromSlug, keeping the body link's richer context.
-    const fromCli = backlinks.filter((b) => b.fromSlug === 'capabilities/cli-entry');
-    expect(fromCli).toHaveLength(1);
-    expect(fromCli[0].context).not.toContain('frontmatter ·');
+    expect(manifest.manifest.backlinkSources['capabilities/mcp-server']).toEqual(['capabilities/cli-entry']);
+  });
+
+  it('lists, per target, every document that links to it or names it in a relation', async () => {
+    const { manifest } = await buildLocalManifest(
+      makeRoot({
+        'capabilities/mcp-server.md': md(['title: MCP Server', 'kind: capability'], 'See [[capabilities/cli-entry]] and [self](mcp-server.md).'),
+        'capabilities/cli-entry.md': md(
+          ['title: CLI Entry', 'kind: capability', 'dependencies: [capabilities/mcp-server]'],
+          'See [[capabilities/mcp-server]], [the doc](../documents/research.md#part) and [[missing/page]] twice: [[missing/page|again]].',
+        ),
+        'documents/research.md': md(['title: Research'], '[up](../capabilities/cli-entry.md) [web](https://x.test/a.md) [[wiki/budget]]'),
+        'wiki/budget.md': md(['title: Budget'], '[[quarter]] [[src:sources/plan.pdf#p2]] [[budget]]'),
+        'wiki/quarter.md': md(['title: Quarter', 'relates: [budget, wiki/budget]'], '[[budget|the budget]]'),
+        'drafts/x.md': md(['title: X one']),
+        'notes/x.md': md(['title: X two'], 'relates [[x]]'),
+        'refs/tail.md': md(['title: Tail', 'relates: [x, research, quarter.md]']),
+      }),
+    );
+    expect(manifest.backlinkSources).toEqual({
+      'capabilities/cli-entry': ['capabilities/mcp-server', 'documents/research'],
+      'capabilities/mcp-server': ['capabilities/cli-entry'],
+      'documents/research': ['capabilities/cli-entry', 'refs/tail'],
+      'missing/page': ['capabilities/cli-entry'],
+      'wiki/budget': ['documents/research', 'wiki/quarter'],
+      'wiki/quarter': ['refs/tail', 'wiki/budget'],
+      x: ['notes/x'],
+    });
   });
 });
 

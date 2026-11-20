@@ -9,7 +9,7 @@ function handle(text: string): FileSystemFileHandle {
   return { getFile: async () => ({ text: async () => text }) } as unknown as FileSystemFileHandle;
 }
 const docs: VaultDoc[] = [{ slug: 'wiki/answer', title: 'Answer', path: 'wiki/answer.md', mtime: 1,
-  frontmatter: {}, tags: [], headings: [], excerpt: '', linksOut: [], updatedAt: '', wordCount: 0 }];
+  frontmatter: {}, tags: [], linksOut: [], updatedAt: '' }];
 const sourceHandles = new Map<string, FileSystemFileHandle>();
 const sources: [] = [];
 

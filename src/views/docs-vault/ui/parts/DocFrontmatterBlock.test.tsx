@@ -22,9 +22,6 @@ const doc: VaultDoc = {
     status: "active",
     depends_on: ["mcp-server"],
   },
-  headings: [],
-  excerpt: "",
-  wordCount: 11114,
   updatedAt: "2026-05-04T00:00:00.000Z",
   linksOut: [],
 };

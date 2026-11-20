@@ -63,7 +63,6 @@ const port: VaultReadPort = {
       domain:
         typeof doc.frontmatter.domain === 'string' ? doc.frontmatter.domain : undefined,
       frontmatter: doc.frontmatter,
-      excerpt: doc.excerpt,
       mtime: doc.mtime,
     })),
   async readDocText(slug: string) {

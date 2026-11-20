@@ -1,5 +1,5 @@
 import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
-import type { VaultManifest } from '../../model/types';
+import { bundledVaultManifest, type BundledVaultManifest } from './bundled-manifest';
 import { DOGFOOD_AGENT_SLUG_PREFIX } from './dogfood-slug-prefix';
 import type { StaticVaultSource } from './static-vault-source';
 
@@ -16,7 +16,7 @@ const inflight = new Map<SampleSource, Promise<StaticVaultSource | null>>();
 const failed = new Set<SampleSource>();
 const listeners = new Set<() => void>();
 
-// JSON imports infer unions as `string`; the build fixes the schema, so this casts once.
+// The build fixes the JSON's schema, so the adapter casts it once.
 async function importSource(source: SampleSource): Promise<StaticVaultSource> {
   if (source === 'storefront') {
     const [manifest, content] = await Promise.all([
@@ -25,7 +25,7 @@ async function importSource(source: SampleSource): Promise<StaticVaultSource> {
     ]);
     return {
       source: 'storefront',
-      manifest: manifest.default as VaultManifest,
+      manifest: bundledVaultManifest(manifest.default),
       content: content.default as Record<string, string>,
     };
   }
@@ -36,7 +36,7 @@ async function importSource(source: SampleSource): Promise<StaticVaultSource> {
   ]);
   return {
     source: 'dogfood',
-    manifest: manifest.default as VaultManifest,
+    manifest: bundledVaultManifest(manifest.default),
     content: content.default as Record<string, string>,
     contentPreviews: {
       CHANGELOG: changelog.default as { body: string; omittedSections: number },
@@ -45,11 +45,11 @@ async function importSource(source: SampleSource): Promise<StaticVaultSource> {
   };
 }
 
-const EMPTY_MANIFEST: VaultManifest = {
+const EMPTY_MANIFEST: BundledVaultManifest = {
   version: '',
   generatedAt: '',
   docs: [],
-  backlinksDetail: {},
+  backlinkSources: {},
   tags: {},
   tree: { name: 'root', path: '', type: 'dir' },
 };

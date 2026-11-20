@@ -18,7 +18,7 @@ const manifest = {
   version: "1",
   generatedAt: "2026-07-25T00:00:00.000Z",
   docs: [],
-  backlinksDetail: {},
+  backlinkSources: {},
   tags: {},
   tree: { name: "vault", path: "", type: "dir", children: [] },
 } satisfies VaultManifest;

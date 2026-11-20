@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { definitionSectionCases } from '../../../../tests/fixtures/definition-section-cases.mjs';
-import { buildDefinitionPreview, buildExcerpt, extractOutLinksWithContext, firstHeading, parseFrontmatter } from './parse-frontmatter';
+import { buildDefinitionPreview, buildExcerpt, extractOutLinkTargets, firstHeading, parseFrontmatter } from './parse-frontmatter';
 
 describe('parseFrontmatter — basics', () => {
   it('returns empty frontmatter when no leading ---', () => {
@@ -184,47 +184,28 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
   });
 });
 
-describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ vault', () => {
-  // `docs/ontology/` is the nested MCP vault this project dogfoods. Wikilinks
-  // inside it (`[[capabilities/x]]`) use slugs relative to that vault root, while
-  // the real document slug carries an `ontology/` prefix. Without the prefix
-  // correction, `backlinksDetail` lookups always missed even where real backlinks
-  // existed, so the backlinks strip at the bottom of `/docs` never rendered — e.g.
-  // a `[[capabilities/topology-canvas-render]]` link written inside an
-  // `ontology/elements/*` document.
+describe('extractOutLinkTargets — wikilinks inside the nested ontology/ vault', () => {
+  // `docs/ontology/` is the nested MCP vault this project dogfoods. Wikilinks inside it
+  // (`[[capabilities/x]]`) use slugs relative to that vault root, while the real document slug
+  // carries an `ontology/` prefix; without the prefix, backlinks from these documents never match.
   it('a wikilink inside an ontology/ document is normalized with the ontology/ prefix', () => {
     const body = '같은 캔버스 엔진 얘기는 [[capabilities/topology-canvas-render]] 참고.';
-    const { contexts } = extractOutLinksWithContext(
-      body,
-      'ontology/elements/sigma-graphology',
-    );
-    expect(contexts).toHaveLength(1);
-    expect(contexts[0].target).toBe('ontology/capabilities/topology-canvas-render');
-    expect(contexts[0].linkText).toBe('capabilities/topology-canvas-render');
+    expect(extractOutLinkTargets(body, 'ontology/elements/sigma-graphology')).toEqual([
+      'ontology/capabilities/topology-canvas-render',
+    ]);
   });
 
   it('a wikilink that already has the ontology/ prefix does not get it twice', () => {
-    const body = '전체 문맥은 [[ontology/project]] 문서 참고.';
-    const { contexts } = extractOutLinksWithContext(
-      body,
-      'ontology/domains/views',
-    );
-    expect(contexts[0].target).toBe('ontology/project');
+    expect(extractOutLinkTargets('전체 문맥은 [[ontology/project]] 문서 참고.', 'ontology/domains/views')).toEqual(['ontology/project']);
   });
 
   it('a wikilink in a document outside ontology/ (top level) stays relative to the vault root', () => {
-    const body = '자세한 기능은 [[FEATURES]] 참고.';
-    const { contexts } = extractOutLinksWithContext(body, 'CHANGELOG');
-    expect(contexts[0].target).toBe('FEATURES');
+    expect(extractOutLinkTargets('자세한 기능은 [[FEATURES]] 참고.', 'CHANGELOG')).toEqual(['FEATURES']);
   });
 
-  it('a standard markdown relative link keeps its fromDir-based normalization, which was already correct', () => {
+  it('a standard markdown relative link resolves against the linking document folder', () => {
     const body = '관련 element 는 [여기](../domains/ai-agent-partner.md) 참고.';
-    const { contexts } = extractOutLinksWithContext(
-      body,
-      'ontology/capabilities/mcp-server',
-    );
-    expect(contexts[0].target).toBe('ontology/domains/ai-agent-partner');
+    expect(extractOutLinkTargets(body, 'ontology/capabilities/mcp-server')).toEqual(['ontology/domains/ai-agent-partner']);
   });
 });
 
@@ -232,41 +213,40 @@ describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ v
  * The renderer and the folder check must fold a bare `[[slug]]` inside `wiki/` into the same name
  * (`docs/ONTOLOGY-ATLAS-SPEC.md` section 11.4).
  */
-describe('extractOutLinksWithContext — a bare wikilink inside wiki/ names a page in wiki/', () => {
+describe('extractOutLinkTargets — a bare wikilink inside wiki/ names a page in wiki/', () => {
   it('a bare slug inside a wiki/ document resolves to a page under wiki/', () => {
-    const body = '분기 계획은 [[budget]] 문서를 참고.';
-    const { slugs, contexts } = extractOutLinksWithContext(body, 'wiki/quarter-plan');
-    expect(slugs).toEqual(['wiki/budget']);
-    expect(contexts[0].target).toBe('wiki/budget');
-    // The reader still shows what the author typed, not the resolved path.
-    expect(contexts[0].linkText).toBe('budget');
+    expect(extractOutLinkTargets('분기 계획은 [[budget]] 문서를 참고.', 'wiki/quarter-plan')).toEqual(['wiki/budget']);
   });
 
   it('a target with a slash is relative to the vault root, so wiki/ is not prepended', () => {
     const body = '이 글은 [[capabilities/checkout]] 과 [[wiki/budget]] 을 가리킨다.';
-    const { slugs } = extractOutLinksWithContext(body, 'wiki/quarter-plan');
-    expect(slugs).toEqual(['capabilities/checkout', 'wiki/budget']);
+    expect(extractOutLinkTargets(body, 'wiki/quarter-plan')).toEqual(['capabilities/checkout', 'wiki/budget']);
   });
 
   it('a bare slug in a document outside wiki/ still points at the vault root, as before', () => {
-    const { slugs } = extractOutLinksWithContext('[[budget]] 참고.', 'capabilities/checkout');
-    expect(slugs).toEqual(['budget']);
+    expect(extractOutLinkTargets('[[budget]] 참고.', 'capabilities/checkout')).toEqual(['budget']);
   });
 
   it('gives the same answer as the folder check: both resolvers build the same target', () => {
     // The folder half normalises with `wiki-page-schema.ts`; if that boundary and this
     // one ever part again, one of these two assertions moves and the other does not.
-    const { slugs } = extractOutLinksWithContext('[[budget]] [[wiki/budget]]', 'wiki/a');
-    expect(new Set(slugs)).toEqual(new Set(['wiki/budget']));
+    expect(extractOutLinkTargets('[[budget]] [[wiki/budget]]', 'wiki/a')).toEqual(['wiki/budget']);
   });
 });
 
-describe('extractOutLinksWithContext — a wiki citation is not a link', () => {
-  it('skips [[src:sources/…#anchor]] and keeps the page links beside it', () => {
+describe('extractOutLinkTargets — what is not a link to a document', () => {
+  it('skips [[src:sources/…#anchor]] citations and keeps the page links beside it', () => {
     const body = '- fact [[src:sources/plan.pdf#p2]] and see [[wiki/other]] and [[src:sources/a.csv#r3|row]]';
-    const { slugs, contexts } = extractOutLinksWithContext(body, 'wiki/me');
-    expect(slugs).toEqual(['wiki/other']);
-    expect(contexts.map((c) => c.target)).toEqual(['wiki/other']);
+    expect(extractOutLinkTargets(body, 'wiki/me')).toEqual(['wiki/other']);
+  });
+
+  it('skips web, anchor-only, non-Markdown and self links, and lists a target once in first-link order', () => {
+    const body = '[w](https://x.test/a.md) [h](#top) [i](pic.png) [me](me.md) [b](b.md) [[a]] [again](./b.md#part) [[a|A]]';
+    expect(extractOutLinkTargets(body, 'notes/me')).toEqual(['notes/b', 'a']);
+  });
+
+  it('keeps a Windows backslash as part of the name: only a slash separates folders in a vault path', () => {
+    expect(extractOutLinkTargets('[w](..\\domains\\x.md) [[notes\\win]]', 'notes/me')).toEqual(['notes/..\\domains\\x', 'notes\\win']);
   });
 });
 

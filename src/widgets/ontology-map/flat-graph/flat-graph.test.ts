@@ -1110,7 +1110,7 @@ describe("cluster iteration budget", () => {
 
 describe("flat graph layout reuse", () => {
   it("draws a capability's new title after a retitle that moves no concept", () => {
-    const derived = deriveOntologyFromVault(dogfoodManifest as VaultManifest);
+    const derived = deriveOntologyFromVault(dogfoodManifest as unknown as VaultManifest);
     const nodes = derived.nodes as Node[];
     const edges = derived.edges as Edge[];
     const before = modelOf(nodes, edges);

@@ -31,8 +31,8 @@ function folderInput() {
     if (index % 50 !== 0) hashes.set(path, HASH);
     const kind = index % 10;
     docs.push({
-      slug: `wiki/page-${index}`, path: `wiki/page-${index}.md`, title: `Page ${index}`, tags: [], headings: [],
-      excerpt: '', wordCount: 1, updatedAt: '', linksOut: [],
+      slug: `wiki/page-${index}`, path: `wiki/page-${index}.md`, title: `Page ${index}`, tags: [], 
+      updatedAt: '', linksOut: [],
       frontmatter: {
         sources: [path],
         source_hash: { [path]: kind === 7 ? 'b'.repeat(64) : HASH },

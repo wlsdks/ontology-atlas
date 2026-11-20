@@ -10,6 +10,7 @@ import {
 } from '@/entities/vault-session';
 import {
   buildNewNodeDoc,
+  deriveDocumentDetail,
   planKindChangeReferrers,
   type FrontmatterUpdateValue,
 } from '@/entities/docs-vault';
@@ -128,18 +129,10 @@ export function useDocWriteActions({
   // Names of documents pointing at `slug`, from the manifest's backlink index.
   const referrersOf = useCallback(
     (slug: string) => {
-      const seen = new Set<string>();
-      const referrers: Array<{ slug: string; title: string }> = [];
-      for (const entry of manifest.backlinksDetail?.[slug] ?? []) {
-        if (entry.fromSlug === slug || seen.has(entry.fromSlug)) continue;
-        seen.add(entry.fromSlug);
-        const doc = manifest.docs.find((d) => d.slug === entry.fromSlug);
-        referrers.push({
-          slug: entry.fromSlug,
-          title: doc ? resolveLocaleDisplayName(doc.frontmatter, locale, doc.title) : entry.fromSlug,
-        });
-      }
-      return referrers;
+      return (manifest.backlinkSources?.[slug] ?? []).map((fromSlug) => {
+        const doc = manifest.docs.find((d) => d.slug === fromSlug);
+        return { slug: fromSlug, title: doc ? resolveLocaleDisplayName(doc.frontmatter, locale, doc.title) : fromSlug };
+      });
     },
     [manifest, locale],
   );
@@ -346,24 +339,6 @@ export function useDocWriteActions({
     if (typeof window === 'undefined') return;
     const doc = manifest.docs.find((d) => d.slug === selectedSlug);
     if (!doc) return;
-    const headings = doc.headings.filter(
-      (h) => h.depth >= 2 && h.depth <= 3,
-    );
-    if (headings.length === 0) {
-      toast.show(t('dialog.noHeadings'), 'info');
-      return;
-    }
-    const tocLines = headings.map((h) => {
-      const indent = h.depth === 3 ? '  ' : '';
-      return `${indent}- [${h.text}](#${h.slug})`;
-    });
-    const tocBlock = [
-      '<!-- toc:start -->',
-      `## ${t('dialog.tocHeading')}`,
-      '',
-      ...tocLines,
-      '<!-- toc:end -->',
-    ].join('\n');
     const fh = localVault.fileHandles.get(selectedSlug);
     if (!fh) {
       toast.show(t('dialog.notLocalFile'), 'error');
@@ -372,6 +347,23 @@ export function useDocWriteActions({
     try {
       const file = await fh.getFile();
       const raw = await file.text();
+      // Decided from the text just read, so a pending detail is never taken for "no headings".
+      const headings = deriveDocumentDetail(raw).headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+      if (headings.length === 0) {
+        toast.show(t('dialog.noHeadings'), 'info');
+        return;
+      }
+      const tocLines = headings.map((h) => {
+        const indent = h.depth === 3 ? '  ' : '';
+        return `${indent}- [${h.text}](#${h.slug})`;
+      });
+      const tocBlock = [
+        '<!-- toc:start -->',
+        `## ${t('dialog.tocHeading')}`,
+        '',
+        ...tocLines,
+        '<!-- toc:end -->',
+      ].join('\n');
       let insertAfter = 0;
       if (raw.startsWith('---')) {
         const end = raw.indexOf('\n---', 3);

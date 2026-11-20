@@ -537,16 +537,12 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   const deleteReferrers = useMemo(() => {
     const slug = nodeEditTarget?.vaultSlug;
     if (!slug || !vault.manifest) return [];
-    const seen = new Set<string>();
-    const referrers: { slug: string; title: string }[] = [];
-    for (const entry of vault.manifest.backlinksDetail?.[slug] ?? []) {
-      if (entry.fromSlug === slug || seen.has(entry.fromSlug)) continue;
-      seen.add(entry.fromSlug);
-      const doc = vault.manifest.docs.find((d) => d.slug === entry.fromSlug);
+    const docs = vault.manifest.docs;
+    return (vault.manifest.backlinkSources?.[slug] ?? []).map((fromSlug) => {
+      const doc = docs.find((d) => d.slug === fromSlug);
       const localized = doc?.frontmatter?.[`display_${activeLocale}`];
-      referrers.push({ slug: entry.fromSlug, title: typeof localized === "string" && localized ? localized : doc?.title ?? entry.fromSlug });
-    }
-    return referrers;
+      return { slug: fromSlug, title: typeof localized === "string" && localized ? localized : doc?.title ?? fromSlug };
+    });
   }, [activeLocale, nodeEditTarget, vault.manifest]);
   const deleteConcept = useCallback(async () => {
     if (!nodeEditTarget || !selectedOntologyNode) return;

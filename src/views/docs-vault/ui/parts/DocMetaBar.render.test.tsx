@@ -33,9 +33,6 @@ const doc: VaultDoc = {
     kind: "capability",
     title: "Agent Graph Readiness",
   },
-  headings: [],
-  excerpt: "",
-  wordCount: 3620,
   updatedAt: "2026-06-05T00:00:00.000Z",
   linksOut: [],
 };

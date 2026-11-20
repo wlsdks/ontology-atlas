@@ -30,8 +30,8 @@ source search reads only the other formats (PDF, CSV, DOCX and the like), so no 
 file is searched twice. On the web a Markdown source matches by its name. Settings › Privacy · data, "Stored on this computer",
 says the index holds file paths and modified times, each document's words with their
 positions, so its text can be read back by anyone who can read the account's cache folder,
-and each document's frontmatter, title, headings, excerpt, link text and the short passage
-around each link, which let a folder
+and each document's frontmatter, title, short first paragraph and the documents it links
+to, which let a folder
 opened before open without reading every file again; it says all of it is rebuilt from
 the folder's files. It shows the open folder's index
 size, deletes that index, and turns indexing off (off leaves no index file). A folder's

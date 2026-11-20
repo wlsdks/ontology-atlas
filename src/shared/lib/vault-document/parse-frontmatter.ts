@@ -488,14 +488,6 @@ export function buildExcerpt(body: string, max = 320): string {
   return `${safe.replace(/[\s·,.:;]+$/g, '')}…`;
 }
 
-export interface LinkContext {
-  /** Slug of another document in the vault, resolved by this function. */
-  target: string;
-  /** 120 characters of context on each side, with the position marked as **[linkText]**. */
-  context: string;
-  linkText: string;
-}
-
 /**
  * Vault folder holding wiki pages — the one name a bare `[[slug]]` folds into.
  *
@@ -520,79 +512,40 @@ export function resolveWikilinkTargetSlug(targetSlug: string, fromSlug: string):
   return targetSlug;
 }
 
+/** A relative `.md` link target as a slug from `fromDir`, or null for a web, anchor or non-Markdown target. */
+function markdownLinkSlug(target: string, fromDir: string): string | null {
+  if (!target || target.startsWith('#') || /^https?:\/\//i.test(target)) return null;
+  if (!target.endsWith('.md') && !target.includes('.md#')) return null;
+  const rel = target.split('#')[0].replace(/^\.\//, '');
+  const stack: string[] = [];
+  for (const part of (fromDir ? `${fromDir}/${rel}` : rel).split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+  return stack.join('/').replace(/\.md$/, '') || null;
+}
+
 /**
- * Extracts relative `.md` references from a markdown body as target slugs plus
- * surrounding context. Ignores http(s), anchors and images. `fromSlug` is the
- * current document's vault slug (directory included, extension excluded).
+ * The slugs a body links to, by relative `.md` link and by wikilink, each once in first-link
+ * order, never `fromSlug` itself. O(body): one scan per link syntax.
  */
-export function extractOutLinksWithContext(
-  body: string,
-  fromSlug: string,
-): { slugs: string[]; contexts: LinkContext[] } {
-  const slugs = new Set<string>();
-  const contexts: LinkContext[] = [];
-  // Standard markdown links: [text](path.md)
-  const re = /\[([^\]]+)\]\(([^)]+)\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(body)) !== null) {
-    const target = m[2];
-    const linkText = m[1];
-    if (!target || target.startsWith('#')) continue;
-    if (/^https?:\/\//i.test(target)) continue;
-    if (!target.endsWith('.md') && !target.includes('.md#')) continue;
-    const [mdPart] = target.split('#');
-    const rel = mdPart.replace(/^\.\//, '');
-    const fromDir = fromSlug.includes('/')
-      ? fromSlug.slice(0, fromSlug.lastIndexOf('/'))
-      : '';
-    const joined = fromDir ? `${fromDir}/${rel}` : rel;
-    const parts = joined.split('/');
-    const stack: string[] = [];
-    for (const p of parts) {
-      if (p === '' || p === '.') continue;
-      if (p === '..') {
-        stack.pop();
-        continue;
-      }
-      stack.push(p);
-    }
-    const targetSlug = stack.join('/').replace(/\.md$/, '');
-    if (!targetSlug || targetSlug === fromSlug) continue;
-    slugs.add(targetSlug);
-    const matchStart = m.index;
-    const matchEnd = m.index + m[0].length;
-    const before = body.slice(Math.max(0, matchStart - 120), matchStart);
-    const after = body.slice(matchEnd, matchEnd + 120);
-    const raw = `${before}**[${linkText}]**${after}`;
-    const context = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
-    contexts.push({ target: targetSlug, context, linkText });
+export function extractOutLinkTargets(body: string, fromSlug: string): string[] {
+  const targets = new Set<string>();
+  const fromDir = fromSlug.includes('/') ? fromSlug.slice(0, fromSlug.lastIndexOf('/')) : '';
+  for (const match of body.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)) {
+    const target = markdownLinkSlug(match[2], fromDir);
+    if (target && target !== fromSlug) targets.add(target);
   }
-  // Wikilinks [[slug]] / [[slug|text]] / [[slug#anchor]] — slugs relative to the
-  // vault root (inside the nested ontology/ vault, relative to that vault's root
-  // — see resolveWikilinkTargetSlug above).
-  const wre = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
-  while ((m = wre.exec(body)) !== null) {
-    const targetSpec = m[1].trim();
-    // A wiki page cites its sources as `[[src:sources/<path>#<anchor>]]`
-    // (`docs/ONTOLOGY-ATLAS-SPEC.md` §11.3). That is a citation, not a link to a
-    // document: counting it here made every compiled page carry a dangling outlink
-    // named after a PDF, and a source the graph cannot open is not a backlink target.
-    if (targetSpec.startsWith('src:')) continue;
-    const [rawTargetSlug] = targetSpec.split('#');
-    if (!rawTargetSlug) continue;
-    const targetSlug = resolveWikilinkTargetSlug(rawTargetSlug, fromSlug);
-    if (!targetSlug || targetSlug === fromSlug) continue;
-    slugs.add(targetSlug);
-    const linkText = (m[2] ?? rawTargetSlug).trim();
-    const matchStart = m.index;
-    const matchEnd = m.index + m[0].length;
-    const before = body.slice(Math.max(0, matchStart - 120), matchStart);
-    const after = body.slice(matchEnd, matchEnd + 120);
-    const raw = `${before}**[${linkText}]**${after}`;
-    const context = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
-    contexts.push({ target: targetSlug, context, linkText });
+  for (const match of body.matchAll(/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g)) {
+    const spec = match[1].trim();
+    // `[[src:sources/<path>#<anchor>]]` cites a source (`docs/ONTOLOGY-ATLAS-SPEC.md` §11.3).
+    if (spec.startsWith('src:')) continue;
+    const [bare] = spec.split('#');
+    const target = bare ? resolveWikilinkTargetSlug(bare, fromSlug) : '';
+    if (target && target !== fromSlug) targets.add(target);
   }
-  return { slugs: [...slugs], contexts };
+  return [...targets];
 }
 
 /**

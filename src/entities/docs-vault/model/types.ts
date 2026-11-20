@@ -6,6 +6,7 @@ export interface VaultHeading {
   slug: string;
 }
 
+/** What lists, the graph and the map need of every document; detail is read from the file on demand. */
 export interface VaultDoc {
   slug: string;
   path: string;
@@ -19,8 +20,7 @@ export interface VaultDoc {
     line: number;
     message: string;
   }>;
-  headings: VaultHeading[];
-  excerpt: string;
+  /** The first paragraph when short (`buildDefinitionPreview`); a concept's summary on every surface. */
   definitionPreview?: string;
   /** Source paths from the project competency block; derived at load, never written back. */
   meaningEvidencePaths?: string[];
@@ -34,7 +34,6 @@ export interface VaultDoc {
    * not a capability, or a manifest built without it (the bundled one), so nothing was measured.
    */
   citesReadLines?: boolean;
-  wordCount: number;
   updatedAt: string;
   /** Commits touching this document, carried across moves; bundled manifest only. */
   revision?: number;
@@ -65,13 +64,6 @@ export interface VaultTreeNode {
   children?: VaultTreeNode[];
 }
 
-export interface VaultBacklinkEntry {
-  fromSlug: string;
-  /** 120 characters around the link, with the link text in bold. */
-  context: string;
-  linkText: string;
-}
-
 export interface VaultManifest {
   version: string;
   generatedAt: string;
@@ -86,7 +78,8 @@ export interface VaultManifest {
   aliases?: Record<string, string>;
   /** Raw sources, kept beside `docs` and never in it so nothing downstream treats one as a concept. */
   sources?: VaultSourceFile[];
-  backlinksDetail: Record<string, VaultBacklinkEntry[]>;
+  /** Per target slug, the documents that link to it or name it in a relation, by `compareCollated`. */
+  backlinkSources: Record<string, string[]>;
   tags: Record<string, string[]>;
   tree: VaultTreeNode;
 }

@@ -24,7 +24,7 @@ source_hash:
 `;
 const doc = (slug: string, text = raw): VaultDoc => ({
   slug, path: `${slug}.md`, title: slug, frontmatter: parseFrontmatter(text).frontmatter,
-  headings: [], tags: [], excerpt: '', wordCount: 0, updatedAt: '', linksOut: [],
+  tags: [], updatedAt: '', linksOut: [],
 });
 
 describe('question desk evidence', () => {

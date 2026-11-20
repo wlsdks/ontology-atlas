@@ -160,10 +160,10 @@ it.each([100_000, 100_001])('keeps the first 100,000 entries and reports truncat
   expect(result.truncated).toBe(size > 100_000);
 });
 
-it('shares repeated metadata values without sharing mutable headings or adding node fields', async () => {
+it('shares repeated metadata values without sharing mutable link lists or adding node fields', async () => {
   const root = makeRoot({
-    'a.md': { text: '---\ntitle: A\nkind: element\ndomain: shared\n---\n\n## Includes\n\nA.', lastModified: 1 },
-    'b.md': { text: '---\ntitle: B\nkind: element\ndomain: shared\n---\n\n## Includes\n\nB.', lastModified: 1 },
+    'a.md': { text: '---\ntitle: A\nkind: element\ndomain: shared\n---\n\n## Includes\n\n[[shared/target]].', lastModified: 1 },
+    'b.md': { text: '---\ntitle: B\nkind: element\ndomain: shared\n---\n\n## Includes\n\n[[shared/target]].', lastModified: 1 },
     'wiki/plain.md': { text: '---\ntitle: Plain\n---\n\n## Includes\n\nPlain.', lastModified: 1 },
   });
   const { manifest } = await buildLocalManifest(root);
@@ -173,9 +173,9 @@ it('shares repeated metadata values without sharing mutable headings or adding n
   expect(Object.keys(plain.frontmatter)).toEqual(['title']);
   expect(a.frontmatter.domain).toBe('shared');
   expect(b.frontmatter.domain).toBe('shared');
-  expect(a.headings[0]).not.toBe(b.headings[0]);
-  a.headings[0].text = 'Changed';
-  expect(b.headings[0].text).toBe('Includes');
+  expect(a.linksOut).not.toBe(b.linksOut);
+  a.linksOut[0] = 'changed';
+  expect(b.linksOut).toEqual(['shared/target']);
 });
 
 it('reuses frozen unchanged documents without mutating an earlier build', async () => {
@@ -183,8 +183,7 @@ it('reuses frozen unchanged documents without mutating an earlier build', async 
   const first = await buildLocalManifestWithEntries(root);
   const doc = first.build.manifest.docs[0];
   Object.freeze(doc.frontmatter);
-  for (const heading of doc.headings) Object.freeze(heading);
-  Object.freeze(doc.headings);
+  Object.freeze(doc.linksOut);
   Object.freeze(doc);
   const next = await rebuildLocalManifestIncremental(root, first.entries);
   expect(next.entries[0].doc).toBe(doc);

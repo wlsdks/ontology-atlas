@@ -224,9 +224,7 @@
     "footerLegend": "> command · # tag"
   },
   "backlinks": {
-    "heading": "Documents that link here · {count}",
-    "expand": "Show context",
-    "collapse": "Hide context"
+    "heading": "Documents that link here · {count}"
   },
   "parts": {
     "meta": {

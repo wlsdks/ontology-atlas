@@ -1,162 +1,57 @@
 'use client';
 
-import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import type {
-  VaultBacklinkEntry,
-  VaultDoc,
-} from '@/entities/docs-vault';
+import type { VaultDoc } from '@/entities/docs-vault';
 import { OntologyMapKindGlyph, isOntologyMapRenderableKind } from '@/shared/ui/ontology-node/map-kind-glyph';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
-import { Chip, IconButton } from '@/shared/ui';
-import { controlClass } from '@/shared/ui/control-class';
+import { Chip } from '@/shared/ui';
 
 interface Props {
-  entries: VaultBacklinkEntry[];
+  /** Slugs of the documents that link here, in the manifest's order. */
+  sources: readonly string[];
   docsBySlug: Map<string, VaultDoc>;
   onNavigate: (slug: string) => void;
   hideHeading?: boolean;
-  /**
-   * 'list' (default): expandable context per item. 'strip': navigating chips at the pane's bottom
-   * without context.
-   */
-  layout?: 'list' | 'strip';
 }
 
-/**
- * Backlinks panel: documents referencing this one, each toggling 120 characters of link context.
- */
-export function DocsVaultBacklinks({
-  entries,
-  docsBySlug,
-  onNavigate,
-  hideHeading = false,
-  layout = 'list',
-}: Props) {
+/** The documents that link to this one, as navigating chips at the pane's bottom. */
+export function DocsVaultBacklinks({ sources, docsBySlug, onNavigate, hideHeading = false }: Props) {
   const t = useTranslations('vaultWidgets.backlinks');
   const locale = useLocale();
-  if (entries.length === 0) return null;
-  if (layout === 'strip') {
-    return (
-      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
-        {hideHeading ? null : (
-          <span className="flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-            {t('heading', { count: entries.length })}
-          </span>
-        )}
-        {entries.map((entry) => {
-          const doc = docsBySlug.get(entry.fromSlug);
-          if (!doc) return null;
-          const kind = doc.frontmatter?.kind;
-          const kindStr = typeof kind === 'string' ? kind : '';
-          return (
-            <Chip
-              key={entry.fromSlug}
-              size="lg"
-              tone="secondary"
-              onClick={() => onNavigate(doc.slug)}
-              className="flex-none hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
-            >
-              {kindStr && isOntologyMapRenderableKind(kindStr) ? (
-                <OntologyMapKindGlyph kind={kindStr} size={11} />
-              ) : (
-                <FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden />
-              )}
-              <span className="max-w-[160px] truncate">
-                {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
-              </span>
-            </Chip>
-          );
-        })}
-      </div>
-    );
-  }
+  if (sources.length === 0) return null;
   return (
-    <section>
+    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
       {hideHeading ? null : (
-        <h3 className="mb-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {t('heading', { count: entries.length })}
-        </h3>
+        <span className="flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+          {t('heading', { count: sources.length })}
+        </span>
       )}
-      <ul className="flex flex-col gap-1.5 text-body">
-        {entries.map((entry) => (
-          <BacklinkItem
-            key={entry.fromSlug}
-            entry={entry}
-            doc={docsBySlug.get(entry.fromSlug)}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function BacklinkItem({
-  entry,
-  doc,
-  onNavigate,
-}: {
-  entry: VaultBacklinkEntry;
-  doc: VaultDoc | undefined;
-  onNavigate: (slug: string) => void;
-}) {
-  const t = useTranslations('vaultWidgets.backlinks');
-  const locale = useLocale();
-  const [open, setOpen] = useState(false);
-  if (!doc) return null;
-  return (
-    <li className="rounded-micro border border-transparent transition-colors hover:border-[color:var(--color-overlay-2)]">
-      <div className="flex items-stretch">
-        <IconButton
-          label={open ? t('collapse') : t('expand')}
-          size="sm"
-          tone="muted"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="hover:text-[color:var(--color-text-secondary)]"
-        >
-          {open ? <ChevronDown size={ICON_SIZE.sm} /> : <ChevronRight size={ICON_SIZE.sm} />}
-        </IconButton>
-        <button
-          type="button"
-          onClick={() => onNavigate(doc.slug)}
-          className={controlClass({ hoverInk: 'strong', shape: "row", size: "sm", className: "group min-w-0 flex-1 gap-1.5 rounded-micro py-0.5" })}
-        >
-          <FileText
-            size={ICON_SIZE.sm}
-            className="flex-none opacity-60"
-            aria-hidden
-          />
-          <span className="truncate text-[color:var(--color-text-tertiary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
-            {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
-          </span>
-        </button>
-      </div>
-      {open ? (
-        <p
-          className="mt-1 whitespace-normal rounded-micro bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
-          dangerouslySetInnerHTML={{
-            __html: formatContext(entry.context),
-          }}
-        />
-      ) : null}
-    </li>
-  );
-}
-
-// Emphasise the build script's **[linkText]** and escape everything else against XSS; context is
-// raw markdown rendered through textContent only.
-function formatContext(raw: string): string {
-  const escaped = raw
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return escaped.replace(
-    /\*\*\[([^\]]+)\]\*\*/g,
-    (_, text) =>
-      `<span class="rounded-micro bg-[color:var(--color-indigo-line-a15)] px-1 text-[color:var(--color-indigo-pale-a92)]">${text}</span>`,
+      {sources.map((fromSlug) => {
+        const doc = docsBySlug.get(fromSlug);
+        if (!doc) return null;
+        const kind = doc.frontmatter?.kind;
+        const kindStr = typeof kind === 'string' ? kind : '';
+        return (
+          <Chip
+            key={fromSlug}
+            size="lg"
+            tone="secondary"
+            onClick={() => onNavigate(doc.slug)}
+            className="flex-none hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {kindStr && isOntologyMapRenderableKind(kindStr) ? (
+              <OntologyMapKindGlyph kind={kindStr} size={11} />
+            ) : (
+              <FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden />
+            )}
+            <span className="max-w-[160px] truncate">
+              {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
+            </span>
+          </Chip>
+        );
+      })}
+    </div>
   );
 }

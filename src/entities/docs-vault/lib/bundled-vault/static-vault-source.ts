@@ -4,13 +4,13 @@ import sampleStorefrontManifest from '../../data/sample-storefront.manifest.json
 import gatewayContent from '../../data/gateway-content.json';
 import gatewayChangelog from '../../data/gateway-changelog.json';
 import vaultManifest from '../../data/manifest.json';
-import type { VaultManifest } from '../../model/types';
+import { bundledVaultManifest, type BundledVaultManifest } from './bundled-manifest';
 import { DOGFOOD_AGENT_SLUG_PREFIX } from './dogfood-slug-prefix';
 
 /** The bundled vault in static mode; manifest and content travel as one pair so they can never mix vaults. */
 export interface StaticVaultSource {
   source: SampleSource;
-  manifest: VaultManifest;
+  manifest: BundledVaultManifest;
   /** slug → markdown for the `guide/*` documents needed before first paint; the rest load from `public/docs-vault/`. */
   content: Record<string, string>;
   /**
@@ -22,10 +22,10 @@ export interface StaticVaultSource {
   agentSlugPrefix?: string;
 }
 
-// JSON imports infer unions as `string`; the build fixes the schema, so this casts once.
+// The build fixes the JSON's schema, so the adapter casts it once.
 const DOGFOOD: StaticVaultSource = {
   source: 'dogfood',
-  manifest: vaultManifest as VaultManifest,
+  manifest: bundledVaultManifest(vaultManifest),
   content: gatewayContent as Record<string, string>,
   contentPreviews: {
     CHANGELOG: gatewayChangelog as { body: string; omittedSections: number },
@@ -35,7 +35,7 @@ const DOGFOOD: StaticVaultSource = {
 
 const STOREFRONT: StaticVaultSource = {
   source: 'storefront',
-  manifest: sampleStorefrontManifest as VaultManifest,
+  manifest: bundledVaultManifest(sampleStorefrontManifest),
   content: sampleStorefrontContent as Record<string, string>,
 };
 

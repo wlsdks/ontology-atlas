@@ -57,7 +57,7 @@ const ROOT = '/fixture';
 const raw = '---\ntitle: Refund overview\n---\n## Facts\n- Refunds restore stock.\n';
 const doc: VaultDoc = {
   slug: 'wiki/refund', path: 'wiki/refund.md', title: 'Refund overview', frontmatter: parseFrontmatter(raw).frontmatter,
-  headings: [], tags: [], excerpt: '', wordCount: 0, updatedAt: '', linksOut: [],
+  tags: [], updatedAt: '', linksOut: [],
 };
 const source: LibrarySourceRow = { path: 'sources/refund.md', name: 'refund.md', format: 'md', bytes: 10, mtime: 1, state: 'compiled', citedBy: [] };
 const docs = [doc];

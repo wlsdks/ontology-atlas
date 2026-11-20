@@ -1,5 +1,4 @@
 export type {
-  VaultBacklinkEntry,
   VaultDoc,
   VaultManifest,
   VaultSourceFile,
@@ -19,7 +18,7 @@ export {
   loadStaticVaultHeadings,
   type StaticVaultHeadings,
 } from './lib/bundled-vault/static-headings';
-export type { DocumentRef, VaultDocDetail } from './store/document-detail';
+export { deriveDocumentDetail, type DocumentRef, type VaultDocDetail } from './store/document-detail';
 export { createDocumentStore, type DocumentStore } from './store/document-store';
 export {
   pinnedDocsStorageKey,
@@ -37,10 +36,10 @@ export { applyVaultChanges } from './lib/local-manifest/apply-vault-changes';
 export type { LocalVaultSnapshot } from './lib/local-manifest/apply-vault-changes';
 export type {
   LocalVaultBuild,
-  BuiltVaultEntry,
   VaultBuildObserver,
   VaultStampIndex,
 } from './lib/local-manifest/build-local-manifest';
+export type { BuiltVaultEntry } from './lib/local-manifest/md-entry';
 export { VAULT_SOURCES_DIR } from './lib/local-manifest/walk-vault';
 export { createSourceCopyBatch } from './lib/library/source-copy-publication';
 export {

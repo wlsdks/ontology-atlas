@@ -34,7 +34,7 @@ The delivery plan. ${link}
 function doc(slug: string, raw: string, mtime = 1): ModelInput["docs"][number] {
   return {
     slug, path: `${slug}.md`, title: slug, frontmatter: parseFrontmatter(raw).frontmatter,
-    mtime, headings: [], tags: [], excerpt: "", wordCount: 0,
+    mtime, tags: [], 
     updatedAt: "2026-09-10", linksOut: [],
   };
 }

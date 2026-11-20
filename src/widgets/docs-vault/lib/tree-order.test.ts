@@ -26,9 +26,6 @@ function vaultDoc(slug: string, updatedAt: string): VaultDoc {
     title: slug,
     tags: [],
     frontmatter: {},
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt,
     linksOut: [],
   };

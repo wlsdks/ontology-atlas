@@ -16,7 +16,7 @@ vi.mock("@/i18n/navigation", () => ({
 
 const page: VaultDoc = {
   slug: "wiki/returns", path: "wiki/returns.md", title: "Returns", tags: [], frontmatter: {},
-  headings: [], excerpt: "", wordCount: 0, updatedAt: "2026-11-20", linksOut: [],
+  updatedAt: "2026-11-20", linksOut: [],
 };
 const CLAIM_B = "Bravo: the return label is free for members. [[src:sources/returns.md#l5]]";
 

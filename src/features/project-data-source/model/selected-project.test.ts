@@ -11,9 +11,6 @@ function project(slug: string): VaultDoc {
     title: slug,
     tags: [],
     frontmatter: { kind: "project", slug },
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     updatedAt: "2026-11-17T00:00:00.000Z",
     linksOut: [],
   };

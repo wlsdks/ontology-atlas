@@ -22,9 +22,6 @@ const doc: VaultDoc = {
   description: 'Architecture doc',
   tags: ['architecture'],
   frontmatter: {},
-  headings: [],
-  excerpt: 'Architecture overview',
-  wordCount: 10,
   updatedAt: '2026-04-23',
   linksOut: [],
 };

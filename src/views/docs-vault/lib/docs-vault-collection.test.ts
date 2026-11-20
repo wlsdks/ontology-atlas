@@ -24,9 +24,6 @@ function doc(
     title: slug,
     tags,
     frontmatter,
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt: '2026-01-01T00:00:00.000Z',
     linksOut: [],
   };

@@ -81,7 +81,7 @@ function successfulBuild(slug = 'project') {
           { slug, path: `${slug}.md`, frontmatter: { kind: 'project' } },
           { slug: 'wiki/notes', path: 'wiki/notes.md', frontmatter: {} },
         ],
-        backlinksDetail: {},
+        backlinkSources: {},
         tags: {},
         tree: { name: 'root', path: '', type: 'dir' as const },
       },

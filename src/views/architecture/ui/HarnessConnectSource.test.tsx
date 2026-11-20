@@ -14,7 +14,7 @@ const nodes: KnowledgeGraphNode[] = [
   { id: 'project:music', kind: 'project', title: 'Music', agentSlug: 'music', projectIds: [], evidenceIds: ['music'], lastApprovedAt: new Date(0), lastApprovedBy: 'test' },
 ];
 const docs: VaultDoc[] = [
-  { slug: 'music', path: 'music.md', title: 'Music', tags: [], frontmatter: { kind: 'project', title: 'Music' }, headings: [], excerpt: '', wordCount: 0, updatedAt: '2026-08-02', linksOut: [] },
+  { slug: 'music', path: 'music.md', title: 'Music', tags: [], frontmatter: { kind: 'project', title: 'Music' }, updatedAt: '2026-08-02', linksOut: [] },
 ];
 const inspection: ProjectSourceInspection = {
   rootPath: '/private/work/music',

@@ -224,9 +224,7 @@
     "footerLegend": "> 명령 · # 태그"
   },
   "backlinks": {
-    "heading": "이 문서를 링크한 문서 · {count}",
-    "expand": "앞뒤 문장 보기",
-    "collapse": "앞뒤 문장 숨기기"
+    "heading": "이 문서를 링크한 문서 · {count}"
   },
   "parts": {
     "meta": {

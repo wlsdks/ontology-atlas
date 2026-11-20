@@ -14,7 +14,7 @@ const snapshot:GrayAreaSnapshot={contract:'grayAreaEvidence:v1',snapshotId:hash,
   nodes:[{uid,slug:'elements/a',title:'A',kind:'element',path:'src/a.ts',body:`## Uncertainty\n- ${statement}`,bodyDigest:hash}],
   edges:[],imports:[],drift:[],recordedReads:[{slug:'elements/a',kind:'unread-file',statement,paths:['src/a.ts'],ranges:[]}],witnesses:[],
   coverage:{filesScanned:1,maxFiles:2000,importsAvailable:true,importsLimited:false,unresolvedImports:0,unsupported:[],readsLimited:false,recordedReadsTotal:1,limits:[]}};
-const doc:VaultDoc={slug:'project',path:'project.md',title:'Project',frontmatter:{kind:'project',uid:projectUid},tags:[],headings:[],excerpt:'',wordCount:1,updatedAt:'2026-10-04',linksOut:[]};
+const doc:VaultDoc={slug:'project',path:'project.md',title:'Project',frontmatter:{kind:'project',uid:projectUid},tags:[],updatedAt:'2026-10-04',linksOut:[]};
 const base:AnalysisCaptureContext={mode:'meaning',surface:'map',handle:null,writable:false,fileHandles:new Map(),
   scope:{projectSlug:'project',projectUid,targetSlugs:[],profileSlug:null},graph:{nodes:[],edges:[]},sourceFingerprint:null,profileHash:null};
 const text=buildGrayAreaInvestigation(snapshot,buildGrayAreaCandidates(snapshot)[0],{projectUid,explicit:true});

@@ -4,8 +4,8 @@ import type { VaultDoc } from '../../model/types';
 import { buildWikiRetrievalIndex } from './wiki-retrieval';
 
 function doc(slug: string, title = slug, frontmatter = {}): VaultDoc {
-  return { slug, path: `${slug}.md`, title, frontmatter, tags: [], headings: [],
-    excerpt: '', wordCount: 0, updatedAt: '', linksOut: [] };
+  return { slug, path: `${slug}.md`, title, frontmatter, tags: [], 
+    updatedAt: '', linksOut: [] };
 }
 
 describe('wiki retrieval from the Library read cache', () => {
