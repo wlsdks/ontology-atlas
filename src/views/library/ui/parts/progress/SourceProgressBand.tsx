@@ -5,6 +5,7 @@ import type { useTranslations } from "next-intl";
 
 import { deriveSourceProgress, type LibrarySourceRow } from "@/entities/docs-vault";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
+import { X } from "lucide-react";
 import { WorkGlyph } from "@/shared/motion/work-glyph";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui";
@@ -240,6 +241,12 @@ export function SourceProgressBand({
   const grouped = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const presses = PRESS_ORDER.filter((state) => byState[state] > 0);
   const compactPresses = presses.length > 2;
+  /* With one state the number, the sentence and the bar already say it, so no legend is drawn. */
+  const legendShown = presses.length > 1;
+  const { state: filterState, clear: clearFilter } = filter;
+  useEffect(() => {
+    if (!legendShown && filterState !== null) clearFilter();
+  }, [clearFilter, filterState, legendShown]);
 
   return (
     <section
@@ -343,11 +350,12 @@ export function SourceProgressBand({
               ) : null}
             </span>
             {/* One press per state the folder holds, in the bar's order; each narrows the list and lights its marks. */}
+            {legendShown ? (
             <div
               role="group"
               aria-label={t("sources.statesAria")}
               data-testid="library-source-states"
-              className="-ml-1.5 flex min-w-0 flex-nowrap items-center gap-x-0.5"
+              className="-ml-1.5 flex h-6 min-w-0 flex-nowrap items-center gap-x-0.5"
             >
               {presses.map((state) => {
                 const label = t(`sources.state.${state}.label`);
@@ -385,24 +393,39 @@ export function SourceProgressBand({
                   </button>
                 );
               })}
-              {filter.state ? (
-                <button
-                  type="button"
-                  data-testid="library-source-states-all"
-                  onClick={filter.clear}
-                  className={controlClass({
-                    shape: "segment",
-                    size: "xs",
-                    tone: "accent",
-                    hoverInk: "strong",
-                    hoverSurface: "lift",
-                    className: "motion-swap-in flex-none whitespace-nowrap tabular-nums",
-                  })}
-                >
-                  {t("sources.filterAll", { count: total })}
-                </button>
-              ) : null}
+              {/*
+               * The clear press holds its slot from the first paint, so pressing a state resizes nothing;
+               * at rest it is invisible, inert and out of the tab order, and it fades in with a filter.
+               */}
+              <button
+                type="button"
+                data-testid="library-source-states-all"
+                aria-label={t("sources.filterAll", { count: total })}
+                title={t("sources.filterAll", { count: total })}
+                aria-hidden={filter.state === null || undefined}
+                inert={filter.state === null || undefined}
+                tabIndex={filter.state === null ? -1 : undefined}
+                data-shown={filter.state === null ? undefined : ""}
+                onClick={filter.clear}
+                className={controlClass({
+                  shape: "segment",
+                  size: "xs",
+                  tone: "muted",
+                  hoverInk: "strong",
+                  hoverSurface: "lift",
+                  className: cn(
+                    "flex-none px-1.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
+                    filter.state === null ? "opacity-0" : "opacity-100",
+                  ),
+                })}
+              >
+                <X size={ICON_SIZE.sm} aria-hidden />
+              </button>
             </div>
+            ) : (
+              /* The legend's row is kept empty, so the band is one height across folders. */
+              <div aria-hidden data-testid="library-source-states-reserve" className="h-6" />
+            )}
           </div>
         </div>
 
@@ -445,7 +468,7 @@ export function SourceProgressBand({
                 aria-describedby={blocked ? blockedId : undefined}
                 className="atlas-touch-floor max-w-full"
               >
-                {running ? <WorkGlyph phase="running" inControl /> : null}
+                {/* No ring in the button while work runs: the work line under it carries the ring. */}
                 <span className="min-w-0 truncate">{t("progress.continue", { count: batch.next.length })}</span>
               </Button>
               {blocked ? (
