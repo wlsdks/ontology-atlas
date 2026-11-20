@@ -6,6 +6,7 @@ use std::process::Stdio;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
+use crate::lower_hex::lower_hex;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -569,15 +570,12 @@ fn measure_identity(
     if resolve().ok().as_ref() != Some(&before) {
         return ChangeBriefing::unavailable("stale");
     }
-    let snapshot = format!(
-        "{:x}",
-        Sha256::digest(format!(
-            "{}\0{}\0{:?}\0{start}\0{end}",
-            before.root.to_string_lossy(),
-            before.head,
-            before.object
-        ))
-    );
+    let snapshot = lower_hex(&Sha256::digest(format!(
+        "{}\0{}\0{:?}\0{start}\0{end}",
+        before.root.to_string_lossy(),
+        before.head,
+        before.object
+    )));
     let result = ChangeBriefing {
         snapshot,
         status: if reasons.is_empty() {

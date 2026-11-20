@@ -1,0 +1,35 @@
+{
+  "reads": [
+    {
+      "relativePath": "domains/주문.md",
+      "text": "---\ntitle: 주문 처리\nkind: domain\n---\n결제 전에 재고를 잡는다. 🧾\n",
+      "lastModified": 1763600000123,
+      "error": null
+    },
+    {
+      "relativePath": "empty.md",
+      "text": "",
+      "lastModified": 1763600000000,
+      "error": null
+    },
+    {
+      "relativePath": "bom.md",
+      "text": "﻿---\r\ntitle: BOM\r\n---\r\n",
+      "lastModified": 1700000000001,
+      "error": null
+    },
+    {
+      "relativePath": ".env.md",
+      "text": null,
+      "lastModified": null,
+      "error": "a batch reads only Markdown outside dot folders"
+    },
+    {
+      "relativePath": "없음.md",
+      "text": null,
+      "lastModified": null,
+      "error": "No such file or directory (os error 2)"
+    }
+  ],
+  "framesHex": "050000000011000000646f6d61696e732feca3bcebacb82e6d6400b04706eca97942520000002d2d2d0a7469746c653a20eca3bcebacb820ecb298eba6ac0a6b696e643a20646f6d61696e0a2d2d2d0aeab2b0eca09c20eca084ec979020ec9eaceab3a0eba5bc20ec9ea1eb8a94eb8ba42e20f09fa7be0a0008000000656d7074792e6d6400004006eca97942000000000006000000626f6d2e6d6400108056febc784219000000efbbbf2d2d2d0d0a7469746c653a20424f4d0d0a2d2d2d0d0a01070000002e656e762e6d642f00000061206261746368207265616473206f6e6c79204d61726b646f776e206f75747369646520646f7420666f6c646572730109000000ec9786ec9d8c2e6d64260000004e6f20737563682066696c65206f72206469726563746f727920286f73206572726f72203229"
+}

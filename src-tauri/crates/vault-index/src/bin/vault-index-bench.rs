@@ -312,7 +312,13 @@ fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
         if let Some(log) = log.as_mut() {
             let line: String = texts
                 .iter()
-                .map(|text| format!("{:x}\n", Sha256::digest(text.as_bytes())))
+                .map(|text| {
+                    let hex: String = Sha256::digest(text.as_bytes())
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect();
+                    hex + "\n"
+                })
                 .collect();
             log.write_all(line.as_bytes()).expect("log");
             log.flush().expect("log");

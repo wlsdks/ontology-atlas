@@ -1,10 +1,11 @@
+use crate::lower_hex::lower_hex;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
 pub(crate) fn digest(bytes: &[u8]) -> String {
-    format!("sha256:{:x}", Sha256::digest(bytes))
+    format!("sha256:{}", lower_hex(&Sha256::digest(bytes)))
 }
 
 pub(crate) fn read_text(root: &Path, relative: &Path) -> Result<String, String> {
@@ -136,7 +137,7 @@ pub(crate) fn vault_digest(vault: &Path) -> Result<String, String> {
     if let Some(root) = crate::git::find_repo_root(vault)? {
         hash.update(crate::run_source_git(&root, &["rev-parse", "HEAD"])?);
     }
-    Ok(format!("sha256:{:x}", hash.finalize()))
+    Ok(format!("sha256:{}", lower_hex(&hash.finalize())))
 }
 fn collect_markdown(
     root: &Path,
@@ -317,7 +318,7 @@ fn observe_with_exclusions(
     hash.update(serde_json::to_vec(&result.excluded).map_err(|_| "source_unavailable")?);
     hash.update([u8::from(result.limited)]);
     hash.update(serde_json::to_vec(&result.ignored_names).map_err(|_| "source_unavailable")?);
-    result.fingerprint = format!("sha256:{:x}", hash.finalize());
+    result.fingerprint = format!("sha256:{}", lower_hex(&hash.finalize()));
     Ok(result)
 }
 pub(crate) fn observe_construction_source(

@@ -23,10 +23,12 @@ import {
   openTauriVaultInFinder,
   vaultRootRejectionReason,
   pickTauriVaultDirectory,
+  readTauriVaultTextFiles,
   inspectTauriProjectSource,
   inspectTauriProjectSourceContinuity,
   tauriVaultPathExists,
 } from './tauri-vault-fs';
+import { encodeVaultTextFrames } from '../../../../tests/helpers/vault-text-frames';
 
 type InvokeCall = {
   command: string;
@@ -291,6 +293,24 @@ describe('tauri vault file-system shim', () => {
     expect(image.type).toBe('image/png');
     expect([...new Uint8Array(await image.arrayBuffer())]).toEqual([137, 80, 78, 71]);
     expect(image.lastModified).toBe(1_790_000_000_456);
+  });
+
+  it('reads a batch as framed bytes and hands back each file or its reason', async () => {
+    const answer = [
+      { relativePath: 'domains/order.md', text: '# order', lastModified: 123, error: null },
+      { relativePath: '.env.md', text: null, lastModified: null, error: 'dot folder' },
+    ];
+    const calls = installInvoke(() => encodeVaultTextFrames(answer));
+
+    const reads = await readTauriVaultTextFiles('/vault', ['domains/order.md', '.env.md']);
+
+    expect(calls).toEqual([
+      {
+        command: 'read_vault_text_files',
+        args: { rootPath: '/vault', relativePaths: ['domains/order.md', '.env.md'] },
+      },
+    ]);
+    expect(reads).toEqual(answer);
   });
 
   it('creates directories, creates files, writes accumulated text, and removes files', async () => {

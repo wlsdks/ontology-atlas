@@ -597,13 +597,17 @@ function makeBridge(overlay, unstubbed) {
       case "harness_source_path_exists":
         return existsSync(realPath(FAKE_SOURCE_ROOT, input.relativePath).full);
       case "read_vault_text_files":
-        return (input.relativePaths ?? []).map((relativePath) => {
-          try {
-            return { relativePath, text: readText(vaultRootOf(input), relativePath, overlay), lastModified: MTIME, error: null };
-          } catch (error) {
-            return { relativePath, text: null, lastModified: null, error: String(error.message ?? error) };
-          }
-        });
+        return {
+          binary: vaultTextFrames(
+            (input.relativePaths ?? []).map((relativePath) => {
+              try {
+                return { relativePath, text: readText(vaultRootOf(input), relativePath, overlay), error: null };
+              } catch (error) {
+                return { relativePath, text: null, error: String(error.message ?? error) };
+              }
+            }),
+          ),
+        };
       case "read_vault_text_tail":
         return readText(vaultRootOf(input), input.relativePath, overlay).split("\n").slice(-input.maxLines).join("\n");
       case "git_bound_evidence_dates":
@@ -734,6 +738,30 @@ const SCREENS = [
   },
 ];
 
+/** The framing `read_vault_text_files` answers; `src/shared/lib/vault-folder/vault-text-frames.ts` decodes it. */
+function vaultTextFrames(reads) {
+  const framed = (text) => {
+    const bytes = Buffer.from(text, "utf8");
+    const length = Buffer.alloc(4);
+    length.writeUInt32LE(bytes.length);
+    return [length, bytes];
+  };
+  const count = Buffer.alloc(4);
+  count.writeUInt32LE(reads.length);
+  const parts = [count];
+  for (const read of reads) {
+    parts.push(Buffer.of(read.text === null ? 1 : 0), ...framed(read.relativePath));
+    if (read.text === null) {
+      parts.push(...framed(read.error));
+      continue;
+    }
+    const stamp = Buffer.alloc(8);
+    stamp.writeDoubleLE(MTIME);
+    parts.push(stamp, ...framed(read.text));
+  }
+  return Buffer.concat(parts);
+}
+
 async function installRuntime(context, bridge) {
   await context.exposeBinding("__atlasCaptureBridge", async (_source, command, input) => {
     try {
@@ -756,7 +784,7 @@ async function installRuntime(context, bridge) {
       async invoke(command, input = {}) {
         const answer = await window.__atlasCaptureBridge(command, input);
         if (!answer.ok) throw new Error(answer.message);
-        if (command === "planning_read_file" || command === "planning_open_document") {
+        if (command === "planning_read_file" || command === "planning_open_document" || command === "read_vault_text_files") {
           const bytes = Uint8Array.from(atob(answer.value.base64), (char) => char.charCodeAt(0));
           return bytes.buffer;
         }

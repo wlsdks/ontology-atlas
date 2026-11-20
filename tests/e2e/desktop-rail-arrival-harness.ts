@@ -191,6 +191,42 @@ export async function installDesktopRailRuntime(
       const slow = <T>(value: T): Promise<T> =>
         new Promise((resolve) => setTimeout(() => resolve(value), latency));
 
+      /** `read_vault_text_files` answers framed bytes; see `src/shared/lib/vault-folder/vault-text-frames.ts`. */
+      const textFrames = (reads: { relativePath: string; text: string | null; error: string | null }[]): ArrayBuffer => {
+        const utf8 = new TextEncoder();
+        const parts: Uint8Array[] = [];
+        const length = (value: number) => {
+          const bytes = new Uint8Array(4);
+          new DataView(bytes.buffer).setUint32(0, value, true);
+          parts.push(bytes);
+        };
+        const text = (value: string) => {
+          const bytes = utf8.encode(value);
+          length(bytes.length);
+          parts.push(bytes);
+        };
+        length(reads.length);
+        for (const read of reads) {
+          parts.push(Uint8Array.of(read.text === null ? 1 : 0));
+          text(read.relativePath);
+          if (read.text === null) {
+            text(read.error ?? "");
+            continue;
+          }
+          const stamp = new Uint8Array(8);
+          new DataView(stamp.buffer).setFloat64(0, mtime, true);
+          parts.push(stamp);
+          text(read.text);
+        }
+        const frames = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
+        let offset = 0;
+        for (const part of parts) {
+          frames.set(part, offset);
+          offset += part.length;
+        }
+        return frames.buffer;
+      };
+
       const status = {
         ok: true,
         initialized: true,
@@ -268,12 +304,14 @@ export async function installDesktopRailRuntime(
             const asked = (args.relativePaths as string[]) ?? [];
             return afterHeldReads(asked.map(relative), () =>
               slow(
-                asked.map((relativePath) => {
-                  const path = relative(relativePath);
-                  return path in files
-                    ? { relativePath, text: files[path], lastModified: mtime, error: null }
-                    : { relativePath, text: null, lastModified: null, error: `missing ${path}` };
-                }),
+                textFrames(
+                  asked.map((relativePath) => {
+                    const path = relative(relativePath);
+                    return path in files
+                      ? { relativePath, text: files[path], error: null }
+                      : { relativePath, text: null, error: `missing ${path}` };
+                  }),
+                ),
               ),
             );
           }

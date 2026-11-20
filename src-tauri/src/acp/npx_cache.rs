@@ -41,7 +41,7 @@ pub(crate) fn npx_cache_root(home: Option<&Path>) -> Option<PathBuf> {
 pub(crate) fn npx_cache_entry_dir(npx_cache_root: &Path, package: &str) -> PathBuf {
     use sha2::{Digest, Sha512};
     let digest = Sha512::digest(package.as_bytes());
-    let hex: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    let hex = crate::lower_hex::lower_hex(&digest);
     npx_cache_root.join(&hex[..16])
 }
 
