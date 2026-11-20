@@ -103,6 +103,20 @@ export function backlinkContribution(
   return out;
 }
 
+/**
+ * The slugs a document backlinks, O(links + refs): its body link targets, then its resolved
+ * frontmatter relation refs, never itself. Full builds and path deltas both aggregate through
+ * this, so they cannot disagree.
+ */
+export function backlinkTargets(doc: VaultDoc, resolve: RefResolver): Set<string> {
+  const targets = new Set(doc.linksOut);
+  for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
+    const target = resolve(ref);
+    if (target && target !== doc.slug) targets.add(target);
+  }
+  return targets;
+}
+
 /** One built file; `handle` and `lastModified` let an incremental rebuild reuse it unchanged. */
 export interface BuiltVaultEntry {
   relativePath: string;

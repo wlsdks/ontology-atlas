@@ -520,6 +520,42 @@ export function resolveWikilinkTargetSlug(targetSlug: string, fromSlug: string):
   return targetSlug;
 }
 
+/** A relative `.md` link target as a slug from `fromDir`, or null for a web, anchor or non-Markdown target. */
+function markdownLinkSlug(target: string, fromDir: string): string | null {
+  if (!target || target.startsWith('#') || /^https?:\/\//i.test(target)) return null;
+  if (!target.endsWith('.md') && !target.includes('.md#')) return null;
+  const rel = target.split('#')[0].replace(/^\.\//, '');
+  const stack: string[] = [];
+  for (const part of (fromDir ? `${fromDir}/${rel}` : rel).split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+  return stack.join('/').replace(/\.md$/, '') || null;
+}
+
+/**
+ * The slugs a body links to, by relative `.md` link and by wikilink, each once in first-link
+ * order, never `fromSlug` itself. O(body): one scan per link syntax.
+ */
+export function extractOutLinkTargets(body: string, fromSlug: string): string[] {
+  const targets = new Set<string>();
+  const fromDir = fromSlug.includes('/') ? fromSlug.slice(0, fromSlug.lastIndexOf('/')) : '';
+  for (const match of body.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)) {
+    const target = markdownLinkSlug(match[2], fromDir);
+    if (target && target !== fromSlug) targets.add(target);
+  }
+  for (const match of body.matchAll(/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g)) {
+    const spec = match[1].trim();
+    // `[[src:sources/<path>#<anchor>]]` cites a source (`docs/ONTOLOGY-ATLAS-SPEC.md` §11.3).
+    if (spec.startsWith('src:')) continue;
+    const [bare] = spec.split('#');
+    const target = bare ? resolveWikilinkTargetSlug(bare, fromSlug) : '';
+    if (target && target !== fromSlug) targets.add(target);
+  }
+  return [...targets];
+}
+
 /**
  * Extracts relative `.md` references from a markdown body as target slugs plus
  * surrounding context. Ignores http(s), anchors and images. `fromSlug` is the

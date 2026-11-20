@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildLocalManifest } from './build-local-manifest';
+import { buildLocalManifest, buildLocalManifestWithEntries, compareCollated } from './build-local-manifest';
+import { backlinkTargets, refResolver, slugTail } from './md-entry';
 
 /** Frontmatter relation refs count as backlinks, as `find_backlinks` counts them. */
 
@@ -187,5 +188,50 @@ describe('build-local-manifest — persisted competency evidence', () => {
       'src/entry.ts',
     ]);
     expect(manifest.manifest.docs[0].meaningEvidencePaths).not.toContain('src/ghost.ts');
+  });
+});
+
+describe('backlink targets equal the referrers of the passages they replace', () => {
+  const fixtures: Record<string, Record<string, FakeFile>> = {
+    'frontmatter refs': {
+      'capabilities/mcp-server.md': md(['title: MCP Server', 'kind: capability', 'elements: [mcp/src/index.js]']),
+      'capabilities/cli-entry.md': md(['title: CLI Entry', 'kind: capability', 'dependencies: [capabilities/mcp-server, capabilities/vault-validator]']),
+      'capabilities/agent-brief.md': md(['title: Agent Brief', 'kind: capability', 'relates: [capabilities/mcp-server]']),
+      'documents/research.md': md(['title: Research', 'kind: document', 'describes: [capabilities/mcp-server]']),
+      'domains/ai-agent-partner.md': md(['title: AI Agent Partner', 'kind: domain']),
+      'capabilities/self.md': md(['title: Self', 'kind: capability', 'domain: ai-agent-partner', 'relates: [capabilities/self]']),
+    },
+    'body and frontmatter': {
+      'capabilities/mcp-server.md': md(['title: MCP Server', 'kind: capability'], 'See [[capabilities/cli-entry]] and [self](mcp-server.md).'),
+      'capabilities/cli-entry.md': md(
+        ['title: CLI Entry', 'kind: capability', 'dependencies: [capabilities/mcp-server]'],
+        'See [[capabilities/mcp-server]], [the doc](../documents/research.md#part) and [[missing/page]] twice: [[missing/page|again]].',
+      ),
+      'documents/research.md': md(['title: Research'], '[up](../capabilities/cli-entry.md) [web](https://x.test/a.md) [[wiki/budget]]'),
+      'wiki/budget.md': md(['title: Budget'], '[[quarter]] [[src:sources/plan.pdf#p2]] [[budget]]'),
+      'wiki/quarter.md': md(['title: Quarter', 'relates: [budget, wiki/budget]'], '[[budget|the budget]]'),
+      'ambiguous/a/x.md': md(['title: X one']),
+      'ambiguous/b/x.md': md(['title: X two'], 'relates [[x]]'),
+      'refs/tail.md': md(['title: Tail', 'relates: [x, research, ai-agent-partner.md]']),
+    },
+  };
+
+  it.each(Object.keys(fixtures))('matches on the %s fixture', async (name) => {
+    const { build, entries } = await buildLocalManifestWithEntries(makeRoot(fixtures[name]));
+    const docs = entries.flatMap((entry) => (entry.doc ? [entry.doc] : []));
+    const slugs = new Set(docs.map((doc) => doc.slug));
+    const tails = new Map<string, string | null>();
+    for (const doc of docs) tails.set(slugTail(doc.slug), tails.has(slugTail(doc.slug)) ? null : doc.slug);
+    const resolve = refResolver((slug) => slugs.has(slug), (tail) => tails.get(tail) ?? null);
+    const sources = new Map<string, string[]>();
+    for (const doc of docs) {
+      for (const target of backlinkTargets(doc, resolve)) sources.set(target, [...(sources.get(target) ?? []), doc.slug]);
+    }
+    const fromTargets = Object.fromEntries([...sources].map(([target, list]) => [target, list.sort(compareCollated)]));
+    const fromPassages = Object.fromEntries(
+      Object.entries(build.manifest.backlinksDetail).map(([target, list]) => [target, list.map((entry) => entry.fromSlug)]),
+    );
+    expect(Object.keys(fromPassages).length).toBeGreaterThanOrEqual(2);
+    expect(fromTargets).toEqual(fromPassages);
   });
 });
