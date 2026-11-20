@@ -205,9 +205,7 @@ with no close.
 ### Copy
 
 Keys under `questionDesk.meaning` in `messages/<locale>/library.json`, as built; English
-source here. `meaning` is the first entry in `questionDesk`. The result-row keys
-(`reasonWords`, `reasonMeaning`, `reasonBoth`, `coverage`) and the result notice for a
-missing model belong to the search slice and are not built yet. Keys in "Copy" below that
+source here. `meaning` is the first entry in `questionDesk`. Keys in "Copy" below that
 this table does not replace keep their text.
 
 | Key | Where | en |
@@ -254,6 +252,13 @@ this table does not replace keep their text.
 | `meaning.unreadable` | desk line, `unreadable` (Resume); dialog, probe failed | Atlas could not read this folder's files. |
 | `meaning.failureDetail` | `{detail}` above | one `select` over `failureDetail` with `-` read as `_`; an unknown code prints itself |
 | `meaning.ringLabel` | ring accessible name | Search by meaning progress |
+| `meaning.reasonWords` / `reasonMeaning` / `reasonBoth` | end of a row's second line, when meaning took part | Same words / Similar meaning / Same words · similar meaning |
+| `meaning.coverage` | coverage popover, when meaning took part | By meaning: {ready, number} of {total, number} files |
+| `meaning.staleDropped` | coverage popover, when passages were left out | {count, plural, one {# passage from a changed file was left out} other {# passages from changed files were left out}} |
+| `meaning.modelGoneNotice` | under the results head, `modelGone` (Download again opens the dialog) | The model is no longer on this computer, so these results match words only. |
+| `meaning.runnerDownNotice` | under the results head, `runnerDown` or `modelMissing` | Ollama did not answer, so these results match words only. |
+| `meaning.failedNotice` | under the results head, any other failure | Search by meaning did not answer, so these results match words only. |
+| `meaning.noMatchBoth` | no-match body, when meaning took part | No passage in the files searched matches these words or this meaning. |
 
 `settingsPrivacy.json`, shown in the app while the index is on: `storedHere.meaningLabel`
 "Search by meaning"; `storedHere.meaningSize` "{size} for this folder. Delete removes it;
@@ -586,3 +591,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: the command contract gains the failure `modelFailed`, because a worker that exits, times out or answers wrongly fits no other failure and its copy must not blame the download, the runner or the cache.
 - 2026-11-20: review of the app wiring and the worker. Stop and a failure hold the folder until the person prepares it again, and `paused` carries the hold across a restart. An update is a pass over a store a preparation once finished, and waits for 30 quiet seconds, at most 10 minutes. The built-in model writes no audit line. A question has 10 s. Failures name the step that failed. The commands refuse a source no screen offers, and prepare takes the index switch.
 - 2026-11-20: the desk line, the consent dialog and the Settings rows are built. The choice is stored per folder with a pause, so Stop survives a restart and the app is told the choice once at folder open; Resume and the dialog clear the pause. The copy table now lists the keys as built. The long-work card and the rail ring are left to the long-work seat, which reads `useVectorRun`.
+- 2026-11-20: the Wiki desk now lists passages found by words and by meaning in one list. A question asks for 24 passages beside the word search; a passage holding a word lead is that lead, otherwise its row is the range's first non-heading source line or first wiki claim, and passages in files the desk does not search are left out. Each row names its reason, and the coverage popover the prepared files. The line under the field names only the file being read, and follows an update of ten files or more with the ring and Stop. The progress ring on the rail is left to the long-work seat.

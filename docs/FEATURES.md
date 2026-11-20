@@ -191,7 +191,7 @@ The desktop rail's order and hrefs come from
 |---|---|---|
 | Map | `/` (with a loaded vault), `/topology` | [`features/map/`](features/map/README.md), [first run](features/first-run.md), [gateway](features/gateway.md) |
 | Harness | `/architecture` | [`harness.md`](features/harness.md) |
-| Library | `/library` (`/docs` is its ontology-tab compatibility entry) | [`features/library/`](features/library/workspace.md) — source import feedback, local Wiki questions, cited ACP reports, document export, Ontology bookmarks, and optional Jev advice |
+| Library | `/library` (`/docs` is its ontology-tab compatibility entry) | [`features/library/`](features/library/workspace.md) — source import feedback, local Wiki questions (by words, and by meaning in the app once set up), cited ACP reports, document export, Ontology bookmarks, and optional Jev advice |
 | Planning | `/planning` | Described below this table — a writable `planning/` folder inside the open folder, or a session-only, read-only folder the person picks; the Library's service import can land here |
 | Automations | `/automations` | [`automations.md`](features/automations.md) |
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
@@ -233,6 +233,7 @@ work here, and where it can.
 | Map entry feedback | ✅ | ✅ | sidebar and G M map entry mark Map in the rail at once and fade the page to the map's canvas before navigating; the preparation scene appears only when preparation outlasts that fade, the first canvas draw releases the cover, and another destination or the return action can cancel the pending entry |
 | Explore overlooked areas | ❌ reason + app link; recorded map stays usable | macOS local evidence reader; Windows stays unmeasured | selected scope + explicit bound-folder confirmation; native re-selection recovers missing source access without rebinding or scanning automatically; no agent or service needed |
 | Work offline | ❌ | ✅ | |
+| Search by meaning in the Wiki question desk | ❌ the line under the field says it works in the app | ✅ off until set up per folder | finds passages in other words or another language beside word matches, each row labelled Same words, Similar meaning or both; setup downloads bge-m3 (BAAI, MIT) once from huggingface.co, or uses an Ollama embedding model already on this computer; nothing from the folder is sent; the prepared passages sit beside the search index in the OS cache folder; Settings › Privacy · data deletes the model and them ([workspace](features/library/workspace.md)) |
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
 | Sent-log count and five recent records | FSA complete read | macOS bounded native pulls; other native platforms keep existing reads | changed, failed or expired reads offer Retry without publishing zero or stale rows; original history is preserved |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |

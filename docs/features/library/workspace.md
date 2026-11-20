@@ -61,6 +61,35 @@ match the no-match title is the head. An info glyph opens read coverage (omitted
 leads named only when there are some), only the limits that are not zero, the
 search method and the freshness caveat once in a popover. Asking again keeps the old rows until the new ones arrive and swaps them in
 place.
+
+**Search by meaning (2026-11-20).** In the installed app the desk can also find
+passages that say the same thing in other words or in another language. It is
+off until the person sets it up for a folder: a line under the field's scope
+sentence says "Searching by words" with **Set up search by meaning**, which opens
+a dialog stating the model (bge-m3 by BAAI, MIT licence), the one-time download
+from huggingface.co and what stays on this computer, that nothing from the folder
+is sent (the download asks only for the model's files), the memory used, and that
+Settings › Privacy · data deletes the model and the prepared passages. Where
+Ollama answers on this computer with an embedding model, the dialog also offers
+that model without a download. The work runs in the background; the line shows
+the download, then files prepared of the total with the file being read and
+Stop, and keeps one height in every state. An update of ten or more changed files
+is followed the same way; a smaller one is one quiet sentence. Once a folder
+holds prepared files (ready, still preparing, or stopped after at least one),
+Find evidence asks the app for the 24 nearest passages beside the word search,
+and the list waits for both. A passage in a file the desk does not search is
+left out; one that holds a word lead is that lead; otherwise its row is the
+passage's first sentence, the first non-heading line of a source or the first
+claim of a wiki page in its range, read from what the desk already read. These
+are a third list in the same rank fusion, and each row's second line ends with
+why it is there: Same words, Similar meaning, or both. The coverage popover adds
+how many files are prepared and, when some were, how many passages were left out
+because their file changed. When meaning cannot answer, the word rows stand with
+one sentence saying so (with Download again when the model is gone); with
+nothing set up, a search that finds nothing offers setup before the
+investigation action. The field's first focus in a visit loads the model so the
+first answer does not wait. The web playground has no search by meaning and says
+so in the line.
 A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify
 the sentence. Results from an older folder listing stay under a line saying the
