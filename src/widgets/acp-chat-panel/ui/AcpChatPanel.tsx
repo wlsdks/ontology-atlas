@@ -39,6 +39,7 @@ import { useTranscriptModel } from './chat-panel/use-transcript-model';
 import { useTranscriptSignals } from './chat-panel/use-transcript-signals';
 import { useTurnCapture } from './chat-panel/use-turn-capture';
 import { useTurnReports } from './chat-panel/use-turn-reports';
+import { useTurnHandover } from './chat-panel/use-turn-handover';
 import { useTurnClock, useTurnSilence } from './chat-panel/use-turn-timing';
 
 export type { AcpMapIntent } from '@/features/acp-session';
@@ -155,11 +156,6 @@ export function AcpChatPanelBody({
     rememberChoices: true,
   });
 
-  const turnHeld = status === 'thinking' || pending !== null;
-  useEffect(() => {
-    onBusyChange?.(turnHeld, turnHeld && activeTurnReadOnly);
-  }, [turnHeld, activeTurnReadOnly, onBusyChange]);
-
   const [connectStopped, setConnectStopped] = useState(false);
   // Mirrored so the start effects see it without re-running, which would race New chat's own start.
   const connectStoppedRef = useRef(false);
@@ -249,6 +245,7 @@ export function AcpChatPanelBody({
     requestComposerFocus,
     answerHold,
     requestCorrection,
+    dropPending,
   } = usePermissionReview({ pending, inputRef, setDraft, t });
 
   const chooseSlashCommand = (name: string) => {
@@ -439,42 +436,20 @@ export function AcpChatPanelBody({
         plan: reportedPlan,
       }
     : null;
-  const reportedActivity = onTurnWorkChange && busy && lastUserEventIndex >= 0
-    ? turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving)
-    : null;
-  const reportedKind = reportedActivity?.kind ?? null;
-  const reportedLabelKind = reportedActivity?.label?.kind ?? null;
-  const reportedLabelText = reportedActivity?.label?.text ?? null;
-  const reportedTarget = reportedActivity?.target ?? null;
-  const reportedAsking = awaitingAnswer;
-  useEffect(() => {
-    if (!onTurnWorkChange) return;
-    onTurnWorkChange(reportedKind === null ? null : {
-      kind: reportedKind,
-      label: reportedLabelKind === null ? null : { kind: reportedLabelKind, text: reportedLabelText ?? '' },
-      target: reportedTarget,
-      asking: reportedAsking,
-    });
-  }, [onTurnWorkChange, reportedAsking, reportedKind, reportedLabelKind, reportedLabelText, reportedTarget]);
-  useEffect(() => () => onTurnWorkChange?.(null), [onTurnWorkChange]);
-
-  const stopTurnRef = useRef<() => void>(() => {});
-  useEffect(() => {
-    stopTurnRef.current = () => {
+  const stopTurn = useTurnHandover({
+    busy,
+    held: status === 'thinking' || pending !== null,
+    readOnly: activeTurnReadOnly,
+    activity: () => lastUserEventIndex < 0 ? null
+      : turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving),
+    asking: awaitingAnswer,
+    stop: () => {
       setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
-      const request = livePendingRef.current;
-      livePendingRef.current = null;
-      request?.resolve(null);
-      setDeferredPermission(null);
+      dropPending();
       cancel();
-    };
+    },
+    onTurnWorkChange, onTurnStopChange, onBusyChange,
   });
-  const stopTurn = useCallback(() => stopTurnRef.current(), []);
-  useEffect(() => {
-    if (!onTurnStopChange) return;
-    onTurnStopChange(busy ? stopTurn : null);
-    return () => onTurnStopChange(null);
-  }, [busy, onTurnStopChange, stopTurn]);
 
   const displayStatus = connectStopped ? 'stopped' : status === 'idle' ? 'starting' : status;
   const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;

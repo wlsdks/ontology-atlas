@@ -83,6 +83,13 @@ export function usePermissionReview({
     setDraft((existing) => existing.trim() ? `${existing}\n\n${correction}` : correction);
     window.requestAnimationFrame(() => inputRef.current?.focus());
   };
+  /** Stopping the turn leaves its open question unanswered rather than refused. */
+  const dropPending = () => {
+    const request = livePendingRef.current;
+    livePendingRef.current = null;
+    request?.resolve(null);
+    setDeferredPermission(null);
+  };
   return {
     pendingHeld,
     pendingHeldChangeSet,
@@ -95,5 +102,6 @@ export function usePermissionReview({
     requestComposerFocus,
     answerHold,
     requestCorrection,
+    dropPending,
   };
 }
