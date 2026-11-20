@@ -405,11 +405,11 @@
     "canvasAria": "资料库图谱：原始来源、Wiki 页面，以及这些页面提到的概念。",
     "islandUnsorted": "未归类",
     "islandUnread": "未读取",
-    "describeIsland": "{name}：一座岛，含 {pages, number} 个页面及它们读取的 {sources, number} 个文件。点按即可展开为列；放大可看到名称。",
-    "announceIsland": "岛 {name}，第 {position, number} 个，共 {total, number} 个：{pages, number} 个页面和 {sources, number} 个文件。按 Enter 展开为列。",
+    "describeIsland": "{name}：一个分组，含 {pages, number} 个页面及它们读取的 {sources, number} 个文件。点按即可展开为列；放大可看到名称。",
+    "announceIsland": "分组 {name}，第 {position, number} 个，共 {total, number} 个：{pages, number} 个页面和 {sources, number} 个文件。按 Enter 展开为列。",
     "describeUnread": "未读取：{sources, number} 个还没有页面读过的文件。点按查看从哪里开始。",
     "unreadPressed": "有 {sources, number} 份来源还没有任何页面读过，所以它们之间没有可绘制的关系。它们在来源列表中标为“无 Wiki 页面”；图上方的“生成 Wiki 页面”会从第一份开始。",
-    "islandBack": "岛屿",
+    "islandBack": "全部分组",
     "islandName": "{name} · {pages, number} 个页面 · {sources, number} 个文件",
     "readerClose": "关闭页面",
     "keys": "用方向键在圆点间移动，Enter 在当前圆点旁打开卡片，Escape 关闭卡片。",
@@ -456,7 +456,7 @@
       "concept": "概念 {count, number}",
       "cite": "引用 {count, number}",
       "mention": "提及 {count, number}",
-      "island": "一座岛是一个概念",
+      "island": "一个分组是一个概念",
       "stale": "撰写后已变更",
       "gestures": "点按显示卡片 · 点按两次打开 · 滚动缩放"
     }

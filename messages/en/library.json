@@ -405,11 +405,11 @@
     "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
     "islandUnsorted": "Unsorted",
     "islandUnread": "Unread",
-    "describeIsland": "{name}: an island of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
-    "announceIsland": "Island {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
+    "describeIsland": "{name}: a group of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
+    "announceIsland": "Group {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
     "describeUnread": "Unread: {sources, number} files no page has read yet. Press it for where to start.",
     "unreadPressed": "{sources, number} files no page has read yet, so there is nothing between them to draw. Each is marked no wiki page in the Sources list; Write wiki page, above the picture, starts on the first.",
-    "islandBack": "Islands",
+    "islandBack": "All groups",
     "islandName": "{name} · {pages, number} pages · {sources, number} files",
     "readerClose": "Close the page",
     "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
@@ -456,7 +456,7 @@
       "concept": "Concept {count, number}",
       "cite": "Citation {count, number}",
       "mention": "Mention {count, number}",
-      "island": "One island is one concept",
+      "island": "One group is one concept",
       "stale": "Changed since written",
       "gestures": "Press for a card · press twice to open · scroll to zoom"
     }
