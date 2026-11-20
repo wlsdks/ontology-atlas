@@ -563,6 +563,56 @@ fn a_huge_limit_returns_at_most_sixty_four_hits() {
 }
 
 #[test]
+fn prefixes_choose_the_candidates_so_nearer_passages_elsewhere_never_crowd_them_out() {
+    let vault = TempVault::new("vectors-prefixes");
+    for i in 0..1_500 {
+        write(
+            &vault,
+            &format!("elsewhere/note-{i:04}.md"),
+            &format!("# Elsewhere {i}\nA note kept elsewhere, number {i}.\n"),
+        );
+    }
+    for i in 0..10 {
+        write(
+            &vault,
+            &format!("desk/page-{i}.md"),
+            &format!("# Desk {i}\nA page on the desk, number {i}.\n"),
+        );
+    }
+    // A prefix is bytes, not a folder: this one is under neither and matches nothing.
+    write(&vault, "desktop.md", "# Desktop\nNot on the desk.\n");
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    // Ten desk pages among 1,511 passages: the nearest 64 hold too few of them for a filter applied
+    // after the limit to return eight.
+    let question = fake("# Elsewhere 7\nA note kept elsewhere, number 7.");
+    let everywhere = searcher.nearest_within(&question, 64, &[]).unwrap();
+    assert_eq!(everywhere, searcher.nearest(&question, 64).unwrap());
+    let desk_among_nearest = everywhere
+        .hits
+        .iter()
+        .filter(|hit| hit.path.starts_with("desk/"))
+        .count();
+    assert!(desk_among_nearest < 8, "{desk_among_nearest}");
+
+    let desk = searcher
+        .nearest_within(&question, 8, &["desk/".to_string()])
+        .unwrap();
+    assert_eq!(desk.hits.len(), 8, "{:?}", desk.hits);
+    assert!(desk.hits.iter().all(|hit| hit.path.starts_with("desk/")));
+    let both = searcher
+        .nearest_within(&question, 64, &["desk/".to_string(), "desktop".to_string()])
+        .unwrap();
+    assert_eq!(both.hits.len(), 11);
+    assert!(searcher
+        .nearest_within(&question, 8, &["nowhere/".to_string()])
+        .unwrap()
+        .hits
+        .is_empty());
+}
+
+#[test]
 fn a_file_contributes_at_most_five_hundred_passages() {
     let vault = TempVault::new("vectors-cap");
     let many: String = (0..620)

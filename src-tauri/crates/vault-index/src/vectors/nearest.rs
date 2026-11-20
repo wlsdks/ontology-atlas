@@ -191,7 +191,20 @@ impl Searcher {
     /// A damaged file is let go and set aside unless a build holds the writer lock, which a search
     /// never waits for; the next `plan` sets it aside then.
     pub fn nearest(&mut self, query: &[f32], limit: usize) -> Result<Found> {
-        let found = self.search(query, limit.min(MAX_HITS));
+        self.nearest_within(query, limit, &[])
+    }
+
+    /// `nearest` among the passages a file whose path starts, byte for byte, with one of
+    /// `prefixes` holds; none means every file. The candidates are chosen among those passages
+    /// only, so passages nearer the query elsewhere never crowd them out. Each prefix costs one
+    /// pass over the files.
+    pub fn nearest_within(
+        &mut self,
+        query: &[f32],
+        limit: usize,
+        prefixes: &[String],
+    ) -> Result<Found> {
+        let found = self.search(query, limit.min(MAX_HITS), prefixes);
         if let Err(error) = &found {
             if error.is_damage() {
                 self.release()?;
@@ -201,7 +214,7 @@ impl Searcher {
         found
     }
 
-    fn search(&mut self, query: &[f32], limit: usize) -> Result<Found> {
+    fn search(&mut self, query: &[f32], limit: usize, prefixes: &[String]) -> Result<Found> {
         let quantized = check_vector(0, query, self.model.dimensions)
             .map_err(|refusal| invalid_input(&format!("query refused: {refusal}")))?;
         if self.store_gone() {
@@ -228,24 +241,54 @@ impl Searcher {
             .iter()
             .map(|word| u64::from_le_bytes(*word))
             .collect();
+        let within = if prefixes.is_empty() {
+            None
+        } else {
+            Some(self.indices_under(prefixes)?)
+        };
         let candidates = self.nearest_by_signs(
             &query_bits,
             RESCORE_CANDIDATES.max(limit.saturating_mul(16)),
+            within.as_deref(),
         );
         let ranked = self.rescore(&unit, &candidates)?;
-        self.verify(ranked, limit)
+        self.verify(ranked, limit, prefixes)
+    }
+
+    /// Indexes into `ids`, ascending, of the vectors a file under one of `prefixes` holds.
+    fn indices_under(&self, prefixes: &[String]) -> Result<Vec<usize>> {
+        let mut statement = self.conn.prepare_cached(
+            "SELECT v.id FROM files AS f
+               JOIN passages AS p ON p.file_id = f.id
+               JOIN vectors AS v ON v.sha256 = p.sha256
+              WHERE substr(CAST(f.path AS BLOB), 1, ?2) = ?1",
+        )?;
+        let ids = self.ids.as_slice();
+        let mut indices = Vec::new();
+        for prefix in prefixes {
+            let bytes = prefix.as_bytes();
+            let rows = statement.query_map(rusqlite::params![bytes, bytes.len() as i64], |row| {
+                row.get::<_, i64>(0)
+            })?;
+            for id in rows {
+                let id = u64::try_from(id?).unwrap_or(u64::MAX);
+                if let Ok(index) = ids.binary_search(&id) {
+                    indices.push(index);
+                }
+            }
+        }
+        indices.sort_unstable();
+        indices.dedup();
+        Ok(indices)
     }
 
     /// Indexes into `ids` of the `count` vectors with the fewest differing sign bits, kept in a
-    /// bounded max-heap.
-    fn nearest_by_signs(&self, query: &[u64], count: usize) -> Vec<usize> {
+    /// bounded max-heap; only those in `within` when it is given.
+    fn nearest_by_signs(&self, query: &[u64], count: usize, within: Option<&[usize]>) -> Vec<usize> {
+        let words = self.model.words();
+        let vectors = self.bits.as_slice();
         let mut heap: BinaryHeap<(u32, usize)> = BinaryHeap::with_capacity(count + 1);
-        for (index, vector) in self
-            .bits
-            .as_slice()
-            .chunks_exact(self.model.words())
-            .enumerate()
-        {
+        let mut consider = |index: usize, vector: &[u64]| {
             let distance: u32 = vector
                 .iter()
                 .zip(query)
@@ -256,6 +299,21 @@ impl Searcher {
             } else if heap.peek().is_some_and(|&(worst, _)| distance < worst) {
                 heap.pop();
                 heap.push((distance, index));
+            }
+        };
+        match within {
+            None => {
+                for (index, vector) in vectors.chunks_exact(words).enumerate() {
+                    consider(index, vector);
+                }
+            }
+            Some(within) => {
+                for &index in within {
+                    let start = index.saturating_mul(words);
+                    if let Some(vector) = vectors.get(start..start.saturating_add(words)) {
+                        consider(index, vector);
+                    }
+                }
             }
         }
         heap.into_iter().map(|(_, index)| index).collect()
@@ -294,8 +352,15 @@ impl Searcher {
         Ok(ranked)
     }
 
-    /// The best `limit` of `ranked` whose file still holds them; each file is read once.
-    fn verify(&self, ranked: Vec<(f32, Sha)>, limit: usize) -> Result<Found> {
+    /// The best `limit` of `ranked` whose file, under one of `prefixes` when any are given, still
+    /// holds them; each file is read once.
+    fn verify(&self, ranked: Vec<(f32, Sha)>, limit: usize, prefixes: &[String]) -> Result<Found> {
+        let under = |path: &str| {
+            prefixes.is_empty()
+                || prefixes
+                    .iter()
+                    .any(|prefix| path.as_bytes().starts_with(prefix.as_bytes()))
+        };
         let mut found = Found::default();
         let mut files: HashMap<String, Option<Vec<Passage>>> = HashMap::new();
         let mut holders = self.conn.prepare_cached(
@@ -306,7 +371,7 @@ impl Searcher {
             let paths = holders
                 .query_map([sha.as_slice()], |row| row.get::<_, String>(0))?
                 .collect::<rusqlite::Result<Vec<_>>>()?;
-            for path in paths {
+            for path in paths.into_iter().filter(|path| under(path)) {
                 if found.hits.len() >= limit {
                     return Ok(found);
                 }

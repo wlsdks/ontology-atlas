@@ -675,6 +675,20 @@ impl Searcher {
             .query_row("SELECT count(*) FROM files", [], |row| row.get(0))?;
         Ok(u64::try_from(count).unwrap_or(0))
     }
+
+    /// The files indexed and their bytes as the last pass saw them, read from the index alone:
+    /// nothing in the vault is opened or listed.
+    pub fn indexed_text(&self) -> Result<(u64, u64)> {
+        let (count, bytes): (i64, i64) = self.conn.query_row(
+            "SELECT count(*), coalesce(sum(size), 0) FROM files",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )?;
+        Ok((
+            u64::try_from(count).unwrap_or(0),
+            u64::try_from(bytes).unwrap_or(0),
+        ))
+    }
 }
 
 /// How many times a writer recreates its folder after a delete removed it while the writer waited.
