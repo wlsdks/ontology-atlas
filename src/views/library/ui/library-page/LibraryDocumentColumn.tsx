@@ -95,22 +95,33 @@ export function LibraryDocumentColumn({
   const painted = useMemo(() => createPaintedBody(), [pageSlug]);
   const paintedSlugRef = useRef<string | null>(null);
   const landingCleanupRef = useRef<(() => void) | null>(null);
-  useEffect(() => () => landingCleanupRef.current?.(), [pageSlug]);
+  /* A page that arrives clears the last one's landing itself; this covers leaving the reader. */
+  useEffect(() => () => landingCleanupRef.current?.(), []);
   const onBodyPainted = useCallback((body: string | null) => {
     painted.set(body);
     const scroller = articleScrollRef.current;
     if (body === null || !pageSlug || !scroller) return;
     const arrived = paintedSlugRef.current !== pageSlug;
     paintedSlugRef.current = pageSlug;
-    const landing = landingRef.current;
-    if (landing && landing.slug === pageSlug) {
-      landingRef.current = null;
-      if ("top" in landing) scroller.scrollTop = landing.top;
-      else if (pageBodyRef.current) landingCleanupRef.current = landAtLine(scroller, pageBodyRef.current, landing.line, reducedMotion);
-      return;
-    }
-    // Another page opened in the same pane starts at its top, not at the scroll the last one left.
-    if (arrived) scroller.scrollTop = 0;
+    const landing = landingRef.current?.slug === pageSlug ? landingRef.current : null;
+    if (landing) landingRef.current = null;
+    else if (!arrived) return;
+    /*
+     * In the next frame, before it paints: placing the scroll lays the new body out, and doing
+     * that inside the commit that rendered a long page would add the whole layout to that task.
+     */
+    landingCleanupRef.current?.();
+    const layer = pageBodyRef.current;
+    let undo: (() => void) | null = null;
+    const frame = requestAnimationFrame(() => {
+      if (!landing) scroller.scrollTop = 0;
+      else if ("top" in landing) scroller.scrollTop = landing.top;
+      else if (layer) undo = landAtLine(scroller, layer, landing.line, reducedMotion);
+    });
+    landingCleanupRef.current = () => {
+      cancelAnimationFrame(frame);
+      undo?.();
+    };
   }, [articleScrollRef, landingRef, pageBodyRef, pageSlug, painted, reducedMotion]);
   const openSourceAt = useCallback((path: string, anchor?: string) => {
     skipReaderFocusRef.current = true;
