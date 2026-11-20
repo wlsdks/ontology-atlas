@@ -978,5 +978,28 @@
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
     "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
     "allDone": "每份来源都有 Wiki 页面"
+  },
+  "check": {
+    "title": "正在检查 Wiki",
+    "reading": "{agent} · 正在读取 <name>{page}</name>",
+    "working": "{agent} · {tool}",
+    "writing": "{agent} · 正在撰写报告",
+    "cardWriting": "正在撰写报告",
+    "figures": "{read, plural, =0 {尚未读取页面} other {已读取 <count>#</count> 个页面}} · {elapsed}",
+    "asking": "{agent} 在继续之前需要你确认。你回答之前，检查会一直等待。",
+    "review": "查看",
+    "doneTitle": "Wiki 检查已完成",
+    "foundTitle": "{pages, number} 个页面中有 {findings, number} 项发现",
+    "foundBody": "Wiki 检查已完成，检查结果中全部列出。",
+    "doneClean": "智能体在已读取的页面中没有发现需要修复的地方。",
+    "openResults": "打开检查结果",
+    "unreadTitle": "检查已完成，但报告不是列表",
+    "unreadBody": "无法从智能体的回答中读取发现，因此检查结果保持不变。回答按原样保留在对话中。",
+    "unreadCardTitle": "无法读取报告",
+    "unreadCardBody": "检查结果保持不变。智能体的回答在对话中。",
+    "openConversation": "打开对话",
+    "failedTitle": "Wiki 检查提前结束了",
+    "failedBody": "{agent} 在报告之前就结束了。没有文件被更改。按“检查 Wiki”可再次运行。",
+    "stopped": "你已停止此检查。没有报告任何内容，也没有文件被更改。"
   }
 }

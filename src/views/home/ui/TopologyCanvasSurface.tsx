@@ -13,6 +13,7 @@ import type { useTopologySceneControls } from "../model/map-canvas/use-topology-
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
+import { useLiftClearOfWorkCard } from "@/features/work-run";
 import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
@@ -20,7 +21,7 @@ import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/status/frame-meter";
 import { HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyScopeReadout } from "./TopologyScopeReadout";
 import { resolveMapScopeCount } from "../lib/map-scope/resolve-count";
@@ -180,11 +181,10 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           {/* With 0-1 visible nodes a lone dot reads as broken; an empty vault never mounts the
              engine at all. */}
           {(topologyOverlayState.kind === "structural-empty" || starterRecoveryActive) && !createNodeOpen ? (
-            // A writable vault gets the progressive start checklist; with documents present its
-            // first step is bootstrap.
-            // Hidden while a conversation is open, which already started; closing the panel brings
-            // it back.
-            startStepsVisible ? (
+            <StartStackClearOfWorkCard>
+            {/* A writable vault gets the progressive start checklist, its first step bootstrap when
+               documents exist. Hidden while a conversation is open; closing the panel brings it back. */}
+            {startStepsVisible ? (
               <VaultStartSteps
                 agentConnected={agentConnect.status.kind === "connected"}
                 acpRuntimeLabel={acpRuntimeLabel}
@@ -239,7 +239,8 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                     : undefined
                 }
               />
-            ) : null
+            ) : null}
+            </StartStackClearOfWorkCard>
           ) : topologyOverlayState.kind === "filter-sparse" ? (
             <TopologyNoMatchesState
               onClearFilters={clearTopologyFilters}
@@ -486,4 +487,30 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
       </>
     </div>
   </>);
+}
+
+/**
+ * The first-run card sits in the window's centre; on a short window the run's card would cover its
+ * buttons, so the stack rises clear of it and settles back once the card goes.
+ */
+function StartStackClearOfWorkCard({ children }: { children: React.ReactNode }) {
+  const layerRef = useRef<HTMLDivElement>(null);
+  const stackOf = useCallback(() => layerRef.current?.querySelector<HTMLElement>('[role="status"]') ?? null, []);
+  const liftPx = useLiftClearOfWorkCard(stackOf);
+  return (
+    <div
+      ref={layerRef}
+      data-testid="map-start-stack-layer"
+      data-lift-px={liftPx}
+      className={cn(
+        "pointer-events-none absolute inset-0 z-20 transition-[translate] duration-[var(--motion-slow)] ease-[var(--motion-ease)]",
+        "[&_[data-map-start-art]]:transition-opacity [&_[data-map-start-art]]:duration-[var(--motion-slow)] [&_[data-map-start-art]]:ease-[var(--motion-ease)]",
+        // Risen, the art would run under the map's toolbar; the card it sits above keeps the meaning.
+        liftPx > 0 && "[&_[data-map-start-art]]:opacity-0",
+      )}
+      style={liftPx > 0 ? { translate: `0 ${-liftPx}px` } : undefined}
+    >
+      {children}
+    </div>
+  );
 }

@@ -5,6 +5,8 @@ import { Stethoscope } from "lucide-react";
 import type { useTranslations } from "next-intl";
 
 import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/library";
+import { isRunActive, useWorkRunStage, type WorkRun } from "@/features/work-run";
+import { Button } from "@/shared/ui/controls/button";
 import type { WikiReport, WikiReportRow } from "@/shared/lib/library/wiki-report.mjs";
 import { Chip, Disclosure, Tooltip } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
@@ -21,6 +23,7 @@ import {
 import { localizeWikiLogSummary } from "../../../lib/wiki/wiki-log-summary";
 import { AgentMissingNotice } from "../agent/AgentMissingNotice";
 import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
+import { WikiCheckStage } from "./WikiCheckStage";
 
 /**
  * Two ledgers, the computed one first: what the app checked (from `model.structural`, needing no
@@ -381,6 +384,11 @@ export function LibraryCheckReport({
   advisoryOpen: advisoryOpenProp,
   onAdvisoryOpenChange,
   fixedKeys,
+  checkRun = null,
+  folder,
+  onStopCheck,
+  onOpenConversation,
+  conversationOpen = false,
   t,
 }: {
   /**
@@ -432,8 +440,18 @@ export function LibraryCheckReport({
   onAdvisoryOpenChange?: (open: boolean) => void;
   /** Keys (`findingKey`) of the findings a Fix turn completed since the last check. */
   fixedKeys?: ReadonlySet<string>;
+  /** This folder's wiki check, running or ended this session; the section is its stage. */
+  checkRun?: WorkRun | null;
+  /** The folder this page shows, so the card elsewhere stands down while this stage is drawn. */
+  folder?: string;
+  onStopCheck?: () => void;
+  onOpenConversation?: () => void;
+  /** The conversation stands beside the report, already showing the agent at work. */
+  conversationOpen?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
+  useWorkRunStage(folder ?? "", folder !== undefined);
+  const checkRunning = isRunActive(checkRun);
   const [candidatesOpen, setCandidatesOpen] = useState(false);
   /**
    * Advisory kinds start closed in every state: they are true of any wiki nobody has cross-linked, so
@@ -643,21 +661,43 @@ export function LibraryCheckReport({
         >
           {t("report.semanticTitle")}
         </h3>
-        <p
-          data-testid="library-check-report-when"
-          className="mt-1.5 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-        >
-          {lastLint
-            ? t("wiki.logLint", { when: logWhen(lastLint.at), summary: localizeWikiLogSummary(lastLint.summary, t) })
-            : t("report.never")}
-        </p>
+        {checkRunning && !lastLint ? null : (
+          <p
+            data-testid="library-check-report-when"
+            className="mt-1.5 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          >
+            {lastLint
+              ? t("wiki.logLint", { when: logWhen(lastLint.at), summary: localizeWikiLogSummary(lastLint.summary, t) })
+              : t("report.never")}
+          </p>
+        )}
 
-        {semanticEmpty ? (
+        {checkRun && checkRunning ? (
+          <WikiCheckStage run={checkRun} besideConversation={conversationOpen} onStop={() => onStopCheck?.()} onReview={() => onOpenConversation?.()} />
+        ) : checkRun?.phase === "unreadable" || checkRun?.phase === "failed" ? (
+          <div data-testid="library-check-ended" data-phase={checkRun.phase} className="mt-4 flex flex-col items-start gap-1.5">
+            <p className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">
+              {checkRun.phase === "unreadable" ? t("check.unreadTitle") : t("check.failedTitle")}
+            </p>
+            <p className="text-body leading-body text-[color:var(--color-text-secondary)]">
+              {checkRun.phase === "unreadable" ? t("check.unreadBody") : t("check.failedBody", { agent: checkRun.agent })}
+            </p>
+            {onOpenConversation ? (
+              <Button size="sm" variant="outline" className="mt-1.5" onClick={onOpenConversation} data-testid="library-check-open-conversation">
+                {t("check.openConversation")}
+              </Button>
+            ) : null}
+          </div>
+        ) : semanticEmpty ? (
           <div className="mt-4 flex flex-col items-start gap-3">
             {/* Lines here live in the report's column, so `--measure-doc-column` is the measure, not a `ch` cap,
                which resolves shorter and gives a second right edge. */}
-            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-              {lastLint ? (lastCheckFoundSomething ? t("report.gone") : t("report.clean")) : t("report.emptyLede")}
+            <p data-testid="library-check-lede" className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+              {checkRun?.phase === "stopped"
+                ? t("check.stopped")
+                : checkRun?.phase === "clean"
+                  ? t("report.clean")
+                  : lastLint ? (lastCheckFoundSomething ? t("report.gone") : t("report.clean")) : t("report.emptyLede")}
             </p>
           </div>
         ) : null}
@@ -665,7 +705,7 @@ export function LibraryCheckReport({
         {/* Availability is a state with its reason. With no coding agent at all, the index's notice with its
            door replaces a dead chip; while one is still being looked for, or a local model can only compile,
            the chip stays beside its reason. */}
-        {onLint === null && agentMissing ? (
+        {checkRunning ? null : onLint === null && agentMissing ? (
           <AgentMissingNotice
             testId="library-check-report-agent-missing"
             doorTestId="library-check-report-agent-missing-door"
