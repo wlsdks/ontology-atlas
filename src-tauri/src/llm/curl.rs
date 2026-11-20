@@ -57,7 +57,7 @@ pub(crate) fn curl_config_for(
     config
 }
 
-const TIMED_OUT_PREFIX: &str = "timed-out:";
+pub(super) const TIMED_OUT_PREFIX: &str = "timed-out:";
 
 fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     match code {
@@ -72,13 +72,27 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
 }
 
 pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
+    run_curl_until(argv, config, None, None)
+}
+
+/// `run_curl` that kills curl and answers `cancelled` once `cancel` is set, or `timed-out:` once
+/// `deadline` passes.
+pub(crate) fn run_curl_until(
+    argv: [&'static str; 9],
+    config: &str,
+    cancel: Option<&std::sync::atomic::AtomicBool>,
+    deadline: Option<std::time::Instant>,
+) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
     crate::no_console::hide_console(&mut command);
     command.args(argv);
-    let output = http_output::capture(command, config.as_bytes()).map_err(|err| match err {
+    let ends = http_output::Ends { cancel, deadline };
+    let captured = http_output::capture_until(command, config.as_bytes(), ends);
+    let output = captured.map_err(|err| match err {
         http_output::CaptureError::Request(err) => coded("request-failed", err),
         http_output::CaptureError::Response(err) => coded("no-response", err),
         http_output::CaptureError::Cancelled => coded("cancelled", ""),
+        http_output::CaptureError::TimedOut => format!("{TIMED_OUT_PREFIX} deadline"),
     })?;
     interpret_curl_output(
         output.status.code(),

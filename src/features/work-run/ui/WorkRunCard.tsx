@@ -12,15 +12,24 @@ import { Button } from '@/shared/ui/controls/button';
 
 import { isRunActive, type WorkRun, type WorkRunPhase } from '../model/work-run';
 import type { ScheduledRun } from '../model/scheduled-run';
+import { isMeaningActive, type MeaningRun } from '../model/meaning-run';
 import { turnPageDoor, type TurnRun } from '../model/turn-run';
 import { workRuns, type SeatRun } from '../model/work-run-store';
 import { useCheckDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
-import { isSeatRunActive, seatRuns, useWaitedLabel, useWorkRunElapsed, useWorkRunSnapshot } from '../model/use-work-run';
+import {
+  isSeatRunActive,
+  seatRuns,
+  useMeaningProgress,
+  useWaitedLabel,
+  useWorkRunElapsed,
+  useWorkRunSnapshot,
+} from '../model/use-work-run';
 import { turnTint, useTurnRunCopy } from './use-turn-run-copy';
 import { useWorkRunCopy, type WorkRunMarks } from './use-work-run-copy';
 import { scheduledTint, useScheduledRunCopy, type SeatTint } from './use-scheduled-run-copy';
 import { RollingCount } from './RollingCount';
-import { WorkRunMoru } from './WorkRunMoru';
+import { MeaningRunMoru, WorkRunMoru } from './WorkRunMoru';
+import { useMeaningRunCopy, type MeaningFigure } from './use-meaning-run-copy';
 import { WorkRunsDialog } from './WorkRunsDialog';
 import { useSeatStepAside } from './use-seat-step-aside';
 import { WORK_CARD_ATTRIBUTE } from './use-clear-of-work-card';
@@ -30,7 +39,7 @@ const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
 
 /** Running and asking share one layer, so a permission ask changes words in place, not the card. */
 function layerOf(entry: SeatRun): string {
-  if (entry.kind === 'scheduled') return `${entry.key}:${entry.run.phase}`;
+  if (entry.kind === 'scheduled' || entry.kind === 'meaning') return `${entry.key}:${entry.run.phase}`;
   if (entry.kind === 'turn') {
     const { phase } = entry.run;
     return `${entry.key}:${phase === 'running' || phase === 'asking' ? 'live' : phase}`;
@@ -79,6 +88,11 @@ function useLeavingLayer(entry: SeatRun) {
   return layers;
 }
 
+function meaningTint(run: MeaningRun): SeatTint {
+  if (run.phase === 'ready') return 'success';
+  return run.phase === 'failed' ? 'amber' : 'running';
+}
+
 function tintOfCheck(phase: WorkRunPhase): SeatTint {
   if (phase === 'found' || phase === 'clean') return 'success';
   if (phase === 'failed' || phase === 'unreadable') return 'amber';
@@ -95,7 +109,11 @@ function CardBox({ entry, open, others, onOpenList }: {
   const layers = useLeavingLayer(entry);
   const cardRef = useRef<HTMLDivElement>(null);
   const { probe, shiftPx } = useSeatStepAside(open, cardRef);
-  const tint = entry.kind === 'check' ? tintOfCheck(entry.run.phase) : entry.kind === 'turn' ? turnTint(entry.run) : scheduledTint(entry.run);
+  const tint = entry.kind === 'check'
+    ? tintOfCheck(entry.run.phase)
+    : entry.kind === 'meaning'
+      ? meaningTint(entry.run)
+      : entry.kind === 'turn' ? turnTint(entry.run) : scheduledTint(entry.run);
   return (
     <div
       ref={cardRef}
@@ -183,10 +201,12 @@ interface LayerProps {
 }
 
 function EntryLayer(props: LayerProps) {
-  if (props.entry.kind === 'turn') return <TurnLayer {...props} run={props.entry.run} />;
-  return props.entry.kind === 'check'
-    ? <PhaseLayer {...props} run={props.entry.run} />
-    : <ScheduledLayer {...props} run={props.entry.run} />;
+  const { entry } = props;
+  if (entry.kind === 'meaning') return <MeaningLayer {...props} run={entry.run} />;
+  if (entry.kind === 'turn') return <TurnLayer {...props} run={entry.run} />;
+  return entry.kind === 'check'
+    ? <PhaseLayer {...props} run={entry.run} />
+    : <ScheduledLayer {...props} run={entry.run} />;
 }
 
 function LayerFrame({ motion, children }: { motion: LayerProps['motion']; children: ReactNode }) {
@@ -393,6 +413,102 @@ function ScheduledLayer({ run, motion, others, onOpenList }: LayerProps & { run:
       {running ? (
         <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none">
           <WorkProgress phase="running" done={run.checkedCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
+        </div>
+      ) : null}
+    </LayerFrame>
+  );
+}
+
+/** The meaning run's lead figure rolls like the check's count. */
+const MEANING_FIGURE: MeaningFigure = (value, format) => (
+  <RollingCount
+    value={value}
+    format={format}
+    className="mr-0.5 text-display leading-display-tight font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+  />
+);
+
+/** The figures a leaving layer drew last, so it fades out as it was rather than with the next phase's. */
+function useLayerProgress(leaving: boolean) {
+  const live = useMeaningProgress();
+  const [held] = useState(live);
+  return leaving ? held : live;
+}
+
+function MeaningLayer({ entry, run, motion, others, onOpenList }: LayerProps & { run: MeaningRun }) {
+  const t = useTranslations('workCard.meaning');
+  const tCard = useTranslations('workCard');
+  const leaving = motion === 'out';
+  const progress = useLayerProgress(leaving);
+  const copy = useMeaningRunCopy(run, progress?.runId === run.id ? progress : null, MEANING_FIGURE);
+  const active = isMeaningActive(run);
+  const testId = (id: string) => (leaving ? undefined : id);
+  const primary = run.phase === 'ready'
+    ? { label: t('ask'), kind: 'ask' as const, id: 'work-run-ask' }
+    : run.phase === 'failed'
+      ? { label: t('openLibrary'), kind: 'library' as const, id: 'work-run-open-library' }
+      : null;
+
+  return (
+    <LayerFrame motion={motion}>
+      <MeaningRunMoru phase={run.phase} />
+      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
+      <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
+        <p
+          data-testid={testId('work-run-title')}
+          className={copy.lead !== null
+            ? 'truncate text-label leading-label text-[color:var(--color-text-tertiary)]'
+            : 'truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'}
+        >
+          {copy.title}
+          {copy.remaining ? (
+            <>
+              <span aria-hidden className="px-1.5 text-[color:var(--color-text-quaternary)]">·</span>
+              <span data-testid={testId('work-run-minutes')}>{copy.remaining}</span>
+            </>
+          ) : null}
+        </p>
+        {copy.lead !== null ? (
+          <div aria-live="off" className="grid min-w-0">
+            <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
+              {copy.lead}
+            </p>
+            <div data-testid={testId('work-run-line')} className="flex min-w-0 truncate text-body leading-body text-[color:var(--color-text-secondary)]">
+              {copy.line}
+            </div>
+          </div>
+        ) : (
+          <p data-testid={testId('work-run-detail')} className="line-clamp-2 text-label leading-label text-[color:var(--color-text-secondary)]">
+            {copy.line}
+          </p>
+        )}
+        <div className="flex h-8 min-w-0 items-center gap-2">
+          {active ? (
+            <Button size="sm" variant="outline" onClick={() => workRuns.stopRun(entry.key)} data-testid={testId('work-run-stop')}>
+              {tCard('stop')}
+            </Button>
+          ) : null}
+          {primary ? (
+            <Button size="sm" onClick={() => workRuns.openMeaningDoor(entry.key, primary.kind)} data-testid={testId(primary.id)}>
+              {primary.label}
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => (active ? workRuns.hideActive() : workRuns.closeRun(entry.key))}
+            data-testid={testId(active ? 'work-run-hide' : 'work-run-close')}
+            className="touch-hit-expand text-[color:var(--color-text-secondary)]"
+          >
+            {active ? tCard('hide') : tCard('close')}
+          </Button>
+          <MoreRuns others={others} onOpenList={onOpenList} testId={testId} />
+        </div>
+      </div>
+      {copy.bar ? (
+        // Figures arrive four times a second, so each step eases into the next without a rest.
+        <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none [&_[data-work-fill]]:duration-[var(--motion-slow)]">
+          <WorkProgress phase="running" done={copy.bar.done} total={copy.bar.total} label={tCard('progressLabel', { title: copy.title })} />
         </div>
       ) : null}
     </LayerFrame>

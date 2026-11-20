@@ -1,15 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 
+import { MeaningDeskLine, MeaningSetupPress, useVectorSearch } from '@/features/vault-vectors';
 import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 import {
   buildQuestionDeskReportBrief,
   countDeskReadablePages,
   countDeskWikiPages,
+  deskBriefEvidence,
+  deskMeaningLeads,
+  deskSearchPrefixes,
   findDeskClaims,
   findDeskSourceHits,
   fuseDeskLeads,
@@ -21,6 +25,7 @@ import {
   type DeskSourceHit,
 } from '@/features/library';
 import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-passage';
+import type { VectorFound } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { Button, Chip } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -40,8 +45,6 @@ export type { QuestionDeskReportDraft } from './desk/DeskReport';
 interface DeskResult extends DeskLeadSet {
   question: string;
   listingVersion: string;
-  claims: DeskClaim[];
-  sourceHits: DeskSourceHit[];
   readPages: number;
   totalPages: number;
   omittedClaims: number;
@@ -50,6 +53,17 @@ interface DeskResult extends DeskLeadSet {
   unreadableSources: number;
   changedSources: number;
   omittedSources: number;
+  /** How search by meaning answered this question; `null` when it was not asked. */
+  meaning: DeskMeaningAnswer | null;
+}
+
+interface DeskMeaningAnswer {
+  state: VectorFound['state'];
+  failure: VectorFound['failure'];
+  filesReady: number;
+  filesTotal: number;
+  /** Passages left out because their file changed, by the app or by the desk's own read. */
+  staleDropped: number;
 }
 
 export interface QuestionDeskReportRequest {
@@ -122,12 +136,15 @@ export function LibraryQuestionDesk({
   const searchId = useRef(0);
   const sourceUnitsByStamp = useRef(new Map<string, SourceUnit[]>());
   const jev = useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoot, vaultScope });
+  const meaningSearch = useVectorSearch(vaultRoot, docs.length, visible);
 
   useEffect(() => () => { searchId.current += 1; }, []);
 
-  const listingVersion = questionDeskListingVersion(docs, sources);
+  // Both read every page and source: worked out when the listing changes, not on each render.
+  const listingVersion = useMemo(() => questionDeskListingVersion(docs, sources), [docs, sources]);
+  const readablePages = useMemo(() => countDeskReadablePages(docs, pageTexts), [docs, pageTexts]);
   const fresh = result !== null && result.listingVersion === listingVersion
-    && result.readPages === countDeskReadablePages(docs, pageTexts);
+    && result.readPages === readablePages;
   const outdated = result !== null && !fresh;
   const slot = useDeskSwap(result ? RESULTS : ENTRY, reducedMotion);
 
@@ -146,9 +163,16 @@ export function LibraryQuestionDesk({
     const currentStamps = new Set(plan.map(stamp));
     for (const key of sourceUnitsByStamp.current.keys()) if (!currentStamps.has(key)) sourceUnitsByStamp.current.delete(key);
     const hits: DeskSourceHit[] = [];
+    /* The units this search read, which also give the sentences of passages found by meaning. */
+    const unitsByPath = new Map<string, readonly SourceUnit[]>();
     let unreadableSources = 0;
     let changedSources = 0;
     let omittedPerFile = 0;
+    /* Asked beside the word search; the list waits for both, and the app ends a question at 10 s. */
+    const askedByMeaning = meaningSearch.ask(asked, deskSearchPrefixes([
+      ...docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => `${doc.slug}.md`),
+      ...sources.map((source) => source.path),
+    ]));
     try {
       for (const source of plan) {
         if (id !== searchId.current) return;
@@ -156,6 +180,7 @@ export function LibraryQuestionDesk({
         if (cached) {
           if (cached.length === 0) unreadableSources += 1;
           else {
+            unitsByPath.set(source.path, cached);
             const found = findDeskSourceHits(source.path, cached, terms);
             hits.push(...found.hits);
             omittedPerFile += found.matches - found.hits.length;
@@ -176,6 +201,7 @@ export function LibraryQuestionDesk({
             sourceUnitsByStamp.current.set(stamp(source), units);
             if (units.length === 0) unreadableSources += 1;
             else {
+              unitsByPath.set(source.path, units);
               const found = findDeskSourceHits(source.path, units, terms);
               hits.push(...found.hits);
               omittedPerFile += found.matches - found.hits.length;
@@ -187,14 +213,24 @@ export function LibraryQuestionDesk({
       }
       hits.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
       const sourceHits = hits.slice(0, 8);
+      const found = askedByMeaning ? await askedByMeaning : null;
+      if (id !== searchId.current) return;
+      const byMeaning = found?.state === 'ok' ? deskMeaningLeads({
+        hits: found.hits, docs, rawBySlug: pageTexts, searchedSources: new Set(plan.map((source) => source.path)),
+        sourceUnitsByPath: unitsByPath, claims: wiki.claims, sourceHits,
+      }) : null;
       /* A report cost an agent turn: it leaves with the rows it answered, when the new rows arrive. */
       onInvalidateReport();
       setResult({
-        question: asked, searchId: id, listingVersion: searchedVersion, claims: wiki.claims, sourceHits,
-        leads: fuseDeskLeads(wiki.claims, sourceHits), terms,
+        question: asked, searchId: id, listingVersion: searchedVersion,
+        leads: fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []), terms, reasons: byMeaning !== null,
         readPages: wiki.readPages, totalPages: wiki.totalPages, omittedClaims: wiki.omitted,
         plannedSources: plan.length, totalSources: sources.length, unreadableSources,
         changedSources, omittedSources: omittedPerFile + Math.max(0, hits.length - 8),
+        meaning: found ? {
+          state: found.state, failure: found.failure, filesReady: found.filesReady, filesTotal: found.filesTotal,
+          staleDropped: found.staleDropped + (byMeaning?.dropped ?? 0),
+        } : null,
       });
     } finally {
       if (id === searchId.current) setReading(false);
@@ -219,12 +255,18 @@ export function LibraryQuestionDesk({
     t('coverageCompact', { readPages: result.readPages, totalPages: result.totalPages, readSources, totalSources: result.totalSources }),
     ...(omittedLeads > 0 ? [t('coverageOmitted', { count: omittedLeads })] : []),
   ].join(' · ') : '';
-  const limits = result ? t('limits', {
+  /* The method sentence the search that produced this list made true; a report saves it with the record. */
+  const searchedByMeaning = result?.meaning?.state === 'ok';
+  /* When meaning covered only part of the folder, the saved limits say how much. */
+  const partialMeaning = searchedByMeaning && result.meaning!.filesReady < result.meaning!.filesTotal
+    ? t('limitsMeaningCoverage', { ready: result.meaning!.filesReady, total: result.meaning!.filesTotal }) : null;
+  const limits = result ? [t(searchedByMeaning ? 'limitsBoth' : 'limits', {
     unreadable: result.unreadableSources, changed: result.changedSources,
     skipped: result.totalSources - result.plannedSources,
     omitted: result.omittedClaims + result.omittedSources,
-  }) : '';
+  }), partialMeaning].filter(Boolean).join(' ') : '';
   /* The popovers list only the limits that hold something; the report keeps the full record. */
+  const limitsMethod = t(searchedByMeaning ? 'limitsMethodBoth' : 'limitsMethod');
   const limitFacts = (withOmitted: boolean) => {
     if (!result) return '';
     const counts: Array<[Parameters<typeof t>[0], number]> = [
@@ -243,19 +285,38 @@ export function LibraryQuestionDesk({
   const reportAction = result && vaultRoot !== null ? <Button size="sm" variant="primary"
     disabled={!agentReady || turnRunning || reading || outdated} onClick={() => {
       onSummarize({
+        // The brief carries the rows the person sees, those found by meaning included.
         brief: buildQuestionDeskReportBrief({ question: result.question, vaultRoot, locale,
-          claims: result.claims, sourceHits: result.sourceHits, coverage: `${coverage} ${limits}` }),
+          ...deskBriefEvidence(result.leads), coverage: `${coverage} ${limits}` }),
         question: result.question, searchId: result.searchId, listingVersion: result.listingVersion,
         vaultScope, coverage, limits,
       });
     }} data-testid="question-desk-summarize">{hasLocalMatches ? t('report.summarize') : t('report.investigate')}</Button> : null;
-  const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, limitFacts(false), t('limitsMethod'), t('wikiCaveat')].filter(Boolean)} />;
+  const offerSetup = vaultRoot !== null && meaningSearch.offerSetup;
+  const meaning = result?.meaning ?? null;
+  const meaningTookPart = meaning?.state === 'ok';
+  /* Meaning coverage is said only when it was partial: a full count would read as a second scope. */
+  const meaningCoverage = meaning && meaningTookPart ? [
+    ...(meaning.filesReady < meaning.filesTotal ? [t('meaning.coverage', { ready: meaning.filesReady, total: meaning.filesTotal })] : []),
+    ...(meaning.staleDropped > 0 ? [t('meaning.staleDropped', { count: meaning.staleDropped })] : []),
+  ] : [];
+  const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, ...meaningCoverage, limitFacts(false), limitsMethod, t('wikiCaveat')].filter(Boolean)} />;
+  /*
+   * When meaning could not answer, the word rows stand as they are and one sentence says why; the
+   * line above carries the state and its press.
+   */
+  const meaningNotice = meaning?.state === 'failed' ? <p role="status" data-testid="question-desk-meaning-notice"
+    className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
+    {meaning.failure === 'modelGone' ? t('meaning.modelGoneNotice')
+      : meaning.failure === 'runnerDown' || meaning.failure === 'modelMissing' ? t('meaning.runnerDownNotice')
+        : t('meaning.failedNotice')}
+  </p> : null;
 
   const results = result && visible ? <>
     {outdated || (report && !activeReport) ? <p role="status" className="mb-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{report ? t('report.outdated') : t('outdated')}</p> : null}
     {activeReport ? <div className="mb-10">
       <DeskReport report={activeReport} coverageCompact={coverageCompact}
-        coverageInfo={<DeskCoverageInfo lines={[coverage, limitFacts(true), t('limitsMethod')].filter(Boolean)} testId="question-desk-report-coverage-info" />}
+        coverageInfo={<DeskCoverageInfo lines={[coverage, partialMeaning ?? '', limitFacts(true), limitsMethod].filter(Boolean)} testId="question-desk-report-coverage-info" />}
         sources={sources} dockOpen={dockOpen} reducedMotion={reducedMotion} onOpenSource={onOpenSource}
         onFileReport={onFileReport} filingReport={filingReport} fileReportNote={fileReportNote} />
     </div> : null}
@@ -263,6 +324,7 @@ export function LibraryQuestionDesk({
       {hasLocalMatches ? <>
         <DeskResultsHead count={result.leads.length} underReport={activeReport !== null} coverageInfo={coverageInfo}
           reportAction={reportAction} />
+        {activeReport ? null : meaningNotice}
         {!agentReady && !activeReport ? <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p> : null}
         {jev.note ? <p role="status" className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jev.note}</p> : null}
         <div className="mt-1">
@@ -276,10 +338,14 @@ export function LibraryQuestionDesk({
           <h3 aria-live="polite" className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
           {coverageInfo}
         </div>
-        <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('zeroLocalBody')}</p>
+        {meaningNotice}
+        <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{meaningTookPart ? t('meaning.noMatchBoth') : t('zeroLocalBody')}</p>
         {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p>
           : <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p>}
-        {reportAction ? <div className="mt-4">{reportAction}</div> : null}
+        {offerSetup || reportAction ? <div className="mt-4 flex flex-wrap items-center gap-2">
+          {offerSetup ? <MeaningSetupPress rootPath={vaultRoot} look="button" testId="question-desk-meaning-setup">{t('meaning.setup')}</MeaningSetupPress> : null}
+          {reportAction}
+        </div> : null}
       </section>}
     </div>
   </> : null;
@@ -304,13 +370,14 @@ export function LibraryQuestionDesk({
               setQuestion(event.target.value);
               setReading(false);
               setReadCount(0);
-            }} className="min-w-40 flex-1" data-testid="question-desk-input" />
+            }} onFocus={meaningSearch.warm} className="min-w-40 flex-1" data-testid="question-desk-input" />
             {/* Pressing keeps focus in the field, so asking again goes on from the keyboard. */}
             <Button type="submit" onMouseDown={(event) => event.preventDefault()} size="sm" variant={result && agentReady ? 'outline' : 'primary'} className="ml-auto" disabled={!question.trim() || reading || jev.sending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
           </div>
           <div data-question-desk-status-row="true" className="mt-2 flex min-h-5 flex-wrap items-center gap-x-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
             <p>{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p>
           </div>
+          <MeaningDeskLine rootPath={vaultRoot} markdownFiles={docs.length} />
         </form>
         {workActivity ? <div className="mt-3">{workActivity}</div> : null}
         <div className="relative mt-6">

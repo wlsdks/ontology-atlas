@@ -181,6 +181,7 @@
     "perf:web-open": "node scripts/perf/perf-web-open.mjs",
     "perf:meaning": "node scripts/perf/perf-meaning.mjs",
     "perf:meaning-quality": "node scripts/perf/meaning-quality.mjs",
+    "perf:builtin-model": "node scripts/perf/perf-builtin-model.mjs",
     "perf:graph:scale": "node scripts/perf/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",
     "perf:mcp:memory": "node scripts/perf/perf-mcp-memory.mjs",
     "perf:mcp:memory:check": "node scripts/perf/perf-mcp-memory.mjs --check",

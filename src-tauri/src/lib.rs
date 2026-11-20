@@ -80,6 +80,16 @@ const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
 pub(crate) const APP_LOCALES: [&str; 4] = ["en", "ko", "ja", "zh"];
 const DEFAULT_APP_LOCALE: &str = "en";
 
+/// Whether this process was started as the built-in model's worker.
+pub fn embed_worker_requested(args: &[std::ffi::OsString]) -> bool {
+    llm::embed::builtin::worker::requested(args)
+}
+
+/// Serves the built-in model on stdin and stdout; returns the exit code.
+pub fn run_embed_worker() -> i32 {
+    llm::embed::builtin::worker::run()
+}
+
 pub fn run() {
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
@@ -275,6 +285,14 @@ pub fn run() {
             vault::index::vault_index_forget,
             vault::index_rows::vault_index_rows_get,
             vault::index_rows::vault_index_rows_put,
+            vault::vectors::commands::vault_vectors_probe,
+            vault::vectors::commands::vault_vectors_status,
+            vault::vectors::commands::vault_vectors_prepare,
+            vault::vectors::commands::vault_vectors_stop,
+            vault::vectors::commands::vault_vectors_warm,
+            vault::vectors::commands::vault_vectors_search,
+            vault::vectors::commands::vault_vectors_delete,
+            vault::vectors::commands::vault_vectors_delete_model,
             vault::read::read_vault_text_file,
             vault::read::read_vault_text_files,
             vault::read::read_vault_text_tail,
@@ -366,6 +384,7 @@ pub fn run() {
             let unfinished = shut_down(shutdown_for(&event), || {
                 llm::requests::cancel_owner(None);
                 audit_read::cancel_owner(None);
+                vault::vectors::stop_all_on_exit();
                 terminate_all_acp_sessions(app_handle);
             });
             if unfinished > 0 {

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
+import { isMeaningActive, type MeaningProgress } from './meaning-run';
 import { isScheduledActive, type ScheduledRun } from './scheduled-run';
 import { elapsedMs, isRunActive, type WorkRun } from './work-run';
 import { isTurnActive, type TurnRun } from './turn-run';
@@ -25,6 +26,7 @@ function holdsSeat(entry: SeatRun, snapshot: WorkRunSnapshot): boolean {
   if (entry.kind === 'turn') return entry.run.card === 'open' && snapshot.turnStage !== entry.run.owner;
   const { run } = entry;
   if (run.card !== 'open' || run.phase === 'stopped') return false;
+  if (entry.kind === 'meaning') return entry.run.folder === snapshot.folder && !snapshot.meaningStage;
   return entry.kind === 'check'
     ? snapshot.stageFolder !== entry.run.folder
     : !snapshot.automationsShown && entry.run.folder === snapshot.folder;
@@ -42,14 +44,33 @@ export function seatRuns(snapshot: WorkRunSnapshot): SeatRun[] {
     .sort((a, b) => Number(asking(a)) - Number(asking(b)) || a.run.startedAt - b.run.startedAt);
 }
 
+/**
+ * The run the Library tile's ring follows: the wiki check, a writing turn or the meaning
+ * preparation of the open folder, whichever the card names while it works, else the one started
+ * last.
+ */
+export function libraryRingRun(snapshot: WorkRunSnapshot, folder: string): SeatRun | null {
+  const working = [...snapshot.runs.values()]
+    .filter((entry) => entry.kind !== 'scheduled' && entry.run.folder === folder && isSeatRunActive(entry))
+    .sort((a, b) => a.run.startedAt - b.run.startedAt);
+  const named = seatRuns(snapshot).at(-1);
+  return working.find((entry) => entry.key === named?.key) ?? working.at(-1) ?? null;
+}
+
 export function workCardHoldsSeat(snapshot: WorkRunSnapshot): boolean {
   for (const entry of snapshot.runs.values()) if (holdsSeat(entry, snapshot)) return true;
   return false;
 }
 
 export function isSeatRunActive(entry: SeatRun): boolean {
+  if (entry.kind === 'meaning') return isMeaningActive(entry.run);
   if (entry.kind === 'turn') return isTurnActive(entry.run);
   return entry.kind === 'check' ? isRunActive(entry.run) : isScheduledActive(entry.run);
+}
+
+/** The meaning run's figures, at most four times a second; read only by the leaves that draw them. */
+export function useMeaningProgress(): MeaningProgress | null {
+  return useSyncExternalStore(workRuns.subscribeMeaningProgress, workRuns.readMeaningProgress, () => null);
 }
 
 /** This folder's Library turn that is still running, wherever its conversation is. */

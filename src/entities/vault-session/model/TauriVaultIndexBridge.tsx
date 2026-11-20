@@ -4,12 +4,19 @@ import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { syncVaultIndex, vaultIndexPreference } from "@/shared/lib/vault-folder/tauri-vault-index";
+import { vectorStatus } from "@/shared/lib/vault-folder/tauri-vault-vectors";
+import { vaultVectorSource } from "@/shared/lib/vault-folder/vault-vector-source";
 import { useLocalVault } from "./local-vault-context";
+
+/** Rust remembers a folder's source for the launch, so each folder is told once per page life. */
+const armedVectorRoots = new Set<string>();
 
 /**
  * Under Tauri, keeps the search index in step with the folder: opening it, each `vault-changed`
  * from the watcher, and each re-read the slow poll triggers start a stamp pass on a background
- * thread. No changed-path list crosses the bridge; a pass finds what changed by itself.
+ * thread. No changed-path list crosses the bridge; a pass finds what changed by itself. A folder
+ * with a stored search-by-meaning choice sends it once, so Rust updates its changed passages
+ * without the Library being visited, and keeps a job the person stopped stopped.
  */
 export function TauriVaultIndexBridge() {
   const { status, handle, lastLoadedAt } = useLocalVault();
@@ -21,6 +28,14 @@ export function TauriVaultIndexBridge() {
     if (!active || rootPath === null) return;
     void syncVaultIndex(rootPath, true).catch(() => undefined);
   }, [active, rootPath, indexSwitch]);
+
+  useEffect(() => {
+    if (!active || rootPath === null || armedVectorRoots.has(rootPath)) return;
+    const choice = vaultVectorSource.read(rootPath);
+    if (choice === null) return;
+    armedVectorRoots.add(rootPath);
+    void vectorStatus(rootPath, choice.source, choice.paused).catch(() => undefined);
+  }, [active, rootPath]);
 
   useEffect(() => {
     if (!active || rootPath === null || lastLoadedAt === null) return;

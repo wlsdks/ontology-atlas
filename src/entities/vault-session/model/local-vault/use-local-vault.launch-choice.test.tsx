@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
 
 /**
  * Launch path depends only on how many folders still exist: one resumes silently,
@@ -80,7 +81,7 @@ function successfulBuild(slug = 'project') {
           { slug, path: `${slug}.md`, frontmatter: { kind: 'project' } },
           { slug: 'wiki/notes', path: 'wiki/notes.md', frontmatter: {} },
         ],
-        backlinksDetail: {},
+        backlinkSources: {},
         tags: {},
         tree: { name: 'root', path: '', type: 'dir' as const },
       },
@@ -306,11 +307,15 @@ afterEach(() => {
 });
 
 describe('taking a folder off the list', () => {
-  it("deletes that folder's search index with it", async () => {
+  it("deletes that folder's search index and its search-by-meaning choice with it", async () => {
+    vaultVectorSource.write('/Users/dana/vaults/old-notes', { kind: 'builtin' });
+    vaultVectorSource.write('/Users/dana/vaults/kept', { kind: 'builtin' });
     const hook = renderHook(() => useLocalVaultInternal());
     await waitFor(() => expect(hook.result.current.status).not.toBe('restoring'));
     await act(() => hook.result.current.forgetRecent([record('old-notes'), record('archive')]));
     expect(forgetVaultIndex.mock.calls).toEqual([['/Users/dana/vaults/old-notes'], ['/Users/dana/vaults/archive']]);
+    expect(vaultVectorSource.read('/Users/dana/vaults/old-notes')).toBeNull();
+    expect(vaultVectorSource.read('/Users/dana/vaults/kept')).not.toBeNull();
   });
 });
 

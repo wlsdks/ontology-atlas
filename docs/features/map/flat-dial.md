@@ -251,7 +251,11 @@ the frame margin. Partner domains do not drive the frame and may leave the
 view; their lines still draw. It zooms in until that star fills the free map,
 without the ratio cap the other selections keep, and stops earlier only when its
 two closest member capabilities already stand `--map-graph-domain-apart-max-px`
-apart, so a domain of two members does not fill the map with them. The star's
+apart, so a domain of two members does not fill the map with them. The width
+the star leaves goes to its member capabilities' one-line names, each on the
+side facing away from the domain, whole names from the shortest while the width
+lasts: a star opened by the free map's edge pans off it until those names fit,
+and the names never lower the zoom. The star's
 marks open with the room they get: each mark and its nearest neighbour share
 `--map-graph-open-fill` of the distance between them in proportion to their
 largest open radii (`--map-graph-cap-open-max-px`, `--map-graph-element-open-max-px`),

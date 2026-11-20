@@ -96,6 +96,275 @@ Outside facts (fetched 2026-11-19):
 - **Audit.** The download writes a `model-download` start line and a closing line to `llm-audit.jsonl`.
 - **Measured on the labelled set (#3611).** Recall@8 went from 66.7 for word search alone to 95.0 for word plus meaning with bge-m3. Cross-language went from 20.0 to 85.0, and exact terms stayed at 100. With sections under 400 characters joined (2026-11-20), word plus meaning reaches 100.0 overall and 100.0 cross-language, and exact terms stay at 100. Preparing 50k files through Ollama took 5–8 hours; the built-in runtime is faster but still takes hours, so preparation is a background job (below).
 
+## The built-in flow and the app contract (2026-11-20)
+
+This section turns the owner decisions above into the flow, states, copy and command contract
+the building slices follow. Where it differs from "Flow", "States" and "Copy" below, this
+section wins: those were written for a runner-only design and are kept for the Ollama choice.
+
+### Flow
+
+1. **The offer stands where the need shows.** In the installed app, with the search index on
+   and search by meaning not set up, the Wiki desk carries one quiet line under the question
+   field: "Searching by words" and the press **Set up search by meaning**. When a search finds
+   no passage, the same press is the no-match block's first action, beside the sentence that
+   says words in another language or wording are not matched. Nothing opens on its own.
+2. **Consent.** The press opens one centred dialog; Cancel holds the focus. It states, as a
+   list of facts: what search by meaning does and how many files it will read; the model's name,
+   maker and licence; the download size and host, and that it happens once; what is kept on this
+   computer and where; that nothing from the folder is sent; the memory used while preparing and
+   that it runs in the background; where to delete it. Its primary action is **Download and
+   prepare**, or **Prepare N files** when the model is already on this computer.
+3. **Not enough disk.** When the disk lacks the room preparation needs, the dialog says how
+   much is needed and how much is free, and the primary action is disabled.
+4. **A runner already on this computer.** When the address in Agents › Models answers on this
+   computer and lists an embedding model, the dialog offers a second action: **Use {model} in
+   Ollama (no download)**. That choice follows the runner flow below. A non-loopback address is
+   never offered.
+5. **The dialog closes at once; the work runs behind.** The desk line becomes the progress
+   line: downloading the model with percent and bytes, then "Preparing the model for this
+   computer", then files done of total with the minutes left (after the first minute) and the
+   file being read now, beside **Stop**. The Library tile on the navigation rail draws the same
+   progress as a ring, from every tab, and its tooltip is the progress line. Pressing the ring
+   opens the Wiki desk.
+6. **Search improves while it runs.** Find evidence uses the files already prepared; wiki pages
+   are prepared first. The results head's coverage popover adds "By meaning: N of M files".
+7. **Stop, quit, crash.** Every finished passage and every downloaded byte is kept. A folder the
+   person stopped, or whose last pass failed, is **held**: nothing starts for it on its own (not
+   after an index pass, not after a search that dropped a stale passage, not a pass already
+   queued) until **Resume** or Set up asks again. The WebView remembers the pause and sends it
+   with the first status call after a restart (`paused`), so the hold outlives the app; the cache
+   does not carry it. A folder that was quit or crashed mid-job, and not paused, continues by
+   itself: the first status call of a launch that arms it schedules the rest after the 30 quiet
+   seconds of an update, with no index pass needed; no passage is prepared twice. A download that
+   failed its check is deleted and says so.
+   Only the dialog's **Download and prepare** fetches the built-in model. Resume, a continuation,
+   an update, a status call, a search and warming never do: without the model they fetch and
+   create nothing and the folder says `modelGone`, whose **Download again** opens the dialog.
+8. **Ready.** The desk line reads "Searching by words and by meaning · N files". When files
+   change, only changed passages are prepared again, and the line says "Updating N changed
+   files" only while N > 0; the rail draws no ring for an update under ten files. An **update**
+   is a pass over a folder whose store a preparation once finished for this model, a fact the
+   store records itself; its counts are the changed files alone. A folder never finished
+   continues as preparing, with folder-wide counts. An update starts after 30 s with no index pass
+   for that folder, and no later than 10 min after the first change it waits on, so an agent
+   writing every few seconds starts the worker once, not once per write.
+9. **A question.** Find evidence runs word search and meaning search together and fuses them
+   (reciprocal rank, k = 60) into the desk's one list. Each row carries the reason it is there:
+   **Same words**, **Similar meaning**, or both. The model loads when the question field takes
+   focus, so the first answer does not wait for it, and leaves memory two minutes after the
+   last question.
+10. **When meaning cannot answer** (model deleted, runner down, index off), the word results
+    arrive as today with one sentence saying which, and the press that fixes it.
+
+### Where the model runs
+
+The built-in model never loads into the app's own process. The app starts its own executable
+with one flag as a worker, speaks to it over a pipe, and the worker converts the download,
+prepares passages and answers questions. It exits when preparation ends and no question came
+in the last two minutes, two minutes after the last question, and when the app quits. Measured
+on an M2 Max: the worker peaks at about 1.8 GB with graphics acceleration and 3.2 GB on the
+processor alone; the app stays within 10 MB of where it was, before, during and after.
+
+### What leaves the machine
+
+| Path | What is sent | Where | Consent | Audit lines |
+|---|---|---|---|---|
+| Built-in model download | The model files' addresses only; no folder content | The hosts in `MODEL_DOWNLOAD_HOSTS` (`src-tauri/src/llm/embed/builtin/download.rs`): `huggingface.co`, `hf.co` and their subdomains, https only, every hop checked | The dialog's primary press, enforced in Rust: only a prepare with `download: true` fetches | `model-download` start line before the first request and a closing line naming every host contacted; an unwritable log stops the download before it asks anything (`auditBlocked`) |
+| Built-in preparing and searching | nothing | A worker process of the app on this computer, over a pipe | The same press | none, by rule: nothing is transferred, so it writes no `embed-build` or `embed-query` line and works in a folder whose `.ontology-atlas` cannot be written |
+| Runner on this computer | Passage text and the question | Loopback only | The dialog's second action | `embed-build` start and closing lines per pass, one `embed-query` line per question; an unwritable log blocks the runner (`auditBlocked`) before anything is sent |
+
+Settings › Privacy · data lists the download as an outbound row, with the host and what is sent.
+Quitting tells every job to stop and waits up to 2 s: a runner batch in flight is killed within
+about 50 ms, so its run normally closes as stopped; one held past the wait keeps a start line
+with no close.
+
+### States
+
+| State | Web | macOS and Windows app |
+|---|---|---|
+| Not set up | `meaning.web` under the field; no press | `meaning.words` and `meaning.setup` under the field |
+| Folder has no Markdown file | as above | `meaning.noFiles`; no press |
+| Search index off | as above | `meaning.indexOff`; **Open Settings** |
+| Dialog: model not on this computer | Out of scope: no index on the web | Facts list; **Download and prepare** |
+| Dialog: model already here | Out of scope: as above | Facts list without the download line; **Prepare N files** |
+| Dialog: disk short | Out of scope: as above | `meaning.diskShort`; primary disabled |
+| Dialog: runner offers a model | Out of scope: as above | Second action `meaning.useRunner` |
+| Downloading the model | Out of scope: as above | `meaning.modelDownloading`; Stop; ring on the rail |
+| Converting and checking the model | Out of scope: as above | `meaning.modelConverting`; ring keeps its place |
+| Preparing | Out of scope: as above | `meaning.preparing` with `meaning.readingNow`; Stop; ring |
+| Stopped | Out of scope: as above | `meaning.stopped`; **Resume**; ring at rest, dimmed |
+| Ready | Out of scope: as above | `meaning.ready`; rows carry `meaning.reason*` |
+| Updating changed files | Out of scope: as above | `meaning.updating` while N > 0 |
+| Download failed, offline included | Out of scope: as above | `meaning.modelDownloadFailed`; **Resume** |
+| Download did not match the published file | Out of scope: as above | `meaning.modelCheckFailed`; **Download again** |
+| Needs a direct connection (the direct attempt failed and the environment names a proxy) | Out of scope: as above | `meaning.modelNeedsDirect` |
+| Model not on this computer (deleted, a download stopped or cut off, or never fetched) | Out of scope: as above | Word results plus `meaning.modelGone`; **Download again** |
+| Cache write failed | Out of scope: as above | `meaning.writeFailed`; **Resume** |
+| Audit log unwritable (a runner, or the model download's log) | Out of scope: as above | `meaning.auditBlocked`; nothing sent |
+| Another folder is preparing | Out of scope: as above | `meaning.waitingTurn`; starts when that one ends |
+| Reduced motion | as above | The ring and the line show their end values; no travelling motion |
+| Windows | Out of scope: web | Same cells; the model runs on the processor there, so preparation is slower and uses more memory (stated in the dialog); proof is Windows CI only |
+
+### Copy
+
+Keys under `questionDesk.meaning` in `messages/<locale>/library.json`, as built; English
+source here. `meaning` is the first entry in `questionDesk`. Keys in "Copy" below that
+this table does not replace keep their text.
+
+| Key | Where | en |
+|---|---|---|
+| `meaning.words` | desk line at rest | Searching by words |
+| `meaning.setup` | desk line press | Set up search by meaning |
+| `meaning.web` | desk line on the web, no press | Search by meaning works in the installed app, where a model on your computer prepares the files. Here, search matches words. |
+| `meaning.noFiles` | desk line, no Markdown files | This folder has no Markdown files to prepare. |
+| `meaning.indexOff` | desk line, index off | Search by meaning needs the search index, which is off in Settings › Privacy · data. |
+| `meaning.openSettings` | desk line press, not drawn yet | Open Settings |
+| `meaning.dialogTitle` | dialog title | Search by meaning |
+| `meaning.lead` | dialog lead | Finds passages that say the same thing in other words or in another language. A model on this computer reads the {files, number} Markdown files in this folder and stores a list of numbers for each passage in this computer's cache folder. |
+| `meaning.factModelLabel` / `factModel` | dialog fact | Model / bge-m3 by BAAI, MIT licence |
+| `meaning.factDownloadLabel` / `factDownload` | dialog fact, model not here | Download / {download} from huggingface.co, once. {kept} stays on this computer. |
+| `meaning.factSentLabel` / `factSent` | dialog fact | Sent / Nothing from your folder. The download asks only for the model's files. |
+| `meaning.factMemoryLabel` / `factMemory` | dialog fact | Memory / About {memory} while preparing, in the background. You can keep working and stop it at any time. |
+| `meaning.factMemoryCpu` | dialog fact, no graphics acceleration | About {memory} while preparing, and slower: this computer prepares on the processor. You can keep working and stop it at any time. |
+| `meaning.factDeleteLabel` / `factDelete` | dialog fact | Delete / Settings › Privacy · data removes the model and the prepared numbers. |
+| `meaning.cancel` | dialog, first focus | Cancel |
+| `meaning.downloadAndPrepare` | dialog primary | Download and prepare |
+| `meaning.prepare` | dialog primary, model here | Prepare {files, number} files |
+| `meaning.useRunner` | dialog, a reachable local runner with the model | Use {model} in Ollama (no download) |
+| `meaning.diskShort` | dialog, primary disabled | Preparing needs {needed} free on this disk; {free} is free. |
+| `meaning.modelDownloading` | desk line, bytes ring | Downloading the model · {percent, number}% · {done} of {total} |
+| `meaning.modelConverting` | desk line, held ring | Preparing the model for this computer |
+| `meaning.preparing` | desk line, files ring | Preparing search by meaning · {done, number} of {total, number} files |
+| `meaning.minutesLeft` | desk line, once a rate is measured | about {minutes, number} min left |
+| `meaning.readingNow` | desk line, file name cut in the middle | Reading {file} |
+| `meaning.stop` / `resume` | desk line press | Stop / Resume |
+| `meaning.stopped` | desk line | Stopped at {done, number} of {total, number} files. Search by meaning covers those files. |
+| `meaning.ready` | desk line | Searching by words and by meaning |
+| `meaning.updating` | desk line | Updating {count, number} changed files for search by meaning |
+| `meaning.waitingTurn` | desk line | Another folder is preparing. This one starts when it ends. |
+| `meaning.modelDownloadFailed` | desk line, `download` (Resume), `diskShort` (Set up) | The model download stopped: {detail}. What is downloaded is kept. |
+| `meaning.modelCheckFailed` | desk line, `modelCheck` (Download again) | The downloaded file did not match the published model, so Atlas deleted it. |
+| `meaning.modelNeedsDirect` | desk line, `needsDirect` (Resume) | The model download needs a direct internet connection; this network allows only a proxy. |
+| `meaning.modelGone` | desk line, `modelGone` (Download again) | The model is no longer on this computer. |
+| `meaning.modelFailed` | desk line, `modelFailed` (Resume) | The model could not run on this computer: {detail}. |
+| `meaning.downloadAgain` | desk line press; opens the setup dialog, never a download by itself | Download again |
+| `meaning.runnerDown` | desk line, `runnerDown` (Resume) | Ollama did not answer. Start Ollama, then press Resume. |
+| `meaning.modelMissing` | desk line, `modelMissing` (Resume) | {model} is no longer in Ollama. |
+| `meaning.writeFailed` | desk line, `write` (Resume) | Could not save search by meaning in this computer's cache folder: {detail}. |
+| `meaning.auditBlocked` | desk line, `auditBlocked` (Resume) | Atlas could not write the sent log in .ontology-atlas, so nothing was sent. |
+| `meaning.unreadable` | desk line, `unreadable` (Resume); dialog, probe failed | Atlas could not read this folder's files. |
+| `meaning.failureDetail` | `{detail}` above | one `select` over `failureDetail` with `-` read as `_`; an unknown code prints itself |
+| `meaning.ringLabel` | ring accessible name | Search by meaning progress |
+| `meaning.reasonWords` / `reasonMeaning` / `reasonBoth` | end of a row's second line, when meaning took part | Same words / Similar meaning / Same words · similar meaning |
+| `meaning.coverage` | coverage popover, when meaning took part and not every file was prepared | By meaning: {ready, number} of {total, number} files |
+| `meaning.staleDropped` | coverage popover, when passages were left out | {count, plural, one {# passage from a changed file was left out} other {# passages from changed files were left out}} |
+| `meaning.modelGoneNotice` | under the results head, `modelGone`; the sentence alone, the line above holds the press | The model is no longer on this computer, so these results match words only. |
+| `meaning.runnerDownNotice` | under the results head, `runnerDown` or `modelMissing` | Ollama did not answer, so these results match words only. |
+| `meaning.failedNotice` | under the results head, any other failure | Search by meaning did not answer, so these results match words only. |
+| `meaning.noMatchBoth` | no-match body, when meaning took part | No passage in the files searched matches these words or this meaning. |
+
+`settingsPrivacy.json`, shown in the app while the index is on: `storedHere.meaningLabel`
+"Search by meaning"; `storedHere.meaningSize` "{size} for this folder. Delete removes it;
+preparing again reads every file."; `storedHere.meaningDeleted`; `storedHere.meaningFailed`;
+`storedHere.modelLabel` "Search-by-meaning model"; `storedHere.modelSize` "{size}, bge-m3 by
+BAAI (MIT). Delete removes it; using search by meaning again downloads it.";
+`storedHere.modelDeleted`; `storedHere.modelFailed`. `storedHere.switchCaption` ends with the
+numbers sentence, and the index size and deleted captions say search by meaning goes with
+the index. The outbound row `paths.vector-model` "Search-by-meaning model download" lists
+huggingface.co.
+
+### Command contract (`src/shared/lib/vault-folder/tauri-vault-vectors.ts`)
+
+Code names this feature by what it stores, vectors, as the crate does (`vault_index::vectors`);
+"meaning" in code already names accepted product meaning (`meaning_transition_archive`), so only
+copy says "search by meaning".
+
+The WebView holds the person's choice for a folder (`VectorSource`) as a preference and sends
+it with every command, as it does the index switch; the vectors on disk are derived state.
+
+```ts
+type VectorSource = { kind: 'builtin' } | { kind: 'runner'; baseUrl: string; model: string };
+
+type VectorPhase =
+  | 'off' | 'notSetUp' | 'waitingTurn'
+  | 'modelDownloading' | 'modelConverting'
+  | 'preparing' | 'stopped' | 'ready' | 'failed';
+
+type VectorFailure =
+  | 'download' | 'modelCheck' | 'needsDirect' | 'diskShort' | 'modelGone'
+  | 'runnerDown' | 'modelMissing' | 'modelFailed' | 'write' | 'auditBlocked' | 'unreadable';
+
+interface VectorStatus {
+  phase: VectorPhase;
+  failure: VectorFailure | null;      // set with 'failed', and with 'stopped' after a failure
+  failureDetail: string | null;        // a coded reason, never vault text
+  filesDone: number; filesTotal: number;
+  passagesDone: number; passagesTotal: number;
+  updating: boolean;                   // preparing only files that changed after 'ready'
+  currentPath: string | null;          // vault-relative, the file being read
+  passagesPerSecond: number | null;    // smoothed over the run; null until measured
+  model: { doneBytes: number; totalBytes: number } | null;   // while 'modelDownloading'
+  vectorsBytes: number;
+}
+
+interface VectorProbe {
+  files: number;                       // from the search index; 0 before its first pass
+  builtin: { onDisk: boolean;          // ready to use
+             modelBytes: number;       // every byte in the app's data folder, a partial
+                                       // download and a failed conversion included; 0 if none
+             downloadBytes: number; keptBytes: number; neededFreeBytes: number;
+             freeBytes: number; memoryBytes: number; accelerated: boolean };
+  runner: { state: 'reachable' | 'unreachable' | 'notLocal'; address: string;
+            models: string[] } | null;
+}
+
+interface PassageHit { path: string; lineStart: number; lineEnd: number; heading: string;
+                       score: number }
+interface VectorFound { state: 'ok' | 'notReady' | 'failed'; failure: VectorFailure | null;
+                         hits: PassageHit[]; staleDropped: number;
+                         filesReady: number; filesTotal: number }
+```
+
+| Command | Does | Never |
+|---|---|---|
+| `vault_vectors_probe(rootPath, runnerBaseUrl?)` | Reads what the dialog states: the folder's files and bytes from the search index, the model's bytes from the app's data folder; a runner address off this computer answers `notLocal` | downloads, creates files, lists, opens or measures a file in the person's folder, or contacts a non-loopback address |
+| `vault_vectors_status(rootPath, enabled, source?, paused?)` | Returns `VectorStatus`. A source arms a folder this launch has not armed; with `paused: true` it also holds it. Arming a folder whose store a preparation never finished, not held, schedules its continuation after 30 quiet seconds | creates anything; downloads; blocks on a model load; replaces a source a prepare chose |
+| `vault_vectors_prepare(rootPath, enabled, source, download)` | Chooses the folder's source, lets a held folder go, starts or continues its one background job and returns at once. Only with `download: true`, the dialog's press, does a missing built-in model download first; without it the folder answers `modelGone` and nothing starts. With `enabled` false it answers `off` | downloads without `download: true`; creates anything with the index off; runs two jobs for one folder, or two model jobs at once |
+| `vault_vectors_stop(rootPath)` | Stops at once and holds the folder; kept work stays. Its answer and every later event say `stopped`, or `modelGone` for a built-in folder whose model is not ready | discards finished work; starts again on its own |
+| `vault_vectors_warm(source)` | Loads the model for a question about to be asked | downloads |
+| `vault_vectors_search(rootPath, source, question, limit, prefixes)` | Embeds the question, cut to 2,000 characters on a character boundary, and returns the nearest `limit` passages, at most 64, whose file path starts, byte for byte, with one of `prefixes`; an empty list means every file. The prefixes choose the candidates before the limit. `PassageHit.path` is the path as it is on disk | waits longer than 10 s: a built-in worker that does not answer by then is killed and the next question starts a fresh one; a runner question has one 10 s limit from the command's start for its model check, its wait for the audit log and its request together; downloads; returns a passage its file no longer holds |
+| `vault_vectors_delete(rootPath)` | Deletes this folder's vectors and ends its job. Its answer and every later event say `notSetUp` with zero counts. When the files cannot be removed it errs with `vectors-delete-failed` and the status says what is still on disk | touches the vault; reports a delete that left the files |
+| `vault_vectors_delete_model()` | Ends every job using the built-in model, a download, conversion or check included, then deletes every byte `modelBytes` counts, in any state; the next probe answers `modelBytes: 0` | touches vectors |
+
+`prepare`, `status`, `search` and `probe` refuse with a command error, never a state, a folder
+the person did not choose. `prepare`, `status` and `search` also refuse a runner address that is
+not on this computer (`embed-not-local`, or `embed-endpoint-invalid` for plain http off it), a
+model name that is malformed (`embed-model-invalid`) or names a cloud model
+(`embed-model-remote`), and a model name over 200 characters once prefixed
+(`vectors-model-name-too-long`). `search` also refuses more than 16 prefixes
+(`vectors-prefixes-too-many`), a prefix over 512 bytes (`vectors-prefix-too-long`), and one that
+starts with `/` or `\` or has a `..` segment (`vectors-prefix-not-relative`). In the bridge only
+`searchVectors` never rejects: a refused search answers `failed` with no hits.
+
+Failures, each with a coded `failureDetail`:
+
+| Failure | When |
+|---|---|
+| `modelCheck` | the download does not match the published file's hash or size; the download is deleted |
+| `modelFailed` | the converted model does not load, fails its reference check, or its worker exits or times out during conversion or the check; the download is kept. Also a worker that exits, times out or answers wrongly while preparing, a runner's malformed answer, and a pass that failed inside Atlas. Its detail is exactly one of `load`, `convert`, `check`, `worker-exited`, `timed-out`, `internal` (the bridge's `MODEL_FAILED_DETAILS`) |
+| `modelGone` | a built-in folder whose model is not ready while no download runs: deleted, a download stopped or cut off, or never fetched, after a first pass and after an update alike. It comes ahead of `stopped` and of a remembered failure, except the failure the last download ended with, which says why until the next prepare. It is not a hold: a prepare with `download: true` works. The vectors are kept |
+| `download` | the download failed, offline included (a host that could not be looked up or reached) |
+| `needsDirect` | the direct attempt failed and the environment the app sees names a proxy (`HTTPS_PROXY`, `https_proxy`, `ALL_PROXY` or `all_proxy`) |
+| `auditBlocked` | the audit log in `.ontology-atlas` could not be written, for a runner or for the model download's lines; nothing was sent |
+| `diskShort`, `write`, `runnerDown`, `modelMissing`, `unreadable` | as their names say |
+
+Finished work is kept after every failure, and Resume tries again. A folder waiting for another
+folder's turn says `waitingTurn` until it holds the turn, never `modelDownloading` first.
+
+Event `vault-vectors-status` carries `{ rootPath, status }` on every phase change and, while a
+job runs, at most four times a second and at least every two seconds.
+
 ## Problem and alternatives
 
 The cause: the desk can only match words, and words differ across paraphrase and
@@ -151,7 +420,7 @@ Where else it connects in this slice:
 5. When the person presses Stop, or quits the app, Atlas keeps every finished passage. **Resume**, or the next app open, continues from there and sends only passages not yet prepared.
 6. When the person presses Find evidence with the folder prepared, Atlas runs word search and meaning search together. It merges them by reciprocal-rank fusion (k = 60) into the same 8 claims and 8 source passages. Each lead is labelled **Same words**, **Similar meaning** or both, and shows its passage with lines, as leads do today. The coverage line adds "By meaning: N of M files prepared".
 7. When a file changes, the index's stamp pass prepares again only the passages whose text changed. The desk head says "Updating N changed files" only while N > 0.
-8. **The model is wrong or the evidence missing.** When a meaning hit's file has changed since it was prepared, Atlas drops that hit and counts it with changed files. When the runner does not answer within 10 s, Atlas shows the word results with "Ollama did not answer, so these results match words only." When neither search finds anything, Atlas says so and keeps **Investigate sources**. A meaning hit is a lead to read; it never fills in an answer, changes a page's status, or reaches an agent.
+8. **The model is wrong or the evidence missing.** When a meaning hit's file has changed since it was prepared, Atlas drops that hit and counts it with changed files. When the runner does not answer within 10 s, Atlas shows the word results with "Ollama did not answer, so these results match words only." When neither search finds anything, Atlas says so and keeps **Investigate sources**. A meaning hit is a lead to read; it never fills in an answer or changes a page's status. It reaches an agent only as a row of a report's brief, after the consent the report already asks for.
 
 **What leaves the machine, per source.**
 
@@ -282,7 +551,7 @@ writes them.
 4. **Scale.** Given 50k files (the `perf:vault-open` shapes). When `pnpm perf:meaning -- --files=10000 --files=50000` runs. Then the built-in runner prepares ≥ 10 passages/s at 50k with bge-m3 on the owner's M2 Max; `vectors.sqlite` is ≤ 1.1 × the vault's text; query p95 is ≤ 300 ms with the model loaded (1,000 queries, embedding included); the model adds ≤ 2 GB peak while preparing and the app returns to ≤ +25 MB steady within 60 s after preparation ends (physical footprint, measured).
 5. **Nothing leaves; every send is logged.** Given the address `https://example.com`, a symlinked audit log, and a runner that returns NaN, a wrong dimension or 5 MiB. When preparation or a search runs. Then no request leaves for the remote address, nothing is sent while the log is unwritable, and every bad response is refused with no vector stored. A run writes its `embed-build` line before its first request and closes it after; a press writes one `embed-query` line (`src-tauri/src/llm/embed/tests.rs`).
 6. **Incremental and fresh.** Given a prepared vault. When one file is edited, then another is renamed, then a third is deleted. Then only the edited file's changed passages are sent, the rename sends nothing, and a search between the edit and the update never shows a passage the file no longer holds (`tests/vectors.rs`).
-7. **States that fail softly.** Given Ollama stopped, the model removed, or the index switched off. When the person presses Find evidence. Then word results arrive within today's time plus 10 s at most, with `meaning.runnerDown`, `meaning.modelMissing` or `meaning.indexOff` (`tests/e2e/library/question-desk-meaning.spec.ts`, with a bridge stub).
+7. **States that fail softly.** Given Ollama stopped, the model removed, or the index switched off. When the person presses Find evidence. Then word results arrive within today's time plus 10 s at most, with `meaning.runnerDown`, `meaning.modelMissing` or `meaning.indexOff` (`tests/e2e/library/answers/library-meaning-search.spec.ts` and `library-meaning-setup.spec.ts`, with a bridge stub; `src/features/vault-vectors/model/desk-line.test.ts` for the index switched off).
 8. **Settings and web.** Given a prepared folder. When the person presses Delete under Search by meaning. Then nothing is stored (the file is gone, or reset in place with no vector in its pages or log where another handle keeps Windows from removing it), the size row reads Nothing stored because no store answers, while its byte count reports only what is still on disk, an open search finds nothing, a running preparation ends, and the 14-day sweep covers `vectors.sqlite` (`StoredHereSettings.test.tsx`, crate `tests/global.rs`). On the web the desk shows `meaning.web`, and its `DEGRADED_SURFACES` entry opens `/download` (`tests/e2e/web-surface-smoke.spec.ts`).
 9. **Background and visible.** Given preparation running at 50k. When the person pans the map, opens the wiki and runs word search. Then map frame p95 stays within 10% of the same walk with preparation stopped, no command waits on the runner, and the progress (done count, what it reads now, time left) is visible from every top-level tab and updates at least every 2 s. Quitting mid-run and relaunching resumes with zero passages prepared twice.
 
@@ -330,3 +599,13 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: passage floor and vector file budget. A whole section shorter than 400 characters now joins its neighbour, within the 2,000-character cap. On the labelled set, heading-only sections averaged 127 bytes and cost 15 points on cross questions: word plus meaning went from 85.0 to 100.0 once they joined, and meaning-only MRR from 85.1 to 92.5. The labelled fixture cannot separate a 400-character floor from packing a whole file into one passage, because its files are at most 1,102 characters; line-level precision is checked on the owner's wiki in S8. One int8 row costs about 1.4 KB whatever the passage holds, so 0.6 × text would need passages spanning several headings, which the desk cannot point into; the file budget becomes 1.1 × text. Measured at 50k files with the floor, after the store review below: 135,144 passages, a file of 1.066 × text, +17.6 MB steady, +18.8 to +19.1 MB peak during a query, +34.0 MB peak while preparing, and search p95 of 2.9 to 3.1 ms in the store. The in-memory copy now lives in an anonymous memory map, so idle memory returns to the system when the search is dropped (+1.2 to +1.5 MB after the drop at 50k files).
 - 2026-11-20: store review. A vector no file holds is kept for 7 days from the moment its last file let it go, so a branch switch and back, or a file removed and restored, sends nothing; after that the next plan deletes it, even when nothing is left to prepare. An empty file listing removes nothing. Delete has one contract on every platform: nothing is stored afterwards, an open search finds nothing and says so, and a running preparation ends, also on Windows, where a file another handle holds is emptied in place rather than removed. A damaged file is set aside and rebuilt by the next plan. Stop is never taken back once pressed, and also stops the plan, which no longer holds the writer lock while it reads files.
 - 2026-11-20: second store review. Delete, another model and damage retire the file one way: removed or renamed aside, else reset in place (schema rows dropped, vacuumed, log checkpointed), so Windows keeps the same contract while a search holds the file. Damage found by a plan's pending list, by prepare's first write or by a search is set aside, and the next plan rebuilds; a search lets its connection go first and never waits for the writer lock. The size row counts every byte on disk, a damaged copy included. A search holds only vectors a file holds, so the 7-day grace period costs disk only. A new passage rule rewrites no vector: file rows are forgotten 1,024 per transaction and the vectors left unheld are marked in batches once every file was read again. Measured at 50k files after it: 134,603 passages, a file of 1.059 × text, +17.6 MB steady, +19.0 to +19.1 MB peak during a query, +34.1 MB peak while preparing, +1.6 MB after the drop, and search p95 of 2.9 to 3.0 ms in the store; at 10k, 1.058 × text, +3.6 MB steady and p95 of 2.0 to 2.2 ms.
+- 2026-11-20: the built-in flow, its states and copy, and the app's command contract; code names the feature vectors.
+- 2026-11-20: the command contract gains the failure `modelFailed`, because a worker that exits, times out or answers wrongly fits no other failure and its copy must not blame the download, the runner or the cache.
+- 2026-11-20: review of the app wiring and the worker. Stop and a failure hold the folder until the person prepares it again, and `paused` carries the hold across a restart. An update is a pass over a store a preparation once finished, and waits for 30 quiet seconds, at most 10 minutes. The built-in model writes no audit line. A question has 10 s. Failures name the step that failed. The commands refuse a source no screen offers, and prepare takes the index switch.
+- 2026-11-20: the desk line, the consent dialog and the Settings rows are built. The choice is stored per folder with a pause, so Stop survives a restart and the app is told the choice once at folder open; Resume and the dialog clear the pause. The copy table now lists the keys as built. The long-work card and the rail ring are left to the long-work seat, which reads `useVectorRun`.
+- 2026-11-20: the Wiki desk now lists passages found by words and by meaning in one list. A question asks for 24 passages beside the word search; a passage holding a word lead is that lead, otherwise its row is the range's first non-heading source line or first wiki claim, and passages in files the desk does not search are left out. Each row names its reason, and the coverage popover the prepared files. The line under the field names only the file being read, and follows an update of ten files or more with the ring and Stop. The progress ring on the rail is left to the long-work seat.
+- 2026-11-20: after review the ready line says only how the desk searches, since a file count beside the desk's scope read as a second scope; the count stays in Settings and in the preparing line. The popover names meaning coverage only while it is partial. A search that answers `failed` reads the folder's status again, so the line and the result notice agree. A report's brief carries the rows of the fused list in its order, so passages found only by meaning reach the agent. A press at the row's end has no separator before it.
+- 2026-11-20: the line's Download again opens the setup dialog, which states the size and the free room with Cancel the default, instead of starting the download; the notices under the results head are the sentence alone. When meaning took part, the limits sentence (`limitsBoth`, `limitsMethodBoth`) says the search matched words and meaning, in the popover, the brief and the saved record; a words-only search keeps the present sentence.
+- 2026-11-20: the long-work seat carries preparation on every tab. The card opens for a press made in this launch and shows the model download in GB, files prepared of the total with the file being read and minutes left, then the result with Ask a question, which opens the Wiki desk with focus in the field. A preparation that continues by itself after a restart, and an update of ten or more changed files, draw only the Library tile's ring, which fills with the fraction prepared; a failure raises the card even when hidden. While the desk's line is on screen, the card stands down. The seat only listens to the job's events, so the folder is still told its choice once at open. Item 8 measured in the static build: the card and the rail commit at most 4 times a second at 20 events a second, and no frame interval exceeds 50 ms while the count rolls or the phase changes.
+- 2026-11-20: after the second review the screens follow the contract's download, prefix and model-size rules. Only the dialog's Download and prepare asks for a download; Resume on a folder whose model is gone says so and offers Download again. A search names the top folders the desk searches, in composed and decomposed form, and a hit joins its file in composed form. Settings shows the model whenever it holds bytes, a download that did not finish included, with the index off or no folder open. A runner that did not answer, or no longer has the model, is held for the line until a search answers or the app's next status event, since the app leaves the status as it was. A choice is stored only once the app accepts it and is forgotten with its folder. When meaning covered part of the folder, the limits say how much. The desk is not drawn again on a status event; only the line is, and its ring moves by a CSS transition.
+- 2026-11-20: second independent review, Rust side. Consent is enforced in Rust: only a prepare with `download: true` fetches the model, and every other path answers `modelGone` without fetching or creating anything. A built-in folder whose model is not ready reads `modelGone` ahead of `stopped` and of other failures, so a stopped download no longer reads "stopped at 0 of 0". A job cut off by a quit continues 30 s after the status call that arms it. A search takes path prefixes that choose candidates before the limit; the probe reads the folder's counts from the search index and adds `modelBytes`; Delete model removes every byte it counts. `modelFailed` details are a closed list of six. Offline is a failed download, and `needsDirect` needs a proxy named in the environment. A runner question has one 10 s limit. A Delete that leaves its files is reported as an error, not as a delete. The download hosts are the one constant `MODEL_DOWNLOAD_HOSTS`.

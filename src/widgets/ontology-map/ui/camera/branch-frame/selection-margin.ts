@@ -11,9 +11,10 @@ import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { lastOpenedDomainStar } from "../../../flat-graph/frame";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
-import { domainTitleBlocks, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
-import { domainStarIds, domainStarRooms, openRadiusPx } from "../../../flat-graph/open-star";
+import { domainTitleBlocks, memberNameReachPx, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
+import { domainStarIds, domainStarRooms, openRadiusPx, type StarRoom } from "../../../flat-graph/open-star";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
+import type { FlatGraphPaintTokens } from "../../../flat-graph/types";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { computeEffectiveCameraScaleMax } from "../topology-camera-math";
@@ -64,17 +65,22 @@ function graphSelectionFrame(
     const opened = [...capabilities, ...elements].flatMap((of) => {
       const node = world.nodeById.get(of);
       const room = rooms.get(of);
-      return node && room ? [{ node, room, own: radius(of), nearestOwn: room.nearestId === null ? 0 : radius(room.nearestId) }] : [];
+      if (!node || !room) return [];
+      const label = model.capabilityById.get(of)?.label;
+      const namePx = label ? memberNameReachPx({ tokens: paint, measureText, fontFamily }, label) : 0;
+      return [{ node, room, own: radius(of), nearestOwn: room.nearestId === null ? 0 : radius(room.nearestId), namePx, outLeft: home !== undefined && node.x < home.x }];
     });
-    const starAt = (scale: number): FramedMark[] => [...block, ...opened.map(({ node, room, own, nearestOwn }) => {
-      const r = openRadiusPx(own, room, scale, domainPx, paint, nearestOwn);
-      return { x: node.x, y: node.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } };
-    })];
+    // The zoom weighs the star alone; its names take only the width the star leaves, so they move the pan, never the scale.
+    const spanPx = free.maxX - free.minX - paint.frameMarginPx * 2;
+    const byName = opened.flatMap((m, i) => (m.namePx > 0 ? [i] : [])).sort((a, b) => opened[a]!.namePx - opened[b]!.namePx || a - b);
+    const starAt = (scale: number): FramedMark[] => domainStarMarks(block, opened, byName, scale, domainPx, paint, spanPx);
     const zoom = domainSelectionZoom({
       members: capabilities.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartMaxPx, starAt, maxScale: band.maxScale,
     });
-    // Panned as it draws at the deepest zoom, the star's largest: one set whatever scale the frame starts from, so a landing frames to itself.
-    return selectionFrameTarget(camera, [starAt(band.maxScale)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
+    // Panned as it draws at the deepest zoom, the star's largest: fixed sets whatever scale the frame starts from, so a landing
+    // frames to itself. With every name's whole width first, then the star alone, the set a zoom-out falls back on.
+    const largest = [domainStarMarks(block, opened, byName, band.maxScale, domainPx, paint, Infinity), domainStarMarks(block, opened, byName, band.maxScale, domainPx, paint, 0)];
+    return selectionFrameTarget(camera, largest, viewport, free, paint.frameMarginPx, band.entryScale, zoom);
   }
   const attention = cachedGraphAttention(model, id, true);
   const elementLabel = (of: string) => world.nodeById.get(of)?.label ?? null;
@@ -114,6 +120,69 @@ function graphSelectionFrame(
   const disc = radius(id);
   const sets = inOpenStar ? [marks(whole), marks(near), [{ x: own.x, y: own.y, box: { minX: -disc, maxX: disc, minY: -disc, maxY: disc } }]] : [marks(whole), marks(near)];
   return selectionFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
+}
+
+/** An open star's member as the domain frame weighs it: its node, its room in the star and its one-line name's reach. */
+interface FramedStarMember {
+  node: { x: number; y: number };
+  room: StarRoom;
+  own: number;
+  nearestOwn: number;
+  /** How far its one-line name reaches past its rim, 0 for an element. */
+  namePx: number;
+  /** Whether it stands left of its domain, so the side facing away from the domain is its left. */
+  outLeft: boolean;
+}
+
+/** Width the star's names leave unspent in `spanPx`, px: float noise never makes a star that fits alone stop fitting. */
+const NAME_ROOM_SLACK_PX = 0.5;
+
+/**
+ * A domain's star as the frame keeps it inside the free map at `scale`: the domain's block, then each
+ * member's opened disc with room for its one-line name on the side facing away from the domain, so a
+ * star framed against the free map's edge keeps a side there for the names of the members on its rim.
+ * The names take only the width the star leaves of `spanPx`, each whole or not at all, the shortest
+ * first (`byName`, the members with a name from shortest to longest): a name that no longer fits is
+ * passed over for a shorter or nearer one, so a short width still seats whole names. Where the star
+ * alone fits it still fits, and where it does not they take none. O(members).
+ */
+function domainStarMarks(
+  block: readonly FramedMark[], members: readonly FramedStarMember[], byName: readonly number[], scale: number, domainPx: number, paint: FlatGraphPaintTokens,
+  spanPx: number,
+): FramedMark[] {
+  const radii = members.map((m) => openRadiusPx(m.own, m.room, scale, domainPx, paint, m.nearestOwn));
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const m of block) {
+    lo = Math.min(lo, m.x * scale + m.box.minX);
+    hi = Math.max(hi, m.x * scale + m.box.maxX);
+  }
+  for (const [i, m] of members.entries()) {
+    lo = Math.min(lo, m.node.x * scale - radii[i]!);
+    hi = Math.max(hi, m.node.x * scale + radii[i]!);
+  }
+  const budget = spanPx - NAME_ROOM_SLACK_PX;
+  const seated = new Uint8Array(members.length);
+  let left = lo;
+  let right = hi;
+  if (hi - lo <= budget) {
+    for (const i of byName) {
+      const m = members[i]!;
+      const nextLeft = m.outLeft ? Math.min(left, m.node.x * scale - radii[i]! - m.namePx) : left;
+      const nextRight = m.outLeft ? right : Math.max(right, m.node.x * scale + radii[i]! + m.namePx);
+      if (nextRight - nextLeft > budget) continue;
+      seated[i] = 1;
+      left = nextLeft;
+      right = nextRight;
+    }
+  }
+  const marks = [...block];
+  for (const [i, { node, namePx, outLeft }] of members.entries()) {
+    const r = radii[i]!;
+    const name = seated[i] === 1 ? namePx : 0;
+    marks.push({ x: node.x, y: node.y, box: { minX: outLeft ? -r - name : -r, maxX: outLeft ? r : r + name, minY: -r, maxY: r } });
+  }
+  return marks;
 }
 
 /**

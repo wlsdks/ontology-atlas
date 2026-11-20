@@ -64,5 +64,19 @@
     "switchedBody": "{agent} was working in {folder}. {written, plural, =0 {No file was written} one {# file was written} other {# files were written}} there before it ended."
   },
   "railWaiting": "{destination}: waiting for your permission",
-  "railWaitingAndFinished": "{destination}: waiting for your permission · {count, plural, one {# finished run to read} other {# finished runs to read}}"
+  "railWaitingAndFinished": "{destination}: waiting for your permission · {count, plural, one {# finished run to read} other {# finished runs to read}}",
+  "meaning": {
+    "title": "Search by meaning",
+    "files": "{done} of {total, number} files",
+    "modelBytes": "{done} of {total} GB",
+    "downloading": "Downloading the model",
+    "converting": "Getting the model ready",
+    "minutesLeft": "about {minutes, plural, one {# minute} other {# minutes}} left",
+    "readyLead": "{total, plural, one {# file} other {# files}}",
+    "ready": "Ready to search by meaning",
+    "ask": "Ask a question",
+    "openLibrary": "Open Library",
+    "filesPrepared": "Files prepared"
+  },
+  "railRunningPercent": "{destination}: {percent, number}% done"
 }

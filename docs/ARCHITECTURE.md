@@ -258,6 +258,32 @@ alphabetic scripts stay whole and lowercased, and Hangul, kana and CJK runs
 become overlapping pairs, so a Korean term is found inside a word that carries
 a particle. The palette reads only the hit files to show their matching lines.
 
+Search by meaning keeps a third file beside them, `vectors.sqlite`
+(`vault-index::vectors`): each Markdown file is split into passages and each
+distinct passage text holds one int8 vector, keyed by the text's SHA-256, so a
+rename sends nothing again and a stopped build resumes where it was. Like the
+index it is derived and rebuildable, never canonical: a search returns only
+passages their file still holds, and Delete, switching the index off and the
+folder sweep remove it with the index files. Nothing is created until the person
+sets it up for a folder; the WebView keeps that choice (the built-in model or a
+loopback Ollama model) and whether they stopped the job as a preference and
+sends it with every command. The built-in model, bge-m3, is downloaded once from
+huggingface.co into the app's data folder and never loads into the app's
+process: the app starts its own executable with `--embed-worker` and speaks to
+it over a pipe. The app ends the worker two minutes after the last question,
+or when a job ends and no question came in that time; the worker also exits
+when its stdin closes, and after five idle minutes of its own. The WebView reaches it through `vault_vectors_probe`, `_status`,
+`_prepare`, `_stop`, `_warm`, `_search`, `_delete` and `_delete_model`
+(`src-tauri/src/vault/vectors/commands.rs`, bridged by
+`src/shared/lib/vault-folder/tauri-vault-vectors.ts`), and follows each folder's
+job through the `vault-vectors-status` event. The web playground has none.
+One store in `src/features/vault-vectors/` keeps each folder's last status for
+the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx` only
+listens to it and copies the open folder's job into the long-work store
+(`src/features/work-run/`) as a `meaning` run beside the checks it holds, so
+`work-run` never imports `vault-vectors` and the card and rail ring redraw at
+most four times a second.
+
 Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
 never becomes a Map node. It declares pattern axes, scoped implementation roles,

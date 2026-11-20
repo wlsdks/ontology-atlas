@@ -39,7 +39,22 @@ pub(super) fn parse_embeddings(
         }
         *slot = Some(row.embedding);
     }
-    let vectors: Vec<Vec<f32>> = slots.into_iter().flatten().collect();
+    check_vectors(
+        slots.into_iter().flatten().collect(),
+        count,
+        expected_dimensions,
+    )
+}
+
+/// One finite vector per input, all of one length.
+pub(super) fn check_vectors(
+    vectors: Vec<Vec<f32>>,
+    count: usize,
+    expected_dimensions: Option<usize>,
+) -> Result<Vec<Vec<f32>>, EmbedError> {
+    if vectors.len() != count {
+        return Err(EmbedError::ResponseInvalid("count"));
+    }
     let dimensions = vectors
         .first()
         .map(Vec::len)
