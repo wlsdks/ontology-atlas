@@ -94,6 +94,7 @@
     "meaningFailed": "意味検索を削除できませんでした。もう一度お試しください。",
     "modelLabel": "意味検索モデル",
     "modelSize": "{size}、bge-m3（BAAI、MIT）。削除すると、次に意味検索を使うときにもう一度ダウンロードします。",
+    "modelPartial": "ダウンロード未完了 · {size}",
     "modelDeleted": "モデルを削除しました。",
     "modelFailed": "モデルを削除できませんでした。もう一度お試しください。"
   }

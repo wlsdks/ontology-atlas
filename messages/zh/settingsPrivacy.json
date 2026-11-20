@@ -94,6 +94,7 @@
     "meaningFailed": "无法删除语义搜索，请重试。",
     "modelLabel": "语义搜索模型",
     "modelSize": "{size}，bge-m3（BAAI，MIT）。删除后，再次使用语义搜索时会重新下载。",
+    "modelPartial": "下载未完成 · {size}",
     "modelDeleted": "已删除模型。",
     "modelFailed": "无法删除模型，请重试。"
   }

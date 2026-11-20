@@ -94,6 +94,7 @@
     "meaningFailed": "의미 검색을 지우지 못했어요. 다시 시도해 주세요.",
     "modelLabel": "의미 검색 모델",
     "modelSize": "{size} · bge-m3 (BAAI, MIT). 지우면 의미 검색을 다시 쓸 때 다시 받아요.",
+    "modelPartial": "다운로드가 끝나지 않음 · {size}",
     "modelDeleted": "모델을 지웠어요.",
     "modelFailed": "모델을 지우지 못했어요. 다시 시도해 주세요."
   }
