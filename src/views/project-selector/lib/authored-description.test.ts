@@ -53,6 +53,13 @@ describe("resolveAuthoredDescription", () => {
     );
   });
 
+  it("reads a definition preview that opens with bold markup as the project's name", () => {
+    const marked = { ...doc({}), definitionPreview: "**Ontology Atlas** is a local-first workbench for what a codebase builds." } as VaultDoc;
+    expect(resolveAuthoredDescription(marked, { name: "Ontology Atlas" })).toBe(
+      "Ontology Atlas is a local-first workbench for what a codebase builds.",
+    );
+  });
+
   it("still refuses a body that opens with something other than the project's definition", () => {
     expect(resolveAuthoredDescription(doc({}), { name: "Ontology Atlas" })).toBeNull();
     const cut = { ...doc({}), definitionPreview: "Ontology Atlas is a workbench that keeps one record of what this codebase bui" } as VaultDoc;

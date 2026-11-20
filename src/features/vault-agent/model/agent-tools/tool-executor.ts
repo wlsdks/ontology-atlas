@@ -174,6 +174,36 @@ export function createToolExecutor(port: VaultReadPort) {
     return rows;
   }
 
+  /*
+   * Summaries are read in order and stop once the rows alone pass the result cap: `pack` can
+   * deliver no prefix past that row, so later rows keep an empty summary.
+   */
+  async function listRows(page: readonly VaultReadDoc[], wantSummary: boolean) {
+    const rows = [];
+    let rowChars = 0;
+    for (const doc of page) {
+      let summary = '';
+      if (wantSummary && rowChars <= AGENT_TOOL_RESULT_CHAR_CAP) {
+        try {
+          summary = excerptOfText(await port.readDocText(doc.slug));
+        } catch {
+          // A file renamed or deleted since the scan has no summary; the turn goes on.
+        }
+      }
+      const row = {
+        slug: doc.slug,
+        kind: doc.kind,
+        title: doc.title,
+        ...(doc.domain ? { domain: doc.domain } : {}),
+        ...(doc.mtime ? { mtime: doc.mtime } : {}),
+        ...(wantSummary ? { summary: wrapUntrusted(summary) } : {}),
+      };
+      rowChars += JSON.stringify(row).length + 1;
+      rows.push(row);
+    }
+    return rows;
+  }
+
   async function readConcept(slugInput: string, bodyMode: 'excerpt' | 'full' = 'full') {
     const node = resolve(slugInput);
     if (!node) {
@@ -402,18 +432,7 @@ export function createToolExecutor(port: VaultReadPort) {
             vaultChars: 0,
           };
         }
-        const page = filtered.slice(offset, offset + limit);
-        const summaries = wantSummary
-          ? await Promise.all(page.map(async (doc) => excerptOfText(await port.readDocText(doc.slug))))
-          : [];
-        const rows = page.map((doc, index) => ({
-          slug: doc.slug,
-          kind: doc.kind,
-          title: doc.title,
-          ...(doc.domain ? { domain: doc.domain } : {}),
-          ...(doc.mtime ? { mtime: doc.mtime } : {}),
-          ...(wantSummary ? { summary: wrapUntrusted(summaries[index]) } : {}),
-        }));
+        const rows = await listRows(filtered.slice(offset, offset + limit), wantSummary);
         const hasMore = offset + rows.length < filtered.length;
         const packed = pack({
           rows,

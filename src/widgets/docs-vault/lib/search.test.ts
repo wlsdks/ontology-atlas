@@ -27,6 +27,9 @@ function bodyIndexOf(entries: Record<string, string>): DocsBodyIndex {
   return m;
 }
 
+/** A body whose text opens past the 320-character first paragraph, so only the body tier can match it. */
+const deep = (text: string) => `${'filler '.repeat(60)}\n\n${text}`;
+
 describe('searchDocs metadata tiers', () => {
   it('scores a title match above a summary match', () => {
     const docs = [
@@ -66,6 +69,14 @@ describe('searchDocs finds a page by its first paragraph only through the body i
     expect(out[0].bodyHit?.text).toContain('Quillwort');
   });
 
+  it('ranks an indexed page by its first paragraph above fifteen tag matches', () => {
+    const tagged = Array.from({ length: 15 }, (_, i) => doc(`tagged-${i}`, `Other ${i}`, { tags: ['ledger'] }));
+    const page = doc('close', 'Month end', { excerpt: 'Ledger close runs at midnight.' });
+    const out = searchDocs('ledger', [...tagged, page], 15, bodyIndexOf({ close: 'Ledger close runs at midnight.' }));
+    expect(out).toHaveLength(15);
+    expect(out[0].doc.slug).toBe('close');
+  });
+
   it('does not find the page by that word without the index', () => {
     expect(searchDocs('quillwort', [plain], 30)).toEqual([]);
   });
@@ -84,7 +95,8 @@ describe('searchDocs body tier ranks lowest', () => {
     const matches = searchDocs('needle phrase', docs, 1, index);
     expect(matches[0].doc).toBe(docs[0]);
     const all = searchDocs('needle phrase', docs, 2, index);
-    expect(all.map(match => match.score)).toEqual([16, 16]);
+    // 20 for the first paragraph holding the first token, 16 for the exact phrase in the body.
+    expect(all.map(match => match.score)).toEqual([36, 36]);
     expect(all.map(match => match.bodyHit!.text.slice(match.bodyHit!.hit.start, match.bodyHit!.hit.end)))
       .toEqual(['needle phrase', 'needle phrase']);
   });
@@ -141,7 +153,7 @@ describe('searchDocs body tier ranks lowest', () => {
     ];
     // The body-only case matches at the very start of the body (the most favourable position).
     const bodyIndex = bodyIndexOf({
-      'body-only': 'needle first thing in the body',
+      'body-only': deep('needle first thing in the body'),
     });
     // A title match clipped past index 80 scores the title minimum (20) and still beats body (≤2).
     const longTitle = `${'x'.repeat(90)}needle`;
@@ -157,7 +169,7 @@ describe('searchDocs body tier ranks lowest', () => {
       }),
       doc('body-first', 'zzz'),
     ];
-    const bodyIndex = bodyIndexOf({ 'body-first': 'needle right away' });
+    const bodyIndex = bodyIndexOf({ 'body-first': deep('needle right away') });
     const out = searchDocs('needle', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['summary-late', 'body-first']);
   });
@@ -189,7 +201,7 @@ describe('searchDocs body tier ranks lowest', () => {
       doc('exact', 'yyy'),
     ];
     const bodyIndex = bodyIndexOf({
-      scattered: 'deterministic is discussed, and later compile appears too',
+      scattered: deep('deterministic is discussed, and later compile appears too'),
       exact: `${'filler '.repeat(50)}the deterministic compile phrase lives here`,
     });
     const out = searchDocs('deterministic compile', docs, 30, bodyIndex);
@@ -225,7 +237,7 @@ describe('searchDocs body tier ranks lowest', () => {
     ];
     // Body idx 0 — the best case, where the exact-phrase boost takes its maximum.
     const bodyIndex = bodyIndexOf({
-      'body-exact': 'needle phrase right at the very start of the body',
+      'body-exact': deep('needle phrase right at the very start of the body'),
     });
     const out = searchDocs('needle phrase', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-exact']);

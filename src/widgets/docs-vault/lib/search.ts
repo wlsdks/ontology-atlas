@@ -1,4 +1,5 @@
 import type { VaultDoc } from '@/entities/docs-vault';
+import { buildExcerpt } from '@/shared/lib/vault-document/parse-frontmatter';
 import { buildPhraseMatcher } from '@/shared/lib/search-match/highlight-match';
 import type { DocsBodyEntry, DocsBodyIndex } from './body-index';
 import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
@@ -65,6 +66,18 @@ function bodyPhraseScore(idx: number): number {
   return 10 + Math.max(0, 6 - idx / 10000);
 }
 
+const excerptLowerByEntry = new WeakMap<DocsBodyEntry, string>();
+
+/** The lowercased first paragraph of an indexed body, cut once per entry, so an index hit scores as before. */
+function indexedExcerptLower(entry: DocsBodyEntry): string {
+  let lower = excerptLowerByEntry.get(entry);
+  if (lower === undefined) {
+    lower = buildExcerpt(entry.raw).toLowerCase();
+    excerptLowerByEntry.set(entry, lower);
+  }
+  return lower;
+}
+
 interface RankedDoc {
   doc: VaultDoc;
   score: number;
@@ -116,8 +129,9 @@ function matchFor(
 }
 
 /**
- * AND-token search. Tiers: title 20-100, slug 25, summary 2-20, tag 15, body phrase 10-16,
- * scattered body about 1. Body text is pre-lowercased; phrase matching shares the viewer's matcher.
+ * AND-token search. Tiers: title 20-100, slug 25, summary or an indexed body's first paragraph
+ * 2-20, tag 15, body phrase 10-16, scattered body about 1. Body text is pre-lowercased; phrase
+ * matching shares the viewer's matcher.
  */
 export function searchDocs(
   query: string,
@@ -145,12 +159,14 @@ export function searchDocs(
       v.toLowerCase(),
     );
     const body = bodyIndex?.get(doc.slug);
+    const excerptLc = body ? indexedExcerptLower(body) : '';
     // Check with AND that each token matches somewhere (body included).
     const allMatch = tokens.every(
       (tok) =>
         titleLc.includes(tok) ||
         displayLc.some((d) => d.includes(tok)) ||
         summaryLc.includes(tok) ||
+        excerptLc.includes(tok) ||
         slugLc.includes(tok) ||
         tagLc.some((t) => t.includes(tok)) ||
         (body !== undefined && body.lower.includes(tok)),
@@ -160,6 +176,8 @@ export function searchDocs(
     const needle = tokens[0];
     const titleIdx = titleLc.indexOf(needle);
     const summaryIdx = summaryLc.indexOf(needle);
+    const excerptIdx = excerptLc.indexOf(needle);
+    const leadIdx = summaryIdx === -1 || (excerptIdx !== -1 && excerptIdx < summaryIdx) ? excerptIdx : summaryIdx;
 
     // Body match position: an exact phrase (newlines as spaces) sets the boost tier; otherwise the
     // first token's position in the lowest tier.
@@ -184,7 +202,7 @@ export function searchDocs(
 
     let score = 0;
     if (titleIdx !== -1) score += 100 - Math.min(titleIdx, 80);
-    if (summaryIdx !== -1) score += 20 - Math.min(summaryIdx, 18);
+    if (leadIdx !== -1) score += 20 - Math.min(leadIdx, 18);
     if (slugLc.includes(needle)) score += 25;
     for (const t of tagLc) if (t.includes(needle)) score += 15;
     if (bodyIdx !== -1) {

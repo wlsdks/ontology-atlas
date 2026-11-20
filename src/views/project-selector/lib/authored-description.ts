@@ -1,5 +1,6 @@
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { Project } from "@/entities/project";
+import { buildExcerpt } from "@/shared/lib/vault-document/parse-frontmatter";
 import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 
 /**
@@ -28,7 +29,7 @@ function resolveBodyDefinition(
 ): string | null {
   if (!doc || !project) return null;
   // 320 is the definition preview's own length, so the whole first sentence fits.
-  const sentence = compactOntologyDescription(doc.definitionPreview ?? '', 320);
+  const sentence = compactOntologyDescription(buildExcerpt(doc.definitionPreview ?? ''), 320);
   // A sentence that does not end inside the preview is a cut, not a definition.
   if (!sentence || !/[.!?。！？]$/u.test(sentence)) return null;
   const names = [project.name, doc.title, ...Object.values(project.displayNames ?? {})]

@@ -289,6 +289,56 @@ describe('tool-executor reads', () => {
     expect(result.content.length).toBeLessThan(7_000);
   });
 
+  describe('list_concepts with summaries reads only as many files as it can deliver', () => {
+    const SUMMARY = 'x'.repeat(300);
+    const many = Array.from({ length: 400 }, (_, index) => ({
+      slug: `capabilities/c${index}`,
+      path: `capabilities/c${index}.md`,
+      title: `c${index}`,
+      kind: 'capability',
+      frontmatter: {},
+      mtime: 1,
+    }));
+    type Delivered = { rows: Array<{ slug: string; summary: string }>; truncated?: boolean; omitted?: number; hint?: string };
+
+    it('delivers the rows a read of every file would, with a bounded number of reads', async () => {
+      const read = vi.fn(async () => SUMMARY);
+      const execute = createToolExecutor(makePort({ docs: many, readDocText: read }));
+      const delivered = JSON.parse(
+        (await execute(call('list_concepts', { summary: true, limit: 400 }))).content,
+      ) as Delivered;
+
+      // The rows pack would keep had every file been read: halve from 400 until the JSON fits.
+      const fullRows = [...many].sort((a, b) => a.slug.localeCompare(b.slug)).map((doc) => ({
+        slug: doc.slug,
+        kind: doc.kind,
+        title: doc.title,
+        mtime: 1,
+        summary: `<untrusted_vault_content>\n${SUMMARY}\n</untrusted_vault_content>`,
+      }));
+      const { rows: _rows, ...envelope } = delivered;
+      let keep = 400;
+      while (keep > 0 && JSON.stringify({ ...envelope, rows: fullRows.slice(0, keep) }).length > AGENT_TOOL_RESULT_CHAR_CAP) {
+        keep = Math.floor(keep / 2);
+      }
+      expect(delivered.rows).toEqual(fullRows.slice(0, keep));
+      expect(delivered.omitted).toBe(400 - keep);
+      expect(read.mock.calls.length).toBeLessThanOrEqual(2 * keep + 2);
+    });
+
+    it('keeps going when one file cannot be read', async () => {
+      const read = vi.fn(async (slug: string) => {
+        if (slug === 'capabilities/c1') throw new Error('file is gone');
+        return SUMMARY;
+      });
+      const execute = createToolExecutor(makePort({ docs: many.slice(0, 3), readDocText: read }));
+      const result = await execute(call('list_concepts', { summary: true }));
+      const rows = (JSON.parse(result.content) as Delivered).rows;
+      expect(result.isError).toBe(false);
+      expect(rows.map((row) => row.summary.includes(SUMMARY))).toEqual([true, false, true]);
+    });
+  });
+
   it('restores a large list through deterministic offset pages without gaps', async () => {
     const many = Array.from({ length: 503 }, (_, index) => ({
       slug: `capabilities/c${String(index).padStart(3, '0')}`,

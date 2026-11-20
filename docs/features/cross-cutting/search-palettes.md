@@ -40,8 +40,10 @@ folder is gone or was left unopened for fourteen days; an index being built or t
 be read is kept. The web has no index: there the palette searches titles, display names,
 slugs, tags and summaries (a description, else a concept's definition preview), and its
 zero-result note says exactly that. A page is no longer found by a word that only its
-first paragraph holds, except in the app with the index on. The Library's wiki list and
-the project palette match the same way.
+first paragraph holds, except in the app with the index on: the documents palette finds
+it when the page is among the index's 15 best files, and the Library's wiki list when
+the index matches it. The project palette's documents section has no index and matches
+by summary only.
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
 substrings only, so the two things a Korean typist does first found nothing on the
