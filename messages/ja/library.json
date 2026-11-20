@@ -49,7 +49,16 @@
       "auditBlocked": ".ontology-atlasに送信記録を書けなかったため、何も送っていません。",
       "unreadable": "このフォルダのファイルを読めませんでした。",
       "failureDetail": "{code, select, embed_request_failed {接続に失敗} embed_timed_out {時間内に応答なし} embed_http_error {サーバーがエラーを返した} embed_redirect_refused {許可していないアドレスへのリダイレクト} embed_download_host_refused {許可していないホスト} embed_model_disk_space {ディスクの空き容量不足} embed_model_convert_failed {このコンピュータ向けにモデルを準備できなかった} embed_model_load_failed {モデルを読み込めなかった} embed_model_store_failed {モデルを保存できなかった} embed_worker_start_failed {モデルのプロセスを起動できなかった} embed_worker_exited {モデルのプロセスが終了した} embed_worker_failed {モデルのプロセスがエラーを返した} embed_inference_failed {箇所を読めなかった} embed_response_invalid {応答を読めなかった} embed_response_too_large {応答が大きすぎた} embed_model_busy {モデルが使用中} embed_pull_failed {Ollamaがモデルを取得できなかった} vectors_refused {応答を受け付けなかった} vectors_store_failed {ディスクへの書き込みが拒否された} load {モデルを読み込めなかった} worker_exited {モデルのプロセスが終了した} other {{raw}}}",
-      "ringLabel": "意味検索の進行状況"
+      "ringLabel": "意味検索の進行状況",
+      "reasonWords": "同じ単語",
+      "reasonMeaning": "似た意味",
+      "reasonBoth": "同じ単語 · 似た意味",
+      "coverage": "意味検索: ファイル{total, number}件中{ready, number}件",
+      "staleDropped": "変更されたファイルの箇所{count, number}件を除きました",
+      "modelGoneNotice": "モデルがこのコンピュータにないため、この結果は単語だけで照合しています。",
+      "runnerDownNotice": "Ollamaが応答しなかったため、この結果は単語だけで照合しています。",
+      "failedNotice": "意味検索が応答しなかったため、この結果は単語だけで照合しています。",
+      "noMatchBoth": "検索したファイルに、この単語やこの意味に合う箇所は見つかりませんでした。"
     },
     "title": "質問して、出典をたどる。",
     "browse": "ページを見る",

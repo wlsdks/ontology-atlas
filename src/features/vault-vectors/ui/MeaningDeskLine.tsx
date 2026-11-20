@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore, type MouseEvent } from 'react';
+import { useId, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
@@ -18,8 +18,8 @@ import { prepare, resume, stop, useVectorStatus } from '../model/vector-store';
 import { MeaningSetupDialog } from './MeaningSetupDialog';
 
 const FILE_NAME_PACE_MS = 1000;
-/** The end of a path kept whole when the middle is cut: enough for a file name and its extension. */
-const KEPT_PATH_END = 18;
+/** The end of a file name kept whole when its middle is cut: enough for a word and the extension. */
+const KEPT_NAME_END = 12;
 const RING_PX = 14;
 const RING_RADIUS = 6;
 const PLACEHOLDER = '\u0000';
@@ -64,13 +64,19 @@ function ProgressRing({ fraction, label, measure }: { fraction: number; label: s
   );
 }
 
-/** The path's start gives way first, so the file name and its extension stay readable. */
-function MiddleCutPath({ path }: { path: string }) {
-  const cut = Math.max(0, path.length - KEPT_PATH_END);
+/**
+ * The file's name alone, its middle giving way first so the ending and extension stay readable;
+ * the full path is its description.
+ */
+function MiddleCutName({ path }: { path: string }) {
+  const pathId = useId();
+  const name = path.split('/').pop() || path;
+  const cut = Math.max(0, name.length - KEPT_NAME_END);
   return (
-    <span className="flex min-w-0" title={path} data-testid="meaning-desk-file">
-      <span className="min-w-0 truncate">{path.slice(0, cut)}</span>
-      <span className="flex-none whitespace-pre">{path.slice(cut)}</span>
+    <span className="flex min-w-0" title={path} aria-describedby={pathId} data-testid="meaning-desk-file">
+      <span className="min-w-0 truncate">{name.slice(0, cut)}</span>
+      <span className="flex-none whitespace-pre">{name.slice(cut)}</span>
+      <span id={pathId} hidden>{path}</span>
     </span>
   );
 }
@@ -190,13 +196,13 @@ export function MeaningDeskLine({
           >
             <span className={web ? 'min-w-0' : 'min-w-0 truncate'} title={web ? undefined : sentence}>{sentence}</span>
             {line.minutesLeft !== null ? <><Separator /><span className="flex-none" data-testid="meaning-desk-minutes">{t('minutesLeft', { minutes: line.minutesLeft })}</span></> : null}
-            {line.message === 'preparing' ? (
+            {line.message === 'preparing' || (line.message === 'updating' && line.progress !== null) ? (
               <span className="flex min-w-0 flex-1 items-center gap-x-1.5">
                 {shownPath ? <>
                   <Separator />
                   <span className="flex min-w-0 items-center whitespace-pre">
                     <span className="flex-none">{readingBefore}</span>
-                    <MiddleCutPath path={shownPath} />
+                    <MiddleCutName path={shownPath} />
                     <span className="flex-none">{readingAfter}</span>
                   </span>
                 </> : null}

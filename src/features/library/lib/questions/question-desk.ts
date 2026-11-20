@@ -21,6 +21,8 @@ const STOP = new Set('a an and are as at be by can did do does for from how in i
 const CITATION = /\[\[src:(sources\/[^\]#]+)#([^\]]+)\]\]/g;
 const MAX_FILES = 200;
 const MAX_BYTES = 20 * 1024 * 1024;
+/** Where the meaning list stands among the lists `fuseDeskLeads` fuses. */
+const MEANING_LIST = 2;
 
 function deskPages(docs: readonly VaultDoc[]): VaultDoc[] {
   return docs.filter((doc) => doc.slug.startsWith('wiki/') && !doc.slug.split('/').some((part) => part.startsWith('_')) && !doc.frontmatter.kind);
@@ -78,6 +80,31 @@ function recordedHashes(frontmatter: Record<string, unknown>): Record<string, st
   return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
 }
 
+/**
+ * Every claim on a page, in page order, before any question scores it: a list item under Facts or
+ * Decisions that is not a question. `bodyOffset` counts the lines above the body, so a claim's
+ * line in the file is `line + bodyOffset`.
+ */
+function pageClaims(doc: VaultDoc, raw: string): { claims: DeskClaim[]; bodyOffset: number } {
+  const parsed = parseFrontmatter(raw);
+  const hashes = recordedHashes(parsed.frontmatter);
+  const whole = raw.replace(/^﻿/u, '').replace(/\r\n/gu, '\n');
+  const bodyOffset = whole.endsWith(parsed.body) ? whole.slice(0, whole.length - parsed.body.length).split('\n').length - 1 : 0;
+  const claims: DeskClaim[] = [];
+  let section = '';
+  for (const [index, line] of parsed.body.split(/\r?\n/).entries()) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('## ')) section = trimmed.slice(3).toLowerCase();
+    if (section !== 'facts' && section !== 'decisions') continue;
+    if (!/^[-*] /.test(trimmed)) continue;
+    const text = trimmed.slice(2).trim();
+    if (text.endsWith('?')) continue;
+    const citations = [...text.matchAll(CITATION)].map((match) => ({ path: match[1]!, anchor: match[2]! }));
+    claims.push({ pageSlug: doc.slug, pageTitle: doc.title, text, citations, line: index + 1, score: 0, recordedHashes: hashes });
+  }
+  return { claims, bodyOffset };
+}
+
 export function findDeskClaims(question: string, docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string>): {
   claims: DeskClaim[]; readPages: number; totalPages: number; omitted: number;
 } {
@@ -89,20 +116,9 @@ export function findDeskClaims(question: string, docs: readonly VaultDoc[], rawB
     const raw = rawBySlug.get(doc.slug);
     if (raw === undefined) continue;
     readPages += 1;
-    const parsed = parseFrontmatter(raw);
-    const hashes = recordedHashes(parsed.frontmatter);
-    let section = '';
-    for (const [index, line] of parsed.body.split(/\r?\n/).entries()) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('## ')) section = trimmed.slice(3).toLowerCase();
-      if (section !== 'facts' && section !== 'decisions') continue;
-      if (!/^[-*] /.test(trimmed)) continue;
-      const text = trimmed.slice(2).trim();
-      if (text.endsWith('?')) continue;
-      const score = questionScore(text, terms);
-      if (!score) continue;
-      const citations = [...text.matchAll(CITATION)].map((match) => ({ path: match[1]!, anchor: match[2]! }));
-      claims.push({ pageSlug: doc.slug, pageTitle: doc.title, text, citations, line: index + 1, score, recordedHashes: hashes });
+    for (const claim of pageClaims(doc, raw).claims) {
+      const score = questionScore(claim.text, terms);
+      if (score) claims.push({ ...claim, score });
     }
   }
   claims.sort((a, b) => b.score - a.score || a.pageSlug.localeCompare(b.pageSlug));
@@ -153,13 +169,83 @@ export function questionTermRuns(text: string, terms: readonly string[]): Array<
   return runs;
 }
 
+/** Which searches held a lead: the word lists, the meaning list, or both. */
+export type DeskLeadReason = 'words' | 'meaning' | 'both';
+
 export type DeskLead =
-  | { kind: 'claim'; key: string; claim: DeskClaim }
-  | { kind: 'source'; key: string; hit: DeskSourceHit };
+  | { kind: 'claim'; key: string; claim: DeskClaim; reason: DeskLeadReason }
+  | { kind: 'source'; key: string; hit: DeskSourceHit; reason: DeskLeadReason };
+
+/** A row search by meaning found, before fusion: a claim or a source passage. */
+export type DeskMeaningLead = { kind: 'claim'; claim: DeskClaim } | { kind: 'source'; hit: DeskSourceHit };
+
+/** A passage search by meaning returned: a file and a 1-based, inclusive line range in it. */
+export interface DeskPassageHit { path: string; lineStart: number; lineEnd: number }
 
 function anchorLine(anchor: string): number {
   const digits = /\d+/.exec(anchor);
   return digits ? Number(digits[0]) : 0;
+}
+
+const LINE_ANCHOR = /^l\d+$/u;
+const MARKDOWN_HEADING = /^#{1,6}(?:\s|$)/u;
+
+/**
+ * The rows the passages found by meaning stand for, in the order returned. A passage in a file the
+ * desk does not search (a listed wiki page, or a source in this search's plan) is dropped
+ * uncounted. A passage holding a lead found by words is that lead, the best-ranked one in range,
+ * so fusion merges the two. Otherwise its row is the passage's first sentence: for a source the
+ * first unit in range that is not a heading, from the units this search read; for a wiki page the
+ * first claim in range. A passage whose file was not read, or whose range holds no such sentence,
+ * is dropped and counted in `dropped`.
+ */
+export function deskMeaningLeads({ hits, docs, rawBySlug, searchedSources, sourceUnitsByPath, claims, sourceHits }: {
+  hits: readonly DeskPassageHit[];
+  docs: readonly VaultDoc[];
+  rawBySlug: ReadonlyMap<string, string>;
+  /** The source paths this search planned to read. */
+  searchedSources: ReadonlySet<string>;
+  /** The units of each planned source this search read; a path absent here could not be read. */
+  sourceUnitsByPath: ReadonlyMap<string, readonly SourceUnit[]>;
+  /** The word leads, each list best first. */
+  claims: readonly DeskClaim[];
+  sourceHits: readonly DeskSourceHit[];
+}): { leads: DeskMeaningLead[]; dropped: number } {
+  const pageByPath = new Map(deskPages(docs).map((doc) => [`${doc.slug}.md`, doc]));
+  const parsedPages = new Map<string, ReturnType<typeof pageClaims>>();
+  const leads: DeskMeaningLead[] = [];
+  let dropped = 0;
+  const within = (line: number, hit: DeskPassageHit) => line >= hit.lineStart && line <= hit.lineEnd;
+  for (const hit of hits) {
+    const doc = pageByPath.get(hit.path);
+    if (doc) {
+      const raw = rawBySlug.get(doc.slug);
+      if (raw === undefined) { dropped += 1; continue; }
+      let page = parsedPages.get(doc.slug);
+      if (!page) { page = pageClaims(doc, raw); parsedPages.set(doc.slug, page); }
+      const { bodyOffset } = page;
+      const claim = claims.find((worded) => worded.pageSlug === doc.slug && within(worded.line + bodyOffset, hit))
+        ?? page.claims.find((candidate) => within(candidate.line + bodyOffset, hit));
+      if (claim) leads.push({ kind: 'claim', claim });
+      else dropped += 1;
+      continue;
+    }
+    if (!searchedSources.has(hit.path)) continue;
+    const units = sourceUnitsByPath.get(hit.path);
+    if (!units) { dropped += 1; continue; }
+    const worded = sourceHits.find((source) => source.path === hit.path && within(anchorLine(source.anchor), hit));
+    if (worded) { leads.push({ kind: 'source', hit: worded }); continue; }
+    const unit = units.find((candidate) => LINE_ANCHOR.test(candidate.anchor) && within(anchorLine(candidate.anchor), hit)
+      && candidate.kind !== 'heading' && !MARKDOWN_HEADING.test(candidate.text));
+    if (unit) leads.push({ kind: 'source', hit: { path: hit.path, anchor: unit.anchor, text: unit.text, score: 0 } });
+    else dropped += 1;
+  }
+  return { leads, dropped };
+}
+
+/** The sentence's runs for its row: a lead only meaning found matched no word, so none is strong. */
+export function deskLeadTermRuns(lead: Pick<DeskLead, 'reason'>, sentence: string, terms: readonly string[]): Array<{ text: string; strong: boolean }> {
+  return lead.reason === 'meaning' ? [{ text: sentence, strong: false }] : questionTermRuns(sentence, terms);
 }
 
 function leadPlace(lead: DeskLead): [string, number] {
@@ -184,25 +270,32 @@ function comparableSentence(text: string): string {
  * evidence, which the claim's cited-file press already opens: it folds into the claim and adds its
  * rank to the claim's. A cited passage that says something else keeps its own row, so a claim and
  * the line that contradicts it stand in the list together.
+ *
+ * `meaning` is the third list, the rows search by meaning found in the order returned. Each lead's
+ * reason names the lists that held it; a folded passage's lists count for its claim.
  */
-export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[]): DeskLead[] {
-  const claimLeads = claims.map((claim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim }));
-  const sourceLeads = hits.map((hit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit }));
-  const citedBy = new Map<string, string[]>();
-  for (const claim of claims) {
+export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[], meaning: readonly DeskMeaningLead[] = []): DeskLead[] {
+  const claimLead = (claim: DeskClaim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim, reason: 'words' });
+  const sourceLead = (hit: DeskSourceHit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit, reason: 'words' });
+  const meaningLeads = meaning.map((lead) => lead.kind === 'claim' ? claimLead(lead.claim) : sourceLead(lead.hit));
+  const citedBy = new Map<string, Set<string>>();
+  for (const claim of [...claims, ...meaning.flatMap((lead) => lead.kind === 'claim' ? [lead.claim] : [])]) {
     const sentence = comparableSentence(claim.text);
     for (const citation of claim.citations) {
       const place = `source:${citation.path}#${citation.anchor}\n${sentence}`;
-      citedBy.set(place, [...(citedBy.get(place) ?? []), `claim:${claim.pageSlug}:${claim.line}`]);
+      citedBy.set(place, (citedBy.get(place) ?? new Set()).add(`claim:${claim.pageSlug}:${claim.line}`));
     }
   }
-  return fuseRankedLists([claimLeads, sourceLeads], (lead) => lead.key, (a, b) => {
+  return fuseRankedLists([claims.map(claimLead), hits.map(sourceLead), meaningLeads], (lead) => lead.key, (a, b) => {
     if (a.kind !== b.kind) return a.kind === 'claim' ? -1 : 1;
     const [pathA, lineA] = leadPlace(a);
     const [pathB, lineB] = leadPlace(b);
     return pathA.localeCompare(pathB) || lineA - lineB;
-  }, (lead) => lead.kind === 'source' ? citedBy.get(`${lead.key}\n${comparableSentence(lead.hit.text)}`) ?? [] : [])
-    .map((fused) => fused.item);
+  }, (lead) => lead.kind === 'source' ? [...citedBy.get(`${lead.key}\n${comparableSentence(lead.hit.text)}`) ?? []] : [])
+    .map(({ item, lists }): DeskLead => {
+      const byMeaning = lists.includes(MEANING_LIST);
+      return { ...item, reason: !byMeaning ? 'words' : lists.length === 1 ? 'meaning' : 'both' };
+    });
 }
 
 function dayValue(value: unknown): number {

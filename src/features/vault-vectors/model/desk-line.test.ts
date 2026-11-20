@@ -60,10 +60,19 @@ describe('deskLine', () => {
     expect(deskLine(app({ ...PREPARING, passagesPerSecond: 0 }))?.minutesLeft).toBeNull();
   });
 
-  it('says updating only while changed files remain, and ready after', () => {
-    const updating = status({ phase: 'preparing', updating: true, filesDone: 1997, filesTotal: 2000 });
-    expect(deskLine(app(updating))).toMatchObject({ message: 'updating', values: { count: 3 }, action: null, progress: null });
-    expect(deskLine(app({ ...updating, filesDone: 2000 }))).toMatchObject({ message: 'ready', values: { files: 2000 } });
+  it('says an update under ten files quietly, only while changed files remain, and ready after', () => {
+    // An update counts the changed files alone.
+    const updating = status({ phase: 'preparing', updating: true, filesDone: 6, filesTotal: 9, currentPath: 'wiki/a.md' });
+    expect(deskLine(app(updating))).toMatchObject({ message: 'updating', values: { count: 3 }, action: null, progress: null, readingPath: null });
+    expect(deskLine(app({ ...updating, filesDone: 9 }))).toMatchObject({ message: 'ready', values: { files: 9 } });
+  });
+
+  it('follows an update of ten files or more like a first preparation, with the ring, the file and Stop', () => {
+    const updating = status({ phase: 'preparing', updating: true, filesDone: 4, filesTotal: 10, passagesDone: 20, passagesTotal: 50, passagesPerSecond: 0.25, currentPath: 'sources/notes/2026-04.md' });
+    expect(deskLine(app(updating))).toMatchObject({
+      message: 'updating', values: { count: 6 }, action: 'stop', readingPath: 'sources/notes/2026-04.md', minutesLeft: 2,
+      progress: { measure: 'files', done: 4, total: 10, fraction: 0.4 },
+    });
   });
 
   it('says where a stop left the files, with Resume', () => {

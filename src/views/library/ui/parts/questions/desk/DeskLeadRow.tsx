@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { BookText, FileText } from 'lucide-react';
 
-import { passageLabelText, questionTermRuns, type DeskCitation, type DeskLead } from '@/features/library';
+import { deskLeadTermRuns, passageLabelText, type DeskCitation, type DeskLead } from '@/features/library';
 import { truncateMiddlePath } from '@/shared/lib/concept-display/truncate-middle-path';
 import { passageLabelFor } from '@/shared/lib/library/source-passage';
 import { Chip } from '@/shared/ui';
@@ -38,9 +38,11 @@ function fileName(path: string): string {
  * covers the row); the cited files and the Jev press sit above that layer as their own controls,
  * so no button is nested in another.
  */
-export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, riseDelay, openRef, onOpenWiki, onOpenSource }: {
+export function DeskLeadRow({ lead, terms, reason, citationState, jev, jevResult, rise, riseDelay, openRef, onOpenWiki, onOpenSource }: {
   lead: DeskLead;
   terms: readonly string[];
+  /** Why the row is here, when search by meaning took part; it ends the second line. */
+  reason: string | null;
   citationState: (citation: DeskCitation) => CitationState;
   /** The Jev press, when this row can be checked here. */
   jev: { busy: boolean; onCheck: () => void } | null;
@@ -55,7 +57,7 @@ export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, 
   const t = useTranslations('library');
   const whereId = useId();
   const sentence = lead.kind === 'claim' ? claimSentence(lead.claim.text) : passageSentence(lead.hit.text);
-  const runs = questionTermRuns(sentence, terms);
+  const runs = deskLeadTermRuns(lead, sentence, terms);
   const place = (citation: DeskCitation) => passageLabelText(passageLabelFor(citation.anchor, []), citation.anchor, t);
   const states = lead.kind === 'claim' ? lead.claim.citations.map(citationState) : [];
   const attention = lead.kind !== 'claim' ? null
@@ -100,6 +102,10 @@ export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, 
         {lead.kind === 'claim' && uncited > 0 ? <button type="button" className={quietPress}
           aria-label={`+${uncited} · ${lead.claim.pageTitle}`}
           onClick={() => onOpenWiki(lead.claim.pageSlug)}>+{uncited}</button> : null}
+        {reason ? <span className="flex min-w-0 items-center gap-x-2" data-lead-reason={lead.reason}>
+          <span aria-hidden="true" className="flex-none">·</span>
+          <span className="min-w-0">{reason}</span>
+        </span> : null}
       </div>
       {jevResult}
     </div>

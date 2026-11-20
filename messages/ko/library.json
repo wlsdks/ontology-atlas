@@ -49,7 +49,16 @@
       "auditBlocked": ".ontology-atlas에 전송 기록을 쓸 수 없어서 아무것도 보내지 않았어요.",
       "unreadable": "이 폴더의 파일을 읽지 못했어요.",
       "failureDetail": "{code, select, embed_request_failed {연결 실패} embed_timed_out {제시간에 응답 없음} embed_http_error {서버 오류 응답} embed_redirect_refused {허용하지 않는 주소로 이동} embed_download_host_refused {허용하지 않는 호스트} embed_model_disk_space {디스크 여유 공간 부족} embed_model_convert_failed {이 컴퓨터에 맞게 모델을 준비하지 못함} embed_model_load_failed {모델을 불러오지 못함} embed_model_store_failed {모델을 저장하지 못함} embed_worker_start_failed {모델 프로세스를 시작하지 못함} embed_worker_exited {모델 프로세스가 끝남} embed_worker_failed {모델 프로세스 오류} embed_inference_failed {구절을 읽지 못함} embed_response_invalid {응답을 읽지 못함} embed_response_too_large {응답이 너무 큼} embed_model_busy {모델 사용 중} embed_pull_failed {Ollama가 모델을 받지 못함} vectors_refused {응답을 받아들이지 않음} vectors_store_failed {디스크가 쓰기를 거부함} load {모델을 불러오지 못함} worker_exited {모델 프로세스가 끝남} other {{raw}}}",
-      "ringLabel": "의미 검색 진행"
+      "ringLabel": "의미 검색 진행",
+      "reasonWords": "같은 단어",
+      "reasonMeaning": "비슷한 뜻",
+      "reasonBoth": "같은 단어 · 비슷한 뜻",
+      "coverage": "의미 검색: 파일 {total, number}개 중 {ready, number}개",
+      "staleDropped": "바뀐 파일의 구절 {count, number}개는 뺐어요",
+      "modelGoneNotice": "모델이 이 컴퓨터에 없어서 이 결과는 단어만 맞춰 찾았어요.",
+      "runnerDownNotice": "Ollama가 응답하지 않아서 이 결과는 단어만 맞춰 찾았어요.",
+      "failedNotice": "의미 검색이 답하지 않아서 이 결과는 단어만 맞춰 찾았어요.",
+      "noMatchBoth": "검색한 파일에서 이 단어나 이 뜻과 맞는 구절을 찾지 못했어요."
     },
     "title": "질문하고, 원문에서 확인하세요.",
     "browse": "페이지 둘러보기",

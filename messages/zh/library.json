@@ -49,7 +49,16 @@
       "auditBlocked": "Atlas 无法在 .ontology-atlas 中写入发送记录，因此没有发送任何内容。",
       "unreadable": "Atlas 无法读取此文件夹的文件。",
       "failureDetail": "{code, select, embed_request_failed {连接失败} embed_timed_out {未及时响应} embed_http_error {服务器返回错误} embed_redirect_refused {重定向到不允许的地址} embed_download_host_refused {下载指向不允许的主机} embed_model_disk_space {磁盘可用空间不足} embed_model_convert_failed {无法为这台电脑准备模型} embed_model_load_failed {无法加载模型} embed_model_store_failed {无法保存模型} embed_worker_start_failed {无法启动模型进程} embed_worker_exited {模型进程已退出} embed_worker_failed {模型进程报错} embed_inference_failed {无法读取段落} embed_response_invalid {无法读取响应} embed_response_too_large {响应过大} embed_model_busy {模型正在使用} embed_pull_failed {Ollama 无法获取模型} vectors_refused {Atlas 拒绝了它的响应} vectors_store_failed {磁盘拒绝写入} load {无法加载模型} worker_exited {模型进程已退出} other {{raw}}}",
-      "ringLabel": "语义搜索进度"
+      "ringLabel": "语义搜索进度",
+      "reasonWords": "相同词语",
+      "reasonMeaning": "相近语义",
+      "reasonBoth": "相同词语 · 相近语义",
+      "coverage": "语义搜索：{ready, number} / {total, number} 个文件",
+      "staleDropped": "已略去已更改文件中的 {count, number} 段内容",
+      "modelGoneNotice": "这台电脑上已没有该模型，因此这些结果只按词语匹配。",
+      "runnerDownNotice": "Ollama 没有响应，因此这些结果只按词语匹配。",
+      "failedNotice": "语义搜索没有响应，因此这些结果只按词语匹配。",
+      "noMatchBoth": "已搜索的文件中没有与这些词语或这个意思相符的段落。"
     },
     "title": "提出问题，顺着来源查证。",
     "browse": "浏览页面",

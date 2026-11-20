@@ -57,6 +57,8 @@ export interface DeskLineInput {
 }
 
 const SECONDS_PER_MINUTE = 60;
+/** An update of this many changed files or more is followed like a first preparation. */
+export const UPDATE_RING_FILES = 10;
 
 const line = (message: DeskLineMessage, fields: Partial<DeskLine> = {}): DeskLine => ({
   message,
@@ -122,7 +124,15 @@ export function deskLine(input: DeskLineInput): DeskLine | null {
     case 'preparing': {
       if (status.updating) {
         const count = Math.max(0, status.filesTotal - status.filesDone);
-        return count > 0 ? line('updating', { values: { count } }) : line('ready', { values: { files: status.filesTotal } });
+        if (count === 0) return line('ready', { values: { files: status.filesTotal } });
+        if (status.filesTotal < UPDATE_RING_FILES) return line('updating', { values: { count } });
+        return line('updating', {
+          values: { count },
+          progress: progressOf('files', status.filesDone, status.filesTotal),
+          minutesLeft: minutesLeftOf(status),
+          readingPath: status.currentPath,
+          action: 'stop',
+        });
       }
       return line('preparing', {
         progress: progressOf('files', status.filesDone, status.filesTotal),

@@ -49,7 +49,16 @@
       "auditBlocked": "Atlas could not write the sent log in .ontology-atlas, so nothing was sent.",
       "unreadable": "Atlas could not read this folder's files.",
       "failureDetail": "{code, select, embed_request_failed {the connection failed} embed_timed_out {no answer came in time} embed_http_error {the server answered with an error} embed_redirect_refused {a redirect led to an address Atlas does not allow} embed_download_host_refused {the download led to a host Atlas does not allow} embed_model_disk_space {not enough free space on this disk} embed_model_convert_failed {the model could not be prepared for this computer} embed_model_load_failed {the model could not load} embed_model_store_failed {the model could not be saved} embed_worker_start_failed {its process could not start} embed_worker_exited {its process ended} embed_worker_failed {its process reported an error} embed_inference_failed {it could not read a passage} embed_response_invalid {its answer could not be read} embed_response_too_large {its answer was too large} embed_model_busy {the model is in use} embed_pull_failed {Ollama could not get the model} vectors_refused {Atlas refused its answer} vectors_store_failed {the disk refused the write} load {the model could not load} worker_exited {its process ended} other {{raw}}}",
-      "ringLabel": "Search by meaning progress"
+      "ringLabel": "Search by meaning progress",
+      "reasonWords": "Same words",
+      "reasonMeaning": "Similar meaning",
+      "reasonBoth": "Same words · similar meaning",
+      "coverage": "By meaning: {ready, number} of {total, number} files",
+      "staleDropped": "{count, plural, one {# passage from a changed file was left out} other {# passages from changed files were left out}}",
+      "modelGoneNotice": "The model is no longer on this computer, so these results match words only.",
+      "runnerDownNotice": "Ollama did not answer, so these results match words only.",
+      "failedNotice": "Search by meaning did not answer, so these results match words only.",
+      "noMatchBoth": "No passage in the files searched matches these words or this meaning."
     },
     "title": "Ask a question. Follow its sources.",
     "browse": "Browse pages",

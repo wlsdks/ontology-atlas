@@ -20,7 +20,11 @@ export interface DeskLeadSet {
   searchId: number;
   leads: readonly DeskLead[];
   terms: readonly string[];
+  /** Whether search by meaning took part, so each row says why it is there. */
+  reasons: boolean;
 }
+
+const REASON_KEY = { words: 'reasonWords', meaning: 'reasonMeaning', both: 'reasonBoth' } as const;
 
 /**
  * The leads of one search. A new search swaps the whole list in this slot, so the head above
@@ -65,6 +69,7 @@ export function DeskLeads({ set, expandedFor, onShowMore, reduced, citationState
             const first = claim?.citations[0] ?? null;
             const judgment = claim && first ? jev.findingFor(claim, first) : null;
             return <DeskLeadRow key={lead.key} lead={lead} terms={value.terms}
+              reason={value.reasons ? t(`questionDesk.meaning.${REASON_KEY[lead.reason]}`) : null}
               citationState={(citation) => citationState(claim!, citation)}
               rise={!leaving && index >= FIRST_LEADS && !reduced}
               riseDelay={staggerDelaySeconds(index - FIRST_LEADS)}
