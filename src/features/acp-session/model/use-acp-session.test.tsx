@@ -1348,6 +1348,9 @@ describe('autoDecide — the screen answers a permission it can judge', () => {
     const starting = result.current.start();
     await waitFor(() => expect(bridge.starts).toBe(1));
     await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    void result.current.send('Write the wiki pages.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
 
     await act(async () => { bridge.listener?.(permissionRequest(201, '/vault/wiki/a.md')); });
     await waitFor(() => expect(bridge.sent.some((m) => m.id === 201 && 'result' in m)).toBe(true));
@@ -1983,9 +1986,9 @@ describe('Stop holds when the agent ignores it', () => {
   const answerOf = (id: number) =>
     (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
 
-  async function waitingTurn(autoDecide: Parameters<typeof useAcpSession>[0]['autoDecide']) {
+  async function waitingTurn(autoDecide: Parameters<typeof useAcpSession>[0]['autoDecide'], turnReadOnly?: () => boolean) {
     const hook = renderHook(() => useAcpSession({
-      runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], rememberChoices: true, autoDecide,
+      runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], rememberChoices: true, autoDecide, turnReadOnly,
     }));
     const starting = hook.result.current.start();
     await waitFor(() => expect(bridge.starts).toBe(1));
@@ -2025,6 +2028,15 @@ describe('Stop holds when the agent ignores it', () => {
     expect(bridge.stopped).toEqual(['acp-1']);
     expect(result.current.turnStopping).toBe(false);
     timers.mockRestore();
+
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    await act(async () => { bridge.release?.(); });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const prompts = () => bridge.sent.filter((message) => message.method === 'session/prompt').length;
+    const before = prompts();
+    await act(async () => { void result.current.send('One more page.'); });
+    await waitFor(() => expect(prompts()).toBe(before + 1));
+    await act(async () => { await result.current.stop(); });
   });
 
   it('leaves the process alone when the agent ends the turn within the grace', async () => {
@@ -2040,6 +2052,48 @@ describe('Stop holds when the agent ignores it', () => {
     await act(async () => { (grace[0]![0] as () => void)(); });
     expect(bridge.stopped).toEqual([]);
     timers.mockRestore();
+    await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('a request that arrives after its turn has ended', () => {
+  const OPTIONS = [
+    { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+    { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+  ];
+  const ask = (id: number, path: string) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `call-${id}`, title: `Edit ${path}`, kind: 'edit', rawInput: { file_path: path } } },
+  });
+  const answerOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+
+  it.each([
+    ['a writing turn the person stopped', false],
+    ['a read-only check', true],
+  ])('takes no standing choice after %s ends, and waits for a press', async (_name, readOnly) => {
+    const autoDecide = vi.fn(() => 'wiki/later.md');
+    const { result } = renderHook(() => useAcpSession({
+      runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], rememberChoices: true, autoDecide,
+      turnReadOnly: () => readOnly,
+    }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    act(() => result.current.setAutoApprove(true));
+    bridge.holdPrompt = true;
+    void result.current.send('Write the wiki pages.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    act(() => result.current.stopTurn());
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'cancelled' } }));
+    });
+    await waitFor(() => expect(result.current.turnStopping).toBe(false));
+
+    await act(async () => { bridge.listener?.(ask(701, '/vault/wiki/later.md')); });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(701));
+    expect(autoDecide).not.toHaveBeenCalled();
+    expect(answerOf(701)).toBeUndefined();
     await act(async () => { await result.current.stop(); });
   });
 });

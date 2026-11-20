@@ -799,7 +799,8 @@ export function useAcpSession({
     // A request that arrived before the person turned auto-approve on still shows its card.
     const autoApproveAtArrival = autoApproveNow() && activeTurnRef.current?.investigation !== true;
     const readOnlyTurn = activeTurnRef.current?.readOnly === true;
-    const activeStart = activeTurnRef.current?.start ?? null;
+    const arrivalTurn = activeTurnRef.current;
+    const activeStart = arrivalTurn?.start ?? null;
     const origin = {
       sessionGeneration: generation,
       turn: activeStart
@@ -841,14 +842,18 @@ export function useAcpSession({
       )) {
         return null;
       }
+      // Only the turn the request arrived in may carry a standing choice, and only while it lasts.
       let decided: AcpAutoDecision = null;
-      try {
-        const decision = autoDecideRef.current?.(request) ?? null;
-        decided = isPromise(decision) ? await decision : decision;
-      } catch {
-        decided = null;
+      if (origin.turn) {
+        try {
+          const decision = autoDecideRef.current?.(request) ?? null;
+          decided = isPromise(decision) ? await decision : decision;
+        } catch {
+          decided = null;
+        }
       }
       if (closed()) return null;
+      if (activeTurnRef.current !== arrivalTurn) decided = null;
       return presentDecided(decided);
     };
     const presentDecided = (decided: AcpAutoDecision) => new Promise<string | null>((resolve) => {
@@ -857,7 +862,7 @@ export function useAcpSession({
         resolve(null);
         return;
       }
-      const note = request.reviewKind === 'permission' && !readOnlyTurn ? decided : null;
+      const note = request.reviewKind === 'permission' && origin.turn && !readOnlyTurn ? decided : null;
       const allow = note !== null ? request.options.find((option) => option.kind === 'allow_once') : undefined;
       if (note !== null && allow) {
         push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
@@ -1401,9 +1406,14 @@ export function useAcpSession({
     pendingResolverRef.current = null;
     setPending(null);
     cancel();
+    // An agent that ignored the cancel is ended, then the same conversation starts again so it can send.
     turnStopTimerRef.current = window.setTimeout(() => {
       turnStopTimerRef.current = null;
-      if (activeTurnRef.current === active) void stopRef.current?.();
+      if (activeTurnRef.current !== active) return;
+      resumeIdRef.current = sessionIdRef.current;
+      void stopRef.current?.().then(() => {
+        if (!disposedRef.current) void startRef.current?.();
+      });
     }, TURN_STOP_GRACE_MS);
   }, [cancel]);
 

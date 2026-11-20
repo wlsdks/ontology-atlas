@@ -9,7 +9,7 @@ import type { AcpChatPanelProps } from './chat-panel/types';
  * While another conversation's turn holds this folder, this one is seated with its session off:
  * it starts and resumes nothing, and its Stop is that turn's.
  */
-function useFolderBusy(keepKey: string, vaultRoot: string | null): AcpChatPanelProps['folderBusy'] {
+export function useFolderBusy(keepKey: string, vaultRoot: string | null): AcpChatPanelProps['folderBusy'] {
   const stop = useSyncExternalStore(
     keptPanels.subscribe,
     () => folderHolder(keepKey, vaultRoot)?.stop ?? null,
