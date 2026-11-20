@@ -158,6 +158,12 @@ test('a mapped post-merge spec rides beside the smoke set before merge', () => {
   assert.match(command, / --only=library\/answers\/library-question-desk\.spec\.ts/);
 });
 
+test('a change inside the question desk folder selects the desk spec', () => {
+  const plan = buildImpactPlan({ files: ['src/views/library/ui/parts/questions/desk/DeskReport.tsx'] });
+  const [command] = commandsForLane({ lane: 'e2e', plan, shard: '1/8' });
+  assert.match(command, / --only=library\/answers\/library-question-desk\.spec\.ts/);
+});
+
 test('main plan retains the exhaustive Playwright sweep', () => {
   const plan = buildImpactPlan({ files: [], forceFull: true });
   assert.deepEqual(commandsForLane({ lane: 'e2e', plan, shard: '3/3' }), [

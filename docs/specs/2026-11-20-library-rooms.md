@@ -207,6 +207,127 @@ deleted when nothing reads them.
 8. Continue still sends ten sources, a blocked reason prints once, and the web playground still
    shows its line (`tests/e2e/web-surface-smoke.spec.ts`).
 
+## W1: Wiki home (the question desk)
+
+### Today (installed-app state, 54 sources, one question asked)
+
+- The field stands in the middle of the pane and travels to the top when results open.
+- With an agent connected, pressing Find evidence leaves a coverage line and two closed rows.
+  No passage is on screen until another press. Of thirteen leads the first is about delivery
+  days; the sentence that answers the question is third.
+- Each lead card prints a raw path with its anchor and repeats the same freshness sentence.
+- Before a question, the desk lists the three alphabetically first sources.
+
+### Decisions
+
+1. **The outcome before a report is the best passages themselves.** This narrows
+   `2026-09-27-wiki-question-answer-first-motion-9385eee9` ("show one search outcome ... place
+   raw leads one expansion away"): the outcome is up to three passages, and the rest follow
+   one `Show N more` press. Dissent kept: three rows can be read as the answer, so the head
+   calls them passages found and the report action stays the primary control beside it.
+   Falsifier: a person takes the three rows for a checked answer, or any lead needs more than
+   one press.
+2. **The entry's material is the person's own trail.** This narrows
+   `2026-09-27-wiki-inquiry-document-grid-20477108` ("up to three inventoried original-file
+   rows"): saved questions come first, then the pages written most recently; the three originals
+   show only in a folder that has neither. Falsifier: a person with saved questions who still
+   opens the Questions door to find the one they saved yesterday.
+3. **The field keeps one place.** Its top edge is the same before a question, with results and
+   with a report.
+4. **One list, best first.** Wiki claims and source passages share a list; a glyph says which
+   a row is. Until search by meaning lands (S6) the order is the reciprocal-rank fusion of the
+   two word lists; S6 adds the meaning list to the same fusion and a reason label to each row.
+5. **A row says where, not how it was checked.** Page title or file name and the line; a state
+   badge only when the source changed, is missing, or the claim cites nothing. The freshness
+   caveat is said once, behind the head's info glyph.
+
+### Flow
+
+1. The person opens Wiki with no page chosen. One column of `--measure-doc-column`, top
+   aligned: the title line, the field, then **Saved questions** (up to three rows: the question,
+   a state badge when its evidence changed, the day it was saved; the head is the existing
+   `answers.title`) and **Written recently** (up to
+   five rows: page title, the day the page records, how many sources it cites). A row opens its
+   answer or its page.
+2. They type and press Enter or Find evidence. The entry material leaves, the results rise in
+   its place, and the field does not move.
+3. **Head.** The count of passages found, an info glyph that opens coverage, limits and the
+   caveat in a popover, and Make report at the right.
+4. **Rows.** The best three. Line one is the sentence in primary ink, at most two lines, with
+   the question's words in strong weight. Line two, in label ink: the kind glyph, the page title
+   or file name, the line, and a badge only when attention is needed. Pressing a row opens
+   where the sentence lives: the page for a wiki claim, the source at its anchor for a passage.
+   A wiki claim's cited files follow on line two as presses that open the source at the cited
+   line. Check claim with Jev sits at the row's right, shown on hover and on focus inside the
+   row, always in the tab order.
+5. **Show N more** appends the remaining rows in place.
+6. **Make report** behaves as today. The report takes the place above the rows, which stay
+   under the head "Passages the search found".
+7. **No match**: the present title, body and investigation action.
+
+### States
+
+| State | The desk shows |
+|---|---|
+| No saved question, no wiki page | Field, then the three originals as today |
+| Saved questions or pages exist | Field, Saved questions, Written recently |
+| Searching | The field's button shows the running state; entry material stays until results exist |
+| One to three leads | Those rows; no Show more |
+| More than three leads | Three rows and Show N more |
+| No match | Present no-match block |
+| Agent not connected | Rows as above; the present line that reports need an agent |
+| Report running, done, failed | As today, above the rows |
+| Folder changed since the search | Present outdated line above the head |
+| Reduced motion | Results and appended rows appear at their end state |
+| Web playground | Same desk; no Jev press, no report action |
+
+### Copy
+
+New keys under `questionDesk` in `messages/<locale>/library.json` (English source here; the
+building slice writes ko, ja and zh in the same register).
+
+| Key | en |
+|---|---|
+| `recentTitle` | Written recently |
+| `recentMeta` | {date} · {count, plural, one {# source} other {# sources}} |
+| `resultsHead` | {count, plural, one {# passage found} other {# passages found}} |
+| `showMore` | Show {count, number} more |
+| `lineAt` | line {line, number} |
+| `passagesUnderReport` | Passages the search found |
+
+`coverageDetails` becomes the info glyph's name. `leadsSummary`, `wikiTitle`, `sourceTitle`,
+`originalsTitle` and `otherOriginals` are deleted when nothing reads them.
+
+### Edge cases
+
+- **A sentence longer than two lines** is cut at the second line; the full sentence is in the
+  row's accessible name and in the place the press opens.
+- **A claim with four cited files** shows two file presses and "+2", which opens the page.
+- **A file name of 80 characters** is cut in the middle, keeping the extension.
+- **Korean question over English sources** with no word match: the no-match block and its
+  cross-language sentence, unchanged.
+- **Asking again while results show**: the old rows leave and the new rise; the field keeps
+  focus and its place.
+- **2,000 pages**: Written recently reads only the five newest; it never sorts on render
+  without memoising on the listing version.
+
+### Acceptance criteria
+
+1. Given the app's state at 1512×901 and 1920×1080, the field's top edge is the same pixel row
+   before a question, with results, after Show more and with a report.
+2. Given a question with thirteen leads, exactly three lead rows are visible without a press and
+   one press on Show 10 more shows all thirteen.
+3. The desk holds no plus, minus or chevron disclosure; coverage opens from the info glyph as
+   a popover that Escape closes, returning focus to the glyph.
+4. No lead row shows a path with `#`; the freshness sentence appears at most once on screen.
+5. Given one saved question, Saved questions lists it and no "Start with a source" list exists;
+   given none and no page, the three originals show.
+6. Tab reaches, in order, the field, Find evidence, the info glyph, Make report, then each row
+   and its Jev press.
+7. Recorded in the app's state: asking, Show more, asking again. No frame interval above 50 ms;
+   reduced motion shows the end state.
+8. Print and Markdown export of a report are unchanged.
+
 ## Out of scope
 
 - A new renderer for the picture; P1 changes layout choice and labels only.
@@ -226,6 +347,7 @@ deleted when nothing reads them.
 
 - 2026-11-20: first draft. Three rooms, eight decisions, the slice list, and H1 in full.
 - 2026-11-20: P1 built. Looking at 1280x800 showed that names sharing the width equally cut every title to five characters, so a kind is named only from 96 px on screen, pages first; the picture's margin above and below fell from 64 px to 24 px so a 60-page folder stands in two stacks at 1512x901.
+- 2026-11-20: W1 detailed: the question desk shows the best passages before a report and the person's own trail at entry.
 - 2026-11-20: H1 as built departs in nine places.
   - Below a 60rem pane the number and the bar stack, so the band stays inside 112px at 1040 with
     the index open; from 60rem the four cells share one row.
