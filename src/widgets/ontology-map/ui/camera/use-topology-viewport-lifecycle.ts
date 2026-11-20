@@ -59,6 +59,20 @@ export interface TopologyViewportLifecycleSources {
   rescueCameraIfEverythingOffscreen: (tokens: OntologyMapTokens) => void;
 }
 
+/**
+ * The layout size, not the painted one: `getBoundingClientRect` reports the box after transforms, and
+ * the map surface's entry fade scales its subtree from 0.995 (`topologyFade`) while a mount-time read
+ * lands, leaving the size slightly small by an amount that varies with the fade's progress. The
+ * computed size carries no transform; a DOM without layout keeps the painted size.
+ */
+export function layoutSizeOf(container: Element, rect: DOMRect = container.getBoundingClientRect()): { width: number; height: number } {
+  const style = getComputedStyle(container);
+  return {
+    width: style.width.endsWith("px") ? Number.parseFloat(style.width) : rect.width,
+    height: style.height.endsWith("px") ? Number.parseFloat(style.height) : rect.height,
+  };
+}
+
 export function useTopologyViewportLifecycle({
   elements,
   viewport,
@@ -109,16 +123,7 @@ export function useTopologyViewportLifecycle({
      */
     const measure = () => {
       const rect = container.getBoundingClientRect();
-      /*
-       * The layout size, not the painted one: `getBoundingClientRect` reports the box after transforms, and
-       * the map surface's entry fade scales its subtree from 0.995 (`topologyFade`) when the mount-time
-       * read lands, leaving the viewport slightly small. The computed size carries no transform.
-       */
-      const style = getComputedStyle(container);
-      // A browser resolves a rendered box's width to px; anything else (a DOM without
-      // layout) keeps the painted size.
-      const width = style.width.endsWith("px") ? Number.parseFloat(style.width) : rect.width;
-      const height = style.height.endsWith("px") ? Number.parseFloat(style.height) : rect.height;
+      const { width, height } = layoutSizeOf(container, rect);
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
       pendingViewportRef.current = { width, height, dpr };
       // Keep the cached pointer rect fresh whenever layout changes (see
