@@ -9,11 +9,9 @@ export {
   isScheduledActive,
   type ScheduledRun,
 } from './model/scheduled-run';
-export { workRuns, type TurnDoor } from './model/work-run-store';
+export { workRuns } from './model/work-run-store';
 export {
   isTurnActive,
-  turnPageDoor,
-  type TurnRun,
   type TurnRunDoor,
   type TurnToolEvent,
   type TurnWorkReport,

@@ -10,7 +10,6 @@ export { useAcpSession } from "./model/use-acp-session";
 export type { InvestigationSendGuard } from './model/investigation/guard';
 export type { AcpEvent, PendingPermission } from "./model/use-acp-session";
 export type { AcpTurnStart, AcpTurnCompletion, AcpAutoDecision } from "./model/use-acp-session";
-export { TURN_STOP_GRACE_MS } from "./model/use-acp-session";
 export { captureTaskBaseline } from './model/task-baseline';
 export type { TaskBaselineCaptureRequest, TaskBaselineCaptureResult, TaskBaselineSourceInspection } from './model/task-baseline';
 export { ANALYSIS_FINDINGS_INSTRUCTION, analysisGraphFromInsight, currentAnalysisBasis, requestsAnalysisFindings } from './model/analysis-capture/analysis-capture';
