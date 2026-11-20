@@ -532,6 +532,12 @@ describe("flow layout", () => {
     expect(fewer.extent.width * fewer.scale).toBeLessThanOrEqual(narrow.width + 1e-6);
   });
 
+  it("still lays two stacks of pages alone in a pane only two bare page columns fit", () => {
+    const pages = Array.from({ length: 60 }, (_, i) => `p${String(i).padStart(3, "0")}`);
+    const pane = { width: 40, height: 400, ceiling: 2 };
+    expect(columnOf(flowLayout(graph({ pages }), pane), "page").stacks).toBe(2);
+  });
+
   it("keeps every mark inside the laid box and the laid box inside the camera's, across random folders", () => {
     const draw = seeded(20261120);
     const boxes = [
