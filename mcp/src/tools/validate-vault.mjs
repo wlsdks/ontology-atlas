@@ -39,14 +39,8 @@ import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/eviden
 import { okResponseBytes } from '../server/rpc.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { foldRepeatedGuidance } from './validate-page-fold.mjs';
-import {
-  WIKI_ADVISORY_CODES,
-  WIKI_DIR,
-  buildWikiNodeIndex,
-  isWikiFurnitureSlug,
-  validateWikiFolder,
-  validateWikiPage,
-} from '../library/wiki-schema.mjs';
+import { WIKI_ADVISORY_CODES } from '../library/wiki-schema.mjs';
+import { judgeLoadedWikiPages } from '../library/wiki-judgement.mjs';
 import {
   buildSummaryFreshness,
   groupDanglingIssuesBySlug,
@@ -62,9 +56,10 @@ import { relative } from 'node:path';
  * like `validate_vault`'s problems, because a folder of tens of thousands of pages
  * would otherwise be one reply no agent can read.
  *
- * Cost per call: O(pages + bytes + links + citations + `describes:` entries) with Maps and Sets; pages that
- * share a primary source name at most ten partners each. Failing pages keep the path
- * order the pages were judged in, so ordering them is O(failing).
+ * Cost per call: O(bytes of pages changed since the last call) read once each, then
+ * O(pages + documents) over kept page facts (`wiki-judgement.mjs`); only the pages a reply
+ * shows are read again for their problem text. Failing pages keep the path order the
+ * pages were judged in, so ordering them is O(failing).
  */
 function validateWikiTool({ paths, offset, limit, afterPath } = {}) {
   if (paths !== undefined && !Array.isArray(paths)) {
@@ -120,7 +115,7 @@ function shownPage(page, keep = WIKI_PAGE_PROBLEM_LIMIT) {
   return {
     path: page.path,
     ok: page.ok,
-    blocking: page.problems.some((entry) => !isWikiAdvisoryCode(entry.code)),
+    blocking: page.blocking,
     problems: shown,
     ...(page.problems.length > keep ? { problemsOmitted: page.problems.length - keep } : {}),
   };
@@ -146,76 +141,11 @@ function cutPageToOneProblem(page) {
 }
 
 function judgeWikiPages(paths) {
-  const wikiPrefix = `${WIKI_DIR}/`;
   // Every raw source in the folder, so a citation naming a file nobody has is reported
   // rather than trusted. Listing only — no source is opened here or anywhere below.
   // One Set for the whole folder: handed an array, every page would copy it.
   const knownSources = new Set(listVaultSourcePaths());
-  const docs = loadVaultDocs(VAULT_ROOT);
-  const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
-  // Every document once, so each `describes:` entry resolves in O(1) as find_backlinks resolves it.
-  const nodes = buildWikiNodeIndex(docs.map((doc) => ({
-    slug: doc.slug,
-    kind: doc.frontmatter?.kind,
-    alias: doc.frontmatter?.slug,
-  })));
-  const folderDocs = docs.filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug));
-
-  const requested =
-    paths === undefined
-      ? folderDocs.map((doc) => `${doc.slug}.md`).sort()
-      : paths.map((path) => String(path));
-
-  const pages = [];
-  for (const path of requested) {
-    if (!path.startsWith(wikiPrefix)) {
-      // Named, not skipped: an agent that asked about the wrong file must learn that,
-      // rather than reading an empty problem list as a pass.
-      pages.push({
-        path,
-        ok: false,
-        problems: [
-          {
-            code: 'not-a-wiki-page',
-            message: `\`${path}\` is not under \`${wikiPrefix}\`, so the wiki page contract does not apply to it.`,
-          },
-        ],
-      });
-      continue;
-    }
-    const doc = bySlug.get(path.replace(/\.md$/, ''));
-    if (!doc) {
-      pages.push({
-        path,
-        ok: false,
-        problems: [{ code: 'page-missing', message: `\`${path}\` is not in this folder.` }],
-      });
-      continue;
-    }
-    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources, nodes, parsed: doc });
-    pages.push({ path, ok, problems });
-  }
-
-  // The folder half is judged over every page in the folder, whatever `paths` narrowed
-  // the report to: whether somebody links to a page is a fact about the other pages,
-  // and a page asked about alone would otherwise always read as an orphan.
-  // `raw` is read as each page is judged, so the folder's text is never held at once.
-  const folderPages = folderDocs.map((doc) => ({
-    path: `${doc.slug}.md`,
-    get raw() {
-      return doc.raw || '';
-    },
-    parsed: doc,
-  }));
-  const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
-  for (const page of pages) {
-    const extra = folderByPath.get(page.path) ?? [];
-    if (extra.length > 0) {
-      page.problems.push(...extra);
-      page.ok = false;
-    }
-  }
-  return pages;
+  return judgeLoadedWikiPages(loadVaultDocs(VAULT_ROOT), knownSources, paths);
 }
 
 const isWikiAdvisoryCode = (code) => WIKI_ADVISORY_CODES.includes(code);
@@ -235,20 +165,17 @@ const isWikiAdvisoryCode = (code) => WIKI_ADVISORY_CODES.includes(code);
 function pageWikiValidation(judged, { offset, cursor = null, limit, textBudget = null, callerArguments = {} }) {
   // `judged` is in path order already.
   const failing = judged.filter((page) => !page.ok);
-  const isBlocking = (page) => page.problems.some((entry) => !isWikiAdvisoryCode(entry.code));
-  const blockingList = failing.filter(isBlocking);
+  const blockingList = failing.filter((page) => page.blocking);
   const blockingPages = blockingList.length;
-  const blockingFirst = [...blockingList, ...failing.filter((page) => !isBlocking(page))];
+  const blockingFirst = [...blockingList, ...failing.filter((page) => !page.blocking)];
   const byCodeMap = new Map();
   for (const page of blockingFirst) {
-    const seen = new Set();
-    for (const entry of page.problems) {
-      if (seen.has(entry.code)) continue;
-      seen.add(entry.code);
-      let row = byCodeMap.get(entry.code);
+    // `codes` are distinct, so each page counts once under each of its codes.
+    for (const code of page.codes) {
+      let row = byCodeMap.get(code);
       if (!row) {
-        row = { severity: isWikiAdvisoryCode(entry.code) ? 'warning' : 'error', count: 0, files: [] };
-        byCodeMap.set(entry.code, row);
+        row = { severity: isWikiAdvisoryCode(code) ? 'warning' : 'error', count: 0, files: [] };
+        byCodeMap.set(code, row);
       }
       row.count += 1;
       if (row.files.length < BY_CODE_FILE_SAMPLE) row.files.push(page.path);
