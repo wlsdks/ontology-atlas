@@ -5,13 +5,14 @@ import type {
   LibraryGraphEdge,
   LibraryGraphNode,
   LibraryGraphNodeKind,
-  LibraryGraphRelation,
 } from "../model/build-library-graph";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { LibraryPositionLookup } from "../model/library-graph-view";
+import { drawLibraryEdges, drawStaleDots, libraryEdgeWidth } from "./library-graph-edges";
 import type { LibraryGraphInk } from "./library-graph-ink";
 
 export { CITES_WIDTH, NODE_RADIUS };
+export { edgeControlPoint, STALE_DOT_STANDING_MAX } from "./library-graph-edges";
 
 /**
  * One frame of the library graph. No React, DOM or clock: it paints what it is handed, so
@@ -225,56 +226,13 @@ const SELECTION_RING_GAP = 3.5;
 const FOCUS_RING_GAP = 6;
 /** Activity remains outside selection/focus rings, so it cannot erase either state. */
 const ACTIVITY_RING_GAP = FOCUS_RING_GAP + 2;
-/**
- * A mention or an "about" link: the page names the concept, or says it is about it. The two
- * share a width and differ by dash, so solid alone says "about"; both end on a ring, never a
- * square, so neither reads as a citation.
- */
-const CONCEPT_LINE_WIDTH = 1;
-
-/** Fixed line weight, which keeps the 5.23:1 contrast those widths were measured at true everywhere. */
-function libraryEdgeWidth(relation: LibraryGraphRelation): number {
-  return relation === "cites" ? CITES_WIDTH : CONCEPT_LINE_WIDTH;
-}
 const LABEL_PAD_X = 6;
 const LABEL_PAD_Y = 4;
 const LABEL_GAP = 6;
-/** The break an unverified citation carries at its midpoint, in CSS px. */
-const BROKEN_EDGE_GAP = 7;
-
-/**
- * The flowing dash in CSS px. Dashed already means `mentions`, so only the open card's own
- * citations flow, or two relations share one mark.
- */
-const FLOW_DASH = 5;
-const FLOW_GAP = 4;
-const FLOW_PERIOD = FLOW_DASH + FLOW_GAP;
-/** Where a still frame's chevron sits along the curve, and how wide its arms are. */
-const FLOW_CHEVRON_T = 0.62;
-const FLOW_CHEVRON_PX = 3.5;
-/**
- * The amber dot in a broken citation's gap: rest radius, floor (the 3px mark floor, since
- * the dot alone says "unverified") and breath; never past half its break.
- */
-const STALE_DOT_RADIUS = 2.2;
-const STALE_DOT_RADIUS_MIN = 1.5;
-const STALE_DOT_BREATH = 1.1;
-/**
- * Most standing amber dots at rest, counted in unverified citations, keeping amber under 4% of ink;
- * 64 sits between the densest legible fixture (48) and what its ink affords (72). Above it no dot
- * stands, never a sample, so an undotted stale citation never reads as fresh.
- */
-export const STALE_DOT_STANDING_MAX = 64;
 const LABEL_RADIUS = 4;
 /** Pointer slop around a mark for a mouse. A 5px square is smaller than any pointer. */
 const FINE_HIT_REACH = 4;
 
-/**
- * Bow depth as a fraction of edge length, capped: long parallel edges separate while a short
- * one stays nearly straight and never suggests a path through somewhere else.
- */
-const EDGE_BOW_RATIO = 0.11;
-const EDGE_BOW_MAX = 17;
 /** The ground each mark clears around itself, as a ratio of the widest line it clears. */
 const MARK_HALO_RATIO = 1;
 /**
@@ -645,61 +603,6 @@ export function hitTestLibraryGraph(
   return best;
 }
 
-/**
- * A flow edge's two control points: level tangents at both ends, so a bundle of citations
- * reads as a sheaf.
- */
-function flowEdgeControls(from: LayoutPoint, to: LayoutPoint): [LayoutPoint, LayoutPoint] {
-  const reach = Math.abs(to.x - from.x) * 0.5;
-  const sign = to.x >= from.x ? 1 : -1;
-  return [
-    { x: from.x + sign * reach, y: from.y },
-    { x: to.x - sign * reach, y: to.y },
-  ];
-}
-
-/**
- * Where an unverified citation breaks in the flow picture, as a fraction from the page.
- * Just short of the page, where lines converge, it reads as a stale page; further out the
- * breaks line up into a column of amber.
- */
-const FLOW_BREAK_T = 0.12;
-
-/** One point on the cubic, for the break in an unverified citation. */
-function cubicAt(from: LayoutPoint, c1: LayoutPoint, c2: LayoutPoint, to: LayoutPoint, t: number): LayoutPoint {
-  const u = 1 - t;
-  return {
-    x: u * u * u * from.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * to.x,
-    y: u * u * u * from.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * to.y,
-  };
-}
-
-/** The quadratic control point of an edge's bow, always on the same side for one consistent hand. */
-export function edgeControlPoint(from: LayoutPoint, to: LayoutPoint): LayoutPoint {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const length = Math.hypot(dx, dy);
-  if (length < 1e-6) return { x: from.x, y: from.y };
-  const bow = Math.min(EDGE_BOW_MAX, length * EDGE_BOW_RATIO);
-  return {
-    x: (from.x + to.x) / 2 - (dy / length) * bow,
-    y: (from.y + to.y) / 2 + (dx / length) * bow,
-  };
-}
-
-/** One point on the quadratic, for the break in an unverified citation. */
-function quadraticAt(from: LayoutPoint, control: LayoutPoint, to: LayoutPoint, t: number): LayoutPoint {
-  const inverse = 1 - t;
-  return {
-    x: inverse * inverse * from.x + 2 * inverse * t * control.x + t * t * to.x,
-    y: inverse * inverse * from.y + 2 * inverse * t * control.y + t * t * to.y,
-  };
-}
-
-function lerp(a: LayoutPoint, b: LayoutPoint, t: number): LayoutPoint {
-  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
-}
-
 function roundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -768,189 +671,12 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
 
   if (frame.islands && frame.islands.length > 0) drawIslands(ctx, frame, ink);
 
-  // Edges before marks, so no line crosses the mark it points at. `butt` caps, since
-  // round caps add half a width to each dash end and narrow the gaps by a third.
+  // `butt` caps, since round caps add half a width to each dash end and narrow the gaps by a third.
   ctx.lineCap = "butt";
+  drawLibraryEdges(ctx, frame, alphaOf);
+  drawStaleDots(ctx, frame, alphaOf);
   const active = frame.hoveredId ?? frame.focusedId;
   const flow = frame.flow ?? null;
-  // The quiet overview draws no line at all: nothing selected, pointed at or focused.
-  const noLine = frame.focusEdgesOnly === true && frame.selectedId === null && active === null && (focus?.size ?? 0) === 0;
-  for (const edge of noLine ? [] : frame.edges) {
-    const touchesSelection =
-      frame.selectedId !== null && (edge.source === frame.selectedId || edge.target === frame.selectedId);
-    // Pointing at a dot asks about its links, which answer well above the 3:1 floor.
-    const touchesActive = active !== null && (edge.source === active || edge.target === active);
-    // The overview draws no line at rest, or ten thousand citations become a grey field.
-    if (frame.focusEdgesOnly && !touchesSelection && !touchesActive && !(focus?.has(edge.source) && focus?.has(edge.target))) continue;
-    const from = nodeCentre(frame, edge.source);
-    const to = nodeCentre(frame, edge.target);
-    if (!from || !to) continue;
-    /*
-     * An open card's citations drift; a just-written page's run one pass. The path is
-     * stroked page→file, so a rising `lineDashOffset` moves the ink toward the page.
-     */
-    const drifting = flow !== null && !flow.still && flow.edges.has(edge.id);
-    const arriving = flow !== null && !flow.still && flow.arrivalEdges.has(edge.id);
-    // As present as its dimmer end, except the selected page's own lines ("where I am").
-    ctx.globalAlpha = touchesSelection ? 1 : Math.min(alphaOf(edge.source), alphaOf(edge.target));
-    ctx.beginPath();
-    if (drifting || arriving) {
-      ctx.setLineDash([FLOW_DASH, FLOW_GAP]);
-      ctx.lineDashOffset = (drifting ? flow!.phase : flow!.arrivalPhase) * FLOW_PERIOD;
-    } else {
-      ctx.setLineDash(edge.relation === "mentions" ? [2.5, 3.5] : []);
-      ctx.lineDashOffset = 0;
-    }
-    ctx.strokeStyle = touchesSelection
-      ? ink.selected
-      : touchesActive
-        ? ink.source
-        : arriving
-          ? ink.selected
-          : ink.edge;
-    // The relations differ in width as well as dash; value stays reserved for the selection.
-    const relationWidth = libraryEdgeWidth(edge.relation);
-    ctx.lineWidth =
-      relationWidth * (touchesSelection ? 1.5 : touchesActive ? 1.33 : 1);
-    if (frame.layout === "flow") {
-      const [c1, c2] = flowEdgeControls(from, to);
-      if (edge.certainty === "unverified") {
-        // Two pieces of the curve with a gap at FLOW_BREAK_T.
-        const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
-        const half = Math.min(BROKEN_EDGE_GAP, length / 3) / 2 / length;
-        const steps = 12;
-        ctx.moveTo(from.x, from.y);
-        for (let i = 1; i <= steps; i += 1) {
-          const t = (FLOW_BREAK_T - half) * (i / steps);
-          const point = cubicAt(from, c1, c2, to, t);
-          ctx.lineTo(point.x, point.y);
-        }
-        const resume = cubicAt(from, c1, c2, to, FLOW_BREAK_T + half);
-        ctx.moveTo(resume.x, resume.y);
-        for (let i = 1; i <= steps; i += 1) {
-          const t = FLOW_BREAK_T + half + (1 - FLOW_BREAK_T - half) * (i / steps);
-          const point = cubicAt(from, c1, c2, to, t);
-          ctx.lineTo(point.x, point.y);
-        }
-      } else {
-        ctx.moveTo(from.x, from.y);
-        ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, to.x, to.y);
-      }
-      ctx.stroke();
-      continue;
-    }
-    const control = edgeControlPoint(from, to);
-    if (edge.certainty === "unverified") {
-      /*
-       * One break at the midpoint, so "unverified" is a different mark, not a shade. Each
-       * half is the original curve by de Casteljau's split, so the break keeps its shape.
-       */
-      const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
-      const half = Math.min(BROKEN_EDGE_GAP, length / 3) / 2 / length;
-      const first = 0.5 - half;
-      const second = 0.5 + half;
-      // Splitting a quadratic at t gives (P0, A, M) before it and (M, B, P1) after it,
-      // where A and B are the two edges of the control triangle at t and M is the point on
-      // the curve. Each piece is drawn from its own split.
-      const beforeControl = lerp(from, control, first);
-      const beforeEnd = quadraticAt(from, control, to, first);
-      ctx.moveTo(from.x, from.y);
-      ctx.quadraticCurveTo(beforeControl.x, beforeControl.y, beforeEnd.x, beforeEnd.y);
-      const afterControl = lerp(control, to, second);
-      const afterStart = quadraticAt(from, control, to, second);
-      ctx.moveTo(afterStart.x, afterStart.y);
-      ctx.quadraticCurveTo(afterControl.x, afterControl.y, to.x, to.y);
-    } else {
-      ctx.moveTo(from.x, from.y);
-      ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
-    }
-    ctx.stroke();
-
-    // Under reduced motion one open chevron on the curve, pointing at the page, keeps the direction.
-    if (flow !== null && flow.still && (flow.edges.has(edge.id) || flow.arrivalEdges.has(edge.id))) {
-      const at = quadraticAt(from, control, to, FLOW_CHEVRON_T);
-      const behind = quadraticAt(from, control, to, FLOW_CHEVRON_T - 0.06);
-      const dx = behind.x - at.x;
-      const dy = behind.y - at.y;
-      const length = Math.hypot(dx, dy) || 1;
-      const ux = dx / length;
-      const uy = dy / length;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(at.x + (-ux * FLOW_CHEVRON_PX - uy * FLOW_CHEVRON_PX), at.y + (-uy * FLOW_CHEVRON_PX + ux * FLOW_CHEVRON_PX));
-      ctx.lineTo(at.x + ux * FLOW_CHEVRON_PX, at.y + uy * FLOW_CHEVRON_PX);
-      ctx.lineTo(at.x + (-ux * FLOW_CHEVRON_PX + uy * FLOW_CHEVRON_PX), at.y + (-uy * FLOW_CHEVRON_PX - ux * FLOW_CHEVRON_PX));
-      ctx.stroke();
-    }
-  }
-  ctx.setLineDash([]);
-  ctx.lineDashOffset = 0;
-  ctx.globalAlpha = 1;
-
-  /*
-   * The amber dot fills the broken citation's gap, so it reads as about the break. It stands
-   * whenever the line is drawn, or the card's "amber dot" sentence names a mark the resting
-   * canvas never draws; `pulse` only grows it. The breath is size, never alpha: a translucent
-   * dot composites off the warning amber and fails the gate's scan.
-   */
-  {
-    const breath = flow === null ? 0 : flow.still ? 1 : flow.pulsePhase;
-    /*
-     * Above {@link STALE_DOT_STANDING_MAX} only citations in hand keep their dots: count is
-     * the only lever with range, since alpha fails the amber scan and radius has one step left.
-     * An open card's mark is the selection and in `focus`, so the card's `flowInlineStale`
-     * sentence still names a drawn mark.
-     */
-    let standing = 0;
-    for (const edge of frame.edges) if (edge.certainty === "unverified") standing += 1;
-    const everyDot = standing <= STALE_DOT_STANDING_MAX;
-    /**
-     * How far a dot is revealed: 1, 0, or the dim ramp's value. Only the reader's attention
-     * counts; exempting `flow.pulse` or `flow.arrivalEdges` repaints the whole stale field on
-     * every visit. It rides `dim` because `focus` outlives the un-dim ramp, or the dots
-     * never go away.
-     */
-    const revealOf = (edge: LibraryGraphEdge): number => {
-      if (everyDot) return 1;
-      const inHand =
-        (focus !== null && (focus.has(edge.source) || focus.has(edge.target))) ||
-        edge.source === frame.selectedId ||
-        edge.target === frame.selectedId ||
-        (active !== null && (edge.source === active || edge.target === active));
-      return inHand ? dim : 0;
-    };
-    for (const edge of frame.edges) {
-      if (edge.certainty !== "unverified") continue;
-      const reveal = revealOf(edge);
-      if (reveal <= 0) continue;
-      const from = nodeCentre(frame, edge.source);
-      const to = nodeCentre(frame, edge.target);
-      if (!from || !to) continue;
-      const pulsing = flow !== null && flow.pulse.has(edge.id);
-      const rise = pulsing ? breath : 0;
-      const middle =
-        frame.layout === "flow"
-          ? (() => {
-              const [c1, c2] = flowEdgeControls(from, to);
-              return cubicAt(from, c1, c2, to, FLOW_BREAK_T);
-            })()
-          : quadraticAt(from, edgeControlPoint(from, to), to, 0.5);
-      const gap = Math.min(BROKEN_EDGE_GAP, Math.hypot(to.x - from.x, to.y - from.y) / 3);
-      const radius =
-        Math.max(STALE_DOT_RADIUS_MIN, Math.min(STALE_DOT_RADIUS, gap / 2)) + STALE_DOT_BREATH * rise;
-      // The line's own alpha: a dimmed citation's dot dims with it; the selected page's stays full.
-      const edgeAlpha =
-        frame.selectedId !== null && (edge.source === frame.selectedId || edge.target === frame.selectedId)
-          ? 1
-          : Math.min(alphaOf(edge.source), alphaOf(edge.target));
-      ctx.globalAlpha = edgeAlpha * reveal;
-      ctx.fillStyle = ink.stale;
-      ctx.beginPath();
-      ctx.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
 
   // On the overview no line carries the break, so a stale page itself is drawn amber.
   const stalePages = frame.layout === "islands" ? stalePagesOf(frame.edges) : new Set<string>();

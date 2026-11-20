@@ -150,6 +150,12 @@ test("a 2,000-document vault draws its overview while it is still being read, an
   expect(total).toBe(DOCUMENTS);
   expect(read).toBeLessThan(DOCUMENTS);
   expect(arrival.jumped).toEqual([]);
+
+  const reads = await page.evaluate(() =>
+    (window as unknown as { __nativeCalls: { command: string }[] }).__nativeCalls.map((call) => call.command),
+  );
+  expect(reads.filter((command) => command === "read_vault_text_file"), "a batch fell back to single reads").toEqual([]);
+  expect(reads.filter((command) => command === "read_vault_text_files").length).toBeGreaterThan(0);
 });
 
 test("on the web, a folder that is still arriving reaches the map and no other reader", async ({ page }) => {
