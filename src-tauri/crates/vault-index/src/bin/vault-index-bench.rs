@@ -299,8 +299,7 @@ fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
 }
 
 /// Opens a searcher, runs `options.queries` searches for 8 passages, then drops it, reporting the
-/// footprint above the process's own at each step. macOS keeps freed large blocks in the
-/// footprint unless `MallocLargeCache=0` is set, so "after drop" is read with it.
+/// footprint above the process's own at each step.
 fn vectors_search(root: &Path, files: &[String], options: &Options) {
     // Timed first, so the baseline already holds SQLite's one-time state, as the app's does.
     let status_started = Instant::now();

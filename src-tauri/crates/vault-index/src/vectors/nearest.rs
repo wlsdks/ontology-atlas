@@ -2,6 +2,7 @@
 
 use super::plan::read_passages;
 use super::quantize::check_vector;
+use super::words::Words;
 use super::{deletion_count, invalid_input, meta_number, reader, Model, META_DELETED_VECTORS};
 use crate::passage::Passage;
 use crate::stamps::Sha;
@@ -37,16 +38,17 @@ pub struct Found {
     pub stale: usize,
 }
 
-/// A read connection plus the sign bits of every stored vector in memory, d / 8 bytes each;
-/// dropping it frees them. A search sees the vectors a running `prepare` stored before it.
+/// A read connection plus the sign bits of every stored vector in memory, d / 8 + 8 bytes each,
+/// returned to the system when it is dropped. A search sees what a running `prepare` stored.
 pub struct Searcher {
     conn: Connection,
     root: PathBuf,
     dir: PathBuf,
     model: Model,
-    ids: Vec<i64>,
+    /// Row ids, as stored.
+    ids: Words,
     /// `model.words()` words per vector, in `ids` order.
-    bits: Vec<u64>,
+    bits: Words,
     loaded_through: i64,
     deleted_at_load: u64,
     deletions: i64,
@@ -65,8 +67,8 @@ impl Searcher {
             root,
             dir,
             model: model.clone(),
-            ids: Vec::new(),
-            bits: Vec::new(),
+            ids: Words::with_capacity(0)?,
+            bits: Words::with_capacity(0)?,
             loaded_through: 0,
             deleted_at_load: 0,
         };
@@ -85,8 +87,11 @@ impl Searcher {
             .conn
             .query_row("SELECT count(*) FROM signs", [], |row| row.get(0))?;
         let count = usize::try_from(count).unwrap_or(0);
-        self.ids = Vec::with_capacity(count);
-        self.bits = Vec::with_capacity(count * self.model.words());
+        // The old copy goes first, so a reload never holds two.
+        self.ids = Words::with_capacity(0)?;
+        self.bits = Words::with_capacity(0)?;
+        self.ids = Words::with_capacity(count)?;
+        self.bits = Words::with_capacity(count.saturating_mul(self.model.words()))?;
         self.loaded_through = 0;
         self.load_new()
     }
@@ -104,8 +109,10 @@ impl Searcher {
             if bytes.len() != words * 8 {
                 continue;
             }
-            self.ids.push(id);
-            self.bits.extend(bytes.chunks_exact(8).map(word_of));
+            self.ids.push(id as u64)?;
+            for word in bytes.chunks_exact(8).map(word_of) {
+                self.bits.push(word)?;
+            }
         }
         Ok(())
     }
@@ -156,7 +163,12 @@ impl Searcher {
     /// bounded max-heap.
     fn nearest_by_signs(&self, query: &[u64], count: usize) -> Vec<usize> {
         let mut heap: BinaryHeap<(u32, usize)> = BinaryHeap::with_capacity(count + 1);
-        for (index, vector) in self.bits.chunks_exact(self.model.words()).enumerate() {
+        for (index, vector) in self
+            .bits
+            .as_slice()
+            .chunks_exact(self.model.words())
+            .enumerate()
+        {
             let distance: u32 = vector
                 .iter()
                 .zip(query)
@@ -180,11 +192,11 @@ impl Searcher {
             .prepare_cached("SELECT sha256, scale, int8 FROM vectors WHERE id = ?1")?;
         let mut ranked = Vec::with_capacity(candidates.len());
         for &index in candidates {
-            let Some(&id) = self.ids.get(index) else {
+            let Some(&id) = self.ids.as_slice().get(index) else {
                 continue;
             };
             let scored = statement
-                .query_row([id], |row| {
+                .query_row([id as i64], |row| {
                     let sha = Sha::try_from(row.get_ref(0)?.as_bytes()?).ok();
                     let scale: f64 = row.get(1)?;
                     let int8 = row.get_ref(2)?.as_bytes()?;

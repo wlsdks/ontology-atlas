@@ -11,6 +11,7 @@ mod nearest;
 mod plan;
 mod prepare;
 mod quantize;
+mod words;
 
 pub use nearest::{Found, PassageHit, Searcher};
 pub use plan::{plan, Plan, Remaining};
