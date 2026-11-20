@@ -8,7 +8,7 @@
   "moreRunning": "{count, number}개 더 실행 중",
   "moreRuns": "{count, number}개 더 있음",
   "runsTitle": "실행 목록",
-  "runsDescription": "앱의 어느 화면으로 가도 하나하나 계속 실행돼요.",
+  "runsDescription": "다른 화면으로 옮겨 가도 모두 계속 실행돼요.",
   "scheduled": {
     "title": "{name} · 예약 점검",
     "figures": "{checked, plural, =0 {아직 점검한 문서 없음} other {문서 <count>#</count>개 점검함}} · {elapsed}",
