@@ -12,6 +12,7 @@ function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
     frontmatter: partial.frontmatter ?? {},
     headings: partial.headings ?? [],
     excerpt: partial.excerpt ?? "",
+    definitionPreview: partial.definitionPreview,
     wordCount: partial.wordCount ?? 0,
     updatedAt: partial.updatedAt ?? new Date(0).toISOString(),
     linksOut: partial.linksOut ?? [],
@@ -196,5 +197,25 @@ describe("deriveProjectsFromVault — isHub", () => {
       ]),
     );
     expect(projects[0]!.isHub).toBeUndefined();
+  });
+});
+
+describe("deriveProjectsFromVault — description fallback", () => {
+  const project = (extra: Partial<VaultDoc>) =>
+    deriveProjectsFromVault(makeManifest([makeDoc({ slug: "acme", frontmatter: { kind: "project" }, ...extra })]))[0];
+
+  it("falls back to the definition preview with Markdown markup stripped", () => {
+    const preview = "**Acme** is a [storefront](../storefront.md) for `small` shops.";
+    expect(project({ definitionPreview: preview })!.description).toBe("Acme is a storefront for small shops.");
+  });
+
+  it("keeps a written description over the definition preview", () => {
+    expect(
+      project({ frontmatter: { kind: "project", description: "Written." }, definitionPreview: "Preview." })!.description,
+    ).toBe("Written.");
+  });
+
+  it("has an empty description when there is neither", () => {
+    expect(project({})!.description).toBe("");
   });
 });

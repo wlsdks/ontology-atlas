@@ -27,10 +27,13 @@ function bodyIndexOf(entries: Record<string, string>): DocsBodyIndex {
   return m;
 }
 
+/** A body whose text opens past the 320-character first paragraph, so only the body tier can match it. */
+const deep = (text: string) => `${'filler '.repeat(60)}\n\n${text}`;
+
 describe('searchDocs metadata tiers', () => {
-  it('scores a title match above an excerpt match', () => {
+  it('scores a title match above a summary match', () => {
     const docs = [
-      doc('a', 'other', { excerpt: 'graph engine here' }),
+      doc('a', 'other', { description: 'graph engine here' }),
       doc('b', 'graph engine'),
     ];
     const out = searchDocs('graph', docs);
@@ -56,6 +59,35 @@ describe('searchDocs metadata tiers', () => {
   });
 });
 
+describe('searchDocs finds a page by its first paragraph only through the body index', () => {
+  const raw = '---\ntitle: Plain page\n---\n\nQuillwort grows in cold ponds.\n\n## Later\n\nOther text.';
+  const plain = doc('plain', 'Plain page', { excerpt: 'Quillwort grows in cold ponds.' });
+
+  it('finds the page by a first-paragraph word when the index holds its body', () => {
+    const out = searchDocs('quillwort', [plain], 30, bodyIndexOf({ plain: raw }));
+    expect(out.map((match) => match.doc.slug)).toEqual(['plain']);
+    expect(out[0].bodyHit?.text).toContain('Quillwort');
+  });
+
+  it('ranks an indexed page by its first paragraph above fifteen tag matches', () => {
+    const tagged = Array.from({ length: 15 }, (_, i) => doc(`tagged-${i}`, `Other ${i}`, { tags: ['ledger'] }));
+    const page = doc('close', 'Month end', { excerpt: 'Ledger close runs at midnight.' });
+    const out = searchDocs('ledger', [...tagged, page], 15, bodyIndexOf({ close: 'Ledger close runs at midnight.' }));
+    expect(out).toHaveLength(15);
+    expect(out[0].doc.slug).toBe('close');
+  });
+
+  it('does not find the page by that word without the index', () => {
+    expect(searchDocs('quillwort', [plain], 30)).toEqual([]);
+  });
+
+  it('finds a page by its description, and a concept by its definition preview', () => {
+    const described = doc('d', 'Described', { description: 'Tracks quillwort stock' });
+    const defined = doc('e', 'Defined', { definitionPreview: 'Tracks quillwort stock' });
+    expect(searchDocs('quillwort', [described, defined]).map((match) => match.doc.slug)).toEqual(['d', 'e']);
+  });
+});
+
 describe('searchDocs body tier ranks lowest', () => {
   it('keeps complete phrase highlights in successive documents', () => {
     const docs = [doc('a', 'Other'), doc('b', 'Other')];
@@ -63,14 +95,15 @@ describe('searchDocs body tier ranks lowest', () => {
     const matches = searchDocs('needle phrase', docs, 1, index);
     expect(matches[0].doc).toBe(docs[0]);
     const all = searchDocs('needle phrase', docs, 2, index);
-    expect(all.map(match => match.score)).toEqual([16, 16]);
+    // 20 for the first paragraph holding the first token, 16 for the exact phrase in the body.
+    expect(all.map(match => match.score)).toEqual([36, 36]);
     expect(all.map(match => match.bodyHit!.text.slice(match.bodyHit!.hit.start, match.bodyHit!.hit.end)))
       .toEqual(['needle phrase', 'needle phrase']);
   });
 
   it('keeps the exhaustive prefix, stable ties and highlights across result limits', () => {
     const docs = Array.from({ length: 80 }, (_, i) => doc(`documents/${79 - i}`, i % 5 === 0 ? 'needle phrase' : 'Other', {
-      excerpt: i % 3 === 0 ? 'needle phrase' : '', tags: i % 7 === 0 ? ['needle', 'phrase'] : [],
+      description: i % 3 === 0 ? 'needle phrase' : '', tags: i % 7 === 0 ? ['needle', 'phrase'] : [],
       frontmatter: { display_ko: '그래프 문서', display_en: 'Graph document' },
     }));
     const bodies = bodyIndexOf(Object.fromEntries(docs.map((d, i) => [d.slug,
@@ -84,10 +117,10 @@ describe('searchDocs body tier ranks lowest', () => {
       }
     }
     expect({ docs, bodies }).toEqual(snapshot);
-    const ties = docs.map(d => ({ ...d, title: 'needle', excerpt: '', tags: [], frontmatter: {} }));
+    const ties = docs.map(d => ({ ...d, title: 'needle', description: '', tags: [], frontmatter: {} }));
     const tiedBodies = bodyIndexOf(Object.fromEntries(ties.map(d => [d.slug, 'needle'])));
     expect(searchDocs('needle', ties, 15, tiedBodies).map(match => match.doc)).toEqual(ties.slice(0, 15));
-    const lateWinner = { ...ties[79], title: 'needle', excerpt: 'needle', tags: ['needle'] };
+    const lateWinner = { ...ties[79], title: 'needle', description: 'needle', tags: ['needle'] };
     expect(searchDocs('needle', [...ties.slice(0, 79), lateWinner], 1, tiedBodies)[0].doc).toBe(lateWinner);
   });
 
@@ -118,9 +151,9 @@ describe('searchDocs body tier ranks lowest', () => {
       doc('body-only', 'zzz totally different'),
       doc('title-hit', 'needle at end of a very long title indeed truly'),
     ];
-    // The body-only case matches at the very start of the body (the most favourable position).
+    // The body-only case matches just past the first paragraph, so only the body tier scores it.
     const bodyIndex = bodyIndexOf({
-      'body-only': 'needle first thing in the body',
+      'body-only': deep('needle first thing in the body'),
     });
     // A title match clipped past index 80 scores the title minimum (20) and still beats body (≤2).
     const longTitle = `${'x'.repeat(90)}needle`;
@@ -129,23 +162,35 @@ describe('searchDocs body tier ranks lowest', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-only']);
   });
 
-  it('scores a body hit below the lowest excerpt score', () => {
+  it('scores a body hit below the lowest summary score', () => {
     const docs = [
-      doc('excerpt-late', 'zzz', {
-        excerpt: `${'y'.repeat(30)}needle far into the excerpt`,
+      doc('summary-late', 'zzz', {
+        description: `${'y'.repeat(30)}needle far into the summary`,
       }),
       doc('body-first', 'zzz'),
     ];
-    const bodyIndex = bodyIndexOf({ 'body-first': 'needle right away' });
+    const bodyIndex = bodyIndexOf({ 'body-first': deep('needle right away') });
     const out = searchDocs('needle', docs, 30, bodyIndex);
-    expect(out.map((m) => m.doc.slug)).toEqual(['excerpt-late', 'body-first']);
+    expect(out.map((m) => m.doc.slug)).toEqual(['summary-late', 'body-first']);
+  });
+
+  it('never scores frontmatter as the first paragraph of an index hit', () => {
+    const docs = [doc('front-only', 'aaa'), doc('opening', 'bbb')];
+    const bodyIndex: DocsBodyIndex = new Map([
+      ['front-only', { raw: '---\ncreated_by: "agent:claude-code"\n---\nThe close runs at midnight.', lower: '---\ncreated_by: "agent:claude-code"\n---\nthe close runs at midnight.', key: 'front-only' }],
+      ['opening', buildBodyEntry('Claude closes the ledger.', 'opening')],
+    ]);
+    const out = searchDocs('claude', docs, 30, bodyIndex);
+    const scoreOf = (slug: string) => out.find((m) => m.doc.slug === slug)?.score ?? 0;
+    expect(scoreOf('front-only')).toBeLessThan(2);
+    expect(scoreOf('opening')).toBeGreaterThanOrEqual(20);
   });
 
   it('ranks an earlier body match slightly higher', () => {
     const docs = [doc('late', 'aaa'), doc('early', 'bbb')];
     const bodyIndex = bodyIndexOf({
       late: `${'filler '.repeat(400)}needle`,
-      early: 'needle up front',
+      early: deep('needle up front'),
     });
     const out = searchDocs('needle', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['early', 'late']);
@@ -168,7 +213,7 @@ describe('searchDocs body tier ranks lowest', () => {
       doc('exact', 'yyy'),
     ];
     const bodyIndex = bodyIndexOf({
-      scattered: 'deterministic is discussed, and later compile appears too',
+      scattered: deep('deterministic is discussed, and later compile appears too'),
       exact: `${'filler '.repeat(50)}the deterministic compile phrase lives here`,
     });
     const out = searchDocs('deterministic compile', docs, 30, bodyIndex);
@@ -202,9 +247,9 @@ describe('searchDocs body tier ranks lowest', () => {
       doc('title-hit', `${'x'.repeat(90)}needle phrase`),
       doc('body-exact', 'zzz'),
     ];
-    // Body idx 0 — the best case, where the exact-phrase boost takes its maximum.
+    // The match sits just past the first paragraph, so only the body tier and its phrase boost score it.
     const bodyIndex = bodyIndexOf({
-      'body-exact': 'needle phrase right at the very start of the body',
+      'body-exact': deep('needle phrase right at the very start of the body'),
     });
     const out = searchDocs('needle phrase', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-exact']);

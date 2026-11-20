@@ -67,7 +67,7 @@ survive the compatibility hop; the return removes the incompatible slug, view, a
 - **Empty query**: pinned → recent → top 5 commands
 - **`>` prefix**: command fuzzy match
 - **`#` prefix**: tag fuzzy match
-- **General query**: doc title/slug/tags/excerpt search (15 results) + command substring (5)
+- **General query**: doc title/slug/tags/description search (15 results; a concept's definition preview stands in for a missing description; in the app with the index on, the body is searched too) + command substring (5)
 - Keyboard: `↑↓` move · `↵` execute · `Tab` cycles mode (`""` → `>` → `#`) · `Esc` close
 - Doc rows are `<Link>` (⌘-click → new tab)
 
