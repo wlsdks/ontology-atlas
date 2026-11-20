@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
@@ -19,17 +19,23 @@ function opensTarget(event: LibraryWorkEvent): event is LibraryWorkEvent & { tar
   return event.target !== null && (event.kind === "read" || event.kind === "write");
 }
 
-/**
- * A path split so the file name survives a narrow line: the folders truncate first, the name last.
- */
-function PathText({ path }: { path: string }) {
+/** The last segment of a vault path: the file a person recognises. */
+function fileName(path: string): string {
   const cut = path.lastIndexOf("/");
-  const folder = cut >= 0 ? path.slice(0, cut + 1) : "";
-  const name = cut >= 0 ? path.slice(cut + 1) : path;
+  return cut >= 0 ? path.slice(cut + 1) : path;
+}
+
+/**
+ * A file's name, never its folders. When the name itself does not fit it is cut in the middle: the
+ * head truncates and the ending (with the extension) stays, so a cut name still reads as that file.
+ */
+function FileName({ path }: { path: string }) {
+  const name = fileName(path);
+  const keep = Math.min(10, Math.floor(name.length / 2));
   return (
-    <span className="flex min-w-0 font-mono">
-      {folder ? <span className="min-w-0 truncate">{folder}</span> : null}
-      <span className="min-w-0 max-w-full flex-none truncate">{name}</span>
+    <span className="flex min-w-0">
+      <span className="min-w-0 truncate">{name.slice(0, name.length - keep)}</span>
+      <span className="flex-none whitespace-pre">{name.slice(name.length - keep)}</span>
     </span>
   );
 }
@@ -77,6 +83,7 @@ export function LibraryWorkLine({
   const headline = activity.current ?? activity.recent[0] ?? null;
   const leaving = useEventSwap(headline);
   const historyTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const targetPathId = useId();
   const {
     open: historyOpen,
     setOpen: setHistoryOpen,
@@ -101,6 +108,7 @@ export function LibraryWorkLine({
   if (!reserved && headline === null) return null;
   const label = (event: LibraryWorkEvent) => t(`${event.phase}.${event.kind}`);
   const line = (event: LibraryWorkEvent, live: boolean) => {
+    const pathId = live ? targetPathId : undefined;
     const running = live && activity.current === event && activity.isActive;
     return (
       <div
@@ -126,6 +134,7 @@ export function LibraryWorkLine({
               tabIndex={live ? undefined : -1}
               data-testid={live ? "library-work-target" : undefined}
               title={event.target.ref}
+              aria-describedby={pathId}
               onClick={() => onSelect(event.target)}
               className={controlClass({
                 shape: "link",
@@ -134,14 +143,15 @@ export function LibraryWorkLine({
                 className: "min-w-0 max-w-full",
               })}
             >
-              <PathText path={event.target.ref} />
+              <FileName path={event.target.ref} />
             </button>
           ) : (
-            <span title={event.target.ref} className="flex min-w-0 text-[color:var(--color-text-tertiary)]">
-              <PathText path={event.target.ref} />
+            <span title={event.target.ref} aria-describedby={pathId} className="flex min-w-0 text-[color:var(--color-text-tertiary)]">
+              <FileName path={event.target.ref} />
             </span>
           )
         ) : null}
+        {event.target && pathId ? <span id={pathId} className="sr-only">{event.target.ref}</span> : null}
       </div>
     );
   };
@@ -192,7 +202,7 @@ export function LibraryWorkLine({
             className="absolute right-0 top-full z-[var(--z-dialog)] mt-1 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-1 rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-elevation-2)]"
           >
             {activity.recent.slice(0, 3).map((event) => {
-              const content = <span className="truncate">{label(event)} · {event.target?.ref ?? t("unbound")}</span>;
+              const content = <span className="truncate">{label(event)} · {event.target ? fileName(event.target.ref) : t("unbound")}</span>;
               return opensTarget(event) ? (
                 <Chip
                   key={event.id}
