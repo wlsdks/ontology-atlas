@@ -3,7 +3,7 @@
 // and the pinned address. curl follows no redirect without `--location`, and the
 // caller refuses any 3xx.
 
-use super::super::curl::{curl_argv_with_timeout, curl_config_for, run_curl};
+use super::super::curl::{curl_argv_with_timeout, curl_config_for, run_curl, run_curl_until};
 use super::EmbedError;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, Command, Stdio};
@@ -29,6 +29,18 @@ pub(crate) struct StreamLimits {
 pub(super) trait Transport: Send + Sync {
     /// Status and body; a body over 4 MiB is an error, not a truncation.
     fn send(&self, request: &Request<'_>) -> Result<(u16, String), EmbedError>;
+    /// `send` that answers `Cancelled` soon after `cancel` turns true; a transport that cannot
+    /// stop a request in flight looks at it only before sending.
+    fn send_until(
+        &self,
+        request: &Request<'_>,
+        cancel: &AtomicBool,
+    ) -> Result<(u16, String), EmbedError> {
+        if cancel.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
+        self.send(request)
+    }
     /// Hands each body line to `on_line` until the stream ends, `on_line` returns
     /// false (then `None`), `cancel` turns true or a limit is passed; returns the
     /// status.
@@ -88,6 +100,22 @@ impl Transport for CurlTransport {
         run_curl(
             curl_argv_with_timeout(request.timeout),
             &curl_config(request),
+        )
+        .map_err(curl_error)
+    }
+
+    fn send_until(
+        &self,
+        request: &Request<'_>,
+        cancel: &AtomicBool,
+    ) -> Result<(u16, String), EmbedError> {
+        if cancel.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
+        run_curl_until(
+            curl_argv_with_timeout(request.timeout),
+            &curl_config(request),
+            Some(cancel),
         )
         .map_err(curl_error)
     }

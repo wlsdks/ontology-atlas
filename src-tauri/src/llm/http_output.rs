@@ -30,7 +30,19 @@ fn read_pipe(reader: impl Read, limit: usize, stream: &str) -> io::Result<Vec<u8
     }
     Ok(bytes)
 }
-pub(super) fn capture(mut command: Command, input: &[u8]) -> Result<Output, CaptureError> {
+pub(super) fn capture(command: Command, input: &[u8]) -> Result<Output, CaptureError> {
+    capture_until(command, input, None)
+}
+
+/// How often a capture that can be stopped looks at its flag.
+const CANCEL_POLL: std::time::Duration = std::time::Duration::from_millis(50);
+
+/// `capture` that kills the child and answers `Cancelled` once `cancel` is set.
+pub(super) fn capture_until(
+    mut command: Command,
+    input: &[u8],
+    cancel: Option<&std::sync::atomic::AtomicBool>,
+) -> Result<Output, CaptureError> {
     let mut child = ChildGuard(
         command
             .stdin(Stdio::piped())
@@ -47,7 +59,22 @@ pub(super) fn capture(mut command: Command, input: &[u8]) -> Result<Output, Capt
     if input_result.is_err() {
         let _ = child.0.kill();
     }
-    let status = child.0.wait();
+    let mut cancelled = false;
+    let status = match cancel {
+        None => child.0.wait(),
+        Some(cancel) => loop {
+            match child.0.try_wait() {
+                Ok(Some(status)) => break Ok(status),
+                Ok(None) if cancel.load(std::sync::atomic::Ordering::SeqCst) => {
+                    cancelled = true;
+                    let _ = child.0.kill();
+                    break child.0.wait();
+                }
+                Ok(None) => std::thread::sleep(CANCEL_POLL),
+                Err(error) => break Err(error),
+            }
+        },
+    };
     if status.is_err() {
         let _ = child.0.kill();
         let _ = child.0.wait();
@@ -58,6 +85,9 @@ pub(super) fn capture(mut command: Command, input: &[u8]) -> Result<Output, Capt
     let stderr = err
         .join()
         .map_err(|_| CaptureError::Response(io::Error::other("stderr_reader_panicked")))?;
+    if cancelled {
+        return Err(CaptureError::Cancelled);
+    }
     input_result.map_err(CaptureError::Request)?;
     Ok(Output {
         status: status.map_err(CaptureError::Response)?,

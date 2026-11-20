@@ -72,10 +72,20 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
 }
 
 pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
+    run_curl_until(argv, config, None)
+}
+
+/// `run_curl` that kills curl and answers `cancelled` once `cancel` is set.
+pub(crate) fn run_curl_until(
+    argv: [&'static str; 9],
+    config: &str,
+    cancel: Option<&std::sync::atomic::AtomicBool>,
+) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
     crate::no_console::hide_console(&mut command);
     command.args(argv);
-    let output = http_output::capture(command, config.as_bytes()).map_err(|err| match err {
+    let captured = http_output::capture_until(command, config.as_bytes(), cancel);
+    let output = captured.map_err(|err| match err {
         http_output::CaptureError::Request(err) => coded("request-failed", err),
         http_output::CaptureError::Response(err) => coded("no-response", err),
         http_output::CaptureError::Cancelled => coded("cancelled", ""),

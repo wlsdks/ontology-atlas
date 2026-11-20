@@ -188,9 +188,10 @@ pub(crate) fn with_jobs_stopped<T>(root: Option<&Path>, delete: impl FnOnce() ->
 const EXIT_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// The app is quitting: every job is told to stop, and quitting waits up to `EXIT_WAIT` for them
-/// to end. A runner job that ends in time writes its closing audit line; one still in a step that
-/// outlasts the wait does not, and its log keeps a start line with no close (the built-in model
-/// writes no line at all). The app quits either way.
+/// to end. A runner batch in flight is killed within about 50 ms of the stop, so a runner job
+/// normally ends in time and writes its closing audit line; one held up past the wait (a closing
+/// line waiting on a locked log, a model check) does not, and its log keeps a start line with no
+/// close. The built-in model writes no line at all. The app quits either way.
 pub(crate) fn stop_all_on_exit() {
     if !app().stop_all(EXIT_WAIT) {
         log::warn!("search by meaning job still running at quit");

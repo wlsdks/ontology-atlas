@@ -22,7 +22,7 @@ use loopback::{Endpoint, Resolve};
 use sha2::{Digest, Sha256};
 use std::fmt;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use transport::{CurlTransport, Request, StreamLimits, Transport};
@@ -217,6 +217,28 @@ pub(crate) struct LocalRunner {
 /// not wait behind them.
 static BATCH_IN_FLIGHT: Mutex<()> = Mutex::new(());
 
+/// How often a batch waiting behind another looks at its stop.
+const BATCH_TURN_POLL: Duration = Duration::from_millis(20);
+
+/// The one batch in flight, or `Cancelled` once `stop` is set while waiting for it.
+fn batch_turn(stop: Option<&AtomicBool>) -> Result<std::sync::MutexGuard<'static, ()>, EmbedError> {
+    let Some(stop) = stop else {
+        return Ok(BATCH_IN_FLIGHT
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()));
+    };
+    loop {
+        if stop.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
+        match BATCH_IN_FLIGHT.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(std::sync::TryLockError::Poisoned(poisoned)) => return Ok(poisoned.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => std::thread::sleep(BATCH_TURN_POLL),
+        }
+    }
+}
+
 impl LocalRunner {
     pub(crate) fn connect(base_url: &str, model: &str) -> Result<Self, EmbedError> {
         Self::connect_with(
@@ -296,7 +318,7 @@ impl LocalRunner {
         let body = self.request_body(&[question]);
         let reservation = audit::reserve_query(vault_dir, self, question, &body)?;
         let started = Instant::now();
-        let sent = self.send_embeddings(&body, 1, self.timeouts.query);
+        let sent = self.send_embeddings(&body, 1, self.timeouts.query, None);
         audit::finish_query(reservation, &sent, started)?;
         let mut vectors = sent?.vectors;
         vectors.pop().ok_or(EmbedError::ResponseInvalid("count"))
@@ -390,14 +412,19 @@ impl LocalRunner {
         body: &str,
         count: usize,
         timeout: &'static str,
+        cancel: Option<&AtomicBool>,
     ) -> Result<Sent, EmbedError> {
         let url = self.endpoint.openai_url("embeddings");
-        let (status, text) = self.transport.send(&Request {
+        let request = Request {
             url: &url,
             body: Some(body),
             timeout,
             pin: self.endpoint.pin(),
-        })?;
+        };
+        let (status, text) = match cancel {
+            Some(cancel) => self.transport.send_until(&request, cancel)?,
+            None => self.transport.send(&request)?,
+        };
         match status {
             200..=299 => {}
             300..=399 => return Err(EmbedError::Redirected(status)),
@@ -450,6 +477,16 @@ pub(crate) struct BuildRun<'r> {
 impl BuildRun<'_> {
     /// Exactly one finite vector per passage, in order, or an error and nothing.
     pub(crate) fn embed_batch(&mut self, passages: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError> {
+        self.embed_batch_in(passages, None)
+    }
+
+    /// `embed_batch` that kills the request and answers `Cancelled` once `stop` is set, whether
+    /// it waits behind another folder's batch or for the runner's answer.
+    fn embed_batch_in(
+        &mut self,
+        passages: &[&str],
+        stop: Option<&AtomicBool>,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
         let chars = check_passages(passages)?;
         if passages.len() > MAX_BATCH_PASSAGES
             || passages.iter().map(|p| p.len()).sum::<usize>() > MAX_BATCH_BYTES
@@ -462,16 +499,14 @@ impl BuildRun<'_> {
             return Err(EmbedError::OverPlan);
         }
         let body = self.runner.request_body(passages);
-        let _one_in_flight = BATCH_IN_FLIGHT
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _one_in_flight = batch_turn(stop)?;
         // Counted before the answer: a timed-out batch may still have been read.
         self.passages_sent += passages.len();
         self.chars_sent += chars;
         self.sent_hash.update(body.as_bytes());
         let sent =
             self.runner
-                .send_embeddings(&body, passages.len(), self.runner.timeouts.batch)?;
+                .send_embeddings(&body, passages.len(), self.runner.timeouts.batch, stop)?;
         Ok(sent.vectors)
     }
 
@@ -566,6 +601,17 @@ impl Embedder for LocalRunner {
 impl EmbedSession for BuildRun<'_> {
     fn embed_batch(&mut self, passages: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError> {
         BuildRun::embed_batch(self, passages)
+    }
+
+    fn embed_batch_until(
+        &mut self,
+        passages: &[&str],
+        stop: &AtomicBool,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
+        if stop.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
+        self.embed_batch_in(passages, Some(stop))
     }
 
     fn finish(self: Box<Self>, ended: RunEnd) -> Result<(), EmbedError> {

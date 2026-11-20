@@ -419,6 +419,40 @@ fn a_runner_that_never_answers_times_out() {
     assert!(started.elapsed() < Duration::from_secs(5));
 }
 
+#[test]
+fn a_stop_ends_a_batch_the_runner_has_not_answered_and_closes_the_run_as_stopped() {
+    let answered = AtomicUsize::new(0);
+    let stub = Stub::start(move || {
+        // The model check answers; the batch never does.
+        if answered.fetch_add(1, Ordering::SeqCst) == 0 {
+            http("200 OK", "", LOCAL_SHOW.as_bytes())
+        } else {
+            Reply::Hang
+        }
+    });
+    let vault = temp_vault("stopped-batch");
+    let runner = curl_runner(&stub.base());
+    let mut run = runner.start_build(&vault, plan(1, 10)).unwrap();
+    let stop = AtomicBool::new(false);
+    let ended = std::thread::scope(|scope| {
+        scope.spawn(|| {
+            while stub.hits() < 2 {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            stop.store(true, Ordering::SeqCst);
+        });
+        EmbedSession::embed_batch_until(&mut run, &["alpha"], &stop)
+    });
+    // `TimedOut` would mean the batch ran to its two-second limit instead.
+    assert_eq!(ended, Err(EmbedError::Cancelled));
+    run.finish(RunEnd::Stopped).unwrap();
+    let lines = audit_lines(&vault);
+    let close = lines.last().unwrap();
+    assert_eq!(close["embed"]["ended"], "stopped");
+    assert_eq!(close["embed"]["passagesSent"], 1);
+    std::fs::remove_dir_all(&vault).ok();
+}
+
 // --- Response validation. ---
 
 #[test]
