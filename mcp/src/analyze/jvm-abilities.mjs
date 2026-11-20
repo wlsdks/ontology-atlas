@@ -10,6 +10,9 @@
  * - scheduled work is a `worker`: a `@Scheduled` method, a
  *   `scheduleAtFixedRate` or `scheduleWithFixedDelay` call, or a class
  *   implementing a repository task type that is runnable and takes a scheduler;
+ * - a message consumer is a `worker` too, one row per method or class annotated
+ *   as a Kafka, RabbitMQ, JMS, SQS or Pulsar listener, named for its method,
+ *   apart from the class's scheduled work;
  * - three or more concrete classes in one folder whose supertype is the same
  *   type are a `family`, the supertype resolved through the file, an explicit
  *   import or the package. A class whose supertype cannot be resolved is in no
@@ -50,8 +53,10 @@ const RUNTIME_TYPE = /^(?:java|kotlin)\./;
 const RUNNABLE_TYPES = new Set(['java.lang.Runnable', 'java.util.TimerTask']);
 const SCHEDULER_TYPE = /\b(?:ScheduledExecutorService|TaskScheduler|Timer)\b/;
 const SCHEDULE_CALL = /\.\s*(?:scheduleAtFixedRate|scheduleWithFixedDelay)\s*\(/g;
+const MESSAGE_LISTENERS = new Set(['KafkaListener', 'RabbitListener', 'JmsListener', 'SqsListener', 'PulsarListener']);
 
-const CLASS_HEAD = /\b(class|interface|enum|record|object)[ \t\r\n]+([A-Za-z_$][\w$]*)/g;
+/** Kotlin's `enum class X` is an enum named X: the second keyword is skipped, not read as the name. */
+const CLASS_HEAD = /\b(class|interface|enum|record|object)[ \t\r\n]+(?:class[ \t\r\n]+)?([A-Za-z_$][\w$]*)/g;
 const ANNOTATION = /@([A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*)/g;
 const JAVA_METHOD_NAME = /(?<![\w$])([A-Za-z_$][\w$]*)\s*\(/g;
 /** Type arguments are read up to 200 characters, so an unclosed `<` costs a bounded scan per function. */
@@ -617,16 +622,30 @@ function isTaskType(cls, types) {
 function workerRows(files, classes, types) {
   const rows = [];
   const named = new Set();
-  const push = (cls, method, offset) => {
-    if (!cls || named.has(cls.qualifiedName)) return;
-    named.add(cls.qualifiedName);
-    rows.push(row('worker', { name: cls.name, symbol: method ? `${cls.name}.${method}` : cls.name }, evidence(cls, offset)));
+  // A row named for its class stands for the whole class; one named for a method is that method's own.
+  const push = (cls, method, offset, name = cls?.name) => {
+    if (!cls) return;
+    const key = name === cls.name ? cls.qualifiedName : `${cls.qualifiedName}\0${name}`;
+    if (named.has(key)) return;
+    named.add(key);
+    rows.push(row('worker', { name, symbol: method ? `${cls.name}.${method}` : cls.name }, evidence(cls, offset)));
   };
   for (const file of files) {
     for (const cls of file.classes) {
+      // Each consumer is its own ability, named for its method; a class-level one takes the class name,
+      // so the class's scheduled work is then named for its method too.
+      const classListener = cls.annotations.find((annotation) => MESSAGE_LISTENERS.has(annotation.name));
+      if (classListener) push(cls, null, classListener.start);
       for (const member of cls.members) {
+        for (const listener of member.annotations.filter((annotation) => MESSAGE_LISTENERS.has(annotation.name))) {
+          const method = annotatedMethod(member, listener.start);
+          push(cls, method, listener.start, method ? `${cls.name}.${method}` : cls.name);
+        }
         const scheduled = member.annotations.find((annotation) => annotation.name === 'Scheduled');
-        if (scheduled) push(cls, annotatedMethod(member, scheduled.start), scheduled.start);
+        if (scheduled) {
+          const method = annotatedMethod(member, scheduled.start);
+          push(cls, method, scheduled.start, classListener && method ? `${cls.name}.${method}` : cls.name);
+        }
       }
     }
     for (const match of file.masked.matchAll(SCHEDULE_CALL)) {

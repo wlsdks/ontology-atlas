@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Download } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -63,8 +63,12 @@ const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
 
+/**
+ * On a touchscreen the chips keep their size and their hit boxes reach the 44px finger floor; the
+ * row's gap grows to 14px there, so the stacked boxes meet instead of overlapping.
+ */
 const HERO_CHIP =
-  'gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
+  'touch-hit-expand gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label';
 
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
@@ -161,13 +165,13 @@ export function DownloadPage() {
                     <a
                       href={THIRD_PARTY_LICENSES_HREF}
                       data-testid="download-footer-third-party-licenses"
-                      className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' })}
+                      className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), 'touch-hit-expand')}
                     >
                       {tFooter('thirdPartyLicenses')}
                     </a>
                   </p>
                   <p className="font-mono">{tFooter('stack')}</p>
-                  <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="gap-1.5" />
+                  <MotionToggle labels={motionLabels} testId="gateway-footer-motion-toggle" className="touch-hit-expand gap-1.5" />
                 </div>
               </div>
             </footer>
@@ -247,7 +251,7 @@ function HeroSection({
 
         {/* From 80rem a container, so the headline is sized against this column, one line per sentence. */}
         <div className="gateway-hero-text relative z-[1] min-w-0 text-center min-[80rem]:text-left">
-          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap gap-2')}>
+          <div className={cn(rise('gateway-t240'), 'gateway-hero-chip flex w-fit max-w-full flex-wrap gap-2 pointer-coarse:gap-3.5')}>
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
@@ -357,6 +361,38 @@ const TEST_IDS = {
   },
 } as const;
 
+/**
+ * The browser map is the download page's second way in and its heaviest route, so it is fetched
+ * once a visitor points at, focuses or touches a way to it, not as soon as the link is on screen.
+ */
+function MapLink({
+  href,
+  className,
+  children,
+  'data-testid': testId,
+}: {
+  href: '/topology';
+  className: string;
+  children: ReactNode;
+  'data-testid': string;
+}) {
+  const [intent, setIntent] = useState(false);
+  const want = () => setIntent(true);
+  return (
+    <Link
+      href={href}
+      prefetch={intent ? null : false}
+      onPointerEnter={want}
+      onFocus={want}
+      onTouchStart={want}
+      data-testid={testId}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** Below `sm` the actions stack at the column's width, one thumb-sized target per row. */
 const ACTIONS_STACK = 'max-sm:w-full max-sm:flex-col max-sm:items-stretch';
 
@@ -433,13 +469,13 @@ function DownloadActions({
         </>
       ) : (
         <>
-          <Link
+          <MapLink
             href="/topology"
             data-testid={id.cta}
             className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
           >
             {t('webCta')}
-          </Link>
+          </MapLink>
           {/* With no file to offer (a phone, or nothing published), the source is the other way in. */}
           <a
             href={GITHUB_REPO_URL}
@@ -454,7 +490,7 @@ function DownloadActions({
         </>
       )}
       {fileWins && scope === 'hero' ? (
-        <Link
+        <MapLink
           href="/topology"
           data-testid="gateway-hero-web-cta"
           className={cn(
@@ -464,7 +500,7 @@ function DownloadActions({
           )}
         >
           {t('heroPlaygroundCta')}
-        </Link>
+        </MapLink>
       ) : null}
     </div>
   );

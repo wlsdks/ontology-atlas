@@ -103,6 +103,15 @@ it('shows only the character and responds without adding playback buttons', () =
   expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-reaction', 'shy');
 });
 
+it('leaves the reaction strip out of the first view and fetches it at the first press', () => {
+  const { container } = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  const response = container.querySelectorAll('img')[1]!;
+  expect(response).not.toHaveAttribute('src');
+  fireEvent.click(screen.getByRole('button', { name: 'pet' }));
+  expect(response.getAttribute('src')).toContain(`/brand/moru-reactions.png?v=${reactions.digest}`);
+});
+
 it('keeps the ambient character visible until the first reaction image is decoded', async () => {
   let decoded!: () => void;
   Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true,
