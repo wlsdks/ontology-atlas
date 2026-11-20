@@ -56,17 +56,18 @@ export function paintLibraryGraphFrame(
     "zoomMaxRef"
   >,
   now: number,
-) {
+  settling: boolean,
+): boolean {
   const canvas = canvasRef.current;
   const sim = simRef.current;
-  if (!canvas || !sim) return;
+  if (!canvas || !sim) return false;
   /*
    * Resolved from the canvas and cached. A throw means `app/globals.css` lacks the palette;
    * it propagates rather than falling back to a colourless default.
    */
   inkRef.current ??= readLibraryGraphInk(canvas);
   const context = canvas.getContext("2d", { alpha: false });
-  if (!context) return;
+  if (!context) return false;
   const startedAt = performance.now();
 
   /*
@@ -79,7 +80,7 @@ export function paintLibraryGraphFrame(
     pendingBoxRef.current = null;
   }
   const { width, height, dpr } = boxRef.current;
-  if (width === 0 || height === 0) return;
+  if (width === 0 || height === 0) return false;
   const backingWidth = Math.max(1, Math.round(width * dpr));
   const backingHeight = Math.max(1, Math.round(height * dpr));
   if (canvas.width !== backingWidth) canvas.width = backingWidth;
@@ -88,6 +89,9 @@ export function paintLibraryGraphFrame(
 
   const moving = travelRef.current !== null || ghostsRef.current.size > 0 ||
     (islandFieldRef.current !== null && isIslandFieldMoving(islandFieldRef.current));
+  // Read before this frame advances them, so the frame that lands the motion still counts as moving.
+  const namesMoving = settling && (travelRef.current !== null || (autoFitRef.current.on && !autoFitRef.current.converged) ||
+    (islandFieldRef.current !== null && isIslandFieldMoving(islandFieldRef.current)));
   let overviewGeometry = overviewGeometryRef.current;
   const geometryChanged = !overviewGeometry || overviewGeometry.nodes !== sim.nodes ||
     overviewGeometry.ticks !== sim.ticks || overviewGeometry.radii !== radiiRef.current ||
@@ -357,7 +361,7 @@ export function paintLibraryGraphFrame(
     const column = columnsRef.current?.columns.find((candidate) => candidate.kind === kind);
     return !column || column.named || zoomedToRead;
   };
-  drawLibraryGraph(context, {
+  const namesFading = drawLibraryGraph(context, {
     nodes,
     edges: graphRef.current.edges,
     positions: screen,
@@ -371,6 +375,8 @@ export function paintLibraryGraphFrame(
     focusedId: stateRef.current.focusedId,
     activeLabel: stateRef.current.activeLabel,
     standingLabels: stateRef.current.standingLabels,
+    moving: namesMoving,
+    reducedMotion: stateRef.current.reducedMotion,
     radii: screenRadiiRef.current,
     sourceLabels:
       pictureRef.current === "flow"
@@ -430,4 +436,5 @@ export function paintLibraryGraphFrame(
   record.total += cost;
   record.frames += 1;
   if (cost > record.worst) record.worst = cost;
+  return namesFading;
 }
