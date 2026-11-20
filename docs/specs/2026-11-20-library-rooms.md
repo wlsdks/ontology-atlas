@@ -105,7 +105,7 @@ on the same files.
 | # | Slice | Core of the change |
 |---|---|---|
 | H1 | Sources header | Band recomposed, bar as filter, work line, doors to the page header, legend key |
-| P1 | Sources picture | One readable picture from 20 to 400 marks; names on concepts |
+| P1 | Sources picture | One readable picture from 20 to 400 marks: each stack carries its own concepts, and a kind is named only from 96 px of room (pages, then concepts, then files) |
 | R1 | Source reader | The source's text with cited passages marked; facts fold to the foot |
 | I1 | Index column | One door row, rows of one height in both lists |
 | W1 | Wiki home | Field at the top, kept questions and newly written pages under it, meaning status (with S6) |
@@ -225,3 +225,4 @@ deleted when nothing reads them.
 ## Revisions
 
 - 2026-11-20: first draft. Three rooms, eight decisions, the slice list, and H1 in full.
+- 2026-11-20: P1 built. Looking at 1280x800 showed that names sharing the width equally cut every title to five characters, so a kind is named only from 96 px on screen, pages first; the picture's margin above and below fell from 64 px to 24 px so a 60-page folder stands in two stacks at 1512x901.
