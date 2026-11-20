@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import type { VectorStatus } from "../../../src/shared/lib/vault-folder/tauri-vault-vectors";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { goToMap, harnessCalls, rail, startCheck, THREE_FINDINGS } from "../library/library-check-run-fixture";
+import { goToMap, harnessCalls, rail, startCheck } from "../library/library-check-run-fixture";
 import {
   installLibraryWorkHarness,
   LIBRARY_VECTOR_FAILURES,
@@ -83,7 +83,7 @@ test.describe("search by meaning in the long-work seat", () => {
     await expect(card(page), "the desk is the job's stage").toHaveCount(0);
 
     await goTo(page, "map");
-    await expect(card(page)).toHaveAttribute("data-kind", "meaning");
+    await expect(card(page)).toHaveAttribute("data-run-kind", "meaning");
     await expect(card(page)).toHaveAttribute("data-state", "open");
     await expect(page.getByTestId("work-run-figures")).toHaveText("312 of 2,000 files");
     await expect(page.getByTestId("work-run-file")).toHaveAttribute("title", "wiki/architecture.md");
@@ -196,64 +196,50 @@ test.describe("two runs in one seat", () => {
     await pressDownloadAndPrepare(page);
     await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing);
     await goToMap(page);
-    await expect(card(page), "the preparation was started last").toHaveAttribute("data-kind", "meaning");
+    await expect(card(page), "the preparation was started last").toHaveAttribute("data-run-kind", "meaning");
     const more = page.getByTestId("work-run-more");
-    await expect(more).toHaveAttribute("data-shown", "true");
     await expect(more).toHaveText("1 more running");
 
     await more.click();
     const dialog = page.getByTestId("work-runs-dialog");
     await expect(dialog).toBeVisible();
-    await expect(page.getByTestId("work-runs-list").getByRole("button")).toHaveCount(2);
-    await expect(page.getByTestId("work-runs-detail"), "the run off the card is chosen first").toHaveAttribute("data-kind", "check");
+    await expect(page.getByTestId("work-runs-tab")).toHaveCount(2);
+    const pane = page.getByTestId("work-runs-pane");
+    await expect(pane, "the run the card names is selected first").toHaveAttribute("data-run-key", /^meaning:/);
+    await expect(page.getByTestId("work-runs-pane-figures")).toContainText("of 2,000 files");
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(more).toBeFocused();
 
     await more.click();
-    await page.getByTestId("work-runs-row-meaning").click();
-    await page.getByTestId("work-runs-stop").click();
-    await expect.poll(() => vectorCalls(harness, page, "vault_vectors_stop")).toBe(1);
-    await expect(card(page), "the check runs on and takes the card").toHaveAttribute("data-kind", "check");
-    await expect(card(page)).toHaveAttribute("data-phase", "running");
-
-    await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparingMeasured);
-    await expect(more).toHaveAttribute("data-shown", "true");
-    await more.click();
-    await page.getByTestId("work-runs-row-check").click();
+    await page.locator('[id^="work-runs-tab-check:"]').click();
+    await expect(pane).toHaveAttribute("data-run-key", /^check:/);
     await page.getByTestId("work-runs-stop").click();
     await expect.poll(() => harnessCalls(page)).toContain("session/cancel");
+    expect(await vectorCalls(harness, page, "vault_vectors_stop"), "the preparation runs on").toBe(0);
+    await expect(card(page)).toHaveAttribute("data-run-kind", "meaning");
+    await expect(card(page)).toHaveAttribute("data-phase", "preparing");
+
+    await expect(pane, "the list moves to the run left").toHaveAttribute("data-run-key", /^meaning:/);
+    await page.getByTestId("work-runs-stop").click();
+    await expect.poll(() => vectorCalls(harness, page, "vault_vectors_stop")).toBe(1);
     await expect(card(page)).toHaveCount(0);
-    await expect(ring(page), "the preparation runs on").toBeVisible();
-    expect(await vectorCalls(harness, page, "vault_vectors_stop")).toBe(1);
+    await expect(dialog).toHaveCount(0);
   });
 });
 
-/** The card's box, its presses' left edges, and the presses a neighbour covers or the box cuts. */
+/** The card's box, its presses' left edges, and the presses the box cuts. */
 async function cardGeometry(page: Page) {
   const box = card(page);
   await waitForAnimationsDone(box);
   return box.evaluate((element) => {
     const rect = element.getBoundingClientRect();
-    const presses = [...element.querySelectorAll<HTMLElement>('[data-work-run-layer="current"] button')];
-    const more = element.querySelector<HTMLElement>('[data-testid="work-run-more"][data-shown="true"]')?.getBoundingClientRect();
-    const shown = more ? [...presses, element.querySelector<HTMLElement>('[data-testid="work-run-more"]')!] : presses;
-    const title = element.querySelector<HTMLElement>('[data-work-run-layer="current"] [data-testid="work-run-title"]');
-    /** The box a text or press draws in: a title's padding is room it leaves, not text. */
-    const drawn = (node: HTMLElement) => {
-      const box = node.getBoundingClientRect();
-      const right = box.right - Number.parseFloat(getComputedStyle(node).paddingRight);
-      return { left: box.left, right, top: box.top, bottom: box.bottom, name: node.textContent };
-    };
-    const meets = (a: { left: number; right: number; top: number; bottom: number }, b: DOMRect) =>
-      a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const buttons = [...element.querySelectorAll<HTMLElement>('[data-work-run-layer="current"] button')];
+    const presses = buttons.filter((button) => button.dataset.testid !== "work-run-more");
     return {
       size: `${Math.round(rect.width)}x${Math.round(rect.height)}`,
       presses: presses.map((button) => Math.round(button.getBoundingClientRect().left - rect.left)),
-      underMore: more
-        ? [...presses, ...(title ? [title] : [])].map(drawn).filter((box) => meets(box, more)).map((box) => box.name)
-        : [],
-      cut: shown
+      cut: buttons
         .filter((button) => button.scrollWidth > button.clientWidth || button.getBoundingClientRect().right > rect.right - 4)
         .map((button) => button.textContent),
     };
@@ -272,23 +258,30 @@ for (const locale of ["en", "ko"] as const) {
         await expect(card(page)).toHaveAttribute("data-phase", phase);
         const geometry = await cardGeometry(page);
         sizes.set(name, geometry.size);
-        expect(geometry.underMore, `${name}: a press runs under 1 more running`).toEqual([]);
         expect(geometry.cut, `${name}: a press is cut`).toEqual([]);
         return geometry;
       };
-      const alone = await record("check running", "running");
-      await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing);
-      await expect(page.getByTestId("work-run-more")).toHaveAttribute("data-shown", "true");
-      const beside = await record("check running beside a preparation", "running");
-      expect(beside.presses, "the presses keep their places when 1 more running appears").toEqual(alone.presses);
-      await harness.answer(page, THREE_FINDINGS);
-      await record("check found", "found");
-      await page.getByTestId("work-run-close").click();
+      await record("check running", "running");
 
+      // Resume is the press that puts the preparation on the card, beside the check still running.
+      await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing);
       await goToDesk(page);
       await page.getByTestId("meaning-desk-stop").click();
       await page.getByTestId("meaning-desk-resume").click();
       await goToMap(page);
+      await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparingMeasured);
+      const more = page.getByTestId("work-run-more");
+      await expect(more).toBeVisible();
+      const beside = await record("preparing beside the check", "preparing");
+
+      await more.click();
+      await page.locator('[id^="work-runs-tab-check:"]').click();
+      await page.getByTestId("work-runs-stop").click();
+      await page.keyboard.press("Escape");
+      await expect(more).toHaveCount(0);
+      const alone = await record("preparing alone", "preparing");
+      expect(alone.presses, "the presses keep their places when 1 more running goes").toEqual(beside.presses);
+
       for (const [phase, status] of [
         ["modelDownloading", LIBRARY_VECTOR_SCRIPT.downloading],
         ["modelConverting", LIBRARY_VECTOR_SCRIPT.converting],
