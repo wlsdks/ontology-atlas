@@ -1107,3 +1107,17 @@ describe("cluster iteration budget", () => {
     for (const run of crowded) expect(run.iterations).toBeGreaterThan(0);
   });
 });
+
+describe("flat graph layout reuse", () => {
+  it("draws a capability's new title after a retitle that moves no concept", () => {
+    const derived = deriveOntologyFromVault(dogfoodManifest as VaultManifest);
+    const nodes = derived.nodes as Node[];
+    const edges = derived.edges as Edge[];
+    const before = modelOf(nodes, edges);
+    const named = namesAt(before, layoutOf(before), 4, null).names.find((n) => n.role === "capability")!;
+    const retitle = named.text.toUpperCase() === named.text ? named.text.toLowerCase() : named.text.toUpperCase();
+    const after = modelOf(nodes.map((n) => (n.id === named.id ? { ...n, title: retitle } : n)), edges);
+    const drawn = namesAt(after, layoutOf(after), 4, null).names.find((n) => n.id === named.id);
+    expect(drawn?.text).toBe(retitle);
+  });
+});
