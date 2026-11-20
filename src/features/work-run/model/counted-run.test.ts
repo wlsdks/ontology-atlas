@@ -88,6 +88,15 @@ describe('when the counted card rises', () => {
     expect(counted()?.card).toBe('open');
   });
 
+  it('keeps a press open when its first answer is the held status the job had before', () => {
+    observe({ ...preparing(10), phase: 'stopped' });
+    observe({ ...preparing(10, { pressed: 1 }), phase: 'stopped' });
+    expect(seatRun(workRuns.read()), 'nothing to say while it is still held').toBeNull();
+    observe(preparing(11, { pressed: 1 }));
+    expect(counted()?.card).toBe('open');
+    expect(seatRun(workRuns.read())?.kind).toBe('meaning');
+  });
+
   it('shows the result only where the card was open, and never over the desk', () => {
     observe(preparing(1999, { pressed: 1 }));
     observe(ready);

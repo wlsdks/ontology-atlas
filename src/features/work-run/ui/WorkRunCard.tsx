@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { useRouter } from '@/i18n/navigation';
@@ -12,6 +12,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION } from '@/shared/motion';
 import { WorkProgress } from '@/shared/motion/work-progress';
 import { Button } from '@/shared/ui/controls/button';
+import { controlClass } from '@/shared/ui/control-class';
 
 import { isCountedActive, type CountedRun } from '../model/counted-run';
 import { isRunActive, type WorkRun, type WorkRunPhase } from '../model/work-run';
@@ -31,6 +32,9 @@ import { CountedRunMoru, WorkRunMoru } from './WorkRunMoru';
 import { RunsDialog } from './RunsDialog';
 import { useSeatStepAside } from './use-seat-step-aside';
 import { WORK_CARD_ATTRIBUTE } from './use-clear-of-work-card';
+
+/** The gap between the title and "1 more running" beside it. */
+const TITLE_GAP_PX = 8;
 
 /** `.app-update-card[data-state='closed']` and `.app-update-layer-out` fade over `--motion-base`. */
 const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
@@ -89,6 +93,11 @@ function CardBox({ seat, open, othersRunning }: { seat: SeatRun; open: boolean; 
   const layers = useLeavingLayer(seat);
   const cardRef = useRef<HTMLDivElement>(null);
   const { probe, shiftPx } = useSeatStepAside(open, cardRef);
+  const [moreWidth, setMoreWidth] = useState(0);
+  // The title row leaves room for "1 more running" only while it shows.
+  const room = othersRunning > 0 ? moreWidth + TITLE_GAP_PX : 0;
+  const style: CSSProperties & Record<'--work-run-more-room', string> = { '--work-run-more-room': `${room}px` };
+  if (shiftPx > 0) style.translate = `${-shiftPx}px 0`;
   return (
     <div
       ref={cardRef}
@@ -105,7 +114,7 @@ function CardBox({ seat, open, othersRunning }: { seat: SeatRun; open: boolean; 
         'right-4 bottom-[var(--app-work-card-bottom-offset,var(--app-toast-bottom-offset,calc(var(--app-toast-bottom-reserve,0px)_+_16px)))]',
         'rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]',
       )}
-      style={shiftPx > 0 ? { translate: `${-shiftPx}px 0` } : undefined}
+      style={style}
     >
       <span ref={probe} aria-hidden className="pointer-events-none invisible absolute h-0 w-[var(--app-toast-right-offset,16px)]" />
       <MoruLight tint={tintOf(seat)} phase={seat.run.phase} />
@@ -113,7 +122,7 @@ function CardBox({ seat, open, othersRunning }: { seat: SeatRun; open: boolean; 
         <SeatLayer key={`leaving-${seatLayer(layers.leaving)}`} seat={layers.leaving} motion="out" />
       ) : null}
       <SeatLayer key={seatLayer(seat)} seat={seat} motion={layers.leaving ? 'in' : 'none'} />
-      <MoreRunning count={othersRunning} />
+      <MoreRunning count={othersRunning} onWidth={setMoreWidth} />
     </div>
   );
 }
@@ -173,7 +182,7 @@ const CARD_MARKS: WorkRunMarks = {
 };
 
 const CARD_FIGURE: CountedFigure = (value, format) => (
-  <RollingCount value={value} format={format} className={cn(COUNT_CLASS, 'mr-1')} />
+  <RollingCount value={value} format={format} className={COUNT_CLASS} />
 );
 
 function useDoor() {
@@ -202,15 +211,24 @@ function LayerFrame({ moru, motion, children }: { moru: ReactNode; motion: Layer
   );
 }
 
-function Title({ text, small, testId }: { text: string; small: boolean; testId?: string }) {
+function Title({ text, small, aside, testId }: { text: string; small: boolean; aside?: string | null; testId?: string }) {
   return (
     <p
       data-testid={testId}
-      className={small
-        ? 'truncate text-label leading-label text-[color:var(--color-text-tertiary)]'
-        : 'truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'}
+      className={cn(
+        'pr-[var(--work-run-more-room,0px)]',
+        small
+          ? 'truncate text-label leading-label text-[color:var(--color-text-tertiary)]'
+          : 'truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
+      )}
     >
       {text}
+      {aside ? (
+        <>
+          <span aria-hidden className="px-1.5 text-[color:var(--color-text-quaternary)]">·</span>
+          <span data-testid={testId ? 'work-run-minutes' : undefined}>{aside}</span>
+        </>
+      ) : null}
     </p>
   );
 }
@@ -320,7 +338,7 @@ function MeaningLayer({ run, motion }: { run: CountedRun; motion: LayerMotion })
 
   return (
     <LayerFrame moru={<CountedRunMoru run={run} />} motion={motion}>
-      <Title text={copy.title} small={copy.lead !== null} testId={testId('work-run-title')} />
+      <Title text={copy.title} aside={copy.remaining} small={copy.lead !== null} testId={testId('work-run-title')} />
       {copy.lead !== null ? (
         <div aria-live="off" className="grid min-w-0">
           <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
@@ -362,19 +380,30 @@ function MeaningLayer({ run, motion }: { run: CountedRun; motion: LayerMotion })
 }
 
 /**
- * "1 more running" stands in its own corner of the action row from the card's first paint, so
- * its arrival moves no press; it opens the list of running work.
+ * "1 more running" stands at the right of the title row, drawn from the card's first paint and
+ * only faded in, so its arrival moves no press; the title gives way beside it. It opens the list
+ * of running work.
  */
-function MoreRunning({ count }: { count: number }) {
+function MoreRunning({ count, onWidth }: { count: number; onWidth: (widthPx: number) => void }) {
   const tCard = useTranslations('workCard');
   const [open, setOpen] = useState(false);
   const shown = count > 0;
   if (open && !shown) setOpen(false);
+  const press = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    const element = press.current;
+    if (!element) return undefined;
+    onWidth(element.offsetWidth);
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => onWidth(element.offsetWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [onWidth]);
   return (
     <>
-      <Button
-        size="sm"
-        variant="ghost"
+      <button
+        ref={press}
+        type="button"
         aria-hidden={shown ? undefined : true}
         tabIndex={shown ? undefined : -1}
         inert={!shown}
@@ -385,13 +414,19 @@ function MoreRunning({ count }: { count: number }) {
         }}
         data-testid="work-run-more"
         data-shown={shown ? 'true' : 'false'}
-        className={cn(
-          'touch-hit-expand absolute right-3 bottom-3 text-[color:var(--color-text-secondary)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)]',
-          shown ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
+        className={controlClass({
+          shape: 'link',
+          size: 'md',
+          tone: 'secondary',
+          hoverInk: 'strong',
+          className: cn(
+            'touch-hit-expand absolute top-2.5 right-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)]',
+            shown ? 'opacity-100' : 'pointer-events-none opacity-0',
+          ),
+        })}
       >
         {tCard('moreRunning', { count: Math.max(1, count) })}
-      </Button>
+      </button>
       <RunsDialog open={open} onClose={() => setOpen(false)} />
     </>
   );

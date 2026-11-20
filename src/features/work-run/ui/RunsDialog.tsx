@@ -40,7 +40,8 @@ function useCheckWords(run: WorkRun): RunWords {
 function useMeaningWords(run: CountedRun): RunWords {
   const progress = useCountedProgress();
   const copy = useCountedCopy(run, progress?.runId === run.id ? progress : null);
-  return { title: copy.title, figures: copy.lead, line: copy.line, bar: copy.bar };
+  const figures = copy.lead && copy.remaining ? <>{copy.lead} · {copy.remaining}</> : copy.lead;
+  return { title: copy.title, figures, line: copy.line, bar: copy.bar };
 }
 
 function Words({ seat, children }: { seat: SeatRun; children: (words: RunWords) => ReactNode }) {

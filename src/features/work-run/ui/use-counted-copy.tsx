@@ -7,8 +7,8 @@ import type { CountedProgress, CountedRun } from '../model/counted-run';
 
 const PLACEHOLDER = '\u0000';
 const BYTES_PER_GIGABYTE = 1_000_000_000;
-/** The end of a file name kept whole when its middle gives way: a word and the extension. */
-const KEPT_NAME_END = 12;
+/** The end of a file name kept whole when its middle gives way: a word's tail and the extension. */
+const KEPT_NAME_END = 8;
 
 /** How a surface sets the figure that leads: the card rolls it, the dialog writes it. */
 export type CountedFigure = (value: number, format: (value: number) => string) => ReactNode;
@@ -17,6 +17,8 @@ const PLAIN_FIGURE: CountedFigure = (value, format) => format(value);
 
 export interface CountedCopy {
   title: string;
+  /** Minutes left, once the job measured its pace; it stands beside the title. */
+  remaining: string | null;
   /** The count that leads while it is counted, or the result's size once ready. */
   lead: ReactNode | null;
   /** What it does now, or how it ended. */
@@ -35,20 +37,22 @@ function withFigure(sentence: string, figure: ReactNode): ReactNode {
 export function MiddleCutName({ path }: { path: string }) {
   const pathId = useId();
   const name = path.split('/').pop() || path;
-  const cut = Math.max(0, name.length - KEPT_NAME_END);
+  // A short name is written whole: cutting it would leave a stub that reads as another name.
+  const cut = name.length > KEPT_NAME_END * 2 ? name.length - KEPT_NAME_END : 0;
   return (
     <>
-      <span className="flex min-w-0" title={path} aria-describedby={pathId} data-testid="work-run-file">
-        <span className="min-w-0 truncate">{name.slice(0, cut)}</span>
-        <span className="flex-none whitespace-pre">{name.slice(cut)}</span>
+      <span
+        className="flex min-w-0 overflow-hidden font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+        title={path}
+        aria-describedby={pathId}
+        data-testid="work-run-file"
+      >
+        {cut > 0 ? <span className="min-w-0 truncate">{name.slice(0, cut)}</span> : null}
+        <span className={cut > 0 ? 'flex-none whitespace-pre' : 'min-w-0 truncate'}>{name.slice(cut)}</span>
       </span>
       <span id={pathId} hidden>{path}</span>
     </>
   );
-}
-
-function Separator() {
-  return <span aria-hidden className="flex-none px-1.5 text-[color:var(--color-text-quaternary)]">·</span>;
 }
 
 /** The desk line's sentence for a failure, with the coded detail in words as the desk says it. */
@@ -75,6 +79,8 @@ export function useCountedCopy(run: CountedRun, progress: CountedProgress | null
   const filesDone = progress?.filesDone ?? 0;
   const filesTotal = progress?.filesTotal ?? 0;
   const title = t('title');
+  const minutes = run.phase === 'preparing' ? progress?.minutesLeft ?? null : null;
+  const remaining = minutes === null ? null : t('minutesLeft', { minutes });
 
   switch (run.phase) {
     case 'modelDownloading': {
@@ -83,35 +89,30 @@ export function useCountedCopy(run: CountedRun, progress: CountedProgress | null
       const total = tenths((bytes?.total ?? 0) / BYTES_PER_GIGABYTE);
       return {
         title,
+        remaining,
         lead: bytes && bytes.total > 0 ? withFigure(t('modelBytes', { done: PLACEHOLDER, total }), figure(done, tenths)) : null,
         line: t('downloading'),
         bar: bytes && bytes.total > 0 ? { done: bytes.done, total: bytes.total } : null,
       };
     }
     case 'modelConverting':
-      return { title, lead: null, line: t('converting'), bar: { done: 1, total: 1 } };
+      return { title, remaining, lead: null, line: t('converting'), bar: { done: 1, total: 1 } };
     case 'waitingTurn':
-      return { title, lead: null, line: tDesk('waitingTurn'), bar: null };
+      return { title, remaining, lead: null, line: tDesk('waitingTurn'), bar: null };
     case 'preparing': {
       const reading = progress?.reading ?? null;
-      const minutes = progress?.minutesLeft ?? null;
       const [readingBefore, readingAfter] = tDesk('readingNow', { file: PLACEHOLDER }).split(PLACEHOLDER);
       return {
         title,
+        remaining,
         lead: withFigure(t('files', { done: PLACEHOLDER, total: filesTotal }), figure(filesDone, whole)),
-        line: (
+        line: reading ? (
           <span className="flex min-w-0 items-center whitespace-pre">
-            {reading ? (
-              <>
-                <span className="flex-none">{readingBefore}</span>
-                <MiddleCutName path={reading} />
-                <span className="flex-none">{readingAfter}</span>
-              </>
-            ) : null}
-            {reading && minutes !== null ? <Separator /> : null}
-            {minutes !== null ? <span className="flex-none" data-testid="work-run-minutes">{t('minutesLeft', { minutes })}</span> : null}
+            <span className="flex-none">{readingBefore}</span>
+            <MiddleCutName path={reading} />
+            <span className="flex-none">{readingAfter}</span>
           </span>
-        ),
+        ) : null,
         bar: filesTotal > 0 ? { done: filesDone, total: filesTotal } : null,
       };
     }
@@ -123,10 +124,10 @@ export function useCountedCopy(run: CountedRun, progress: CountedProgress | null
       const lead = at < 0
         ? sentence
         : <>{sentence.slice(0, at)}{figure(filesTotal, whole)}{sentence.slice(at + written.length)}</>;
-      return { title, lead, line: t('ready'), bar: null };
+      return { title, remaining, lead, line: t('ready'), bar: null };
     }
     case 'failed':
     case 'stopped':
-      return { title, lead: null, line: failure, bar: null };
+      return { title, remaining, lead: null, line: failure, bar: null };
   }
 }

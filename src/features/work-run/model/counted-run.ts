@@ -121,10 +121,12 @@ export function observeCounted(
   const active = ACTIVE.has(observation.phase);
   const newPress = observation.pressed !== null && observation.pressed !== run?.pressed;
   if (newPress) {
-    const shownAtOnce = active || (observation.phase !== 'stopped' && !context.stageShown);
-    return begin(observation, context, shownAtOnce ? 'open' : 'closed');
+    // A press may be answered with the held status before the job starts; the card waits open.
+    const ended = observation.phase === 'ready' || observation.phase === 'failed';
+    return begin(observation, context, ended && context.stageShown ? 'closed' : 'open');
   }
-  if (run === null || (!isCountedActive(run) && active)) {
+  const startingFromPress = run?.phase === 'stopped' && run.card === 'open';
+  if (run === null || (!isCountedActive(run) && active && !startingFromPress)) {
     if (!active) return run;
     return begin(observation, context, observation.updating ? 'closed' : 'hidden');
   }
