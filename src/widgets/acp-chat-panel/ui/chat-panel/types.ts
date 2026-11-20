@@ -17,6 +17,9 @@ import type {
 } from '@/features/acp-session';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
+import type { ToolLabel } from '../tool-label';
+import type { TurnActivityKind } from '../turn-activity';
+
 export type ChatT = ReturnType<typeof useTranslations<'acpChat'>>;
 export type GrayT = ReturnType<typeof useTranslations<'grayArea'>>;
 
@@ -30,6 +33,14 @@ export interface AcpOntologyRelationPreview {
   targetSlug: string;
   relationType: string;
   phase: 'draft' | 'committing';
+}
+
+/** What the running turn is doing, in the words its transcript row uses; `asking` while a permission card waits. */
+export interface AcpTurnWork {
+  kind: TurnActivityKind;
+  label: ToolLabel | null;
+  target: string | null;
+  asking: boolean;
 }
 
 export interface OpeningRequest {
@@ -153,6 +164,12 @@ export interface AcpChatPanelProps {
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
+  /** Stops the running turn as the composer's Stop does; reported while a turn runs, null otherwise. */
+  onTurnStopChange?: (stop: (() => void) | null) => void;
+  /** Kept while the panel is away, so a screen elsewhere can show the turn's progress. */
+  onTurnWorkChange?: (work: AcpTurnWork | null) => void;
+  /** Whether the running turn only reads; a kept read-only turn may finish beside another dock on its folder. */
+  turnIsReadOnly?: () => boolean;
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   meaningTransitionContext?: MeaningTransitionContext;
   onBusyChange?: (busy: boolean) => void;

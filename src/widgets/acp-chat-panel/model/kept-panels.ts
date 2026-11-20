@@ -47,10 +47,16 @@ function prune() {
   publish(kept);
 }
 
+/** A turn that only reads cannot clash with a writer on its folder, so it may finish beside one. */
+function readsOnly(panel: KeptPanel): boolean {
+  return panel.busy && panel.props.turnIsReadOnly?.() === true;
+}
+
 function withoutRivals(key: string, props: AcpChatPanelProps): readonly KeptPanel[] {
   if (props.sessionEnabled === false) return panels;
   return panels.filter((panel) => {
-    const rival = panel.key !== key && !panel.seated && (!panel.busy || panel.props.vaultRoot === props.vaultRoot);
+    const rival = panel.key !== key && !panel.seated && !readsOnly(panel)
+      && (!panel.busy || panel.props.vaultRoot === props.vaultRoot);
     if (rival) panel.node.remove();
     return !rival;
   });

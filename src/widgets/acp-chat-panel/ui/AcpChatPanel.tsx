@@ -85,6 +85,8 @@ export function AcpChatPanelBody({
   onOntologyRelationPreviewChange,
   onWorkReceipt,
   onTurnStarted,
+  onTurnStopChange,
+  onTurnWorkChange,
   captureTaskBaseline,
   meaningTransitionContext,
   onBusyChange,
@@ -425,19 +427,51 @@ export function AcpChatPanelBody({
     : busy
       ? pending === null && !turnSilent ? 'working' : null
       : status === 'ready' && watchedTurnId === lastUserEventId && hasCompletedAgentAnswer ? 'done' : null;
+  const textArriving = lastTurnUpdateAt !== null && (turnNowMs === null || turnNowMs - lastTurnUpdateAt < TEXT_ARRIVING_MS);
   const turnWork: TurnWork | null = turnWorkPhase && lastUserEventId !== null
     ? {
         turnId: lastUserEventId,
         phase: turnWorkPhase,
-        activity: turnActivity(
-          events,
-          lastUserEventIndex,
-          VAULT_MCP_SERVER_NAME,
-          lastTurnUpdateAt !== null && (turnNowMs === null || turnNowMs - lastTurnUpdateAt < TEXT_ARRIVING_MS),
-        ),
+        activity: turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving),
         plan: reportedPlan,
       }
     : null;
+  const reportedActivity = onTurnWorkChange && busy && lastUserEventIndex >= 0
+    ? turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving)
+    : null;
+  const reportedKind = reportedActivity?.kind ?? null;
+  const reportedLabelKind = reportedActivity?.label?.kind ?? null;
+  const reportedLabelText = reportedActivity?.label?.text ?? null;
+  const reportedTarget = reportedActivity?.target ?? null;
+  const reportedAsking = awaitingAnswer;
+  useEffect(() => {
+    if (!onTurnWorkChange) return;
+    onTurnWorkChange(reportedKind === null ? null : {
+      kind: reportedKind,
+      label: reportedLabelKind === null ? null : { kind: reportedLabelKind, text: reportedLabelText ?? '' },
+      target: reportedTarget,
+      asking: reportedAsking,
+    });
+  }, [onTurnWorkChange, reportedAsking, reportedKind, reportedLabelKind, reportedLabelText, reportedTarget]);
+  useEffect(() => () => onTurnWorkChange?.(null), [onTurnWorkChange]);
+
+  const stopTurnRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    stopTurnRef.current = () => {
+      setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
+      const request = livePendingRef.current;
+      livePendingRef.current = null;
+      request?.resolve(null);
+      setDeferredPermission(null);
+      cancel();
+    };
+  });
+  const stopTurn = useCallback(() => stopTurnRef.current(), []);
+  useEffect(() => {
+    if (!onTurnStopChange) return;
+    onTurnStopChange(busy ? stopTurn : null);
+    return () => onTurnStopChange(null);
+  }, [busy, onTurnStopChange, stopTurn]);
 
   const displayStatus = connectStopped ? 'stopped' : status === 'idle' ? 'starting' : status;
   const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
@@ -725,12 +759,7 @@ export function AcpChatPanelBody({
             requestComposerFocus();
           }}
           onStop={() => {
-            setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
-            const request = livePendingRef.current;
-            livePendingRef.current = null;
-            request?.resolve(null);
-            setDeferredPermission(null);
-            cancel();
+            stopTurn();
             requestComposerFocus();
           }}
           onStopConnecting={() => {
