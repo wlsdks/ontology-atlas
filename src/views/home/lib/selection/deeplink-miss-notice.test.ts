@@ -10,6 +10,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: false,
         projectsLoaded: true,
         sourceReady: true,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "none" });
   });
@@ -22,6 +23,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: false,
         projectsLoaded: true,
         sourceReady: true,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "none" });
   });
@@ -34,6 +36,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: true,
         projectsLoaded: true,
         sourceReady: true,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "none" });
   });
@@ -47,6 +50,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: false,
         projectsLoaded: false,
         sourceReady: true,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "notify-now" });
   });
@@ -59,6 +63,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: false,
         projectsLoaded: true,
         sourceReady: true,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "notify-now" });
   });
@@ -73,6 +78,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: false,
         projectsLoaded: false,
         sourceReady: true,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "notify-after-grace" });
   });
@@ -85,7 +91,20 @@ describe("resolveDeeplinkMissDecision", () => {
         hasProjectMatch: false,
         projectsLoaded: true,
         sourceReady: false,
+        resolvedBefore: false,
       }),
     ).toEqual({ action: "none" });
+  });
+  it("deselects quietly when a selection that resolved earlier is gone, instead of calling it a broken link", () => {
+    expect(
+      resolveDeeplinkMissDecision({
+        selectedSlug: "capability:cancel-order",
+        hasOntologyMatch: false,
+        hasProjectMatch: false,
+        projectsLoaded: true,
+        sourceReady: true,
+        resolvedBefore: true,
+      }),
+    ).toEqual({ action: "deselect" });
   });
 });

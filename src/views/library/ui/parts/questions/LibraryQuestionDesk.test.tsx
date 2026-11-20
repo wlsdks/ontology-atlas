@@ -234,6 +234,21 @@ describe('Library question desk transfer boundary', () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it("keeps the question focused while Search is pressed over an arrived report, so WebKit's blur cannot hide the form before the click", async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    act(() => { screen.getByTestId('question-desk-input').focus(); });
+    rendered.rerender(<Desk onSummarize={onSummarize} report={{
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion,
+      vaultScope: request.vaultScope, text: 'A draft.', coverage: request.coverage,
+      limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    }} />);
+    expect(fireEvent.mouseDown(screen.getByTestId('question-desk-search'))).toBe(false);
+  });
+
   it('keeps Korean masthead type untracked and renders a localized human timestamp', async () => {
     const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
     const rendered = render(<Desk onSummarize={onSummarize} />);
