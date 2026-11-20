@@ -403,11 +403,11 @@
     "canvasAria": "資料室のグラフ。元ソース、Wikiページ、そのページが挙げる概念。",
     "islandUnsorted": "未分類",
     "islandUnread": "未読",
-    "describeIsland": "{name}: ページ{pages, number}件と、それが読んだファイル{sources, number}件の島です。押すと列として開きます。拡大すると名前が表示されます。",
-    "announceIsland": "島{name}、{position, number}/{total, number}: ページ{pages, number}件、ファイル{sources, number}件。Enterキーで列として開きます。",
+    "describeIsland": "{name}：ページ{pages, number}件と、それが読んだファイル{sources, number}件のグループです。押すと列として開きます。拡大すると名前が表示されます。",
+    "announceIsland": "グループ{name}、{position, number}/{total, number}: ページ{pages, number}件、ファイル{sources, number}件。Enterキーで列として開きます。",
     "describeUnread": "未読：どのページもまだ読んでいないファイルが{sources, number}件あります。押すと、どこから始めればよいかが表示されます。",
     "unreadPressed": "どのページもまだ読んでいないソースが{sources, number}件あるため、その間に描く関係はありません。ソース一覧で「Wikiページなし」と表示されているもので、図の上の「Wikiページを作成」で最初の1件から始まります。",
-    "islandBack": "島",
+    "islandBack": "すべてのグループ",
     "islandName": "{name} · ページ{pages, number}件 · ファイル{sources, number}件",
     "readerClose": "ページを閉じる",
     "keys": "矢印キーで点の間を移動し、Enterキーで今いる点の横にカードを開き、Escapeキーで閉じます。",
@@ -454,7 +454,7 @@
       "concept": "概念{count, number}",
       "cite": "引用{count, number}",
       "mention": "言及{count, number}",
-      "island": "島ひとつが概念ひとつ",
+      "island": "グループひとつが概念ひとつ",
       "stale": "書いた後に変更",
       "gestures": "押すとカード · 2回押すと開く · スクロールで拡大"
     }
