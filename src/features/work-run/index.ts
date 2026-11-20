@@ -3,9 +3,8 @@ export {
   type WorkRun,
   type WorkRunActivity,
   type WorkRunOutcome,
-  type WorkRunReport,
 } from './model/work-run';
-export { workRuns, type WorkRunSnapshot } from './model/work-run-store';
+export { workRuns } from './model/work-run-store';
 export {
   useFolderWorkRun,
   useWorkRunElapsed,
