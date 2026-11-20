@@ -19,7 +19,7 @@ import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { cpus, loadavg } from 'node:os';
 import { join } from 'node:path';
 import { printBudgetTable } from './lib/budgets.mjs';
-import { childrenOf, footprintCategories, footprints, processName, vmmapRegions, webkitHelpers } from './lib/macos-memory.mjs';
+import { childrenOf, footprintCategories, footprints, MACOS_TOOL, processName, vmmapRegions, webkitHelpers } from './lib/macos-memory.mjs';
 import { ensurePerfApp, PERF_APP_IDENTIFIER, unregisterPerfApp } from './lib/perf-app.mjs';
 import { captureWindow } from '../lib/verify-macos/visual-evidence.mjs';
 import { parseOnscreenWindows, readOnscreenWindows } from '../lib/verify-macos/window-accessibility.mjs';
@@ -172,7 +172,7 @@ async function launch(vault, { walks, capMs, label, composition }) {
 }
 
 function screenLocked() {
-  const session = spawnSync('/usr/sbin/ioreg', ['-n', 'Root', '-d1', '-a'], { encoding: 'utf8' }).stdout ?? '';
+  const session = spawnSync(MACOS_TOOL.ioreg, ['-n', 'Root', '-d1', '-a'], { encoding: 'utf8' }).stdout ?? '';
   return /<key>CGSSessionScreenIsLocked<\/key>\s*<true\/>/.test(session);
 }
 
