@@ -56,6 +56,10 @@ describe("landing a page at a claim", () => {
     const mark = layer.querySelector<HTMLElement>("[data-reader-claim-mark]");
     expect(mark?.style.top).toBe("996px");
     expect(mark?.getAttribute("aria-hidden")).toBe("true");
+    // The tint alone: no coloured edge on the row.
+    expect(mark?.style.background).toBe("var(--color-indigo-line-a22)");
+    expect(mark?.style.boxShadow).toBe("");
+    expect(mark?.style.borderLeft).toBe("");
   });
 
   it("does not scroll for a claim on the first screen", () => {

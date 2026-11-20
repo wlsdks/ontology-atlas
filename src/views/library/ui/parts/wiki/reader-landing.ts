@@ -57,14 +57,12 @@ export function landAtLine(
     position: "absolute",
     zIndex: "-1",
     pointerEvents: "none",
-    // Starts just inside a list item's bullet, so the accent edge never sits on it.
-    left: `${rect.left - layerRect.left - 6}px`,
+    left: `${rect.left - layerRect.left - 10}px`,
     top: `${rect.top - layerRect.top - 4}px`,
-    width: `${rect.width + 16}px`,
+    width: `${rect.width + 20}px`,
     height: `${rect.height + 8}px`,
     borderRadius: "var(--radius-chip)",
     background: "var(--color-indigo-line-a22)",
-    boxShadow: "inset 2px 0 0 var(--color-indigo-accent)",
   });
   layer.prepend(mark);
   if (scrolls) scroller.scrollTo({ top: target, behavior: reduced ? "auto" : "smooth" });
