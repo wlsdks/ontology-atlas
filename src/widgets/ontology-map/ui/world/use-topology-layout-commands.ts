@@ -18,6 +18,7 @@ import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { type RealmRuntimeData } from "./topology-realm-runtime";
 import { prepareRevealHome } from "./topology-reveal-home";
 import { type TopologyWorld } from "./topology-world";
+import { isWorldBuilding, onWorldSwap } from "./world-swap";
 
 interface Dependencies {
   relayoutToken: number;
@@ -124,20 +125,27 @@ export function useTopologyLayoutCommands({
   const lastRevealTokenRef = useRef(0);
 
   useEffect(() => {
+    const reveal = () => {
+      if (revealToken === lastRevealTokenRef.current) return;
+      lastRevealTokenRef.current = revealToken;
+      const world = worldRef.current;
+      if (!world || world.nodes.length === 0) return;
+      // Origin = the project node's home, falling back to the spine bbox centre.
+      const projectNode = world.nodes.find((n) => n.kind === "project");
+      const cx = projectNode?.homeX ?? (world.spineBounds.minX + world.spineBounds.maxX) / 2;
+      const cy = projectNode?.homeY ?? (world.spineBounds.minY + world.spineBounds.maxY) / 2;
+      const tokens = readOntologyMapTokensOrNull();
+      if (!tokens) return;
+      const revealed = prepareRevealHome(world, tokens, { x: cx, y: cy });
+      worldRef.current = revealed.world;
+      homeSpringsRef.current = revealed.springs;
+      homingActiveRef.current = true;
+    };
     if (revealToken === lastRevealTokenRef.current) return;
-    lastRevealTokenRef.current = revealToken;
-    const world = worldRef.current;
-    if (!world || world.nodes.length === 0) return;
-    // Origin = the project node's home, falling back to the spine bbox centre.
-    const projectNode = world.nodes.find((n) => n.kind === "project");
-    const cx = projectNode?.homeX ?? (world.spineBounds.minX + world.spineBounds.maxX) / 2;
-    const cy = projectNode?.homeY ?? (world.spineBounds.minY + world.spineBounds.maxY) / 2;
-    const tokens = readOntologyMapTokensOrNull();
-    if (!tokens) return;
-    const reveal = prepareRevealHome(world, tokens, { x: cx, y: cy });
-    worldRef.current = reveal.world;
-    homeSpringsRef.current = reveal.springs;
-    homingActiveRef.current = true;
+    // A world still building would replace the revealed one, so the token waits for that swap.
+    if (!worldRef.current || isWorldBuilding(worldRef)) return onWorldSwap(worldRef, reveal);
+    reveal();
+    return undefined;
   }, [homeSpringsRef, homingActiveRef, revealToken, worldRef]);
 
 }
