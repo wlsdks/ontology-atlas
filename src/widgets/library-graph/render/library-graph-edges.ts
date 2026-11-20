@@ -58,9 +58,11 @@ const EDGE_BOW_MAX = 17;
  */
 const FLOW_BREAK_T = 0.12;
 
-/** How far past its curve's hull an edge can paint: a chevron's arm, the stale dot or half a stroke, plus antialiasing. */
-const EDGE_INK_REACH_PX =
-  Math.max(FLOW_CHEVRON_PX * Math.SQRT2, STALE_DOT_RADIUS + STALE_DOT_BREATH, (CITES_WIDTH * 1.5) / 2) + 1;
+/**
+ * How far past its curve's hull an edge can paint: a chevron's arm plus a selected citation's
+ * full width, which covers the arm's miter tip (6.0 px) and the breathing stale dot (3.3 px).
+ */
+const EDGE_INK_REACH_PX = FLOW_CHEVRON_PX * Math.SQRT2 + CITES_WIDTH * 1.5;
 
 /**
  * A flow edge's two control points: level tangents at both ends, so a bundle of citations

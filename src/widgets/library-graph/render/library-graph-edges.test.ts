@@ -22,9 +22,16 @@ interface Stroke {
   path: Command[];
 }
 
-/** A context that keeps every stroked path with the state it was stroked in. */
-function strokeRecorder(): { ctx: CanvasRenderingContext2D; strokes: Stroke[] } {
+interface Fill {
+  style: string;
+  arcs: Array<{ x: number; y: number; r: number }>;
+}
+
+/** A context that keeps every stroked path with the state it was stroked in, and every filled arc. */
+function strokeRecorder(): { ctx: CanvasRenderingContext2D; strokes: Stroke[]; fills: Fill[] } {
   const strokes: Stroke[] = [];
+  const fills: Fill[] = [];
+  let arcs: Fill["arcs"] = [];
   let path: Command[] = [];
   const state: Record<string | symbol, unknown> = { font: "10px Test", globalAlpha: 1, lineWidth: 1, strokeStyle: "" };
   let dash: number[] = [];
@@ -32,7 +39,9 @@ function strokeRecorder(): { ctx: CanvasRenderingContext2D; strokes: Stroke[] } 
     get(target, key) {
       if (key === "measureText") return (text: string) => ({ width: text.length * 5 });
       if (key === "setLineDash") return (pattern: number[]) => void (dash = [...pattern]);
-      if (key === "beginPath") return () => void (path = []);
+      if (key === "beginPath") return () => void ((path = []), (arcs = []));
+      if (key === "arc") return (x: number, y: number, r: number) => void arcs.push({ x, y, r });
+      if (key === "fill") return () => void fills.push({ style: String(target.fillStyle), arcs });
       if (key === "moveTo" || key === "lineTo" || key === "quadraticCurveTo" || key === "bezierCurveTo") {
         return (...args: number[]) => void path.push([key, ...args]);
       }
@@ -54,7 +63,7 @@ function strokeRecorder(): { ctx: CanvasRenderingContext2D; strokes: Stroke[] } 
       return true;
     },
   });
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, strokes };
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, strokes, fills };
 }
 
 function random(seed: number): () => number {
@@ -178,5 +187,56 @@ describe("edges outside the canvas", () => {
     const missing = onScreen.filter((stroke) => !culled.some((drawn) => sameStroke(drawn, stroke)));
     expect(missing).toEqual([]);
     expect(culled.length).toBeLessThan(reference.length * 0.75);
+  });
+});
+
+/** One citation between two marks at `from` and `to`; the marks themselves may lie anywhere. */
+function oneEdge(from: LayoutPoint, to: LayoutPoint, extra: Partial<LibraryGraphFrame>, edge: Partial<LibraryGraphEdge> = {}): LibraryGraphFrame {
+  return {
+    nodes: [
+      { id: "page:a", kind: "page", label: "a", ref: "a", href: null },
+      { id: "source:b", kind: "source", label: "b", ref: "b", href: null },
+    ],
+    edges: [{ id: "e", source: "page:a", target: "source:b", relation: "cites", certainty: "current", ...edge }],
+    positions: new Map([["page:a", from], ["source:b", to]]),
+    width: WIDTH, height: HEIGHT, ink: INK,
+    selectedId: null, hoveredId: null, focusedId: null, activeLabel: null,
+    standingLabels: false, sourceLabels: false,
+    ...extra,
+  };
+}
+
+/** Reduced motion on an open card: the citation keeps a chevron and its stale dot at full breath. */
+const STILL_FLOW: NonNullable<LibraryGraphFrame["flow"]> = {
+  edges: new Set(["e"]), phase: 0, arrivalEdges: new Set(), arrivalPhase: 0, arrived: new Map(),
+  pulse: new Set(["e"]), pulsePhase: 1, still: true,
+};
+
+function drawn(frame: LibraryGraphFrame): { strokes: Stroke[]; fills: Fill[] } {
+  const { ctx, strokes, fills } = strokeRecorder();
+  drawLibraryGraph(ctx, frame);
+  return { strokes: strokes.filter((stroke) => stroke.style === INK.edge), fills: fills.filter((fill) => fill.style === INK.stale) };
+}
+
+describe("ink an edge carries past its line", () => {
+  it("draws a long line just above the canvas whose bow dips onto it", () => {
+    const { strokes } = drawn(oneEdge({ x: 100, y: -8 }, { x: 400, y: -8 }, { layout: "force" }));
+    expect(strokes).toHaveLength(1);
+    expect(Math.max(...samples(strokes[0]).map((point) => point.y))).toBeGreaterThan(0);
+  });
+
+  it("draws the stale dot of a line just left of the canvas when the dot reaches over the edge", () => {
+    const { fills } = drawn(oneEdge({ x: -3.2, y: 100 }, { x: -3.2, y: 160 }, { layout: "flow", flow: STILL_FLOW }, { certainty: "unverified" }));
+    expect(fills).toHaveLength(1);
+    const [dot] = fills[0].arcs;
+    expect(dot.x + dot.r).toBeGreaterThan(0);
+  });
+
+  it("draws a short line just left of the canvas whose chevron arm reaches onto it", () => {
+    const { strokes } = drawn(oneEdge({ x: -3.2, y: 206 }, { x: -3.2, y: 200 }, { layout: "force", flow: STILL_FLOW }));
+    expect(strokes).toHaveLength(2);
+    const [line, chevron] = strokes;
+    expect(Math.max(...samples(line).map((point) => point.x)) + line.width / 2).toBeLessThan(0);
+    expect(Math.max(...samples(chevron).map((point) => point.x))).toBeGreaterThan(0);
   });
 });
