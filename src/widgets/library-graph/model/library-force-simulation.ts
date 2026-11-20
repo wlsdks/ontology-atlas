@@ -986,10 +986,9 @@ export function resizeLibrarySimulation(
 }
 
 /**
- * A changed folder rearranges without jumping: kept nodes keep position and velocity, a new
- * node enters on an attached neighbour (a fresh page on its sources), and removed nodes are
- * returned so the caller fades them over `--motion-base`. `forces: false` is for a picture that
- * lays every mark itself: no force reads the groups there, and the next sync with forces composes.
+ * A changed folder rearranges without jumping: kept nodes keep position and velocity, a new node enters
+ * on an attached neighbour, and removed nodes return for the caller to fade. `forces: false` is for a
+ * picture that lays every mark itself, where no force reads the groups; the next sync with forces composes.
  */
 export function syncLibrarySimulation(
   sim: LibrarySimulation,

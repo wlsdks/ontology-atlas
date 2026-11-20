@@ -722,6 +722,7 @@ describe("a sync for a laid picture", () => {
     ["past the prepass with no loose mark", 1_500, 0],
     ["past the prepass with loose marks", 1_500, 6],
     ["within the prepass", 200, 3],
+    ["within the prepass with no loose mark", 200, 0],
   ])("leaves every mark where a composing sync does, %s", (_name, count, loose) => {
     const box = { width: 1200, height: 800 };
     const whole = pairs(count, loose);

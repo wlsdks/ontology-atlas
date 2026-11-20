@@ -1,6 +1,6 @@
-/** Half a 4 px cell's reach, so a name grazing a dense column's edge still finds a certificate. */
+/** Fine enough that a name grazing a dense column's edge still finds a certificate; see the off-grid work test. */
 const CELL_PX = 2;
-/** 2,048 × 1,024 cells, 8 MB with both rasters; a larger canvas skips the raster. */
+/** 2,048 × 1,024 cells, 16 MB with both Int32 rasters; a larger canvas skips the raster. */
 const MAX_CELLS = 1 << 21;
 const SHARED = -1;
 

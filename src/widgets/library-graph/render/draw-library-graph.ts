@@ -1372,6 +1372,8 @@ function drawActivityMarks(ctx: CanvasRenderingContext2D, frame: LibraryGraphFra
 
 /** The screen cell placed names and marks are bucketed on, in CSS px: about one line of a name tall. */
 const STANDING_NAME_GRID_PX = 16;
+/** Past this many candidate names a placement builds its crowd rasters and pre-checks each place. */
+const STANDING_NAME_CROWD_MIN = 256;
 
 type ScreenBox = { x: number; y: number; width: number; height: number };
 
@@ -1385,7 +1387,7 @@ interface StandingName {
   leaderFrom: { x: number; y: number; half: number } | null;
 }
 
-/** Each canvas keeps one raster, cleared per placement, so a moving frame allocates none. */
+/** Each canvas keeps one raster, cleared per placement rather than allocated again. */
 const occupancyByCanvas = new WeakMap<CanvasRenderingContext2D, LibraryLabelOccupancy>();
 
 /** Per mark, in `frame.nodes` order: whether it has a centre, then its centre's x and y, then its radius. */
@@ -1439,12 +1441,8 @@ function standingNames(
 }
 
 /**
- * Names are semantic, not thresholded: a page always carries its name, the quieter page
- * losing a collision; a file or concept only when zoomed past `SOURCE_LABEL_MIN_SCALE`,
- * pointed at or in the open page's neighbourhood. Losers are hidden, never overlapped.
- * Greedy in a fixed order against boxes already taken, marks included, each test asking a
- * {@link LibraryLabelOccupancy} raster, then a {@link BoxGrid} of them: O(marks + names)
- * expected, deterministic across draws and machines.
+ * Greedy in a fixed order against the boxes taken, marks included; a loser is hidden, never overlapped.
+ * Each test asks a {@link LibraryLabelOccupancy} raster, then a {@link BoxGrid}: O(marks + names) expected.
  */
 function placeStandingNames(
   ctx: CanvasRenderingContext2D,
@@ -1497,7 +1495,10 @@ function placeStandingNames(
     right: Math.max(box.x, box.x + box.width),
     bottom: Math.max(box.y, box.y + box.height),
   }));
-  const occupancy = LibraryLabelOccupancy.create(frame.width, frame.height, NAME_GAP_X, NAME_GAP_Y, occupancyByCanvas.get(ctx));
+  // A few names cost less tested directly than a raster of the whole canvas costs to clear.
+  const occupancy = named.length > STANDING_NAME_CROWD_MIN
+    ? LibraryLabelOccupancy.create(frame.width, frame.height, NAME_GAP_X, NAME_GAP_Y, occupancyByCanvas.get(ctx))
+    : null;
   if (occupancy) occupancyByCanvas.set(ctx, occupancy);
   const take = (box: ScreenBox & { of?: string }): void => {
     taken.add(box);
@@ -1545,7 +1546,7 @@ function placeStandingNames(
       return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
     });
   };
-  const coverage = named.length > 256 ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
+  const coverage = named.length > STANDING_NAME_CROWD_MIN ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
   if (coverage) {
     for (const { node, radius, x, y } of named) {
       const left = x - radius, top = y - radius, size = radius * 2;
@@ -1563,7 +1564,7 @@ function placeStandingNames(
     const centre = { x, y };
     const fontPx = labelFontPx(ink, node.kind);
     const lineHeight = Math.round(fontPx * 1.35);
-    if (named.length > 256 && frame.nodes.length > LEADER_MAX_MARKS) {
+    if (named.length > STANDING_NAME_CROWD_MIN && frame.nodes.length > LEADER_MAX_MARKS) {
       const middle = Math.min(Math.max(2, centre.x), Math.max(2, frame.width - 2));
       const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, node.id) ||
         openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, node.id) ||

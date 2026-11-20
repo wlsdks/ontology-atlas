@@ -229,6 +229,7 @@ function spiralPosition(
     const along = cos * collision.cx + sin * collision.cy;
     const halfChordSquared = reachOf * reachOf - (collision.cx * collision.cx + collision.cy * collision.cy - along * along);
     const insideUntil = halfChordSquared > 4 * step * step ? along + Math.sqrt(halfChordSquared) - step : Number.NEGATIVE_INFINITY;
+    // One addition per step, never `step * n`: the rounded sum is the seed geometry the slots are defined by.
     do {
       reach += step;
       attempt += 1;

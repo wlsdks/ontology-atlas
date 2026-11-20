@@ -2,8 +2,10 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
+import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
+import { flowLayout } from "../model/library-flow-layout";
 import type { LayoutPoint } from "../model/library-graph-layout";
+import { fitBox, fitView, LIBRARY_ZOOM_MAX } from "../model/library-graph-view";
 import { drawLibraryGraph, type LibraryGraphFrame, type LibraryGraphLabelBox } from "./draw-library-graph";
 import { BoxGrid } from "./library-box-grid";
 import type { LibraryGraphInk } from "./library-graph-ink";
@@ -39,6 +41,8 @@ function tracingContext(): { ctx: CanvasRenderingContext2D; trace: unknown[] } {
       if (key === "setLineDash") return (pattern: number[]) => void (target.lineDash = [...pattern]);
       if (key in target) return target[key];
       return (...args: unknown[]) => {
+        // A restore puts back the saved state whatever was set before it, so that state draws nothing.
+        if (key === "restore") return void trace.push([key]);
         trace.push([key, ...args.map((arg) => (arg instanceof StubPath ? "path" : arg)), JSON.stringify(target)]);
       };
     },
@@ -123,6 +127,46 @@ function overview(count: number, seed: number): LibraryGraphFrame {
   return { ...frame, layout: "islands", focusEdgesOnly: true, overview: { geometry: { positions: world, radii: frame.radii! }, view } };
 }
 
+/**
+ * An island the flow layout folds into stacks, zoomed in near its right end: stacks stand far past
+ * the left edge, so a name's room reaches across more of the canvas than the box grid buckets.
+ */
+function laidIsland(pages: number, seed: number): LibraryGraphFrame {
+  const next = random(seed);
+  const nodes: LibraryGraphNode[] = [];
+  const edges: LibraryGraphEdge[] = [];
+  const titles = ["vault and graph", "an evidence review of the boundary", "x", "boundary notes"];
+  for (let index = 0; index < pages; index += 1) {
+    nodes.push({ id: `page:${index}`, kind: "page", label: `Page ${index} ${titles[index % 4]}`, ref: `w/${index}`, href: null });
+    if (next() < 0.8) {
+      nodes.push({ id: `source:${index}`, kind: "source", label: `batch-${index % 7}/doc-${index}.md`, ref: `${index}.md`, href: null });
+      edges.push({ id: `c${index}`, source: `page:${index}`, target: `source:${index}`, relation: "cites", certainty: "current" });
+    }
+  }
+  const concepts = Math.floor(next() * 40);
+  for (let index = 0; index < concepts; index += 1) {
+    nodes.push({ id: `concept:${index}`, kind: "concept", label: `Concept number ${index}`, ref: `c/${index}`, href: null });
+    for (let k = 0; k < 3; k += 1) edges.push({ id: `m${index}-${k}`, source: `page:${Math.floor(next() * pages)}`, target: `concept:${index}`, relation: "mentions", certainty: "current" });
+  }
+  const graph = { nodes, edges, counts: { sources: 0, pages, concepts, cites: 0, mentions: 0 } };
+  const box = { width: 1440, height: 900 };
+  const pad = { x: 24, y: 24 };
+  const layout = flowLayout(graph, { ...fitBox(box, pad), ceiling: LIBRARY_ZOOM_MAX });
+  const fit = fitView({ minX: 0, minY: 0, maxX: layout.extent.width, maxY: layout.extent.height }, box, pad, LIBRARY_ZOOM_MAX);
+  const xs = [...layout.positions.values()].map((point) => point.x);
+  const view = { x: Math.max(...xs) - 200, y: fit.y, scale: LIBRARY_ZOOM_MAX };
+  const positions = new Map<string, LayoutPoint>();
+  const radii = new Map<string, number>();
+  for (const mark of nodes) {
+    const point = layout.positions.get(mark.id)!;
+    positions.set(mark.id, { x: box.width / 2 + (point.x - view.x) * view.scale, y: box.height / 2 + (point.y - view.y) * view.scale });
+    radii.set(mark.id, (mark.kind === "source" ? 3.5 : 5 + (mark.id.length % 4)) * view.scale);
+  }
+  const flowLabelRoom = Object.fromEntries(layout.columns.filter((column) => column.labelRoom > 0).map((column) => [column.kind, column.labelRoom * view.scale]));
+  expect(layout.columns.find((column) => column.kind === "page")!.stacks, "the island folds into stacks").toBeGreaterThanOrEqual(2);
+  return { ...frameOf(nodes, positions, radii, { layout: "flow", flowLabelRoom }), width: box.width, height: box.height };
+}
+
 function drawn(frame: LibraryGraphFrame): { digest: string; labels: LibraryGraphLabelBox[] } {
   const { ctx, trace } = tracingContext();
   drawLibraryGraph(ctx, frame);
@@ -136,11 +180,12 @@ afterEach(() => {
 describe("standing names", () => {
   /** Canvas command streams drawn by the reference linear scan over every placed box, per fixture. */
   const fixtures: Array<[string, () => LibraryGraphFrame, string, number]> = [
-    ["opened island columns at fit", () => columns(1950, 0.31, 6), "b972f23ec492c5ad", 0],
-    ["opened island columns zoomed in", () => columns(1950, 7.5, -4000), "a84562d74d7ecf4b", 75],
-    ["a force cloud past every edge", () => cloud(3000, 7), "cd895b0831403ac1", 44],
-    ["the islands overview", () => overview(3000, 11), "aa0088b6e6986807", 51],
-    ["a small folder with leaders", () => cloud(90, 3), "b172955545775fac", 63],
+    ["opened island columns at fit", () => columns(1950, 0.31, 6), "3e47890a0c7c0a36", 0],
+    ["opened island columns zoomed in", () => columns(1950, 7.5, -4000), "abf73cad20c898cb", 75],
+    ["a force cloud past every edge", () => cloud(3000, 7), "458118ed58eb402a", 44],
+    ["the islands overview", () => overview(3000, 11), "6b2569ff6e526e4f", 51],
+    ["a small folder with leaders", () => cloud(90, 3), "fc65bbd834906eed", 63],
+    ["a laid island zoomed in near its right end", () => laidIsland(2400, 7 * 31337), "b390fda7a108d4d7", 267],
   ];
 
   it.each(fixtures)("%s: places and draws exactly what the reference did", (_name, make, digest, count) => {
@@ -153,7 +198,7 @@ describe("standing names", () => {
 
   it.each([
     ["at fit", (pages: number) => columns(pages, 615 / pages, 6)],
-    ["at fit off the pixel grid", (pages: number) => columns(pages, 615 / pages, 7.85, 1.85, 2.5)],
+    ["at fit off the pixel grid", (pages: number) => columns(pages, 615 / pages, 6.74, 0.74, 2.5)],
     ["zoomed in", (pages: number) => columns(pages, 7.5, -4000)],
   ])("places names with work in proportion to the marks for an opened island %s", (_name, make) => {
     vi.stubGlobal("Path2D", StubPath);
@@ -185,6 +230,53 @@ describe("standing names", () => {
     positions.set(moved, { x: positions.get(moved)!.x + 30, y: positions.get(moved)!.y });
     const replaced = placementWork(() => drawLibraryGraph(ctx, { ...frame, positions }));
     expect(replaced).toBeGreaterThan(0);
+  });
+
+  /** Frame B differs from frame A in one thing the placement reads. */
+  const named = (frame: LibraryGraphFrame): string[] => {
+    const report: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(tracingContext().ctx, { ...frame, labelReport: report });
+    return report.filter((label) => Number.isFinite(label.x)).map((label) => label.nodeId);
+  };
+  const crowd = (): LibraryGraphFrame => ({ ...cloud(3000, 7), hoveredId: null, selectedId: null });
+  const changes: Array<[string, () => [LibraryGraphFrame, LibraryGraphFrame]]> = [
+    ["hover on a named mark", () => { const a = crowd(); return [a, { ...a, hoveredId: named(a)[5] }]; }],
+    ["a selection outside the focus set", () => {
+      const a = crowd();
+      return [a, { ...a, selectedId: a.nodes.find((mark) => !a.focus!.has(mark.id) && named(a).includes(mark.id))!.id }];
+    }],
+    ["the focus set replaced by one of the same size", () => {
+      const a = crowd();
+      return [a, { ...a, focus: new Set(a.nodes.slice(40, 80).map((mark) => mark.id)) }];
+    }],
+    ["the width", () => { const a = crowd(); return [a, { ...a, width: a.width - 300 }]; }],
+    ["the height", () => { const a = crowd(); return [a, { ...a, height: a.height - 250 }]; }],
+    ["file names off", () => { const a = crowd(); return [a, { ...a, sourceLabels: false }]; }],
+    ["page names off", () => { const a = crowd(); return [a, { ...a, pageLabels: false }]; }],
+    ["the flow room", () => { const a = columns(1950, 7.5, -4000); return [a, { ...a, flowLabelRoom: { page: 40, source: 30 } }]; }],
+    ["the nodes replaced by renamed ones", () => {
+      const a = crowd();
+      return [a, { ...a, nodes: a.nodes.map((mark) => ({ ...mark, label: `${mark.label} renamed at length` })) }];
+    }],
+    ["a radius", () => {
+      const a = crowd();
+      const radii = new Map(a.radii);
+      radii.set(named(a)[3], 40);
+      return [a, { ...a, radii }];
+    }],
+    ["a second folder on the same canvas", () => [crowd(), { ...cloud(3000, 8), hoveredId: null, selectedId: null }]],
+  ];
+
+  it.each(changes)("names a frame after one with a different %s as a fresh canvas would", (_name, pair) => {
+    vi.stubGlobal("Path2D", StubPath);
+    const [a, b] = pair();
+    const fresh: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(tracingContext().ctx, { ...b, labelReport: fresh });
+    const { ctx } = tracingContext();
+    drawLibraryGraph(ctx, { ...a, labelReport: [] });
+    const reused: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(ctx, { ...b, labelReport: reused });
+    expect(reused).toEqual(fresh);
   });
 });
 
