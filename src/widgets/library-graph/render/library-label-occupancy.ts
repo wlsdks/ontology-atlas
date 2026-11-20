@@ -58,7 +58,6 @@ export class LibraryLabelOccupancy {
   private readonly inGap: CellOwners;
   /** Cells a taken box of non-negative size meets. */
   private readonly met: CellOwners;
-  private readonly ids = new Map<string, number>();
   private readonly columns: number;
   private readonly rows: number;
   private readonly gapX: number;
@@ -80,23 +79,15 @@ export class LibraryLabelOccupancy {
     if (reuse && reuse.columns === columns && reuse.rows === rows && reuse.gapX === gapX && reuse.gapY === gapY) {
       reuse.inGap.cells.fill(0);
       reuse.met.cells.fill(0);
-      reuse.ids.clear();
       return reuse;
     }
     return new LibraryLabelOccupancy(columns, rows, gapX, gapY);
   }
 
-  private idOf(owner: string): number {
-    let id = this.ids.get(owner);
-    if (id === undefined) this.ids.set(owner, (id = this.ids.size + 1));
-    return id;
-  }
-
-  /** Takes a box for `owner`; a `null` owner's box blocks every box. */
-  hold(owner: string | null, box: Box): void {
-    const { x, y, width, height } = box;
+  /** Takes a box for `owner`, a non-negative integer; a negative owner's box blocks every box. */
+  hold(owner: number, x: number, y: number, width: number, height: number): void {
     if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(width) || !Number.isFinite(height)) return;
-    const id = owner === null ? SHARED : this.idOf(owner);
+    const id = owner < 0 ? SHARED : owner + 1;
     // Shrunk by a few ulps, so a cell counted inside is inside under the caller's rounding too.
     const left = x - this.gapX, top = y - this.gapY, right = x + width + this.gapX, bottom = y + height + this.gapY;
     const epsilon = Math.max(1e-7, Math.max(Math.abs(left), Math.abs(top), Math.abs(right), Math.abs(bottom)) * Number.EPSILON * 16);
@@ -110,10 +101,10 @@ export class LibraryLabelOccupancy {
   }
 
   /** True only if a box held by anything but `own` overlaps `box` grown by the gap. */
-  blocks(box: Box, own: string): boolean {
+  blocks(box: Box, own: number): boolean {
     const { x, y, width, height } = box;
     // An owner never held marks no cell, so any marked cell is another's.
-    const id = this.ids.get(own) ?? 0;
+    const id = own + 1;
     if (this.inGap.other(id,
       Math.floor(x / CELL_PX), Math.floor((x + width) / CELL_PX),
       Math.floor(y / CELL_PX), Math.floor((y + height) / CELL_PX))) return true;

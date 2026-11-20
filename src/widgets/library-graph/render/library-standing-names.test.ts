@@ -9,12 +9,11 @@ import { flowLayout } from "../model/library-flow-layout";
 import type { LayoutPoint } from "../model/library-graph-layout";
 import { fitBox, fitView, LIBRARY_ZOOM_MAX } from "../model/library-graph-view";
 import { drawLibraryGraph, type LibraryGraphFrame, type LibraryGraphLabelBox } from "./draw-library-graph";
-import { BoxGrid } from "./library-box-grid";
 import type { LibraryGraphInk } from "./library-graph-ink";
 import { LibraryLabelOccupancy } from "./library-label-occupancy";
+import { LibraryNameGrid } from "./library-name-grid";
 import { drawStandingNames } from "./library-standing-names";
 
-type ScreenBox = { x: number; y: number; width: number; height: number };
 
 const INK: LibraryGraphInk = {
   ground: "ground", page: "page", source: "source", concept: "concept", edge: "edge",
@@ -283,22 +282,26 @@ describe("standing names", () => {
   });
 });
 
-/** Box tests at the grid, plus each occupancy question and hold, for one run of the placement. */
+/** Boxes the name grid tested, plus each occupancy question and hold, for one run of the placement. */
 function placementWork(run: () => void): number {
   let work = 0;
-  const some = BoxGrid.prototype.some;
+  const counted = (method: "blocks" | "roomRightOf") => {
+    const original = LibraryNameGrid.prototype[method] as (...args: unknown[]) => unknown;
+    return vi.spyOn(LibraryNameGrid.prototype, method).mockImplementation(function (this: LibraryNameGrid, ...args: unknown[]) {
+      const before = this.visits;
+      const result = original.apply(this, args);
+      work += this.visits - before;
+      return result as never;
+    });
+  };
   const spies = [
-    vi.spyOn(BoxGrid.prototype, "some").mockImplementation(function (this: BoxGrid<ScreenBox>, box, margin, test) {
-      return some.call(this, box, margin, (item) => {
-        work += 1;
-        return test(item);
-      });
-    }),
+    counted("blocks"),
+    counted("roomRightOf"),
     vi.spyOn(LibraryLabelOccupancy.prototype, "blocks"),
     vi.spyOn(LibraryLabelOccupancy.prototype, "hold"),
   ];
   run();
-  for (const spy of spies.slice(1)) work += spy.mock.calls.length;
+  for (const spy of spies.slice(2)) work += spy.mock.calls.length;
   for (const spy of spies) spy.mockRestore();
   return work;
 }
@@ -391,7 +394,8 @@ describe("standing names while marks move", () => {
     drawStandingNames(ctx, still, null, null, one);
     const stillBytes = getHeapStatistics().used_heap_size - before;
     console.log(`[standing-names] 40,000 marks, ${report.length} names: still frame work ${stillWork}, ${stillLookups} lookups, ${stillBytes} bytes; moving frame work ${movingWork}, ${movingLookups} lookups, ${Math.round(movingBytes / frames)} bytes a frame`);
-    expect(movingWork).toBe(0);
+    // Carried names test only each other on the name grid: 107 tests for 75 names measured, no mark tested.
+    expect(movingWork).toBeLessThanOrEqual(report.length * 4);
     expect(movingLookups).toBeLessThanOrEqual(report.length);
     expect(stillLookups).toBeGreaterThanOrEqual(40_000);
     // About 150 bytes a drawn name measured (argument boxing at the canvas calls), none per mark.

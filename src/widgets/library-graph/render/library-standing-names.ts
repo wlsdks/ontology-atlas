@@ -1,12 +1,11 @@
 import type { LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
 import type { LibraryGraphFrame, LibraryGraphGeometry } from "./draw-library-graph";
-import { BoxGrid } from "./library-box-grid";
 import { CITES_WIDTH, NODE_RADIUS, nodeCentre, radiusOf } from "./library-graph-marks";
 import type { LibraryGraphInk } from "./library-graph-ink";
 import { LibraryLabelCoverage } from "./library-label-coverage";
 import { LibraryLabelMarkIndex } from "./library-label-mark-index";
 import { LibraryLabelOccupancy } from "./library-label-occupancy";
-import { LibraryNameGrid } from "./library-name-grid";
+import { LibraryNameGrid, NO_OWNER } from "./library-name-grid";
 
 /**
  * Two ramp steps: `--text-label` for a page's name, `--text-caption` for a file's or a
@@ -108,8 +107,28 @@ interface StandingName {
   leaderFrom: { x: number; y: number; half: number } | null;
 }
 
-/** Each canvas keeps one raster, cleared per placement rather than allocated again. */
+/** Each canvas keeps one raster and one box grid, cleared per placement rather than allocated again. */
 const occupancyByCanvas = new WeakMap<CanvasRenderingContext2D, LibraryLabelOccupancy>();
+const takenByCanvas = new WeakMap<CanvasRenderingContext2D, LibraryNameGrid>();
+const coverageByCanvas = new WeakMap<CanvasRenderingContext2D, LibraryLabelCoverage>();
+
+const ownersByNodes = new WeakMap<readonly LibraryGraphNode[], Int32Array>();
+
+/** Per mark, the first index carrying its id, so two marks with one id own each other's boxes. O(marks) per list. */
+function ownersOf(nodes: readonly LibraryGraphNode[]): Int32Array {
+  let owners = ownersByNodes.get(nodes);
+  if (owners) return owners;
+  owners = new Int32Array(nodes.length);
+  const first = new Map<string, number>();
+  for (let index = 0; index < nodes.length; index += 1) {
+    const id = nodes[index].id;
+    const seen = first.get(id);
+    if (seen === undefined) first.set(id, index);
+    owners[index] = seen ?? index;
+  }
+  ownersByNodes.set(nodes, owners);
+  return owners;
+}
 
 /** Per mark, in `frame.nodes` order: whether it has a centre, then its centre's x and y, then its radius. */
 const MARK_SLOTS = 4;
@@ -172,7 +191,7 @@ function carriesName(frame: LibraryGraphFrame, node: LibraryGraphNode, active: s
 
 /**
  * Greedy in a fixed order against the boxes taken, marks included; a loser is hidden, never overlapped.
- * Each test asks a {@link LibraryLabelOccupancy} raster, then a {@link BoxGrid}: O(marks + names) expected.
+ * Each test asks a {@link LibraryLabelOccupancy} raster, then a {@link LibraryNameGrid}: O(marks + names) expected.
  */
 function placeStandingNames(
   ctx: CanvasRenderingContext2D,
@@ -211,29 +230,23 @@ function placeStandingNames(
       second.radius - first.radius ||
       first.index - second.index,
   );
-  const taken = new BoxGrid<ScreenBox & { of?: string }>(STANDING_NAME_GRID_PX, (box) => ({
-    left: Math.min(box.x, box.x + box.width),
-    top: Math.min(box.y, box.y + box.height),
-    right: Math.max(box.x, box.x + box.width),
-    bottom: Math.max(box.y, box.y + box.height),
-  }));
+  const owners = ownersOf(frame.nodes);
+  let taken = takenByCanvas.get(ctx);
+  if (!taken) takenByCanvas.set(ctx, (taken = new LibraryNameGrid(STANDING_NAME_GRID_PX)));
+  taken.reset(frame.width, frame.height);
   // A few names cost less tested directly than a raster of the whole canvas costs to clear.
   const occupancy = named.length > STANDING_NAME_CROWD_MIN
     ? LibraryLabelOccupancy.create(frame.width, frame.height, NAME_GAP_X, NAME_GAP_Y, occupancyByCanvas.get(ctx))
     : null;
   if (occupancy) occupancyByCanvas.set(ctx, occupancy);
-  const take = (box: ScreenBox & { of?: string }): void => {
-    taken.add(box);
-    occupancy?.hold(box.of ?? null, box);
+  const take = (x: number, y: number, width: number, height: number, owner: number): void => {
+    taken.add(x, y, width, height, owner);
+    occupancy?.hold(owner, x, y, width, height);
   };
   /** Whether a placed name or a mark other than `own`'s stands within the names' gap of `box`. */
-  const takenNear = (box: ScreenBox, own: string): boolean =>
+  const takenNear = (box: ScreenBox, own: number): boolean =>
     occupancy?.blocks(box, own) === true ||
-    taken.some(
-      { x: box.x - NAME_GAP_X, y: box.y - NAME_GAP_Y, width: box.width + NAME_GAP_X * 2, height: box.height + NAME_GAP_Y * 2 },
-      0,
-      (other) => other.of !== own && overlaps(box, other),
-    );
+    taken.blocks(box.x, box.y, box.width, box.height, NAME_GAP_X, NAME_GAP_Y, own);
   const overview = frame.overview;
   const indexed = named.length > 0 && overview && frame.layout !== "flow" &&
     Number.isFinite(overview.view.x) && Number.isFinite(overview.view.y) &&
@@ -246,7 +259,7 @@ function placeStandingNames(
     for (let index = 0; index < frame.nodes.length; index += 1) {
       if (marks[index * MARK_SLOTS] === 0) continue;
       const x = marks[index * MARK_SLOTS + 1], y = marks[index * MARK_SLOTS + 2], half = marks[index * MARK_SLOTS + 3];
-      take({ x: x - half, y: y - half, width: half * 2, height: half * 2, of: frame.nodes[index].id });
+      take(x - half, y - half, half * 2, half * 2, owners[index]);
     }
   }
   const hitsMark = (box: ScreenBox, own: string): boolean => {
@@ -268,30 +281,37 @@ function placeStandingNames(
       return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
     });
   };
-  const coverage = named.length > STANDING_NAME_CROWD_MIN ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
+  const coverage = named.length > STANDING_NAME_CROWD_MIN
+    ? LibraryLabelCoverage.create(frame.width, frame.height, coverageByCanvas.get(ctx))
+    : null;
   if (coverage) {
-    for (const { node, radius, x, y } of named) {
+    coverageByCanvas.set(ctx, coverage);
+    for (const { index, radius, x, y } of named) {
       const left = x - radius, top = y - radius, size = radius * 2;
-      coverage.add(node.id, left - NAME_GAP_X, top - NAME_GAP_Y,
+      coverage.add(owners[index], left - NAME_GAP_X, top - NAME_GAP_Y,
         left + size + NAME_GAP_X, top + size + NAME_GAP_Y);
     }
   }
-  const openLine = (x: number, y: number, height: number, own: string): boolean => {
+  const lineBox: ScreenBox = { x: 0, y: 0, width: 0, height: 0 };
+  const openLine = (x: number, y: number, height: number, own: number, ownId: string): boolean => {
     if (x < 2 || x > frame.width - 2 || y < 2 || y + height > frame.height - 2) return false;
     if (coverage?.blocksLine(x, y, height)) return false;
-    const box = { x, y, width: 0, height };
-    return !takenNear(box, own) && !hitsMark(box, own);
+    lineBox.x = x;
+    lineBox.y = y;
+    lineBox.height = height;
+    return !takenNear(lineBox, own) && !hitsMark(lineBox, ownId);
   };
-  for (const { node, radius: half, x, y } of named) {
+  for (const { node, index: nodeIndex, radius: half, x, y } of named) {
     const centre = { x, y };
+    const own = owners[nodeIndex];
     const fontPx = labelFontPx(ink, node.kind);
     const lineHeight = Math.round(fontPx * 1.35);
     if (named.length > STANDING_NAME_CROWD_MIN && frame.nodes.length > LEADER_MAX_MARKS) {
       const middle = Math.min(Math.max(2, centre.x), Math.max(2, frame.width - 2));
-      const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, node.id) ||
-        openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, node.id) ||
-        openLine(centre.x + half + STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id) ||
-        openLine(centre.x - half - STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id);
+      const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, own, node.id) ||
+        openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, own, node.id) ||
+        openLine(centre.x + half + STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, own, node.id) ||
+        openLine(centre.x - half - STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, own, node.id);
       if (!possible) continue;
     }
     // Font per kind before measuring, so the tested box matches the drawn step.
@@ -329,13 +349,7 @@ function placeStandingNames(
       // Only a box starting before the canvas edge plus a gap can narrow the room.
       const reach = frame.width - 2 + NAME_GAP_X - startX;
       // The same gaps `overlaps` tests with, or the cut name still loses its side.
-      if (reach >= 0) {
-        taken.each({ x: startX, y: lineTop, width: reach, height: lineHeight }, NAME_GAP_X, (other) => {
-          if (other.of === node.id || other.x < startX) return;
-          if (other.y + other.height + NAME_GAP_Y <= lineTop || other.y - NAME_GAP_Y >= lineTop + lineHeight) return;
-          room = Math.min(room, other.x - NAME_GAP_X - startX);
-        });
-      }
+      if (reach >= 0) room = taken.roomRightOf(startX, lineTop, lineHeight, reach, NAME_GAP_X, NAME_GAP_Y, own, room);
       if (width > room && room >= STANDING_LABEL_MIN_PX) {
         text = cutFlowName(ctx, text, room);
         if (!text) continue;
@@ -387,13 +401,13 @@ function placeStandingNames(
       const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
       if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
       if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
-      if (takenNear(tried, node.id) || hitsMark(tried, node.id)) continue;
+      if (takenNear(tried, own) || hitsMark(tried, node.id)) continue;
       box = tried;
       placement = index;
       break;
     }
     if (!box) continue;
-    take(box);
+    take(box.x, box.y, box.width, box.height, NO_OWNER);
     // A hairline leader only past the four base places; a label touching its dot needs none.
     placedNames.push({ node, text, box, fontPx, leaderFrom: placement >= 4 ? { x, y, half } : null });
   }
