@@ -22,7 +22,6 @@ export {
   useAdoptDocumentText,
   useDocumentDetail,
   useDocumentDetails,
-  type DocumentDetailAnswer,
 } from './model/document-store/use-document-detail';
 export {
   startPreferredSampleDownload,
