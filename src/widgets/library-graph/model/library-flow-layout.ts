@@ -11,7 +11,8 @@ import { LIBRARY_ZOOM_MIN, SOURCE_MARK_WORLD_RADIUS } from "./library-graph-view
  * Pure and deterministic. Pages are ordered by concept barycentre then title, the outer
  * columns by page barycentre (one crossing-reduction sweep). Folded pages stand in stacks,
  * each a whole flow of its own files, pages and concepts; a file or concept joins a stack by
- * counting its own edges. O(n log n + E) with Map lookups; width and scale are solved in closed form.
+ * counting its own edges. O(n log n + E) with Map lookups; width and scale are solved in
+ * closed form. A folded folder is laid for at most three stack counts, so it stays linear in that.
  */
 
 /**
@@ -39,6 +40,14 @@ export const FLOW_GRID_STEP = 12;
 export const FLOW_LABEL_ROOM_MAX_PX = 240;
 /** The least room a name place gets at a narrow canvas: a few characters and an ellipsis. */
 export const FLOW_LABEL_ROOM_MIN_PX = 40;
+/**
+ * The least screen room a file name is given: about a dozen glyphs, enough to tell one dated or
+ * numbered file from the next. With less, files are an unnamed grid and their width goes to
+ * the pages and concepts; the index beside the picture and a press's card still name them.
+ */
+export const FLOW_FILE_NAME_MIN_PX = 96;
+/** How many stack counts past the fewest the row floor allows are laid to find the one that names pages best. */
+const STACK_COUNTS_TRIED_PAST_FEWEST = 2;
 /** The widest mark's radius (`WIDEST_MARK_WORLD_RADIUS`) and the gap a name stands from it. */
 const WIDEST_MARK = 9;
 const NAME_GAP = 5;
@@ -99,6 +108,26 @@ function rowsByNeighbours(
   return ys.map((y) => y + shift);
 }
 
+/** One row gap for a picture whose longest column has `longestRows` rows, and the height that takes. */
+function rowPitch(longestRows: number, box: Required<FlowWorld>): { rowGap: number; height: number } {
+  const innerHeight = Math.max(0, box.height - FLOW_TOP_PAD * 2);
+  const rowsFit = Math.max(1, Math.floor(innerHeight / FLOW_ROW_MIN) + 1);
+  const rowGap =
+    longestRows > rowsFit ? FLOW_ROW_MIN : Math.min(FLOW_ROW_MAX, Math.max(FLOW_ROW_MIN, longestRows > 1 ? innerHeight / (longestRows - 1) : FLOW_ROW_MAX));
+  return { rowGap, height: Math.max(box.height, rowGap * (longestRows - 1) + FLOW_TOP_PAD * 2) };
+}
+
+/** The zoom the camera shows a picture laid at `scale` with: the whole picture inside the canvas. */
+function shownScale(scale: number, box: Required<FlowWorld>): number {
+  return Math.min(box.ceiling, scale * box.cameraGain);
+}
+
+/** Whether a laid picture's rows stay at the floor on screen with the camera still able to fit it. */
+function keepsRowFloor(layout: Pick<FlowLayout, "rowGap" | "scale">, box: Required<FlowWorld>): boolean {
+  const shown = shownScale(layout.scale, box);
+  return layout.rowGap * shown >= FLOW_ROW_MIN_PX - 1e-9 && shown >= LIBRARY_ZOOM_MIN;
+}
+
 /** What a name place costs besides its room: the marks either side, the name gap, a breath. */
 function placeCost(breath: number): number {
   return WIDEST_MARK * 2 + NAME_GAP + breath;
@@ -150,7 +179,10 @@ export interface FlowLayout {
   rowGap: number;
   /** The box the picture was laid in: the world box, or a larger one the camera fits. */
   extent: { width: number; height: number };
-  /** The zoom the camera will fit `extent` at: the ceiling, or lower for a long folder. */
+  /**
+   * The zoom `extent` fills the world box at: the ceiling, or lower for a long folder. The
+   * camera shows it at this times `FlowWorld.cameraGain`, never past the ceiling.
+   */
   scale: number;
 }
 
@@ -159,6 +191,12 @@ export interface FlowWorld {
   height: number;
   /** The zoom the world was derived at; the picture's own scale is this or lower. */
   ceiling?: number;
+  /**
+   * The camera's zoom over a picture's `scale`: the box the camera fits over the world box
+   * seen through the ceiling (`flowWorld`). The row floor and a file name's least room are
+   * measured on screen with it; 1 when the world is the fitted box itself.
+   */
+  cameraGain?: number;
 }
 
 export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
@@ -192,34 +230,30 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   ];
   const ordered = candidates.filter((column) => column.nodes.length > 0);
 
-  const box: Required<FlowWorld> = { width: Math.max(1, world.width), height: Math.max(1, world.height), ceiling: world.ceiling ?? 1 };
+  const box: Required<FlowWorld> = {
+    width: Math.max(1, world.width),
+    height: Math.max(1, world.height),
+    ceiling: world.ceiling ?? 1,
+    cameraGain: world.cameraGain ?? 1,
+  };
   if (ordered.length === 0) {
     return { positions: new Map(), columns: [], rowGap: FLOW_ROW_MAX, extent: { width: box.width, height: box.height }, scale: box.ceiling };
   }
-  const innerHeight = Math.max(0, box.height - FLOW_TOP_PAD * 2);
-
   /**
    * Rows. A named mark keeps its own row while the picture can afford `FLOW_ROW_MIN_PX`;
    * past that its column folds into sub-columns, like an index in two columns. The unnamed
    * file band folds the same way rather than becoming a ladder the camera shrinks away.
    */
-  const rowsFit = Math.max(1, Math.floor(innerHeight / FLOW_ROW_MIN) + 1);
   const leastScale = FLOW_ROW_MIN_PX / FLOW_ROW_MIN;
-  const rowsAffordable = Math.max(1, Math.floor(((box.height * box.ceiling) / leastScale - FLOW_TOP_PAD * 2) / FLOW_ROW_MIN) + 1);
+  const rowsAffordable = Math.max(1, Math.floor(((box.height * box.ceiling * box.cameraGain) / leastScale - FLOW_TOP_PAD * 2) / FLOW_ROW_MIN) + 1);
   // A file band folds only past the rows affordable at the 18px floor, not the rows that
   // fit at the ceiling, or a short band folds while a plain list would name every file.
   const grids = ordered.map((column) => Math.max(1, Math.ceil(column.nodes.length / rowsAffordable)));
   const rowsOf = (count: number, grid: number): number => Math.ceil(count / grid);
-  const longestRows = Math.max(1, ...ordered.map((column, index) => rowsOf(column.nodes.length, grids[index])));
-  // One gap for every column, so rows line up and an edge is a straight-ish S, not a fan.
-  const rowGap =
-    longestRows > rowsFit ? FLOW_ROW_MIN : Math.min(FLOW_ROW_MAX, Math.max(FLOW_ROW_MIN, longestRows > 1 ? innerHeight / (longestRows - 1) : FLOW_ROW_MAX));
-  const height = Math.max(box.height, rowGap * (longestRows - 1) + FLOW_TOP_PAD * 2);
-
   const pageIndex = ordered.findIndex((column) => column.kind === "page");
-  if (pageIndex >= 0 && grids[pageIndex] > 1) {
-    return stackedFlowLayout(ordered, grids[pageIndex], neighbours, box, rowGap, height);
-  }
+  if (pageIndex >= 0 && grids[pageIndex] > 1) return stackedFlowLayout(ordered, grids[pageIndex], neighbours, box);
+  // One gap for every column, so rows line up and an edge is a straight-ish S, not a fan.
+  const { rowGap, height } = rowPitch(Math.max(1, ...ordered.map((column, index) => rowsOf(column.nodes.length, grids[index]))), box);
 
   /**
    * Width keeps the box's aspect, so the fitted camera fills both axes. Every name place
@@ -227,10 +261,15 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
    * named sub-column. A folded file band names nothing at rest, so it keeps no room outside.
    */
   const namedLanes = ordered.reduce((sum, column, index) => sum + (column.kind === "source" ? 0 : grids[index] - 1), 0);
-  const leftRoom = ordered[0].kind === "source" && grids[0] > 1 ? 0 : 1;
-  const places = leftRoom + 1 + (ordered.length - 1) + namedLanes;
   const sourceBands = ordered.reduce((sum, column, index) => sum + (column.kind === "source" ? (grids[index] - 1) * FLOW_GRID_STEP : 0), 0);
-  const { room: labelRoom, scale, width } = settleNameRoom(box, height, (room, breath) => FLOW_SIDE_PAD * 2 + sourceBands + places * (placeCost(breath) + room));
+  const settleWith = (leftRoom: number) => {
+    const places = leftRoom + 1 + (ordered.length - 1) + namedLanes;
+    return { leftRoom, ...settleNameRoom(box, height, (room, breath) => FLOW_SIDE_PAD * 2 + sourceBands + places * (placeCost(breath) + room)) };
+  };
+  const filesLeft = ordered[0].kind === "source";
+  const withFileNames = settleWith(filesLeft && grids[0] > 1 ? 0 : 1);
+  const filesNamed = filesLeft && withFileNames.leftRoom === 1 && withFileNames.room * shownScale(withFileNames.scale, box) >= FLOW_FILE_NAME_MIN_PX;
+  const { leftRoom, room: labelRoom, scale, width } = filesLeft && !filesNamed ? settleWith(0) : withFileNames;
   const breath = BREATH_PX / scale;
   const laneStep = placeCost(breath) + labelRoom;
   const stepOf = (kind: LibraryGraphNodeKind): number => (kind === "source" ? FLOW_GRID_STEP : laneStep);
@@ -256,7 +295,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     x: columnX(index),
     ids: column.nodes.map((node) => node.id),
     grid: grids[index],
-    labelRoom,
+    labelRoom: column.kind === "source" && !filesNamed ? 0 : labelRoom,
   }));
 
   /**
@@ -335,23 +374,47 @@ const STACK_NAMINGS: readonly StackNaming[] = [
 const UNNAMED_STACKS: StackNaming = { files: false, pages: false, concepts: false };
 
 /**
+ * Lays a folded folder for the fewest stacks the row floor allows and a couple more, and keeps
+ * the count whose page names get the most room on screen while its rows keep the floor (a tie
+ * to fewer stacks); when none keeps the floor, the fewest. Linear in the candidates laid.
+ */
+function stackedFlowLayout(
+  ordered: ReadonlyArray<{ kind: LibraryGraphNodeKind; nodes: readonly LibraryGraphNode[] }>,
+  fewestStacks: number,
+  neighbours: ReadonlyMap<string, readonly string[]>,
+  box: Required<FlowWorld>,
+): FlowLayout {
+  const pageCount = ordered.find((column) => column.kind === "page")!.nodes.length;
+  const candidates: FlowLayout[] = [];
+  for (let stacks = fewestStacks; stacks <= Math.min(pageCount, fewestStacks + STACK_COUNTS_TRIED_PAST_FEWEST); stacks += 1) {
+    candidates.push(layStacks(ordered, stacks, neighbours, box));
+  }
+  const pageRoomPx = (layout: FlowLayout): number => layout.columns.find((column) => column.kind === "page")!.labelRoom * shownScale(layout.scale, box);
+  let best: FlowLayout | null = null;
+  for (const layout of candidates) {
+    if (keepsRowFloor(layout, box) && (best === null || pageRoomPx(layout) > pageRoomPx(best) + 1e-9)) best = layout;
+  }
+  return best ?? candidates[0];
+}
+
+/**
  * Folded pages stand in `stacks` runs of consecutive pages, and each stack is a whole flow:
  * its files as a grid to its left, its concepts to its right, so a stack's lines stay inside
  * it. A file goes to the first stack that reads it, a concept to the stack holding most of
  * the pages naming it (the earlier on a tie); either with no page goes to the last stack.
  * O(n log n + E): every mark is counted, sorted and placed once, within its own stack.
  */
-function stackedFlowLayout(
+function layStacks(
   ordered: ReadonlyArray<{ kind: LibraryGraphNodeKind; nodes: readonly LibraryGraphNode[] }>,
   stacks: number,
   neighbours: ReadonlyMap<string, readonly string[]>,
   box: Required<FlowWorld>,
-  rowGap: number,
-  height: number,
 ): FlowLayout {
   const nodesOf = (kind: LibraryGraphNodeKind): readonly LibraryGraphNode[] => ordered.find((column) => column.kind === kind)?.nodes ?? [];
   const pageIds = nodesOf("page").map((node) => node.id);
   const rows = Math.ceil(pageIds.length / stacks);
+  // Files and concepts fold to the stack's rows, so the pages' rows are the picture's.
+  const { rowGap, height } = rowPitch(rows, box);
   const stackOfPage = new Map(pageIds.map((id, index) => [id, Math.floor(index / rows)]));
   const rowYs = evenRows(rows, rowGap, height);
 
@@ -416,14 +479,16 @@ function stackedFlowLayout(
     return { width: x, at };
   };
   /*
-   * The most names whose rows keep the floor. Past that, pages alone keep their names while
-   * the camera can still fit them (`LIBRARY_ZOOM_MIN`), the rows giving way; then nothing is named at rest.
+   * The most names whose rows keep the floor, files' only with `FLOW_FILE_NAME_MIN_PX`. Past
+   * that, pages alone keep their names while the camera can still fit them (`LIBRARY_ZOOM_MIN`),
+   * the rows giving way; then nothing is named at rest.
    */
-  const settle = (naming: StackNaming) => ({ naming, ...settleNameRoom(box, height, (room, breath) => strip(room, breath, naming).width) });
+  const settle = (naming: StackNaming) => ({ naming, rowGap, ...settleNameRoom(box, height, (room, breath) => strip(room, breath, naming).width) });
   const plans = STACK_NAMINGS.map(settle);
   const pagesOnly = plans[plans.length - 1];
+  const fileNamesTellApart = (plan: (typeof plans)[number]) => !plan.naming.files || !filesNameable || plan.room * shownScale(plan.scale, box) >= FLOW_FILE_NAME_MIN_PX;
   const { naming, room, scale, width } =
-    plans.find((plan) => plan.scale >= FLOW_ROW_MIN_PX / rowGap - 1e-9) ?? (pagesOnly.scale >= LIBRARY_ZOOM_MIN ? pagesOnly : settle(UNNAMED_STACKS));
+    plans.find((plan) => keepsRowFloor(plan, box) && fileNamesTellApart(plan)) ?? (shownScale(pagesOnly.scale, box) >= LIBRARY_ZOOM_MIN ? pagesOnly : settle(UNNAMED_STACKS));
   const laid = strip(room, BREATH_PX / scale, naming);
   const shift = (width - laid.width) / 2;
 

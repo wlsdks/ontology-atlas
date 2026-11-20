@@ -15,6 +15,7 @@ export function flowWorld(box: { width: number; height: number }, ceiling: numbe
     width: Math.max(1, ((box.width - FIT_PADDING * 2) / ceiling) * shrink),
     height: Math.max(1, ((box.height - FIT_PADDING * 2) / ceiling) * shrink),
     ceiling,
+    cameraGain: 1 / shrink,
   };
 }
 /** The islands overview's world: the padded box shrunk a little, so the fit lands at 1:1. */

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph } from "./build-library-graph";
 import {
+  FLOW_FILE_NAME_MIN_PX,
   FLOW_GRID_STEP,
   FLOW_LABEL_ROOM_MAX_PX,
   FLOW_LABEL_ROOM_MIN_PX,
@@ -319,7 +320,7 @@ describe("flow layout", () => {
     const folder = foldedFolder();
     for (const width of [260, 600, 2400]) {
       const layout = flowLayout(folder, { ...FOLDED_WORLD, width });
-      const rooms = new Set(layout.columns.map((column) => column.labelRoom * layout.scale));
+      const rooms = new Set(layout.columns.filter((column) => column.labelRoom > 0).map((column) => column.labelRoom * layout.scale));
       expect(rooms.size, `width ${width}`).toBe(1);
       const [roomPx] = [...rooms];
       expect(roomPx, `width ${width}`).toBeGreaterThanOrEqual(FLOW_LABEL_ROOM_MIN_PX - 1e-6);
@@ -331,6 +332,55 @@ describe("flow layout", () => {
     const middling = flowLayout(folder, { ...FOLDED_WORLD, width: 600 });
     expect(middling.columns[1].labelRoom * middling.scale).toBeLessThan(FLOW_LABEL_ROOM_MAX_PX);
     expect(middling.extent.width * middling.scale).toBeCloseTo(600 * 2, 6);
+  });
+
+  it("names files only with the room to tell one from the next, and gives their width to pages and concepts", () => {
+    const folder = foldedFolder();
+    const roomPx = (layout: FlowLayout, kind: string) => layout.columns.find((column) => column.kind === kind)!.labelRoom * layout.scale;
+    // Three name places a stack would share about 92px each: under the bound, so two share it.
+    const middling = flowLayout(folder, { ...FOLDED_WORLD, width: 400 });
+    expect(stacksOf(middling, folder).pageXs).toHaveLength(2);
+    expect(roomPx(middling, "source")).toBe(0);
+    expect(roomPx(middling, "page")).toBeGreaterThan(FLOW_FILE_NAME_MIN_PX * 1.4);
+    expect(roomPx(middling, "concept")).toBe(roomPx(middling, "page"));
+    const wide = flowLayout(folder, { ...FOLDED_WORLD, width: 600 });
+    expect(roomPx(wide, "source")).toBeGreaterThanOrEqual(FLOW_FILE_NAME_MIN_PX);
+    expect(roomPx(wide, "source")).toBe(roomPx(wide, "page"));
+    // An unfolded flow follows the same bound: a narrow box names its pages, not its files.
+    const short = graph({ sources: ["2026-01-12-report.md", "2026-01-13-report.md"], pages: ["one", "two"], cites: [["one", "2026-01-12-report.md"], ["two", "2026-01-13-report.md"]] });
+    for (const width of [120, 600]) {
+      const layout = flowLayout(short, { width, height: 200, ceiling: 2 });
+      const files = roomPx(layout, "source");
+      if (files > 0) expect(files, `width ${width}`).toBeGreaterThanOrEqual(FLOW_FILE_NAME_MIN_PX);
+      expect(files > 0, `width ${width}`).toBe(width === 600);
+    }
+  });
+
+  it("lays the stack count that gives a page name the most room among those keeping the row floor, a tie to fewer", () => {
+    const folder = foldedFolder();
+    // 60 pages afford 37 rows at the floor here, so two stacks are the fewest; three and four
+    // keep the floor too but split the width among more names, and a wide box ties them at the ceiling.
+    for (const width of [600, 2400]) {
+      const layout = flowLayout(folder, { ...FOLDED_WORLD, width });
+      expect(stacksOf(layout, folder).pageXs, `width ${width}`).toHaveLength(2);
+      expect(layout.rowGap * layout.scale).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
+    }
+    // Three stacks are the fewest at this height but this width takes their rows under the
+    // floor; four keep it, so four are laid.
+    const cramped = flowLayout(folder, { width: 200, height: 200, ceiling: 2 });
+    expect(stacksOf(cramped, folder).pageXs).toHaveLength(4);
+    expect(cramped.rowGap * cramped.scale).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
+  });
+
+  it("measures the row floor at the zoom the camera shows the picture with", () => {
+    const folder = foldedFolder();
+    const world = { ...FOLDED_WORLD, height: 250 };
+    const seenAsLaid = flowLayout(folder, world);
+    const seenLarger = flowLayout(folder, { ...world, cameraGain: 1 / 0.9 });
+    expect(stacksOf(seenAsLaid, folder).pageXs).toHaveLength(3);
+    expect(stacksOf(seenLarger, folder).pageXs).toHaveLength(2);
+    expect(seenLarger.rowGap * seenLarger.scale).toBeLessThan(FLOW_ROW_MIN_PX);
+    expect((seenLarger.rowGap * seenLarger.scale) / 0.9).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
   });
 
   it("drops file names, then concept names, before a narrow pane takes a stack's rows under the floor", () => {
