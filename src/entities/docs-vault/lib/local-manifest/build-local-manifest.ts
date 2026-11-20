@@ -536,7 +536,7 @@ async function stampedEntry(entry: WalkEntry, stamps: VaultStampIndex | null): P
 }
 
 /**
- * The derived index's name for what `buildMdEntry` computes: a hash of this module and everything
+ * The derived index's name for what `buildMdEntry` computes: a hash of `md-entry.ts` and everything
  * it loads, made at build time (scripts/lib/row-producer.mjs), so a build whose derive code changed
  * never reads an older build's rows. A build without one (the dev server) keeps no rows.
  */
