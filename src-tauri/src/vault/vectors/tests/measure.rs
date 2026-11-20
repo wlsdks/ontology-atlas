@@ -206,7 +206,7 @@ fn questions() -> Vec<String> {
 
 fn ask(vectors: &Arc<Vectors>, entry: &Arc<Entry>, question: &str) -> f64 {
     let started = Instant::now();
-    let found = vectors.search(entry, &VectorSource::Builtin, question, 8);
+    let found = vectors.search(entry, &VectorSource::Builtin, question, 8, &[]);
     let ms = started.elapsed().as_secs_f64() * 1_000.0;
     assert_eq!(found.failure, None, "the search failed: {:?}", found.state);
     assert!(!found.hits.is_empty(), "the search found nothing");
@@ -250,7 +250,7 @@ fn a_folder_prepared_and_asked_on_this_computer() {
     println!("{{\"mark\":\"preparing\",\"pid\":{}}}", std::process::id());
     let sampler = Sampler::start(model.clone());
     let started = Instant::now();
-    vectors.prepare(&entry, VectorSource::Builtin);
+    vectors.prepare(&entry, VectorSource::Builtin, true);
     let done = latest.wait_until_done();
     let prepare_s = started.elapsed().as_secs_f64();
     let (app_peak, worker_peak) = sampler.stop();

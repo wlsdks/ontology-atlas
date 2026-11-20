@@ -41,7 +41,8 @@ pub(crate) enum VectorFailure {
     RunnerDown,
     ModelMissing,
     /// The model could not be converted, loaded or checked, could not start, stopped answering,
-    /// or answered with vectors Atlas refused; also a job that failed inside (detail `internal`).
+    /// or answered with vectors Atlas refused; also a job that failed inside. Its detail is one of
+    /// `ModelFailedDetail`.
     ModelFailed,
     Write,
     AuditBlocked,
@@ -97,6 +98,85 @@ pub(super) fn failure_of(error: &EmbedError, during: During) -> VectorFailure {
     }
 }
 
+/// Where the model was when it failed: converting the download, checking the converted model, or
+/// answering (preparing passages or a question).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ModelStep {
+    Convert,
+    Check,
+    Answer,
+}
+
+/// The one detail a `modelFailed` failure carries: a closed list the screens hold the same way
+/// (`MODEL_FAILED_DETAILS`), so no other string reaches them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ModelFailedDetail {
+    /// The model did not load.
+    Load,
+    /// The download could not be converted.
+    Convert,
+    /// The converted model, or an answer, failed Atlas's check.
+    Check,
+    WorkerExited,
+    TimedOut,
+    /// The job failed inside Atlas.
+    Internal,
+}
+
+impl ModelFailedDetail {
+    #[cfg(test)]
+    pub(super) const ALL: [Self; 6] = [
+        Self::Load,
+        Self::Convert,
+        Self::Check,
+        Self::WorkerExited,
+        Self::TimedOut,
+        Self::Internal,
+    ];
+
+    /// The only place a detail becomes the string the screens read.
+    pub(super) fn as_str(self) -> &'static str {
+        match self {
+            Self::Load => "load",
+            Self::Convert => "convert",
+            Self::Check => "check",
+            Self::WorkerExited => "worker-exited",
+            Self::TimedOut => "timed-out",
+            Self::Internal => "internal",
+        }
+    }
+
+    pub(super) fn of(error: &EmbedError, step: ModelStep) -> Self {
+        use EmbedError as E;
+        match (error, step) {
+            (E::WorkerExited, _) => Self::WorkerExited,
+            (E::TimedOut, _) => Self::TimedOut,
+            (E::ModelLoad(detail), ModelStep::Check) if detail.starts_with("reference") => {
+                Self::Check
+            }
+            (E::ModelLoad(_) | E::WorkerStart(_) | E::ModelNotReady, _) => Self::Load,
+            (_, ModelStep::Convert) => Self::Convert,
+            (_, ModelStep::Check | ModelStep::Answer) => Self::Check,
+        }
+    }
+}
+
+/// A failure and its detail as the screens read them: a `modelFailed` detail from the closed list,
+/// any other failure's detail the error's code.
+pub(super) fn failure_detail(
+    error: &EmbedError,
+    during: During,
+    step: ModelStep,
+) -> (VectorFailure, String) {
+    let failure = failure_of(error, during);
+    let detail = if failure == VectorFailure::ModelFailed {
+        ModelFailedDetail::of(error, step).as_str()
+    } else {
+        error.code()
+    };
+    (failure, detail.to_string())
+}
+
 #[derive(Serialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModelBytes {
@@ -149,7 +229,11 @@ impl VectorStatus {
 #[derive(Serialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BuiltinProbe {
+    /// The model is ready.
     pub on_disk: bool,
+    /// What the model holds in the app's data folder, a partial download and a failed
+    /// conversion's leftovers included; 0 when nothing is there.
+    pub model_bytes: u64,
     pub download_bytes: u64,
     pub kept_bytes: u64,
     pub needed_free_bytes: u64,

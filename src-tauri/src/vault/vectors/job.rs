@@ -10,7 +10,8 @@ use super::models::{builtin_model, is_builtin_model, readable_model, Builtin, Ru
 use super::report::{Rate, Throttle};
 use super::search::OpenSearcher;
 use super::types::{
-    failure_of, During, ModelBytes, VectorFailure, VectorPhase, VectorSource, VectorStatus,
+    failure_detail, During, ModelBytes, ModelFailedDetail, ModelStep, VectorFailure, VectorPhase,
+    VectorSource, VectorStatus,
 };
 use super::{lock, Vectors};
 use crate::llm::embed::builtin::{Progress, Stage as ModelStage};
@@ -34,7 +35,12 @@ pub(super) const UPDATE_QUIET: Duration = Duration::from_secs(30);
 /// and no later than this after the first index pass it waited for.
 pub(super) const UPDATE_LATEST: Duration = Duration::from_secs(10 * 60);
 /// What a pass that panicked reports, so the screen can offer Resume.
-const INTERNAL: &str = "internal";
+fn internal() -> Ended {
+    Ended::Failed(
+        VectorFailure::ModelFailed,
+        ModelFailedDetail::Internal.as_str().into(),
+    )
+}
 
 /// The app's one model turn: jobs take it in the order they asked.
 #[derive(Default)]
@@ -129,26 +135,27 @@ pub(super) enum Ended {
 }
 
 fn failed(error: &EmbedError, during: During) -> Ended {
-    Ended::Failed(failure_of(error, during), error.code().to_string())
+    let (failure, detail) = failure_detail(error, during, ModelStep::Answer);
+    Ended::Failed(failure, detail)
 }
 
-/// A failure while the worker converts or checks the model; the detail names the step and, for
-/// the check, whether the model did not load or did not match the reference vectors.
+/// A failure while the worker converts or checks the model; the download is kept.
 fn model_failed(error: &EmbedError, step: ModelStage) -> Ended {
     let step = if step == ModelStage::Check {
-        "check"
+        ModelStep::Check
     } else {
-        "convert"
+        ModelStep::Convert
     };
-    let code = match error {
-        EmbedError::ModelLoad(detail) if detail.starts_with("reference") => {
-            "embed-model-reference-failed"
-        }
-        error => error.code(),
-    };
+    let (failure, detail) = failure_detail(error, During::ModelConvert, step);
+    Ended::Failed(failure, detail)
+}
+
+/// The built-in model is not on this computer and this pass may not fetch it. Not a hold: the
+/// status says so for as long as it is true.
+fn model_gone() -> Ended {
     Ended::Failed(
-        failure_of(error, During::ModelConvert),
-        format!("{code}-in-{step}"),
+        VectorFailure::ModelGone,
+        EmbedError::ModelNotReady.code().into(),
     )
 }
 
@@ -165,6 +172,8 @@ enum Stage {
 pub(super) struct Run {
     pass: Pass,
     pub(super) builtin: bool,
+    /// The person pressed the dialog's download: the one pass that may fetch the built-in model.
+    may_download: bool,
     /// The store was finished once before this pass, so this pass updates changed files.
     finished: bool,
     generation: u64,
@@ -182,10 +191,18 @@ pub(super) struct Run {
 }
 
 impl Run {
-    fn new(pass: Pass, builtin: bool, finished: bool, generation: u64, initial: Stage) -> Self {
+    fn new(
+        pass: Pass,
+        builtin: bool,
+        may_download: bool,
+        finished: bool,
+        generation: u64,
+        initial: Stage,
+    ) -> Self {
         Self {
             pass,
             builtin,
+            may_download,
             finished,
             generation,
             progress: PrepareProgress::default(),
@@ -222,6 +239,9 @@ struct EntryState {
     run: Option<Arc<Run>>,
     /// The last pass's failure this launch; cleared by the next pass that does not fail.
     failure: Option<(VectorFailure, String)>,
+    /// The failure came from fetching or making the built-in model, so it says why the model is
+    /// absent: until the next prepare it is shown instead of `modelGone`.
+    failure_at_model: bool,
     /// Raised by a Delete: a pass of an older generation records and reports nothing.
     generation: u64,
     /// Stopped by the person, paused across a restart, or ended by a failure: no quiet pass
@@ -231,6 +251,8 @@ struct EntryState {
     deleted: bool,
     /// Index passes a quiet update waits behind: the first and the last, on the job's clock.
     deferred: Option<(Duration, Duration)>,
+    /// A prepare with the person's download press waits for its pass, which takes it.
+    download: bool,
 }
 
 /// What the progress events last said, so the throttle knows whether anything moved.
@@ -277,17 +299,19 @@ impl Entry {
     }
 
     /// Arms a folder with no remembered source in this launch with the WebView's `source`, held
-    /// when the person had paused it; never replaces a source a prepare chose.
-    pub(super) fn arm(&self, source: &VectorSource, paused: bool) {
+    /// when the person had paused it; never replaces a source a prepare chose. `true` when it
+    /// armed the folder now.
+    pub(super) fn arm(&self, source: &VectorSource, paused: bool) -> bool {
         let mut state = lock(&self.state);
         if state.source.is_some() {
-            return;
+            return false;
         }
         state.source = Some(source.clone());
         if paused {
             state.held = true;
             state.deferred = None;
         }
+        true
     }
 
     pub(super) fn running_run(&self) -> Option<Arc<Run>> {
@@ -348,7 +372,9 @@ impl Entry {
             state.run = None;
             state.again = None;
             state.held = true;
-            state.failure = Some((VectorFailure::ModelFailed, INTERNAL.into()));
+            if let Ended::Failed(failure, detail) = internal() {
+                state.failure = Some((failure, detail));
+            }
         }
         self.ended.notify_all();
     }
@@ -454,20 +480,43 @@ fn finished_once(root: &Path, source: &VectorSource) -> bool {
 
 impl Vectors {
     /// Starts or continues the folder's job with `source`, and returns at once. The one call that
-    /// chooses a folder's source and lets a held folder go.
-    pub(super) fn prepare(self: &Arc<Self>, entry: &Arc<Entry>, source: VectorSource) {
+    /// chooses a folder's source and lets a held folder go. Only with `download`, the person's
+    /// press in the dialog, may its pass fetch the built-in model.
+    pub(super) fn prepare(
+        self: &Arc<Self>,
+        entry: &Arc<Entry>,
+        source: VectorSource,
+        download: bool,
+    ) {
         {
             let mut state = lock(&entry.state);
             state.source = Some(source);
             state.held = false;
             state.deleted = false;
             state.deferred = None;
+            state.download |= download;
         }
         self.request(entry, Pass::Prepare);
     }
 
+    /// Arms the folder as `Entry::arm` does. A folder armed now, not paused, whose store a
+    /// preparation never finished was cut off by a quit or a crash: it continues once the quiet
+    /// wait has passed, with no index pass needed.
+    pub(super) fn arm(self: &Arc<Self>, entry: &Arc<Entry>, source: &VectorSource, paused: bool) {
+        if !entry.arm(source, paused) || paused {
+            return;
+        }
+        if readable_model(&entry.root, source).is_some() && !finished_once(&entry.root, source) {
+            self.defer_update(entry);
+        }
+    }
+
     /// The folder changed: a quiet update follows once its index passes go quiet (`tick`).
     pub(super) fn note_change(self: &Arc<Self>, entry: &Arc<Entry>) {
+        self.defer_update(entry);
+    }
+
+    fn defer_update(self: &Arc<Self>, entry: &Arc<Entry>) {
         let now = self.clock.now();
         {
             let mut state = lock(&entry.state);
@@ -559,20 +608,22 @@ impl Vectors {
         }
     }
 
-    /// Publishes the next pass's run, or ends the job: a held folder, or one with no source,
-    /// starts nothing.
+    /// Whether the built-in model is missing from this computer, a partial download included.
+    pub(super) fn builtin_absent(&self) -> bool {
+        !self
+            .sources
+            .builtin()
+            .is_ok_and(|builtin| builtin.is_ready())
+    }
+
+    /// Publishes the next pass's run, or ends the job: a held folder, one with no source, and a
+    /// built-in one whose model is absent and whose pass may not fetch it start nothing.
     fn start_run(&self, entry: &Entry, pass: Pass) -> Option<(Arc<Run>, VectorSource)> {
         let mut seen = entry.source();
         loop {
             let facts = seen.as_ref().map(|source| {
-                // A pass that must fetch the model says so once it holds the turn.
-                let fetches_model = pass == Pass::Prepare
-                    && matches!(source, VectorSource::Builtin)
-                    && self
-                        .sources
-                        .builtin()
-                        .is_ok_and(|builtin| !builtin.is_ready());
-                (fetches_model, finished_once(&entry.root, source))
+                let absent = matches!(source, VectorSource::Builtin) && self.builtin_absent();
+                (absent, finished_once(&entry.root, source))
             });
             let mut state = lock(&entry.state);
             if state.source != seen {
@@ -580,7 +631,7 @@ impl Vectors {
                 continue;
             }
             state.again = None;
-            let (Some(source), Some((fetches_model, finished))) = (seen, facts) else {
+            let (Some(source), Some((absent, finished))) = (seen, facts) else {
                 state.running = false;
                 return None;
             };
@@ -588,13 +639,27 @@ impl Vectors {
                 state.running = false;
                 return None;
             }
-            let initial = if fetches_model {
+            // The press is taken by the pass it asked for; a later Resume asks again.
+            let may_download = pass == Pass::Prepare && std::mem::take(&mut state.download);
+            if absent && !may_download {
+                state.running = false;
+                return None;
+            }
+            // A pass that must fetch the model says so once it holds the turn.
+            let initial = if absent {
                 Stage::Downloading { done: 0, total: 0 }
             } else {
                 Stage::Starting
             };
             let builtin = matches!(source, VectorSource::Builtin);
-            let run = Arc::new(Run::new(pass, builtin, finished, state.generation, initial));
+            let run = Arc::new(Run::new(
+                pass,
+                builtin,
+                may_download,
+                finished,
+                state.generation,
+                initial,
+            ));
             state.run = Some(run.clone());
             return Some((run, source));
         }
@@ -607,13 +672,19 @@ impl Vectors {
             let (run, source) = current;
             let ended =
                 std::panic::catch_unwind(AssertUnwindSafe(|| self.run_pass(entry, &run, &source)))
-                    .unwrap_or_else(|_| Ended::Failed(VectorFailure::ModelFailed, INTERNAL.into()));
+                    .unwrap_or_else(|_| internal());
             entry.forget_summary();
             let next = {
                 let mut state = lock(&entry.state);
                 state.run = None;
                 if state.generation == run.generation {
+                    state.failure_at_model = matches!(
+                        *lock(&run.stage),
+                        Stage::Downloading { .. } | Stage::Converting
+                    );
                     state.failure = match &ended {
+                        // Not a hold and not remembered: the status says it while it is true.
+                        Ended::Failed(VectorFailure::ModelGone, _) => None,
                         Ended::Failed(failure, detail) => {
                             state.held = true;
                             state.deferred = None;
@@ -713,18 +784,16 @@ impl Vectors {
         }
     }
 
-    /// Downloads, converts and checks the built-in model. An update never downloads.
+    /// Downloads, converts and checks the built-in model, only in the pass the person's download
+    /// press started.
     fn make_model_ready(
         &self,
         entry: &Entry,
         run: &Run,
         builtin: &dyn Builtin,
     ) -> Result<(), Ended> {
-        if run.pass == Pass::Update {
-            return Err(Ended::Failed(
-                VectorFailure::ModelGone,
-                EmbedError::ModelNotReady.code().into(),
-            ));
+        if !run.may_download {
+            return Err(model_gone());
         }
         // The worker maps the weights; nothing may hold them while the files are replaced.
         builtin.release();
@@ -844,7 +913,10 @@ impl Vectors {
                 log::warn!("search by meaning refused the model's answer: {refusal}");
                 (
                     RunEnd::Failed,
-                    Ended::Failed(VectorFailure::ModelFailed, "vectors-refused".into()),
+                    Ended::Failed(
+                        VectorFailure::ModelFailed,
+                        ModelFailedDetail::Check.as_str().into(),
+                    ),
                 )
             }
             Err(PrepareError::Index(error)) => {
@@ -914,8 +986,13 @@ impl Vectors {
 
     /// Stops every matching job for good, holds each out of its plan while `delete` runs, and lets
     /// each folder's search copy and remembered source go. Each folder reports not set up from
-    /// now until it is prepared again.
-    pub(super) fn forget<T>(&self, root: Option<&Path>, delete: impl FnOnce() -> T) -> T {
+    /// now until it is prepared again, unless `delete` failed: then its status says what is on
+    /// disk.
+    pub(super) fn forget<T, E>(
+        &self,
+        root: Option<&Path>,
+        delete: impl FnOnce() -> Result<T, E>,
+    ) -> Result<T, E> {
         let canonical = root.and_then(|root| std::fs::canonicalize(root).ok());
         let mut entries: Vec<Arc<Entry>> = self
             .all_entries()
@@ -949,6 +1026,9 @@ impl Vectors {
         for entry in &entries {
             *lock(&entry.searcher) = None;
             entry.forget_summary();
+            if deleted.is_err() {
+                lock(&entry.state).deleted = false;
+            }
         }
         drop(gates);
         for entry in &entries {
@@ -990,7 +1070,7 @@ impl Vectors {
             off.vectors_bytes = vault_index::vectors::vectors_bytes(&entry.root).unwrap_or(0);
             return off;
         }
-        let (run, remembered, failure, held, deleted) = {
+        let (run, remembered, failure, held, deleted, at_model) = {
             let state = lock(&entry.state);
             (
                 // A pass of an older generation was ended by a Delete and speaks no more.
@@ -1002,6 +1082,7 @@ impl Vectors {
                 state.failure.clone(),
                 state.held,
                 state.deleted,
+                state.failure_at_model,
             )
         };
         if deleted {
@@ -1016,6 +1097,28 @@ impl Vectors {
                 .flatten(),
         };
         let summary = model.as_ref().and_then(|model| self.summary(entry, model));
+        // Resume cannot work without the model, so its absence comes first: ahead of a failure
+        // and of `stopped`, also for a pass stopped during its download. Only the download the
+        // person pressed for, still going, says otherwise, and the failure that download ended
+        // with, which says why the model is absent, until the next prepare lets the folder go.
+        let downloading = run
+            .as_ref()
+            .is_some_and(|run| run.may_download && !run.stopped());
+        let says_why = held && at_model && failure.is_some();
+        if matches!(source, Some(VectorSource::Builtin))
+            && !downloading
+            && !says_why
+            && self.builtin_absent()
+        {
+            let mut gone = VectorStatus::of_phase(VectorPhase::Failed);
+            if let Some(summary) = summary {
+                fill_counts(&mut gone, &summary, 0, 0);
+            }
+            gone.failure = Some(VectorFailure::ModelGone);
+            gone.failure_detail = Some(EmbedError::ModelNotReady.code().into());
+            gone.vectors_bytes = vectors_bytes;
+            return gone;
+        }
         let mut status = match run {
             Some(run) => self.running_status(entry, &run, summary),
             None => self.idle_status(summary, model.as_ref(), failure, held),

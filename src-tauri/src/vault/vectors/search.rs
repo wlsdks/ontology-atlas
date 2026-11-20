@@ -55,6 +55,7 @@ impl Vectors {
         source: &VectorSource,
         question: &str,
         limit: usize,
+        prefixes: &[String],
     ) -> VectorFound {
         let root = &entry.root;
         let Some(model) = readable_model(root, source) else {
@@ -82,7 +83,7 @@ impl Vectors {
             Ok(query) => query,
             Err(error) => return self.with_coverage(entry, failed(failure_of(&error, during))),
         };
-        let found = self.nearest(entry, &model, &query, limit.min(MAX_HITS));
+        let found = self.nearest(entry, &model, &query, limit.min(MAX_HITS), prefixes);
         let found = match found {
             Ok(found) => found,
             Err(error) => {
@@ -141,6 +142,7 @@ impl Vectors {
         model: &Model,
         query: &[f32],
         limit: usize,
+        prefixes: &[String],
     ) -> vault_index::Result<vault_index::vectors::Found> {
         let now = self.clock.now();
         let mut open = lock(&entry.searcher);
@@ -161,7 +163,7 @@ impl Vectors {
                 break;
             };
             current.last_used = now;
-            let found = current.searcher.nearest(query, limit)?;
+            let found = current.searcher.nearest_within(query, limit, prefixes)?;
             if !found.deleted {
                 return Ok(found);
             }

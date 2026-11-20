@@ -25,14 +25,15 @@ fn every_folder_command_refuses_a_folder_the_person_did_not_choose() {
         assert!(commands::probe(vectors, &root, None).is_err(), "probe");
         assert!(commands::status(vectors, &root, true, Some(&builtin), false).is_err());
         assert!(commands::status(vectors, &root, true, None, false).is_err());
-        assert!(commands::prepare(vectors, &root, true, builtin.clone()).is_err());
+        assert!(commands::prepare(vectors, &root, true, builtin.clone(), true).is_err());
         assert!(commands::stop(vectors, &root).is_err(), "stop");
-        assert!(commands::search(vectors, &root, &builtin, "sedges", 4).is_err());
+        assert!(commands::search(vectors, &root, &builtin, "sedges", 4, &[]).is_err());
         assert!(commands::delete(vectors, &root).is_err(), "delete");
     }
     assert!(harness.model().sent().is_empty());
     assert_eq!(vault_index::vectors::store_model(&other).unwrap(), None);
 
+    indexed(&granted);
     let opened = commands::probe(vectors, &shown(&granted), None).unwrap();
     assert_eq!(opened.files, 1);
     assert!(commands::status(vectors, &shown(&granted), true, None, false).is_ok());
@@ -82,9 +83,9 @@ fn a_source_no_screen_offers_is_a_command_error_not_a_state() {
     ] {
         let path = shown(&root);
         let refused = [
-            commands::prepare(vectors, &path, true, source.clone()).map(|_| ()),
+            commands::prepare(vectors, &path, true, source.clone(), true).map(|_| ()),
             commands::status(vectors, &path, true, Some(&source), false).map(|_| ()),
-            commands::search(vectors, &path, &source, "sedges", 4).map(|_| ()),
+            commands::search(vectors, &path, &source, "sedges", 4, &[]).map(|_| ()),
         ];
         for answer in refused {
             assert_eq!(answer, Err(code.to_string()), "{source:?}");
@@ -121,7 +122,7 @@ fn a_question_longer_than_a_passage_is_cut_on_a_character_and_searched() {
     prepare_and_wait(&harness, &entry, VectorSource::Builtin);
     let found = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, &long, 3);
+        .search(&entry, &VectorSource::Builtin, &long, 3, &[]);
     assert_eq!((found.state, found.failure), (FoundState::Ok, None));
     assert!(!found.hits.is_empty());
     cleanup(&root);

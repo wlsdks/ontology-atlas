@@ -36,6 +36,8 @@ pub(crate) trait Builtin: Embedder + Send + Sync {
     fn runtime(&self) -> Runtime;
     fn space_needed(&self) -> u64;
     fn free_bytes(&self) -> Option<u64>;
+    /// Every byte the model holds in the app's data folder, ready or not.
+    fn model_bytes(&self) -> u64;
 }
 
 /// A runner on this computer, past the loopback rule.
@@ -151,6 +153,10 @@ impl Builtin for AppBuiltin {
 
     fn free_bytes(&self) -> Option<u64> {
         self.0.store().free_bytes()
+    }
+
+    fn model_bytes(&self) -> u64 {
+        self.0.store().bytes()
     }
 }
 

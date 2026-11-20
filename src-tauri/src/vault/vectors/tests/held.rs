@@ -9,7 +9,7 @@ use crate::llm::embed::builtin::Stage as ModelStage;
 use crate::vault_grants::EnforcedScope;
 use std::path::PathBuf;
 
-fn shown(root: &Path) -> String {
+pub(super) fn shown(root: &Path) -> String {
     root.to_string_lossy().into_owned()
 }
 
@@ -40,7 +40,7 @@ fn a_stopped_folder_prepares_nothing_after_an_index_pass_or_a_stale_hit() {
     let root = vault("stop-holds", 320);
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     harness.vectors.stop(&entry);
     harness.model().gate.open();
@@ -54,7 +54,7 @@ fn a_stopped_folder_prepares_nothing_after_an_index_pass_or_a_stale_hit() {
     assert!(entry.wait_idle(WITHIN));
     let found = harness
         .vectors
-        .search(&entry, &VectorSource::Builtin, "Passage number 3", 4);
+        .search(&entry, &VectorSource::Builtin, "Passage number 3", 4, &[]);
     assert_eq!(found.state, FoundState::Ok);
     index_pass_then_quiet(&harness, &entry, UPDATE_LATEST);
 
@@ -75,7 +75,7 @@ fn a_failed_folder_prepares_nothing_after_an_index_pass() {
     let root = vault("failure-holds", 70);
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     *lock(&harness.model().batch_error) = Some(EmbedError::WorkerExited);
     harness.model().gate.open();
@@ -101,7 +101,7 @@ fn a_stop_that_lands_between_two_queued_passes_starts_neither_again() {
     let root = vault("stop-between", 3);
     let entry = entry(&harness, &root);
     harness.model().gate.hold();
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     // Read and queued: this edit is for the next pass, which an update asks for now.
     rewrite(&root, "wiki/note-000.md");
@@ -126,12 +126,12 @@ fn a_stop_that_lands_between_two_queued_passes_starts_neither_again() {
 }
 
 /// A folder stopped half way in an earlier launch: its store on disk, nothing in memory.
-fn stopped_in_an_earlier_launch(label: &str) -> PathBuf {
+pub(super) fn stopped_in_an_earlier_launch(label: &str) -> PathBuf {
     let earlier = Harness::new();
     let root = vault(label, 70);
     let entry = entry(&earlier, &root);
     earlier.model().gate.allow(1);
-    earlier.vectors.prepare(&entry, VectorSource::Builtin);
+    earlier.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(earlier.model().gate.wait_for_held());
     earlier.vectors.stop(&entry);
     earlier.model().gate.open();
@@ -164,20 +164,34 @@ fn a_pause_the_webview_sends_holds_a_folder_across_a_restart() {
 }
 
 #[test]
-fn a_folder_quit_mid_job_continues_as_a_first_preparation_at_the_next_opening() {
+fn a_folder_quit_mid_job_continues_by_itself_after_the_quiet_wait() {
     let root = stopped_in_an_earlier_launch("quit-continues");
     let _scope = EnforcedScope::granting(std::slice::from_ref(&root));
     let harness = Harness::new();
-    commands::status(
-        &harness.vectors,
-        &shown(&root),
-        true,
-        Some(&VectorSource::Builtin),
-        false,
-    )
-    .unwrap();
+    let arm = || {
+        commands::status(
+            &harness.vectors,
+            &shown(&root),
+            true,
+            Some(&VectorSource::Builtin),
+            false,
+        )
+        .unwrap()
+    };
+    // Only the launch's status calls: no index pass, no change noted, no prepare.
+    arm();
     let entry = entry(&harness, &root);
-    index_pass_then_quiet(&harness, &entry, Duration::ZERO);
+    harness.clock.set(UPDATE_QUIET - Duration::from_millis(1));
+    arm();
+    harness.vectors.tick();
+    assert!(entry.wait_idle(Duration::ZERO));
+    assert!(
+        harness.model().sent().is_empty(),
+        "not before the quiet wait"
+    );
+    harness.clock.set(UPDATE_QUIET);
+    harness.vectors.tick();
+    assert!(entry.wait_idle(WITHIN));
 
     assert_eq!(harness.model().sent().len(), 70 - 32, "only the rest");
     assert_eq!(status(&harness, &entry).phase, VectorPhase::Ready);
@@ -331,7 +345,7 @@ fn stop_and_delete_answer_what_the_person_did_while_a_batch_is_in_flight() {
     let _scope = EnforcedScope::granting(std::slice::from_ref(&root));
     let entry = entry(&harness, &root);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     // The batch in flight ignores the stop, as a request already sent can.
     harness.model().deaf.store(true, Ordering::SeqCst);
@@ -353,7 +367,7 @@ fn stop_and_delete_answer_what_the_person_did_while_a_batch_is_in_flight() {
 
     harness.model().deaf.store(false, Ordering::SeqCst);
     harness.model().gate.allow(1);
-    harness.vectors.prepare(&entry, VectorSource::Builtin);
+    harness.vectors.prepare(&entry, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
     harness.model().deaf.store(true, Ordering::SeqCst);
     let from = harness.events.count();
@@ -377,7 +391,7 @@ fn quitting_waits_for_a_job_to_close_its_line_and_not_past_its_bound() {
     let entry = entry(&harness, &root);
     let model = &harness.sources.runner;
     model.gate.allow(1);
-    harness.vectors.prepare(&entry, runner());
+    harness.vectors.prepare(&entry, runner(), true);
     assert!(model.gate.wait_for_held());
     assert!(harness.vectors.stop_all(WITHIN));
     assert_eq!(
@@ -388,7 +402,7 @@ fn quitting_waits_for_a_job_to_close_its_line_and_not_past_its_bound() {
 
     model.gate.hold();
     model.deaf.store(true, Ordering::SeqCst);
-    harness.vectors.prepare(&entry, runner());
+    harness.vectors.prepare(&entry, runner(), true);
     assert!(model.gate.wait_for_held());
     assert!(!harness.vectors.stop_all(Duration::from_millis(50)));
     assert_eq!(
@@ -434,9 +448,11 @@ fn deleting_the_model_stops_a_folder_waiting_to_start_before_it_touches_the_mode
     let (busy_root, queued_root) = (vault("delete-busy", 40), vault("delete-queued", 3));
     let (busy, queued) = (entry(&harness, &busy_root), entry(&harness, &queued_root));
     harness.model().gate.hold();
-    harness.vectors.prepare(&busy, VectorSource::Builtin);
+    harness.vectors.prepare(&busy, VectorSource::Builtin, true);
     assert!(harness.model().gate.wait_for_held());
-    harness.vectors.prepare(&queued, VectorSource::Builtin);
+    harness
+        .vectors
+        .prepare(&queued, VectorSource::Builtin, true);
     assert!(harness
         .events
         .wait_for(|status| status.phase == VectorPhase::WaitingTurn));
@@ -466,9 +482,11 @@ fn a_folder_waiting_its_turn_says_so_first() {
     let (busy_root, waiting_root) = (vault("first-busy", 40), vault("first-waiting", 3));
     let (busy, waiting) = (entry(&harness, &busy_root), entry(&harness, &waiting_root));
     harness.sources.runner.gate.hold();
-    harness.vectors.prepare(&busy, runner());
+    harness.vectors.prepare(&busy, runner(), true);
     assert!(harness.sources.runner.gate.wait_for_held());
-    harness.vectors.prepare(&waiting, VectorSource::Builtin);
+    harness
+        .vectors
+        .prepare(&waiting, VectorSource::Builtin, true);
     assert_eq!(status(&harness, &waiting).phase, VectorPhase::WaitingTurn);
     harness.sources.runner.gate.open();
     assert!(busy.wait_idle(WITHIN) && waiting.wait_idle(WITHIN));
@@ -498,7 +516,7 @@ fn a_model_gone_during_an_update_fails_as_model_gone_with_vectors_kept() {
     let (busy, entry) = (entry(&harness, &busy_root), entry(&harness, &root));
     prepare_and_wait(&harness, &entry, VectorSource::Builtin);
     harness.sources.runner.gate.hold();
-    harness.vectors.prepare(&busy, runner());
+    harness.vectors.prepare(&busy, runner(), true);
     assert!(harness.sources.runner.gate.wait_for_held());
     rewrite(&root, "wiki/note-000.md");
     harness.vectors.request_update(&entry);
@@ -530,31 +548,37 @@ fn a_model_that_fails_after_its_download_names_the_step_and_why() {
             ModelStage::Convert,
             EmbedError::WorkerExited,
             VectorFailure::ModelFailed,
-            "embed-worker-exited-in-convert",
+            "worker-exited",
         ),
         (
             ModelStage::Convert,
             EmbedError::TimedOut,
             VectorFailure::ModelFailed,
-            "embed-timed-out-in-convert",
+            "timed-out",
+        ),
+        (
+            ModelStage::Convert,
+            EmbedError::Inference("shape".into()),
+            VectorFailure::ModelFailed,
+            "convert",
         ),
         (
             ModelStage::Check,
             EmbedError::TimedOut,
             VectorFailure::ModelFailed,
-            "embed-timed-out-in-check",
+            "timed-out",
         ),
         (
             ModelStage::Check,
             EmbedError::ModelLoad("weights".into()),
             VectorFailure::ModelFailed,
-            "embed-model-load-failed-in-check",
+            "load",
         ),
         (
             ModelStage::Check,
             EmbedError::ModelLoad("reference 1 cosine 0.2".into()),
             VectorFailure::ModelFailed,
-            "embed-model-reference-failed-in-check",
+            "check",
         ),
     ];
     for (step, error, failure, detail) in cases {
@@ -604,6 +628,7 @@ fn prepare_with_the_index_off_answers_off_and_starts_nothing() {
         &shown(&root),
         false,
         VectorSource::Builtin,
+        true,
     )
     .unwrap();
     assert_eq!(off.phase, VectorPhase::Off);
@@ -626,7 +651,7 @@ fn a_runner_search_starts_the_housekeeping_that_drops_its_copy() {
     assert!(harness.vectors.housekeeping.get().is_none());
     let found = harness
         .vectors
-        .search(&entry, &runner(), "Passage number 1", 3);
+        .search(&entry, &runner(), "Passage number 1", 3, &[]);
     assert_eq!(found.state, FoundState::Ok);
     assert!(harness.vectors.housekeeping.get().is_some());
     assert!(lock(&entry.searcher).is_some());

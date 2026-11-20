@@ -180,7 +180,10 @@ pub(crate) fn after_index_pass(root: &Path) {
 
 /// Runs `delete` (the search index's own Delete or switch-off) with every matching job stopped and
 /// held out of its next store write, so nothing is written after it; `None` means every folder.
-pub(crate) fn with_jobs_stopped<T>(root: Option<&Path>, delete: impl FnOnce() -> T) -> T {
+pub(crate) fn with_jobs_stopped<T, E>(
+    root: Option<&Path>,
+    delete: impl FnOnce() -> Result<T, E>,
+) -> Result<T, E> {
     app().forget(root, delete)
 }
 
