@@ -78,6 +78,11 @@ export function useVectorStatus(rootPath: string | null): VectorStatus | null {
   return status;
 }
 
+/** The folder's last known status without asking for one: the long-work seat only listens. */
+export function statusOf(rootPath: string): VectorStatus | null {
+  return statuses.get(rootPath) ?? null;
+}
+
 /**
  * The press that last started or resumed this folder's job in this launch, or `null` when the job
  * continues by itself (a restart, an update of changed files).

@@ -101,11 +101,16 @@ test.describe("search by meaning in the long-work seat", () => {
 
   test("a preparation already running at load draws only the ring, and a failure raises the card", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
+    await seedBuiltinChoice(page);
     const harness = await openFolder(page, { status: LIBRARY_VECTOR_SCRIPT.preparing }, "en");
+    // The folder bridge tells the stored choice once; the job then reports by its own events.
+    await expect.poll(() => vectorCalls(harness, page, "vault_vectors_status")).toBe(1);
+    await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing);
     await expect(ring(page)).toBeVisible();
     await expect(ring(page)).toHaveAttribute("data-ring-fraction", "0.1560");
     await expect(libraryTile(page)).toHaveAccessibleName(`${navRail("en").library}: 15% done`);
     await expect(card(page)).toHaveCount(0);
+    expect(await vectorCalls(harness, page, "vault_vectors_status"), "the seat listens and never asks").toBe(1);
 
     await emit(harness, page, LIBRARY_VECTOR_FAILURES.runnerDown);
     await expect(card(page)).toHaveAttribute("data-phase", "failed");

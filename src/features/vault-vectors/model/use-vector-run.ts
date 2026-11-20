@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type R
 import type { VectorPhase, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
 import { deskLine, minutesLeftOf, UPDATE_RING_FILES, type DeskLine } from './desk-line';
-import { pressOf, resume, stop, subscribe, useVectorStatus } from './vector-store';
+import { pressOf, resume, statusOf, stop, subscribe } from './vector-store';
 
 const RUN_PHASES: ReadonlySet<VectorPhase> = new Set([
   'waitingTurn', 'modelDownloading', 'modelConverting', 'preparing', 'stopped', 'ready', 'failed',
@@ -42,9 +42,14 @@ function failureLine(rootPath: string, status: VectorStatus): VectorRun['failure
   return line ? { message: line.message, values: line.values } : null;
 }
 
-/** The long-work seat's view of the folder's job: `null` until the folder has one to tell. */
+/**
+ * The long-work seat's view of the folder's job: `null` until the folder has one to tell. It never
+ * asks Rust: the folder bridge tells the stored choice once at open, and a running job's events
+ * reach the store by themselves.
+ */
 export function useVectorRun(rootPath: string | null): VectorRun | null {
-  const status = useVectorStatus(rootPath);
+  const readStatus = useCallback(() => (rootPath === null ? null : statusOf(rootPath)), [rootPath]);
+  const status = useSyncExternalStore(subscribe, readStatus, () => null);
   const readPress = useCallback(() => (rootPath === null ? null : pressOf(rootPath)), [rootPath]);
   const pressed = useSyncExternalStore(subscribe, readPress, () => null);
   return useMemo(() => {
