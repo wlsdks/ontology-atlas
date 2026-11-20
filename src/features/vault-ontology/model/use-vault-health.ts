@@ -35,11 +35,10 @@ function useHealthManifest(): VaultManifest | null {
   }, [mode, staticManifest, localManifestUsable, vault.manifest]);
 }
 
-/** Null while `shown` is false: nothing renders the result, so the graph pass waits. */
-export function useVaultHealth(shown: boolean): VaultHealthResult | null {
+export function useVaultHealth(): VaultHealthResult {
   const manifest = useHealthManifest();
-  return useMemo(() => {
-    if (!shown) return null;
-    return manifest ? manifestHealth(manifest) : computeVaultHealth([]);
-  }, [manifest, shown]);
+  return useMemo(
+    () => (manifest ? manifestHealth(manifest) : computeVaultHealth([])),
+    [manifest],
+  );
 }

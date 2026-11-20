@@ -421,6 +421,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const { chatWidth, acpRuntime } = acpRuntimeController;
   // Derived from this folder's state here, so the chat panel needs no `LocalVaultProvider`.
   const changedSourceConcepts = useChangedSourceConcepts(topologyVaultReadModel.ontologyInsight?.nodes);
+  const chatSuggestions = useChatSuggestions(projectSourceReadiness.state, changedSourceConcepts);
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   const topologyAgentActivity = useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeController, topologyAuthoring });
 
@@ -462,11 +463,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
   });
   const { agentDockOpen, runtimeChatOpen, closeVaultAgent, openVaultAgent } = topologyAgentOrchestration;
-  // The same condition `TopologyAgentDock` mounts the chat under, so its vault-health pass waits for it.
-  const chatSuggestionsShown =
-    Boolean(acpRuntime && topologyVaultReadModel.gitVaultPath) &&
-    (runtimeChatOpen || acpRuntimeController.chatMounted || homeWorkbenchController.meaningWorkbenchPresence.mounted);
-  const chatSuggestions = useChatSuggestions(projectSourceReadiness.state, changedSourceConcepts, chatSuggestionsShown);
   const askAgentFromSource = useCallback((text: string) => {
     setVaultAgentPrefill({ text, nonce: Date.now() });
     openVaultAgent();
