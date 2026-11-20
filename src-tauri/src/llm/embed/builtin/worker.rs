@@ -165,6 +165,10 @@ fn checked_texts(texts: &[String], question: bool) -> Result<Vec<&str>, EmbedErr
     Ok(texts)
 }
 
+/// Requests read ahead of the one being computed. The client sends one at a time, so a full queue
+/// means a client that does not wait; the reader then stops reading until one is taken.
+const REQUESTS_QUEUED: usize = 8;
+
 /// Serves requests until `exit`, the end of `input`, or `idle` without one.
 pub(crate) fn serve(
     input: impl Read + Send + 'static,
@@ -173,7 +177,7 @@ pub(crate) fn serve(
     idle: Duration,
 ) -> i32 {
     let stops = Arc::new(Stops::default());
-    let (requests, received) = mpsc::channel::<Option<Request>>();
+    let (requests, received) = mpsc::sync_channel::<Option<Request>>(REQUESTS_QUEUED);
     let reader_stops = stops.clone();
     std::thread::spawn(move || {
         let mut input = input;
